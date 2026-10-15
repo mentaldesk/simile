@@ -7,7 +7,8 @@ from pydantic import ValidationError
 from simile.llm import FakeProvider, LLMClient, Model, StructuredOutputError
 from simile.npc.generate import HOMES, SYSTEM, Draft, generate, npc_id, plan, prompt
 from simile.npc.values import ranked
-from simile.schema import Npc
+from simile.schema import LocationKind, Npc
+from simile.world.map import load_map
 
 MakeDraft = Callable[..., Draft]
 
@@ -26,6 +27,12 @@ def test_plan_is_deterministic_for_a_seed() -> None:
 def test_plan_gives_each_resident_a_home() -> None:
     assert [brief.home for brief in plan(10, 0)] == [f"house_{n}" for n in range(1, 11)]
     assert [brief.home for brief in plan(3, 0)] == ["house_1", "house_2", "house_3"]
+
+
+def test_homes_are_the_houses_on_the_map() -> None:
+    houses = {loc.id for loc in load_map().locations if loc.kind is LocationKind.HOUSE}
+
+    assert set(HOMES) == houses
 
 
 @pytest.mark.parametrize("count", [0, len(HOMES) + 1])
