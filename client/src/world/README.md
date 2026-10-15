@@ -4,11 +4,8 @@ The village as the player sees it. `scenes/` has the Phaser side: `BootScene` lo
 every character atlas, then starts `WorldScene`, which draws the map and the characters and moves
 the player. Everything here in `world/` is Phaser-free and tested under vitest.
 
-Run it with the server's demo mode, which walks the fixture NPCs around the village:
-
-```bash
-SIMILE_DEMO=1 make dev   # then open http://localhost:5173
-```
+Run it with `make dev` and open http://localhost:5173. The residents go about their day (B1's
+`simile.behaviour`); at 1x the first ones leave home a few minutes after the server starts.
 
 Arrow keys or WASD move the player.
 
