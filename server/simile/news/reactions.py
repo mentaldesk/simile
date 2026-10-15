@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.llm import LLMClient, Model
+from simile.llm import LLMClient, Model, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.memory.store import recency
 from simile.news.store import NewsStore
@@ -26,6 +26,9 @@ class NewsConfig(BaseModel):
         default=2, ge=1, description="Articles read per terminal visit, newest unread first."
     )
     model: str = Field(default=Model.HAIKU, description="The model that rates each article.")
+    priority: int = Field(
+        default=-1, description="L1 priority of the rating calls, below conversations' 0."
+    )
     cares_most: int = Field(
         default=5, ge=0, description="Strongest values listed in the reading prompt."
     )
@@ -163,7 +166,11 @@ class NewsReader:
                     system=system_prompt(npc, self.config),
                     model=self.config.model,
                     purpose="news-reaction",
+                    priority=self.config.priority,
                 )
+            except StructuredOutputError:
+                logger.warning("%s couldn't rate %r, so skipped it", npc.id, item.title)
+                continue
             except Exception:
                 logger.warning("%s couldn't read %r", npc.id, item.title, exc_info=True)
                 self.seen[npc.id].difference_update(unread.id for unread in items[index:])

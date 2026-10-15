@@ -47,7 +47,7 @@ async def fast_forward(
         for lifespan in (behaviour, memory, news, world_lifespan):
             await stack.enter_async_context(lifespan(app))
         await world.loop.run(timedelta(hours=hours))
-        await asyncio.gather(*asyncio.all_tasks() - {asyncio.current_task()})
+        await asyncio.gather(*behaviour_of(app).hooks.read_news.__self__.tasks)
         now, store = world.clock.now, memory_of(app)
         npcs = behaviour_of(app).npcs
         memories = [m for npc in npcs for m in store.recall(npc, now, kind=MemoryKind.NEWS, k=100)]

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -88,7 +89,7 @@ def news_memories(memory: MemoryStore, owner: str) -> list[Memory]:
 
 
 def read_titles(fake: FakeProvider) -> list[str]:
-    return [request.messages[-1].content.split("\n")[2] for request in fake.requests]
+    return [request.messages[0].content.split("\n")[2] for request in fake.requests]
 
 
 @pytest.mark.anyio
@@ -170,6 +171,53 @@ async def test_an_article_that_failed_is_read_on_the_next_visit(
     await settle(reader)
     assert read_titles(fake) == ["Article 0", "Article 0", "Article 1"]
     assert len(news_memories(memory, "mei")) == 2
+
+
+@pytest.mark.anyio
+async def test_an_article_that_cant_be_rated_is_skipped(
+    news: NewsStore, memory: MemoryStore, caplog: pytest.LogCaptureFixture
+) -> None:
+    news.add(article(n) for n in range(2))
+    fake = FakeProvider(["Interesting!", "Very interesting!"], default=SHRUG)
+    reader = reader_for(news, memory, fake, per_visit=1)
+    mei = npc("mei")
+
+    reader.read(mei)
+    await settle(reader)
+    reader.read(mei)
+    await settle(reader)
+
+    assert read_titles(fake) == ["Article 0", "Article 0", "Article 1"]
+    assert [m.news_id for m in news_memories(memory, "mei")] == ["item-1"]
+    [warning] = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert warning.getMessage() == "mei couldn't rate 'Article 0', so skipped it"
+    assert warning.exc_info is None
+
+
+@pytest.mark.anyio
+async def test_conversations_go_ahead_of_reading(news: NewsStore, memory: MemoryStore) -> None:
+    news.add([article(0)])
+    busy = asyncio.Event()
+
+    def answer(request: Request) -> str:
+        return SHRUG if request.messages[-1].content.startswith("You've just read") else "Hi."
+
+    fake = FakeProvider([[busy, "Done."], answer, answer])
+    client = LLMClient(fake, max_concurrency=1)
+    reader = NewsReader(news, memory, Clock(NOW), lambda: client)
+
+    first = asyncio.create_task(client.complete("Busy"))
+    await asyncio.sleep(0)
+    reader.read(npc("mei"))
+    await asyncio.sleep(0)
+    line = asyncio.create_task(client.complete("Hello"))
+    await asyncio.sleep(0)
+    busy.set()
+    await asyncio.gather(first, line, *reader.tasks)
+
+    prompts = [request.messages[-1].content for request in fake.requests]
+    assert prompts[:2] == ["Busy", "Hello"]
+    assert len(news_memories(memory, "mei")) == 1
 
 
 @pytest.mark.anyio
