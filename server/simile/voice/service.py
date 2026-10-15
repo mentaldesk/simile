@@ -54,7 +54,11 @@ class VoiceService:
         self._worker: asyncio.Task[None] | None = None
 
     async def __aenter__(self) -> Self:
-        await self._run(self._synthesiser.load)
+        try:
+            await self._run(self._synthesiser.load)
+        except BaseException:
+            self._thread.shutdown(wait=False)
+            raise
         self._worker = asyncio.create_task(self._work())
         return self
 
@@ -87,6 +91,8 @@ class VoiceService:
         return self._stream(_Job(npc_id, sentence), priority)
 
     async def _stream(self, job: _Job, priority: Priority) -> AsyncGenerator[bytes, None]:
+        if self._worker is None or self._worker.done():
+            raise RuntimeError("the voice service isn't running")
         self._queue.put_nowait((priority, next(self._order), job))
         try:
             while (pcm := await job.chunks.get()) is not None:

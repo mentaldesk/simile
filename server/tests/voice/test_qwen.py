@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import struct
 import time
 
@@ -69,3 +70,22 @@ def test_cancelling_stops_generation_promptly() -> None:
         raise AssertionError("no audio after cancelling")
 
     assert asyncio.run(scenario()) < 0.5
+
+
+def test_warns_when_a_sentence_hits_the_generation_cap(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    from simile.voice import qwen
+
+    monkeypatch.setattr(qwen, "TOKENS_PER_SECOND", 1)
+
+    async def scenario() -> None:
+        async with VoiceService(qwen.QwenSynthesiser()) as voice:
+            await voice.add_voice("dwarf_smith", DWARF_SMITH)
+            async for _ in voice.speak("dwarf_smith", LINE):
+                pass
+
+    with caplog.at_level(logging.WARNING, logger="simile.voice.qwen"):
+        asyncio.run(scenario())
+
+    assert "Cut dwarf_smith off" in caplog.text

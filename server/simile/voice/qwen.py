@@ -1,9 +1,13 @@
+import logging
 from collections.abc import Generator
 from pathlib import Path
 
 import mlx.core as mx
+from mlx_audio.tts.models.base import GenerationResult
 from mlx_audio.tts.utils import load_model
 from mlx_audio.utils import load_audio
+
+logger = logging.getLogger(__name__)
 
 MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit"
 TOKENS_PER_SECOND = 12.5
@@ -34,13 +38,19 @@ class QwenSynthesiser:
     def generate(self, npc_id: str, sentence: str) -> Generator[bytes, None, None]:
         # Caps a generation that never emits end-of-speech.
         max_seconds = 3 + len(sentence) / 5
-        yield from self._generate(npc_id, sentence, int(TOKENS_PER_SECOND * max_seconds))
+        max_tokens = int(TOKENS_PER_SECOND * max_seconds)
+        tokens = 0
+        for result in self._generate(npc_id, sentence, max_tokens):
+            tokens += result.token_count
+            yield to_pcm(result.audio)
+        if tokens >= max_tokens:
+            logger.warning(f"Cut {npc_id} off after {max_seconds:.1f}s of {sentence!r}")
 
     def _generate(
         self, npc_id: str, sentence: str, max_tokens: int
-    ) -> Generator[bytes, None, None]:
+    ) -> Generator[GenerationResult, None, None]:
         audio, transcript = self._references[npc_id]
-        for result in self._model.generate(
+        yield from self._model.generate(
             text=sentence,
             lang_code="english",
             ref_audio=audio,
@@ -48,5 +58,4 @@ class QwenSynthesiser:
             stream=True,
             streaming_interval=CHUNK_SECONDS,
             max_tokens=max_tokens,
-        ):
-            yield to_pcm(result.audio)
+        )

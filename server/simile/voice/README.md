@@ -49,7 +49,10 @@ async with aclosing(
   they were asked for. A sentence already being spoken isn't interrupted.
 - To cancel, stop iterating: close the iterator (`aclose()`, or `aclosing` as above) or cancel the
   task that iterates it. A queued sentence is dropped; one being spoken stops within one chunk.
-- An error while speaking is raised from the iterator. The next sentence still plays.
+- An error while speaking is raised from the iterator. The next sentence still plays. Iterating
+  after the service has stopped raises `RuntimeError`.
+- A sentence that runs past 3 s plus 1 s per 5 characters is cut off with a warning, so a
+  generation that never ends can't hold the queue.
 
 ## Tests
 

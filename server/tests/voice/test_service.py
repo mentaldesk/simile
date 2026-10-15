@@ -182,3 +182,35 @@ def test_stopping_ends_every_sentence(synthesiser: FakeSynthesiser) -> None:
 
     assert asyncio.run(scenario()) == [[], []]
     assert synthesiser.started == ["Speaking."]
+
+
+def test_speaking_after_stopping_raises(synthesiser: FakeSynthesiser) -> None:
+    async def scenario() -> None:
+        async with smith_voice(synthesiser) as voice:
+            speech = voice.speak("smith", "Too late.")
+        with pytest.raises(RuntimeError, match="isn't running"):
+            async with asyncio.timeout(2):
+                await collect(speech)
+
+    asyncio.run(scenario())
+
+
+def test_a_failed_load_stops_the_voice_thread(synthesiser: FakeSynthesiser) -> None:
+    threads: list[threading.Thread] = []
+
+    def load() -> None:
+        threads.append(threading.current_thread())
+        raise OSError("no model")
+
+    synthesiser.load = load  # type: ignore[method-assign]
+    voice = VoiceService(synthesiser)
+
+    async def scenario() -> None:
+        with pytest.raises(OSError, match="no model"):
+            async with voice:
+                pass
+
+    asyncio.run(scenario())
+
+    threads[0].join(timeout=2)
+    assert not threads[0].is_alive()

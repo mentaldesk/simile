@@ -5,11 +5,7 @@ from pathlib import Path
 
 
 class FakeSynthesiser:
-    """For tests: speaks every sentence instantly, as `chunks` chunks of 10 ms of PCM.
-
-    `gate(sentence)` makes that sentence wait before each chunk until the test releases the
-    returned semaphore. Sentences in `failing` raise instead.
-    """
+    """For tests: instant PCM chunks. `gate()` holds a sentence; sentences in `failing` raise."""
 
     def __init__(self, chunks: int = 4) -> None:
         self.chunks = chunks
