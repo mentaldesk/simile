@@ -5,6 +5,7 @@ description = "Sim server for Simile, a village of LLM-driven NPCs."
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "pillow>=12.3.0",
+    "pydantic>=2.14.1",
     "starlette>=1.8",
     "typer>=0.27",
     "uvicorn[standard]>=0.54",
@@ -16,6 +17,7 @@ simile = "simile.cli:main"
 [dependency-groups]
 dev = [
     "httpx2>=2.13",
+    "jsonschema>=4.26.0",
     "pytest>=9.1",
     "ruff>=0.17",
 ]

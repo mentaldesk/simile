@@ -1,0 +1,103 @@
+{
+  "$defs": {
+    "LocationKind": {
+      "enum": [
+        "house",
+        "coffee_shop",
+        "square",
+        "terminal",
+        "amenity"
+      ],
+      "title": "LocationKind",
+      "type": "string"
+    },
+    "Tile": {
+      "additionalProperties": false,
+      "description": "A cell of the map grid, counted in tiles from the top-left corner.",
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Tile",
+      "type": "object"
+    },
+    "TileArea": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        },
+        "width": {
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "TileArea",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/LocationKind"
+    },
+    "area": {
+      "$ref": "#/$defs/TileArea",
+      "description": "The tiles the location covers."
+    },
+    "entry": {
+      "$ref": "#/$defs/Tile",
+      "description": "The tile entities walk to when they go there."
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "kind",
+    "area",
+    "entry"
+  ],
+  "title": "Location",
+  "type": "object"
+}

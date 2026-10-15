@@ -1,0 +1,66 @@
+[
+  {
+    "id": "conv_1",
+    "participants": ["mei", "viktor"],
+    "started": "2026-03-14T08:05:00Z",
+    "ended": "2026-03-14T08:05:22Z",
+    "lines": [
+      {
+        "id": 1,
+        "conversation_id": "conv_1",
+        "speaker": "mei",
+        "text": "Morning, Viktor! Same as always, or are you feeling brave today?",
+        "timestamp": "2026-03-14T08:05:00Z",
+        "duration": 4.4
+      },
+      {
+        "id": 2,
+        "conversation_id": "conv_1",
+        "speaker": "viktor",
+        "text": "Same as always. Bravery is for people who haven't had their coffee.",
+        "timestamp": "2026-03-14T08:05:05Z",
+        "duration": 4.8
+      },
+      {
+        "id": 3,
+        "conversation_id": "conv_1",
+        "speaker": "mei",
+        "text": "Ha! Look, I tried a new pattern on the foam. It's meant to be the old footbridge.",
+        "timestamp": "2026-03-14T08:05:10Z",
+        "duration": 6.8
+      },
+      {
+        "id": 4,
+        "conversation_id": "conv_1",
+        "speaker": "viktor",
+        "text": "Hm. The arch is wrong, but it's a fine likeness. Well done.",
+        "timestamp": "2026-03-14T08:05:17Z",
+        "duration": 4.4
+      }
+    ]
+  },
+  {
+    "id": "conv_2",
+    "participants": ["player", "mei"],
+    "started": "2026-03-14T09:10:00Z",
+    "ended": null,
+    "lines": [
+      {
+        "id": 5,
+        "conversation_id": "conv_2",
+        "speaker": "player",
+        "text": "Hi Mei, how's your morning going?",
+        "timestamp": "2026-03-14T09:10:00Z",
+        "duration": 2.4
+      },
+      {
+        "id": 6,
+        "conversation_id": "conv_2",
+        "speaker": "mei",
+        "text": "Busy, but good! Viktor actually liked my latte art. Can you believe it?",
+        "timestamp": "2026-03-14T09:10:03Z",
+        "duration": 5.2
+      }
+    ]
+  }
+]

@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "Accessory": {
+      "enum": [
+        "glasses",
+        "sunglasses",
+        "cap",
+        "beanie",
+        "headphones",
+        "scarf",
+        "backpack",
+        "apron"
+      ],
+      "title": "Accessory",
+      "type": "string"
+    },
+    "Build": {
+      "enum": [
+        "slim",
+        "average",
+        "broad"
+      ],
+      "title": "Build",
+      "type": "string"
+    },
+    "HairStyle": {
+      "enum": [
+        "bald",
+        "buzz",
+        "short",
+        "curly",
+        "bob",
+        "long",
+        "ponytail",
+        "bun"
+      ],
+      "title": "HairStyle",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "What a character looks like, for the sprite generator. Colours are #rrggbb.",
+  "properties": {
+    "skin": {
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Skin",
+      "type": "string"
+    },
+    "hair_style": {
+      "$ref": "#/$defs/HairStyle"
+    },
+    "hair_colour": {
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Hair Colour",
+      "type": "string"
+    },
+    "top_colour": {
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Top Colour",
+      "type": "string"
+    },
+    "bottom_colour": {
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Bottom Colour",
+      "type": "string"
+    },
+    "shoe_colour": {
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "title": "Shoe Colour",
+      "type": "string"
+    },
+    "build": {
+      "$ref": "#/$defs/Build"
+    },
+    "accessories": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Accessory"
+      },
+      "title": "Accessories",
+      "type": "array"
+    }
+  },
+  "required": [
+    "skin",
+    "hair_style",
+    "hair_colour",
+    "top_colour",
+    "bottom_colour",
+    "shoe_colour",
+    "build",
+    "accessories"
+  ],
+  "title": "Appearance",
+  "type": "object"
+}
