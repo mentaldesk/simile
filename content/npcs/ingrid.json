@@ -1,0 +1,61 @@
+{
+  "id": "ingrid",
+  "name": "Ingrid Salazar-Moreau",
+  "age": 37,
+  "occupation": "Experimental Textile Designer",
+  "home": "house_10",
+  "values": {
+    "freedom": 0.86,
+    "independence": 0.66,
+    "self_respect": 0.73,
+    "self_actualization": 0.77,
+    "creativity": 0.91,
+    "honesty": 0.66,
+    "compassion": 0.5,
+    "loyalty": 0.4,
+    "justice": 0.69,
+    "responsibility": 0.82,
+    "security": 0.14,
+    "equality": 0.58,
+    "tradition": 0.23,
+    "obedience": 0.08,
+    "success": 0.27,
+    "ambition": 0.76,
+    "discipline": 0.75,
+    "knowledge": 0.58,
+    "open_mindedness": 0.53,
+    "peace_of_mind": 0.35,
+    "pleasure": 0.54,
+    "connection": 0.38,
+    "adventure": 0.71,
+    "optimism": 0.44
+  },
+  "backstory": "Ingrid grew up in Valparaíso and Montreal, where her mother ran a failing dye workshop and taught her that you make the thing yourself or you go without. She left a steady job at a fashion house at thirty to build her own studio, and moved to the village for the maker space's looms and cheap, quiet workshop rent.",
+  "persona": "Ingrid is a restless maker who treats every free hour as a chance to build something nobody has seen before. She keeps her promises to clients and collaborators to the day, rises early to work, and talks openly about where she wants her studio to be in five years. She shrugs off orders, brushes aside talk of pensions and safe bets, and is bored by heritage crafts done the way they have always been done.",
+  "speaking_style": "Quick, direct and informal, with sentences that run on when she is excited about an idea and stop short when someone tells her what she should do. She uses making words like warp, dye bath and prototype, and often says 'let's try it' instead of debating.",
+  "interests": [
+    "woven electronics and conductive thread",
+    "natural dye experiments",
+    "solo trekking and long-distance trails",
+    "maker space tool sharing",
+    "building a studio brand from scratch",
+    "upcycled fabric waste"
+  ],
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "ponytail",
+    "hair_colour": "#3e2731",
+    "top_colour": "#2ce8f5",
+    "bottom_colour": "#68386c",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "backpack"
+    ]
+  },
+  "voice": {
+    "description": "A woman in her late thirties. Mid-range pitch with a slightly husky, textured timbre. Brisk, confident pace with clear articulation and a dry, focused manner, steady and unhurried in tone.",
+    "reference_line": "I finished the dye test last night, and the indigo took better than I expected. I will start the full batch after lunch.",
+    "reference_clip": null
+  }
+}

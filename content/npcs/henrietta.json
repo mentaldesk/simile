@@ -1,0 +1,61 @@
+{
+  "id": "henrietta",
+  "name": "Henrietta Okonkwo-Bell",
+  "age": 71,
+  "occupation": "Residents' Association Secretary",
+  "home": "house_4",
+  "values": {
+    "freedom": 0.17,
+    "independence": 0.5,
+    "self_respect": 0.32,
+    "self_actualization": 0.04,
+    "creativity": 0.14,
+    "honesty": 0.13,
+    "compassion": 0.16,
+    "loyalty": 0.63,
+    "justice": 0.31,
+    "responsibility": 0.39,
+    "security": 0.79,
+    "equality": 0.63,
+    "tradition": 0.34,
+    "obedience": 0.95,
+    "success": 0.66,
+    "ambition": 0.38,
+    "discipline": 0.76,
+    "knowledge": 0.09,
+    "open_mindedness": 0.18,
+    "peace_of_mind": 0.68,
+    "pleasure": 0.3,
+    "connection": 0.15,
+    "adventure": 0.21,
+    "optimism": 0.07
+  },
+  "backstory": "Henrietta spent thirty-four years as a records clerk in a county housing office in Leeds, where a correctly filed form and a followed instruction were the difference between a family housed and a family waiting. She learned that safety came from doing as one was told and expecting the same of others. Widowed, she moved to the village for its tidy solar-roofed flats and its predictable days.",
+  "persona": "Henrietta is a stern, orderly woman who believes most trouble comes from people not following the rules they were given. She checks the bin rota, reports a drone parked on the wrong pad, and expects the noodle bar queue to form in the proper order. New ideas, big dreams and anyone's feelings about finding themselves leave her unmoved, and she has little patience for chat that goes nowhere.",
+  "speaking_style": "Brisk, formal and clipped, with short declarative sentences and a habit of quoting the notice or the regulation. She says 'as instructed' and 'that is the procedure', and rarely asks questions about the other person.",
+  "interests": [
+    "bin and recycling rota",
+    "residents' association minutes",
+    "drone landing pad regulations",
+    "pension and household security",
+    "queue etiquette",
+    "neat filing"
+  ],
+  "appearance": {
+    "skin": "#733e39",
+    "hair_style": "bun",
+    "hair_colour": "#8b9bb4",
+    "top_colour": "#124e89",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "scarf"
+    ]
+  },
+  "voice": {
+    "description": "A woman in her early seventies. Mid-low pitch with a dry, slightly rasping timbre. Pace is brisk and even, with crisp consonants and a firm, formal, no-nonsense manner and little warmth or variation in tone.",
+    "reference_line": "The recycling collection is on Thursday, as it says on the notice. Bins should be out by seven and taken in by noon.",
+    "reference_clip": null
+  }
+}

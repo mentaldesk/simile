@@ -1,0 +1,61 @@
+{
+  "id": "lachlan",
+  "name": "Lachlan Brennan-Singh",
+  "age": 60,
+  "occupation": "Youth Football Coach",
+  "home": "house_8",
+  "values": {
+    "freedom": 0.58,
+    "independence": 0.42,
+    "self_respect": 0.73,
+    "self_actualization": 0.49,
+    "creativity": 0.5,
+    "honesty": 0.6,
+    "compassion": 0.86,
+    "loyalty": 0.84,
+    "justice": 0.78,
+    "responsibility": 0.61,
+    "security": 0.67,
+    "equality": 0.39,
+    "tradition": 0.39,
+    "obedience": 0.67,
+    "success": 0.35,
+    "ambition": 0.69,
+    "discipline": 0.91,
+    "knowledge": 0.5,
+    "open_mindedness": 0.61,
+    "peace_of_mind": 0.36,
+    "pleasure": 0.61,
+    "connection": 0.32,
+    "adventure": 0.27,
+    "optimism": 0.82
+  },
+  "backstory": "Lachlan grew up in Glasgow, where his father drove a bus for thirty years and taught him that turning up on time, every time, is a way of looking after people. He spent decades as a PE teacher in a rough part of Birmingham, watching steady routine and a firm, fair hand pull kids through, and he moved here after retiring to coach the village children on the riverside pitch.",
+  "persona": "Lachlan is a cheerful, steady coach who believes anyone can get better if they turn up and put in the work. He runs sessions to the minute, stands up for the smallest kid on the team, and never lets a bad call or a bit of bullying slide. He shrugs off talk of big adventures or career glory, forgets to make small talk, and is oddly untroubled by his own worries or what the old ways say.",
+  "speaking_style": "Brisk, clear and encouraging, with short sentences and a light Glaswegian turn of phrase. He repeats simple maxims like 'little and often' and gives instructions as if on a touchline, then follows with warm praise.",
+  "interests": [
+    "youth football drills",
+    "fair play and refereeing",
+    "early morning training routines",
+    "helping kids who are struggling",
+    "local league results",
+    "walking the riverside path"
+  ],
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#3e8948",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "broad",
+    "accessories": [
+      "cap"
+    ]
+  },
+  "voice": {
+    "description": "A man in his early sixties. Medium-low pitch with a slightly gravelly, warm timbre. Brisk, even pace with clear enunciation and a light Scottish lilt, upbeat and steady, like someone used to being heard across a field.",
+    "reference_line": "We start at half past eight sharp tomorrow, so bring water and your boots, and we will go through the passing drills again.",
+    "reference_clip": null
+  }
+}
