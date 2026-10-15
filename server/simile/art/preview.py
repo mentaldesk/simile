@@ -40,8 +40,6 @@ def checker(width: int, height: int, size: int = 6) -> Image.Image:
     return image
 
 
-# Scene
-
 TERRAIN = [
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
     "RRRRRRRRRRRRRRRRRRRRRRRRRRRR",
@@ -146,7 +144,14 @@ def village() -> Scene:
         3,
         [
             ["cafe_wall_l", "cafe_wall", "cafe_sign_l", "cafe_sign_r", "cafe_wall", "cafe_wall_r"],
-            ["cafe_window_l", "cafe_window", "cafe_door", "cafe_window", "cafe_window", "cafe_window_r"],
+            [
+                "cafe_window_l",
+                "cafe_window",
+                "cafe_door",
+                "cafe_window",
+                "cafe_window",
+                "cafe_window_r",
+            ],
         ],
     )
     scene.put(12, 8, "cafe_awning_l", "cafe_awning_r")
@@ -162,8 +167,22 @@ def village() -> Scene:
         "roof",
         3,
         [
-            ["wall_slate_l", "window_slate", "door_slate_top", "wall_slate", "wall_slate", "wall_slate_r"],
-            ["base_slate_l", "base_window_slate", "door_slate", "base_slate", "base_window_slate", "base_slate_r"],
+            [
+                "wall_slate_l",
+                "window_slate",
+                "door_slate_top",
+                "wall_slate",
+                "wall_slate",
+                "wall_slate_r",
+            ],
+            [
+                "base_slate_l",
+                "base_window_slate",
+                "door_slate",
+                "base_slate",
+                "base_window_slate",
+                "base_slate_r",
+            ],
         ],
     )
     scene.put(21, 5, "roof_skylight")
@@ -239,9 +258,6 @@ def render_scene(
     return canvas.to_image()
 
 
-# Contact sheets
-
-
 def palette_strip(scale: int = 2) -> Image.Image:
     swatch, border = 12 * scale, 2
     width = swatch * len(PALETTE) + 2 * border
@@ -298,11 +314,15 @@ def characters_sheet(people: dict[str, Appearance], scale: int = 3) -> Image.Ima
     width = margin * 2 + min(per_row, len(people)) * pitch_x
     height = margin * 2 + 3 * GLYPH_HEIGHT + 12 + actual + rows * pitch_y
     image = Image.new("RGBA", (width, height), rgba(BACKGROUND))
-    image.alpha_composite(label("CHARACTERS - 1X, 2X, THEN SHEETS AT 3X", scale=3), (margin, margin))
+    image.alpha_composite(
+        label("CHARACTERS - 1X, 2X, THEN SHEETS AT 3X", scale=3), (margin, margin)
+    )
     y = margin + 3 * GLYPH_HEIGHT + 12
     strip = Image.new("RGBA", (len(people) * (FRAME_WIDTH + 4), FRAME_HEIGHT), rgba("pavement"))
     for i, appearance in enumerate(people.values()):
-        strip.alpha_composite(draw_frame(appearance, "down", 1).to_image(), (i * (FRAME_WIDTH + 4), 0))
+        strip.alpha_composite(
+            draw_frame(appearance, "down", 1).to_image(), (i * (FRAME_WIDTH + 4), 0)
+        )
     image.alpha_composite(strip, (margin, y))
     image.alpha_composite(scaled(strip, 2), (margin, y + FRAME_HEIGHT + 8))
     y += actual
@@ -334,7 +354,9 @@ def walk_frames(people: Sequence[Appearance], tile: Tile, scale: int = 3) -> lis
                 c = Canvas(width, height)
                 c.paste(floor)
                 for i, appearance in enumerate(people):
-                    c.paste(draw_frame(appearance, direction, step), gap + i * (FRAME_WIDTH + gap), gap)
+                    c.paste(
+                        draw_frame(appearance, direction, step), gap + i * (FRAME_WIDTH + gap), gap
+                    )
                 frames.append(scaled(c.to_image(), scale))
     return frames
 

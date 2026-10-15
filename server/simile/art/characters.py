@@ -1,75 +1,19 @@
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 from simile.art.canvas import Canvas
 from simile.art.palette import PALETTE, hex_to_rgb, nearest, shade
+from simile.schema import Appearance
 
 FRAME_WIDTH = 16
 FRAME_HEIGHT = 24
 DIRECTIONS = ("down", "left", "right", "up")
 FRAMES = 3
-HAIR_STYLES = ("bald", "buzz", "short", "curly", "bob", "long", "ponytail", "bun")
-BUILDS = ("slim", "average", "broad")
-ACCESSORIES = (
-    "glasses",
-    "sunglasses",
-    "cap",
-    "beanie",
-    "headphones",
-    "scarf",
-    "backpack",
-    "apron",
-)
 
 SKIN_TONES = ("cream", "peach", "sand", "tan", "brown", "umber")
 CLOTH_COLOURS = tuple(name for name in PALETTE if name != "ink")
 ACCENTS = ("amber", "cyan", "red", "lime", "violet", "neon")
 LIGHT_COLOURS = {"white", "pavement", "ice", "cream", "peach", "yellow", "sand", "amber"}
-
-
-@dataclass(frozen=True)
-class Appearance:
-    """Mirrors F2's Appearance: colours are #rrggbb, snapped to the palette when drawn."""
-
-    skin: str
-    hair_style: str
-    hair_colour: str
-    top_colour: str
-    bottom_colour: str
-    shoe_colour: str
-    build: str
-    accessories: tuple[str, ...] = ()
-
-    def __post_init__(self) -> None:
-        if self.hair_style not in HAIR_STYLES:
-            raise ValueError(f"unknown hair style {self.hair_style!r}")
-        if self.build not in BUILDS:
-            raise ValueError(f"unknown build {self.build!r}")
-        for accessory in self.accessories:
-            if accessory not in ACCESSORIES:
-                raise ValueError(f"unknown accessory {accessory!r}")
-        for colour in (
-            self.skin,
-            self.hair_colour,
-            self.top_colour,
-            self.bottom_colour,
-            self.shoe_colour,
-        ):
-            hex_to_rgb(colour)
-
-    @classmethod
-    def from_dict(cls, data: Mapping[str, Any]) -> "Appearance":
-        return cls(
-            skin=data["skin"],
-            hair_style=data["hair_style"],
-            hair_colour=data["hair_colour"],
-            top_colour=data["top_colour"],
-            bottom_colour=data["bottom_colour"],
-            shoe_colour=data["shoe_colour"],
-            build=data["build"],
-            accessories=tuple(data.get("accessories", ())),
-        )
 
 
 def snap(hex_colour: str, choices: tuple[str, ...]) -> str:
@@ -186,7 +130,13 @@ SIDE_LEGS = {
     ],
 }
 SIDE_ARMS = {
-    1: [".......TT.......", ".......TT.......", ".......TT.......", ".......TT.......", ".......ss......."],
+    1: [
+        ".......TT.......",
+        ".......TT.......",
+        ".......TT.......",
+        ".......TT.......",
+        ".......ss.......",
+    ],
     0: [".......TT.......", ".......TT.......", "........TT......", ".........ss....."],
     2: [".......TT.......", "......TT........", ".....TT.........", ".....ss........."],
 }
@@ -231,7 +181,6 @@ def _side_body(c: Canvas, build: str, frame: int) -> None:
     c.vline(5, 7, 2, "e")
 
 
-# Hair: (behind body, in front) per view. Rows start at y=0.
 HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
     "bald": {"down": ([], []), "up": ([], []), "left": ([], [])},
     "buzz": {
@@ -312,7 +261,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "down": (
             [],
             [
-                "....h.hh.h.h....",
+                "",
                 "...hhhhhhhhhh...",
                 "..hhHhhHhhHhhh..",
                 ".hhhhhhhhhhhhhH.",
@@ -326,7 +275,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "up": (
             [],
             [
-                "....h.hh.h.h....",
+                "",
                 "...hhhhhhhhhh...",
                 "..hhHhhHhhHhhh..",
                 ".hhhhhhhhhhhhhH.",
@@ -341,7 +290,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "left": (
             [],
             [
-                ".....h.hh.h.....",
+                "",
                 "....hhhhhhhhh...",
                 "...hhHhhHhhHhh..",
                 "..hhhhhhhhhhhhH.",
@@ -522,12 +471,12 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 "...hhhhhhhhhhh..",
                 "...hhhhhhhhhhH..",
                 "...h....hhhhhaH.",
-                "........hhhhhhhH",
-                ".........hhhH.hH",
-                ".........HHH..hH",
-                "..............hH",
+                "........hhhhhhH.",
+                ".........hhhHhH.",
+                ".........HHH.hH.",
                 ".............hH.",
-                ".............H..",
+                "............hH..",
+                "............H...",
             ],
         ),
     },
@@ -535,7 +484,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "down": (
             [],
             [
-                "......hhhh......",
+                "",
                 ".....hhhhhH.....",
                 "....HhhhhhhH....",
                 "...hhhhhhhhhh...",
@@ -548,7 +497,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "up": (
             [],
             [
-                "......hhhh......",
+                "",
                 ".....hhhhhH.....",
                 "....HhhhhhHH....",
                 "...hhhhhhhhhh...",
@@ -564,7 +513,7 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
         "left": (
             [],
             [
-                ".........hhh....",
+                "",
                 "........hhhhH...",
                 "......hhhhhHH...",
                 "....hhhhhhhhhh..",
@@ -614,12 +563,12 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             ".....aaaaaaaa...",
             "....awwaaaaaaA..",
             "....aaaaaaaaaA..",
-            "AAAAAAAAAAAAAA..",
+            ".AAAAAAAAAAAAA..",
         ],
     },
     "beanie": {
         "down": [
-            "......aaaa......",
+            "",
             "....aaaaaaaa....",
             "...aAaAaAaAaA...",
             "...aaaaaaaaaa...",
@@ -627,7 +576,7 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             "..AAAAAAAAAAAA..",
         ],
         "up": [
-            "......aaaa......",
+            "",
             "....aaaaaaaa....",
             "...aAaAaAaAaA...",
             "...aaaaaaaaaa...",
@@ -635,7 +584,7 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             "..AAAAAAAAAAAA..",
         ],
         "left": [
-            "......aaaa......",
+            "",
             ".....aaaaaaaa...",
             "....aAaAaAaAaA..",
             "....aaaaaaaaaa..",
@@ -676,9 +625,21 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
         ],
     },
     "scarf": {
-        "down": [*[""] * 10, "...aaaaaaaaaa...", "....AaaaaaaA....", "........aA......", "........aA......"],
+        "down": [
+            *[""] * 10,
+            "...aaaaaaaaaa...",
+            "....AaaaaaaA....",
+            "........aA......",
+            "........aA......",
+        ],
         "up": [*[""] * 10, "...aaaaaaaaaa...", "....AAAAAAAA...."],
-        "left": [*[""] * 10, "....aaaaaaa.....", ".....AaaaaA.....", ".........aA.....", ".........aA....."],
+        "left": [
+            *[""] * 10,
+            "....aaaaaaa.....",
+            ".....AaaaaA.....",
+            ".........aA.....",
+            ".........aA.....",
+        ],
     },
     "apron": {
         "down": [
@@ -694,7 +655,13 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
         "left": [*[""] * 12, "....p...", "....p...", "...pp...", "...pP...", "...PP..."],
     },
     "backpack": {
-        "down": [*[""] * 11, ".....A....A.....", ".....A....A.....", ".....A....A.....", ".....A....A....."],
+        "down": [
+            *[""] * 11,
+            ".....A....A.....",
+            ".....A....A.....",
+            ".....A....A.....",
+            ".....A....A.....",
+        ],
         "up": [
             *[""] * 11,
             "....AaaaaaaA....",
@@ -758,7 +725,9 @@ def sprite_sheet(appearance: Appearance) -> Canvas:
     sheet = Canvas(FRAME_WIDTH * FRAMES, FRAME_HEIGHT * len(DIRECTIONS))
     for row, direction in enumerate(DIRECTIONS):
         for col in range(FRAMES):
-            sheet.paste(draw_frame(appearance, direction, col), col * FRAME_WIDTH, row * FRAME_HEIGHT)
+            sheet.paste(
+                draw_frame(appearance, direction, col), col * FRAME_WIDTH, row * FRAME_HEIGHT
+            )
     return sheet
 
 
@@ -770,7 +739,12 @@ def atlas(image: str) -> dict[str, Any]:
     frames = {}
     for row, direction in enumerate(DIRECTIONS):
         for col in range(FRAMES):
-            rect = {"x": col * FRAME_WIDTH, "y": row * FRAME_HEIGHT, "w": FRAME_WIDTH, "h": FRAME_HEIGHT}
+            rect = {
+                "x": col * FRAME_WIDTH,
+                "y": row * FRAME_HEIGHT,
+                "w": FRAME_WIDTH,
+                "h": FRAME_HEIGHT,
+            }
             frames[frame_name(direction, col)] = {
                 "frame": rect,
                 "rotated": False,
@@ -789,47 +763,71 @@ def atlas(image: str) -> dict[str, Any]:
     }
 
 
-PLAYER = Appearance(
-    skin="#e4a672",
-    hair_style="short",
-    hair_colour="#3e2731",
-    top_colour="#0099db",
-    bottom_colour="#3a4466",
-    shoe_colour="#ffffff",
-    build="average",
-    accessories=("backpack",),
+def _look(
+    skin: str,
+    hair_style: str,
+    hair: str,
+    top: str,
+    bottom: str,
+    shoes: str,
+    build: str,
+    *accessories: str,
+) -> Appearance:
+    return Appearance.model_validate(
+        {
+            "skin": skin,
+            "hair_style": hair_style,
+            "hair_colour": hair,
+            "top_colour": top,
+            "bottom_colour": bottom,
+            "shoe_colour": shoes,
+            "build": build,
+            "accessories": list(accessories),
+        }
+    )
+
+
+PLAYER = _look(
+    "#e4a672", "short", "#3e2731", "#0099db", "#3a4466", "#ffffff", "average", "backpack"
 )
 
 SAMPLES: dict[str, Appearance] = {
-    "sample_barista": Appearance(
-        "#e8b98f", "bob", "#1c1b22", "#d9645a", "#2f3e5c", "#f2efe6", "slim", ("apron",)
+    "sample_barista": _look(
+        "#e8b98f", "bob", "#1c1b22", "#d9645a", "#2f3e5c", "#f2efe6", "slim", "apron"
     ),
-    "sample_coder": Appearance(
-        "#c28569", "buzz", "#262b44", "#5a6988", "#262b44", "#e43b44", "average",
-        ("headphones", "glasses"),
+    "sample_coder": _look(
+        "#c28569",
+        "buzz",
+        "#262b44",
+        "#5a6988",
+        "#262b44",
+        "#e43b44",
+        "average",
+        "headphones",
+        "glasses",
     ),
-    "sample_student": Appearance(
-        "#ead4aa", "ponytail", "#733e39", "#f6757a", "#124e89", "#ffffff", "slim", ("backpack",)
+    "sample_student": _look(
+        "#ead4aa", "ponytail", "#733e39", "#f6757a", "#124e89", "#ffffff", "slim", "backpack"
     ),
-    "sample_courier": Appearance(
-        "#b86f50", "short", "#181425", "#feae34", "#3a4466", "#3a4466", "broad", ("cap",)
+    "sample_courier": _look(
+        "#b86f50", "short", "#181425", "#feae34", "#3a4466", "#3a4466", "broad", "cap"
     ),
-    "sample_artist": Appearance(
-        "#e4a672", "curly", "#ff4fa8", "#68386c", "#3e8948", "#fee761", "average", ("scarf",)
+    "sample_artist": _look(
+        "#e4a672", "curly", "#ff4fa8", "#68386c", "#3e8948", "#fee761", "average", "scarf"
     ),
-    "sample_elder": Appearance(
-        "#e8b796", "bald", "#c0cbdc", "#8b9bb4", "#3e2731", "#3e2731", "broad", ("glasses",)
+    "sample_elder": _look(
+        "#e8b796", "bald", "#c0cbdc", "#8b9bb4", "#3e2731", "#3e2731", "broad", "glasses"
     ),
-    "sample_runner": Appearance(
-        "#733e39", "long", "#181425", "#2ce8f5", "#262b44", "#63c74d", "slim", ("sunglasses",)
+    "sample_runner": _look(
+        "#733e39", "long", "#181425", "#2ce8f5", "#262b44", "#63c74d", "slim", "sunglasses"
     ),
-    "sample_skater": Appearance(
-        "#c28569", "short", "#feae34", "#e43b44", "#5a6988", "#181425", "average", ("beanie",)
+    "sample_skater": _look(
+        "#c28569", "short", "#feae34", "#e43b44", "#5a6988", "#181425", "average", "beanie"
     ),
-    "sample_teacher": Appearance(
-        "#3e2731", "bun", "#181425", "#265c42", "#ead4aa", "#733e39", "average", ("glasses",)
+    "sample_teacher": _look(
+        "#3e2731", "bun", "#181425", "#265c42", "#ead4aa", "#733e39", "average", "glasses"
     ),
-    "sample_gardener": Appearance(
-        "#e4a672", "curly", "#c0cbdc", "#3e8948", "#733e39", "#733e39", "broad", ("cap", "scarf")
+    "sample_gardener": _look(
+        "#e4a672", "curly", "#c0cbdc", "#3e8948", "#733e39", "#733e39", "broad", "cap", "scarf"
     ),
 }

@@ -3,7 +3,8 @@ from pathlib import Path
 from typing import Any
 
 from simile.art import characters, preview, tiles
-from simile.art.characters import PLAYER, SAMPLES, Appearance
+from simile.art.characters import PLAYER, SAMPLES
+from simile.schema import Appearance, Npc
 
 CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
 BUILTIN = {"player": PLAYER, **SAMPLES}
@@ -92,11 +93,10 @@ def write_previews(directory: Path) -> list[Path]:
 def load_npcs(directory: Path) -> dict[str, Appearance]:
     npcs = {}
     for path in sorted(directory.glob("*.json")):
-        data = json.loads(path.read_text())
-        npc_id = data.get("id", path.stem)
-        if npc_id in BUILTIN:
-            raise ValueError(f"{path}: NPC id {npc_id!r} clashes with a built-in sprite")
-        npcs[npc_id] = Appearance.from_dict(data["appearance"])
+        npc = Npc.model_validate_json(path.read_text())
+        if npc.id in BUILTIN:
+            raise ValueError(f"{path}: NPC id {npc.id!r} clashes with a built-in sprite")
+        npcs[npc.id] = npc.appearance
     return npcs
 
 

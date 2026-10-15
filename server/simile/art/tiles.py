@@ -41,9 +41,6 @@ def _split(canvas: Canvas, names: list[list[str]], **flags: bool) -> list[Tile]:
     return tiles
 
 
-# Ground
-
-
 def grass(name: str = "grass", tufts: int = 5, flowers: tuple[str, ...] = ()) -> Canvas:
     c = Canvas(fill="green")
     r = _rng(name)
@@ -70,14 +67,16 @@ def pavement() -> Canvas:
 
 
 def tactile(vertical: bool) -> Canvas:
-    c = pavement()
-    c.rect(0, 5, 16, 6, "amber")
+    strip = Canvas()
+    strip.rect(0, 5, 16, 6, "amber")
     for y in (6, 8):
         for x in range(1, 16, 4):
-            c.hline(x, y, 3, "yellow")
-            c.hline(x, y + 1, 3, "orange")
-    c.hline(0, 10, 16, "orange")
-    return _transpose(c) if vertical else c
+            strip.hline(x, y, 3, "yellow")
+            strip.hline(x, y + 1, 3, "orange")
+    strip.hline(0, 10, 16, "orange")
+    c = pavement()
+    c.paste(_transpose(strip) if vertical else strip)
+    return c
 
 
 def _transpose(c: Canvas) -> Canvas:
@@ -156,9 +155,6 @@ def water(name: str = "water") -> Canvas:
     return c
 
 
-# Terrain edges: a terrain patch set into pavement. The suffix names the sides that border
-# pavement; "_nook" tiles have pavement only on that diagonal.
-
 EdgeDrawer = Callable[[Canvas, str], None]
 
 
@@ -220,7 +216,9 @@ def _copy(c: Canvas) -> Canvas:
     return out
 
 
-def edge_set(terrain: str, base: Callable[[], Canvas], edge: EdgeDrawer, **flags: bool) -> list[Tile]:
+def edge_set(
+    terrain: str, base: Callable[[], Canvas], edge: EdgeDrawer, **flags: bool
+) -> list[Tile]:
     def with_edges(*sides: str) -> Canvas:
         c = base()
         for side in sides:
@@ -255,9 +253,6 @@ def edge_variant(terrain: str, same: Callable[[int, int], bool]) -> str:
         if not same(dx, dy):
             return f"{terrain}_{corner}_nook"
     return terrain
-
-
-# Roofs
 
 
 def roof_interior(kind: str, name: str) -> Canvas:
@@ -297,29 +292,16 @@ def roof_piece(kind: str, name: str, sides: str) -> Canvas:
         for y in rim_rows:
             c.px(14, y, "concrete")
         c.vline(15, 0, 16, "slate")
-    if "n" in sides:
-        if "w" in sides:
-            c.px(1, 1, "white")
-        c.hline(0, 0, 16, "slate")
+    if "n" in sides and "w" in sides:
+        c.px(1, 1, "white")
     return c
 
 
 def roof_set(kind: str) -> list[Tile]:
     prefix = "roof" if kind == "grey" else f"roof_{kind}"
-    layout = {
-        "nw": "nw",
-        "n": "n",
-        "ne": "ne",
-        "w": "w",
-        "": "",
-        "e": "e",
-        "sw": "sw",
-        "s": "s",
-        "se": "se",
-    }
     tiles = []
-    for suffix, sides in layout.items():
-        name = f"{prefix}_{suffix}" if suffix else prefix
+    for sides in ("nw", "n", "ne", "w", "", "e", "sw", "s", "se"):
+        name = f"{prefix}_{sides}" if sides else prefix
         tiles.append(Tile(name, roof_piece(kind, name, sides), collides=True))
     return tiles
 
@@ -328,7 +310,7 @@ def roof_extra(kind: str) -> Canvas:
     c = roof_interior("grey", f"roof_{kind}")
     if kind == "solar":
         c.rect(1, 2, 14, 12, "night")
-        for y in range(3, 13, 1):
+        for y in range(3, 13):
             for x in range(2, 14):
                 c.px(x, y, "navy" if (x % 4 == 1 or y % 5 == 2) else "blue")
         c.hline(2, 3, 12, "ice")
@@ -347,7 +329,7 @@ def roof_extra(kind: str) -> Canvas:
                 ".pccccccccc...",
                 ".ssssssssss...",
             ],
-            {"s": "slate", "p": "pavement", "c": "concrete", ".": None},
+            {"s": "slate", "p": "pavement", "c": "concrete"},
             1,
             3,
         )
@@ -360,9 +342,6 @@ def roof_extra(kind: str) -> Canvas:
         c.hline(3, 8, 10, "concrete")
         c.hline(2, 13, 12, "slate")
     return c
-
-
-# Facades
 
 
 @dataclass(frozen=True)
@@ -404,18 +383,16 @@ def wall(m: Material, end: str = "") -> Canvas:
 
 def base_wall(m: Material, end: str = "") -> Canvas:
     c = wall(m, end)
-    c.hline(0, 0, 16, m.base if end == "" else m.base)
-    if end == "l":
-        c.px(1, 0, m.light)
-    if end == "r":
-        c.px(14, 0, m.dark)
+    c.hline(0, 0, 16, m.base)
     c.hline(0, 13, 16, m.dark)
     c.hline(0, 14, 16, "steel")
     c.hline(0, 15, 16, "slate")
     if end == "l":
         c.vline(0, 0, 16, m.outline)
+        c.px(1, 0, m.light)
     if end == "r":
         c.vline(15, 0, 16, m.outline)
+        c.px(14, 0, m.dark)
     return c
 
 
@@ -486,9 +463,6 @@ def facade_set(material: str) -> list[Tile]:
     return [Tile(t.name, t.canvas, collides=True) for t in tiles]
 
 
-# Shops
-
-
 def shopfront(end: str = "", name: str = "shopfront") -> Canvas:
     c = Canvas(fill="night")
     r = _rng(name)
@@ -556,9 +530,6 @@ def awning_set(name: str, colour: str, stripe: str) -> list[Tile]:
         Tile(name, awning(colour, stripe)),
         Tile(f"{name}_r", awning(colour, stripe, "r")),
     ]
-
-
-# Coffee shop
 
 
 def cafe_wall(end: str = "") -> Canvas:
@@ -689,9 +660,6 @@ def cafe_menu() -> Canvas:
     return c
 
 
-# Signs
-
-
 def _panel(c: Canvas, top: int, bottom: int, glow: str) -> None:
     c.rect(0, top, 16, bottom - top + 1, glow)
     c.rect(1, top + 1, 14, bottom - top - 1, "night")
@@ -802,15 +770,12 @@ def ac_unit() -> Canvas:
             "scccccccccccc",
             ".s.........s.",
         ],
-        {"s": "steel", "p": "pavement", "c": "concrete", ".": None},
+        {"s": "steel", "p": "pavement", "c": "concrete"},
         1,
         4,
     )
     c.stamp(["cc", "c.", "c."], {"c": "steel"}, 13, 6)
     return c
-
-
-# Street furniture
 
 
 def terminal() -> Canvas:
@@ -924,7 +889,11 @@ def vending() -> Canvas:
     c.rect(3, 6, 9, 3, "ink")
     c.hline(4, 7, 7, "cyan")
     c.rect(3, 10, 9, 13, "ice")
-    for y, colours in ((11, ("blue", "lime", "amber")), (15, ("neon", "cyan", "orange")), (19, ("white", "red", "lime"))):
+    for y, colours in (
+        (11, ("blue", "lime", "amber")),
+        (15, ("neon", "cyan", "orange")),
+        (19, ("white", "red", "lime")),
+    ):
         for i, colour in enumerate(colours):
             c.rect(4 + i * 3, y, 2, 3, colour)
         c.hline(3, y + 3, 9, "pavement")
@@ -933,9 +902,6 @@ def vending() -> Canvas:
     c.px(12, 14, "lime")
     c.rect(2, 30, 12, 1, "maroon")
     return c
-
-
-# Greenery
 
 
 def tree() -> Canvas:
