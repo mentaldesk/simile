@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "Aspect": {
+      "enum": [
+        "like",
+        "trust",
+        "respect"
+      ],
+      "title": "Aspect",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Something `actor` did that changes how `target` feels about them.",
+  "properties": {
+    "actor": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Actor",
+      "type": "string"
+    },
+    "target": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Target",
+      "type": "string"
+    },
+    "action": {
+      "description": "What the actor did, in a few words.",
+      "title": "Action",
+      "type": "string"
+    },
+    "aspects": {
+      "description": "Which of the target's feelings about the actor it moves. Familiarity grows with any event.",
+      "items": {
+        "$ref": "#/$defs/Aspect"
+      },
+      "title": "Aspects",
+      "type": "array"
+    },
+    "valence": {
+      "description": "How it landed with the target, from -1 to 1.",
+      "maximum": 1,
+      "minimum": -1,
+      "title": "Valence",
+      "type": "number"
+    },
+    "magnitude": {
+      "description": "How much it mattered, 0-1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Magnitude",
+      "type": "number"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "conversation_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Conversation Id"
+    }
+  },
+  "required": [
+    "actor",
+    "target",
+    "action",
+    "aspects",
+    "valence",
+    "magnitude",
+    "timestamp",
+    "conversation_id"
+  ],
+  "title": "InteractionEvent",
+  "type": "object"
+}

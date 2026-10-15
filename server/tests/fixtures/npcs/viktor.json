@@ -1,0 +1,52 @@
+{
+  "id": "viktor",
+  "name": "Viktor Hale",
+  "age": 71,
+  "occupation": "Retired bridge engineer",
+  "home": "house_2",
+  "values": {
+    "freedom": 0.3,
+    "independence": 0.6,
+    "self_respect": 0.78,
+    "self_actualization": 0.4,
+    "creativity": 0.25,
+    "honesty": 0.8,
+    "compassion": 0.45,
+    "loyalty": 0.82,
+    "justice": 0.7,
+    "responsibility": 0.85,
+    "security": 0.8,
+    "equality": 0.4,
+    "tradition": 0.9,
+    "obedience": 0.65,
+    "success": 0.5,
+    "ambition": 0.3,
+    "discipline": 0.88,
+    "knowledge": 0.75,
+    "open_mindedness": 0.2,
+    "peace_of_mind": 0.7,
+    "pleasure": 0.2,
+    "connection": 0.35,
+    "adventure": 0.1,
+    "optimism": 0.3
+  },
+  "backstory": "Viktor spent forty years building bridges and still walks the village every morning checking the paving for cracks.",
+  "persona": "Gruff, precise and dependable. Distrusts anything new until it has proved itself, but never forgets a kindness.",
+  "speaking_style": "Slow and formal, short sentences, the occasional dry joke.",
+  "interests": ["engineering", "local history", "chess", "keeping things in good repair"],
+  "appearance": {
+    "skin": "#c99a78",
+    "hair_style": "short",
+    "hair_colour": "#c8c8c8",
+    "top_colour": "#4d5b46",
+    "bottom_colour": "#3a3a40",
+    "shoe_colour": "#4a3326",
+    "build": "broad",
+    "accessories": ["glasses", "scarf"]
+  },
+  "voice": {
+    "description": "An old man in his seventies. Deep, gravelly voice, speaks slowly and deliberately, gruff but warm.",
+    "reference_line": "The old footbridge was built to last a hundred years. They don't make them like that any more.",
+    "reference_clip": null
+  }
+}

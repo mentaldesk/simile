@@ -1,0 +1,108 @@
+{
+  "$defs": {
+    "MemoryKind": {
+      "enum": [
+        "conversation",
+        "news",
+        "observation"
+      ],
+      "title": "MemoryKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "owner": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Owner",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/MemoryKind"
+    },
+    "content": {
+      "description": "The memory in the owner's own words, ready for a prompt.",
+      "title": "Content",
+      "type": "string"
+    },
+    "salience": {
+      "description": "How much it matters to the owner, 0-1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Salience",
+      "type": "number"
+    },
+    "valence": {
+      "description": "How the owner felt about it, from -1 to 1.",
+      "maximum": 1,
+      "minimum": -1,
+      "title": "Valence",
+      "type": "number"
+    },
+    "timestamp": {
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "about": {
+      "default": [],
+      "description": "Entities the memory involves.",
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "title": "About",
+      "type": "array"
+    },
+    "topics": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Topics",
+      "type": "array"
+    },
+    "conversation_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Conversation Id"
+    },
+    "news_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "News Id"
+    }
+  },
+  "required": [
+    "owner",
+    "kind",
+    "content",
+    "salience",
+    "valence",
+    "timestamp",
+    "about",
+    "topics",
+    "conversation_id",
+    "news_id"
+  ],
+  "title": "Memory",
+  "type": "object"
+}

@@ -1,0 +1,52 @@
+[
+  {
+    "actor": "viktor",
+    "target": "mei",
+    "action": "fixed her espresso machine as he promised",
+    "aspects": ["trust", "respect"],
+    "valence": 0.7,
+    "magnitude": 0.6,
+    "timestamp": "2026-03-12T17:00:00Z",
+    "conversation_id": null
+  },
+  {
+    "actor": "suki",
+    "target": "viktor",
+    "action": "flew a delivery drone low over his garden",
+    "aspects": ["like", "respect"],
+    "valence": -0.6,
+    "magnitude": 0.4,
+    "timestamp": "2026-03-14T07:30:00Z",
+    "conversation_id": null
+  },
+  {
+    "actor": "mei",
+    "target": "viktor",
+    "action": "remembered his usual order",
+    "aspects": ["like"],
+    "valence": 0.3,
+    "magnitude": 0.2,
+    "timestamp": "2026-03-14T08:05:00Z",
+    "conversation_id": "conv_1"
+  },
+  {
+    "actor": "viktor",
+    "target": "mei",
+    "action": "praised her latte art",
+    "aspects": ["like"],
+    "valence": 0.6,
+    "magnitude": 0.3,
+    "timestamp": "2026-03-14T08:05:17Z",
+    "conversation_id": "conv_1"
+  },
+  {
+    "actor": "player",
+    "target": "mei",
+    "action": "asked how her morning was going",
+    "aspects": ["like"],
+    "valence": 0.4,
+    "magnitude": 0.2,
+    "timestamp": "2026-03-14T09:10:00Z",
+    "conversation_id": "conv_2"
+  }
+]

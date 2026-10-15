@@ -1,0 +1,247 @@
+{
+  "$defs": {
+    "Accessory": {
+      "enum": [
+        "glasses",
+        "sunglasses",
+        "cap",
+        "beanie",
+        "headphones",
+        "scarf",
+        "backpack",
+        "apron"
+      ],
+      "title": "Accessory",
+      "type": "string"
+    },
+    "Appearance": {
+      "additionalProperties": false,
+      "description": "What a character looks like, for the sprite generator. Colours are #rrggbb.",
+      "properties": {
+        "skin": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Skin",
+          "type": "string"
+        },
+        "hair_style": {
+          "$ref": "#/$defs/HairStyle"
+        },
+        "hair_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Hair Colour",
+          "type": "string"
+        },
+        "top_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Top Colour",
+          "type": "string"
+        },
+        "bottom_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Bottom Colour",
+          "type": "string"
+        },
+        "shoe_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Shoe Colour",
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/$defs/Build"
+        },
+        "accessories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Accessory"
+          },
+          "title": "Accessories",
+          "type": "array"
+        }
+      },
+      "required": [
+        "skin",
+        "hair_style",
+        "hair_colour",
+        "top_colour",
+        "bottom_colour",
+        "shoe_colour",
+        "build",
+        "accessories"
+      ],
+      "title": "Appearance",
+      "type": "object"
+    },
+    "Build": {
+      "enum": [
+        "slim",
+        "average",
+        "broad"
+      ],
+      "title": "Build",
+      "type": "string"
+    },
+    "CoreValue": {
+      "enum": [
+        "freedom",
+        "independence",
+        "self_respect",
+        "self_actualization",
+        "creativity",
+        "honesty",
+        "compassion",
+        "loyalty",
+        "justice",
+        "responsibility",
+        "security",
+        "equality",
+        "tradition",
+        "obedience",
+        "success",
+        "ambition",
+        "discipline",
+        "knowledge",
+        "open_mindedness",
+        "peace_of_mind",
+        "pleasure",
+        "connection",
+        "adventure",
+        "optimism"
+      ],
+      "title": "CoreValue",
+      "type": "string"
+    },
+    "HairStyle": {
+      "enum": [
+        "bald",
+        "buzz",
+        "short",
+        "curly",
+        "bob",
+        "long",
+        "ponytail",
+        "bun"
+      ],
+      "title": "HairStyle",
+      "type": "string"
+    },
+    "Voice": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "What the voice sounds like, for the voice design model.",
+          "title": "Description",
+          "type": "string"
+        },
+        "reference_line": {
+          "description": "A neutral line in character, 5-10 seconds of speech. The clip's transcript.",
+          "title": "Reference Line",
+          "type": "string"
+        },
+        "reference_clip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The recorded reference clip, relative to the repository root. Null until the voice is designed.",
+          "title": "Reference Clip"
+        }
+      },
+      "required": [
+        "description",
+        "reference_line",
+        "reference_clip"
+      ],
+      "title": "Voice",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "age": {
+      "maximum": 120,
+      "minimum": 0,
+      "title": "Age",
+      "type": "integer"
+    },
+    "occupation": {
+      "title": "Occupation",
+      "type": "string"
+    },
+    "home": {
+      "description": "Location id of their house.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Home",
+      "type": "string"
+    },
+    "values": {
+      "additionalProperties": {
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
+      "description": "How much they care about each of the 24 core values, 0-1. All are present.",
+      "propertyNames": {
+        "$ref": "#/$defs/CoreValue"
+      },
+      "title": "Values",
+      "type": "object"
+    },
+    "backstory": {
+      "title": "Backstory",
+      "type": "string"
+    },
+    "persona": {
+      "title": "Persona",
+      "type": "string"
+    },
+    "speaking_style": {
+      "title": "Speaking Style",
+      "type": "string"
+    },
+    "interests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Interests",
+      "type": "array"
+    },
+    "appearance": {
+      "$ref": "#/$defs/Appearance"
+    },
+    "voice": {
+      "$ref": "#/$defs/Voice"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "age",
+    "occupation",
+    "home",
+    "values",
+    "backstory",
+    "persona",
+    "speaking_style",
+    "interests",
+    "appearance",
+    "voice"
+  ],
+  "title": "Npc",
+  "type": "object"
+}

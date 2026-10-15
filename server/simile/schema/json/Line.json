@@ -1,0 +1,48 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "Unique across the world. Audio for the line carries it.",
+      "minimum": 0,
+      "title": "Id",
+      "type": "integer"
+    },
+    "conversation_id": {
+      "minLength": 1,
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "speaker": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Speaker",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "timestamp": {
+      "description": "When the speaker starts saying it.",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "duration": {
+      "description": "Estimated seconds to say it aloud.",
+      "minimum": 0,
+      "title": "Duration",
+      "type": "number"
+    }
+  },
+  "required": [
+    "id",
+    "conversation_id",
+    "speaker",
+    "text",
+    "timestamp",
+    "duration"
+  ],
+  "title": "Line",
+  "type": "object"
+}
