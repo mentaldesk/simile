@@ -25,6 +25,7 @@ from simile.conversation.player import (
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
+from simile.reflection import Deed, Extraction, Reflection, Reflector
 from simile.schema import (
     PLAYER_ID,
     Aspect,
@@ -222,6 +223,50 @@ async def test_the_reply_is_written_from_the_npcs_side_at_player_priority() -> N
     assert prompt.endswith("Say your next line to Visitor.")
     assert village.llm.priorities == [1]
     assert [record.purpose for record in village.records] == ["player-reply"]
+
+
+async def test_what_b3_takes_from_a_conversation_comes_up_in_the_next() -> None:
+    remembered = Reflection(
+        npc="ana",
+        summary="Visitor told me they keep bees on their balcony.",
+        valence=0.6,
+        salience=0.8,
+        events=[
+            Deed(
+                by=PLAYER_ID,
+                action="told Ana about their bees",
+                aspects=[Aspect.LIKE],
+                valence=0.6,
+                magnitude=0.5,
+            )
+        ],
+    )
+    provider = FakeProvider(
+        [
+            "Bees! How lovely. [values: connection]",
+            "Bye now!",
+            Extraction(reflections=[remembered]),
+            "Hello again! How are the bees?",
+        ]
+    )
+    village = Village(provider=provider)
+    reflector = Reflector(village.store, lambda: village.behaviour.npcs, lambda: village.llm)
+    village.world.bus.subscribe(ConversationEnded, reflector.on_ended)
+
+    village.players.say("I keep bees on my balcony.", "ana")
+    await village.run(4)
+    village.players.say("Anyway, bye!", "ana")
+    await village.run(4)
+    await asyncio.gather(*reflector.tasks)
+    village.players.say("Hi again!", "ana")
+    await village.run(2)
+
+    reflection, later = provider.requests[2].messages[-1].content, provider.requests[3]
+    assert "Visitor: I keep bees on my balcony." in reflection
+    prompt = later.messages[-1].content
+    assert "- Visitor told me they keep bees on their balcony." in prompt
+    assert "- just now, Visitor: told Ana about their bees" in prompt
+    assert village.said("ana")[-2:] == ["Hello again!", "How are the bees?"]
 
 
 async def test_the_npc_remembers_the_player() -> None:
