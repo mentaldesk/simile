@@ -1,3 +1,4 @@
+import zlib
 from dataclasses import dataclass
 from typing import Any
 
@@ -31,11 +32,12 @@ class Colours:
     apron: str
 
     @classmethod
-    def of(cls, a: Appearance) -> "Colours":
+    def of(cls, a: Appearance, seed: str | None = None) -> "Colours":
         top = snap(a.top_colour, CLOTH_COLOURS)
         bottom = snap(a.bottom_colour, CLOTH_COLOURS)
         hair = snap(a.hair_colour, CLOTH_COLOURS)
-        accent = next(c for c in ACCENTS if c not in (top, bottom, hair))
+        free = [c for c in ACCENTS if c not in (top, bottom, hair)]
+        accent = free[zlib.crc32(seed.encode()) % len(free)] if seed else free[0]
         return cls(
             skin=snap(a.skin, SKIN_TONES),
             hair=hair,
@@ -685,10 +687,12 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
 }
 
 
-def draw_frame(appearance: Appearance, direction: str, frame: int) -> Canvas:
+def draw_frame(
+    appearance: Appearance, direction: str, frame: int, seed: str | None = None
+) -> Canvas:
     if direction == "right":
-        return draw_frame(appearance, "left", frame).flipped()
-    key = Colours.of(appearance).key()
+        return draw_frame(appearance, "left", frame, seed).flipped()
+    key = Colours.of(appearance, seed).key()
     accessories = set(appearance.accessories)
     behind, front = HAIR[appearance.hair_style][direction]
     if accessories & {"cap", "beanie"} and appearance.hair_style in ("bun", "curly"):
@@ -721,12 +725,12 @@ def draw_frame(appearance: Appearance, direction: str, frame: int) -> Canvas:
     return c.outlined("ink")
 
 
-def sprite_sheet(appearance: Appearance) -> Canvas:
+def sprite_sheet(appearance: Appearance, seed: str | None = None) -> Canvas:
     sheet = Canvas(FRAME_WIDTH * FRAMES, FRAME_HEIGHT * len(DIRECTIONS))
     for row, direction in enumerate(DIRECTIONS):
         for col in range(FRAMES):
             sheet.paste(
-                draw_frame(appearance, direction, col), col * FRAME_WIDTH, row * FRAME_HEIGHT
+                draw_frame(appearance, direction, col, seed), col * FRAME_WIDTH, row * FRAME_HEIGHT
             )
     return sheet
 

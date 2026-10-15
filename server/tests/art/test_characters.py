@@ -126,6 +126,14 @@ def test_colours_snap_to_the_palette() -> None:
     assert colours.accent not in (colours.top, colours.bottom, colours.hair)
 
 
+def test_a_seed_varies_the_accent_but_never_to_an_outfit_colour() -> None:
+    cap = look(accessories=["cap"])
+    seeded = [Colours.of(cap, f"npc{i}") for i in range(12)]
+    assert len({c.accent for c in seeded}) > 1
+    assert all(c.accent not in (c.top, c.bottom, c.hair) for c in seeded)
+    assert Colours.of(cap, "lachlan").accent != Colours.of(cap, "tobias").accent
+
+
 def test_atlas_is_a_phaser_json_hash_over_the_grid() -> None:
     data = atlas("mei.png")
     assert data["meta"]["image"] == "mei.png"
