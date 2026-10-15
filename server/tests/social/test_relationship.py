@@ -11,6 +11,7 @@ from simile.social import (
     DEFAULT_CONFIG,
     RelationshipConfig,
     apply_event,
+    as_of,
     decay,
     describe,
     open_flag,
@@ -307,3 +308,32 @@ def test_the_config_loads_from_json() -> None:
     assert config.negativity_bias == 3
     assert config.like_half_life == timedelta(days=1)
     assert config.trust_half_life == DEFAULT_CONFIG.trust_half_life
+
+
+def test_as_of_decays_from_the_last_interaction() -> None:
+    rel = relationship(like=0.9, trust=0.1, familiarity=0.5, last_interaction=NOW)
+
+    assert as_of(rel, NOW + timedelta(days=3)) == decay(rel, timedelta(days=3))
+
+
+def test_as_of_leaves_a_relationship_without_interactions_alone() -> None:
+    rel = relationship(like=0.9)
+
+    assert as_of(rel, NOW) == rel
+
+
+def test_as_of_never_decays_backwards() -> None:
+    rel = relationship(like=0.9, last_interaction=NOW)
+
+    assert as_of(rel, NOW - timedelta(days=1)) == rel
+
+
+def test_storing_only_after_an_event_decays_each_stretch_once() -> None:
+    stored = relationship(like=0.9, last_interaction=NOW)
+    later, latest = NOW + timedelta(days=1), NOW + timedelta(days=3)
+
+    stored = apply_event(as_of(stored, later), event(aspects=[]), later)
+
+    assert as_of(stored, latest).like == pytest.approx(
+        decay(relationship(like=0.9), latest - NOW).like
+    )

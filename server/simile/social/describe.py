@@ -20,12 +20,12 @@ FEELINGS: dict[Aspect, dict[int, str]] = {
 }
 
 FLAGS: dict[FlagKind, str] = {
-    FlagKind.DEBT: "{name} still owes you for {description}.",
-    FlagKind.GRUDGE: "You hold a grudge against {name} over {description}.",
-    FlagKind.PROMISE: "{name} made you a promise they haven't kept yet: {description}.",
-    FlagKind.BROKEN_PROMISE: "{name} broke a promise to you: {description}.",
-    FlagKind.SAVED_LIFE: "{name} once saved your life: {description}.",
-    FlagKind.SECRET: "{name} trusted you with a secret: {description}.",
+    FlagKind.DEBT: "{name} still owes you for {description}",
+    FlagKind.GRUDGE: "You hold a grudge against {name} over {description}",
+    FlagKind.PROMISE: "{name} made you a promise they haven't kept yet: {description}",
+    FlagKind.BROKEN_PROMISE: "{name} broke a promise to you: {description}",
+    FlagKind.SAVED_LIFE: "{name} once saved your life: {description}",
+    FlagKind.SECRET: "{name} trusted you with a secret: {description}",
 }
 
 
@@ -53,7 +53,7 @@ def describe(rel: Relationship, name: str, *, config: RelationshipConfig = DEFAU
         familiarity = f"You know {next(refer)} well."
 
     flags = [
-        FLAGS[flag.kind].format(name=name, description=flag.description)
+        _sentence(FLAGS[flag.kind].format(name=name, description=flag.description.strip()))
         for flag in sorted(rel.flags, key=lambda flag: flag.created)
         if flag.resolved is None
     ]
@@ -74,3 +74,7 @@ def _level(score: float, config: RelationshipConfig) -> int:
 
 def _join(clauses: list[str]) -> str:
     return clauses[0] if len(clauses) == 1 else f"{', '.join(clauses[:-1])} and {clauses[-1]}"
+
+
+def _sentence(text: str) -> str:
+    return text if text.endswith((".", "!", "?")) else f"{text}."

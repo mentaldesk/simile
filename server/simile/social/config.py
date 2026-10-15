@@ -3,12 +3,42 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from simile.schema import Aspect, CoreValue, Signed
+
+BASELINE_WEIGHTS: dict[Aspect, dict[CoreValue, float]] = {
+    Aspect.LIKE: {
+        CoreValue.CONNECTION: 0.2,
+        CoreValue.COMPASSION: 0.15,
+        CoreValue.OPTIMISM: 0.15,
+        CoreValue.OPEN_MINDEDNESS: 0.1,
+    },
+    Aspect.TRUST: {
+        CoreValue.OPTIMISM: 0.15,
+        CoreValue.COMPASSION: 0.1,
+        CoreValue.OPEN_MINDEDNESS: 0.05,
+        CoreValue.SECURITY: -0.15,
+        CoreValue.INDEPENDENCE: -0.05,
+    },
+    Aspect.RESPECT: {
+        CoreValue.EQUALITY: 0.1,
+        CoreValue.OBEDIENCE: 0.1,
+        CoreValue.TRADITION: 0.05,
+        CoreValue.AMBITION: -0.1,
+        CoreValue.SUCCESS: -0.05,
+    },
+}
+
 
 class RelationshipConfig(BaseModel):
     """Every tunable constant of the relationship model. Scores run from 0 to 1, neutral at 0.5."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    baseline_weights: dict[Aspect, dict[CoreValue, Signed]] = Field(
+        default=BASELINE_WEIGHTS,
+        description="How each core value moves a newcomer's baseline away from neutral: "
+        "0.5 + sum(weight * (value - 0.5)), clamped to [0, 1].",
+    )
     max_shift: float = Field(
         default=0.3,
         gt=0,
@@ -37,7 +67,11 @@ class RelationshipConfig(BaseModel):
         gt=timedelta(0),
         description="Time without contact for like to get halfway back to its baseline.",
     )
-    respect_half_life: timedelta = Field(default=timedelta(days=4), gt=timedelta(0))
+    respect_half_life: timedelta = Field(
+        default=timedelta(days=4),
+        gt=timedelta(0),
+        description="Time without contact for respect to get halfway back to its baseline.",
+    )
     trust_half_life: timedelta = Field(
         default=timedelta(days=8),
         gt=timedelta(0),

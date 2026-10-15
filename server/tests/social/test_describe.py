@@ -170,3 +170,18 @@ def test_the_fixture_relationships() -> None:
     assert describe(rels[4], "the newcomer") == (
         "You have no strong feelings about the newcomer. You barely know them."
     )
+
+
+@pytest.mark.parametrize(
+    ("description", "ending"),
+    [
+        ("the bridge incident.", "the bridge incident."),
+        ("the bridge incident!", "the bridge incident!"),
+        (" the bridge incident ", "the bridge incident."),
+    ],
+)
+def test_a_flag_description_keeps_its_own_punctuation(description: str, ending: str) -> None:
+    assert describe(relationship(flag(FlagKind.DEBT, description)), "Mei") == (
+        "You have no strong feelings about Mei. You know them a little. "
+        f"Mei still owes you for {ending}"
+    )

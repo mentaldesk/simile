@@ -1,7 +1,27 @@
 from datetime import datetime, timedelta
 
-from simile.schema import Flag, InteractionEvent, Relationship
+from simile.schema import Aspect, Baseline, Flag, InteractionEvent, Npc, Relationship
 from simile.social.config import DEFAULT_CONFIG, RelationshipConfig
+
+
+def meet(owner: Npc, about: str, *, config: RelationshipConfig = DEFAULT_CONFIG) -> Relationship:
+    """How `owner` feels about someone new: at a baseline set by their own core values."""
+    baseline = Baseline.model_validate(
+        {aspect.value: _baseline(owner, aspect, config) for aspect in Aspect}
+    )
+    return Relationship(
+        owner=owner.id, about=about, **baseline.model_dump(), familiarity=0.0, baseline=baseline
+    )
+
+
+def as_of(
+    rel: Relationship, now: datetime, *, config: RelationshipConfig = DEFAULT_CONFIG
+) -> Relationship:
+    """`rel` decayed from its last interaction to `now`. Read through this but don't store it:
+    store `apply_event(as_of(rel, now), event, now)`, so each stretch of time decays once."""
+    if rel.last_interaction is None:
+        return rel
+    return decay(rel, max(now - rel.last_interaction, timedelta(0)), config=config)
 
 
 def apply_event(
@@ -63,6 +83,11 @@ def resolve_flag(rel: Relationship, flag_id: str, when: datetime) -> Relationshi
         for flag in rel.flags
     ]
     return _with(rel, flags=flags)
+
+
+def _baseline(owner: Npc, aspect: Aspect, config: RelationshipConfig) -> float:
+    weights = config.baseline_weights.get(aspect, {})
+    return _clamp(0.5 + sum(weight * (owner.values[v] - 0.5) for v, weight in weights.items()))
 
 
 def _clamp(value: float, a: float = 0.0, b: float = 1.0) -> float:
