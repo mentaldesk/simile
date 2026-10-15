@@ -77,6 +77,11 @@ class PlayerSayMessage(Model):
     target: Id = Field(description="The NPC the player is talking to.")
 
 
+class WatchNpcMessage(Model):
+    type: Literal["watch_npc"] = "watch_npc"
+    npc_id: Id | None = Field(description="The NPC to send npc_state for, or null to stop.")
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | EntityMovedMessage
@@ -88,7 +93,7 @@ type ServerMessage = Annotated[
 ]
 
 type ClientMessage = Annotated[
-    PlayerMoveMessage | PlayerSayMessage,
+    PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage,
     Field(discriminator="type"),
 ]
 
