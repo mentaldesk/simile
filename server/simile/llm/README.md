@@ -89,6 +89,10 @@ Each call takes the next reply:
 
 `FakeProvider(default="...")` answers every call after the script runs out.
 
+With `SIMILE_LLM=fake`, the server's client answers every call with a few stock lines instead of
+calling Claude. The test suite sets it for every test, so a test that starts the real app can't
+reach Claude.
+
 ## How Claude Code is called
 
 `ClaudeCodeProvider` runs one fresh `claude` process per call (the SDK's bundled CLI unless
