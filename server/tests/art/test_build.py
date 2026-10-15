@@ -6,7 +6,7 @@ import pytest
 from PIL import Image, ImageSequence
 from typer.testing import CliRunner
 
-from simile.art.build import BUILTIN, CONTENT_DIR, generate
+from simile.art.build import BUILTIN, CONTENT_DIR, generate, load_npcs
 from simile.art.palette import RGB
 from simile.cli import create_cli
 
@@ -30,6 +30,19 @@ def pixels(path: Path) -> list[bytes]:
         return [frame.convert("RGBA").tobytes() for frame in ImageSequence.Iterator(image)]
 
 
+def assert_phaser_atlas(path: Path) -> None:
+    atlas = json.loads(path.read_text())
+    assert isinstance(atlas["frames"], dict), path.name
+    with Image.open(path.parent / atlas["meta"]["image"]) as image:
+        assert atlas["meta"]["size"] == {"w": image.width, "h": image.height}, path.name
+        for name, frame in atlas["frames"].items():
+            r = frame["frame"]
+            box = (r["x"], r["y"], r["x"] + r["w"], r["y"] + r["h"])
+            assert box[2] <= image.width and box[3] <= image.height, f"{path.name} {name}"
+            assert image.crop(box).getbbox() is not None, f"{path.name} {name} is empty"
+            assert frame["sourceSize"] == {"w": r["w"], "h": r["h"]}
+
+
 def test_generate_writes_the_tileset_sprites_and_previews(content: Path) -> None:
     generate(content)
 
@@ -43,9 +56,15 @@ def test_generate_writes_the_tileset_sprites_and_previews(content: Path) -> None
     with Image.open(art / tileset["image"]) as image:
         assert image.size == (tileset["imagewidth"], tileset["imageheight"])
     for character_id in [*BUILTIN, *FIXTURE_IDS]:
-        atlas = json.loads((art / "characters" / f"{character_id}.json").read_text())
-        with Image.open(art / "characters" / atlas["meta"]["image"]) as image:
-            assert image.size == (atlas["meta"]["size"]["w"], atlas["meta"]["size"]["h"])
+        assert_phaser_atlas(art / "characters" / f"{character_id}.json")
+
+
+def test_every_npc_in_content_renders_a_phaser_atlas(tmp_path: Path) -> None:
+    shutil.copytree(CONTENT_DIR / "npcs", tmp_path / "npcs")
+    generate(tmp_path, npcs_only=True)
+
+    for npc_id in load_npcs(CONTENT_DIR / "npcs"):
+        assert_phaser_atlas(tmp_path / "art" / "characters" / f"{npc_id}.json")
 
 
 def test_every_opaque_pixel_is_from_the_palette(content: Path) -> None:
@@ -81,6 +100,18 @@ def test_regenerating_removes_sprites_for_npcs_that_are_gone(content: Path) -> N
     sprites = files(content / "art" / "characters")
     assert "mei.png" not in sprites and "stray.png" not in sprites
     assert {"player.png", "suki.png"} <= sprites
+
+
+def test_npcs_that_look_alike_get_different_accents(content: Path) -> None:
+    npc = json.loads((FIXTURES / "mei.json").read_text())
+    npc["appearance"]["accessories"] = ["cap"]
+    for npc_id in ("lachlan", "tobias"):
+        (content / "npcs" / f"{npc_id}.json").write_text(json.dumps(npc | {"id": npc_id}))
+
+    generate(content, npcs_only=True)
+
+    sprites = content / "art" / "characters"
+    assert pixels(sprites / "lachlan.png") != pixels(sprites / "tobias.png")
 
 
 def test_npc_ids_cannot_shadow_built_in_sprites(content: Path) -> None:
