@@ -52,7 +52,6 @@ def database(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture(autouse=True)
 def local_feed(feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SIMILE_NEWS_FEED", feed_server.url)
-    monkeypatch.delenv("SIMILE_NEWS", raising=False)
 
 
 def wait_for_ticks(app: Starlette, ticks: int = 3) -> None:
