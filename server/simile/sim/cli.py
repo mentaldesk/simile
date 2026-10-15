@@ -29,4 +29,9 @@ def register(app: typer.Typer) -> None:
             raise typer.BadParameter("must be more than 0", param_hint="'--speed'")
         logging.basicConfig(level=logging.INFO, format="%(message)s")
         world = World(Clock(speed=speed))
-        asyncio.run(run_headless(world, None if duration is None else timedelta(hours=duration)))
+        try:
+            asyncio.run(
+                run_headless(world, None if duration is None else timedelta(hours=duration))
+            )
+        except KeyboardInterrupt:
+            raise typer.Exit(130) from None

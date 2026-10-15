@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from simile.schema import Conversation, Id, Line
+
 
 @dataclass(frozen=True)
 class Event:
@@ -8,24 +10,21 @@ class Event:
 
 @dataclass(frozen=True)
 class EntityMoved(Event):
-    entity_id: str
+    entity: Id
     x: float
     y: float
 
 
 @dataclass(frozen=True)
 class ConversationStarted(Event):
-    conversation_id: str
-    participant_ids: tuple[str, ...]
+    conversation: Conversation
 
 
 @dataclass(frozen=True)
 class LineSpoken(Event):
-    conversation_id: str
-    speaker_id: str
-    text: str
+    line: Line
 
 
 @dataclass(frozen=True)
 class ConversationEnded(Event):
-    conversation_id: str
+    conversation: Conversation

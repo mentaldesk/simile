@@ -5,8 +5,8 @@ The world clock, the tick loop and the event bus. Every other part of the villag
 ## The world
 
 A `World` holds a `clock`, a `loop` and a `bus`. `simile serve` and `simile headless` each run one,
-on `app.state.world`. Get it with `world_of(app)`, which creates the world on first use, so a module
-whose lifespan runs before `sim`'s (`behaviour`, `conversation`, …) can still register.
+on `app.state.world`. Get it in your module's lifespan with `world_of(app)`. It creates the world on
+first use, so it works before or after `sim` in the alphabet.
 
 ```python
 from contextlib import asynccontextmanager
@@ -18,13 +18,16 @@ from simile.sim import EntityMoved, world_of
 async def lifespan(app):
     world = world_of(app)
     movement = Movement(world)
-    world.loop.register(movement)
+    unregister = world.loop.register(movement)
     unsubscribe = world.bus.subscribe(EntityMoved, movement.on_moved)
     yield
     unsubscribe()
+    unregister()
 ```
 
-The `sim` lifespan runs the loop at 1x in `simile serve`.
+In `simile serve`, the `sim` module's `running` hook runs the loop at 1x. It starts after every
+module's lifespan has started and stops before any of them exits, so systems never tick while a
+module is still setting up or has already shut down.
 
 ## Clock
 
@@ -36,8 +39,9 @@ The `sim` lifespan runs the loop at 1x in `simile serve`.
 
 ## Tick loop
 
-- `world.loop.register(system)` adds anything with a `tick(dt: float)` method. `dt` is in sim
-  seconds and is always `STEP` (0.1). The clock has already advanced when `tick` is called.
+- `world.loop.register(system)` adds anything with a `tick(dt: float)` method and returns a
+  function that unregisters it. `dt` is in sim seconds and is always `STEP` (0.1). The clock has
+  already advanced when `tick` is called.
 - Systems tick in the order they registered, which is lifespan order, so alphabetical by module.
   A system registered mid-run ticks from the next tick.
 - `tick` must not block or await. Start an asyncio task for slow work like LLM calls or TTS.
@@ -58,14 +62,18 @@ The `sim` lifespan runs the loop at 1x in `simile serve`.
 - Handlers must not block. To pass events to async code such as a WebSocket, put them on an
   `asyncio.Queue` with `put_nowait`.
 
-Events are frozen dataclasses that refer to entities by id:
+Events are frozen dataclasses. They refer to entities by id and carry the
+[schema](../schema/) models:
 
 | Event | Fields |
 |---|---|
-| `EntityMoved` | `entity_id`, `x`, `y` (in tiles) |
-| `ConversationStarted` | `conversation_id`, `participant_ids` |
-| `LineSpoken` | `conversation_id`, `speaker_id`, `text` |
-| `ConversationEnded` | `conversation_id` |
+| `EntityMoved` | `entity` (an id), `x`, `y` (in tiles) |
+| `ConversationStarted` | `conversation`: a `Conversation` |
+| `LineSpoken` | `line`: a `Line`, with its id, speaker, text, timestamp and duration |
+| `ConversationEnded` | `conversation`: a `Conversation`, with its lines and `ended` set |
+
+Subscribers get the model you published, not a copy. If you'll keep changing it, as a conversation
+gains lines, publish `model.model_copy(deep=True)`.
 
 Define more in your own module by subclassing `Event`:
 
@@ -81,8 +89,9 @@ class NewsRead(Event):
 `uv run simile headless --speed 10 --duration 24` starts every module's lifespan, as `simile serve`
 does but without HTTP, and runs the loop for 24 sim hours, logging every event with its sim time.
 Without `--duration` it runs until Ctrl-C or SIGTERM, which stop it after the current tick and
-shut the modules down normally. `app.state.headless` is `True`, so the `sim` lifespan leaves the
-loop to the headless runner.
+shut the modules down normally. A second Ctrl-C while they shut down exits at once, with code 130.
+`app.state.headless` is `True`, so the `sim` module's `running` hook leaves the loop to the
+headless runner.
 
 ## Tests
 

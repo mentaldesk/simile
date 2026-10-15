@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from datetime import timedelta
 from typing import Protocol
 
@@ -19,8 +20,13 @@ class TickLoop:
         self._systems: list[System] = []
         self._stopped = False
 
-    def register(self, system: System) -> None:
+    def register(self, system: System) -> Callable[[], None]:
         self._systems.append(system)
+
+        def unregister() -> None:
+            self._systems = [other for other in self._systems if other is not system]
+
+        return unregister
 
     def tick(self) -> None:
         self.clock.advance(self.step)

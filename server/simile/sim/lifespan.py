@@ -16,12 +16,11 @@ def log_crash(task: asyncio.Task[None]) -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: Starlette) -> AsyncIterator[None]:
-    world = world_of(app)
+async def running(app: Starlette) -> AsyncIterator[None]:
     if getattr(app.state, "headless", False):
         yield
         return
-    task = asyncio.create_task(world.loop.run())
+    task = asyncio.create_task(world_of(app).loop.run())
     task.add_done_callback(log_crash)
     try:
         yield

@@ -1,6 +1,5 @@
 import logging
 from collections.abc import Callable
-from contextlib import suppress
 from typing import Any
 
 from simile.sim.events import Event
@@ -19,8 +18,7 @@ class EventBus:
         self._subscribers.append(subscriber)
 
         def unsubscribe() -> None:
-            with suppress(ValueError):
-                self._subscribers.remove(subscriber)
+            self._subscribers = [other for other in self._subscribers if other is not subscriber]
 
         return unsubscribe
 

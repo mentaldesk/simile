@@ -38,13 +38,21 @@ async def run_headless(
     world.loop.register(HourlyLog(world.clock))
 
     loop = asyncio.get_running_loop()
+
+    def restore_signals() -> None:
+        for sig in STOP_SIGNALS:
+            loop.remove_signal_handler(sig)
+
+    def stop() -> None:
+        world.loop.stop()
+        restore_signals()
+
     for sig in STOP_SIGNALS:
-        loop.add_signal_handler(sig, world.loop.stop)
+        loop.add_signal_handler(sig, stop)
     try:
         async with app.router.lifespan_context(app):
             logger.info(f"{world.clock}  Running at {world.clock.speed:g}x")
             await world.loop.run(duration)
     finally:
-        for sig in STOP_SIGNALS:
-            loop.remove_signal_handler(sig)
+        restore_signals()
     logger.info(f"{world.clock}  Stopped")

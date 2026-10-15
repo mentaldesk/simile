@@ -76,6 +76,19 @@ def test_systems_tick_in_registration_order() -> None:
     assert world.clock.now == at(2 * STEP)
 
 
+def test_unregister_stops_ticking_the_system() -> None:
+    world, _ = world_at_start()
+    recorder = Recorder(world)
+    unregister = world.loop.register(recorder)
+
+    world.loop.tick()
+    unregister()
+    unregister()
+    world.loop.tick()
+
+    assert [now for now, _ in recorder.ticks] == [at(STEP)]
+
+
 def test_a_system_registered_mid_run_ticks_from_the_next_tick() -> None:
     world, _ = world_at_start()
     late = Recorder(world)
