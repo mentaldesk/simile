@@ -1,0 +1,41 @@
+[project]
+name = "simile"
+version = "0.1.0"
+description = "Sim server for Simile, a village of LLM-driven NPCs."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "starlette>=1.8",
+    "typer>=0.27",
+    "uvicorn[standard]>=0.54",
+]
+
+[project.scripts]
+simile = "simile.cli:main"
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13",
+    "pytest>=9.1",
+    "ruff>=0.17",
+]
+
+[build-system]
+requires = ["hatchling>=1.32"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--import-mode=importlib", "-p", "pytester"]
+markers = [
+    "mlx: needs macOS on Apple Silicon with MLX installed; skipped everywhere else",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"anthropic".msg = "Never use the Claude API. LLM calls go through the L1 client over local Claude Code."
