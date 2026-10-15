@@ -100,7 +100,7 @@ async def test_asks_sonnet_once_per_npc_with_the_system_prompt(
     assert all(request.system.startswith(SYSTEM) for request in fake.requests)
 
 
-async def test_each_prompt_lists_the_residents_so_far_and_their_looks(
+async def test_each_prompt_lists_the_residents_so_far_with_background_and_looks(
     residents: Callable[[], FakeProvider], names: list[str]
 ) -> None:
     fake = residents()
@@ -108,8 +108,13 @@ async def test_each_prompt_lists_the_residents_so_far_and_their_looks(
     npcs = await village(LLMClient(fake), count=3)
 
     prompts = [request.messages[-1].content for request in fake.requests]
+    first = npcs[0]
     assert "- none yet" in prompts[0]
-    assert f"- {names[0]}, {npcs[0].age}, {npcs[0].occupation}. Looks: " in prompts[1]
+    assert (
+        f"- {first.name}, {first.age}, {first.occupation}. {first.name} grew up by the sea. Looks: "
+        in prompts[1]
+    )
+    assert "They moved here for the quiet." not in prompts[1]
     assert names[1] not in prompts[1]
     assert f"- {names[0]}, " in prompts[2] and f"- {names[1]}, " in prompts[2]
     assert (

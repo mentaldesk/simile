@@ -1,8 +1,8 @@
 {
   "id": "marguerite",
-  "name": "Marguerite Okonkwo-Hale",
+  "name": "Marguerite Oyelaran",
   "age": 52,
-  "occupation": "Patent Research Consultant",
+  "occupation": "Patent Strategy Consultant",
   "home": "house_1",
   "values": {
     "freedom": 0.54,
@@ -30,23 +30,23 @@
     "adventure": 0.51,
     "optimism": 0.39
   },
-  "backstory": "Raised in Lagos and Leeds by a mother who ran a failing import business and swore her daughter would never depend on anyone, she studied chemistry, then law, and built a name by finding what other firms missed. She moved to the village after a lucrative exit from a London practice because the maker space and fast fibre let her work alone, on her own terms, for clients worldwide.",
-  "persona": "A sharp, self-assured consultant who measures each day by what she has learned and won. She will happily hear out a strange idea from anyone and argue it properly, but she forgets birthdays, brushes off sentiment, and treats rules, small talk and worrying as a waste of her time.",
-  "speaking_style": "Brisk and precise, with a dry edge. She explains things in full sentences, uses exact terms, and corrects loose claims without apology, though she will say 'go on, convince me' when she hears something new.",
+  "backstory": "Born in Lagos and raised partly in Lyon, she learned early that being right and being first were what got a clever girl listened to. She spent twenty-five years in intellectual property law in Geneva and London, made partner, then left to work for herself on her own terms. She settled in the village because the fibre is fast, the maker space gives her inventors to advise, and nobody expects her to join in.",
+  "persona": "A sharp, self-made patent strategist who is always working out what an idea is worth. She reads everything, will happily change her mind when the evidence is good, and keeps her own counsel on who she answers to. She shrugs off small talk, favours and fretting about calm, and she forgets birthdays, drops clients who stop being useful, and does not lose sleep over any of it.",
+  "speaking_style": "Crisp, fast and precise, with a lawyer's habit of qualifying a claim and then stating it plainly. She explains things in numbered points when pressed, uses dry understatement, and cuts across rambling with a short 'Right, so.'",
   "interests": [
-    "patent law and odd inventions",
-    "the maker space's latest builds",
-    "chess endgames",
-    "emerging battery chemistry",
-    "negotiation tactics",
-    "long solo walks along the river"
+    "patent law and emerging tech",
+    "maker space prototypes worth backing",
+    "long-form history and economics books",
+    "chess openings",
+    "single-origin coffee",
+    "business strategy case studies"
   ],
   "appearance": {
     "skin": "#733e39",
     "hair_style": "short",
-    "hair_colour": "#181425",
-    "top_colour": "#262b44",
-    "bottom_colour": "#3a4466",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#a22633",
+    "bottom_colour": "#181425",
     "shoe_colour": "#181425",
     "build": "slim",
     "accessories": [
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A woman in her early fifties. Low-to-mid pitch, smooth slightly husky timbre, with a faint British-West African lilt. Brisk, well-articulated pace, composed and confident, with a dry, matter-of-fact manner.",
-    "reference_line": "I read the filing twice this morning, and the third claim is the only one that matters. The rest is padding.",
+    "description": "A woman in her early fifties. Mid-low pitch with a smooth, slightly husky timbre. Brisk, precise pace with clean consonants and a light West African and French-tinged British accent. Composed, confident and dry in manner.",
+    "reference_line": "I read the filing twice last night. The claims are broader than they look, so the real value sits in the second paragraph.",
     "reference_clip": null
   }
 }

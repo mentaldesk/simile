@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 
 from simile.llm import FakeProvider, LLMClient
-from simile.npc.content import NPCS_DIR, first_sentence, load_npcs, readme, write_npcs
-from simile.npc.generate import HOMES, MAX_WORDS, MIN_WORDS, generate, plan
+from simile.npc.content import NPCS_DIR, load_npcs, readme, write_npcs
+from simile.npc.generate import HOMES, MAX_WORDS, MIN_WORDS, first_sentence, generate, plan
 from simile.npc.values import format_scores, ranked
 from simile.schema import Npc
 

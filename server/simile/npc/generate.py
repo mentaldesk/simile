@@ -98,7 +98,10 @@ English with British spelling."""
 
 def prompt(brief: Brief, number: int, count: int, others: Sequence[Npc]) -> str:
     order = ranked(brief.values)
-    residents = "\n".join(f"- {n.name}, {n.age}, {n.occupation}. {_look(n)}" for n in others)
+    residents = "\n".join(
+        f"- {n.name}, {n.age}, {n.occupation}. {first_sentence(n.backstory)} {_look(n)}"
+        for n in others
+    )
     skins = ", ".join(PALETTE[name] for name in SKIN_TONES)
     palette = ", ".join(f"{name} {colour}" for name, colour in PALETTE.items())
     return f"""\
@@ -113,8 +116,8 @@ Core values (0 = indifferent, 1 = central to who they are):
 - Cares least about: {format_scores(order[::-1][:5])}
 - All 24: {format_scores(list(brief.values.items()))}
 
-Residents so far. Use a different first name and occupation, and a look that's easy to tell \
-apart from theirs at sprite size:
+Residents so far. Give this one a different first name, surname, occupation and background, and \
+a look that's easy to tell apart from theirs at sprite size:
 {residents or "- none yet"}
 
 Write:
@@ -150,6 +153,10 @@ def _look(npc: Npc) -> str:
     accessories = ", ".join(a.accessories) or "no accessories"
     clothes = f"{top} top, {bottom} bottoms"
     return f"Looks: {a.build} build, {a.hair_style} {hair} hair, {clothes}, {accessories}."
+
+
+def first_sentence(text: str) -> str:
+    return re.split(r"(?<=[.!?])\s+", text.strip(), maxsplit=1)[0]
 
 
 def npc_id(name: str, taken: Collection[str]) -> str:

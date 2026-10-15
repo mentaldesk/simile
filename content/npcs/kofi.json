@@ -1,8 +1,8 @@
 {
   "id": "kofi",
-  "name": "Kofi Lindqvist",
+  "name": "Kofi Lindqvist-Mensah",
   "age": 21,
-  "occupation": "Street Mural Painter",
+  "occupation": "Street Mural Artist",
   "home": "house_6",
   "values": {
     "freedom": 0.92,
@@ -30,23 +30,23 @@
     "adventure": 0.95,
     "optimism": 0.84
   },
-  "backstory": "Kofi grew up between Accra and Gothenburg, moving every couple of years, and learned early that every new place had a different way of seeing things. He left an art course after a term because it felt like being told where the edges were. He came to the village because its blank walls and drifting mix of people let him paint without a plan.",
-  "persona": "Kofi is a restless, sunny wanderer who treats the whole village as a canvas and every stranger as someone worth hearing out. He will happily change his mind mid-sentence, shares his paint and his sofa with anyone who needs them, and bristles at unfairness toward whoever is on the receiving end. Schedules, deadlines, rules and plans for the future slide straight past him, and he forgets appointments, loses keys and has never once saved money.",
-  "speaking_style": "Quick, bright and a bit tumbling, with sentences that wander off and double back. He says things like 'wait, actually' and 'okay but what if', asks what you think, and keeps his language casual and playful.",
+  "backstory": "Kofi grew up in Accra and Gothenburg, moving between two households with different rules, and learned that most rules are just habits nobody questioned. He dropped out of art school after a year to paint walls in whatever city would have him, and came to the village because the maker space let him use their spare shutters and walls without paperwork.",
+  "persona": "Kofi is a restless, generous young painter who says yes to almost any odd idea and will happily argue the other side just to see it from there. He listens to strangers like they are the most interesting thing that week, and gives away sketches and spare paint without keeping track. Schedules, deadlines, career plans and promises to be somewhere 'on time' slide right past him, and he treats safety nets as something other people worry about.",
+  "speaking_style": "Quick, loose and cheerful, full of 'what if' and 'go on, tell me more'. Casual slang, half-finished sentences when a new idea arrives, and he laughs at his own tangents.",
   "interests": [
-    "Walls and public art",
-    "Folk music from places he has lived",
-    "Unplanned trips and night trains",
-    "Street food from anywhere",
-    "Fairness and who gets heard",
-    "Odd ideas from strangers"
+    "street murals and paint experiments",
+    "hitchhiking and cheap night trains",
+    "fair pay and rent for young artists",
+    "strange food from other cultures",
+    "swapping languages and slang",
+    "maker space salvage projects"
   ],
   "appearance": {
-    "skin": "#b86f50",
+    "skin": "#733e39",
     "hair_style": "curly",
     "hair_colour": "#181425",
     "top_colour": "#feae34",
-    "bottom_colour": "#3a4466",
+    "bottom_colour": "#5a6988",
     "shoe_colour": "#f6757a",
     "build": "slim",
     "accessories": [
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A man in his early twenties. Mid-range, slightly husky pitch with a warm, relaxed timbre. Speaks at a quick, easy pace with a light, curious, friendly manner and an easy, unforced cheerfulness.",
-    "reference_line": "I started a wall by the river this morning, and I still don't know what it's going to be, which is honestly the best part.",
+    "description": "A man in his early twenties. Mid-range, slightly husky pitch with a warm, relaxed timbre. Fairly quick pace with easy, friendly rhythm, a hint of amusement and curiosity in the manner, and a casual, unpolished delivery.",
+    "reference_line": "I found a stack of old shutters behind the maker space this morning, and I think they might make a decent wall for painting.",
     "reference_clip": null
   }
 }

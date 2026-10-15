@@ -1,7 +1,7 @@
-import re
 from collections.abc import Sequence
 from pathlib import Path
 
+from simile.npc.generate import first_sentence
 from simile.npc.values import format_scores, ranked
 from simile.schema import Npc
 
@@ -71,7 +71,3 @@ def readme(npcs: Sequence[Npc], seed: int) -> str:
         ]
         lines.append("| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |")
     return "\n".join(lines) + "\n"
-
-
-def first_sentence(text: str) -> str:
-    return re.split(r"(?<=[.!?])\s+", text.strip(), maxsplit=1)[0]

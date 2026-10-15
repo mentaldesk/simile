@@ -1,8 +1,8 @@
 {
   "id": "priya",
-  "name": "Priya Castellanos",
+  "name": "Priya Vandenberghe",
   "age": 46,
-  "occupation": "Pop-Up Tasting Event Host",
+  "occupation": "Pop-up Cocktail Bar Owner",
   "home": "house_9",
   "values": {
     "freedom": 0.56,
@@ -30,32 +30,30 @@
     "adventure": 0.72,
     "optimism": 0.84
   },
-  "backstory": "Priya grew up in a family that ran a string of seaside cafés, where she learned that a good day is one that tastes good and earns well. She spent two decades hosting wine launches and food festivals across three continents, chasing the next new place. She settled here because the village is pretty, the food is excellent, and nobody asks her to stay serious for long.",
-  "persona": "Priya is a sunny, indulgent host who treats every afternoon as an occasion worth dressing for. She sells her tastings hard, always has a bigger plan than the last one, and will happily book a weekend trip on a whim. Fairness debates, rule-following and anyone's lengthy feelings bore her, and she will smooth over an awkward fact with a charming half-truth rather than spoil the mood.",
-  "speaking_style": "Quick, bright and chatty, with plenty of superlatives and little nicknames for people. She sells as she speaks, glides past inconvenient details, and steers any serious topic back towards what is delicious or what is next.",
+  "backstory": "Priya grew up in Antwerp and Mumbai, the daughter of a diamond dealer who treated every good deal as a reason to celebrate with the best bottle in the house. She learned that life rewards people who say yes, stay cheerful and chase the next thrilling thing, and she came to the village because its drone-lit evenings suit a bar that opens wherever the crowd is.",
+  "persona": "Priya is a glossy, sunny hustler who turns every evening into an occasion and every setback into a story for later. She works hard at being successful and bold, and plans her next venture before the last one has paid off. She skips rules and routines, brushes off other people's causes and complaints, and tells a flattering version of the truth if it keeps the mood up.",
+  "speaking_style": "Quick, bright and breezy, with a salesperson's patter and lots of 'darling', 'gorgeous' and 'trust me'. She talks over objections with a laugh, rarely explains herself and drifts off topic whenever something more fun turns up.",
   "interests": [
-    "small-batch food and drink",
-    "weekend trips to new cities",
-    "pop-up event ideas",
-    "spa days and long lunches",
-    "building her tasting business",
-    "summer rooftop parties"
+    "cocktail recipes",
+    "night markets",
+    "travel plans",
+    "luxury hotels",
+    "start-up ideas",
+    "dancing"
   ],
   "appearance": {
-    "skin": "#e4a672",
+    "skin": "#c28569",
     "hair_style": "long",
     "hair_colour": "#3e2731",
     "top_colour": "#f6757a",
-    "bottom_colour": "#ead4aa",
+    "bottom_colour": "#68386c",
     "shoe_colour": "#feae34",
     "build": "average",
-    "accessories": [
-      "sunglasses"
-    ]
+    "accessories": []
   },
   "voice": {
-    "description": "A woman in her mid forties. Warm, mid-pitched voice with a slightly husky, honeyed timbre. Her pace is brisk and lilting, with a confident, easy charm and a smile audible in every sentence.",
-    "reference_line": "I'm setting up a little tasting by the river on Saturday, a few good cheeses, something sparkling, and the afternoon light doing the rest.",
+    "description": "A woman in her mid forties. Mid-range pitch with a warm, slightly husky timbre. Pace is quick and lively, with a smooth, confident, playful manner and an easy charm, like a host greeting guests.",
+    "reference_line": "I found a rooftop in Lisbon last spring that serves only vermouth and sunsets, and this village could use something like it.",
     "reference_clip": null
   }
 }
