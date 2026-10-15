@@ -1,0 +1,121 @@
+# Concept
+
+Simile is a simulation that takes the form of a 2d pixel art video game set in a small village. 
+
+## NPCs (agents)
+
+### Core values
+
+The village has various NPC characters. Each NPC has certain core values that are more or less important to them. The list of things they might value are:
+- Freedom
+- Independence
+- Self Respect
+- Self Actualization
+- Creativity
+- Honesty
+- Compassion
+- Loyalty
+- Justice
+- Responsibility
+- Security
+- Equality
+- Tradition
+- Obedience
+- Success
+- Ambition
+- Discipline   
+- Knowledge   
+- Open Mindedness   
+- PeaceOfMind   
+- Pleasure   
+- Connection   
+- Adventure
+- Optimism
+
+NPCs are generated and assigned scores (between 0 and 1) for each of those core values. Those core values will be used to determine each NPC's behaviour... for example, how likely they are to seek conversations with the player or other NPCs and, once in a conversation, how long they are likely to stay in the conversation (or conversely how quickly they might seek to end it). The values also determine the kinds of things the NPCs are likely to want to talk about and the sorts of other NPCs or players they will enjoy speaking with. If another player or NPC tends to speak about things the agents is interested in, they will be more engaged in the conversation and start to be more interested in that NPC/player.
+
+NPCs can also speak about other NPCs they've met or other conversations they've had and indeed they should be more likely to do this if such conversations are:
+1. either recent
+2. and/or interesting to them
+
+### Relationships
+
+NPCs establish and develop relationships with other NPCs and with the player that they maintain over time. Each interraction with another entity can influence how they feel about that individual with respect to:
+- Like/Dislike: do I enjoy this person?	This will me more likely if they have conversations about topics they care about (per their core values).
+- Trust: Will they keep promises, keep secrets, not betray me?	
+- Respect: Do I rate their competence, status or strength? (You can respect someone you dislike.)	
+- Familiarity: How well I know them. Grows with any interaction and rarely decreases.	
+
+NPCs will be more likey to seek out conversations with other NPCs that they consider friends (based on the score/tally that they keey for each of the other entities per the above 4 metrics (again, on a scale of 0 to 1 for each metric)... and they will avoid or only have short interractions with other NPCs or players that they like less. 
+
+Familiarity should act as a dampener. Scale how far an event moves the other metrics by inverse familiarity. First impressions swing hard; established relationships are stable. One rude act from a stranger hurts more than one from an old friend.
+Decay toward a baseline. Without contact, values drift slowly toward neutral (or toward a personality-based default). Trust might decay more slowly than affinity.
+Negativity bias. Make negative events weigh about 2–3× as much as positive ones. Betrayal should be hard to undo.
+Memory: store events, derive scores
+
+Rather than only incrementing numbers, keep a log of significant interactions per pair ({actor, target, action, valence, magnitude, timestamp}) that gets passed into future conversations between those two characters. This can lead to:
+- Callbacks in dialogue (“You still owe me for the bridge incident”)
+- Grudges and debts as discrete flags (an unpaid favour, a broken promise, a saved life) that persist even after the numeric score recovers
+
+## The Player
+
+The player can wander around the village and chat to the NPCs. The NPCs can also chat with one another (if they want). When NPCs do chat with one another, their conversations take place in English, at the same pace a normal conversation would take place. If the player is near NPCs who are chatting to one another, they are able to overhear what the NPCs are saying to one another. 
+
+## World
+
+### Size 
+
+Initially the universe might be small - maybe 10 NPCs, as a POC.
+
+The town should have some houses, a coffee shop, a town square and a couple of other amenities. Give it a modern (2026) vibe... possibly erring on futuristic (think Shenzen). 
+
+### News / External Inputs
+
+The town also has a newspaper covering all the stories from https://feeds.feedburner.com/bigthink/main... the NPCs can, if they wish, check the news on public terminals that are available in the town. 
+
+If they read something that triggers them (either it really aligns with one of their core values or it really rubs them the wrong way) they would be likely to bring that up in a conversation with one of the other NPCs or the player ("Hey did you hear the news?" kind of thing). Their likelinees to bring a news story up will depend on how recently they read the article and how strongly it made them feel (negative or positive). 
+
+## Voices
+
+Every NPC speaks out loud in their own voice. Speech is generated locally on the player's machine with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS), so there's no cloud voice service and no cost per line.
+
+### Creating an NPC's voice
+
+When an NPC is generated, the generator also writes:
+- A **voice description** that fits the character, e.g. "An old man in his seventies. Deep, gravelly voice, speaks slowly and deliberately, gruff but warm." Age and core values should shape it: a high Discipline, high Tradition NPC might speak slowly and formally, a high Adventure, high Optimism one quickly and brightly.
+- A **reference line**: a sentence or two (5–10 seconds of speech) that the NPC might say, in character.
+
+The voice design model (`Qwen3-TTS-12Hz-1.7B-VoiceDesign`) turns the description into a recording of the NPC saying their reference line. That clip and its transcript are saved with the NPC and are their voice from then on. This happens once per NPC, when the world is generated.
+
+A voice can also come from an existing recording instead of a description (e.g. a clip made in ElevenLabs), as long as it comes with a transcript.
+
+The tone of the reference clip carries into everything the NPC says. A sleepy or angry reference makes a permanently sleepy or angry NPC, so reference lines should be delivered neutrally unless that's the character's fixed mood.
+
+### Speaking in real time
+
+At runtime the clone model (`Qwen3-TTS-12Hz-1.7B-Base`) speaks any new line in an NPC's voice, given their reference clip and its transcript. There's no training step: each NPC's clip is processed once when the game loads and reused for every line.
+
+Each line of dialogue goes through this pipeline:
+1. The LLM writes the line, streamed as text.
+2. As each sentence completes, it's sent to the clone model with the speaker's voice.
+3. Audio streams back in short chunks and plays from the speaker's position in the village, with volume and panning based on their distance from the player.
+
+On an M2 Max, using the MLX version of the model ([mlx-audio](https://github.com/Blaizzy/mlx-audio)) with 8-bit weights, audio starts 0.2–0.4 seconds after a sentence's text arrives, and speech is generated about 3x faster than it plays. The LLM, not the voice, will be the main source of delay.
+
+### Only voicing what the player can hear
+
+Since speech is generated only about 3x faster than real time, one machine can voice just a few conversations at once. That's all the village needs:
+- **Every conversation happens as text.** NPCs talk to each other whether or not anyone is listening, and those conversations shape their memories and relationships as usual.
+- **Only conversations within earshot are voiced.** When the player walks within earshot, voicing starts with the next line, and it stops when they walk away.
+- **Conversations keep normal speaking pace either way.** A line that isn't voiced still takes as long as it would take to say (estimated from its word count), so a conversation lasts the same time whether the player hears it or not.
+- **NPC-to-NPC conversations run a line ahead.** Nobody is waiting on the player, so the next reply (text and audio) can be generated while the current speaker is still talking, which avoids gaps between turns. Only NPCs replying to the player depend on the low-latency streaming above.
+
+### Platform
+
+MLX only runs on Apple Silicon. On Windows and Linux the same models would run through Qwen's `qwen-tts` PyTorch package on an Nvidia GPU (untested so far). PyTorch on a Mac is too slow for real time (about 0.7x real time on an M2 Max), so Macs need MLX.
+
+### Open questions
+
+- **Emotion.** The clone model takes no instructions about tone, so delivery comes from the reference clip and the words themselves. Whether an NPC can sound angry in one line and cheerful in the next without their voice changing is untested. One option is a reference clip per mood for each NPC, if the voice design model can keep the voice consistent across them.
+- **Model size.** The 0.6B clone model is about 20% faster than the 1.7B. Whether it sounds as good is a call for the ear.
+- **Player speech.** If the player talks to NPCs out loud instead of typing, [Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper) can transcribe it locally.
