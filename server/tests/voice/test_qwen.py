@@ -4,12 +4,12 @@ import time
 
 import pytest
 
+from simile.protocol import SAMPLE_RATE
 from simile.schema import Voice
 from simile.voice import VoiceService
 
 pytestmark = pytest.mark.mlx
 
-SAMPLE_RATE = 24_000
 DWARF_SMITH = Voice(
     description="An old dwarf blacksmith with a deep, gravelly Scottish voice.",
     reference_line=(
