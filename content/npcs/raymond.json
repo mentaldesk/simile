@@ -56,6 +56,6 @@
   "voice": {
     "description": "A man in his mid-sixties. Medium-low, slightly gravelly baritone with a polished, confident timbre. Brisk, even pace with crisp enunciation and a formal, upbeat salesman's manner, warm but authoritative.",
     "reference_line": "Good morning. I have three meetings before lunch, and by Friday I expect the new noodle bar licence to be signed and filed.",
-    "reference_clip": null
+    "reference_clip": "content/voices/raymond.wav"
   }
 }

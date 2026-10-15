@@ -54,6 +54,6 @@
   "voice": {
     "description": "A woman in her mid forties. Mid-range pitch with a warm, slightly husky timbre. Pace is quick and lively, with a smooth, confident, playful manner and an easy charm, like a host greeting guests.",
     "reference_line": "I found a rooftop in Lisbon last spring that serves only vermouth and sunsets, and this village could use something like it.",
-    "reference_clip": null
+    "reference_clip": "content/voices/priya.wav"
   }
 }
