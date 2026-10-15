@@ -302,7 +302,9 @@ def tiles_sheet(cells: list[Tile | None], scale: int = 3) -> Image.Image:
     return sheet
 
 
-def characters_sheet(people: dict[str, Appearance], scale: int = 3) -> Image.Image:
+def characters_sheet(
+    people: dict[str, Appearance], scale: int = 3, seeded: bool = False
+) -> Image.Image:
     per_row = 6
     margin = 16
     sheet_w, sheet_h = FRAME_WIDTH * FRAMES * scale, FRAME_HEIGHT * len(DIRECTIONS) * scale
@@ -319,10 +321,9 @@ def characters_sheet(people: dict[str, Appearance], scale: int = 3) -> Image.Ima
     )
     y = margin + 3 * GLYPH_HEIGHT + 12
     strip = Image.new("RGBA", (len(people) * (FRAME_WIDTH + 4), FRAME_HEIGHT), rgba("pavement"))
-    for i, appearance in enumerate(people.values()):
-        strip.alpha_composite(
-            draw_frame(appearance, "down", 1).to_image(), (i * (FRAME_WIDTH + 4), 0)
-        )
+    for i, (name, appearance) in enumerate(people.items()):
+        frame = draw_frame(appearance, "down", 1, name if seeded else None)
+        strip.alpha_composite(frame.to_image(), (i * (FRAME_WIDTH + 4), 0))
     image.alpha_composite(strip, (margin, y))
     image.alpha_composite(scaled(strip, 2), (margin, y + FRAME_HEIGHT + 8))
     y += actual
@@ -331,7 +332,8 @@ def characters_sheet(people: dict[str, Appearance], scale: int = 3) -> Image.Ima
         y0 = y + (i // per_row) * pitch_y
         image.alpha_composite(label(name.replace("_", " ")), (x0, y0))
         background = Image.new("RGBA", (sheet_w, sheet_h), rgba("pavement"))
-        background.alpha_composite(scaled(sprite_sheet(appearance).to_image(), scale))
+        sheet = sprite_sheet(appearance, name if seeded else None)
+        background.alpha_composite(scaled(sheet.to_image(), scale))
         image.alpha_composite(background, (x0, y0 + name_height))
     return image
 

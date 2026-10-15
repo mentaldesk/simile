@@ -56,6 +56,6 @@
   "voice": {
     "description": "A man in his early sixties. Medium-low pitch with a slightly gravelly, warm timbre. Brisk, even pace with clear enunciation and a light Scottish lilt, upbeat and steady, like someone used to being heard across a field.",
     "reference_line": "We start at half past eight sharp tomorrow, so bring water and your boots, and we will go through the passing drills again.",
-    "reference_clip": null
+    "reference_clip": "content/voices/lachlan.wav"
   }
 }
