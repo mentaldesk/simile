@@ -17,13 +17,19 @@ def create_app(package: str = "simile") -> Starlette:
     routes: list[BaseRoute] = [Route("/api/health", health)]
     for module in submodules("routes", package):
         routes.extend(module.routes)
-    module_lifespans = [module.lifespan for module in submodules("lifespan", package)]
+    modules = list(submodules("lifespan", package))
+    hooks = [
+        getattr(module, hook)
+        for hook in ("lifespan", "running")
+        for module in modules
+        if hasattr(module, hook)
+    ]
 
     @asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
         async with AsyncExitStack() as stack:
-            for module_lifespan in module_lifespans:
-                await stack.enter_async_context(module_lifespan(app))
+            for hook in hooks:
+                await stack.enter_async_context(hook(app))
             yield
 
     return Starlette(routes=routes, lifespan=lifespan)
