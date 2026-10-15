@@ -5,10 +5,10 @@
   "name": "simile",
   "image": "tiles.png",
   "imagewidth": 256,
-  "imageheight": 208,
+  "imageheight": 224,
   "tilewidth": 16,
   "tileheight": 16,
-  "tilecount": 208,
+  "tilecount": 224,
   "columns": 16,
   "margin": 0,
   "spacing": 0,
@@ -3010,6 +3010,26 @@
           "name": "name",
           "type": "string",
           "value": "fountain_br"
+        }
+      ]
+    },
+    {
+      "id": 208,
+      "properties": [
+        {
+          "name": "above",
+          "type": "bool",
+          "value": false
+        },
+        {
+          "name": "collides",
+          "type": "bool",
+          "value": true
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "value": "blocked"
         }
       ]
     }

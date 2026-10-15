@@ -218,3 +218,9 @@ In a map whose tileset has `firstgid` 1, a tile's gid is its id + 1.
 | 202 | `fountain_tr` | yes |  |
 | 203 | `fountain_bl` | yes |  |
 | 204 | `fountain_br` | yes |  |
+
+## Editor
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 208 | `blocked` | yes |  |

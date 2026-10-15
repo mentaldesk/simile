@@ -1032,6 +1032,16 @@ def fountain() -> Canvas:
     return c.outlined("slate")
 
 
+def blocked() -> Canvas:
+    c = Canvas()
+    c.rect(0, 0, 16, 16, "red")
+    c.rect(1, 1, 14, 14, None)
+    for i in range(16):
+        c.px(i, i, "red")
+        c.px(15 - i, i, "red")
+    return c
+
+
 def _vertical(canvas: Canvas, name: str) -> list[Tile]:
     return [
         *_split(canvas, [[f"{name}_top"]], above=True),
@@ -1141,6 +1151,7 @@ def groups() -> list[Group]:
                 *_split(fountain(), [[], ["fountain_bl", "fountain_br"]], collides=True),
             ],
         ),
+        Group("editor", [Tile("blocked", blocked(), collides=True)]),
     ]
 
 
