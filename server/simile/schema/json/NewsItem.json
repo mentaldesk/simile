@@ -1,0 +1,38 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "description": "The feed entry's guid.",
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "url": {
+      "title": "Url",
+      "type": "string"
+    },
+    "summary": {
+      "description": "Plain text, HTML stripped.",
+      "title": "Summary",
+      "type": "string"
+    },
+    "published": {
+      "format": "date-time",
+      "title": "Published",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "url",
+    "summary",
+    "published"
+  ],
+  "title": "NewsItem",
+  "type": "object"
+}

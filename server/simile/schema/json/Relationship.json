@@ -1,0 +1,186 @@
+{
+  "$defs": {
+    "Baseline": {
+      "additionalProperties": false,
+      "description": "Where like, trust and respect drift back to without contact.",
+      "properties": {
+        "like": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Like",
+          "type": "number"
+        },
+        "trust": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Trust",
+          "type": "number"
+        },
+        "respect": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Respect",
+          "type": "number"
+        }
+      },
+      "required": [
+        "like",
+        "trust",
+        "respect"
+      ],
+      "title": "Baseline",
+      "type": "object"
+    },
+    "Flag": {
+      "additionalProperties": false,
+      "description": "A discrete fact `owner` holds about `about` that persists after the scores recover.",
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/FlagKind"
+        },
+        "owner": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Owner",
+          "type": "string"
+        },
+        "about": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "About",
+          "type": "string"
+        },
+        "description": {
+          "description": "What it concerns, in a few words, for prompts.",
+          "title": "Description",
+          "type": "string"
+        },
+        "created": {
+          "format": "date-time",
+          "title": "Created",
+          "type": "string"
+        },
+        "resolved": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "When it stopped applying, e.g. a debt repaid. Null while open.",
+          "title": "Resolved"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "owner",
+        "about",
+        "description",
+        "created",
+        "resolved"
+      ],
+      "title": "Flag",
+      "type": "object"
+    },
+    "FlagKind": {
+      "description": "From the owner's side: `debt`, `about` owes the owner; `grudge`, the owner resents `about`;\n`promise`, `about` promised the owner something; `broken_promise`, `about` broke one;\n`saved_life`, `about` saved the owner's life; `secret`, `about` told the owner a secret.",
+      "enum": [
+        "debt",
+        "grudge",
+        "promise",
+        "broken_promise",
+        "saved_life",
+        "secret"
+      ],
+      "title": "FlagKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "How `owner` feels about `about`. Each direction is a separate relationship.",
+  "properties": {
+    "owner": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Owner",
+      "type": "string"
+    },
+    "about": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "About",
+      "type": "string"
+    },
+    "like": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Like",
+      "type": "number"
+    },
+    "trust": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Trust",
+      "type": "number"
+    },
+    "respect": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Respect",
+      "type": "number"
+    },
+    "familiarity": {
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Familiarity",
+      "type": "number"
+    },
+    "baseline": {
+      "$ref": "#/$defs/Baseline"
+    },
+    "flags": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Flag"
+      },
+      "title": "Flags",
+      "type": "array"
+    },
+    "last_interaction": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Last Interaction"
+    }
+  },
+  "required": [
+    "owner",
+    "about",
+    "like",
+    "trust",
+    "respect",
+    "familiarity",
+    "baseline",
+    "flags",
+    "last_interaction"
+  ],
+  "title": "Relationship",
+  "type": "object"
+}
