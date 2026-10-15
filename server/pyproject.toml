@@ -13,6 +13,11 @@ dependencies = [
 [project.scripts]
 simile = "simile.cli:main"
 
+[project.optional-dependencies]
+voice = [
+    "mlx-audio>=0.5.9 ; platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
+
 [dependency-groups]
 dev = [
     "httpx2>=2.13",
