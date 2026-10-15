@@ -32,7 +32,7 @@ events = await llm.structured(transcript, Extraction, model=Model.SONNET, purpos
   slot goes to the highest `priority` waiting (default 0), then first come first served. Player
   replies pass `priority=1` so they don't queue behind NPC chatter.
 - Every failure raises `LLMError`: a usage limit, the CLI crashing or not found, a reply cut short,
-  or Claude Code not confirming that it's on the subscription login.
+  or Claude Code not confirming that it bills the Claude subscription.
 - Leaving a stream early (`break`, or cancelling the task) interrupts the call, so it stops using
   the subscription and frees its slot within about a second. Wrap the stream in
   `contextlib.aclosing` when you `break`, so that happens straight away rather than when the
@@ -99,12 +99,16 @@ Each call takes the next reply:
   extended thinking;
 - prompts are delivered verbatim, so `@path` or `/command` in player text does nothing;
 - it runs in an empty temporary directory and doesn't save the session to disk;
-- `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and the Bedrock/Vertex/Foundry
-  switches are removed from this process's environment before every call;
-- no text is passed on until Claude Code's `init` frame reports the API key source `none`.
+- `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and every
+  `CLAUDE_CODE_USE_*` backend switch (Bedrock, Vertex, Foundry, Anthropic AWS and Google Cloud,
+  Mantle, gateway) are removed from this process's environment before every call;
+- once connected, and before any prompt is sent, the account Claude Code reports must have the API
+  provider `firstParty` and no API key source. That also catches a gateway forced by host policy;
+- no text is passed on until the turn's `init` frame reports the API key source `none`.
 
-`ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process (it drops the
-credentials first), and `turn(sdk, request)` streams one turn and interrupts it if the caller
-leaves early. A warm-session provider should build on these two.
+`ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process: it drops the
+credentials and checks the account. `turn(sdk, request)` streams one turn. If the caller leaves
+early, it interrupts the turn and reads the rest of it, so the same session can take another turn.
+A warm-session provider should build on these two, as `SessionProvider` in `smoke.py` does.
 
 Another backend implements `Provider`: an async generator of text chunks followed by one `Usage`.

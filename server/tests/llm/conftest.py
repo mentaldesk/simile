@@ -80,7 +80,10 @@ for line in sys.stdin:
         if message["request"]["subtype"] == "interrupt":
             log({{"interrupt": True}})
             interrupted.set()
-        response = {{"subtype": "success", "request_id": message["request_id"], "response": {{}}}}
+        body = {{}}
+        if message["request"]["subtype"] == "initialize" and scenario["account"] is not None:
+            body = {{"account": scenario["account"]}}
+        response = {{"subtype": "success", "request_id": message["request_id"], "response": body}}
         send({{"type": "control_response", "response": response}})
     elif message["type"] == "user":
         log({{"stdin": message}})
@@ -124,6 +127,8 @@ class FakeCli:
 
 MakeFakeCli = Callable[..., FakeCli]
 
+FIRST_PARTY = {"apiProvider": "firstParty", "subscriptionType": "Claude Max"}
+
 
 @pytest.fixture(autouse=True)
 def no_api_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -143,6 +148,7 @@ def fake_cli(tmp_path: Path) -> MakeFakeCli:
         result: bool = True,
         subtype: str = "success",
         exit_code: int = 0,
+        account: dict[str, Any] | None = FIRST_PARTY,
     ) -> FakeCli:
         log = tmp_path / "fake-claude.log"
         log.touch()
@@ -157,6 +163,7 @@ def fake_cli(tmp_path: Path) -> MakeFakeCli:
                 "result": result,
                 "subtype": subtype,
                 "exit_code": exit_code,
+                "account": account,
             }
         )
         path = tmp_path / "claude"

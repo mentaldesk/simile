@@ -10,6 +10,7 @@ import pytest
 from simile.llm import CallRecord, LLMClient, LLMError, Message, Request, Usage
 from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider, render_prompt
 from simile.llm.provider import RateLimit
+from simile.llm.smoke import SessionProvider
 
 MakeFakeCli = Callable[..., Any]
 
@@ -257,6 +258,54 @@ async def test_raises_on_an_error_result(fake_cli: MakeFakeCli, tmp_path: Path) 
         await client.complete("Hello")
 
     assert records[0].error is not None
+    assert not cli.interrupted
+
+
+@pytest.mark.parametrize(
+    "account",
+    [
+        {"apiProvider": "gateway", "subscriptionType": "Claude Max"},
+        {"apiProvider": "bedrock"},
+        {"apiProvider": "firstParty", "apiKeySource": "ANTHROPIC_API_KEY"},
+        None,
+    ],
+    ids=["gateway", "bedrock", "api-key", "no-account"],
+)
+async def test_refuses_any_backend_but_the_subscription(
+    fake_cli: MakeFakeCli, tmp_path: Path, account: dict[str, str] | None
+) -> None:
+    cli = fake_cli(account=account)
+
+    with pytest.raises(LLMError, match="must bill the Claude subscription"):
+        await client_for(cli, tmp_path).complete("Hello")
+
+    assert cli.stdin == []
+
+
+async def test_records_the_subscription(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    provider = ClaudeCodeProvider(cli_path=fake_cli().path, cwd=tmp_path)
+
+    await LLMClient(provider).complete("Hello")
+
+    assert provider.subscription == "Claude Max"
+
+
+async def test_a_session_takes_another_turn_after_an_interrupted_one(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    cli = fake_cli(("word ",) * 20, delay=0.02)
+    provider = ClaudeCodeProvider(cli_path=cli.path, cwd=tmp_path)
+
+    async with provider.session(Request((Message("user", "Hi"),), SYSTEM, "haiku")) as sdk:
+        client = LLMClient(SessionProvider(sdk, provider))
+        async with aclosing(client.stream("Turn 1")) as chunks:
+            async for _ in chunks:
+                break
+        second = await client.complete("Turn 2")
+
+    assert cli.interrupted
+    assert [prompt["message"]["content"] for prompt in cli.stdin] == ["Turn 1", "Turn 2"]
+    assert second == "word " * 20
 
 
 def test_renders_earlier_turns_into_one_prompt() -> None:

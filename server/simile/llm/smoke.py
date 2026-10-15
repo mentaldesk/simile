@@ -44,6 +44,7 @@ async def smoke(
     info = provider.session_info or {}
     print(
         f"Claude Code {info.get('claude_code_version')}, model {info.get('model')}, "
+        f"subscription {provider.subscription!r}, "
         f"API key source {info.get('apiKeySource')!r}, tools {info.get('tools')}, "
         f"MCP servers {info.get('mcp_servers')}, skills {info.get('skills')}, "
         f"plugins {info.get('plugins')}"

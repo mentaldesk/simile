@@ -29,6 +29,10 @@ API_CREDENTIALS = (
     "CLAUDE_CODE_USE_BEDROCK",
     "CLAUDE_CODE_USE_VERTEX",
     "CLAUDE_CODE_USE_FOUNDRY",
+    "CLAUDE_CODE_USE_ANTHROPIC_AWS",
+    "CLAUDE_CODE_USE_ANTHROPIC_GOOGLE_CLOUD",
+    "CLAUDE_CODE_USE_MANTLE",
+    "CLAUDE_CODE_USE_GATEWAY",
 )
 
 
@@ -48,6 +52,8 @@ class ClaudeCodeProvider:
         self.cwd = cwd or Path(tempfile.gettempdir()) / "simile-llm"
         self.session_info: dict[str, Any] | None = None
         """The last call's `system/init` frame: model, tools, MCP servers, API key source."""
+        self.subscription: str | None = None
+        """The subscription the last session's account reported, e.g. `Claude Max`."""
 
     def options(self, request: Request) -> ClaudeAgentOptions:
         return ClaudeAgentOptions(
@@ -84,22 +90,36 @@ class ClaudeCodeProvider:
         self.cwd.mkdir(parents=True, exist_ok=True)
         with as_llm_errors():
             async with ClaudeSDKClient(self.options(request)) as sdk:
+                account = ((await sdk.get_server_info()) or {}).get("account") or {}
+                if account.get("apiProvider") != "firstParty" or "apiKeySource" in account:
+                    raise LLMError(
+                        "Claude Code must bill the Claude subscription, but its account reports "
+                        f"API provider {account.get('apiProvider')!r} and API key source "
+                        f"{account.get('apiKeySource')!r}."
+                    )
+                self.subscription = account.get("subscriptionType")
                 yield sdk
 
     async def turn(
         self, sdk: ClaudeSDKClient, request: Request
     ) -> AsyncGenerator[str | Usage, None]:
         """Send the request as the session's next turn. Interrupt it if the caller stops early."""
-        finished = False
+        ended = False
+
+        async def messages() -> AsyncIterator[SDKMessage]:
+            nonlocal ended
+            async for message in sdk.receive_response():
+                ended = isinstance(message, ResultMessage)
+                yield message
+
         try:
             with as_llm_errors():
                 await sdk.query(render_prompt(request.messages))
-                async with aclosing(self.parse(sdk.receive_response())) as chunks:
+                async with aclosing(self.parse(messages())) as chunks:
                     async for chunk in chunks:
                         yield chunk
-            finished = True
         finally:
-            if not finished:
+            if not ended:
                 await interrupt(sdk)
 
     async def parse(self, messages: AsyncIterator[SDKMessage]) -> AsyncGenerator[str | Usage, None]:
@@ -148,17 +168,16 @@ def as_llm_errors() -> Iterator[None]:
 
 
 async def interrupt(sdk: ClaudeSDKClient) -> None:
-    """Stop the turn now: leaving the client only closes stdin, and Claude Code finishes first."""
+    """Stop the turn and read the rest of it, up to its result, so the session can take another.
 
-    async def drain() -> None:
-        async for _ in sdk.receive_messages():
-            pass
-
+    Leaving the client alone only closes stdin, and Claude Code finishes the turn before exiting.
+    """
     with anyio.CancelScope(shield=True), anyio.move_on_after(1), suppress(Exception):
         async with anyio.create_task_group() as tasks:
-            # A full SDK buffer would otherwise hold back the reply to the interrupt.
-            tasks.start_soon(drain)
-            await sdk.interrupt()
+            tasks.start_soon(sdk.interrupt)
+            async for message in sdk.receive_messages():
+                if isinstance(message, ResultMessage):
+                    break
             tasks.cancel_scope.cancel()
 
 
