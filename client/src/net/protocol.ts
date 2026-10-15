@@ -11,7 +11,7 @@ export type ServerMessage =
   | NpcStateMessage;
 export type EntityKind = 'npc' | 'player';
 export type JsonValue = unknown;
-export type ClientMessage = PlayerMoveMessage | PlayerSayMessage;
+export type ClientMessage = PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -115,4 +115,11 @@ export interface PlayerSayMessage {
    * The NPC the player is talking to.
    */
   target: string;
+}
+export interface WatchNpcMessage {
+  type: 'watch_npc';
+  /**
+   * The NPC to send npc_state for, or null to stop.
+   */
+  npc_id: string | null;
 }

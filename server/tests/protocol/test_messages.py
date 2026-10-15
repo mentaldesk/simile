@@ -15,6 +15,7 @@ from simile.protocol import (
     PlayerMoveMessage,
     PlayerSayMessage,
     Position,
+    WatchNpcMessage,
 )
 from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
@@ -36,6 +37,8 @@ SERVER = [
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
     PlayerSayMessage(text="Hello!", target="mei"),
+    WatchNpcMessage(npc_id="mei"),
+    WatchNpcMessage(npc_id=None),
 ]
 
 
@@ -66,6 +69,13 @@ def test_messages_carry_their_type() -> None:
     }
 
 
+def test_stopping_watching_sends_a_null_npc_id() -> None:
+    assert json.loads(WatchNpcMessage(npc_id=None).model_dump_json()) == {
+        "type": "watch_npc",
+        "npc_id": None,
+    }
+
+
 def test_timestamps_are_utc() -> None:
     sydney = datetime(2026, 3, 14, 20, 10, 3, tzinfo=timezone(timedelta(hours=11)))
 
@@ -79,6 +89,8 @@ def test_timestamps_are_utc() -> None:
         {"type": "player_move", "position": {"x": 1, "y": 2}, "speed": 3},
         {"type": "player_say", "text": "", "target": "mei"},
         {"type": "player_say", "text": "Hi", "target": "Mei"},
+        {"type": "watch_npc"},
+        {"type": "watch_npc", "npc_id": "Mei"},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

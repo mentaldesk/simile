@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeAudioChunk } from './audio';
 import { ServerConnection, type Socket } from './connection';
-import type { EntityMovedMessage, SnapshotMessage } from './protocol';
+import type { EntityMovedMessage, SnapshotMessage, WatchNpcMessage } from './protocol';
 
 class FakeSocket implements Socket {
   binaryType: BinaryType = 'blob';
@@ -168,6 +168,19 @@ describe('ServerConnection', () => {
     expect(connection.send(move)).toBe(true);
 
     expect(latest().sent.map((text) => JSON.parse(text))).toEqual([move]);
+  });
+
+  it('sends watch_npc with an NPC id, and with null to stop watching', () => {
+    const watches: WatchNpcMessage[] = [
+      { type: 'watch_npc', npc_id: 'mei' },
+      { type: 'watch_npc', npc_id: null },
+    ];
+    connection.connect();
+    latest().open();
+
+    for (const watch of watches) connection.send(watch);
+
+    expect(latest().sent.map((text) => JSON.parse(text))).toEqual(watches);
   });
 
   it('reconnects with backoff until a connection opens', () => {

@@ -15,6 +15,7 @@ from simile.protocol.messages import (
     Position,
     ServerMessage,
     SnapshotMessage,
+    WatchNpcMessage,
 )
 
 __all__ = [
@@ -36,5 +37,6 @@ __all__ = [
     "Position",
     "ServerMessage",
     "SnapshotMessage",
+    "WatchNpcMessage",
     "hub_of",
 ]

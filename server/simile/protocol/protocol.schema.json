@@ -5,7 +5,8 @@
       "discriminator": {
         "mapping": {
           "player_move": "#/$defs/PlayerMoveMessage",
-          "player_say": "#/$defs/PlayerSayMessage"
+          "player_say": "#/$defs/PlayerSayMessage",
+          "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
       },
@@ -15,6 +16,9 @@
         },
         {
           "$ref": "#/$defs/PlayerSayMessage"
+        },
+        {
+          "$ref": "#/$defs/WatchNpcMessage"
         }
       ]
     },
@@ -406,6 +410,35 @@
         "conversations"
       ],
       "title": "SnapshotMessage",
+      "type": "object"
+    },
+    "WatchNpcMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "watch_npc",
+          "default": "watch_npc",
+          "type": "string"
+        },
+        "npc_id": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The NPC to send npc_state for, or null to stop."
+        }
+      },
+      "required": [
+        "type",
+        "npc_id"
+      ],
+      "title": "WatchNpcMessage",
       "type": "object"
     }
   },
