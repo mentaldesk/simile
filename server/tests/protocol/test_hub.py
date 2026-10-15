@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 
 import pytest
@@ -25,8 +25,16 @@ START = datetime(2026, 3, 14, 9, tzinfo=UTC)
 
 
 @pytest.fixture
-def app() -> Starlette:
-    app = create_app()
+def app(make_package: Callable[[dict[str, str]], str]) -> Starlette:
+    app = create_app(
+        make_package(
+            {
+                "protocol/lifespan.py": "from simile.protocol.lifespan import lifespan\n",
+                "protocol/routes.py": "from simile.protocol.routes import routes\n",
+                "sim/lifespan.py": "from simile.sim.lifespan import running\n",
+            }
+        )
+    )
     app.state.world = World(Clock(START))
     return app
 
