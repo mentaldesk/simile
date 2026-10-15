@@ -28,10 +28,15 @@ export function followScroll(target: Point, view: Size, world: Size, zoom: numbe
   };
 }
 
-/** Where a world point is drawn on the canvas, for a camera at `scroll` zoomed about its centre. */
 export function toCanvas(point: Point, scroll: Point, view: Size, zoom: number): Point {
   return {
     x: (point.x - scroll.x - view.width / 2) * zoom + view.width / 2,
     y: (point.y - scroll.y - view.height / 2) * zoom + view.height / 2,
   };
+}
+
+/** The largest zoom that fits and shows each canvas pixel as whole device pixels, but at least 1. */
+export function pixelZoom(available: Size, canvas: Size, devicePixelRatio = 1): number {
+  const fit = Math.min(available.width / canvas.width, available.height / canvas.height);
+  return Math.max(1, Math.floor(fit * devicePixelRatio) / devicePixelRatio);
 }

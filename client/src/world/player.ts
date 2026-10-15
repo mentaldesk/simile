@@ -3,8 +3,8 @@ import type { CollisionMap } from './map';
 import { facingFor, type Body, type Facing } from './motion';
 import { PLAYER_SPEED } from './tuning';
 
-/** The part of the player's tile that collides: around the feet, which are on the tile's bottom edge. */
-export const FOOTPRINT = { left: 0.25, right: 0.75, top: 0.65, bottom: 1 };
+/** Holds (x + 0.5, y + 0.5), so the tile W2 puts the player on, `floor(p + 0.5)`, is never blocked. */
+export const FOOTPRINT = { left: 0.25, right: 0.75, top: 0.5, bottom: 1 };
 
 type Span = [first: number, last: number];
 
@@ -60,10 +60,13 @@ export class Player implements Body {
       this.walking = false;
       return;
     }
-    this.facing = facingFor(direction.x, direction.y, this.facing);
     const step = (speed * dt) / length;
     const next = walk(map, this.position, direction.x * step, direction.y * step);
-    this.walking = next.x !== this.position.x || next.y !== this.position.y;
+    const [dx, dy] = [next.x - this.position.x, next.y - this.position.y];
+    this.walking = dx !== 0 || dy !== 0;
+    this.facing = this.walking
+      ? facingFor(dx, dy, this.facing)
+      : facingFor(direction.x, direction.y, this.facing);
     this.position = next;
   }
 }

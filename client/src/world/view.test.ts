@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { feetOf, followScroll, toCanvas } from './view';
+import { feetOf, followScroll, pixelZoom, toCanvas } from './view';
 
 const VIEW = { width: 640, height: 360 };
 const WORLD = { width: 1024, height: 672 };
@@ -48,5 +48,25 @@ describe('followScroll', () => {
   it('centres a world smaller than the view', () => {
     const scroll = followScroll({ x: 0, y: 0 }, VIEW, { width: 100, height: 60 }, ZOOM);
     expect(toCanvas({ x: 50, y: 30 }, scroll, VIEW, ZOOM)).toEqual({ x: 320, y: 180 });
+  });
+});
+
+describe('pixelZoom', () => {
+  it('picks the largest whole multiple that fits', () => {
+    expect(pixelZoom({ width: 1024, height: 768 }, VIEW)).toBe(1);
+    expect(pixelZoom({ width: 1280, height: 720 }, VIEW)).toBe(2);
+    expect(pixelZoom({ width: 1919, height: 1200 }, VIEW)).toBe(2);
+    expect(pixelZoom({ width: 2560, height: 1100 }, VIEW)).toBe(3);
+  });
+
+  it('never goes below 1, however small the window', () => {
+    expect(pixelZoom({ width: 500, height: 300 }, VIEW)).toBe(1);
+    expect(pixelZoom({ width: 0, height: 0 }, VIEW)).toBe(1);
+  });
+
+  it('counts device pixels on high-density screens', () => {
+    expect(pixelZoom({ width: 1024, height: 768 }, VIEW, 2)).toBe(1.5);
+    expect(pixelZoom({ width: 1440, height: 900 }, VIEW, 2)).toBe(2);
+    expect(pixelZoom({ width: 1280, height: 720 }, VIEW, 1.5)).toBe(2);
   });
 });

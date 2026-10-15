@@ -3,7 +3,6 @@ import { SEND_INTERVAL_SECONDS } from './tuning';
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-/** Picks which player positions to send: changed ones, at most one per interval. */
 export class MoveThrottle {
   private readonly interval: number;
   private sent?: Position;

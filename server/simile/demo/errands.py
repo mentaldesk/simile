@@ -24,8 +24,6 @@ class Walker:
 
 
 class Errands:
-    """Sends each NPC from its doorstep on two errands and home again, resting at every stop."""
-
     def __init__(self, movement: Movement, entities: Sequence[Entity]) -> None:
         self.movement = movement
         npcs = sorted((e for e in entities if e.kind == EntityKind.NPC), key=lambda e: e.id)

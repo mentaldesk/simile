@@ -10,7 +10,6 @@ function fnv1a(text: string): number {
   return hash >>> 0;
 }
 
-/** The atlas to draw an entity with: its own, or else the same `sample_*` one every time. */
 export function characterFor(entityId: string, available: readonly string[]): string {
   if (available.includes(entityId)) return entityId;
   const samples = available.filter((key) => key.startsWith(SAMPLE_PREFIX)).sort();

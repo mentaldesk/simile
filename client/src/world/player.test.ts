@@ -44,7 +44,7 @@ describe('walk', () => {
     expect(end.y).toBe(1 - FOOTPRINT.top);
   });
 
-  it('never overlaps a blocked tile, whatever the moves', () => {
+  it('never overlaps a blocked tile or reports one as its tile, whatever the moves', () => {
     const map = grid('.....', '.#...', '...#.', '.....');
     const overlaps = ({ x, y }: { x: number; y: number }) => {
       for (let row = Math.floor(y + FOOTPRINT.top); row < y + FOOTPRINT.bottom; row++) {
@@ -60,6 +60,7 @@ describe('walk', () => {
     for (let i = 0; i < 2000; i++) {
       position = walk(map, position, random() / 3, random() / 3);
       expect(overlaps(position)).toBe(false);
+      expect(map.blocks(Math.floor(position.x + 0.5), Math.floor(position.y + 0.5))).toBe(false);
     }
   });
 
@@ -81,9 +82,11 @@ describe('the village', () => {
     expect(map.blocks(cafe.x, cafe.y - 1)).toBe(true);
   });
 
-  it('stops the player at the coffee shop door', () => {
+  it('stops the player at the coffee shop door, still on the tile in front of it', () => {
     const cafe = entryOf(village, 'coffee_shop')!;
-    expect(push(map, cafe, 0, -0.2).y).toBe(cafe.y - FOOTPRINT.top);
+    const stopped = push(map, cafe, 0, -0.2);
+    expect(stopped.y).toBe(cafe.y - FOOTPRINT.top);
+    expect([Math.floor(stopped.x + 0.5), Math.floor(stopped.y + 0.5)]).toEqual([cafe.x, cafe.y]);
   });
 });
 
@@ -101,6 +104,14 @@ describe('Player', () => {
     player.move({ x: 0, y: -1 }, 0.1, ROOM);
     expect(player.facing).toBe('up');
     expect(player.walking).toBe(false);
+  });
+
+  it('faces the way it slides along a wall', () => {
+    const player = new Player({ x: 2, y: 1 - FOOTPRINT.top });
+    player.move({ x: 1, y: -1 }, 0.1, ROOM);
+    expect(player.position.y).toBe(1 - FOOTPRINT.top);
+    expect(player.walking).toBe(true);
+    expect(player.facing).toBe('right');
   });
 
   it('stops walking when no key is down', () => {

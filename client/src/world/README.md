@@ -26,8 +26,9 @@ its own atlas gets one of the `sample_*` sprites, the same one every time (`char
   behind hurries, then snaps.
 - **The player** is the client's: it moves at `PLAYER_SPEED` and collides locally with the map's
   `collision` layer around its feet (`FOOTPRINT`), and the scene sends `player_move` at most five
-  times a second. Only the first `snapshot` places it; after a reconnection it stays put and sends
-  its position again.
+  times a second. The footprint always covers the tile W2 reads the position as, `floor(p + 0.5)`,
+  so the server never thinks the player is standing in a wall. Only the first `snapshot` places it;
+  after a reconnection it stays put and sends its position again.
 - Facing comes from the direction of travel, picking a 4-way facing on diagonals. Walk cycles play
   at `WALK_FPS` at walking speed, faster for the player.
 
@@ -44,6 +45,7 @@ each sprite) and as audio's position provider, with the player as the listener. 
 Tiles and sprites are 16 px, drawn at 3× (`ZOOM`). The camera follows the player and stops at the
 map's edges, and keeps its centre on a whole world pixel so every art pixel is exactly 3×3 canvas
 pixels. Layers `ground`, `buildings` and `decor` are under the characters, `above` over them, and
-characters are sorted by where their feet are.
+characters are sorted by where their feet are. `main.ts` shows the 640×360 canvas at the largest
+zoom that fits the window and draws each canvas pixel as whole device pixels (`pixelZoom`).
 
 The dev harnesses (`?harness=dialogue`, `?audio-harness`) don't start the world scene.
