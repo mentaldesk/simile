@@ -3,7 +3,7 @@ description: Install uv, Python 3.12 and the server's locked dependencies.
 runs:
   using: composite
   steps:
-    - uses: astral-sh/setup-uv@v10
+    - uses: astral-sh/setup-uv@v10.3.0
       with:
         enable-cache: true
         cache-dependency-glob: server/uv.lock
