@@ -1,0 +1,96 @@
+[
+  {
+    "owner": "mei",
+    "about": "viktor",
+    "like": 0.64,
+    "trust": 0.72,
+    "respect": 0.78,
+    "familiarity": 0.62,
+    "baseline": {"like": 0.55, "trust": 0.6, "respect": 0.65},
+    "flags": [
+      {
+        "id": "flag_1",
+        "kind": "debt",
+        "owner": "mei",
+        "about": "viktor",
+        "description": "covering his coffees after the bridge incident",
+        "created": "2026-02-20T09:00:00Z",
+        "resolved": null
+      },
+      {
+        "id": "flag_2",
+        "kind": "promise",
+        "owner": "mei",
+        "about": "viktor",
+        "description": "fixing the espresso machine",
+        "created": "2026-03-10T08:00:00Z",
+        "resolved": "2026-03-12T17:00:00Z"
+      }
+    ],
+    "last_interaction": "2026-03-14T08:05:22Z"
+  },
+  {
+    "owner": "viktor",
+    "about": "mei",
+    "like": 0.6,
+    "trust": 0.66,
+    "respect": 0.52,
+    "familiarity": 0.62,
+    "baseline": {"like": 0.5, "trust": 0.55, "respect": 0.5},
+    "flags": [],
+    "last_interaction": "2026-03-14T08:05:22Z"
+  },
+  {
+    "owner": "viktor",
+    "about": "suki",
+    "like": 0.28,
+    "trust": 0.35,
+    "respect": 0.4,
+    "familiarity": 0.3,
+    "baseline": {"like": 0.45, "trust": 0.5, "respect": 0.45},
+    "flags": [
+      {
+        "id": "flag_3",
+        "kind": "grudge",
+        "owner": "viktor",
+        "about": "suki",
+        "description": "drones buzzing over his garden",
+        "created": "2026-03-01T07:30:00Z",
+        "resolved": null
+      }
+    ],
+    "last_interaction": "2026-03-14T07:30:00Z"
+  },
+  {
+    "owner": "suki",
+    "about": "mei",
+    "like": 0.7,
+    "trust": 0.65,
+    "respect": 0.55,
+    "familiarity": 0.5,
+    "baseline": {"like": 0.6, "trust": 0.55, "respect": 0.5},
+    "flags": [
+      {
+        "id": "flag_4",
+        "kind": "secret",
+        "owner": "suki",
+        "about": "mei",
+        "description": "Mei is thinking of selling the coffee shop",
+        "created": "2026-03-08T19:00:00Z",
+        "resolved": null
+      }
+    ],
+    "last_interaction": "2026-03-13T18:30:00Z"
+  },
+  {
+    "owner": "mei",
+    "about": "player",
+    "like": 0.56,
+    "trust": 0.5,
+    "respect": 0.5,
+    "familiarity": 0.12,
+    "baseline": {"like": 0.55, "trust": 0.5, "respect": 0.5},
+    "flags": [],
+    "last_interaction": "2026-03-14T09:10:03Z"
+  }
+]

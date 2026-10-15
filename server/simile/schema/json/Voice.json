@@ -1,0 +1,35 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "description": {
+      "description": "What the voice sounds like, for the voice design model.",
+      "title": "Description",
+      "type": "string"
+    },
+    "reference_line": {
+      "description": "A neutral line in character, 5-10 seconds of speech. The clip's transcript.",
+      "title": "Reference Line",
+      "type": "string"
+    },
+    "reference_clip": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The recorded reference clip, relative to the repository root. Null until the voice is designed.",
+      "title": "Reference Clip"
+    }
+  },
+  "required": [
+    "description",
+    "reference_line",
+    "reference_clip"
+  ],
+  "title": "Voice",
+  "type": "object"
+}

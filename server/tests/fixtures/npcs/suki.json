@@ -1,0 +1,52 @@
+{
+  "id": "suki",
+  "name": "Suki Tan",
+  "age": 24,
+  "occupation": "Delivery drone pilot",
+  "home": "house_3",
+  "values": {
+    "freedom": 0.9,
+    "independence": 0.85,
+    "self_respect": 0.6,
+    "self_actualization": 0.65,
+    "creativity": 0.7,
+    "honesty": 0.55,
+    "compassion": 0.5,
+    "loyalty": 0.45,
+    "justice": 0.5,
+    "responsibility": 0.3,
+    "security": 0.15,
+    "equality": 0.6,
+    "tradition": 0.1,
+    "obedience": 0.05,
+    "success": 0.5,
+    "ambition": 0.55,
+    "discipline": 0.25,
+    "knowledge": 0.5,
+    "open_mindedness": 0.8,
+    "peace_of_mind": 0.3,
+    "pleasure": 0.8,
+    "connection": 0.6,
+    "adventure": 0.95,
+    "optimism": 0.75
+  },
+  "backstory": "Suki grew up in the city and came to the village for the delivery job, which lets her fly all day and answer to nobody.",
+  "persona": "Restless, funny and allergic to rules. Always planning the next trip somewhere she hasn't been.",
+  "speaking_style": "Fast and bright, full of slang, jumps between topics.",
+  "interests": ["drones", "travel", "street music", "new tech"],
+  "appearance": {
+    "skin": "#d7a77f",
+    "hair_style": "ponytail",
+    "hair_colour": "#7b3fa0",
+    "top_colour": "#f2c94c",
+    "bottom_colour": "#1f1f2b",
+    "shoe_colour": "#e04a7a",
+    "build": "average",
+    "accessories": ["headphones", "backpack"]
+  },
+  "voice": {
+    "description": "A young woman in her twenties. Light, energetic voice, speaks quickly and brightly.",
+    "reference_line": "I've got three drops before lunch and then I'm free. Want to see the view from the water tower?",
+    "reference_clip": null
+  }
+}

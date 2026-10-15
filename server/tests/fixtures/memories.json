@@ -1,0 +1,74 @@
+[
+  {
+    "owner": "mei",
+    "kind": "conversation",
+    "content": "Viktor said my footbridge latte art was a fine likeness. From him, that's a standing ovation.",
+    "salience": 0.55,
+    "valence": 0.7,
+    "timestamp": "2026-03-14T08:05:22Z",
+    "about": ["viktor"],
+    "topics": ["latte art", "the old footbridge"],
+    "conversation_id": "conv_1",
+    "news_id": null
+  },
+  {
+    "owner": "viktor",
+    "kind": "conversation",
+    "content": "Mei drew the old footbridge in my coffee. The arch was wrong, but she meant well.",
+    "salience": 0.35,
+    "valence": 0.4,
+    "timestamp": "2026-03-14T08:05:22Z",
+    "about": ["mei"],
+    "topics": ["latte art", "the old footbridge"],
+    "conversation_id": "conv_1",
+    "news_id": null
+  },
+  {
+    "owner": "viktor",
+    "kind": "news",
+    "content": "Somebody finally wrote that boredom is good for you. The young ones could stand to hear it.",
+    "salience": 0.6,
+    "valence": 0.5,
+    "timestamp": "2026-03-14T08:20:00Z",
+    "about": [],
+    "topics": ["boredom"],
+    "conversation_id": null,
+    "news_id": "https://bigthink.com/?p=900101"
+  },
+  {
+    "owner": "suki",
+    "kind": "news",
+    "content": "Towns want a say over drone flights now. Great, more forms between me and the sky.",
+    "salience": 0.8,
+    "valence": -0.7,
+    "timestamp": "2026-03-14T07:00:00Z",
+    "about": [],
+    "topics": ["drones", "regulation"],
+    "conversation_id": null,
+    "news_id": "https://bigthink.com/?p=900202"
+  },
+  {
+    "owner": "suki",
+    "kind": "observation",
+    "content": "Viktor shook his fist at my drone again this morning.",
+    "salience": 0.4,
+    "valence": -0.3,
+    "timestamp": "2026-03-14T07:30:00Z",
+    "about": ["viktor"],
+    "topics": ["drones"],
+    "conversation_id": null,
+    "news_id": null
+  },
+  {
+    "owner": "mei",
+    "kind": "observation",
+    "content": "A newcomer wandered into the café and spent ages reading the menu board.",
+    "salience": 0.3,
+    "valence": 0.2,
+    "timestamp": "2026-03-14T09:09:00Z",
+    "about": ["player"],
+    "topics": [],
+    "conversation_id": null,
+    "news_id": null
+  }
+]
