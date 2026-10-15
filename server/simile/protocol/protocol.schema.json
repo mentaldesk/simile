@@ -1,0 +1,420 @@
+{
+  "title": "Message",
+  "$defs": {
+    "ClientMessage": {
+      "discriminator": {
+        "mapping": {
+          "player_move": "#/$defs/PlayerMoveMessage",
+          "player_say": "#/$defs/PlayerSayMessage"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/PlayerMoveMessage"
+        },
+        {
+          "$ref": "#/$defs/PlayerSayMessage"
+        }
+      ]
+    },
+    "Conversation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "participants": {
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "type": "array"
+        },
+        "started": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "ended": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Null while it's going on."
+        },
+        "lines": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Line"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "participants",
+        "started",
+        "ended",
+        "lines"
+      ],
+      "title": "Conversation",
+      "type": "object"
+    },
+    "ConversationEndedMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "conversation_ended",
+          "default": "conversation_ended",
+          "type": "string"
+        },
+        "conversation_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "ended": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "conversation_id",
+        "ended"
+      ],
+      "title": "ConversationEndedMessage",
+      "type": "object"
+    },
+    "ConversationStartedMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "conversation_started",
+          "default": "conversation_started",
+          "type": "string"
+        },
+        "conversation": {
+          "$ref": "#/$defs/Conversation"
+        }
+      },
+      "required": [
+        "type",
+        "conversation"
+      ],
+      "title": "ConversationStartedMessage",
+      "type": "object"
+    },
+    "Entity": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/EntityKind"
+        },
+        "name": {
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "position"
+      ],
+      "title": "Entity",
+      "type": "object"
+    },
+    "EntityKind": {
+      "enum": [
+        "npc",
+        "player"
+      ],
+      "title": "EntityKind",
+      "type": "string"
+    },
+    "EntityMovedMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "entity_moved",
+          "default": "entity_moved",
+          "type": "string"
+        },
+        "entity_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "type",
+        "entity_id",
+        "position"
+      ],
+      "title": "EntityMovedMessage",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Line": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique across the world. Audio for the line carries it.",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "conversation_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "speaker": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "When the speaker starts saying it.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "duration": {
+          "description": "Estimated seconds to say it aloud.",
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "conversation_id",
+        "speaker",
+        "text",
+        "timestamp",
+        "duration"
+      ],
+      "title": "Line",
+      "type": "object"
+    },
+    "LineMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "line",
+          "default": "line",
+          "type": "string"
+        },
+        "line": {
+          "$ref": "#/$defs/Line"
+        },
+        "voiced": {
+          "description": "Whether audio_chunk frames will follow for this line.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "line",
+        "voiced"
+      ],
+      "title": "LineMessage",
+      "type": "object"
+    },
+    "NpcStateMessage": {
+      "additionalProperties": false,
+      "description": "Debug state for the overlay. The fields in `state` are up to the modules that send them.",
+      "properties": {
+        "type": {
+          "const": "npc_state",
+          "default": "npc_state",
+          "type": "string"
+        },
+        "npc_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "state": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "type",
+        "npc_id",
+        "state"
+      ],
+      "title": "NpcStateMessage",
+      "type": "object"
+    },
+    "PlayerMoveMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "player_move",
+          "default": "player_move",
+          "type": "string"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "type",
+        "position"
+      ],
+      "title": "PlayerMoveMessage",
+      "type": "object"
+    },
+    "PlayerSayMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "player_say",
+          "default": "player_say",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "target": {
+          "description": "The NPC the player is talking to.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "text",
+        "target"
+      ],
+      "title": "PlayerSayMessage",
+      "type": "object"
+    },
+    "Position": {
+      "additionalProperties": false,
+      "description": "Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step.",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Position",
+      "type": "object"
+    },
+    "ServerMessage": {
+      "discriminator": {
+        "mapping": {
+          "conversation_ended": "#/$defs/ConversationEndedMessage",
+          "conversation_started": "#/$defs/ConversationStartedMessage",
+          "entity_moved": "#/$defs/EntityMovedMessage",
+          "line": "#/$defs/LineMessage",
+          "npc_state": "#/$defs/NpcStateMessage",
+          "snapshot": "#/$defs/SnapshotMessage"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SnapshotMessage"
+        },
+        {
+          "$ref": "#/$defs/EntityMovedMessage"
+        },
+        {
+          "$ref": "#/$defs/ConversationStartedMessage"
+        },
+        {
+          "$ref": "#/$defs/ConversationEndedMessage"
+        },
+        {
+          "$ref": "#/$defs/LineMessage"
+        },
+        {
+          "$ref": "#/$defs/NpcStateMessage"
+        }
+      ]
+    },
+    "SnapshotMessage": {
+      "additionalProperties": false,
+      "description": "The whole world, sent on connect. Replaces anything the client had.",
+      "properties": {
+        "type": {
+          "const": "snapshot",
+          "default": "snapshot",
+          "type": "string"
+        },
+        "time": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "map_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "entities": {
+          "items": {
+            "$ref": "#/$defs/Entity"
+          },
+          "type": "array"
+        },
+        "conversations": {
+          "description": "Only those still going on.",
+          "items": {
+            "$ref": "#/$defs/Conversation"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "time",
+        "map_id",
+        "entities",
+        "conversations"
+      ],
+      "title": "SnapshotMessage",
+      "type": "object"
+    }
+  },
+  "anyOf": [
+    {
+      "$ref": "#/$defs/ServerMessage"
+    },
+    {
+      "$ref": "#/$defs/ClientMessage"
+    }
+  ]
+}
