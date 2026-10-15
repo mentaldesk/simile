@@ -1,0 +1,52 @@
+{
+  "id": "mei",
+  "name": "Mei Lin",
+  "age": 29,
+  "occupation": "Barista and owner of the coffee shop",
+  "home": "house_1",
+  "values": {
+    "freedom": 0.5,
+    "independence": 0.35,
+    "self_respect": 0.55,
+    "self_actualization": 0.5,
+    "creativity": 0.55,
+    "honesty": 0.7,
+    "compassion": 0.85,
+    "loyalty": 0.72,
+    "justice": 0.6,
+    "responsibility": 0.62,
+    "security": 0.45,
+    "equality": 0.66,
+    "tradition": 0.3,
+    "obedience": 0.2,
+    "success": 0.35,
+    "ambition": 0.3,
+    "discipline": 0.4,
+    "knowledge": 0.45,
+    "open_mindedness": 0.7,
+    "peace_of_mind": 0.5,
+    "pleasure": 0.6,
+    "connection": 0.92,
+    "adventure": 0.4,
+    "optimism": 0.78
+  },
+  "backstory": "Mei moved to the village to open a coffee shop after years of night shifts in the city. She knows everyone's order and most of their troubles.",
+  "persona": "Warm, chatty and quick to notice when someone is having a bad day. She keeps the village talking to itself.",
+  "speaking_style": "Friendly and informal, asks lots of questions, laughs easily.",
+  "interests": ["coffee", "neighbourhood gossip", "street food", "people's stories"],
+  "appearance": {
+    "skin": "#e8b98f",
+    "hair_style": "bob",
+    "hair_colour": "#1c1b22",
+    "top_colour": "#d9645a",
+    "bottom_colour": "#2f3e5c",
+    "shoe_colour": "#f2efe6",
+    "build": "slim",
+    "accessories": ["apron"]
+  },
+  "voice": {
+    "description": "A woman in her late twenties. Bright, warm mid-range voice, speaks quickly with a smile in it.",
+    "reference_line": "Morning! The usual? I saved you the last almond croissant, but don't tell anyone.",
+    "reference_clip": "content/voices/mei.wav"
+  }
+}

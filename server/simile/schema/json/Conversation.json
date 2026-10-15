@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "Line": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique across the world. Audio for the line carries it.",
+          "minimum": 0,
+          "title": "Id",
+          "type": "integer"
+        },
+        "conversation_id": {
+          "title": "Conversation Id",
+          "type": "string"
+        },
+        "speaker": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Speaker",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "timestamp": {
+          "description": "When the speaker starts saying it.",
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "duration": {
+          "description": "Estimated seconds to say it aloud.",
+          "minimum": 0,
+          "title": "Duration",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "conversation_id",
+        "speaker",
+        "text",
+        "timestamp",
+        "duration"
+      ],
+      "title": "Line",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "participants": {
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "minItems": 2,
+      "title": "Participants",
+      "type": "array"
+    },
+    "started": {
+      "format": "date-time",
+      "title": "Started",
+      "type": "string"
+    },
+    "ended": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Null while it's going on.",
+      "title": "Ended"
+    },
+    "lines": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Line"
+      },
+      "title": "Lines",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "participants",
+    "started",
+    "ended",
+    "lines"
+  ],
+  "title": "Conversation",
+  "type": "object"
+}

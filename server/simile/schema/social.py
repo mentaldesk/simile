@@ -1,0 +1,112 @@
+from datetime import datetime
+from enum import StrEnum
+from typing import Self
+
+from pydantic import Field, model_validator
+
+from simile.schema.common import Id, Model, Signed, Unit
+
+
+class Aspect(StrEnum):
+    LIKE = "like"
+    TRUST = "trust"
+    RESPECT = "respect"
+
+
+class InteractionEvent(Model):
+    """Something `actor` did that changes how `target` feels about them."""
+
+    actor: Id
+    target: Id
+    action: str = Field(description="What the actor did, in a few words.")
+    aspects: list[Aspect] = Field(
+        description="Which of the target's feelings about the actor it moves. "
+        "Familiarity grows with any event."
+    )
+    valence: Signed = Field(description="How it landed with the target, from -1 to 1.")
+    magnitude: Unit = Field(description="How much it mattered, 0-1.")
+    timestamp: datetime
+    conversation_id: str | None = None
+
+    @model_validator(mode="after")
+    def _two_parties(self) -> Self:
+        if self.actor == self.target:
+            raise ValueError("actor and target must differ")
+        return self
+
+
+class FlagKind(StrEnum):
+    """From the owner's side: `debt`, `about` owes the owner; `grudge`, the owner resents `about`;
+    `promise`, `about` promised the owner something; `broken_promise`, `about` broke one;
+    `saved_life`, `about` saved the owner's life; `secret`, `about` told the owner a secret."""
+
+    DEBT = "debt"
+    GRUDGE = "grudge"
+    PROMISE = "promise"
+    BROKEN_PROMISE = "broken_promise"
+    SAVED_LIFE = "saved_life"
+    SECRET = "secret"
+
+
+class Flag(Model):
+    """A discrete fact `owner` holds about `about` that persists after the scores recover."""
+
+    id: str = Field(min_length=1)
+    kind: FlagKind
+    owner: Id
+    about: Id
+    description: str = Field(description="What it concerns, in a few words, for prompts.")
+    created: datetime
+    resolved: datetime | None = Field(
+        default=None, description="When it stopped applying, e.g. a debt repaid. Null while open."
+    )
+
+
+class Baseline(Model):
+    """Where like, trust and respect drift back to without contact."""
+
+    like: Unit
+    trust: Unit
+    respect: Unit
+
+
+class Relationship(Model):
+    """How `owner` feels about `about`. Each direction is a separate relationship."""
+
+    owner: Id
+    about: Id
+    like: Unit
+    trust: Unit
+    respect: Unit
+    familiarity: Unit
+    baseline: Baseline
+    flags: list[Flag] = []
+    last_interaction: datetime | None = None
+
+    @model_validator(mode="after")
+    def _consistent(self) -> Self:
+        if self.owner == self.about:
+            raise ValueError("owner and about must differ")
+        for flag in self.flags:
+            if (flag.owner, flag.about) != (self.owner, self.about):
+                raise ValueError(f"flag {flag.id} belongs to another relationship")
+        return self
+
+
+class MemoryKind(StrEnum):
+    CONVERSATION = "conversation"
+    NEWS = "news"
+    OBSERVATION = "observation"
+
+
+class Memory(Model):
+    owner: Id
+    kind: MemoryKind
+    content: str = Field(description="The memory in the owner's own words, ready for a prompt.")
+    salience: Unit = Field(description="How much it matters to the owner, 0-1.")
+    valence: Signed = Field(description="How the owner felt about it, from -1 to 1.")
+    timestamp: datetime
+    about: list[Id] = Field(default=[], description="Entities the memory involves.")
+    topics: list[str] = []
+    conversation_id: str | None = None
+    news_id: str | None = None

@@ -1,0 +1,76 @@
+{
+  "$defs": {
+    "FlagKind": {
+      "description": "From the owner's side: `debt`, `about` owes the owner; `grudge`, the owner resents `about`;\n`promise`, `about` promised the owner something; `broken_promise`, `about` broke one;\n`saved_life`, `about` saved the owner's life; `secret`, `about` told the owner a secret.",
+      "enum": [
+        "debt",
+        "grudge",
+        "promise",
+        "broken_promise",
+        "saved_life",
+        "secret"
+      ],
+      "title": "FlagKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A discrete fact `owner` holds about `about` that persists after the scores recover.",
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/FlagKind"
+    },
+    "owner": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Owner",
+      "type": "string"
+    },
+    "about": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "About",
+      "type": "string"
+    },
+    "description": {
+      "description": "What it concerns, in a few words, for prompts.",
+      "title": "Description",
+      "type": "string"
+    },
+    "created": {
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+    },
+    "resolved": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "When it stopped applying, e.g. a debt repaid. Null while open.",
+      "title": "Resolved"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "owner",
+    "about",
+    "description",
+    "created",
+    "resolved"
+  ],
+  "title": "Flag",
+  "type": "object"
+}
