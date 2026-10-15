@@ -56,6 +56,6 @@
   "voice": {
     "description": "A woman in her late thirties. Mid-range pitch with a slightly husky, textured timbre. Brisk, confident pace with clear articulation and a dry, focused manner, steady and unhurried in tone.",
     "reference_line": "I finished the dye test last night, and the indigo took better than I expected. I will start the full batch after lunch.",
-    "reference_clip": null
+    "reference_clip": "content/voices/ingrid.wav"
   }
 }

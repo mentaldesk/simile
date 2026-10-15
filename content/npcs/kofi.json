@@ -56,6 +56,6 @@
   "voice": {
     "description": "A man in his early twenties. Mid-range, slightly husky pitch with a warm, relaxed timbre. Fairly quick pace with easy, friendly rhythm, a hint of amusement and curiosity in the manner, and a casual, unpolished delivery.",
     "reference_line": "I found a stack of old shutters behind the maker space this morning, and I think they might make a decent wall for painting.",
-    "reference_clip": null
+    "reference_clip": "content/voices/kofi.wav"
   }
 }
