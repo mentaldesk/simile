@@ -56,6 +56,6 @@
   "voice": {
     "description": "A woman in her late twenties. Mid-pitched, warm and slightly husky timbre, with a relaxed, smiling quality. Pace is easy and a little drifting, casual and playful in manner, with a friendly, informal lilt.",
     "reference_line": "I made far too much rice again, so there's a bowl for anyone who wants one. Take a seat, there's plenty of room.",
-    "reference_clip": null
+    "reference_clip": "content/voices/odalys.wav"
   }
 }

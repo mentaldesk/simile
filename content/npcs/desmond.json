@@ -56,6 +56,6 @@
   "voice": {
     "description": "A man in his early forties. Medium-low pitch with a slightly gravelly, warm timbre. Unhurried, even pace, gentle and steady, with a quiet seriousness and a faint South African lilt softened by years abroad.",
     "reference_line": "Right, so the form is due on Friday, and I've read it twice. Bring whatever letters you have and we'll go through it together.",
-    "reference_clip": null
+    "reference_clip": "content/voices/desmond.wav"
   }
 }

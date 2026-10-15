@@ -55,6 +55,6 @@
   "voice": {
     "description": "A man in his mid seventies. Low, slightly gravelly baritone with a dry, worn timbre. Slow, deliberate pace with even pauses, formal and steady, calm and reassuring, with a faint Scandinavian lilt.",
     "reference_line": "I come to the square at nine each morning, as I always have. It is a quiet hour, and I like it.",
-    "reference_clip": null
+    "reference_clip": "content/voices/tobias.wav"
   }
 }

@@ -56,6 +56,6 @@
   "voice": {
     "description": "A woman in her early seventies. Mid-low pitch with a dry, slightly rasping timbre. Pace is brisk and even, with crisp consonants and a firm, formal, no-nonsense manner and little warmth or variation in tone.",
     "reference_line": "The recycling collection is on Thursday, as it says on the notice. Bins should be out by seven and taken in by noon.",
-    "reference_clip": null
+    "reference_clip": "content/voices/henrietta.wav"
   }
 }

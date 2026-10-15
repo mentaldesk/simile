@@ -56,6 +56,6 @@
   "voice": {
     "description": "A woman in her early fifties. Mid-low pitch with a smooth, slightly husky timbre. Brisk, precise pace with clean consonants and a light West African and French-tinged British accent. Composed, confident and dry in manner.",
     "reference_line": "I read the filing twice last night. The claims are broader than they look, so the real value sits in the second paragraph.",
-    "reference_clip": null
+    "reference_clip": "content/voices/marguerite.wav"
   }
 }
