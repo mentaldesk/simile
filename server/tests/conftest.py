@@ -29,6 +29,8 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
 def in_memory_database(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SIMILE_DB", ":memory:")
     monkeypatch.delenv("SIMILE_NEWS", raising=False)
+    monkeypatch.delenv("SIMILE_DEMO", raising=False)
+    monkeypatch.delenv("SIMILE_DEMO_WALK", raising=False)
 
 
 @pytest.fixture
