@@ -57,9 +57,9 @@ def test_cli_check_fails_when_out_of_date(monkeypatch: pytest.MonkeyPatch) -> No
 
 
 @pytest.mark.parametrize(
-    ("name", "fixture"),
+    ("name", "pattern"),
     [
-        ("Npc", "npcs/mei.json"),
+        ("Npc", "npcs/*.json"),
         ("Location", "locations.json"),
         ("Relationship", "relationships.json"),
         ("InteractionEvent", "interaction_events.json"),
@@ -68,11 +68,14 @@ def test_cli_check_fails_when_out_of_date(monkeypatch: pytest.MonkeyPatch) -> No
         ("Conversation", "conversations.json"),
     ],
 )
-def test_exported_schema_accepts_fixtures(name: str, fixture: str) -> None:
-    data = json.loads((FIXTURES / fixture).read_text())
+def test_exported_schema_accepts_fixtures(name: str, pattern: str) -> None:
+    paths = sorted(FIXTURES.glob(pattern))
+    assert paths
 
-    for item in data if isinstance(data, list) else [data]:
-        schema(name).validate(item)
+    for path in paths:
+        data = json.loads(path.read_text())
+        for item in data if isinstance(data, list) else [data]:
+            schema(name).validate(item)
 
 
 def test_exported_schema_rejects_unknown_fields() -> None:

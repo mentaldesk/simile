@@ -1,4 +1,4 @@
-from simile.schema.common import PLAYER_ID, Colour, Id, Model, Signed, Unit
+from simile.schema.common import PLAYER_ID, Colour, Id, Key, Model, Signed, Timestamp, Unit
 from simile.schema.conversation import Conversation, Line
 from simile.schema.news import NewsItem
 from simile.schema.npc import Accessory, Appearance, Build, CoreValue, HairStyle, Npc, Voice
@@ -44,6 +44,7 @@ __all__ = [
     "HairStyle",
     "Id",
     "InteractionEvent",
+    "Key",
     "Line",
     "Location",
     "LocationKind",
@@ -56,6 +57,7 @@ __all__ = [
     "Signed",
     "Tile",
     "TileArea",
+    "Timestamp",
     "Unit",
     "Voice",
 ]

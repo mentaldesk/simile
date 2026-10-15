@@ -1,10 +1,9 @@
-from datetime import datetime
 from enum import StrEnum
 from typing import Self
 
 from pydantic import Field, model_validator
 
-from simile.schema.common import Id, Model, Signed, Unit
+from simile.schema.common import Id, Key, Model, Signed, Timestamp, Unit
 
 
 class Aspect(StrEnum):
@@ -25,8 +24,8 @@ class InteractionEvent(Model):
     )
     valence: Signed = Field(description="How it landed with the target, from -1 to 1.")
     magnitude: Unit = Field(description="How much it mattered, 0-1.")
-    timestamp: datetime
-    conversation_id: str | None = None
+    timestamp: Timestamp
+    conversation_id: Key | None = None
 
     @model_validator(mode="after")
     def _two_parties(self) -> Self:
@@ -51,13 +50,13 @@ class FlagKind(StrEnum):
 class Flag(Model):
     """A discrete fact `owner` holds about `about` that persists after the scores recover."""
 
-    id: str = Field(min_length=1)
+    id: Key
     kind: FlagKind
     owner: Id
     about: Id
     description: str = Field(description="What it concerns, in a few words, for prompts.")
-    created: datetime
-    resolved: datetime | None = Field(
+    created: Timestamp
+    resolved: Timestamp | None = Field(
         default=None, description="When it stopped applying, e.g. a debt repaid. Null while open."
     )
 
@@ -81,7 +80,7 @@ class Relationship(Model):
     familiarity: Unit
     baseline: Baseline
     flags: list[Flag] = []
-    last_interaction: datetime | None = None
+    last_interaction: Timestamp | None = None
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:
@@ -105,8 +104,8 @@ class Memory(Model):
     content: str = Field(description="The memory in the owner's own words, ready for a prompt.")
     salience: Unit = Field(description="How much it matters to the owner, 0-1.")
     valence: Signed = Field(description="How the owner felt about it, from -1 to 1.")
-    timestamp: datetime
+    timestamp: Timestamp
     about: list[Id] = Field(default=[], description="Entities the memory involves.")
     topics: list[str] = []
-    conversation_id: str | None = None
-    news_id: str | None = None
+    conversation_id: Key | None = None
+    news_id: Key | None = None

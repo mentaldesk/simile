@@ -67,6 +67,7 @@
     "conversation_id": {
       "anyOf": [
         {
+          "minLength": 1,
           "type": "string"
         },
         {
@@ -79,6 +80,7 @@
     "news_id": {
       "anyOf": [
         {
+          "minLength": 1,
           "type": "string"
         },
         {

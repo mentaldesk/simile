@@ -60,6 +60,7 @@
     "conversation_id": {
       "anyOf": [
         {
+          "minLength": 1,
           "type": "string"
         },
         {

@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -9,8 +10,12 @@ from simile.schema import (
     PLAYER_ID,
     Conversation,
     CoreValue,
+    Flag,
     InteractionEvent,
+    Line,
+    Memory,
     Model,
+    NewsItem,
     Npc,
     Relationship,
 )
@@ -26,6 +31,49 @@ def fixture(name: str, index: int | None = None) -> dict[str, Any]:
 def rejects(model: type[Model], data: dict[str, Any], match: str) -> None:
     with pytest.raises(ValidationError, match=match):
         model.model_validate(data)
+
+
+TIMESTAMPS = [
+    (Conversation, fixture("conversations.json", 0), "started"),
+    (Conversation, fixture("conversations.json", 0), "ended"),
+    (Line, fixture("conversations.json", 0)["lines"][0], "timestamp"),
+    (InteractionEvent, fixture("interaction_events.json", 0), "timestamp"),
+    (Flag, fixture("relationships.json", 0)["flags"][0], "created"),
+    (Flag, fixture("relationships.json", 0)["flags"][0], "resolved"),
+    (Relationship, fixture("relationships.json", 1), "last_interaction"),
+    (Memory, fixture("memories.json", 0), "timestamp"),
+    (NewsItem, fixture("news_items.json", 0), "published"),
+]
+
+
+@pytest.mark.parametrize(("model", "data", "field"), TIMESTAMPS)
+def test_naive_timestamps_are_rejected(
+    model: type[Model], data: dict[str, Any], field: str
+) -> None:
+    rejects(model, data | {field: "2026-03-14T16:05:00"}, "timezone")
+
+
+@pytest.mark.parametrize(("model", "data", "field"), TIMESTAMPS)
+def test_timestamps_are_converted_to_utc(
+    model: type[Model], data: dict[str, Any], field: str
+) -> None:
+    parsed = model.model_validate(data | {field: "2026-03-14T16:05:00+08:00"})
+
+    assert getattr(parsed, field) == datetime(2026, 3, 14, 8, 5, tzinfo=UTC)
+    assert getattr(parsed, field).tzinfo is UTC
+    assert json.loads(parsed.model_dump_json())[field] == "2026-03-14T08:05:00Z"
+
+
+@pytest.mark.parametrize(
+    ("model", "data"),
+    [
+        (Line, fixture("conversations.json", 0)["lines"][0]),
+        (InteractionEvent, fixture("interaction_events.json", 2)),
+        (Memory, fixture("memories.json", 0)),
+    ],
+)
+def test_conversation_ids_are_not_empty(model: type[Model], data: dict[str, Any]) -> None:
+    rejects(model, data | {"conversation_id": ""}, "at least 1 character")
 
 
 def test_there_are_24_core_values() -> None:

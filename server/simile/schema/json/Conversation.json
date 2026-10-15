@@ -10,6 +10,7 @@
           "type": "integer"
         },
         "conversation_id": {
+          "minLength": 1,
           "title": "Conversation Id",
           "type": "string"
         },
