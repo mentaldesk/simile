@@ -94,15 +94,22 @@ For a group of commands (`simile art tiles`), make a `typer.Typer()` and
 `server/simile/<module>/routes.py` with `routes: list[starlette.routing.BaseRoute]`, under `/api/`
 or `/ws`.
 
-**Startup and shutdown.** For anything that runs as long as the server does, such as a tick loop, a
-model loaded once or a refresh interval, create `server/simile/<module>/lifespan.py` with a
-`lifespan(app)` async context manager. The server enters every module's lifespan when it starts,
-in alphabetical module order, and exits them in reverse when it stops. Modules share objects
-through `app.state`. Since the order is alphabetical, don't read another module's `app.state` entry
-during startup. Look it up when you use it.
+**Startup and shutdown.** For anything that runs as long as the server does, such as a model loaded
+once or a refresh interval, create `server/simile/<module>/lifespan.py` with a `lifespan(app)`
+async context manager. The server enters every module's lifespan when it starts, in alphabetical
+module order, and exits them in reverse when it stops. Modules share objects through `app.state`.
+Since the order is alphabetical, don't read another module's `app.state` entry during startup. Look
+it up when you use it. `simile headless` runs the same hooks without HTTP.
+
+Work that needs every module set up, like the sim's tick loop, goes in a `running(app)` async
+context manager in the same file. The server enters every module's `running` after all the
+lifespans have started, and exits them before any lifespan exits. A module can define either hook
+or both.
+
+To tick on the sim loop or hear its events, register in your lifespan. The loop starts only once
+every module is up. [`server/simile/sim/README.md`](server/simile/sim/README.md) has the details.
 
 ```python
-import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -111,12 +118,15 @@ from starlette.applications import Starlette
 
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
-    from simile.sim.clock import Clock
+    from simile.sim import EntityMoved, world_of
 
-    app.state.clock = Clock()
-    task = asyncio.create_task(app.state.clock.run())
+    world = world_of(app)
+    movement = Movement(world)
+    unregister = world.loop.register(movement)
+    unsubscribe = world.bus.subscribe(EntityMoved, movement.on_moved)
     yield
-    task.cancel()
+    unsubscribe()
+    unregister()
 ```
 
 **Dependencies.** Any task may add its own: `cd server && uv add <pkg>` (or `uv add --dev <pkg>`),
