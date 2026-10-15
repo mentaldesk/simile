@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -20,7 +20,7 @@ from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
 from simile.protocol.messages import client_messages, server_messages
 
-SNAPSHOT = fixture_snapshot()
+SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
 
 SERVER = [
@@ -67,7 +67,9 @@ def test_messages_carry_their_type() -> None:
 
 
 def test_timestamps_are_utc() -> None:
-    assert json.loads(SNAPSHOT.model_dump_json())["time"] == "2026-03-14T09:10:03Z"
+    sydney = datetime(2026, 3, 14, 20, 10, 3, tzinfo=timezone(timedelta(hours=11)))
+
+    assert json.loads(fixture_snapshot(sydney).model_dump_json())["time"] == "2026-03-14T09:10:03Z"
 
 
 @pytest.mark.parametrize(

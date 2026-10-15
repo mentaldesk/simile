@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import cache
 from pathlib import Path
 
@@ -15,8 +16,7 @@ def standing_at(location: Location) -> Position:
 
 
 @cache
-def fixture_snapshot() -> SnapshotMessage:
-    """F2's example world, until the sim has a real one: NPCs at home, the player in the square."""
+def fixture_world() -> tuple[list[Entity], list[Conversation]]:
     locations = {
         location.id: location
         for location in TypeAdapter(list[Location]).validate_json(
@@ -44,9 +44,10 @@ def fixture_snapshot() -> SnapshotMessage:
             position=standing_at(locations["square"]),
         )
     )
-    return SnapshotMessage(
-        time=max(line.timestamp for c in conversations for line in c.lines),
-        map_id=MAP_ID,
-        entities=entities,
-        conversations=[c for c in conversations if c.ended is None],
-    )
+    return entities, [c for c in conversations if c.ended is None]
+
+
+def fixture_snapshot(time: datetime) -> SnapshotMessage:
+    """F2's example world, until the sim has a real one: NPCs at home, the player in the square."""
+    entities, conversations = fixture_world()
+    return SnapshotMessage(time=time, map_id=MAP_ID, entities=entities, conversations=conversations)

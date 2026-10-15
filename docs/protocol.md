@@ -38,7 +38,7 @@ client replaces whatever it had.
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one
-conversation that hasn't ended.
+conversation that hasn't ended. Its `time` is the sim clock's.
 
 ### `entity_moved`
 
@@ -100,6 +100,19 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 
 `text` (not empty) and `target`, the id of the NPC the player is talking to.
 
+## Sim events
+
+`server/simile/protocol/lifespan.py` forwards the sim's bus events to every client:
+
+| Sim event | Message |
+|---|---|
+| `EntityMoved` | `entity_moved` |
+| `ConversationStarted` | `conversation_started` |
+| `LineSpoken` | `line`, with `voiced` `false` until earshot voicing (I1) exists |
+| `ConversationEnded` | `conversation_ended`, with the clock's time if the conversation's `ended` isn't set |
+
+So most modules publish on the bus rather than calling the hub.
+
 ## Using it on the server
 
 `hub_of(app)` returns the `Hub` for the running server, creating it on first use, so any module can
@@ -112,7 +125,7 @@ hub = hub_of(app)
 hub.broadcast(EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)))
 hub.broadcast(audio_chunk)  # an AudioChunk goes out as a binary frame
 unsubscribe = hub.subscribe(PlayerSayMessage, on_player_say)
-hub.snapshot = world_snapshot  # a function returning a SnapshotMessage; the fixtures by default
+hub.snapshot = world_snapshot  # returns a SnapshotMessage; the fixtures at sim time by default
 ```
 
 - `broadcast` queues the message for every connected client and returns at once, so it's safe to
@@ -136,9 +149,12 @@ server.send({ type: 'player_move', position: { x: 14, y: 12.5 } });
 
 - `server.on(type, handler)` takes any server message `type` or `'audio_chunk'`, types the handler's
   argument to match, and returns a function that unsubscribes.
-- `server` connects when `client/src/net/` loads, at startup. Messages aren't replayed, so subscribe
-  when your module loads. A scene that starts later should read state that a module-level
-  subscriber keeps.
+- `server` connects to `/ws` on the page's origin when `client/src/net/` loads, at startup.
+  Messages aren't replayed, so subscribe when your module loads. A scene that starts later should
+  read state that a module-level subscriber keeps.
+- Under vitest it doesn't connect, so tests can import it. `server.dispatch(text)` or
+  `server.dispatch(arrayBuffer)` handles a frame as if the server had sent it, which also suits dev
+  harnesses, and `vi.spyOn(server, 'send')` sees what a module sends.
 - After a disconnection it reconnects with backoff (250 ms, doubling, at most 5 s), and the server
   sends a fresh `snapshot`.
 - `send` returns `false` and drops the message while disconnected.

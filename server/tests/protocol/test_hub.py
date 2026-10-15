@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Iterator
+from datetime import UTC, datetime
 
 import pytest
 from starlette.applications import Starlette
@@ -13,16 +14,21 @@ from simile.protocol import (
     PlayerMoveMessage,
     PlayerSayMessage,
     Position,
+    SnapshotMessage,
     hub_of,
 )
 from simile.protocol.fixtures import fixture_snapshot
+from simile.sim import Clock, World, world_of
 
 MOVED = EntityMovedMessage(entity_id="viktor", position=Position(x=11, y=7.5))
+START = datetime(2026, 3, 14, 9, tzinfo=UTC)
 
 
 @pytest.fixture
 def app() -> Starlette:
-    return create_app()
+    app = create_app()
+    app.state.world = World(Clock(START))
+    return app
 
 
 @pytest.fixture
@@ -36,13 +42,18 @@ def hub(app: Starlette) -> Hub:
     return hub_of(app)
 
 
-def test_sends_the_fixture_snapshot_on_connect(client: TestClient) -> None:
+def test_sends_the_fixture_snapshot_at_sim_time_on_connect(
+    app: Starlette, client: TestClient
+) -> None:
     with client.websocket_connect("/ws") as ws:
-        assert ws.receive_json() == fixture_snapshot().model_dump(mode="json")
+        snapshot = SnapshotMessage.model_validate(ws.receive_json())
+
+    assert START <= snapshot.time <= world_of(app).clock.now
+    assert snapshot.model_copy(update={"time": START}) == fixture_snapshot(START)
 
 
 def test_sends_the_snapshot_from_the_current_source(client: TestClient, hub: Hub) -> None:
-    hub.snapshot = lambda: fixture_snapshot().model_copy(update={"map_id": "elsewhere"})
+    hub.snapshot = lambda: fixture_snapshot(START).model_copy(update={"map_id": "elsewhere"})
 
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["map_id"] == "elsewhere"

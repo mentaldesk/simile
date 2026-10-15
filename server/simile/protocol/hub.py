@@ -11,6 +11,7 @@ from starlette.websockets import WebSocket
 from simile.protocol.audio import AudioChunk
 from simile.protocol.fixtures import fixture_snapshot
 from simile.protocol.messages import ServerMessage, SnapshotMessage, client_messages
+from simile.sim import world_of
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class Connection:
 class Hub:
     """Every connected client. Call it from the event loop."""
 
-    def __init__(self) -> None:
-        self.snapshot: Callable[[], SnapshotMessage] = fixture_snapshot
+    def __init__(self, snapshot: Callable[[], SnapshotMessage]) -> None:
+        self.snapshot = snapshot
         self.connections: set[Connection] = set()
         self._subscribers: list[tuple[type[BaseModel], Callable[[Any], None]]] = []
 
@@ -102,5 +103,5 @@ class Hub:
 
 def hub_of(app: Starlette) -> Hub:
     if not hasattr(app.state, "hub"):
-        app.state.hub = Hub()
+        app.state.hub = Hub(lambda: fixture_snapshot(world_of(app).clock.now))
     return app.state.hub

@@ -79,6 +79,24 @@ describe('ServerConnection', () => {
     expect(latest().binaryType).toBe('arraybuffer');
   });
 
+  it.each([
+    ['http://localhost:5173/', 'ws://localhost:5173/ws'],
+    ['https://simile.test/play?debug', 'wss://simile.test/ws'],
+  ])('connects to /ws on the origin of %s by default', (page, expected) => {
+    vi.stubGlobal('window', { location: new URL(page) });
+    const urls: string[] = [];
+    const sameOrigin = new ServerConnection(undefined, (url) => {
+      urls.push(url);
+      return new FakeSocket(url);
+    });
+
+    sameOrigin.connect();
+    sameOrigin.close();
+    vi.unstubAllGlobals();
+
+    expect(urls).toEqual([expected]);
+  });
+
   it('delivers each message to the handlers for its type', () => {
     const snapshots: SnapshotMessage[] = [];
     const moves: EntityMovedMessage[] = [];
@@ -103,6 +121,15 @@ describe('ServerConnection', () => {
     latest().deliver(encodeAudioChunk(chunk));
 
     expect(received).toHaveBeenCalledWith(chunk);
+  });
+
+  it('handles frames passed to dispatch as if the server sent them', () => {
+    const received = vi.fn();
+    connection.on('entity_moved', received);
+
+    connection.dispatch(JSON.stringify(moved));
+
+    expect(received).toHaveBeenCalledWith(moved);
   });
 
   it('stops delivering after unsubscribe', () => {
