@@ -21,12 +21,15 @@ class ReflectionConfig(BaseModel):
     transcript_lines: int = Field(
         default=60, ge=1, description="Latest lines of a conversation in the prompt."
     )
-    events: int = Field(
-        default=4, ge=0, description="Most events kept per participant per conversation."
+    events: int = Field(default=4, ge=0, description="Most events kept per NPC per conversation.")
+    max_magnitude: float = Field(
+        default=1.0,
+        gt=0,
+        le=1,
+        description="Most that one NPC's events about another can weigh in a conversation, "
+        "however many there are: a total magnitude above it is scaled down to it.",
     )
-    flags: int = Field(
-        default=3, ge=0, description="Most flags opened per participant per conversation."
-    )
+    flags: int = Field(default=3, ge=0, description="Most flags opened per NPC per conversation.")
     topics: int = Field(default=3, ge=0, description="Most topics kept per memory.")
     player_name: str = Field(
         default="Visitor", min_length=1, description="What the player is called in the prompt."

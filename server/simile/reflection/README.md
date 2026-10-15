@@ -7,7 +7,8 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
 
 - **When.** The bus handler only starts an asyncio task, so the tick never waits. Conversations
   with no lines, or with no NPC in them, are skipped. Tasks still running at shutdown are
-  cancelled and their conversations are lost.
+  cancelled and their conversations are lost; to process one at shutdown, await
+  `reflector.reflect(llm, conversation)` directly.
 - **The call.** One L1 `structured()` call per conversation, with Haiku, `purpose="reflection"`
   and priority -1, so it queues behind dialogue. The prompt has each NPC's persona, strongest and
   weakest values, interests, how they felt about the others going in (R1's `as_of`, or `meet` for
@@ -17,12 +18,15 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
   and magnitude), `flags_opened` and `flags_resolved` (by ref). People can be named by id,
   transcript name or full name; anything naming someone outside the conversation is dropped.
 - **Applying it.** After the reply, each NPC's relationships are read again from R2 (another
-  reflection may have changed them meanwhile), decayed with `as_of` to when the conversation
-  ended, then moved by `apply_event` for each event, at most `events` per NPC. A conversation with
-  no events between two people still counts once as contact, which grows familiarity and nothing
-  else. New flags go on their owner's relationship with `open_flag`, at most `flags` per NPC, and
-  refs are resolved with `resolve_flag` unless they were resolved meanwhile. Each summary becomes
-  a `conversation` memory about the others. Everything is stored with one R2 `add`.
+  reflection may have changed them meanwhile) and decayed with `as_of` to when the conversation
+  ended. Each NPC's first `events` valid events then go through `apply_event`. If their events
+  about one person add up to more than `max_magnitude` (1), they're scaled down to it, so a
+  conversation moves a pair at most as far as one full-strength event however many events the
+  model lists. The events apply at the familiarity the pair had going in, and familiarity grows
+  once per conversation, events or not. New flags go on their owner's relationship with
+  `open_flag`, at most `flags` per NPC. An NPC resolves only their own flags, with
+  `resolve_flag`, and not ones resolved meanwhile. Each summary becomes a `conversation` memory
+  about the others. Everything is stored with one R2 `add`.
 - **Failures.** A reply that doesn't match the schema after L1's retry (always, under
   `SIMILE_LLM=fake`) logs one warning and changes nothing. So does an `LLMError`.
 

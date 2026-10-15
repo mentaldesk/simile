@@ -2,6 +2,8 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import pytest
+
 from simile.memory import MemoryStore
 from simile.reflection import DEFAULT_CONFIG, Deed, Extraction, NewFlag, Reflection, gather, outcome
 from simile.schema import (
@@ -208,6 +210,18 @@ def test_ignores_a_flag_resolved_while_the_llm_was_busy(
     assert result.after[("ben", "ana")].flags[0].resolved == earlier
 
 
+def test_only_a_flags_owner_resolves_it(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    store.add(meet(npcs["ben"], "ana"), promise("ben", "ana"))
+    context = gather(talk(("ana", "Your fence is done.")), npcs, store)
+    extraction = Extraction(reflections=[reflection("ana", flags_resolved=["F1"])])
+
+    result = outcome(context, extraction, store)
+
+    assert result.after[("ben", "ana")].flags[0].resolved is None
+
+
 def test_drops_what_doesnt_fit_the_conversation(
     npcs: dict[str, Npc], store: MemoryStore, talk: Talk
 ) -> None:
@@ -235,22 +249,64 @@ def test_drops_what_doesnt_fit_the_conversation(
     assert [m.content for m in result.memories] == ["Ana Ferreira chatted."]
 
 
-def test_keeps_at_most_the_configured_events_and_flags(
+def test_keeps_at_most_the_configured_events_and_flags_that_fit(
     npcs: dict[str, Npc], store: MemoryStore, talk: Talk
 ) -> None:
     config = DEFAULT_CONFIG.model_copy(update={"events": 2, "flags": 1})
     context = gather(talk(("ana", "Hi.")), npcs, store, config)
     flags = [
-        NewFlag(kind=FlagKind.SECRET, about="ben", description=f"secret {n}") for n in range(3)
+        NewFlag(kind=FlagKind.SECRET, about="cal", description="a stranger's secret"),
+        *(NewFlag(kind=FlagKind.SECRET, about="ben", description=f"secret {n}") for n in range(3)),
     ]
-    extraction = Extraction(
-        reflections=[reflection("ana", events=[deed("ben")] * 3, flags_opened=flags)]
-    )
+    deeds = [deed("cal"), deed("ana"), *(deed("ben", action=f"deed {n}") for n in range(3))]
+    extraction = Extraction(reflections=[reflection("ana", events=deeds, flags_opened=flags)])
 
     result = outcome(context, extraction, store, config)
 
-    assert len(result.events) == 2
+    assert [e.action for e in result.events] == ["deed 0", "deed 1"]
     assert [f.description for f in result.after[("ana", "ben")].flags] == ["secret 0"]
+
+
+def test_several_deeds_move_like_no_further_than_one_full_strength_deed(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    context = gather(talk(("ben", "Out of my way.")), npcs, store)
+
+    def snubbed(*deeds: Deed) -> tuple[float, list[InteractionEvent]]:
+        result = outcome(context, Extraction(reflections=[reflection("ana", events=deeds)]), store)
+        return result.after[("ana", "ben")].like, result.events
+
+    full, _ = snubbed(deed("ben", valence=-1, magnitude=1))
+    several, events = snubbed(*[deed("ben", valence=-1, magnitude=0.8)] * 4)
+
+    assert several == pytest.approx(full)
+    assert sum(event.magnitude for event in events) == pytest.approx(1)
+
+
+def test_splitting_a_deed_in_two_changes_nothing(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    context = gather(talk(("ben", "Out of my way.")), npcs, store)
+
+    def snubbed(*deeds: Deed) -> float:
+        result = outcome(context, Extraction(reflections=[reflection("ana", events=deeds)]), store)
+        return result.after[("ana", "ben")].like
+
+    once = snubbed(deed("ben", valence=-0.6, magnitude=0.6))
+
+    assert snubbed(*[deed("ben", valence=-0.6, magnitude=0.3)] * 2) == pytest.approx(once)
+    assert once < meet(npcs["ana"], "ben").like
+
+
+def test_familiarity_grows_once_per_conversation(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    context = gather(talk(("ana", "Hi.")), npcs, store)
+    extraction = Extraction(reflections=[reflection("ana", events=[deed("ben")] * 4)])
+
+    result = outcome(context, extraction, store)
+
+    assert result.after[("ana", "ben")].familiarity == RELATIONSHIPS.familiarity_gain
 
 
 def test_each_npc_remembers_the_conversation_in_their_own_words(

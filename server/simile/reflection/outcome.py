@@ -4,6 +4,7 @@ from simile.memory import Record
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.reflection.extraction import (
     Context,
+    Deed,
     Extraction,
     Reflection,
     Relationships,
@@ -52,35 +53,21 @@ def outcome(
     opened = 0
     for npc in context.npcs:
         reflection = reflections.get(npc)
-        moved: set[Id] = set()
-        for deed in reflection.events[: config.events] if reflection else []:
-            actor = context.who(deed.by)
-            if actor is None or actor == npc or not deed.action.strip():
-                continue
-            event = InteractionEvent(
-                actor=actor,
-                target=npc,
-                action=deed.action.strip(),
-                aspects=list(dict.fromkeys(deed.aspects)),
-                valence=deed.valence,
-                magnitude=deed.magnitude,
-                timestamp=now,
-                conversation_id=conversation.id,
-            )
-            result.after[(npc, actor)] = apply_event(result.after[(npc, actor)], event, now)
-            result.events.append(event)
-            moved.add(actor)
+        deeds = _deeds(npc, reflection, context)[: config.events]
         for other in context.others(npc):
-            if other not in moved:
-                result.after[(npc, other)] = apply_event(
-                    result.after[(npc, other)], _contact(other, npc, context), now
-                )
+            events = _events(
+                npc, other, [deed for by, deed in deeds if by == other], context, config
+            )
+            result.after[(npc, other)] = _feel(result.after[(npc, other)], events, context)
+            result.events += events
         if reflection is None:
             continue
-        for new in reflection.flags_opened[: config.flags]:
-            about = context.who(new.about)
-            if about is None or about == npc or not new.description.strip():
-                continue
+        flags = [
+            (about, new)
+            for new in reflection.flags_opened
+            if (about := context.who(new.about)) not in (None, npc) and new.description.strip()
+        ]
+        for about, new in flags[: config.flags]:
             opened += 1
             flag = Flag(
                 id=f"{conversation.id}/{opened}",
@@ -94,10 +81,10 @@ def outcome(
         if reflection.summary.strip():
             result.memories.append(_memory(npc, reflection, context, config))
 
-    for reflection in reflections.values():
+    for npc, reflection in reflections.items():
         for ref in reflection.flags_resolved:
             flag = context.flags.get(ref.strip().upper())
-            if flag is None:
+            if flag is None or flag.owner != npc:
                 continue
             key = (flag.owner, flag.about)
             if any(f.id == flag.id and f.resolved is None for f in result.after[key].flags):
@@ -105,11 +92,43 @@ def outcome(
     return result
 
 
-def _contact(actor: Id, target: Id, context: Context) -> InteractionEvent:
-    """A conversation with no event worth noting still counts as contact, for familiarity."""
-    return InteractionEvent(
-        actor=actor,
-        target=target,
+def _deeds(npc: Id, reflection: Reflection | None, context: Context) -> list[tuple[Id, Deed]]:
+    return [
+        (by, deed)
+        for deed in (reflection.events if reflection else [])
+        if (by := context.who(deed.by)) not in (None, npc) and deed.action.strip()
+    ]
+
+
+def _events(
+    npc: Id, actor: Id, deeds: list[Deed], context: Context, config: ReflectionConfig
+) -> list[InteractionEvent]:
+    """Scaled so that however many there are, they weigh no more than `max_magnitude`."""
+    total = sum(deed.magnitude for deed in deeds)
+    scale = min(1.0, config.max_magnitude / total) if total else 1.0
+    return [
+        InteractionEvent(
+            actor=actor,
+            target=npc,
+            action=deed.action.strip(),
+            aspects=list(dict.fromkeys(deed.aspects)),
+            valence=deed.valence,
+            magnitude=deed.magnitude * scale,
+            timestamp=context.now,
+            conversation_id=context.conversation.id,
+        )
+        for deed in deeds
+    ]
+
+
+def _feel(rel: Relationship, events: list[InteractionEvent], context: Context) -> Relationship:
+    """Events apply at the pair's familiarity going in, which then grows once."""
+    familiarity = rel.familiarity
+    for event in events:
+        rel = apply_event(rel, event, context.now).model_copy(update={"familiarity": familiarity})
+    contact = InteractionEvent(
+        actor=rel.about,
+        target=rel.owner,
         action="talked",
         aspects=[],
         valence=0,
@@ -117,6 +136,7 @@ def _contact(actor: Id, target: Id, context: Context) -> InteractionEvent:
         timestamp=context.now,
         conversation_id=context.conversation.id,
     )
+    return apply_event(rel, contact, context.now)
 
 
 def _memory(npc: Id, reflection: Reflection, context: Context, config: ReflectionConfig) -> Memory:
