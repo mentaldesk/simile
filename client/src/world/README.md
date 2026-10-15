@@ -5,7 +5,7 @@ every character atlas, then starts `WorldScene`, which draws the map and the cha
 the player. Everything here in `world/` is Phaser-free and tested under vitest.
 
 Run it with `make dev` and open http://localhost:5173. The residents go about their day (B1's
-`simile.behaviour`).
+`simile.behaviour`); at 1x the first ones leave home a few minutes after the server starts.
 
 Arrow keys or WASD move the player.
 
