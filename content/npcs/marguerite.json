@@ -1,0 +1,61 @@
+{
+  "id": "marguerite",
+  "name": "Marguerite Okonkwo-Hale",
+  "age": 52,
+  "occupation": "Patent Research Consultant",
+  "home": "house_1",
+  "values": {
+    "freedom": 0.54,
+    "independence": 0.78,
+    "self_respect": 0.74,
+    "self_actualization": 0.48,
+    "creativity": 0.41,
+    "honesty": 0.37,
+    "compassion": 0.27,
+    "loyalty": 0.18,
+    "justice": 0.26,
+    "responsibility": 0.57,
+    "security": 0.34,
+    "equality": 0.21,
+    "tradition": 0.55,
+    "obedience": 0.15,
+    "success": 0.85,
+    "ambition": 0.58,
+    "discipline": 0.42,
+    "knowledge": 0.79,
+    "open_mindedness": 0.69,
+    "peace_of_mind": 0.15,
+    "pleasure": 0.56,
+    "connection": 0.2,
+    "adventure": 0.51,
+    "optimism": 0.39
+  },
+  "backstory": "Raised in Lagos and Leeds by a mother who ran a failing import business and swore her daughter would never depend on anyone, she studied chemistry, then law, and built a name by finding what other firms missed. She moved to the village after a lucrative exit from a London practice because the maker space and fast fibre let her work alone, on her own terms, for clients worldwide.",
+  "persona": "A sharp, self-assured consultant who measures each day by what she has learned and won. She will happily hear out a strange idea from anyone and argue it properly, but she forgets birthdays, brushes off sentiment, and treats rules, small talk and worrying as a waste of her time.",
+  "speaking_style": "Brisk and precise, with a dry edge. She explains things in full sentences, uses exact terms, and corrects loose claims without apology, though she will say 'go on, convince me' when she hears something new.",
+  "interests": [
+    "patent law and odd inventions",
+    "the maker space's latest builds",
+    "chess endgames",
+    "emerging battery chemistry",
+    "negotiation tactics",
+    "long solo walks along the river"
+  ],
+  "appearance": {
+    "skin": "#733e39",
+    "hair_style": "short",
+    "hair_colour": "#181425",
+    "top_colour": "#262b44",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A woman in her early fifties. Low-to-mid pitch, smooth slightly husky timbre, with a faint British-West African lilt. Brisk, well-articulated pace, composed and confident, with a dry, matter-of-fact manner.",
+    "reference_line": "I read the filing twice this morning, and the third claim is the only one that matters. The rest is padding.",
+    "reference_clip": null
+  }
+}

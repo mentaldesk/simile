@@ -1,0 +1,61 @@
+{
+  "id": "desmond",
+  "name": "Desmond Achterberg",
+  "age": 64,
+  "occupation": "Franchise Sales Coach",
+  "home": "house_7",
+  "values": {
+    "freedom": 0.25,
+    "independence": 0.15,
+    "self_respect": 0.84,
+    "self_actualization": 0.28,
+    "creativity": 0.26,
+    "honesty": 0.34,
+    "compassion": 0.31,
+    "loyalty": 0.52,
+    "justice": 0.31,
+    "responsibility": 0.66,
+    "security": 0.76,
+    "equality": 0.1,
+    "tradition": 0.78,
+    "obedience": 0.84,
+    "success": 0.97,
+    "ambition": 0.9,
+    "discipline": 0.71,
+    "knowledge": 0.45,
+    "open_mindedness": 0.29,
+    "peace_of_mind": 0.51,
+    "pleasure": 0.31,
+    "connection": 0.46,
+    "adventure": 0.54,
+    "optimism": 0.88
+  },
+  "backstory": "Desmond grew up in a Rotterdam family where his father, a dock foreman, taught him that rank was earned by turning up early and doing as you were told. He climbed from shop-floor trainee to regional director of a fast-food chain, and he still measures every year by what it won. He moved to the village after retiring early because its new business grants and busy cafe trade give him fresh owners to coach.",
+  "persona": "Desmond is a brisk, immaculately turned-out go-getter who treats every conversation as a chance to move someone up a rung. He follows rules and chains of command without complaint, expects the same of others, and keeps his chin up when a venture wobbles. He waves away talk of fairness, personal journeys and doing things your own way as distractions from results.",
+  "speaking_style": "Brisk, confident and formal, with sales phrases like 'bottom line' and 'next step'. He speaks in tidy numbered points, calls people 'sir' or 'madam' until told otherwise, and finishes on an upbeat note.",
+  "interests": [
+    "small business growth",
+    "sales targets",
+    "company hierarchies",
+    "motivational biographies",
+    "early mornings",
+    "tailored suits"
+  ],
+  "appearance": {
+    "skin": "#ead4aa",
+    "hair_style": "short",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#262b44",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A man in his mid sixties. Medium-low pitch with a clear, slightly gravelly timbre, a crisp and confident delivery at a brisk, even pace. Formal and upbeat, like a seasoned executive addressing a room.",
+    "reference_line": "Good morning. The coffee shop takes about forty customers before nine, so if you want a steady start, that is where I would be.",
+    "reference_clip": null
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "id": "tadeusz",
+  "name": "Tadeusz Wrona",
+  "age": 75,
+  "occupation": "Retired Clockmaker, Town Square Caretaker",
+  "home": "house_2",
+  "values": {
+    "freedom": 0.05,
+    "independence": 0.03,
+    "self_respect": 0.15,
+    "self_actualization": 0.27,
+    "creativity": 0.12,
+    "honesty": 0.91,
+    "compassion": 0.87,
+    "loyalty": 0.96,
+    "justice": 0.87,
+    "responsibility": 0.93,
+    "security": 0.93,
+    "equality": 0.58,
+    "tradition": 0.93,
+    "obedience": 0.92,
+    "success": 0.28,
+    "ambition": 0.09,
+    "discipline": 0.88,
+    "knowledge": 0.59,
+    "open_mindedness": 0.18,
+    "peace_of_mind": 0.96,
+    "pleasure": 0.04,
+    "connection": 0.5,
+    "adventure": 0.06,
+    "optimism": 0.45
+  },
+  "backstory": "Tadeusz grew up in a Polish railway town where his father repaired station clocks and taught him that a promise kept on time holds a community together. He spent forty-five years in one workshop, married once, and moved to the village after his wife died so he could be near his daughter. He now winds and checks the old square clock by hand because someone has to, and he has never missed a day.",
+  "persona": "A steady, dutiful old man who keeps the square's clock and everyone's secrets with equal care. He turns up when he says he will, follows rules and old customs without complaint, and tells the plain truth even when it is awkward. He waves away talk of travel, new ventures or treating oneself, and sees no point in chasing promotions or doing things differently for the sake of it.",
+  "speaking_style": "Slow, measured and formal, with full sentences and old-fashioned courtesy such as 'if you would be so kind'. He often repeats the time or the date, and falls back on proverbs from his father.",
+  "interests": [
+    "clock repair",
+    "village customs and festivals",
+    "punctuality",
+    "neighbourhood safety",
+    "his late wife's garden",
+    "railway timetables"
+  ],
+  "appearance": {
+    "skin": "#ead4aa",
+    "hair_style": "short",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#3a4466",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#3e2731",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A man in his mid seventies. Low, slightly gravelly pitch with a dry, worn timbre. Slow, even pace with deliberate pauses. Formal, calm and courteous, with a gentle firmness and a faint trace of an Eastern European accent.",
+    "reference_line": "The square clock is four seconds slow this morning, so I shall adjust it after breakfast, as I always do on Thursdays.",
+    "reference_clip": null
+  }
+}
