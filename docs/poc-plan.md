@@ -9,15 +9,17 @@ Goal: a playable slice of the village described in the [README](../README.md). T
 │ Client       │ ◀───────────────────────────────▶ │ Sim server (Python)              │
 │ render, input│                                   │  world clock + tick loop         │
 │ dialogue UI  │                                   │  NPC behaviour / pathfinding     │
-│ spatial audio│                                   │  conversation engine ──▶ LLM     │
+│ spatial audio│                                   │  conversation engine ──▶ Claude  │
 └──────────────┘                                   │  relationships + memory (SQLite) │
                                                    │  news ingest                     │
                                                    │  TTS worker (MLX, from voice-lab)│
                                                    └──────────────────────────────────┘
 ```
 
+"Claude" here is the local Claude Code install, running on the user's subscription. There are no API calls.
+
 - **The server is authoritative.** The whole simulation runs headless, so it can be tested and run fast-forward without the client. The client is a view: it renders state, sends player input, and plays audio.
-- **Python on the server** because the TTS is already Python/MLX and the LLM SDKs are first-class there.
+- **Python on the server** because the TTS is already Python/MLX and the Claude Agent SDK, which drives the local Claude Code CLI, has a Python package.
 - **Contracts first.** The data schemas and the client↔server protocol are fixed before the parallel work starts, so subagents can build against them without talking to each other.
 
 ## Decisions
@@ -25,7 +27,7 @@ Goal: a playable slice of the village described in the [README](../README.md). T
 | Decision | Choice | Why |
 |---|---|---|
 | Client engine | **Phaser 3 + TypeScript** in the browser (Vite) | Loads Tiled maps directly, Web Audio's `PannerNode` gives distance/pan audio for free, fast reload loop. Godot would be the stronger choice if this grows past a POC. |
-| LLM | **Claude API** behind a pluggable interface | A local LLM would compete with TTS for the same GPU. Use a small model (Haiku) for NPC↔NPC chatter and summarisation; cap concurrent conversations to bound cost. |
+| LLM | **Local Claude Code on the user's subscription**, behind a pluggable interface | The Claude API would be too expensive for always-on NPC chatter, and a local model would compete with TTS for the same GPU. Calls go through the Claude Agent SDK (or `claude -p`) with tools disabled and no API key in the environment. The budget is the subscription's usage limits rather than money, so concurrent conversations are capped. Use Haiku for NPC↔NPC chatter and summarisation. |
 | Art | **CC0 placeholder packs** (Kenney etc.) | Swap later; nothing depends on it. |
 
 ## Phases
@@ -56,7 +58,7 @@ Each track owns its own directory, so agents can't collide.
 | N2 | NPCs | Batch voice design: a reference clip per generated NPC (from `voice-lab/design_then_clone.py`) | N1 |
 | R1 | Social | Relationship model: like/trust/respect/familiarity, familiarity dampening, 2–3× negativity bias, decay toward a personality baseline, persistent flags (debts, grudges, broken promises). Pure functions, heavily unit-tested | F2 |
 | R2 | Social | Memory store: per-pair event log, conversation summaries, retrieval ranked by recency × salience, in SQLite | F2 |
-| L1 | LLM | LLM client: streaming, provider-pluggable, prompt templates, structured-output helper, token/latency/cost logging, a fake provider for tests | F1 |
+| L1 | LLM | LLM client over local Claude Code (Agent SDK, subscription login, no tools, own system prompt): streaming, structured-output helper, concurrency cap, latency/usage logging, a fake provider for tests. Measures cold-start and time-to-first-token early, since both drive player-reply latency | F1 |
 | V1 | Voice | TTS service from `clone_mlx.py`: load model once, cache each NPC's processed reference, sentence in → streamed audio chunks out, priority queue with a concurrency cap | F2 |
 | X1 | News | RSS ingest of the Big Think feed, dedupe, store as `NewsItem`s, refresh on an interval | F2 |
 
@@ -77,13 +79,13 @@ Each track owns its own directory, so agents can't collide.
 | I1 | Earshot voicing: split the LLM stream into sentences, send to V1 only for conversations within earshot, start/stop as the player moves | B2, B5, V1, C3 |
 | I2 | Debug overlay: per-NPC current goal, top values, relationship table, recent memories, live conversation transcripts. Essential for tuning a simulation | B3, C1 |
 | I3 | Save/load world state (relationships, memories, flags, positions, clock) | B3 |
-| I4 | Performance pass: latency budget for player replies, concurrent conversation cap, LLM spend per sim-hour | I1 |
+| I4 | Performance pass: latency budget for player replies, concurrent conversation cap, subscription usage per sim-hour | I1 |
 
 ### Phase 4: Tuning and demo
 
 | ID | Task | Depends on |
 |---|---|---|
-| D1 | Headless soak test: run the village at 10x for a sim-day, report relationship drift, conversation counts, repeated topics, cost | I3 |
+| D1 | Headless soak test: run the village at 10x for a sim-day, report relationship drift, conversation counts, repeated topics, LLM usage | I3 |
 | D2 | Tuning pass on values → behaviour weights and relationship constants, using D1's report | D1 |
 | D3 | Scripted demo scenario (e.g. a news story that splits the village) and a short recording | D2, I1 |
 
@@ -115,9 +117,24 @@ graph LR
 
 The critical path is F1 → F2 → R1/N1 → B1 → B2 → B5 → I1. The client, voice and news tracks have slack and can absorb extra agents.
 
+## Risks
+
+- **Subscription usage limits.** Ten NPCs talking continuously is a lot of calls. L1 logs usage from day one, and I4 sets a conversation cap that keeps a sim-hour within limits.
+- **Player-reply latency.** Each Claude Code call has process and session overhead on top of model latency. L1 measures it first; if it's too slow, keep a warm session per active conversation.
+
+## Layout
+
+```
+server/simile/   schema/ protocol/ sim/ world/ npc/ social/ memory/ llm/ voice/ news/
+                 behaviour/ conversation/ reflection/ voicing/ persistence/ debug/
+client/src/      net/ scenes/ world/ ui/ audio/ debug/
+content/         map/ npcs/ voices/
+voice-lab/       the voice prototype; N2 extends it for batch voice design
+```
+
 ## Tracking and assigning tasks
 
-Each task above becomes one issue (GitHub Issues or Linear) and one PR. An issue carries:
+Each task above is one issue in [mentaldesk/simile](https://github.com/mentaldesk/simile/issues) and one PR. Dependencies are recorded as GitHub "blocked by" relationships, and all tasks are sub-issues of one tracking issue. An issue carries:
 
 - **ID and title**, e.g. `R1: Relationship model`.
 - **Depends on**: the IDs above. An issue is ready when all of them are merged.
