@@ -10,16 +10,14 @@ from simile.llm.provider import Request, Usage
 if TYPE_CHECKING:
     from pydantic import BaseModel
 
-type Reply = str | BaseModel | BaseException | Callable[[Request], str | Awaitable[str]]
+type Step = str | asyncio.Event | BaseException
+type Reply = (
+    str | BaseModel | BaseException | list[Step] | Callable[[Request], str | Awaitable[str]]
+)
 
 
 class FakeProvider:
-    """Scripted replies for tests, streamed a word at a time.
-
-    Each call takes the next reply: a string, a pydantic model (sent as its JSON), an exception to
-    raise, or a function of the request that returns a string, sync or async. When the script
-    runs out, `default` is used, and without one the call fails.
-    """
+    """Scripted replies for tests. The README lists what a reply can be."""
 
     name = "fake"
 
@@ -30,27 +28,37 @@ class FakeProvider:
 
     async def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
         self.requests.append(request)
-        text = await self._next_reply(request)
-        for chunk in re.findall(r"\s*\S+\s*", text) or [text]:
+        text = ""
+        for step in await self._next_steps(request):
+            if isinstance(step, BaseException):
+                raise step
+            if isinstance(step, asyncio.Event):
+                await step.wait()
+                continue
             await asyncio.sleep(0)
-            yield chunk
+            text += step
+            yield step
         yield Usage(
             input_tokens=sum(len(m.content.split()) for m in request.messages),
             output_tokens=len(text.split()),
             model=f"fake-{request.model}",
         )
 
-    async def _next_reply(self, request: Request) -> str:
+    async def _next_steps(self, request: Request) -> list[Step]:
         if self.replies:
             reply = self.replies.popleft()
         elif self.default is not None:
             reply = self.default
         else:
             raise AssertionError(f"FakeProvider has no reply left for {request.messages[-1]}")
-        if isinstance(reply, BaseException):
-            raise reply
         if callable(reply):
             reply = reply(request)
             if inspect.isawaitable(reply):
                 reply = await reply
-        return reply if isinstance(reply, str) else reply.model_dump_json()
+        if isinstance(reply, str):
+            return re.findall(r"\s*\S+\s*", reply) or [reply]
+        if isinstance(reply, list):
+            return reply
+        if isinstance(reply, BaseException):
+            return [reply]
+        return [reply.model_dump_json()]

@@ -1,14 +1,16 @@
 import logging
 import os
 import tempfile
-from collections.abc import AsyncGenerator, AsyncIterator, Sequence
-from contextlib import aclosing
+from collections.abc import AsyncGenerator, AsyncIterator, Iterator, Sequence
+from contextlib import aclosing, asynccontextmanager, contextmanager, suppress
 from pathlib import Path
 from typing import Any
 
+import anyio
 from claude_agent_sdk import (
     ClaudeAgentOptions,
     ClaudeSDKClient,
+    ClaudeSDKError,
     RateLimitEvent,
     ResultMessage,
     StreamEvent,
@@ -16,7 +18,7 @@ from claude_agent_sdk import (
 )
 from claude_agent_sdk import Message as SDKMessage
 
-from simile.llm.provider import LLMError, Message, Request, Usage
+from simile.llm.provider import LLMError, Message, RateLimit, Request, Usage
 
 logger = logging.getLogger("simile.llm")
 
@@ -71,38 +73,96 @@ class ClaudeCodeProvider:
         )
 
     async def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
+        async with self.session(request) as sdk, aclosing(self.turn(sdk, request)) as chunks:
+            async for chunk in chunks:
+                yield chunk
+
+    @asynccontextmanager
+    async def session(self, request: Request) -> AsyncIterator[ClaudeSDKClient]:
+        """A connected Claude Code process with this request's model and system prompt."""
         drop_api_credentials()
         self.cwd.mkdir(parents=True, exist_ok=True)
-        async with ClaudeSDKClient(self.options(request)) as sdk:
-            await sdk.query(render_prompt(request.messages))
-            async with aclosing(self.parse(sdk.receive_response())) as chunks:
-                async for chunk in chunks:
-                    yield chunk
+        with as_llm_errors():
+            async with ClaudeSDKClient(self.options(request)) as sdk:
+                yield sdk
+
+    async def turn(
+        self, sdk: ClaudeSDKClient, request: Request
+    ) -> AsyncGenerator[str | Usage, None]:
+        """Send the request as the session's next turn. Interrupt it if the caller stops early."""
+        finished = False
+        try:
+            with as_llm_errors():
+                await sdk.query(render_prompt(request.messages))
+                async with aclosing(self.parse(sdk.receive_response())) as chunks:
+                    async for chunk in chunks:
+                        yield chunk
+            finished = True
+        finally:
+            if not finished:
+                await interrupt(sdk)
 
     async def parse(self, messages: AsyncIterator[SDKMessage]) -> AsyncGenerator[str | Usage, None]:
+        subscription_confirmed = False
+        rate_limit: RateLimit | None = None
         async for message in messages:
             match message:
                 case SystemMessage(subtype="init", data=data):
                     self.session_info = data
-                    if data.get("apiKeySource", "none") != "none":
+                    if data.get("apiKeySource") != "none":
                         raise LLMError(
-                            f"Claude Code is billing an API key ({data['apiKeySource']}). "
-                            "Log in to Claude Code with a Claude subscription instead."
+                            "Claude Code must use the subscription login, but reported API key "
+                            f"source {data.get('apiKeySource')!r}. Log in with a Claude "
+                            "subscription and unset any API key."
                         )
+                    subscription_confirmed = True
                 case StreamEvent(event={"delta": {"type": "text_delta", "text": text}}):
+                    if not subscription_confirmed:
+                        raise LLMError("Claude Code sent text before confirming its login")
                     yield text
-                case RateLimitEvent(rate_limit_info=info) if info.status != "allowed":
-                    logger.warning("Claude usage limit %s: %s", info.status, info.raw)
+                case RateLimitEvent(rate_limit_info=info):
+                    rate_limit = RateLimit(
+                        info.status, info.rate_limit_type, info.utilization, info.resets_at
+                    )
+                    if info.status != "allowed":
+                        logger.warning("Claude usage limit %s: %s", info.status, info.raw)
                 case ResultMessage():
                     if message.is_error:
                         raise LLMError(
                             f"Claude Code call failed ({message.subtype}): "
                             f"{message.errors or message.result}"
                         )
-                    yield usage_from(message)
+                    if not subscription_confirmed:
+                        raise LLMError("Claude Code finished without confirming its login")
+                    yield usage_from(message, rate_limit)
+                    return
+        raise LLMError("Claude Code stopped without finishing the reply")
 
 
-def usage_from(result: ResultMessage) -> Usage:
+@contextmanager
+def as_llm_errors() -> Iterator[None]:
+    try:
+        yield
+    except ClaudeSDKError as e:
+        raise LLMError(f"Claude Code failed: {e}") from e
+
+
+async def interrupt(sdk: ClaudeSDKClient) -> None:
+    """Stop the turn now: leaving the client only closes stdin, and Claude Code finishes first."""
+
+    async def drain() -> None:
+        async for _ in sdk.receive_messages():
+            pass
+
+    with anyio.CancelScope(shield=True), anyio.move_on_after(1), suppress(Exception):
+        async with anyio.create_task_group() as tasks:
+            # A full SDK buffer would otherwise hold back the reply to the interrupt.
+            tasks.start_soon(drain)
+            await sdk.interrupt()
+            tasks.cancel_scope.cancel()
+
+
+def usage_from(result: ResultMessage, rate_limit: RateLimit | None = None) -> Usage:
     usage = result.usage or {}
     return Usage(
         input_tokens=usage.get("input_tokens", 0),
@@ -112,6 +172,7 @@ def usage_from(result: ResultMessage) -> Usage:
         cost_usd=result.total_cost_usd,
         model=next(iter(result.model_usage or {}), None),
         api_ms=result.duration_api_ms,
+        rate_limit=rate_limit,
     )
 
 

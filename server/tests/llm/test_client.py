@@ -17,6 +17,7 @@ from simile.llm import (
     Request,
     StructuredOutputError,
 )
+from simile.llm.client import Slots
 
 pytestmark = pytest.mark.anyio
 
@@ -27,6 +28,11 @@ class Mood(BaseModel):
 
 
 GLAD = '{"mood": "glad", "intensity": 0.5}'
+
+
+async def settle() -> None:
+    for _ in range(10):
+        await asyncio.sleep(0)
 
 
 async def test_streams_the_reply_in_chunks() -> None:
@@ -106,14 +112,82 @@ async def test_caps_concurrent_calls() -> None:
     records: list[CallRecord] = []
     client = LLMClient(FakeProvider([slow] * 5), max_concurrency=2, listeners=[records.append])
     calls = [asyncio.create_task(client.complete("Hi")) for _ in range(5)]
-    for _ in range(10):
-        await asyncio.sleep(0)
+    await settle()
 
     assert in_flight == 2
     release.set()
     assert await asyncio.gather(*calls) == ["done"] * 5
     assert peak == 2
     assert max(r.queued_ms for r in records) > 0
+
+
+async def test_higher_priority_calls_get_the_next_free_slot() -> None:
+    release = asyncio.Event()
+
+    async def hold(request: Request) -> str:
+        await release.wait()
+        return "done"
+
+    fake = FakeProvider([hold], default="ok")
+    client = LLMClient(fake, max_concurrency=1)
+    calls = [asyncio.create_task(client.complete("blocking"))]
+    await settle()
+    for prompt, priority in [("chatter 1", 0), ("chatter 2", 0), ("player", 1)]:
+        calls.append(asyncio.create_task(client.complete(prompt, priority=priority)))
+    await settle()
+
+    release.set()
+    await asyncio.gather(*calls)
+
+    started = [request.messages[-1].content for request in fake.requests]
+    assert started == ["blocking", "player", "chatter 1", "chatter 2"]
+
+
+async def test_a_cancelled_wait_gives_up_its_place() -> None:
+    release = asyncio.Event()
+
+    async def hold(request: Request) -> str:
+        await release.wait()
+        return "done"
+
+    client = LLMClient(FakeProvider([hold], default="ok"), max_concurrency=1)
+    blocking = asyncio.create_task(client.complete("blocking"))
+    await settle()
+    gave_up = asyncio.create_task(client.complete("gave up"))
+    await settle()
+    gave_up.cancel()
+    release.set()
+
+    assert await blocking == "done"
+    assert await asyncio.wait_for(client.complete("next"), timeout=1) == "ok"
+
+
+async def test_a_slot_handed_to_a_cancelled_caller_passes_on() -> None:
+    slots = Slots(1)
+
+    async def wait_for_slot() -> None:
+        async with slots.hold(0):
+            pass
+
+    async with slots.hold(0):
+        waiter = asyncio.create_task(wait_for_slot())
+        await settle()
+    waiter.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await waiter
+    await asyncio.wait_for(wait_for_slot(), timeout=1)
+
+
+async def test_a_failing_listener_doesnt_fail_the_call(caplog: pytest.LogCaptureFixture) -> None:
+    def broken(record: CallRecord) -> None:
+        raise RuntimeError("listener bug")
+
+    client = LLMClient(FakeProvider(["Hi."]), listeners=[broken])
+
+    assert await client.complete("Hello") == "Hi."
+    assert "listener" in caplog.text
+    assert "listener bug" in caplog.text
 
 
 async def test_leaving_a_stream_early_frees_its_slot() -> None:

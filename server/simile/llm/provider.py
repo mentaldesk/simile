@@ -23,6 +23,18 @@ class Request:
 
 
 @dataclass(frozen=True)
+class RateLimit:
+    status: str
+    """`allowed`, `allowed_warning` or `rejected`."""
+    window: str | None = None
+    """Which subscription limit, e.g. `five_hour` or `seven_day`."""
+    utilization: float | None = None
+    """Fraction of the window used, from 0 to 1."""
+    resets_at: int | None = None
+    """Unix time when the window resets."""
+
+
+@dataclass(frozen=True)
 class Usage:
     input_tokens: int = 0
     output_tokens: int = 0
@@ -31,9 +43,11 @@ class Usage:
     cost_usd: float | None = None
     """What the call would have cost on the API. The subscription isn't billed per call."""
     model: str | None = None
-    """The model that actually answered, e.g. `claude-haiku-4-5` for `haiku`."""
+    """The full name of the model that answered, which an alias like `haiku` resolves to."""
     api_ms: float | None = None
     """Time spent waiting on the model API. The rest of a call's latency is backend overhead."""
+    rate_limit: RateLimit | None = None
+    """The subscription's usage limit, if the backend reported it during the call."""
 
 
 class LLMError(Exception):

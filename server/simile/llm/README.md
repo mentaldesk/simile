@@ -10,7 +10,9 @@ from simile.llm import LLMClient, Message, Model
 
 llm = request.app.state.llm  # the server's shared client, or LLMClient() in a script
 
-async for chunk in llm.stream("Good morning!", system=mara_persona, purpose="player-reply"):
+async for chunk in llm.stream(
+    "Good morning!", system=mara_persona, purpose="player-reply", priority=1
+):
     send_to_client(chunk)
 
 summary = await llm.complete(transcript, system=summariser, purpose="summary")
@@ -26,15 +28,24 @@ events = await llm.structured(transcript, Extraction, model=Model.SONNET, purpos
 - `structured(prompt, schema)` adds the JSON Schema of a pydantic model to the system prompt,
   validates the reply, and retries once with the validation error before raising
   `StructuredOutputError`.
-- At most `max_concurrency` calls (default 4) run at once. The rest wait for a slot.
-- Calls that fail raise `LLMError` (usage limit, CLI failure, an API key in use).
+- At most `max_concurrency` calls (default 4) run at once. The rest wait for a slot, and a freed
+  slot goes to the highest `priority` waiting (default 0), then first come first served. Player
+  replies pass `priority=1` so they don't queue behind NPC chatter.
+- Every failure raises `LLMError`: a usage limit, the CLI crashing or not found, a reply cut short,
+  or Claude Code not confirming that it's on the subscription login.
+- Leaving a stream early (`break`, or cancelling the task) interrupts the call, so it stops using
+  the subscription and frees its slot within about a second. Wrap the stream in
+  `contextlib.aclosing` when you `break`, so that happens straight away rather than when the
+  generator is garbage collected.
 
 ## Usage and latency
 
 Every call produces a `CallRecord`: purpose, model, time queued for a slot, latency, time to first
-token, token usage, and the error if it failed. It's logged at INFO on the `simile.llm` logger
-(the record is in `extra={"llm_call": record}`) and passed to each function in
-`client.listeners`:
+token, `usage` and the error if it failed. `usage` has the token counts, the model that answered,
+the time spent on the model API, and `rate_limit` (status, window, utilisation and reset time)
+when Claude Code reported the subscription's usage limit during the call. The record is logged at
+INFO on the `simile.llm` logger (in `extra={"llm_call": record}`) and passed to each function in
+`client.listeners`. A listener that raises is logged and doesn't fail the call.
 
 ```python
 llm.listeners.append(lambda record: usage_this_hour.add(record.usage))
@@ -48,19 +59,35 @@ llm.listeners.append(lambda record: usage_this_hour.add(record.usage))
 Tests never call Claude. Give the client a `FakeProvider` with scripted replies:
 
 ```python
-from simile.llm import FakeProvider, LLMClient
+import asyncio
 
-fake = FakeProvider(["Morning!", Mood(mood="glad", intensity=0.5), TimeoutError()])
+from simile.llm import FakeProvider, LLMClient, LLMError
+
+resume = asyncio.Event()
+fake = FakeProvider(
+    [
+        "Morning!",
+        Mood(mood="glad", intensity=0.5),
+        TimeoutError(),
+        ["Well, ", "I ", resume, LLMError("usage limit reached")],
+    ]
+)
 llm = LLMClient(fake)
 
 assert await llm.complete("Hello") == "Morning!"
 assert fake.requests[0].messages[-1].content == "Hello"
 ```
 
-A reply is a string, a pydantic model (sent as its JSON, for `structured`), an exception to raise,
-or a function of the `Request` returning a string, sync or async (handy for holding a call open
-until the test releases it). `FakeProvider(default="...")` answers every call after the script runs
-out. Replies stream a word at a time.
+Each call takes the next reply:
+
+- a string, streamed a word at a time;
+- a pydantic model, sent as its JSON (for `structured`);
+- an exception, raised before any text;
+- a list of steps: strings are streamed as given, an `asyncio.Event` pauses the stream until the
+  test sets it, and an exception fails the stream at that point;
+- a function of the `Request` that returns a string, sync or async.
+
+`FakeProvider(default="...")` answers every call after the script runs out.
 
 ## How Claude Code is called
 
@@ -73,7 +100,11 @@ out. Replies stream a word at a time.
 - prompts are delivered verbatim, so `@path` or `/command` in player text does nothing;
 - it runs in an empty temporary directory and doesn't save the session to disk;
 - `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and the Bedrock/Vertex/Foundry
-  switches are removed from this process's environment before every call, and a call fails if
-  Claude Code reports any API key source other than `none`.
+  switches are removed from this process's environment before every call;
+- no text is passed on until Claude Code's `init` frame reports the API key source `none`.
+
+`ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process (it drops the
+credentials first), and `turn(sdk, request)` streams one turn and interrupts it if the caller
+leaves early. A warm-session provider should build on these two.
 
 Another backend implements `Provider`: an async generator of text chunks followed by one `Usage`.

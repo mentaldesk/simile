@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from simile.llm import FakeProvider, Message, Request, Usage
@@ -35,6 +37,19 @@ async def test_fails_when_the_script_runs_out() -> None:
 async def test_raises_scripted_exceptions() -> None:
     with pytest.raises(TimeoutError):
         await collect(FakeProvider([TimeoutError()]))
+
+
+async def test_scripts_can_pause_and_fail_mid_stream() -> None:
+    resume = asyncio.Event()
+    stream = FakeProvider([["Hello ", "there", resume, TimeoutError()]]).stream(REQUEST)
+
+    assert [await anext(stream), await anext(stream)] == ["Hello ", "there"]
+    paused = asyncio.create_task(anext(stream))
+    await asyncio.sleep(0.01)
+    assert not paused.done()
+    resume.set()
+    with pytest.raises(TimeoutError):
+        await paused
 
 
 async def test_replies_can_be_functions_of_the_request() -> None:

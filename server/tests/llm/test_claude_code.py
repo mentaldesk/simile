@@ -1,4 +1,7 @@
+import asyncio
+import time
 from collections.abc import Callable
+from contextlib import aclosing
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +9,7 @@ import pytest
 
 from simile.llm import CallRecord, LLMClient, LLMError, Message, Request, Usage
 from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider, render_prompt
+from simile.llm.provider import RateLimit
 
 MakeFakeCli = Callable[..., Any]
 
@@ -16,6 +20,18 @@ SYSTEM = "You are Mara, who runs the coffee shop."
 
 def value_after(argv: list[str], flag: str) -> str:
     return argv[argv.index(flag) + 1]
+
+
+def client_for(cli: Any, tmp_path: Path, **kwargs: Any) -> LLMClient:
+    return LLMClient(ClaudeCodeProvider(cli_path=cli.path, cwd=tmp_path), **kwargs)
+
+
+async def collect_until_error(client: LLMClient) -> tuple[list[str], LLMError]:
+    chunks: list[str] = []
+    with pytest.raises(LLMError) as error:
+        async for chunk in client.stream("Hello"):
+            chunks.append(chunk)
+    return chunks, error.value
 
 
 def test_options_make_a_plain_text_generator(tmp_path: Path) -> None:
@@ -105,14 +121,129 @@ async def test_refuses_a_session_billed_to_an_api_key(
     fake_cli: MakeFakeCli, tmp_path: Path
 ) -> None:
     cli = fake_cli(api_key_source="ANTHROPIC_API_KEY")
-    client = LLMClient(ClaudeCodeProvider(cli_path=cli.path, cwd=tmp_path))
-    chunks: list[str] = []
 
-    with pytest.raises(LLMError, match="API key"):
-        async for chunk in client.stream("Hello"):
-            chunks.append(chunk)
+    chunks, error = await collect_until_error(client_for(cli, tmp_path))
 
     assert chunks == []
+    assert "'ANTHROPIC_API_KEY'" in str(error)
+    assert cli.interrupted
+
+
+async def test_refuses_a_session_that_doesnt_report_its_api_key_source(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    cli = fake_cli(api_key_source=None)
+
+    chunks, error = await collect_until_error(client_for(cli, tmp_path))
+
+    assert chunks == []
+    assert "None" in str(error)
+
+
+async def test_refuses_text_before_the_login_is_confirmed(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    cli = fake_cli(init=False)
+
+    chunks, error = await collect_until_error(client_for(cli, tmp_path))
+
+    assert chunks == []
+    assert "confirming its login" in str(error)
+
+
+async def test_a_cli_crash_raises_llm_error(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    cli = fake_cli(chunks=("Morn",), result=False, exit_code=1)
+
+    chunks, error = await collect_until_error(client_for(cli, tmp_path))
+
+    assert chunks == ["Morn"]
+    assert "exit code 1" in str(error)
+
+
+async def test_a_reply_cut_short_raises_llm_error(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    cli = fake_cli(chunks=("Morn",), result=False, exit_code=0)
+
+    chunks, error = await collect_until_error(client_for(cli, tmp_path))
+
+    assert chunks == ["Morn"]
+    assert "without finishing" in str(error)
+
+
+async def test_a_missing_cli_raises_llm_error(tmp_path: Path) -> None:
+    client = LLMClient(ClaudeCodeProvider(cli_path=tmp_path / "missing", cwd=tmp_path))
+
+    with pytest.raises(LLMError, match="not found"):
+        await client.complete("Hello")
+
+
+async def test_leaving_a_stream_early_interrupts_the_cli(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    cli = fake_cli(("word ",) * 100, delay=0.05)
+    client = client_for(cli, tmp_path, max_concurrency=1)
+
+    async with aclosing(client.stream("Hello")) as chunks:
+        async for _ in chunks:
+            left = time.perf_counter()
+            break
+
+    assert time.perf_counter() - left < 2
+    assert cli.interrupted
+
+
+async def test_interrupts_promptly_when_the_reader_fell_behind(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    cli = fake_cli(("word ",) * 300, delay=0.005)
+    client = client_for(cli, tmp_path)
+
+    async with aclosing(client.stream("Hello")) as chunks:
+        async for _ in chunks:
+            await asyncio.sleep(1)  # long enough for the SDK's 100-message buffer to fill
+            left = time.perf_counter()
+            break
+
+    assert time.perf_counter() - left < 0.9
+    assert cli.interrupted
+
+
+async def test_cancelling_a_call_interrupts_the_cli(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    cli = fake_cli(("word ",) * 100, delay=0.05)
+    client = client_for(cli, tmp_path, max_concurrency=1)
+    streaming = asyncio.Event()
+
+    async def listen() -> None:
+        async for _ in client.stream("Hello"):
+            streaming.set()
+
+    call = asyncio.create_task(listen())
+    await streaming.wait()
+    cancelled = time.perf_counter()
+    call.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await call
+
+    assert time.perf_counter() - cancelled < 2
+    assert cli.interrupted
+
+
+async def test_a_finished_call_is_not_interrupted(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    cli = fake_cli()
+
+    await client_for(cli, tmp_path).complete("Hello")
+
+    assert not cli.interrupted
+
+
+async def test_records_the_subscription_usage_limit(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    limit = {"status": "allowed", "rateLimitType": "five_hour", "utilization": 0.4, "resetsAt": 9}
+    cli = fake_cli(rate_limit=limit)
+    records: list[CallRecord] = []
+
+    await client_for(cli, tmp_path, listeners=[records.append]).complete("Hello")
+
+    assert records[0].usage is not None
+    assert records[0].usage.rate_limit == RateLimit("allowed", "five_hour", 0.4, 9)
 
 
 async def test_raises_on_an_error_result(fake_cli: MakeFakeCli, tmp_path: Path) -> None:

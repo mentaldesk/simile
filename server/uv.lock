@@ -595,6 +595,7 @@ name = "simile"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "anyio" },
     { name = "claude-agent-sdk" },
     { name = "pydantic" },
     { name = "starlette" },
@@ -612,6 +613,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "anyio", specifier = ">=4.15" },
     { name = "claude-agent-sdk", specifier = ">=0.2.167" },
     { name = "pydantic", specifier = ">=2.14.1" },
     { name = "starlette", specifier = ">=1.8" },

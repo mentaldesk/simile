@@ -1,4 +1,6 @@
+import tempfile
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -11,8 +13,13 @@ MakeFakeCli = Callable[..., Any]
 runner = CliRunner()
 
 
+@pytest.fixture(autouse=True)
+def temp_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+
+
 def test_smoke_streams_a_reply_and_prints_timings(
-    fake_cli: MakeFakeCli, monkeypatch: pytest.MonkeyPatch
+    fake_cli: MakeFakeCli, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "set-by-test")
     cli = fake_cli(chunks=("Welcome", " in!"))
@@ -26,6 +33,7 @@ def test_smoke_streams_a_reply_and_prints_timings(
     assert "first token" in result.output
     assert "API key source 'none'" in result.output
     assert "ANTHROPIC_API_KEY" not in cli.env
+    assert (tmp_path / "simile-llm").is_dir()
 
 
 def test_smoke_can_reuse_one_session(fake_cli: MakeFakeCli) -> None:

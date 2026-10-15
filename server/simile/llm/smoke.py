@@ -1,16 +1,12 @@
 import os
 import time
 from collections.abc import AsyncGenerator
+from contextlib import aclosing
 from pathlib import Path
 
 from claude_agent_sdk import ClaudeSDKClient
 
-from simile.llm.claude_code import (
-    API_CREDENTIALS,
-    ClaudeCodeProvider,
-    drop_api_credentials,
-    render_prompt,
-)
+from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider
 from simile.llm.client import CallRecord, LLMClient
 from simile.llm.provider import Message, Request, Usage
 
@@ -27,9 +23,9 @@ class SessionProvider:
         self.parent = parent
 
     async def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
-        await self.sdk.query(render_prompt(request.messages))
-        async for chunk in self.parent.parse(self.sdk.receive_response()):
-            yield chunk
+        async with aclosing(self.parent.turn(self.sdk, request)) as chunks:
+            async for chunk in chunks:
+                yield chunk
 
 
 async def smoke(
@@ -41,11 +37,8 @@ async def smoke(
     if not session:
         await run(LLMClient(provider), prompt, model, runs)
     else:
-        drop_api_credentials()
-        provider.cwd.mkdir(parents=True, exist_ok=True)
-        options = provider.options(Request((Message("user", prompt),), SYSTEM, model))
         start = time.perf_counter()
-        async with ClaudeSDKClient(options) as sdk:
+        async with provider.session(Request((Message("user", prompt),), SYSTEM, model)) as sdk:
             print(f"Session connected in {(time.perf_counter() - start) * 1000:.0f} ms")
             await run(LLMClient(SessionProvider(sdk, provider)), prompt, model, runs)
     info = provider.session_info or {}
@@ -72,3 +65,5 @@ async def run(client: LLMClient, prompt: str, model: str, runs: int) -> None:
             f"+{usage.cache_creation_tokens} cache writes), out {usage.output_tokens}, "
             f"{usage.model}"
         )
+        if usage.rate_limit:
+            print(f"  usage limit: {usage.rate_limit}")

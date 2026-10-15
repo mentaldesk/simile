@@ -1,9 +1,11 @@
 import asyncio
+import heapq
+import itertools
 import json
 import logging
 import time
 from collections.abc import AsyncIterator, Callable, Iterable, Sequence
-from contextlib import aclosing
+from contextlib import aclosing, asynccontextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -38,6 +40,44 @@ class StructuredOutputError(Exception):
         self.error = error
 
 
+class Slots:
+    """A concurrency cap that gives a freed slot to the highest priority waiting, then FIFO."""
+
+    def __init__(self, size: int) -> None:
+        self._free = size
+        self._waiting: list[tuple[int, int, asyncio.Future[None]]] = []
+        self._order = itertools.count()
+
+    @asynccontextmanager
+    async def hold(self, priority: int) -> AsyncIterator[None]:
+        await self._acquire(priority)
+        try:
+            yield
+        finally:
+            self._release()
+
+    async def _acquire(self, priority: int) -> None:
+        if self._free:
+            self._free -= 1
+            return
+        granted = asyncio.get_running_loop().create_future()
+        heapq.heappush(self._waiting, (-priority, next(self._order), granted))
+        try:
+            await granted
+        except asyncio.CancelledError:
+            if granted.done() and not granted.cancelled():
+                self._release()
+            raise
+
+    def _release(self) -> None:
+        while self._waiting:
+            _, _, granted = heapq.heappop(self._waiting)
+            if not granted.done():
+                granted.set_result(None)
+                return
+        self._free += 1
+
+
 class LLMClient:
     def __init__(
         self,
@@ -47,7 +87,7 @@ class LLMClient:
         listeners: Iterable[Callable[[CallRecord], None]] = (),
     ) -> None:
         self._provider = provider
-        self._slots = asyncio.Semaphore(max_concurrency)
+        self._slots = Slots(max_concurrency)
         self.listeners = list(listeners)
 
     @property
@@ -65,11 +105,12 @@ class LLMClient:
         system: str = "",
         model: str = Model.HAIKU,
         purpose: str = "",
+        priority: int = 0,
     ) -> AsyncIterator[str]:
         request = Request(as_messages(prompt), system, str(model))
         provider = self.provider
         queued = time.perf_counter()
-        async with self._slots:
+        async with self._slots.hold(priority):
             started_at, start = time.time(), time.perf_counter()
             ttft: float | None = None
             end: float | None = None
@@ -112,8 +153,9 @@ class LLMClient:
         system: str = "",
         model: str = Model.HAIKU,
         purpose: str = "",
+        priority: int = 0,
     ) -> str:
-        chunks = self.stream(prompt, system=system, model=model, purpose=purpose)
+        chunks = self.stream(prompt, system=system, model=model, purpose=purpose, priority=priority)
         return "".join([chunk async for chunk in chunks])
 
     async def structured[T: "BaseModel"](
@@ -124,6 +166,7 @@ class LLMClient:
         system: str = "",
         model: str = Model.HAIKU,
         purpose: str = "",
+        priority: int = 0,
     ) -> T:
         """Ask for JSON matching `schema` and validate it, retrying once with the error."""
         from pydantic import ValidationError
@@ -131,7 +174,9 @@ class LLMClient:
         messages = list(as_messages(prompt))
         system = f"{system}\n\n{json_instructions(schema)}".strip()
         for _ in range(2):
-            text = await self.complete(messages, system=system, model=model, purpose=purpose)
+            text = await self.complete(
+                messages, system=system, model=model, purpose=purpose, priority=priority
+            )
             try:
                 return schema.model_validate_json(extract_json(text))
             except ValidationError as e:
@@ -161,7 +206,10 @@ class LLMClient:
             extra={"llm_call": record},
         )
         for listener in self.listeners:
-            listener(record)
+            try:
+                listener(record)
+            except Exception:
+                logger.exception("LLM call listener %r failed", listener)
 
 
 def as_messages(prompt: Prompt) -> tuple[Message, ...]:
