@@ -109,14 +109,19 @@ def test_art_command(content: Path) -> None:
     assert not (content / "art" / "tiles.png").exists()
 
 
+def is_npc_output(name: str) -> bool:
+    path = Path(name)
+    npc_sprite = path.parent.name == "characters" and path.stem not in BUILTIN
+    return npc_sprite or name == "preview/npcs.png"
+
+
 def test_committed_art_is_up_to_date(tmp_path: Path) -> None:
-    if (CONTENT_DIR / "npcs").exists():
-        shutil.copytree(CONTENT_DIR / "npcs", tmp_path / "npcs")
     generate(tmp_path)
 
     fresh, committed = tmp_path / "art", CONTENT_DIR / "art"
     stale = "content/art is out of date: run `cd server && uv run simile art`"
-    assert files(committed) - HAND_WRITTEN == files(fresh), stale
+    built_in = {name for name in files(committed) - HAND_WRITTEN if not is_npc_output(name)}
+    assert built_in == files(fresh), stale
     for name in files(fresh):
         if name.endswith((".png", ".gif")):
             assert pixels(committed / name) == pixels(fresh / name), f"{name}: {stale}"

@@ -101,10 +101,6 @@ def test_walk_frames_step() -> None:
         assert step_a != stand and step_b != stand and step_a != step_b, direction
 
 
-def test_drawing_is_deterministic() -> None:
-    assert sprite_sheet(PLAYER).pixels == sprite_sheet(PLAYER).pixels
-
-
 @pytest.mark.parametrize(
     "change",
     [

@@ -8,7 +8,8 @@ cd server && uv run simile art         # tileset, player, sample characters, pre
 cd server && uv run simile art --npcs  # only the sprites for content/npcs/*.json
 ```
 
-Output is deterministic, and `tests/art` fails if these files drift from the generator.
+Output is deterministic. `tests/art` fails if the tileset, `tiles.md`, the `player` and `sample_*`
+sprites or the previews drift from the generator. It ignores NPC sprites and `preview/npcs.png`.
 
 ## Palette
 
@@ -34,7 +35,8 @@ skin snaps to one of six skin tones.
 Suggested map layers: ground (terrain), buildings (roofs and facades), decor (everything with a
 transparent background: props, signs, awnings), then above (`above` tiles, over the characters).
 
-**Terrain.** Grass, road and water patches sit inside pavement, at least one pavement tile apart.
+**Terrain.** Grass, road and water patches sit inside pavement. Each patch is at least two tiles
+thick, and patches are at least one pavement tile apart.
 A patch's border tiles are named by the sides that touch pavement: `grass_n` has pavement to the
 north, `grass_ne` is the patch's north-east corner, and `grass_ne_nook` has pavement only on its
 north-east diagonal (a concave corner). `simile.art.tiles.edge_variant(terrain, same)` picks the
