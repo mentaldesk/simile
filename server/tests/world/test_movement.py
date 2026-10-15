@@ -195,6 +195,26 @@ def test_stopping_cancels_the_walk_and_ends_on_the_next_tile() -> None:
     assert village.tiles("mei")[-1] == (3, 0)
 
 
+@pytest.mark.parametrize("stop", ["stop", "unreachable"])
+def test_stopping_steps_off_a_tile_someone_else_has(stop: str) -> None:
+    village = Village(TownMap("corridor", 13, 1, ((False,) * 12 + (True,),), ()))
+    village.movement.place("b", Tile(x=2, y=0))
+    village.movement.place("a", Tile(x=0, y=0))
+    village.movement.walk_to("a", Tile(x=11, y=0))
+    village.run(1)
+    assert 1 < village.movement.position("a").x < 2
+
+    if stop == "stop":
+        village.movement.stop("a")
+    else:
+        village.movement.walk_to("a", Tile(x=12, y=0))
+    village.run(5)
+
+    assert village.movement.position("b") == (2, 0)
+    assert village.movement.position("a") in ((1, 0), (3, 0))
+    assert village.tiles("a")[-1] == village.movement.position("a")
+
+
 def test_a_new_walk_supersedes_the_last() -> None:
     village = Village(corridor(14))
     village.movement.place("mei", Tile(x=5, y=0))
@@ -339,3 +359,38 @@ def test_a_callback_can_start_the_next_walk() -> None:
 
     assert [walk.outcome for walk in walks] == [Outcome.CANCELLED, Outcome.ARRIVED]
     assert walks[1].destination == TOWN.location("square").entry
+
+
+def test_placing_someone_from_a_callback_mid_tick_publishes_no_stale_move() -> None:
+    village = Village(corridor(12))
+    village.movement.place("a", Tile(x=0, y=0))
+    village.movement.place("b", Tile(x=5, y=0))
+    walk = village.movement.walk_to("a", Tile(x=1, y=0))
+    village.movement.walk_to("b", Tile(x=11, y=0))
+    walk.add_done_callback(lambda _: village.movement.place("b", Tile(x=9, y=0)))
+    village.moves.clear()
+
+    village.finish(walk)
+    village.run(1)
+
+    assert village.tiles("b") == [(9, 0)]
+
+
+def test_a_failing_callback_is_logged_and_the_others_still_run(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    village = Village(corridor(3))
+    village.movement.place("mei", Tile(x=0, y=0))
+    heard: list[Walk] = []
+
+    def fail(walk: Walk) -> None:
+        raise RuntimeError("boom")
+
+    walk = village.movement.walk_to("mei", Tile(x=1, y=0))
+    walk.add_done_callback(fail)
+    walk.add_done_callback(heard.append)
+    village.finish(walk)
+    walk.add_done_callback(fail)
+
+    assert heard == [walk]
+    assert caplog.text.count("RuntimeError: boom") == 2

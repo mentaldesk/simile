@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import math
 from collections import deque
 from collections.abc import Callable, Generator
@@ -12,6 +13,8 @@ from simile.schema import Id, Location, Tile
 from simile.sim import EntityMoved, EventBus, world_of
 from simile.world.map import WALKING_SPEED, TownMap, load_map
 from simile.world.paths import Cell, find_path, nearby, path_length
+
+logger = logging.getLogger(__name__)
 
 type Target = Tile | str
 
@@ -47,7 +50,7 @@ class Walk:
 
     def add_done_callback(self, callback: Callable[["Walk"], None]) -> None:
         if self.done:
-            callback(self)
+            self._call(callback)
         else:
             self._callbacks.append(callback)
 
@@ -57,7 +60,13 @@ class Walk:
         self.outcome = outcome
         callbacks, self._callbacks = self._callbacks, []
         for callback in callbacks:
+            self._call(callback)
+
+    def _call(self, callback: Callable[["Walk"], None]) -> None:
+        try:
             callback(self)
+        except Exception:
+            logger.exception("%r failed to handle %r", callback, self)
 
     def __await__(self) -> Generator[Any, None, Outcome]:
         if self.outcome is None:
@@ -180,26 +189,30 @@ class Movement:
             budget -= gap
             body.tile, body.position = (x, y), Point(x, y)
             body.path.popleft()
-            if body.walk and body.claim in self._claims(entity):
-                self._reroute(entity, body, body.walk)
+            if body.claim in self._claims(entity):
+                self._reroute(entity, body)
             self._publish(entity, body.tile)
             if not body.path:
                 self._end(body, Outcome.ARRIVED)
                 return
 
-    def _reroute(self, entity: Id, body: Body, walk: Walk) -> None:
-        cell = self._resolve(entity, walk.target, body.tile)
+    def _reroute(self, entity: Id, body: Body) -> None:
+        walk = body.walk
+        target = walk.target if walk else Tile(x=body.tile[0], y=body.tile[1])
+        cell = self._resolve(entity, target, body.tile)
         path = None if cell is None else find_path(self.town, body.tile, cell)
         if path:
-            walk.distance += path_length(path) - path_length([body.tile, *body.path])
-            walk.destination = Tile(x=path[-1][0], y=path[-1][1])
+            if walk:
+                walk.distance += path_length(path) - path_length([body.tile, *body.path])
+                walk.destination = Tile(x=path[-1][0], y=path[-1][1])
             body.path = deque(path[1:])
 
     def _replace(self, entity: Id, body: Body) -> None:
         old = self._bodies.get(entity)
         self._bodies[entity] = body
-        if old and old.walk:
-            old.walk.finish(Outcome.CANCELLED)
+        if old:
+            old.path.clear()
+            self._end(old, Outcome.CANCELLED)
 
     def _end(self, body: Body, outcome: Outcome) -> None:
         body.path = deque([body.path[0]]) if body.stepping else deque()

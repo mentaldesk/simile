@@ -26,7 +26,7 @@ if await walk is Outcome.ARRIVED:
 | `position(entity)` | A `Point(x, y)` in tiles. Fractions are mid-step. |
 | `entities()` | `{id: Point}` for every entity. |
 | `distance(a, b)` | Straight-line distance between two entities, in tiles. |
-| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position on every `player_move`. |
+| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position on every `player_move`, so `position("player")` raises `KeyError` until the first one. |
 | `town` | The `TownMap`. |
 
 A target is a `Tile` or a location id.
@@ -45,14 +45,16 @@ A target is a `Tile` or a location id.
 
 - `await walk` returns an `Outcome` and never raises: `ARRIVED`, `UNREACHABLE`, `CANCELLED` (by
   `stop` or `place`) or `SUPERSEDED` (by another `walk_to`). From a tick, poll `walk.outcome`, which
-  is `None` until it ends, or use `walk.add_done_callback(callback)`.
+  is `None` until it ends, or use `walk.add_done_callback(callback)`. A callback that raises is
+  logged and doesn't affect the others.
 - `walk.destination` is the `Tile` it's heading for and `walk.distance` its length in tiles, so it
   takes `walk.distance / WALKING_SPEED` sim seconds.
 - Entities walk at `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second, at any sim speed.
 - Paths are A\* on the map's grid in 8 directions. A diagonal step needs both tiles beside it to be
   walkable, so nobody cuts a corner.
 - Entities only stop on whole tiles. A walk that ends early finishes the step it's on, and a new
-  walk starts from that tile.
+  walk starts from that tile. If someone else has that tile, the entity steps on to the nearest
+  free one.
 - Walkers pass through each other.
 
 ## `EntityMoved`
