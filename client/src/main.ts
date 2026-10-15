@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { collectScenes, type Area } from './areas';
-import { pixelZoom } from './world/view';
+import { fitZoom } from './world/view';
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -13,9 +13,11 @@ const game = new Phaser.Game({
   scene: collectScenes(import.meta.glob<Area>('./*/index.ts', { eager: true })),
 });
 
+// Scrollbars would shrink the page the canvas is centred in, and take the canvas off-centre.
+document.documentElement.style.overflow = 'hidden';
+
 const fitCanvas = () => {
-  const zoom = pixelZoom(game.scale.parentSize, game.scale.gameSize, window.devicePixelRatio);
-  if (zoom !== game.scale.zoom) game.scale.setZoom(zoom);
+  if (game.isBooted) fitZoom(game.scale, game.scale.gameSize, window);
 };
 game.events.once(Phaser.Core.Events.READY, fitCanvas);
-game.scale.on(Phaser.Scale.Events.RESIZE, fitCanvas);
+window.addEventListener('resize', fitCanvas);

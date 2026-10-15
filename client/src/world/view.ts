@@ -40,3 +40,13 @@ export function pixelZoom(available: Size, canvas: Size, devicePixelRatio = 1): 
   const fit = Math.min(available.width / canvas.width, available.height / canvas.height);
   return Math.max(1, Math.floor(fit * devicePixelRatio) / devicePixelRatio);
 }
+
+export type Zoomable = { readonly zoom: number; setZoom(zoom: number): unknown };
+export type Viewport = { innerWidth: number; innerHeight: number; devicePixelRatio: number };
+
+/** Sizes from the window, which the canvas can't resize, so a new zoom never changes the next one. */
+export function fitZoom(scale: Zoomable, canvas: Size, viewport: Viewport): void {
+  const available = { width: viewport.innerWidth, height: viewport.innerHeight };
+  const zoom = pixelZoom(available, canvas, viewport.devicePixelRatio);
+  if (zoom !== scale.zoom) scale.setZoom(zoom);
+}

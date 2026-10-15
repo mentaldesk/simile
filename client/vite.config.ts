@@ -14,5 +14,7 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts'],
+    // Its cache keeps an import.meta.glob's old matches after files are added under content/.
+    fsModuleCache: false,
   },
 });

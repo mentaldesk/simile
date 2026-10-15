@@ -46,6 +46,8 @@ Tiles and sprites are 16 px, drawn at 3× (`ZOOM`). The camera follows the playe
 map's edges, and keeps its centre on a whole world pixel so every art pixel is exactly 3×3 canvas
 pixels. Layers `ground`, `buildings` and `decor` are under the characters, `above` over them, and
 characters are sorted by where their feet are. `main.ts` shows the 640×360 canvas at the largest
-zoom that fits the window and draws each canvas pixel as whole device pixels (`pixelZoom`).
+zoom that fits the window and draws each canvas pixel as whole device pixels (`pixelZoom`). It
+sizes from the window, not the page, and hides page overflow, so scrollbars can't feed back into the
+zoom (`fitZoom`).
 
 The dev harnesses (`?harness=dialogue`, `?audio-harness`) don't start the world scene.

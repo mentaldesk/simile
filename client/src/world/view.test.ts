@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { feetOf, followScroll, pixelZoom, toCanvas } from './view';
+import { feetOf, fitZoom, followScroll, pixelZoom, toCanvas, type Viewport } from './view';
 
 const VIEW = { width: 640, height: 360 };
 const WORLD = { width: 1024, height: 672 };
@@ -68,5 +68,41 @@ describe('pixelZoom', () => {
     expect(pixelZoom({ width: 1024, height: 768 }, VIEW, 2)).toBe(1.5);
     expect(pixelZoom({ width: 1440, height: 900 }, VIEW, 2)).toBe(2);
     expect(pixelZoom({ width: 1280, height: 720 }, VIEW, 1.5)).toBe(2);
+  });
+});
+
+describe('fitZoom', () => {
+  function page(innerWidth: number, innerHeight: number) {
+    const viewport: Viewport = { innerWidth, innerHeight, devicePixelRatio: 1 };
+    const zooms: number[] = [];
+    const scale = {
+      zoom: 1,
+      setZoom(zoom: number) {
+        if (zooms.length > 5) throw new Error(`oscillating: ${zooms.join(', ')}`);
+        zooms.push(zoom);
+        scale.zoom = zoom;
+        fitZoom(scale, VIEW, viewport);
+      },
+    };
+    return { viewport, scale, zooms, fit: () => fitZoom(scale, VIEW, viewport) };
+  }
+
+  it('settles at once, even when zooming re-fits synchronously as Phaser does', () => {
+    const { scale, zooms, fit } = page(1280, 760);
+    fit();
+    expect(zooms).toEqual([2]);
+    fit();
+    expect(zooms).toEqual([2]);
+    expect(scale.zoom).toBe(2);
+  });
+
+  it('zooms once each way when the window is resized across a threshold', () => {
+    const { viewport, zooms, fit } = page(1279, 760);
+    fit();
+    viewport.innerWidth = 1290;
+    fit();
+    viewport.innerWidth = 1270;
+    fit();
+    expect(zooms).toEqual([2, 1]);
   });
 });
