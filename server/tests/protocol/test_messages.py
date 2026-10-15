@@ -93,5 +93,5 @@ def test_fixture_snapshot_has_everyone_and_only_active_conversations() -> None:
         ("viktor", "npc"),
         ("player", "player"),
     ]
-    assert SNAPSHOT.entities[0].position == Position(x=4, y=6)
+    assert SNAPSHOT.entities[0].position == Position(x=3, y=11)
     assert [c.id for c in SNAPSHOT.conversations] == ["conv_2"]

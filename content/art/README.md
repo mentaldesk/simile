@@ -34,6 +34,7 @@ skin snaps to one of six skin tones.
 
 Suggested map layers: ground (terrain), buildings (roofs and facades), decor (everything with a
 transparent background: props, signs, awnings), then above (`above` tiles, over the characters).
+`blocked`, a red cross, is for a hidden collision layer and is never drawn in the game.
 
 **Terrain.** Grass, road and water patches sit inside pavement. Each patch is at least two tiles
 thick, and patches are at least one pavement tile apart.
