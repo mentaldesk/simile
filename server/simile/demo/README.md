@@ -8,9 +8,10 @@ SIMILE_DEMO=1 make dev                            # sim server and client
 cd server && SIMILE_DEMO=1 uv run simile serve    # server only
 ```
 
-Each NPC leaves its doorstep on two errands (the coffee shop, the square, the park or a terminal),
-pausing at each, then goes home and starts again. They walk at `WALKING_SPEED` along the shortest
-route over walkable tiles of the village map, diagonals included, and publish `EntityMoved` each
-time they reach a tile, as W2's movement does. The snapshot puts them on the last tile they reached.
+Each NPC starts on its doorstep, a few seconds after the one before, and walks two errands (the
+coffee shop, the square, the park or a terminal) and home again, resting at each stop, over and
+over. It drives W2's movement (`simile.world`), so the `entity_moved` messages are exactly what
+the real behaviour will send, and the snapshot puts everyone where movement has them.
 
-It never runs under `simile headless`, and tests don't turn it on.
+It never runs under `simile headless`. Don't combine it with W2's `SIMILE_DEMO_WALK`, which walks
+Mei too.

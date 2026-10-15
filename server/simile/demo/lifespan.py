@@ -5,11 +5,6 @@ from contextlib import asynccontextmanager
 
 from starlette.applications import Starlette
 
-from simile.demo.walkers import Demo
-from simile.protocol import hub_of
-from simile.sim import world_of
-from simile.world.map import load_map
-
 logger = logging.getLogger(__name__)
 
 ENV = "SIMILE_DEMO"
@@ -24,12 +19,17 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     if not enabled(app):
         yield
         return
+    from simile.demo.errands import Errands
+    from simile.protocol import hub_of
+    from simile.sim import world_of
+    from simile.world import movement_of
+
     world, hub = world_of(app), hub_of(app)
     fixtures = hub.snapshot
-    demo = Demo(load_map(), fixtures().entities, world.bus.publish)
-    hub.snapshot = lambda: demo.snapshot(fixtures())
-    unregister = world.loop.register(demo)
-    logger.info("Demo mode: %d NPCs walk errands in a loop", len(demo.walkers))
+    errands = Errands(movement_of(app), fixtures().entities)
+    hub.snapshot = lambda: errands.snapshot(fixtures())
+    unregister = world.loop.register(errands)
+    logger.info("Demo mode: %d NPCs walk errands in a loop", len(errands.walkers))
     try:
         yield
     finally:
