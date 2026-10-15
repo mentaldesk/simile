@@ -50,10 +50,12 @@ def write_tileset(art: Path) -> list[Path]:
     ]
 
 
-def write_character(directory: Path, character_id: str, appearance: Appearance) -> list[Path]:
+def write_character(
+    directory: Path, character_id: str, appearance: Appearance, seed: str | None = None
+) -> list[Path]:
     image = f"{character_id}.png"
     return [
-        _save(characters.sprite_sheet(appearance).to_image(), directory / image),
+        _save(characters.sprite_sheet(appearance, seed).to_image(), directory / image),
         _write_json(directory / f"{character_id}.json", characters.atlas(image)),
     ]
 
@@ -117,11 +119,11 @@ def generate(content: Path = CONTENT_DIR, npcs_only: bool = False) -> list[Path]
             written += write_character(sprites, character_id, appearance)
         written += write_previews(art / "preview")
     for character_id, appearance in npcs.items():
-        written += write_character(sprites, character_id, appearance)
+        written += write_character(sprites, character_id, appearance, seed=character_id)
     npc_preview = art / "preview" / "npcs.png"
     if npcs:
         npc_preview.parent.mkdir(parents=True, exist_ok=True)
-        written.append(_save(preview.characters_sheet(npcs), npc_preview))
+        written.append(_save(preview.characters_sheet(npcs, seeded=True), npc_preview))
     elif npc_preview.exists():
         npc_preview.unlink()
     return written
