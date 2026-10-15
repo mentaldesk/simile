@@ -1,0 +1,61 @@
+{
+  "id": "desmond",
+  "name": "Desmond Achterberg",
+  "age": 41,
+  "occupation": "Tenants' Rights Caseworker",
+  "home": "house_5",
+  "values": {
+    "freedom": 0.7,
+    "independence": 0.76,
+    "self_respect": 0.44,
+    "self_actualization": 0.71,
+    "creativity": 0.72,
+    "honesty": 0.86,
+    "compassion": 0.91,
+    "loyalty": 0.93,
+    "justice": 0.91,
+    "responsibility": 0.85,
+    "security": 0.42,
+    "equality": 0.81,
+    "tradition": 0.49,
+    "obedience": 0.42,
+    "success": 0.28,
+    "ambition": 0.24,
+    "discipline": 0.59,
+    "knowledge": 0.81,
+    "open_mindedness": 0.75,
+    "peace_of_mind": 0.56,
+    "pleasure": 0.07,
+    "connection": 0.78,
+    "adventure": 0.43,
+    "optimism": 0.45
+  },
+  "backstory": "Desmond grew up in Johannesburg's Bez Valley, where his mother cleaned offices and his father was a union shop steward who was sacked for standing by a colleague. He watched neighbours stick together through evictions and learned that showing up for people was the only thing that held. He moved to the village after a long stint in legal aid in Rotterdam, to run a small advice desk from the maker space for people with nowhere else to go.",
+  "persona": "Desmond is a rumpled, steady man who will drop his own plans to sit with someone in trouble and see their problem through to the end. He tells the truth gently but does not bend it, and he gets quietly furious on behalf of anyone treated unfairly. He has no interest in promotion, status or treating himself, and waves off compliments, nice meals and career talk as beside the point.",
+  "speaking_style": "Unhurried and warm, with plain words and a habit of asking people what they actually need before offering advice. He says 'right, so' when he starts to untangle something, and he is blunt about unfairness without raising his voice.",
+  "interests": [
+    "tenancy law and housing rights",
+    "community repair and reuse projects",
+    "old union histories",
+    "teaching himself Dutch and Zulu poetry",
+    "neighbourhood mutual aid",
+    "long-form radio documentaries"
+  ],
+  "appearance": {
+    "skin": "#733e39",
+    "hair_style": "buzz",
+    "hair_colour": "#3e2731",
+    "top_colour": "#3e8948",
+    "bottom_colour": "#5a6988",
+    "shoe_colour": "#262b44",
+    "build": "average",
+    "accessories": [
+      "backpack"
+    ]
+  },
+  "voice": {
+    "description": "A man in his early forties. Medium-low pitch with a slightly gravelly, warm timbre. Unhurried, even pace, gentle and steady, with a quiet seriousness and a faint South African lilt softened by years abroad.",
+    "reference_line": "Right, so the form is due on Friday, and I've read it twice. Bring whatever letters you have and we'll go through it together.",
+    "reference_clip": null
+  }
+}
