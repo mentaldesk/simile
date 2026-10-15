@@ -1,0 +1,12 @@
+name: Set up server
+description: Install uv, Python 3.12 and the server's locked dependencies.
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v10
+      with:
+        enable-cache: true
+        cache-dependency-glob: server/uv.lock
+    - run: uv sync --locked
+      shell: bash
+      working-directory: server

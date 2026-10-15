@@ -1,0 +1,13 @@
+name: Set up client
+description: Install Node and the client's locked dependencies.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v7
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: client/package-lock.json
+    - run: npm ci
+      shell: bash
+      working-directory: client
