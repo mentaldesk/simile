@@ -39,7 +39,10 @@ THEIR_FLAGS: dict[FlagKind, str] = {
 VALUE_NAMES = ", ".join(value.value.replace("_", " ") for value in CoreValue)
 VALUES = {value.value for value in CoreValue}
 
-TAG = re.compile(r"\[\s*values?\s*:([^\]]*)\]|^\s*values?\s*:(.*)$", re.IGNORECASE | re.MULTILINE)
+TAG = re.compile(
+    r"\[\s*values?\s*:([^\]\n]*)\]?|^\s*values?\s*:(.*)$", re.IGNORECASE | re.MULTILINE
+)
+CUT_OFF = re.compile(r"\[[^\]\n]*$")
 STAGE_DIRECTION = re.compile(r"\*[^*]*\*")
 QUOTES = {'"': '"', "“": "”", "'": "'"}
 
@@ -138,13 +141,18 @@ def turn_prompt(
     return "\n\n".join([background, so_far, CUES[cue].format(other=other)])
 
 
-def parse_reply(text: str, names: Sequence[str] = ()) -> Draft:
-    """The spoken line and its values from a reply, without the tag, labels or stage directions."""
+def parse_reply(text: str, names: Sequence[str] = (), others: Sequence[str] = ()) -> Draft:
+    """The speaker's line and its values from a reply, without the tag, labels, stage directions
+    or any turn written for `others`."""
     values: tuple[CoreValue, ...] = ()
     for match in TAG.finditer(text):
         values = _values(match.group(1) or match.group(2) or "")
-    spoken = STAGE_DIRECTION.sub(" ", TAG.sub(" ", text))
-    spoken = " ".join(spoken.split())
+    spoken = CUT_OFF.sub("", TAG.sub(" ", text).rstrip())
+    for name in others:
+        turn = re.search(rf"^\s*{re.escape(name)}\s*:", spoken, re.IGNORECASE | re.MULTILINE)
+        if turn:
+            spoken = spoken[: turn.start()]
+    spoken = " ".join(STAGE_DIRECTION.sub(" ", spoken).split())
     for name in sorted(names, key=len, reverse=True):
         if spoken.lower().startswith(f"{name.lower()}:"):
             spoken = spoken[len(name) + 1 :].strip()

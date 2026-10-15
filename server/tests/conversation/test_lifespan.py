@@ -8,7 +8,7 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
-from simile.conversation import conversations_of, create_engine
+from simile.conversation import DEFAULT_CONFIG, conversations_of, create_engine
 from simile.llm.lifespan import CANNED, FAKE_ENV
 from simile.protocol import hub_of
 from simile.sim import (
@@ -59,9 +59,13 @@ def test_the_server_never_reaches_claude_under_tests() -> None:
         assert app.state.llm.provider.name == "canned"
 
 
-def test_the_server_uses_claude_unless_told_otherwise(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_the_llm_uses_claude_unless_told_otherwise(
+    make_package: MakePackage, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv(FAKE_ENV)
-    app = create_app()
+    app = create_app(
+        make_package({"llm/lifespan.py": "from simile.llm.lifespan import lifespan\n"})
+    )
 
     with TestClient(app):
         assert app.state.llm.provider.name == "claude-code"
@@ -95,5 +99,6 @@ async def test_the_village_talks_with_the_fake_provider(monkeypatch: pytest.Monk
     assert ended
     assert all(conversation.ended for conversation in ended)
     lines = [event.line for event in events if isinstance(event, LineSpoken)]
+    assert all(len(c.lines) >= DEFAULT_CONFIG.min_lines + 2 for c in ended)
     assert {line.text for line in lines} <= set(CANNED)
     assert len(lines) == len({line.id for line in lines})

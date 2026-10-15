@@ -4,6 +4,7 @@ import logging
 import random
 from collections import deque
 from collections.abc import Callable, Iterator, Sequence
+from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Protocol
@@ -221,18 +222,23 @@ class ConversationEngine:
         prompt = turn_prompt(
             party.background, lines, talk.names, cue, first_name(other.npc), self.config
         )
-        chunks = self.llm().stream(
+        stream = self.llm().stream(
             prompt, system=party.system, model=self.config.model, purpose="conversation"
         )
-        text = "".join([chunk async for chunk in chunks])
-        return parse_reply(text, [talk.names[speaker], party.npc.name])
+        async with asyncio.timeout(self.config.line_timeout), aclosing(stream) as chunks:
+            text = "".join([chunk async for chunk in chunks])
+        return parse_reply(
+            text,
+            [talk.names[speaker], party.npc.name],
+            [talk.names[talk.other(speaker)], other.npc.name],
+        )
 
     def _drafted(self, talk: Talk, task: asyncio.Task[Draft]) -> bool:
         if task.cancelled():
             return False
         if error := task.exception():
             logger.warning(
-                "Couldn't write %s's line in %s: %s", talk.speaker, talk.conversation.id, error
+                "Couldn't write %s's line in %s: %r", talk.speaker, talk.conversation.id, error
             )
             return False
         draft = task.result()
@@ -282,8 +288,6 @@ class ConversationEngine:
             talk.cue = Cue.REPLY
 
     def _end(self, talk: Talk) -> None:
-        if talk.writing is not None:
-            talk.writing.cancel()
         now = self.clock.now
         conversation = talk.conversation
         conversation.ended = now

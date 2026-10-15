@@ -20,10 +20,10 @@ hooks and ticks the engine on the sim loop.
   system prompt is the speaker's persona, backstory, speaking style, values and interests. The
   prompt is R1's `describe()` of how they feel about the other, R2's `shared_history` (events, and
   the other's open flags about them), R2's `recall` (memories of the other, then recent or salient
-  ones), B4's `topics_to_raise` if `simile.news.reactions` exists, where and when they are, the
-  latest lines and a cue: open, reply, goodbye or answer a goodbye. The model ends each line with
-  `[values: ...]`, the core values the conversation touches. `parse_reply` takes it off, with any
-  name label, quotes or `*stage directions*`.
+  ones), B4's `topics_to_raise`, where and when they are, the latest lines and a cue: open, reply,
+  goodbye or answer a goodbye. The model ends each line with `[values: ...]`, the core values the
+  conversation touches. `parse_reply` takes it off, even cut short, along with any name label,
+  quotes, `*stage directions*` and anything the model wrote for the other speaker.
 - **Engagement.** Each participant starts from `start_engagement`, more if they like the other or
   value Connection. After every line, both lose `fatigue` and gain `topic_weight` times how much
   the line's values matter to them (from -1 to 1) plus `like_weight` times how much they like the
@@ -34,8 +34,9 @@ hooks and ticks the engine on the sim loop.
   `turn_gap` before the next, whether or not anyone is listening. The next line is written while
   the current one plays, so lines follow each other without gaps unless the LLM is slower than the
   line. `Line.timestamp` is when it starts.
-- **Ending.** After the last line plays, or a line fails to come back, the conversation ends. Both
-  NPCs resume deciding, and neither seeks the other for `cooldown` minutes.
+- **Ending.** After the last line plays, the conversation ends. So does one whose next line fails
+  or takes longer than `line_timeout` real seconds (30) to write, once the current line has
+  played. Both NPCs resume deciding, and neither seeks the other for `cooldown` minutes.
 
 Every constant is in `ConversationConfig`.
 

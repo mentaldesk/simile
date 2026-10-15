@@ -93,6 +93,12 @@ class ConversationConfig(BaseModel):
     turn_gap: float = Field(default=0.5, ge=0, description="Sim seconds between two lines.")
 
     model: str = Field(default=Model.HAIKU, description="The model that writes lines.")
+    line_timeout: float = Field(
+        default=30,
+        gt=0,
+        description="Real seconds a line may take to write before it counts as failed, which "
+        "ends the conversation.",
+    )
     max_words: int = Field(default=40, ge=1, description="Longest line asked for.")
     memories_about: int = Field(
         default=3, ge=0, description="Memories of the other person in a speaker's prompt."

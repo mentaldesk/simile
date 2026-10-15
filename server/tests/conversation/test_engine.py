@@ -15,7 +15,7 @@ from simile.conversation import (
     Facing,
     LineDrafted,
 )
-from simile.llm import FakeProvider, LLMClient, LLMError, Request
+from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.schema import (
@@ -113,7 +113,8 @@ class Village:
         self.behaviour.start()
         self.script = Script(self.clock, replies)
         self.provider = provider or FakeProvider(itertools.repeat(self.script, 100))
-        self.llm = LLMClient(self.provider)
+        self.records: list[CallRecord] = []
+        self.llm = LLMClient(self.provider, listeners=[self.records.append])
         self.engine = ConversationEngine(
             self.clock,
             self.world.bus,
@@ -390,6 +391,28 @@ async def test_without_news_reactions_there_are_no_topics(monkeypatch: pytest.Mo
     assert "News you might bring up" not in village.script.prompts[0]
 
 
+async def test_news_they_reacted_to_comes_up() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.store.add(
+        Memory(
+            owner="ana",
+            kind=MemoryKind.NEWS,
+            content="The river is getting a tidal barrier, and about time.",
+            salience=0.9,
+            valence=0.6,
+            timestamp=START - timedelta(hours=1),
+            news_id="barrier",
+        )
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.1)
+
+    news = "News you might bring up:\n- The river is getting a tidal barrier, and about time."
+    assert news in village.script.prompts[0]
+    assert news not in village.script.prompts[1]
+
+
 async def test_line_ids_are_unique_across_conversations() -> None:
     village = Village(
         npcs=(ANA, BEN, CAL, DOT), relationships=[*friends(ANA, BEN), *friends(CAL, DOT)]
@@ -425,7 +448,33 @@ async def test_closing_stops_writing() -> None:
     village.engine.start("ana", "ben")
     await village.run(minutes=0.1)
 
-    await village.engine.close()
+    assert provider.requests
+    assert village.records == []
+
+    await asyncio.wait_for(village.engine.close(), 1)
 
     assert village.spoken == []
-    assert provider.requests
+    assert [record.error for record in village.records] == ["cancelled"]
+
+
+async def test_a_line_that_never_comes_back_times_out_and_frees_its_slots() -> None:
+    never = asyncio.Event()
+    provider = FakeProvider(["Hello. [values: connection]", ["Well, ", never], "Free again."])
+    village = Village(
+        relationships=friends(ANA, BEN),
+        config=ConversationConfig(line_timeout=0.05),
+        provider=provider,
+    )
+    village.llm = LLMClient(provider, max_concurrency=1, listeners=[village.records.append])
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.1)
+    await asyncio.sleep(0.1)
+    await village.run(minutes=0.1)
+
+    [ended] = village.ended
+    assert [line.text for line in ended.conversation.lines] == ["Hello."]
+    assert [record.error for record in village.records] == [None, "cancelled"]
+    assert village.engine.live() == []
+    assert not any(mind.paused for mind in village.behaviour.minds.values())
+    assert await asyncio.wait_for(village.llm.complete("Still there?"), 1) == "Free again."

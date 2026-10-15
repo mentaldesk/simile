@@ -193,10 +193,20 @@ def test_the_first_turn_has_no_transcript() -> None:
             Draft("Fine. Truly.", (CoreValue.JUSTICE,)),
         ),
         ("[values: honesty]", Draft("", (CoreValue.HONESTY,))),
+        ("Hi.\n[values: connection, adven", Draft("Hi.", (CoreValue.CONNECTION,))),
+        ("Hi there.\n[val", Draft("Hi there.")),
+        (
+            "Hi.\n\nHenrietta: Oh, hello.\nKofi: How are you?\n[values: connection]",
+            Draft("Hi.", (CoreValue.CONNECTION,)),
+        ),
+        ("Kofi: Hi.\nHenrietta Okonkwo-Bell: Hello, Kofi.", Draft("Hi.")),
+        ("I told Henrietta: no.", Draft("I told Henrietta: no.")),
     ],
 )
 def test_parsing_a_reply(reply: str, draft: Draft) -> None:
-    assert parse_reply(reply, ["Kofi", "Kofi Lindqvist-Mensah"]) == draft
+    speaker, other = ["Kofi", "Kofi Lindqvist-Mensah"], ["Henrietta", "Henrietta Okonkwo-Bell"]
+
+    assert parse_reply(reply, speaker, other) == draft
 
 
 def test_a_line_takes_as_long_as_saying_it_at_150_words_a_minute() -> None:
