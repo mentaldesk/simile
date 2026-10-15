@@ -72,7 +72,7 @@ def reply():
     )
 
 
-log({{"argv": sys.argv[1:], "env": dict(os.environ)}})
+log({{"argv": sys.argv[1:], "env": dict(os.environ), "pid": os.getpid()}})
 replying = None
 for line in sys.stdin:
     message = json.loads(line)
@@ -119,6 +119,11 @@ class FakeCli:
     @property
     def stdin(self) -> list[dict[str, Any]]:
         return [e["stdin"] for e in self.entries() if "stdin" in e]
+
+    @property
+    def pids(self) -> list[int]:
+        """Every process started, in order."""
+        return [e["pid"] for e in self.entries() if "pid" in e]
 
     @property
     def interrupted(self) -> bool:

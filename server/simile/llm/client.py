@@ -146,6 +146,18 @@ class LLMClient:
                     )
                 )
 
+    def warm(self, *, system: str = "", model: str = Model.HAIKU) -> None:
+        """Get the provider ready for a `stream` with this system prompt and model, if it can.
+        Claude Code starts a process, which saves its startup on that call."""
+        warm = getattr(self.provider, "warm", None)
+        if warm is not None:
+            warm(system, str(model))
+
+    async def aclose(self) -> None:
+        close = getattr(self._provider, "aclose", None)
+        if close is not None:
+            await close()
+
     async def complete(
         self,
         prompt: Prompt,

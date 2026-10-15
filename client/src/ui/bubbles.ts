@@ -5,9 +5,16 @@ import {
   FULL_ALPHA_TILES,
   MIN_BUBBLE_SECONDS,
   SECONDS_PER_WORD,
+  THINKING_SECONDS,
 } from './tuning';
 
-export type Bubble = { speaker: string; text: string; shownAt: number; seconds: number };
+export type Bubble = {
+  speaker: string;
+  text: string;
+  shownAt: number;
+  seconds: number;
+  thinking?: boolean;
+};
 
 export function speakingSeconds(text: string): number {
   return text.split(/\s+/).filter(Boolean).length * SECONDS_PER_WORD;
@@ -35,6 +42,15 @@ export class SpeechBubbles {
   show(speaker: string, text: string, duration: number, now = Date.now()): void {
     const seconds = Math.max(duration, MIN_BUBBLE_SECONDS);
     this.bySpeaker.set(speaker, { speaker, text, shownAt: now, seconds });
+  }
+
+  think(speaker: string, now = Date.now()): void {
+    const seconds = THINKING_SECONDS;
+    this.bySpeaker.set(speaker, { speaker, text: '…', shownAt: now, seconds, thinking: true });
+  }
+
+  stopThinking(speaker: string): void {
+    if (this.bySpeaker.get(speaker)?.thinking) this.bySpeaker.delete(speaker);
   }
 
   current(now = Date.now()): Bubble[] {

@@ -4,8 +4,14 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 
 - a speech bubble over each speaker within earshot, for the line's `duration`, fainter the further
   away they are;
-- a chat box: Enter opens it to the nearest NPC within range, Enter sends `player_say`, Esc closes;
-- a scrollable log of everything the player has heard or said.
+- a chat box: Enter opens it to the NPC the player is talking with, or else the nearest NPC within
+  range who isn't talking to someone else. Enter sends `player_say`, Esc closes;
+- an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the
+  conversation ends;
+- a hint when an NPC starts a conversation with the player: "Mei wants to talk. Press Enter to
+  reply.";
+- a scrollable log of everything the player has heard or said, with an NPC's lines to the player
+  marked "→ You".
 
 Distances and timings are in [`tuning.ts`](tuning.ts).
 
@@ -50,5 +56,8 @@ have sent. Move with the arrow keys, WASD or a click. It only loads in `vite dev
 
 - `dialogue.say(text, target)` sends `player_say`, then shows and logs the player's line. `line`
   messages spoken by the player are skipped because they've been shown already.
-- `chatTarget(view)` picks who the chat box talks to, and `ChatBox.open(target)` opens it to a given
-  NPC, for example when an NPC starts a conversation with the player.
+- `dialogue` follows `snapshot`, `conversation_started` and `conversation_ended`: `partner()` is the
+  NPC the player is talking with, `busy(id)` whether an NPC is talking with someone else, and
+  `onInvitation(listener)` hears about NPCs who start a conversation with the player.
+- `chatTarget(view, dialogue)` picks who the chat box talks to, and `ChatBox.open(target)` opens it
+  to a given NPC.

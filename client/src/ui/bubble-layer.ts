@@ -26,6 +26,7 @@ export class BubbleLayer {
       shown.add(bubble.speaker);
       const element = this.element(bubble.speaker);
       if (element.textContent !== bubble.text) element.textContent = bubble.text;
+      element.classList.toggle('dialogue-bubble-thinking', bubble.thinking === true);
       const { offsetWidth: width, offsetHeight: height } = element;
       const left = clamp(anchor.x - width / 2, MARGIN, this.root.offsetWidth - width - MARGIN);
       const top = clamp(anchor.y - height - TAIL, MARGIN, this.root.offsetHeight - height - MARGIN);

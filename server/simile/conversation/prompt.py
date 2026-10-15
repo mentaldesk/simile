@@ -6,7 +6,7 @@ from enum import StrEnum
 
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.memory import SharedHistory
-from simile.schema import CoreValue, FlagKind, Id, Line, Memory, Npc, Relationship
+from simile.schema import PLAYER_ID, CoreValue, FlagKind, Id, Line, Memory, Npc, Relationship
 from simile.social import describe
 
 
@@ -48,6 +48,15 @@ QUOTES = {'"': '"', "“": "”", "'": "'"}
 
 
 @dataclass(frozen=True)
+class Player:
+    """The player as NPCs see them. B3 calls them Visitor too."""
+
+    name: str = "Visitor"
+    description: str = "a newcomer to the village"
+    id: Id = PLAYER_ID
+
+
+@dataclass(frozen=True)
 class Draft:
     """A line as written: its spoken text and the core values it touches."""
 
@@ -55,8 +64,8 @@ class Draft:
     values: tuple[CoreValue, ...] = ()
 
 
-def first_name(npc: Npc) -> str:
-    return npc.name.split()[0]
+def first_name(person: Npc | Player) -> str:
+    return person.name if isinstance(person, Player) else person.name.split()[0]
 
 
 def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
@@ -86,7 +95,7 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
 
 def background(
     speaker: Npc,
-    other: Npc,
+    other: Npc | Player,
     rel: Relationship,
     history: SharedHistory,
     memories: Sequence[Memory],
@@ -97,11 +106,12 @@ def background(
     """What the speaker knows going in: the other person, their history, what's on their mind."""
     name = first_name(other)
     where = f"at {place}" if place else "out in the street"
-    parts = [
-        f"It's {now:%H:%M}, {where}. You're with {name} ({other.name}, aged {other.age}, "
-        f"{other.occupation}).",
-        describe(rel, name),
-    ]
+    who = (
+        other.description
+        if isinstance(other, Player)
+        else f"{other.name}, aged {other.age}, {other.occupation}"
+    )
+    parts = [f"It's {now:%H:%M}, {where}. You're with {name} ({who}).", describe(rel, name)]
     events = [
         f"- {_ago(event.timestamp, now)}, {'you' if event.actor == speaker.id else name}: "
         f"{event.action}"

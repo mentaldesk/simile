@@ -24,7 +24,8 @@ export class DialogueScene extends Phaser.Scene {
 
     this.bubbles = new BubbleLayer(this.root);
     const log = new LogPanel(this.root, dialogue.log);
-    const chat = new ChatBox(this.root, dialogue, () => chatTarget(worldView()));
+    const chat = new ChatBox(this.root, dialogue, () => chatTarget(worldView(), dialogue));
+    const stopInvitations = dialogue.onInvitation((npcId) => chat.invite(npcId));
 
     const onKeyDown = (event: KeyboardEvent) => {
       const { target, key } = event;
@@ -40,6 +41,7 @@ export class DialogueScene extends Phaser.Scene {
     window.addEventListener('keydown', onKeyDown);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('keydown', onKeyDown);
+      stopInvitations();
       log.stop();
       this.root.remove();
     });
