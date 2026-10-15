@@ -10,6 +10,7 @@ MAP_ID = "village"
 MAP_PATH = CONTENT_DIR / "map" / f"{MAP_ID}.tmj"
 COLLISION_LAYER = "collision"
 LOCATIONS_LAYER = "locations"
+WALKING_SPEED = 1.3  # tiles per sim second: a 1.4 m/s walk, with a tile about 1.1 m
 
 
 @dataclass(frozen=True)

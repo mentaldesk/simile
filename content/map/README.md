@@ -37,14 +37,16 @@ buildings, and every walkable tile can reach every other.
 | Ids | |
 |---|---|
 | `house_1` … `house_10` | Homes on Lychee Lane, Kapok Walk and Banyan Row |
-| `coffee_shop` | The Daily Grind, on the north side of the square |
+| `coffee_shop` | The Daily Grind, on the north side of the square. Its area takes in the terrace. |
 | `square` | The town square |
 | `terminal_1` … `terminal_3` | News terminals on the square, at the park gate and by the river |
 | `park`, `noodle_bar`, `maker_space` | Amenities |
 
-**Scale.** The sprites are 1.5 tiles tall, so a tile is about 1.1 m, and walking at 1.4 m/s is about
-1.3 tiles/s. At that pace, crossing from west to east takes about 50 s and the farthest two
-locations are about 55 s apart.
+**Scale.** The map is sized for `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second. The
+sprites are 1.5 tiles tall, so a tile is about 1.1 m, and 1.3 tiles/s is a 1.4 m/s walk. At that
+speed, crossing from west to east takes about 50 s and the farthest two locations are about 55 s
+apart. W2 moves entities at `WALKING_SPEED` and B1 plans trips with it. At a typical game speed of
+around 4 tiles/s the village would feel three times smaller.
 
 ## Loading it
 

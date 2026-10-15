@@ -168,10 +168,16 @@ class Town:
         self.locations.append(location)
 
     def place_building(
-        self, location_id: str, name: str, kind: LocationKind, area: TileArea, door: int
+        self,
+        location_id: str,
+        name: str,
+        kind: LocationKind,
+        area: TileArea,
+        door: int,
+        front: int = 1,
     ) -> None:
-        """The location takes in the doorstep in front of the door, which is its entry."""
-        grown = area.model_copy(update={"height": area.height + 1})
+        """The location takes in `front` rows outside; the doorstep is its entry."""
+        grown = area.model_copy(update={"height": area.height + front})
         self.place(location_id, name, kind, grown, (door, area.y + area.height))
 
     def house(
@@ -349,7 +355,9 @@ def lychee_lane(town: Town) -> None:
     town.put(30, 11, "cafe_menu")
     town.put(33, 11, "cafe_table")
     town.put(35, 11, "cafe_table")
-    town.place_building("coffee_shop", "The Daily Grind", LocationKind.COFFEE_SHOP, cafe, 31)
+    town.place_building(
+        "coffee_shop", "The Daily Grind", LocationKind.COFFEE_SHOP, cafe, 31, front=2
+    )
 
     maker = town.building(
         37,

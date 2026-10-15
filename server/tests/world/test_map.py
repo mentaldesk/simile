@@ -5,15 +5,15 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
+from pydantic import TypeAdapter
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
-from simile.schema import LocationKind
+from simile.schema import Location, LocationKind
 from simile.world.build_map import Tileset, Town
-from simile.world.map import CONTENT_DIR, MAP_PATH, TownMap, load_map
+from simile.world.map import CONTENT_DIR, MAP_PATH, WALKING_SPEED, TownMap, load_map
 
 ART = CONTENT_DIR / "art"
-WALKING_PACE = 1.3  # tiles/s: 1.4 m/s, with sprites 1.5 tiles tall making a tile about 1.1 m
 
 
 @pytest.fixture(scope="module")
@@ -69,7 +69,16 @@ def test_the_farthest_two_places_are_about_a_minute_apart(town: TownMap) -> None
     entries = [(location.entry.x, location.entry.y) for location in town.locations]
     longest = max(max(distances(town, a)[b] for b in entries) for a in entries)
 
-    assert 40 <= longest / WALKING_PACE <= 80
+    assert 40 <= longest / WALKING_SPEED <= 80
+
+
+def test_f2_location_fixtures_stand_where_the_map_puts_them(town: TownMap) -> None:
+    fixtures = Path(__file__).parents[1] / "fixtures" / "locations.json"
+    locations = TypeAdapter(list[Location]).validate_json(fixtures.read_bytes())
+
+    for location in locations:
+        expected = town.location(location.id).model_copy(update={"name": location.name})
+        assert location == expected, location.id
 
 
 def test_walkable(town: TownMap) -> None:
