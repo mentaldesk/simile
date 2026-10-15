@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Sim server for Simile, a village of LLM-driven NPCs."
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "claude-agent-sdk>=0.2.167",
+    "pydantic>=2.14.1",
     "starlette>=1.8",
     "typer>=0.27",
     "uvicorn[standard]>=0.54",
