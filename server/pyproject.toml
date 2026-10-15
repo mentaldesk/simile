@@ -19,6 +19,7 @@ simile = "simile.cli:main"
 [dependency-groups]
 dev = [
     "httpx2>=2.13",
+    "hypothesis>=6.170.0",
     "jsonschema>=4.26.0",
     "pytest>=9.1",
     "ruff>=0.17",
