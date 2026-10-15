@@ -7,7 +7,6 @@ from typing import Any
 import pytest
 from pydantic import TypeAdapter
 
-import simile.memory.store as store_module
 from simile.memory import MemoryStore, default_path
 from simile.schema import InteractionEvent, Memory, MemoryKind, Model, Relationship
 
@@ -37,6 +36,7 @@ def test_everything_survives_reopening_the_database(tmp_path: Path) -> None:
     path = tmp_path / "village" / "simile.db"
 
     with MemoryStore(path) as first:
+        assert first.path == path
         first.add(*memories, *events, *relationships)
         before = everything(first)
 
@@ -66,11 +66,11 @@ def test_default_path_comes_from_simile_db(monkeypatch: pytest.MonkeyPatch, tmp_
     assert default_path() == tmp_path / "custom.db"
 
 
-def test_default_path_is_in_a_folder_git_ignores(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    monkeypatch.delenv("SIMILE_DB", raising=False)
-    monkeypatch.setattr(store_module, "DATA", tmp_path / "data")
+def test_default_path_is_server_data(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SIMILE_DB")
 
-    assert default_path() == tmp_path / "data" / "simile.db"
-    assert (tmp_path / "data" / ".gitignore").read_text() == "*\n"
+    assert default_path() == Path(__file__).resolve().parents[2] / "data" / "simile.db"
+
+
+def test_tests_get_an_in_memory_database() -> None:
+    assert str(default_path()) == ":memory:"

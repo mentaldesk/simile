@@ -12,7 +12,7 @@ from starlette.applications import Starlette
 
 from simile.schema import Flag, InteractionEvent, Memory, MemoryKind, Relationship
 
-DATA = Path(__file__).resolve().parents[2] / "data"
+DEFAULT_PATH = Path(__file__).resolve().parents[2] / "data" / "simile.db"
 HALF_LIFE = timedelta(hours=12)
 
 SCHEMA = """
@@ -27,14 +27,14 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS events_by_pair ON events (actor, target);
 
 CREATE TABLE IF NOT EXISTS flags (
-    id TEXT PRIMARY KEY,
     owner TEXT NOT NULL,
     about TEXT NOT NULL,
+    id TEXT NOT NULL,
     created REAL NOT NULL,
     resolved REAL,
-    data TEXT NOT NULL
+    data TEXT NOT NULL,
+    PRIMARY KEY (owner, about, id)
 );
-CREATE INDEX IF NOT EXISTS flags_by_pair ON flags (owner, about);
 
 CREATE TABLE IF NOT EXISTS memories (
     id INTEGER PRIMARY KEY,
@@ -58,16 +58,18 @@ type Record = InteractionEvent | Memory | Flag | Relationship
 
 
 def default_path() -> Path:
-    """`$SIMILE_DB`, or `server/data/simile.db` in a folder git ignores."""
-    if path := os.environ.get("SIMILE_DB"):
-        return Path(path)
-    DATA.mkdir(parents=True, exist_ok=True)
-    (DATA / ".gitignore").write_text("*\n")
-    return DATA / "simile.db"
+    """`$SIMILE_DB`, or `server/data/simile.db`."""
+    return Path(os.environ.get("SIMILE_DB") or DEFAULT_PATH)
 
 
 def recency(age: float, half_life: float) -> float:
     return 0.5 ** (max(age, 0.0) / half_life)
+
+
+def seconds(half_life: timedelta) -> float:
+    if half_life <= timedelta(0):
+        raise ValueError(f"half_life must be positive, not {half_life}")
+    return half_life.total_seconds()
 
 
 def epoch(now: datetime) -> float:
@@ -88,8 +90,9 @@ class MemoryStore:
     """Events, flags, memories and relationships in one SQLite file. Thread-safe."""
 
     def __init__(self, path: str | Path) -> None:
+        self.path = Path(path)
         if str(path) != ":memory:":
-            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._db = sqlite3.connect(path, check_same_thread=False)
         self._db.create_function("recency", 2, recency, deterministic=True)
@@ -191,7 +194,7 @@ class MemoryStore:
                 "kind": kind,
                 "about": about,
                 "now": epoch(now),
-                "half_life": half_life.total_seconds(),
+                "half_life": seconds(half_life),
                 "k": k,
             },
         )
@@ -209,7 +212,7 @@ class MemoryStore:
             " ORDER BY magnitude * recency(:now - time, :half_life) DESC, time DESC, id DESC"
             " LIMIT :k"
             ") ORDER BY time, id",
-            {"a": a, "b": b, "now": epoch(now), "half_life": half_life.total_seconds(), "k": k},
+            {"a": a, "b": b, "now": epoch(now), "half_life": seconds(half_life), "k": k},
         )
         flags = self._fetch(
             "SELECT data FROM flags"
@@ -253,8 +256,7 @@ class MemoryStore:
 
 
 def memory_of(app: Starlette) -> MemoryStore:
-    """The server's store on `app.state.memory`, opened at `default_path()` on first use. Tests
-    that start the server set `app.state.memory = MemoryStore(":memory:")` first."""
+    """The server's store on `app.state.memory`, opened at `default_path()` on first use."""
     if not hasattr(app.state, "memory"):
         app.state.memory = MemoryStore(default_path())
     return app.state.memory

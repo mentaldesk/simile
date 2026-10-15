@@ -25,6 +25,11 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(skip)
 
 
+@pytest.fixture(autouse=True)
+def in_memory_database(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SIMILE_DB", ":memory:")
+
+
 @pytest.fixture
 def make_package(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

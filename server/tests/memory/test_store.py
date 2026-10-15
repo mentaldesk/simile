@@ -85,15 +85,6 @@ def test_recall_ranks_by_salience_times_recency(store: MemoryStore) -> None:
     assert store.recall("mei", NOW) == [recent_and_interesting, fresh_but_dull, old_but_vivid]
 
 
-def test_recall_prefers_recent_and_salient_memories(store: MemoryStore) -> None:
-    older = memory("older", hours_ago=1)
-    dull = memory("dull", salience=0.2)
-    newer = memory("newer")
-    store.add(older, dull, newer)
-
-    assert store.recall("mei", NOW) == [newer, older, dull]
-
-
 def test_a_longer_half_life_lets_salience_win(store: MemoryStore) -> None:
     old_but_vivid = memory("the bridge collapsed", salience=0.9, hours_ago=24)
     fresh_but_dull = memory("Viktor ordered a flat white", salience=0.3)
@@ -128,6 +119,11 @@ def test_recall_filters_by_owner_about_and_kind(store: MemoryStore) -> None:
 def test_now_must_be_timezone_aware(store: MemoryStore) -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
         store.recall("mei", datetime(2026, 3, 14, 12))
+
+
+def test_half_life_must_be_positive(store: MemoryStore) -> None:
+    with pytest.raises(ValueError, match="half_life must be positive"):
+        store.shared_history("mei", "viktor", NOW, half_life=timedelta(0))
 
 
 def test_shared_history_is_per_pair_in_both_directions(store: MemoryStore) -> None:
@@ -189,6 +185,16 @@ def test_saving_a_relationship_replaces_its_scores_and_keeps_its_flags(store: Me
     assert store.relationship("mei", "viktor") == relationship(
         "mei", "viktor", like=0.7, flags=[debt]
     )
+
+
+def test_flags_with_the_same_id_in_different_pairs_are_kept_apart(store: MemoryStore) -> None:
+    meis = relationship("mei", "viktor", flags=[flag("debt", "mei", "viktor")])
+    viktors = relationship("viktor", "suki", flags=[flag("debt", "viktor", "suki")])
+    store.add(meis, viktors, flag("debt", "suki", "viktor", resolved=True))
+
+    assert store.relationship("mei", "viktor") == meis
+    assert store.relationship("viktor", "suki") == viktors
+    assert store.shared_history("viktor", "suki", NOW).flags == viktors.flags
 
 
 def test_resolving_a_flag_updates_it_and_closes_it(store: MemoryStore) -> None:
