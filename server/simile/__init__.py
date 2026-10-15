@@ -6,7 +6,6 @@ from types import ModuleType
 
 
 def submodules(name: str, package: str = __name__) -> Iterator[ModuleType]:
-    """Import and yield `<package>.<subpackage>.<name>` for every subpackage that defines it."""
     root = importlib.import_module(package)
     for info in sorted(pkgutil.iter_modules(root.__path__), key=lambda m: m.name):
         qualified = f"{package}.{info.name}.{name}"

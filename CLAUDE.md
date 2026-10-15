@@ -8,7 +8,10 @@ task in it is one issue in mentaldesk/simile and one PR.
 
 - **Change only the paths your issue's *Owns* section lists.** Two tasks in flight never own the
   same paths. Shared contracts (`server/simile/schema/`, `server/simile/protocol/`) change only in
-  their own small PR. If you need to change something you don't own, stop and report it.
+  their own small PR. If you need to change something you don't own, stop and report it. The one
+  exception: any task may add the dependencies it needs to `server/pyproject.toml` + `server/uv.lock`
+  or `client/package.json` + `client/package-lock.json` (see *Dependencies* below), even though F1
+  owns those files.
 - **Never use the Claude API, the `anthropic` SDK or an `ANTHROPIC_API_KEY`.** Every LLM call goes
   through the L1 client (`server/simile/llm/`), which drives the local Claude Code login. Tests use
   L1's fake provider and never call Claude. Lint enforces this: ruff bans `import anthropic` and
@@ -59,6 +62,13 @@ origin.
 
 ## Adding to the server without editing shared files
 
+The server finds each module's CLI commands, routes and startup hook by importing every
+subpackage's `__init__.py`, `cli.py`, `routes.py` and `lifespan.py`. That happens on every `simile`
+command and in Linux CI, so **none of those four files may import MLX, torch or any other optional or
+heavy dependency at module level.** Import them inside the function that uses them. Otherwise one
+module breaks the CLI and CI for everyone, and the server can no longer run without the voice
+dependencies.
+
 **CLI subcommands.** `uv run simile <command>` is a typer app. At startup it imports
 `simile.<module>.cli` for every subpackage that has one and calls its `register(app)`. Add a command
 by creating `server/simile/<module>/cli.py`; never edit `server/simile/cli.py`.
@@ -77,16 +87,41 @@ def register(app: typer.Typer) -> None:
 ```
 
 For a group of commands (`simile art tiles`), make a `typer.Typer()` and
-`app.add_typer(group, name="art")`. Every module's `cli.py` is imported on every `simile` call, so
-keep its top-level imports light (no MLX, torch or LLM client at import time).
+`app.add_typer(group, name="art")`.
 
 **HTTP and WebSocket routes.** `simile serve` builds a Starlette app from `/api/health` plus the
 `routes` list of every `simile.<module>.routes` module. Add endpoints by creating
 `server/simile/<module>/routes.py` with `routes: list[starlette.routing.BaseRoute]`, under `/api/`
 or `/ws`.
 
-**Dependencies.** `cd server && uv add <pkg>` (or `uv add --dev <pkg>`) and commit `pyproject.toml`
-and `uv.lock`. Apple Silicon-only packages need a marker so Linux CI can still resolve and install:
+**Startup and shutdown.** For anything that runs as long as the server does, such as a tick loop, a
+model loaded once or a refresh interval, create `server/simile/<module>/lifespan.py` with a
+`lifespan(app)` async context manager. The server enters every module's lifespan when it starts,
+in alphabetical module order, and exits them in reverse when it stops. Modules share objects
+through `app.state`. Since the order is alphabetical, don't read another module's `app.state` entry
+during startup. Look it up when you use it.
+
+```python
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from starlette.applications import Starlette
+
+
+@asynccontextmanager
+async def lifespan(app: Starlette) -> AsyncIterator[None]:
+    from simile.sim.clock import Clock
+
+    app.state.clock = Clock()
+    task = asyncio.create_task(app.state.clock.run())
+    yield
+    task.cancel()
+```
+
+**Dependencies.** Any task may add its own: `cd server && uv add <pkg>` (or `uv add --dev <pkg>`),
+then commit `pyproject.toml` and `uv.lock`. Apple Silicon-only packages need a marker so Linux CI
+can still resolve and install them:
 `uv add mlx-audio --marker "sys_platform == 'darwin' and platform_machine == 'arm64'"`.
 
 ## Adding to the client without editing shared files
@@ -97,9 +132,9 @@ and `uv.lock`. Apple Silicon-only packages need a marker so Linux CI can still r
 automatically; give overlay scenes `active: true` in their scene config. Areas without scenes
 (`net/`, `audio/`) don't export `scenes`.
 
-Dependencies: `cd client && npm install <pkg>` (or `--save-dev`) and commit `package.json` and
-`package-lock.json`. Vitest runs in Node; a test that needs a DOM adds `jsdom` as a dev dependency
-and starts with `// @vitest-environment jsdom`.
+**Dependencies.** Any task may add its own: `cd client && npm install <pkg>` (or `--save-dev`), then
+commit `package.json` and `package-lock.json`. Vitest runs in Node; a test that needs a DOM adds
+`jsdom` as a dev dependency and starts with `// @vitest-environment jsdom`.
 
 ## Tests that need Apple Silicon
 
