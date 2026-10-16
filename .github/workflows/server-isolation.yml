@@ -1,0 +1,30 @@
+name: Server isolation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_LOCKED: "1"
+
+jobs:
+  test:
+    name: Server tests (each file alone)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-server
+      - working-directory: server
+        run: |
+          git ls-files 'tests/*test_*.py' | xargs -P 4 -I {} sh -c '
+            out=$(uv run pytest -q -p no:cacheprovider "$1" 2>&1) ||
+              { echo "::error::$1 fails when run on its own"; echo "$out"; exit 1; }
+          ' _ {}
