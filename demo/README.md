@@ -71,9 +71,11 @@ Times are from your first step. Lines quoted are from a real run; yours will dif
    you'll catch the end.
 4. **1:00, Desmond.** Still lonely, Desmond may come over and greet you ("Kia orana. Mind if I
    sit?"). Press Enter and ask him about Mars, or walk on. About 10 seconds after Kofi and Tobias
-   finish, once the reflection lands, Kofi's row for Tobias jumps to the top of his table: like
-   0.71 → 0.82, familiarity 0.15 → 0.20. They disagreed about Mars and came away liking each other
-   more.
+   finish, once the reflection lands, Kofi's row for Tobias jumps to the top of his table, which is
+   ordered by familiarity: familiarity 0.15 → 0.20, respect 0.53 → 0.58. His like barely moves
+   (0.71 → 0.72), because Kofi's first impressions are already warm and each step further from
+   neutral is harder than the last. They disagreed about Mars and came away thinking better of each
+   other: click Tobias, and his like for Kofi has gone from 0.52 to 0.59.
 5. **1:20, Raymond at the terminal.** Walk east along the square, then south to the news terminal
    on its east edge, by the park gate. Raymond, the franchise broker, walked there at the start and
    read the article live: click him to see the new memory ("Frankly, Mars is the biggest territory
@@ -86,7 +88,7 @@ Times are from your first step. Lines quoted are from a real run; yours will dif
    with you quickly.
 7. **2:30, what Raymond makes of you.** Talking to Henrietta ended your chat with Raymond. Click
    him again (by the terminal, or heading for the coffee shop): there's a new row for Player, with
-   like and respect a little below his first impression (0.47 and 0.40, from 0.50 and 0.45) after
+   like and respect a little below his first impression (0.47 and 0.42, from 0.50 and 0.44) after
    you argued with him.
 
 The village carries on after that: in the real run Tobias, still lonely, sought out Odalys, who

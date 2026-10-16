@@ -97,7 +97,7 @@ def test_a_negative_event_lands_in_full_at_every_level(good_ones: int) -> None:
     )
 
 
-@pytest.mark.parametrize("like", [0.05, 0.2, 0.35, 0.65, 0.8, 0.95])
+@pytest.mark.parametrize("like", [0.05, 0.2, 0.35, 0.47, 0.53, 0.65, 0.8, 0.95])
 def test_moving_toward_neutral_is_as_easy_as_moving_from_it(like: float) -> None:
     toward = event(valence=-0.4 if like > 0.5 else 1.0, magnitude=0.25)
     from_neutral = apply_event(relationship(), toward, NOW).like - 0.5
@@ -106,14 +106,6 @@ def test_moving_toward_neutral_is_as_easy_as_moving_from_it(like: float) -> None
 
     assert moved == pytest.approx(from_neutral)
     assert abs(moved) == pytest.approx(0.075)
-
-
-def test_a_shift_past_neutral_carries_on_from_neutral() -> None:
-    rel = relationship(like=0.55)
-
-    after = apply_event(rel, event(valence=-0.8, magnitude=1 / 3), NOW)
-
-    assert after.like == pytest.approx(0.35)
 
 
 def test_an_old_friends_snub_hurts_as_much_as_a_strangers() -> None:

@@ -110,15 +110,11 @@ def resolve_flag(rel: Relationship, flag_id: str, when: datetime) -> Relationshi
 
 
 def _moved(score: float, shift: float, step: float) -> float:
-    """`score` after a shift that would move a neutral score by `shift`. Toward neutral it moves
-    the whole way. Away from it, 10 ** (distance / step) grows as much as it would from neutral."""
-    if not shift:
-        return score
+    """`score` after a shift that would move a neutral score by `shift`. From neutral or toward it,
+    it moves the whole way. Away from it, 10 ** (distance / step) grows as much as from neutral."""
     offset = score - NEUTRAL
-    if offset * shift < 0:
-        if abs(shift) <= abs(offset):
-            return score + shift
-        score, shift, offset = NEUTRAL, shift + offset, 0.0
+    if offset * shift <= 0:
+        return _clamp(score + shift)
     # A shift of 1 already crosses the whole scale, and much more would overflow.
     distance, push = abs(offset) / step, min(abs(shift), 1.0) / step
     further = step * math.log10(10**distance + 10**push - 1) - abs(offset)
