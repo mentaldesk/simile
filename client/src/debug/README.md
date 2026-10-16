@@ -9,8 +9,7 @@ another NPC to switch, and <kbd>`</kbd> again to close it.
 - The toggle listens for key-downs, which the chat box stops while the player types.
 - It sends `watch_npc` with the NPC while open and `null` when closed, and again after every
   `snapshot`, so a reconnected or restarted server picks the watch back up.
-- Clicks hit-test the 48 × 72 canvas box under each NPC's `bubbleAnchor` from the dialogue UI's
-  `WorldView`, so it needs nothing from the world scene. Where sprites overlap, the one in front
-  wins.
+- Clicks hit-test with `npcAt` from [`world/hit.ts`](../world/hit.ts), as the dialogue UI's do.
+  While the overlay is open it claims clicks, so they don't also choose who to talk to.
 - The panel is HTML (`panel.ts`), escaped by the `html` template in `html.ts`, since memories and
   lines are LLM text.

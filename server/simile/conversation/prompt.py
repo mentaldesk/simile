@@ -50,10 +50,14 @@ FAREWELL = (
     r"(?:good-?\s?bye|bye(?:-bye| now| then| for now)?|cheerio|ciao|farewell|good\s?night|"
     r"take care(?: now| then| of yourself)?)"
 )
+CLAUSE_START = r"(?:^|[,;:—-]\s*|\b(?:and|so|well|right|okay|ok|anyway)\s+)"
+CLAUSE_END = r"(?=\s*(?:[,.!…]|$))"
+SEE_YOU = r"see (?:you|ya)\b(?!['’])"
 LEAVING = re.compile(
-    rf"(?:^|[,;:—-]\s*|\b(?:and|so|well|right|okay|ok|anyway)\s+){FAREWELL}(?=\s*(?:[,.!…]|$))"
-    r"|\b(?:catch|see) (?:you|ya) (?:later|soon|around)\b"
-    r"|(?<!to )\bsee (?:you|ya)\b(?!['’])"
+    rf"{CLAUSE_START}{FAREWELL}{CLAUSE_END}"
+    rf"|{CLAUSE_START}{SEE_YOU}|\b(?:i|we)(?:['’]ll| will| shall) {SEE_YOU}"
+    rf"|\bsee (?:you|ya) (?:later|soon|around|tomorrow){CLAUSE_END}"
+    r"|\bcatch (?:you|ya) (?:later|soon|around)\b"
     r"|\btalk (?:to you )?(?:later|soon)\b|\buntil next time\b|\bmind how you go\b"
     r"|\bgood (?:day|morning|afternoon|evening) to you\b(?! too)"
     r"|\b(?:i['’]ll|i will|i shall|i['’]d better|i['’]d best|i should|i must|let me) "

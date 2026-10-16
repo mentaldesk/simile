@@ -1,5 +1,5 @@
 import type { ScreenPoint, WorldView } from '../ui/world-view';
-import { SPRITE_HEIGHT, TILE_SIZE, ZOOM } from '../world/tuning';
+import { SPRITE_HEIGHT, TILE_SIZE, ZOOM } from './tuning';
 
 export type Box = { x: number; y: number; width: number; height: number };
 
