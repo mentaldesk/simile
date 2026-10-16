@@ -307,6 +307,26 @@ def test_seekers_can_seek_the_player() -> None:
     assert requests == [("ana", PLAYER_ID)]
 
 
+def test_npcs_who_leave_the_player_alone_dont_seek_them_until_let_go() -> None:
+    requests: list[tuple[str, str]] = []
+    village = Village([ANA], start=at(11), config=keen(A.SEEK))
+    village.movement.place(PLAYER_ID, "square")
+    village.behaviour.leave_player_alone.add("ana")
+
+    def decline(a: str, b: str) -> bool:
+        requests.append((a, b))
+        return False
+
+    village.behaviour.hooks.set(request_conversation=decline)
+    village.run(minutes=30)
+    assert len(village.chosen("ana")) > 1
+    assert f"seek {PLAYER_ID}" not in village.chosen("ana")
+
+    village.behaviour.leave_player_alone.discard("ana")
+    village.run_until(lambda: bool(requests))
+    assert requests == [("ana", PLAYER_ID)]
+
+
 def test_seekers_choose_friends_from_their_relationships() -> None:
     baseline = Baseline(like=0.5, trust=0.5, respect=0.5)
     friend = Relationship(

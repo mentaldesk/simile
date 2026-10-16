@@ -91,6 +91,10 @@ replies wait on the first word; B2 writes each line while the one before it play
 run in the background. The configs name the version rather than the `haiku` alias, so these
 numbers hold when the alias moves.
 
+These calls wrote one-hour cache entries. Five-minute ones (see *How Claude Code is called*) cut a
+Haiku 5.5 line's prompt cost by about a third and its usage by about a fifth. Haiku 4.5's
+player-reply prompts, at 1,100 to 1,500 tokens, aren't cached at all.
+
 ## Usage and latency
 
 Every call produces a `CallRecord`: purpose, model, time queued for a slot, latency, time to first
@@ -163,6 +167,10 @@ reach Claude.
   thinking disabled where the model allows it (see *Thinking*);
 - prompts are delivered verbatim, so `@path` or `/command` in player text does nothing;
 - it runs in an empty temporary directory and doesn't save the session to disk;
+- prompt-cache entries last five minutes (`CLAUDE_CODE_PROMPT_CACHE_TTL=5m`, whatever this
+  process's environment says) rather than the hour Claude Code picks on a subscription, because
+  one-hour writes cost more. No prompt is sent twice, so the only reads are of a system prompt used
+  again within minutes, like the speaker's next line in a conversation;
 - `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and every
   `CLAUDE_CODE_USE_*` backend switch (Bedrock, Vertex, Foundry, Anthropic AWS and Google Cloud,
   Mantle, gateway) are removed from this process's environment before every call;

@@ -84,6 +84,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `needs(npc)` | `{Need: 0-1}`. |
 | `state(npc)` | JSON for F3's `npc_state`: goal, needs, last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
+| `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
 Every new goal is published on the bus as `GoalChosen(npc, activity, target)`.
 
