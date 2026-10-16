@@ -62,7 +62,8 @@ When it's `false`, show the text for `duration` seconds.
 
 `npc_id`, and `state`, an open JSON object for the debug overlay (I2). Each module puts its own keys
 in `state`, for example `{"goal": "coffee_shop"}`. The keys aren't part of the contract and can grow
-without changing the protocol.
+without changing the protocol. The server sends it only for the NPC the client is watching
+([`watch_npc`](#watch_npc)).
 
 ### `audio_chunk`
 
@@ -99,6 +100,14 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 ### `player_say`
 
 `text` (not empty) and `target`, the id of the NPC the player is talking to.
+
+### `watch_npc`
+
+`npc_id`: the NPC whose [`npc_state`](#npc_state) the debug overlay wants, or `null` to stop. The
+client sends it when the overlay opens on an NPC or switches to another, and with `null` when the
+overlay closes. Each one replaces the last, so there's one watched NPC at most. Nothing is watched
+until the client sends one, so it sends it again after each `snapshot`: a reconnection may be to a
+restarted server.
 
 ## Sim events
 

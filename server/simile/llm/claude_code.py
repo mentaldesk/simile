@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import tempfile
@@ -47,13 +48,23 @@ class ClaudeCodeProvider:
 
     name = "claude-code"
 
-    def __init__(self, *, cli_path: str | Path | None = None, cwd: Path | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        cli_path: str | Path | None = None,
+        cwd: Path | None = None,
+        max_warm: int = 2,
+        warm_for: float = 120,
+    ) -> None:
         self.cli_path = cli_path
         self.cwd = cwd or Path(tempfile.gettempdir()) / "simile-llm"
+        self.max_warm = max_warm
+        self.warm_for = warm_for
         self.session_info: dict[str, Any] | None = None
         """The last call's `system/init` frame: model, tools, MCP servers, API key source."""
         self.subscription: str | None = None
         """The subscription the last session's account reported, e.g. `Claude Max`."""
+        self._warm: dict[tuple[str, str], Warm] = {}
 
     def options(self, request: Request) -> ClaudeAgentOptions:
         return ClaudeAgentOptions(
@@ -79,9 +90,43 @@ class ClaudeCodeProvider:
         )
 
     async def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
+        if warm := self._warm.pop((request.system, request.model), None):
+            replied = False
+            try:
+                if sdk := await warm.claim():
+                    async with aclosing(self.turn(sdk, request)) as chunks:
+                        async for chunk in chunks:
+                            replied = replied or isinstance(chunk, str)
+                            yield chunk
+                    return
+            except LLMError as error:
+                if replied or not isinstance(error.__cause__, ClaudeSDKError):
+                    raise
+                logger.warning("A warm Claude Code process failed, so starting another: %s", error)
+            finally:
+                warm.release()
         async with self.session(request) as sdk, aclosing(self.turn(sdk, request)) as chunks:
             async for chunk in chunks:
                 yield chunk
+
+    def warm(self, system: str, model: str) -> None:
+        """Start a process for one later call with this system prompt and model."""
+        key = (system, model)
+        if warm := self._warm.get(key):
+            warm.keep()
+            return
+        while self._warm and len(self._warm) >= self.max_warm:
+            self._warm.pop(next(iter(self._warm))).close()
+        if self.max_warm:
+            self._warm[key] = Warm(self, Request((), system, model), self.warm_for)
+
+    async def aclose(self) -> None:
+        """Close the warm processes."""
+        warms = list(self._warm.values())
+        self._warm.clear()
+        for warm in warms:
+            warm.close()
+        await asyncio.gather(*(warm.task for warm in warms), return_exceptions=True)
 
     @asynccontextmanager
     async def session(self, request: Request) -> AsyncIterator[ClaudeSDKClient]:
@@ -157,6 +202,59 @@ class ClaudeCodeProvider:
                     yield usage_from(message, rate_limit)
                     return
         raise LLMError("Claude Code stopped without finishing the reply")
+
+
+class Warm:
+    """A Claude Code process for one turn, opened and closed in its own task as the SDK needs."""
+
+    def __init__(self, provider: ClaudeCodeProvider, request: Request, idle: float) -> None:
+        loop = asyncio.get_running_loop()
+        self.ready: asyncio.Future[ClaudeSDKClient | None] = loop.create_future()
+        self.claimed = asyncio.Event()
+        self.released = asyncio.Event()
+        self.idle = idle
+        self.deadline = loop.time() + idle
+        self.task = loop.create_task(self._hold(provider, request))
+
+    def keep(self) -> None:
+        self.deadline = max(self.deadline, asyncio.get_running_loop().time() + self.idle)
+
+    async def claim(self) -> ClaudeSDKClient | None:
+        """The connected client, or None if it couldn't connect."""
+        self.claimed.set()
+        return await asyncio.shield(self.ready)
+
+    def release(self) -> None:
+        self.released.set()
+
+    def close(self) -> None:
+        if not self.claimed.is_set():
+            self.task.cancel()
+
+    async def _hold(self, provider: ClaudeCodeProvider, request: Request) -> None:
+        key = (request.system, request.model)
+        try:
+            async with provider.session(request) as sdk:
+                self.ready.set_result(sdk)
+                self.keep()
+                await self._wait_for_claim()
+                if provider._warm.get(key) is self:
+                    del provider._warm[key]
+                if self.claimed.is_set():
+                    await self.released.wait()
+        except Exception as error:
+            logger.warning("A warm Claude Code process failed: %s", error)
+        finally:
+            if not self.ready.done():
+                self.ready.set_result(None)
+            if provider._warm.get(key) is self:
+                del provider._warm[key]
+
+    async def _wait_for_claim(self) -> None:
+        loop = asyncio.get_running_loop()
+        while not self.claimed.is_set() and (left := self.deadline - loop.time()) > 0:
+            with suppress(TimeoutError):
+                await asyncio.wait_for(self.claimed.wait(), left)
 
 
 @contextmanager

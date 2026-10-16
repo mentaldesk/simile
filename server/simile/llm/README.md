@@ -38,6 +38,32 @@ events = await llm.structured(transcript, Extraction, model=Model.SONNET, purpos
   `contextlib.aclosing` when you `break`, so that happens straight away rather than when the
   generator is garbage collected.
 
+## Warm processes
+
+Starting Claude Code takes about half a second before a call can begin. `llm.warm(system=...,
+model=...)` starts a process for a later `stream` with that system prompt and model, so that call
+skips the startup. Each process takes one call and is then closed, so no history builds up. One
+that isn't used within `warm_for` (120 s, counted again from each `warm`) is closed, and so is the
+oldest when more than `max_warm` (2) are waiting. Warming costs no usage. `llm.aclose()`, which the
+lifespan calls on shutdown, closes those still waiting. A warm process that died is replaced by a
+fresh one before any text, and providers without `warm` (the fake ones) ignore it.
+
+```python
+llm.warm(system=mara_persona, model="claude-haiku-4-5")  # when the player walks up to Mara
+...
+async for chunk in llm.stream(line, system=mara_persona, model="claude-haiku-4-5", priority=1):
+    ...
+```
+
+## Thinking
+
+`thinking={"type": "disabled"}` only reaches the model when the model allows it. Haiku 5.5, which
+`haiku` resolves to, doesn't: Claude Code says "Thinking can't be turned off" for it and sends no
+thinking setting, so the API's adaptive thinking applies. On a conversation prompt it thought for
+about 200 to 250 tokens, 1 to 1.3 s before the first word; `--effort low` barely changed that. A
+trivial prompt like the smoke test's doesn't trigger it. Haiku 4.5 (`claude-haiku-4-5`) honours
+`disabled`, and its first word came 0.75 s after the request on the same prompt.
+
 ## Usage and latency
 
 Every call produces a `CallRecord`: purpose, model, time queued for a slot, latency, time to first
@@ -99,8 +125,8 @@ reach Claude.
 `cli_path` says otherwise), configured as a plain text generator:
 
 - the game's system prompt replaces Claude Code's, with no tools, MCP servers, skills, slash
-  commands, settings files or `CLAUDE.md` (`--safe-mode`, `--setting-sources=`), one turn and no
-  extended thinking;
+  commands, settings files or `CLAUDE.md` (`--safe-mode`, `--setting-sources=`), one turn and
+  thinking disabled where the model allows it (see *Thinking*);
 - prompts are delivered verbatim, so `@path` or `/command` in player text does nothing;
 - it runs in an empty temporary directory and doesn't save the session to disk;
 - `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and every
@@ -113,6 +139,6 @@ reach Claude.
 `ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process: it drops the
 credentials and checks the account. `turn(sdk, request)` streams one turn. If the caller leaves
 early, it interrupts the turn and reads the rest of it, so the same session can take another turn.
-A warm-session provider should build on these two, as `SessionProvider` in `smoke.py` does.
+Warm processes and `SessionProvider` in `smoke.py` both build on these two.
 
 Another backend implements `Provider`: an async generator of text chunks followed by one `Usage`.
