@@ -64,7 +64,12 @@ def reply():
             "duration_api_ms": 30,
             "num_turns": 1,
             "result": "".join(scenario["chunks"]),
-            "usage": {{"input_tokens": 12, "output_tokens": 4, "cache_read_input_tokens": 600}},
+            "usage": {{
+                "input_tokens": 12,
+                "output_tokens": 4,
+                "cache_read_input_tokens": 600,
+                "output_tokens_details": {{"thinking_tokens": 3}},
+            }},
             "total_cost_usd": 0.001,
             "modelUsage": {{"claude-haiku-test": {{}}}},
             "session_id": "s1",

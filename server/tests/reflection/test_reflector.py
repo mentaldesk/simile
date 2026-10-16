@@ -157,7 +157,7 @@ async def test_reflects_with_haiku_in_one_call(
     )
 
     [request] = fake.requests
-    assert request.model == "haiku"
+    assert request.model == "claude-haiku-5-5"
     assert request.system.startswith(SYSTEM)
     assert [record.purpose for record in records] == ["reflection"]
 

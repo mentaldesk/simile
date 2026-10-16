@@ -18,6 +18,11 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 - Coming into earshot voices the next line on, including one already written and waiting for its
   turn. Leaving it cuts the line being said and drops the rest.
 - The player's own conversation is always in earshot: B5 ends it beyond 6 tiles.
+- At most `max_voiced` (2) conversations are voiced at once, the player's included. V1 makes speech
+  about 2.6x faster than it plays on an M2 Max: with two conversations it ran up to 2 s behind the
+  bubbles, with three up to 13 s, and dropped lines. Another conversation coming into earshot stays
+  unvoiced, from its next line on, until one of them ends or leaves earshot. The player starting a
+  conversation silences the farthest voiced one instead.
 - C2 draws bubbles within the same 8 tiles, so the player hears the conversations whose bubbles they
   see. C3's volume is `((14 - d) / 12)²`: a quarter at 8 tiles, about 6% at 11, silent at 14.
 

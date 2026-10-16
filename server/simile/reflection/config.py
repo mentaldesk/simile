@@ -8,7 +8,10 @@ class ReflectionConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    model: str = Field(default=Model.HAIKU, description="The model that reads each conversation.")
+    model: str = Field(
+        default=Model.HAIKU_5_5,
+        description="The model that reads each conversation. See *Which model* in the L1 README.",
+    )
     priority: int = Field(
         default=-1, description="L1 priority of the reflection calls, below conversations' 0."
     )

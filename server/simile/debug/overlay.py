@@ -33,14 +33,13 @@ class Overlay:
             return
         try:
             state = self.npc_state(self.watched)
+            if state is None:
+                logger.warning("Not watching %s: there's no such NPC", self.watched)
+                self.watched = None
+                return
+            self.broadcast(NpcStateMessage(npc_id=self.watched, state=state))
         except Exception:
-            logger.exception("Couldn't read %s's state for the debug overlay", self.watched)
-            return
-        if state is None:
-            logger.warning("Not watching %s: there's no such NPC", self.watched)
-            self.watched = None
-            return
-        self.broadcast(NpcStateMessage(npc_id=self.watched, state=state))
+            logger.exception("Couldn't send %s's state to the debug overlay", self.watched)
 
     async def run(self, interval: float) -> None:
         while True:

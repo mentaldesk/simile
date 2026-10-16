@@ -25,7 +25,7 @@ class NewsConfig(BaseModel):
     per_visit: int = Field(
         default=2, ge=1, description="Articles read per terminal visit, newest unread first."
     )
-    model: str = Field(default=Model.HAIKU, description="The model that rates each article.")
+    model: str = Field(default=Model.HAIKU_5_5, description="The model that rates each article.")
     priority: int = Field(
         default=-1, description="L1 priority of the rating calls, below conversations' 0."
     )

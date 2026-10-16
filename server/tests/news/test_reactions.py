@@ -116,7 +116,7 @@ async def test_an_article_clashing_with_a_high_value_lands_badly(
     assert reaction.topics == ["rules", "civic life", "history"]
     [other] = news_memories(memory, "rebel")
     assert other.valence == pytest.approx(0.8)
-    assert all(request.model == Model.HAIKU for request in fake.requests)
+    assert all(request.model == Model.HAIKU_5_5 for request in fake.requests)
 
 
 @pytest.mark.anyio

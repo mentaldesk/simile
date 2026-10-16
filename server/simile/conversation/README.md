@@ -17,7 +17,7 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` speaks first.
-- **Lines.** Each line is one L1 `stream()` call with Haiku and `purpose="conversation"`. The
+- **Lines.** Each line is one L1 `stream()` call with Haiku 5.5 and `purpose="conversation"`. The
   system prompt is the speaker's persona, backstory, speaking style, values and interests. The
   prompt is R1's `describe()` of how they feel about the other, R2's `shared_history` (events, and
   the other's open flags about them), R2's `recall` (memories of the other, then recent or salient
@@ -31,8 +31,8 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   other. From `min_lines` on, whoever's turn it is says goodbye when theirs is below
   `leave_below`, and the other answers. Pairs who dislike each other start lower and drop faster,
   so their conversations are short. Nobody talks past `max_lines`.
-- **Pacing.** A line takes `words / 150 wpm` sim seconds (at least `min_line_seconds`), then
-  `turn_gap` before the next, whether or not anyone is listening. The next line is written while
+- **Pacing.** A line takes `words / 200 wpm` sim seconds (at least `min_line_seconds`), about as
+  long as V1 takes to say it, then `turn_gap` before the next, whether or not anyone is listening. The next line is written while
   the current one plays, so lines follow each other without gaps unless the LLM is slower than the
   line. `Line.timestamp` is when it starts.
 - **Ending.** After the last line plays, the conversation ends. So does one whose next line fails
@@ -101,6 +101,9 @@ published.
   over the NPC or left gets a `LineDrafted` but no `LineSpoken`.
 - **Debug overlay (I2).** `engine.state(npc)` has their conversation, who they're talking to,
   engagement, facing and whether they're about to leave.
+- **Ending one now (I3).** `engine.end(conversation_id)` ends a live conversation as if it had run
+  its course, dropping any line still being written, and returns it with `ended` set, or None if
+  it isn't live. `ConversationEnded` follows as usual, so B3 reflects on it.
 
 ## Without Claude
 

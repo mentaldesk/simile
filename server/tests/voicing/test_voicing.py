@@ -415,3 +415,68 @@ def test_an_ending_never_restarts_lines_left_unspoken(synthesiser: FakeSynthesis
 
     assert asyncio.run(scenario()) == []
     assert synthesiser.started == [sentence]
+
+
+def test_voices_no_more_than_max_voiced_until_one_ends(synthesiser: FakeSynthesiser) -> None:
+    async def scenario() -> tuple[bool, bool, bool]:
+        async with village(synthesiser, VoicingConfig(max_voiced=1)) as world:
+            first = world.start("mei", "viktor")
+            _, voiced = world.say(first, "mei", "Morning, Viktor.")
+            second = world.start("suki", "tom")
+            _, crowded = world.say(second, "suki", "Morning, Tom.")
+            world.end(first, "mei", "viktor")
+            _, freed = world.say(second, "suki", "Lovely day for it.")
+            return voiced, crowded, freed
+
+    assert asyncio.run(scenario()) == (True, False, True)
+
+
+def test_voices_a_crowded_out_conversation_once_another_leaves_earshot(
+    synthesiser: FakeSynthesiser,
+) -> None:
+    async def scenario() -> tuple[bool, bool, bool]:
+        async with village(synthesiser, VoicingConfig(max_voiced=1)) as world:
+            world.at.update({"ana": (6, 6), "ben": (6, 7)})
+            for npc in ("ana", "ben"):
+                await world.voicing.voice.add_voice(npc, VOICE)
+            first = world.start("mei", "viktor")
+            second = world.start("ana", "ben")
+            _, crowded = world.say(second, "ana", "Morning, Ben.")
+            world.move_player(10, 10)
+            world.voicing.tick(0.1)
+            _, freed = world.say(second, "ben", "Morning, Ana.")
+            _, gone = world.say(first, "mei", "Morning, Viktor.")
+            return crowded, freed, gone
+
+    assert asyncio.run(scenario()) == (False, True, False)
+
+
+def test_the_players_conversation_silences_the_farthest_overheard_one(
+    synthesiser: FakeSynthesiser,
+) -> None:
+    sentence = "Did you hear about the bakery?"
+    gate = synthesiser.gate(sentence)
+
+    async def scenario() -> tuple[bool, list[AudioChunk], bool, bool, bool]:
+        async with village(synthesiser, VoicingConfig(max_voiced=2)) as world:
+            world.at.update({"ana": (9, 0), "ben": (9, 1)})
+            for npc in ("ana", "ben"):
+                await world.voicing.voice.add_voice(npc, VOICE)
+            near = world.start("mei", "viktor")
+            far = world.start("ana", "ben")
+            line, far_before = world.say(far, "ana", sentence)
+            gate.release(1)
+            await until(lambda: len(world.chunks(line)) == 1)
+            talk = world.start(PLAYER_ID, "suki")
+            _, reply = world.say(talk, "suki", "Nice to meet you.")
+            cut = await world.heard(line)
+            _, near_after = world.say(near, "mei", "Morning, Viktor.")
+            _, far_after = world.say(far, "ben", "I did.")
+            gate.release(synthesiser.chunks)
+            return far_before, cut, reply, near_after, far_after
+
+    far_before, cut, reply, near_after, far_after = asyncio.run(scenario())
+
+    assert far_before
+    assert cut[1:] == [AudioChunk(cut[0].line_id, 1, b"", last=True)]
+    assert (reply, near_after, far_after) == (True, True, False)

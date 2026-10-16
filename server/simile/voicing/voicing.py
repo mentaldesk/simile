@@ -131,20 +131,44 @@ class Voicing:
 
     def _listen(self, conversation: ConversationAudio) -> None:
         near = self._near(conversation)
+        if near and not conversation.near:
+            if conversation.priority is Priority.PLAYER:
+                self._make_room_for_player()
+            else:
+                near = len(self._voiced()) < self.config.max_voiced
         if near:
+            conversation.near = True
             for line in conversation.drafted.values():
                 if line.id not in conversation.lines:
                     self._start(conversation, line)
         elif conversation.near:
-            for audio in tuple(conversation.lines.values()):
-                self._stop(audio)
-        conversation.near = near
+            self._silence(conversation)
 
     def _near(self, conversation: ConversationAudio) -> bool:
         if not self.listening():
             return False
         reach = self.config.out_of_earshot if conversation.near else self.config.earshot
         return any(self._from_player(npc) <= reach for npc in conversation.participants)
+
+    def _voiced(self) -> list[ConversationAudio]:
+        return [c for c in self._conversations.values() if c.near and not c.ended]
+
+    def _make_room_for_player(self) -> None:
+        voiced = self._voiced()
+        overheard = sorted(
+            (c for c in voiced if c.priority is Priority.OVERHEARD), key=self._closest
+        )
+        while overheard and len(voiced) >= self.config.max_voiced:
+            voiced.remove(farthest := overheard.pop())
+            self._silence(farthest)
+
+    def _closest(self, conversation: ConversationAudio) -> float:
+        return min(self._from_player(npc) for npc in conversation.participants)
+
+    def _silence(self, conversation: ConversationAudio) -> None:
+        for audio in tuple(conversation.lines.values()):
+            self._stop(audio)
+        conversation.near = False
 
     def _from_player(self, npc: Id) -> float:
         if npc == PLAYER_ID:

@@ -9,7 +9,7 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
   with no lines, or with no NPC in them, are skipped. Tasks still running at shutdown are
   cancelled and their conversations are lost; to process one at shutdown, await
   `reflector.reflect(llm, conversation)` directly.
-- **The call.** One L1 `structured()` call per conversation, with Haiku, `purpose="reflection"`
+- **The call.** One L1 `structured()` call per conversation, with Haiku 5.5, `purpose="reflection"`
   and priority -1, so it queues behind dialogue. The prompt has each NPC's persona, strongest and
   weakest values, interests, how they felt about the others going in (R1's `as_of`, or `meet` for
   strangers), their open flags about them as refs (`F1`, `F2`, ...), and the transcript.

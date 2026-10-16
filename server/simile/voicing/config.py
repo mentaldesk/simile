@@ -22,6 +22,13 @@ class VoicingConfig(BaseModel):
         "this from every speaker. C3 is down to about 6% volume here and silent at 14. The gap "
         "from `earshot` keeps lines from cutting in and out at the edge.",
     )
+    max_voiced: int = Field(
+        default=2,
+        ge=1,
+        description="Most conversations voiced at once, the player's included, since V1 voices one "
+        "sentence at a time. Others in earshot stay unvoiced until there's room, and the player's "
+        "own conversation silences the farthest.",
+    )
     lead: float = Field(
         default=0.5,
         gt=0,
