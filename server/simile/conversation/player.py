@@ -42,6 +42,13 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
+TURNED_AWAY = (
+    "I'll let you talk to {name}. See you around.",
+    "Go on, {name}'s waiting. Catch you later.",
+    "I'll leave you with {name}. Bye for now.",
+    "Right, I'll let you go. See you!",
+)
+
 
 def says_goodbye(text: str) -> bool:
     return GOODBYE.search(text) is not None
@@ -164,7 +171,7 @@ class PlayerConversations:
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
             if talk is not None:
-                self._end(talk)
+                self._turned_away(talk, target)
             joined = self._start(target, opener=PLAYER_ID)
         return self._hear(joined, text)
 
@@ -353,6 +360,14 @@ class PlayerConversations:
     def _end(self, talk: PlayerTalk) -> None:
         self._interrupt(talk)
         self.engine._end(talk)
+
+    def _turned_away(self, talk: PlayerTalk, to: Id) -> None:
+        """The player spoke to `to`, so the NPC says a quick goodbye, unless they've said one."""
+        if not talk.closing:
+            self._interrupt(talk)
+            name = first_name(self.engine.behaviour.npcs[to])
+            self._sentence(talk, self.rng.choice(TURNED_AWAY).format(name=name))
+        self._end(talk)
 
     def _look_around(self) -> None:
         engine, now = self.engine, self.engine.clock.now

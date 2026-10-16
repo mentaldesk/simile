@@ -16,6 +16,7 @@ from simile.conversation import (
 )
 from simile.conversation.player import (
     DEFAULT_PLAYER_CONFIG,
+    TURNED_AWAY,
     PlayerConfig,
     PlayerConversations,
     Sentences,
@@ -439,7 +440,7 @@ async def test_a_failed_reply_ends_the_conversation() -> None:
     assert not village.behaviour.minds["ana"].paused
 
 
-async def test_talking_to_someone_else_ends_the_first_conversation() -> None:
+async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_conversation() -> None:
     village = Village()
     village.players.say("Hi Ana.", "ana")
     await village.run(4)
@@ -449,8 +450,55 @@ async def test_talking_to_someone_else_ends_the_first_conversation() -> None:
     await village.run(1)
 
     first, second = village.of(ConversationStarted)
-    assert [event.conversation.id for event in village.ended] == [first.conversation.id]
+    [ended] = village.ended
+    assert ended.conversation.id == first.conversation.id
+    goodbye = ended.conversation.lines[-1]
+    assert goodbye.speaker == "ana"
+    assert goodbye.text in [text.format(name="Ben") for text in TURNED_AWAY]
+    assert goodbye.timestamp == ended.conversation.ended
+    assert goodbye in [event.line for event in village.of(LineDrafted)]
+    order = [
+        event
+        for event in village.events
+        if isinstance(event, ConversationStarted | ConversationEnded)
+        or (isinstance(event, LineSpoken) and event.line == goodbye)
+    ]
+    assert order == [first, LineSpoken(goodbye), ended, second]
     assert second.conversation.participants == [PLAYER_ID, "ben"]
+    assert village.said(PLAYER_ID) == ["Hi Ana.", "Hi Ben."]
+
+
+async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
+    hang = asyncio.Event()
+    village = Village(provider=FakeProvider([["Well, ", hang], "Hello! [values: connection]"]))
+    village.players.say("Hi Ana.", "ana")
+    await village.run(1)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(1)
+
+    [ended] = village.ended
+    assert [line.speaker for line in ended.conversation.lines] == [PLAYER_ID, "ana"]
+    assert ended.conversation.lines[-1].text in [text.format(name="Ben") for text in TURNED_AWAY]
+    assert village.records[0].error == "cancelled"
+    assert village.said("ben") == ["Hello!"]
+
+
+async def test_an_npc_who_has_said_goodbye_doesnt_say_another() -> None:
+    village = Village(["Hm. Right. [values: tradition]"], npcs=(BEN, ANA))
+    village.players.say("Hello!", "ben")
+    await village.run(5)
+    village.players.say("Lovely weather.", "ben")
+    await village.run(5)
+
+    village.walk_to("ana", 1)
+    village.players.say("Hi Ana.", "ana")
+
+    [ended] = village.ended
+    assert village.said("ben") == ["Hm.", "Right."] * 2
+    assert ended.conversation.lines[-1].speaker == "ben"
+    assert village.players.talk() is not None
 
 
 async def test_talking_to_someone_busy_keeps_the_conversation_going_on() -> None:

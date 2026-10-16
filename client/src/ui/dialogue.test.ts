@@ -201,6 +201,24 @@ describe('Dialogue', () => {
     expect(dialogue.bubbles.current().map(({ speaker }) => speaker)).toEqual(['player']);
   });
 
+  it('keeps the goodbye of an NPC the player turned away from', () => {
+    vi.spyOn(server, 'send').mockReturnValue(true);
+    start('conv_1', 'player', 'mei');
+    dialogue.say('Hi Mei', 'mei');
+
+    const goodbye = "I'll let you talk to Tom. See you around.";
+    deliver('mei', goodbye);
+    end('conv_1');
+
+    expect(dialogue.bubbles.current()[1]).toMatchObject({ speaker: 'mei', text: goodbye });
+    expect(dialogue.log.entries.at(-1)).toEqual({
+      speaker: 'mei',
+      name: 'Mei Lin',
+      text: goodbye,
+      to: 'You',
+    });
+  });
+
   it(`keeps the last ${LOG_LIMIT} entries`, () => {
     for (let i = 0; i <= LOG_LIMIT; i++) deliver('mei', `Line ${i}`);
 

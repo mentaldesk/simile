@@ -27,8 +27,8 @@ box. NPCs talking with someone else are skipped: clicking one says they're busy,
 out of range says they're too far away. Esc forgets the choice. While the debug overlay is open,
 clicks are its own.
 
-Saying something to someone else mid-conversation ends the current conversation: the server does
-that when `player_say` names a new NPC. While the chat box is open its target stays put, so the
+Saying something to someone else mid-conversation ends the current conversation with a quick
+goodbye from the NPC left behind: the server does that when `player_say` names a new NPC. While the chat box is open its target stays put, so the
 label never changes under the player; if they walk off or get busy, sending says so instead.
 
 Distances and timings are in [`tuning.ts`](tuning.ts). `CHAT_RANGE_TILES` (3) is a tile inside
