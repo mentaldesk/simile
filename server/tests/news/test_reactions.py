@@ -10,7 +10,7 @@ import pytest
 from simile.llm import FakeProvider, LLMClient, LLMError, Model, Request
 from simile.memory import MemoryStore
 from simile.news import NewsStore
-from simile.news.reactions import NewsConfig, NewsReader, Reaction, topics_to_raise
+from simile.news.reactions import NewsConfig, NewsReader, Reaction, mentioned, topics_to_raise
 from simile.schema import CoreValue, Memory, MemoryKind, NewsItem, Npc
 from simile.sim import Clock
 
@@ -397,3 +397,115 @@ def test_ranking_favours_recent_and_intense_reactions(memory: MemoryStore) -> No
 
 def test_nothing_to_raise_without_news(memory: MemoryStore) -> None:
     assert topics_to_raise(memory, "mei", NOW) == []
+
+
+def took_in(owner: str, title: str, *topics: str) -> Memory:
+    return Memory(
+        owner=owner,
+        kind=MemoryKind.NEWS,
+        content=f'I read "{title}" in BBC News on the news terminal. Wow.',
+        salience=0.5,
+        valence=0.3,
+        timestamp=NOW - timedelta(hours=1),
+        topics=list(topics),
+        news_id=title,
+    )
+
+
+def test_a_line_naming_an_article_brings_back_the_take_on_it(memory: MemoryStore) -> None:
+    memory.add(
+        took_in("mei", "Colonising Mars by 2050", "space travel"),
+        took_in("mei", "Tidal barrier for the river", "flooding"),
+        took_in("suki", "Bees in decline", "pollinators"),
+    )
+
+    def recalled(said: str) -> list[str | None]:
+        return [m.news_id for m in mentioned(memory, "mei", said, NOW)]
+
+    assert recalled("Did you hear about the tidal barrier?") == ["Tidal barrier for the river"]
+    assert recalled("They want to colonise Mars!") == ["Colonising Mars by 2050"]
+    assert recalled("More floods by the river") == ["Tidal barrier for the river"]
+    assert recalled("Is space travel worth it?") == ["Colonising Mars by 2050"]
+    assert recalled("Bees are in decline, you know.") == []
+    assert recalled("Mars is so bright tonight.") == []
+    assert recalled("I read the BBC News on the terminal.") == []
+    assert recalled("") == []
+
+
+def test_the_article_sharing_most_words_comes_first(memory: MemoryStore) -> None:
+    memory.add(
+        took_in("mei", "River barrier plans"),
+        took_in("mei", "Tidal barrier for the river"),
+    )
+
+    def recalled(said: str, **config: int) -> list[str | None]:
+        found = mentioned(memory, "mei", said, NOW, config=NewsConfig(**config))
+        return [m.news_id for m in found]
+
+    said = "That tidal barrier on the river!"
+    assert recalled(said) == ["Tidal barrier for the river", "River barrier plans"]
+    assert recalled(said, mentions=1) == ["Tidal barrier for the river"]
+    assert recalled(said, mentions=0) == []
+    assert recalled("The river!") == []
+    assert len(recalled("The river!", mention_words=1)) == 2
+
+
+def stored(title: str, tags: list[str], summary: str) -> NewsItem:
+    return NewsItem(
+        id=title,
+        title=title,
+        url=f"https://example.com/{len(title)}",
+        summary=summary,
+        published=NOW - timedelta(hours=2),
+        tags=tags,
+    )
+
+
+ROVER = stored(
+    "Mission to the red planet",
+    ["space exploration", "robots"],
+    "Engineers test a new rover in the desert.",
+)
+OUTAGE = stored(
+    "Internet outage hits millions",
+    ["broadband", "life sciences"],
+    "Homes lost their connection for hours.",
+)
+
+
+def test_the_stored_articles_tags_and_summary_count_too(memory: MemoryStore) -> None:
+    memory.add(took_in("mei", ROVER.title), took_in("mei", "Tidal barrier for the river"))
+
+    def recalled(said: str, store: dict[str, NewsItem]) -> list[str | None]:
+        return [m.news_id for m in mentioned(memory, "mei", said, NOW, article=store.get)]
+
+    assert recalled("Those robots out in the desert!", {ROVER.id: ROVER}) == [ROVER.title]
+    assert recalled("Those robots out in the desert!", {}) == []
+    assert recalled("A mission to another planet.", {}) == [ROVER.title]
+    assert recalled("That tidal barrier!", {ROVER.id: ROVER}) == ["Tidal barrier for the river"]
+
+
+@pytest.mark.parametrize(
+    ("said", "recalled"),
+    [
+        ("Did you see the Mars piece?", ["Colonising Mars by 2050"]),
+        ("That broadband story, wow.", [OUTAGE.title]),
+        ("Mars is so bright tonight.", []),
+        ("Did you read about the colonies?", []),
+        ("Tell me the story of your life.", []),
+        ("I read a lot of history.", []),
+        ("Life sciences are booming.", [OUTAGE.title]),
+        ("I read about the international summit.", []),
+    ],
+)
+def test_naming_the_news_lets_one_exact_word_do(
+    memory: MemoryStore, said: str, recalled: list[str]
+) -> None:
+    memory.add(
+        took_in("mei", "Colonising Mars by 2050", "space travel", "ancient history"),
+        took_in("mei", OUTAGE.title),
+    )
+
+    found = mentioned(memory, "mei", said, NOW, article={OUTAGE.id: OUTAGE}.get)
+
+    assert [m.news_id for m in found] == recalled

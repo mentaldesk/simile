@@ -12,10 +12,10 @@ class AmbientConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Whether the director nudges anyone.")
     quiet: float = Field(
-        default=120,
+        default=60,
         ge=0,
-        description="How long the player goes without an NPC conversation in earshot before the "
-        "director nudges a pair near them.",
+        description="How long the player goes without an NPC conversation in earshot, or one of "
+        "their own, before the director nudges a pair near them.",
     )
     retry: float = Field(
         default=60, ge=0, description="How long after a nudge before it may nudge again."

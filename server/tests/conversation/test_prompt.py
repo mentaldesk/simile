@@ -12,7 +12,7 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, first_name, takes_leave, with_both_read
+from simile.conversation.prompt import Player, first_name, takes_leave
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -116,25 +116,6 @@ def test_the_background_has_the_relationship_history_memories_and_news() -> None
     assert "News you might bring up:\n- Read about a city that paints its bridges." in text
 
 
-def test_news_both_have_read_is_marked_where_it_is_and_added_where_it_isnt() -> None:
-    bridges, drones = (
-        memory("kofi", 'I read "Bridges painted". Lovely idea.', MemoryKind.NEWS),
-        memory("kofi", 'I read "Drones regulated". About time.', MemoryKind.NEWS),
-    )
-    text = 'It\'s 09:30.\n\nNews you might bring up:\n- I read "Bridges painted". Lovely idea.'
-
-    assert with_both_read(text, [bridges, drones], "Visitor") == (
-        "It's 09:30.\n\n"
-        "News you might bring up:\n"
-        '- I read "Bridges painted". Lovely idea. (Visitor has read it too.)\n\n'
-        "News you've both read:\n"
-        '- I read "Drones regulated". About time. (Visitor has read it too.)\n\n'
-        "You might ask Visitor if they saw the news you've both read, and if they bring it up, "
-        "say what you made of it."
-    )
-    assert with_both_read(text, [], "Visitor") == text
-
-
 def test_the_player_is_a_newcomer_called_visitor() -> None:
     rel = meet(KOFI, PLAYER_ID)
     history = SharedHistory(
@@ -190,6 +171,21 @@ def test_a_turn_is_the_background_the_transcript_and_the_cue() -> None:
         "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
         "goodbye yet."
     )
+
+
+def test_news_the_other_just_mentioned_follows_the_transcript() -> None:
+    lines = [line(1, "henrietta", "They want to paint murals on Mars now.")]
+    mars = memory("kofi", 'I read "Murals on Mars". Wild.', MemoryKind.NEWS)
+
+    prompt = turn_prompt("B", lines, NAMES, Cue.REPLY, "Henrietta", recalled=[mars])
+
+    assert (
+        "Henrietta: They want to paint murals on Mars now.\n\n"
+        "You read about what Henrietta just mentioned:\n"
+        '- I read "Murals on Mars". Wild.\n\n'
+        "Say one or two sentences"
+    ) in prompt
+    assert "You read about" not in turn_prompt("B", lines, NAMES, Cue.REPLY, "Henrietta")
 
 
 def test_a_speaker_sees_how_their_latest_lines_began() -> None:
@@ -257,6 +253,11 @@ def test_cues(cue: Cue, expected: str) -> None:
         "We'll see you there.",
         "Thanks for the tea. Hope to see you soon.",
         "See ya!",
+        "Lovely to see you, bye!",
+        "I'll see you out there on Saturday.",
+        "I'll see you right there at six.",
+        "I'll see you right here at six.",
+        "I'll see you right after church.",
     ],
 )
 def test_lines_that_say_goodbye(text: str) -> None:
@@ -296,6 +297,12 @@ def test_lines_that_say_goodbye(text: str) -> None:
         "Bye now, she said, and off he went to the market. Strange man.",
         "Catch you later, I said, but he never came back. Do you know him?",
         "Goodbye to all that, I thought.",
+        "Nice to see you.",
+        "Don't get up, I'll see you out.",
+        "I'll see you right, don't worry.",
+        "We'll see you through the winter.",
+        "I'll see you home after the quiz.",
+        "I'll see you off at the station.",
     ],
 )
 def test_lines_that_dont_say_goodbye(text: str) -> None:

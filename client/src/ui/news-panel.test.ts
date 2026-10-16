@@ -36,8 +36,8 @@ function news(articles: NewsArticle[]): void {
   server.dispatch(JSON.stringify({ type: 'news', articles }));
 }
 
-function press(key: string): KeyboardEvent {
-  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+function press(key: string, init: KeyboardEventInit = {}): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
   (document.activeElement ?? section()).dispatchEvent(event);
   return event;
 }
@@ -157,6 +157,44 @@ it.each(['Escape', 'e'])('closes with %s, which goes no further', (key) => {
   expect(panel.isOpen).toBe(false);
   expect(section().hidden).toBe(true);
   expect(document.activeElement).toBe(document.body);
+  expect(reached).not.toHaveBeenCalled();
+  window.removeEventListener('keydown', reached);
+});
+
+it('closes with E once per press, not held down or with a modifier', () => {
+  panel.open('Terminal');
+
+  press('e', { repeat: true });
+  press('e', { metaKey: true });
+  press('e', { ctrlKey: true });
+  press('e', { altKey: true });
+  expect(panel.isOpen).toBe(true);
+
+  press('E', { shiftKey: true });
+  expect(panel.isOpen).toBe(false);
+});
+
+it('keeps Tab and Shift+Tab inside the panel', () => {
+  const reached = vi.fn();
+  window.addEventListener('keydown', reached);
+  panel.open('Terminal');
+  news(ARTICLES);
+
+  expect(press('Tab').defaultPrevented).toBe(true);
+  expect(press('Tab', { shiftKey: true }).defaultPrevented).toBe(true);
+  expect(document.activeElement).toBe(section());
+
+  press('Enter');
+  press('Tab');
+  expect(document.activeElement).toBe(link());
+  press('Tab');
+  expect(document.activeElement).toBe(link());
+  expect(press('Tab', { shiftKey: true }).defaultPrevented).toBe(true);
+  expect(document.activeElement).toBe(link());
+
+  section().focus();
+  press('Tab', { shiftKey: true });
+  expect(document.activeElement).toBe(link());
   expect(reached).not.toHaveBeenCalled();
   window.removeEventListener('keydown', reached);
 });

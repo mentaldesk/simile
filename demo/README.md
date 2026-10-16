@@ -34,15 +34,17 @@ script, whatever you do with your first few steps: Tobias and Kofi, and Desmond 
 don't seek you out or greet you until their own conversation has started, and until both have,
 nobody's choices are left to chance. Everyone takes their best option, and accepts a conversation
 whenever they're more for it than against. That's the first 7 seconds or so, and only Tobias,
-Desmond and Raymond decide in them. The [ambient director](../server/simile/ambient/README.md) is
-off for the whole demo, so nobody is sent over to talk near you and the later beats stay where the
-walk-through puts them.
+Desmond and Raymond decide in them. If a pair still hasn't talked 2 sim minutes after your first
+step, it lets go of everyone anyway (`SIMILE_DEMO_SCRIPT_CAP` below). The [ambient
+director](../server/simile/ambient/README.md) is off for the whole demo, so nobody is sent over to
+talk near you and the later beats stay where the walk-through puts them.
 
 | Variable | Default | |
 |---|---|---|
 | `DEMO_DB` | `server/data/demo.db` | The database to rebuild. Your normal village in `simile.db` is never touched. |
 | `SIMILE_PORT`, `CLIENT_PORT` | 8000, 5173 | Ports, to run it next to `make dev`. |
 | `SIMILE_VOICE` | 1 | 0 runs it unvoiced. |
+| `SIMILE_DEMO_SCRIPT_CAP` | 120 | Sim seconds from your first step before the scripted pairs are let go, whether or not they've talked. |
 
 `SIMILE_NEWS` is turned off, so the Mars article is the only news and nothing is fetched or
 analysed.
@@ -153,7 +155,9 @@ out Marguerite, both conversations starting, and Raymond going to read. A simula
 connected throughout, and `--runs` is per way the player starts: stepping left and waiting, as in
 the walk-through, or heading for Tobias or Kofi, or for Desmond or Marguerite, within 2 seconds of
 the first step. 1000 runs of each went to script, the conversations starting 7 sim seconds in. Run
-it after changing `scenario.json`. It exits non-zero if any beat was missed.
+it after changing `scenario.json`. Before the runs, it checks that the hold lets go at its cap
+whether none, one or both pairs have talked by then. It exits non-zero if that check fails or any
+beat was missed.
 
 CI runs three of each on every PR (`.github/workflows/demo.yml`), along with ruff on `demo/` and
 an import check of `serve.py`, so a change to the server APIs the demo builds on shows up there.
