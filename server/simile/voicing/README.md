@@ -26,6 +26,8 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 - A line starts generating on `LineDrafted`: a line ahead for NPC conversations, and as soon as each
   sentence has streamed for the player's. B2 and B5 pace every line by its word count either way,
   so a conversation lasts as long whether it's voiced or not.
+- An NPC conversation's lines go to V1 whole rather than split into sentences, because B2 hands
+  over each line once it's fully written. B5 already makes each sentence of a reply its own line.
 - The protocol forwarder sends `voiced: app.state.voiced(line)` with each `line`: whether audio is
   being made for it. Its `audio_chunk`s follow the `line` message, and the last one is header-only
   with the last flag set, even when the line is cut short.

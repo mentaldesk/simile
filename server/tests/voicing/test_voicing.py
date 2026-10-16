@@ -336,3 +336,82 @@ def test_voices_nothing_without_a_client(synthesiser: FakeSynthesiser) -> None:
             return voiced
 
     assert not asyncio.run(scenario())
+
+
+def test_sends_audio_no_more_than_the_lead_ahead_of_playback() -> None:
+    synthesiser = FakeSynthesiser(chunks=30)
+    config = VoicingConfig(lead=0.03)
+
+    async def scenario() -> list[tuple[float, AudioChunk]]:
+        async with village(synthesiser, config) as world:
+            talk = world.start("mei", "viktor")
+            line, _ = world.say(talk, "mei", "Let me tell you about the harvest.")
+            await world.heard(line)
+            return [(at, chunk) for at, chunk in world.sent if chunk.pcm]
+
+    ahead = queued_on_the_client(asyncio.run(scenario()))
+
+    assert len(ahead) == synthesiser.chunks - 1
+    assert max(ahead) <= config.lead + 0.002
+
+
+def queued_on_the_client(sent: list[tuple[float, AudioChunk]]) -> list[float]:
+    """How much audio C3's timeline still had to play as each chunk after the first arrived."""
+    start, samples, ahead = -math.inf, 0, []
+    for at, chunk in sent:
+        end = start + samples / SAMPLE_RATE
+        if samples:
+            ahead.append(end - at)
+        if not samples or end < at + 0.01:
+            start, samples = at + DEFAULT_CONFIG.jitter_buffer, 0
+        samples += len(chunk.pcm) // 2
+    return ahead
+
+
+def test_a_player_reply_cuts_an_overheard_line_being_heard(
+    synthesiser: FakeSynthesiser,
+) -> None:
+    overheard = "Did you hear about the bakery?"
+    gate = synthesiser.gate(overheard)
+
+    async def scenario() -> tuple[list[AudioChunk], bool, list[AudioChunk]]:
+        async with village(synthesiser) as world:
+            nearby = world.start("viktor", "suki")
+            line, _ = world.say(nearby, "viktor", overheard)
+            gate.release(1)
+            await until(lambda: len(world.chunks(line)) == 1)
+            talk = world.start(PLAYER_ID, "mei")
+            reply, voiced = world.say(talk, "mei", "Nice to meet you.")
+            cut = await world.heard(line)
+            gate.release(1)
+            return cut, voiced, await world.heard(reply)
+
+    cut, voiced, reply = asyncio.run(scenario())
+
+    assert cut[1:] == [AudioChunk(cut[0].line_id, 1, b"", last=True)]
+    assert synthesiser.made[overheard] < synthesiser.chunks
+    assert voiced
+    assert [chunk.pcm for chunk in reply[:-1]] == pcm(synthesiser)
+
+
+def test_an_ending_never_restarts_lines_left_unspoken(synthesiser: FakeSynthesiser) -> None:
+    sentence = "Right, I'm off."
+    gate = synthesiser.gate(sentence)
+
+    async def scenario() -> list[AudioChunk]:
+        async with village(synthesiser) as world:
+            talk = world.start("mei", "viktor")
+            last, _ = world.say(talk, "mei", sentence)
+            gate.release(1)
+            await until(lambda: len(world.chunks(last)) == 1)
+            unsaid = world.draft(talk, "viktor", "Bye.")
+            world.end(talk, "mei", "viktor")
+            await settle()
+            world.voicing.tick(0.1)
+            gate.release(synthesiser.chunks)
+            await world.heard(last)
+            await settle()
+            return world.chunks(unsaid)
+
+    assert asyncio.run(scenario()) == []
+    assert synthesiser.started == [sentence]

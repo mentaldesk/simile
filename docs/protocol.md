@@ -117,7 +117,7 @@ restarted server.
 |---|---|
 | `EntityMoved` | `entity_moved` |
 | `ConversationStarted` | `conversation_started` |
-| `LineSpoken` | `line`, with `voiced` `false` until earshot voicing (I1) exists |
+| `LineSpoken` | `line`, with `voiced` from `app.state.voiced(line)` while earshot voicing (I1) runs, else `false` |
 | `ConversationEnded` | `conversation_ended`, with the clock's time if the conversation's `ended` isn't set |
 
 So most modules publish on the bus rather than calling the hub.
