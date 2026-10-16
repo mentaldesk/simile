@@ -92,6 +92,22 @@ def test_refresh_reads_every_feed_and_lists_their_sources(
     assert "(RNZ Sport Headlines)" in result.output
 
 
+def test_refresh_says_how_many_items_each_feed_had_too_short_to_react_to(
+    database: Path, feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    economist = feed_server.add("/economist", (FIXTURES / "economist.xml").read_bytes())
+    rnz = feed_server.add("/rnz", (FIXTURES / "rnz.xml").read_bytes())
+    monkeypatch.setenv("SIMILE_NEWS_FEED", f"{economist},{rnz}")
+
+    result = runner.invoke(create_cli(), ["news", "--refresh", "-n", "20"])
+
+    assert result.exit_code == 0, result.output
+    assert f"5 new items from {economist}, 8 skipped as too short to react to" in result.output
+    assert f"10 new items from {rnz}, 0 skipped as too short to react to" in result.output
+    assert "  Politics" not in result.output
+    assert "Cartoon: AI tsunami (The world this week)" in result.output
+
+
 def test_refresh_lists_the_news_despite_a_feed_it_cant_fetch(
     database: Path, feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
