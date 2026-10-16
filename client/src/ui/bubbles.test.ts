@@ -94,7 +94,7 @@ describe('distanceAlpha', () => {
   });
 
   it('fades the further away the speaker is', () => {
-    const alphas = [3.5, 4, 5, 6, 7.5].map(distanceAlpha);
+    const alphas = [2.2, 2.5, 3, 3.5, 4].map(distanceAlpha);
     expect(alphas).toEqual([...alphas].sort((a, b) => b - a));
     expect(new Set(alphas).size).toBe(alphas.length);
   });
@@ -108,6 +108,15 @@ it('combines fading with time and with distance', () => {
   const bubble = { speaker: 'mei', text: 'Hi', shownAt: 0, seconds: 2 };
   const halfFaded = 2000 + (BUBBLE_FADE_SECONDS * 1000) / 2;
   expect(bubbleAlpha(bubble, EARSHOT_TILES, halfFaded)).toBeCloseTo(FAINTEST_ALPHA / 2);
+});
+
+it('keeps the player’s partner opaque however far away they are', () => {
+  const bubbles = new SpeechBubbles();
+  bubbles.show('mei', 'Over here!', 2, true, 0);
+  bubbles.think('tom', 0);
+
+  const alphas = bubbles.current(0).map((bubble) => bubbleAlpha(bubble, EARSHOT_TILES + 2, 0));
+  expect(alphas).toEqual([1, 1]);
 });
 
 it('estimates how long the player takes to say something', () => {

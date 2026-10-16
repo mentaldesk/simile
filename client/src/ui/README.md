@@ -3,7 +3,7 @@
 The text side of conversations, drawn as HTML over the game canvas by `DialogueScene`:
 
 - a speech bubble over each speaker within earshot, for the line's `duration`, fainter the further
-  away they are;
+  away they are, except in the player's own conversation, whose lines always show in full;
 - a ring and name tag on the NPC the player will talk to (see *Choosing who to talk to*);
 - a chat box: Enter opens it to that NPC, Enter sends `player_say`, Esc closes;
 - an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the

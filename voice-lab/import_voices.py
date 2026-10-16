@@ -14,6 +14,7 @@ from npcs import (
     has_voice,
     imported_voices,
     load_npcs,
+    measure_rates,
     misheard,
     remove_voice,
     save_imported,
@@ -41,6 +42,7 @@ class Tools(Protocol):
     def clone(self, wav: Path, transcript: str, out: Path) -> list[Path]: ...
     def accents(self, wavs: list[Path]) -> dict[str, str]: ...
     def speak(self, npc_ids: list[str]) -> None: ...
+    def measure(self, npc_ids: list[str]) -> None: ...
 
 
 def convert(source: Path, wav: Path) -> None:
@@ -95,6 +97,9 @@ class Models:
     def speak(self, npc_ids: list[str]) -> None:
         run = [sys.executable, HERE / "speak_npcs.py", *npc_ids, "--force", "--torch-python", self.torch_python]
         subprocess.run(run, check=True)
+
+    def measure(self, npc_ids: list[str]) -> None:
+        measure_rates(npc_ids)
 
 
 @dataclass
@@ -257,7 +262,7 @@ def run(
         else:
             clip.status = "would import" if dry_run else "imported"
     todo = [clip for clip in clips if clip.status == "imported"]
-    unspoken = None
+    failed = []
     if todo:
         imported = imported_voices()
         for clip in todo:
@@ -269,13 +274,18 @@ def run(
         try:
             tools.speak(ids)
         except subprocess.CalledProcessError:
-            unspoken = f"speak_npcs.py failed, so rerun it: .venv-mlx/bin/python speak_npcs.py {' '.join(ids)} --force"
+            failed.append(f"speak_npcs.py failed, so rerun it: .venv-mlx/bin/python speak_npcs.py {' '.join(ids)} --force")
+        print(f"\nMeasuring how fast {', '.join(ids)} speak", flush=True)
+        try:
+            tools.measure(ids)
+        except (OSError, subprocess.CalledProcessError):
+            failed.append(f"Measuring failed, so rerun it: cd ../server && uv run --extra voice simile voice measure {' '.join(ids)}")
 
     print()
     print("\n\n".join(map(report, clips)))
     print(f"\nTo listen: the converted clips and the samples cloned from them are in {out}")
-    if unspoken:
-        raise SystemExit(unspoken)
+    if failed:
+        raise SystemExit("\n".join(failed))
     return clips
 
 

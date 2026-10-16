@@ -5,6 +5,8 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 
+import pytest
+
 from simile.conversation import LineDrafted
 from simile.protocol import SAMPLE_RATE, AudioChunk
 from simile.schema import PLAYER_ID, Conversation, Id, Line, Voice
@@ -168,6 +170,91 @@ def test_writes_a_line_ahead_and_sends_it_once_spoken(synthesiser: FakeSynthesis
     assert len(after) == synthesiser.chunks + 1
 
 
+def test_knows_how_long_a_line_plays_once_its_audio_is_made(
+    synthesiser: FakeSynthesiser,
+) -> None:
+    gate = synthesiser.gate("Morning, Mei.")
+
+    async def scenario() -> tuple[float | None, float | None]:
+        async with village(synthesiser) as world:
+            talk = world.start("mei", "viktor")
+            line = world.draft(talk, "viktor", "Morning, Mei.")
+            await until(lambda: "Morning, Mei." in synthesiser.started)
+            making = world.voicing.duration(line)
+            gate.release(synthesiser.chunks)
+            await until(lambda: "Morning, Mei." in synthesiser.closed)
+            await settle()
+            return making, world.voicing.duration(line)
+
+    making, made = asyncio.run(scenario())
+
+    played = synthesiser.chunks * len(synthesiser.chunk(0)) / 2 / SAMPLE_RATE
+    assert making is None
+    assert made == pytest.approx(DEFAULT_CONFIG.jitter_buffer + played)
+
+
+def test_knows_how_long_until_a_lines_audio_has_played(synthesiser: FakeSynthesiser) -> None:
+    gate = synthesiser.gate("Morning, Mei.")
+
+    async def scenario() -> list[float | None]:
+        async with village(synthesiser) as world:
+            talk = world.start("mei", "viktor")
+            line = world.draft(talk, "viktor", "Morning, Mei.")
+            await until(lambda: "Morning, Mei." in synthesiser.started)
+            making = world.voicing.remaining(line)
+            gate.release(synthesiser.chunks)
+            await until(lambda: "Morning, Mei." in synthesiser.closed)
+            await settle()
+            made = world.voicing.remaining(line)
+            world.speak(line)
+            await world.heard(line)
+            playing = world.voicing.remaining(line)
+            await asyncio.sleep((playing or 0) + 0.01)
+            return [making, made, playing, world.voicing.remaining(line)]
+
+    making, made, playing, played = asyncio.run(scenario())
+
+    seconds = DEFAULT_CONFIG.jitter_buffer + synthesiser.chunks * 240 / SAMPLE_RATE
+    assert making is None
+    assert made == pytest.approx(seconds)
+    assert playing is not None and 0 < playing <= seconds
+    assert played == 0
+
+
+def test_a_line_it_doesnt_voice_has_nothing_left_to_play(synthesiser: FakeSynthesiser) -> None:
+    async def scenario() -> float | None:
+        async with village(synthesiser) as world:
+            world.move_player(100, 0)
+            talk = world.start("mei", "viktor")
+            line, _ = world.say(talk, "mei", "Anyone there?")
+            await settle()
+            return world.voicing.remaining(line)
+
+    assert asyncio.run(scenario()) == 0
+
+
+def test_knows_no_duration_for_a_line_it_wont_play_whole(synthesiser: FakeSynthesiser) -> None:
+    synthesiser.failing.add("Hmm.")
+
+    async def scenario() -> tuple[float | None, list[float | None]]:
+        async with village(synthesiser) as world:
+            talk = world.start("mei", "viktor")
+            failed = world.draft(talk, "mei", "Hmm.")
+            cut = world.draft(talk, "viktor", "Well, as I was saying.")
+            await until(lambda: "Well, as I was saying." in synthesiser.closed)
+            await settle()
+            made = world.voicing.duration(cut)
+            world.move_player(100, 0)
+            far = world.draft(talk, "mei", "Where did they go?")
+            await settle()
+            return made, [world.voicing.duration(line) for line in (failed, cut, far)]
+
+    made, others = asyncio.run(scenario())
+
+    assert made is not None
+    assert others == [None, None, None]
+
+
 def test_holds_a_line_until_the_one_before_has_played(synthesiser: FakeSynthesiser) -> None:
     async def scenario() -> tuple[list[float], list[float]]:
         async with village(synthesiser) as world:
@@ -189,11 +276,11 @@ def test_starts_with_the_next_line_when_the_player_comes_near(
 ) -> None:
     async def scenario() -> tuple[bool, bool, list[AudioChunk]]:
         async with village(synthesiser) as world:
-            world.move_player(20, 0)
+            world.move_player(5.5, 0)
             talk = world.start("mei", "viktor")
             _, far = world.say(talk, "mei", "Morning, Viktor.")
             line = world.draft(talk, "viktor", "Morning, Mei.")
-            world.move_player(5, 5)
+            world.move_player(4, 2)
             near = world.speak(line)
             return far, near, await world.heard(line)
 
@@ -215,18 +302,18 @@ def test_stops_when_the_player_walks_away(synthesiser: FakeSynthesiser) -> None:
             gate.release(1)
             await until(lambda: len(world.chunks(line)) == 1)
             ahead = world.draft(talk, "viktor", "I have.")
-            world.move_player(10, 0)
+            world.move_player(6, 0)
             await settle()
-            sent_at_ten = len(world.chunks(line))
-            world.move_player(13, 0)
+            sent_nearby = len(world.chunks(line))
+            world.move_player(8, 0)
             chunks = await world.heard(line)
             gate.release(synthesiser.chunks)
             await until(lambda: sentence in synthesiser.closed)
-            return chunks, sent_at_ten, world.speak(ahead)
+            return chunks, sent_nearby, world.speak(ahead)
 
-    chunks, sent_at_ten, ahead_voiced = asyncio.run(scenario())
+    chunks, sent_nearby, ahead_voiced = asyncio.run(scenario())
 
-    assert sent_at_ten == 1
+    assert sent_nearby == 1
     assert chunks[1:] == [AudioChunk(chunks[0].line_id, 1, b"", last=True)]
     assert synthesiser.made[sentence] < synthesiser.chunks
     assert not ahead_voiced
@@ -436,13 +523,13 @@ def test_voices_a_crowded_out_conversation_once_another_leaves_earshot(
 ) -> None:
     async def scenario() -> tuple[bool, bool, bool]:
         async with village(synthesiser, VoicingConfig(max_voiced=1)) as world:
-            world.at.update({"ana": (6, 6), "ben": (6, 7)})
+            world.at.update({"ana": (5, 3), "ben": (6, 3)})
             for npc in ("ana", "ben"):
                 await world.voicing.voice.add_voice(npc, VOICE)
             first = world.start("mei", "viktor")
             second = world.start("ana", "ben")
             _, crowded = world.say(second, "ana", "Morning, Ben.")
-            world.move_player(10, 10)
+            world.move_player(7, 5)
             world.voicing.tick(0.1)
             _, freed = world.say(second, "ben", "Morning, Ana.")
             _, gone = world.say(first, "mei", "Morning, Viktor.")
@@ -459,7 +546,7 @@ def test_the_players_conversation_silences_the_farthest_overheard_one(
 
     async def scenario() -> tuple[bool, list[AudioChunk], bool, bool, bool]:
         async with village(synthesiser, VoicingConfig(max_voiced=2)) as world:
-            world.at.update({"ana": (9, 0), "ben": (9, 1)})
+            world.at.update({"ana": (6, 0), "ben": (6, 1)})
             for npc in ("ana", "ben"):
                 await world.voicing.voice.add_voice(npc, VOICE)
             near = world.start("mei", "viktor")

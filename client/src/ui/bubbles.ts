@@ -14,6 +14,7 @@ export type Bubble = {
   shownAt: number;
   seconds: number;
   thinking?: boolean;
+  partner?: boolean;
 };
 
 export function speakingSeconds(text: string): number {
@@ -33,20 +34,21 @@ export function distanceAlpha(distance: number): number {
 }
 
 export function bubbleAlpha(bubble: Bubble, distance: number, now: number): number {
-  return fadeAlpha(bubble, now) * distanceAlpha(distance);
+  return fadeAlpha(bubble, now) * (bubble.partner ? 1 : distanceAlpha(distance));
 }
 
 export class SpeechBubbles {
   private readonly bySpeaker = new Map<string, Bubble>();
 
-  show(speaker: string, text: string, duration: number, now = Date.now()): void {
+  show(speaker: string, text: string, duration: number, partner = false, now = Date.now()): void {
     const seconds = Math.max(duration, MIN_BUBBLE_SECONDS);
-    this.bySpeaker.set(speaker, { speaker, text, shownAt: now, seconds });
+    this.bySpeaker.set(speaker, { speaker, text, shownAt: now, seconds, partner });
   }
 
   think(speaker: string, now = Date.now()): void {
     const seconds = THINKING_SECONDS;
-    this.bySpeaker.set(speaker, { speaker, text: '…', shownAt: now, seconds, thinking: true });
+    const bubble = { speaker, text: '…', shownAt: now, seconds, thinking: true, partner: true };
+    this.bySpeaker.set(speaker, bubble);
   }
 
   stopThinking(speaker: string): void {

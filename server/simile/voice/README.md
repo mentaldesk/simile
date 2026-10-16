@@ -54,6 +54,28 @@ async with aclosing(
 - A sentence that runs past 3 s plus 1 s per 5 characters is cut off with a warning, so a
   generation that never ends can't hold the queue.
 
+## Speaking rates
+
+B2 and B5 pace each NPC's line by how fast their voice speaks until I1 has made its audio, and by
+the audio after that (see *Pacing* in the [conversation README](../conversation/README.md)).
+`content/voices/rates.json` holds each resident's measured rate: a line takes
+`base_seconds + seconds_per_word * words`. `speaking_rate(npc_id)` returns it, or `None` for a voice
+nobody has measured, which is then paced at `ConversationConfig.words_per_minute` (200, 0.3 s a word).
+
+```bash
+cd server && uv sync --extra voice
+uv run simile voice measure [npc ...] [--force]
+```
+
+- `simile voice measure` speaks `CALIBRATION` (24 lines of 1 to 37 words) in each voice through
+  `QwenSynthesiser`, as V1 does, and fits the rate by least squares. Each sentence is seeded, so a
+  rerun gives the same rate. It takes a minute or two a voice on an M2 Max.
+- It measures only the voices whose rate is missing or out of date, unless `--force`. Each rate
+  keeps a digest of the clip and transcript it was measured from, and a new clip or reference line
+  makes it out of date. `make test` fails while any resident's voice has no up-to-date rate.
+- voice-lab's `design_npcs.py` and `import_voices.py` run it for each voice they make, so a new
+  voice is paced by its own rate. Restart the server to use a new rate.
+
 ## Tests
 
 `FakeSynthesiser` speaks instantly without MLX, so code that uses the service can run in CI:

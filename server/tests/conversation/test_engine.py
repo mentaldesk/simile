@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import sys
 import types
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -14,6 +14,7 @@ from simile.conversation import (
     ConversationEngine,
     Facing,
     LineDrafted,
+    engine,
 )
 from simile.conversation.player import PlayerConversations
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
@@ -40,6 +41,7 @@ from simile.sim import (
     World,
 )
 from simile.social import meet
+from simile.voice import SpeakingRate
 from simile.world import Movement
 from simile.world.map import load_map
 
@@ -260,6 +262,86 @@ async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> 
     asked = [when for when, _ in village.script.calls]
     for line, next_asked in zip(lines, asked[1:], strict=False):
         assert line.timestamp <= next_asked < line.timestamp + timedelta(seconds=line.duration)
+
+
+async def test_a_measured_voice_paces_its_speakers_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    rate = SpeakingRate(base_seconds=0.4, seconds_per_word=0.26)
+    monkeypatch.setattr(engine, "speaking_rate", lambda npc: rate if npc == "ana" else None)
+    village = Village(["One two three four five.", "Six seven eight nine ten."])
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    ana, ben, *_ = village.spoken
+    assert (ana.duration, ben.duration) == (1.7, 1.5)
+    assert ben.timestamp == ana.timestamp + timedelta(seconds=1.7 + 0.5)
+
+
+class Audio:
+    """What I1 would say about each NPC line's audio: made when `make` says, played from the
+    line's start."""
+
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+        self.made: dict[int, float] = {}
+
+    def make(self, seconds: float) -> Callable[[LineDrafted | LineSpoken], None]:
+        def record(event: LineDrafted | LineSpoken) -> None:
+            if event.line.speaker != PLAYER_ID:
+                self.made.setdefault(event.line.id, seconds)
+
+        return record
+
+    def duration(self, line: Line) -> float | None:
+        return self.made.get(line.id)
+
+    def remaining(self, line: Line) -> float | None:
+        if line.speaker == PLAYER_ID:
+            return 0.0
+        if line.id not in self.made:
+            return None
+        ends = line.timestamp + timedelta(seconds=self.made[line.id])
+        return max(0.0, (ends - self.clock.now).total_seconds())
+
+
+async def test_a_voiced_line_lasts_as_long_as_its_audio() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineDrafted, audio.make(2.345))
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    lines = village.spoken
+    assert {line.duration for line in lines} == {2.35}
+    for line, after in itertools.pairwise(lines):
+        assert after.timestamp == line.timestamp + timedelta(seconds=2.35 + 0.5)
+
+
+async def test_the_next_line_waits_for_audio_that_runs_longer_than_its_line() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(4.0))
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    first, second, *_ = village.spoken
+    assert first.duration == 1.2
+    assert second.timestamp == first.timestamp + timedelta(seconds=4.0 + 0.5)
+
+
+async def test_the_next_line_waits_a_while_for_audio_still_being_made() -> None:
+    village = Village(relationships=friends(ANA, BEN), config=ConversationConfig(voice_wait=2))
+    village.engine.audio = Audio(village.clock)
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    first, second, *_ = village.spoken
+    first_ends = first.timestamp + timedelta(seconds=first.duration)
+    assert first_ends + timedelta(seconds=2) <= second.timestamp
+    assert second.timestamp <= first_ends + timedelta(seconds=2 + 0.1 + 0.5)
 
 
 async def test_each_line_is_announced_before_it_is_spoken() -> None:

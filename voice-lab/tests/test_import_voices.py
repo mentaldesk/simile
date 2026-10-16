@@ -49,6 +49,7 @@ class FakeTools:
         self.accent = accents or {}
         self.transcribed: list[str] = []
         self.spoken: list[list[str]] = []
+        self.measured: list[list[str]] = []
 
     def convert(self, source: Path, wav: Path) -> None:
         if source.read_bytes()[:4] != b"RIFF":
@@ -71,6 +72,9 @@ class FakeTools:
 
     def speak(self, npc_ids: list[str]) -> None:
         self.spoken.append(npc_ids)
+
+    def measure(self, npc_ids: list[str]) -> None:
+        self.measured.append(npc_ids)
 
 
 @pytest.fixture
@@ -127,6 +131,7 @@ def test_imports_a_clip_as_the_residents_voice(content: Path, incoming: Path, ou
     assert (content / "npcs" / "desmond.json").read_text(encoding="utf-8") == n1_json(expected)
     assert not any(path.exists() for path in npcs.sample_paths("desmond"))
     assert tools.spoken == [["desmond"]]
+    assert tools.measured == [["desmond"]]
     assert set(npcs.imported_voices()) == {"desmond"}
     assert (content / "npcs" / "priya.json").read_bytes() == priya["priya.json"]
     assert npcs.clip_path("priya").read_bytes() == priya["priya.wav"]
@@ -342,6 +347,33 @@ def test_a_failed_speak_npcs_says_how_to_rerun_it(content: Path, incoming: Path,
         run(incoming, Mute(), out=out)
 
     assert set(npcs.imported_voices()) == {"desmond"}
+
+
+class Unmeasured(FakeTools):
+    def measure(self, npc_ids: list[str]) -> None:
+        raise subprocess.CalledProcessError(1, "simile voice measure")
+
+
+def test_a_failed_measurement_says_how_to_rerun_it(content: Path, incoming: Path, out: Path) -> None:
+    drop(incoming, "desmond")
+    drop(incoming, "priya")
+
+    with pytest.raises(SystemExit, match="simile voice measure desmond priya"):
+        run(incoming, Unmeasured(), out=out)
+
+    assert set(npcs.imported_voices()) == {"desmond", "priya"}
+
+
+def test_measures_rates_with_the_servers_command(content: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    runs = []
+    monkeypatch.setattr(subprocess, "run", lambda command, **kwargs: runs.append((command, kwargs)))
+
+    npcs.measure_rates(["desmond", "priya"])
+
+    [(command, kwargs)] = runs
+    assert command[:3] == ["uv", "run", "--project"] and command[3] == npcs.REPO_ROOT / "server"
+    assert command[4:] == ["--extra", "voice", "simile", "voice", "measure", "desmond", "priya"]
+    assert kwargs == {"check": True}
 
 
 def test_design_never_redesigns_an_imported_voice(content: Path) -> None:

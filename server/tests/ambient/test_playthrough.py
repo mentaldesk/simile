@@ -78,9 +78,9 @@ async def test_reflections_are_valid_and_store_nothing() -> None:
 
 
 async def test_a_short_playthrough_chats_and_overhears() -> None:
-    result = await playthrough(minutes=10, warmup=5, seed=0)
+    result = await playthrough(minutes=20, warmup=5, seed=0)
 
-    assert result.minutes == 10
+    assert result.minutes == 20
     assert result.player_conversations and result.nudges
     assert result.overheard
     assert 0 < result.heard < 600

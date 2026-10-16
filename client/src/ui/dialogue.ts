@@ -59,14 +59,15 @@ export class Dialogue {
 
   hear(line: Line): boolean {
     if (line.speaker === PLAYER_ID) return false; // say() showed it already
+    const partner = this.withPlayer(line.conversation_id);
     const distance = distanceFromPlayer(this.view(), line.speaker);
-    if (distance === undefined || distance > EARSHOT_TILES) return false;
-    this.bubbles.show(line.speaker, line.text, line.duration);
+    if (!partner && (distance === undefined || distance > EARSHOT_TILES)) return false;
+    this.bubbles.show(line.speaker, line.text, line.duration, partner);
     this.log.add({
       speaker: line.speaker,
       name: this.nameOf(line.speaker),
       text: line.text,
-      to: this.withPlayer(line.conversation_id) ? this.nameOf(PLAYER_ID) : null,
+      to: partner ? this.nameOf(PLAYER_ID) : null,
     });
     return true;
   }

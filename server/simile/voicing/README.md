@@ -12,9 +12,10 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 
 ## Earshot
 
-- A conversation is in earshot once the player is within `earshot` (8 tiles) of one of its NPCs,
-  and stays in it until they're further than `out_of_earshot` (11) from all of them. Nothing is in
-  earshot while no client is connected.
+- A conversation is in earshot once the player is within `earshot` (4 tiles) of one of its NPCs,
+  and stays in it until they're further than `out_of_earshot` (5.5) from all of them. Nothing is in
+  earshot while no client is connected. At the client's zoom the screen shows about 4 tiles above
+  and below the player, so a conversation starts being voiced only once it's on screen.
 - Coming into earshot voices the next line on, including one already written and waiting for its
   turn. Leaving it cuts the line being said and drops the rest.
 - The player's own conversation is always in earshot: B5 ends it beyond 6 tiles.
@@ -23,14 +24,20 @@ an M2 Max, then follows the bus and ticks on the sim loop.
   bubbles, with three up to 13 s, and dropped lines. Another conversation coming into earshot stays
   unvoiced, from its next line on, until one of them ends or leaves earshot. The player starting a
   conversation silences the farthest voiced one instead.
-- C2 draws bubbles within the same 8 tiles, so the player hears the conversations whose bubbles they
-  see. C3's volume is `((14 - d) / 12)²`: a quarter at 8 tiles, about 6% at 11, silent at 14.
+- C2 draws bubbles within the same 4 tiles, so the player hears the conversations whose bubbles they
+  see. C3 plays the player's own partner at full volume. It caps an overheard voice at a third
+  (about −9.5 dB) within 2 tiles and fades it to silence at 5.5, so it's about −24 dB at 4 tiles.
+  `server/tests/voicing/test_client_earshot.py` keeps both sides' distances the same.
 
 ## Lines
 
 - A line starts generating on `LineDrafted`: a line ahead for NPC conversations, and as soon as each
-  sentence has streamed for the player's. B2 and B5 pace every line by its word count either way,
-  so a conversation lasts as long whether it's voiced or not.
+  sentence has streamed for the player's. B2 and B5 pace a line by its speaker's measured
+  rate, or by its audio once all of it is made. The running hook makes `Voicing` the engine's
+  `audio`: `duration(line)` is how long a line's audio plays, jitter buffer included, so the `line`
+  message carries it and the bubble lasts as long as the voice. `remaining(line)` is how long until
+  it has played on the client, or `None` while it's still being made, and the next line waits for
+  it.
 - An NPC conversation's lines go to V1 whole rather than split into sentences, because B2 hands
   over each line once it's fully written. B5 already makes each sentence of a reply its own line.
 - The protocol forwarder sends `voiced: app.state.voiced(line)` with each `line`: whether audio is
