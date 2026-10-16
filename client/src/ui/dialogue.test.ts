@@ -33,15 +33,16 @@ describe('Dialogue', () => {
   const view = viewOf({
     player: { x: 10, y: 10 },
     mei: { x: 12, y: 10 },
+    suki: { x: 11, y: 10 },
     tom: { x: 10 + EARSHOT_TILES + 1, y: 10 },
   });
   let dialogue: Dialogue;
   let stop: () => void;
 
-  function deliver(speaker: string, text: string, duration = 2): void {
+  function deliver(speaker: string, text: string, duration = 2, conversation = 'conv_1'): void {
     const line: Line = {
       id: 1,
-      conversation_id: 'conv_1',
+      conversation_id: conversation,
       speaker,
       text,
       timestamp: '2026-03-14T08:05:00Z',
@@ -229,6 +230,75 @@ describe('Dialogue', () => {
       text: goodbye,
       to: 'You',
     });
+  });
+
+  it('shows a sentence cut at its first clause in one bubble and one log entry', () => {
+    start('conv_1', 'player', 'mei');
+    deliver('mei', 'Oh man, depends who you ask—', 1.6);
+
+    expect(dialogue.bubbles.current()).toMatchObject([
+      { speaker: 'mei', text: 'Oh man, depends who you ask—' },
+    ]);
+    expect(dialogue.log.entries).toEqual([]);
+
+    deliver('mei', 'some people hike.', 1.2);
+    deliver('mei', 'You?');
+
+    const sentence = 'Oh man, depends who you ask—some people hike.';
+    expect(dialogue.log.entries).toEqual([
+      { speaker: 'mei', name: 'Mei Lin', text: sentence, to: 'You' },
+      { speaker: 'mei', name: 'Mei Lin', text: 'You?', to: 'You' },
+    ]);
+  });
+
+  it('keeps the space after a comma, semicolon or spaced dash, and lasts as long as the rest', () => {
+    for (const clause of ['The pastries are something else,', 'It took all summer;', 'Go on -']) {
+      deliver('mei', clause);
+      deliver('mei', 'so get there early.', 2.5);
+
+      expect(dialogue.bubbles.current()).toMatchObject([
+        { speaker: 'mei', text: `${clause} so get there early.`, seconds: 2.5 },
+      ]);
+    }
+  });
+
+  it('logs a cut line on its own when the rest never comes', () => {
+    vi.spyOn(server, 'send').mockReturnValue(true);
+    start('conv_1', 'player', 'mei');
+    deliver('mei', 'Go and find Marcus at the maker space—');
+    dialogue.say('Wait, who?', 'mei');
+    deliver('mei', 'Marcus!');
+
+    expect(dialogue.bubbles.current()[0]).toMatchObject({ speaker: 'mei', text: 'Marcus!' });
+    deliver('mei', 'He knows everyone—');
+    end('conv_1');
+
+    expect(dialogue.log.entries.map(({ text }) => text)).toEqual([
+      'Go and find Marcus at the maker space—',
+      'Wait, who?',
+      'Marcus!',
+      'He knows everyone—',
+    ]);
+  });
+
+  it('joins nothing across someone else speaking, and keeps the log in order', () => {
+    deliver('mei', 'I was thinking,', 2, 'c3');
+    deliver('suki', 'Go on, then.', 2, 'c4');
+    deliver('mei', 'about the bakery.', 2, 'c3');
+    deliver('suki', 'Mm?', 2, 'c3');
+    deliver('mei', 'never mind.', 2, 'c3');
+
+    expect(dialogue.bubbles.current()).toMatchObject([
+      { speaker: 'mei', text: 'never mind.' },
+      { speaker: 'suki', text: 'Mm?' },
+    ]);
+    expect(dialogue.log.entries.map(({ text }) => text)).toEqual([
+      'I was thinking,',
+      'Go on, then.',
+      'about the bakery.',
+      'Mm?',
+      'never mind.',
+    ]);
   });
 
   it(`keeps the last ${LOG_LIMIT} entries`, () => {

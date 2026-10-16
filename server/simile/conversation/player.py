@@ -33,7 +33,9 @@ from simile.voice import speaking_rate
 logger = logging.getLogger(__name__)
 
 SENTENCE_END = re.compile(r"[.!?…]+[\"'”’)\]*]*(?=\s)")
-CLAUSE_END = re.compile(r"\s*(?:[—–]|--|\s-(?=\s))|;(?=\s)|(?P<comma>,)(?=\s)")
+CLAUSE_END = re.compile(
+    r"\s*(?<!\d)(?<!\d\s)(?:[—–]|--|(?<=\s)-(?=\s))(?!\s?\d)|;(?=\s)|(?P<comma>,)(?=\s)"
+)
 CLAUSE_WORDS = 6
 COMMA_CLAUSE_WORDS = 10
 FOLLOWING_WORDS = 4
@@ -539,8 +541,7 @@ class Sentences:
         return sentences
 
     def _first_clause(self, speakable: str) -> int | None:
-        """Where to cut a long first sentence so its voice starts sooner: at a dash or semicolon, or
-        a comma outside a list, with enough words before it and streamed after it."""
+        """Where to cut a long first sentence so its voice can start sooner."""
         for match in CLAUSE_END.finditer(speakable, self._start):
             end, comma = match.end(), match["comma"] is not None
             if speakable.count("*", 0, end) % 2:

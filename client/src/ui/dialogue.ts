@@ -1,10 +1,16 @@
 import { server, type Conversation, type Line } from '../net';
 import { SpeechBubbles, speakingSeconds } from './bubbles';
-import { DialogueLog } from './log';
+import { DialogueLog, type LogEntry } from './log';
 import { EARSHOT_TILES } from './tuning';
 import { distanceFromPlayer, PLAYER_ID, worldView, type WorldView } from './world-view';
 
 type Server = Pick<typeof server, 'on' | 'send'>;
+
+const CUT = /[,;—–-]$/;
+
+function joined(clause: string, rest: string): string {
+  return /\S(?:[—–]|--)$/.test(clause) ? clause + rest : `${clause} ${rest}`;
+}
 
 export class Dialogue {
   readonly bubbles = new SpeechBubbles();
@@ -12,6 +18,8 @@ export class Dialogue {
   private readonly names = new Map<string, string>();
   private readonly talks = new Map<string, readonly string[]>();
   private readonly invitations = new Set<(npcId: string) => void>();
+  private readonly latest = new Map<string, { speaker: string; text: string }>();
+  private readonly held = new Map<string, LogEntry>();
   private readonly server: Server;
   private readonly view: () => WorldView;
 
@@ -23,6 +31,8 @@ export class Dialogue {
   listen(): () => void {
     const unsubscribes = [
       this.server.on('snapshot', ({ entities, conversations }) => {
+        this.release();
+        this.latest.clear();
         this.names.clear();
         for (const { id, name } of entities) this.names.set(id, name);
         this.talks.clear();
@@ -58,17 +68,29 @@ export class Dialogue {
   }
 
   hear(line: Line): boolean {
-    if (line.speaker === PLAYER_ID) return false; // say() showed it already
-    const partner = this.withPlayer(line.conversation_id);
+    const conversation = line.conversation_id;
+    const before = this.latest.get(conversation);
+    const held = this.held.get(conversation);
+    this.latest.delete(conversation);
+    this.held.delete(conversation);
+    const partner = this.withPlayer(conversation);
     const distance = distanceFromPlayer(this.view(), line.speaker);
-    if (!partner && (distance === undefined || distance > EARSHOT_TILES)) return false;
-    this.bubbles.show(line.speaker, line.text, line.duration, partner);
-    this.log.add({
+    const near = distance !== undefined && distance <= EARSHOT_TILES;
+    const heard = line.speaker !== PLAYER_ID && (partner || near); // say() showed the player's
+    const continues = heard && before?.speaker === line.speaker && CUT.test(before.text);
+    if (held && !continues) this.logged(held);
+    if (!heard) return false;
+    const text = continues ? joined(before.text, line.text) : line.text;
+    this.latest.set(conversation, { speaker: line.speaker, text });
+    this.bubbles.show(line.speaker, text, line.duration, partner);
+    const entry = {
       speaker: line.speaker,
       name: this.nameOf(line.speaker),
-      text: line.text,
+      text: held && continues ? text : line.text,
       to: partner ? this.nameOf(PLAYER_ID) : null,
-    });
+    };
+    if (CUT.test(text)) this.held.set(conversation, entry);
+    else this.logged(entry);
     return true;
   }
 
@@ -77,13 +99,29 @@ export class Dialogue {
     if (!said || !this.server.send({ type: 'player_say', text: said, target })) return false;
     this.bubbles.show(PLAYER_ID, said, speakingSeconds(said));
     this.bubbles.think(target);
-    this.log.add({
+    for (const [id, participants] of this.talks) {
+      if (participants.includes(PLAYER_ID)) this.latest.delete(id);
+    }
+    this.logged({
       speaker: PLAYER_ID,
       name: this.nameOf(PLAYER_ID),
       text: said,
       to: this.nameOf(target),
     });
     return true;
+  }
+
+  private logged(entry: LogEntry): void {
+    this.release();
+    this.log.add(entry);
+  }
+
+  private release(conversationId?: string): void {
+    for (const [id, entry] of this.held) {
+      if (conversationId !== undefined && id !== conversationId) continue;
+      this.held.delete(id);
+      this.log.add(entry);
+    }
   }
 
   private withPlayer(conversationId: string): boolean {
@@ -100,6 +138,8 @@ export class Dialogue {
   private ended(conversationId: string): void {
     const participants = this.talks.get(conversationId) ?? [];
     this.talks.delete(conversationId);
+    this.release(conversationId);
+    this.latest.delete(conversationId);
     if (!participants.includes(PLAYER_ID)) return;
     for (const id of participants) if (id !== PLAYER_ID) this.bubbles.stopThinking(id);
   }

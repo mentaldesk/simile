@@ -82,12 +82,12 @@ resident towards their social need.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
-  said. So that the voice starts sooner, a long first sentence is cut after its first clause, which
-  is a dash or semicolon after 6 words, or a comma after 10 that isn't in a list, once 4 more words
-  have streamed. The bubble then shows the clause and then the rest of the sentence. Sentences are
-  paced as in *Pacing* above, back to back without `turn_gap`. The player's lines are spoken when
-  they arrive and have no `LineDrafted`. If the player says something while the NPC is still writing
-  or speaking, the NPC stops: the rest of that reply is dropped and they answer the new line.
+  said. A long first sentence is cut after its first clause (a dash or semicolon after 6 words, or a
+  comma after 10 that isn't in a list) so its voice starts sooner, and the client shows both pieces
+  in one bubble. Sentences are paced as in *Pacing* above, back to back without `turn_gap`. The
+  player's lines are spoken when they arrive and have no `LineDrafted`. If the player says something
+  while the NPC is still writing or speaking, the NPC stops: the rest of that reply is dropped and
+  they answer the new line.
 - **News the player mentions.** B4's `mentioned` matches the player's lines since the NPC last
   spoke against each article the NPC read: its title, tags and summary from the news store (looked
   up through `news_of` when needed, or just the title quoted in the memory if it's gone) and the
@@ -133,8 +133,8 @@ published.
 - **Player conversations (B5).** Conversations with the player have `player` as a participant
   and publish the same events, with the player's lines included.
 - **Voicing (I1).** `LineDrafted` gives each NPC line's text one line ahead of `LineSpoken`. In a
-  conversation with the player, each line is a sentence, or the first clause of a long first
-  sentence, and `LineDrafted` comes as soon as it has streamed, so voicing can start on it. A sentence dropped because the player talked
+  conversation with the player, each line is a sentence and `LineDrafted` comes as soon as it has
+  streamed, so voicing can start on the first sentence. A sentence dropped because the player talked
   over the NPC or left gets a `LineDrafted` but no `LineSpoken`.
 - **Debug overlay (I2).** `engine.state(npc)` has their conversation, who they're talking to,
   engagement, facing and whether they're about to leave.

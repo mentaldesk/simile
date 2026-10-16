@@ -50,10 +50,8 @@ class QwenSynthesiser:
         silence = LeadingSilence()
         for result in self._generate(npc_id, sentence, max_tokens):
             tokens += result.token_count
-            if pcm := silence.feed(to_pcm(result.audio)):
-                yield pcm
-        if pcm := silence.end():
-            yield pcm
+            yield silence.feed(to_pcm(result.audio))
+        yield silence.end()
         if tokens >= max_tokens:
             logger.warning(f"Cut {npc_id} off after {max_seconds:.1f}s of {sentence!r}")
 

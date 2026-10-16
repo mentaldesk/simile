@@ -12,8 +12,6 @@ from simile.voice.service import REPO_ROOT
 
 RATES = REPO_ROOT / "content" / "voices" / "rates.json"
 SYNTHESIS = 2
-"""Bump it when V1's synthesis changes how long lines take, so every rate has to be measured
-again."""
 
 
 class SpeakingRate(Model):

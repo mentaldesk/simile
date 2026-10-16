@@ -15,8 +15,7 @@ GIVE_UP = 1.5
 
 
 class LeadingSilence:
-    """Drops the silence a line starts with but for `LEAD_IN` before its first sound. Holds the
-    line's chunks back until it finds that sound, for at most `GIVE_UP` seconds."""
+    """Drops the silence a line starts with, holding its chunks back until the first sound."""
 
     def __init__(self) -> None:
         self._held = bytearray()

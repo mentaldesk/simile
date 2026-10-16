@@ -1006,6 +1006,8 @@ def test_a_long_first_sentence_is_cut_at_a_clause(text: str, sentences: list[str
         "The coffee is decent but the pastries are something else, really.",
         "When I'm not working at the bakery I like painting, hiking, swimming and old novels.",
         "It's a well-known spot for the after-work crowd and their dogs on a sunny evening.",
+        "We usually open the whole shop from 9–5 most days, except Sundays of course.",
+        "The bakery is at its busiest between 7 -- 11 on weekdays and quiet after lunch.",
     ],
 )
 def test_a_first_sentence_without_a_good_clause_stays_whole(text: str) -> None:
