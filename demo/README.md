@@ -75,7 +75,7 @@ Times are from your first step. Lines quoted are from a real run; yours will dif
    ordered by familiarity: familiarity 0.15 → 0.20, respect 0.53 → 0.58. His like barely moves
    (0.71 → 0.72), because Kofi's first impressions are already warm and each step further from
    neutral is harder than the last. They disagreed about Mars and came away thinking better of each
-   other: click Tobias, and his like for Kofi has gone from 0.52 to 0.59.
+   other.
 5. **1:20, Raymond at the terminal.** Walk east along the square, then south to the news terminal
    on its east edge, by the park gate. Raymond, the franchise broker, walked there at the start and
    read the article live: click him to see the new memory ("Frankly, Mars is the biggest territory
