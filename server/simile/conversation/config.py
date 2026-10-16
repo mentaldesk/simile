@@ -113,7 +113,12 @@ class ConversationConfig(BaseModel):
         description="Real seconds a line may take to write before it counts as failed, which "
         "ends the conversation.",
     )
-    max_words: int = Field(default=40, ge=1, description="Longest line asked for.")
+    max_words: int = Field(
+        default=40,
+        ge=1,
+        description="Longest line asked for. A longer one is cut at the first sentence boundary "
+        "past it.",
+    )
     memories_about: int = Field(
         default=3, ge=0, description="Memories of the other person in a speaker's prompt."
     )

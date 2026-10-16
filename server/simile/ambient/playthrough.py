@@ -212,12 +212,12 @@ class ScriptedPlayer:
         ]
 
     def join(self) -> None:
-        self.hub.connections.add(self)  # type: ignore[arg-type]
+        self.hub.connections.add(self)
         self._send_position()
         self._linger()
 
     def leave(self) -> None:
-        self.hub.connections.discard(self)  # type: ignore[arg-type]
+        self.hub.connections.discard(self)
         for stop in self._stops:
             stop()
 

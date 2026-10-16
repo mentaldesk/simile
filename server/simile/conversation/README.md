@@ -29,7 +29,8 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   asks for pet words and phrases now and then, not in every line. The model ends each line with
   `[values: ...]`, the core values the conversation touches. `parse_reply` takes it off, even cut
   short, along with any name label, quotes, `*stage directions*` and anything the model wrote for
-  the other speaker.
+  the other speaker. It also cuts a line at the first sentence boundary past `max_words` (40), so
+  no sentence starts after the 40th word.
 - **Engagement.** Each participant starts from `start_engagement`, more if they like the other or
   value Connection. After every line, both lose `fatigue` and gain `topic_weight` times how much
   the values it brings up for the first time in the conversation matter to them (from -1 to 1)

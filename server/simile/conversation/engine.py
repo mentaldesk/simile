@@ -265,6 +265,7 @@ class ConversationEngine:
             text,
             [talk.names[speaker], party.npc.name],
             [talk.names[talk.other(speaker)], other.npc.name],
+            self.config,
         )
 
     def _drafted(self, talk: Talk, task: asyncio.Task[Draft]) -> bool:

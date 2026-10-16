@@ -228,6 +228,18 @@ async def test_a_request_is_decided_on_the_accept_score() -> None:
     assert village.engine.request("cal", "dot")
 
 
+async def test_a_line_past_max_words_is_cut_at_a_sentence() -> None:
+    replies = ["One two three four. Five six seven. Eight nine. [values: connection]"]
+    village = Village(
+        replies, relationships=friends(ANA, BEN), config=ConversationConfig(max_words=5)
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.2)
+
+    assert village.spoken[0].text == "One two three four. Five six seven."
+
+
 async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> None:
     replies = ["One two three four five. [values: connection]", "Six seven eight nine ten."]
     village = Village(replies, relationships=friends(ANA, BEN))
