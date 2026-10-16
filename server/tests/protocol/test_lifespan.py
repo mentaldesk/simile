@@ -62,7 +62,6 @@ CASES = [
 
 
 def sent_by(act: Callable[[World], None]) -> list[ServerMessage]:
-    """Runs `act` inside the lifespan and again after it, and returns what was broadcast."""
     app = Starlette()
     world = app.state.world = World(Clock(NOW))
     sent: list[ServerMessage] = []
