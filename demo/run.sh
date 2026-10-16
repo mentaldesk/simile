@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Start the demo village afresh: rebuild its database from demo/, then run the voiced sim server
-# and the client. Ctrl-C stops both.
+# and the client. The village holds still until the player's first step. Ctrl-C stops both.
 set -euo pipefail
 set -m
 
@@ -34,7 +34,7 @@ stop() {
 }
 trap stop EXIT INT TERM
 
-uv run --extra voice simile serve --port "$SIMILE_PORT" &
+uv run --extra voice python ../demo/serve.py --port "$SIMILE_PORT" &
 server=$!
 (cd "$root/client" && exec node_modules/.bin/vite --config ../demo/vite.config.mts \
   --port "$CLIENT_PORT" --strictPort) &
@@ -44,8 +44,12 @@ until curl -sf "http://127.0.0.1:$SIMILE_PORT/api/health" >/dev/null; do
   kill -0 "$server" 2>/dev/null && kill -0 "$client" 2>/dev/null || exit 1
   sleep 1
 done
-echo
-echo "The village is running. Open http://localhost:$CLIENT_PORT and press a key to unmute it."
-echo
+cat <<EOF
+
+Open http://localhost:$CLIENT_PORT now and take a step (any arrow key). The village holds still
+until you do, and that key press is also what lets the browser play sound. To start over, press
+Ctrl-C here and run demo/run.sh again.
+
+EOF
 
 while kill -0 "$server" 2>/dev/null && kill -0 "$client" 2>/dev/null; do sleep 1; done

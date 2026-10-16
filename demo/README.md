@@ -22,10 +22,14 @@ demo/run.sh
 ```
 
 It rebuilds the demo database (`server/data/demo.db`) from this folder, then starts the sim server
-with `SIMILE_VOICE=1` on port 8000 and the client on 5173. When it says the village is running, open
-<http://localhost:5173> and click into the page or press a key: browsers keep audio muted until
-then. The residents start acting as soon as the server is up, so have the page open by then. It
-reconnects on its own, so you can open it while the voice model loads. Ctrl-C stops both.
+with `SIMILE_VOICE=1` on port 8000 and the client on 5173. When it prints the address, open
+<http://localhost:5173> and take a step: hold an arrow key for a moment. Until that first step the
+village holds still, with the clock stopped at 10:30, so take your time setting up the recording.
+The key press is also what lets the browser play sound, which it keeps muted until the page gets a
+key press or click. Ctrl-C stops both.
+
+[`serve.py`](serve.py) does the holding. It's `simile serve` with the tick loop's wall clock
+standing still until the first `player_move` that moves the player.
 
 | Variable | Default | |
 |---|---|---|
@@ -36,20 +40,21 @@ reconnects on its own, so you can open it while the voice model loads. Ctrl-C st
 `SIMILE_NEWS` is turned off, so the Mars article is the only news and nothing is fetched or
 analysed.
 
-**Resetting** is running `demo/run.sh` again: every run starts from the same state. To carry on
-from where a demo stopped instead (the server saves on Ctrl-C), run the village on the demo database:
+**Resetting** is Ctrl-C and `demo/run.sh` again: every run starts from the same state, so that's
+also how to retake the opening. To carry on from where a demo stopped instead (the server saves on
+Ctrl-C), run the village on the demo database:
 `SIMILE_DB="$PWD/server/data/demo.db" SIMILE_VOICE=1 make dev`. Don't use `simile reset` or
 `SIMILE_FRESH=1` on it: they forget who has read the article.
 
 ## The walk-through (2 to 3 minutes)
 
-Times are from the moment the server is up. Lines quoted are from a real run; yours will differ.
+Times are from your first step. Lines quoted are from a real run; yours will differ.
 
-1. **0:00, the square.** You start south of the fountain. On your left, Tobias walks over to Kofi
-   and opens on the Mars story within about 10 seconds. Stand still and listen. Tobias, the
-   retired lockkeeper: "I'd sooner we looked after the one world we have before we set about
-   remaking another." Kofi, the mural painter: "What if they clean up Earth too? Half the walls in
-   this square could use a fresh coat of hope." Their chat runs about a minute.
+1. **0:00, the square.** You start south of the fountain. Take one step left and stand still. On
+   your left, Tobias walks over to Kofi and opens on the Mars story within about 10 seconds.
+   Tobias, the retired lockkeeper: "I'd sooner we looked after the one world we have before we set
+   about remaking another." Kofi, the mural painter: "What if they clean up Earth too? Half the
+   walls in this square could use a fresh coat of hope." Their chat runs about a minute.
 2. **0:20, inside their heads.** Press <kbd>`</kbd> and click Tobias. The overlay shows his goal
    (`talk kofi`), his last decision (seeking out Kofi scored 1.17, going home 0.66), his memory of
    the article (feeling −0.60), and his relationships: everyone at the same first impression, with
@@ -136,7 +141,10 @@ cd server && uv run python ../demo/check.py --runs 20
 Runs the opening headless on the fake LLM and counts how often each scripted beat happens: Tobias
 seeking out Kofi, Desmond seeking out Marguerite, both conversations starting, and Raymond going to
 read. 100 runs out of 100 went to script, the conversations starting 7 sim seconds in. Run it after
-changing `scenario.json`, or after B1 or B2 change. It exits non-zero if any beat was missed.
+changing `scenario.json`. It exits non-zero if any beat was missed.
+
+CI runs it three times on every PR (`.github/workflows/demo.yml`), along with ruff on `demo/` and
+an import check of `serve.py`, so a change to the server APIs the demo builds on shows up there.
 
 ## Recording
 
