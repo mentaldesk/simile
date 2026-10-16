@@ -15,7 +15,7 @@ def test_generate_npcs_writes_the_village(
     residents: Callable[[], FakeProvider], monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     fake = residents()
-    monkeypatch.setattr("simile.llm.LLMClient", lambda **kwargs: LLMClient(fake, **kwargs))
+    monkeypatch.setattr(LLMClient, "provider", property(lambda client: fake))
 
     result = runner.invoke(
         create_cli(), ["generate-npcs", "--count", "3", "--seed", "2", "--out", str(tmp_path)]

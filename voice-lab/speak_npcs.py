@@ -1,4 +1,5 @@
 import argparse
+import json
 import subprocess
 import tempfile
 import zlib
@@ -13,6 +14,7 @@ from mlx_audio.utils import load_audio
 import transcribe
 from npcs import SAMPLE_LINES, SAMPLES, clip_path, has_voice, load_npcs, sample_paths, word_error_rate
 
+HERE = Path(__file__).parent
 MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit"
 TOKENS_PER_SECOND = 12.5
 
@@ -23,6 +25,7 @@ def main() -> None:
     parser.add_argument("--model", default=MODEL)
     parser.add_argument("--force", action="store_true", help="respeak samples that already exist")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--torch-python", type=Path, default=HERE / ".venv" / "bin" / "python")
     args = parser.parse_args()
 
     todo = {}
@@ -40,7 +43,7 @@ def main() -> None:
     SAMPLES.mkdir(parents=True, exist_ok=True)
     model = load_model(args.model)
     whisper = transcribe.load()
-    report = []
+    spoken = []
     with tempfile.TemporaryDirectory() as tmp:
         for npc_id, (npc, lines) in todo.items():
             reference = load_audio(str(clip_path(npc_id)), sample_rate=model.sample_rate)
@@ -61,11 +64,14 @@ def main() -> None:
                 seconds, error_rate = len(audio) / model.sample_rate, word_error_rate(line, heard)
                 print(f"{path.name}: {seconds:.1f} s, word error rate {error_rate:.0%}")
                 print(f"  heard: {heard}")
-                report.append(f"| `{path.name}` | {seconds:.1f} s | {error_rate:.0%} | {heard} |")
+                spoken.append((path.name, seconds, error_rate, heard, str(wav)))
+        run = [args.torch_python, HERE / "accent.py", *(wav for *_, wav in spoken)]
+        accents = json.loads(subprocess.run(run, capture_output=True, text=True, check=True).stdout.splitlines()[-1])
 
-    print("\n| Sample | Length | Word error rate | Heard |")
-    print("|---|--:|--:|---|")
-    print("\n".join(report))
+    print("\n| Sample | Length | Word error rate | Accent | Heard |")
+    print("|---|--:|--:|---|---|")
+    for name, seconds, error_rate, heard, wav in spoken:
+        print(f"| `{name}` | {seconds:.1f} s | {error_rate:.0%} | {accents[wav]} | {heard} |")
 
 
 if __name__ == "__main__":

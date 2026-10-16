@@ -30,9 +30,9 @@
     "adventure": 0.21,
     "optimism": 0.07
   },
-  "backstory": "Henrietta spent thirty-four years as a records clerk in a county housing office in Leeds, where a correctly filed form and a followed instruction were the difference between a family housed and a family waiting. She learned that safety came from doing as one was told and expecting the same of others. Widowed, she moved to the village for its tidy solar-roofed flats and its predictable days.",
+  "backstory": "Henrietta grew up in Leith and spent thirty-four years as a records clerk in the council housing office in Edinburgh, where a correctly filed form and a followed instruction were the difference between a family housed and a family waiting. She learned that safety came from doing as one was told and expecting the same of others. Widowed, she moved to the village for its tidy solar-roofed flats and its predictable days.",
   "persona": "Henrietta is a stern, orderly woman who believes most trouble comes from people not following the rules they were given. She checks the bin rota, reports a drone parked on the wrong pad, and expects the noodle bar queue to form in the proper order. New ideas, big dreams and anyone's feelings about finding themselves leave her unmoved, and she has little patience for chat that goes nowhere.",
-  "speaking_style": "Brisk, formal and clipped, with short declarative sentences and a habit of quoting the notice or the regulation. She says 'as instructed' and 'that is the procedure', and rarely asks questions about the other person.",
+  "speaking_style": "Brisk, formal and clipped, with short declarative sentences, precise Edinburgh diction and a habit of quoting the notice or the regulation. She says 'as instructed' and 'that is the procedure', and rarely asks questions about the other person.",
   "interests": [
     "bin and recycling rota",
     "residents' association minutes",
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A woman in her early seventies. Mid-low pitch with a dry, slightly rasping timbre. Pace is brisk and even, with crisp consonants and a firm, formal, no-nonsense manner and little warmth or variation in tone.",
-    "reference_line": "The recycling collection is on Thursday, as it says on the notice. Bins should be out by seven and taken in by noon.",
+    "description": "A thick, broad Scots accent. A stern old Scottish woman in her early seventies.",
+    "reference_line": "The recycling uplift is on Thursday, as it says on the notice. Bins are to be out by seven and in again by noon.",
     "reference_clip": "content/voices/henrietta.wav"
   }
 }
