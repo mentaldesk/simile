@@ -77,7 +77,7 @@ export class Dialogue {
     const distance = distanceFromPlayer(this.view(), line.speaker);
     const near = distance !== undefined && distance <= EARSHOT_TILES;
     const heard = line.speaker !== PLAYER_ID && (partner || near); // say() showed the player's
-    const continues = heard && before?.speaker === line.speaker && CUT.test(before.text);
+    const continues = partner && before?.speaker === line.speaker && CUT.test(before.text);
     if (held && !continues) this.logged(held);
     if (!heard) return false;
     const text = continues ? joined(before.text, line.text) : line.text;
@@ -89,7 +89,7 @@ export class Dialogue {
       text: held && continues ? text : line.text,
       to: partner ? this.nameOf(PLAYER_ID) : null,
     };
-    if (CUT.test(text)) this.held.set(conversation, entry);
+    if (partner && CUT.test(text)) this.held.set(conversation, entry);
     else this.logged(entry);
     return true;
   }

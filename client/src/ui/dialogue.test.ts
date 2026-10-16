@@ -252,6 +252,7 @@ describe('Dialogue', () => {
   });
 
   it('keeps the space after a comma, semicolon or spaced dash, and lasts as long as the rest', () => {
+    start('conv_1', 'player', 'mei');
     for (const clause of ['The pastries are something else,', 'It took all summer;', 'Go on -']) {
       deliver('mei', clause);
       deliver('mei', 'so get there early.', 2.5);
@@ -278,6 +279,27 @@ describe('Dialogue', () => {
       'Wait, who?',
       'Marcus!',
       'He knows everyone—',
+    ]);
+  });
+
+  it('logs and shows overheard lines as they come, even one ending in a dash', () => {
+    start('conv_1', 'player', 'mei');
+    deliver('suki', 'I was going to say—', 2, 'c2');
+
+    expect(dialogue.log.entries.map(({ text }) => text)).toEqual(['I was going to say—']);
+    deliver('mei', 'Go and find Marcus at the maker space—');
+    deliver('suki', 'never mind.', 2, 'c2');
+    deliver('mei', 'he knows everyone.');
+
+    expect(dialogue.bubbles.current()).toMatchObject([
+      { speaker: 'suki', text: 'never mind.' },
+      { speaker: 'mei', text: 'Go and find Marcus at the maker space—he knows everyone.' },
+    ]);
+    expect(dialogue.log.entries.map(({ text }) => text)).toEqual([
+      'I was going to say—',
+      'Go and find Marcus at the maker space—',
+      'never mind.',
+      'he knows everyone.',
     ]);
   });
 

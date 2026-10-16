@@ -218,8 +218,7 @@ def test_a_failed_load_stops_the_voice_thread(synthesiser: FakeSynthesiser) -> N
 
 
 class Hesitant(FakeSynthesiser):
-    """Has nothing to send for its first `steps` 50 ms steps, like Qwen while the trim holds a
-    silent start."""
+    """Sends nothing for `steps` 50 ms steps, like Qwen while the trim holds a silent start."""
 
     def __init__(self, steps: int) -> None:
         super().__init__()
