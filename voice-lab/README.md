@@ -35,7 +35,7 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python design_npcs.py [npc ...] [--force
 .venv-mlx/bin/python speak_npcs.py [npc ...] [--force] [--seed N]
 ```
 
-- `design_npcs.py` designs a voice for each NPC whose `voice.reference_clip` isn't `content/voices/<id>.wav` yet: the VoiceDesign model says the NPC's reference line in the voice their description asks for. It saves the clip (24 kHz mono WAV) with its transcript (`<id>.txt`) and sets `reference_clip`. With no NPCs named, it also deletes the voices of NPCs that no longer exist. It never replaces an [imported voice](#importing-a-recorded-voice).
+- `design_npcs.py` designs a voice for each NPC whose `voice.reference_clip` isn't `content/voices/<id>.wav` yet: the VoiceDesign model says the NPC's reference line in the voice their description asks for. It saves the clip (24 kHz mono WAV) with its transcript (`<id>.txt`) and sets `reference_clip`. With no NPCs named, it also deletes the voices of NPCs that no longer exist. It doesn't replace an [imported voice](#importing-a-recorded-voice).
 - Each clip must be 5–10 s long, at -30 to -14 dBFS RMS and unclipped, and Whisper (`transcribe.py`, in `.venv-mlx`) must hear the reference line with at most a 10% word error rate, last two words included. The accent classifier (`accent.py`, in `.venv`) must hear the accent the description names, or if it doesn't know that accent, must not hear a North American one. A clip that fails is redesigned with another seed, at most five times, and the attempt with the fewest problems, then the closest accent, is kept. The table at the end says which checks the kept clips failed. Every attempt stays in `out/design/`.
 - `speak_npcs.py` speaks `SAMPLE_LINES` from `npcs.py` in each voice with the server's clone model, to `content/voices/samples/<id>_<n>.m4a`, to check that a voice holds up away from its reference line. Every NPC says the same lines, so voices are easy to compare. Its table shows the accent the classifier hears in each, since cloning can lose it. Redesigning a voice deletes its samples, so the next run speaks them again.
 - Seeds come from the NPC's base seed, the NPC and the attempt. The base seed is `--seed`, or else the one saved in `content/voices/seeds.json` by the last design, so a rerun with `--force` gives the same voices.
@@ -71,12 +71,12 @@ Since VoiceDesign can't do a strong accent, a resident's voice can come from a r
 - A clip that passes becomes the resident's voice: `content/voices/<id>.wav` and `<id>.txt`, `voice.reference_clip` and `voice.reference_line` in `content/npcs/<id>.json`, and new samples from `speak_npcs.py`. The check clones with the same seeds as `speak_npcs.py`, so its samples sound just like the new ones.
 - `--dry-run` runs every check and changes nothing. The converted clips and their cloned samples are in `out/import/` to listen to.
 - `--force` imports a clip that fails the length or Whisper check, but never a transcript that can't be a reference line. It also reimports a clip that was already imported unchanged, which is otherwise skipped.
-- `content/voices/imported.json` lists the imported voices, and `design_npcs.py` never redesigns them, even with `--force`. Remove a resident from it to redesign their voice.
+- `content/voices/imported.json` lists the imported voices. `design_npcs.py` doesn't redesign them, even with `--force`, as long as the resident still has that voice. If they lose it, for example when `simile generate-npcs` clears `reference_clip`, it designs a new one. Remove a resident from the list to redesign their voice.
 - Restart the server to hear a new voice. The saved village doesn't keep voices, so there's no need for `simile reset`.
 
 ## Tests
 
-`tests/` covers `import_voices.py` and the `npcs.py` helpers it shares with `design_npcs.py`, with fakes instead of models. Neither `make test` nor CI runs them:
+`tests/` covers `import_voices.py` and the `npcs.py` helpers it shares with `design_npcs.py`, with fakes instead of models. `make test` doesn't run them. CI runs them (`.github/workflows/voice-lab.yml`) on changes to `voice-lab/` or `content/npcs/`:
 
 ```bash
 uvx --python 3.12 pytest

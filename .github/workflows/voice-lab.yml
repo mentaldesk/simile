@@ -1,0 +1,25 @@
+name: Voice lab
+
+on:
+  pull_request:
+    paths: [voice-lab/**, content/npcs/**, .github/workflows/voice-lab.yml]
+  push:
+    branches: [main]
+    paths: [voice-lab/**, content/npcs/**, .github/workflows/voice-lab.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Voice lab tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uvx --python 3.12 pytest
+        working-directory: voice-lab

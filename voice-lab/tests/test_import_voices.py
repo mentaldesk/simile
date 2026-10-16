@@ -350,9 +350,24 @@ def test_design_never_redesigns_an_imported_voice(content: Path) -> None:
 
     assert npcs.to_design(residents, force=True).keys() == {"priya"}
     assert npcs.to_design(residents, force=False) == {}
+
+
+def test_design_gives_a_resident_a_voice_once_their_imported_one_is_gone(content: Path) -> None:
+    npcs.save_imported({"desmond": "digest"})
+    regenerated = resident("desmond", LINES["desmond"])
+    regenerated["voice"]["reference_clip"] = None
+    (content / "npcs" / "desmond.json").write_text(n1_json(regenerated), encoding="utf-8")
+
+    assert npcs.to_design(npcs.load_npcs(), force=False).keys() == {"desmond"}
+
+
+def test_removing_a_voice_forgets_its_import(content: Path) -> None:
+    npcs.save_imported({"desmond": "digest", "priya": "digest"})
+
     npcs.remove_voice("desmond")
-    npcs.remove_voice("priya")
-    assert npcs.to_design(residents, force=False).keys() == {"priya"}
+
+    assert npcs.imported_voices() == {"priya": "digest"}
+    assert not npcs.clip_path("desmond").exists()
 
 
 def test_scripts_are_the_reference_lines(content: Path, incoming: Path) -> None:

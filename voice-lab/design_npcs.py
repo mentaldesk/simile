@@ -108,9 +108,9 @@ def main() -> None:
         imported = imported_voices()
         if set(imported) - set(npcs):
             save_imported({npc_id: digest for npc_id, digest in imported.items() if npc_id in npcs})
-    if kept := sorted(set(npcs) & set(imported_voices())):
-        print(f"Keeping the imported voices of {', '.join(kept)}. Remove them from imported.json to redesign them.")
     todo = to_design(npcs, args.force)
+    if kept := sorted(set(npcs) & set(imported_voices()) - set(todo)):
+        print(f"Keeping the imported voices of {', '.join(kept)}. Remove them from imported.json to redesign them.")
     if not todo:
         print("Nothing to design." if args.force else "Every NPC has a voice. Use --force to redesign them.")
         return

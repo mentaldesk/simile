@@ -48,6 +48,9 @@ def set_reference_clip(npc_id: str, clip: Path, reference_line: str | None = Non
 def remove_voice(npc_id: str) -> None:
     for path in [clip_path(npc_id), clip_path(npc_id).with_suffix(".txt"), *sample_paths(npc_id)]:
         path.unlink(missing_ok=True)
+    imported = imported_voices()
+    if imported.pop(npc_id, None) is not None:
+        save_imported(imported)
 
 
 def imported_path() -> Path:
@@ -67,7 +70,7 @@ def save_imported(imported: dict[str, str]) -> None:
 def to_design(npcs: dict[str, dict], force: bool) -> dict[str, dict]:
     imported = imported_voices()
     return {
-        npc_id: npc for npc_id, npc in npcs.items() if npc_id not in imported and (force or not has_voice(npc_id, npc))
+        npc_id: npc for npc_id, npc in npcs.items() if not has_voice(npc_id, npc) or (force and npc_id not in imported)
     }
 
 

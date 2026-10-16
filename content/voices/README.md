@@ -10,7 +10,7 @@ See [`voice-lab/README.md`](../../voice-lab/README.md#the-villages-voices).
 
 A voice can also be a recording, imported by `voice-lab/import_voices.py`
 ([how](../../voice-lab/README.md#importing-a-recorded-voice)). `imported.json` lists those, and
-`design_npcs.py` never redesigns them.
+`design_npcs.py` leaves them alone.
 
 Each resident's accent was set by hand (N2b, #70) in their `backstory`, `speaking_style` and
 `voice.description`. Rerunning `simile generate-npcs` replaces those along with everything else.
