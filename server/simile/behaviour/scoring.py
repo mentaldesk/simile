@@ -68,6 +68,9 @@ class Situation:
     bedtime: float
     others: Sequence[Other] = ()
     last: Goal | None = None
+    news: float = 0.0
+    """How interesting the best article they haven't read is, 0-1. 0 if nothing's worth reading,
+    and then the terminals aren't an option."""
 
 
 AFFINITY = ("like", "trust", "respect")
@@ -124,6 +127,8 @@ def walk_minutes(a: Point, b: Point) -> float:
 def candidates(situation: Situation, places: Places) -> list[Goal]:
     goals = [Goal(Activity.HOME, situation.home)]
     for activity, locations in places.by_activity.items():
+        if activity is Activity.NEWS and situation.news <= 0:
+            continue
         goals.extend(Goal(activity, location.id) for location in locations)
     goals += [Goal(Activity.WANDER), Goal(Activity.IDLE)]
     goals.extend(Goal(Activity.SEEK, o.id) for o in situation.others if o.available)
@@ -137,8 +142,10 @@ def score(
     total = config.base.get(activity, 0.0)
     total += sum(w * (values[v] - 0.5) for v, w in config.value_weights.get(activity, {}).items())
     total += sum(w * needs[n] for n, w in config.need_weights.get(activity, {}).items())
+    on_offer = situation.news if activity is Activity.NEWS else 1.0
     total += sum(
-        urgency.weight * relief(needs[need], promised(activity, need, config), urgency.power)
+        urgency.weight
+        * relief(needs[need], on_offer * promised(activity, need, config), urgency.power)
         for need, urgency in config.urgency.items()
     )
     total += curve(config.daily.get(activity, ()), situation.hour)

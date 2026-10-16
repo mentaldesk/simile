@@ -9,7 +9,7 @@ from simile.world.map import load_map
 
 MORNING = datetime(2026, 1, 1, 10, tzinfo=UTC)
 LATER = MORNING + timedelta(days=2, hours=3)
-NEEDS = {Need.SOCIAL: 0.3, Need.CURIOSITY: 0.6, Need.REST: 0.2}
+NEEDS = {Need.SOCIAL: 0.3, Need.CURIOSITY: 0.6, Need.REST: 0.2, Need.NEWS: 0.4}
 
 
 class Village:

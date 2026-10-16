@@ -24,6 +24,7 @@ STREET = "street"
 TERMINAL = "terminal"
 PLACES = (HOME, STREET, "coffee_shop", "square", TERMINAL, "park", "noodle_bar", "maker_space")
 NIGHT = (1.0, 5.0)
+NEWS_INTEREST = 0.6
 
 
 @dataclass
@@ -82,7 +83,8 @@ class Observer:
 
 async def simulate(hours: float, *, start: datetime, seed: int = 0) -> tuple[Observer, float]:
     """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows.
-    Conversations and news stay stubbed, so nothing calls Claude."""
+    Conversations and news stay stubbed, so nothing calls Claude: there's always an article of
+    `NEWS_INTEREST` to read, and reading it does nothing."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
@@ -101,6 +103,7 @@ async def simulate(hours: float, *, start: datetime, seed: int = 0) -> tuple[Obs
         app.state.behaviour.hooks.set(
             request_conversation=decline,
             read_news=skip_news,
+            news_interest=lambda npc: NEWS_INTEREST,
             conversations=no_conversations,
         )
         world.loop.register(observer)

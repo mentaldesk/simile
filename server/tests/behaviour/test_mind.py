@@ -1,5 +1,6 @@
 import json
 import logging
+from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -193,6 +194,20 @@ def test_connection_makes_them_lonely_faster() -> None:
     assert lonelier["keen"] > 3 * lonelier["aloof"] > 0
 
 
+def test_knowledge_and_open_mindedness_make_them_want_the_news() -> None:
+    config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (120, 120)})
+    reader = make_npc("reader", "house_1", knowledge=0.9, open_mindedness=0.8)
+    incurious = make_npc("incurious", "house_2", knowledge=0.1, open_mindedness=0.2)
+    village = Village([reader, incurious], config=config)
+    for mind in village.behaviour.minds.values():
+        mind.needs[Need.NEWS] = 0.3
+
+    village.run(hours=1)
+
+    assert village.behaviour.needs("reader")[Need.NEWS] > 0.5
+    assert village.behaviour.needs("incurious")[Need.NEWS] < 0.3
+
+
 def test_resting_at_home_brings_tiredness_down() -> None:
     config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (120, 120)})
     village = Village([ANA], config=config)
@@ -319,12 +334,63 @@ def test_seekers_choose_friends_from_their_relationships() -> None:
 def test_reads_the_news_at_a_terminal() -> None:
     readers: list[str] = []
     village = Village([ANA], config=keen(A.NEWS))
-    village.behaviour.hooks.set(read_news=lambda npc: readers.append(npc.id))
+    village.behaviour.hooks.set(
+        read_news=lambda npc: readers.append(npc.id), news_interest=lambda npc: 1.0
+    )
 
     village.run_until(lambda: bool(readers))
 
     location = village.behaviour.places.at(village.movement.position("ana"))
     assert location is not None and location.id.startswith("terminal")
+
+
+def test_reading_at_a_terminal_meets_curiosity_as_well_as_the_news() -> None:
+    readers: list[str] = []
+    village = Village([ANA], config=keen(A.NEWS))
+    village.behaviour.hooks.set(
+        read_news=lambda npc: readers.append(npc.id), news_interest=lambda npc: 1.0
+    )
+    village.run_until(lambda: bool(readers))
+    needs = village.behaviour.minds["ana"].needs
+    needs[Need.CURIOSITY] = needs[Need.NEWS] = 0.8
+
+    village.run(minutes=4)
+
+    assert village.behaviour.goal("ana").activity is A.NEWS
+    assert village.behaviour.needs("ana")[Need.CURIOSITY] < 0.65
+    assert village.behaviour.needs("ana")[Need.NEWS] < 0.6
+
+
+def test_nobody_goes_to_a_terminal_with_nothing_worth_reading() -> None:
+    village = Village([ANA], config=keen(A.NEWS))
+    asked: list[str] = []
+
+    def nothing(npc: Npc) -> float:
+        asked.append(npc.id)
+        return 0.0
+
+    village.behaviour.hooks.set(news_interest=nothing)
+    village.run(hours=2)
+
+    assert asked and set(asked) == {"ana"}
+    assert "news" not in {e.activity for _, e in village.goals}
+
+
+def test_those_who_care_little_for_knowledge_rarely_read() -> None:
+    readers = [
+        make_npc(f"reader{n}", f"house_{n}", knowledge=0.9, open_mindedness=0.85) for n in (1, 2, 3)
+    ]
+    others = [
+        make_npc(f"other{n}", f"house_{n}", knowledge=0.1, open_mindedness=0.2) for n in (4, 5, 6)
+    ]
+    village = Village([*readers, *others], start=at(9))
+    village.behaviour.hooks.set(news_interest=lambda npc: 0.8)
+
+    village.run(hours=8)
+
+    visits = Counter(e.npc for _, e in village.goals if e.activity == "news")
+    assert all(visits[npc.id] >= 3 for npc in readers)
+    assert sum(visits[npc.id] for npc in others) <= 1
 
 
 def test_a_failing_hook_is_logged_and_the_loop_carries_on(
@@ -335,7 +401,7 @@ def test_a_failing_hook_is_logged_and_the_loop_carries_on(
     def broken(npc: Npc) -> None:
         raise RuntimeError("no paper today")
 
-    village.behaviour.hooks.set(read_news=broken)
+    village.behaviour.hooks.set(read_news=broken, news_interest=lambda npc: 1.0)
     with caplog.at_level(logging.ERROR):
         village.run(hours=1)
 
@@ -386,7 +452,7 @@ def test_state_is_json_for_the_debug_overlay() -> None:
 
     assert json.loads(json.dumps(state)) == state
     needs = state["needs"]
-    assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest"}
+    assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest", "news"}
     assert state["goal"] == str(village.behaviour.goal("ana"))
 
 

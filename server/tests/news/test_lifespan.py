@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import sqlite3
 import threading
 import time
@@ -12,7 +13,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.news import NewsStore, news_of
+from simile.news import NewsStore, news_of, parse
 from simile.sim import Clock, FakeWallClock, World, world_of
 from simile.sim.headless import run_headless
 
@@ -119,3 +120,34 @@ def test_a_restart_waits_out_the_min_gap(
         assert len(news_of(second).latest()) == 5
 
     assert len(feed_server.requests) == 1
+
+
+def test_leaves_news_the_canned_llm_cant_analyse_unanalysed_and_says_so_once(
+    make_package: MakePackage,
+    database: Path,
+    feed_xml: bytes,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with NewsStore(database) as store:
+        store.add(parse(feed_xml))
+    package = make_package(
+        {
+            "llm/lifespan.py": "from simile.llm.lifespan import lifespan\n",
+            "memory/lifespan.py": "from simile.memory.lifespan import lifespan\n",
+            "news/lifespan.py": "from simile.news.lifespan import lifespan\n",
+            "sim/lifespan.py": "from simile.sim.lifespan import running\n",
+        }
+    )
+    app = create_app(package)
+
+    with caplog.at_level(logging.DEBUG, logger="simile.news.analysis"), TestClient(app):
+        deadline = time.monotonic() + 5
+        while news_of(app).unanalysed(60, "canned") and time.monotonic() < deadline:
+            time.sleep(0.01)
+
+    with NewsStore(database) as store:
+        assert store.unanalysed(60, "canned") == []
+        assert len(store.unanalysed(60, "claude-code")) == 5
+        assert store.latest(analysed=True) == []
+    failures = [r for r in caplog.records if "couldn't analyse" in r.getMessage()]
+    assert [r.levelno for r in failures] == [logging.WARNING] + [logging.DEBUG] * 4

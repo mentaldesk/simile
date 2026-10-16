@@ -1,53 +1,22 @@
 import asyncio
 import logging
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from datetime import datetime, timedelta
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
-from simile.llm import LLMClient, Model, StructuredOutputError
+from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.memory.store import recency
+from simile.news.config import DEFAULT_CONFIG, NewsConfig
+from simile.news.interest import interest
 from simile.news.store import NewsStore
 from simile.npc.values import format_scores, ranked
 from simile.schema import Id, Memory, MemoryKind, NewsItem, Npc, Signed, Unit
 from simile.sim import Clock
 
 logger = logging.getLogger(__name__)
-
-
-class NewsConfig(BaseModel):
-    """Every constant of how NPCs read and bring up the news."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    per_visit: int = Field(
-        default=2, ge=1, description="Articles read per terminal visit, newest unread first."
-    )
-    model: str = Field(default=Model.HAIKU_5_5, description="The model that rates each article.")
-    priority: int = Field(
-        default=-1, description="L1 priority of the rating calls, below conversations' 0."
-    )
-    cares_most: int = Field(
-        default=5, ge=0, description="Strongest values listed in the reading prompt."
-    )
-    cares_least: int = Field(
-        default=3, ge=0, description="Weakest values listed in the reading prompt."
-    )
-    topics: int = Field(default=3, ge=0, description="Most topics kept per reaction.")
-    half_life: timedelta = Field(
-        default=timedelta(hours=24),
-        description="Sim time over which a reaction's pull as a topic halves.",
-    )
-    min_score: float = Field(
-        default=0.05,
-        ge=0,
-        description="Reactions scoring less than this (intensity × recency) aren't raised.",
-    )
-
-
-DEFAULT_CONFIG = NewsConfig()
 
 
 class Reaction(BaseModel):
@@ -113,8 +82,9 @@ def remember(
 
 
 class NewsReader:
-    """B1's `read_news` hook: an NPC at a terminal reads the latest articles they haven't read,
-    and a task asks the LLM how each lands and stores it as a `news` memory."""
+    """B1's `read_news` and `news_interest` hooks: an NPC at a terminal reads the analysed
+    article they haven't read that interests them most, and a task asks the LLM how it lands and
+    stores it as a `news` memory."""
 
     def __init__(
         self,
@@ -133,18 +103,35 @@ class NewsReader:
         self.seen: dict[Id, set[str]] = {}
         self.tasks: set[asyncio.Task[None]] = set()
 
+    def ranked(self, npc: Npc) -> list[tuple[NewsItem, float]]:
+        """The analysed articles among the newest that `npc` hasn't read, with their interest,
+        most interesting first. Those below `config.min_interest` are left out."""
+        items = self.news.latest(
+            self.config.candidates, exclude=self._seen_by(npc.id), analysed=True
+        )
+        scored = [(item, interest(npc, item, self.config)) for item in items]
+        worth = [pair for pair in scored if pair[1] >= self.config.min_interest]
+        return sorted(worth, key=lambda pair: pair[1], reverse=True)
+
+    def interest(self, npc: Npc) -> float:
+        """How interesting `npc` finds the best article they haven't read, 0-1. 0 if nothing is
+        worth reading, or there's no LLM to read it with."""
+        if self.llm() is None:
+            return 0.0
+        best = self.ranked(npc)
+        return min(best[0][1], 1.0) if best else 0.0
+
     def read(self, npc: Npc) -> None:
-        """Pick the articles `npc` reads now and start reacting to them. Doesn't block."""
+        """Start reading the unread article that interests `npc` most, if any. Doesn't block."""
         llm = self.llm()
         if llm is None:
             return
-        loop = asyncio.get_running_loop()
-        seen = self._seen_by(npc.id)
-        items = self.news.latest(self.config.per_visit, exclude=seen)
-        if not items:
+        best = self.ranked(npc)
+        if not best:
             return
-        seen.update(item.id for item in items)
-        task = loop.create_task(self._react(llm, npc, items, self.clock.now))
+        item = best[0][0]
+        self._seen_by(npc.id).add(item.id)
+        task = asyncio.get_running_loop().create_task(self._react(llm, npc, item, self.clock.now))
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)
 
@@ -160,35 +147,32 @@ class NewsReader:
             self.seen[npc] = {memory.news_id for memory in memories if memory.news_id}
         return self.seen[npc]
 
-    async def _react(
-        self, llm: LLMClient, npc: Npc, items: Sequence[NewsItem], now: datetime
-    ) -> None:
-        for index, item in enumerate(items):
-            try:
-                reaction = await llm.structured(
-                    article_prompt(item),
-                    Reaction,
-                    system=system_prompt(npc, self.config),
-                    model=self.config.model,
-                    purpose="news-reaction",
-                    priority=self.config.priority,
-                )
-            except StructuredOutputError:
-                logger.warning("%s couldn't rate %r, so skipped it", npc.id, item.title)
-                continue
-            except Exception:
-                logger.warning("%s couldn't read %r", npc.id, item.title, exc_info=True)
-                self.seen[npc.id].difference_update(unread.id for unread in items[index:])
-                return
-            self.memory.add(remember(npc, item, reaction, now, self.config))
-            logger.info(
-                "%s read %r: valence %.2f, intensity %.2f. %s",
-                npc.id,
-                item.title,
-                reaction.valence,
-                reaction.intensity,
-                reaction.take,
+    async def _react(self, llm: LLMClient, npc: Npc, item: NewsItem, now: datetime) -> None:
+        try:
+            reaction = await llm.structured(
+                article_prompt(item),
+                Reaction,
+                system=system_prompt(npc, self.config),
+                model=self.config.model,
+                purpose="news-reaction",
+                priority=self.config.priority,
             )
+        except StructuredOutputError:
+            logger.warning("%s couldn't rate %r, so skipped it", npc.id, item.title)
+            return
+        except Exception:
+            logger.warning("%s couldn't read %r", npc.id, item.title, exc_info=True)
+            self.seen[npc.id].discard(item.id)
+            return
+        self.memory.add(remember(npc, item, reaction, now, self.config))
+        logger.info(
+            "%s read %r: valence %.2f, intensity %.2f. %s",
+            npc.id,
+            item.title,
+            reaction.valence,
+            reaction.intensity,
+            reaction.take,
+        )
 
 
 def score(memory: Memory, now: datetime, half_life: timedelta) -> float:

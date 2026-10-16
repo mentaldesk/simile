@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 type ConversationRequest = Callable[[Id, Id], bool]
 type NewsReader = Callable[[Npc], None]
+type NewsInterest = Callable[[Npc], float]
 type LiveConversations = Callable[[], list[Conversation]]
 
 AT_HOME = (Activity.HOME, Activity.SLEEP)
@@ -56,6 +57,10 @@ def skip_news(npc: Npc) -> None:
     return None
 
 
+def no_news(npc: Npc) -> float:
+    return 0.0
+
+
 def no_conversations() -> list[Conversation]:
     return []
 
@@ -66,6 +71,7 @@ class Hooks:
     def __init__(self) -> None:
         self.request_conversation: ConversationRequest = decline
         self.read_news: NewsReader = skip_news
+        self.news_interest: NewsInterest = no_news
         self.conversations: LiveConversations = no_conversations
 
     def set(
@@ -73,12 +79,14 @@ class Hooks:
         *,
         request_conversation: ConversationRequest | None = None,
         read_news: NewsReader | None = None,
+        news_interest: NewsInterest | None = None,
         conversations: LiveConversations | None = None,
     ) -> Callable[[], None]:
         """Plug in the hooks given and return a function that puts back what they replaced."""
         given = {
             "request_conversation": request_conversation,
             "read_news": read_news,
+            "news_interest": news_interest,
             "conversations": conversations,
         }
         hooks = {name: hook for name, hook in given.items() if hook is not None}
@@ -323,6 +331,7 @@ class Behaviour:
                     self._available(mind, other, hour),
                 )
             )
+        news = self._call(self.hooks.news_interest, npc)
         return Situation(
             npc.values,
             mind.needs,
@@ -332,6 +341,7 @@ class Behaviour:
             mind.bedtime,
             others,
             mind.goal,
+            _clamp(news) if isinstance(news, int | float) else 0.0,
         )
 
     def _place_of(self, entity: Id, position: Point) -> str | None:

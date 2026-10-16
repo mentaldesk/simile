@@ -27,7 +27,15 @@ CREATE TABLE IF NOT EXISTS news_feeds (
     etag TEXT,
     modified TEXT
 );
+
+CREATE TABLE IF NOT EXISTS news_unanalysable (
+    id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    PRIMARY KEY (id, provider)
+);
 """
+
+ANALYSED = "EXISTS (SELECT 1 FROM json_each(data, '$.values'))"
 
 
 @dataclass(frozen=True)
@@ -88,16 +96,50 @@ class NewsStore:
             row = self._db.execute("SELECT data FROM news WHERE id = ?", (id,)).fetchone()
         return NewsItem.model_validate_json(row[0]) if row else None
 
-    def latest(self, n: int = 10, *, exclude: Collection[str] = ()) -> list[NewsItem]:
+    def latest(
+        self, n: int = 10, *, exclude: Collection[str] = (), analysed: bool | None = None
+    ) -> list[NewsItem]:
         """The `n` most recently published items, newest first, leaving out the ids in
-        `exclude`."""
+        `exclude` and, if `analysed` is given, those that are or aren't analysed."""
+        where = "" if analysed is None else f" AND {'' if analysed else 'NOT '}{ANALYSED}"
         with self._lock:
             rows = self._db.execute(
                 "SELECT data FROM news WHERE id NOT IN (SELECT value FROM json_each(?))"
-                " ORDER BY published DESC, rowid DESC LIMIT ?",
+                f"{where} ORDER BY published DESC, rowid DESC LIMIT ?",
                 (json.dumps(list(exclude)), n),
             ).fetchall()
         return [NewsItem.model_validate_json(data) for (data,) in rows]
+
+    def unanalysed(self, n: int, provider: str) -> list[NewsItem]:
+        """The items among the `n` newest that aren't analysed and that `provider` hasn't
+        failed to analyse, newest first."""
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT data FROM (SELECT id, data, published, rowid AS row FROM news"
+                " ORDER BY published DESC, rowid DESC LIMIT ?)"
+                f" WHERE NOT {ANALYSED}"
+                " AND id NOT IN (SELECT id FROM news_unanalysable WHERE provider = ?)"
+                " ORDER BY published DESC, row DESC",
+                (n, provider),
+            ).fetchall()
+        return [NewsItem.model_validate_json(data) for (data,) in rows]
+
+    def update(self, item: NewsItem) -> bool:
+        """Replace the stored item that has `item`'s id, as when it's been analysed. False if
+        there isn't one."""
+        with self._lock, self._db:
+            cursor = self._db.execute(
+                "UPDATE news SET data = ? WHERE id = ?", (item.model_dump_json(), item.id)
+            )
+        return cursor.rowcount > 0
+
+    def unanalysable(self, id: str, provider: str) -> None:
+        """Remember that `provider` couldn't analyse the item, so it isn't asked again."""
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT OR IGNORE INTO news_unanalysable (id, provider) VALUES (?, ?)",
+                (id, provider),
+            )
 
     def feed(self, url: str) -> FeedState:
         with self._lock:
