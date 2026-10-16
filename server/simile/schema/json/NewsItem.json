@@ -1,4 +1,36 @@
 {
+  "$defs": {
+    "CoreValue": {
+      "enum": [
+        "freedom",
+        "independence",
+        "self_respect",
+        "self_actualization",
+        "creativity",
+        "honesty",
+        "compassion",
+        "loyalty",
+        "justice",
+        "responsibility",
+        "security",
+        "equality",
+        "tradition",
+        "obedience",
+        "success",
+        "ambition",
+        "discipline",
+        "knowledge",
+        "open_mindedness",
+        "peace_of_mind",
+        "pleasure",
+        "connection",
+        "adventure",
+        "optimism"
+      ],
+      "title": "CoreValue",
+      "type": "string"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "id": {
@@ -36,6 +68,47 @@
       "description": "The URL of the feed it came from. Empty for items stored before sources were recorded.",
       "title": "Source Url",
       "type": "string"
+    },
+    "values": {
+      "additionalProperties": {
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
+      "default": {},
+      "description": "How related the article is to each of the 24 core values, 0-1, with no direction: an article that clashes with a value relates to it as much as one that upholds it. Empty until analysed, then all are present.",
+      "propertyNames": {
+        "$ref": "#/$defs/CoreValue"
+      },
+      "title": "Values",
+      "type": "object"
+    },
+    "tags": {
+      "default": [],
+      "description": "Up to 10 short topic tags, e.g. \"drones\". Empty until analysed.",
+      "items": {
+        "maxLength": 40,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Tags",
+      "type": "array"
+    },
+    "sentiment": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": -1,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The article's overall tone, from -1 (very negative) to 1 (very positive). Null until analysed.",
+      "title": "Sentiment"
     }
   },
   "required": [
@@ -45,7 +118,10 @@
     "summary",
     "published",
     "source",
-    "source_url"
+    "source_url",
+    "values",
+    "tags",
+    "sentiment"
   ],
   "title": "NewsItem",
   "type": "object"

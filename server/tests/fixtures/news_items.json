@@ -6,7 +6,10 @@
     "summary": "Researchers argue that idle time gives the mind room to wander, and that constant stimulation crowds out reflection.",
     "published": "2026-03-13T15:00:00Z",
     "source": "Big Think",
-    "source_url": "https://feeds.feedburner.com/bigthink/main"
+    "source_url": "https://feeds.feedburner.com/bigthink/main",
+    "values": {},
+    "tags": [],
+    "sentiment": null
   },
   {
     "id": "https://bigthink.com/?p=900202",
@@ -15,6 +18,34 @@
     "summary": "As drone deliveries scale up, towns are weighing convenience against noise, privacy and who gets a say over the air above their homes.",
     "published": "2026-03-14T06:30:00Z",
     "source": "Big Think",
-    "source_url": "https://feeds.feedburner.com/bigthink/main"
+    "source_url": "https://feeds.feedburner.com/bigthink/main",
+    "values": {
+      "freedom": 0.7,
+      "independence": 0.3,
+      "self_respect": 0.1,
+      "self_actualization": 0.05,
+      "creativity": 0.15,
+      "honesty": 0.2,
+      "compassion": 0.15,
+      "loyalty": 0.05,
+      "justice": 0.55,
+      "responsibility": 0.45,
+      "security": 0.75,
+      "equality": 0.5,
+      "tradition": 0.3,
+      "obedience": 0.35,
+      "success": 0.3,
+      "ambition": 0.35,
+      "discipline": 0.05,
+      "knowledge": 0.3,
+      "open_mindedness": 0.35,
+      "peace_of_mind": 0.8,
+      "pleasure": 0.25,
+      "connection": 0.4,
+      "adventure": 0.3,
+      "optimism": 0.35
+    },
+    "tags": ["drones", "delivery", "privacy", "noise", "airspace", "local government", "technology"],
+    "sentiment": -0.2
   }
 ]

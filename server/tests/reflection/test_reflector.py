@@ -51,13 +51,6 @@ def read(request: Request) -> str:
                     salience=0.6,
                     topics=["the stall"],
                     events=[cold("ana", "told Ben nobody cares about his door")],
-                    flags_opened=[
-                        NewFlag(
-                            kind=FlagKind.PROMISE,
-                            about="ana",
-                            description="moving her stall from Ben's door by Friday",
-                        )
-                    ],
                 ),
                 Reflection(
                     npc="ana",
@@ -66,7 +59,15 @@ def read(request: Request) -> str:
                     salience=0.5,
                     events=[cold("ben", "called Ana's stall a disgrace")],
                 ),
-            ]
+            ],
+            flags_opened=[
+                NewFlag(
+                    kind=FlagKind.PROMISE,
+                    who="ana",
+                    whom="ben",
+                    description="moving her stall from Ben's door by Friday",
+                )
+            ],
         )
     else:
         extraction = Extraction(
@@ -144,6 +145,51 @@ async def test_a_promise_becomes_a_flag(
     assert flag.resolved is None
     assert store.shared_history("ana", "ben", END).flags == [flag]
     assert store.relationship("ana", "ben").flags == []
+
+
+HELD = [
+    pytest.param("ana", FlagKind.DEBT, "ben", "ben", id="ana owes ben"),
+    pytest.param("ben", FlagKind.DEBT, "ana", "ana", id="ben owes ana"),
+    pytest.param("ana", FlagKind.GRUDGE, "ben", "ana", id="ana holds a grudge against ben"),
+    pytest.param("ben", FlagKind.GRUDGE, "ana", "ben", id="ben holds a grudge against ana"),
+    pytest.param("ana", FlagKind.PROMISE, "ben", "ben", id="ana promised ben"),
+    pytest.param("ben", FlagKind.PROMISE, "ana", "ana", id="ben promised ana"),
+    pytest.param("ana", FlagKind.BROKEN_PROMISE, "ben", "ben", id="ana broke a promise to ben"),
+    pytest.param("ben", FlagKind.BROKEN_PROMISE, "ana", "ana", id="ben broke a promise to ana"),
+    pytest.param("ana", FlagKind.SAVED_LIFE, "ben", "ben", id="ana saved ben's life"),
+    pytest.param("ben", FlagKind.SAVED_LIFE, "ana", "ana", id="ben saved ana's life"),
+    pytest.param("ana", FlagKind.SECRET, "ben", "ben", id="ana told ben a secret"),
+    pytest.param("ben", FlagKind.SECRET, "ana", "ana", id="ben told ana a secret"),
+]
+"""Who did what to whom, and who holds the flag, by F2's reading of each kind."""
+
+
+@pytest.mark.parametrize(("who", "kind", "whom", "holder"), HELD)
+async def test_each_kind_of_flag_lands_on_whoever_holds_it(
+    who: str,
+    kind: FlagKind,
+    whom: str,
+    holder: str,
+    npcs: dict[str, Npc],
+    store: MemoryStore,
+    talk: Talk,
+) -> None:
+    reply = Extraction(
+        reflections=[],
+        flags_opened=[NewFlag(kind=kind, who=who, whom=whom, description="the fence")],
+    )
+    llm = LLMClient(FakeProvider([reply.model_dump_json()]))
+
+    await reflector(store, npcs, None).reflect(llm, talk(*HOSTILE))
+
+    other = whom if holder == who else who
+    [flag] = store.relationship(holder, other).flags
+    assert (flag.kind, flag.owner, flag.about) == (kind, holder, other)
+    assert store.relationship(other, holder).flags == []
+
+
+def test_every_kind_of_flag_has_a_holder() -> None:
+    assert {param.values[1] for param in HELD} == set(FlagKind)
 
 
 async def test_reflects_with_haiku_in_one_call(

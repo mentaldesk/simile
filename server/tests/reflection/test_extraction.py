@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 from simile.memory import MemoryStore
 from simile.reflection import DEFAULT_CONFIG, Extraction, gather, prompt
+from simile.reflection.extraction import WHAT
 from simile.schema import PLAYER_ID, Conversation, Flag, FlagKind, Npc
 from simile.social import meet
 
@@ -44,27 +45,41 @@ def test_the_prompt_gives_feelings_going_in_decayed_to_the_end(
     assert context.feelings[("ben", "ana")].familiarity == 0
 
 
-def test_the_prompt_lists_open_flags_under_their_owner_by_ref(
+def test_the_prompt_lists_open_flags_by_ref_as_who_did_what_to_whom(
     npcs: dict[str, Npc], store: MemoryStore, talk: Talk
 ) -> None:
-    def flag(id: str, resolved: datetime | None = None) -> Flag:
+    def flag(
+        id: str, kind: FlagKind, owner: str, about: str, resolved: datetime | None = None
+    ) -> Flag:
         return Flag(
             id=id,
-            kind=FlagKind.PROMISE,
-            owner="ben",
-            about="ana",
-            description=f"promise {id}",
+            kind=kind,
+            owner=owner,
+            about=about,
+            description=id,
             created=START - timedelta(days=1),
             resolved=resolved,
         )
 
-    store.add(meet(npcs["ben"], "ana"), flag("kept", START), flag("fence"))
+    fence = flag("the fence", FlagKind.PROMISE, "ben", "ana")
+    hedge = flag("the hedge", FlagKind.GRUDGE, "ana", "ben")
+    store.add(
+        meet(npcs["ben"], "ana"),
+        meet(npcs["ana"], "ben"),
+        flag("the gate", FlagKind.PROMISE, "ben", "ana", START),
+        fence,
+        hedge,
+    )
 
     context = gather(talk(("ana", "Hi.")), npcs, store)
 
-    assert context.flags == {"F1": flag("fence")}
-    ben = prompt(context).split("\n\nben (")[1]
-    assert "Open flags:\n- F1 (promise about ana): promise fence" in ben
+    assert context.flags == {"F1": hedge, "F2": fence}
+    assert (
+        "Open flags between them:\n"
+        "- F1 (grudge): ana holds a grudge against ben: the hedge\n"
+        "- F2 (promise): ana promised ben: the fence\n\n"
+        "The conversation:"
+    ) in prompt(context)
 
 
 def test_the_player_is_named_but_doesnt_reflect(
@@ -110,15 +125,26 @@ def test_names_resolve_to_participants(
 
 
 def test_the_schema_asks_for_each_part_of_a_reflection() -> None:
-    reflection = Extraction.model_json_schema()["$defs"]["Reflection"]["properties"]
+    schema = Extraction.model_json_schema()
 
-    assert list(reflection) == [
+    assert list(schema["properties"]) == ["reflections", "flags_opened", "flags_resolved"]
+    assert list(schema["$defs"]["Reflection"]["properties"]) == [
         "npc",
         "summary",
         "valence",
         "salience",
         "topics",
         "events",
-        "flags_opened",
-        "flags_resolved",
     ]
+    assert list(schema["$defs"]["NewFlag"]["properties"]) == ["kind", "who", "whom", "description"]
+
+
+def test_the_schema_says_who_did_what_to_whom_for_every_kind_of_flag() -> None:
+    kind = Extraction.model_json_schema()["$defs"]["NewFlag"]["properties"]["kind"]
+
+    assert kind["description"] == (
+        "What `who` did to `whom`: debt, `who` owes `whom`; grudge, `who` holds a grudge against "
+        "`whom`; promise, `who` promised `whom`; broken_promise, `who` broke a promise to `whom`; "
+        "saved_life, `who` saved the life of `whom`; secret, `who` told `whom` a secret."
+    )
+    assert list(WHAT) == list(FlagKind)

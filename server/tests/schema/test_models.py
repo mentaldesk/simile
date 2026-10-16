@@ -166,3 +166,49 @@ def test_news_items_stored_without_a_source_still_load() -> None:
     parsed = NewsItem.model_validate_json(json.dumps(item))
 
     assert (parsed.source, parsed.source_url) == ("", "")
+
+
+def test_news_items_stored_before_analysis_load_as_not_analysed() -> None:
+    item = fixture("news_items.json", 1)
+    del item["values"], item["tags"], item["sentiment"]
+
+    parsed = NewsItem.model_validate_json(json.dumps(item))
+
+    assert (parsed.values, parsed.tags, parsed.sentiment) == ({}, [], None)
+    assert not parsed.analysed
+
+
+def test_news_item_with_values_is_analysed() -> None:
+    assert NewsItem.model_validate(fixture("news_items.json", 1)).analysed
+
+
+@pytest.mark.parametrize("score", [-0.1, 1.1])
+def test_news_relatedness_stays_in_unit_range(score: float) -> None:
+    item = fixture("news_items.json", 1)
+    item["values"]["freedom"] = score
+
+    rejects(NewsItem, item, "values.freedom")
+
+
+def test_news_values_are_all_or_nothing() -> None:
+    item = fixture("news_items.json", 1)
+    del item["values"]["optimism"]
+
+    rejects(NewsItem, item, "missing core values: optimism")
+
+
+@pytest.mark.parametrize(
+    ("tags", "match"),
+    [
+        ([f"tag {n}" for n in range(11)], "at most 10 items"),
+        ([""], "at least 1 character"),
+        (["x" * 41], "at most 40 characters"),
+    ],
+)
+def test_news_tags_are_few_and_short(tags: list[str], match: str) -> None:
+    rejects(NewsItem, fixture("news_items.json", 1) | {"tags": tags}, match)
+
+
+@pytest.mark.parametrize("sentiment", [-1.5, 1.5])
+def test_news_sentiment_is_signed_unit(sentiment: float) -> None:
+    rejects(NewsItem, fixture("news_items.json", 1) | {"sentiment": sentiment}, "sentiment")
