@@ -9,7 +9,7 @@ import {
   type AudioOutput,
   type VoiceOutput,
 } from './player';
-import { spatialMix, UNPOSITIONED, type Mix } from './spatial';
+import { overheardMix, partnerMix, UNPOSITIONED, type Mix } from './spatial';
 import { JITTER_BUFFER_S } from './timeline';
 
 class FakeVoice implements VoiceOutput {
@@ -59,9 +59,9 @@ const chunk = (lineId: number, sequence: number, last = false, length = CHUNK): 
   samples: new Int16Array(length).fill(16384),
 });
 
-const line = (id: number, speaker: string): Line => ({
+const line = (id: number, speaker: string, conversation = 'conv_1'): Line => ({
   id,
-  conversation_id: 'conv_1',
+  conversation_id: conversation,
   speaker,
   text: 'Morning!',
   timestamp: '2026-03-14T08:05:00Z',
@@ -119,7 +119,7 @@ describe('VoicePlayer', () => {
     player.learn(line(1, 'mei'));
     player.receive(chunk(1, 0));
 
-    expect(output.voices[0].mixes).toEqual([spatialMix({ x: 10, y: 10 }, { x: 14, y: 10 })]);
+    expect(output.voices[0].mixes).toEqual([overheardMix({ x: 10, y: 10 }, { x: 14, y: 10 })]);
     expect(output.voices[0].latestMix.pan).toBeGreaterThan(0);
   });
 
@@ -130,12 +130,12 @@ describe('VoicePlayer', () => {
 
     where.set('mei', { x: 6, y: 10 });
     player.update();
-    expect(voice.latestMix).toEqual(spatialMix({ x: 10, y: 10 }, { x: 6, y: 10 }));
+    expect(voice.latestMix).toEqual(overheardMix({ x: 10, y: 10 }, { x: 6, y: 10 }));
     expect(voice.latestMix.pan).toBeLessThan(0);
 
     where.set('player', { x: 6, y: 18 });
     player.update();
-    expect(voice.latestMix).toEqual(spatialMix({ x: 6, y: 18 }, { x: 6, y: 10 }));
+    expect(voice.latestMix).toEqual(overheardMix({ x: 6, y: 18 }, { x: 6, y: 10 }));
   });
 
   it('leaves the mix alone while nobody moves', () => {
@@ -146,6 +146,29 @@ describe('VoicePlayer', () => {
     player.update();
 
     expect(output.voices[0].mixes).toHaveLength(1);
+  });
+
+  it('plays the player’s partner at full volume, panned gently', () => {
+    player.learn(line(1, 'mei'), true);
+    player.learn(line(2, 'mei'));
+    player.receive(chunk(1, 0));
+    player.receive(chunk(2, 0));
+
+    const [partner, overheard] = output.voices;
+    expect(partner.mixes).toEqual([partnerMix({ x: 10, y: 10 }, { x: 14, y: 10 })]);
+    expect(partner.latestMix.gain).toBe(1);
+    expect(partner.latestMix.pan).toBeGreaterThan(0);
+    expect(partner.latestMix.pan).toBeLessThan(overheard.latestMix.pan);
+  });
+
+  it('keeps the partner at full volume as they walk away', () => {
+    player.learn(line(1, 'mei'), true);
+    player.receive(chunk(1, 0));
+
+    where.set('mei', { x: 10, y: 16 });
+    player.update();
+
+    expect(output.voices[0].latestMix).toEqual({ gain: 1, pan: 0 });
   });
 
   it('plays lines from different speakers at the same time', () => {
@@ -175,7 +198,7 @@ describe('VoicePlayer', () => {
 
     expect(output.voices[0].mixes).toEqual([
       UNPOSITIONED,
-      spatialMix({ x: 10, y: 10 }, { x: 4, y: 12 }),
+      overheardMix({ x: 10, y: 10 }, { x: 4, y: 12 }),
     ]);
   });
 
@@ -211,7 +234,7 @@ describe('VoicePlayer', () => {
     where.set('mei', { x: 10, y: 4 });
     player.update();
 
-    expect(output.voices[0].latestMix).toEqual(spatialMix({ x: 10, y: 10 }, { x: 10, y: 4 }));
+    expect(output.voices[0].latestMix).toEqual(overheardMix({ x: 10, y: 10 }, { x: 10, y: 4 }));
   });
 
   it('closes a voice whose last chunk is empty without playing anything more', () => {
@@ -266,7 +289,7 @@ describe('VoicePlayer', () => {
 
     expect(output.voices.map((voice) => voice.latestMix)).toEqual([
       UNPOSITIONED,
-      spatialMix({ x: 10, y: 10 }, { x: 14, y: 10 }),
+      overheardMix({ x: 10, y: 10 }, { x: 14, y: 10 }),
     ]);
   });
 });
@@ -288,7 +311,7 @@ describe('listen', () => {
     listen(connection, player, () => playing);
   });
 
-  const meiNearby = spatialMix({ x: 10, y: 10 }, { x: 14, y: 10 });
+  const meiNearby = overheardMix({ x: 10, y: 10 }, { x: 14, y: 10 });
   const audio = (lineId: number) =>
     connection.dispatch(
       encodeAudioChunk({ lineId, sequence: 0, last: false, samples: new Int16Array(4) }),
@@ -329,6 +352,84 @@ describe('listen', () => {
     audio(2);
 
     expect(output.voices.map((voice) => voice.latestMix)).toEqual([meiNearby, meiNearby]);
+  });
+
+  const meiAsPartner = partnerMix({ x: 10, y: 10 }, { x: 14, y: 10 });
+  const conversation = (id: string, participants: [string, string], lines: Line[] = []) => ({
+    id,
+    participants,
+    started: '2026-03-14T08:05:00Z',
+    ended: null,
+    lines,
+  });
+  const started = (id: string, participants: [string, string]) =>
+    connection.dispatch(
+      JSON.stringify({
+        type: 'conversation_started',
+        conversation: conversation(id, participants),
+      }),
+    );
+  const said = (id: number, conversationId: string) =>
+    connection.dispatch(
+      JSON.stringify({ type: 'line', line: line(id, 'mei', conversationId), voiced: true }),
+    );
+
+  it('plays the player’s partner at full volume and overheard voices quieter', () => {
+    started('mine', ['player', 'mei']);
+    started('theirs', ['mei', 'tom']);
+    said(1, 'mine');
+    said(2, 'theirs');
+    audio(1);
+    audio(2);
+
+    expect(output.voices.map((voice) => voice.latestMix)).toEqual([meiAsPartner, meiNearby]);
+  });
+
+  it('knows the player’s conversation from the snapshot', () => {
+    connection.dispatch(
+      JSON.stringify({
+        type: 'snapshot',
+        time: '2026-03-14T08:05:00Z',
+        map_id: 'village',
+        entities: [],
+        conversations: [conversation('mine', ['mei', 'player'], [line(1, 'mei', 'mine')])],
+      }),
+    );
+    said(2, 'mine');
+    audio(1);
+    audio(2);
+
+    expect(output.voices.map((voice) => voice.latestMix)).toEqual([meiAsPartner, meiAsPartner]);
+  });
+
+  it('plays the partner’s last line at full volume after the conversation ends', () => {
+    started('mine', ['player', 'mei']);
+    said(1, 'mine');
+    connection.dispatch(
+      JSON.stringify({ type: 'conversation_ended', conversation_id: 'mine', ended: 'x' }),
+    );
+    said(2, 'mine');
+    audio(1);
+    audio(2);
+
+    expect(output.voices.map((voice) => voice.latestMix)).toEqual([meiAsPartner, meiNearby]);
+  });
+
+  it('forgets the player’s conversations on a new snapshot', () => {
+    started('mine', ['player', 'mei']);
+    connection.dispatch(
+      JSON.stringify({
+        type: 'snapshot',
+        time: '2026-03-14T08:05:00Z',
+        map_id: 'village',
+        entities: [],
+        conversations: [],
+      }),
+    );
+    said(1, 'mine');
+    audio(1);
+
+    expect(output.voices[0].latestMix).toEqual(meiNearby);
   });
 
   it('drops audio while it can’t play', () => {

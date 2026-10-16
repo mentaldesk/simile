@@ -1,7 +1,14 @@
-import { SAMPLE_RATE, server, type LineMessage, type Position } from '../../net';
+import {
+  SAMPLE_RATE,
+  server,
+  type ConversationStartedMessage,
+  type LineMessage,
+  type Position,
+} from '../../net';
+import { PLAYER_ID } from '../../ui/world-view';
 import type { VoicePlayer } from '../player';
 import { setPositionProvider } from '../positions';
-import { spatialMix } from '../spatial';
+import { overheardMix, partnerMix } from '../spatial';
 import { checkGapless, type GaplessCheck } from './check';
 import { arrivalGaps, audioFrames, toInt16 } from './stream';
 
@@ -11,7 +18,7 @@ const wavs = import.meta.glob<string>('../../../../voice-lab/voices/*.wav', {
   eager: true,
 });
 
-type Source = { id: string; name: string; url: string; position: Position };
+type Source = { id: string; name: string; url: string; position: Position; partner: boolean };
 
 const STEP = 0.5;
 const MOVES: Record<string, [number, number]> = {
@@ -29,8 +36,24 @@ export function startHarness(context: AudioContext, player: VoicePlayer): void {
     id: `harness_${i + 1}`,
     name: path.slice(path.lastIndexOf('/') + 1),
     url,
-    position: { x: 6 + 8 * i, y: 10 },
+    position: { x: 6 + 6 * i, y: 10 },
+    partner: i === 0,
   }));
+  const conversationOf = (source: Source) =>
+    source.partner ? 'audio-harness-partner' : 'audio-harness';
+  const startTalking = (partner: Source) => {
+    const started: ConversationStartedMessage = {
+      type: 'conversation_started',
+      conversation: {
+        id: conversationOf(partner),
+        participants: [PLAYER_ID, partner.id],
+        started: new Date().toISOString(),
+        ended: null,
+        lines: [],
+      },
+    };
+    server.dispatch(JSON.stringify(started));
+  };
   const listener: Position = { x: 10, y: 10 };
   setPositionProvider({
     positionOf: (id) => sources.find((source) => source.id === id)?.position,
@@ -54,12 +77,13 @@ export function startHarness(context: AudioContext, player: VoicePlayer): void {
   const stream = async (source: Source) => {
     await context.resume();
     const samples = await load(source);
+    if (source.partner) startTalking(source);
     const id = nextLineId++;
     const line: LineMessage = {
       type: 'line',
       line: {
         id,
-        conversation_id: 'audio-harness',
+        conversation_id: conversationOf(source),
         speaker: source.id,
         text: source.name,
         timestamp: new Date().toISOString(),
@@ -108,9 +132,12 @@ export function startHarness(context: AudioContext, player: VoicePlayer): void {
       `audio ${context.state}${context.state === 'running' ? '' : ': press a key'}`,
       `listener at (${fixed(listener.x)}, ${fixed(listener.y)}): arrow keys move it`,
       ...sources.map((source, i) => {
-        const { gain, pan } = spatialMix(listener, source.position);
+        const mixOf = source.partner ? partnerMix : overheardMix;
+        const { gain, pan } = mixOf(listener, source.position);
         const { x, y } = source.position;
-        return `${i + 1} ${source.name} at (${x}, ${y}): gain ${fixed(gain)}, pan ${fixed(pan)}`;
+        const who = source.partner ? 'partner' : 'overheard';
+        const mix = `gain ${fixed(gain)}, pan ${fixed(pan)}`;
+        return `${i + 1} ${source.name} (${who}) at (${x}, ${y}): ${mix}`;
       }),
       `1-${sources.length} stream that voice, space streams them all at once, C checks gapless`,
       `lines streaming ${streaming}, late chunks ${player.underruns}`,

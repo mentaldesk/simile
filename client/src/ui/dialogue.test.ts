@@ -172,6 +172,18 @@ describe('Dialogue', () => {
     expect(invited).toEqual(['mei']);
   });
 
+  it('shows and logs the player’s partner beyond earshot', () => {
+    start('conv_1', 'player', 'tom');
+    deliver('tom', 'Can you still hear me?');
+
+    expect(dialogue.bubbles.current()).toMatchObject([
+      { speaker: 'tom', text: 'Can you still hear me?', partner: true },
+    ]);
+    expect(dialogue.log.entries).toEqual([
+      { speaker: 'tom', name: 'tom', text: 'Can you still hear me?', to: 'You' },
+    ]);
+  });
+
   it("logs an NPC's lines to the player as said to them", () => {
     start('conv_1', 'player', 'mei');
     deliver('mei', 'Welcome!');
