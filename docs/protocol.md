@@ -65,6 +65,14 @@ in `state`, for example `{"goal": "coffee_shop"}`. The keys aren't part of the c
 without changing the protocol. The server sends it only for the NPC the client is watching
 ([`watch_npc`](#watch_npc)).
 
+### `news`
+
+`articles`: the articles at the news terminals, newest first. Each has its `news_id` (the F2
+`NewsItem` id), `title`, `source` (the feed's display name, e.g. `"The Atlantic"`, or empty),
+`summary` (plain text), `url` (the original article) and `read`, whether the player has read it.
+The server sends it in reply to [`list_news`](#list_news) and [`read_news`](#read_news), and the
+client shows the latest one.
+
 ### `audio_chunk`
 
 A binary frame: part of a line's audio, as Qwen3-TTS produces it. A 12-byte header, then the
@@ -108,6 +116,18 @@ client sends it when the overlay opens on an NPC or switches to another, and wit
 overlay closes. Each one replaces the last, so there's one watched NPC at most. Nothing is watched
 until the client sends one, so it sends it again after each `snapshot`: a reconnection may be to a
 restarted server.
+
+### `list_news`
+
+No fields. The client sends it when the player opens the news at a terminal, and the server
+replies with [`news`](#news). Hub subscribers don't know which connection a message came from, so
+the reply goes to every client, which is fine with one player.
+
+### `read_news`
+
+`news_id`: the article the player reads. The server stores it as the player's own `news` memory,
+with its `news_id`, and replies with [`news`](#news), where it's now `read`. An unknown `news_id`
+stores nothing.
 
 ## Sim events
 
