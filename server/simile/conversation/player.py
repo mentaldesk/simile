@@ -23,6 +23,7 @@ from simile.conversation.prompt import (
     system_prompt,
     turn_prompt,
 )
+from simile.llm import Model
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line
 from simile.sim import ConversationStarted, LineSpoken
 
@@ -52,9 +53,10 @@ class PlayerConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     model: str = Field(
-        default="claude-haiku-4-5",
+        default=Model.HAIKU_4_5,
         description="The model that writes NPC replies to the player. Haiku 4.5 rather than B2's "
-        "Haiku, which can't turn thinking off and thinks for over a second before its first word.",
+        "Haiku 5.5, which can't turn thinking off and thinks for over a second before its first "
+        "word.",
     )
     say_range: float = Field(
         default=4.0,

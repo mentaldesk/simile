@@ -236,7 +236,7 @@ def test_parsing_a_reply(reply: str, draft: Draft) -> None:
     assert parse_reply(reply, speaker, other) == draft
 
 
-def test_a_line_takes_as_long_as_saying_it_at_150_words_a_minute() -> None:
-    assert duration(" ".join(["word"] * 15)) == pytest.approx(6.0)
+def test_a_line_takes_as_long_as_saying_it_at_200_words_a_minute() -> None:
+    assert duration(" ".join(["word"] * 15)) == pytest.approx(4.5)
     assert duration("Hi.") == pytest.approx(1.0)
-    assert duration("Hi.", ConversationConfig(min_line_seconds=0)) == pytest.approx(0.4)
+    assert duration("Hi.", ConversationConfig(min_line_seconds=0)) == pytest.approx(0.3)

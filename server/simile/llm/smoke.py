@@ -63,7 +63,8 @@ async def run(client: LLMClient, prompt: str, model: str, runs: int) -> None:
             f"\n  latency {record.latency_ms:.0f} ms (API {usage.api_ms or 0:.0f} ms), "
             f"first token {record.ttft_ms or 0:.0f} ms, "
             f"tokens in {usage.input_tokens} (+{usage.cache_read_tokens} cached, "
-            f"+{usage.cache_creation_tokens} cache writes), out {usage.output_tokens}, "
+            f"+{usage.cache_creation_tokens} cache writes), out {usage.output_tokens} "
+            f"({usage.thinking_tokens} thinking), "
             f"{usage.model}"
         )
         if usage.rate_limit:

@@ -415,3 +415,36 @@ def test_an_ending_never_restarts_lines_left_unspoken(synthesiser: FakeSynthesis
 
     assert asyncio.run(scenario()) == []
     assert synthesiser.started == [sentence]
+
+
+def test_voices_no_more_than_max_voiced_until_one_ends(synthesiser: FakeSynthesiser) -> None:
+    async def scenario() -> tuple[bool, bool, bool]:
+        async with village(synthesiser, VoicingConfig(max_voiced=1)) as world:
+            first = world.start("mei", "viktor")
+            _, voiced = world.say(first, "mei", "Morning, Viktor.")
+            second = world.start("suki", "tom")
+            _, crowded = world.say(second, "suki", "Morning, Tom.")
+            world.end(first, "mei", "viktor")
+            _, freed = world.say(second, "suki", "Lovely day for it.")
+            return voiced, crowded, freed
+
+    assert asyncio.run(scenario()) == (True, False, True)
+
+
+def test_the_players_conversation_silences_the_farthest_overheard_one(
+    synthesiser: FakeSynthesiser,
+) -> None:
+    async def scenario() -> tuple[bool, bool, bool]:
+        async with village(synthesiser, VoicingConfig(max_voiced=2)) as world:
+            world.at.update({"ana": (9, 0), "ben": (9, 1)})
+            for npc in ("ana", "ben"):
+                await world.voicing.voice.add_voice(npc, VOICE)
+            near = world.start("mei", "viktor")
+            far = world.start("ana", "ben")
+            talk = world.start(PLAYER_ID, "suki")
+            _, reply = world.say(talk, "suki", "Nice to meet you.")
+            _, near_voiced = world.say(near, "mei", "Morning, Viktor.")
+            _, far_voiced = world.say(far, "ana", "Morning, Ben.")
+            return reply, near_voiced, far_voiced
+
+    assert asyncio.run(scenario()) == (True, True, False)

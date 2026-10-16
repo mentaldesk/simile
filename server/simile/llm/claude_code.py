@@ -13,6 +13,7 @@ from claude_agent_sdk import (
     ClaudeSDKClient,
     ClaudeSDKError,
     RateLimitEvent,
+    RateLimitInfo,
     ResultMessage,
     StreamEvent,
     SystemMessage,
@@ -187,9 +188,7 @@ class ClaudeCodeProvider:
                         raise LLMError("Claude Code sent text before confirming its login")
                     yield text
                 case RateLimitEvent(rate_limit_info=info):
-                    rate_limit = RateLimit(
-                        info.status, info.rate_limit_type, info.utilization, info.resets_at
-                    )
+                    rate_limit = rate_limit_from(info)
                     if info.status != "allowed":
                         logger.warning("Claude usage limit %s: %s", info.status, info.raw)
                 case ResultMessage():
@@ -280,11 +279,25 @@ async def interrupt(sdk: ClaudeSDKClient) -> None:
             tasks.cancel_scope.cancel()
 
 
+def rate_limit_from(info: RateLimitInfo) -> RateLimit:
+    """Claude Code reports each window's utilisation under `unifiedWindows`, not `utilization`."""
+    windows = {
+        name: float(window["utilization"])
+        for name, window in (info.raw.get("unifiedWindows") or {}).items()
+        if isinstance(window, dict) and window.get("utilization") is not None
+    }
+    utilization = info.utilization
+    if utilization is None and info.rate_limit_type is not None:
+        utilization = windows.get(info.rate_limit_type)
+    return RateLimit(info.status, info.rate_limit_type, utilization, info.resets_at, windows)
+
+
 def usage_from(result: ResultMessage, rate_limit: RateLimit | None = None) -> Usage:
     usage = result.usage or {}
     return Usage(
         input_tokens=usage.get("input_tokens", 0),
         output_tokens=usage.get("output_tokens", 0),
+        thinking_tokens=(usage.get("output_tokens_details") or {}).get("thinking_tokens", 0),
         cache_read_tokens=usage.get("cache_read_input_tokens", 0),
         cache_creation_tokens=usage.get("cache_creation_input_tokens", 0),
         cost_usd=result.total_cost_usd,

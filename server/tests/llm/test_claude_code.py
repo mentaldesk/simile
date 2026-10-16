@@ -70,6 +70,7 @@ async def test_streams_through_the_cli(fake_cli: MakeFakeCli, tmp_path: Path) ->
     assert record.usage == Usage(
         input_tokens=12,
         output_tokens=4,
+        thinking_tokens=3,
         cache_read_tokens=600,
         cost_usd=0.001,
         model="claude-haiku-test",
@@ -245,6 +246,27 @@ async def test_records_the_subscription_usage_limit(fake_cli: MakeFakeCli, tmp_p
 
     assert records[0].usage is not None
     assert records[0].usage.rate_limit == RateLimit("allowed", "five_hour", 0.4, 9)
+
+
+async def test_reads_every_windows_utilisation(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    limit = {
+        "status": "allowed",
+        "rateLimitType": "five_hour",
+        "resetsAt": 9,
+        "unifiedWindows": {
+            "five_hour": {"utilization": 0.27, "resetsAt": 9},
+            "seven_day": {"utilization": 0.64, "resetsAt": 99},
+        },
+    }
+    cli = fake_cli(rate_limit=limit)
+    records: list[CallRecord] = []
+
+    await client_for(cli, tmp_path, listeners=[records.append]).complete("Hello")
+
+    assert records[0].usage is not None
+    assert records[0].usage.rate_limit == RateLimit(
+        "allowed", "five_hour", 0.27, 9, {"five_hour": 0.27, "seven_day": 0.64}
+    )
 
 
 async def test_raises_on_an_error_result(fake_cli: MakeFakeCli, tmp_path: Path) -> None:

@@ -215,9 +215,9 @@ async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> 
         "One two three four five.",
         "Six seven eight nine ten.",
     ]
-    assert {line.duration for line in lines} == {2.0}
+    assert {line.duration for line in lines} == {1.5}
     for line, after in itertools.pairwise(lines):
-        assert after.timestamp == line.timestamp + timedelta(seconds=2.0 + 0.5)
+        assert after.timestamp == line.timestamp + timedelta(seconds=1.5 + 0.5)
     asked = [when for when, _ in village.script.calls]
     for line, next_asked in zip(lines, asked[1:], strict=False):
         assert line.timestamp <= next_asked < line.timestamp + timedelta(seconds=line.duration)
@@ -378,7 +378,7 @@ async def test_the_prompt_brings_in_the_relationship_memories_history_and_news(
     assert "- Ben lent me his ladder." in prompt
     assert "- ana read that octopuses dream." in prompt
     assert "at The Daily Grind" in prompt
-    assert request.model == "haiku"
+    assert request.model == "claude-haiku-5-5"
 
 
 async def test_without_news_reactions_there_are_no_topics(monkeypatch: pytest.MonkeyPatch) -> None:
