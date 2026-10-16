@@ -121,6 +121,8 @@ class PlayerTalk(Talk):
     """Sentences of the reply being written that have been published."""
     topics: tuple[CoreValue, ...] = ()
     ends: datetime | None = None
+    quiet_until: datetime
+    """The NPC's lines wait for the goodbye of the resident the player turned away from."""
 
     @property
     def npc(self) -> Id:
@@ -171,18 +173,15 @@ class PlayerConversations:
         if distance is None or distance > reach:
             self.engine._log("The player is too far from %s to talk (%s tiles)", target, distance)
             return None
-        goodbye_ends = None
         if joined is None:
             if not self._free(target):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
-            if talk is not None:
-                goodbye_ends = self._turned_away(talk, target)
+            goodbye_ends = self._turned_away(talk, target) if talk is not None else None
             joined = self._start(target, opener=PLAYER_ID)
-        line = self._hear(joined, text)
-        if goodbye_ends is not None:
-            joined.free_at = max(joined.free_at, goodbye_ends)
-        return line
+            if goodbye_ends is not None:
+                joined.quiet_until = goodbye_ends
+        return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
         return self._start(npc, opener=opener).conversation
@@ -208,6 +207,7 @@ class PlayerConversations:
             {npc: party},
             speaker=opener,
             free_at=now,
+            quiet_until=now,
             names={npc: first_name(party.npc), PLAYER_ID: engine.player.name},
         )
         engine._talks[conversation.id] = talk
@@ -258,7 +258,7 @@ class PlayerConversations:
             talk.writing.cancel()
             talk.writing = None
         talk.queued.clear()
-        talk.free_at = min(talk.free_at, self.engine.clock.now)
+        talk.free_at = max(min(talk.free_at, self.engine.clock.now), talk.quiet_until)
 
     def _write(self, talk: PlayerTalk, cue: Cue) -> None:
         talk.cue, talk.speaker, talk.said = cue, talk.npc, 0

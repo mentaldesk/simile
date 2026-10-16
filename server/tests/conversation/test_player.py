@@ -576,6 +576,29 @@ async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_convers
     assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
+@pytest.mark.parametrize("said", [["Hi Ben.", "Got a minute?"], ["Hi.", "Ben?", "Hey!"]])
+async def test_the_new_resident_waits_for_the_goodbye_however_much_the_player_says(
+    said: list[str],
+) -> None:
+    village = Village()
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+
+    village.walk_to("ben", 1)
+    for text in said:
+        village.players.say(text, "ben")
+        await village.run(0.3)
+    await village.run(6)
+
+    [ended] = village.ended
+    goodbye = ended.conversation.lines[-1]
+    talk = village.players.talk()
+    assert talk is not None
+    lines = talk.conversation.lines
+    assert [line.text for line in lines] == [*said, "Lovely to meet you.", "Settling in?"]
+    assert lines[len(said)].timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+
+
 async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
     hang = asyncio.Event()
     village = Village(provider=FakeProvider([["Well, ", hang], "Hello! [values: connection]"]))
