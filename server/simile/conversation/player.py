@@ -7,6 +7,7 @@ from collections.abc import Callable, Iterator, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from itertools import takewhile
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,11 +23,10 @@ from simile.conversation.prompt import (
     parse_reply,
     system_prompt,
     turn_prompt,
-    with_both_read,
 )
 from simile.llm import Model
-from simile.news.reactions import read_by_both
-from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory
+from simile.news.reactions import mentioned
+from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
 
 logger = logging.getLogger(__name__)
@@ -134,11 +134,13 @@ class PlayerConversations:
         engine: ConversationEngine,
         *,
         connected: Callable[[], bool] = lambda: True,
+        article: Callable[[str], NewsItem | None] = lambda _: None,
         config: PlayerConfig = DEFAULT_PLAYER_CONFIG,
         seed: int | None = None,
     ) -> None:
         self.engine = engine
         self.connected = connected
+        self.article = article
         self.config = config
         self.rng = random.Random(seed)
         self._considered: dict[Id, datetime] = {}
@@ -266,13 +268,14 @@ class PlayerConversations:
         engine, npc = self.engine, talk.npc
         party = talk.parties[npc]
         prompt = turn_prompt(
-            with_both_read(party.background, self._read_by_both(npc), engine.player.name),
+            party.background,
             lines,
             talk.names,
             cue,
             engine.player.name,
             engine.config,
             speaker=npc,
+            recalled=self._recalled(npc, lines),
         )
         stream = engine.llm().stream(
             prompt,
@@ -290,11 +293,18 @@ class PlayerConversations:
             self._sentence(talk, sentence)
         return sentences.draft
 
-    def _read_by_both(self, npc: Id) -> list[Memory]:
+    def _recalled(self, npc: Id, lines: Sequence[Line]) -> list[Memory]:
+        """What `npc` read about the articles the player has mentioned since `npc` last spoke."""
+        latest = takewhile(lambda line: line.speaker != npc, reversed(lines))
+        said = " ".join(line.text for line in latest)
+        if not said:
+            return []
         try:
-            return read_by_both(self.engine.memory, npc, PLAYER_ID, self.engine.clock.now)
+            return mentioned(
+                self.engine.memory, npc, said, self.engine.clock.now, article=self.article
+            )
         except Exception:
-            logger.exception("Couldn't get the news %s and the player have both read", npc)
+            logger.exception("Couldn't recall the news %s read", npc)
             return []
 
     def _sentence(self, talk: PlayerTalk, text: str) -> None:

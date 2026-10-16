@@ -9,7 +9,6 @@ from simile.memory import MemoryStore, memory_of
 from simile.news import NewsStore, news_of
 from simile.news.config import NewsConfig
 from simile.news.player import PlayerNews
-from simile.news.reactions import read_by_both
 from simile.protocol import NewsArticle
 from simile.schema import PLAYER_ID, Memory, MemoryKind, NewsItem
 from simile.sim import Clock
@@ -30,18 +29,6 @@ def article(n: int, **fields: str) -> NewsItem:
             "source": "The Atlantic",
             **fields,
         }
-    )
-
-
-def took_in(owner: str, item: NewsItem, take: str, salience: float = 0.5) -> Memory:
-    return Memory(
-        owner=owner,
-        kind=MemoryKind.NEWS,
-        content=f'I read "{item.title}". {take}',
-        salience=salience,
-        valence=0,
-        timestamp=NOW,
-        news_id=item.id,
     )
 
 
@@ -130,26 +117,6 @@ def test_an_unknown_article_stores_nothing_and_gets_the_list(
 
     assert player_news(memory) == []
     assert [a.news_id for a in reply.articles] == ["item-0", "item-1", "item-2"]
-
-
-def test_an_npc_has_read_by_both_only_what_the_player_read_too(memory: MemoryStore) -> None:
-    first, second, third = article(0), article(1), article(2)
-    memory.add(
-        took_in("mei", first, "About time.", salience=0.3),
-        took_in("mei", second, "Dreadful.", salience=0.9),
-        took_in("mei", third, "Meh."),
-        took_in(PLAYER_ID, first, ""),
-        took_in(PLAYER_ID, second, ""),
-        took_in("suki", third, "Lovely."),
-    )
-
-    assert [m.content for m in read_by_both(memory, "mei", PLAYER_ID, NOW)] == [
-        'I read "Article 1". Dreadful.',
-        'I read "Article 0". About time.',
-    ]
-    assert read_by_both(memory, "suki", PLAYER_ID, NOW) == []
-    assert len(read_by_both(memory, "mei", PLAYER_ID, NOW, config=NewsConfig(shared=1))) == 1
-    assert read_by_both(memory, "mei", PLAYER_ID, NOW, config=NewsConfig(shared=0)) == []
 
 
 def test_the_terminal_lists_and_reads_over_the_websocket(make_package: MakePackage) -> None:

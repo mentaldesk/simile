@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 import sys
 from collections.abc import Callable
 from datetime import datetime, timedelta
@@ -10,13 +11,16 @@ from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.memory.store import recency
 from simile.news.config import DEFAULT_CONFIG, NewsConfig
-from simile.news.interest import interest
+from simile.news.interest import interest, shared, words
 from simile.news.store import NewsStore
 from simile.npc.values import format_scores, ranked
 from simile.schema import Id, Memory, MemoryKind, NewsItem, Npc, Signed, Unit
 from simile.sim import Clock
 
 logger = logging.getLogger(__name__)
+
+TITLE = re.compile(r'^I read "(.+?)"')
+NAMING = re.compile(r"\b(?:news|articles?|pieces?|story|stories|headlines?|read|papers?)\b", re.I)
 
 
 class Reaction(BaseModel):
@@ -194,21 +198,45 @@ def topics_to_raise(
     return [m for m in recalled if score(m, now, config.half_life) >= config.min_score]
 
 
-def read_by_both(
+def mentioned(
     memory: MemoryStore,
     npc_id: str,
-    other_id: str,
+    said: str,
     now: datetime,
     *,
+    article: Callable[[str], NewsItem | None] = lambda _: None,
     config: NewsConfig = DEFAULT_CONFIG,
 ) -> list[Memory]:
-    """`npc_id`'s `news` memories of articles `other_id` has read too, ranked by recency ×
-    intensity, best first, at most `config.shared`."""
-    if not config.shared:
+    """`npc_id`'s `news` memories of the articles `said` mentions, most shared words first, at
+    most `config.mentions`. An article counts if its title, tags, summary and the NPC's topics
+    share `config.mention_words` of the words in `said`, or if `said` names the news ("the Mars
+    piece") and its title or a one-word tag or topic has one of them exactly, give or take a
+    plural."""
+    names_news = NAMING.search(said) is not None
+    spoken = words(NAMING.sub(" ", said))
+    if not spoken or not config.mentions:
         return []
-    theirs = memory.recall(other_id, now, kind=MemoryKind.NEWS, k=sys.maxsize)
-    read = {m.news_id for m in theirs if m.news_id}
-    mine = memory.recall(
+    read = memory.recall(
         npc_id, now, kind=MemoryKind.NEWS, k=sys.maxsize, half_life=config.half_life
     )
-    return [m for m in mine if m.news_id in read][: config.shared]
+    found = []
+    for m in read:
+        headline, whole = article_words(m, article(m.news_id) if m.news_id else None)
+        n = shared(spoken, whole)
+        if n >= config.mention_words or (names_news and spoken & headline):
+            found.append((n, m))
+    found.sort(key=lambda pair: -pair[0])
+    return [m for _, m in found[: config.mentions]]
+
+
+def article_words(memory: Memory, item: NewsItem | None) -> tuple[set[str], set[str]]:
+    """The words of the article's title and of its one-word tags and NPC's topics, and those of
+    all of it: title, tags, summary and topics. Without the article, the title in the memory."""
+    if item is None:
+        quoted = TITLE.match(memory.content)
+        title, tags, summary = quoted[1] if quoted else memory.content, [], ""
+    else:
+        title, tags, summary = item.title, item.tags, item.summary
+    labels = [*tags, *memory.topics]
+    headline = words(" ".join([title, *(label for label in labels if label.isalpha())]))
+    return headline, headline | words(" ".join([*labels, summary]))
