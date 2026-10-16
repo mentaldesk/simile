@@ -627,6 +627,22 @@ async def test_turning_away_again_during_the_goodbye_waits_for_it_without_anothe
     assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
+async def test_turning_away_mid_goodbye_waits_only_for_the_sentence_being_said() -> None:
+    village = Village(["Right you are, off you go. See you around! [values: connection]"])
+    village.players.say("Bye, Ana!", "ana")
+    await village.run(1.5)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(6)
+
+    [ended] = village.ended
+    lines = ended.conversation.lines
+    assert [line.text for line in lines] == ["Bye, Ana!", "Right you are, off you go."]
+    reply = next(line for line in village.spoken if line.speaker == "ben")
+    assert reply.timestamp == lines[-1].timestamp + timedelta(seconds=lines[-1].duration)
+
+
 async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
     hang = asyncio.Event()
     village = Village(provider=FakeProvider([["Well, ", hang], "Hello! [values: connection]"]))

@@ -386,14 +386,13 @@ class PlayerConversations:
         self.engine._end(talk)
 
     def _turned_away(self, talk: PlayerTalk, to: Id) -> datetime:
-        """The NPC says a quick goodbye, unless they've said one or are still waiting to speak, and
-        returns when they finish."""
+        """A quick goodbye, unless they said one or haven't spoken yet. Returns when they finish."""
         if not talk.closing:
             self._interrupt(talk)
             if talk.quiet_until <= self.engine.clock.now:
                 name = first_name(self.engine.behaviour.npcs[to])
                 self._sentence(talk, self.rng.choice(TURNED_AWAY).format(name=name))
-        ends = talk.free_at
+        ends = talk.queued[0].timestamp if talk.queued else talk.free_at
         self._end(talk)
         return ends
 
