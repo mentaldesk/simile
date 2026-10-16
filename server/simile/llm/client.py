@@ -41,10 +41,12 @@ class StructuredOutputError(Exception):
 
 
 class Slots:
-    """A concurrency cap that gives a freed slot to the highest priority waiting, then FIFO."""
+    """A concurrency cap that gives a freed slot to the highest priority waiting, then FIFO.
+    The last `reserved` free slots only go to calls with a priority above 0."""
 
-    def __init__(self, size: int) -> None:
+    def __init__(self, size: int, reserved: int = 0) -> None:
         self._free = size
+        self._reserved = max(0, min(reserved, size - 1))
         self._waiting: list[tuple[int, int, asyncio.Future[None]]] = []
         self._order = itertools.count()
 
@@ -56,8 +58,11 @@ class Slots:
         finally:
             self._release()
 
+    def _available(self, priority: int) -> bool:
+        return self._free > (0 if priority > 0 else self._reserved)
+
     async def _acquire(self, priority: int) -> None:
-        if self._free:
+        if self._available(priority):
             self._free -= 1
             return
         granted = asyncio.get_running_loop().create_future()
@@ -70,12 +75,17 @@ class Slots:
             raise
 
     def _release(self) -> None:
-        while self._waiting:
-            _, _, granted = heapq.heappop(self._waiting)
-            if not granted.done():
-                granted.set_result(None)
-                return
         self._free += 1
+        while self._waiting:
+            priority, _, granted = self._waiting[0]
+            if granted.done():
+                heapq.heappop(self._waiting)
+            elif self._available(-priority):
+                heapq.heappop(self._waiting)
+                self._free -= 1
+                granted.set_result(None)
+            else:
+                return
 
 
 class LLMClient:
@@ -84,10 +94,11 @@ class LLMClient:
         provider: Provider | None = None,
         *,
         max_concurrency: int = 4,
+        reserved: int = 1,
         listeners: Iterable[Callable[[CallRecord], None]] = (),
     ) -> None:
         self._provider = provider
-        self._slots = Slots(max_concurrency)
+        self._slots = Slots(max_concurrency, reserved)
         self.listeners = list(listeners)
 
     @property
@@ -205,15 +216,15 @@ class LLMClient:
 
     def _emit(self, record: CallRecord) -> None:
         usage = record.usage or Usage()
+        answered = usage.model if usage.model and usage.model != record.model else None
         logger.info(
-            "llm %s model=%s latency=%.0fms ttft=%s queued=%.0fms tokens in=%d out=%d%s",
+            "llm %s model=%s latency=%.0fms ttft=%s queued=%.0fms %s%s",
             record.purpose or "call",
-            record.model,
+            f"{record.model}->{answered}" if answered else record.model,
             record.latency_ms,
             "-" if record.ttft_ms is None else f"{record.ttft_ms:.0f}ms",
             record.queued_ms,
-            usage.input_tokens + usage.cache_read_tokens + usage.cache_creation_tokens,
-            usage.output_tokens,
+            describe_usage(usage),
             f" error={record.error}" if record.error else "",
             extra={"llm_call": record},
         )
@@ -222,6 +233,20 @@ class LLMClient:
                 listener(record)
             except Exception:
                 logger.exception("LLM call listener %r failed", listener)
+
+
+def describe_usage(usage: Usage) -> str:
+    prompt = usage.input_tokens + usage.cache_read_tokens + usage.cache_creation_tokens
+    text = (
+        f"tokens in={prompt} (cache read {usage.cache_read_tokens}, "
+        f"write {usage.cache_creation_tokens}) out={usage.output_tokens} "
+        f"(thinking {usage.thinking_tokens})"
+    )
+    if usage.cost_usd is not None:
+        text += f" api_cost=${usage.cost_usd:.5f}"
+    if usage.rate_limit is not None:
+        text += "".join(f" {name}={used:.0%}" for name, used in usage.rate_limit.windows.items())
+    return text
 
 
 def as_messages(prompt: Prompt) -> tuple[Message, ...]:

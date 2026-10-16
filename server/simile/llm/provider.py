@@ -1,5 +1,5 @@
 from collections.abc import AsyncGenerator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal, Protocol
 
@@ -7,6 +7,8 @@ from typing import Literal, Protocol
 class Model(StrEnum):
     HAIKU = "haiku"
     SONNET = "sonnet"
+    HAIKU_4_5 = "claude-haiku-4-5"
+    HAIKU_5_5 = "claude-haiku-5-5"
 
 
 @dataclass(frozen=True)
@@ -32,12 +34,17 @@ class RateLimit:
     """Fraction of the window used, from 0 to 1."""
     resets_at: int | None = None
     """Unix time when the window resets."""
+    windows: dict[str, float] = field(default_factory=dict)
+    """Fraction used of every window Claude Code reported, e.g. `five_hour` and `seven_day`."""
 
 
 @dataclass(frozen=True)
 class Usage:
     input_tokens: int = 0
+    """Uncached input tokens. The prompt is these plus the cache reads and writes."""
     output_tokens: int = 0
+    """Every token the model wrote, `thinking_tokens` included."""
+    thinking_tokens: int = 0
     cache_read_tokens: int = 0
     cache_creation_tokens: int = 0
     cost_usd: float | None = None

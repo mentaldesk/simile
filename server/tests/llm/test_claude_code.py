@@ -6,9 +6,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from claude_agent_sdk import ResultMessage
 
 from simile.llm import CallRecord, LLMClient, LLMError, Message, Request, Usage
-from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider, render_prompt
+from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider, render_prompt, usage_from
 from simile.llm.provider import RateLimit
 from simile.llm.smoke import SessionProvider
 
@@ -70,6 +71,7 @@ async def test_streams_through_the_cli(fake_cli: MakeFakeCli, tmp_path: Path) ->
     assert record.usage == Usage(
         input_tokens=12,
         output_tokens=4,
+        thinking_tokens=3,
         cache_read_tokens=600,
         cost_usd=0.001,
         model="claude-haiku-test",
@@ -245,6 +247,77 @@ async def test_records_the_subscription_usage_limit(fake_cli: MakeFakeCli, tmp_p
 
     assert records[0].usage is not None
     assert records[0].usage.rate_limit == RateLimit("allowed", "five_hour", 0.4, 9)
+
+
+async def test_reads_every_windows_utilisation(fake_cli: MakeFakeCli, tmp_path: Path) -> None:
+    limit = {
+        "status": "allowed",
+        "rateLimitType": "five_hour",
+        "resetsAt": 9,
+        "unifiedWindows": {
+            "five_hour": {"utilization": 0.27, "resetsAt": 9},
+            "seven_day": {"utilization": 0.64, "resetsAt": 99},
+        },
+    }
+    cli = fake_cli(rate_limit=limit)
+    records: list[CallRecord] = []
+
+    await client_for(cli, tmp_path, listeners=[records.append]).complete("Hello")
+
+    assert records[0].usage is not None
+    assert records[0].usage.rate_limit == RateLimit(
+        "allowed", "five_hour", 0.27, 9, {"five_hour": 0.27, "seven_day": 0.64}
+    )
+
+
+@pytest.mark.parametrize(
+    "windows",
+    [
+        [{"utilization": 0.27}],
+        "five_hour",
+        {"five_hour": [0.27]},
+        {"five_hour": {"utilization": "27%"}},
+        {"five_hour": {"utilization": [0.27]}},
+        {"five_hour": {"utilization": True}},
+    ],
+    ids=["list", "string", "window-list", "percent-string", "utilisation-list", "bool"],
+)
+async def test_an_unreadable_usage_limit_leaves_the_call_alone(
+    fake_cli: MakeFakeCli, tmp_path: Path, windows: object
+) -> None:
+    limit = {
+        "status": "allowed",
+        "rateLimitType": "five_hour",
+        "utilization": "27%",
+        "unifiedWindows": windows,
+    }
+    cli = fake_cli(rate_limit=limit)
+    records: list[CallRecord] = []
+
+    reply = await client_for(cli, tmp_path, listeners=[records.append]).complete("Hello")
+
+    assert reply == "Morning, stranger."
+    assert records[0].usage is not None
+    assert records[0].usage.rate_limit == RateLimit("allowed", "five_hour")
+
+
+@pytest.mark.parametrize(
+    "details",
+    [None, [3], "3", {"thinking_tokens": "3"}, {"thinking_tokens": None}],
+    ids=["missing", "list", "string", "string-count", "null-count"],
+)
+def test_unreadable_thinking_tokens_count_as_none(details: object) -> None:
+    result = ResultMessage(
+        subtype="success",
+        duration_ms=50,
+        duration_api_ms=30,
+        is_error=False,
+        num_turns=1,
+        session_id="s1",
+        usage={"output_tokens": 4, "output_tokens_details": details},
+    )
+
+    assert usage_from(result) == Usage(output_tokens=4, api_ms=30)
 
 
 async def test_raises_on_an_error_result(fake_cli: MakeFakeCli, tmp_path: Path) -> None:

@@ -1,4 +1,3 @@
-import json
 from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
@@ -8,10 +7,11 @@ from simile.behaviour import Behaviour
 from simile.conversation import DEFAULT_CONFIG, ConversationConfig, ConversationEngine
 from simile.conversation.player import PlayerConversations
 from simile.debug import Village
-from simile.debug.state import MAX_LINES, MAX_MEMORIES, MAX_RELATIONSHIPS, MAX_TEXT
+from simile.debug.state import MAX_FLAGS, MAX_LINES, MAX_MEMORIES, MAX_RELATIONSHIPS, MAX_TEXT
 from simile.llm import FakeProvider, LLMClient
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
+from simile.protocol import NpcStateMessage
 from simile.schema import PLAYER_ID, Flag, FlagKind, Memory, MemoryKind, Relationship
 from simile.sim import Clock, FakeWallClock, LineSpoken, World
 from simile.social import as_of, meet
@@ -22,6 +22,7 @@ pytestmark = pytest.mark.anyio
 
 NPCS = {npc.id: npc for npc in load_npcs()}
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
+WIDEST = "😀"
 
 
 class Town:
@@ -29,6 +30,7 @@ class Town:
         self,
         records: Sequence[Relationship | Memory] = (),
         config: ConversationConfig = DEFAULT_CONFIG,
+        reply: str = "Lovely morning for it.",
     ) -> None:
         self.world = World(Clock(START), FakeWallClock())
         self.memory = MemoryStore(":memory:")
@@ -39,7 +41,7 @@ class Town:
             self.world.clock, self.world.bus, movement, NPCS.values(), self.memory, seed=0
         )
         self.behaviour.start()
-        llm = LLMClient(FakeProvider(default="Lovely morning for it. [values: connection]"))
+        llm = LLMClient(FakeProvider(default=f"{reply} [values: connection]"))
         self.engine = ConversationEngine(
             self.world.clock,
             self.world.bus,
@@ -213,18 +215,41 @@ async def test_shows_their_conversation_with_the_player() -> None:
 
 async def test_stays_small_however_much_they_know() -> None:
     known = [
-        feeling("kofi", f"stranger_{n}", familiarity=n / 100, last_interaction=START)
+        feeling(
+            "kofi",
+            f"stranger_{n}",
+            familiarity=n / 100,
+            last_interaction=START,
+            flags=[long_flag(f"stranger_{n}", f"F{i}") for i in range(MAX_FLAGS + 2)],
+        )
         for n in range(MAX_RELATIONSHIPS + 5)
     ]
-    long_memories = [remembered("y" * 5000, 0.9, hours_ago=n) for n in range(20)]
-    town = Town([*known, *long_memories], ConversationConfig(min_lines=30, max_lines=40))
+    long_memories = [remembered(WIDEST * 5000, 0.9, hours_ago=n) for n in range(20)]
+    town = Town(
+        [*known, *long_memories],
+        ConversationConfig(min_lines=30, max_lines=40, max_words=5000),
+        reply=WIDEST * 5000,
+    )
     town.engine.start("kofi", "henrietta")
 
-    await town.world.loop.run(timedelta(minutes=1))
+    await town.world.loop.run(timedelta(seconds=40))
 
     state = town.state("kofi")
     assert len(state["relationships"]) == MAX_RELATIONSHIPS
     assert state["relationships"][0]["about"] == f"stranger_{MAX_RELATIONSHIPS + 4}"
+    assert all(len(rel["flags"]) == MAX_FLAGS for rel in state["relationships"])
     assert len(state["memories"]) == MAX_MEMORIES
     assert len(state["conversation"]["lines"]) == MAX_LINES
-    assert len(json.dumps(state)) < 16_000
+    message = NpcStateMessage(npc_id="kofi", state=state).model_dump_json().encode()
+    assert len(message) < 80_000
+
+
+def long_flag(about: str, id: str) -> Flag:
+    return Flag(
+        id=id,
+        kind=FlagKind.PROMISE,
+        owner="kofi",
+        about=about,
+        description=WIDEST * 5000,
+        created=START,
+    )

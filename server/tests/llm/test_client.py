@@ -16,8 +16,10 @@ from simile.llm import (
     Model,
     Request,
     StructuredOutputError,
+    Usage,
 )
-from simile.llm.client import Slots
+from simile.llm.client import Slots, describe_usage
+from simile.llm.provider import RateLimit
 
 pytestmark = pytest.mark.anyio
 
@@ -84,6 +86,25 @@ async def test_records_and_logs_every_call(caplog: pytest.LogCaptureFixture) -> 
     assert record.usage is not None and record.usage.output_tokens == 2
     assert record.ttft_ms is not None and 0 <= record.ttft_ms <= record.latency_ms
     assert [r.llm_call for r in caplog.records] == [record]
+    assert "model=haiku->fake-haiku" in caplog.text
+
+
+def test_the_log_shows_caching_thinking_cost_and_usage_limits() -> None:
+    windows = {"five_hour": 0.27, "seven_day": 0.64}
+    usage = Usage(
+        input_tokens=2,
+        output_tokens=64,
+        thinking_tokens=40,
+        cache_read_tokens=700,
+        cache_creation_tokens=800,
+        cost_usd=0.0003,
+        rate_limit=RateLimit("allowed", "five_hour", 0.27, 9, windows),
+    )
+
+    assert describe_usage(usage) == (
+        "tokens in=1502 (cache read 700, write 800) out=64 (thinking 40) api_cost=$0.00030 "
+        "five_hour=27% seven_day=64%"
+    )
 
 
 async def test_records_failures() -> None:
@@ -110,7 +131,9 @@ async def test_caps_concurrent_calls() -> None:
         return "done"
 
     records: list[CallRecord] = []
-    client = LLMClient(FakeProvider([slow] * 5), max_concurrency=2, listeners=[records.append])
+    client = LLMClient(
+        FakeProvider([slow] * 5), max_concurrency=2, reserved=0, listeners=[records.append]
+    )
     calls = [asyncio.create_task(client.complete("Hi")) for _ in range(5)]
     await settle()
 
@@ -141,6 +164,25 @@ async def test_higher_priority_calls_get_the_next_free_slot() -> None:
 
     started = [request.messages[-1].content for request in fake.requests]
     assert started == ["blocking", "player", "chatter 1", "chatter 2"]
+
+
+async def test_keeps_a_slot_for_calls_above_priority_0() -> None:
+    release = asyncio.Event()
+
+    async def reply(request: Request) -> str:
+        if request.messages[-1].content.startswith("chatter"):
+            await release.wait()
+        return "done"
+
+    fake = FakeProvider([reply] * 3)
+    client = LLMClient(fake, max_concurrency=2, reserved=1)
+    chatter = [asyncio.create_task(client.complete(f"chatter {i}")) for i in range(2)]
+    await settle()
+
+    assert [request.messages[-1].content for request in fake.requests] == ["chatter 0"]
+    assert await asyncio.wait_for(client.complete("player", priority=1), timeout=1) == "done"
+    release.set()
+    assert await asyncio.gather(*chatter) == ["done", "done"]
 
 
 async def test_a_cancelled_wait_gives_up_its_place() -> None:

@@ -91,6 +91,24 @@ def test_keeps_watching_when_reading_state_fails(
 
 
 @pytest.mark.anyio
+async def test_run_carries_on_when_sending_fails(village: Village) -> None:
+    sent: list[NpcStateMessage] = []
+
+    def broadcast(message: NpcStateMessage) -> None:
+        sent.append(message)
+        if len(sent) <= 2:
+            raise RuntimeError("client gone")
+
+    overlay = Overlay(broadcast, village.npc_state)
+    overlay.watch(watch("kofi"))
+
+    with anyio.move_on_after(0.1):
+        await overlay.run(0.01)
+
+    assert len(sent) > 3
+
+
+@pytest.mark.anyio
 async def test_run_sends_every_interval(overlay: Overlay, sent: list[NpcStateMessage]) -> None:
     overlay.watch(watch("kofi"))
 

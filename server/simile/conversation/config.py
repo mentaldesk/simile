@@ -88,11 +88,19 @@ class ConversationConfig(BaseModel):
     )
     farewell: bool = Field(default=True, description="Whether the other answers a goodbye.")
 
-    words_per_minute: float = Field(default=150, gt=0, description="Speaking pace.")
+    words_per_minute: float = Field(
+        default=200,
+        gt=0,
+        description="Speaking pace: 0.3 s a word, so lines take about as long as V1 takes to say "
+        "them. C2's SECONDS_PER_WORD matches it.",
+    )
     min_line_seconds: float = Field(default=1.0, ge=0, description="Shortest a line takes.")
     turn_gap: float = Field(default=0.5, ge=0, description="Sim seconds between two lines.")
 
-    model: str = Field(default=Model.HAIKU, description="The model that writes lines.")
+    model: str = Field(
+        default=Model.HAIKU_5_5,
+        description="The model that writes lines. See *Which model* in the L1 README.",
+    )
     line_timeout: float = Field(
         default=30,
         gt=0,
