@@ -52,7 +52,6 @@ def load():
 
 
 def classify(model, wav: np.ndarray, sr: int) -> list[tuple[str, float]]:
-    """Every accent the model knows, most likely first."""
     if wav.ndim > 1:
         wav = wav.mean(axis=1)
     audio = torch.tensor(resample_poly(wav, SAMPLE_RATE, sr), dtype=torch.float32)[None]

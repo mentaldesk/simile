@@ -71,6 +71,10 @@ def check(
     return result
 
 
+def save_seeds(seeds: dict[str, int]) -> None:
+    SEEDS.write_text(json.dumps(dict(sorted(seeds.items())), indent=2) + "\n", encoding="utf-8")
+
+
 def transcribe(mlx_python: Path, clip: Path) -> str:
     run = subprocess.run([mlx_python, HERE / "transcribe.py", clip], capture_output=True, text=True, check=True)
     return json.loads(run.stdout.splitlines()[-1])[str(clip)]
@@ -90,8 +94,10 @@ def main() -> None:
         for clip in VOICES.glob("*.wav"):
             if clip.stem not in npcs:
                 remove_voice(clip.stem)
-                seeds.pop(clip.stem, None)
                 print(f"Removed the voice of {clip.stem}, who is no longer an NPC")
+        if set(seeds) - set(npcs):
+            seeds = {npc_id: seed for npc_id, seed in seeds.items() if npc_id in npcs}
+            save_seeds(seeds)
     todo = {npc_id: npc for npc_id, npc in npcs.items() if args.force or not has_voice(npc_id, npc)}
     if not todo:
         print("Every NPC has a voice. Use --force to redesign them.")
@@ -133,7 +139,7 @@ def main() -> None:
         shutil.copyfile(candidate, clip)
         clip.with_suffix(".txt").write_text(voice["reference_line"] + "\n", encoding="utf-8")
         set_reference_clip(npc_id, clip)
-        SEEDS.write_text(json.dumps(dict(sorted(seeds.items())), indent=2) + "\n", encoding="utf-8")
+        save_seeds(seeds)
         report.append(
             f"| `{npc_id}` | {attempt} of {len(attempts)} | {seed} | {result.seconds:.1f} s | "
             f"{result.peak_db:.1f} | {result.rms_db:.1f} | {result.word_error_rate:.0%} | "
