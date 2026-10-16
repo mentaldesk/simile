@@ -189,7 +189,7 @@ def test_starts_with_the_next_line_when_the_player_comes_near(
 ) -> None:
     async def scenario() -> tuple[bool, bool, list[AudioChunk]]:
         async with village(synthesiser) as world:
-            world.move_player(20, 0)
+            world.move_player(5.5, 0)
             talk = world.start("mei", "viktor")
             _, far = world.say(talk, "mei", "Morning, Viktor.")
             line = world.draft(talk, "viktor", "Morning, Mei.")
