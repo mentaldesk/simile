@@ -1,7 +1,15 @@
 import type { Position } from '../net';
 
 export type TiledProperty = { name: string; type: string; value: unknown };
-export type TiledObject = { name: string; type: string; properties?: TiledProperty[] };
+export type TiledObject = {
+  name: string;
+  type: string;
+  properties?: TiledProperty[];
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+};
 export type TiledLayer = { name: string; type: string; data?: number[]; objects?: TiledObject[] };
 export type TiledMap = {
   width: number;

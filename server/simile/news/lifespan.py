@@ -15,7 +15,9 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.llm import LLMClient
     from simile.memory import memory_of
     from simile.news.analysis import NewsAnalyser
+    from simile.news.player import PlayerNews
     from simile.news.reactions import NewsReader
+    from simile.protocol import ListNewsMessage, ReadNewsMessage, hub_of
 
     def llm() -> LLMClient | None:
         return getattr(app.state, "llm", None)
@@ -27,6 +29,13 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         stack.push_async_callback(reader.stop)
         stack.callback(
             behaviour_of(app).hooks.set(read_news=reader.read, news_interest=reader.interest)
+        )
+        player, hub = PlayerNews(store, memory_of(app), world.clock), hub_of(app)
+        stack.callback(hub.subscribe(ListNewsMessage, lambda _: hub.broadcast(player.listing())))
+        stack.callback(
+            hub.subscribe(
+                ReadNewsMessage, lambda message: hub.broadcast(player.read(message.news_id))
+            )
         )
         analyser = NewsAnalyser(store, llm)
         stack.push_async_callback(analyser.stop)

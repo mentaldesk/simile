@@ -12,7 +12,7 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, first_name, takes_leave
+from simile.conversation.prompt import Player, first_name, takes_leave, with_both_read
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -114,6 +114,25 @@ def test_the_background_has_the_relationship_history_memories_and_news() -> None
     assert "grudge" not in text
     assert "On your mind:\n- Odalys fed half the square on Sunday." in text
     assert "News you might bring up:\n- Read about a city that paints its bridges." in text
+
+
+def test_news_both_have_read_is_marked_where_it_is_and_added_where_it_isnt() -> None:
+    bridges, drones = (
+        memory("kofi", 'I read "Bridges painted". Lovely idea.', MemoryKind.NEWS),
+        memory("kofi", 'I read "Drones regulated". About time.', MemoryKind.NEWS),
+    )
+    text = 'It\'s 09:30.\n\nNews you might bring up:\n- I read "Bridges painted". Lovely idea.'
+
+    assert with_both_read(text, [bridges, drones], "Visitor") == (
+        "It's 09:30.\n\n"
+        "News you might bring up:\n"
+        '- I read "Bridges painted". Lovely idea. (Visitor has read it too.)\n\n'
+        "News you've both read:\n"
+        '- I read "Drones regulated". About time. (Visitor has read it too.)\n\n'
+        "You might ask Visitor if they saw the news you've both read, and if they bring it up, "
+        "say what you made of it."
+    )
+    assert with_both_read(text, [], "Visitor") == text
 
 
 def test_the_player_is_a_newcomer_called_visitor() -> None:

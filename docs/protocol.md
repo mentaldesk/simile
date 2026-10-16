@@ -71,7 +71,9 @@ without changing the protocol. The server sends it only for the NPC the client i
 `NewsItem` id), `title`, `source` (the feed's display name, e.g. `"The Atlantic"`, or empty),
 `summary` (plain text), `url` (the original article) and `read`, whether the player has read it.
 The server sends it in reply to [`list_news`](#list_news) and [`read_news`](#read_news), and the
-client shows the latest one.
+client shows the latest one. Hub subscribers don't know which connection a message came from, so the
+reply goes to every client, which is fine with one player. A client ignores `news` while its news
+panel is closed.
 
 ### `audio_chunk`
 
@@ -120,14 +122,13 @@ restarted server.
 ### `list_news`
 
 No fields. The client sends it when the player opens the news at a terminal, and the server
-replies with [`news`](#news). Hub subscribers don't know which connection a message came from, so
-the reply goes to every client, which is fine with one player.
+replies with [`news`](#news).
 
 ### `read_news`
 
 `news_id`: the article the player reads. The server stores it as the player's own `news` memory,
 with its `news_id`, and replies with [`news`](#news), where it's now `read`. An unknown `news_id`
-stores nothing.
+stores nothing, and still gets a `news` reply.
 
 ## Sim events
 
