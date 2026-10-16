@@ -13,9 +13,9 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   Independence and Peace of Mind against), their social need, which weighs most (someone lonely
   accepts almost anyone, someone who's just talked mostly doesn't), and what they're busy with:
   someone at a terminal or the maker space, or looking for someone else, is less keen, and someone
-  who was looking for `a` is very keen. Anyone already talking and anything beyond `max_conversations` (2)
-  are declined, counting conversations with the player. Requests involving the player go to
-  `engine.player_request` (see below).
+  who was looking for `a` is very keen. Anyone already talking and anything beyond
+  `max_conversations` (2) are declined, counting conversations with the player. Requests involving
+  the player go to `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` speaks first.
 - **Lines.** Each line is one L1 `stream()` call with Haiku 5.5 and `purpose="conversation"`. The
@@ -36,7 +36,7 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   same values runs out of steam; one that moves on to things they care about keeps going. From
   `min_lines` on, whoever's turn it is says goodbye when theirs is below `leave_below`, and the
   other answers. Pairs who dislike each other start lower and drop faster, so their conversations
-  are short; strangers usually part within 5 to 15 lines and friends on good form can go on for 30
+  are short; strangers usually part within 5 to 20 lines and friends on good form can go on for 30
   or more. `max_lines` (60) is only a backstop.
 - **Goodbyes.** A reply that says goodbye anyway ("I'll leave you to it", "see you at the
   riverside", "catch you later") counts as one: the other answers it and the conversation ends.

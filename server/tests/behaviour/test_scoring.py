@@ -127,8 +127,7 @@ def test_a_little_loneliness_barely_registers_and_a_lot_crowds_out_the_rest() ->
     def pull(social: float) -> float:
         return score_of(seek, situation(needs={Need.SOCIAL: social}, others=kofi))
 
-    assert pull(0.5) - pull(0.3) < 0.1
-    assert pull(0.9) - pull(0.7) > 0.5
+    assert pull(0.9) - pull(0.7) > 4 * (pull(0.5) - pull(0.3)) > 0
     assert best(situation({V.CONNECTION: 0.7}, {Need.SOCIAL: 0.9}, others=kofi)) == seek
 
 

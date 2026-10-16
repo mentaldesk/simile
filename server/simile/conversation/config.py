@@ -74,7 +74,7 @@ class ConversationConfig(BaseModel):
         default=0.1,
         ge=0,
         description="Engagement per line per unit of topic match: how much the values the line "
-        "touches matter to them, from -1 to 1.",
+        "brings into the conversation for the first time matter to them, from -1 to 1.",
     )
     like_weight: float = Field(
         default=0.1, ge=0, description="Engagement per line per unit of `like - 0.5`."

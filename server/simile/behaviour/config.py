@@ -77,7 +77,7 @@ DAILY: dict[Activity, Curve] = {
 RISE: dict[Need, float] = {Need.SOCIAL: 0.02, Need.CURIOSITY: 0.03, Need.REST: 0.04}
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
-    Need.SOCIAL: {V.CONNECTION: 0.5, V.PEACE_OF_MIND: -0.1},
+    Need.SOCIAL: {V.CONNECTION: 0.65, V.PEACE_OF_MIND: -0.1},
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
 }
@@ -94,7 +94,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.WANDER: {Need.CURIOSITY: -0.3},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
-    A.TALK: {Need.SOCIAL: -12.0},
+    A.TALK: {Need.SOCIAL: -6.0},
 }
 
 DWELL: dict[Activity, tuple[float, float]] = {
