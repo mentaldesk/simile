@@ -6,6 +6,7 @@ import pytest
 from simile.ambient import AmbientConfig, Director, Earshot, Nudged
 from simile.behaviour import Activity, Behaviour, Goal
 from simile.conversation import DEFAULT_CONFIG, ConversationConfig, ConversationEngine
+from simile.conversation.player import PlayerConversations
 from simile.llm import FakeProvider, LLMClient
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -103,8 +104,8 @@ class Village:
     def wait(self, seconds: float) -> None:
         self.clock.advance(seconds)
 
-    def at_home(self, npc: str) -> None:
-        self.behaviour.minds[npc].goal = Goal(Activity.HOME, self.behaviour.npcs[npc].home)
+    def at_home(self, npc: str, activity: Activity = Activity.HOME) -> None:
+        self.behaviour.minds[npc].goal = Goal(activity, self.behaviour.npcs[npc].home)
 
     async def run(self, minutes: float) -> None:
         for system in (self.behaviour, self.movement, self.engine, self.director):
@@ -156,18 +157,33 @@ def test_the_target_is_in_earshot_and_the_seeker_within_reach() -> None:
     assert out_of_reach.director.choose() is None
 
 
-def test_nobody_talking_at_home_or_walking_off_is_the_target() -> None:
+def test_nobody_talking_or_walking_off_is_the_target() -> None:
     village = Village({"ana": 27, "ben": 35}, relationships=friends(ANA, BEN))
-    village.at_home("ana")
     village.behaviour.minds["ben"].walk = village.movement.walk_to("ben", "park")
 
-    assert village.director.choose() is None
-
-    village.behaviour.minds["ben"].walk = None
-    assert village.director.choose() == ("ana", "ben")
+    assert village.director.choose() == ("ben", "ana")
 
     village.behaviour.pause("ana")
     assert village.director.choose() is None
+
+
+@pytest.mark.parametrize("activity", [Activity.HOME, Activity.SLEEP])
+def test_nobody_at_home_or_asleep_is_nudged_or_sought_out(activity: Activity) -> None:
+    village = Village({"ana": 27, "ben": 35}, relationships=friends(ANA, BEN))
+    village.at_home("ana", activity)
+
+    assert village.director.choose() is None
+
+
+def test_nobody_in_a_house_is_nudged_or_sought_out() -> None:
+    village = Village({"ana": 27, "ben": 24}, relationships=friends(ANA, BEN))
+    village.movement.place(PLAYER_ID, Tile(x=18, y=21))
+    village.movement.place("ana", TOWN.location("house_7").entry)
+
+    assert village.director.choose() is None
+
+    village.movement.place("ana", Tile(x=16, y=21))
+    assert set(village.director.choose() or ()) == {"ana", "ben"}
 
 
 def test_a_pair_cooling_off_from_each_other_is_left_alone() -> None:
@@ -189,6 +205,36 @@ def test_nudges_once_it_has_been_quiet_and_waits_before_the_next() -> None:
     assert [(e.seeker, e.target) for e in village.of(Nudged)] == [pair]
 
     village.wait(29)
+    assert village.director.look() is None
+    village.wait(1)
+    assert village.director.look() is not None
+
+
+def test_it_never_nudges_while_the_player_talks_and_the_quiet_starts_again_after() -> None:
+    village = Village({"ana": 27, "ben": 35, "cal": 30}, relationships=friends(ANA, BEN))
+    chat = PlayerConversations(village.engine).start("cal", opener=PLAYER_ID)
+
+    village.wait(120)
+    assert village.director.look() is None
+    village.engine.end(chat.id)
+
+    village.wait(59)
+    assert village.director.look() is None
+    village.wait(1)
+    assert village.director.look() is not None
+
+
+def test_by_default_it_nudges_after_a_minute_of_quiet_and_a_minute_apart() -> None:
+    village = Village(
+        {"ana": 27, "ben": 35}, relationships=friends(ANA, BEN), config=AmbientConfig()
+    )
+
+    village.wait(59)
+    assert village.director.look() is None
+    village.wait(1)
+    assert village.director.look() is not None
+
+    village.wait(59)
     assert village.director.look() is None
     village.wait(1)
     assert village.director.look() is not None
