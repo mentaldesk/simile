@@ -1,0 +1,4269 @@
+{
+ "format": 1,
+ "set": "night",
+ "hours": [
+  21,
+  5
+ ],
+ "crossfade_minutes": 60,
+ "sun": {
+  "azimuth": 150,
+  "elevation": 50
+ },
+ "tile": {
+  "width": 96,
+  "height": 48,
+  "metres": 1.1
+ },
+ "map": {
+  "width": 64,
+  "height": 42
+ },
+ "ground": {
+  "x": -2040,
+  "y": -24,
+  "width": 5136,
+  "height": 2592,
+  "hash": "34a44fa82e33ca1f",
+  "chunks": [
+   {
+    "image": "night/ground-0-0.webp",
+    "x": -2040,
+    "y": -24,
+    "width": 1712,
+    "height": 1296
+   },
+   {
+    "image": "night/ground-1-0.webp",
+    "x": -328,
+    "y": -24,
+    "width": 1712,
+    "height": 1296
+   },
+   {
+    "image": "night/ground-2-0.webp",
+    "x": 1384,
+    "y": -24,
+    "width": 1712,
+    "height": 1296
+   },
+   {
+    "image": "night/ground-0-1.webp",
+    "x": -2040,
+    "y": 1272,
+    "width": 1712,
+    "height": 1296
+   },
+   {
+    "image": "night/ground-1-1.webp",
+    "x": -328,
+    "y": 1272,
+    "width": 1712,
+    "height": 1296
+   },
+   {
+    "image": "night/ground-2-1.webp",
+    "x": 1384,
+    "y": 1272,
+    "width": 1712,
+    "height": 1296
+   }
+  ]
+ },
+ "light_map": {
+  "image": "night/light.webp",
+  "px_per_tile": 8,
+  "width": 512,
+  "height": 336,
+  "scale": 6.057,
+  "hash": "64828bc085d7a080"
+ },
+ "objects": [
+  {
+   "id": "building-57-4",
+   "kind": "building",
+   "anchor": [
+    63,
+    11
+   ],
+   "footprint": [
+    57,
+    4,
+    63,
+    11
+   ],
+   "image": "night/building-57-4.webp",
+   "width": 640,
+   "height": 1173,
+   "offset": [
+    -296,
+    -1169
+   ],
+   "hash": "be392018769bff96",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1632.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1644.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1668.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1692.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1716.0
+    },
+    {
+     "x": 200,
+     "width": 48,
+     "depth": 1740.0
+    },
+    {
+     "x": 248,
+     "width": 96,
+     "depth": 1764.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1740.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1716.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1692.0
+    },
+    {
+     "x": 488,
+     "width": 48,
+     "depth": 1668.0
+    },
+    {
+     "x": 536,
+     "width": 48,
+     "depth": 1644.0
+    },
+    {
+     "x": 584,
+     "width": 48,
+     "depth": 1620.0
+    },
+    {
+     "x": 632,
+     "width": 8,
+     "depth": 1608.0
+    }
+   ]
+  },
+  {
+   "id": "building-37-5",
+   "kind": "building",
+   "anchor": [
+    43,
+    11
+   ],
+   "footprint": [
+    37,
+    5,
+    43,
+    11
+   ],
+   "image": "night/building-37-5.webp",
+   "width": 619,
+   "height": 828,
+   "offset": [
+    -323,
+    -824
+   ],
+   "hash": "16d452f8df1b47d2",
+   "slices": [
+    {
+     "x": 0,
+     "width": 35,
+     "depth": 1152.0
+    },
+    {
+     "x": 35,
+     "width": 48,
+     "depth": 1164.0
+    },
+    {
+     "x": 83,
+     "width": 48,
+     "depth": 1188.0
+    },
+    {
+     "x": 131,
+     "width": 48,
+     "depth": 1212.0
+    },
+    {
+     "x": 179,
+     "width": 48,
+     "depth": 1236.0
+    },
+    {
+     "x": 227,
+     "width": 48,
+     "depth": 1260.0
+    },
+    {
+     "x": 275,
+     "width": 96,
+     "depth": 1284.0
+    },
+    {
+     "x": 371,
+     "width": 48,
+     "depth": 1260.0
+    },
+    {
+     "x": 419,
+     "width": 48,
+     "depth": 1236.0
+    },
+    {
+     "x": 467,
+     "width": 48,
+     "depth": 1212.0
+    },
+    {
+     "x": 515,
+     "width": 48,
+     "depth": 1188.0
+    },
+    {
+     "x": 563,
+     "width": 48,
+     "depth": 1164.0
+    },
+    {
+     "x": 611,
+     "width": 8,
+     "depth": 1152.0
+    }
+   ]
+  },
+  {
+   "id": "building-1-6",
+   "kind": "building",
+   "anchor": [
+    6,
+    11
+   ],
+   "footprint": [
+    1,
+    6,
+    6,
+    11
+   ],
+   "image": "night/building-1-6.webp",
+   "width": 496,
+   "height": 620,
+   "offset": [
+    -248,
+    -616
+   ],
+   "hash": "4ad67d7151a516de",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 288.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 300.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 324.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 348.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 372.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 396.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 372.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 348.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 324.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 300.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 288.0
+    }
+   ]
+  },
+  {
+   "id": "building-7-6",
+   "kind": "building",
+   "anchor": [
+    12,
+    11
+   ],
+   "footprint": [
+    7,
+    6,
+    12,
+    11
+   ],
+   "image": "night/building-7-6.webp",
+   "width": 496,
+   "height": 597,
+   "offset": [
+    -248,
+    -593
+   ],
+   "hash": "8cd7c0543b323df4",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 432.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 444.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 468.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 492.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 516.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 540.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 516.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 492.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 468.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 444.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 432.0
+    }
+   ]
+  },
+  {
+   "id": "building-13-6",
+   "kind": "building",
+   "anchor": [
+    22,
+    11
+   ],
+   "footprint": [
+    13,
+    6,
+    22,
+    11
+   ],
+   "image": "night/building-13-6.webp",
+   "width": 715,
+   "height": 876,
+   "offset": [
+    -467,
+    -872
+   ],
+   "hash": "dbc225fb4e35e6fc",
+   "slices": [
+    {
+     "x": 0,
+     "width": 35,
+     "depth": 576.0
+    },
+    {
+     "x": 35,
+     "width": 48,
+     "depth": 588.0
+    },
+    {
+     "x": 83,
+     "width": 48,
+     "depth": 612.0
+    },
+    {
+     "x": 131,
+     "width": 48,
+     "depth": 636.0
+    },
+    {
+     "x": 179,
+     "width": 48,
+     "depth": 660.0
+    },
+    {
+     "x": 227,
+     "width": 48,
+     "depth": 684.0
+    },
+    {
+     "x": 275,
+     "width": 48,
+     "depth": 708.0
+    },
+    {
+     "x": 323,
+     "width": 48,
+     "depth": 732.0
+    },
+    {
+     "x": 371,
+     "width": 48,
+     "depth": 756.0
+    },
+    {
+     "x": 419,
+     "width": 96,
+     "depth": 780.0
+    },
+    {
+     "x": 515,
+     "width": 48,
+     "depth": 756.0
+    },
+    {
+     "x": 563,
+     "width": 48,
+     "depth": 732.0
+    },
+    {
+     "x": 611,
+     "width": 48,
+     "depth": 708.0
+    },
+    {
+     "x": 659,
+     "width": 48,
+     "depth": 684.0
+    },
+    {
+     "x": 707,
+     "width": 8,
+     "depth": 672.0
+    }
+   ]
+  },
+  {
+   "id": "building-28-6",
+   "kind": "building",
+   "anchor": [
+    36,
+    11
+   ],
+   "footprint": [
+    28,
+    6,
+    36,
+    11
+   ],
+   "image": "night/building-28-6.webp",
+   "width": 667,
+   "height": 669,
+   "offset": [
+    -419,
+    -665
+   ],
+   "hash": "92226f8da4759ed1",
+   "slices": [
+    {
+     "x": 0,
+     "width": 35,
+     "depth": 936.0
+    },
+    {
+     "x": 35,
+     "width": 48,
+     "depth": 948.0
+    },
+    {
+     "x": 83,
+     "width": 48,
+     "depth": 972.0
+    },
+    {
+     "x": 131,
+     "width": 48,
+     "depth": 996.0
+    },
+    {
+     "x": 179,
+     "width": 48,
+     "depth": 1020.0
+    },
+    {
+     "x": 227,
+     "width": 48,
+     "depth": 1044.0
+    },
+    {
+     "x": 275,
+     "width": 48,
+     "depth": 1068.0
+    },
+    {
+     "x": 323,
+     "width": 48,
+     "depth": 1092.0
+    },
+    {
+     "x": 371,
+     "width": 96,
+     "depth": 1116.0
+    },
+    {
+     "x": 467,
+     "width": 48,
+     "depth": 1092.0
+    },
+    {
+     "x": 515,
+     "width": 48,
+     "depth": 1068.0
+    },
+    {
+     "x": 563,
+     "width": 48,
+     "depth": 1044.0
+    },
+    {
+     "x": 611,
+     "width": 48,
+     "depth": 1020.0
+    },
+    {
+     "x": 659,
+     "width": 8,
+     "depth": 1008.0
+    }
+   ]
+  },
+  {
+   "id": "building-45-6",
+   "kind": "building",
+   "anchor": [
+    50,
+    11
+   ],
+   "footprint": [
+    45,
+    6,
+    50,
+    11
+   ],
+   "image": "night/building-45-6.webp",
+   "width": 496,
+   "height": 597,
+   "offset": [
+    -248,
+    -593
+   ],
+   "hash": "c486b564491ab3da",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1344.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1356.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1380.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1404.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1428.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 1452.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 1428.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1404.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1380.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1356.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 1344.0
+    }
+   ]
+  },
+  {
+   "id": "building-51-6",
+   "kind": "building",
+   "anchor": [
+    56,
+    11
+   ],
+   "footprint": [
+    51,
+    6,
+    56,
+    11
+   ],
+   "image": "night/building-51-6.webp",
+   "width": 497,
+   "height": 620,
+   "offset": [
+    -249,
+    -616
+   ],
+   "hash": "c4545eba58e695d5",
+   "slices": [
+    {
+     "x": 0,
+     "width": 9,
+     "depth": 1488.0
+    },
+    {
+     "x": 9,
+     "width": 48,
+     "depth": 1500.0
+    },
+    {
+     "x": 57,
+     "width": 48,
+     "depth": 1524.0
+    },
+    {
+     "x": 105,
+     "width": 48,
+     "depth": 1548.0
+    },
+    {
+     "x": 153,
+     "width": 48,
+     "depth": 1572.0
+    },
+    {
+     "x": 201,
+     "width": 96,
+     "depth": 1596.0
+    },
+    {
+     "x": 297,
+     "width": 48,
+     "depth": 1572.0
+    },
+    {
+     "x": 345,
+     "width": 48,
+     "depth": 1548.0
+    },
+    {
+     "x": 393,
+     "width": 48,
+     "depth": 1524.0
+    },
+    {
+     "x": 441,
+     "width": 48,
+     "depth": 1500.0
+    },
+    {
+     "x": 489,
+     "width": 8,
+     "depth": 1488.0
+    }
+   ]
+  },
+  {
+   "id": "building-1-14",
+   "kind": "building",
+   "anchor": [
+    6,
+    19
+   ],
+   "footprint": [
+    1,
+    14,
+    6,
+    19
+   ],
+   "image": "night/building-1-14.webp",
+   "width": 496,
+   "height": 620,
+   "offset": [
+    -248,
+    -616
+   ],
+   "hash": "5e6e3d97297db04a",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 480.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 492.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 516.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 540.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 564.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 588.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 564.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 540.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 516.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 492.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 480.0
+    }
+   ]
+  },
+  {
+   "id": "building-7-14",
+   "kind": "building",
+   "anchor": [
+    12,
+    19
+   ],
+   "footprint": [
+    7,
+    14,
+    12,
+    19
+   ],
+   "image": "night/building-7-14.webp",
+   "width": 496,
+   "height": 597,
+   "offset": [
+    -248,
+    -593
+   ],
+   "hash": "80014f8c37682573",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 624.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 636.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 660.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 684.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 708.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 732.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 708.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 684.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 660.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 636.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 624.0
+    }
+   ]
+  },
+  {
+   "id": "building-13-14",
+   "kind": "building",
+   "anchor": [
+    17,
+    19
+   ],
+   "footprint": [
+    13,
+    14,
+    17,
+    19
+   ],
+   "image": "night/building-13-14.webp",
+   "width": 448,
+   "height": 596,
+   "offset": [
+    -200,
+    -592
+   ],
+   "hash": "fdce9b35805d8102",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 768.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 780.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 804.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 828.0
+    },
+    {
+     "x": 152,
+     "width": 96,
+     "depth": 852.0
+    },
+    {
+     "x": 248,
+     "width": 48,
+     "depth": 828.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 804.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 780.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 756.0
+    },
+    {
+     "x": 440,
+     "width": 8,
+     "depth": 744.0
+    }
+   ]
+  },
+  {
+   "id": "building-29-28",
+   "kind": "building",
+   "anchor": [
+    34,
+    34
+   ],
+   "footprint": [
+    29,
+    28,
+    34,
+    34
+   ],
+   "image": "night/building-29-28.webp",
+   "width": 544,
+   "height": 965,
+   "offset": [
+    -248,
+    -961
+   ],
+   "hash": "5180b801d9442c4d",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1512.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1524.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1548.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1572.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1596.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 1620.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 1596.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1572.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1548.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1524.0
+    },
+    {
+     "x": 488,
+     "width": 48,
+     "depth": 1500.0
+    },
+    {
+     "x": 536,
+     "width": 8,
+     "depth": 1488.0
+    }
+   ]
+  },
+  {
+   "id": "building-2-29",
+   "kind": "building",
+   "anchor": [
+    7,
+    34
+   ],
+   "footprint": [
+    2,
+    29,
+    7,
+    34
+   ],
+   "image": "night/building-2-29.webp",
+   "width": 496,
+   "height": 597,
+   "offset": [
+    -248,
+    -593
+   ],
+   "hash": "542cf4fa5ffc01c8",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 864.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 876.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 900.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 924.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 948.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 972.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 948.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 924.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 900.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 876.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 864.0
+    }
+   ]
+  },
+  {
+   "id": "building-8-29",
+   "kind": "building",
+   "anchor": [
+    13,
+    34
+   ],
+   "footprint": [
+    8,
+    29,
+    13,
+    34
+   ],
+   "image": "night/building-8-29.webp",
+   "width": 496,
+   "height": 620,
+   "offset": [
+    -248,
+    -616
+   ],
+   "hash": "3dd674a2b38b2909",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1008.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1020.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1044.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1068.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1092.0
+    },
+    {
+     "x": 200,
+     "width": 96,
+     "depth": 1116.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 1092.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1068.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1044.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1020.0
+    },
+    {
+     "x": 488,
+     "width": 8,
+     "depth": 1008.0
+    }
+   ]
+  },
+  {
+   "id": "building-14-29",
+   "kind": "building",
+   "anchor": [
+    18,
+    34
+   ],
+   "footprint": [
+    14,
+    29,
+    18,
+    34
+   ],
+   "image": "night/building-14-29.webp",
+   "width": 448,
+   "height": 596,
+   "offset": [
+    -200,
+    -592
+   ],
+   "hash": "0377d71680b7b3a9",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1152.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1164.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1188.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1212.0
+    },
+    {
+     "x": 152,
+     "width": 96,
+     "depth": 1236.0
+    },
+    {
+     "x": 248,
+     "width": 48,
+     "depth": 1212.0
+    },
+    {
+     "x": 296,
+     "width": 48,
+     "depth": 1188.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1164.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1140.0
+    },
+    {
+     "x": 440,
+     "width": 8,
+     "depth": 1128.0
+    }
+   ]
+  },
+  {
+   "id": "building-21-29",
+   "kind": "building",
+   "anchor": [
+    27,
+    34
+   ],
+   "footprint": [
+    21,
+    29,
+    27,
+    34
+   ],
+   "image": "night/building-21-29.webp",
+   "width": 544,
+   "height": 644,
+   "offset": [
+    -296,
+    -640
+   ],
+   "hash": "20297f224f4e17da",
+   "slices": [
+    {
+     "x": 0,
+     "width": 8,
+     "depth": 1320.0
+    },
+    {
+     "x": 8,
+     "width": 48,
+     "depth": 1332.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1356.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1380.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1404.0
+    },
+    {
+     "x": 200,
+     "width": 48,
+     "depth": 1428.0
+    },
+    {
+     "x": 248,
+     "width": 96,
+     "depth": 1452.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1428.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1404.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1380.0
+    },
+    {
+     "x": 488,
+     "width": 48,
+     "depth": 1356.0
+    },
+    {
+     "x": 536,
+     "width": 8,
+     "depth": 1344.0
+    }
+   ]
+  },
+  {
+   "id": "bollard-24-3",
+   "kind": "bollard",
+   "anchor": [
+    24.5,
+    3.5
+   ],
+   "footprint": [
+    24.5,
+    3.5,
+    24.5,
+    3.5
+   ],
+   "image": "night/bollard-24-3.webp",
+   "width": 20,
+   "height": 61,
+   "offset": [
+    -10,
+    -55
+   ],
+   "hash": "7271d3d63eea1e8f",
+   "slices": [
+    {
+     "x": 0,
+     "width": 20,
+     "depth": 672.0
+    }
+   ]
+  },
+  {
+   "id": "bollard-28-3",
+   "kind": "bollard",
+   "anchor": [
+    28.5,
+    3.5
+   ],
+   "footprint": [
+    28.5,
+    3.5,
+    28.5,
+    3.5
+   ],
+   "image": "night/bollard-28-3.webp",
+   "width": 20,
+   "height": 61,
+   "offset": [
+    -10,
+    -55
+   ],
+   "hash": "79f3cb5c9644bf94",
+   "slices": [
+    {
+     "x": 0,
+     "width": 20,
+     "depth": 768.0
+    }
+   ]
+  },
+  {
+   "id": "bollard-42-3",
+   "kind": "bollard",
+   "anchor": [
+    42.5,
+    3.5
+   ],
+   "footprint": [
+    42.5,
+    3.5,
+    42.5,
+    3.5
+   ],
+   "image": "night/bollard-42-3.webp",
+   "width": 20,
+   "height": 61,
+   "offset": [
+    -10,
+    -55
+   ],
+   "hash": "10b239c2a2861eda",
+   "slices": [
+    {
+     "x": 0,
+     "width": 20,
+     "depth": 1104.0
+    }
+   ]
+  },
+  {
+   "id": "bollard-46-3",
+   "kind": "bollard",
+   "anchor": [
+    46.5,
+    3.5
+   ],
+   "footprint": [
+    46.5,
+    3.5,
+    46.5,
+    3.5
+   ],
+   "image": "night/bollard-46-3.webp",
+   "width": 20,
+   "height": 61,
+   "offset": [
+    -10,
+    -55
+   ],
+   "hash": "4d0793fc5249550b",
+   "slices": [
+    {
+     "x": 0,
+     "width": 20,
+     "depth": 1200.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-3-4",
+   "kind": "lamp",
+   "anchor": [
+    3.5,
+    4.5
+   ],
+   "footprint": [
+    3.5,
+    4.5,
+    3.5,
+    4.5
+   ],
+   "image": "night/lamp-3-4.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "292c358019941aec",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 192.0
+    }
+   ]
+  },
+  {
+   "id": "tree-8-4",
+   "kind": "tree",
+   "anchor": [
+    9.0,
+    4.5
+   ],
+   "footprint": [
+    9.0,
+    4.5,
+    9.0,
+    4.5
+   ],
+   "image": "night/tree-8-4.webp",
+   "width": 217,
+   "height": 271,
+   "offset": [
+    -109,
+    -262
+   ],
+   "hash": "2daeedfc7f9c655d",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 324.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-15-4",
+   "kind": "lamp",
+   "anchor": [
+    15.5,
+    4.5
+   ],
+   "footprint": [
+    15.5,
+    4.5,
+    15.5,
+    4.5
+   ],
+   "image": "night/lamp-15-4.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "4d906c4637bbfa7b",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 480.0
+    }
+   ]
+  },
+  {
+   "id": "tree-19-4",
+   "kind": "tree",
+   "anchor": [
+    20.0,
+    4.5
+   ],
+   "footprint": [
+    20.0,
+    4.5,
+    20.0,
+    4.5
+   ],
+   "image": "night/tree-19-4.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -272
+   ],
+   "hash": "64d36f3dcff5dbb6",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 588.0
+    }
+   ]
+  },
+  {
+   "id": "tree-31-4",
+   "kind": "tree",
+   "anchor": [
+    32.0,
+    4.5
+   ],
+   "footprint": [
+    32.0,
+    4.5,
+    32.0,
+    4.5
+   ],
+   "image": "night/tree-31-4.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -272
+   ],
+   "hash": "02e4e99bf0f62e14",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 876.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-33-4",
+   "kind": "lamp",
+   "anchor": [
+    33.5,
+    4.5
+   ],
+   "footprint": [
+    33.5,
+    4.5,
+    33.5,
+    4.5
+   ],
+   "image": "night/lamp-33-4.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "8dcb36d75afeef86",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 912.0
+    }
+   ]
+  },
+  {
+   "id": "tree-38-4",
+   "kind": "tree",
+   "anchor": [
+    39.0,
+    4.5
+   ],
+   "footprint": [
+    39.0,
+    4.5,
+    39.0,
+    4.5
+   ],
+   "image": "night/tree-38-4.webp",
+   "width": 212,
+   "height": 277,
+   "offset": [
+    -105,
+    -268
+   ],
+   "hash": "7b9045b1290e6ef4",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 1044.0
+    }
+   ]
+  },
+  {
+   "id": "tree-48-4",
+   "kind": "tree",
+   "anchor": [
+    49.0,
+    4.5
+   ],
+   "footprint": [
+    49.0,
+    4.5,
+    49.0,
+    4.5
+   ],
+   "image": "night/tree-48-4.webp",
+   "width": 217,
+   "height": 271,
+   "offset": [
+    -109,
+    -262
+   ],
+   "hash": "3034c98bd3408dee",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1284.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-51-4",
+   "kind": "lamp",
+   "anchor": [
+    51.5,
+    4.5
+   ],
+   "footprint": [
+    51.5,
+    4.5,
+    51.5,
+    4.5
+   ],
+   "image": "night/lamp-51-4.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "4a247a33a2c8f6f3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1344.0
+    }
+   ]
+  },
+  {
+   "id": "vending-22-10",
+   "kind": "vending",
+   "anchor": [
+    22.5,
+    10.5
+   ],
+   "footprint": [
+    22.09,
+    10.18,
+    22.91,
+    10.82
+   ],
+   "image": "night/vending-22-10.webp",
+   "width": 74,
+   "height": 144,
+   "offset": [
+    -37,
+    -124
+   ],
+   "hash": "c27c3cc55a7bf3f9",
+   "slices": [
+    {
+     "x": 0,
+     "width": 37,
+     "depth": 795.4
+    },
+    {
+     "x": 37,
+     "width": 37,
+     "depth": 799.7
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-1-11",
+   "kind": "planter_flowers",
+   "anchor": [
+    1.5,
+    11.5
+   ],
+   "footprint": [
+    1.5,
+    11.5,
+    1.5,
+    11.5
+   ],
+   "image": "night/planter_flowers-1-11.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "0f68c52d58a77ba9",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 312.0
+    }
+   ]
+  },
+  {
+   "id": "bike_blue-11-11",
+   "kind": "bike_blue",
+   "anchor": [
+    11.5,
+    11.5
+   ],
+   "footprint": [
+    11.5,
+    11.5,
+    11.5,
+    11.5
+   ],
+   "image": "night/bike_blue-11-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "687bb914e453ca92",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 552.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-13-11",
+   "kind": "bike_yellow",
+   "anchor": [
+    13.5,
+    11.5
+   ],
+   "footprint": [
+    13.5,
+    11.5,
+    13.5,
+    11.5
+   ],
+   "image": "night/bike_yellow-13-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "e50c942d5681cfe6",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 600.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-14-11",
+   "kind": "bike_yellow",
+   "anchor": [
+    14.5,
+    11.5
+   ],
+   "footprint": [
+    14.5,
+    11.5,
+    14.5,
+    11.5
+   ],
+   "image": "night/bike_yellow-14-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "5a2109f39d94e314",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 624.0
+    }
+   ]
+  },
+  {
+   "id": "bins-22-11",
+   "kind": "bins",
+   "anchor": [
+    22.5,
+    11.5
+   ],
+   "footprint": [
+    22.5,
+    11.5,
+    22.5,
+    11.5
+   ],
+   "image": "night/bins-22-11.webp",
+   "width": 66,
+   "height": 86,
+   "offset": [
+    -33,
+    -68
+   ],
+   "hash": "163941198d10a647",
+   "slices": [
+    {
+     "x": 0,
+     "width": 66,
+     "depth": 816.0
+    }
+   ]
+  },
+  {
+   "id": "cafe_table-28-11",
+   "kind": "cafe_table",
+   "anchor": [
+    28.5,
+    11.5
+   ],
+   "footprint": [
+    27.6,
+    11.17,
+    29.4,
+    11.83
+   ],
+   "image": "night/cafe_table-28-11.webp",
+   "width": 90,
+   "height": 91,
+   "offset": [
+    -45,
+    -72
+   ],
+   "hash": "0af99006e9046d63",
+   "slices": [
+    {
+     "x": 0,
+     "width": 45,
+     "depth": 963.8
+    },
+    {
+     "x": 45,
+     "width": 45,
+     "depth": 987.8
+    }
+   ]
+  },
+  {
+   "id": "cafe_menu-30-11",
+   "kind": "cafe_menu",
+   "anchor": [
+    30.5,
+    11.5
+   ],
+   "footprint": [
+    30.5,
+    11.5,
+    30.5,
+    11.5
+   ],
+   "image": "night/cafe_menu-30-11.webp",
+   "width": 48,
+   "height": 76,
+   "offset": [
+    -24,
+    -64
+   ],
+   "hash": "18706f5c4e77e2c3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 48,
+     "depth": 1008.0
+    }
+   ]
+  },
+  {
+   "id": "cafe_table-33-11",
+   "kind": "cafe_table",
+   "anchor": [
+    33.5,
+    11.5
+   ],
+   "footprint": [
+    32.6,
+    11.17,
+    34.4,
+    11.83
+   ],
+   "image": "night/cafe_table-33-11.webp",
+   "width": 90,
+   "height": 91,
+   "offset": [
+    -45,
+    -72
+   ],
+   "hash": "078e8f0d2d4a1d76",
+   "slices": [
+    {
+     "x": 0,
+     "width": 45,
+     "depth": 1083.8
+    },
+    {
+     "x": 45,
+     "width": 45,
+     "depth": 1107.8
+    }
+   ]
+  },
+  {
+   "id": "cafe_table-35-11",
+   "kind": "cafe_table",
+   "anchor": [
+    35.5,
+    11.5
+   ],
+   "footprint": [
+    34.6,
+    11.17,
+    36.4,
+    11.83
+   ],
+   "image": "night/cafe_table-35-11.webp",
+   "width": 90,
+   "height": 91,
+   "offset": [
+    -45,
+    -72
+   ],
+   "hash": "962dd6282e646958",
+   "slices": [
+    {
+     "x": 0,
+     "width": 45,
+     "depth": 1131.8
+    },
+    {
+     "x": 45,
+     "width": 45,
+     "depth": 1155.8
+    }
+   ]
+  },
+  {
+   "id": "bike_blue-37-11",
+   "kind": "bike_blue",
+   "anchor": [
+    37.5,
+    11.5
+   ],
+   "footprint": [
+    37.5,
+    11.5,
+    37.5,
+    11.5
+   ],
+   "image": "night/bike_blue-37-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "37ed96b3386f7853",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1176.0
+    }
+   ]
+  },
+  {
+   "id": "planter-49-11",
+   "kind": "planter",
+   "anchor": [
+    49.5,
+    11.5
+   ],
+   "footprint": [
+    49.5,
+    11.5,
+    49.5,
+    11.5
+   ],
+   "image": "night/planter-49-11.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "27df5c1a9f0aebbb",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1464.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-60-11",
+   "kind": "bike_yellow",
+   "anchor": [
+    60.5,
+    11.5
+   ],
+   "footprint": [
+    60.5,
+    11.5,
+    60.5,
+    11.5
+   ],
+   "image": "night/bike_yellow-60-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "abc8fce63203a29a",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1728.0
+    }
+   ]
+  },
+  {
+   "id": "bike_blue-61-11",
+   "kind": "bike_blue",
+   "anchor": [
+    61.5,
+    11.5
+   ],
+   "footprint": [
+    61.5,
+    11.5,
+    61.5,
+    11.5
+   ],
+   "image": "night/bike_blue-61-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "a1569983095096d1",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1752.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-62-11",
+   "kind": "bike_yellow",
+   "anchor": [
+    62.5,
+    11.5
+   ],
+   "footprint": [
+    62.5,
+    11.5,
+    62.5,
+    11.5
+   ],
+   "image": "night/bike_yellow-62-11.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "5a14620480cefcdc",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1776.0
+    }
+   ]
+  },
+  {
+   "id": "terminal-36-14",
+   "kind": "terminal",
+   "anchor": [
+    36.5,
+    14.5
+   ],
+   "footprint": [
+    36.23,
+    14.34,
+    36.77,
+    14.66
+   ],
+   "image": "night/terminal-36-14.webp",
+   "width": 48,
+   "height": 138,
+   "offset": [
+    -24,
+    -125
+   ],
+   "hash": "3fc6f30a88414fa7",
+   "slices": [
+    {
+     "x": 0,
+     "width": 24,
+     "depth": 1221.4
+    },
+    {
+     "x": 24,
+     "width": 24,
+     "depth": 1226.6
+    }
+   ]
+  },
+  {
+   "id": "bush-53-14",
+   "kind": "bush",
+   "anchor": [
+    53.5,
+    14.5
+   ],
+   "footprint": [
+    53.5,
+    14.5,
+    53.5,
+    14.5
+   ],
+   "image": "night/bush-53-14.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "6d554c1297ec6d10",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 1632.0
+    }
+   ]
+  },
+  {
+   "id": "tree-22-15",
+   "kind": "tree",
+   "anchor": [
+    23.0,
+    15.5
+   ],
+   "footprint": [
+    23.0,
+    15.5,
+    23.0,
+    15.5
+   ],
+   "image": "night/tree-22-15.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "29e4c60b94d660aa",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 924.0
+    }
+   ]
+  },
+  {
+   "id": "tree-40-15",
+   "kind": "tree",
+   "anchor": [
+    41.0,
+    15.5
+   ],
+   "footprint": [
+    41.0,
+    15.5,
+    41.0,
+    15.5
+   ],
+   "image": "night/tree-40-15.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "d7a441f35afdd571",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1356.0
+    }
+   ]
+  },
+  {
+   "id": "tree-47-15",
+   "kind": "tree",
+   "anchor": [
+    48.0,
+    15.5
+   ],
+   "footprint": [
+    48.0,
+    15.5,
+    48.0,
+    15.5
+   ],
+   "image": "night/tree-47-15.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "35a71d8dcb336a65",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1524.0
+    }
+   ]
+  },
+  {
+   "id": "tree-56-15",
+   "kind": "tree",
+   "anchor": [
+    57.0,
+    15.5
+   ],
+   "footprint": [
+    57.0,
+    15.5,
+    57.0,
+    15.5
+   ],
+   "image": "night/tree-56-15.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "01f29f0943d0ad41",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 1740.0
+    }
+   ]
+  },
+  {
+   "id": "tree-61-16",
+   "kind": "tree",
+   "anchor": [
+    62.0,
+    16.5
+   ],
+   "footprint": [
+    62.0,
+    16.5,
+    62.0,
+    16.5
+   ],
+   "image": "night/tree-61-16.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "e50961492cc0ed95",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1884.0
+    }
+   ]
+  },
+  {
+   "id": "tree-51-17",
+   "kind": "tree",
+   "anchor": [
+    52.0,
+    17.5
+   ],
+   "footprint": [
+    52.0,
+    17.5,
+    52.0,
+    17.5
+   ],
+   "image": "night/tree-51-17.webp",
+   "width": 212,
+   "height": 278,
+   "offset": [
+    -105,
+    -278
+   ],
+   "hash": "8a98852b4c9d5132",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 1668.0
+    }
+   ]
+  },
+  {
+   "id": "bench-59-17",
+   "kind": "bench",
+   "anchor": [
+    60.0,
+    17.5
+   ],
+   "footprint": [
+    59.14,
+    17.27,
+    60.86,
+    17.73
+   ],
+   "image": "night/bench-59-17.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -63
+   ],
+   "hash": "1ef3a8049b55e34e",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1847.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1871.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1877.3
+    }
+   ]
+  },
+  {
+   "id": "bench-27-18",
+   "kind": "bench",
+   "anchor": [
+    28.0,
+    18.5
+   ],
+   "footprint": [
+    27.14,
+    18.27,
+    28.86,
+    18.73
+   ],
+   "image": "night/bench-27-18.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "cb2fe07eb4bfae27",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1103.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1127.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1133.3
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-30-18",
+   "kind": "planter_flowers",
+   "anchor": [
+    30.5,
+    18.5
+   ],
+   "footprint": [
+    30.5,
+    18.5,
+    30.5,
+    18.5
+   ],
+   "image": "night/planter_flowers-30-18.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "1c9aad31176ebc32",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1176.0
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-33-18",
+   "kind": "planter_flowers",
+   "anchor": [
+    33.5,
+    18.5
+   ],
+   "footprint": [
+    33.5,
+    18.5,
+    33.5,
+    18.5
+   ],
+   "image": "night/planter_flowers-33-18.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "81668c1b68d11c19",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1248.0
+    }
+   ]
+  },
+  {
+   "id": "bench-34-18",
+   "kind": "bench",
+   "anchor": [
+    35.0,
+    18.5
+   ],
+   "footprint": [
+    34.14,
+    18.27,
+    35.86,
+    18.73
+   ],
+   "image": "night/bench-34-18.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "15b87b32ded600e9",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1271.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1295.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1301.3
+    }
+   ]
+  },
+  {
+   "id": "palm-20-19",
+   "kind": "palm",
+   "anchor": [
+    20.5,
+    19.5
+   ],
+   "footprint": [
+    20.5,
+    19.5,
+    20.5,
+    19.5
+   ],
+   "image": "night/palm-20-19.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "05371cc165efde61",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 960.0
+    }
+   ]
+  },
+  {
+   "id": "palm-43-19",
+   "kind": "palm",
+   "anchor": [
+    43.5,
+    19.5
+   ],
+   "footprint": [
+    43.5,
+    19.5,
+    43.5,
+    19.5
+   ],
+   "image": "night/palm-43-19.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "7869c01a0879aeec",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1512.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-25-20",
+   "kind": "lamp",
+   "anchor": [
+    25.5,
+    20.5
+   ],
+   "footprint": [
+    25.5,
+    20.5,
+    25.5,
+    20.5
+   ],
+   "image": "night/lamp-25-20.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "f6c2cd8a5c58ca11",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1104.0
+    }
+   ]
+  },
+  {
+   "id": "fountain-31-20",
+   "kind": "fountain",
+   "anchor": [
+    32.0,
+    20.0
+   ],
+   "footprint": [
+    30.95,
+    18.95,
+    33.05,
+    21.05
+   ],
+   "image": "night/fountain-31-20.webp",
+   "width": 206,
+   "height": 170,
+   "offset": [
+    -103,
+    -117
+   ],
+   "hash": "846bf253e610fb76",
+   "slices": [
+    {
+     "x": 0,
+     "width": 7,
+     "depth": 1248.0
+    },
+    {
+     "x": 7,
+     "width": 48,
+     "depth": 1262.4
+    },
+    {
+     "x": 55,
+     "width": 96,
+     "depth": 1286.4
+    },
+    {
+     "x": 151,
+     "width": 48,
+     "depth": 1262.4
+    },
+    {
+     "x": 199,
+     "width": 7,
+     "depth": 1248.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-38-20",
+   "kind": "lamp",
+   "anchor": [
+    38.5,
+    20.5
+   ],
+   "footprint": [
+    38.5,
+    20.5,
+    38.5,
+    20.5
+   ],
+   "image": "night/lamp-38-20.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "c3c1a5dd95684e30",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1416.0
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-30-21",
+   "kind": "planter_flowers",
+   "anchor": [
+    30.5,
+    21.5
+   ],
+   "footprint": [
+    30.5,
+    21.5,
+    30.5,
+    21.5
+   ],
+   "image": "night/planter_flowers-30-21.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "efa171dd2647eb78",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1248.0
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-33-21",
+   "kind": "planter_flowers",
+   "anchor": [
+    33.5,
+    21.5
+   ],
+   "footprint": [
+    33.5,
+    21.5,
+    33.5,
+    21.5
+   ],
+   "image": "night/planter_flowers-33-21.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "23d1b1c10c9d368e",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1320.0
+    }
+   ]
+  },
+  {
+   "id": "tree-48-21",
+   "kind": "tree",
+   "anchor": [
+    49.0,
+    21.5
+   ],
+   "footprint": [
+    49.0,
+    21.5,
+    49.0,
+    21.5
+   ],
+   "image": "night/tree-48-21.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "f49e0a872a7ffb3b",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 1692.0
+    }
+   ]
+  },
+  {
+   "id": "bush-5-22",
+   "kind": "bush",
+   "anchor": [
+    5.5,
+    22.5
+   ],
+   "footprint": [
+    5.5,
+    22.5,
+    5.5,
+    22.5
+   ],
+   "image": "night/bush-5-22.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "348b5290aa892493",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 672.0
+    }
+   ]
+  },
+  {
+   "id": "bench-9-22",
+   "kind": "bench",
+   "anchor": [
+    10.0,
+    22.5
+   ],
+   "footprint": [
+    9.14,
+    22.27,
+    10.86,
+    22.73
+   ],
+   "image": "night/bench-9-22.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -63
+   ],
+   "hash": "f61f4e009ff0ca49",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 767.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 791.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 797.3
+    }
+   ]
+  },
+  {
+   "id": "bush-16-22",
+   "kind": "bush",
+   "anchor": [
+    16.5,
+    22.5
+   ],
+   "footprint": [
+    16.5,
+    22.5,
+    16.5,
+    22.5
+   ],
+   "image": "night/bush-16-22.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "f2874e3db2fbaec3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 936.0
+    }
+   ]
+  },
+  {
+   "id": "bench-27-22",
+   "kind": "bench",
+   "anchor": [
+    28.0,
+    22.5
+   ],
+   "footprint": [
+    27.14,
+    22.27,
+    28.86,
+    22.73
+   ],
+   "image": "night/bench-27-22.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "d1a925f9762b66be",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1199.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1223.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1229.3
+    }
+   ]
+  },
+  {
+   "id": "bench-34-22",
+   "kind": "bench",
+   "anchor": [
+    35.0,
+    22.5
+   ],
+   "footprint": [
+    34.14,
+    22.27,
+    35.86,
+    22.73
+   ],
+   "image": "night/bench-34-22.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "8f3062c98f6649b3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1367.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1391.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1397.3
+    }
+   ]
+  },
+  {
+   "id": "terminal-44-22",
+   "kind": "terminal",
+   "anchor": [
+    44.5,
+    22.5
+   ],
+   "footprint": [
+    44.23,
+    22.34,
+    44.77,
+    22.66
+   ],
+   "image": "night/terminal-44-22.webp",
+   "width": 48,
+   "height": 138,
+   "offset": [
+    -24,
+    -125
+   ],
+   "hash": "f576b71bc5c529a3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 24,
+     "depth": 1605.4
+    },
+    {
+     "x": 24,
+     "width": 24,
+     "depth": 1610.6
+    }
+   ]
+  },
+  {
+   "id": "tree-2-23",
+   "kind": "tree",
+   "anchor": [
+    3.0,
+    23.5
+   ],
+   "footprint": [
+    3.0,
+    23.5,
+    3.0,
+    23.5
+   ],
+   "image": "night/tree-2-23.webp",
+   "width": 212,
+   "height": 278,
+   "offset": [
+    -105,
+    -278
+   ],
+   "hash": "bfcd4276adb88ec2",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 636.0
+    }
+   ]
+  },
+  {
+   "id": "tree-12-23",
+   "kind": "tree",
+   "anchor": [
+    13.0,
+    23.5
+   ],
+   "footprint": [
+    13.0,
+    23.5,
+    13.0,
+    23.5
+   ],
+   "image": "night/tree-12-23.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "a3496aa6fdb8bb28",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 876.0
+    }
+   ]
+  },
+  {
+   "id": "tree-22-24",
+   "kind": "tree",
+   "anchor": [
+    23.0,
+    24.5
+   ],
+   "footprint": [
+    23.0,
+    24.5,
+    23.0,
+    24.5
+   ],
+   "image": "night/tree-22-24.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "36b2c11b35af3902",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 1140.0
+    }
+   ]
+  },
+  {
+   "id": "tree-40-24",
+   "kind": "tree",
+   "anchor": [
+    41.0,
+    24.5
+   ],
+   "footprint": [
+    41.0,
+    24.5,
+    41.0,
+    24.5
+   ],
+   "image": "night/tree-40-24.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "38de81ff0a58ec9f",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1572.0
+    }
+   ]
+  },
+  {
+   "id": "tree-7-25",
+   "kind": "tree",
+   "anchor": [
+    8.0,
+    25.5
+   ],
+   "footprint": [
+    8.0,
+    25.5,
+    8.0,
+    25.5
+   ],
+   "image": "night/tree-7-25.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "ba52052ccaf8fc78",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 804.0
+    }
+   ]
+  },
+  {
+   "id": "tree-15-25",
+   "kind": "tree",
+   "anchor": [
+    16.0,
+    25.5
+   ],
+   "footprint": [
+    16.0,
+    25.5,
+    16.0,
+    25.5
+   ],
+   "image": "night/tree-15-25.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "9862a3d8a56db003",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 996.0
+    }
+   ]
+  },
+  {
+   "id": "bench-49-26",
+   "kind": "bench",
+   "anchor": [
+    50.0,
+    26.5
+   ],
+   "footprint": [
+    49.14,
+    26.27,
+    50.86,
+    26.73
+   ],
+   "image": "night/bench-49-26.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -63
+   ],
+   "hash": "19911fbe52605377",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1823.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1847.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1853.3
+    }
+   ]
+  },
+  {
+   "id": "tree-47-28",
+   "kind": "tree",
+   "anchor": [
+    48.0,
+    28.5
+   ],
+   "footprint": [
+    48.0,
+    28.5,
+    48.0,
+    28.5
+   ],
+   "image": "night/tree-47-28.webp",
+   "width": 216,
+   "height": 281,
+   "offset": [
+    -107,
+    -281
+   ],
+   "hash": "225274635a4839ef",
+   "slices": [
+    {
+     "x": 0,
+     "width": 216,
+     "depth": 1836.0
+    }
+   ]
+  },
+  {
+   "id": "bush-40-29",
+   "kind": "bush",
+   "anchor": [
+    40.5,
+    29.5
+   ],
+   "footprint": [
+    40.5,
+    29.5,
+    40.5,
+    29.5
+   ],
+   "image": "night/bush-40-29.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "cbc0a8b15cb3ce56",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 1680.0
+    }
+   ]
+  },
+  {
+   "id": "palm-42-29",
+   "kind": "palm",
+   "anchor": [
+    42.5,
+    29.5
+   ],
+   "footprint": [
+    42.5,
+    29.5,
+    42.5,
+    29.5
+   ],
+   "image": "night/palm-42-29.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -267
+   ],
+   "hash": "17bde85ed41fc0ac",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1728.0
+    }
+   ]
+  },
+  {
+   "id": "tree-37-30",
+   "kind": "tree",
+   "anchor": [
+    38.0,
+    30.5
+   ],
+   "footprint": [
+    38.0,
+    30.5,
+    38.0,
+    30.5
+   ],
+   "image": "night/tree-37-30.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "37c7a2294fb0370c",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 1644.0
+    }
+   ]
+  },
+  {
+   "id": "bush-48-31",
+   "kind": "bush",
+   "anchor": [
+    48.5,
+    31.5
+   ],
+   "footprint": [
+    48.5,
+    31.5,
+    48.5,
+    31.5
+   ],
+   "image": "night/bush-48-31.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "b08633552a86f446",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 1920.0
+    }
+   ]
+  },
+  {
+   "id": "bush-60-31",
+   "kind": "bush",
+   "anchor": [
+    60.5,
+    31.5
+   ],
+   "footprint": [
+    60.5,
+    31.5,
+    60.5,
+    31.5
+   ],
+   "image": "night/bush-60-31.webp",
+   "width": 90,
+   "height": 73,
+   "offset": [
+    -42,
+    -61
+   ],
+   "hash": "007746b571afea35",
+   "slices": [
+    {
+     "x": 0,
+     "width": 90,
+     "depth": 2208.0
+    }
+   ]
+  },
+  {
+   "id": "tree-41-32",
+   "kind": "tree",
+   "anchor": [
+    42.0,
+    32.5
+   ],
+   "footprint": [
+    42.0,
+    32.5,
+    42.0,
+    32.5
+   ],
+   "image": "night/tree-41-32.webp",
+   "width": 212,
+   "height": 278,
+   "offset": [
+    -105,
+    -278
+   ],
+   "hash": "98003dd34fa1cb4a",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 1788.0
+    }
+   ]
+  },
+  {
+   "id": "tree-50-32",
+   "kind": "tree",
+   "anchor": [
+    51.0,
+    32.5
+   ],
+   "footprint": [
+    51.0,
+    32.5,
+    51.0,
+    32.5
+   ],
+   "image": "night/tree-50-32.webp",
+   "width": 212,
+   "height": 278,
+   "offset": [
+    -105,
+    -278
+   ],
+   "hash": "4c0bb79a196a96b3",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 2004.0
+    }
+   ]
+  },
+  {
+   "id": "tree-61-32",
+   "kind": "tree",
+   "anchor": [
+    62.0,
+    32.5
+   ],
+   "footprint": [
+    62.0,
+    32.5,
+    62.0,
+    32.5
+   ],
+   "image": "night/tree-61-32.webp",
+   "width": 212,
+   "height": 278,
+   "offset": [
+    -105,
+    -278
+   ],
+   "hash": "a9ab4464530d2c90",
+   "slices": [
+    {
+     "x": 0,
+     "width": 212,
+     "depth": 2268.0
+    }
+   ]
+  },
+  {
+   "id": "tree-55-33",
+   "kind": "tree",
+   "anchor": [
+    56.0,
+    33.5
+   ],
+   "footprint": [
+    56.0,
+    33.5,
+    56.0,
+    33.5
+   ],
+   "image": "night/tree-55-33.webp",
+   "width": 217,
+   "height": 272,
+   "offset": [
+    -109,
+    -272
+   ],
+   "hash": "61d3f8f5f9c50585",
+   "slices": [
+    {
+     "x": 0,
+     "width": 217,
+     "depth": 2148.0
+    }
+   ]
+  },
+  {
+   "id": "bike_blue-16-34",
+   "kind": "bike_blue",
+   "anchor": [
+    16.5,
+    34.5
+   ],
+   "footprint": [
+    16.5,
+    34.5,
+    16.5,
+    34.5
+   ],
+   "image": "night/bike_blue-16-34.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "a7ea7c11bba2b519",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1224.0
+    }
+   ]
+  },
+  {
+   "id": "planter_flowers-21-34",
+   "kind": "planter_flowers",
+   "anchor": [
+    21.5,
+    34.5
+   ],
+   "footprint": [
+    21.5,
+    34.5,
+    21.5,
+    34.5
+   ],
+   "image": "night/planter_flowers-21-34.webp",
+   "width": 84,
+   "height": 91,
+   "offset": [
+    -42,
+    -69
+   ],
+   "hash": "dbcbd410adfbb312",
+   "slices": [
+    {
+     "x": 0,
+     "width": 84,
+     "depth": 1344.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-33-34",
+   "kind": "bike_yellow",
+   "anchor": [
+    33.5,
+    34.5
+   ],
+   "footprint": [
+    33.5,
+    34.5,
+    33.5,
+    34.5
+   ],
+   "image": "night/bike_yellow-33-34.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "a5165618ee55c553",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1632.0
+    }
+   ]
+  },
+  {
+   "id": "bike_yellow-34-34",
+   "kind": "bike_yellow",
+   "anchor": [
+    34.5,
+    34.5
+   ],
+   "footprint": [
+    34.5,
+    34.5,
+    34.5,
+    34.5
+   ],
+   "image": "night/bike_yellow-34-34.webp",
+   "width": 74,
+   "height": 74,
+   "offset": [
+    -37,
+    -55
+   ],
+   "hash": "90dfb870a6e3cf64",
+   "slices": [
+    {
+     "x": 0,
+     "width": 74,
+     "depth": 1656.0
+    }
+   ]
+  },
+  {
+   "id": "palm-12-36",
+   "kind": "palm",
+   "anchor": [
+    12.5,
+    36.5
+   ],
+   "footprint": [
+    12.5,
+    36.5,
+    12.5,
+    36.5
+   ],
+   "image": "night/palm-12-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "39d5703fabdce678",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1176.0
+    }
+   ]
+  },
+  {
+   "id": "palm-24-36",
+   "kind": "palm",
+   "anchor": [
+    24.5,
+    36.5
+   ],
+   "footprint": [
+    24.5,
+    36.5,
+    24.5,
+    36.5
+   ],
+   "image": "night/palm-24-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "4844d433a5ac615d",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1464.0
+    }
+   ]
+  },
+  {
+   "id": "palm-30-36",
+   "kind": "palm",
+   "anchor": [
+    30.5,
+    36.5
+   ],
+   "footprint": [
+    30.5,
+    36.5,
+    30.5,
+    36.5
+   ],
+   "image": "night/palm-30-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "a297122c11593a7c",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1608.0
+    }
+   ]
+  },
+  {
+   "id": "palm-42-36",
+   "kind": "palm",
+   "anchor": [
+    42.5,
+    36.5
+   ],
+   "footprint": [
+    42.5,
+    36.5,
+    42.5,
+    36.5
+   ],
+   "image": "night/palm-42-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "d5f83eaa9602d29a",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 1896.0
+    }
+   ]
+  },
+  {
+   "id": "terminal-46-36",
+   "kind": "terminal",
+   "anchor": [
+    46.5,
+    36.5
+   ],
+   "footprint": [
+    46.23,
+    36.34,
+    46.77,
+    36.66
+   ],
+   "image": "night/terminal-46-36.webp",
+   "width": 48,
+   "height": 138,
+   "offset": [
+    -24,
+    -125
+   ],
+   "hash": "d3034fd0a3c6b422",
+   "slices": [
+    {
+     "x": 0,
+     "width": 24,
+     "depth": 1989.4
+    },
+    {
+     "x": 24,
+     "width": 24,
+     "depth": 1994.6
+    }
+   ]
+  },
+  {
+   "id": "palm-49-36",
+   "kind": "palm",
+   "anchor": [
+    49.5,
+    36.5
+   ],
+   "footprint": [
+    49.5,
+    36.5,
+    49.5,
+    36.5
+   ],
+   "image": "night/palm-49-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "9a9e1cb61287bed0",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 2064.0
+    }
+   ]
+  },
+  {
+   "id": "palm-58-36",
+   "kind": "palm",
+   "anchor": [
+    58.5,
+    36.5
+   ],
+   "footprint": [
+    58.5,
+    36.5,
+    58.5,
+    36.5
+   ],
+   "image": "night/palm-58-36.webp",
+   "width": 205,
+   "height": 266,
+   "offset": [
+    -94,
+    -258
+   ],
+   "hash": "572dc720dc092636",
+   "slices": [
+    {
+     "x": 0,
+     "width": 205,
+     "depth": 2280.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-3-37",
+   "kind": "lamp",
+   "anchor": [
+    3.5,
+    37.5
+   ],
+   "footprint": [
+    3.5,
+    37.5,
+    3.5,
+    37.5
+   ],
+   "image": "night/lamp-3-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "13bff6eaebf63106",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 984.0
+    }
+   ]
+  },
+  {
+   "id": "bench-8-37",
+   "kind": "bench",
+   "anchor": [
+    9.0,
+    37.5
+   ],
+   "footprint": [
+    8.14,
+    37.27,
+    9.86,
+    37.73
+   ],
+   "image": "night/bench-8-37.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "d10a3dd2404e4445",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1103.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1127.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1133.3
+    }
+   ]
+  },
+  {
+   "id": "lamp-15-37",
+   "kind": "lamp",
+   "anchor": [
+    15.5,
+    37.5
+   ],
+   "footprint": [
+    15.5,
+    37.5,
+    15.5,
+    37.5
+   ],
+   "image": "night/lamp-15-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "aaf42823112c3ebf",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1272.0
+    }
+   ]
+  },
+  {
+   "id": "bench-20-37",
+   "kind": "bench",
+   "anchor": [
+    21.0,
+    37.5
+   ],
+   "footprint": [
+    20.14,
+    37.27,
+    21.86,
+    37.73
+   ],
+   "image": "night/bench-20-37.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "e070e8fd5038535b",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1391.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1415.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1421.3
+    }
+   ]
+  },
+  {
+   "id": "lamp-27-37",
+   "kind": "lamp",
+   "anchor": [
+    27.5,
+    37.5
+   ],
+   "footprint": [
+    27.5,
+    37.5,
+    27.5,
+    37.5
+   ],
+   "image": "night/lamp-27-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "7ccb563fcfc5dc85",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1560.0
+    }
+   ]
+  },
+  {
+   "id": "bench-33-37",
+   "kind": "bench",
+   "anchor": [
+    34.0,
+    37.5
+   ],
+   "footprint": [
+    33.14,
+    37.27,
+    34.86,
+    37.73
+   ],
+   "image": "night/bench-33-37.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "d6d4deb3529b7628",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 1703.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 1727.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 1733.3
+    }
+   ]
+  },
+  {
+   "id": "lamp-39-37",
+   "kind": "lamp",
+   "anchor": [
+    39.5,
+    37.5
+   ],
+   "footprint": [
+    39.5,
+    37.5,
+    39.5,
+    37.5
+   ],
+   "image": "night/lamp-39-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "abb70ffbbbd06d76",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 1848.0
+    }
+   ]
+  },
+  {
+   "id": "lamp-51-37",
+   "kind": "lamp",
+   "anchor": [
+    51.5,
+    37.5
+   ],
+   "footprint": [
+    51.5,
+    37.5,
+    51.5,
+    37.5
+   ],
+   "image": "night/lamp-51-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "bf0b803c0d8d1133",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 2136.0
+    }
+   ]
+  },
+  {
+   "id": "bench-55-37",
+   "kind": "bench",
+   "anchor": [
+    56.0,
+    37.5
+   ],
+   "footprint": [
+    55.14,
+    37.27,
+    56.86,
+    37.73
+   ],
+   "image": "night/bench-55-37.webp",
+   "width": 108,
+   "height": 77,
+   "offset": [
+    -54,
+    -53
+   ],
+   "hash": "c0f449fe699c2001",
+   "slices": [
+    {
+     "x": 0,
+     "width": 30,
+     "depth": 2231.0
+    },
+    {
+     "x": 30,
+     "width": 48,
+     "depth": 2255.0
+    },
+    {
+     "x": 78,
+     "width": 30,
+     "depth": 2261.3
+    }
+   ]
+  },
+  {
+   "id": "lamp-61-37",
+   "kind": "lamp",
+   "anchor": [
+    61.5,
+    37.5
+   ],
+   "footprint": [
+    61.5,
+    37.5,
+    61.5,
+    37.5
+   ],
+   "image": "night/lamp-61-37.webp",
+   "width": 52,
+   "height": 224,
+   "offset": [
+    -8,
+    -219
+   ],
+   "hash": "c0d78500fad31214",
+   "slices": [
+    {
+     "x": 0,
+     "width": 52,
+     "depth": 2376.0
+    }
+   ]
+  }
+ ]
+}
