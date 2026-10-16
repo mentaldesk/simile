@@ -79,7 +79,7 @@ def test_exported_schema_accepts_fixtures(name: str, pattern: str) -> None:
 
 
 def test_exported_schema_rejects_unknown_fields() -> None:
-    assert not schema("NewsItem").is_valid(
-        {"id": "x", "title": "t", "url": "u", "summary": "s", "published": "2026-01-01T00:00:00Z"}
-        | {"author": "a"}
-    )
+    item = json.loads((FIXTURES / "news_items.json").read_text())[0]
+    assert schema("NewsItem").is_valid(item)
+
+    assert not schema("NewsItem").is_valid(item | {"author": "a"})

@@ -157,3 +157,12 @@ def test_conversation_participants_are_distinct() -> None:
         fixture("conversations.json", 0) | {"participants": ["mei", "mei"], "lines": []},
         "distinct",
     )
+
+
+def test_news_items_stored_without_a_source_still_load() -> None:
+    item = fixture("news_items.json", 0)
+    del item["source"], item["source_url"]
+
+    parsed = NewsItem.model_validate_json(json.dumps(item))
+
+    assert (parsed.source, parsed.source_url) == ("", "")
