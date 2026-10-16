@@ -209,10 +209,7 @@ def iso(tx: float, ty: float) -> tuple[float, float]:
 
 
 def blend(hour: float) -> list[tuple[str, float]]:
-    """The lighting sets to draw at a sim-clock hour, and their weights.
-
-    Each change of set is a smoothstep crossfade CROSSFADE_MIN long, centred on the boundary.
-    """
+    """The lighting sets to draw at a sim-clock hour, and their weights."""
     names = list(TIMES)
     half = CROSSFADE_MIN / 120
     for i, name in enumerate(names):

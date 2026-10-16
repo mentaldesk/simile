@@ -1,8 +1,4 @@
-"""The residents, built from primitives on an 11-bone armature.
-
-A replacement (a skinned body mesh, say) only has to keep build_character's contract: a rig named
-after the resident, feet at the origin, facing -Y, with BONES' names, so pose() still animates it.
-"""
+"""Residents from primitives. A body mesh can replace this if its rig keeps BONES, facing -Y."""
 
 import math
 import random

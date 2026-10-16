@@ -217,9 +217,14 @@ The iso view squashes the ground, so afternoon and evening shadows both point ri
 mostly sets them apart is length: 1.4 m against 6.3 m.
 
 **Crossfade: 60 sim minutes, centred on each boundary**, so 04:30–05:30, 10:30–11:30 and so on, with
-smoothstep weights. `scene.blend(hour)` gives the sets to draw and their weights. Phaser draws the
-outgoing set's ground and object layers, then the incoming set's on top at alpha = weight. Halfway
-through, every shadow shows twice at half strength. Smoothstep gets through the 25–75% stretch in
+smoothstep weights. `scene.blend(hour)` gives the sets to draw and their weights. The frame below
+blends the two renders pixel by pixel: outgoing × (1 − weight) + incoming × weight. To get that in
+Phaser, draw the sets in pairs: the incoming ground directly above the outgoing ground, and each
+object's incoming sprite directly above its outgoing one at the same depth, at alpha = weight. Both
+sprites of a pair have the same silhouette, so nothing behind shows through. Don't put the
+incoming set in its own Layer or Container with alpha = weight. Phaser 3 applies that alpha to each
+child separately, so halfway through about a quarter of the ground and the objects behind would
+show through the incoming objects. Mid-fade, every shadow shows twice at half strength. Smoothstep gets through the 25–75% stretch in
 35% of the fade, rather than half of it. At 1× a fade lasts an hour of real time. At 60× it lasts a
 minute, and the doubled shadows are obvious for about 20 s.
 
@@ -306,7 +311,7 @@ still from one render.
 - Whether residents lit by a lamp at night (near-neutral tint) read as lamp-lit or as daylight.
 - Whether (b)'s fixed body shading is acceptable.
 
-The lit windows are the same 45% in every set. Glow is a post effect at 100% at night, 85% in the
+The same 45% of windows are lit in every set; only their brightness changes. Glow is a post effect at 100% at night, 85% in the
 evening and 25% by day.
 
 ## What a switch would touch

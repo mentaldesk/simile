@@ -93,6 +93,7 @@ LIGHTING = {
 }
 LIGHTMAP_PX = 8
 LIGHTMAP_EXPOSURE = -2.0
+GROUND_MARKINGS = ("inlay", "tactile", "line", "zebra")
 
 T = S.TILE_M
 PAL = S.a1_palette()
@@ -1280,6 +1281,7 @@ def render_lightmap(out: Path, timings: dict):
     white = bpy.data.materials.new("white")
     for obj in bpy.context.scene.objects:
         obj.visible_camera = obj.name.startswith("ground_")
+        obj.visible_shadow = not obj.name.startswith(GROUND_MARKINGS)
         for slot in obj.material_slots if obj.visible_camera else ():
             slot.material = white
     glowing = [
@@ -1336,7 +1338,6 @@ def sprite_frame():
 
 
 def fitted_frame():
-    """A frame that holds a walking figure and, when it casts one, its whole shadow."""
     pts = [Vector((x, y, z)) for x in (-0.45, 0.45) for y in (-0.45, 0.45) for z in (0.0, 2.0)]
     if L["time"] != "neutral":
         light = sunlight()

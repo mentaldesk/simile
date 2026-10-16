@@ -269,7 +269,6 @@ GROUP = {"sx": (3.0, 27.0), "sy": (19.5, 28.5)}
 
 
 def lit(time: str) -> dict:
-    """A lighting set from out/: its background, its sprites, the neutral ones and its light map."""
     base = S.OUT / LIGHT_LEVEL
     radius, strength = POST[LIGHT_LEVEL]["glow"]
     scene = Image.open(base / time / "scene.png").convert("RGB")
@@ -356,7 +355,6 @@ def runtime_light(s: dict) -> dict:
 
 
 def light_here(light: dict, light_map: LightMap | None, tx: float, ty: float):
-    """A resident's tint and shadow strength: the set's, or the set's moved by the local light."""
     tint, shadow = np.array(light["tint"]), light["shadow"]
     if light_map is None:
         return tint, shadow
@@ -366,7 +364,6 @@ def light_here(light: dict, light_map: LightMap | None, tx: float, ty: float):
 
 
 def drop_shadow(meta, tx, ty, azimuth, elevation, opacity) -> tuple[Image.Image, tuple]:
-    """The runtime shadow, an ellipse on the ground from the feet away from the sun, and where."""
     east, north, _ = S.to_sun(azimuth, elevation)
     flat = math.hypot(east, north)
     dx, dy = -east / flat, north / flat
@@ -422,12 +419,10 @@ def place(bg: Image.Image, meta, sprites: dict, tints: dict | None = None) -> Im
 
 
 def baked(s: dict) -> Image.Image:
-    """(a) Each resident rendered under this set's light, shadow included."""
     return place(s["bg"], s["meta"], s["baked"])
 
 
 def tinted(bg, meta, neutral, lights: list[tuple[dict, LightMap | None, float]]) -> Image.Image:
-    """(b) One neutral sprite, a runtime tint, and a drop shadow per set weighted as the fade."""
     tints = {}
     for npc_id, tx, ty, _, _ in S.RESIDENTS:
         tints[npc_id] = np.zeros(3)
@@ -471,7 +466,6 @@ def half_width(im: Image.Image) -> Image.Image:
 
 
 def characters(shots: dict, folder) -> None:
-    """The residents under each set: (a), then (b) without and with the light map."""
     titles = (
         "(a) sprites rendered per set",
         "(b) neutral sprite, set tint, drop shadow",
@@ -520,7 +514,6 @@ def objects_mb(folder) -> float:
 
 
 def costs() -> None:
-    """Measured render times per set, and the full asset set they extrapolate to."""
     base = S.OUT / LIGHT_LEVEL
     residents, frames = 11, 72
     print(
