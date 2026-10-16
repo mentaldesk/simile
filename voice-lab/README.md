@@ -42,6 +42,12 @@ PYTORCH_ENABLE_MPS_FALLBACK=1 .venv/bin/python design_npcs.py [npc ...] [--force
 
 ### Accents
 
-VoiceDesign leans hard towards an American accent. It ignores a "faint lilt" entirely, and even "A heavy Irish accent." comes out American on most seeds. Name the accent plainly at the start of the description, and try several seeds and wordings. The clone model then pulls voices back towards American again, so check the samples as well as the reference clip.
+VoiceDesign leans hard towards an American accent. It ignores a "faint lilt" entirely, and even "A heavy Irish accent." comes out American on most seeds. Name the accent plainly at the start of the description, and try several seeds and wordings. The clone model keeps a strong accent, such as macOS's Australian, Indian and Irish voices, but pulls a faint one back towards American, so check the samples as well as the reference clip. It needs the clip's transcript to do it: from the voice alone (`--no-transcript`), Karen's Australian accent came out American.
 
-The classifier is [CommonAccent ECAPA](https://huggingface.co/Jzuluaga/accent-id-commonaccent_ecapa) (speechbrain), which knows 16 accents of English: England, US, Canada, Australia, New Zealand, India, Scotland, Ireland, Wales, Africa, Malaysia, Singapore, the Philippines, Hong Kong, Bermuda and the South Atlantic. `accent.KNOWN` maps the words a description uses to those. For any other accent, such as Danish, French or Portuguese, it can only say whether a clip sounds North American, so listen. It labelled macOS's Irish voice (Moira) `england`, so an Irish clip may score as English.
+To check a recording before it becomes a voice, such as a speaker with the accent an NPC needs, run `clone_accent_test.py`. It speaks `SAMPLE_LINES` in each clip's voice the way `speak_npcs.py` does, and prints the accent the classifier hears in the clip and in each sample. Each clip needs its transcript in a `.txt` beside it. Samples go to `out/clone-accent/`.
+
+```bash
+.venv-mlx/bin/python clone_accent_test.py clip.wav [clip.wav ...] [--seeds N] [--model ID] [--no-transcript] [--out DIR]
+```
+
+The classifier is [CommonAccent ECAPA](https://huggingface.co/Jzuluaga/accent-id-commonaccent_ecapa) (speechbrain), which knows 16 accents of English: England, US, Canada, Australia, New Zealand, India, Scotland, Ireland, Wales, Africa, Malaysia, Singapore, the Philippines, Hong Kong, Bermuda and the South Atlantic. `accent.KNOWN` maps the words a description uses to those. For any other accent, such as Danish, French or Portuguese, it can only say whether a clip sounds North American, so listen. It labelled macOS's Irish voice (Moira) `england` on one line and `ireland` on another, so an Irish clip may score as English.
