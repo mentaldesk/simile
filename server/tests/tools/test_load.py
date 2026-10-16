@@ -116,7 +116,7 @@ def database(tmp_path: Path) -> Path:
         id="n1", title="Bees", url="https://example.com/n1", summary="", published=at(-90)
     )
     with MemoryStore(path) as memories, NewsStore(path) as news, RecordStore(path) as store:
-        news.add([item, item.model_copy(update={"id": "n2"})])
+        news.add([item, item.model_copy(update={"id": "n2", "url": "https://example.com/n2"})])
         memories.add(
             memory(-5),
             memory(5, topics=["bees"]),
