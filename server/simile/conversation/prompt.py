@@ -21,7 +21,8 @@ class Cue(StrEnum):
 
 CUES: dict[Cue, str] = {
     Cue.OPEN: "You've just walked up to {other}. Say hello and start the conversation.",
-    Cue.REPLY: "Say your next line to {other}.",
+    Cue.REPLY: "Say your next line to {other}. Keep the conversation going: don't wrap it up or "
+    "say goodbye yet.",
     Cue.GOODBYE: "You've had enough of this conversation. Wrap it up now with a brief, natural "
     "goodbye to {other}.",
     Cue.FAREWELL: "{other} is leaving. Say a brief goodbye back.",
@@ -45,6 +46,20 @@ TAG = re.compile(
 CUT_OFF = re.compile(r"\[[^\]\n]*$")
 STAGE_DIRECTION = re.compile(r"\*[^*]*\*")
 QUOTES = {'"': '"', "“": "”", "'": "'"}
+LEAVING = re.compile(
+    r"\b(?:good-?\s?bye|bye(?:-bye| now| then)?|cheerio|ciao|take care(?! of)|"
+    r"(?:catch|see) (?:you|ya) (?:later|soon|around)|"
+    r"talk (?:to you )?(?:later|soon)|until next time|mind how you go|"
+    r"good (?:day|morning|afternoon|evening) to you|"
+    r"(?:i['’]ll|i will|i shall|i['’]d better|i['’]d best|i should|i must|let me) (?:leave you|"
+    r"let you get|be off|get going|head off|be on my way)|"
+    r"(?:must|gotta|got to|have to) (?:dash|be off|get going)|"
+    r"off i go)\b"
+    r"|\b(?:see (?:you|ya)|farewell|good\s?night)\b[^.!?]*[.!?]*\W*$",
+    re.IGNORECASE,
+)
+OPENING_WORDS = 3
+OPENINGS = 4
 
 
 @dataclass(frozen=True)
@@ -79,7 +94,8 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "small, modern village. Stay in character.",
             npc.persona,
             npc.backstory,
-            f"How you speak: {npc.speaking_style}",
+            f"How you speak: {npc.speaking_style} Use your pet words and phrases now and then, "
+            "not in every line.",
             f"What you care about most: {most}. What you care about least: {least}.\n"
             f"Your interests: {', '.join(npc.interests)}.",
             "You're in a face-to-face conversation. Reply with only your next spoken line: at "
@@ -139,6 +155,8 @@ def turn_prompt(
     cue: Cue,
     other: str,
     config: ConversationConfig = DEFAULT_CONFIG,
+    *,
+    speaker: Id | None = None,
 ) -> str:
     recent = lines[-config.transcript_lines :]
     if recent:
@@ -148,7 +166,20 @@ def turn_prompt(
         so_far = f"The conversation so far:\n{transcript}"
     else:
         so_far = "The conversation hasn't started yet."
-    return "\n\n".join([background, so_far, CUES[cue].format(other=other)])
+    parts = [background, so_far]
+    openings = [opening(line.text) for line in lines if line.speaker == speaker][-OPENINGS:]
+    if openings:
+        listed = ", ".join(f'"{words}..."' for words in openings)
+        parts.append(f"Your lines so far began {listed}. Begin this one another way.")
+    return "\n\n".join([*parts, CUES[cue].format(other=other)])
+
+
+def opening(text: str) -> str:
+    return " ".join(text.split()[:OPENING_WORDS]).rstrip(",;:.!?—-")
+
+
+def takes_leave(text: str) -> bool:
+    return LEAVING.search(text) is not None
 
 
 def parse_reply(text: str, names: Sequence[str] = (), others: Sequence[str] = ()) -> Draft:

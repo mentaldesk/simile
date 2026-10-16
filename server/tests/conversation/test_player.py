@@ -221,7 +221,10 @@ async def test_the_reply_is_written_from_the_npcs_side_at_player_priority() -> N
     assert "You're with Visitor (a newcomer to the village)." in prompt
     assert describe(meet(ANA, PLAYER_ID), "Visitor") in prompt
     assert "The conversation so far:\nVisitor: Hi there." in prompt
-    assert prompt.endswith("Say your next line to Visitor.")
+    assert prompt.endswith(
+        "Say your next line to Visitor. Keep the conversation going: don't wrap it up or say "
+        "goodbye yet."
+    )
     assert village.llm.priorities == [1]
     assert [record.purpose for record in village.records] == ["player-reply"]
 

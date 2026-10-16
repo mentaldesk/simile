@@ -12,7 +12,7 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, first_name
+from simile.conversation.prompt import Player, first_name, takes_leave
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -44,6 +44,7 @@ def test_the_system_prompt_is_the_speakers_persona_values_and_style() -> None:
     assert KOFI.persona in prompt
     assert KOFI.backstory in prompt
     assert f"How you speak: {KOFI.speaking_style}" in prompt
+    assert "now and then, not in every line" in prompt
     assert "care about most: open mindedness, adventure, creativity" in prompt
     assert "care about least: discipline, security, obedience." in prompt
     assert "at most 30 words" in prompt
@@ -166,8 +167,24 @@ def test_a_turn_is_the_background_the_transcript_and_the_cue() -> None:
     assert prompt == (
         "BACKGROUND\n\n"
         "The conversation so far:\nKofi: Morning!\nHenrietta: Hm. Morning.\n\n"
-        "Say your next line to Henrietta."
+        "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
+        "goodbye yet."
     )
+
+
+def test_a_speaker_sees_how_their_latest_lines_began() -> None:
+    said = ["Ha, mostly paint and pavement.", "Ha! Fair enough.", "Go on, then.", "Ha, a wall?"]
+    lines = [line(n, "kofi", text) for n, text in enumerate(["Morning, all.", *said], 1)]
+
+    prompt = turn_prompt("B", lines, NAMES, Cue.REPLY, "Henrietta", speaker="kofi")
+
+    assert prompt.endswith(
+        'Your lines so far began "Ha, mostly paint...", "Ha! Fair enough...", "Go on, then...", '
+        '"Ha, a wall...". Begin this one another way.\n\n'
+        "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
+        "goodbye yet."
+    )
+    assert "began" not in turn_prompt("B", lines, NAMES, Cue.REPLY, "Kofi", speaker="henrietta")
 
 
 def test_a_long_transcript_keeps_the_latest_lines() -> None:
@@ -190,6 +207,39 @@ def test_a_long_transcript_keeps_the_latest_lines() -> None:
 )
 def test_cues(cue: Cue, expected: str) -> None:
     assert expected in turn_prompt("B", [], NAMES, cue, "Henrietta")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Quite right. I shall leave you to your porridge and your cones.",
+        "Aye, thanks Tobias. Keep your mornings steady, and I'll see you at the riverside.",
+        "Right you are, Lachlan. Off you go, and mind the cones. Good morning to you.",
+        "Send the rate, and I'll have the calendar ready. Good day to you.",
+        "Ha, Wednesday noon, got it! Catch you later, and I'll bring the numbers.",
+        "Right, I’d better be off. Take care!",
+        "Bye now.",
+        "Must dash, the kiln's on.",
+    ],
+)
+def test_lines_that_say_goodbye(text: str) -> None:
+    assert takes_leave(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Good morning, Lachlan. Are the young players keeping you busy?",
+        "Rain or shine, the cones are out by six, no excuses.",
+        "I'll see you at the riverside on Saturday, then? What time do they start?",
+        "I take care of the bins on Tuesdays.",
+        "A farewell party for the vicar, of all things. Were you there?",
+        "By the way, the bylaw says otherwise.",
+        "Frankly, a fixed date concentrates the mind wonderfully.",
+    ],
+)
+def test_lines_that_dont_say_goodbye(text: str) -> None:
+    assert not takes_leave(text)
 
 
 def test_the_first_turn_has_no_transcript() -> None:

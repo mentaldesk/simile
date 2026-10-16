@@ -271,16 +271,17 @@ async def test_a_conversation_on_topics_they_dislike_ends_with_a_goodbye() -> No
 
     [ended] = village.ended
     conversation = ended.conversation
-    assert [line.speaker for line in conversation.lines] == ["ana", "ben", "ana", "ben"]
+    assert [line.speaker for line in conversation.lines] == ["ana", "ben", "ana", "ben", "ana"]
     assert conversation.lines == village.spoken
     last = village.spoken[-1]
     assert conversation.ended == last.timestamp + timedelta(seconds=last.duration)
     prompts = village.script.prompts
     assert "You've just walked up to Ben." in prompts[0]
     assert "Say your next line to Ana." in prompts[1]
-    assert "goodbye to Ben." in prompts[2]
-    assert "Ana is leaving. Say a brief goodbye back." in prompts[3]
-    assert len(prompts) == 4
+    assert "Say your next line to Ben." in prompts[2]
+    assert "goodbye to Ana." in prompts[3]
+    assert "Ben is leaving. Say a brief goodbye back." in prompts[4]
+    assert len(prompts) == 5
     assert village.engine.live() == []
     assert not any(mind.paused for mind in village.behaviour.minds.values())
     cooldown = conversation.ended + timedelta(minutes=DEFAULT_CONFIG.cooldown)
@@ -288,15 +289,64 @@ async def test_a_conversation_on_topics_they_dislike_ends_with_a_goodbye() -> No
     assert village.behaviour.minds["ben"].cooldowns["ana"] == cooldown
 
 
-async def test_topics_they_care_about_keep_them_talking() -> None:
-    village = Village(["That's not fair on them. [values: justice]"])
+TOPICS = ["justice", "equality", "honesty", "freedom", "creativity", "knowledge", "adventure"]
+EVE = make_npc("eve", "house_1", **dict.fromkeys(TOPICS, 1.0))
+FAY = make_npc("fay", "house_2", **dict.fromkeys(TOPICS, 1.0))
+
+
+async def lines_talked(replies: Sequence[str], relationships: Sequence[Relationship] = ()) -> int:
+    village = Village(replies, npcs=(EVE, FAY), relationships=relationships)
+    village.engine.start("eve", "fay")
+    await village.run(minutes=10)
+    [ended] = village.ended
+    assert "goodbye to" in village.script.prompts[-2]
+    return len(ended.conversation.lines)
+
+
+async def test_new_topics_keep_them_talking_and_one_topic_runs_out_of_steam() -> None:
+    moving_on = await lines_talked([f"And {topic}? [values: {topic}]" for topic in TOPICS])
+    circling = await lines_talked(["And justice? [values: justice]"])
+
+    assert circling < moving_on < DEFAULT_CONFIG.max_lines
+
+
+async def test_friends_on_good_form_talk_at_length() -> None:
+    replies = [f"And {topic}? [values: {topic}]" for topic in TOPICS]
+
+    assert 20 < await lines_talked(replies, friends(EVE, FAY)) < DEFAULT_CONFIG.max_lines
+
+
+async def test_saying_goodbye_unprompted_ends_the_conversation() -> None:
+    replies = [
+        "Morning! [values: connection]",
+        "Morning to you. [values: connection]",
+        "Right, I'll leave you to your coffee. [values: connection]",
+        "Bye then. [values: connection]",
+    ]
+    village = Village(replies, relationships=friends(ANA, BEN))
     village.engine.start("ana", "ben")
 
-    await village.run(minutes=5)
+    await village.run()
 
     [ended] = village.ended
-    assert len(ended.conversation.lines) == DEFAULT_CONFIG.max_lines
-    assert "goodbye to" in village.script.prompts[-2]
+    assert [line.text for line in ended.conversation.lines] == [
+        "Morning!",
+        "Morning to you.",
+        "Right, I'll leave you to your coffee.",
+        "Bye then.",
+    ]
+    assert "Ana is leaving. Say a brief goodbye back." in village.script.prompts[3]
+
+
+async def test_a_speaker_is_shown_how_their_lines_began() -> None:
+    village = Village(["Ha, lovely morning. [values: connection]"], relationships=friends(ANA, BEN))
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.5)
+
+    prompts = village.script.prompts
+    assert "Your lines so far began" not in prompts[0] + prompts[1]
+    assert 'Your lines so far began "Ha, lovely morning...".' in prompts[2]
 
 
 async def test_a_pair_who_dislike_each_other_talk_less_than_friends() -> None:
@@ -436,7 +486,7 @@ async def test_finished_conversations_stay_reachable() -> None:
     finished = village.engine.conversation(started.id)
     assert finished is not None
     assert finished == village.ended[0].conversation
-    assert len(finished.lines) == 4
+    assert finished.lines == village.spoken
     assert village.engine.state("ana") == {"conversation": None}
     assert village.engine.conversation("nope") is None
 

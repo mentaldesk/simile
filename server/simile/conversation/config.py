@@ -47,7 +47,7 @@ class ConversationConfig(BaseModel):
         default=ACCEPT_VALUES, description="Accept score per unit of the target's `value - 0.5`."
     )
     accept_social: float = Field(
-        default=0.5, description="Accept score per unit of the target's `social need - 0.5`."
+        default=1.5, description="Accept score per unit of the target's `social need - 0.5`."
     )
     accept_goals: dict[Activity, float] = Field(
         default=ACCEPT_GOALS, description="Accept score by what the target is busy with."
@@ -69,22 +69,25 @@ class ConversationConfig(BaseModel):
     start_values: dict[CoreValue, float] = Field(
         default={V.CONNECTION: 0.3}, description="Engagement at hello per unit of `value - 0.5`."
     )
-    fatigue: float = Field(default=0.05, ge=0, description="Engagement lost every line.")
+    fatigue: float = Field(default=0.07, ge=0, description="Engagement lost every line.")
     topic_weight: float = Field(
-        default=0.15,
+        default=0.1,
         ge=0,
         description="Engagement per line per unit of topic match: how much the values the line "
         "touches matter to them, from -1 to 1.",
     )
     like_weight: float = Field(
-        default=0.15, ge=0, description="Engagement per line per unit of `like - 0.5`."
+        default=0.1, ge=0, description="Engagement per line per unit of `like - 0.5`."
     )
     leave_below: float = Field(
         default=0.3, ge=0, le=1, description="Someone whose turn it is says goodbye below this."
     )
     min_lines: int = Field(default=2, ge=1, description="Lines before anyone may say goodbye.")
     max_lines: int = Field(
-        default=16, ge=2, description="Most lines, goodbyes included, before a conversation ends."
+        default=60,
+        ge=2,
+        description="A backstop: most lines, goodbyes included, before a conversation ends. "
+        "Engagement ends them long before this.",
     )
     farewell: bool = Field(default=True, description="Whether the other answers a goodbye.")
 

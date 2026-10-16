@@ -253,7 +253,13 @@ class PlayerConversations:
         engine, npc = self.engine, talk.npc
         party = talk.parties[npc]
         prompt = turn_prompt(
-            party.background, lines, talk.names, cue, engine.player.name, engine.config
+            party.background,
+            lines,
+            talk.names,
+            cue,
+            engine.player.name,
+            engine.config,
+            speaker=npc,
         )
         stream = engine.llm().stream(
             prompt,

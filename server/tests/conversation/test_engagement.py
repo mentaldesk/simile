@@ -114,6 +114,13 @@ def test_values_needs_and_goals_move_acceptance() -> None:
     assert acceptance(npc().values, rel, Goal(Activity.SEEK, "cal"), 0.5) < score
 
 
+def test_the_lonely_accept_a_stranger_and_the_content_mostly_dont() -> None:
+    rel = meet(npc(), "ben")
+    idle = Goal(Activity.IDLE)
+
+    assert acceptance(npc().values, rel, idle, 0.9) > 0 > acceptance(npc().values, rel, idle, 0.1)
+
+
 def test_accepting_is_a_threshold_at_temperature_0_and_a_chance_otherwise() -> None:
     sharp = ConversationConfig(accept_temperature=0)
     rng = random.Random(0)
