@@ -1,4 +1,3 @@
-import os
 import time
 from collections.abc import AsyncGenerator
 from contextlib import aclosing
@@ -6,7 +5,7 @@ from pathlib import Path
 
 from claude_agent_sdk import ClaudeSDKClient
 
-from simile.llm.claude_code import API_CREDENTIALS, ClaudeCodeProvider
+from simile.llm.claude_code import ClaudeCodeProvider, unwanted_variables
 from simile.llm.client import CallRecord, LLMClient
 from simile.llm.provider import Message, Request, Usage
 
@@ -31,8 +30,12 @@ class SessionProvider:
 async def smoke(
     prompt: str, *, model: str, runs: int, session: bool, cli_path: str | Path | None
 ) -> None:
-    present = [name for name in API_CREDENTIALS if name in os.environ]
-    print(f"Dropping from the environment: {', '.join(present)}" if present else "No API keys set")
+    present = unwanted_variables()
+    print(
+        f"Dropping from the environment: {', '.join(present)}"
+        if present
+        else "Nothing to drop from the environment"
+    )
     provider = ClaudeCodeProvider(cli_path=cli_path)
     if not session:
         await run(LLMClient(provider), prompt, model, runs)
