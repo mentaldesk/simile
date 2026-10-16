@@ -46,8 +46,8 @@ talk near you and the later beats stay where the walk-through puts them.
 | `SIMILE_VOICE` | 1 | 0 runs it unvoiced. |
 | `SIMILE_DEMO_SCRIPT_CAP` | 120 | Sim seconds from your first step before the scripted pairs are let go, whether or not they've talked. |
 
-`SIMILE_NEWS` is turned off, so the Mars article is the only news and nothing is fetched or
-analysed.
+`SIMILE_NEWS` is turned off, so nothing is fetched or analysed. The terminals list the Mars
+article and twelve more real ones, all analysed already (see [below](#what-it-starts-from)).
 
 **Resetting** is Ctrl-C and `demo/run.sh` again: every run starts from the same state, so that's
 also how to retake the opening. To carry on from where a demo stopped instead (the server saves on
@@ -100,8 +100,8 @@ told him about the Mars piece over breakfast talk.
 
 ## What it starts from
 
-[`scenario.json`](scenario.json) and [`article.json`](article.json) hold everything, and
-[`prepare.py`](prepare.py) writes them into a fresh database.
+[`scenario.json`](scenario.json), [`article.json`](article.json) and [`news.json`](news.json)
+hold everything, and [`prepare.py`](prepare.py) writes them into a fresh database.
 
 - **The time** is 10:30 on 16 October 2026, the morning after the article came out.
 - **The article** is "What would it take to terraform Mars? Erika DeBenedictis has ideas",
@@ -111,7 +111,8 @@ told him about the Mars piece over breakfast talk.
   creativity 0.3 and ambition 0.3, tone +0.4.
 - **Who has read it.** Nine of the ten, each with the take B4's reaction prompt gave them in one
   real run, read between 08:20 and 10:10. They bring it up through B2's "news you might bring up".
-  Raymond hasn't read it; his need for news is high, so he goes and reads it at the start.
+  Raymond hasn't read it; his need for news is high, so he goes and reads it at the start. Of
+  everything on the terminals it interests him most, and `prepare.py` checks that it still does.
 
   | Resident | Feeling | Strength | Their take, in short |
   |---|--:|--:|---|
@@ -124,6 +125,32 @@ told him about the Mars piece over breakfast talk.
   | henrietta | −0.2 | 0.15 | No residents' association, no planning permission, no view |
   | desmond | −0.2 | 0.3 | Put that energy into housing first |
   | tobias | −0.6 | 0.4 | Look after the one world we've got |
+
+- **The rest of the news** is twelve more real articles from the six feeds, published between 8
+  and 16 October, so the player has a list to choose from. They were captured from a local news
+  store with the analysis X1's call gave each (value scores, tags and tone), and like the Mars
+  article's, their summaries are our own paraphrases of the feeds'. Nobody has read them yet, and
+  as the residents finish what they're doing, some go to a terminal and read the one that
+  interests them most:
+
+  | Source | Article | First choice of |
+  |---|---|---|
+  | RNZ Sport | All Blacks coach Dave Rennie expresses his dismay at 'crazy' World Cup draw | |
+  | RNZ Sport | Auckland FC defend controversial Sam Cosgrove call ahead of A-League season opener | desmond, lachlan |
+  | The Atlantic | The Memory Shortage Comes for Schools | |
+  | The Atlantic | This Is Edgar Allan Poe, and I Am Begging Kelly Clarkson to Take My Bird | ingrid |
+  | OpenAI | Bringing GPT-Rosalind to academic research labs | |
+  | Scientific American | Scientists discover an ancient shipwreck dating to when the Great Pyramid was built | marguerite |
+  | OpenAI | Teaching students to think and learn through questions | |
+  | Scientific American | Scientists vote to end leap seconds, redefining how the world keeps time | |
+  | Scientific American | Anthropic’s AI worm research raises new fears about smart device security | henrietta, tobias |
+  | IGN | Warhammer 40,000: Boltgun 2 Review | kofi, priya |
+  | IGN | Castlevania: Belmont’s Curse Review | |
+  | The Economist | Cartoon: America’s gargantuan debt | |
+
+  Odalys finds none of them worth reading. None of this touches the opening: Tobias and Desmond
+  still seek out company and Raymond still reads the Mars article, and everyone else is mid-stay
+  until well after the scripted conversations have started.
 
 - **Where everyone is.** Tobias by the west lamp of the square and Kofi near him; Desmond and
   Marguerite on the coffee shop terrace; Raymond in the square's south-east corner; Henrietta in
@@ -140,8 +167,10 @@ told him about the Mars piece over breakfast talk.
 The run behind the quotes above took 36 calls over the 4 sim minutes it ran (the walk-through plus
 a minute): 23 conversation lines (Haiku 5.5), 7 reflections (Haiku 5.5), 5 player replies (Haiku
 4.5) and 1 news reaction. That's $0.02 API-equivalent, and the five-hour usage window went from 22%
-to 23%. Leaving it running costs more: the scripted loneliness keeps conversations coming for the
-first few minutes, and after that D2's soak measured about 43 calls a sim hour.
+to 23%. That was before the terminals had more than the Mars article; each resident who reads one
+of the others now adds a news reaction call. Leaving it running costs more: the scripted
+loneliness keeps conversations coming for the first few minutes, and after that D2's soak measured
+about 43 calls a sim hour.
 
 ## Checking it without Claude
 
