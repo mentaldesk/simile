@@ -46,18 +46,22 @@ TAG = re.compile(
 CUT_OFF = re.compile(r"\[[^\]\n]*$")
 STAGE_DIRECTION = re.compile(r"\*[^*]*\*")
 QUOTES = {'"': '"', "“": "”", "'": "'"}
+FAREWELL = (
+    r"(?:good-?\s?bye|bye(?:-bye| now| then| for now)?|cheerio|ciao|farewell|good\s?night|"
+    r"take care(?: now| then| of yourself)?)"
+)
 LEAVING = re.compile(
-    r"\b(?:good-?\s?bye|bye(?:-bye| now| then)?|cheerio|ciao|take care(?! of)|"
-    r"(?:catch|see) (?:you|ya) (?:later|soon|around)|"
-    r"talk (?:to you )?(?:later|soon)|until next time|mind how you go|"
-    r"good (?:day|morning|afternoon|evening) to you|"
-    r"(?:i['’]ll|i will|i shall|i['’]d better|i['’]d best|i should|i must|let me) (?:leave you|"
-    r"let you get|be off|get going|head off|be on my way)|"
-    r"(?:must|gotta|got to|have to) (?:dash|be off|get going)|"
-    r"off i go)\b"
-    r"|\b(?:see (?:you|ya)|farewell|good\s?night)\b[^.!?]*[.!?]*\W*$",
+    rf"(?:^|[,;:—-]\s*|\b(?:and|so|well|right|okay|ok|anyway)\s+){FAREWELL}(?=\s*(?:[,.!…]|$))"
+    r"|\b(?:catch|see) (?:you|ya) (?:later|soon|around)\b"
+    r"|(?<!to )\bsee (?:you|ya)\b(?!['’])"
+    r"|\btalk (?:to you )?(?:later|soon)\b|\buntil next time\b|\bmind how you go\b"
+    r"|\bgood (?:day|morning|afternoon|evening) to you\b(?! too)"
+    r"|\b(?:i['’]ll|i will|i shall|i['’]d better|i['’]d best|i should|i must|let me) "
+    r"(?:leave you (?:to|be|in peace)|let you get|be off|get going|head off|be on my way)\b"
+    r"|\b(?:must|gotta|got to|have to) (?:dash|be off|get going)\b|\boff i go\b",
     re.IGNORECASE,
 )
+SENTENCE_BREAK = re.compile(r"(?<=[.!?…])\s+")
 OPENING_WORDS = 3
 OPENINGS = 4
 
@@ -179,7 +183,12 @@ def opening(text: str) -> str:
 
 
 def takes_leave(text: str) -> bool:
-    return LEAVING.search(text) is not None
+    """Whether the line ends by saying goodbye: its last sentence takes leave and isn't a
+    question."""
+    last = SENTENCE_BREAK.split(text.strip())[-1]
+    if last.rstrip("\"'”’)]* ").endswith("?"):
+        return False
+    return LEAVING.search(last) is not None
 
 
 def parse_reply(text: str, names: Sequence[str] = (), others: Sequence[str] = ()) -> Draft:

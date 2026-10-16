@@ -338,6 +338,19 @@ async def test_saying_goodbye_unprompted_ends_the_conversation() -> None:
     assert "Ana is leaving. Say a brief goodbye back." in village.script.prompts[3]
 
 
+async def test_a_goodbye_before_min_lines_is_just_a_greeting() -> None:
+    replies = ["Morning! [values: connection]", "Good day to you, Ana! [values: connection]"]
+    village = Village(
+        [*replies, "So, the bins. [values: connection]"], relationships=friends(ANA, BEN)
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.5)
+
+    assert len(village.spoken) > 3
+    assert "Say your next line to Ben." in village.script.prompts[2]
+
+
 async def test_a_speaker_is_shown_how_their_lines_began() -> None:
     village = Village(["Ha, lovely morning. [values: connection]"], relationships=friends(ANA, BEN))
     village.engine.start("ana", "ben")

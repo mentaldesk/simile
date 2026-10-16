@@ -298,7 +298,8 @@ class ConversationEngine:
         ends = line.timestamp + timedelta(seconds=line.duration)
         talk.free_at = ends + timedelta(seconds=self.config.turn_gap)
         said = talk.cue
-        if said is Cue.REPLY and takes_leave(line.text):
+        spoken = len(talk.conversation.lines)
+        if said is Cue.REPLY and spoken > self.config.min_lines and takes_leave(line.text):
             said = Cue.GOODBYE
             self._log("%s said goodbye in %s", talk.speaker, talk.conversation.id)
         talk.speaker = talk.other(talk.speaker)

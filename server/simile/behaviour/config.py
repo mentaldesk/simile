@@ -279,5 +279,12 @@ class BehaviourConfig(BaseModel):
             raise ValueError("bedtime_range must be before midnight")
         return self
 
+    @model_validator(mode="after")
+    def _priced_once(self) -> Self:
+        weighted = {need for weights in self.need_weights.values() for need in weights}
+        if twice := sorted(weighted & set(self.urgency)):
+            raise ValueError(f"{', '.join(twice)} can't be in both urgency and need_weights")
+        return self
+
 
 DEFAULT_CONFIG = BehaviourConfig()

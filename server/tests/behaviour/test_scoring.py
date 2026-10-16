@@ -2,10 +2,12 @@ import random
 from collections.abc import Sequence
 
 import pytest
+from pydantic import ValidationError
 
 from simile.behaviour import (
     DEFAULT_CONFIG,
     Activity,
+    BehaviourConfig,
     Goal,
     Need,
     Other,
@@ -137,6 +139,13 @@ def test_the_same_relief_is_worth_far_more_to_someone_desperate() -> None:
     assert relief(0.9, -0.6, 3) > 50 * relief(0.3, -0.6, 3)
     assert relief(0.5, 0.0, 3) == 0.0
     assert relief(0.5, 0.2, 1) == pytest.approx((0.5**2 - 0.7**2) / 2)
+
+
+def test_a_need_is_priced_by_its_curve_or_its_weights_not_both() -> None:
+    weights = {**DEFAULT_CONFIG.need_weights, A.SEEK: {Need.SOCIAL: 1.0}}
+
+    with pytest.raises(ValidationError, match="social can't be in both"):
+        BehaviourConfig(need_weights=weights)
 
 
 def test_seeking_someone_out_promises_a_talk() -> None:

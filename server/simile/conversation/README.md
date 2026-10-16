@@ -38,8 +38,10 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   other answers. Pairs who dislike each other start lower and drop faster, so their conversations
   are short; strangers usually part within 5 to 20 lines and friends on good form can go on for 30
   or more. `max_lines` (60) is only a backstop.
-- **Goodbyes.** A reply that says goodbye anyway ("I'll leave you to it", "see you at the
-  riverside", "catch you later") counts as one: the other answers it and the conversation ends.
+- **Goodbyes.** From `min_lines` on, a reply whose last sentence says goodbye anyway ("I'll leave
+  you to it", "see you at the riverside", "catch you later") counts as one: the other answers it
+  and the conversation ends. A goodbye mentioned in passing, or asked as a question ("Will I see you
+  at the quiz?"), doesn't count.
 - **Pacing.** A line takes `words / 200 wpm` sim seconds (at least `min_line_seconds`), about as
   long as V1 takes to say it, then `turn_gap` before the next, whether or not anyone is listening. The next line is written while
   the current one plays, so lines follow each other without gaps unless the LLM is slower than the
