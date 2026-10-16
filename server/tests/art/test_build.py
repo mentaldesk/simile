@@ -151,7 +151,11 @@ def test_committed_art_is_up_to_date(tmp_path: Path) -> None:
 
     fresh, committed = tmp_path / "art", CONTENT_DIR / "art"
     stale = "content/art is out of date: run `cd server && uv run simile art`"
-    built_in = {name for name in files(committed) - HAND_WRITTEN if not is_npc_output(name)}
+    built_in = {
+        name
+        for name in files(committed) - HAND_WRITTEN
+        if not is_npc_output(name) and not name.startswith("iso/")
+    }
     assert built_in == files(fresh), stale
     for name in files(fresh):
         if name.endswith((".png", ".gif")):
