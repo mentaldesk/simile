@@ -32,8 +32,10 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
   `add`.
 - **Broken promises.** The prompt asks for a broken promise to be resolved by its ref and opened
   again as a `broken_promise`, and Haiku does both. If a reply only opens the `broken_promise`,
-  and its owner holds just one open `promise` about whoever broke it, that promise is closed
-  too. With more than one, B3 can't tell which was broken and leaves them open. A broken promise
+  and the prompt listed just one open `promise` its owner holds about whoever broke it, that
+  promise is closed too, unless it was closed meanwhile. A promise made while the LLM was busy
+  doesn't count, since the reply can't be about it, and with more than one listed, B3 can't tell
+  which was broken and leaves them open. A broken promise
   always costs trust: if the owner's own events about whoever broke it don't already lower
   trust, B3 adds one that does (`broken_promise_valence` and `broken_promise_magnitude`) to
   those events before `apply_events`, so it counts towards `max_magnitude` like the rest.

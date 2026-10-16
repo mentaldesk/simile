@@ -79,7 +79,7 @@ def outcome(
         if flag is None:
             continue
         key = (flag.owner, flag.about)
-        if any(f.id == flag.id and f.resolved is None for f in result.after[key].flags):
+        if _still_open(result.after[key], flag):
             result.after[key] = resolve_flag(result.after[key], flag.id, now)
             if flag.kind == FlagKind.PROMISE:
                 settled.add(key)
@@ -88,17 +88,23 @@ def outcome(
         key = (flag.owner, flag.about)
         if flag.kind != FlagKind.BROKEN_PROMISE or key in settled:
             continue
-        promises = [
-            f for f in result.after[key].flags if f.kind == FlagKind.PROMISE and f.resolved is None
+        listed = [
+            f
+            for f in context.flags.values()
+            if f.kind == FlagKind.PROMISE and (f.owner, f.about) == key
         ]
-        if len(promises) == 1:
-            result.after[key] = resolve_flag(result.after[key], promises[0].id, now)
+        if len(listed) == 1 and _still_open(result.after[key], listed[0]):
+            result.after[key] = resolve_flag(result.after[key], listed[0].id, now)
             settled.add(key)
 
     for flag in opened:
         key = (flag.owner, flag.about)
         result.after[key] = open_flag(result.after[key], flag)
     return result
+
+
+def _still_open(rel: Relationship, flag: Flag) -> bool:
+    return any(f.id == flag.id and f.resolved is None for f in rel.flags)
 
 
 def _breaches(

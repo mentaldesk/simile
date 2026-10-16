@@ -202,31 +202,39 @@ FORGOT = deed(
     "tobias", action="forgot Kofi's samples", aspects=["trust"], valence=-0.3, magnitude=0.3
 )
 SORRY = deed("tobias", action="apologised to Kofi", aspects=["like"], valence=0.3, magnitude=0.3)
-# The second is how Haiku replied in all three of three tries, apology promise and all.
 ADMISSIONS = {
-    "as Haiku replies": Extraction(
-        reflections=[reflection("kofi", events=[SORRY, FORGOT])],
-        flags_resolved=["F1"],
-        flags_opened=[
-            flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES),
-            flagged("tobias", FlagKind.PROMISE, "kofi", "warning Kofi before Wednesday next time"),
-        ],
+    "as Haiku replies": (
+        Extraction(
+            reflections=[reflection("kofi", events=[SORRY, FORGOT])],
+            flags_resolved=["F1"],
+            flags_opened=[
+                flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES),
+                flagged("tobias", FlagKind.PROMISE, "kofi", "warning Kofi next time"),
+            ],
+        ),
+        0,
     ),
-    "without resolving the promise": Extraction(
-        reflections=[reflection("kofi", events=[SORRY, FORGOT])],
-        flags_opened=[flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES)],
+    "without resolving the promise": (
+        Extraction(
+            reflections=[reflection("kofi", events=[SORRY, FORGOT])],
+            flags_opened=[flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES)],
+        ),
+        0,
     ),
-    "without a trust event": Extraction(
-        reflections=[reflection("kofi", events=[SORRY])],
-        flags_resolved=["F1"],
-        flags_opened=[flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES)],
+    "without a trust event": (
+        Extraction(
+            reflections=[reflection("kofi", events=[SORRY])],
+            flags_resolved=["F1"],
+            flags_opened=[flagged("tobias", FlagKind.BROKEN_PROMISE, "kofi", SAMPLES)],
+        ),
+        1,
     ),
 }
 
 
-@pytest.mark.parametrize("admission", ADMISSIONS.values(), ids=ADMISSIONS.keys())
+@pytest.mark.parametrize(("admission", "hits"), ADMISSIONS.values(), ids=ADMISSIONS.keys())
 def test_a_promise_tobias_admits_he_broke_costs_him_kofis_trust(
-    admission: Extraction, store: MemoryStore, talk: Talk
+    admission: Extraction, hits: int, store: MemoryStore, talk: Talk
 ) -> None:
     residents = {npc.id: npc for npc in load_npcs() if npc.id in ("tobias", "kofi")}
     promised = Extraction(
@@ -250,6 +258,8 @@ def test_a_promise_tobias_admits_he_broke_costs_him_kofis_trust(
     assert kept.resolved == later + timedelta(minutes=2)
     assert (broken.description, broken.resolved) == (SAMPLES, None)
     assert kofi.trust < result.before[("kofi", "tobias")].trust
+    added = [e for e in result.events if e.action == f"broke a promise: {SAMPLES}"]
+    assert len(added) == hits
 
 
 def test_a_kept_promise_is_resolved_and_opens_nothing(
@@ -301,6 +311,40 @@ def test_a_broken_promise_leaves_alone_promises_it_cant_tell_apart(
         ("gate", None),
         ("talk_1/1", None),
     ]
+
+
+def test_a_broken_promise_leaves_alone_a_promise_made_while_the_llm_was_busy(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    store.add(meet(npcs["ben"], "ana"))
+    context = gather(talk(("ana", "I never got round to it.")), npcs, store)
+    store.add(promise("ben", "ana"))
+    broken = flagged("ana", FlagKind.BROKEN_PROMISE, "ben")
+
+    result = outcome(context, Extraction(reflections=[], flags_opened=[broken]), store)
+
+    flags = result.after[("ben", "ana")].flags
+    assert {f.id: f.resolved for f in flags} == {"fence": None, "talk_1/1": None}
+
+
+@pytest.mark.parametrize("listed", [["fence"], ["fence", "gate"]], ids=["one", "two"])
+def test_a_broken_promise_settles_only_a_promise_the_llm_could_tell_was_broken(
+    listed: list[str], npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    store.add(meet(npcs["ben"], "ana"), *(promise("ben", "ana", id=id) for id in listed))
+    context = gather(talk(("ana", "I never got round to it.")), npcs, store)
+    earlier = START + timedelta(minutes=1)
+    store.add(promise("ben", "ana", id=listed[-1]).model_copy(update={"resolved": earlier}))
+    broken = flagged("ana", FlagKind.BROKEN_PROMISE, "ben")
+
+    result = outcome(context, Extraction(reflections=[], flags_opened=[broken]), store)
+
+    flags = result.after[("ben", "ana")].flags
+    assert {f.id: f.resolved for f in flags} == {
+        **dict.fromkeys(listed[:-1]),
+        listed[-1]: earlier,
+        "talk_1/1": None,
+    }
 
 
 def test_ignores_a_flag_resolved_while_the_llm_was_busy(
