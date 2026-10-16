@@ -468,7 +468,7 @@ ROVER = stored(
 )
 OUTAGE = stored(
     "Internet outage hits millions",
-    ["broadband"],
+    ["broadband", "life sciences"],
     "Homes lost their connection for hours.",
 )
 
@@ -493,6 +493,8 @@ def test_the_stored_articles_tags_and_summary_count_too(memory: MemoryStore) -> 
         ("Mars is so bright tonight.", []),
         ("Did you read about the colonies?", []),
         ("Tell me the story of your life.", []),
+        ("I read a lot of history.", []),
+        ("Life sciences are booming.", [OUTAGE.title]),
         ("I read about the international summit.", []),
     ],
 )
@@ -500,7 +502,7 @@ def test_naming_the_news_lets_one_exact_word_do(
     memory: MemoryStore, said: str, recalled: list[str]
 ) -> None:
     memory.add(
-        took_in("mei", "Colonising Mars by 2050", "space travel"),
+        took_in("mei", "Colonising Mars by 2050", "space travel", "ancient history"),
         took_in("mei", OUTAGE.title),
     )
 

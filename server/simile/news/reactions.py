@@ -210,7 +210,8 @@ def mentioned(
     """`npc_id`'s `news` memories of the articles `said` mentions, most shared words first, at
     most `config.mentions`. An article counts if its title, tags, summary and the NPC's topics
     share `config.mention_words` of the words in `said`, or if `said` names the news ("the Mars
-    piece") and its title, tags or topics have one of them exactly, give or take a plural."""
+    piece") and its title or a one-word tag or topic has one of them exactly, give or take a
+    plural."""
     names_news = NAMING.search(said) is not None
     spoken = words(NAMING.sub(" ", said))
     if not spoken or not config.mentions:
@@ -220,8 +221,8 @@ def mentioned(
     )
     found = []
     for m in read:
-        headline, summary = article_words(m, article(m.news_id) if m.news_id else None)
-        n = shared(spoken, headline | summary)
+        headline, whole = article_words(m, article(m.news_id) if m.news_id else None)
+        n = shared(spoken, whole)
         if n >= config.mention_words or (names_news and spoken & headline):
             found.append((n, m))
     found.sort(key=lambda pair: -pair[0])
@@ -229,9 +230,13 @@ def mentioned(
 
 
 def article_words(memory: Memory, item: NewsItem | None) -> tuple[set[str], set[str]]:
-    """The words of the article's title, tags and the NPC's topics for it, and of its summary.
-    Without the article, the title quoted in the memory."""
+    """The words of the article's title and of its one-word tags and NPC's topics, and those of
+    all of it: title, tags, summary and topics. Without the article, the title in the memory."""
     if item is None:
-        title = TITLE.match(memory.content)
-        return words(" ".join([title[1] if title else memory.content, *memory.topics])), set()
-    return words(" ".join([item.title, *item.tags, *memory.topics])), words(item.summary)
+        quoted = TITLE.match(memory.content)
+        title, tags, summary = quoted[1] if quoted else memory.content, [], ""
+    else:
+        title, tags, summary = item.title, item.tags, item.summary
+    labels = [*tags, *memory.topics]
+    headline = words(" ".join([title, *(label for label in labels if label.isalpha())]))
+    return headline, headline | words(" ".join([*labels, summary]))

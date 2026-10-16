@@ -86,7 +86,8 @@ resident towards their social need.
   topics the NPC took from it. An article counts if they share `NewsConfig.mention_words` (2)
   words, where a word matches its other forms ("colonise", "Colonising"), or if the player names
   the news ("news", "article", "piece", "story", "headline", "read", "paper") and one word is in its
-  title, tags or topics exactly, give or take a plural ("Did you see the Mars piece?"). The NPC's
+  title, or is one of its one-word tags or topics, exactly, give or take a plural ("Did you see the
+  Mars piece?"). A tag like "life sciences" only counts towards the two words. The NPC's
   memory of each article that counts, with their take, follows the transcript in that reply's
   prompt, for at most `mentions` (2) articles, most shared words first. An NPC who didn't read it
   gets nothing and answers from their values.
