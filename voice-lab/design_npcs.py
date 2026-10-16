@@ -12,7 +12,18 @@ import torch
 
 import accent
 from design_then_clone import load
-from npcs import VOICES, clip_path, has_voice, load_npcs, remove_voice, set_reference_clip, word_error_rate, words
+from npcs import (
+    VOICES,
+    clip_path,
+    imported_voices,
+    load_npcs,
+    misheard,
+    remove_voice,
+    save_imported,
+    set_reference_clip,
+    to_design,
+    word_error_rate,
+)
 
 HERE = Path(__file__).parent
 OUT = HERE / "out" / "design"
@@ -23,7 +34,6 @@ ATTEMPTS = 6
 MIN_SECONDS, MAX_SECONDS = 5.0, 10.0
 MIN_RMS_DB, MAX_RMS_DB = -30.0, -14.0
 CLIPPED = 0.99
-MAX_WORD_ERROR_RATE = 0.1
 
 
 @dataclass
@@ -62,10 +72,7 @@ def check(
         result.problems.append(f"RMS {result.rms_db:.1f} dBFS")
     if clipped := int(np.sum(np.abs(wav) >= CLIPPED)):
         result.problems.append(f"{clipped} clipped samples")
-    if result.word_error_rate > MAX_WORD_ERROR_RATE:
-        result.problems.append(f"word error rate {result.word_error_rate:.0%}")
-    if words(heard)[-2:] != words(line)[-2:]:
-        result.problems.append("ending missing")
+    result.problems += misheard(line, heard)
     if problem := accent.problem(accents, target):
         result.problems.append(problem)
     return result
@@ -98,9 +105,14 @@ def main() -> None:
         if set(seeds) - set(npcs):
             seeds = {npc_id: seed for npc_id, seed in seeds.items() if npc_id in npcs}
             save_seeds(seeds)
-    todo = {npc_id: npc for npc_id, npc in npcs.items() if args.force or not has_voice(npc_id, npc)}
+        imported = imported_voices()
+        if set(imported) - set(npcs):
+            save_imported({npc_id: digest for npc_id, digest in imported.items() if npc_id in npcs})
+    todo = to_design(npcs, args.force)
+    if kept := sorted(set(npcs) & set(imported_voices()) - set(todo)):
+        print(f"Keeping the imported voices of {', '.join(kept)}. Remove them from imported.json to redesign them.")
     if not todo:
-        print("Every NPC has a voice. Use --force to redesign them.")
+        print("Nothing to design." if args.force else "Every NPC has a voice. Use --force to redesign them.")
         return
 
     VOICES.mkdir(parents=True, exist_ok=True)
