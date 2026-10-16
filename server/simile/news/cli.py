@@ -6,7 +6,7 @@ import typer
 def register(app: typer.Typer) -> None:
     @app.command()
     def news(
-        refresh: Annotated[bool, typer.Option(help="Fetch the live feed first.")] = False,
+        refresh: Annotated[bool, typer.Option(help="Fetch the live feeds first.")] = False,
         count: Annotated[
             int, typer.Option("--count", "-n", min=1, help="How many items to list.")
         ] = 10,
@@ -15,26 +15,33 @@ def register(app: typer.Typer) -> None:
 
         `simile serve` and `simile headless` keep it fresh only with SIMILE_NEWS=1.
 
-        SIMILE_NEWS_FEED overrides the feed's URL.
+        SIMILE_NEWS_FEED overrides the feeds with a comma-separated list of URLs.
         """
         import asyncio
 
         from simile.memory import default_path
-        from simile.news.feed import feed_url
-        from simile.news.refresh import refresh as fetch_news
+        from simile.news.feed import feeds
+        from simile.news.refresh import refresh_all
         from simile.news.store import NewsStore
 
+        failed = False
         with NewsStore(default_path()) as store:
             if refresh:
-                url = feed_url()
-                try:
-                    added = asyncio.run(fetch_news(store, url))
-                except (OSError, ValueError) as error:
-                    typer.echo(f"Couldn't fetch {url}: {error}", err=True)
-                    raise typer.Exit(1) from None
-                typer.echo(f"{len(added)} new items from {url}\n")
+                chosen = feeds()
+                results = asyncio.run(refresh_all(store, chosen))
+                for feed, result in zip(chosen, results, strict=True):
+                    label = f"{feed.name} ({feed.url})" if feed.name else feed.url
+                    if isinstance(result, BaseException):
+                        typer.echo(f"Couldn't fetch {label}: {result}", err=True)
+                        failed = True
+                    else:
+                        typer.echo(f"{len(result)} new items from {label}")
+                typer.echo()
             items = store.latest(count)
         if not items:
             typer.echo("No news stored yet. Fetch it with `simile news --refresh`.")
         for item in items:
-            typer.echo(f"{item.published:%Y-%m-%d %H:%M}  {item.title}\n{'':18}{item.url}")
+            source = f" ({item.source})" if item.source else ""
+            typer.echo(f"{item.published:%Y-%m-%d %H:%M}  {item.title}{source}\n{'':18}{item.url}")
+        if failed:
+            raise typer.Exit(1)

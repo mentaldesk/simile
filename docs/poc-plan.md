@@ -61,7 +61,7 @@ Each track owns its own directory, so agents can't collide.
 | R2 | Social | Memory store: per-pair event log, conversation summaries, retrieval ranked by recency × salience, in SQLite | F2 |
 | L1 | LLM | LLM client over local Claude Code (Agent SDK, subscription login, no tools, own system prompt): streaming, structured-output helper, concurrency cap, latency/usage logging, a fake provider for tests. Measures cold-start and time-to-first-token early, since both drive player-reply latency | F1 |
 | V1 | Voice | TTS service from `clone_mlx.py`: load model once, cache each NPC's processed reference, sentence in → streamed audio chunks out, priority queue with a concurrency cap | F2 |
-| X1 | News | RSS ingest of the Big Think feed, dedupe, store as `NewsItem`s, refresh on an interval | F2 |
+| X1 | News | RSS ingest of six news feeds, dedupe, store as `NewsItem`s with their source, refresh on an interval | F2 |
 
 ### Phase 2: Agent behaviour
 

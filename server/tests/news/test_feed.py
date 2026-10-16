@@ -1,13 +1,18 @@
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
 
 import pytest
 
-from simile.news import FEED_URL, feed_url, fetch, parse
+from simile.news import FEEDS, Feed, feeds, fetch, parse
 from simile.news.feed import SUMMARY_LENGTH, USER_AGENT, plain, shorten
 
 FeedServer = Any
+
+FIXTURES = Path(__file__).parent / "fixtures"
+OPENAI = Feed("https://openai.com/news/rss.xml", "OpenAI")
+RNZ = Feed("https://www.rnz.co.nz/rss/sport.xml", "RNZ Sport")
 
 
 def rss(*items: str) -> bytes:
@@ -41,6 +46,26 @@ def test_parses_the_saved_feed(feed_xml: bytes) -> None:
     assert [item.published for item in items] == sorted(
         (item.published for item in items), reverse=True
     )
+
+
+def test_credits_each_item_to_its_feed() -> None:
+    openai = parse((FIXTURES / "openai.xml").read_bytes(), OPENAI)
+    rnz = parse((FIXTURES / "rnz.xml").read_bytes(), RNZ)
+
+    assert (len(openai), len(rnz)) == (40, 14)
+    assert {(item.source, item.source_url) for item in openai} == {("OpenAI", OPENAI.url)}
+    assert {(item.source, item.source_url) for item in rnz} == {("RNZ Sport", RNZ.url)}
+    assert rnz[0].title == (
+        "All Blacks coach Dave Rennie expresses his dismay at 'crazy' World Cup draw"
+    )
+    assert rnz[0].published == datetime(2026, 10, 16, 1, 49, 41, tzinfo=UTC)
+
+
+def test_credits_an_unnamed_feed_to_its_title(feed_xml: bytes) -> None:
+    [first, *_] = parse(feed_xml, Feed("https://example.com/feed"))
+
+    assert (first.source, first.source_url) == ("Big Think", "https://example.com/feed")
+    assert parse(feed_xml)[0].source_url == ""
 
 
 def test_summaries_are_short_plain_text(feed_xml: bytes) -> None:
@@ -105,16 +130,31 @@ def test_shortens_at_a_word_without_a_late_sentence_end() -> None:
     assert shorten("Short.", 30) == "Short."
 
 
-def test_feed_url_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reads_the_six_feeds_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("SIMILE_NEWS_FEED", raising=False)
-    assert feed_url() == FEED_URL
 
-    monkeypatch.setenv("SIMILE_NEWS_FEED", "https://example.com/feed")
-    assert feed_url() == "https://example.com/feed"
+    assert feeds() == FEEDS
+    assert [feed.name for feed in FEEDS] == [
+        "The Atlantic",
+        "OpenAI",
+        "Scientific American",
+        "The Economist",
+        "RNZ Sport",
+        "IGN",
+    ]
+
+
+def test_feeds_can_be_overridden_with_a_list(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(
+        "SIMILE_NEWS_FEED",
+        f" https://example.com/feed,{OPENAI.url},, https://example.com/feed ",
+    )
+
+    assert feeds() == (Feed("https://example.com/feed"), OPENAI)
 
 
 def test_fetch_identifies_itself_and_keeps_the_validators(feed_server: FeedServer) -> None:
-    fetched = fetch(feed_server.url)
+    fetched = fetch(Feed(feed_server.url))
 
     assert fetched.items is not None and len(fetched.items) == 5
     assert (fetched.etag, fetched.modified) == (feed_server.etag, feed_server.modified)
@@ -126,7 +166,7 @@ def test_fetch_identifies_itself_and_keeps_the_validators(feed_server: FeedServe
 def test_fetch_asks_only_for_changes(feed_server: FeedServer) -> None:
     etag, modified = feed_server.etag, feed_server.modified
 
-    fetched = fetch(feed_server.url, etag, modified)
+    fetched = fetch(Feed(feed_server.url), etag, modified)
 
     assert fetched.items is None
     assert (fetched.etag, fetched.modified) == (etag, modified)
@@ -136,7 +176,7 @@ def test_fetch_asks_only_for_changes(feed_server: FeedServer) -> None:
 
 
 def test_fetch_raises_on_a_server_error(feed_server: FeedServer) -> None:
-    feed_server.status = 503
+    feed_server.errors["/feed"] = 503
 
     with pytest.raises(HTTPError):
-        fetch(feed_server.url)
+        fetch(Feed(feed_server.url))

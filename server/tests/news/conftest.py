@@ -7,24 +7,34 @@ import pytest
 
 from simile.news import NewsStore
 
-FIXTURE = Path(__file__).parent / "fixtures" / "bigthink.xml"
+FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURE = FIXTURES / "bigthink.xml"
 
 
 class FeedServer(ThreadingHTTPServer):
-    """Serves the saved feed on localhost, with an ETag, and records each request's headers."""
+    """Serves saved feeds on localhost, with an ETag, and records each request's path and
+    headers. `url` is the saved Big Think feed's."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
-        self.xml = xml
-        self.status = 200
+        self.feeds = {"/feed": xml}
+        self.errors: dict[str, int] = {}
         self.etag = '"v1"'
         self.modified = "Wed, 15 Sep 2021 20:05:26 GMT"
         self.requests: list[dict[str, str]] = []
+        self.paths: list[str] = []
 
     @property
     def url(self) -> str:
+        return self.url_of("/feed")
+
+    def url_of(self, path: str) -> str:
         host, port = self.server_address[:2]
-        return f"http://{host!s}:{port}/feed"
+        return f"http://{host!s}:{port}{path}"
+
+    def add(self, path: str, xml: bytes) -> str:
+        self.feeds[path] = xml
+        return self.url_of(path)
 
 
 class FeedHandler(BaseHTTPRequestHandler):
@@ -32,19 +42,23 @@ class FeedHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         self.server.requests.append(dict(self.headers))
-        if self.server.status != 200:
-            self.send_error(self.server.status)
+        self.server.paths.append(self.path)
+        xml = self.server.feeds.get(self.path)
+        if xml is None:
+            self.send_error(404)
+        elif self.path in self.server.errors:
+            self.send_error(self.server.errors[self.path])
         elif self.headers.get("If-None-Match") == self.server.etag:
             self.send_response(304)
             self.end_headers()
         else:
             self.send_response(200)
             self.send_header("Content-Type", "application/rss+xml")
-            self.send_header("Content-Length", str(len(self.server.xml)))
+            self.send_header("Content-Length", str(len(xml)))
             self.send_header("ETag", self.server.etag)
             self.send_header("Last-Modified", self.server.modified)
             self.end_headers()
-            self.wfile.write(self.server.xml)
+            self.wfile.write(xml)
 
     def log_message(self, format: str, *args: object) -> None:
         pass

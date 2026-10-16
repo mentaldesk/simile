@@ -26,6 +26,15 @@ def test_adds_only_new_items(store: NewsStore) -> None:
     assert store.get("b") == b
 
 
+def test_adds_a_story_once_even_under_another_id(store: NewsStore) -> None:
+    a = news("a")
+    elsewhere = news("b").model_copy(update={"url": a.url, "source": "Elsewhere"})
+
+    assert store.add([a, elsewhere]) == [a]
+    assert store.add([elsewhere]) == []
+    assert store.get("b") is None
+
+
 def test_stores_the_saved_feed_once(store: NewsStore, feed_xml: bytes) -> None:
     items = parse(feed_xml)
 

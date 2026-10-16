@@ -1,16 +1,18 @@
-from simile.news.feed import FEED_URL, Fetched, feed_url, fetch, parse
-from simile.news.refresh import NewsRefresher, refresh
+from simile.news.feed import FEEDS, Feed, Fetched, feeds, fetch, parse
+from simile.news.refresh import NewsRefresher, refresh, refresh_all
 from simile.news.store import FeedState, NewsStore, news_of
 
 __all__ = [
-    "FEED_URL",
+    "FEEDS",
+    "Feed",
     "FeedState",
     "Fetched",
     "NewsRefresher",
     "NewsStore",
-    "feed_url",
+    "feeds",
     "fetch",
     "news_of",
     "parse",
     "refresh",
+    "refresh_all",
 ]
