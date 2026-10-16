@@ -2,9 +2,10 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable, Sequence
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import timedelta
 
+from simile.news.config import DEFAULT_CONFIG, NewsConfig
 from simile.news.feed import Feed, Fetched, fetch
 from simile.news.feed import feeds as configured_feeds
 from simile.news.store import NewsStore
@@ -19,6 +20,18 @@ MAX_PER_FEED = 10
 type Fetch = Callable[[Feed, str | None, str | None], Fetched]
 
 
+@dataclass(frozen=True)
+class Refreshed:
+    """The items a refresh stored, and the feed's items it skipped as too short to react to."""
+
+    added: list[NewsItem]
+    skipped: list[NewsItem]
+
+
+def too_short(item: NewsItem, config: NewsConfig = DEFAULT_CONFIG) -> bool:
+    return len(item.summary.split()) < config.min_summary_words
+
+
 async def refresh(
     store: NewsStore,
     feed: Feed,
@@ -26,15 +39,22 @@ async def refresh(
     fetch: Fetch = fetch,
     at: float | None = None,
     limit: int = MAX_PER_FEED,
-) -> list[NewsItem]:
-    """Fetch `feed` once, in a thread, and store the new ones among its `limit` newest items.
-    Returns them."""
+    config: NewsConfig = DEFAULT_CONFIG,
+) -> Refreshed:
+    """Fetch `feed` once, in a thread, and store the new ones among its `limit` newest items
+    that aren't too short to react to."""
     state = replace(store.feed(feed.url), checked=time.time() if at is None else at)
     store.set_feed(feed.url, state)
     fetched = await asyncio.to_thread(fetch, feed, state.etag, state.modified)
     store.set_feed(feed.url, replace(state, etag=fetched.etag, modified=fetched.modified))
-    newest = sorted(fetched.items or [], key=lambda item: item.published, reverse=True)
-    return store.add(newest[:limit])
+    items = fetched.items or []
+    skipped = [item for item in items if too_short(item, config)]
+    if skipped:
+        titles = ", ".join(repr(item.title) for item in skipped)
+        logger.debug(f"Skipped as too short to react to from {feed.url}: {titles}")
+    kept = [item for item in items if not too_short(item, config)]
+    newest = sorted(kept, key=lambda item: item.published, reverse=True)
+    return Refreshed(store.add(newest[:limit]), skipped)
 
 
 async def refresh_all(
@@ -44,11 +64,12 @@ async def refresh_all(
     fetch: Fetch = fetch,
     at: float | None = None,
     limit: int = MAX_PER_FEED,
-) -> list[list[NewsItem] | BaseException]:
-    """Refresh every feed at once. A feed that fails gives its exception in place of its new
-    items, and doesn't stop the others."""
+    config: NewsConfig = DEFAULT_CONFIG,
+) -> list[Refreshed | BaseException]:
+    """Refresh every feed at once. A feed that fails gives its exception in place of what it
+    refreshed, and doesn't stop the others."""
     return await asyncio.gather(
-        *(refresh(store, feed, fetch=fetch, at=at, limit=limit) for feed in feeds),
+        *(refresh(store, feed, fetch=fetch, at=at, limit=limit, config=config) for feed in feeds),
         return_exceptions=True,
     )
 
@@ -67,6 +88,7 @@ class NewsRefresher:
         limit: int = MAX_PER_FEED,
         fetch: Fetch = fetch,
         now: Callable[[], float] = time.time,
+        config: NewsConfig = DEFAULT_CONFIG,
     ) -> None:
         self.store = store
         self.feeds = tuple(feeds) if feeds is not None else configured_feeds()
@@ -74,6 +96,7 @@ class NewsRefresher:
         self.min_gap = min_gap.total_seconds()
         self.limit = limit
         self.fetch = fetch
+        self.config = config
         self.now = now
         self.since = {feed.url: self.interval for feed in self.feeds}
         self.checked = {feed.url: store.feed(feed.url).checked for feed in self.feeds}
@@ -102,13 +125,16 @@ class NewsRefresher:
     async def _refresh(self, feeds: Sequence[Feed], at: float) -> None:
         try:
             results = await refresh_all(
-                self.store, feeds, fetch=self.fetch, at=at, limit=self.limit
+                self.store, feeds, fetch=self.fetch, at=at, limit=self.limit, config=self.config
             )
             for feed, result in zip(feeds, results, strict=True):
                 if isinstance(result, BaseException):
                     logger.warning(f"Couldn't refresh the news from {feed.url}", exc_info=result)
                 else:
-                    logger.info(f"{len(result)} new news items from {feed.url}")
+                    logger.info(
+                        f"{len(result.added)} new news items from {feed.url}, "
+                        f"{len(result.skipped)} skipped as too short to react to"
+                    )
         finally:
             self.task = None
 
