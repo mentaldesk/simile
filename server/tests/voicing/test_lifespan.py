@@ -90,11 +90,13 @@ def test_registers_every_npc_voice_at_startup(qwen: FakeSynthesiser) -> None:
 
     with TestClient(app):
         assert callable(app.state.voiced)
+        assert callable(conversations_of(app).voiced_duration)
 
     voiced = {npc.id for npc in load_npcs() if npc.voice.reference_clip}
     assert voiced
     assert set(qwen.voices) == voiced
     assert not hasattr(app.state, "voiced")
+    assert conversations_of(app).voiced_duration is None
 
 
 def test_does_nothing_unvoiced(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -97,8 +97,8 @@ class ConversationConfig(BaseModel):
     words_per_minute: float = Field(
         default=200,
         gt=0,
-        description="Speaking pace: 0.3 s a word, so lines take about as long as V1 takes to say "
-        "them. C2's SECONDS_PER_WORD matches it.",
+        description="Speaking pace for a voice without a measured rate (see the voice README's "
+        "*Speaking rates*), and for the player: 0.3 s a word. C2's SECONDS_PER_WORD matches it.",
     )
     min_line_seconds: float = Field(default=1.0, ge=0, description="Shortest a line takes.")
     turn_gap: float = Field(default=0.5, ge=0, description="Sim seconds between two lines.")

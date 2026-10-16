@@ -56,8 +56,9 @@ async with aclosing(
 
 ## Speaking rates
 
-B2 and B5 pace each NPC's lines by how fast their voice speaks, so a conversation keeps time with
-its audio. `content/voices/rates.json` holds each resident's measured rate: a line takes
+B2 and B5 pace each NPC's line by how fast their voice speaks until I1 has made its audio, and by
+the audio after that (see *Pacing* in the [conversation README](../conversation/README.md)).
+`content/voices/rates.json` holds each resident's measured rate: a line takes
 `base_seconds + seconds_per_word * words`. `speaking_rate(npc_id)` returns it, or `None` for a voice
 nobody has measured, which is then paced at `ConversationConfig.words_per_minute` (200, 0.3 s a word).
 

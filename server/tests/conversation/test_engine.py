@@ -14,6 +14,7 @@ from simile.conversation import (
     ConversationEngine,
     Facing,
     LineDrafted,
+    engine,
 )
 from simile.conversation.player import PlayerConversations
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
@@ -40,6 +41,7 @@ from simile.sim import (
     World,
 )
 from simile.social import meet
+from simile.voice import SpeakingRate
 from simile.world import Movement
 from simile.world.map import load_map
 
@@ -260,6 +262,46 @@ async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> 
     asked = [when for when, _ in village.script.calls]
     for line, next_asked in zip(lines, asked[1:], strict=False):
         assert line.timestamp <= next_asked < line.timestamp + timedelta(seconds=line.duration)
+
+
+async def test_a_measured_voice_paces_its_speakers_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    rate = SpeakingRate(base_seconds=0.4, seconds_per_word=0.26)
+    monkeypatch.setattr(engine, "speaking_rate", lambda npc: rate if npc == "ana" else None)
+    village = Village(["One two three four five.", "Six seven eight nine ten."])
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    ana, ben, *_ = village.spoken
+    assert (ana.duration, ben.duration) == (1.7, 1.5)
+    assert ben.timestamp == ana.timestamp + timedelta(seconds=1.7 + 0.5)
+
+
+async def test_a_voiced_line_lasts_as_long_as_its_audio() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.engine.voiced_duration = lambda line: 2.345
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    lines = village.spoken
+    assert {line.duration for line in lines} == {2.35}
+    for line, after in itertools.pairwise(lines):
+        assert after.timestamp == line.timestamp + timedelta(seconds=2.35 + 0.5)
+
+
+async def test_the_next_line_waits_for_audio_that_runs_longer_than_its_line() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    made: dict[int, float] = {}
+    village.engine.voiced_duration = lambda line: made.get(line.id)
+    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 4.0))
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    first, second, *_ = village.spoken
+    assert first.duration == 1.2
+    assert second.timestamp == first.timestamp + timedelta(seconds=4.0 + 0.5)
 
 
 async def test_each_line_is_announced_before_it_is_spoken() -> None:

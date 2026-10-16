@@ -44,10 +44,14 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   you to it", "see you at the riverside", "catch you later") counts as one: the other answers it
   and the conversation ends. A goodbye mentioned in passing, or asked as a question ("Will I see you
   at the quiz?"), doesn't count.
-- **Pacing.** A line takes `words / 200 wpm` sim seconds (at least `min_line_seconds`), about as
-  long as V1 takes to say it, then `turn_gap` before the next, whether or not anyone is listening. The next line is written while
-  the current one plays, so lines follow each other without gaps unless the LLM is slower than the
-  line. `Line.timestamp` is when it starts.
+- **Pacing.** A line takes as long as its speaker's voice takes to say it (at least
+  `min_line_seconds`), then `turn_gap` before the next. That's the voice's measured rate
+  ([*Speaking rates*](../voice/README.md#speaking-rates)), or `words_per_minute` (200) for a voice
+  without one. A voiced line whose audio I1 has finished making by the time it's spoken lasts
+  exactly as long as its audio instead, and if a line's audio turns out longer than the line, the
+  next line waits for it, so speech keeps pace with the bubbles. The next line is written while the
+  current one plays, so lines follow each other without gaps unless the LLM is slower than the
+  line. `Line.timestamp` is when it starts and `Line.duration` how long it lasts.
 - **Ending.** After the last line plays, the conversation ends. So does one whose next line fails
   or takes longer than `line_timeout` real seconds (30) to write, once the current line has
   played. Both NPCs resume deciding, and neither seeks the other for `cooldown` minutes.

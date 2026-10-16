@@ -27,6 +27,8 @@ class ConversationAudio:
     drafted: dict[int, Line] = field(default_factory=dict)
     """Lines written and waiting for their turn, by id."""
     lines: dict[int, "LineAudio"] = field(default_factory=dict)
+    durations: dict[int, float] = field(default_factory=dict)
+    """How long each line's audio plays for, by id, once it's all made."""
     ends: float = 0.0
     """When the client finishes playing the audio sent so far, in event loop time."""
 
@@ -78,6 +80,12 @@ class Voicing:
         """Whether `audio_chunk`s will follow the line's `line` message. Asked as it's spoken."""
         audio = self._lines.get(line.id)
         return audio is not None and not audio.failed
+
+    def duration(self, line: Line) -> float | None:
+        """How long the line's audio plays for on the client, its jitter buffer included. None
+        until all of it is made, and for a line that isn't voiced or was cut short."""
+        conversation = self._conversations.get(line.conversation_id)
+        return None if conversation is None else conversation.durations.get(line.id)
 
     def on_started(self, event: ConversationStarted) -> None:
         conversation = event.conversation
@@ -207,15 +215,21 @@ class Voicing:
 
     async def _generate(self, audio: LineAudio) -> None:
         line = audio.line
+        samples = 0
         try:
             speech = self.voice.speak(line.speaker, line.text, audio.priority)
             async with aclosing(speech) as chunks:
                 async for pcm in chunks:
                     audio.chunks.append(pcm)
+                    samples += len(pcm) // 2
                     audio.more.set()
         except Exception as error:
             logger.warning("Couldn't voice %s's line %d: %r", line.speaker, line.id, error)
             audio.failed = True
+        else:
+            if self._lines.get(line.id) is audio:
+                seconds = self.config.jitter_buffer + samples / SAMPLE_RATE
+                audio.conversation.durations[line.id] = seconds
         audio.generated = True
         audio.more.set()
 
@@ -246,6 +260,7 @@ class Voicing:
         audio.closed = last
 
     def _stop(self, audio: LineAudio) -> None:
+        audio.conversation.durations.pop(audio.line.id, None)
         self._forget(audio)
         if audio.sending is not None:
             audio.sending.cancel()

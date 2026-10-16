@@ -39,6 +39,7 @@ from simile.memory import SharedHistory
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, Npc, Relationship
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
+from simile.voice import speaking_rate
 from simile.world import Point
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,8 @@ class ConversationEngine:
         self.player = Player()
         self.player_request: Callable[[Id, Id], bool] | None = None
         """Answers requests involving the player, which this engine declines without it."""
+        self.voiced_duration: Callable[[Line], float | None] | None = None
+        """How long a line's audio plays for, once it's all made. I1 sets it while voiced."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
@@ -286,7 +289,7 @@ class ConversationEngine:
             speaker=talk.speaker,
             text=draft.text,
             timestamp=max(self.clock.now, talk.free_at),
-            duration=round(duration(draft.text, self.config), 2),
+            duration=round(duration(draft.text, self.config, speaking_rate(talk.speaker)), 2),
         )
         talk.pending = (line, draft.values)
         self.bus.publish(LineDrafted(line))
@@ -294,7 +297,14 @@ class ConversationEngine:
 
     def _speak(self, talk: Talk) -> None:
         assert talk.pending is not None
-        (line, values), talk.pending = talk.pending, None
+        line, values = talk.pending
+        if (ends := self.still_playing(talk.conversation)) is not None:
+            free_at = ends + timedelta(seconds=self.config.turn_gap)
+            if free_at > self.clock.now:
+                talk.pending = (line.model_copy(update={"timestamp": free_at}), values)
+                return
+        talk.pending = None
+        line = self.as_voiced(line)
         talk.conversation.lines.append(line)
         self.bus.publish(LineSpoken(line))
         new = [value for value in values if value not in talk.touched]
@@ -327,6 +337,21 @@ class ConversationEngine:
             )
         else:
             talk.cue = Cue.REPLY
+
+    def as_voiced(self, line: Line) -> Line:
+        """The line lasting as long as its audio, if that's all made."""
+        played = self.voiced_duration(line) if self.voiced_duration else None
+        return line if played is None else line.model_copy(update={"duration": round(played, 2)})
+
+    def still_playing(self, conversation: Conversation) -> datetime | None:
+        """When the last line's audio ends, if it runs past the line's duration."""
+        if not conversation.lines or self.voiced_duration is None:
+            return None
+        last = conversation.lines[-1]
+        played = self.voiced_duration(last)
+        if played is None or played <= last.duration:
+            return None
+        return last.timestamp + timedelta(seconds=played)
 
     def _end(self, talk: Talk) -> None:
         now = self.clock.now
