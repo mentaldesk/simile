@@ -7,7 +7,6 @@ export const GROUND_DEPTH = -1e6;
 /** Above any slice keyed at the same screen y: on a tie the resident is in front. */
 const RESIDENT_TIE = 1e-3;
 
-/** A resident sorts by the screen y of their feet on the ground plane. */
 export const residentDepth = (feet: Point, tile: IsoTile): number =>
   project(tile, feet).y + RESIDENT_TIE;
 

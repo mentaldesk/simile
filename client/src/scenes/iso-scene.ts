@@ -13,19 +13,16 @@ import {
 } from '../world';
 import {
   CLOCK_WAIT_MS,
-  CUTAWAY_ALPHA,
-  fade,
+  Cutaway,
   feetOf,
   FIGURE_HEIGHT,
   gridDirection,
   GROUND_DEPTH,
   groundHeights,
   hides,
-  imageUrl,
   ISO_ZOOM,
   isoScroll,
   lightingSetAt,
-  manifestUrl,
   project,
   residentDepth,
   sceneryImages,
@@ -43,7 +40,7 @@ export const ISO_SCENE = 'iso-world';
 const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
 
 type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
-type Building = { object: SceneryObject; slices: Phaser.GameObjects.Image[]; alpha: number };
+type Building = { object: SceneryObject; slices: Phaser.GameObjects.Image[]; cutaway: Cutaway };
 type Scenery = {
   manifest: SceneryManifest;
   buildings: Building[];
@@ -94,6 +91,7 @@ export class IsoScene extends Phaser.Scene {
 
   private async loadScenery(): Promise<void> {
     const set = lightingSetAt(await simClock.known(CLOCK_WAIT_MS));
+    const { imageUrl, manifestUrl } = await import('../world/iso/assets');
     const key = `iso/${set}`;
     this.load.json(key, manifestUrl(set));
     await this.loadQueued();
@@ -123,7 +121,7 @@ export class IsoScene extends Phaser.Scene {
           .setCrop(cropX, 0, cropWidth, object.height)
           .setDepth(depth),
       );
-      if (object.kind === 'building') buildings.push({ object, slices, alpha: 1 });
+      if (object.kind === 'building') buildings.push({ object, slices, cutaway: new Cutaway() });
     }
     this.scenery = {
       manifest,
@@ -147,11 +145,10 @@ export class IsoScene extends Phaser.Scene {
 
   private cutAway(player: Figure, dt: number): void {
     const { manifest, buildings } = this.scenery!;
-    for (const building of buildings) {
-      const target = hides(building.object, player, manifest.tile) ? CUTAWAY_ALPHA : 1;
-      if (building.alpha === target) continue;
-      building.alpha = fade(building.alpha, target, dt);
-      for (const slice of building.slices) slice.setAlpha(building.alpha);
+    for (const { object, slices, cutaway } of buildings) {
+      const before = cutaway.alpha;
+      const alpha = cutaway.update(hides(object, player, manifest.tile), dt);
+      if (alpha !== before) for (const slice of slices) slice.setAlpha(alpha);
     }
   }
 

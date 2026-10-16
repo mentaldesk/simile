@@ -10,7 +10,6 @@ export function project(tile: IsoTile, { x, y }: Point, z = 0): Point {
   };
 }
 
-/** Screen px to the map point on the ground plane under it. */
 export function unproject(tile: IsoTile, { x, y }: Point): Point {
   return { x: x / tile.width + y / tile.height, y: y / tile.height - x / tile.width };
 }

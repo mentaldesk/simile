@@ -1,4 +1,3 @@
-export * from './assets';
 export * from './camera';
 export * from './controls';
 export * from './cutaway';

@@ -38,7 +38,6 @@ export class SimClock {
     for (const resolve of this.waiting) resolve();
   }
 
-  /** The sim time once it's known, or undefined if it isn't within the timeout. */
   known(timeoutMs: number): Promise<string | undefined> {
     if (this.time !== undefined) return Promise.resolve(this.time);
     return new Promise((resolve) => {

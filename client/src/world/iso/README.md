@@ -11,8 +11,9 @@ the manifests, the projection, the depth slices and the ground heights.
 ## Assets
 
 `assets.ts` globs `content/art/iso/scenery/`. Manifests are imported `?url` and images `?no-inline`,
-so the build emits each file under `dist/assets/` with a hash and inlines none of them, and the
-bundle holds only their URLs. The scene fetches one manifest and the 115 images it names (about
+so the build emits each file under `dist/assets/` with a hash and inlines none of them. The scene
+imports `assets.ts` itself, once it starts, so the map of their URLs is a lazy chunk and the top-down
+page loads none of it. The scene then fetches one manifest and the 115 images it names (about
 4.5 MB), so only the set in use is downloaded. In dev, Vite serves them straight from `content/`.
 
 **Which set:** the one whose hours hold the sim time from the snapshot or the latest `clock` message
@@ -29,7 +30,8 @@ mirror `lighting.py`, and a test checks them against every manifest.
 - **Ground heights** (`ground.ts`): feet on grass are drawn about 10 px up and on a road 4 px down.
   Depth stays on the ground plane.
 - **Cutaway** (`cutaway.ts`): a building fades to `CUTAWAY_ALPHA` while it's in front of the player
-  where they stand and its silhouette covers them. The ground under it is lit.
+  where they stand and its silhouette covers them, and back in `CUTAWAY_HOLD_SECONDS` after it stops.
+  The ground under it is lit.
 - **Camera** (`camera.ts`): it follows the player and keeps the view on the map's diamond, giving way
   at the edges and corners so the player stays within `TARGET_REACH` of the centre.
 - **Controls** (`controls.ts`): arrows and WASD are screen directions, turned into grid directions,
