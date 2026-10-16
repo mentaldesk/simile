@@ -238,7 +238,7 @@ def walk_images(level: str) -> None:
 
 
 def compare() -> None:
-    """The same 1:1 crop from each approach, side by side at half size."""
+    """The same crop from each approach, side by side; the pixel art at an exact 2×."""
     crops = [
         ("1-xcom-crop.jpg", "1  pre-rendered 3D, XCOM 2 level"),
         ("1b-fallout-crop.png", "1b  pre-rendered 3D, Fallout 2 level"),
@@ -246,14 +246,19 @@ def compare() -> None:
     ]
     if not all((S.IMAGES / name).exists() for name, _ in crops):
         return
-    w, h, label = 528, 336, 20
+    w, h, label = 704, 448, 20
     sheet = Image.new("RGB", (w * len(crops), h + label), (24, 20, 37))
     draw = ImageDraw.Draw(sheet)
     for i, (name, title) in enumerate(crops):
-        im = Image.open(S.IMAGES / name).convert("RGB").resize((w, h), Image.Resampling.LANCZOS)
+        im = Image.open(S.IMAGES / name).convert("RGB")
+        if name.startswith("2-"):
+            native = im.resize((im.width // 3, im.height // 3), Image.Resampling.NEAREST)
+            im = upscale(native, 2)
+        else:
+            im = im.resize((w, h), Image.Resampling.LANCZOS)
         sheet.paste(im, (i * w, label))
         draw.text((i * w + 6, 4), title, fill=(234, 212, 170))
-    save(sheet, "compare.jpg", quality=88)
+    save(sheet, "compare.png")
 
 
 def main(levels: list[str]) -> None:

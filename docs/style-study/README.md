@@ -7,10 +7,12 @@ screen up-right. The residents are Odalys (curly hair, apron) by the café, Ingr
 backpack) walking east, and Lachlan (buzz cut, cap) by the fountain. Their art comes from their
 `appearance` in `content/npcs/` and A1's colour rules.
 
-![The same crop from each approach](images/compare.jpg)
+![The same crop from each approach](images/compare.png)
 
-The crops below are 1:1 at the size the game would draw them. Each one covers about 22 × 14 tiles,
-the same screen area a tile covers today (A1's 16 px tiles at 3×).
+The crops below are 1:1 at the size the game would draw them. Each 96 × 48 px diamond has the same
+area as today's 48 px tile (A1's 16 px tiles at 3×). So a crop shows as much of the town as a
+22 × 14-tile window does now. In the comparison above, the pixel art is at an exact 2× and the
+renders are scaled to match.
 
 ## 1. Pre-rendered 3D, XCOM 2 level
 
@@ -28,6 +30,9 @@ residents, which are rendered separately as sprites with their shadows, the way 
 them.
 
 Buildings south of the square would hide it, so they're cut away to their walls, as XCOM does.
+`--part objects` renders every building whole, and one sprite per prop kind, each on its own. That's
+what C1 would draw over a ground layer, and it's where the full-set estimates below get their
+numbers.
 
 **Characters** are built from primitives, using `appearance` for build, skin, hair style and
 colours, and accessories. Rigid parts are parented to an 11-bone armature, with no skinning. The
@@ -47,7 +52,8 @@ The same script with `--level fallout` turns the detail down:
 - 8-sided cylinders instead of 16, and simpler trees.
 - No bevels, window frames, AC units, grime or bump.
 - A 7-bone rig with no knees or elbows.
-- 4 directions × 6 frames.
+- 4 directions × 6 frames. Without knees the pose depends on `sin(phase)` alone, so frames sit a
+  quarter step off the cycle's turning points to keep all six distinct.
 - Half the resolution: 48 px tiles, drawn at 2×.
 - 20 samples, a softer and higher sun, and daylight.
 
@@ -104,8 +110,10 @@ authenticated to access it. Please log in.
 This run's rules were not to log in, not to accept a licence and not to use re-uploads, so
 **there are no approach 3 images.** `flux.sh` is the exact attempt. It holds the prompts for a
 set piece (the café) and both consistency tests: two plaza tiles that should match, and Ingrid in
-two poses with the same seed. It runs as it is once someone accepts the gate. That someone is the
-user, since the gate needs their account. The download is 33.7 GB in the diffusers layout mflux
+two poses with the same seed. It runs as it is once the user accepts the gate on their Hugging Face
+account and logs in as usual (`hf auth login`, or `HF_TOKEN` in the environment). The script only
+moves the weights, setting `HF_HUB_CACHE` to `~/.cache/simile-style-study/hf/hub`, so the login is
+found where it normally lives. The download is 33.7 GB in the diffusers layout mflux
 uses.
 
 Two Apache-2.0 models that aren't gated, per the Hugging Face API, and that mflux 0.22 supports:
@@ -123,7 +131,7 @@ paint-over on top of approach 1's geometry rather than a pipeline of its own.
 
 ## Costs
 
-Measured on an M2 Max with Blender 5.2.2. The whole study regenerates in 77 s
+Measured on an M2 Max with Blender 5.2.2. The whole study regenerates in 2.5 min
 (`BLENDER=/opt/homebrew/bin/blender ./render.sh`), plus about 60 s the first time Blender compiles
 its Metal kernels.
 
@@ -131,16 +139,23 @@ its Metal kernels.
 |---|---|---|---|---|
 | Mock-up scene | 2256 × 1272 px, 93k triangles, 1,351 objects, **16 s** | 1128 × 636 px, 27k triangles, **2 s** | 752 × 424 px, **1 s** | not run (gated) |
 | One resident | ~2k triangles, 11 bones, 0.55 s a frame | ~550 triangles, 7 bones, 0.45 s a frame | A1's `draw_frame`, instant | |
-| **Full asset set, machine time** (estimate) | **~9 min**: village background ~80 s (4.9× the mock-up's area), 11 characters × 72 frames ~7 min | **~3 min**: background ~10 s, 11 × 28 frames ~2.5 min | **~5 s** | 33.7 GB download, then each asset is prompt, pick and clean up; not measured |
+| **Full asset set, machine time** (estimate) | **~10 min**: ground layer ~80 s (4.9× the mock-up's area), 32 object sprites 49 s (measured), 11 characters × 72 frames ~7 min | **~3 min**: ground ~10 s, objects 21 s (measured), 11 × 28 frames ~2.3 min | **~5 s** | 33.7 GB download, then each asset is prompt, pick and clean up; not measured |
 | **Building the pipeline** (estimate) | 3–5 agent-days from this study, plus art-direction rounds; +2–4 days for realistic rather than toy-like people (a skinned body mesh, e.g. MPFB) | 2–4 agent-days: the same code with the detail dial down, so the saving is machine time and size, not authoring | 1–2 agent-days: bake an iso tileset, redraw A1's top-down props, draw 3/4 views for every hair style and accessory | unknown, and animation still needs 1 or 2 underneath |
 | **How characters animate** | Rig + procedural cycles rendered to frames; 8 directions × (8 walk + 1 idle). A new animation (talk, sit) is a pose function: +64 frames, +35 s, ~+0.7 MB a character | Same, 4 directions × (6 + 1); 8 directions doubles it | A1's 3-frame yoyo in 4 views; the other 4 directions need 3/4 views | No frame-to-frame consistency without ControlNet over 1's renders |
 | **New resident** | Automatic from `appearance`: ~40 s of rendering | Automatic: ~13 s | Automatic (A1) | A prompt per resident, plus a human pick; no guarantee they look the same twice |
 | **New building** | Automatic from its tiles in the map; re-render it and the ground | Same | Automatic from A1's tiles | Generate, then fit it to the footprint by hand |
-| **Size on disk, full set** (estimate) | Background ~14 MP: ~3 MB as JPEG/WebP, ~18 MB as PNG; characters ~0.8 MB each as trimmed 256-colour atlases (2 MB raw). **~12 MB** (vs 0.7 MB for all of `content/art` today) | Background ~3.5 MP: ~2 MB at 256 colours; characters ~0.1 MB each. **~3 MB** | **< 0.1 MB** | n/a |
-| Runtime | 2D sprites in Phaser, no extra GPU work beyond ~60 MB of texture for the XCOM background (in ≤ 4096 px chunks) | | | |
+| **Size on disk, full set** (estimate) | Ground ~14 MP: ~3 MB as JPEG/WebP, ~18 MB as PNG. Object sprites: 0.6 MB trimmed at 256 colours, 0.35 MB as WebP (9.6 MB as raw PNG). Characters ~0.8 MB each as trimmed 256-colour atlases (2 MB raw). **~13 MB** (vs 0.7 MB for all of `content/art` today) | Ground ~3.5 MP: ~2 MB at 256 colours; object sprites 0.15 MB; characters ~0.1 MB each. **~3 MB** | **~0.1 MB** | n/a |
+| Runtime | 2D sprites in Phaser, no extra GPU work beyond texture memory: ~60 MB for the XCOM ground layer (in ≤ 4096 px chunks), plus the sprite atlases | | | |
 
-Estimates scale the mock-up's measured numbers to the whole 64 × 42 map and 11 characters (10
-residents and the player). Machine time is per frame, not per pixel: a 211 × 139 frame takes 0.55 s
+The estimates cover what C1 would need, not one baked background. That's a ground layer for the
+whole 64 × 42 map, a sprite for each of the 16 buildings and one per prop kind (anything a resident
+can walk behind), and 11 characters (10 residents and the player).
+
+- **Object sprites** are measured with `--part objects`.
+- **The ground layer** scales the mock-up's background render to the whole map. In production,
+  the objects would be hidden from its camera (Cycles' `visible_camera`) so that their shadows still
+  land on it. That's an untested assumption about its cost.
+- **Identical props share one sprite.** Every lamp is the same lamp, for example. Machine time is per frame, not per pixel: a 211 × 139 frame takes 0.55 s
 and a 91 × 70 frame 0.45 s, mostly Blender's per-render overhead.
 
 ## Recommendation
@@ -204,7 +219,7 @@ The simulation stays on its square grid. Only the projection changes. Screen pos
 | | |
 |---|---|
 | `scene.py` | The shared scene: reads the map, the residents and A1's palette; the view, crop and resident placements |
-| `render3d.py` | Approaches 1 and 1b: `blender -b -P render3d.py -- --level xcom\|fallout --part scene\|sprites\|walk\|all` |
+| `render3d.py` | Approaches 1 and 1b: `blender -b -P render3d.py -- --level xcom\|fallout --part scene\|sprites\|walk\|objects\|all` |
 | `compose.py` | Composites the residents, adds glow, the painterly filter and the palette, and writes `images/` |
 | `pixel_iso.py` | Approach 2, run from `server/` so it can import A1 |
 | `flux.sh` | Approach 3, as attempted |

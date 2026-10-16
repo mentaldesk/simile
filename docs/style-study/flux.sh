@@ -10,7 +10,7 @@ mkdir -p "$CACHE" "$OUT"
   uv venv --python 3.12 "$CACHE/venv"
   uv pip install --python "$CACHE/venv/bin/python" mflux==0.22.0
 }
-export HF_HOME="$CACHE/hf"
+export HF_HUB_CACHE="$CACHE/hf/hub"
 
 STYLE="isometric 2:1 pre-rendered game art, modern Shenzhen, muted palette, neon accents, \
 soft baked shadows, plain background"

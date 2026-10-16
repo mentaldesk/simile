@@ -484,9 +484,9 @@ def build_ground(town: S.TownMap, M):
                     poly.material_index = 1
 
 
-def build_building(b: dict, M):
+def build_building(b: dict, M, cutaway: bool = True):
     x0, x1, y0, y1 = b["x0"], b["x1"], b["y0"], b["y1"]
-    cut = y0 > SQUARE_SOUTH
+    cut = cutaway and y0 > SQUARE_SOUTH
     storeys = b["storeys"]
     height = 1.0 if cut else storeys * S.STOREY_M
     wall = {"cafe": M["cafe_wall"], "slate": M["slate_wall"], "cream": M["cream_wall"]}
@@ -1478,14 +1478,18 @@ def character_scene(npc_id):
     return rig, (w, h, anchor)
 
 
+def walk_phase(frame: int) -> float:
+    # A rig without knees poses by sin(phase) alone; this offset keeps every frame distinct.
+    return math.tau * (frame + 0.25) / L["frames"]
+
+
 def render_sprites(out: Path, timings: dict):
     frames = {}
     for npc_id, _, _, facing, frame in S.RESIDENTS:
         rig, (w, h, anchor) = character_scene(npc_id)
         timings[f"{npc_id}_triangles"] = poly_count()
         rig.rotation_euler.z = math.radians(S.FACING_DEG[facing])
-        n = 8
-        pose(rig, None if frame is None else math.tau * frame / n)
+        pose(rig, None if frame is None else walk_phase(frame))
         timings[f"{npc_id}_render_s"] = round(render(out / f"sprite_{npc_id}.png"), 1)
         frames[npc_id] = {"anchor": anchor, "size": [w, h]}
     (out / "sprites.json").write_text(json.dumps(frames, indent=2))
@@ -1498,7 +1502,7 @@ def render_walk(out: Path, timings: dict):
     for facing in L["dirs"]:
         rig.rotation_euler.z = math.radians(S.FACING_DEG[facing])
         for f in range(L["frames"]):
-            pose(rig, math.tau * f / L["frames"])
+            pose(rig, walk_phase(f))
             render(out / "walk" / f"{facing}_{f}.png")
             count += 1
     timings["walk_frames"] = count
@@ -1512,11 +1516,59 @@ def render_walk(out: Path, timings: dict):
     )
 
 
+def render_objects(out: Path, timings: dict):
+    """One sprite per building and per prop kind: what C1 draws over a ground layer."""
+    town = S.TownMap()
+    jobs = [
+        (f"building_{i}", lambda b=b: build_building(b, mats(), cutaway=False))
+        for i, b in enumerate(town.buildings())
+    ]
+    first = {}
+    for kind, tx, ty in town.props():
+        first.setdefault(kind, (tx, ty))
+    jobs += [
+        (
+            f"prop_{kind}",
+            lambda kind=kind, p=p: build_prop(kind, *p, town, mats(), random.Random(1)),
+        )
+        for kind, p in first.items()
+    ]
+    k = ppm()
+    start = time.time()
+    total = pixels = 0
+    for name, build in jobs:
+        clear()
+        build()
+        xs, ys = [], []
+        for obj in bpy.context.scene.objects:
+            if obj.type in ("MESH", "FONT"):
+                for corner in obj.bound_box:
+                    p = obj.matrix_world @ Vector(corner)
+                    xs.append(p.dot(CAM_RIGHT) * k)
+                    ys.append(-p.dot(CAM_UP) * k)
+        w = math.ceil(max(xs) - min(xs)) + 4
+        h = math.ceil(max(ys) - min(ys)) + 4
+        mid_x, mid_y = (max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2
+        camera(w, h, k, CAM_RIGHT * (mid_x / k) - CAM_UP * (mid_y / k))
+        setup_lights()
+        setup_render(w, h, transparent=True)
+        path = out / "objects" / f"{name}.png"
+        render(path)
+        total += path.stat().st_size
+        pixels += w * h
+    timings["object_sprites"] = len(jobs)
+    timings["object_render_s"] = round(time.time() - start, 1)
+    timings["object_mpx"] = round(pixels / 1e6, 2)
+    timings["object_png_mb"] = round(total / 1e6, 2)
+
+
 def main():
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser()
     parser.add_argument("--level", choices=list(LEVELS), default="xcom")
-    parser.add_argument("--part", choices=["scene", "sprites", "walk", "all"], default="all")
+    parser.add_argument(
+        "--part", choices=["scene", "sprites", "walk", "objects", "all"], default="all"
+    )
     parser.add_argument("--samples", type=int)
     args = parser.parse_args(argv)
     L.update(LEVELS[args.level])
@@ -1533,6 +1585,8 @@ def main():
         render_sprites(out, timings)
     if args.part in ("walk", "all"):
         render_walk(out, timings)
+    if args.part in ("objects", "all"):
+        render_objects(out, timings)
     timings_path.write_text(json.dumps(timings, indent=2))
     print("TIMINGS", json.dumps(timings))
 
