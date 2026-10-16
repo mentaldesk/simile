@@ -10,13 +10,14 @@ from simile.app import create_app
 from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import conversations_of, create_engine
+from simile.conversation.player import PlayerConversations
 from simile.llm import FakeProvider, LLMClient, Request, Usage
 from simile.memory import MemoryStore, memory_of
 from simile.news import news_of
 from simile.persistence import SavedWorld, WorldStore, capture
 from simile.persistence.lifespan import FRESH_ENV
 from simile.reflection import SYSTEM, Deed, Extraction, Reflection
-from simile.schema import Conversation, Line, Memory, NewsItem, Relationship
+from simile.schema import PLAYER_ID, Conversation, Line, Memory, NewsItem, Relationship
 from simile.sim import Clock, ConversationEnded, FakeWallClock, World, world_of
 
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
@@ -147,6 +148,27 @@ async def test_a_conversation_going_on_at_shutdown_is_ended_and_reflected_on(
     assert world.npcs["kofi"].cooldowns.keys() == {"henrietta"}
     assert world.npcs["henrietta"].cooldowns.keys() == {"kofi"}
     assert world.npcs["kofi"].until == world.npcs["henrietta"].until == stop
+
+
+@pytest.mark.anyio
+async def test_a_conversation_with_the_player_is_ended_too(database: Path) -> None:
+    ended: list[Conversation] = []
+
+    async def greet_the_player(app: Starlette) -> None:
+        app.state.llm = LLMClient(Chat())
+        world_of(app).bus.subscribe(
+            ConversationEnded, lambda event: ended.append(event.conversation)
+        )
+        PlayerConversations(conversations_of(app)).start("kofi", opener="kofi")
+
+    await run_village(timedelta(0), before=greet_the_player)
+
+    [conversation] = ended
+    assert conversation.participants == ["kofi", PLAYER_ID]
+    assert conversation.ended == START
+    kofi = saved(database).npcs["kofi"]
+    assert kofi.cooldowns.keys() == {PLAYER_ID}
+    assert kofi.until == conversation.ended
 
 
 @pytest.mark.anyio
