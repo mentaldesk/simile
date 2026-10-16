@@ -17,6 +17,7 @@ from npcs import (
     clip_path,
     imported_voices,
     load_npcs,
+    measure_rates,
     misheard,
     remove_voice,
     save_imported,
@@ -162,6 +163,14 @@ def main() -> None:
     print("\n| NPC | Kept attempt | Seed | Length | Peak dBFS | RMS dBFS | Word error rate | Accent | Checks |")
     print("|---|---|--:|--:|--:|--:|--:|---|---|")
     print("\n".join(report))
+
+    print(f"\nMeasuring how fast {', '.join(todo)} speak", flush=True)
+    try:
+        measure_rates(list(todo))
+    except (OSError, subprocess.CalledProcessError):
+        raise SystemExit(
+            f"Measuring failed, so rerun it: cd ../server && uv run --extra voice simile voice measure {' '.join(todo)}"
+        ) from None
 
 
 if __name__ == "__main__":

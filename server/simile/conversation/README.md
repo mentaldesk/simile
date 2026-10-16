@@ -44,10 +44,15 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   you to it", "see you at the riverside", "catch you later") counts as one: the other answers it
   and the conversation ends. A goodbye mentioned in passing, or asked as a question ("Will I see you
   at the quiz?"), doesn't count.
-- **Pacing.** A line takes `words / 200 wpm` sim seconds (at least `min_line_seconds`), about as
-  long as V1 takes to say it, then `turn_gap` before the next, whether or not anyone is listening. The next line is written while
-  the current one plays, so lines follow each other without gaps unless the LLM is slower than the
-  line. `Line.timestamp` is when it starts.
+- **Pacing.** A line takes as long as its speaker's voice takes to say it (at least
+  `min_line_seconds`), then `turn_gap` before the next. That's the voice's measured rate
+  ([*Speaking rates*](../voice/README.md#speaking-rates)), or `words_per_minute` (200) for a voice
+  without one. A voiced line whose audio I1 has finished making by the time it's spoken lasts
+  exactly as long as its audio instead. And the next line waits while the last one's audio is still
+  being made or playing, at most `voice_wait` (3 s) past its end, so speech keeps pace with the
+  bubbles. The next line is written while the current one plays, so lines follow each other
+  without gaps unless the LLM is slower than the line. `Line.timestamp` is when it starts and
+  `Line.duration` how long it lasts.
 - **Ending.** After the last line plays, the conversation ends. So does one whose next line fails
   or takes longer than `line_timeout` real seconds (30) to write, once the current line has
   played. Both NPCs resume deciding, and neither seeks the other for `cooldown` minutes.
@@ -77,9 +82,10 @@ resident towards their social need.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
-  said. The player's lines are spoken when they arrive and have no `LineDrafted`. If the player
-  says something while the NPC is still writing or speaking, the NPC stops: the rest of that reply
-  is dropped and they answer the new line.
+  said. Sentences are paced as in *Pacing* above, back to back without `turn_gap`. The player's
+  lines are spoken when they arrive and have no `LineDrafted`. If the player says something while
+  the NPC is still writing or speaking, the NPC stops: the rest of that reply is dropped and they
+  answer the new line.
 - **News the player mentions.** B4's `mentioned` matches the player's lines since the NPC last
   spoke against each article the NPC read: its title, tags and summary from the news store (looked
   up through `news_of` when needed, or just the title quoted in the memory if it's gone) and the

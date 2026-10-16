@@ -12,5 +12,9 @@ A voice can also be a recording, imported by `voice-lab/import_voices.py`
 ([how](../../voice-lab/README.md#importing-a-recorded-voice)). `imported.json` lists those, and
 `design_npcs.py` leaves them alone.
 
+`rates.json` is how fast each voice speaks, which paces their lines. `simile voice measure` writes
+it, and `design_npcs.py` and `import_voices.py` run that for each voice they make
+([how](../../server/simile/voice/README.md#speaking-rates)).
+
 Each resident's accent was set by hand (N2b, #70) in their `backstory`, `speaking_style` and
 `voice.description`. Rerunning `simile generate-npcs` replaces those along with everything else.

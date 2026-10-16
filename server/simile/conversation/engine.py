@@ -39,9 +39,12 @@ from simile.memory import SharedHistory
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, Npc, Relationship
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
+from simile.voice import speaking_rate
 from simile.world import Point
 
 logger = logging.getLogger(__name__)
+
+RECHECK = timedelta(seconds=0.1)
 
 
 class Memories(Protocol):
@@ -52,6 +55,18 @@ class Memories(Protocol):
     ) -> list[Memory]: ...
 
     def shared_history(self, a: str, b: str, now: datetime, *, k: int = 10) -> SharedHistory: ...
+
+
+class Audio(Protocol):
+    """I1's view of the audio it makes for each line."""
+
+    def duration(self, line: Line) -> float | None:
+        """How long the line's audio plays, once it's all made."""
+        ...
+
+    def remaining(self, line: Line) -> float | None:
+        """Seconds until the line's audio has played, or None while it's still being made."""
+        ...
 
 
 @dataclass
@@ -114,6 +129,8 @@ class ConversationEngine:
         self.player = Player()
         self.player_request: Callable[[Id, Id], bool] | None = None
         """Answers requests involving the player, which this engine declines without it."""
+        self.audio: Audio | None = None
+        """The audio being made for each line, which I1 sets while the server is voiced."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
@@ -286,7 +303,7 @@ class ConversationEngine:
             speaker=talk.speaker,
             text=draft.text,
             timestamp=max(self.clock.now, talk.free_at),
-            duration=round(duration(draft.text, self.config), 2),
+            duration=round(duration(draft.text, self.config, speaking_rate(talk.speaker)), 2),
         )
         talk.pending = (line, draft.values)
         self.bus.publish(LineDrafted(line))
@@ -294,7 +311,14 @@ class ConversationEngine:
 
     def _speak(self, talk: Talk) -> None:
         assert talk.pending is not None
-        (line, values), talk.pending = talk.pending, None
+        line, values = talk.pending
+        if (ends := self.still_playing(talk.conversation)) is not None:
+            free_at = ends + timedelta(seconds=self.config.turn_gap)
+            if free_at > self.clock.now:
+                talk.pending = (line.model_copy(update={"timestamp": free_at}), values)
+                return
+        talk.pending = None
+        line = self.as_voiced(line)
         talk.conversation.lines.append(line)
         self.bus.publish(LineSpoken(line))
         new = [value for value in values if value not in talk.touched]
@@ -327,6 +351,25 @@ class ConversationEngine:
             )
         else:
             talk.cue = Cue.REPLY
+
+    def as_voiced(self, line: Line) -> Line:
+        """The line lasting as long as its audio, if that's all made."""
+        played = self.audio.duration(line) if self.audio else None
+        return line if played is None else line.model_copy(update={"duration": round(played, 2)})
+
+    def still_playing(self, conversation: Conversation) -> datetime | None:
+        """Until when the last line's audio plays, while it's playing or still being made, but no
+        later than `voice_wait` past the line's end."""
+        if not conversation.lines or self.audio is None:
+            return None
+        last, now = conversation.lines[-1], self.clock.now
+        latest = last.timestamp + timedelta(seconds=last.duration + self.config.voice_wait)
+        if now >= latest:
+            return None
+        remaining = self.audio.remaining(last)
+        if remaining is None:
+            return min(now + RECHECK, latest)
+        return min(now + timedelta(seconds=remaining), latest) if remaining > 0 else None
 
     def _end(self, talk: Talk) -> None:
         now = self.clock.now

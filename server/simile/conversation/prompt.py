@@ -8,6 +8,7 @@ from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.memory import SharedHistory
 from simile.schema import PLAYER_ID, CoreValue, FlagKind, Id, Line, Memory, Npc, Relationship
 from simile.social import describe
+from simile.voice import SpeakingRate
 
 
 class Cue(StrEnum):
@@ -233,9 +234,12 @@ def parse_reply(
     return Draft(_trim(spoken, config.max_words), values)
 
 
-def duration(text: str, config: ConversationConfig = DEFAULT_CONFIG) -> float:
-    """Seconds to say `text` aloud at the configured pace."""
-    return max(config.min_line_seconds, len(text.split()) * 60 / config.words_per_minute)
+def duration(
+    text: str, config: ConversationConfig = DEFAULT_CONFIG, rate: SpeakingRate | None = None
+) -> float:
+    """Seconds to say `text` aloud: at the voice's measured rate, or else at the configured pace."""
+    seconds = rate.seconds(text) if rate else len(text.split()) * 60 / config.words_per_minute
+    return max(config.min_line_seconds, seconds)
 
 
 def _trim(text: str, max_words: int) -> str:

@@ -28,6 +28,7 @@ from simile.llm import Model
 from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
+from simile.voice import speaking_rate
 
 logger = logging.getLogger(__name__)
 
@@ -308,15 +309,18 @@ class PlayerConversations:
             logger.exception("Couldn't recall the news %s read", npc)
             return []
 
-    def _sentence(self, talk: PlayerTalk, text: str) -> None:
+    def _sentence(self, talk: PlayerTalk, text: str, *, at_once: bool = False) -> None:
         engine, now = self.engine, self.engine.clock.now
+        starts = max(now, talk.free_at)
+        if not at_once and (ends := engine.still_playing(talk.conversation)) is not None:
+            starts = max(starts, ends)
         line = Line(
             id=next(engine.line_ids),
             conversation_id=talk.conversation.id,
             speaker=talk.npc,
             text=text,
-            timestamp=max(now, talk.free_at),
-            duration=round(duration(text, engine.config), 2),
+            timestamp=starts,
+            duration=round(duration(text, engine.config, speaking_rate(talk.npc)), 2),
         )
         talk.free_at = line.timestamp + timedelta(seconds=line.duration)
         talk.said += 1
@@ -327,8 +331,18 @@ class PlayerConversations:
             talk.queued.append(line)
 
     def _speak(self, talk: PlayerTalk, line: Line) -> None:
+        line = self.engine.as_voiced(line)
         talk.conversation.lines.append(line)
         self.engine.bus.publish(LineSpoken(line))
+        if line.speaker != PLAYER_ID:
+            self._follow(talk, line.timestamp + timedelta(seconds=line.duration))
+
+    def _follow(self, talk: PlayerTalk, ends: datetime) -> None:
+        """Moves the queued sentences to follow each other from `ends`."""
+        for n, line in enumerate(talk.queued):
+            talk.queued[n] = line.model_copy(update={"timestamp": ends})
+            ends += timedelta(seconds=line.duration)
+        talk.free_at = ends
 
     def _advance(self, talk: PlayerTalk) -> None:
         now = self.engine.clock.now
@@ -338,7 +352,11 @@ class PlayerConversations:
             self._end(talk)
             return
         while talk.queued and talk.queued[0].timestamp <= now:
-            self._speak(talk, talk.queued.popleft())
+            ends = self.engine.still_playing(talk.conversation)
+            if ends is not None and ends > now:
+                self._follow(talk, ends)
+            else:
+                self._speak(talk, talk.queued.popleft())
         if talk.writing is not None and talk.writing.done():
             task, talk.writing = talk.writing, None
             self._replied(talk, task)
@@ -391,7 +409,8 @@ class PlayerConversations:
             self._interrupt(talk)
             if talk.quiet_until <= self.engine.clock.now:
                 name = first_name(self.engine.behaviour.npcs[to])
-                self._sentence(talk, self.rng.choice(TURNED_AWAY).format(name=name))
+                goodbye = self.rng.choice(TURNED_AWAY).format(name=name)
+                self._sentence(talk, goodbye, at_once=True)
         ends = talk.queued[0].timestamp if talk.queued else talk.free_at
         self._end(talk)
         return ends

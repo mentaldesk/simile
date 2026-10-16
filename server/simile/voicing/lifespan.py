@@ -14,7 +14,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         return
 
     from simile.behaviour import behaviour_of
-    from simile.conversation import LineDrafted
+    from simile.conversation import LineDrafted, conversations_of
     from simile.protocol import hub_of
     from simile.sim import ConversationEnded, ConversationStarted, LineSpoken, world_of
     from simile.voicing.voicing import Voicing, add_voices
@@ -35,10 +35,13 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.loop.register(voicing),
     ]
     app.state.voiced = voicing.voiced
+    engine = conversations_of(app)
+    engine.audio = voicing
     try:
         await add_voices(voice, behaviour_of(app).npcs.values())
         yield
     finally:
+        engine.audio = None
         del app.state.voiced
         for stop in reversed(stops):
             stop()

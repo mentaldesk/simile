@@ -1,5 +1,6 @@
 import json
 import re
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -65,6 +66,13 @@ def imported_voices() -> dict[str, str]:
 
 def save_imported(imported: dict[str, str]) -> None:
     imported_path().write_text(json.dumps(dict(sorted(imported.items())), indent=2) + "\n", encoding="utf-8")
+
+
+def measure_rates(npc_ids: list[str]) -> None:
+    """Measure how fast the voices speak, which paces their lines, with the server's voice model."""
+    server = REPO_ROOT / "server"
+    run = ["uv", "run", "--project", server, "--extra", "voice", "simile", "voice", "measure", *npc_ids]
+    subprocess.run(run, check=True)
 
 
 def to_design(npcs: dict[str, dict], force: bool) -> dict[str, dict]:

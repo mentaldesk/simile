@@ -27,6 +27,7 @@ from simile.schema import (
     MemoryKind,
 )
 from simile.social import describe, meet
+from simile.voice import SpeakingRate
 
 NPCS = {npc.id: npc for npc in load_npcs()}
 KOFI, HENRIETTA = NPCS["kofi"], NPCS["henrietta"]
@@ -376,7 +377,15 @@ def test_a_trim_never_ends_on_an_abbreviation() -> None:
     assert draft.text == LONG.removesuffix(" Right, so, who pays for the domes?")
 
 
-def test_a_line_takes_as_long_as_saying_it_at_200_words_a_minute() -> None:
+def test_a_voice_without_a_measured_rate_takes_200_words_a_minute() -> None:
     assert duration(" ".join(["word"] * 15)) == pytest.approx(4.5)
     assert duration("Hi.") == pytest.approx(1.0)
     assert duration("Hi.", ConversationConfig(min_line_seconds=0)) == pytest.approx(0.3)
+
+
+def test_a_measured_voice_takes_as_long_as_its_rate_says() -> None:
+    rate = SpeakingRate(base_seconds=0.6, seconds_per_word=0.27)
+
+    assert duration(" ".join(["word"] * 15), rate=rate) == pytest.approx(4.65)
+    assert duration("Hi.", rate=rate) == pytest.approx(1.0)
+    assert duration("Hi.", ConversationConfig(min_line_seconds=0), rate) == pytest.approx(0.87)

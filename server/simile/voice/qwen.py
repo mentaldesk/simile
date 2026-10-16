@@ -1,4 +1,5 @@
 import logging
+import zlib
 from collections.abc import Generator
 from pathlib import Path
 
@@ -19,10 +20,11 @@ def to_pcm(audio: mx.array) -> bytes:
 
 
 class QwenSynthesiser:
-    """Qwen3-TTS voice cloning on MLX, so Apple Silicon only."""
+    """Qwen3-TTS voice cloning on MLX, so Apple Silicon only. A seed makes sentences repeatable."""
 
-    def __init__(self, model: str = MODEL) -> None:
+    def __init__(self, model: str = MODEL, seed: int | None = None) -> None:
         self._model_name = model
+        self._seed = seed
         self._references: dict[str, tuple[mx.array, str]] = {}
 
     def load(self) -> None:
@@ -39,6 +41,8 @@ class QwenSynthesiser:
         # Caps a generation that never emits end-of-speech.
         max_seconds = 3 + len(sentence) / 5
         max_tokens = int(TOKENS_PER_SECOND * max_seconds)
+        if self._seed is not None:
+            mx.random.seed(zlib.crc32(f"{self._seed}/{npc_id}/{sentence}".encode()))
         tokens = 0
         for result in self._generate(npc_id, sentence, max_tokens):
             tokens += result.token_count
