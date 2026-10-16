@@ -1,4 +1,5 @@
 import type { NewsArticle, server } from '../net';
+import { pressedNewsKey } from './keys';
 import { NEWS_KEY } from './tuning';
 
 type Server = Pick<typeof server, 'on' | 'send'>;
@@ -74,9 +75,12 @@ export class NewsPanel {
 
   private onKey(event: KeyboardEvent): void {
     const { key } = event;
-    if (key === 'Escape' || key.toLowerCase() === NEWS_KEY) {
+    if (key === 'Escape' || pressedNewsKey(event)) {
       event.preventDefault();
       this.close();
+    } else if (key === 'Tab') {
+      event.preventDefault();
+      this.tab(event.shiftKey ? -1 : 1);
     } else if (key === 'ArrowDown' || key === 'ArrowUp') {
       event.preventDefault();
       this.move(key === 'ArrowDown' ? 1 : -1);
@@ -92,6 +96,14 @@ export class NewsPanel {
     const next = Math.min(Math.max(at + step, 0), this.articles.length - 1);
     this.selected = this.articles[next].news_id;
     this.render();
+  }
+
+  private tab(step: 1 | -1): void {
+    const stops = [...this.panel.querySelectorAll<HTMLElement>('a[href]')];
+    if (stops.length === 0) return;
+    const at = stops.indexOf(document.activeElement as HTMLElement);
+    const next = at === -1 ? (step === 1 ? 0 : stops.length - 1) : at + step;
+    stops[(next + stops.length) % stops.length].focus();
   }
 
   private read(newsId: string): void {
