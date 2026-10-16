@@ -53,9 +53,10 @@ FAREWELL = (
 CLAUSE_START = r"(?:^|[,;:—-]\s*|\b(?:and|so|well|right|okay|ok|anyway)\s+)"
 CLAUSE_END = r"(?=\s*(?:[,.!…]|$))"
 SEE_YOU = r"see (?:you|ya)\b(?!['’])"
+LOOKED_AFTER = rf" (?:(?:out|off|home|through)\b(?! there)|right{CLAUSE_END})"
 LEAVING = re.compile(
     rf"{CLAUSE_START}{FAREWELL}{CLAUSE_END}"
-    rf"|{CLAUSE_START}{SEE_YOU}|\b(?:i|we)(?:['’]ll| will| shall) {SEE_YOU}"
+    rf"|{CLAUSE_START}{SEE_YOU}|\b(?:i|we)(?:['’]ll| will| shall) {SEE_YOU}(?!{LOOKED_AFTER})"
     rf"|\bsee (?:you|ya) (?:later|soon|around|tomorrow){CLAUSE_END}"
     r"|\bcatch (?:you|ya) (?:later|soon|around)\b"
     r"|\btalk (?:to you )?(?:later|soon)\b|\buntil next time\b|\bmind how you go\b"
