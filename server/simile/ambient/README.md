@@ -1,9 +1,10 @@
 # simile.ambient
 
 The ambient director: it makes sure the player overhears the village. If no conversation between
-residents has been within earshot for a couple of minutes, it nudges two residents near the player
-who would happily talk to start one. `director_of(app)` returns the server's `Director`, which the
-`running` hook ticks on the sim loop.
+residents has been within earshot for a minute, it nudges two residents near the player who would
+happily talk to start one. With the defaults the player overhears about one every 8 minutes in the
+play-through below. `director_of(app)` returns the server's `Director`, which the `running` hook
+ticks on the sim loop.
 
 ## Nudging
 
@@ -11,17 +12,19 @@ who would happily talk to start one. `director_of(app)` returns the server's `Di
   conversation between NPCs comes into earshot once the player is within `earshot` (8 tiles) of
   one of its speakers, and stays in it until they're further than `out_of_earshot` (11) from all
   of them. Nothing is in earshot while no client is connected or the player isn't on the map.
-- **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (2 minutes) and
-  at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected
-  and the player is on the map, and starts again whenever a conversation is in earshot. It waits
-  while `max_conversations` NPC conversations are already going on elsewhere, since B2 would
-  decline another.
+- **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (1 minute) and
+  at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected,
+  the player is on the map and they aren't in a conversation of their own, so it never nudges
+  while the player is talking. It starts again whenever a conversation is in earshot or the
+  player's own ends. It waits while `max_conversations` NPC conversations are already going on
+  elsewhere, since B2 would decline another.
 - **Who.** Two residents who would each accept the other: both score above `accept_bar` (0) on
   B2's `accept_score`, which weighs how they feel about each other, their values, their social need
-  and what they're doing. The target is out, staying put within `earshot` of the player, and free
-  to be sought out as B1 has it (not asleep, at home or talking). The seeker is within `reach` (24
-  tiles) of them, not talking or in bed, and neither has a cooldown on the other. The pair whose
-  less keen member is keenest wins, then the target nearest the player.
+  and what they're doing. Both are already out in public: each is free to be sought out by the
+  other as B1 has it (not asleep, at home or heading there, talking, or cooling off from the
+  other), and neither is standing in a house. The target is staying put within `earshot` of the
+  player, and the seeker is within `reach` (24 tiles) of them. The pair whose less keen member is
+  keenest wins, then the target nearest the player.
 - **How.** Through B1's scores, with `Behaviour.nudge`: seeking the target out gets `bonus` (0.6)
   at the seeker's next decision, which they make on the next think. They walk over as for any seek,
   and B2's `request` decides as it always does, so the director never moves anyone or starts a
