@@ -42,14 +42,48 @@ class Deed(BaseModel):
     )
 
 
+WHAT = {
+    FlagKind.DEBT: "{who} owes {whom}",
+    FlagKind.GRUDGE: "{who} holds a grudge against {whom}",
+    FlagKind.PROMISE: "{who} promised {whom}",
+    FlagKind.BROKEN_PROMISE: "{who} broke a promise to {whom}",
+    FlagKind.SAVED_LIFE: "{who} saved the life of {whom}",
+    FlagKind.SECRET: "{who} told {whom} a secret",
+}
+"""Each kind of flag as who did what to whom."""
+
+HELD_BY_WHO = frozenset({FlagKind.GRUDGE})
+"""The kinds whose flag `who` holds. `whom` holds the rest: who is owed, promised, let down, saved
+or told."""
+
+
+def owner_and_about(kind: FlagKind, who: Id, whom: Id) -> tuple[Id, Id]:
+    """The flag's owner and who it's about, since F2's kinds read from the owner's side."""
+    return (who, whom) if kind in HELD_BY_WHO else (whom, who)
+
+
+def who_did_what(flag: Flag) -> str:
+    held_by_who = flag.kind in HELD_BY_WHO
+    who, whom = (flag.owner, flag.about) if held_by_who else (flag.about, flag.owner)
+    return WHAT[flag.kind].format(who=who, whom=whom)
+
+
 class NewFlag(BaseModel):
     kind: FlagKind = Field(
-        description="From this person's side: debt, `about` owes them; grudge, they resent "
-        "`about`; promise, `about` promised them something; broken_promise, `about` broke a "
-        "promise to them; saved_life, `about` saved their life; secret, `about` told them a "
-        "secret."
+        description="What `who` did to `whom`: "
+        + "; ".join(
+            f"{kind}, {what.format(who='`who`', whom='`whom`')}" for kind, what in WHAT.items()
+        )
+        + "."
     )
-    about: str = Field(description="The id of the other person.")
+    who: str = Field(
+        description="The id of who owes, holds the grudge, made the promise, broke it, saved the "
+        "life or told the secret."
+    )
+    whom: str = Field(
+        description="The id of who they owe, hold the grudge against, promised, let down, saved "
+        "or told."
+    )
     description: str = Field(
         description="What it concerns, in a few words, e.g. 'fixing Ana's fence by Friday'."
     )
@@ -75,23 +109,23 @@ class Reflection(BaseModel):
         "feels about them, judged by what this person cares about. Pleasant talk about things "
         "they care about is a small positive event for like. Leave out what didn't matter.",
     )
-    flags_opened: list[NewFlag] = Field(
-        default=[],
-        description="Lasting facts this person now holds about someone else because of this "
-        "conversation: a promise made to them, a favour they're owed, a grudge, a secret they "
-        "were told. Don't repeat a flag that's already open.",
-    )
-    flags_resolved: list[str] = Field(
-        default=[],
-        description="Refs (like F1) of this person's open flags that the conversation settled: "
-        "a promise kept, a debt repaid, a grudge let go. A promise that was broken is resolved "
-        "and opened again as a broken_promise.",
-    )
 
 
 class Extraction(BaseModel):
     reflections: list[Reflection] = Field(
         description="One for each person you're asked to reflect for."
+    )
+    flags_opened: list[NewFlag] = Field(
+        default=[],
+        description="Lasting facts between two people in the conversation that it created, each "
+        "as who did what to whom: a promise made, a debt run up, a grudge formed, a life saved, "
+        "a secret told. Don't repeat a flag that's already open.",
+    )
+    flags_resolved: list[str] = Field(
+        default=[],
+        description="Refs (like F1) of open flags that the conversation settled: a promise "
+        "kept, a debt repaid, a grudge let go. A promise that was broken is resolved and opened "
+        "again as a broken_promise.",
     )
 
 
@@ -190,6 +224,12 @@ def prompt(context: Context, config: ReflectionConfig = DEFAULT_CONFIG) -> str:
             "Also in the conversation, with no reflection of their own, though what they did "
             f"still counts:\n{listed}"
         )
+    if context.flags:
+        listed = "\n".join(
+            f"- {ref} ({flag.kind.value}): {who_did_what(flag)}: {flag.description}"
+            for ref, flag in context.flags.items()
+        )
+        parts.append(f"Open flags between them:\n{listed}")
     lines = conversation.lines[-config.transcript_lines :]
     transcript = "\n".join(f"{context.names[line.speaker]}: {line.text}" for line in lines)
     if len(conversation.lines) > len(lines):
@@ -213,13 +253,6 @@ def _person(context: Context, npc: Npc, config: ReflectionConfig) -> str:
             f"Going in, about {context.names[other]}: like {rel.like:.2f}, trust {rel.trust:.2f}, "
             f"respect {rel.respect:.2f}, familiarity {rel.familiarity:.2f}."
         )
-    flags = [
-        f"- {ref} ({flag.kind.value} about {flag.about}): {flag.description}"
-        for ref, flag in context.flags.items()
-        if flag.owner == npc.id
-    ]
-    if flags:
-        lines.append("Open flags:\n" + "\n".join(flags))
     return "\n".join(lines)
 
 

@@ -8,6 +8,7 @@ from simile.reflection.extraction import (
     Extraction,
     Reflection,
     Relationships,
+    owner_and_about,
     relationship,
 )
 from simile.schema import Flag, Id, InteractionEvent, Memory, MemoryKind, Relationship
@@ -37,7 +38,7 @@ def outcome(
 ) -> Outcome:
     """Apply what each NPC made of the conversation to how they feel about the others. Reads
     the relationships afresh, since others may have changed while the LLM was busy."""
-    now, conversation = context.now, context.conversation
+    now = context.now
     result = Outcome()
     for npc in context.npcs.values():
         for other in context.others(npc.id):
@@ -50,7 +51,6 @@ def outcome(
         if npc in context.npcs and npc not in reflections:
             reflections[npc] = reflection
 
-    opened = 0
     for npc in context.npcs:
         reflection = reflections.get(npc)
         deeds = _deeds(npc, reflection, context)[: config.events]
@@ -60,36 +60,44 @@ def outcome(
             )
             result.after[(npc, other)] = _feel(result.after[(npc, other)], events, context)
             result.events += events
-        if reflection is None:
-            continue
-        flags = [
-            (about, new)
-            for new in reflection.flags_opened
-            if (about := context.who(new.about)) not in (None, npc) and new.description.strip()
-        ]
-        for about, new in flags[: config.flags]:
-            opened += 1
-            flag = Flag(
-                id=f"{conversation.id}/{opened}",
-                kind=new.kind,
-                owner=npc,
-                about=about,
-                description=new.description.strip(),
-                created=now,
-            )
-            result.after[(npc, about)] = open_flag(result.after[(npc, about)], flag)
-        if reflection.summary.strip():
+        if reflection is not None and reflection.summary.strip():
             result.memories.append(_memory(npc, reflection, context, config))
 
-    for npc, reflection in reflections.items():
-        for ref in reflection.flags_resolved:
-            flag = context.flags.get(ref.strip().upper())
-            if flag is None or flag.owner != npc:
-                continue
-            key = (flag.owner, flag.about)
-            if any(f.id == flag.id and f.resolved is None for f in result.after[key].flags):
-                result.after[key] = resolve_flag(result.after[key], flag.id, now)
+    for flag in _flags(extraction, context, config):
+        key = (flag.owner, flag.about)
+        result.after[key] = open_flag(result.after[key], flag)
+
+    for ref in extraction.flags_resolved:
+        flag = context.flags.get(ref.strip().upper())
+        if flag is None:
+            continue
+        key = (flag.owner, flag.about)
+        if any(f.id == flag.id and f.resolved is None for f in result.after[key].flags):
+            result.after[key] = resolve_flag(result.after[key], flag.id, now)
     return result
+
+
+def _flags(extraction: Extraction, context: Context, config: ReflectionConfig) -> list[Flag]:
+    """The new flags, at most `flags` per owner."""
+    flags: list[Flag] = []
+    for new in extraction.flags_opened:
+        who, whom = context.who(new.who), context.who(new.whom)
+        description = new.description.strip()
+        if who is None or whom is None or who == whom or not description:
+            continue
+        owner, about = owner_and_about(new.kind, who, whom)
+        if owner in context.npcs and sum(f.owner == owner for f in flags) < config.flags:
+            flags.append(
+                Flag(
+                    id=f"{context.conversation.id}/{len(flags) + 1}",
+                    kind=new.kind,
+                    owner=owner,
+                    about=about,
+                    description=description,
+                    created=context.now,
+                )
+            )
+    return flags
 
 
 def _deeds(npc: Id, reflection: Reflection | None, context: Context) -> list[tuple[Id, Deed]]:

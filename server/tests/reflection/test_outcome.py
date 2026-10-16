@@ -38,6 +38,10 @@ def deed(by: str, **changes: Any) -> Deed:
     )
 
 
+def flagged(who: str, kind: FlagKind, whom: str, description: str = "the fence") -> NewFlag:
+    return NewFlag(kind=kind, who=who, whom=whom, description=description)
+
+
 def promise(owner: str, about: str, id: str = "fence") -> Flag:
     return Flag(
         id=id,
@@ -141,15 +145,13 @@ def test_reads_relationships_again_after_the_llm(
     assert result.after[("ana", "ben")].like == 0.2
 
 
-def test_a_promise_becomes_a_flag_on_its_owners_relationship(
+def test_a_promise_becomes_a_flag_held_by_whoever_was_promised(
     npcs: dict[str, Npc], store: MemoryStore, talk: Talk
 ) -> None:
     context = gather(talk(("ana", "I'll fix it.")), npcs, store)
-    opened = NewFlag(kind=FlagKind.PROMISE, about="ana", description=" fixing Ben's fence ")
+    opened = flagged("Ana", FlagKind.PROMISE, "ben", " fixing Ben's fence ")
 
-    result = outcome(
-        context, Extraction(reflections=[reflection("ben", flags_opened=[opened])]), store
-    )
+    result = outcome(context, Extraction(reflections=[], flags_opened=[opened]), store)
 
     assert result.after[("ben", "ana")].flags == [
         Flag(
@@ -167,7 +169,7 @@ def test_a_promise_becomes_a_flag_on_its_owners_relationship(
 def test_resolves_open_flags_by_ref(npcs: dict[str, Npc], store: MemoryStore, talk: Talk) -> None:
     store.add(meet(npcs["ben"], "ana"), promise("ben", "ana"))
     context = gather(talk(("ana", "Fixed your fence!")), npcs, store)
-    extraction = Extraction(reflections=[reflection("ben", flags_resolved=["f1", "F9"])])
+    extraction = Extraction(reflections=[], flags_resolved=["f1", "F9"])
 
     result = outcome(context, extraction, store)
 
@@ -181,10 +183,8 @@ def test_a_broken_promise_is_resolved_and_opened_again(
 ) -> None:
     store.add(meet(npcs["ben"], "ana"), promise("ben", "ana"))
     context = gather(talk(("ana", "I never got round to your fence.")), npcs, store)
-    broken = NewFlag(kind=FlagKind.BROKEN_PROMISE, about="ana", description="the fence")
-    extraction = Extraction(
-        reflections=[reflection("ben", flags_resolved=["F1"], flags_opened=[broken])]
-    )
+    broken = flagged("ana", FlagKind.BROKEN_PROMISE, "ben")
+    extraction = Extraction(reflections=[], flags_resolved=["F1"], flags_opened=[broken])
 
     result = outcome(context, extraction, store)
 
@@ -203,23 +203,9 @@ def test_ignores_a_flag_resolved_while_the_llm_was_busy(
     earlier = START + timedelta(minutes=1)
     store.add(promise("ben", "ana").model_copy(update={"resolved": earlier}))
 
-    result = outcome(
-        context, Extraction(reflections=[reflection("ben", flags_resolved=["F1"])]), store
-    )
+    result = outcome(context, Extraction(reflections=[], flags_resolved=["F1"]), store)
 
     assert result.after[("ben", "ana")].flags[0].resolved == earlier
-
-
-def test_only_a_flags_owner_resolves_it(
-    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
-) -> None:
-    store.add(meet(npcs["ben"], "ana"), promise("ben", "ana"))
-    context = gather(talk(("ana", "Your fence is done.")), npcs, store)
-    extraction = Extraction(reflections=[reflection("ana", flags_resolved=["F1"])])
-
-    result = outcome(context, extraction, store)
-
-    assert result.after[("ben", "ana")].flags[0].resolved is None
 
 
 def test_drops_what_doesnt_fit_the_conversation(
@@ -232,20 +218,21 @@ def test_drops_what_doesnt_fit_the_conversation(
             reflection(
                 "Ana Ferreira",
                 events=[deed("ana"), deed("cal"), deed("ben", action="  "), deed("Ben")],
-                flags_opened=[
-                    NewFlag(kind=FlagKind.DEBT, about="ana", description="a coffee"),
-                    NewFlag(kind=FlagKind.DEBT, about="ben", description=" "),
-                    NewFlag(kind=FlagKind.DEBT, about="cal", description="a coffee"),
-                ],
             ),
             reflection("ana", summary="A second take."),
-        ]
+        ],
+        flags_opened=[
+            flagged("ana", FlagKind.DEBT, "Ana Ferreira", "a coffee"),
+            flagged("ben", FlagKind.DEBT, "ana", " "),
+            flagged("cal", FlagKind.DEBT, "ana", "a coffee"),
+            flagged("ben", FlagKind.DEBT, "cal", "a coffee"),
+        ],
     )
 
     result = outcome(context, extraction, store)
 
     assert [(e.actor, e.target) for e in result.events] == [("ben", "ana")]
-    assert result.after[("ana", "ben")].flags == []
+    assert all(rel.flags == [] for rel in result.after.values())
     assert [m.content for m in result.memories] == ["Ana Ferreira chatted."]
 
 
@@ -255,16 +242,18 @@ def test_keeps_at_most_the_configured_events_and_flags_that_fit(
     config = DEFAULT_CONFIG.model_copy(update={"events": 2, "flags": 1})
     context = gather(talk(("ana", "Hi.")), npcs, store, config)
     flags = [
-        NewFlag(kind=FlagKind.SECRET, about="cal", description="a stranger's secret"),
-        *(NewFlag(kind=FlagKind.SECRET, about="ben", description=f"secret {n}") for n in range(3)),
+        flagged("cal", FlagKind.SECRET, "ana", "a stranger's secret"),
+        *(flagged("ben", FlagKind.SECRET, "ana", f"Ben's secret {n}") for n in range(3)),
+        flagged("ana", FlagKind.SECRET, "ben", "Ana's secret"),
     ]
     deeds = [deed("cal"), deed("ana"), *(deed("ben", action=f"deed {n}") for n in range(3))]
-    extraction = Extraction(reflections=[reflection("ana", events=deeds, flags_opened=flags)])
+    extraction = Extraction(reflections=[reflection("ana", events=deeds)], flags_opened=flags)
 
     result = outcome(context, extraction, store, config)
 
     assert [e.action for e in result.events] == ["deed 0", "deed 1"]
-    assert [f.description for f in result.after[("ana", "ben")].flags] == ["secret 0"]
+    assert [f.description for f in result.after[("ana", "ben")].flags] == ["Ben's secret 0"]
+    assert [f.description for f in result.after[("ben", "ana")].flags] == ["Ana's secret"]
 
 
 def test_several_deeds_move_like_no_further_than_one_full_strength_deed(
@@ -348,12 +337,9 @@ def test_npcs_remember_the_player_who_has_no_feelings_of_their_own(
     extraction = Extraction(
         reflections=[
             reflection(PLAYER_ID),
-            reflection(
-                "ana",
-                events=[deed("Visitor", action="offered Ana seeds")],
-                flags_opened=[NewFlag(kind=FlagKind.PROMISE, about="player", description="seeds")],
-            ),
-        ]
+            reflection("ana", events=[deed("Visitor", action="offered Ana seeds")]),
+        ],
+        flags_opened=[flagged("Visitor", FlagKind.PROMISE, "ana", "seeds")],
     )
 
     result = outcome(context, extraction, store)
@@ -365,3 +351,25 @@ def test_npcs_remember_the_player_who_has_no_feelings_of_their_own(
     assert result.memories[0].about == [PLAYER_ID]
     assert store.relationship(PLAYER_ID, "ana") is None
     assert store.relationship("ana", PLAYER_ID).flags[0].description == "seeds"
+
+
+def test_flags_the_player_would_hold_are_dropped(
+    npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    conversation = talk(("ana", "I'll bring you seeds."), participants=[PLAYER_ID, "ana"])
+    context = gather(conversation, npcs, store)
+    extraction = Extraction(
+        reflections=[],
+        flags_opened=[
+            flagged("ana", FlagKind.PROMISE, PLAYER_ID, "seeds"),
+            flagged("ana", FlagKind.SECRET, "Visitor", "her debts"),
+            flagged(PLAYER_ID, FlagKind.GRUDGE, "ana", "the seeds"),
+            flagged("ana", FlagKind.GRUDGE, PLAYER_ID, "being pestered"),
+        ],
+    )
+
+    result = outcome(context, extraction, store)
+
+    [flag] = result.after[("ana", PLAYER_ID)].flags
+    assert (flag.kind, flag.description) == (FlagKind.GRUDGE, "being pestered")
+    assert list(result.after) == [("ana", PLAYER_ID)]
