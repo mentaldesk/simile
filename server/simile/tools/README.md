@@ -34,7 +34,7 @@ the run: memories, interaction events and flags.
 
 | Section | |
 |---|---|
-| Problems | Signs of degenerate behaviour: most of the village at one place, one place taking most of the time out, the same few pairs or one NPC in most conversations, NPCs who never talked, lines repeated word for word, conversations that loop, catchphrases, B3 or B4 storing nothing, failing LLM calls and usage limits. Thresholds are in `ReportConfig`. |
+| Problems | Signs of degenerate behaviour: too few conversations an hour, NPCs who never talked, most of the village at one place, one place taking most of the time out, the same few pairs or one NPC in most conversations, conversations that only end at B2's line cap, lines repeated word for word, conversations that loop, catchphrases, speakers who open most lines the same way, B3 or B4 storing nothing, failing LLM calls and usage limits. Thresholds are in `ReportConfig`. |
 | Conversations | Per pair: how many, their lines and sim minutes. Conversations that ended before anyone spoke are left out here and everywhere else. |
 | Relationship drift | End minus start as a matrix, owner by row, for each aspect that moved, and the largest shifts. |
 | Reflections and flags | What B3 stored, and every flag opened or resolved. |

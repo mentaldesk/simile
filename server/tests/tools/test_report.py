@@ -224,6 +224,48 @@ def test_nobody_talking_is_a_problem() -> None:
     assert problems(change(healthy(), conversations=[], memories=[])) == ["Nobody talked."]
 
 
+def test_a_quiet_village_is_a_problem() -> None:
+    run = healthy()
+    quiet = change(run, conversations=run.conversations[:2], ended=at(120))
+
+    assert problems(quiet) == [
+        "Only 2 conversations in 2 sim hours (1.0 per sim hour).",
+        "Never talked: ed, fi.",
+    ]
+
+
+def test_conversations_that_run_to_the_cap_are_a_problem() -> None:
+    words = "apple bread cider dough eggs flour grape honey ice jam kale lime mint nut oat pear"
+    capped = talk(
+        "ada", "bo", *(f"{w.capitalize()} is item {i}." for i, w in enumerate(words.split()))
+    )
+    short = talk("cy", "di", "Hello.", "Hi.", "Bye.")
+
+    found = problems(
+        change(healthy(), conversations=[capped, capped.model_copy(update={"id": "x"})])
+    )
+
+    assert "2 of 2 conversations ran to B2's 16-line cap rather than ending on their own." in found
+    assert not any("cap" in p for p in problems(change(healthy(), conversations=[capped, short])))
+
+
+def test_opening_most_lines_the_same_way_is_a_verbal_tic() -> None:
+    script = [
+        "Frankly, the numbers speak.",
+        "Go on, tell me more.",
+        "Frankly, a fixed date.",
+        "What if we waited?",
+        "Frankly, no.",
+        "Ha, fine.",
+        "Right, Wednesday.",
+        "Deal.",
+    ]
+
+    found = problems(change(healthy(), conversations=[talk("ada", "bo", *script)]))
+
+    assert 'Verbal tics: ada opens 3 of 4 lines with "frankly".' in found
+
+
 def test_failing_calls_and_usage_limits_are_problems() -> None:
     calls = [
         *(call() for _ in range(17)),
@@ -417,10 +459,14 @@ def test_lists_tied_lines_and_phrases_in_order() -> None:
         '- 2× "alpha bravo charlie delta"',
         '- 2× "zulu yankee xray whiskey"',
     ]
-    assert section[-2:] == [
+    assert section[section.index("Phrases of 4 words in the most conversations:") + 2 :][:2] == [
         '- "alpha bravo charlie delta": 2 of 2',
         '- "zulu yankee xray whiskey": 2 of 2',
     ]
+    assert (
+        section[-1]
+        == 'Each speaker\'s most common first word: ada "zulu" 2 of 2, bo "alpha" 2 of 2.'
+    )
 
 
 def test_says_when_the_provider_was_fake() -> None:

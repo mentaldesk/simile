@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from simile.behaviour.simulate import PLACES
+from simile.conversation.config import DEFAULT_CONFIG as CONVERSATION
 from simile.schema import (
     PLAYER_ID,
     Conversation,
@@ -53,9 +54,24 @@ class ReportConfig(BaseModel):
     min_place_minutes: int = Field(
         default=60, description="NPC minutes at places before judging which dominates."
     )
+    min_conversation_rate: float = Field(
+        default=2.0, description="Conversations per sim hour below which the village is quiet."
+    )
     min_conversations: int = Field(
         default=6, description="Conversations before judging who talks to whom, or catchphrases."
     )
+    max_lines: int = Field(
+        default=CONVERSATION.max_lines, description="B2's cap on lines in a conversation."
+    )
+    capped_share: float = Field(
+        default=0.5,
+        description="Share of conversations that may run to `max_lines` rather than end on "
+        "their own.",
+    )
+    tic_share: float = Field(
+        default=0.5, description="Share of a speaker's lines that may open with the same word."
+    )
+    tic_lines: int = Field(default=4, description="Lines a speaker says before judging tics.")
     top_pairs: int = Field(
         default=3, description="How many pairs, each talking more than once, make 'the same few'."
     )
@@ -336,8 +352,19 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
     expected = " Expected with canned lines." if fake else ""
     found = []
     talks = with_lines(run)
+    hours = (run.ended - run.started) / timedelta(hours=1)
     if not talks:
         found.append("Nobody talked.")
+    elif hours >= 1 and len(talks) / hours < config.min_conversation_rate:
+        found.append(
+            f"Only {_n(len(talks), 'conversation')} in {hours:g} sim hours "
+            f"({len(talks) / hours:.1f} per sim hour)."
+        )
+    if talks:
+        held = Counter(npc for c in talks for npc in c.participants if npc in run.npcs)
+        quiet = [npc for npc in run.npcs if npc not in held]
+        if quiet:
+            found.append(f"Never talked: {', '.join(quiet)}.")
 
     need = crowd_size(run, config)
     crowded = crowded_minutes(run, need)
@@ -367,13 +394,16 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
             found.append(
                 f"{share:.0%} of conversations were between {_n(len(pairs), 'pair')}: {names}."
             )
-        held = Counter(npc for c in talks for npc in c.participants if npc in run.npcs)
         for npc, n in _top(held):
             if n / len(talks) > config.hub_share:
                 found.append(f"{npc} was in {n} of {len(talks)} conversations.")
-        quiet = [npc for npc in run.npcs if npc not in held]
-        if quiet:
-            found.append(f"Never talked: {', '.join(quiet)}.")
+
+    capped = [c for c in talks if len(c.lines) >= config.max_lines]
+    if talks and len(capped) / len(talks) > config.capped_share:
+        found.append(
+            f"{len(capped)} of {len(talks)} conversations ran to B2's {config.max_lines}-line cap "
+            "rather than ending on their own."
+        )
 
     lines = spoken(run)
     repeats = repeated_lines(lines)
@@ -397,6 +427,13 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
         if common:
             said = "; ".join(f'"{phrase}" in {n}' for phrase, n in common)
             found.append(f"Catchphrases, out of {len(talks)} conversations: {said}.{expected}")
+    tics = [
+        f'{speaker} opens {n} of {said} lines with "{word}"'
+        for speaker, word, n, said in openers(lines)
+        if said >= config.tic_lines and n / said >= config.tic_share
+    ]
+    if tics:
+        found.append(f"Verbal tics: {'; '.join(tics)}.{expected}")
 
     reflected = [c for c in talks if any(p in run.npcs for p in c.participants)]
     if reflected and not _kind(run.memories, MemoryKind.CONVERSATION):
@@ -577,6 +614,9 @@ def repetition_section(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) 
             "",
             f"Conversations that repeat one of their own lines: {len(loops)} of {len(talks)}.",
         ]
+    opening = [f'{who} "{word}" {n} of {total}' for who, word, n, total in openers(said) if n > 1]
+    if opening:
+        lines += ["", f"Each speaker's most common first word: {', '.join(opening)}."]
     return lines
 
 
@@ -774,6 +814,20 @@ def phrases(conversations: Iterable[Conversation], words: int) -> Counter[str]:
             said = normalise(line.text).split()
             grams.update(" ".join(said[i : i + words]) for i in range(len(said) - words + 1))
         found.update(grams)
+    return found
+
+
+def openers(lines: Iterable[Line]) -> list[tuple[str, str, int, int]]:
+    """Each speaker's most common first word: who, the word, how many of their lines open with
+    it, and how many lines they said."""
+    first: dict[str, Counter[str]] = defaultdict(Counter)
+    for line in lines:
+        if words := normalise(line.text).split():
+            first[line.speaker][words[0]] += 1
+    found = []
+    for speaker in sorted(first):
+        word, n = _top(first[speaker], 1)[0]
+        found.append((speaker, word, n, sum(first[speaker].values())))
     return found
 
 
