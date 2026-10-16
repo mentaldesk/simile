@@ -576,6 +576,73 @@ async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_convers
     assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
+@pytest.mark.parametrize("said", [["Hi Ben.", "Got a minute?"], ["Hi.", "Ben?", "Hey!"]])
+async def test_the_new_resident_waits_for_the_goodbye_however_much_the_player_says(
+    said: list[str],
+) -> None:
+    village = Village()
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+
+    village.walk_to("ben", 1)
+    for text in said:
+        village.players.say(text, "ben")
+        await village.run(0.3)
+    await village.run(6)
+
+    [ended] = village.ended
+    goodbye = ended.conversation.lines[-1]
+    talk = village.players.talk()
+    assert talk is not None
+    lines = talk.conversation.lines
+    assert [line.text for line in lines] == [*said, "Lovely to meet you.", "Settling in?"]
+    assert lines[len(said)].timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+
+
+@pytest.mark.parametrize("then", ["cal", "ana"])
+async def test_turning_away_again_during_the_goodbye_waits_for_it_without_another(
+    then: str,
+) -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(0.3)
+    village.walk_to(then, 1)
+    village.players.say("Oh, hello!", then)
+    await village.run(6)
+
+    to_ana, to_ben = village.ended
+    assert [line.speaker for line in to_ben.conversation.lines] == [PLAYER_ID]
+    goodbye = to_ana.conversation.lines[-1]
+    goodbyes = {text.format(name=name) for text in TURNED_AWAY for name in ("Ben", "Cal", "Ana")}
+    assert [event.line for event in village.of(LineDrafted) if event.line.text in goodbyes] == [
+        goodbye
+    ]
+    talk = village.players.talk()
+    assert talk is not None and talk.npc == then
+    reply = talk.conversation.lines[1]
+    assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+
+
+async def test_turning_away_mid_goodbye_waits_only_for_the_sentence_being_said() -> None:
+    village = Village(["Right you are, off you go. See you around! [values: connection]"])
+    village.players.say("Bye, Ana!", "ana")
+    await village.run(1.5)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(6)
+
+    [ended] = village.ended
+    lines = ended.conversation.lines
+    assert [line.text for line in lines] == ["Bye, Ana!", "Right you are, off you go."]
+    reply = next(line for line in village.spoken if line.speaker == "ben")
+    assert reply.timestamp == lines[-1].timestamp + timedelta(seconds=lines[-1].duration)
+
+
 async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
     hang = asyncio.Event()
     village = Village(provider=FakeProvider([["Well, ", hang], "Hello! [values: connection]"]))
