@@ -36,12 +36,12 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     ]
     app.state.voiced = voicing.voiced
     engine = conversations_of(app)
-    engine.voiced_duration = voicing.duration
+    engine.audio = voicing
     try:
         await add_voices(voice, behaviour_of(app).npcs.values())
         yield
     finally:
-        engine.voiced_duration = None
+        engine.audio = None
         del app.state.voiced
         for stop in reversed(stops):
             stop()

@@ -87,6 +87,23 @@ class Voicing:
         conversation = self._conversations.get(line.conversation_id)
         return None if conversation is None else conversation.durations.get(line.id)
 
+    def remaining(self, line: Line) -> float | None:
+        """Seconds until the line's audio has played on the client, by C3's timeline. None while
+        it's still being made, and 0 once it has played or if it isn't voiced."""
+        conversation = self._conversations.get(line.conversation_id)
+        if conversation is None:
+            return 0.0
+        now = asyncio.get_running_loop().time()
+        audio = self._lines.get(line.id)
+        if audio is None or audio.failed:
+            return max(0.0, conversation.ends - now)
+        if not audio.generated:
+            return None
+        unsent = sum(len(pcm) for pcm in audio.chunks) / 2 / SAMPLE_RATE
+        if not audio.sequence:
+            return max(0.0, conversation.ends - now) + self.config.jitter_buffer + unsent
+        return max(0.0, audio.ends - now) + unsent
+
     def on_started(self, event: ConversationStarted) -> None:
         conversation = event.conversation
         audio = ConversationAudio(tuple(conversation.participants))

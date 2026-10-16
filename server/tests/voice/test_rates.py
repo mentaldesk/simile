@@ -78,7 +78,8 @@ def test_a_voice_without_a_measurement_has_no_rate() -> None:
 def test_every_resident_with_a_voice_has_an_up_to_date_rate() -> None:
     stale = [npc.id for npc in outdated(RESIDENTS, load_rates())]
 
-    assert not stale, f"Measure their voices: cd server && uv run simile voice measure {stale}"
+    command = f"uv run --extra voice simile voice measure {' '.join(stale)}"
+    assert not stale, f"Measure their voices in server/: {command}"
 
 
 def test_every_residents_rate_is_loaded() -> None:

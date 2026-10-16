@@ -30,10 +30,11 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 
 - A line starts generating on `LineDrafted`: a line ahead for NPC conversations, and as soon as each
   sentence has streamed for the player's. B2 and B5 pace a line by its speaker's measured
-  rate, or by its audio once all of it is made: `duration(line)` is how long it plays, jitter
-  buffer included, and the engine reads it as `voiced_duration`. So the `line` message carries the
-  audio's length, the bubble lasts as long as the voice, and a line whose audio runs long holds back
-  the next.
+  rate, or by its audio once all of it is made. The running hook makes `Voicing` the engine's
+  `audio`: `duration(line)` is how long a line's audio plays, jitter buffer included, so the `line`
+  message carries it and the bubble lasts as long as the voice. `remaining(line)` is how long until
+  it has played on the client, or `None` while it's still being made, and the next line waits for
+  it.
 - An NPC conversation's lines go to V1 whole rather than split into sentences, because B2 hands
   over each line once it's fully written. B5 already makes each sentence of a reply its own line.
 - The protocol forwarder sends `voiced: app.state.voiced(line)` with each `line`: whether audio is

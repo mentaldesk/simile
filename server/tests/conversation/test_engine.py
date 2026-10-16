@@ -2,7 +2,7 @@ import asyncio
 import itertools
 import sys
 import types
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -277,9 +277,37 @@ async def test_a_measured_voice_paces_its_speakers_lines(monkeypatch: pytest.Mon
     assert ben.timestamp == ana.timestamp + timedelta(seconds=1.7 + 0.5)
 
 
+class Audio:
+    """What I1 would say about each NPC line's audio: made when `make` says, played from the
+    line's start."""
+
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+        self.made: dict[int, float] = {}
+
+    def make(self, seconds: float) -> Callable[[LineDrafted | LineSpoken], None]:
+        def record(event: LineDrafted | LineSpoken) -> None:
+            if event.line.speaker != PLAYER_ID:
+                self.made.setdefault(event.line.id, seconds)
+
+        return record
+
+    def duration(self, line: Line) -> float | None:
+        return self.made.get(line.id)
+
+    def remaining(self, line: Line) -> float | None:
+        if line.speaker == PLAYER_ID:
+            return 0.0
+        if line.id not in self.made:
+            return None
+        ends = line.timestamp + timedelta(seconds=self.made[line.id])
+        return max(0.0, (ends - self.clock.now).total_seconds())
+
+
 async def test_a_voiced_line_lasts_as_long_as_its_audio() -> None:
     village = Village(relationships=friends(ANA, BEN))
-    village.engine.voiced_duration = lambda line: 2.345
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineDrafted, audio.make(2.345))
     village.engine.start("ana", "ben")
 
     await village.run(minutes=1)
@@ -292,9 +320,8 @@ async def test_a_voiced_line_lasts_as_long_as_its_audio() -> None:
 
 async def test_the_next_line_waits_for_audio_that_runs_longer_than_its_line() -> None:
     village = Village(relationships=friends(ANA, BEN))
-    made: dict[int, float] = {}
-    village.engine.voiced_duration = lambda line: made.get(line.id)
-    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 4.0))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(4.0))
     village.engine.start("ana", "ben")
 
     await village.run(minutes=1)
@@ -302,6 +329,19 @@ async def test_the_next_line_waits_for_audio_that_runs_longer_than_its_line() ->
     first, second, *_ = village.spoken
     assert first.duration == 1.2
     assert second.timestamp == first.timestamp + timedelta(seconds=4.0 + 0.5)
+
+
+async def test_the_next_line_waits_a_while_for_audio_still_being_made() -> None:
+    village = Village(relationships=friends(ANA, BEN), config=ConversationConfig(voice_wait=2))
+    village.engine.audio = Audio(village.clock)
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    first, second, *_ = village.spoken
+    first_ends = first.timestamp + timedelta(seconds=first.duration)
+    assert first_ends + timedelta(seconds=2) <= second.timestamp
+    assert second.timestamp <= first_ends + timedelta(seconds=2 + 0.1 + 0.5)
 
 
 async def test_each_line_is_announced_before_it_is_spoken() -> None:

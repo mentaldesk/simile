@@ -101,6 +101,12 @@ class ConversationConfig(BaseModel):
         "*Speaking rates*), and for the player: 0.3 s a word. C2's SECONDS_PER_WORD matches it.",
     )
     min_line_seconds: float = Field(default=1.0, ge=0, description="Shortest a line takes.")
+    voice_wait: float = Field(
+        default=3.0,
+        ge=0,
+        description="Longest the next line waits, past the end of a voiced line, for I1 to make "
+        "and play that line's audio, so a slow generation can't stall a conversation.",
+    )
     turn_gap: float = Field(default=0.5, ge=0, description="Sim seconds between two lines.")
 
     model: str = Field(

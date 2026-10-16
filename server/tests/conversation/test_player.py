@@ -1,6 +1,6 @@
 import asyncio
 import itertools
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -212,12 +212,37 @@ async def test_a_measured_voice_paces_the_npcs_sentences(monkeypatch: pytest.Mon
     assert second.timestamp == first.timestamp + timedelta(seconds=1.78)
 
 
+class Audio:
+    """What I1 would say about each NPC line's audio: made when `make` says, played from the
+    line's start."""
+
+    def __init__(self, clock: Clock) -> None:
+        self.clock = clock
+        self.made: dict[int, float] = {}
+
+    def make(self, seconds: float) -> Callable[[LineDrafted | LineSpoken], None]:
+        def record(event: LineDrafted | LineSpoken) -> None:
+            if event.line.speaker != PLAYER_ID:
+                self.made.setdefault(event.line.id, seconds)
+
+        return record
+
+    def duration(self, line: Line) -> float | None:
+        return self.made.get(line.id)
+
+    def remaining(self, line: Line) -> float | None:
+        if line.speaker == PLAYER_ID:
+            return 0.0
+        if line.id not in self.made:
+            return None
+        ends = line.timestamp + timedelta(seconds=self.made[line.id])
+        return max(0.0, (ends - self.clock.now).total_seconds())
+
+
 async def test_voiced_sentences_last_as_long_as_their_audio() -> None:
     village = Village(["One. Two. Three."])
-    made: dict[int, float] = {}
-    village.engine.voiced_duration = lambda line: made.get(line.id)
-    village.world.bus.subscribe(LineDrafted, lambda event: made.setdefault(event.line.id, 2.5))
-    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 3.0))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineDrafted, audio.make(2.5))
 
     village.players.say("Count for me.", "ana")
     await village.run(seconds=10)
@@ -230,9 +255,8 @@ async def test_voiced_sentences_last_as_long_as_their_audio() -> None:
 
 async def test_the_next_sentence_waits_for_audio_that_runs_longer_than_its_line() -> None:
     village = Village(["One. Two."])
-    made: dict[int, float] = {}
-    village.engine.voiced_duration = lambda line: made.get(line.id)
-    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 3.0))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(3.0))
 
     village.players.say("Count for me.", "ana")
     await village.run(seconds=10)
@@ -254,6 +278,23 @@ async def test_the_first_sentence_is_out_before_the_rest_is_written() -> None:
     rest.set()
     await village.run(2)
     assert village.said("ana") == ["Oh, hello!", "Welcome to the village."]
+
+
+async def test_a_sentence_written_late_still_waits_for_the_audio_before_it() -> None:
+    rest = asyncio.Event()
+    provider = FakeProvider([["Oh, hello! ", "Welcome to ", rest, "the village.\n[values: x]"]])
+    village = Village(provider=provider)
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(3.0))
+
+    village.players.say("Hello", "ana")
+    await village.run(2)
+    rest.set()
+    await village.run(3)
+
+    _, hello, welcome = village.spoken
+    assert hello.duration == 1.0
+    assert welcome.timestamp == hello.timestamp + timedelta(seconds=3.0)
 
 
 async def test_the_reply_is_written_from_the_npcs_side_at_player_priority() -> None:
@@ -620,6 +661,24 @@ async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_convers
     assert village.said(PLAYER_ID) == ["Hi Ana.", "Hi Ben."]
     reply = next(line for line in village.spoken if line.speaker == "ben")
     assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+
+
+async def test_turning_away_gets_the_goodbye_at_once_while_audio_still_plays() -> None:
+    village = Village()
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(3.0))
+    village.players.say("Hi Ana.", "ana")
+    await village.run(1)
+
+    village.walk_to("ben", 1)
+    turned = village.clock.now
+    village.players.say("Hi Ben.", "ben")
+    await village.run(6)
+
+    [ended] = village.ended
+    goodbye = ended.conversation.lines[-1]
+    assert goodbye.text in [text.format(name="Ben") for text in TURNED_AWAY]
+    assert goodbye.timestamp == turned
 
 
 @pytest.mark.parametrize("said", [["Hi Ben.", "Got a minute?"], ["Hi.", "Ben?", "Hey!"]])

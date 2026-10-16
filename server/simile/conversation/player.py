@@ -309,14 +309,17 @@ class PlayerConversations:
             logger.exception("Couldn't recall the news %s read", npc)
             return []
 
-    def _sentence(self, talk: PlayerTalk, text: str) -> None:
+    def _sentence(self, talk: PlayerTalk, text: str, *, at_once: bool = False) -> None:
         engine, now = self.engine, self.engine.clock.now
+        starts = max(now, talk.free_at)
+        if not at_once and (ends := engine.still_playing(talk.conversation)) is not None:
+            starts = max(starts, ends)
         line = Line(
             id=next(engine.line_ids),
             conversation_id=talk.conversation.id,
             speaker=talk.npc,
             text=text,
-            timestamp=max(now, talk.free_at),
+            timestamp=starts,
             duration=round(duration(text, engine.config, speaking_rate(talk.npc)), 2),
         )
         talk.free_at = line.timestamp + timedelta(seconds=line.duration)
@@ -406,7 +409,8 @@ class PlayerConversations:
             self._interrupt(talk)
             if talk.quiet_until <= self.engine.clock.now:
                 name = first_name(self.engine.behaviour.npcs[to])
-                self._sentence(talk, self.rng.choice(TURNED_AWAY).format(name=name))
+                goodbye = self.rng.choice(TURNED_AWAY).format(name=name)
+                self._sentence(talk, goodbye, at_once=True)
         ends = talk.queued[0].timestamp if talk.queued else talk.free_at
         self._end(talk)
         return ends

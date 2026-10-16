@@ -44,6 +44,8 @@ from simile.world import Point
 
 logger = logging.getLogger(__name__)
 
+RECHECK = timedelta(seconds=0.1)
+
 
 class Memories(Protocol):
     def relationship(self, owner: str, about: str) -> Relationship | None: ...
@@ -53,6 +55,18 @@ class Memories(Protocol):
     ) -> list[Memory]: ...
 
     def shared_history(self, a: str, b: str, now: datetime, *, k: int = 10) -> SharedHistory: ...
+
+
+class Audio(Protocol):
+    """I1's view of the audio it makes for each line."""
+
+    def duration(self, line: Line) -> float | None:
+        """How long the line's audio plays, once it's all made."""
+        ...
+
+    def remaining(self, line: Line) -> float | None:
+        """Seconds until the line's audio has played, or None while it's still being made."""
+        ...
 
 
 @dataclass
@@ -115,8 +129,8 @@ class ConversationEngine:
         self.player = Player()
         self.player_request: Callable[[Id, Id], bool] | None = None
         """Answers requests involving the player, which this engine declines without it."""
-        self.voiced_duration: Callable[[Line], float | None] | None = None
-        """How long a line's audio plays for, once it's all made. I1 sets it while voiced."""
+        self.audio: Audio | None = None
+        """The audio being made for each line, which I1 sets while the server is voiced."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
@@ -340,18 +354,22 @@ class ConversationEngine:
 
     def as_voiced(self, line: Line) -> Line:
         """The line lasting as long as its audio, if that's all made."""
-        played = self.voiced_duration(line) if self.voiced_duration else None
+        played = self.audio.duration(line) if self.audio else None
         return line if played is None else line.model_copy(update={"duration": round(played, 2)})
 
     def still_playing(self, conversation: Conversation) -> datetime | None:
-        """When the last line's audio ends, if it runs past the line's duration."""
-        if not conversation.lines or self.voiced_duration is None:
+        """Until when the last line's audio plays, while it's playing or still being made, but no
+        later than `voice_wait` past the line's end."""
+        if not conversation.lines or self.audio is None:
             return None
-        last = conversation.lines[-1]
-        played = self.voiced_duration(last)
-        if played is None or played <= last.duration:
+        last, now = conversation.lines[-1], self.clock.now
+        latest = last.timestamp + timedelta(seconds=last.duration + self.config.voice_wait)
+        if now >= latest:
             return None
-        return last.timestamp + timedelta(seconds=played)
+        remaining = self.audio.remaining(last)
+        if remaining is None:
+            return min(now + RECHECK, latest)
+        return min(now + timedelta(seconds=remaining), latest) if remaining > 0 else None
 
     def _end(self, talk: Talk) -> None:
         now = self.clock.now

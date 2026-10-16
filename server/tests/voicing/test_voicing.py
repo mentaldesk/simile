@@ -193,6 +193,46 @@ def test_knows_how_long_a_line_plays_once_its_audio_is_made(
     assert made == pytest.approx(DEFAULT_CONFIG.jitter_buffer + played)
 
 
+def test_knows_how_long_until_a_lines_audio_has_played(synthesiser: FakeSynthesiser) -> None:
+    gate = synthesiser.gate("Morning, Mei.")
+
+    async def scenario() -> list[float | None]:
+        async with village(synthesiser) as world:
+            talk = world.start("mei", "viktor")
+            line = world.draft(talk, "viktor", "Morning, Mei.")
+            await until(lambda: "Morning, Mei." in synthesiser.started)
+            making = world.voicing.remaining(line)
+            gate.release(synthesiser.chunks)
+            await until(lambda: "Morning, Mei." in synthesiser.closed)
+            await settle()
+            made = world.voicing.remaining(line)
+            world.speak(line)
+            await world.heard(line)
+            playing = world.voicing.remaining(line)
+            await asyncio.sleep((playing or 0) + 0.01)
+            return [making, made, playing, world.voicing.remaining(line)]
+
+    making, made, playing, played = asyncio.run(scenario())
+
+    seconds = DEFAULT_CONFIG.jitter_buffer + synthesiser.chunks * 240 / SAMPLE_RATE
+    assert making is None
+    assert made == pytest.approx(seconds)
+    assert playing is not None and 0 < playing <= seconds
+    assert played == 0
+
+
+def test_a_line_it_doesnt_voice_has_nothing_left_to_play(synthesiser: FakeSynthesiser) -> None:
+    async def scenario() -> float | None:
+        async with village(synthesiser) as world:
+            world.move_player(100, 0)
+            talk = world.start("mei", "viktor")
+            line, _ = world.say(talk, "mei", "Anyone there?")
+            await settle()
+            return world.voicing.remaining(line)
+
+    assert asyncio.run(scenario()) == 0
+
+
 def test_knows_no_duration_for_a_line_it_wont_play_whole(synthesiser: FakeSynthesiser) -> None:
     synthesiser.failing.add("Hmm.")
 
