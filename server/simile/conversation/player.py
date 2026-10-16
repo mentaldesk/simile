@@ -22,9 +22,11 @@ from simile.conversation.prompt import (
     parse_reply,
     system_prompt,
     turn_prompt,
+    with_both_read,
 )
 from simile.llm import Model
-from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line
+from simile.news.reactions import read_by_both
+from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory
 from simile.sim import ConversationStarted, LineSpoken
 
 logger = logging.getLogger(__name__)
@@ -264,7 +266,7 @@ class PlayerConversations:
         engine, npc = self.engine, talk.npc
         party = talk.parties[npc]
         prompt = turn_prompt(
-            party.background,
+            with_both_read(party.background, self._read_by_both(npc), engine.player.name),
             lines,
             talk.names,
             cue,
@@ -287,6 +289,13 @@ class PlayerConversations:
         for sentence in sentences.end():
             self._sentence(talk, sentence)
         return sentences.draft
+
+    def _read_by_both(self, npc: Id) -> list[Memory]:
+        try:
+            return read_by_both(self.engine.memory, npc, PLAYER_ID, self.engine.clock.now)
+        except Exception:
+            logger.exception("Couldn't get the news %s and the player have both read", npc)
+            return []
 
     def _sentence(self, talk: PlayerTalk, text: str) -> None:
         engine, now = self.engine, self.engine.clock.now

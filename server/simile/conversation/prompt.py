@@ -157,6 +157,30 @@ def background(
     return "\n\n".join(parts)
 
 
+def with_both_read(background: str, memories: Sequence[Memory], other: str) -> str:
+    """`background` with the news the speaker and `other` have both read marked, or added if it
+    isn't there, and a nudge to bring it up."""
+    if not memories:
+        return background
+    lines = background.split("\n")
+    missing = []
+    for memory in memories:
+        line = f"- {memory.content}"
+        marked = f"{line} ({other} has read it too.)"
+        if line in lines:
+            lines[lines.index(line)] = marked
+        else:
+            missing.append(marked)
+    parts = ["\n".join(lines)]
+    if missing:
+        parts.append("News you've both read:\n" + "\n".join(missing))
+    parts.append(
+        f"You might ask {other} if they saw the news you've both read, and if they bring it up, "
+        "say what you made of it."
+    )
+    return "\n\n".join(parts)
+
+
 def turn_prompt(
     background: str,
     lines: Sequence[Line],

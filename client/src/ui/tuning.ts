@@ -10,3 +10,6 @@ export const BUBBLE_FADE_SECONDS = 0.5;
 export const SECONDS_PER_WORD = 0.3;
 
 export const LOG_LIMIT = 200;
+
+/** Opens the news at a terminal, and closes it. */
+export const NEWS_KEY = 'e';
