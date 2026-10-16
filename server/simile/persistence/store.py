@@ -1,12 +1,12 @@
 import logging
 import sqlite3
 import threading
-from pathlib import Path
 from types import TracebackType
 from typing import Self
 
 from pydantic import ValidationError
 
+from simile.memory import MemoryStore
 from simile.persistence.state import SavedWorld
 
 logger = logging.getLogger(__name__)
@@ -18,19 +18,15 @@ CREATE TABLE IF NOT EXISTS saved_world (
 );
 """
 
-VILLAGE = ("events", "flags", "memories", "relationships", "saved_world")
-"""R2's tables and the saved world: everything `clear` forgets."""
-
 
 class WorldStore:
-    """The saved world in its own table of a SQLite file, R2's by default. Thread-safe."""
+    """The saved world, in its own table of R2's database file. Thread-safe."""
 
-    def __init__(self, path: str | Path) -> None:
-        self.path = Path(path)
-        if str(path) != ":memory:":
-            self.path.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, memory: MemoryStore) -> None:
+        self.memory = memory
+        self.path = memory.path
         self._lock = threading.Lock()
-        self._db = sqlite3.connect(path, check_same_thread=False)
+        self._db = sqlite3.connect(memory.path, check_same_thread=False)
         self._db.executescript(SCHEMA)
 
     def close(self) -> None:
@@ -66,10 +62,7 @@ class WorldStore:
             return None
 
     def clear(self) -> None:
-        """Forget the village: the saved world and R2's relationships, flags, memories and
-        events. The news stays."""
+        """Forget the village: the saved world and everything R2 holds. The news stays."""
+        self.memory.clear()
         with self._lock, self._db:
-            existing = {name for (name,) in self._db.execute("SELECT name FROM sqlite_master")}
-            for table in VILLAGE:
-                if table in existing:
-                    self._db.execute(f"DELETE FROM {table}")
+            self._db.execute("DELETE FROM saved_world")

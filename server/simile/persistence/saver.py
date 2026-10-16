@@ -1,13 +1,12 @@
 import asyncio
 import logging
-from datetime import timedelta
 
 from simile.behaviour import Behaviour
 from simile.conversation import ConversationEngine
+from simile.persistence.config import DEFAULT_CONFIG, PersistenceConfig
 from simile.persistence.state import SavedWorld, capture
 from simile.persistence.store import WorldStore
-from simile.schema import Conversation
-from simile.sim import ConversationEnded
+from simile.reflection import Reflector
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +15,12 @@ class Saver:
     """Saves the world to a `WorldStore` when asked, and every so often until stopped. The
     snapshot is taken between ticks and written on a thread, so the tick never waits."""
 
-    def __init__(self, store: WorldStore, behaviour: Behaviour) -> None:
+    def __init__(
+        self, store: WorldStore, behaviour: Behaviour, config: PersistenceConfig = DEFAULT_CONFIG
+    ) -> None:
         self.store = store
         self.behaviour = behaviour
+        self.config = config
         self._stopping = asyncio.Event()
 
     async def save(self) -> SavedWorld:
@@ -26,11 +28,11 @@ class Saver:
         await asyncio.to_thread(self.store.save, world)
         return world
 
-    async def autosave(self, every: float) -> None:
-        """Save every `every` real seconds until `stop`, finishing any save under way."""
+    async def autosave(self) -> None:
+        """Save every `save_every` real seconds until `stop`, finishing any save under way."""
         while True:
             try:
-                await asyncio.wait_for(self._stopping.wait(), every)
+                await asyncio.wait_for(self._stopping.wait(), self.config.save_every)
                 return
             except TimeoutError:
                 pass
@@ -42,20 +44,23 @@ class Saver:
     def stop(self) -> None:
         self._stopping.set()
 
-
-def end_conversations(engine: ConversationEngine) -> list[Conversation]:
-    """End every live conversation now, as the engine does when one runs out: both NPCs resume
-    and leave each other be for the cooldown, and `ConversationEnded` is published."""
-    behaviour, now = engine.behaviour, engine.clock.now
-    cooldown = now + timedelta(minutes=engine.config.cooldown)
-    ended = engine.live()
-    for conversation in ended:
-        conversation.ended = now
-        for npc in conversation.participants:
-            if (mind := behaviour.minds.get(npc)) is not None:
-                mind.cooldowns.update(
-                    {other: cooldown for other in conversation.participants if other != npc}
-                )
-            behaviour.resume(npc)
-        engine.bus.publish(ConversationEnded(conversation))
-    return ended
+    async def shut_down(
+        self, engine: ConversationEngine | None, reflector: Reflector | None
+    ) -> None:
+        """End the conversations going on, so B3 reflects on them, give every reflection under
+        way up to `reflection_wait` to finish, and save."""
+        clock = self.behaviour.clock
+        if engine is not None:
+            for conversation in engine.live():
+                engine.end(conversation.id)
+                logger.info("%s  Ended %s for the shutdown", clock, conversation.id)
+        if reflector and reflector.tasks:
+            wait = self.config.reflection_wait
+            logger.info(
+                "%s  Waiting up to %gs for %d reflections", clock, wait, len(reflector.tasks)
+            )
+            _, pending = await asyncio.wait(list(reflector.tasks), timeout=wait)
+            if pending:
+                logger.warning("%s  Gave up on %d reflections, which are lost", clock, len(pending))
+        await self.save()
+        logger.info("%s  Saved the village to %s", clock, self.store.path)

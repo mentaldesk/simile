@@ -13,7 +13,7 @@ runner = CliRunner()
 
 def save_a_village(database: Path, relationships: list[Relationship]) -> SavedWorld:
     world = SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={})
-    with MemoryStore(database) as memory, WorldStore(database) as store:
+    with MemoryStore(database) as memory, WorldStore(memory) as store:
         memory.add(*relationships)
         store.save(world)
     return world
@@ -25,7 +25,7 @@ def test_reset_forgets_the_saved_village(database: Path, relationships: list[Rel
     result = runner.invoke(create_cli(), ["reset", "--yes"])
 
     assert result.exit_code == 0, result.output
-    with MemoryStore(database) as memory, WorldStore(database) as store:
+    with MemoryStore(database) as memory, WorldStore(memory) as store:
         assert memory.relationships("mei") == []
         assert store.load() is None
 
@@ -37,7 +37,7 @@ def test_reset_asks_first(database: Path, relationships: list[Relationship]) -> 
 
     assert result.exit_code == 1
     assert str(database) in result.output
-    with MemoryStore(database) as memory, WorldStore(database) as store:
+    with MemoryStore(database) as memory, WorldStore(memory) as store:
         assert memory.relationships("mei") != []
         assert store.load() == world
 

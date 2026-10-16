@@ -1,5 +1,7 @@
 import logging
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -35,18 +37,24 @@ WORLD = SavedWorld(
 )
 
 
+@contextmanager
+def opened(path: Path | str) -> Iterator[WorldStore]:
+    with MemoryStore(path) as memory, WorldStore(memory) as store:
+        yield store
+
+
 def test_loads_what_it_saved_after_reopening(tmp_path: Path) -> None:
     path = tmp_path / "simile.db"
-    with WorldStore(path) as store:
+    with opened(path) as store:
         store.save(WORLD.model_copy(update={"now": NOW - timedelta(hours=1)}))
         store.save(WORLD)
 
-    with WorldStore(path) as reopened:
+    with opened(path) as reopened:
         assert reopened.load() == WORLD
 
 
 def test_loads_nothing_before_the_first_save() -> None:
-    with WorldStore(":memory:") as store:
+    with opened(":memory:") as store:
         assert store.load() is None
 
 
@@ -54,12 +62,12 @@ def test_starts_afresh_from_a_save_it_cannot_read(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     path = tmp_path / "simile.db"
-    with WorldStore(path) as store:
+    with opened(path) as store:
         store.save(WORLD)
     with sqlite3.connect(path) as db:
         db.execute("UPDATE saved_world SET data = json_set(data, '$.npcs.kofi.activity', 'nap')")
 
-    with WorldStore(path) as store, caplog.at_level(logging.WARNING):
+    with opened(path) as store, caplog.at_level(logging.WARNING):
         assert store.load() is None
 
     assert "starting afresh" in caplog.text
@@ -72,21 +80,14 @@ def test_clear_forgets_the_village_but_keeps_the_news(
     news: list[NewsItem],
 ) -> None:
     path = tmp_path / "simile.db"
-    with MemoryStore(path) as memory, NewsStore(path) as headlines, WorldStore(path) as store:
-        memory.add(*relationships, *memories)
+    with opened(path) as store, NewsStore(path) as headlines:
+        store.memory.add(*relationships, *memories)
         headlines.add(news)
         store.save(WORLD)
 
         store.clear()
 
         assert store.load() is None
-        assert memory.relationships("mei") == []
-        assert memory.recall("mei", NOW, k=100) == []
+        assert store.memory.relationships("mei") == []
+        assert store.memory.recall("mei", NOW, k=100) == []
         assert {item.id for item in headlines.latest(10)} == {item.id for item in news}
-
-
-def test_clear_works_before_anything_else_made_its_tables() -> None:
-    with WorldStore(":memory:") as store:
-        store.clear()
-
-        assert store.load() is None

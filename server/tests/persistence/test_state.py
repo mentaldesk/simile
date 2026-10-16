@@ -1,12 +1,23 @@
 import asyncio
+import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from simile.behaviour import Behaviour, GoalChosen, Need
+from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.persistence import SavedWorld, Saver, WorldStore, capture, restore
+from simile.persistence import (
+    PersistenceConfig,
+    SavedWorld,
+    Saver,
+    WorldStore,
+    capture,
+    restore,
+)
+from simile.reflection import Reflector
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement
 from simile.world.map import load_map
@@ -53,19 +64,20 @@ def test_a_village_comes_back_as_it_was_saved(tmp_path: Path) -> None:
     before = Village()
     before.run_until_someone_walks(timedelta(hours=3))
     saved = capture(before.behaviour)
-    with WorldStore(tmp_path / "simile.db") as store:
+    with MemoryStore(tmp_path / "simile.db") as memory, WorldStore(memory) as store:
         store.save(saved)
         loaded = store.load()
     assert loaded == saved
 
     after = Village(start=MORNING + timedelta(days=3), seed=1)
+    after.goals.clear()
     restore(loaded, after.behaviour)
 
     assert after.world.clock.now == saved.now
     assert capture(after.behaviour) == resumed(saved)
     assert any(state.until is None for state in saved.npcs.values())
     assert any(state.cooldowns for state in saved.npcs.values())
-    assert after.goals[-len(NPCS) :] == [
+    assert after.goals == [
         GoalChosen(npc, state.activity, state.target) for npc, state in saved.npcs.items()
     ]
 
@@ -144,21 +156,52 @@ def test_cooldowns_that_have_run_out_are_not_saved() -> None:
     }
 
 
+class Recorder(WorldStore):
+    """Keeps every world saved in a list."""
+
+    def __init__(self) -> None:
+        super().__init__(MemoryStore(":memory:"))
+        self.saved: list[SavedWorld] = []
+
+    def save(self, world: SavedWorld) -> None:
+        self.saved.append(world)
+
+
+async def until(condition: Callable[[], bool]) -> None:
+    async with asyncio.timeout(5):
+        while not condition():
+            await asyncio.sleep(0)
+
+
 @pytest.mark.anyio
-async def test_saves_every_so_often_until_stopped(tmp_path: Path) -> None:
-    village = Village()
-    with WorldStore(tmp_path / "simile.db") as store:
-        saver = Saver(store, village.behaviour)
-        autosave = asyncio.create_task(saver.autosave(0.01))
-        await asyncio.sleep(0.05)
-        assert store.load() == capture(village.behaviour)
+async def test_saves_every_so_often_until_stopped() -> None:
+    village, store = Village(), Recorder()
+    saver = Saver(store, village.behaviour, PersistenceConfig(save_every=1e-6))
+    autosave = asyncio.create_task(saver.autosave())
 
-        village.world.loop.tick()
-        await asyncio.sleep(0.05)
-        saver.stop()
-        await autosave
-        assert store.load() == capture(village.behaviour)
+    await until(lambda: len(store.saved) > 0)
+    assert store.saved[-1] == capture(village.behaviour)
+    village.world.loop.tick()
+    await until(lambda: store.saved[-1].now == village.world.clock.now)
+    assert store.saved[-1] == capture(village.behaviour)
 
-        village.world.loop.tick()
-        await asyncio.sleep(0.05)
-        assert store.load() != capture(village.behaviour)
+    saver.stop()
+    await asyncio.wait_for(autosave, 5)
+
+
+@pytest.mark.anyio
+async def test_shutdown_saves_without_reflections_that_take_too_long(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    village, store = Village(), Recorder()
+    saver = Saver(store, village.behaviour, PersistenceConfig(reflection_wait=0))
+    reflector = Reflector(MemoryStore(":memory:"), dict, lambda: None)
+    stuck = asyncio.create_task(asyncio.Event().wait())
+    reflector.tasks.add(stuck)
+
+    with caplog.at_level(logging.WARNING):
+        await saver.shut_down(None, reflector)
+
+    assert store.saved == [capture(village.behaviour)]
+    assert "Gave up on 1 reflections" in caplog.text
+    stuck.cancel()

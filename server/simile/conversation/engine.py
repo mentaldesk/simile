@@ -198,6 +198,17 @@ class ConversationEngine:
             "leaving": talk.cue is Cue.GOODBYE and talk.speaker == npc,
         }
 
+    def end(self, conversation_id: str) -> Conversation | None:
+        """End a live conversation now, as if it had run its course, dropping any line still
+        being written. Returns it with `ended` set, or None if it isn't live."""
+        talk = self._talks.get(conversation_id)
+        if talk is None:
+            return None
+        if talk.writing is not None:
+            talk.writing.cancel()
+        self._end(talk)
+        return talk.conversation.model_copy(deep=True)
+
     async def close(self) -> None:
         """Stop writing lines. Conversations still going on are left as they are."""
         tasks = [talk.writing for talk in self._talks.values() if talk.writing]

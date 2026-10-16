@@ -1,7 +1,7 @@
 import logging
 import math
 import random
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Protocol
@@ -203,6 +203,29 @@ class Behaviour:
         if mind.paused:
             mind.paused = False
             mind.until = self.clock.now
+
+    def restore(
+        self,
+        npc: Id,
+        goal: Goal,
+        needs: Mapping[Need, float],
+        since: datetime,
+        until: datetime | None,
+        cooldowns: Mapping[Id, datetime],
+    ) -> None:
+        """Put the NPC back to what they were doing when saved, after the clock has been set:
+        their walk stops, and with no `until` (they were walking or talking) they decide again
+        on the next think. Everyone's needs rise from now."""
+        mind = self.minds[npc]
+        walk, mind.walk = mind.walk, None
+        if walk is not None:
+            self.movement.stop(npc)
+        mind.goal, mind.since, mind.until = goal, since, until or self.clock.now
+        mind.needs.update(needs)
+        mind.cooldowns = dict(cooldowns)
+        mind.paused, mind.chases, mind.options = False, 0, {}
+        self._needs_at = self.clock.now
+        self._publish(mind)
 
     def goal(self, npc: Id) -> Goal:
         return self.minds[npc].goal

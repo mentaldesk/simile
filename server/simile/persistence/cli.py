@@ -10,7 +10,7 @@ def register(app: typer.Typer) -> None:
     ) -> None:
         """Forget the saved village, so the next run starts afresh from content/. Keeps the
         news."""
-        from simile.memory import default_path
+        from simile.memory import MemoryStore, default_path
         from simile.persistence.store import WorldStore
 
         path = default_path()
@@ -19,6 +19,6 @@ def register(app: typer.Typer) -> None:
             return
         if not yes:
             typer.confirm(f"Forget the village saved in {path}?", abort=True)
-        with WorldStore(path) as store:
+        with MemoryStore(path) as memory, WorldStore(memory) as store:
             store.clear()
         typer.echo(f"Forgot the village saved in {path}")

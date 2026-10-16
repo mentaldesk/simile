@@ -48,7 +48,7 @@ async def run_village(
 
 
 def saved(database: Path) -> SavedWorld:
-    with WorldStore(database) as store:
+    with MemoryStore(database) as memory, WorldStore(memory) as store:
         world = store.load()
     assert world is not None
     return world

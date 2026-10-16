@@ -10,8 +10,6 @@ from starlette.applications import Starlette
 logger = logging.getLogger(__name__)
 
 FRESH_ENV = "SIMILE_FRESH"
-SAVE_EVERY = 10.0
-"""Real seconds between saves."""
 
 
 @asynccontextmanager
@@ -22,43 +20,34 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.persistence.state import restore
     from simile.persistence.store import WorldStore
 
-    path = memory_of(app).path
-    if path == Path(":memory:"):
+    memory = memory_of(app)
+    if memory.path == Path(":memory:"):
         yield
         return
     behaviour = behaviour_of(app)
-    with WorldStore(path) as store:
+    with WorldStore(memory) as store:
         if os.environ.get(FRESH_ENV) == "1":
             store.clear()
-            logger.info("%s  Starting a fresh village in %s", behaviour.clock, path)
+            logger.info("%s  Starting a fresh village in %s", behaviour.clock, store.path)
         elif (world := store.load()) is not None:
             restore(world, behaviour)
-            logger.info("%s  Resumed the village from %s", behaviour.clock, path)
+            logger.info("%s  Resumed the village from %s", behaviour.clock, store.path)
         app.state.persistence = Saver(store, behaviour)
         yield
 
 
 @asynccontextmanager
 async def running(app: Starlette) -> AsyncIterator[None]:
-    from simile.persistence.saver import end_conversations
-
     saver = getattr(app.state, "persistence", None)
     if saver is None:
         yield
         return
-    autosave = asyncio.create_task(saver.autosave(SAVE_EVERY))
+    autosave = asyncio.create_task(saver.autosave())
     try:
         yield
     finally:
         saver.stop()
         await autosave
-    clock = saver.behaviour.clock
-    if (engine := getattr(app.state, "conversation", None)) is not None:
-        await engine.close()
-        for conversation in end_conversations(engine):
-            logger.info("%s  Ended %s for the shutdown", clock, conversation.id)
-    if (reflector := getattr(app.state, "reflection", None)) is not None and reflector.tasks:
-        logger.info("%s  Waiting for %d reflections", clock, len(reflector.tasks))
-        await asyncio.gather(*reflector.tasks, return_exceptions=True)
-    await saver.save()
-    logger.info("%s  Saved the village to %s", clock, saver.store.path)
+    await saver.shut_down(
+        getattr(app.state, "conversation", None), getattr(app.state, "reflection", None)
+    )
