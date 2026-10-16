@@ -145,6 +145,7 @@ class Behaviour:
         self.config = config
         self.rng = random.Random(seed)
         self.hooks = Hooks()
+        self.leave_player_alone: set[Id] = set()
         self.places = Places(movement.town)
         self.minds: dict[Id, Mind] = {}
         self._finished: list[Walk] = []
@@ -352,6 +353,8 @@ class Behaviour:
         return location.id if location else None
 
     def _available(self, seeker: Mind, other: Id, hour: float) -> bool:
+        if other == PLAYER_ID and seeker.npc.id in self.leave_player_alone:
+            return False
         if seeker.cooldowns.get(other, self.clock.now) > self.clock.now:
             return False
         mind = self.minds.get(other)
