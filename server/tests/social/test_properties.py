@@ -5,7 +5,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from simile.schema import Aspect, Baseline, FlagKind, InteractionEvent, Relationship
-from simile.social import DEFAULT_CONFIG, RelationshipConfig, apply_event, decay
+from simile.social import DEFAULT_CONFIG, RelationshipConfig, apply_event, apply_events, decay
 
 PEOPLE = ["mei", "viktor", "suki", "player"]
 UNITS = st.floats(0, 1)
@@ -64,7 +64,7 @@ def configs(draw: st.DrawFn) -> RelationshipConfig:
     return RelationshipConfig(
         max_shift=draw(st.floats(0.01, 1)),
         negativity_bias=draw(st.floats(1, 5)),
-        dampening_floor=draw(UNITS),
+        resistance_step=draw(st.floats(0.05, 0.5)),
         familiarity_gain=draw(UNITS),
         like_half_life=like,
         trust_half_life=trust,
@@ -112,6 +112,37 @@ def test_apply_event_moves_only_its_aspects_and_only_with_its_valence(
             assert moved == 0
         else:
             assert moved * event.valence >= 0
+
+
+@given(st.data(), relationships(), configs(), TIMES)
+def test_only_a_move_away_from_neutral_is_resisted(
+    data: st.DataObject, rel: Relationship, config: RelationshipConfig, now: datetime
+) -> None:
+    event = data.draw(events_for(rel))
+    bias = config.negativity_bias if event.valence < 0 else 1.0
+    shift = event.valence * event.magnitude * config.max_shift * bias
+
+    after = apply_event(rel, event, now, config=config)
+
+    for aspect in event.aspects:
+        offset = getattr(rel, aspect) - 0.5
+        moved = getattr(after, aspect) - getattr(rel, aspect)
+        if offset * shift < 0 and abs(shift) <= abs(offset):
+            assert moved == pytest.approx(shift)
+        else:
+            assert abs(moved) <= abs(shift) + 1e-9
+
+
+@given(st.data(), relationships(), configs(), TIMES)
+def test_an_encounters_events_count_the_same_in_any_order(
+    data: st.DataObject, rel: Relationship, config: RelationshipConfig, now: datetime
+) -> None:
+    events = data.draw(st.lists(events_for(rel), max_size=5))
+
+    forward = apply_events(rel, events, now, config=config)
+    backward = apply_events(rel, events[::-1], now, config=config)
+
+    assert scores(forward) == pytest.approx(scores(backward), abs=1e-9)
 
 
 @given(relationships(), configs(), st.timedeltas(timedelta(0), timedelta(days=3650)))

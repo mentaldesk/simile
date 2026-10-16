@@ -20,14 +20,15 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
   anything naming someone outside the conversation is dropped.
 - **Applying it.** After the reply, each NPC's relationships are read again from R2 (another
   reflection may have changed them meanwhile) and decayed with `as_of` to when the conversation
-  ended. Each NPC's first `events` valid events then go through `apply_event`. If their events
-  about one person add up to more than `max_magnitude` (1), they're scaled down to it, so a
-  conversation moves a pair at most as far as one full-strength event however many events the
-  model lists. The events apply at the familiarity the pair had going in, and familiarity grows
-  once per conversation, events or not. New flags go on their owner's relationship with
-  `open_flag`, at most `flags` per owner. The refs in `flags_resolved` close those flags with
-  `resolve_flag`, whoever owns them, but not ones resolved meanwhile. Each summary becomes a
-  `conversation` memory about the others. Everything is stored with one R2 `add`.
+  ended. Each NPC's first `events` valid events then go through `apply_events`, one call per
+  person they're about. If those events add up to more than `max_magnitude` (1), they're scaled
+  down to it, so a conversation moves a pair at most as far as one full-strength event however
+  many events the model lists. R1 adds them up per aspect and moves each score once, so R1's
+  curve holds per conversation, not per event, and familiarity grows once per conversation,
+  events or not. New flags go on their owner's relationship with `open_flag`, at most `flags`
+  per owner. The refs in `flags_resolved` close those flags with `resolve_flag`, whoever owns
+  them, but not ones resolved meanwhile. Each summary becomes a `conversation` memory about the
+  others. Everything is stored with one R2 `add`.
 - **Failures.** A reply that doesn't match the schema after L1's retry (always, under
   `SIMILE_LLM=fake`) logs one warning and changes nothing. So does an `LLMError`.
 
