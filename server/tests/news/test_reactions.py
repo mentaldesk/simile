@@ -18,15 +18,6 @@ NOW = datetime(2026, 3, 14, 9, tzinfo=UTC)
 MEI = Npc.model_validate_json(
     (Path(__file__).parents[1] / "fixtures" / "npcs" / "mei.json").read_text()
 )
-RULES = NewsItem(
-    id="rules",
-    title="Why the best rules are made to be broken",
-    url="https://example.com/rules",
-    summary="A historian argues that progress comes from people who ignore the rules.",
-    published=NOW - timedelta(hours=2),
-    source="The Atlantic",
-    source_url="https://www.theatlantic.com/feed/best-of/",
-)
 SHRUG = Reaction(take="Huh.", valence=0.1, intensity=0.2, topics=["news"]).model_dump_json()
 
 
@@ -36,14 +27,36 @@ def npc(id: str, **values: float) -> Npc:
     )
 
 
-def article(n: int) -> NewsItem:
-    return NewsItem(
+def analysed(item: NewsItem, **related: float) -> NewsItem:
+    values = {value: related.get(value.value, 0.0) for value in CoreValue}
+    return NewsItem.model_validate({**item.model_dump(), "values": values})
+
+
+def article(n: int, **related: float) -> NewsItem:
+    item = NewsItem(
         id=f"item-{n}",
         title=f"Article {n}",
         url=f"https://example.com/{n}",
         summary=f"What happened in article {n}.",
         published=NOW - timedelta(hours=n),
     )
+    return analysed(item, **(related or {"knowledge": 0.8}))
+
+
+RULES = analysed(
+    NewsItem(
+        id="rules",
+        title="Why the best rules are made to be broken",
+        url="https://example.com/rules",
+        summary="A historian argues that progress comes from people who ignore the rules.",
+        published=NOW - timedelta(hours=2),
+        source="The Atlantic",
+        source_url="https://www.theatlantic.com/feed/best-of/",
+    ),
+    obedience=0.9,
+    freedom=0.8,
+)
+MEI_READS = npc("mei", knowledge=0.95)
 
 
 def judge(request: Request) -> str:
@@ -101,7 +114,7 @@ async def test_an_article_clashing_with_a_high_value_lands_badly(
     news.add([RULES])
     fake = FakeProvider([judge, judge])
     reader = reader_for(news, memory, fake)
-    stickler, rebel = npc("stickler", obedience=0.95), npc("rebel", obedience=0.1)
+    stickler, rebel = npc("stickler", obedience=0.95), npc("rebel", obedience=0.1, freedom=0.95)
 
     reader.read(stickler)
     reader.read(rebel)
@@ -134,7 +147,7 @@ async def test_an_article_from_an_unnamed_feed_is_read_on_the_terminal(
     fake = FakeProvider(default=SHRUG)
     reader = reader_for(news, memory, fake)
 
-    reader.read(npc("mei"))
+    reader.read(MEI_READS)
     await settle(reader)
 
     [reaction] = news_memories(memory, "mei")
@@ -147,32 +160,90 @@ async def test_an_article_from_an_unnamed_feed_is_read_on_the_terminal(
 
 
 @pytest.mark.anyio
-async def test_reads_the_newest_unread_articles_a_few_at_a_time(
+async def test_reads_one_article_a_visit_the_most_interesting_first(
     news: NewsStore, memory: MemoryStore
 ) -> None:
-    news.add(article(n) for n in range(5))
+    news.add([article(0, knowledge=0.6), article(1, knowledge=0.9), article(2, knowledge=0.75)])
     fake = FakeProvider(default=SHRUG)
-    reader = reader_for(news, memory, fake, per_visit=2)
-    mei = npc("mei")
+    reader = reader_for(news, memory, fake)
 
-    for _ in range(4):
-        reader.read(mei)
+    for visits in range(1, 5):
+        reader.read(MEI_READS)
         await settle(reader)
+        assert len(fake.requests) == min(visits, 3)
 
-    assert read_titles(fake) == [f"Article {n}" for n in range(5)]
-    assert {m.news_id for m in news_memories(memory, "mei")} == {f"item-{n}" for n in range(5)}
+    assert read_titles(fake) == ["Article 1", "Article 2", "Article 0"]
+    assert {m.news_id for m in news_memories(memory, "mei")} == {"item-0", "item-1", "item-2"}
+
+
+@pytest.mark.anyio
+async def test_different_residents_read_different_articles(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    news.add([article(0, justice=0.9, equality=0.4), article(1, pleasure=0.9, adventure=0.5)])
+    fake = FakeProvider(default=SHRUG)
+    reader = reader_for(news, memory, fake)
+
+    reader.read(npc("fair", justice=0.95))
+    reader.read(npc("fun", pleasure=0.95))
+    reader.read(npc("neither"))
+    await settle(reader)
+
+    assert [m.news_id for m in news_memories(memory, "fair")] == ["item-0"]
+    assert [m.news_id for m in news_memories(memory, "fun")] == ["item-1"]
+    assert news_memories(memory, "neither") == []
+    assert len(fake.requests) == 2
+
+
+@pytest.mark.anyio
+async def test_nothing_below_the_threshold_is_read(news: NewsStore, memory: MemoryStore) -> None:
+    news.add([article(0, knowledge=0.4), article(1, knowledge=0.9)])
+    fake = FakeProvider(default=SHRUG)
+    reader = reader_for(news, memory, fake, min_interest=0.5)
+
+    assert reader.interest(MEI_READS) == pytest.approx((0.95 * 2 - 1) * 0.9)
+    reader.read(MEI_READS)
+    await settle(reader)
+    assert reader.interest(MEI_READS) == 0.0
+    reader.read(MEI_READS)
+    await settle(reader)
+
+    assert read_titles(fake) == ["Article 1"]
+    assert [item for item, _ in reader.ranked(MEI_READS)] == []
+
+
+@pytest.mark.anyio
+async def test_skips_articles_not_yet_analysed(news: NewsStore, memory: MemoryStore) -> None:
+    fresh = article(0).model_copy(update={"values": {}})
+    news.add([fresh, article(1)])
+    fake = FakeProvider(default=SHRUG)
+    reader = reader_for(news, memory, fake)
+
+    reader.read(MEI_READS)
+    reader.read(MEI_READS)
+    await settle(reader)
+
+    assert read_titles(fake) == ["Article 1"]
+
+
+def test_interest_is_capped_at_one(news: NewsStore, memory: MemoryStore) -> None:
+    news.add([article(0, knowledge=1.0, honesty=1.0, justice=1.0)])
+    reader = reader_for(news, memory, FakeProvider())
+    keen = npc("keen", knowledge=1.0, honesty=1.0, justice=1.0)
+
+    assert reader.ranked(keen)[0][1] > 1
+    assert reader.interest(keen) == 1.0
 
 
 @pytest.mark.anyio
 async def test_reading_doesnt_block_the_tick(news: NewsStore, memory: MemoryStore) -> None:
-    news.add(article(n) for n in range(3))
+    news.add([article(0, knowledge=0.9), article(1, knowledge=0.7)])
     replied = asyncio.Event()
     fake = FakeProvider([[replied, SHRUG]], default=SHRUG)
-    reader = reader_for(news, memory, fake, per_visit=1)
-    mei = npc("mei")
+    reader = reader_for(news, memory, fake)
 
-    reader.read(mei)
-    reader.read(mei)
+    reader.read(MEI_READS)
+    reader.read(MEI_READS)
     await asyncio.wait(reader.tasks, return_when=asyncio.FIRST_COMPLETED)
 
     assert [m.news_id for m in news_memories(memory, "mei")] == ["item-1"]
@@ -185,16 +256,17 @@ async def test_reading_doesnt_block_the_tick(news: NewsStore, memory: MemoryStor
 async def test_an_article_that_failed_is_read_on_the_next_visit(
     news: NewsStore, memory: MemoryStore
 ) -> None:
-    news.add(article(n) for n in range(2))
+    news.add([article(0, knowledge=0.9), article(1, knowledge=0.7)])
     fake = FakeProvider([LLMError("usage limit reached")], default=SHRUG)
     reader = reader_for(news, memory, fake)
-    mei = npc("mei")
 
-    reader.read(mei)
+    reader.read(MEI_READS)
     await settle(reader)
     assert news_memories(memory, "mei") == []
 
-    reader.read(mei)
+    reader.read(MEI_READS)
+    await settle(reader)
+    reader.read(MEI_READS)
     await settle(reader)
     assert read_titles(fake) == ["Article 0", "Article 0", "Article 1"]
     assert len(news_memories(memory, "mei")) == 2
@@ -204,14 +276,13 @@ async def test_an_article_that_failed_is_read_on_the_next_visit(
 async def test_an_article_that_cant_be_rated_is_skipped(
     news: NewsStore, memory: MemoryStore, caplog: pytest.LogCaptureFixture
 ) -> None:
-    news.add(article(n) for n in range(2))
+    news.add([article(0, knowledge=0.9), article(1, knowledge=0.7)])
     fake = FakeProvider(["Interesting!", "Very interesting!"], default=SHRUG)
-    reader = reader_for(news, memory, fake, per_visit=1)
-    mei = npc("mei")
+    reader = reader_for(news, memory, fake)
 
-    reader.read(mei)
+    reader.read(MEI_READS)
     await settle(reader)
-    reader.read(mei)
+    reader.read(MEI_READS)
     await settle(reader)
 
     assert read_titles(fake) == ["Article 0", "Article 0", "Article 1"]
@@ -235,7 +306,7 @@ async def test_conversations_go_ahead_of_reading(news: NewsStore, memory: Memory
 
     first = asyncio.create_task(client.complete("Busy"))
     await asyncio.sleep(0)
-    reader.read(npc("mei"))
+    reader.read(MEI_READS)
     await asyncio.sleep(0)
     line = asyncio.create_task(client.complete("Hello"))
     await asyncio.sleep(0)
@@ -251,16 +322,19 @@ async def test_conversations_go_ahead_of_reading(news: NewsStore, memory: Memory
 async def test_remembers_what_was_read_before_a_restart(
     news: NewsStore, memory: MemoryStore
 ) -> None:
-    news.add(article(n) for n in range(3))
+    news.add(article(n, knowledge=0.9 - n / 10) for n in range(3))
     first = FakeProvider(default=SHRUG)
     reader = reader_for(news, memory, first)
-    reader.read(npc("mei"))
+    reader.read(MEI_READS)
+    await settle(reader)
+    reader.read(MEI_READS)
     await settle(reader)
 
     second = FakeProvider(default=SHRUG)
     restarted = reader_for(news, memory, second)
-    restarted.read(npc("mei"))
-    restarted.read(npc("mei"))
+    restarted.read(MEI_READS)
+    await settle(restarted)
+    restarted.read(MEI_READS)
     await settle(restarted)
 
     assert read_titles(first) == ["Article 0", "Article 1"]
@@ -270,9 +344,11 @@ async def test_remembers_what_was_read_before_a_restart(
 def test_reads_nothing_without_an_llm(news: NewsStore, memory: MemoryStore) -> None:
     news.add([RULES])
     reader = NewsReader(news, memory, Clock(NOW), lambda: None)
+    stickler = npc("stickler", obedience=0.95)
 
-    reader.read(npc("mei"))
+    reader.read(stickler)
 
+    assert reader.interest(stickler) == 0.0
     assert reader.tasks == set()
     assert reader.seen == {}
 
@@ -282,11 +358,11 @@ async def test_stop_abandons_reading(news: NewsStore, memory: MemoryStore) -> No
     news.add([RULES])
     reader = reader_for(news, memory, FakeProvider([[asyncio.Event(), SHRUG]]))
 
-    reader.read(npc("mei"))
+    reader.read(npc("stickler", obedience=0.95))
     await reader.stop()
 
     assert reader.tasks == set()
-    assert news_memories(memory, "mei") == []
+    assert news_memories(memory, "stickler") == []
 
 
 def reaction(owner: str, content: str, intensity: float, hours_ago: float) -> Memory:

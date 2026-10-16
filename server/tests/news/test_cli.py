@@ -6,6 +6,7 @@ from typer.testing import CliRunner
 
 from simile.cli import create_cli
 from simile.news import NewsStore, parse
+from simile.schema import CoreValue, NewsItem
 
 FeedServer = Any
 
@@ -105,3 +106,36 @@ def test_refresh_lists_the_news_despite_a_feed_it_cant_fetch(
     assert f"Couldn't fetch {broken}: HTTP Error 503" in result.output
     assert f"10 new items from {rnz}" in result.output
     assert "(RNZ Sport Headlines)" in result.output
+
+
+def test_lists_what_an_article_was_analysed_as(database: Path, feed_xml: bytes) -> None:
+    newest = parse(feed_xml)[0]
+    related = {CoreValue.KNOWLEDGE: 0.9, CoreValue.ADVENTURE: 0.6, CoreValue.OPEN_MINDEDNESS: 0.4}
+    values = {value: related.get(value, 0.0) for value in CoreValue}
+    with NewsStore(database) as store:
+        store.add(parse(feed_xml))
+        analysis = {"values": values, "tags": ["space", "aliens"], "sentiment": 0.4}
+        store.update(NewsItem.model_validate({**newest.model_dump(), **analysis}))
+
+    result = runner.invoke(create_cli(), ["news", "-n", "2"])
+
+    assert result.exit_code == 0, result.output
+    lines = result.output.splitlines()
+    assert lines[2] == (
+        "                  knowledge 0.9, adventure 0.6, open_mindedness 0.4; tone +0.4; "
+        "space, aliens"
+    )
+    assert len(lines) == 5
+
+
+def test_analyse_says_what_it_couldnt(database: Path, feed_xml: bytes) -> None:
+    with NewsStore(database) as store:
+        store.add(parse(feed_xml))
+
+    first = runner.invoke(create_cli(), ["news", "--analyse"])
+    second = runner.invoke(create_cli(), ["news", "--analyse"])
+
+    assert first.exit_code == 1
+    assert first.output.startswith("Analysed 0 of 5 articles waiting.\n")
+    assert second.exit_code == 0, second.output
+    assert second.output.startswith("Analysed 0 of 0 articles waiting.\n")

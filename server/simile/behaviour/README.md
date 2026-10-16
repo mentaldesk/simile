@@ -13,10 +13,9 @@ sets F3's snapshot to the NPCs' real positions.
   the maker space, wander, seek someone out (an NPC or the player), or idle. `sleep` and `talk` are
   set by the loop rather than chosen.
 - **Score** = base + values + needs + time of day + people − walking time. Values enter as
-  `weight * (value - 0.5)`: Connection pulls towards people, Knowledge and Open Mindedness to the
-  terminals, PeaceOfMind home and to the park (and away from seeking company), Adventure to wander,
-  Creativity to the maker space. Needs (`social`, `curiosity`, `rest`, 0 to 1) pull towards
-  whatever meets them. The coffee shop
+  `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
+  away from seeking company), Adventure to wander, Creativity to the maker space. Needs (`social`,
+  `curiosity`, `rest`, `news`, 0 to 1) pull towards whatever meets them. The coffee shop
   peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before bed.
   The activity just finished scores less.
 - **Loneliness.** `social` feels urgent on a convex curve, `need ** 3` (`urgency`), so a little
@@ -28,6 +27,12 @@ sets F3's snapshot to the NPCs' real positions.
   company, and low-Connection ones mostly keep to themselves. Talking meets it fast. `curiosity`
   and `rest` still enter linearly through `need_weights`; the needs in #74 can move to the same
   curve.
+- **The news.** `news`, wanting to catch up, is on the same kind of curve (`need ** 2`), and only a
+  terminal meets it. It rises with Knowledge and Open Mindedness and falls for NPCs low in both,
+  so some read every couple of hours and some never do. The `news_interest` hook says how
+  interesting the best article they haven't read is (0 to 1), and a terminal's relief is scaled by
+  it, so a gripping article pulls harder than a so-so one. With nothing worth reading, the
+  terminals aren't an option.
 - **People.** Affinity is a weighted sum of R1's like, trust, respect and familiarity, read from R2
   with `as_of`, or `meet` for strangers. Seeking someone scores their affinity, scaled up by
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
@@ -60,6 +65,7 @@ restore()
 |---|---|---|
 | `request_conversation(a, b)` | When `a` walks up to `b` (an NPC id or `"player"`) | Declines |
 | `read_news(npc)` | With the `Npc` when they reach a terminal | Does nothing |
+| `news_interest(npc)` | With the `Npc` at each decision: how interesting the best unread article is, 0 to 1 | 0, so nobody goes to the terminals |
 | `conversations()` | For each snapshot | `[]` |
 
 Hooks run inside a tick, so they mustn't block. One that raises is logged and counts as a decline.
@@ -89,4 +95,5 @@ cd server && uv run simile behaviour simulate --hours 24 --seed 0
 
 Runs memory, world and behaviour on a `FakeWallClock` as fast as the CPU allows (a sim-day in
 about 15 s) and prints where everyone spent their time: minutes near others by Connection, places
-by hour and who was out at night. Conversations and news stay stubbed, so nothing calls Claude.
+by hour and who was out at night. Conversations and news stay stubbed, so nothing calls Claude:
+there's always an article of middling interest unread, and reading it does nothing.

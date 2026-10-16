@@ -12,6 +12,7 @@ class Need(StrEnum):
     SOCIAL = "social"
     CURIOSITY = "curiosity"
     REST = "rest"
+    NEWS = "news"
 
 
 class Activity(StrEnum):
@@ -39,7 +40,6 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
     A.HOME: {V.PEACE_OF_MIND: 0.6, V.SECURITY: 0.4, V.TRADITION: 0.2, V.ADVENTURE: -0.3},
     A.COFFEE_SHOP: {V.CONNECTION: 0.5, V.PLEASURE: 0.4, V.SUCCESS: 0.1},
     A.SQUARE: {V.CONNECTION: 0.4, V.FREEDOM: 0.2, V.EQUALITY: 0.1},
-    A.NEWS: {V.KNOWLEDGE: 0.8, V.OPEN_MINDEDNESS: 0.6, V.JUSTICE: 0.2},
     A.PARK: {V.PEACE_OF_MIND: 0.7, V.FREEDOM: 0.2, V.ADVENTURE: 0.1},
     A.NOODLE_BAR: {V.PLEASURE: 0.6, V.CONNECTION: 0.3},
     A.MAKER_SPACE: {
@@ -57,7 +57,6 @@ NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: 0.8},
     A.COFFEE_SHOP: {Need.REST: 0.2},
     A.SQUARE: {Need.CURIOSITY: 0.1},
-    A.NEWS: {Need.CURIOSITY: 0.9},
     A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.1},
     A.NOODLE_BAR: {Need.REST: 0.2},
     A.MAKER_SPACE: {Need.CURIOSITY: 0.6},
@@ -65,7 +64,7 @@ NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.IDLE: {Need.REST: 0.2},
 }
 
-BASE: dict[Activity, float] = {A.COFFEE_SHOP: 0.1, A.SQUARE: 0.05, A.IDLE: -0.1}
+BASE: dict[Activity, float] = {A.COFFEE_SHOP: 0.1, A.SQUARE: 0.05, A.NEWS: -0.3, A.IDLE: -0.1}
 
 DAILY: dict[Activity, Curve] = {
     A.COFFEE_SHOP: ((6.5, 0.0), (8.0, 0.3), (10.0, 0.1), (13.0, 0.0), (15.0, 0.15), (17.0, 0.0)),
@@ -74,12 +73,18 @@ DAILY: dict[Activity, Curve] = {
     A.PARK: ((9.0, 0.0), (15.0, 0.15), (19.0, 0.0)),
 }
 
-RISE: dict[Need, float] = {Need.SOCIAL: 0.02, Need.CURIOSITY: 0.03, Need.REST: 0.04}
+RISE: dict[Need, float] = {
+    Need.SOCIAL: 0.02,
+    Need.CURIOSITY: 0.03,
+    Need.REST: 0.04,
+    Need.NEWS: -0.1,
+}
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.SOCIAL: {V.CONNECTION: 0.65, V.PEACE_OF_MIND: -0.1},
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
+    Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
 }
 
 EFFECTS: dict[Activity, dict[Need, float]] = {
@@ -87,7 +92,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.SLEEP: {Need.REST: -0.25},
     A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1},
     A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.05},
-    A.NEWS: {Need.CURIOSITY: -3.0},
+    A.NEWS: {Need.NEWS: -3.6},
     A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.05},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
     A.MAKER_SPACE: {Need.CURIOSITY: -1.2},
@@ -121,7 +126,10 @@ class Urgency(BaseModel):
     weight: float = Field(ge=0, description="Score per unit of relief.")
 
 
-URGENCY: dict[Need, Urgency] = {Need.SOCIAL: Urgency(power=3.0, weight=6.0)}
+URGENCY: dict[Need, Urgency] = {
+    Need.SOCIAL: Urgency(power=3.0, weight=6.0),
+    Need.NEWS: Urgency(power=2.0, weight=10.0),
+}
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
     V.DISCIPLINE: -1.0,
@@ -157,7 +165,8 @@ class BehaviourConfig(BaseModel):
         default=URGENCY,
         description="Needs that score by the relief an activity brings rather than through "
         "need_weights: weight times the area under need ** power between the need now and after "
-        "a typical stay, so the same relief is worth much more to someone desperate.",
+        "a typical stay, so the same relief is worth much more to someone desperate. A "
+        "terminal's relief is scaled by how interesting the best unread article is.",
     )
     talk_minutes: float = Field(
         default=3.0, gt=0, description="How long seeking someone out promises to talk for."
@@ -243,7 +252,12 @@ class BehaviourConfig(BaseModel):
         default=(0.5, 5), description="Minutes awake at home before the first decision."
     )
     start_needs: dict[Need, tuple[float, float]] = Field(
-        default={Need.SOCIAL: (0.3, 0.8), Need.CURIOSITY: (0.2, 0.5), Need.REST: (0.0, 0.15)},
+        default={
+            Need.SOCIAL: (0.3, 0.8),
+            Need.CURIOSITY: (0.2, 0.5),
+            Need.REST: (0.0, 0.15),
+            Need.NEWS: (0.1, 0.6),
+        },
         description="Needs on start, sampled uniformly.",
     )
 

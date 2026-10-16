@@ -34,7 +34,7 @@ from simile.world.movement import Point
 PLACES = Places(load_map())
 SQUARE = Point(31, 22)
 NEUTRAL = {value: 0.5 for value in CoreValue}
-CONTENT = {Need.SOCIAL: 0.2, Need.CURIOSITY: 0.2, Need.REST: 0.2}
+CONTENT = {Need.SOCIAL: 0.2, Need.CURIOSITY: 0.2, Need.REST: 0.2, Need.NEWS: 0.2}
 
 V = CoreValue
 A = Activity
@@ -48,6 +48,7 @@ def situation(
     others: Sequence[Other] = (),
     last: Goal | None = None,
     position: Point = SQUARE,
+    news: float = 0.0,
 ) -> Situation:
     return Situation(
         {**NEUTRAL, **(values or {})},
@@ -58,6 +59,7 @@ def situation(
         22.5,
         others,
         last,
+        news,
     )
 
 
@@ -69,10 +71,35 @@ def score_of(goal: Goal, s: Situation) -> float:
     return score(goal, s, PLACES)
 
 
-def test_knowledge_and_curiosity_send_npcs_to_the_nearest_terminal() -> None:
-    s = situation({V.KNOWLEDGE: 0.95, V.OPEN_MINDEDNESS: 0.95}, {Need.CURIOSITY: 0.9})
+def test_wanting_the_news_and_a_good_article_send_npcs_to_the_nearest_terminal() -> None:
+    s = situation(needs={Need.NEWS: 0.9}, news=0.8)
 
     assert best(s) == Goal(A.NEWS, "terminal_1")
+
+
+def test_nothing_worth_reading_keeps_them_from_the_terminals() -> None:
+    s = situation(needs={Need.NEWS: 1.0}, news=0.0)
+
+    assert all(goal.activity is not A.NEWS for goal in scores(s, PLACES))
+
+
+def test_a_gripping_article_pulls_harder_than_a_so_so_one() -> None:
+    news = Goal(A.NEWS, "terminal_1")
+
+    def pull(interest: float) -> float:
+        return score_of(news, situation(needs={Need.NEWS: 0.7}, news=interest))
+
+    assert pull(1.0) > pull(0.6) > pull(0.1)
+
+
+def test_wanting_the_news_barely_registers_until_it_builds() -> None:
+    news = Goal(A.NEWS, "terminal_1")
+
+    def pull(need: float) -> float:
+        return score_of(news, situation(needs={Need.NEWS: need}, news=1.0))
+
+    assert pull(0.9) - pull(0.6) > 2 * (pull(0.6) - pull(0.3)) > 0
+    assert best(situation(needs={Need.NEWS: 0.2}, news=1.0)).activity is not A.NEWS
 
 
 def test_peace_of_mind_and_tiredness_send_npcs_home() -> None:
@@ -248,7 +275,7 @@ def test_needs_raise_the_activities_that_meet_them() -> None:
 
 
 def test_each_activity_is_offered_once_with_its_best_place() -> None:
-    options = scores(situation(), PLACES)
+    options = scores(situation(news=0.5), PLACES)
     best = best_per_activity(options)
 
     assert sum(goal.activity is A.NEWS for goal in options) == 3

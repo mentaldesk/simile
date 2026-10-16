@@ -6,6 +6,7 @@ from simile.behaviour.mind import (
     Hooks,
     LiveConversations,
     Mind,
+    NewsInterest,
     NewsReader,
     behaviour_of,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "LiveConversations",
     "Mind",
     "Need",
+    "NewsInterest",
     "NewsReader",
     "Other",
     "Places",

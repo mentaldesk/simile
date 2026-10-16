@@ -3,7 +3,7 @@ from pathlib import Path
 
 from simile.memory import MemoryStore
 from simile.news import FeedState, NewsStore, parse
-from simile.schema import Memory, MemoryKind, NewsItem
+from simile.schema import CoreValue, Memory, MemoryKind, NewsItem
 
 NOON = datetime(2026, 3, 14, 12, tzinfo=UTC)
 
@@ -59,6 +59,44 @@ def test_lists_the_latest_leaving_out_ids_already_seen(store: NewsStore) -> None
 
 def test_gets_nothing_for_an_unknown_id(store: NewsStore) -> None:
     assert store.get("nope") is None
+
+
+def analysed(item: NewsItem) -> NewsItem:
+    return NewsItem.model_validate(
+        {**item.model_dump(), "values": dict.fromkeys(CoreValue, 0.5), "tags": ["x"]}
+    )
+
+
+def test_writes_an_analysis_back(store: NewsStore) -> None:
+    store.add([news("a"), news("b", 1)])
+
+    assert store.update(analysed(news("a")))
+    assert not store.update(analysed(news("c")))
+
+    assert store.get("a") == analysed(news("a"))
+    assert store.get("c") is None
+    assert [item.id for item in store.latest(analysed=True)] == ["a"]
+    assert [item.id for item in store.latest(analysed=False)] == ["b"]
+    assert [item.id for item in store.latest(analysed=None)] == ["a", "b"]
+
+
+def test_lists_unanalysed_items_among_the_newest(store: NewsStore) -> None:
+    store.add([news("old", 5), news("new", 1), news("middle", 3), news("done", 2)])
+    store.update(analysed(news("done", 2)))
+
+    assert [item.id for item in store.unanalysed(4, "claude")] == ["new", "middle", "old"]
+    assert [item.id for item in store.unanalysed(3, "claude")] == ["new", "middle"]
+
+
+def test_leaves_out_what_a_provider_couldnt_analyse(store: NewsStore) -> None:
+    store.add([news("a"), news("b", 1)])
+
+    store.unanalysable("a", "canned")
+    store.unanalysable("a", "canned")
+
+    assert [item.id for item in store.unanalysed(10, "canned")] == ["b"]
+    assert [item.id for item in store.unanalysed(10, "claude-code")] == ["a", "b"]
+    assert [item.id for item in store.latest(analysed=False)] == ["a", "b"]
 
 
 def test_remembers_each_feed(store: NewsStore) -> None:
