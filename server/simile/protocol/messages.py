@@ -66,6 +66,22 @@ class NpcStateMessage(Model):
     state: dict[str, JsonValue]
 
 
+class NewsArticle(Model):
+    news_id: Key
+    title: str
+    source: str = Field(description='The feed it came from, e.g. "The Atlantic". May be empty.')
+    summary: str = Field(description="Plain text.")
+    url: str = Field(description="The original article.")
+    read: bool = Field(description="Whether the player has read it.")
+
+
+class NewsMessage(Model):
+    """The articles at the news terminals, newest first. The reply to list_news and read_news."""
+
+    type: Literal["news"] = "news"
+    articles: list[NewsArticle]
+
+
 class PlayerMoveMessage(Model):
     type: Literal["player_move"] = "player_move"
     position: Position
@@ -75,6 +91,15 @@ class PlayerSayMessage(Model):
     type: Literal["player_say"] = "player_say"
     text: str = Field(min_length=1)
     target: Id = Field(description="The NPC the player is talking to.")
+
+
+class ListNewsMessage(Model):
+    type: Literal["list_news"] = "list_news"
+
+
+class ReadNewsMessage(Model):
+    type: Literal["read_news"] = "read_news"
+    news_id: Key = Field(description="The article the player reads.")
 
 
 class WatchNpcMessage(Model):
@@ -88,12 +113,13 @@ type ServerMessage = Annotated[
     | ConversationStartedMessage
     | ConversationEndedMessage
     | LineMessage
-    | NpcStateMessage,
+    | NpcStateMessage
+    | NewsMessage,
     Field(discriminator="type"),
 ]
 
 type ClientMessage = Annotated[
-    PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage,
+    PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage | ListNewsMessage | ReadNewsMessage,
     Field(discriminator="type"),
 ]
 

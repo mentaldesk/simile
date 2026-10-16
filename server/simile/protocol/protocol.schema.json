@@ -4,8 +4,10 @@
     "ClientMessage": {
       "discriminator": {
         "mapping": {
+          "list_news": "#/$defs/ListNewsMessage",
           "player_move": "#/$defs/PlayerMoveMessage",
           "player_say": "#/$defs/PlayerSayMessage",
+          "read_news": "#/$defs/ReadNewsMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -19,6 +21,12 @@
         },
         {
           "$ref": "#/$defs/WatchNpcMessage"
+        },
+        {
+          "$ref": "#/$defs/ListNewsMessage"
+        },
+        {
+          "$ref": "#/$defs/ReadNewsMessage"
         }
       ]
     },
@@ -244,6 +252,82 @@
       "title": "LineMessage",
       "type": "object"
     },
+    "ListNewsMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "list_news",
+          "default": "list_news",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ListNewsMessage",
+      "type": "object"
+    },
+    "NewsArticle": {
+      "additionalProperties": false,
+      "properties": {
+        "news_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "source": {
+          "description": "The feed it came from, e.g. \"The Atlantic\". May be empty.",
+          "type": "string"
+        },
+        "summary": {
+          "description": "Plain text.",
+          "type": "string"
+        },
+        "url": {
+          "description": "The original article.",
+          "type": "string"
+        },
+        "read": {
+          "description": "Whether the player has read it.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "news_id",
+        "title",
+        "source",
+        "summary",
+        "url",
+        "read"
+      ],
+      "title": "NewsArticle",
+      "type": "object"
+    },
+    "NewsMessage": {
+      "additionalProperties": false,
+      "description": "The articles at the news terminals, newest first. The reply to list_news and read_news.",
+      "properties": {
+        "type": {
+          "const": "news",
+          "default": "news",
+          "type": "string"
+        },
+        "articles": {
+          "items": {
+            "$ref": "#/$defs/NewsArticle"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "articles"
+      ],
+      "title": "NewsMessage",
+      "type": "object"
+    },
     "NpcStateMessage": {
       "additionalProperties": false,
       "description": "Debug state for the overlay. The fields in `state` are up to the modules that send them.",
@@ -337,6 +421,27 @@
       "title": "Position",
       "type": "object"
     },
+    "ReadNewsMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "read_news",
+          "default": "read_news",
+          "type": "string"
+        },
+        "news_id": {
+          "description": "The article the player reads.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "news_id"
+      ],
+      "title": "ReadNewsMessage",
+      "type": "object"
+    },
     "ServerMessage": {
       "discriminator": {
         "mapping": {
@@ -344,6 +449,7 @@
           "conversation_started": "#/$defs/ConversationStartedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
           "line": "#/$defs/LineMessage",
+          "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
           "snapshot": "#/$defs/SnapshotMessage"
         },
@@ -367,6 +473,9 @@
         },
         {
           "$ref": "#/$defs/NpcStateMessage"
+        },
+        {
+          "$ref": "#/$defs/NewsMessage"
         }
       ]
     },

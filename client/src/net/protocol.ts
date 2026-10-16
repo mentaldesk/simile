@@ -8,10 +8,12 @@ export type ServerMessage =
   | ConversationStartedMessage
   | ConversationEndedMessage
   | LineMessage
-  | NpcStateMessage;
+  | NpcStateMessage
+  | NewsMessage;
 export type EntityKind = 'npc' | 'player';
 export type JsonValue = unknown;
-export type ClientMessage = PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage;
+export type ClientMessage =
+  PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage | ListNewsMessage | ReadNewsMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -104,6 +106,33 @@ export interface NpcStateMessage {
     [k: string]: JsonValue;
   };
 }
+/**
+ * The articles at the news terminals, newest first. The reply to list_news and read_news.
+ */
+export interface NewsMessage {
+  type: 'news';
+  articles: NewsArticle[];
+}
+export interface NewsArticle {
+  news_id: string;
+  title: string;
+  /**
+   * The feed it came from, e.g. "The Atlantic". May be empty.
+   */
+  source: string;
+  /**
+   * Plain text.
+   */
+  summary: string;
+  /**
+   * The original article.
+   */
+  url: string;
+  /**
+   * Whether the player has read it.
+   */
+  read: boolean;
+}
 export interface PlayerMoveMessage {
   type: 'player_move';
   position: Position;
@@ -122,4 +151,14 @@ export interface WatchNpcMessage {
    * The NPC to send npc_state for, or null to stop.
    */
   npc_id: string | null;
+}
+export interface ListNewsMessage {
+  type: 'list_news';
+}
+export interface ReadNewsMessage {
+  type: 'read_news';
+  /**
+   * The article the player reads.
+   */
+  news_id: string;
 }
