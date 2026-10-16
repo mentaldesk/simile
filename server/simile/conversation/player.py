@@ -42,6 +42,13 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
+TURNED_AWAY = (
+    "I'll let you talk to {name}. See you around.",
+    "Go on, {name}'s waiting. Catch you later.",
+    "I'll leave you with {name}. Bye for now.",
+    "Right, I'll let you go. See you!",
+)
+
 
 def says_goodbye(text: str) -> bool:
     return GOODBYE.search(text) is not None
@@ -159,14 +166,18 @@ class PlayerConversations:
         if distance is None or distance > reach:
             self.engine._log("The player is too far from %s to talk (%s tiles)", target, distance)
             return None
+        goodbye_ends = None
         if joined is None:
             if not self._free(target):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
             if talk is not None:
-                self._end(talk)
+                goodbye_ends = self._turned_away(talk, target)
             joined = self._start(target, opener=PLAYER_ID)
-        return self._hear(joined, text)
+        line = self._hear(joined, text)
+        if goodbye_ends is not None:
+            joined.free_at = max(joined.free_at, goodbye_ends)
+        return line
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
         return self._start(npc, opener=opener).conversation
@@ -353,6 +364,16 @@ class PlayerConversations:
     def _end(self, talk: PlayerTalk) -> None:
         self._interrupt(talk)
         self.engine._end(talk)
+
+    def _turned_away(self, talk: PlayerTalk, to: Id) -> datetime:
+        """The NPC says a quick goodbye, unless they've said one, and returns when they finish."""
+        if not talk.closing:
+            self._interrupt(talk)
+            name = first_name(self.engine.behaviour.npcs[to])
+            self._sentence(talk, self.rng.choice(TURNED_AWAY).format(name=name))
+        ends = talk.free_at
+        self._end(talk)
+        return ends
 
     def _look_around(self) -> None:
         engine, now = self.engine, self.engine.clock.now

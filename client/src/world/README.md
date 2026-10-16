@@ -37,6 +37,10 @@ Speeds and distances are in [`tuning.ts`](tuning.ts).
 each sprite) and as audio's position provider, with the player as the listener. Other code can read
 `world` (`world.positionOf(id)`, `world.npcs`, `world.player`) from `world/model.ts`.
 
+`npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point: the 48 × 72 box
+under their `bubbleAnchor`, the one in front where sprites overlap. Choosing who to talk to and the
+debug overlay both click with it, so a new projection changes it here.
+
 ## Rendering
 
 Tiles and sprites are 16 px, drawn at 3× (`ZOOM`). The camera follows the player and stops at the
