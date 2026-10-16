@@ -6,7 +6,8 @@ import {
   type Position,
   type SnapshotMessage,
 } from '../net';
-import { chatTarget, Dialogue } from './dialogue';
+import { Dialogue } from './dialogue';
+import { ChatTarget } from './target';
 import { CHAT_RANGE_TILES, EARSHOT_TILES, LOG_LIMIT } from './tuning';
 import { PLAYER_ID, type WorldView } from './world-view';
 
@@ -17,53 +18,6 @@ function viewOf(positions: Record<string, Position | undefined>): WorldView {
     bubbleAnchor: () => ({ x: 0, y: 0 }),
   };
 }
-
-describe('chatTarget', () => {
-  it('picks the nearest NPC within range', () => {
-    const view = viewOf({
-      player: { x: 10, y: 10 },
-      mei: { x: 12, y: 10 },
-      viktor: { x: 10, y: 11.5 },
-      suki: { x: 11, y: 11 },
-    });
-    expect(chatTarget(view)).toBe('suki');
-  });
-
-  it('includes an NPC right at the edge of the range', () => {
-    expect(chatTarget(viewOf({ player: { x: 0, y: 0 }, mei: { x: CHAT_RANGE_TILES, y: 0 } }))).toBe(
-      'mei',
-    );
-  });
-
-  it('picks nobody when every NPC is out of range', () => {
-    const view = viewOf({ player: { x: 0, y: 0 }, mei: { x: CHAT_RANGE_TILES + 0.1, y: 0 } });
-    expect(chatTarget(view)).toBeUndefined();
-  });
-
-  it('picks who the player is talking with, however far away they are', () => {
-    const view = viewOf({
-      player: { x: 0, y: 0 },
-      mei: { x: 1, y: 0 },
-      suki: { x: CHAT_RANGE_TILES + 2, y: 0 },
-    });
-
-    expect(chatTarget(view, { partner: () => 'suki', busy: () => false })).toBe('suki');
-  });
-
-  it('skips NPCs who are talking with someone else', () => {
-    const view = viewOf({ player: { x: 0, y: 0 }, mei: { x: 1, y: 0 }, suki: { x: 2, y: 0 } });
-
-    expect(chatTarget(view, { partner: () => undefined, busy: (id) => id === 'mei' })).toBe('suki');
-    expect(chatTarget(view, { partner: () => undefined, busy: () => true })).toBeUndefined();
-  });
-
-  it('skips NPCs that are nowhere, and picks nobody when the player is nowhere', () => {
-    expect(
-      chatTarget(viewOf({ player: { x: 0, y: 0 }, mei: undefined, suki: { x: 1, y: 1 } })),
-    ).toBe('suki');
-    expect(chatTarget(viewOf({ player: undefined, mei: { x: 0, y: 0 } }))).toBeUndefined();
-  });
-});
 
 describe('Dialogue', () => {
   const snapshot: SnapshotMessage = {
@@ -192,11 +146,12 @@ describe('Dialogue', () => {
       mei: { x: CHAT_RANGE_TILES + 2, y: 0 },
       suki: { x: 1, y: 0 },
     });
+    const target = new ChatTarget(() => away, dialogue);
     start('c1', 'player', 'mei');
 
-    expect(chatTarget(away, dialogue)).toBe('mei');
+    expect(target.current()).toBe('mei');
     end('c1');
-    expect(chatTarget(away, dialogue)).toBe('suki');
+    expect(target.current()).toBe('suki');
   });
 
   it('picks up conversations already going on from the snapshot', () => {

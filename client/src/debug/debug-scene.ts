@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import { server } from '../net';
+import { claimClicks } from '../ui/target';
 import { worldView } from '../ui/world-view';
+import { npcAt, spriteBox } from '../world/hit';
 import './debug.css';
-import { npcAt, spriteBox } from './hit';
 import { renderPanel } from './panel';
 import { DebugWatch } from './watch';
 
@@ -39,9 +40,11 @@ export class DebugScene extends Phaser.Scene {
     };
     window.addEventListener('keydown', onKeyDown);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
+    const unclaim = claimClicks(() => debugWatch.open);
     debugWatch.onChange = () => this.render();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('keydown', onKeyDown);
+      unclaim();
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       debugWatch.onChange = () => {};
       this.panel.remove();

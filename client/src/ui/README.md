@@ -4,15 +4,32 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 
 - a speech bubble over each speaker within earshot, for the line's `duration`, fainter the further
   away they are;
-- a chat box: Enter opens it to the NPC the player is talking with, for as long as the server keeps
-  that conversation going, or else the nearest NPC within `CHAT_RANGE_TILES` who isn't talking to
-  someone else. Enter sends `player_say`, Esc closes;
+- a ring and name tag on the NPC the player will talk to (see *Choosing who to talk to*);
+- a chat box: Enter opens it to that NPC, Enter sends `player_say`, Esc closes;
 - an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the
   conversation ends;
 - a hint when an NPC starts a conversation with the player: "Mei wants to talk. Press Enter to
   reply.";
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
+
+## Choosing who to talk to
+
+The ringed NPC is, in order:
+
+1. the one the player chose by clicking them or with Tab, while they're within `CHAT_RANGE_TILES`
+   and not talking with someone else, or the player is talking with them;
+2. the NPC the player is talking with, for as long as the server keeps that conversation going;
+3. the nearest NPC within `CHAT_RANGE_TILES` who isn't talking with someone else.
+
+Tab and Shift+Tab go through the NPCs the player can talk to, nearest first, in or out of the chat
+box. NPCs talking with someone else are skipped: clicking one says they're busy, and clicking one
+out of range says they're too far away. Esc forgets the choice. While the debug overlay is open,
+clicks are its own.
+
+Saying something to someone else mid-conversation ends the current conversation: the server does
+that when `player_say` names a new NPC. While the chat box is open its target stays put, so the
+label never changes under the player; if they walk off or get busy, sending says so instead.
 
 Distances and timings are in [`tuning.ts`](tuning.ts). `CHAT_RANGE_TILES` (3) is a tile inside
 the server's `say_range` (4), so an NPC the chat box picks is still in range when the line arrives.
@@ -52,7 +69,8 @@ included) don't fire while the player types. Key-ups still get through, so no ke
 Run `make dev-client` and open <http://localhost:5173/?harness=dialogue>. The harness disconnects
 from the sim server, plays fake lines through `server.dispatch` (Mei and Viktor talking nearby, Suki
 further off, Tom out of earshot), draws boxes for the entities and lists every `player_say` it would
-have sent. Move with the arrow keys, WASD or a click. It only loads in `vite dev`: builds leave it out.
+have sent. Move with the arrow keys, WASD or a click on the ground. It only loads in `vite dev`:
+builds leave it out.
 
 ## Extending it
 
@@ -61,5 +79,6 @@ have sent. Move with the arrow keys, WASD or a click. It only loads in `vite dev
 - `dialogue` follows `snapshot`, `conversation_started` and `conversation_ended`: `partner()` is the
   NPC the player is talking with, `busy(id)` whether an NPC is talking with someone else, and
   `onInvitation(listener)` hears about NPCs who start a conversation with the player.
-- `chatTarget(view, dialogue)` picks who the chat box talks to, and `ChatBox.open(target)` opens it
-  to a given NPC.
+- `ChatTarget` (`target.ts`) picks who the chat box talks to, and `clicked(point, view)` finds the
+  NPC a click picks with `world/hit.ts`. Another overlay that wants clicks while it's open calls
+  `claimClicks(() => open)`.

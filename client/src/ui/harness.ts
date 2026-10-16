@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { server, type ClientMessage, type Entity, type LineMessage, type Position } from '../net';
+import { npcAt } from '../world/hit';
 import { speakingSeconds } from './bubbles';
 import './harness.css';
 import { CHAT_RANGE_TILES } from './tuning';
@@ -89,9 +90,9 @@ class HarnessScene extends Phaser.Scene {
     window.addEventListener('keydown', ({ key }) => {
       if (Object.hasOwn(moves, key)) step(...moves[key]);
     });
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      const tile = trackedWorld.tileAt({ x: pointer.x, y: pointer.y });
-      if (tile) movePlayer(tile);
+    this.input.on('pointerdown', ({ x, y }: Phaser.Input.Pointer) => {
+      const tile = trackedWorld.tileAt({ x, y });
+      if (tile && !npcAt({ x, y }, trackedWorld)) movePlayer(tile);
     });
   }
 
@@ -116,7 +117,8 @@ function showPanel(root: HTMLElement): (message: ClientMessage) => void {
   const panel = root.appendChild(document.createElement('section'));
   panel.className = 'dialogue-harness';
   panel.innerHTML = `<b>Dialogue harness</b>
-    <p>Arrows, WASD or click to move. Enter talks to the nearest NPC within ${CHAT_RANGE_TILES} tiles.</p>
+    <p>Arrows, WASD or click to move. Enter talks to the ringed NPC: click one or press Tab to pick
+    another within ${CHAT_RANGE_TILES} tiles.</p>
     <ol></ol>`;
   const sent = panel.querySelector('ol')!;
   return (message) => {
