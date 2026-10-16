@@ -4,8 +4,9 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 
 - a speech bubble over each speaker within earshot, for the line's `duration`, fainter the further
   away they are;
-- a chat box: Enter opens it to the NPC the player is talking with, or else the nearest NPC within
-  range who isn't talking to someone else. Enter sends `player_say`, Esc closes;
+- a chat box: Enter opens it to the NPC the player is talking with, for as long as the server keeps
+  that conversation going, or else the nearest NPC within `CHAT_RANGE_TILES` who isn't talking to
+  someone else. Enter sends `player_say`, Esc closes;
 - an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the
   conversation ends;
 - a hint when an NPC starts a conversation with the player: "Mei wants to talk. Press Enter to
@@ -13,7 +14,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
 
-Distances and timings are in [`tuning.ts`](tuning.ts).
+Distances and timings are in [`tuning.ts`](tuning.ts). `CHAT_RANGE_TILES` (3) is a tile inside
+the server's `say_range` (4), so an NPC the chat box picks is still in range when the line arrives.
 
 ## What the world scene provides
 

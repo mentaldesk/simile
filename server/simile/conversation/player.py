@@ -59,11 +59,14 @@ class PlayerConfig(BaseModel):
     say_range: float = Field(
         default=4.0,
         gt=0,
-        description="Furthest the player can be from an NPC to talk to them. The chat box picks "
-        "NPCs within 3.",
+        description="Furthest the player can be from an NPC to start talking to them. The chat box "
+        "picks NPCs within 3.",
     )
     leave_range: float = Field(
-        default=6.0, gt=0, description="Walking further than this from the NPC ends it."
+        default=6.0,
+        gt=0,
+        description="Walking further than this from the NPC ends it. Until then the player's "
+        "lines reach them.",
     )
     silence: float = Field(
         default=60, gt=0, description="How long the NPC waits for the player before leaving."
@@ -147,20 +150,21 @@ class PlayerConversations:
         if not text or target not in self.engine.behaviour.npcs:
             logger.warning("Ignoring the player saying %r to %r", text, target)
             return None
+        talk = self.talk()
+        joined = talk if talk is not None and talk.npc == target else None
+        reach = self.config.say_range if joined is None else self.config.leave_range
         distance = self._distance(target)
-        if distance is None or distance > self.config.say_range:
+        if distance is None or distance > reach:
             self.engine._log("The player is too far from %s to talk (%s tiles)", target, distance)
             return None
-        talk = self.talk()
-        if talk is not None and talk.npc != target:
-            self._end(talk)
-            talk = None
-        if talk is None:
+        if joined is None:
             if not self._free(target):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
-            talk = self._start(target, opener=PLAYER_ID)
-        return self._hear(talk, text)
+            if talk is not None:
+                self._end(talk)
+            joined = self._start(target, opener=PLAYER_ID)
+        return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
         return self._start(npc, opener=opener).conversation
