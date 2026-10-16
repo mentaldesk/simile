@@ -40,12 +40,14 @@ describe('chatTarget', () => {
     expect(chatTarget(view)).toBeUndefined();
   });
 
-  it('picks who the player is talking with while they are in range', () => {
-    const view = viewOf({ player: { x: 0, y: 0 }, mei: { x: 1, y: 0 }, suki: { x: 2, y: 0 } });
-    const talks = { partner: () => 'suki', busy: () => false };
+  it('picks who the player is talking with, however far away they are', () => {
+    const view = viewOf({
+      player: { x: 0, y: 0 },
+      mei: { x: 1, y: 0 },
+      suki: { x: CHAT_RANGE_TILES + 2, y: 0 },
+    });
 
-    expect(chatTarget(view, talks)).toBe('suki');
-    expect(chatTarget(view, { ...talks, partner: () => 'tom' })).toBe('mei');
+    expect(chatTarget(view, { partner: () => 'suki', busy: () => false })).toBe('suki');
   });
 
   it('skips NPCs who are talking with someone else', () => {
@@ -182,6 +184,19 @@ describe('Dialogue', () => {
     end('c2');
     expect(dialogue.partner()).toBeUndefined();
     expect(dialogue.busy('suki')).toBe(false);
+  });
+
+  it('keeps the chat on who the player is talking with until the server ends it', () => {
+    const away = viewOf({
+      player: { x: 0, y: 0 },
+      mei: { x: CHAT_RANGE_TILES + 2, y: 0 },
+      suki: { x: 1, y: 0 },
+    });
+    start('c1', 'player', 'mei');
+
+    expect(chatTarget(away, dialogue)).toBe('mei');
+    end('c1');
+    expect(chatTarget(away, dialogue)).toBe('suki');
   });
 
   it('picks up conversations already going on from the snapshot', () => {
