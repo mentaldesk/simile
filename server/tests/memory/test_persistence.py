@@ -74,3 +74,17 @@ def test_default_path_is_server_data(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_tests_get_an_in_memory_database() -> None:
     assert str(default_path()) == ":memory:"
+
+
+def test_clear_forgets_everything(tmp_path: Path) -> None:
+    memories = load("memories.json", Memory)
+    events = load("interaction_events.json", InteractionEvent)
+    relationships = load("relationships.json", Relationship)
+    with MemoryStore(tmp_path / "simile.db") as store, MemoryStore(":memory:") as empty:
+        store.add(*memories, *events, *relationships)
+
+        store.clear()
+
+        assert everything(store) == everything(empty)
+        store.add(memories[0])
+        assert store.recall(memories[0].owner, NOW) == [memories[0]]
