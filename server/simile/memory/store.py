@@ -102,6 +102,12 @@ class MemoryStore:
         with self._lock:
             self._db.close()
 
+    def clear(self) -> None:
+        """Forget every event, flag, memory and relationship. Other tables in the file stay."""
+        with self._lock, self._db:
+            for table in ("events", "flags", "memories", "relationships"):
+                self._db.execute(f"DELETE FROM {table}")
+
     def __enter__(self) -> Self:
         return self
 

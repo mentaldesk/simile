@@ -63,6 +63,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 |---|---|
 | `pause(npc, talking_to=None)` | Stops their walk and their decisions. Does nothing for the player. |
 | `resume(npc)` | They decide again on the next think. |
+| `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location or entity id. |
 | `needs(npc)` | `{Need: 0-1}`. |
 | `state(npc)` | JSON for F3's `npc_state`: goal, needs, last decision's scores, bedtime. |
