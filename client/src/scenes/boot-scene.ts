@@ -10,6 +10,8 @@ import {
   walkAnimation,
   walkFrames,
 } from '../world';
+import { isoRequested } from '../world/iso';
+import { ISO_SCENE } from './iso-scene';
 import { WORLD_SCENE } from './world-scene';
 
 const harnessOpen = () => {
@@ -40,6 +42,6 @@ export class BootScene extends Phaser.Scene {
       }
     }
     // The dev harnesses set up their own world view and positions.
-    if (!harnessOpen()) this.scene.start(WORLD_SCENE);
+    if (!harnessOpen()) this.scene.start(isoRequested(location.search) ? ISO_SCENE : WORLD_SCENE);
   }
 }
