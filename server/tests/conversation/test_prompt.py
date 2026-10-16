@@ -12,9 +12,11 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
+from simile.conversation.prompt import Player, first_name
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
+    PLAYER_ID,
     Aspect,
     CoreValue,
     Flag,
@@ -111,6 +113,31 @@ def test_the_background_has_the_relationship_history_memories_and_news() -> None
     assert "grudge" not in text
     assert "On your mind:\n- Odalys fed half the square on Sunday." in text
     assert "News you might bring up:\n- Read about a city that paints its bridges." in text
+
+
+def test_the_player_is_a_newcomer_called_visitor() -> None:
+    rel = meet(KOFI, PLAYER_ID)
+    history = SharedHistory(
+        events=[
+            InteractionEvent(
+                actor=PLAYER_ID,
+                target="kofi",
+                action="asked about his murals",
+                aspects=[Aspect.LIKE],
+                valence=0.4,
+                magnitude=0.3,
+                timestamp=NOW - timedelta(days=1),
+            )
+        ],
+        flags=[],
+    )
+
+    text = background(KOFI, Player(), rel, history, [], [], None, NOW)
+
+    assert "You're with Visitor (a newcomer to the village)." in text
+    assert describe(rel, "Visitor") in text
+    assert "- yesterday, Visitor: asked about his murals" in text
+    assert first_name(Player()) == "Visitor"
 
 
 def test_the_background_leaves_out_what_there_isnt() -> None:

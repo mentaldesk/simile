@@ -25,6 +25,7 @@ from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
     Cue,
     Draft,
+    Player,
     background,
     duration,
     first_name,
@@ -80,7 +81,7 @@ class Talk:
     names: dict[Id, str] = field(default_factory=dict)
 
     def other(self, npc: Id) -> Id:
-        return next(party for party in self.parties if party != npc)
+        return next(other for other in self.conversation.participants if other != npc)
 
 
 class ConversationEngine:
@@ -107,11 +108,16 @@ class ConversationEngine:
         self.config = config
         self.rng = random.Random(seed)
         self.finished: deque[Conversation] = deque(maxlen=config.keep_finished)
+        self.player = Player()
+        self.player_request: Callable[[Id, Id], bool] | None = None
+        """Answers requests involving the player, which this engine declines without it."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
         """B1's `request_conversation`: `b` accepts or declines `a`, who has walked up to them."""
-        if PLAYER_ID in (a, b) or self.talking(a) or self.talking(b):
+        if PLAYER_ID in (a, b):
+            return self.player_request is not None and self.player_request(a, b)
+        if self.talking(a) or self.talking(b):
             return False
         if len(self._talks) >= self.config.max_conversations:
             self._log("%s and %s can't talk: %d conversations going on", a, b, len(self._talks))
@@ -160,7 +166,8 @@ class ConversationEngine:
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
-            self._advance(talk)
+            if PLAYER_ID not in talk.conversation.participants:
+                self._advance(talk)
 
     def live(self) -> list[Conversation]:
         """Conversations going on, with their lines so far, for the snapshot."""
@@ -301,7 +308,7 @@ class ConversationEngine:
         )
         self.bus.publish(ConversationEnded(conversation.model_copy(deep=True)))
         cooldown = now + timedelta(minutes=self.config.cooldown)
-        for npc in talk.parties:
+        for npc in conversation.participants:
             mind = self.behaviour.minds.get(npc)
             if mind is not None:
                 mind.cooldowns[talk.other(npc)] = cooldown
@@ -309,7 +316,7 @@ class ConversationEngine:
 
     def _party(self, npc: Id, other: Id, direction: Direction) -> Party:
         now = self.clock.now
-        speaker, them = self.behaviour.npcs[npc], self.behaviour.npcs[other]
+        speaker, them = self.behaviour.npcs[npc], self._person(other)
         rel = self._relationship(npc, other)
         topics = self._topics(npc, now)
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
@@ -330,6 +337,9 @@ class ConversationEngine:
             engagement=initial_engagement(speaker.values, rel.like, self.config),
             facing=direction,
         )
+
+    def _person(self, id: Id) -> Npc | Player:
+        return self.player if id == PLAYER_ID else self.behaviour.npcs[id]
 
     def _relationship(self, owner: Id, about: Id) -> Relationship:
         stored = self.memory.relationship(owner, about)
@@ -366,7 +376,9 @@ class ConversationEngine:
         logger.info(f"%s  {message}", self.clock, *args)
 
     def _talk_of(self, npc: Id) -> Talk | None:
-        return next((talk for talk in self._talks.values() if npc in talk.parties), None)
+        return next(
+            (talk for talk in self._talks.values() if npc in talk.conversation.participants), None
+        )
 
 
 def facing(here: Point, there: Point) -> Direction:

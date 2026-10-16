@@ -1,8 +1,8 @@
 # simile.conversation
 
-NPCs talking to each other in real time. `conversations_of(app)` returns the server's
-`ConversationEngine`, created on first use. Its lifespan plugs `request` and `live` into B1's
-hooks and ticks the engine on the sim loop.
+NPCs talking to each other, and to the player, in real time. `conversations_of(app)` returns the
+server's `ConversationEngine`, created on first use. Its lifespan plugs `request` and `live` into
+B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the sim loop.
 
 ## A conversation
 
@@ -12,8 +12,9 @@ hooks and ticks the engine on the sim loop.
   `as_of`, or `meet` for strangers), `b`'s values (Connection, Compassion and Open Mindedness for,
   Independence and Peace of Mind against), their social need and what they're busy with: someone
   at a terminal or the maker space, or looking for someone else, is less keen, and someone who was
-  looking for `a` is very keen. The player, anyone already talking and anything beyond
-  `max_conversations` (2) are declined.
+  looking for `a` is very keen. Anyone already talking and anything beyond `max_conversations` (2)
+  are declined, counting conversations with the player. Requests involving the player go to
+  `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` speaks first.
 - **Lines.** Each line is one L1 `stream()` call with Haiku and `purpose="conversation"`. The
@@ -40,6 +41,39 @@ hooks and ticks the engine on the sim loop.
 
 Every constant is in `ConversationConfig`.
 
+## Talking with the player
+
+`PlayerConversations` in `player.py` runs conversations between the player and an NPC on the same
+engine, so `live`, `conversation(id)`, `talking`, `state` and the events below cover them too. The
+player is `Visitor` in prompts (B3 uses the same name), "a newcomer to the village", and NPCs bring
+their relationship with `player`, shared history and memories as with anyone else.
+
+- **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
+  they're talking to another NPC or asleep. Saying something to a different NPC ends the one going
+  on. An NPC who walks up to the player (B1's seek) says hello. So does a free NPC within `near` (3
+  tiles) whose acceptance score beats `greet_bar` (0.5): every `look_every` (5 s), each nearby NPC
+  is considered once per `greet_cooldown` (10 min), so high Connection NPCs greet strangers and
+  those who dislike the player don't. Nobody greets a player who's already talking or not
+  connected.
+- **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
+  with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
+  has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
+  said. The player's lines are spoken when they arrive and have no `LineDrafted`. If the player
+  says something while the NPC is still writing or speaking, the NPC stops: the rest of that reply
+  is dropped and they answer the new line.
+- **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
+  off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
+  Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.
+- **Ending.** Engagement works as in B2, with each player line and each reply counting as a line.
+  The player's lines touch the values the NPC's last reply did. When it's low, the NPC answers with a goodbye; a player line within
+  `farewell_wait` (8 s) of that goodbye joins the conversation and ends it. If the player says
+  goodbye ("bye", "see you", "gotta go", ...), the NPC says goodbye back and it ends. It ends at
+  once if the player walks beyond `leave_range` (6 tiles) or disconnects. After `silence` (60 s)
+  without a word from the player, the NPC says goodbye, or just leaves if the player never answered
+  their hello. A reply that fails or says nothing ends it too. Cooldowns are as in B2.
+
+Every constant is in `PlayerConfig`.
+
 ## Events
 
 | Event | When |
@@ -57,10 +91,11 @@ published.
 
 - **Transcripts (B3).** Subscribe to `ConversationEnded`. `engine.conversation(id)` returns a live
   or recently finished conversation, and `engine.finished` keeps the last `keep_finished` (50).
-- **Player conversations (B5).** `system_prompt`, `background`, `turn_prompt`, `parse_reply`,
-  `engage`, `leaving` and `duration` work for any speaker. Take line ids from `line_ids(app)`, so
-  they're unique across the world.
-- **Voicing (I1).** `LineDrafted` gives each NPC line's text one line ahead of `LineSpoken`.
+- **Player conversations (B5).** Conversations with the player have `player` as a participant
+  and publish the same events, with the player's lines included.
+- **Voicing (I1).** `LineDrafted` gives each NPC line's text one line ahead of `LineSpoken`. In a
+  conversation with the player, each line is a sentence and `LineDrafted` comes as soon as it has
+  streamed, so voicing can start on the first sentence.
 - **Debug overlay (I2).** `engine.state(npc)` has their conversation, who they're talking to,
   engagement, facing and whether they're about to leave.
 

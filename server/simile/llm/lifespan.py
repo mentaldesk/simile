@@ -36,5 +36,8 @@ class CannedProvider:
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
     fake = os.environ.get(FAKE_ENV) == "fake"
-    app.state.llm = LLMClient(CannedProvider() if fake else None)
-    yield
+    app.state.llm = llm = LLMClient(CannedProvider() if fake else None)
+    try:
+        yield
+    finally:
+        await llm.aclose()
