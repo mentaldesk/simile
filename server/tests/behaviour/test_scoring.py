@@ -27,7 +27,7 @@ from simile.behaviour.scoring import (
     relief,
     wake,
 )
-from simile.schema import Baseline, CoreValue, Relationship
+from simile.schema import PLAYER_ID, Baseline, CoreValue, Relationship
 from simile.world.map import load_map
 from simile.world.movement import Point
 
@@ -186,6 +186,25 @@ def test_seeking_someone_out_promises_a_talk() -> None:
     )
     assert promised(A.MAKER_SPACE, Need.SOCIAL) == 0.0
     assert promised(A.SEEK, Need.SOCIAL) < promised(A.COFFEE_SHOP, Need.SOCIAL) < 0
+
+
+def test_seeking_the_player_promises_less_relief_than_seeking_a_resident() -> None:
+    resident = Other("kofi", Point(33, 24), affinity=0.0)
+    player = Other(PLAYER_ID, Point(33, 24), affinity=0.0)
+    s = situation({V.CONNECTION: 0.9}, {Need.SOCIAL: 0.8}, others=[resident, player])
+    urgency, talk = DEFAULT_CONFIG.urgency[Need.SOCIAL], promised(A.SEEK, Need.SOCIAL)
+    halved = talk * DEFAULT_CONFIG.player_relief
+
+    gap = urgency.weight * (relief(0.8, talk, urgency.power) - relief(0.8, halved, urgency.power))
+    assert gap > 0
+    assert score_of(Goal(A.SEEK, "kofi"), s) - score_of(Goal(A.SEEK, PLAYER_ID), s) == (
+        pytest.approx(gap)
+    )
+
+    same = DEFAULT_CONFIG.model_copy(update={"player_relief": 1.0})
+    assert score(Goal(A.SEEK, PLAYER_ID), s, PLACES, same) == pytest.approx(
+        score(Goal(A.SEEK, "kofi"), s, PLACES, same)
+    )
 
 
 def test_seeks_a_friend_over_a_stranger() -> None:

@@ -15,6 +15,7 @@ from simile.conversation import (
     Facing,
     LineDrafted,
 )
+from simile.conversation.player import PlayerConversations
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -199,6 +200,32 @@ async def test_concurrent_conversations_are_capped() -> None:
     assert village.engine.request("ana", "ben")
     assert not village.engine.request("cal", "dot")
     assert not village.engine.request("dot", "ana")
+
+
+async def test_the_players_conversation_does_not_count_against_the_cap() -> None:
+    village = Village(
+        npcs=(ANA, BEN, CAL),
+        relationships=friends(ANA, BEN),
+        config=ConversationConfig(max_conversations=1),
+    )
+    PlayerConversations(village.engine).start("cal", opener=PLAYER_ID)
+
+    assert village.engine.talking(PLAYER_ID)
+    assert village.engine.request("ana", "ben")
+
+
+async def test_a_request_is_decided_on_the_accept_score() -> None:
+    disliked = [feeling(BEN, "ana", like=0.05, trust=0.1), *friends(CAL, DOT)]
+    village = Village(
+        npcs=(ANA, BEN, CAL, DOT),
+        relationships=disliked,
+        config=ConversationConfig(accept_temperature=0),
+    )
+
+    assert village.engine.accept_score("ana", "ben") < 0
+    assert not village.engine.request("ana", "ben")
+    assert village.engine.accept_score("cal", "dot") > 0
+    assert village.engine.request("cal", "dot")
 
 
 async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> None:

@@ -10,7 +10,7 @@ class AmbientConfig(BaseModel):
 
     enabled: bool = Field(default=True, description="Whether the director nudges anyone.")
     quiet: float = Field(
-        default=180,
+        default=120,
         ge=0,
         description="How long the player goes without an NPC conversation in earshot before the "
         "director nudges a pair near them.",
@@ -30,7 +30,7 @@ class AmbientConfig(BaseModel):
         description="It stays in earshot until the player is further than this from all of them.",
     )
     reach: float = Field(
-        default=16.0, gt=0, description="Furthest a seeker may be from the one they're nudged to."
+        default=24.0, gt=0, description="Furthest a seeker may be from the one they're nudged to."
     )
     accept_bar: float = Field(
         default=0.0,

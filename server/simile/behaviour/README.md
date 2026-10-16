@@ -24,9 +24,10 @@ sets F3's snapshot to the NPCs' real positions.
   middle of its `dwell`; seeking someone out promises `talk_minutes` of talking). The same chat is
   worth far more to someone desperate than to someone who's just had one. Connection sets how fast
   `social` rises (Peace of Mind slows it), so high-Connection NPCs get lonely and go looking for
-  company, and low-Connection ones mostly keep to themselves. Talking meets it fast. `curiosity`
-  and `rest` still enter linearly through `need_weights`; the needs in #74 can move to the same
-  curve.
+  company, and low-Connection ones mostly keep to themselves. Talking meets it fast. Talking with
+  the player meets `player_relief` (0.5) of that, and seeking them out promises only as much, so a
+  chatty player doesn't become the village's social life. `curiosity` and `rest` still enter
+  linearly through `need_weights`; the needs in #74 can move to the same curve.
 - **The news.** `news`, wanting to catch up, is on the same kind of curve (`need ** 2`), and only a
   terminal meets it. It rises with Knowledge and Open Mindedness and falls for NPCs low in both,
   so some read every couple of hours and some never do. The `news_interest` hook says how
@@ -79,6 +80,8 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 |---|---|
 | `pause(npc, talking_to=None)` | Stops their walk and their decisions. Does nothing for the player. |
 | `resume(npc)` | They decide again on the next think. |
+| `nudge(npc, goal, bonus)` | Adds `bonus` to `goal`'s score at their next decision, which they make on the next think, stopping where they are if walking. False, changing nothing, if they're paused or asleep. The ambient director nudges through it. |
+| `available(seeker, other)` | Whether `seeker` could seek `other` out: B1's rules for who is sought, and `seeker`'s cooldowns. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location or entity id. |
 | `needs(npc)` | `{Need: 0-1}`. |

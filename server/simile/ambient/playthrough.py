@@ -140,10 +140,10 @@ class Padded:
         return [(LINE, self.sentences(WORDS, 2).replace("\n", " ") + tag)]
 
     def sentences(self, words: int, count: int) -> str:
-        """`count` sentences of about `words` words in all, one a line."""
-        each = math.ceil(words / count)
+        """`count` sentences of `words` words in all, one a line."""
         out = []
-        for _ in range(count):
+        for n in range(count):
+            each = (words + n) // count
             picked: list[str] = []
             while len(picked) < each:
                 picked += self.rng.choice(PHRASES).split()
@@ -380,9 +380,9 @@ class ScriptedPlayer:
 @dataclass
 class Result:
     minutes: float
-    heard: float = 0.0
-    """Sim seconds with an NPC conversation in earshot."""
-    longest_quiet: float = 0.0
+    heard: int = 0
+    """Sim seconds with an NPC conversation in earshot, looked at once a second."""
+    longest_quiet: int = 0
     """The longest stretch without one, in sim seconds."""
     overheard: set[str] = field(default_factory=set)
     """NPC conversations the player heard at least a line of."""
@@ -407,7 +407,7 @@ class Listener:
         self.earshot = Earshot(self._from_player, config)
         for conversation in conversations_of(app).live():
             self.earshot.on_started(ConversationStarted(conversation))
-        self.quiet, self._elapsed = 0.0, 0.0
+        self.quiet, self._elapsed = 0, 0.0
         self._stops = [
             bus.subscribe(ConversationStarted, self._on_started),
             bus.subscribe(ConversationEnded, self.earshot.on_ended),
@@ -421,12 +421,12 @@ class Listener:
         self._elapsed += dt
         if self._elapsed < 1 - 1e-9:
             return
-        seconds, self._elapsed = self._elapsed, 0.0
+        self._elapsed = 0.0
         if self.earshot.update():
-            self.result.heard += seconds
-            self.quiet = 0.0
+            self.result.heard += 1
+            self.quiet = 0
         else:
-            self.quiet += seconds
+            self.quiet += 1
             self.result.longest_quiet = max(self.result.longest_quiet, self.quiet)
 
     def stop(self) -> Result:
