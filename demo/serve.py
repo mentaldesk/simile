@@ -7,7 +7,9 @@ the ambient director off.
 
 import argparse
 import asyncio
+import os
 import time
+from datetime import timedelta
 
 import uvicorn
 from starlette.applications import Starlette
@@ -20,6 +22,7 @@ from simile.protocol import PlayerMoveMessage, hub_of
 from simile.sim import ConversationStarted, World, world_of
 
 SCRIPTED = (frozenset({"tobias", "kofi"}), frozenset({"desmond", "marguerite"}))
+SCRIPT_CAP = timedelta(minutes=2)
 
 
 class HeldWallClock:
@@ -43,26 +46,41 @@ class HeldWallClock:
             self.released.set()
 
 
-def keep_to_script(app: Starlette) -> None:
+class ScriptHold:
     """Neither of a scripted pair seeks out or greets the player until one of them starts talking,
-    which on script is to the other. Until both pairs have, nobody's choices are left to chance."""
-    behaviour, engine = behaviour_of(app), conversations_of(app)
-    usual = behaviour.config, engine.config
-    behaviour.config = behaviour.config.model_copy(update={"temperature": 0.0})
-    engine.config = engine.config.model_copy(update={"accept_temperature": 0.0})
-    behaviour.leave_player_alone.update(*SCRIPTED)
-    waiting = set(SCRIPTED)
+    which on script is to the other. Until both pairs have, nobody's choices are left to chance.
+    After `cap` of sim time it lets go regardless, so a pair that never talks doesn't ignore the
+    player all session."""
 
-    def started(event: ConversationStarted) -> None:
+    def __init__(self, app: Starlette, cap: timedelta = SCRIPT_CAP) -> None:
+        world = world_of(app)
+        self.clock = world.clock
+        self.behaviour, self.engine = behaviour_of(app), conversations_of(app)
+        self.usual = self.behaviour.config, self.engine.config
+        self.behaviour.config = self.behaviour.config.model_copy(update={"temperature": 0.0})
+        self.engine.config = self.engine.config.model_copy(update={"accept_temperature": 0.0})
+        self.behaviour.leave_player_alone.update(*SCRIPTED)
+        self.waiting = set(SCRIPTED)
+        self.until = self.clock.now + cap
+        self._unsubscribe = world.bus.subscribe(ConversationStarted, self.started)
+        self._unregister = world.loop.register(self)
+
+    def started(self, event: ConversationStarted) -> None:
         talking = set(event.conversation.participants)
-        for pair in [pair for pair in waiting if pair & talking]:
-            waiting.remove(pair)
-            behaviour.leave_player_alone.difference_update(pair)
-        if not waiting:
-            behaviour.config, engine.config = usual
-            unsubscribe()
+        self._let_go([pair for pair in self.waiting if pair & talking])
 
-    unsubscribe = world_of(app).bus.subscribe(ConversationStarted, started)
+    def tick(self, dt: float) -> None:
+        if self.waiting and self.clock.now >= self.until:
+            self._let_go(list(self.waiting))
+
+    def _let_go(self, pairs: list[frozenset[str]]) -> None:
+        for pair in pairs:
+            self.waiting.remove(pair)
+            self.behaviour.leave_player_alone.difference_update(pair)
+        if not self.waiting:
+            self.behaviour.config, self.engine.config = self.usual
+            self._unsubscribe()
+            self._unregister()
 
 
 def without_director(app: Starlette) -> None:
@@ -75,6 +93,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the demo village's sim server.")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
+    seconds = os.environ.get("SIMILE_DEMO_SCRIPT_CAP", str(SCRIPT_CAP.total_seconds()))
+    try:
+        cap = timedelta(seconds=float(seconds))
+    except (ValueError, OverflowError) as error:
+        parser.error(
+            f"SIMILE_DEMO_SCRIPT_CAP={seconds} isn't a usable number of sim seconds: {error}"
+        )
 
     wall = HeldWallClock()
     app = create_app()
@@ -86,7 +111,7 @@ def main() -> None:
         if not first:
             first.append(here)
         elif here != first[0] and not wall.released.is_set():
-            keep_to_script(app)
+            ScriptHold(app, cap)
             without_director(app)
             wall.release()
             print("The player has taken a step, so the village starts.", flush=True)
