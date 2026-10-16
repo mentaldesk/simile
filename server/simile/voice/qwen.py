@@ -8,6 +8,8 @@ from mlx_audio.tts.models.base import GenerationResult
 from mlx_audio.tts.utils import load_model
 from mlx_audio.utils import load_audio
 
+from simile.voice.silence import LeadingSilence
+
 logger = logging.getLogger(__name__)
 
 MODEL = "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit"
@@ -37,6 +39,7 @@ class QwenSynthesiser:
         for _ in self._generate(npc_id, "Hello.", max_tokens=1):
             pass
 
+    # Bump rates.SYNTHESIS when a change here alters how long lines take.
     def generate(self, npc_id: str, sentence: str) -> Generator[bytes, None, None]:
         # Caps a generation that never emits end-of-speech.
         max_seconds = 3 + len(sentence) / 5
@@ -44,9 +47,13 @@ class QwenSynthesiser:
         if self._seed is not None:
             mx.random.seed(zlib.crc32(f"{self._seed}/{npc_id}/{sentence}".encode()))
         tokens = 0
+        silence = LeadingSilence()
         for result in self._generate(npc_id, sentence, max_tokens):
             tokens += result.token_count
-            yield to_pcm(result.audio)
+            if pcm := silence.feed(to_pcm(result.audio)):
+                yield pcm
+        if pcm := silence.end():
+            yield pcm
         if tokens >= max_tokens:
             logger.warning(f"Cut {npc_id} off after {max_seconds:.1f}s of {sentence!r}")
 

@@ -103,6 +103,14 @@ def test_a_new_clip_or_transcript_makes_a_rate_outdated() -> None:
     assert outdated([unvoiced], {}) == []
 
 
+def test_a_change_to_synthesis_makes_every_rate_outdated(monkeypatch: pytest.MonkeyPatch) -> None:
+    rate = MeasuredRate(base_seconds=0.4, seconds_per_word=0.3, digest=voice_digest(TOBIAS.voice))
+
+    monkeypatch.setattr(rates, "SYNTHESIS", rates.SYNTHESIS + 1)
+
+    assert outdated([TOBIAS], {"tobias": rate}) == [TOBIAS]
+
+
 def test_saves_and_loads_rates(tmp_path: Path) -> None:
     path = tmp_path / "rates.json"
     saved = {
