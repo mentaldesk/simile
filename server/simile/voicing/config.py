@@ -25,10 +25,9 @@ class VoicingConfig(BaseModel):
     max_voiced: int = Field(
         default=2,
         ge=1,
-        description="Most conversations voiced at once, the player's included. V1 voices one "
-        "sentence at a time, about 2.6x faster than it plays on an M2 Max, which keeps up with two "
-        "conversations but falls seconds behind with three. Others in earshot keep their bubbles "
-        "unvoiced until one ends, and the player's own conversation silences the farthest.",
+        description="Most conversations voiced at once, the player's included, since V1 voices one "
+        "sentence at a time. Others in earshot stay unvoiced until there's room, and the player's "
+        "own conversation silences the farthest.",
     )
     lead: float = Field(
         default=0.5,

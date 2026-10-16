@@ -22,6 +22,7 @@ pytestmark = pytest.mark.anyio
 
 NPCS = {npc.id: npc for npc in load_npcs()}
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
+WIDEST = "😀"
 
 
 class Town:
@@ -223,11 +224,11 @@ async def test_stays_small_however_much_they_know() -> None:
         )
         for n in range(MAX_RELATIONSHIPS + 5)
     ]
-    long_memories = [remembered("y" * 5000, 0.9, hours_ago=n) for n in range(20)]
+    long_memories = [remembered(WIDEST * 5000, 0.9, hours_ago=n) for n in range(20)]
     town = Town(
         [*known, *long_memories],
         ConversationConfig(min_lines=30, max_lines=40, max_words=5000),
-        reply="“" + "z" * 5000 + "”",
+        reply=WIDEST * 5000,
     )
     town.engine.start("kofi", "henrietta")
 
@@ -240,7 +241,7 @@ async def test_stays_small_however_much_they_know() -> None:
     assert len(state["memories"]) == MAX_MEMORIES
     assert len(state["conversation"]["lines"]) == MAX_LINES
     message = NpcStateMessage(npc_id="kofi", state=state).model_dump_json().encode()
-    assert len(message) < 52_000
+    assert len(message) < 80_000
 
 
 def long_flag(about: str, id: str) -> Flag:
@@ -249,6 +250,6 @@ def long_flag(about: str, id: str) -> Flag:
         kind=FlagKind.PROMISE,
         owner="kofi",
         about=about,
-        description="…" * 5000,
+        description=WIDEST * 5000,
         created=START,
     )

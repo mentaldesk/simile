@@ -280,24 +280,33 @@ async def interrupt(sdk: ClaudeSDKClient) -> None:
 
 
 def rate_limit_from(info: RateLimitInfo) -> RateLimit:
-    """Claude Code reports each window's utilisation under `unifiedWindows`, not `utilization`."""
+    """Utilisation comes in the undocumented `unifiedWindows`. Anything unreadable is left out."""
+    reported = info.raw.get("unifiedWindows") if isinstance(info.raw, dict) else None
     windows = {
-        name: float(window["utilization"])
-        for name, window in (info.raw.get("unifiedWindows") or {}).items()
-        if isinstance(window, dict) and window.get("utilization") is not None
+        str(name): used
+        for name, window in (reported.items() if isinstance(reported, dict) else ())
+        if isinstance(window, dict) and (used := number(window.get("utilization"))) is not None
     }
-    utilization = info.utilization
+    utilization = number(info.utilization)
     if utilization is None and info.rate_limit_type is not None:
         utilization = windows.get(info.rate_limit_type)
     return RateLimit(info.status, info.rate_limit_type, utilization, info.resets_at, windows)
 
 
+def number(value: object) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return float(value)
+
+
 def usage_from(result: ResultMessage, rate_limit: RateLimit | None = None) -> Usage:
     usage = result.usage or {}
+    details = usage.get("output_tokens_details")
+    thinking = number(details.get("thinking_tokens")) if isinstance(details, dict) else None
     return Usage(
         input_tokens=usage.get("input_tokens", 0),
         output_tokens=usage.get("output_tokens", 0),
-        thinking_tokens=(usage.get("output_tokens_details") or {}).get("thinking_tokens", 0),
+        thinking_tokens=int(thinking or 0),
         cache_read_tokens=usage.get("cache_read_input_tokens", 0),
         cache_creation_tokens=usage.get("cache_creation_input_tokens", 0),
         cost_usd=result.total_cost_usd,

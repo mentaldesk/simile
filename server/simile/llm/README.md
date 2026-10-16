@@ -74,15 +74,19 @@ Measured by I4 on an M2 Max, each call a fresh Claude Code process. Usage is Cla
 API-equivalent cost (`Usage.cost_usd`), the best guide there is to how fast a call uses up the
 subscription's limits.
 
-| Purpose | Model | First word | Thinking | Usage per call |
-|---|---|--:|--:|--:|
-| `player-reply` (B5) | Haiku 4.5 | 0.7 s (0.6 to 1.8 s) | none | $0.0015 |
-| `conversation` (B2) | Haiku 5.5 | 2.7 s (1.5 to 4.7 s) | half the lines, 150 tokens on average | $0.00033 |
-| `reflection` (B3) | Haiku 5.5 | 10 to 12 s | about 1,800 tokens | $0.0017 |
-| `news-reaction` (B4) | Haiku 5.5 | 2.5 to 3.1 s | about 250 tokens | $0.00047 |
+Medians, with the range in brackets:
+
+| Purpose | Model | Calls | First word | Whole call | Thinking | Usage per call |
+|---|---|--:|--:|--:|---|--:|
+| `player-reply` (B5) | Haiku 4.5 | 7 | 0.7 s (0.6 to 1.8) | | none | $0.0015 |
+| `conversation` (B2) | Haiku 5.5 | 56 | 2.8 s (1.5 to 5.0) | 3.1 s (1.7 to 5.2) | 31 of 56 lines, 185 tokens on average | $0.00033 |
+| `conversation` | Haiku 4.5 | 14 | 1.4 s (1.3 to 2.4) | 2.2 s (1.8 to 3.2) | none | $0.0015 |
+| `reflection` (B3) | Haiku 5.5 | 9 | 11.6 s (7.7 to 12.9) | 13.9 s (9.9 to 15.3) | about 1,850 tokens | $0.0016 |
+| `reflection` | Haiku 4.5 | 2 | | 5.8 and 6.7 s | none | $0.0058 |
+| `news-reaction` (B4) | Haiku 5.5 | 2 | 2.5 and 3.1 s | 3.0 and 3.4 s | about 250 tokens | $0.00047 |
 
 Haiku 5.5 costs about a tenth of Haiku 4.5 per token, so even with its thinking a line costs about
-a quarter as much (Haiku 4.5: $0.0015) and a reflection about a third ($0.0058). Only player
+a quarter as much and a reflection about a third. Only player
 replies wait on the first word; B2 writes each line while the one before it plays, and B3 and B4
 run in the background. The configs name the version rather than the `haiku` alias, so these
 numbers hold when the alias moves.

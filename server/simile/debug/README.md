@@ -20,5 +20,5 @@ server, not per client: the hub doesn't say which client a message came from.
 | `memories` | What R2's `recall` gives them now, up to 6: `kind`, `content`, `timestamp`, `salience`, `valence`. |
 | `conversation` | `null`, or B2's `state(npc)` (`id`, `talking_to`, `engagement`, `facing`, `leaving`) with the last 12 `lines` (`speaker`, `text`, `timestamp`). |
 
-Text is cut at 280 characters, so a state stays under 52 KB even with every flag, memory and
-line at full length in multi-byte characters.
+Text is cut at 280 characters, so a state stays under 80 KB however long its flags, memories
+and lines are, even in 4-byte characters.

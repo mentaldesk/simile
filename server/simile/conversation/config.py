@@ -99,9 +99,7 @@ class ConversationConfig(BaseModel):
 
     model: str = Field(
         default=Model.HAIKU_5_5,
-        description="The model that writes lines. Haiku 5.5 thinks before about half its lines, "
-        "but a line is written while the one before it plays, and it costs about a quarter of "
-        "Haiku 4.5's line in usage.",
+        description="The model that writes lines. See *Which model* in the L1 README.",
     )
     line_timeout: float = Field(
         default=30,

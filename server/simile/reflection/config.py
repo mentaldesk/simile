@@ -10,8 +10,7 @@ class ReflectionConfig(BaseModel):
 
     model: str = Field(
         default=Model.HAIKU_5_5,
-        description="The model that reads each conversation. Haiku 5.5 thinks for 10 to 14 s, "
-        "twice as long as Haiku 4.5, at about a third of its usage.",
+        description="The model that reads each conversation. See *Which model* in the L1 README.",
     )
     priority: int = Field(
         default=-1, description="L1 priority of the reflection calls, below conversations' 0."
