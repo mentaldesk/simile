@@ -13,8 +13,9 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   Independence and Peace of Mind against), their social need, which weighs most (someone lonely
   accepts almost anyone, someone who's just talked mostly doesn't), and what they're busy with:
   someone at a terminal or the maker space, or looking for someone else, is less keen, and someone
-  who was looking for `a` is very keen. Anyone already talking and anything beyond
-  `max_conversations` (2) are declined, counting conversations with the player. Requests involving
+  who was looking for `a` is very keen. `accept_score(a, b)` is that score. Anyone already talking
+  is declined, and so is anything beyond `max_conversations` (2) conversations between NPCs. The
+  player's doesn't count: I1's `max_voiced` already caps how many are voiced. Requests involving
   the player go to `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` speaks first.
@@ -28,7 +29,8 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   asks for pet words and phrases now and then, not in every line. The model ends each line with
   `[values: ...]`, the core values the conversation touches. `parse_reply` takes it off, even cut
   short, along with any name label, quotes, `*stage directions*` and anything the model wrote for
-  the other speaker.
+  the other speaker. It also cuts a line at the first sentence boundary past `max_words` (40), so
+  no sentence starts after the 40th word.
 - **Engagement.** Each participant starts from `start_engagement`, more if they like the other or
   value Connection. After every line, both lose `fatigue` and gain `topic_weight` times how much
   the values it brings up for the first time in the conversation matter to them (from -1 to 1)
@@ -57,16 +59,21 @@ Every constant is in `ConversationConfig`.
 `PlayerConversations` in `player.py` runs conversations between the player and an NPC on the same
 engine, so `live`, `conversation(id)`, `talking`, `state` and the events below cover them too. The
 player is `Visitor` in prompts (B3 uses the same name), "a newcomer to the village", and NPCs bring
-their relationship with `player`, shared history and memories as with anyone else.
+their relationship with `player`, shared history and memories as with anyone else. The resident's
+prompt also marks up to `NewsConfig.shared` (3) articles both they and the player have read (B4's
+`read_by_both`), so they're likelier to bring them up. B1 counts a talk with the player as
+`player_relief` (half) of one with a resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
   they're talking to another NPC or asleep. From then on, the player's lines reach the NPC for as
   long as the conversation lasts. Saying something to a different NPC who is free ends the one going
-  on; saying it to one who isn't changes nothing. An NPC who walks up to the player (B1's seek) says
-  hello. So does a free NPC within `near` (3 tiles) whose acceptance score beats `greet_bar` (0.5):
-  every `look_every` (5 s), each nearby NPC is considered once per `greet_cooldown` (10 min), so
-  high Connection NPCs greet strangers and those who dislike the player don't. Nobody greets a
-  player who's already talking or not connected.
+  on: the old partner says a short canned goodbye, and the new resident's first line waits until it
+  ends. Saying it to one who isn't free changes nothing. An NPC who walks up to the player (B1's
+  seek) says hello. So does a free NPC within `near` (3 tiles) whose acceptance score beats
+  `greet_bar` (0.5): every `look_every` (5 s), each nearby NPC is considered once per
+  `greet_cooldown` (10 min), so high Connection NPCs greet strangers and those who dislike the
+  player don't. Nobody greets a player who's already talking or not connected, and nobody in B1's
+  `leave_player_alone` greets them.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
@@ -115,6 +122,8 @@ published.
 - **Ending one now (I3).** `engine.end(conversation_id)` ends a live conversation as if it had run
   its course, dropping any line still being written, and returns it with `ended` set, or None if
   it isn't live. `ConversationEnded` follows as usual, so B3 reflects on it.
+- **The ambient director.** `engine.accept_score(a, b)` says how keen `b` would be if `a` walked up
+  now, so [`simile.ambient`](../ambient/README.md) only nudges pairs who would accept each other.
 
 ## Without Claude
 

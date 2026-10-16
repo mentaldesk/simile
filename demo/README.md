@@ -34,7 +34,9 @@ script, whatever you do with your first few steps: Tobias and Kofi, and Desmond 
 don't seek you out or greet you until their own conversation has started, and until both have,
 nobody's choices are left to chance. Everyone takes their best option, and accepts a conversation
 whenever they're more for it than against. That's the first 7 seconds or so, and only Tobias,
-Desmond and Raymond decide in them.
+Desmond and Raymond decide in them. The [ambient director](../server/simile/ambient/README.md) is
+off for the whole demo, so nobody is sent over to talk near you and the later beats stay where the
+walk-through puts them.
 
 | Variable | Default | |
 |---|---|---|
@@ -145,13 +147,13 @@ first few minutes, and after that D2's soak measured about 43 calls a sim hour.
 cd server && uv run python ../demo/check.py --runs 20
 ```
 
-Runs the opening headless on the fake LLM, kept to script as `serve.py` keeps it, and counts how
-often each scripted beat happens: Tobias seeking out Kofi, Desmond seeking out Marguerite, both
-conversations starting, and Raymond going to read. A simulated client is connected throughout, and
-`--runs` is per way the player starts: stepping left and waiting, as in the walk-through, or
-heading for Tobias or Kofi, or for Desmond or Marguerite, within 2 seconds of the first step. 1000
-runs of each went to script, the conversations starting 7 sim seconds in. Run it after changing
-`scenario.json`. It exits non-zero if any beat was missed.
+Runs the opening headless on the fake LLM, kept to script and with the director off as `serve.py`
+has it, and counts how often each scripted beat happens: Tobias seeking out Kofi, Desmond seeking
+out Marguerite, both conversations starting, and Raymond going to read. A simulated client is
+connected throughout, and `--runs` is per way the player starts: stepping left and waiting, as in
+the walk-through, or heading for Tobias or Kofi, or for Desmond or Marguerite, within 2 seconds of
+the first step. 1000 runs of each went to script, the conversations starting 7 sim seconds in. Run
+it after changing `scenario.json`. It exits non-zero if any beat was missed.
 
 CI runs three of each on every PR (`.github/workflows/demo.yml`), along with ruff on `demo/` and
 an import check of `serve.py`, so a change to the server APIs the demo builds on shows up there.

@@ -34,7 +34,10 @@ class ConversationConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_conversations: int = Field(
-        default=2, ge=0, description="Conversations going on at once. Requests beyond it decline."
+        default=2,
+        ge=0,
+        description="Conversations between NPCs going on at once. Requests beyond it decline. "
+        "The player's conversation doesn't count; I1's max_voiced caps what's voiced.",
     )
 
     accept_base: float = Field(default=0.2, description="Base score for accepting a request.")
@@ -110,7 +113,12 @@ class ConversationConfig(BaseModel):
         description="Real seconds a line may take to write before it counts as failed, which "
         "ends the conversation.",
     )
-    max_words: int = Field(default=40, ge=1, description="Longest line asked for.")
+    max_words: int = Field(
+        default=40,
+        ge=1,
+        description="Longest line asked for. A longer one is cut at the first sentence boundary "
+        "past it.",
+    )
     memories_about: int = Field(
         default=3, ge=0, description="Memories of the other person in a speaker's prompt."
     )

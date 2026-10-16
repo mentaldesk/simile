@@ -2,7 +2,7 @@ import json
 import logging
 from collections import Counter
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -253,6 +253,80 @@ def test_talking_meets_social_need() -> None:
     village.run(minutes=30)
 
     assert village.behaviour.needs("ana")[Need.SOCIAL] < 0.5
+
+
+def test_talking_with_the_player_meets_less_social_need_than_talking_with_a_resident() -> None:
+    steady = DEFAULT_CONFIG.model_copy(
+        update={
+            "rise": {**DEFAULT_CONFIG.rise, Need.SOCIAL: 0.0},
+            "rise_values": {**DEFAULT_CONFIG.rise_values, Need.SOCIAL: {}},
+            "company": 0.0,
+        }
+    )
+    village = Village([ANA, BEN], config=steady)
+    village.behaviour.pause("ana", "cal")
+    village.behaviour.pause("ben", PLAYER_ID)
+    for npc in ("ana", "ben"):
+        village.behaviour.minds[npc].needs[Need.SOCIAL] = 0.9
+
+    village.run(minutes=5)
+
+    talk = steady.effects[A.TALK][Need.SOCIAL] * 5 / 60
+    assert village.behaviour.needs("ana")[Need.SOCIAL] == pytest.approx(0.9 + talk)
+    assert village.behaviour.needs("ben")[Need.SOCIAL] == pytest.approx(
+        0.9 + talk * steady.player_relief
+    )
+    assert steady.player_relief == 0.5
+
+
+def test_a_nudge_tips_their_next_decision_and_only_that_one() -> None:
+    village = Village(
+        [ANA, BEN],
+        start=at(11),
+        config=DEFAULT_CONFIG.model_copy(update={"temperature": 0.0}),
+        placed={"ana": "square", "ben": "square"},
+    )
+    now = village.clock.now
+    needs = village.behaviour.needs("ana")
+    staying = Goal(A.SQUARE, "square")
+    for npc in ("ana", "ben"):
+        village.behaviour.restore(npc, staying, needs, now, now + timedelta(hours=1), {})
+
+    assert village.behaviour.nudge("ana", Goal(A.SEEK, "ben"), 5.0)
+    village.run(minutes=0.1)
+
+    assert village.behaviour.goal("ana") == Goal(A.SEEK, "ben")
+    assert village.behaviour.minds["ana"].options["seek ben"] > 5.0
+    assert village.behaviour.minds["ana"].nudge is None
+    assert village.behaviour.goal("ben") == staying
+
+
+def test_a_nudge_stops_a_walk_and_waits_for_anyone_talking_or_asleep() -> None:
+    village = Village([ANA, BEN], start=at(11), config=keen(A.PARK), placed={"ben": "square"})
+    village.run_until(lambda: village.behaviour.minds["ana"].walk is not None)
+
+    assert village.behaviour.nudge("ana", Goal(A.SEEK, "ben"), 50.0)
+    assert village.behaviour.minds["ana"].walk is None
+    village.run(minutes=0.1)
+    assert village.behaviour.goal("ana") == Goal(A.SEEK, "ben")
+
+    village.behaviour.pause("ben", "cal")
+    assert not village.behaviour.nudge("ben", Goal(A.SEEK, "ana"), 50.0)
+    assert village.behaviour.minds["ben"].nudge is None
+
+    night = Village([ANA], start=at(23.5))
+    assert not night.behaviour.nudge("ana", Goal(A.PARK, "park"), 50.0)
+
+
+def test_a_nudge_left_at_bedtime_is_dropped_with_the_new_goal() -> None:
+    village = Village([ANA], start=datetime(2026, 1, 1, 22, 29, 58, tzinfo=UTC))
+    assert village.behaviour.minds["ana"].bedtime == 22.5
+
+    assert village.behaviour.nudge("ana", Goal(A.PARK, "park"), 50.0)
+    village.run(minutes=0.2)
+
+    assert village.behaviour.goal("ana").activity is A.SLEEP
+    assert village.behaviour.minds["ana"].nudge is None
 
 
 def test_seekers_ask_to_talk_and_both_pause_when_accepted() -> None:

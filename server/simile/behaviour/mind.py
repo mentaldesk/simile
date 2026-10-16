@@ -121,6 +121,8 @@ class Mind:
     options: dict[str, float] = field(default_factory=dict)
     """The best score of each activity at the last decision."""
     cooldowns: dict[Id, datetime] = field(default_factory=dict)
+    nudge: tuple[Goal, float] | None = None
+    """A goal and the bonus it gets at the next decision."""
 
 
 class Behaviour:
@@ -196,7 +198,7 @@ class Behaviour:
             return
         mind = self.minds[npc]
         mind.paused = True
-        mind.until = None
+        mind.until, mind.nudge = None, None
         walk, mind.walk = mind.walk, None
         if walk is not None:
             self.movement.stop(npc)
@@ -232,9 +234,25 @@ class Behaviour:
         mind.goal, mind.since, mind.until = goal, since, until or self.clock.now
         mind.needs.update(needs)
         mind.cooldowns = dict(cooldowns)
-        mind.paused, mind.chases, mind.options = False, 0, {}
+        mind.paused, mind.chases, mind.options, mind.nudge = False, 0, {}, None
         self._needs_at = self.clock.now
         self._publish(mind)
+
+    def nudge(self, npc: Id, goal: Goal, bonus: float) -> bool:
+        """Add `bonus` to `goal` when they decide, on the next think. False if paused or asleep."""
+        mind = self.minds[npc]
+        if mind.paused or asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
+            return False
+        walk, mind.walk = mind.walk, None
+        if walk is not None:
+            self.movement.stop(npc)
+        mind.nudge, mind.until = (goal, bonus), self.clock.now
+        return True
+
+    def available(self, seeker: Id, other: Id) -> bool:
+        """Whether `seeker` could seek `other` out: not asleep, at home, talking, recently refused
+        or, for the player, left alone."""
+        return self._available(self.minds[seeker], other, self.clock.time_of_day)
 
     def goal(self, npc: Id) -> Goal:
         return self.minds[npc].goal
@@ -281,13 +299,21 @@ class Behaviour:
         for mind in self.minds.values():
             activity = mind.goal.activity
             sleeping = activity is Activity.SLEEP and mind.walk is None
-            effects = config.walking if mind.walk is not None else config.effects.get(activity, {})
+            effects = self._effects(mind)
             for need in Need:
                 rate = 0.0 if sleeping else self._rise(mind.npc, need)
                 rate += effects.get(need, 0.0)
                 mind.needs[need] = _clamp(mind.needs[need] + rate * hours)
             if activity not in AT_HOME and self._has_company(mind.npc.id, positions):
                 mind.needs[Need.SOCIAL] = _clamp(mind.needs[Need.SOCIAL] - config.company * hours)
+
+    def _effects(self, mind: Mind) -> Mapping[Need, float]:
+        if mind.walk is not None:
+            return self.config.walking
+        effects = self.config.effects.get(mind.goal.activity, {})
+        if mind.goal == Goal(Activity.TALK, PLAYER_ID) and Need.SOCIAL in effects:
+            return {**effects, Need.SOCIAL: effects[Need.SOCIAL] * self.config.player_relief}
+        return effects
 
     def _rise(self, npc: Npc, need: Need) -> float:
         weights = self.config.rise_values.get(need, {})
@@ -306,6 +332,10 @@ class Behaviour:
             self._sleep(mind)
             return
         options = scores(self._situation(mind), self.places, self.config)
+        if mind.nudge is not None:
+            (goal, bonus), mind.nudge = mind.nudge, None
+            if goal in options:
+                options[goal] += bonus
         mind.options = {
             str(goal): round(value, 3) for goal, value in best_per_activity(options).values()
         }
@@ -364,6 +394,7 @@ class Behaviour:
 
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
+        mind.nudge = None
         self._publish(mind)
         match goal.activity:
             case Activity.IDLE:
