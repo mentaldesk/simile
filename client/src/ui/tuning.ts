@@ -1,5 +1,6 @@
-export const EARSHOT_TILES = 8;
-export const FULL_ALPHA_TILES = 3;
+/** The server's `earshot`, checked by server/tests/voicing/test_client_earshot.py. */
+export const EARSHOT_TILES = 4;
+export const FULL_ALPHA_TILES = 2;
 export const FAINTEST_ALPHA = 0.3;
 
 export const CHAT_RANGE_TILES = 3;

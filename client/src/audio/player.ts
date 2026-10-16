@@ -1,7 +1,8 @@
-import type { AudioChunk, Line, server } from '../net';
+import type { AudioChunk, Conversation, Line, server } from '../net';
+import { PLAYER_ID } from '../ui/world-view';
 import { toFloat32 } from './pcm';
 import type { PositionProvider } from './positions';
-import { spatialMix, UNPOSITIONED, type Mix } from './spatial';
+import { overheardMix, partnerMix, UNPOSITIONED, type Mix } from './spatial';
 import { Timeline } from './timeline';
 
 /** The Web Audio seam: webaudio.ts in the browser, a fake in tests. Times are in seconds. */
@@ -19,10 +20,12 @@ export type VoiceOutput = {
 const STALE_S = 5;
 export const REMEMBERED_LINES = 512;
 
+type Speaker = { id: string; partner: boolean };
+
 type Voice = {
   output: VoiceOutput;
   timeline: Timeline;
-  speaker?: string;
+  speaker?: Speaker;
   mix?: Mix;
   heard: number;
   finished: boolean;
@@ -32,7 +35,7 @@ export class VoicePlayer {
   underruns = 0;
   private readonly output: AudioOutput;
   private readonly positions: PositionProvider;
-  private readonly speakers = new Map<number, string>();
+  private readonly speakers = new Map<number, Speaker>();
   private readonly voices = new Map<number, Voice>();
 
   constructor(output: AudioOutput, positions: PositionProvider) {
@@ -40,16 +43,17 @@ export class VoicePlayer {
     this.positions = positions;
   }
 
-  learn(line: Pick<Line, 'id' | 'speaker'>): void {
+  learn(line: Pick<Line, 'id' | 'speaker'>, partner = false): void {
+    const speaker = { id: line.speaker, partner };
     this.speakers.delete(line.id);
-    this.speakers.set(line.id, line.speaker);
+    this.speakers.set(line.id, speaker);
     if (this.speakers.size > REMEMBERED_LINES) {
       const [oldest] = this.speakers.keys();
       this.speakers.delete(oldest);
     }
     const voice = this.voices.get(line.id);
     if (voice) {
-      voice.speaker = line.speaker;
+      voice.speaker = speaker;
       this.position(voice);
     }
   }
@@ -97,9 +101,10 @@ export class VoicePlayer {
 
   private position(voice: Voice): void {
     const listener = this.positions.listenerPosition();
-    const source =
-      voice.speaker === undefined ? undefined : this.positions.positionOf(voice.speaker);
-    const mix = listener && source ? spatialMix(listener, source) : UNPOSITIONED;
+    const { speaker } = voice;
+    const source = speaker && this.positions.positionOf(speaker.id);
+    const mixOf = speaker?.partner ? partnerMix : overheardMix;
+    const mix = listener && source ? mixOf(listener, source) : UNPOSITIONED;
     if (voice.mix?.gain === mix.gain && voice.mix.pan === mix.pan) return;
     voice.mix = mix;
     voice.output.mix(mix);
@@ -111,13 +116,20 @@ export function listen(
   player: VoicePlayer,
   canPlay: () => boolean,
 ): () => void {
-  const learnAll = (lines: Line[]) => lines.forEach((line) => player.learn(line));
+  const withPlayer = new Set<string>();
+  const learn = (line: Line) => player.learn(line, withPlayer.has(line.conversation_id));
+  const follow = ({ id, participants, lines }: Conversation) => {
+    if (participants.includes(PLAYER_ID)) withPlayer.add(id);
+    lines.forEach(learn);
+  };
   const unsubscribes = [
-    connection.on('snapshot', ({ conversations }) =>
-      conversations.forEach((conversation) => learnAll(conversation.lines)),
-    ),
-    connection.on('conversation_started', ({ conversation }) => learnAll(conversation.lines)),
-    connection.on('line', ({ line }) => player.learn(line)),
+    connection.on('snapshot', ({ conversations }) => {
+      withPlayer.clear();
+      conversations.forEach(follow);
+    }),
+    connection.on('conversation_started', ({ conversation }) => follow(conversation)),
+    connection.on('conversation_ended', ({ conversation_id: id }) => withPlayer.delete(id)),
+    connection.on('line', ({ line }) => learn(line)),
     connection.on('audio_chunk', (chunk) => {
       if (canPlay()) player.receive(chunk);
     }),

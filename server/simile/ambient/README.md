@@ -2,15 +2,15 @@
 
 The ambient director: it makes sure the player overhears the village. If no conversation between
 residents has been within earshot for a minute, it nudges two residents near the player who would
-happily talk to start one. With the defaults the player overhears about one every 8 minutes in the
+happily talk to start one. With the defaults the player overhears about one every 10 minutes in the
 play-through below. `director_of(app)` returns the server's `Director`, which the `running` hook
 ticks on the sim loop.
 
 ## Nudging
 
 - **Earshot.** `Earshot` follows the bus and decides as I1 does, with I1's distances by default: a
-  conversation between NPCs comes into earshot once the player is within `earshot` (8 tiles) of
-  one of its speakers, and stays in it until they're further than `out_of_earshot` (11) from all
+  conversation between NPCs comes into earshot once the player is within `earshot` (4 tiles) of
+  one of its speakers, and stays in it until they're further than `out_of_earshot` (5.5) from all
   of them. Nothing is in earshot while no client is connected or the player isn't on the map.
 - **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (1 minute) and
   at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected,

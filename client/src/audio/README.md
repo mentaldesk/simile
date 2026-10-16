@@ -11,8 +11,15 @@ from where the speaker stands.
 - Chunks carry a line id, so the speaker comes from the `line` messages and the lines in `snapshot`
   and `conversation_started`. A chunk that arrives before its line plays unpositioned until the line
   arrives.
-- Volume is full within 2 tiles of the listener and falls to silence at 14 (`spatial.ts`). Keep
-  the server's earshot within that. Pan follows the speaker's direction, up to 0.8 either side.
+- The player's own conversation partner plays at full volume wherever they are, panned up to 0.3
+  towards their side. A line is the partner's if its conversation includes the player, as told by
+  `snapshot`, `conversation_started` and `conversation_ended`, so a goodbye said as the
+  conversation ends still plays at full volume.
+- Overheard voices are capped at a third of full volume (about −9.5 dB) within 2 tiles of the
+  listener and fall to silence at `SILENT_BEYOND` (5.5), where the server stops voicing them
+  (`out_of_earshot`). Pan follows the speaker's direction, up to 0.8 either side. `spatial.ts`
+  has both mixes, and `server/tests/voicing/test_client_earshot.py` fails if `SILENT_BEYOND` and
+  `out_of_earshot` drift apart.
 - Browsers keep audio suspended until the page gets a key press or click. Chunks that arrive before
   then are dropped.
 
@@ -38,7 +45,8 @@ listener, voices play unpositioned: full volume, centred.
 
 Run `npm run dev` in `client/` and open <http://localhost:5173/?audio-harness>. It plays each WAV in
 `voice-lab/voices/` from a fixed source, streamed as `audio_chunk` frames through `server.dispatch`
-at an uneven pace like the TTS's, with a `line` message first.
+at an uneven pace like the TTS's, with a `line` message first. The first source is the player's
+partner, in a conversation the harness starts with `conversation_started`; the rest are overheard.
 
 - Arrow keys move the listener.
 - `1`, `2`, … stream that WAV. Space streams them all at once.
