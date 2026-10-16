@@ -40,6 +40,13 @@ Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one
 conversation that hasn't ended. Its `time` is the sim clock's.
 
+### `clock`
+
+`time` (sim time) and `speed` (sim seconds per real second, more than 0). The server sends it
+straight after every `snapshot`, when the speed changes, and as each sim minute starts, so the client
+can keep its own clock in between: sim time now is about `time` + `speed` × the real seconds since
+it arrived.
+
 ### `entity_moved`
 
 `entity_id`, `position`. There's no facing: the client works it out from the direction of travel.
@@ -161,6 +168,8 @@ hub.snapshot = world_snapshot  # returns a SnapshotMessage; the fixtures at sim 
 - `broadcast` queues the message for every connected client and returns at once, so it's safe to
   call from a tick or an event bus handler. Each client gets its messages in the order they were
   broadcast, after its snapshot.
+- The protocol lifespan sets `hub.clock`, which sends the `clock` after each snapshot. Without the
+  lifespan, a new client gets only the snapshot.
 - Subscribers to client messages are called on the event loop, in the order they subscribed, and
   mustn't block. One that raises is logged and doesn't affect the others.
 - Call the hub from the event loop. From a worker thread, such as a TTS model running in one, use

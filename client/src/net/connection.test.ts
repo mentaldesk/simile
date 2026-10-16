@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeAudioChunk } from './audio';
 import { ServerConnection, type Socket } from './connection';
-import type { EntityMovedMessage, SnapshotMessage, WatchNpcMessage } from './protocol';
+import type {
+  ClockMessage,
+  EntityMovedMessage,
+  SnapshotMessage,
+  WatchNpcMessage,
+} from './protocol';
 
 class FakeSocket implements Socket {
   binaryType: BinaryType = 'blob';
@@ -46,6 +51,7 @@ const snapshot: SnapshotMessage = {
   entities: [{ id: 'mei', kind: 'npc', name: 'Mei Lin', position: { x: 4, y: 6 } }],
   conversations: [],
 };
+const clock: ClockMessage = { type: 'clock', time: '2026-03-14T09:10:03Z', speed: 1 };
 const moved: EntityMovedMessage = {
   type: 'entity_moved',
   entity_id: 'mei',
@@ -110,6 +116,27 @@ describe('ServerConnection', () => {
 
     expect(snapshots).toEqual([snapshot]);
     expect(moves).toEqual([moved]);
+  });
+
+  it('passes over messages nothing handles, like the clock after the snapshot', () => {
+    const received = vi.fn();
+    connection.on('snapshot', received);
+    connection.on('entity_moved', received);
+    connection.connect();
+    latest().open();
+
+    for (const message of [snapshot, clock, moved]) latest().deliver(JSON.stringify(message));
+
+    expect(received.mock.calls).toEqual([[snapshot], [moved]]);
+  });
+
+  it('delivers the clock to its handlers', () => {
+    const received = vi.fn();
+    connection.on('clock', received);
+
+    connection.dispatch(JSON.stringify(clock));
+
+    expect(received).toHaveBeenCalledWith(clock);
   });
 
   it('decodes binary frames as audio chunks', () => {

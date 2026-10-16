@@ -30,6 +30,34 @@
         }
       ]
     },
+    "ClockMessage": {
+      "additionalProperties": false,
+      "description": "The sim clock, sent after the snapshot, when the speed changes and every sim minute.",
+      "properties": {
+        "type": {
+          "const": "clock",
+          "default": "clock",
+          "type": "string"
+        },
+        "time": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "speed": {
+          "description": "Sim seconds per real second.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "time",
+        "speed"
+      ],
+      "title": "ClockMessage",
+      "type": "object"
+    },
     "Conversation": {
       "additionalProperties": false,
       "properties": {
@@ -445,6 +473,7 @@
     "ServerMessage": {
       "discriminator": {
         "mapping": {
+          "clock": "#/$defs/ClockMessage",
           "conversation_ended": "#/$defs/ConversationEndedMessage",
           "conversation_started": "#/$defs/ConversationStartedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
@@ -458,6 +487,9 @@
       "oneOf": [
         {
           "$ref": "#/$defs/SnapshotMessage"
+        },
+        {
+          "$ref": "#/$defs/ClockMessage"
         },
         {
           "$ref": "#/$defs/EntityMovedMessage"
