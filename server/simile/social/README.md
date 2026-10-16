@@ -30,15 +30,14 @@ ambition makes them respect strangers less. Familiarity starts at 0.
   Moving toward neutral isn't resisted, even past it, so an old friend's betrayal lands in full: a
   bad conversation as strong as a typical good one takes like from 0.95 to 0.575. Neutral is 0.5
   for everyone, so a warm baseline of 0.71 is a head start worth about three good conversations.
-- **Familiarity** closes `familiarity_gain` (6%) of its gap to 1 once per encounter, events or
-  not. It doesn't slow the scores down.
+- **Familiarity** closes `familiarity_gain` (6%) of its gap to 1 once per encounter, events or not.
 
 ## Decay
 
 `decay(rel, elapsed)` moves like, trust and respect back toward the baseline, halving the distance
 every 2 days for like, 4 for respect and 8 for trust. Familiarity halves toward 0 every 90 days.
-Decay sets how high a pair stays: from a neutral baseline, a typical good conversation every hour
-holds like at about 0.82, every six hours at 0.73 and every day at 0.68.
+Decay sets how high a pair gets: from a neutral baseline, with a typical good conversation every
+hour like peaks at about 0.82, every six hours at 0.73 and every day at 0.68.
 
 A stored relationship is as of its `last_interaction`. Read it through `as_of(rel, now)`, and store
 `apply_events(as_of(rel, now), events, now)`, so each stretch of time decays once.
