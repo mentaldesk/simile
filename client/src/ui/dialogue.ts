@@ -1,30 +1,10 @@
 import { server, type Conversation, type Line } from '../net';
 import { SpeechBubbles, speakingSeconds } from './bubbles';
 import { DialogueLog } from './log';
-import { CHAT_RANGE_TILES, EARSHOT_TILES } from './tuning';
+import { EARSHOT_TILES } from './tuning';
 import { distanceFromPlayer, PLAYER_ID, worldView, type WorldView } from './world-view';
 
 type Server = Pick<typeof server, 'on' | 'send'>;
-
-type Talks = Pick<Dialogue, 'partner' | 'busy'>;
-
-/** The NPC the player is talking with until the server ends it, else the nearest free one. */
-export function chatTarget(view: WorldView, talks?: Talks): string | undefined {
-  const partner = talks?.partner();
-  if (partner !== undefined) return partner;
-  let nearest: string | undefined;
-  let nearestDistance = Infinity;
-  for (const id of view.npcIds()) {
-    if (talks?.busy(id)) continue;
-    const distance = distanceFromPlayer(view, id);
-    if (distance === undefined || distance > CHAT_RANGE_TILES) continue;
-    if (distance < nearestDistance) {
-      nearest = id;
-      nearestDistance = distance;
-    }
-  }
-  return nearest;
-}
 
 export class Dialogue {
   readonly bubbles = new SpeechBubbles();

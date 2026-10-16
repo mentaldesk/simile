@@ -6,11 +6,17 @@ from simile.llm import Model
 
 
 class NewsConfig(BaseModel):
-    """Every constant of how articles are analysed and how NPCs pick, read and bring up the
-    news."""
+    """Every constant of how articles are taken in and analysed, and how NPCs pick, read and
+    bring up the news."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    min_summary_words: int = Field(
+        default=3,
+        ge=0,
+        description="Feed items whose summary has fewer words than this, like a section header "
+        "with none, aren't taken in: there's too little to react to.",
+    )
     model: str = Field(
         default=Model.HAIKU_5_5, description="The model that analyses and rates articles."
     )
