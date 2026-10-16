@@ -3,7 +3,7 @@
 import math
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 CHUNK_PX = 2048
 OPEN_PERCENTILE = 99
@@ -43,6 +43,16 @@ def chunks(
     ]
 
 
+def polygon_mask(polygons: list[list[tuple[float, float]]], size: tuple[int, int]) -> Image.Image:
+    """An antialiased mask of these polygons, in px."""
+    k = 4
+    big = Image.new("L", (size[0] * k, size[1] * k), 0)
+    draw = ImageDraw.Draw(big)
+    for polygon in polygons:
+        draw.polygon([(x * k, y * k) for x, y in polygon], fill=255)
+    return big.resize(size, Image.Resampling.BOX)
+
+
 def _luma(rgb: np.ndarray) -> np.ndarray:
     return rgb @ np.array([0.2126, 0.7152, 0.0722], np.float32)
 
@@ -62,7 +72,7 @@ def _disc_mean(a: np.ndarray, radius: float) -> np.ndarray:
 def light_map(
     sunsky: np.ndarray, sun: np.ndarray, lights: np.ndarray, elevation: float, px_per_tile: int
 ) -> tuple[Image.Image, float]:
-    """A resident's light at their feet, relative to the open square, and its RGB scale."""
+    """A resident's light at their feet, and its tint scale: tint above, sun fraction below."""
     sky = np.maximum(sunsky - sun, 0)
     e = math.radians(elevation)
     upright = math.cos(e) / (math.pi * math.sin(e))
@@ -76,5 +86,5 @@ def light_map(
     tint = np.power(np.maximum(ratio, 0), 1 / 2.2)
     in_sun = np.clip(_luma(_disc_mean(sun, radius)) / max(float(_luma(open_sun)), 1e-6), 0, 1)
     scale = max(round(float(tint.max()), 3), 1.0)
-    rgba = np.dstack([np.clip(tint / scale, 0, 1), in_sun])
-    return Image.fromarray(np.round(rgba * 255).astype(np.uint8), "RGBA"), scale
+    stacked = np.concatenate([np.clip(tint / scale, 0, 1), np.repeat(in_sun[..., None], 3, 2)])
+    return Image.fromarray(np.round(stacked * 255).astype(np.uint8), "RGB"), scale

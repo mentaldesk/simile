@@ -60,3 +60,27 @@ def test_the_front_edge_runs_along_the_south_and_east_walls() -> None:
     assert front(BUILDING, 8.0) == project(16, 8)[1]
     assert front(BUILDING, 12.0) == project(16, 4)[1]
     assert front(BUILDING, 30.0) == front(BUILDING, 12.0)
+
+
+def strips_under(sx: float, width: float, footprint) -> list[float]:
+    left = int(project(footprint[0], footprint[3])[0]) - 400
+    keys = []
+    for s in slices(footprint, left, 1600):
+        x0, x1 = left + s["x"], left + s["x"] + s["width"]
+        if x0 < sx + width / 2 and sx - width / 2 < x1:
+            keys.append(s["depth"])
+    return keys
+
+
+@pytest.mark.parametrize("x", [10.5, 11.5, 12.5, 13.5, 14.5, 15.5, 16.5])
+def test_a_wide_figure_along_the_south_wall_is_never_cut(x: float) -> None:
+    for step in (0.0, 0.25, 0.5, 0.75):
+        sx, sy = project(x + step, 8.5)
+        assert all(key <= sy for key in strips_under(sx, 96, BUILDING)), (x + step, 8.5)
+
+
+@pytest.mark.parametrize("y", [3.5, 4.5, 5.5, 6.5, 7.5, 8.5])
+def test_a_wide_figure_along_the_east_wall_is_never_cut(y: float) -> None:
+    for step in (0.0, 0.25, 0.5, 0.75):
+        sx, sy = project(16.5, y + step)
+        assert all(key <= sy for key in strips_under(sx, 96, BUILDING)), (16.5, y + step)

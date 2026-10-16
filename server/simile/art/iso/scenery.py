@@ -6,19 +6,31 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 from PIL import Image
 
+from simile.art import palette
 from simile.art.iso import blender, camera, depth, formats, post
 from simile.art.iso.lighting import CROSSFADE_MINUTES, LOOK, SETS, LightingSet
-from simile.art.iso.town import Building, Object, Town
+from simile.art.iso.town import GROUND_HEIGHTS, Building, Object, Town
 
-PIPELINE_VERSION = 1
+PIPELINE_VERSION = 2
 CONTENT_DIR = Path(__file__).resolve().parents[4] / "content"
+SIMILE = Path(__file__).resolve().parents[2]
+SOURCES = (
+    "art/palette.py",
+    "art/iso/camera.py",
+    "art/iso/formats.py",
+    "art/iso/lighting.py",
+    "art/iso/post.py",
+    "art/iso/scenery.py",
+    "art/iso/town.py",
+    "art/iso/in_blender",
+)
 MANIFEST_FORMAT = 1
 LIGHT_MAP_PX = 8
 MARGIN_PX = 24
@@ -33,6 +45,18 @@ def blender_renderer(job: dict[str, Any], work: Path) -> dict[str, Any]:
 def digest(data: Any) -> str:
     text = json.dumps(data, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(text.encode()).hexdigest()[:16]
+
+
+def sources_digest() -> str:
+    """A digest of the code that decides how renders look, which tests pin."""
+    paths = []
+    for name in SOURCES:
+        path = SIMILE / name
+        paths += sorted(path.glob("*.py")) if path.is_dir() else [path]
+    h = hashlib.sha256()
+    for path in paths:
+        h.update(path.relative_to(SIMILE).as_posix().encode() + b"\0" + path.read_bytes())
+    return h.hexdigest()[:16]
 
 
 def ground_rect(town: Town) -> tuple[int, int, int, int]:
@@ -78,21 +102,33 @@ def plan(town: Town, light: LightingSet) -> Plan:
         "look": LOOK,
         "light": light.params(),
         "camera": [camera.TILE_W, camera.TILE_H, camera.TILE_M, camera.ELEVATION],
+        "palette": palette.PALETTE,
     }
     out = Plan(light, town)
     for obj in town.objects:
         context = [o.spec() for o in town.context(obj, light)]
-        inputs = {"format": formats.SPRITES.name, "target": obj.spec(), "context": context}
+        inputs = {"format": asdict(formats.SPRITES), "target": obj.spec(), "context": context}
         out.sprites[obj.id] = SpriteTask(obj, context, digest({**base, **inputs}))
     scene = {
         **base,
         "ground": town.ground(),
+        "heights": town.heights(),
         "objects": [o.spec() for o in town.objects],
     }
-    out.ground_hash = digest({**scene, "rect": ground_rect(town), "format": formats.GROUND.name})
-    light_map = {"light_map": LIGHT_MAP_PX, "format": formats.LIGHT_MAP.name}
+    ground = {"rect": ground_rect(town), "format": asdict(formats.GROUND)}
+    out.ground_hash = digest({**scene, **ground})
+    light_map = {"light_map": LIGHT_MAP_PX, "format": asdict(formats.LIGHT_MAP)}
     out.light_map_hash = digest({**scene, **light_map})
     return out
+
+
+def corners(b: Building) -> list[tuple[float, float]]:
+    return [(b.x0, b.y0), (b.x1, b.y0), (b.x1, b.y1), (b.x0, b.y1)]
+
+
+def _px(x: float, y: float, x0: int, y0: int) -> tuple[float, float]:
+    sx, sy = camera.project(x, y)
+    return sx - x0, sy - y0
 
 
 def _write(path: Path, data: bytes) -> bool:
@@ -167,6 +203,7 @@ class SetBuild:
                 "width": town.width,
                 "height": town.height,
                 "ground": town.ground(),
+                "heights": town.heights(),
                 "buildings": [b.spec() for b in town.buildings],
                 "props": [p.spec() for p in town.props],
             }
@@ -196,7 +233,12 @@ class SetBuild:
             "hours": list(self.plan.light.hours),
             "crossfade_minutes": CROSSFADE_MINUTES,
             "sun": {"azimuth": self.plan.light.azimuth, "elevation": self.plan.light.elevation},
-            "tile": {"width": camera.TILE_W, "height": camera.TILE_H, "metres": camera.TILE_M},
+            "tile": {
+                "width": camera.TILE_W,
+                "height": camera.TILE_H,
+                "metres": camera.TILE_M,
+                "px_per_metre_up": round(camera.UPRIGHT_PX_PER_M, 3),
+            },
             "map": {"width": self.plan.town.width, "height": self.plan.town.height},
             "ground": self._ground(ground),
             "light_map": self._light_map(light_map),
@@ -220,8 +262,12 @@ class SetBuild:
         if not rendered:
             return self.old["ground"]
         x0, y0, w, h = ground_rect(self.plan.town)
-        with Image.open(self.work / self.name / "ground.png") as raw:
-            image = post.glow(raw.convert("RGBA"), LOOK["glow_radius"], self._glow())
+        work = self.work / self.name
+        under = [[_px(x, y, x0, y0) for x, y in corners(b)] for b in self.plan.town.buildings]
+        with Image.open(work / "ground.png") as raw, Image.open(work / "ground_open.png") as bare:
+            mask = post.polygon_mask(under, (w, h))
+            ground = Image.composite(bare.convert("RGBA"), raw.convert("RGBA"), mask)
+        image = post.glow(ground, LOOK["glow_radius"], self._glow())
         pieces = []
         for col, row, cx, cy, cw, ch in post.chunks(w, h):
             piece = image.crop((cx, cy, cx + cw, cy + ch))
@@ -240,6 +286,7 @@ class SetBuild:
             "y": y0,
             "width": w,
             "height": h,
+            "heights": GROUND_HEIGHTS,
             "hash": self.plan.ground_hash,
             "chunks": pieces,
         }
@@ -257,7 +304,8 @@ class SetBuild:
             "image": self._save(f"light.{formats.LIGHT_MAP.ext}", formats.LIGHT_MAP.encode(image)),
             "px_per_tile": LIGHT_MAP_PX,
             "width": image.width,
-            "height": image.height,
+            "height": image.height // 2,
+            "sun_y": image.height // 2,
             "scale": scale,
             "hash": self.plan.light_map_hash,
         }

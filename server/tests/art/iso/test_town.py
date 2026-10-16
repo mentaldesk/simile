@@ -3,7 +3,7 @@ from dataclasses import replace
 import pytest
 
 from simile.art.iso.lighting import SETS
-from simile.art.iso.town import GRASS_M, MODELLED, Building, Prop, Town, shades
+from simile.art.iso.town import MODELLED, Building, Prop, Town, ground_height, shades
 
 from .conftest import VILLAGE
 
@@ -27,7 +27,8 @@ def test_every_prop_kind_has_a_model(town: Town) -> None:
 def test_props_on_grass_stand_on_the_raised_bed(town: Town) -> None:
     for p in town.props:
         ground = town.at("ground", int(p.x), int(p.y)) or ""
-        assert p.z == (GRASS_M if ground.startswith("grass") else 0.0), p.id
+        assert p.z == ground_height(ground), p.id
+        assert p.z == (0.18 if ground.startswith("grass") else 0.0), p.id
 
 
 def test_trees_come_in_three_shapes(town: Town) -> None:
@@ -75,3 +76,12 @@ def test_lamps_light_nearby_buildings_only_when_they_are_on() -> None:
     town.buildings, town.props = [building], [lamp]
     assert town.context(building, SETS["night"]) == [lamp]
     assert town.context(building, replace(SETS["night"], emit={"lamp": 0.0})) == []
+
+
+@pytest.mark.parametrize(
+    ("tile", "metres"),
+    [("grass", 0.18), ("grass_ne_nook", 0.18), ("road_line_h", -0.08), ("crosswalk_h", -0.08)]
+    + [("water_s", -0.35), ("pavement", 0.0), ("plaza_inlay", 0.0), ("tactile_v", 0.0)],
+)
+def test_ground_heights_by_tile(tile: str, metres: float) -> None:
+    assert ground_height(tile) == metres

@@ -26,12 +26,10 @@ LOSSLESS_WEBP = Format(
 )
 PNG = Format("png", "png", (("optimize", True),))
 FORMATS = (LOSSY_WEBP, PNG, LOSSLESS_WEBP)
-# exact keeps the colour under fully transparent pixels, which a light map needs.
-DATA_WEBP = Format("data-webp", "webp", (*LOSSLESS_WEBP.options, ("exact", True)))
 
 GROUND = LOSSY_WEBP
 SPRITES = LOSSLESS_WEBP
-LIGHT_MAP = DATA_WEBP
+LIGHT_MAP = LOSSLESS_WEBP
 
 
 def sizes(images: Iterable[Image.Image], formats: Iterable[Format] = FORMATS) -> dict[str, int]:

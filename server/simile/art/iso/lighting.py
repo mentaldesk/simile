@@ -28,7 +28,7 @@ class LightingSet:
         return asdict(self)
 
 
-DAY_EMIT = {"lamp": 0.0, "neon": 0.12, "window": 0.1, "screen": 0.6}
+DAY_EMIT = {"lamp": 0.0, "neon": 0.12, "window": 0.1, "screen": 0.6, "water": 1.0}
 
 SETS: dict[str, LightingSet] = {
     s.name: s
@@ -42,7 +42,7 @@ SETS: dict[str, LightingSet] = {
             sun_colour=(0.55, 0.68, 1.0),
             sky_colour=(0.04, 0.07, 0.18),
             sky_strength=0.45,
-            emit={"lamp": 1.0, "neon": 1.0, "window": 1.0, "screen": 1.0},
+            emit={"lamp": 1.0, "neon": 1.0, "window": 1.0, "screen": 1.0, "water": 0.15},
             exposure=0.5,
             glow=1.0,
         ),
@@ -79,7 +79,7 @@ SETS: dict[str, LightingSet] = {
             sun_colour=(1.0, 0.5, 0.25),
             sky_colour=(0.3, 0.27, 0.48),
             sky_strength=0.5,
-            emit={"lamp": 0.7, "neon": 0.8, "window": 0.7, "screen": 0.9},
+            emit={"lamp": 0.7, "neon": 0.8, "window": 0.7, "screen": 0.9, "water": 0.5},
             glow=0.85,
         ),
     )

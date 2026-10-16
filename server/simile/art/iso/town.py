@@ -11,7 +11,7 @@ from simile.art.iso.camera import TILE_M
 from simile.art.iso.lighting import LightingSet, shadow_direction
 
 STOREY_M = 3.0
-GRASS_M = 0.18
+GROUND_HEIGHTS = {"grass": 0.18, "water": -0.35, "road": -0.08, "crosswalk": -0.08}
 WALL_DECOR = ("awning", "cafe_awning", "neon", "screen")
 ROOF_ITEMS = ("roof_solar", "roof_ac", "roof_skylight")
 VARIANTS = {"tree": 3}
@@ -143,6 +143,9 @@ class Town:
     def ground(self) -> list[list[str]]:
         return [[name or "pavement" for name in row] for row in self.layers["ground"]]
 
+    def heights(self) -> list[list[float]]:
+        return [[ground_height(name) for name in row] for row in self.ground()]
+
     @property
     def objects(self) -> list[Object]:
         return [*self.buildings, *self.props]
@@ -213,8 +216,7 @@ class Town:
                     continue
                 else:
                     kind, px, py = name, x + 0.5, y + 0.5
-                ground = self.at("ground", int(px), int(py)) or ""
-                z = GRASS_M if ground.startswith("grass") else 0.0
+                z = ground_height(self.at("ground", int(px), int(py)) or "")
                 out.append(Prop(kind=kind, tile=(x, y), x=px, y=py, z=z))
         return out
 
@@ -237,6 +239,11 @@ class Town:
             if lamp_lit or shades(other, box, light):
                 out.append(other)
         return out
+
+
+def ground_height(name: str) -> float:
+    """How far a ground tile is drawn above (or below) the pavement, in metres."""
+    return next((h for prefix, h in GROUND_HEIGHTS.items() if name.startswith(prefix)), 0.0)
 
 
 LAMP_REACH = 12.0

@@ -5,7 +5,7 @@ import pytest
 from PIL import Image
 
 from simile.art.iso import formats
-from simile.art.iso.post import chunks, glow, light_map
+from simile.art.iso.post import chunks, glow, light_map, polygon_mask
 
 
 def test_glow_spreads_from_neon_but_not_from_dull_colours() -> None:
@@ -47,22 +47,24 @@ def lit_ground(shape=(40, 64)) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return sun + sky, sun, lights
 
 
-def test_light_map_is_one_in_the_open_and_shows_where_the_sun_is() -> None:
+def test_the_light_map_stacks_the_tint_above_the_sun_in_one_opaque_image() -> None:
     image, scale = light_map(*lit_ground(), elevation=40, px_per_tile=8)
-    rgba = np.asarray(image).astype(float)
-    assert image.size == (64, 40)
-    assert rgba[10, 40, :3] / 255 * scale == pytest.approx([1, 1, 1], abs=0.01)
-    assert rgba[10, 40, 3] == 255
-    assert rgba[5, 5, 3] == 0
-    assert (rgba[5, 5, :3] < rgba[10, 40, :3]).all()
+    assert image.mode == "RGB"
+    assert image.size == (64, 80)
+    tint, sun = np.asarray(image)[:40].astype(float), np.asarray(image)[40:].astype(float)
+    assert tint[10, 40] / 255 * scale == pytest.approx([1, 1, 1], abs=0.01)
+    assert (sun[10, 40] == 255).all()
+    assert (sun[5, 5] == 0).all()
+    assert (tint[5, 5] > 0).all()
+    assert (tint[5, 5] < tint[10, 40]).all()
 
 
 def test_lamps_push_the_light_map_past_one() -> None:
     image, scale = light_map(*lit_ground(), elevation=40, px_per_tile=8)
-    rgba = np.asarray(image).astype(float)
+    tint = np.asarray(image)[:40].astype(float)
     assert scale > 1
-    assert (rgba[36, 60, :3] / 255 * scale > 1.2).all()
-    assert rgba[..., :3].max() == 255
+    assert (tint[36, 60] / 255 * scale > 1.2).all()
+    assert tint.max() == 255
 
 
 @pytest.mark.parametrize("fmt", [formats.PNG, formats.LOSSLESS_WEBP])
@@ -75,10 +77,13 @@ def test_lossless_formats_keep_every_visible_pixel(fmt: formats.Format) -> None:
         assert back.convert("RGBA").tobytes() == image.tobytes()
 
 
-def test_the_light_map_format_keeps_colour_where_there_is_no_sun() -> None:
-    image = Image.new("RGBA", (8, 8), (120, 90, 200, 0))
-    with Image.open(io.BytesIO(formats.LIGHT_MAP.encode(image))) as back:
-        assert back.convert("RGBA").tobytes() == image.tobytes()
+def test_polygon_mask_fills_inside_and_softens_the_edge() -> None:
+    mask = np.asarray(polygon_mask([[(2, 2), (18, 2), (18, 10), (2, 10)]], (20, 12)))
+    assert mask[6, 10] == 255
+    assert mask[0, 0] == 0
+    assert mask[11, 19] == 0
+    diamond = np.asarray(polygon_mask([[(10, 0), (20, 6), (10, 12), (0, 6)]], (20, 12)))
+    assert 0 < diamond[3, 4] < 255
 
 
 def test_sizes_measures_every_format() -> None:

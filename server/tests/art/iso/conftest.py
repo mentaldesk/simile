@@ -53,6 +53,7 @@ class FakeBlender:
         if task := job.get("ground"):
             _, _, w, h = task["rect"]
             Image.new("RGBA", (w, h), (90, 100, 110, 255)).save(work / "ground.png")
+            Image.new("RGBA", (w, h), (150, 160, 170, 255)).save(work / "ground_open.png")
         if task := job.get("lightmap"):
             px, town = task["px_per_tile"], job["town"]
             shape = (town["height"] * px, town["width"] * px, 3)

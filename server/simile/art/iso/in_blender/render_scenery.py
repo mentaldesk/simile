@@ -27,7 +27,7 @@ def ground(job: dict, out: Path, result: dict) -> None:
     C.clear()
     town = job["town"]
     C.group("ground")
-    S.build_ground(town["ground"])
+    S.build_ground(town["ground"], town["heights"])
     for spec in [*town["buildings"], *town["props"]]:
         C.group(spec["id"])
         build(spec)
@@ -42,6 +42,13 @@ def ground(job: dict, out: Path, result: dict) -> None:
         C.setup_render(w, h, transparent=True)
         result["seconds"]["ground"] = round(C.render(out / "ground.png"), 1)
         C.progress(f"ground {w}x{h} in {result['seconds']['ground']} s")
+        buildings = [o for o in bpy.context.scene.objects if o["group"].startswith("building-")]
+        for obj in buildings:
+            obj.hide_render = True
+        result["seconds"]["ground_open"] = round(C.render(out / "ground_open.png"), 1)
+        C.progress(f"ground without buildings in {result['seconds']['ground_open']} s")
+        for obj in buildings:
+            obj.hide_render = False
     if task := job.get("lightmap"):
         seconds = render_lightmap(out, town["width"], town["height"], task["px_per_tile"])
         result["seconds"]["lightmap"] = round(seconds, 1)

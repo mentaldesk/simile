@@ -38,7 +38,9 @@ def mats() -> dict:
         "road": material("road", "slate", 0.9, pattern="noise", sat=0.25, val=0.55),
         "line": material("line", "pavement", 0.7, sat=0.2, val=1.1),
         "tactile": material("tactile", "amber", 0.7, sat=0.85),
-        "water": material("water", "blue", 0.05, sat=0.7, val=0.6, emit="cyan", strength=0.08),
+        "water": material(
+            "water", "blue", 0.05, sat=0.7, val=0.6, emit="cyan", strength=emit("water", 0.08)
+        ),
         "bark": material("bark", "umber", 0.9, sat=0.6),
         "leaf": material("leaf", "green", 0.85, sat=0.65, val=0.9),
         "leaf2": material("leaf2", "forest", 0.85, sat=0.65, val=1.0),
@@ -102,27 +104,19 @@ def mats() -> dict:
     }
 
 
-def build_ground(cells: list[list[str]]) -> None:
+def build_ground(cells: list[list[str]], heights: list[list[float]]) -> None:
     M = mats()
-    height, width = len(cells), len(cells[0])
     groups: dict[str, list] = {}
     raised = {}
-    for y in range(height):
-        for x in range(width):
-            name = cells[y][x]
-            if name.startswith("grass"):
-                kind, z = "grass", 0.18
-            elif name.startswith("water"):
-                kind, z = "water", -0.35
-            elif name.startswith(("road", "crosswalk")):
-                kind, z = "road", -0.08
-            elif name.startswith("plaza"):
-                kind, z = "plaza", 0.0
-            else:
-                kind, z = "pavement", 0.0
+    for y, row in enumerate(cells):
+        for x, name in enumerate(row):
+            z = heights[y][x]
+            kinds = ("grass", "water", "road", "plaza")
+            kind = next((k for k in kinds if name.startswith(k)), "pavement")
+            kind = "road" if name.startswith("crosswalk") else kind
             raised[(x, y)] = z
             groups.setdefault(kind, []).append((x, y, z))
-            markings(name, x, y, M)
+            markings(name, x, y, z, M)
 
     for kind, group_cells in groups.items():
         bm = bmesh.new()
@@ -156,7 +150,7 @@ def build_ground(cells: list[list[str]]) -> None:
                     poly.material_index = 1
 
 
-def markings(name: str, x: int, y: int, M: dict) -> None:
+def markings(name: str, x: int, y: int, z: float, M: dict) -> None:
     if name == "plaza_inlay":
         c = W(x + 0.5, y + 0.5)
         cyl("inlay", c.x, c.y, 0, 0.012, 0.42, M["inlay"], seg=32)
@@ -168,10 +162,10 @@ def markings(name: str, x: int, y: int, M: dict) -> None:
         else:
             box("tactile", c.x - T / 2, c.y - 0.15, 0, c.x + T / 2, c.y + 0.15, 0.012, M["tactile"])
     elif name.startswith("road_line"):
-        c = W(x + 0.5, y + 0.5, -0.08)
+        c = W(x + 0.5, y + 0.5, z)
         box("line", c.x - 0.3, c.y - 0.05, c.z, c.x + 0.3, c.y + 0.05, c.z + 0.01, M["line"])
     elif name.startswith("crosswalk"):
-        c = W(x + 0.5, y + 0.5, -0.08)
+        c = W(x + 0.5, y + 0.5, z)
         for i in range(3):
             yy = c.y - 0.4 + i * 0.36
             box("zebra", c.x - 0.5, yy, c.z, c.x + 0.5, yy + 0.16, c.z + 0.01, M["line"])

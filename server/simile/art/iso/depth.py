@@ -1,4 +1,4 @@
-"""Depth keys: each sprite in diagonal slices, keyed by its footprint's front edge."""
+"""Depth keys: sprites in diagonal slices, keyed by the far end of the footprint's front edge."""
 
 import math
 
@@ -23,7 +23,7 @@ def slices(
     for c in range(first, last):
         x0 = max(c * SLICE_PX, left) - left
         x1 = min((c + 1) * SLICE_PX, left + width) - left
-        depth = round(front(footprint, c + 0.5), 1)
+        depth = round(min(front(footprint, c), front(footprint, c + 1)), 1)
         if out and out[-1]["depth"] == depth:
             out[-1]["width"] += x1 - x0
         else:

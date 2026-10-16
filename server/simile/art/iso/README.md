@@ -64,14 +64,19 @@ paths are relative to the manifest's folder. The renderer (C1c) builds against t
   "hours": [21, 5],                          // start and end; night wraps past midnight
   "crossfade_minutes": 60,
   "sun": {"azimuth": 150, "elevation": 50},  // degrees; azimuth clockwise from grid north
-  "tile": {"width": 96, "height": 48, "metres": 1.1},
+  "tile": {"width": 96, "height": 48, "metres": 1.1, "px_per_metre_up": 53.443},
   "map": {"width": 64, "height": 42},        // tiles
   "ground": {
     "x": -2040, "y": -24, "width": 5136, "height": 2592,   // screen px
+    "heights": {"grass": 0.18, "water": -0.35, "road": -0.08, "crosswalk": -0.08},  // metres
     "hash": "…",
     "chunks": [{"image": "night/ground-0-0.webp", "x": -2040, "y": -24, "width": 1712, "height": 1296}, …]
   },
-  "light_map": {"image": "night/light.webp", "px_per_tile": 8, "width": 512, "height": 336, "scale": 6.057, "hash": "…"},
+  "light_map": {
+    "image": "night/light.webp", "px_per_tile": 8,
+    "width": 512, "height": 336,             // each half: the tint on top, the sun below it
+    "sun_y": 336, "scale": 6.057, "hash": "…"
+  },
   "objects": [
     {
       "id": "building-28-6",
@@ -92,6 +97,13 @@ paths are relative to the manifest's folder. The renderer (C1c) builds against t
 **Ground.** The ground has every object's shadow, the lamp pools and the reflections baked in,
 but no objects. Draw it under everything. It comes in chunks of at most 2048 px, for GPUs with
 small textures: draw each chunk at its `x`, `y`. Outside the map's diamond it's transparent.
+Under each building's footprint is the ground as it would be without that building, lit by the
+set's light, so a building faded by the cutaway shows the ground rather than a black hole.
+
+**Ground heights.** Grass beds are raised and roads and water sunk. A ground tile whose name in
+the map starts with a key of `heights` is that many metres up (negative is down), and any other
+tile is at 0. Draw feet standing on it `metres × px_per_metre_up` px higher on screen: about
+10 px up on grass and 4 px down on a road. Depth keys stay on the ground plane.
 
 **Objects** are everything that can hide a resident: the 16 buildings and every prop (trees,
 palms, lamps, benches, terminals, the fountain, bins, bikes, planters, bollards and café tables),
@@ -102,10 +114,12 @@ A building's anchor is its front (south-east) corner, and a prop's is where it s
 the screen y of their feet, `(x + y) · 24`. One key per object can't get a building right: a
 resident just in front of its south wall is nearer the camera than its front corner, but has a
 smaller y. So each object comes in `slices`: vertical strips of its image (`x` and `width` within
-the image) on the screen's 48 px diagonal grid, each with its own `depth`, which is the screen y
-of the footprint's front edge in that strip. Draw each slice as its own crop of the image at that
-depth, and a resident in the same strip sorts correctly against it. Most props have one slice. On
-a tie, draw the resident in front.
+the image) on the screen's 48 px diagonal grid, each with its own `depth`. That's the screen y of
+the footprint's front edge at the far end of the strip, the end further from the camera. Draw each
+slice as its own crop of the image at that depth, and a resident in the same strip sorts correctly
+against it. Keying by the far end keeps a figure up to 96 px wide, walking along a south or east
+wall, from having its leading edge cut off by the next strip. Most props have one slice. On a tie,
+draw the resident in front.
 
 **Crossfade.** Every set has the same objects in the same order, with the same `id`, `anchor`,
 `footprint`, `width`, `height`, `offset` and `slices`. So an object pairs up across sets by `id`,
@@ -115,22 +129,25 @@ outgoing one. Don't fade a Layer or Container instead: Phaser 3 applies its alph
 so what's behind would show through.
 
 **Light map.** This is the light a standing resident gets at each spot, for their tint and drop
-shadow, seen from straight above at `px_per_tile` px a tile. Pixel `(u, v)` covers tile
-`(u / 8, v / 8)`, with no iso projection. Sample it at a resident's feet `(x, y)` at
-`(x · 8, y · 8)`: it's already averaged over a resident's footprint.
+shadow, seen from straight above at `px_per_tile` px a tile, with no iso projection. It's one
+opaque image in two halves, each `width` × `height`, so nothing depends on alpha (browsers
+premultiply it). Sample it at a resident's feet `(x, y)`, at `(u, v) = (x · 8, y · 8)`: it's
+already averaged over a resident's footprint.
 
-- RGB × `scale` / 255 is how much more light than in the open square a figure gets there, per
-  channel, with gamma 1/2.2 applied. It's 1 in the open, less in shade and more under a lamp.
-  Multiply the set's tint by it. Phaser's `setTint` can't go above 1, so then scale the result down
-  until no channel passes 1, keeping its hue.
-- A / 255 is how much of the sun (the moon at night) reaches the spot: 1 in the open, 0 in shadow.
-  Multiply the drop shadow's strength by it. RGB is kept where A is 0.
+- **Tint**, the top half at `(u, v)`: RGB × `scale` / 255 is how much more light than in the open
+  square a figure gets there, per channel, with gamma 1/2.2 applied. It's 1 in the open, less in
+  shade and more under a lamp. Multiply the set's tint by it. Phaser's `setTint` can't go above 1,
+  so then scale the result down until no channel passes 1, keeping its hue.
+- **Sun**, the bottom half at `(u, v + sun_y)`, grey: any channel / 255 is how much of the sun (the
+  moon at night) reaches the spot, 1 in the open and 0 in shadow. Multiply the drop shadow's
+  strength by it.
 
 **Hashes.** Each image's `hash` covers what it depends on: the pipeline version, the look, the
-lighting set, the camera, the format, the object, and whatever can shade or light that object in
-that set. The ground and light map depend on the whole map. A rebuild renders only what's missing
-or whose hash changed, and writes a file only if its bytes changed, so a rerun with nothing changed
-writes nothing. `tests/art/iso` fails if the committed manifests are stale.
+lighting set, the camera, the palette, the format and its options, the object, and whatever can
+shade or light that object in that set. The ground and light map depend on the whole map. A rebuild
+renders only what's missing or whose hash changed, and writes a file only if its bytes changed, so
+a rerun with nothing changed writes nothing. `tests/art/iso` fails if the committed manifests are
+stale, and pins a digest of the pipeline's code (see below).
 
 ## Formats
 
@@ -138,7 +155,7 @@ writes nothing. `tests/art/iso` fails if the committed manifests are stale.
 
 - **Ground: lossy WebP**, quality 82. Lossless ground would take most of the budget.
 - **Sprites: lossless WebP.** For these renders it's about a third smaller than PNG.
-- **Light map: lossless WebP** that keeps the colour under transparent pixels, since it's data.
+- **Light map: lossless WebP**, since it's data. It's about a third smaller than PNG.
 
 `formats.sizes(images)` measures images in each format, so the choice can be remade for another
 kind of asset. `content/art/iso/` stays under 20 MB in total, and `tests/art/iso` checks it.
@@ -148,7 +165,8 @@ kind of asset. `content/art/iso/` stays under 20 MB in total, and `tests/art/iso
 Each lighting set is one Blender run: Cycles at 48 samples, denoised, with the AgX view.
 
 - **Ground:** the whole village, with every object hidden from the camera, so that their shadows
-  and reflections still land on the ground.
+  and reflections still land on the ground. A second pass without the buildings fills in the ground
+  under their footprints.
 - **Light map:** the same scene from straight above, with all the ground white, in three passes:
   sun and sky, the sun alone, and lamps and lit signs alone.
 - **Objects:** each object is rendered in place, with whatever can shade it in that set (anything
@@ -159,7 +177,12 @@ Each lighting set is one Blender run: Cycles at 48 samples, denoised, with the A
 - **Glow:** a halo around neon, lamps and screens, inside each image's silhouette, as in the
   mock-up.
 
-To change how something looks, change it in `in_blender/`, `lighting.py` or `post.py`. Bump
-`PIPELINE_VERSION` in `scenery.py` if the hashes can't see the change (any code change, as opposed
-to a setting in `lighting.py`), then rerun the command on a Mac with Blender. A building or prop
-added to the map needs only the rerun.
+Each set scales the lamps, neon, lit windows, screens and water by its `emit` settings in
+`lighting.py`, so the canal and fountain are dimmer at night than by day.
+
+To change how something looks, change it in `in_blender/`, `lighting.py` or `post.py`, then rerun
+the command on a Mac with Blender. The hashes see the settings in `lighting.py`, the palette, the
+formats and the map, but not code. So `tests/art/iso` pins a digest of the code that decides how
+renders look (`SOURCES` in `scenery.py`) and fails when it changes. Then bump `PIPELINE_VERSION`
+and rerun if the renders would change, and either way update the pin. A building or prop added to
+the map needs only the rerun.

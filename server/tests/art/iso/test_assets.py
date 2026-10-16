@@ -4,14 +4,15 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from simile.art.iso import formats, scenery
+from simile.art.iso import camera, depth, formats, scenery
 from simile.art.iso.lighting import SETS
-from simile.art.iso.town import Town
+from simile.art.iso.town import GROUND_HEIGHTS, Town
 
 ISO = scenery.CONTENT_DIR / "art" / "iso"
 SCENERY = ISO / "scenery"
 BUDGET_BYTES = 20_000_000
 STALE = "content/art/iso/scenery is out of date: run `cd server && uv run simile art iso scenery`"
+PINNED_SOURCES = "f8d065c9a61533fe"
 
 
 def load(name: str) -> dict:
@@ -43,9 +44,11 @@ def test_every_image_in_a_manifest_is_there_at_its_size(name: str) -> None:
     for chunk in m["ground"]["chunks"]:
         with Image.open(SCENERY / chunk["image"]) as image:
             assert image.size == (chunk["width"], chunk["height"]), chunk["image"]
-    with Image.open(SCENERY / m["light_map"]["image"]) as image:
-        assert image.size == (m["light_map"]["width"], m["light_map"]["height"])
-        assert image.size == (m["map"]["width"] * 8, m["map"]["height"] * 8)
+    light = m["light_map"]
+    with Image.open(SCENERY / light["image"]) as image:
+        assert image.mode == "RGB"
+        assert image.size == (light["width"], light["sun_y"] + light["height"])
+        assert (light["width"], light["height"]) == (m["map"]["width"] * 8, m["map"]["height"] * 8)
 
 
 @pytest.mark.parametrize("name", list(SETS))
@@ -101,6 +104,34 @@ def test_renders_are_up_to_date_with_the_map_and_the_pipeline(
         assert [o["hash"] for o in m["objects"]] == [
             plan.sprites[o.id].hash for o in town.objects
         ], STALE
+        assert m["ground"]["heights"] == GROUND_HEIGHTS, STALE
+        for o in m["objects"]:
+            left = round(camera.project(*o["anchor"])[0]) + o["offset"][0]
+            assert o["slices"] == depth.slices(o["footprint"], left, o["width"]), STALE
+
+
+def test_the_pipeline_code_is_pinned() -> None:
+    changed = (
+        "The scenery pipeline's code changed. If renders would change, bump PIPELINE_VERSION in "
+        "simile/art/iso/scenery.py and rerun `uv run simile art iso scenery`; either way, update "
+        "the pin here."
+    )
+    assert scenery.sources_digest() == PINNED_SOURCES, changed
+
+
+def test_the_ground_under_buildings_is_lit(manifests: dict[str, dict]) -> None:
+    m = manifests["afternoon"]
+    for building in (o for o in m["objects"] if o["kind"] == "building"):
+        x0, y0, x1, y1 = building["footprint"]
+        sx, sy = camera.project((x0 + x1) / 2, (y0 + y1) / 2)
+        chunk = next(
+            c
+            for c in m["ground"]["chunks"]
+            if c["x"] <= sx < c["x"] + c["width"] and c["y"] <= sy < c["y"] + c["height"]
+        )
+        with Image.open(SCENERY / chunk["image"]) as image:
+            pixel = image.convert("RGB").getpixel((round(sx) - chunk["x"], round(sy) - chunk["y"]))
+        assert sum(pixel) > 150, (building["id"], pixel)
 
 
 def test_committed_files_are_all_in_a_manifest(manifests: dict[str, dict]) -> None:

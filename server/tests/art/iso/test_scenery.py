@@ -133,8 +133,43 @@ def test_sprites_are_stored_in_the_sprite_format(content: Path, fake_blender: Fa
     assert all(o["image"].endswith(f".{formats.SPRITES.ext}") for o in m["objects"])
     assert all(c["image"].endswith(f".{formats.GROUND.ext}") for c in m["ground"]["chunks"])
     with Image.open(content / SCENERY / m["light_map"]["image"]) as light:
-        assert light.mode == "RGBA"
-        assert light.size == (m["map"]["width"] * 8, m["map"]["height"] * 8)
+        assert light.mode == "RGB"
+        assert light.size == (m["map"]["width"] * 8, m["map"]["height"] * 16)
+    assert m["light_map"]["sun_y"] == m["light_map"]["height"] == m["map"]["height"] * 8
+
+
+def test_ground_under_a_building_is_the_ground_without_it(
+    content: Path, fake_blender: FakeBlender
+) -> None:
+    build(content, fake_blender, sets=["night"])
+    m = manifest(content)
+    building = next(o for o in m["objects"] if o["kind"] == "building")
+    x0, y0, x1, y1 = building["footprint"]
+    inside = project((x0 + x1) / 2, (y0 + y1) / 2)
+    outside = project(x0 - 2, y0 - 2)
+    assert ground_pixel(content, m, *inside) == (150, 160, 170)
+    assert ground_pixel(content, m, *outside) == (90, 100, 110)
+
+
+def ground_pixel(content: Path, m: dict, sx: float, sy: float) -> tuple[int, ...]:
+    for chunk in m["ground"]["chunks"]:
+        x, y = round(sx) - chunk["x"], round(sy) - chunk["y"]
+        if 0 <= x < chunk["width"] and 0 <= y < chunk["height"]:
+            with Image.open(content / SCENERY / chunk["image"]) as image:
+                return tuple(round(c / 10) * 10 for c in image.convert("RGB").getpixel((x, y)))
+    raise AssertionError("off the ground")
+
+
+def test_the_manifest_lists_ground_heights(content: Path, fake_blender: FakeBlender) -> None:
+    build(content, fake_blender, sets=["night"])
+    m = manifest(content)
+    assert m["ground"]["heights"] == {
+        "grass": 0.18,
+        "water": -0.35,
+        "road": -0.08,
+        "crosswalk": -0.08,
+    }
+    assert m["tile"]["px_per_metre_up"] == pytest.approx(53.44, abs=0.01)
 
 
 def test_the_command_renders_the_sets_it_is_given(
