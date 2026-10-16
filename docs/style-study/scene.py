@@ -5,6 +5,7 @@ Pure standard library, so Blender's Python and uv's Python can both import it.
 
 import importlib.util
 import json
+import math
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -28,6 +29,16 @@ RESIDENTS = [
     ("lachlan", 30.0, 23.6, "ne", None),
 ]
 WALKER = "ingrid"
+
+# Sim-clock hours per set, and the sun's (at night the moon's) bearing and height in degrees.
+TIMES = {
+    "night": {"hours": (21, 5), "azimuth": 150, "elevation": 50},
+    "morning": {"hours": (5, 11), "azimuth": 105, "elevation": 26},
+    "afternoon": {"hours": (11, 17), "azimuth": 215, "elevation": 52},
+    "evening": {"hours": (17, 21), "azimuth": 248, "elevation": 16},
+}
+CROSSFADE_MIN = 60
+FIGURE_M = 1.8
 
 GRID_FACINGS = ("s", "se", "e", "ne", "n", "nw", "w", "sw")
 # Degrees about +Z for a model that faces south (-Y) at rest; Blender's Y is the map's -y.
@@ -195,3 +206,26 @@ def _facade_material(facade) -> str:
 
 def iso(tx: float, ty: float) -> tuple[float, float]:
     return tx - ty, (tx + ty) / 2
+
+
+def blend(hour: float) -> list[tuple[str, float]]:
+    """The lighting sets to draw at a sim-clock hour, and their weights."""
+    names = list(TIMES)
+    half = CROSSFADE_MIN / 120
+    for i, name in enumerate(names):
+        since = (hour - TIMES[name]["hours"][0] + 12) % 24 - 12
+        if -half < since < half:
+            x = (since + half) / (2 * half)
+            w = x * x * (3 - 2 * x)
+            return [(names[i - 1], 1 - w), (name, w)]
+    for name in names:
+        start, end = TIMES[name]["hours"]
+        if (start <= hour < end) if start < end else (hour >= start or hour < end):
+            return [(name, 1.0)]
+    raise ValueError(f"no lighting set covers {hour}")
+
+
+def to_sun(azimuth: float, elevation: float) -> tuple[float, float, float]:
+    """Unit vector towards the sun, in Blender's axes: x east, y north, z up."""
+    a, e = math.radians(azimuth), math.radians(elevation)
+    return math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e)
