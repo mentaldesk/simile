@@ -307,6 +307,55 @@ async def test_the_npc_remembers_the_player() -> None:
     assert "- Visitor asked where to buy a bike." in prompt
 
 
+def read(owner: str, news_id: str, content: str) -> Memory:
+    return Memory(
+        owner=owner,
+        kind=MemoryKind.NEWS,
+        content=content,
+        salience=0.6,
+        valence=0.4,
+        timestamp=START - timedelta(hours=1),
+        news_id=news_id,
+    )
+
+
+async def test_news_both_have_read_comes_up_with_the_npcs_take() -> None:
+    village = Village()
+    village.store.add(
+        read("ana", "barrier", 'I read "Tidal barrier for the river". About time.'),
+        read("ana", "bees", 'I read "Bees in decline". So sad.'),
+        read(PLAYER_ID, "barrier", 'I read "Tidal barrier for the river".'),
+        read(PLAYER_ID, "drones", 'I read "Drones regulated".'),
+    )
+
+    village.players.say("Hi!", "ana")
+    await village.run(1)
+
+    prompt = village.script.prompts[0]
+    assert "News you might bring up:\n" in prompt
+    assert (
+        '- I read "Tidal barrier for the river". About time. (Visitor has read it too.)' in prompt
+    )
+    assert '- I read "Bees in decline". So sad.\n' in prompt
+    assert "Drones" not in prompt
+    assert "You might ask Visitor if they saw the news you've both read" in prompt
+
+
+async def test_news_the_player_reads_mid_conversation_comes_up_in_the_next_reply() -> None:
+    village = Village()
+    village.store.add(read("ana", "barrier", 'I read "Tidal barrier for the river". About time.'))
+
+    village.players.say("Hi!", "ana")
+    await village.run(1)
+    village.store.add(read(PLAYER_ID, "barrier", 'I read "Tidal barrier for the river".'))
+    village.players.say("Did you see the news?", "ana")
+    await village.run(1)
+
+    first, second = village.script.prompts
+    assert "(Visitor has read it too.)" not in first
+    assert "(Visitor has read it too.)" in second
+
+
 async def test_the_player_talks_over_the_npc() -> None:
     hang = asyncio.Event()
     provider = FakeProvider(

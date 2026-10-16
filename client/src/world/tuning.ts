@@ -15,3 +15,6 @@ export const MAX_FRAME_SECONDS = 0.1;
 export const TILE_SIZE = 16;
 export const SPRITE_HEIGHT = 24;
 export const ZOOM = 3;
+
+/** How far from a terminal's area the player can still use it. */
+export const TERMINAL_REACH_TILES = 1;
