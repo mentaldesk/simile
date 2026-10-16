@@ -6,6 +6,7 @@ import pytest
 
 from simile.behaviour import Behaviour
 from simile.conversation import DEFAULT_CONFIG, ConversationConfig, ConversationEngine
+from simile.conversation.player import PlayerConversations
 from simile.debug import Village
 from simile.debug.state import MAX_LINES, MAX_MEMORIES, MAX_RELATIONSHIPS, MAX_TEXT
 from simile.llm import FakeProvider, LLMClient
@@ -33,6 +34,7 @@ class Town:
         self.memory = MemoryStore(":memory:")
         self.memory.add(*records)
         movement = Movement(load_map(), self.world.bus)
+        movement.place(PLAYER_ID, "square")
         self.behaviour = Behaviour(
             self.world.clock, self.world.bus, movement, NPCS.values(), self.memory, seed=0
         )
@@ -47,8 +49,10 @@ class Town:
             config=config,
             seed=0,
         )
+        self.players = PlayerConversations(self.engine, seed=0)
         self.world.loop.register(movement)
         self.world.loop.register(self.engine)
+        self.world.loop.register(self.players)
         self.village = Village(self.behaviour, self.engine, self.memory)
 
     def state(self, npc: str) -> dict:
@@ -191,6 +195,20 @@ async def test_shows_the_live_transcript_of_their_conversation() -> None:
         for event in spoken[-MAX_LINES:]
     ]
     assert town.state("desmond")["conversation"] is None
+
+
+async def test_shows_their_conversation_with_the_player() -> None:
+    town = Town()
+    town.behaviour.movement.place(PLAYER_ID, NPCS["kofi"].home)
+    conversation = town.players.start("kofi", opener="kofi")
+
+    await town.world.loop.run(timedelta(seconds=6))
+
+    talk = town.state("kofi")["conversation"]
+    assert talk["id"] == conversation.id
+    assert talk["talking_to"] == PLAYER_ID
+    assert talk["lines"]
+    assert {line["speaker"] for line in talk["lines"]} == {"kofi"}
 
 
 async def test_stays_small_however_much_they_know() -> None:
