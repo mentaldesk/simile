@@ -253,6 +253,9 @@ def test_cues(cue: Cue, expected: str) -> None:
         "We'll see you there.",
         "Thanks for the tea. Hope to see you soon.",
         "See ya!",
+        "Lovely to see you, bye!",
+        "I'll see you out there on Saturday.",
+        "I'll see you right there at six.",
     ],
 )
 def test_lines_that_say_goodbye(text: str) -> None:
@@ -292,6 +295,12 @@ def test_lines_that_say_goodbye(text: str) -> None:
         "Bye now, she said, and off he went to the market. Strange man.",
         "Catch you later, I said, but he never came back. Do you know him?",
         "Goodbye to all that, I thought.",
+        "Nice to see you.",
+        "Don't get up, I'll see you out.",
+        "I'll see you right, don't worry.",
+        "We'll see you through the winter.",
+        "I'll see you home after the quiz.",
+        "I'll see you off at the station.",
     ],
 )
 def test_lines_that_dont_say_goodbye(text: str) -> None:
