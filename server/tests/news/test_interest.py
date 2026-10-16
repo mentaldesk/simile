@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from simile.news.config import DEFAULT_CONFIG
-from simile.news.interest import interest, matching_tags, pulls, words
+from simile.news.interest import interest, matching_tags, pulls, shared, words
 from simile.schema import CoreValue, NewsItem, Npc
 
 V = CoreValue
@@ -84,6 +84,18 @@ def test_tags_match_whole_words_give_or_take_a_plural() -> None:
     assert words("Bin and recycling rota, the art of it") == {"recycling", "rota"}
     assert words("Drones") == {"drone"}
     assert matching_tags(npc(["bin and recycling rota"]), article(tags=["earth rotation"])) == []
+
+
+def test_words_leave_out_chatter() -> None:
+    assert words("What do you think about Mars? I really would have said so.") == {"mar"}
+
+
+def test_forms_of_a_word_count_as_shared() -> None:
+    assert shared({"colonise", "mar"}, words("Colonising Mars")) == 2
+    assert shared(words("paint"), words("Painting murals")) == 1
+    assert shared({"protest"}, {"protection"}) == 0
+    assert shared({"mar"}, {"market", "marine"}) == 0
+    assert shared(set(), {"mar"}) == 0
 
 
 def test_optimists_lean_to_good_news_and_pessimists_to_bad() -> None:

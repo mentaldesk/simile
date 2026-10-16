@@ -59,10 +59,10 @@ Every constant is in `ConversationConfig`.
 `PlayerConversations` in `player.py` runs conversations between the player and an NPC on the same
 engine, so `live`, `conversation(id)`, `talking`, `state` and the events below cover them too. The
 player is `Visitor` in prompts (B3 uses the same name), "a newcomer to the village", and NPCs bring
-their relationship with `player`, shared history and memories as with anyone else. The resident's
-prompt also marks up to `NewsConfig.shared` (3) articles both they and the player have read (B4's
-`read_by_both`), so they're likelier to bring them up. B1 counts a talk with the player as
-`player_relief` (half) of one with a resident towards their social need.
+their relationship with `player`, shared history and memories as with anyone else, and the news they
+might bring up is their own (B4's `topics_to_raise`), as with a resident. Nothing the player has read
+reaches an NPC's prompt. B1 counts a talk with the player as `player_relief` (half) of one with a
+resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
   they're talking to another NPC or asleep. From then on, the player's lines reach the NPC for as
@@ -80,6 +80,11 @@ prompt also marks up to `NewsConfig.shared` (3) articles both they and the playe
   said. The player's lines are spoken when they arrive and have no `LineDrafted`. If the player
   says something while the NPC is still writing or speaking, the NPC stops: the rest of that reply
   is dropped and they answer the new line.
+- **News the player mentions.** When the player's lines since the NPC last spoke share at least
+  `NewsConfig.mention_words` (2) words, or forms of them, with the title or topics of an article the
+  NPC read (B4's `mentioned`), the NPC's memory of it, with their take, follows the transcript in
+  that reply's prompt, for at most `mentions` (2) articles. An NPC who didn't read it gets nothing
+  and answers from their values.
 - **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
   off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
   Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.

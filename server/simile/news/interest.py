@@ -5,15 +5,32 @@ from simile.schema import CoreValue, NewsItem, Npc
 
 WORD = re.compile(r"[a-z]+")
 COMMON = frozenset(
-    {"about", "from", "into", "other", "rather", "than", "that", "their", "them", "they", "this"}
-    | {"things", "with"}
+    {"about", "after", "again", "also", "been", "before", "being", "both", "could", "does"}
+    | {"done", "each", "even", "ever", "from", "have", "here", "into", "just", "know", "like"}
+    | {"made", "make", "many", "more", "most", "much", "must", "only", "other", "over", "rather"}
+    | {"really", "said", "same", "says", "seen", "should", "some", "still", "such", "than", "that"}
+    | {"their", "them", "then", "there", "these", "they", "thing", "things", "think", "this"}
+    | {"those", "very", "want", "well", "were", "what", "when", "where", "which", "while", "will"}
+    | {"with", "would", "your"}
 )
+STEM = 6
 
 
 def words(text: str) -> set[str]:
     """The words of `text` that could name a topic, without a plural ending."""
     found = (word for word in WORD.findall(text.lower()) if word not in COMMON)
     return {word.removesuffix("s") for word in found if len(word) >= 4}
+
+
+def shared(these: set[str], those: set[str]) -> int:
+    """How many of `these` words have a form among `those`: the same word or, from five letters
+    on, one that begins with the shorter's first `STEM` letters ("paint" and "painting")."""
+    return sum(any(_akin(word, other) for other in those) for word in these)
+
+
+def _akin(a: str, b: str) -> bool:
+    short, long = sorted((a, b), key=len)
+    return short == long if len(short) < 5 else long.startswith(short[:STEM])
 
 
 def pulls(npc: Npc, item: NewsItem) -> list[float]:

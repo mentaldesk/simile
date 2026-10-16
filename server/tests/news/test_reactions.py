@@ -10,7 +10,7 @@ import pytest
 from simile.llm import FakeProvider, LLMClient, LLMError, Model, Request
 from simile.memory import MemoryStore
 from simile.news import NewsStore
-from simile.news.reactions import NewsConfig, NewsReader, Reaction, topics_to_raise
+from simile.news.reactions import NewsConfig, NewsReader, Reaction, mentioned, topics_to_raise
 from simile.schema import CoreValue, Memory, MemoryKind, NewsItem, Npc
 from simile.sim import Clock
 
@@ -397,3 +397,54 @@ def test_ranking_favours_recent_and_intense_reactions(memory: MemoryStore) -> No
 
 def test_nothing_to_raise_without_news(memory: MemoryStore) -> None:
     assert topics_to_raise(memory, "mei", NOW) == []
+
+
+def took_in(owner: str, title: str, *topics: str) -> Memory:
+    return Memory(
+        owner=owner,
+        kind=MemoryKind.NEWS,
+        content=f'I read "{title}" in BBC News on the news terminal. Wow.',
+        salience=0.5,
+        valence=0.3,
+        timestamp=NOW - timedelta(hours=1),
+        topics=list(topics),
+        news_id=title,
+    )
+
+
+def test_a_line_naming_an_article_brings_back_the_take_on_it(memory: MemoryStore) -> None:
+    memory.add(
+        took_in("mei", "Colonising Mars by 2050", "space travel"),
+        took_in("mei", "Tidal barrier for the river", "flooding"),
+        took_in("suki", "Bees in decline", "pollinators"),
+    )
+
+    def recalled(said: str) -> list[str | None]:
+        return [m.news_id for m in mentioned(memory, "mei", said, NOW)]
+
+    assert recalled("Did you hear about the tidal barrier?") == ["Tidal barrier for the river"]
+    assert recalled("They want to colonise Mars!") == ["Colonising Mars by 2050"]
+    assert recalled("More floods by the river") == ["Tidal barrier for the river"]
+    assert recalled("Is space travel worth it?") == ["Colonising Mars by 2050"]
+    assert recalled("Bees are in decline, you know.") == []
+    assert recalled("Mars is so bright tonight.") == []
+    assert recalled("I read the BBC News on the terminal.") == []
+    assert recalled("") == []
+
+
+def test_the_article_sharing_most_words_comes_first(memory: MemoryStore) -> None:
+    memory.add(
+        took_in("mei", "River barrier plans"),
+        took_in("mei", "Tidal barrier for the river"),
+    )
+
+    def recalled(said: str, **config: int) -> list[str | None]:
+        found = mentioned(memory, "mei", said, NOW, config=NewsConfig(**config))
+        return [m.news_id for m in found]
+
+    said = "That tidal barrier on the river!"
+    assert recalled(said) == ["Tidal barrier for the river", "River barrier plans"]
+    assert recalled(said, mentions=1) == ["Tidal barrier for the river"]
+    assert recalled(said, mentions=0) == []
+    assert recalled("The river!") == []
+    assert len(recalled("The river!", mention_words=1)) == 2

@@ -307,7 +307,7 @@ async def test_the_npc_remembers_the_player() -> None:
     assert "- Visitor asked where to buy a bike." in prompt
 
 
-def read(owner: str, news_id: str, content: str) -> Memory:
+def read(owner: str, news_id: str, content: str, *topics: str) -> Memory:
     return Memory(
         owner=owner,
         kind=MemoryKind.NEWS,
@@ -315,45 +315,84 @@ def read(owner: str, news_id: str, content: str) -> Memory:
         salience=0.6,
         valence=0.4,
         timestamp=START - timedelta(hours=1),
+        topics=list(topics),
         news_id=news_id,
     )
 
 
-async def test_news_both_have_read_comes_up_with_the_npcs_take() -> None:
+MARS = read("ana", "mars", 'I read "Colonising Mars by 2050". I\'d paint the domes.', "space")
+BARRIER = 'I read "Tidal barrier for the river". About time.'
+
+
+async def prompts_with(*memories: Memory) -> list[str]:
+    village = Village()
+    village.store.add(*memories)
+    village.players.say("Hi!", "ana")
+    await village.run(1)
+    village.players.say("How's your day going?", "ana")
+    await village.run(1)
+    return village.script.prompts
+
+
+async def test_the_resident_raises_their_own_news_and_never_sees_the_players() -> None:
+    hers = [MARS, read("ana", "barrier", BARRIER)]
+    players = [read(PLAYER_ID, "barrier", BARRIER), read(PLAYER_ID, "drones", "Drones regulated")]
+
+    prompts = await prompts_with(*hers, *players)
+
+    assert prompts == await prompts_with(*hers)
+    assert "News you might bring up:\n" in prompts[0]
+    assert '- I read "Colonising Mars by 2050". I\'d paint the domes.' in prompts[0]
+
+
+async def test_a_story_the_player_names_brings_the_residents_take_to_mind() -> None:
+    village = Village()
+    village.store.add(MARS, read("ana", "barrier", BARRIER, "flooding"))
+
+    village.players.say("Did you hear about the tidal barrier?", "ana")
+    await village.run(1)
+
+    assert (
+        "Visitor: Did you hear about the tidal barrier?\n\n"
+        f"You read about what Visitor just mentioned:\n- {BARRIER}\n\n"
+    ) in village.script.prompts[0]
+
+
+@pytest.mark.parametrize(
+    "said",
+    [
+        "Did you hear about the tidal barrier?",
+        "What a lovely village this is.",
+    ],
+)
+async def test_a_story_the_resident_didnt_read_or_one_shared_word_brings_nothing(said: str) -> None:
     village = Village()
     village.store.add(
-        read("ana", "barrier", 'I read "Tidal barrier for the river". About time.'),
-        read("ana", "bees", 'I read "Bees in decline". So sad.'),
-        read(PLAYER_ID, "barrier", 'I read "Tidal barrier for the river".'),
-        read(PLAYER_ID, "drones", 'I read "Drones regulated".'),
+        MARS,
+        read("ana", "fete", 'I read "Village fete called off". Shame.', "community"),
+        read("ben", "barrier", BARRIER),
+        read(PLAYER_ID, "barrier", BARRIER),
     )
 
-    village.players.say("Hi!", "ana")
+    village.players.say(said, "ana")
     await village.run(1)
 
-    prompt = village.script.prompts[0]
-    assert "News you might bring up:\n" in prompt
-    assert (
-        '- I read "Tidal barrier for the river". About time. (Visitor has read it too.)' in prompt
-    )
-    assert '- I read "Bees in decline". So sad.\n' in prompt
-    assert "Drones" not in prompt
-    assert "You might ask Visitor if they saw the news you've both read" in prompt
+    assert "You read about" not in village.script.prompts[0]
 
 
-async def test_news_the_player_reads_mid_conversation_comes_up_in_the_next_reply() -> None:
+async def test_only_what_the_player_said_since_the_resident_last_spoke_counts() -> None:
     village = Village()
-    village.store.add(read("ana", "barrier", 'I read "Tidal barrier for the river". About time.'))
+    village.store.add(read("ana", "barrier", BARRIER))
 
-    village.players.say("Hi!", "ana")
+    village.players.say("Did you hear about the tidal barrier?", "ana")
     await village.run(1)
-    village.store.add(read(PLAYER_ID, "barrier", 'I read "Tidal barrier for the river".'))
-    village.players.say("Did you see the news?", "ana")
+    village.players.say("Anyway, how's your day?", "ana")
     await village.run(1)
 
     first, second = village.script.prompts
-    assert "(Visitor has read it too.)" not in first
-    assert "(Visitor has read it too.)" in second
+    assert BARRIER in first
+    assert "Visitor: Did you hear about the tidal barrier?" in second
+    assert "You read about" not in second
 
 
 async def test_the_player_talks_over_the_npc() -> None:
