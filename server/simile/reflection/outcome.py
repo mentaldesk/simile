@@ -11,7 +11,16 @@ from simile.reflection.extraction import (
     owner_and_about,
     relationship,
 )
-from simile.schema import Flag, Id, InteractionEvent, Memory, MemoryKind, Relationship
+from simile.schema import (
+    Aspect,
+    Flag,
+    FlagKind,
+    Id,
+    InteractionEvent,
+    Memory,
+    MemoryKind,
+    Relationship,
+)
 from simile.social import apply_events, open_flag, resolve_flag
 
 
@@ -51,30 +60,71 @@ def outcome(
         if npc in context.npcs and npc not in reflections:
             reflections[npc] = reflection
 
+    opened = _flags(extraction, context, config)
     for npc in context.npcs:
         reflection = reflections.get(npc)
         deeds = _deeds(npc, reflection, context)[: config.events]
         for other in context.others(npc):
-            events = _events(
-                npc, other, [deed for by, deed in deeds if by == other], context, config
-            )
+            theirs = [deed for by, deed in deeds if by == other]
+            theirs += _breaches(npc, other, theirs, opened, config)
+            events = _events(npc, other, theirs, context, config)
             result.after[(npc, other)] = apply_events(result.after[(npc, other)], events, now)
             result.events += events
         if reflection is not None and reflection.summary.strip():
             result.memories.append(_memory(npc, reflection, context, config))
 
-    for flag in _flags(extraction, context, config):
-        key = (flag.owner, flag.about)
-        result.after[key] = open_flag(result.after[key], flag)
-
+    settled: set[tuple[Id, Id]] = set()
     for ref in extraction.flags_resolved:
         flag = context.flags.get(ref.strip().upper())
         if flag is None:
             continue
         key = (flag.owner, flag.about)
-        if any(f.id == flag.id and f.resolved is None for f in result.after[key].flags):
+        if _still_open(result.after[key], flag):
             result.after[key] = resolve_flag(result.after[key], flag.id, now)
+            if flag.kind == FlagKind.PROMISE:
+                settled.add(key)
+
+    for flag in opened:
+        key = (flag.owner, flag.about)
+        if flag.kind != FlagKind.BROKEN_PROMISE or key in settled:
+            continue
+        listed = [
+            f
+            for f in context.flags.values()
+            if f.kind == FlagKind.PROMISE and (f.owner, f.about) == key
+        ]
+        if len(listed) == 1 and _still_open(result.after[key], listed[0]):
+            result.after[key] = resolve_flag(result.after[key], listed[0].id, now)
+            settled.add(key)
+
+    for flag in opened:
+        key = (flag.owner, flag.about)
+        result.after[key] = open_flag(result.after[key], flag)
     return result
+
+
+def _still_open(rel: Relationship, flag: Flag) -> bool:
+    return any(f.id == flag.id and f.resolved is None for f in rel.flags)
+
+
+def _breaches(
+    npc: Id, other: Id, deeds: list[Deed], opened: list[Flag], config: ReflectionConfig
+) -> list[Deed]:
+    """A trust hit for each promise `other` broke to `npc`, unless `npc`'s own deeds already
+    count against their trust in `other`."""
+    if any(deed.valence < 0 and Aspect.TRUST in deed.aspects for deed in deeds):
+        return []
+    return [
+        Deed(
+            by=other,
+            action=f"broke a promise: {flag.description}",
+            aspects=[Aspect.TRUST],
+            valence=config.broken_promise_valence,
+            magnitude=config.broken_promise_magnitude,
+        )
+        for flag in opened
+        if flag.kind == FlagKind.BROKEN_PROMISE and (flag.owner, flag.about) == (npc, other)
+    ]
 
 
 def _flags(extraction: Extraction, context: Context, config: ReflectionConfig) -> list[Flag]:
