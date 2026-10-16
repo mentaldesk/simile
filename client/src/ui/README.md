@@ -42,10 +42,9 @@ a hint says "Press E to read the news", and E opens the news panel. It sends `li
 the `news` that comes back: each article's title, source and the start of its summary, newest first,
 with a tick on those the player has read. ↑ and ↓ choose an article, and Enter or a click reads it:
 the panel sends `read_news` and shows the whole summary and a link to the original, which opens in a
-new tab. The server stores what the player read as their own `news` memory, and residents who read
-it too are told so when they talk with the player. Esc or E closes the panel, and so does walking
-away from the terminal. The panel keeps its key-downs from `window`, like the chat input, so the
-player doesn't walk while reading, and it ignores `news` while closed.
+new tab. The server stores what the player read as their own `news` memory. Esc or E closes the
+panel, and so does walking away from the terminal. The panel keeps its key-downs from `window`, like
+the chat input, so the player doesn't walk while reading, and it ignores `news` while closed.
 
 ## Keys
 

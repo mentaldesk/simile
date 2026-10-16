@@ -8,7 +8,7 @@ from simile.ambient.config import DEFAULT_CONFIG, AmbientConfig
 from simile.ambient.events import Nudged
 from simile.behaviour import Activity, Behaviour, Goal
 from simile.conversation import ConversationEngine
-from simile.schema import PLAYER_ID, Id
+from simile.schema import PLAYER_ID, Id, LocationKind
 from simile.sim import ConversationEnded, ConversationStarted
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ class Director:
         """Nudge a pair if it's been quiet long enough. Returns them, seeker first."""
         behaviour, config, now = self.behaviour, self.config, self.behaviour.clock.now
         listening = self.connected() and PLAYER_ID in behaviour.movement.entities()
-        if not listening or self.earshot.update():
+        if not listening or self.earshot.update() or self.engine.talking(PLAYER_ID):
             self.heard_at = now
             return None
         if not config.enabled:
@@ -138,11 +138,13 @@ class Director:
             return None
 
     def _free(self, seeker: Id, target: Id) -> bool:
-        mind, now = self.behaviour.minds[seeker], self.behaviour.clock.now
-        if mind.paused or mind.goal.activity is Activity.SLEEP:
+        if self._in_a_house(seeker) or self._in_a_house(target):
             return False
-        refused = self.behaviour.minds[target].cooldowns.get(seeker, now) > now
-        return not refused and self.behaviour.available(seeker, target)
+        return self.behaviour.available(seeker, target) and self.behaviour.available(target, seeker)
+
+    def _in_a_house(self, npc: Id) -> bool:
+        place = self.behaviour.places.at(self.behaviour.movement.position(npc))
+        return place is not None and place.kind is LocationKind.HOUSE
 
 
 def director_of(app: Starlette) -> Director:

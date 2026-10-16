@@ -120,6 +120,18 @@ async def test_never_passes_api_credentials_to_the_cli(
     assert [name for name in API_CREDENTIALS if name in cli.env] == []
 
 
+async def test_never_passes_prompt_caching_switches_to_the_cli(
+    fake_cli: MakeFakeCli, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    for family in ("", "_HAIKU", "_SONNET", "_OPUS", "_FABLE", "_MYTHOS"):
+        monkeypatch.setenv(f"DISABLE_PROMPT_CACHING{family}", "1")
+    cli = fake_cli()
+
+    await client_for(cli, tmp_path).complete("Hello")
+
+    assert [name for name in cli.env if name.startswith("DISABLE_PROMPT_CACHING")] == []
+
+
 async def test_asks_for_five_minute_prompt_caching(
     fake_cli: MakeFakeCli, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

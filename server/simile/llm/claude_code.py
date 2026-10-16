@@ -36,11 +36,17 @@ API_CREDENTIALS = (
     "CLAUDE_CODE_USE_MANTLE",
     "CLAUDE_CODE_USE_GATEWAY",
 )
+CACHE_SWITCH_PREFIX = "DISABLE_PROMPT_CACHING"
 
 
-def drop_api_credentials() -> None:
+def unwanted_variables() -> list[str]:
+    """The variables in our environment that Claude Code must not inherit."""
+    return [n for n in os.environ if n in API_CREDENTIALS or n.startswith(CACHE_SWITCH_PREFIX)]
+
+
+def drop_unwanted_variables() -> None:
     """The CLI inherits our environment, and the SDK can add variables to it but not unset them."""
-    for name in API_CREDENTIALS:
+    for name in unwanted_variables():
         os.environ.pop(name, None)
 
 
@@ -134,7 +140,7 @@ class ClaudeCodeProvider:
     @asynccontextmanager
     async def session(self, request: Request) -> AsyncIterator[ClaudeSDKClient]:
         """A connected Claude Code process with this request's model and system prompt."""
-        drop_api_credentials()
+        drop_unwanted_variables()
         self.cwd.mkdir(parents=True, exist_ok=True)
         with as_llm_errors():
             async with ClaudeSDKClient(self.options(request)) as sdk:

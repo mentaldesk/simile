@@ -26,13 +26,13 @@ export function onGameKey({ chat, news }: GameKeys): (event: KeyboardEvent) => v
     } else if (key === 'Tab') {
       event.preventDefault();
       chat.cycle(event.shiftKey ? -1 : 1);
-    } else if (key.toLowerCase() === NEWS_KEY && !event.repeat && !modified(event)) {
+    } else if (pressedNewsKey(event)) {
       event.preventDefault();
       news();
     }
   };
 }
 
-function modified({ ctrlKey, metaKey, altKey }: KeyboardEvent): boolean {
-  return ctrlKey || metaKey || altKey;
+export function pressedNewsKey({ key, repeat, ctrlKey, metaKey, altKey }: KeyboardEvent): boolean {
+  return key.toLowerCase() === NEWS_KEY && !repeat && !(ctrlKey || metaKey || altKey);
 }
