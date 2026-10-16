@@ -6,8 +6,8 @@ from simile.llm import Model
 
 
 class NewsConfig(BaseModel):
-    """Every constant of how articles are taken in and analysed, and how NPCs pick, read and
-    bring up the news."""
+    """Every constant of how articles are taken in and analysed, how NPCs pick, read and bring up
+    the news, and how the player reads it."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -72,6 +72,22 @@ class NewsConfig(BaseModel):
         default=0.05,
         ge=0,
         description="Reactions scoring less than this (intensity × recency) aren't raised.",
+    )
+    articles: int = Field(
+        default=20, ge=0, description="The newest articles listed for the player at a terminal."
+    )
+    player_salience: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="The salience of the player's memory of reading an article. They don't "
+        "react to it, so its valence is 0.",
+    )
+    shared: int = Field(
+        default=3,
+        ge=0,
+        description="Most articles that both an NPC and the player have read noted in the NPC's "
+        "prompt when they talk.",
     )
 
 

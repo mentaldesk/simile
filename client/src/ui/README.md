@@ -12,6 +12,7 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   reply.";
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
+- the news at a terminal (see *Reading the news*).
 
 ## Choosing who to talk to
 
@@ -33,6 +34,24 @@ label never changes under the player; if they walk off or get busy, sending says
 
 Distances and timings are in [`tuning.ts`](tuning.ts). `CHAT_RANGE_TILES` (3) is a tile inside
 the server's `say_range` (4), so an NPC the chat box picks is still in range when the line arrives.
+
+## Reading the news
+
+Near one of the map's `terminal` locations (`terminalAt` in [`world/terminals.ts`](../world/terminals.ts)),
+a hint says "Press E to read the news", and E opens the news panel. It sends `list_news` and shows
+the `news` that comes back: each article's title, source and the start of its summary, newest first,
+with a tick on those the player has read. ↑ and ↓ choose an article, and Enter or a click reads it:
+the panel sends `read_news` and shows the whole summary and a link to the original, which opens in a
+new tab. The server stores what the player read as their own `news` memory, and residents who read
+it too are told so when they talk with the player. Esc or E closes the panel, and so does walking
+away from the terminal. The panel keeps its key-downs from `window`, like the chat input, so the
+player doesn't walk while reading, and it ignores `news` while closed.
+
+## Keys
+
+The game's keys (Enter, Tab, Esc, E) are handled on `window` only when nothing on the page has
+focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
+Tab and Esc.
 
 ## What the world scene provides
 

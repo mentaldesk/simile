@@ -37,6 +37,10 @@ Speeds and distances are in [`tuning.ts`](tuning.ts).
 each sprite) and as audio's position provider, with the player as the listener. Other code can read
 `world` (`world.positionOf(id)`, `world.npcs`, `world.player`) from `world/model.ts`.
 
+`terminalsOf(map)` in [`terminals.ts`](terminals.ts) lists the map's news terminals, each with its
+label and area in tiles, and `terminalAt(terminals, position)` finds the one within
+`TERMINAL_REACH_TILES` (1) of the tile the player stands on. The dialogue UI opens the news there.
+
 `npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point: the 48 × 72 box
 under their `bubbleAnchor`, the one in front where sprites overlap. Choosing who to talk to and the
 debug overlay both click with it, so a new projection changes it here.

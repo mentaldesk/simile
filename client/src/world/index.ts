@@ -4,6 +4,7 @@ export * from './model';
 export * from './motion';
 export * from './player';
 export * from './sprites';
+export * from './terminals';
 export * from './throttle';
 export * from './tuning';
 export * from './view';

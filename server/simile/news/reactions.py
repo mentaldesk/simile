@@ -192,3 +192,23 @@ def topics_to_raise(
     that have faded below `config.min_score`."""
     recalled = memory.recall(npc_id, now, kind=MemoryKind.NEWS, k=k, half_life=config.half_life)
     return [m for m in recalled if score(m, now, config.half_life) >= config.min_score]
+
+
+def read_by_both(
+    memory: MemoryStore,
+    npc_id: str,
+    other_id: str,
+    now: datetime,
+    *,
+    config: NewsConfig = DEFAULT_CONFIG,
+) -> list[Memory]:
+    """`npc_id`'s `news` memories of articles `other_id` has read too, ranked by recency ×
+    intensity, best first, at most `config.shared`."""
+    if not config.shared:
+        return []
+    theirs = memory.recall(other_id, now, kind=MemoryKind.NEWS, k=sys.maxsize)
+    read = {m.news_id for m in theirs if m.news_id}
+    mine = memory.recall(
+        npc_id, now, kind=MemoryKind.NEWS, k=sys.maxsize, half_life=config.half_life
+    )
+    return [m for m in mine if m.news_id in read][: config.shared]
