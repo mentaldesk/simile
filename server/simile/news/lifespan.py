@@ -23,7 +23,6 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     world = world_of(app)
     async with AsyncExitStack() as stack:
         store = stack.enter_context(news_of(app))
-
         reader = NewsReader(store, memory_of(app), world.clock, llm)
         stack.push_async_callback(reader.stop)
         stack.callback(
