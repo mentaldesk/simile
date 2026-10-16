@@ -177,6 +177,22 @@ def test_needs_rise_over_time() -> None:
     assert after[Need.CURIOSITY] > before[Need.CURIOSITY]
 
 
+def test_connection_makes_them_lonely_faster() -> None:
+    config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (120, 120)})
+    keen, aloof = (
+        make_npc("keen", "house_1", connection=0.9),
+        make_npc("aloof", "house_2", connection=0.1),
+    )
+    village = Village([keen, aloof], config=config)
+    for mind in village.behaviour.minds.values():
+        mind.needs[Need.SOCIAL] = 0.2
+
+    village.run(hours=1)
+
+    lonelier = {npc: village.behaviour.needs(npc)[Need.SOCIAL] - 0.2 for npc in ("keen", "aloof")}
+    assert lonelier["keen"] > 3 * lonelier["aloof"] > 0
+
+
 def test_resting_at_home_brings_tiredness_down() -> None:
     config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (120, 120)})
     village = Village([ANA], config=config)

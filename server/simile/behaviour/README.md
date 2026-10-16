@@ -14,10 +14,20 @@ sets F3's snapshot to the NPCs' real positions.
   set by the loop rather than chosen.
 - **Score** = base + values + needs + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, Knowledge and Open Mindedness to the
-  terminals, PeaceOfMind home and to the park, Adventure to wander, Creativity to the maker space.
-  Needs (`social`, `curiosity`, `rest`, 0 to 1) pull towards whatever meets them. The coffee shop
+  terminals, PeaceOfMind home and to the park (and away from seeking company), Adventure to wander,
+  Creativity to the maker space. Needs (`social`, `curiosity`, `rest`, 0 to 1) pull towards
+  whatever meets them. The coffee shop
   peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before bed.
   The activity just finished scores less.
+- **Loneliness.** `social` feels urgent on a convex curve, `need ** 3` (`urgency`), so a little
+  barely registers and a lot crowds out everything else. An option scores the relief it brings:
+  the area under that curve between the need now and after a typical stay (`effects` over the
+  middle of its `dwell`; seeking someone out promises `talk_minutes` of talking). The same chat is
+  worth far more to someone desperate than to someone who's just had one. Connection sets how fast
+  `social` rises (Peace of Mind slows it), so high-Connection NPCs get lonely and go looking for
+  company, and low-Connection ones mostly keep to themselves. Talking meets it fast. `curiosity`
+  and `rest` still enter linearly through `need_weights`; the needs in #74 can move to the same
+  curve.
 - **People.** Affinity is a weighted sum of R1's like, trust, respect and familiarity, read from R2
   with `as_of`, or `meet` for strangers. Seeking someone scores their affinity, scaled up by
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,

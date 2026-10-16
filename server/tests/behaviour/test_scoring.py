@@ -2,14 +2,29 @@ import random
 from collections.abc import Sequence
 
 import pytest
+from pydantic import ValidationError
 
-from simile.behaviour import Activity, Goal, Need, Other, Places, Situation, choose, score, scores
+from simile.behaviour import (
+    DEFAULT_CONFIG,
+    Activity,
+    BehaviourConfig,
+    Goal,
+    Need,
+    Other,
+    Places,
+    Situation,
+    choose,
+    score,
+    scores,
+)
 from simile.behaviour.scoring import (
     affinity,
     asleep,
     bedtime,
     best_per_activity,
     curve,
+    promised,
+    relief,
     wake,
 )
 from simile.schema import Baseline, CoreValue, Relationship
@@ -93,9 +108,57 @@ def test_connection_and_loneliness_seek_someone_out() -> None:
 
 def test_low_connection_does_not_seek_anyone_out() -> None:
     kofi = Other("kofi", Point(33, 24), affinity=0.2)
-    s = situation({V.CONNECTION: 0.05, V.INDEPENDENCE: 0.9}, {Need.SOCIAL: 0.9}, others=[kofi])
+    s = situation({V.CONNECTION: 0.05, V.INDEPENDENCE: 0.9}, {Need.SOCIAL: 0.6}, others=[kofi])
 
     assert best(s).activity is not A.SEEK
+
+
+def test_peace_of_mind_keeps_them_from_seeking_company() -> None:
+    kofi = [Other("kofi", Point(33, 24), affinity=0.2)]
+    seek = Goal(A.SEEK, "kofi")
+
+    content = situation({V.PEACE_OF_MIND: 0.95}, others=kofi)
+
+    assert score_of(seek, content) < score_of(seek, situation(others=kofi))
+
+
+def test_a_little_loneliness_barely_registers_and_a_lot_crowds_out_the_rest() -> None:
+    kofi = [Other("kofi", Point(33, 24), affinity=0.0)]
+    seek = Goal(A.SEEK, "kofi")
+
+    def pull(social: float) -> float:
+        return score_of(seek, situation(needs={Need.SOCIAL: social}, others=kofi))
+
+    assert pull(0.9) - pull(0.7) > 4 * (pull(0.5) - pull(0.3)) > 0
+    assert best(situation({V.CONNECTION: 0.7}, {Need.SOCIAL: 0.9}, others=kofi)) == seek
+
+
+def test_the_same_relief_is_worth_far_more_to_someone_desperate() -> None:
+    assert relief(0.9, -0.6, 3) == pytest.approx((0.9**4 - 0.3**4) / 4)
+    assert relief(0.3, -0.6, 3) == pytest.approx(0.3**4 / 4)
+    assert relief(0.9, -0.6, 3) > 50 * relief(0.3, -0.6, 3)
+    assert relief(0.5, 0.0, 3) == 0.0
+    assert relief(0.5, 0.2, 1) == pytest.approx((0.5**2 - 0.7**2) / 2)
+
+
+def test_a_need_is_priced_by_its_curve_or_its_weights_not_both() -> None:
+    weights = {**DEFAULT_CONFIG.need_weights, A.SEEK: {Need.SOCIAL: 1.0}}
+
+    with pytest.raises(ValidationError, match="social can't be in both"):
+        BehaviourConfig(need_weights=weights)
+
+
+def test_seeking_someone_out_promises_a_talk() -> None:
+    config = DEFAULT_CONFIG
+    talk = config.effects[A.TALK][Need.SOCIAL] * config.talk_minutes / 60
+    stay = sum(config.dwell[A.COFFEE_SHOP]) / 2 / 60
+
+    assert promised(A.SEEK, Need.SOCIAL) == pytest.approx(talk)
+    assert promised(A.COFFEE_SHOP, Need.SOCIAL) == pytest.approx(
+        config.effects[A.COFFEE_SHOP][Need.SOCIAL] * stay
+    )
+    assert promised(A.MAKER_SPACE, Need.SOCIAL) == 0.0
+    assert promised(A.SEEK, Need.SOCIAL) < promised(A.COFFEE_SHOP, Need.SOCIAL) < 0
 
 
 def test_seeks_a_friend_over_a_stranger() -> None:

@@ -137,6 +137,10 @@ def score(
     total = config.base.get(activity, 0.0)
     total += sum(w * (values[v] - 0.5) for v, w in config.value_weights.get(activity, {}).items())
     total += sum(w * needs[n] for n, w in config.need_weights.get(activity, {}).items())
+    total += sum(
+        urgency.weight * relief(needs[need], promised(activity, need, config), urgency.power)
+        for need, urgency in config.urgency.items()
+    )
     total += curve(config.daily.get(activity, ()), situation.hour)
     if situation.last is not None and activity is situation.last.activity:
         total -= config.repeat_penalty
@@ -167,6 +171,21 @@ def company(location_id: str, situation: Situation, config: BehaviourConfig) -> 
         + config.avoid_weight * disliked
         + config.crowd_weight * connection * crowd
     )
+
+
+def relief(need: float, change: float, power: float) -> float:
+    """What changing a need by `change` is worth: the area under its urgency curve,
+    `need ** power`, between where it is and where it ends up. Positive for relief."""
+    after = min(max(need + change, 0.0), 1.0)
+    return (need ** (power + 1) - after ** (power + 1)) / (power + 1)
+
+
+def promised(activity: Activity, need: Need, config: BehaviourConfig = DEFAULT_CONFIG) -> float:
+    """How a typical stay at `activity` changes `need`. Seeking someone out promises a talk."""
+    if activity is Activity.SEEK:
+        return config.effects.get(Activity.TALK, {}).get(need, 0.0) * config.talk_minutes / 60
+    low, high = config.dwell.get(activity, (0.0, 0.0))
+    return config.effects.get(activity, {}).get(need, 0.0) * (low + high) / 2 / 60
 
 
 def scores(

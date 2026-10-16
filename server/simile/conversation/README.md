@@ -10,27 +10,38 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   is positive (at `accept_temperature` 0; otherwise with chance `logistic(score / temperature)`).
   It adds up how `b` feels about `a` (R1's like, trust, respect and familiarity, read from R2 with
   `as_of`, or `meet` for strangers), `b`'s values (Connection, Compassion and Open Mindedness for,
-  Independence and Peace of Mind against), their social need and what they're busy with: someone
-  at a terminal or the maker space, or looking for someone else, is less keen, and someone who was
-  looking for `a` is very keen. Anyone already talking and anything beyond `max_conversations` (2)
-  are declined, counting conversations with the player. Requests involving the player go to
-  `engine.player_request` (see below).
+  Independence and Peace of Mind against), their social need, which weighs most (someone lonely
+  accepts almost anyone, someone who's just talked mostly doesn't), and what they're busy with:
+  someone at a terminal or the maker space, or looking for someone else, is less keen, and someone
+  who was looking for `a` is very keen. Anyone already talking and anything beyond
+  `max_conversations` (2) are declined, counting conversations with the player. Requests involving
+  the player go to `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` speaks first.
 - **Lines.** Each line is one L1 `stream()` call with Haiku 5.5 and `purpose="conversation"`. The
   system prompt is the speaker's persona, backstory, speaking style, values and interests. The
   prompt is R1's `describe()` of how they feel about the other, R2's `shared_history` (events, and
   the other's open flags about them), R2's `recall` (memories of the other, then recent or salient
-  ones), B4's `topics_to_raise`, where and when they are, the latest lines and a cue: open, reply,
-  goodbye or answer a goodbye. The model ends each line with `[values: ...]`, the core values the
-  conversation touches. `parse_reply` takes it off, even cut short, along with any name label,
-  quotes, `*stage directions*` and anything the model wrote for the other speaker.
+  ones), B4's `topics_to_raise`, where and when they are, the latest lines, how the speaker's last
+  few lines began (so they begin this one another way rather than with the same pet word) and a
+  cue: open, reply (keep it going, no goodbyes yet), goodbye or answer a goodbye. The system prompt
+  asks for pet words and phrases now and then, not in every line. The model ends each line with
+  `[values: ...]`, the core values the conversation touches. `parse_reply` takes it off, even cut
+  short, along with any name label, quotes, `*stage directions*` and anything the model wrote for
+  the other speaker.
 - **Engagement.** Each participant starts from `start_engagement`, more if they like the other or
   value Connection. After every line, both lose `fatigue` and gain `topic_weight` times how much
-  the line's values matter to them (from -1 to 1) plus `like_weight` times how much they like the
-  other. From `min_lines` on, whoever's turn it is says goodbye when theirs is below
-  `leave_below`, and the other answers. Pairs who dislike each other start lower and drop faster,
-  so their conversations are short. Nobody talks past `max_lines`.
+  the values it brings up for the first time in the conversation matter to them (from -1 to 1)
+  plus `like_weight` times how much they like the other. A conversation that keeps circling the
+  same values runs out of steam; one that moves on to things they care about keeps going. From
+  `min_lines` on, whoever's turn it is says goodbye when theirs is below `leave_below`, and the
+  other answers. Pairs who dislike each other start lower and drop faster, so their conversations
+  are short; strangers usually part within 5 to 20 lines and friends on good form can go on for 30
+  or more. `max_lines` (60) is only a backstop.
+- **Goodbyes.** From `min_lines` on, a reply whose last sentence says goodbye anyway ("I'll leave
+  you to it", "see you at the riverside", "catch you later") counts as one: the other answers it
+  and the conversation ends. A goodbye mentioned in passing, or asked as a question ("Will I see you
+  at the quiz?"), doesn't count.
 - **Pacing.** A line takes `words / 200 wpm` sim seconds (at least `min_line_seconds`), about as
   long as V1 takes to say it, then `turn_gap` before the next, whether or not anyone is listening. The next line is written while
   the current one plays, so lines follow each other without gaps unless the LLM is slower than the

@@ -18,6 +18,7 @@ from simile.schema import (
 from simile.tools.report import (
     Call,
     RecordedRun,
+    ReportConfig,
     Sample,
     article_mentions,
     conversation_section,
@@ -241,12 +242,14 @@ def test_conversations_that_run_to_the_cap_are_a_problem() -> None:
     )
     short = talk("cy", "di", "Hello.", "Hi.", "Bye.")
 
+    config = ReportConfig(max_lines=16)
     found = problems(
-        change(healthy(), conversations=[capped, capped.model_copy(update={"id": "x"})])
+        change(healthy(), conversations=[capped, capped.model_copy(update={"id": "x"})]), config
     )
 
     assert "2 of 2 conversations ran to B2's 16-line cap rather than ending on their own." in found
-    assert not any("cap" in p for p in problems(change(healthy(), conversations=[capped, short])))
+    short_and_long = change(healthy(), conversations=[capped, short])
+    assert not any("cap" in p for p in problems(short_and_long, config))
 
 
 def test_opening_most_lines_the_same_way_is_a_verbal_tic() -> None:

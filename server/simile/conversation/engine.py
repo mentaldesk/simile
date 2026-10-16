@@ -31,6 +31,7 @@ from simile.conversation.prompt import (
     first_name,
     parse_reply,
     system_prompt,
+    takes_leave,
     turn_prompt,
 )
 from simile.llm import LLMClient
@@ -79,6 +80,8 @@ class Talk:
     closing: bool = False
     """The last line has been spoken."""
     names: dict[Id, str] = field(default_factory=dict)
+    touched: set[CoreValue] = field(default_factory=set)
+    """The values the conversation has touched so far."""
 
     def other(self, npc: Id) -> Id:
         return next(other for other in self.conversation.participants if other != npc)
@@ -238,7 +241,13 @@ class ConversationEngine:
     async def _write(self, talk: Talk, speaker: Id, cue: Cue, lines: Sequence[Line]) -> Draft:
         party, other = talk.parties[speaker], talk.parties[talk.other(speaker)]
         prompt = turn_prompt(
-            party.background, lines, talk.names, cue, first_name(other.npc), self.config
+            party.background,
+            lines,
+            talk.names,
+            cue,
+            first_name(other.npc),
+            self.config,
+            speaker=speaker,
         )
         stream = self.llm().stream(
             prompt, system=party.system, model=self.config.model, purpose="conversation"
@@ -280,13 +289,19 @@ class ConversationEngine:
         (line, values), talk.pending = talk.pending, None
         talk.conversation.lines.append(line)
         self.bus.publish(LineSpoken(line))
+        new = [value for value in values if value not in talk.touched]
+        talk.touched.update(values)
         for party in talk.parties.values():
             party.engagement = engage(
-                party.engagement, party.npc.values, party.like, values, self.config
+                party.engagement, party.npc.values, party.like, new, self.config
             )
         ends = line.timestamp + timedelta(seconds=line.duration)
         talk.free_at = ends + timedelta(seconds=self.config.turn_gap)
         said = talk.cue
+        spoken = len(talk.conversation.lines)
+        if said is Cue.REPLY and spoken > self.config.min_lines and takes_leave(line.text):
+            said = Cue.GOODBYE
+            self._log("%s said goodbye in %s", talk.speaker, talk.conversation.id)
         talk.speaker = talk.other(talk.speaker)
         if said is Cue.GOODBYE and self.config.farewell:
             talk.cue = Cue.FAREWELL

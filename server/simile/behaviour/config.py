@@ -49,20 +49,19 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
         V.AMBITION: 0.2,
     },
     A.WANDER: {V.ADVENTURE: 0.8, V.FREEDOM: 0.4, V.OPEN_MINDEDNESS: 0.2, V.SECURITY: -0.3},
-    A.SEEK: {V.CONNECTION: 1.0, V.COMPASSION: 0.2, V.INDEPENDENCE: -0.3},
+    A.SEEK: {V.CONNECTION: 1.0, V.COMPASSION: 0.2, V.INDEPENDENCE: -0.3, V.PEACE_OF_MIND: -0.5},
     A.IDLE: {V.PEACE_OF_MIND: 0.1},
 }
 
 NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: 0.8},
-    A.COFFEE_SHOP: {Need.SOCIAL: 0.5, Need.REST: 0.2},
-    A.SQUARE: {Need.SOCIAL: 0.4, Need.CURIOSITY: 0.1},
+    A.COFFEE_SHOP: {Need.REST: 0.2},
+    A.SQUARE: {Need.CURIOSITY: 0.1},
     A.NEWS: {Need.CURIOSITY: 0.9},
     A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.1},
-    A.NOODLE_BAR: {Need.SOCIAL: 0.4, Need.REST: 0.2},
+    A.NOODLE_BAR: {Need.REST: 0.2},
     A.MAKER_SPACE: {Need.CURIOSITY: 0.6},
     A.WANDER: {Need.CURIOSITY: 0.4},
-    A.SEEK: {Need.SOCIAL: 1.0},
     A.IDLE: {Need.REST: 0.2},
 }
 
@@ -75,10 +74,10 @@ DAILY: dict[Activity, Curve] = {
     A.PARK: ((9.0, 0.0), (15.0, 0.15), (19.0, 0.0)),
 }
 
-RISE: dict[Need, float] = {Need.SOCIAL: 0.04, Need.CURIOSITY: 0.03, Need.REST: 0.04}
+RISE: dict[Need, float] = {Need.SOCIAL: 0.02, Need.CURIOSITY: 0.03, Need.REST: 0.04}
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
-    Need.SOCIAL: {V.CONNECTION: 0.1},
+    Need.SOCIAL: {V.CONNECTION: 0.65, V.PEACE_OF_MIND: -0.1},
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
 }
@@ -95,7 +94,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.WANDER: {Need.CURIOSITY: -0.3},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
-    A.TALK: {Need.SOCIAL: -1.2},
+    A.TALK: {Need.SOCIAL: -6.0},
 }
 
 DWELL: dict[Activity, tuple[float, float]] = {
@@ -110,6 +109,19 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.SEEK: (3, 10),
     A.IDLE: (2, 8),
 }
+
+
+class Urgency(BaseModel):
+    """How pressing a need feels: `need ** power`, so a little barely registers and a lot
+    crowds out everything else."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    power: float = Field(gt=0, description="The urgency curve's exponent.")
+    weight: float = Field(ge=0, description="Score per unit of relief.")
+
+
+URGENCY: dict[Need, Urgency] = {Need.SOCIAL: Urgency(power=3.0, weight=6.0)}
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
     V.DISCIPLINE: -1.0,
@@ -138,7 +150,17 @@ class BehaviourConfig(BaseModel):
         default=VALUE_WEIGHTS, description="Score per unit of `value - 0.5`, by activity."
     )
     need_weights: dict[Activity, dict[Need, float]] = Field(
-        default=NEED_WEIGHTS, description="Score per unit of need, by activity."
+        default=NEED_WEIGHTS,
+        description="Score per unit of need, by activity, for needs without an urgency curve.",
+    )
+    urgency: dict[Need, Urgency] = Field(
+        default=URGENCY,
+        description="Needs that score by the relief an activity brings rather than through "
+        "need_weights: weight times the area under need ** power between the need now and after "
+        "a typical stay, so the same relief is worth much more to someone desperate.",
+    )
+    talk_minutes: float = Field(
+        default=3.0, gt=0, description="How long seeking someone out promises to talk for."
     )
     daily: dict[Activity, Curve] = Field(
         default=DAILY,
@@ -199,7 +221,7 @@ class BehaviourConfig(BaseModel):
         default={Need.REST: 0.1}, description="How walking changes needs."
     )
     company: float = Field(
-        default=0.2, ge=0, description="How fast having someone near satisfies social need."
+        default=0.1, ge=0, description="How fast having someone near satisfies social need."
     )
     near: float = Field(
         default=4.0, gt=0, description="Tiles within which someone counts as company."
@@ -218,10 +240,10 @@ class BehaviourConfig(BaseModel):
         default=DWELL, description="Minutes spent at an activity once there, sampled uniformly."
     )
     start_dwell: tuple[float, float] = Field(
-        default=(2, 30), description="Minutes awake at home before the first decision."
+        default=(0.5, 5), description="Minutes awake at home before the first decision."
     )
     start_needs: dict[Need, tuple[float, float]] = Field(
-        default={Need.SOCIAL: (0.2, 0.5), Need.CURIOSITY: (0.2, 0.5), Need.REST: (0.0, 0.15)},
+        default={Need.SOCIAL: (0.3, 0.8), Need.CURIOSITY: (0.2, 0.5), Need.REST: (0.0, 0.15)},
         description="Needs on start, sampled uniformly.",
     )
 
@@ -255,6 +277,13 @@ class BehaviourConfig(BaseModel):
             raise ValueError("wake_range must come before bedtime_range")
         if not self.bedtime_range[0] <= self.bedtime_range[1] < 24:
             raise ValueError("bedtime_range must be before midnight")
+        return self
+
+    @model_validator(mode="after")
+    def _priced_once(self) -> Self:
+        weighted = {need for weights in self.need_weights.values() for need in weights}
+        if twice := sorted(weighted & set(self.urgency)):
+            raise ValueError(f"{', '.join(twice)} can't be in both urgency and need_weights")
         return self
 
 
