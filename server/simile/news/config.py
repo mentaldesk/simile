@@ -86,8 +86,9 @@ class NewsConfig(BaseModel):
     mention_words: int = Field(
         default=2,
         ge=1,
-        description="Words the player's latest lines must share with the title or topics of an "
-        "article an NPC read to bring it to the NPC's mind. One, like 'village', is too common.",
+        description="Words the player's latest lines must share with an article an NPC read, "
+        "its title, tags, summary or the NPC's topics, to bring it to the NPC's mind. One will "
+        "do only if they name the news too and it's in the title, tags or topics as it is.",
     )
     mentions: int = Field(
         default=2,

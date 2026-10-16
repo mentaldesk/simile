@@ -448,3 +448,62 @@ def test_the_article_sharing_most_words_comes_first(memory: MemoryStore) -> None
     assert recalled(said, mentions=0) == []
     assert recalled("The river!") == []
     assert len(recalled("The river!", mention_words=1)) == 2
+
+
+def stored(title: str, tags: list[str], summary: str) -> NewsItem:
+    return NewsItem(
+        id=title,
+        title=title,
+        url=f"https://example.com/{len(title)}",
+        summary=summary,
+        published=NOW - timedelta(hours=2),
+        tags=tags,
+    )
+
+
+ROVER = stored(
+    "Mission to the red planet",
+    ["space exploration", "robots"],
+    "Engineers test a new rover in the desert.",
+)
+OUTAGE = stored(
+    "Internet outage hits millions",
+    ["broadband"],
+    "Homes lost their connection for hours.",
+)
+
+
+def test_the_stored_articles_tags_and_summary_count_too(memory: MemoryStore) -> None:
+    memory.add(took_in("mei", ROVER.title), took_in("mei", "Tidal barrier for the river"))
+
+    def recalled(said: str, store: dict[str, NewsItem]) -> list[str | None]:
+        return [m.news_id for m in mentioned(memory, "mei", said, NOW, article=store.get)]
+
+    assert recalled("Those robots out in the desert!", {ROVER.id: ROVER}) == [ROVER.title]
+    assert recalled("Those robots out in the desert!", {}) == []
+    assert recalled("A mission to another planet.", {}) == [ROVER.title]
+    assert recalled("That tidal barrier!", {ROVER.id: ROVER}) == ["Tidal barrier for the river"]
+
+
+@pytest.mark.parametrize(
+    ("said", "recalled"),
+    [
+        ("Did you see the Mars piece?", ["Colonising Mars by 2050"]),
+        ("That broadband story, wow.", [OUTAGE.title]),
+        ("Mars is so bright tonight.", []),
+        ("Did you read about the colonies?", []),
+        ("Tell me the story of your life.", []),
+        ("I read about the international summit.", []),
+    ],
+)
+def test_naming_the_news_lets_one_exact_word_do(
+    memory: MemoryStore, said: str, recalled: list[str]
+) -> None:
+    memory.add(
+        took_in("mei", "Colonising Mars by 2050", "space travel"),
+        took_in("mei", OUTAGE.title),
+    )
+
+    found = mentioned(memory, "mei", said, NOW, article={OUTAGE.id: OUTAGE}.get)
+
+    assert [m.news_id for m in found] == recalled

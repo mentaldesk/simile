@@ -5,8 +5,8 @@ from simile.schema import CoreValue, NewsItem, Npc
 
 WORD = re.compile(r"[a-z]+")
 COMMON = frozenset(
-    {"about", "after", "again", "also", "been", "before", "being", "both", "could", "does"}
-    | {"done", "each", "even", "ever", "from", "have", "here", "into", "just", "know", "like"}
+    {"about", "after", "again", "also", "been", "before", "being", "both", "could", "does", "done"}
+    | {"each", "even", "ever", "from", "good", "have", "here", "into", "just", "know", "like"}
     | {"made", "make", "many", "more", "most", "much", "must", "only", "other", "over", "rather"}
     | {"really", "said", "same", "says", "seen", "should", "some", "still", "such", "than", "that"}
     | {"their", "them", "then", "there", "these", "they", "thing", "things", "think", "this"}

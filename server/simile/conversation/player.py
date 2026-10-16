@@ -26,7 +26,7 @@ from simile.conversation.prompt import (
 )
 from simile.llm import Model
 from simile.news.reactions import mentioned
-from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory
+from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
 
 logger = logging.getLogger(__name__)
@@ -134,11 +134,13 @@ class PlayerConversations:
         engine: ConversationEngine,
         *,
         connected: Callable[[], bool] = lambda: True,
+        article: Callable[[str], NewsItem | None] = lambda _: None,
         config: PlayerConfig = DEFAULT_PLAYER_CONFIG,
         seed: int | None = None,
     ) -> None:
         self.engine = engine
         self.connected = connected
+        self.article = article
         self.config = config
         self.rng = random.Random(seed)
         self._considered: dict[Id, datetime] = {}
@@ -298,7 +300,9 @@ class PlayerConversations:
         if not said:
             return []
         try:
-            return mentioned(self.engine.memory, npc, said, self.engine.clock.now)
+            return mentioned(
+                self.engine.memory, npc, said, self.engine.clock.now, article=self.article
+            )
         except Exception:
             logger.exception("Couldn't recall the news %s read", npc)
             return []

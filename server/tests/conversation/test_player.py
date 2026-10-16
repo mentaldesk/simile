@@ -324,25 +324,30 @@ MARS = read("ana", "mars", 'I read "Colonising Mars by 2050". I\'d paint the dom
 BARRIER = 'I read "Tidal barrier for the river". About time.'
 
 
-async def prompts_with(*memories: Memory) -> list[str]:
+RECALLED = f"You read about what Visitor just mentioned:\n- {BARRIER}\n\n"
+
+
+async def requests_with(*memories: Memory) -> list[Request]:
     village = Village()
     village.store.add(*memories)
     village.players.say("Hi!", "ana")
     await village.run(1)
-    village.players.say("How's your day going?", "ana")
+    village.players.say("Did you hear about the tidal barrier?", "ana")
     await village.run(1)
-    return village.script.prompts
+    return village.script.requests
 
 
 async def test_the_resident_raises_their_own_news_and_never_sees_the_players() -> None:
     hers = [MARS, read("ana", "barrier", BARRIER)]
     players = [read(PLAYER_ID, "barrier", BARRIER), read(PLAYER_ID, "drones", "Drones regulated")]
 
-    prompts = await prompts_with(*hers, *players)
+    requests = await requests_with(*hers, *players)
 
-    assert prompts == await prompts_with(*hers)
-    assert "News you might bring up:\n" in prompts[0]
-    assert '- I read "Colonising Mars by 2050". I\'d paint the domes.' in prompts[0]
+    assert requests == await requests_with(*hers)
+    first, second = (request.messages[-1].content for request in requests)
+    assert "News you might bring up:\n" in first
+    assert '- I read "Colonising Mars by 2050". I\'d paint the domes.' in first
+    assert RECALLED in second
 
 
 async def test_a_story_the_player_names_brings_the_residents_take_to_mind() -> None:
@@ -352,10 +357,8 @@ async def test_a_story_the_player_names_brings_the_residents_take_to_mind() -> N
     village.players.say("Did you hear about the tidal barrier?", "ana")
     await village.run(1)
 
-    assert (
-        "Visitor: Did you hear about the tidal barrier?\n\n"
-        f"You read about what Visitor just mentioned:\n- {BARRIER}\n\n"
-    ) in village.script.prompts[0]
+    [prompt] = village.script.prompts
+    assert f"Visitor: Did you hear about the tidal barrier?\n\n{RECALLED}" in prompt
 
 
 @pytest.mark.parametrize(
@@ -390,9 +393,24 @@ async def test_only_what_the_player_said_since_the_resident_last_spoke_counts() 
     await village.run(1)
 
     first, second = village.script.prompts
-    assert BARRIER in first
+    assert RECALLED in first
     assert "Visitor: Did you hear about the tidal barrier?" in second
     assert "You read about" not in second
+
+
+async def test_player_lines_in_a_row_can_name_the_story_between_them() -> None:
+    provider = FakeProvider([["Hmm", asyncio.Event()], "Oh, that! [values: security]"])
+    village = Village(provider=provider)
+    village.store.add(read("ana", "barrier", BARRIER))
+
+    village.players.say("Did you see the tidal thing?", "ana")
+    await village.run(1)
+    village.players.say("The barrier, I mean.", "ana")
+    await village.run(1)
+
+    first, second = (request.messages[-1].content for request in provider.requests)
+    assert "You read about" not in first
+    assert f"Visitor: The barrier, I mean.\n\n{RECALLED}" in second
 
 
 async def test_the_player_talks_over_the_npc() -> None:

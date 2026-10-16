@@ -80,11 +80,16 @@ resident towards their social need.
   said. The player's lines are spoken when they arrive and have no `LineDrafted`. If the player
   says something while the NPC is still writing or speaking, the NPC stops: the rest of that reply
   is dropped and they answer the new line.
-- **News the player mentions.** When the player's lines since the NPC last spoke share at least
-  `NewsConfig.mention_words` (2) words, or forms of them, with the title or topics of an article the
-  NPC read (B4's `mentioned`), the NPC's memory of it, with their take, follows the transcript in
-  that reply's prompt, for at most `mentions` (2) articles. An NPC who didn't read it gets nothing
-  and answers from their values.
+- **News the player mentions.** B4's `mentioned` matches the player's lines since the NPC last
+  spoke against each article the NPC read: its title, tags and summary from the news store (looked
+  up through `news_of` when needed, or just the title quoted in the memory if it's gone) and the
+  topics the NPC took from it. An article counts if they share `NewsConfig.mention_words` (2)
+  words, where a word matches its other forms ("colonise", "Colonising"), or if the player names
+  the news ("news", "article", "piece", "story", "headline", "read", "paper") and one word is in its
+  title, tags or topics exactly, give or take a plural ("Did you see the Mars piece?"). The NPC's
+  memory of each article that counts, with their take, follows the transcript in that reply's
+  prompt, for at most `mentions` (2) articles, most shared words first. An NPC who didn't read it
+  gets nothing and answers from their values.
 - **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
   off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
   Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.

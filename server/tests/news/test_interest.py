@@ -87,7 +87,7 @@ def test_tags_match_whole_words_give_or_take_a_plural() -> None:
 
 
 def test_words_leave_out_chatter() -> None:
-    assert words("What do you think about Mars? I really would have said so.") == {"mar"}
+    assert words("Good! What do you think about Mars? I really would have said so.") == {"mar"}
 
 
 def test_forms_of_a_word_count_as_shared() -> None:
