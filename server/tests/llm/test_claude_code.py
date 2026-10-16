@@ -120,6 +120,17 @@ async def test_never_passes_api_credentials_to_the_cli(
     assert [name for name in API_CREDENTIALS if name in cli.env] == []
 
 
+async def test_asks_for_five_minute_prompt_caching(
+    fake_cli: MakeFakeCli, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("CLAUDE_CODE_PROMPT_CACHE_TTL", "1h")
+    cli = fake_cli()
+
+    await client_for(cli, tmp_path).complete("Hello")
+
+    assert cli.env["CLAUDE_CODE_PROMPT_CACHE_TTL"] == "5m"
+
+
 async def test_refuses_a_session_billed_to_an_api_key(
     fake_cli: MakeFakeCli, tmp_path: Path
 ) -> None:
