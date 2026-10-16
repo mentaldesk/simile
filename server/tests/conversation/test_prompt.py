@@ -256,6 +256,8 @@ def test_cues(cue: Cue, expected: str) -> None:
         "Lovely to see you, bye!",
         "I'll see you out there on Saturday.",
         "I'll see you right there at six.",
+        "I'll see you right here at six.",
+        "I'll see you right after church.",
     ],
 )
 def test_lines_that_say_goodbye(text: str) -> None:

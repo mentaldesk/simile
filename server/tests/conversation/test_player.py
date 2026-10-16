@@ -794,6 +794,10 @@ def test_split() -> None:
         "Hope to see you soon.",
         "Thanks, see you around",
         "ok see you",
+        "It was nice to see you.",
+        "It was lovely to see you!",
+        "Was great to see you.",
+        "It's been good to see you.",
     ],
 )
 def test_goodbyes(text: str) -> None:
@@ -812,6 +816,8 @@ def test_goodbyes(text: str) -> None:
         "Oh hi, nice to see you.",
         "Good to see ya!",
         "Lovely to see you again.",
+        "Oh hi, I was hoping to see you.",
+        "nice to see you.",
     ],
 )
 def test_not_goodbyes(text: str) -> None:

@@ -53,7 +53,7 @@ FAREWELL = (
 CLAUSE_START = r"(?:^|[,;:—-]\s*|\b(?:and|so|well|right|okay|ok|anyway)\s+)"
 CLAUSE_END = r"(?=\s*(?:[,.!…]|$))"
 SEE_YOU = r"see (?:you|ya)\b(?!['’])"
-LOOKED_AFTER = r" (?:out|off|home|right|through)\b(?! there)"
+LOOKED_AFTER = rf" (?:(?:out|off|home|through)\b(?! there)|right{CLAUSE_END})"
 LEAVING = re.compile(
     rf"{CLAUSE_START}{FAREWELL}{CLAUSE_END}"
     rf"|{CLAUSE_START}{SEE_YOU}|\b(?:i|we)(?:['’]ll| will| shall) {SEE_YOU}(?!{LOOKED_AFTER})"
