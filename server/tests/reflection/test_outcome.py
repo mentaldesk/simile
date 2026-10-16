@@ -10,6 +10,7 @@ from simile.schema import (
     PLAYER_ID,
     Aspect,
     Conversation,
+    CoreValue,
     Flag,
     FlagKind,
     InteractionEvent,
@@ -285,6 +286,41 @@ def test_splitting_a_deed_in_two_changes_nothing(
 
     assert snubbed(*[deed("ben", valence=-0.6, magnitude=0.3)] * 2) == pytest.approx(once)
     assert once < meet(npcs["ana"], "ben").like
+
+
+# Like D2's warm soak conversations: magnitudes past B3's cap and the odd small negative.
+GOOD_CONVERSATIONS = {
+    "four deeds": [
+        deed("ben", aspects=["like", "respect"], magnitude=0.8, valence=0.6),
+        deed("ben", aspects=["respect", "like"], magnitude=0.6, valence=0.7),
+        deed("ben", aspects=["trust", "like"], magnitude=0.4, valence=0.4),
+        deed("ben", aspects=["like"], magnitude=0.2, valence=-0.2),
+    ],
+    "two deeds": [
+        deed("ben", aspects=["like", "respect"], magnitude=0.9, valence=0.6),
+        deed("ben", aspects=["like"], magnitude=0.6, valence=0.3),
+    ],
+}
+
+
+@pytest.mark.parametrize("deeds", GOOD_CONVERSATIONS.values(), ids=GOOD_CONVERSATIONS.keys())
+def test_1_11_and_111_good_conversations_take_like_to_0_65_0_8_and_0_95(
+    deeds: list[Deed], npcs: dict[str, Npc], store: MemoryStore, talk: Talk
+) -> None:
+    neutral = {
+        id: npc.model_copy(update={"values": dict.fromkeys(CoreValue, 0.5)})
+        for id, npc in npcs.items()
+    }
+    likes = []
+    for n in range(111):
+        context = gather(talk(("ben", "Lovely roses."), id=f"talk_{n}"), neutral, store)
+        result = outcome(context, Extraction(reflections=[reflection("ana", events=deeds)]), store)
+        store.add(*result.records)
+        likes.append(result.after[("ana", "ben")].like)
+
+    assert likes[0] == pytest.approx(0.65, abs=0.02)
+    assert likes[10] == pytest.approx(0.8, abs=0.02)
+    assert likes[110] == pytest.approx(0.95, abs=0.02)
 
 
 def test_familiarity_grows_once_per_conversation(

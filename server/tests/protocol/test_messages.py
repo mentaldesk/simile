@@ -11,10 +11,14 @@ from simile.protocol import (
     ConversationStartedMessage,
     EntityMovedMessage,
     LineMessage,
+    ListNewsMessage,
+    NewsArticle,
+    NewsMessage,
     NpcStateMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     Position,
+    ReadNewsMessage,
     WatchNpcMessage,
 )
 from simile.protocol.export import SCHEMA_FILE
@@ -23,6 +27,14 @@ from simile.protocol.messages import client_messages, server_messages
 
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
+ARTICLE = NewsArticle(
+    news_id="https://bigthink.com/?p=900101",
+    title="Drones to be regulated",
+    source="Big Think",
+    summary="The council votes on drone rules.",
+    url="https://bigthink.com/drones",
+    read=False,
+)
 
 SERVER = [
     SNAPSHOT,
@@ -33,12 +45,15 @@ SERVER = [
     ),
     LineMessage(line=CONVERSATION.lines[-1], voiced=True),
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
+    NewsMessage(articles=[ARTICLE, ARTICLE.model_copy(update={"news_id": "n2", "read": True})]),
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
     PlayerSayMessage(text="Hello!", target="mei"),
     WatchNpcMessage(npc_id="mei"),
     WatchNpcMessage(npc_id=None),
+    ListNewsMessage(),
+    ReadNewsMessage(news_id=ARTICLE.news_id),
 ]
 
 
@@ -76,6 +91,22 @@ def test_stopping_watching_sends_a_null_npc_id() -> None:
     }
 
 
+def test_news_lists_every_field_of_each_article() -> None:
+    assert json.loads(NewsMessage(articles=[ARTICLE]).model_dump_json()) == {
+        "type": "news",
+        "articles": [
+            {
+                "news_id": "https://bigthink.com/?p=900101",
+                "title": "Drones to be regulated",
+                "source": "Big Think",
+                "summary": "The council votes on drone rules.",
+                "url": "https://bigthink.com/drones",
+                "read": False,
+            }
+        ],
+    }
+
+
 def test_timestamps_are_utc() -> None:
     sydney = datetime(2026, 3, 14, 20, 10, 3, tzinfo=timezone(timedelta(hours=11)))
 
@@ -91,6 +122,9 @@ def test_timestamps_are_utc() -> None:
         {"type": "player_say", "text": "Hi", "target": "Mei"},
         {"type": "watch_npc"},
         {"type": "watch_npc", "npc_id": "Mei"},
+        {"type": "list_news", "news_id": "n1"},
+        {"type": "read_news"},
+        {"type": "read_news", "news_id": ""},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

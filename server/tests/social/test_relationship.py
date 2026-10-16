@@ -1,4 +1,5 @@
 import json
+import math
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,7 @@ from simile.social import (
     DEFAULT_CONFIG,
     RelationshipConfig,
     apply_event,
+    apply_events,
     as_of,
     decay,
     describe,
@@ -66,25 +68,82 @@ def flag(**changes: Any) -> Flag:
     )
 
 
-def test_a_strangers_rude_act_moves_scores_more_than_a_friends() -> None:
-    stranger = relationship(familiarity=0.0)
-    friend = relationship(familiarity=0.9)
-
-    stranger_drop = stranger.like - apply_event(stranger, event(), NOW).like
-    friend_drop = friend.like - apply_event(friend, event(), NOW).like
-
-    assert stranger_drop > friend_drop > 0
+def encounters(rel: Relationship, n: int, *events: InteractionEvent) -> Relationship:
+    for _ in range(n):
+        rel = apply_events(rel, events, NOW)
+    return rel
 
 
-def test_an_old_friend_can_still_be_moved() -> None:
-    stranger = relationship(familiarity=0.0)
-    friend = relationship(familiarity=1.0)
+@pytest.mark.parametrize("n", [1, 2, 11, 111])
+@pytest.mark.parametrize("valence", [1.0, -0.4], ids=["good", "bad"])
+def test_each_step_away_from_neutral_is_ten_times_harder_than_the_last(
+    n: int, valence: float
+) -> None:
+    moves_neutral_by_0_15 = event(valence=valence, magnitude=0.5)
 
-    stranger_drop = stranger.like - apply_event(stranger, event(), NOW).like
-    friend_drop = friend.like - apply_event(friend, event(), NOW).like
+    rel = encounters(relationship(), n, moves_neutral_by_0_15)
 
-    assert friend_drop == pytest.approx(stranger_drop * DEFAULT_CONFIG.dampening_floor)
-    assert friend_drop > 0
+    assert abs(rel.like - 0.5) == pytest.approx(0.15 * math.log10(1 + 9 * n))
+
+
+@pytest.mark.parametrize("good_ones", [0, 1, 11, 111])
+def test_a_negative_event_lands_in_full_at_every_level(good_ones: int) -> None:
+    rel = encounters(relationship(), good_ones, event(valence=1.0, magnitude=0.5))
+
+    after = apply_event(rel, event(valence=-0.4, magnitude=0.2), NOW)
+
+    assert rel.like - after.like == pytest.approx(
+        0.4 * 0.2 * DEFAULT_CONFIG.max_shift * DEFAULT_CONFIG.negativity_bias
+    )
+
+
+@pytest.mark.parametrize("like", [0.05, 0.2, 0.35, 0.47, 0.53, 0.65, 0.8, 0.95])
+def test_moving_toward_neutral_is_as_easy_as_moving_from_it(like: float) -> None:
+    toward = event(valence=-0.4 if like > 0.5 else 1.0, magnitude=0.25)
+    from_neutral = apply_event(relationship(), toward, NOW).like - 0.5
+
+    moved = apply_event(relationship(like=like), toward, NOW).like - like
+
+    assert moved == pytest.approx(from_neutral)
+    assert abs(moved) == pytest.approx(0.075)
+
+
+def test_an_old_friends_snub_hurts_as_much_as_a_strangers() -> None:
+    stranger = relationship(like=0.8, familiarity=0.0)
+    friend = relationship(like=0.8, familiarity=1.0)
+
+    assert apply_event(friend, event(), NOW).like == apply_event(stranger, event(), NOW).like
+
+
+def test_an_encounters_events_add_up_before_they_move_a_score() -> None:
+    rel = relationship(like=0.8)
+    half = event(valence=0.6, magnitude=0.25)
+
+    whole = apply_events(rel, [event(valence=0.6, magnitude=0.5)], NOW)
+    halves = apply_events(rel, [half, half], NOW)
+    one_at_a_time = apply_event(apply_event(rel, half, NOW), half, NOW)
+
+    assert halves.like == pytest.approx(whole.like)
+    assert one_at_a_time.like < whole.like
+
+
+def test_good_and_bad_in_one_encounter_net_out() -> None:
+    rel = relationship(like=0.8)
+
+    after = apply_events(
+        rel, [event(valence=0.5, magnitude=0.5), event(valence=-0.2, magnitude=0.5)], NOW
+    )
+
+    assert after.like == pytest.approx(rel.like)
+
+
+def test_familiarity_grows_once_per_encounter() -> None:
+    rel = relationship(familiarity=0.4)
+
+    once = apply_event(rel, event(), NOW).familiarity
+
+    assert apply_events(rel, [event()] * 3, NOW).familiarity == once
+    assert apply_events(rel, [], NOW).familiarity == once
 
 
 @pytest.mark.parametrize("bias", [2.0, 2.5, 3.0])
