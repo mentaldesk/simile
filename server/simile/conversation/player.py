@@ -38,8 +38,9 @@ UNCLOSED = re.compile(r"\[[^\]\n]*$")
 
 ANYWHERE = r"good-?\s?bye|bye|farewell|cya|ciao|cheerio"
 AT_THE_END = (
-    r"see (?:you|ya)(?: later| soon| around| tomorrow| then)?|take care|catch you later|"
-    r"talk (?:to you )?(?:later|soon)|good\s?night|"
+    r"(?<!to )see (?:you|ya)|see (?:you|ya) (?:later|soon|around|tomorrow|then)|take care|"
+    r"(?:was|been) (?:so )?(?:nice|good|great|lovely) to see (?:you|ya)|"
+    r"catch you later|talk (?:to you )?(?:later|soon)|good\s?night|"
     r"(?:gotta|got to|have to|need to|must|should) (?:go|run|head off|get going)(?: now)?"
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
