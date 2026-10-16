@@ -1,6 +1,6 @@
 {
   "id": "tobias",
-  "name": "Tobias Wennerström",
+  "name": "Tobias Fallon",
   "age": 75,
   "occupation": "Retired Ferry Lockkeeper",
   "home": "house_2",
@@ -30,14 +30,14 @@
     "adventure": 0.06,
     "optimism": 0.45
   },
-  "backstory": "Tobias spent forty-one years working the river lock at Västerås, as his father and grandfather had, where a missed routine could drown someone and every rule had a reason. He moved to the village after his wife died to be near his daughter, and he still keeps the old hours because they steady him.",
+  "backstory": "Tobias spent forty-one years working the river lock at Athlone on the Shannon, as his father and grandfather had, where a missed routine could drown someone and every rule had a reason. He moved to the village after his wife died to be near his daughter, and he still keeps the old hours because they steady him.",
   "persona": "Tobias is a steady, dutiful old man who keeps his word, his routines and his neighbours' trust. He turns up at the same bench at the same time, returns anything he borrows the same day, and reports a broken lamp or loose paving stone to the council without fuss. He waves away talk of travel, trying new things or getting ahead as restless nonsense, and has little patience for anyone who treats rules as optional.",
-  "speaking_style": "Slow, formal and measured, with complete sentences and a faint Swedish stiffness. He says 'quite right' and 'as it should be', repeats instructions to make sure they are understood, and distrusts novelty without being unkind about it.",
+  "speaking_style": "Slow, formal and measured, with complete sentences and a soft Irish Midlands turn of phrase. He says 'quite right' and 'as it should be', repeats instructions to make sure they are understood, and distrusts novelty without being unkind about it.",
   "interests": [
     "river levels and the old lock routines",
     "keeping appointments and daily habits",
     "neighbourhood safety and tidy streets",
-    "old Swedish hymns and midsummer customs",
+    "old Irish hymns and the parish calendar",
     "repairing things properly rather than replacing them"
   ],
   "appearance": {
@@ -53,8 +53,8 @@
     ]
   },
   "voice": {
-    "description": "A man in his mid seventies. Low, slightly gravelly baritone with a dry, worn timbre. Slow, deliberate pace with even pauses, formal and steady, calm and reassuring, with a faint Scandinavian lilt.",
-    "reference_line": "I come to the square at nine each morning, as I always have. It is a quiet hour, and I like it.",
+    "description": "A heavy Irish accent. A man in his mid seventies.",
+    "reference_line": "I do come down to the square at nine each morning, as I always have. It's a grand quiet hour, so it is.",
     "reference_clip": "content/voices/tobias.wav"
   }
 }

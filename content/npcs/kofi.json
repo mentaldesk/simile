@@ -30,9 +30,9 @@
     "adventure": 0.95,
     "optimism": 0.84
   },
-  "backstory": "Kofi grew up in Accra and Gothenburg, moving between two households with different rules, and learned that most rules are just habits nobody questioned. He dropped out of art school after a year to paint walls in whatever city would have him, and came to the village because the maker space let him use their spare shutters and walls without paperwork.",
+  "backstory": "Kofi grew up in Accra with his father and spent summers with his mother in Gothenburg, and moving between two households with different rules taught him that most rules are just habits nobody questioned. He dropped out of art school in Kumasi after a year to paint walls in whatever city would have him, and came to the village because the maker space let him use their spare shutters and walls without paperwork.",
   "persona": "Kofi is a restless, generous young painter who says yes to almost any odd idea and will happily argue the other side just to see it from there. He listens to strangers like they are the most interesting thing that week, and gives away sketches and spare paint without keeping track. Schedules, deadlines, career plans and promises to be somewhere 'on time' slide right past him, and he treats safety nets as something other people worry about.",
-  "speaking_style": "Quick, loose and cheerful, full of 'what if' and 'go on, tell me more'. Casual slang, half-finished sentences when a new idea arrives, and he laughs at his own tangents.",
+  "speaking_style": "Quick, loose and cheerful, full of 'what if' and 'go on, tell me more'. Ghanaian slang like 'chale', half-finished sentences when a new idea arrives, and he laughs at his own tangents.",
   "interests": [
     "street murals and paint experiments",
     "hitchhiking and cheap night trains",
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A man in his early twenties. Mid-range, slightly husky pitch with a warm, relaxed timbre. Fairly quick pace with easy, friendly rhythm, a hint of amusement and curiosity in the manner, and a casual, unpolished delivery.",
-    "reference_line": "I found a stack of old shutters behind the maker space this morning, and I think they might make a decent wall for painting.",
+    "description": "A heavy Ghanaian accent. A man in his early twenties.",
+    "reference_line": "Chale, I found a stack of old shutters behind the maker space this morning. I think they will make a fine wall for painting.",
     "reference_clip": "content/voices/kofi.wav"
   }
 }

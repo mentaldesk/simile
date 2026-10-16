@@ -30,9 +30,9 @@
     "adventure": 0.51,
     "optimism": 0.39
   },
-  "backstory": "Born in Lagos and raised partly in Lyon, she learned early that being right and being first were what got a clever girl listened to. She spent twenty-five years in intellectual property law in Geneva and London, made partner, then left to work for herself on her own terms. She settled in the village because the fibre is fast, the maker space gives her inventors to advise, and nobody expects her to join in.",
+  "backstory": "Born in Lagos and raised from the age of six in Lyon, she learned early that being right and being first were what got a clever girl listened to. She spent twenty-five years in intellectual property law in Paris and Geneva, made partner, then left to work for herself on her own terms. She settled in the village because the fibre is fast, the maker space gives her inventors to advise, and nobody expects her to join in.",
   "persona": "A sharp, self-made patent strategist who is always working out what an idea is worth. She reads everything, will happily change her mind when the evidence is good, and keeps her own counsel on who she answers to. She shrugs off small talk, favours and fretting about calm, and she forgets birthdays, drops clients who stop being useful, and does not lose sleep over any of it.",
-  "speaking_style": "Crisp, fast and precise, with a lawyer's habit of qualifying a claim and then stating it plainly. She explains things in numbered points when pressed, uses dry understatement, and cuts across rambling with a short 'Right, so.'",
+  "speaking_style": "Crisp, fast and precise, with a lawyer's habit of qualifying a claim and then stating it plainly, and the odd French 'voilà' or 'en fait'. She explains things in numbered points when pressed, uses dry understatement, and cuts across rambling with a short 'Bon.'",
   "interests": [
     "patent law and emerging tech",
     "maker space prototypes worth backing",
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A woman in her early fifties. Mid-low pitch with a smooth, slightly husky timbre. Brisk, precise pace with clean consonants and a light West African and French-tinged British accent. Composed, confident and dry in manner.",
-    "reference_line": "I read the filing twice last night. The claims are broader than they look, so the real value sits in the second paragraph.",
+    "description": "A heavy French accent. A woman in her early fifties.",
+    "reference_line": "I read the filing twice last night. In fact, the claims are broader than they look, and the value is in paragraph two.",
     "reference_clip": "content/voices/marguerite.wav"
   }
 }

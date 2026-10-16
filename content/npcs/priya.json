@@ -30,9 +30,9 @@
     "adventure": 0.72,
     "optimism": 0.84
   },
-  "backstory": "Priya grew up in Antwerp and Mumbai, the daughter of a diamond dealer who treated every good deal as a reason to celebrate with the best bottle in the house. She learned that life rewards people who say yes, stay cheerful and chase the next thrilling thing, and she came to the village because its drone-lit evenings suit a bar that opens wherever the crowd is.",
+  "backstory": "Priya grew up in Mumbai, with long summers in Antwerp, the daughter of a diamond dealer who treated every good deal as a reason to celebrate with the best bottle in the house. She learned that life rewards people who say yes, stay cheerful and chase the next thrilling thing, and she came to the village because its drone-lit evenings suit a bar that opens wherever the crowd is.",
   "persona": "Priya is a glossy, sunny hustler who turns every evening into an occasion and every setback into a story for later. She works hard at being successful and bold, and plans her next venture before the last one has paid off. She skips rules and routines, brushes off other people's causes and complaints, and tells a flattering version of the truth if it keeps the mood up.",
-  "speaking_style": "Quick, bright and breezy, with a salesperson's patter and lots of 'darling', 'gorgeous' and 'trust me'. She talks over objections with a laugh, rarely explains herself and drifts off topic whenever something more fun turns up.",
+  "speaking_style": "Quick, bright and breezy, with a salesperson's patter, Bombay slang like 'yaar' and lots of 'darling', 'gorgeous' and 'trust me'. She talks over objections with a laugh, rarely explains herself and drifts off topic whenever something more fun turns up.",
   "interests": [
     "cocktail recipes",
     "night markets",
@@ -52,8 +52,8 @@
     "accessories": []
   },
   "voice": {
-    "description": "A woman in her mid forties. Mid-range pitch with a warm, slightly husky timbre. Pace is quick and lively, with a smooth, confident, playful manner and an easy charm, like a host greeting guests.",
-    "reference_line": "I found a rooftop in Lisbon last spring that serves only vermouth and sunsets, and this village could use something like it.",
+    "description": "An Indian auntie from Mumbai in her mid forties speaking Indian English, warm and quick.",
+    "reference_line": "Yaar, I found a rooftop bar in Lisbon last spring that serves only vermouth and sunsets, and this village needs one also.",
     "reference_clip": "content/voices/priya.wav"
   }
 }
