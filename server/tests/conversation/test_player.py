@@ -553,6 +553,19 @@ async def test_an_npc_who_dislikes_the_player_doesnt_greet_them() -> None:
     assert village.of(ConversationStarted) == []
 
 
+async def test_an_npc_who_leaves_the_player_alone_doesnt_greet_them_until_let_go() -> None:
+    village = Village(["Hello! New in town? [values: connection]"], npcs=(ANA,))
+    village.behaviour.leave_player_alone.add("ana")
+
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
+    assert village.of(ConversationStarted) == []
+
+    village.behaviour.leave_player_alone.discard("ana")
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    [started] = village.of(ConversationStarted)
+    assert started.conversation.participants == ["ana", PLAYER_ID]
+
+
 async def test_a_claude_code_process_is_started_before_the_npc_needs_it() -> None:
     village = Village(npcs=(BEN,))
     system = system_prompt(BEN)
