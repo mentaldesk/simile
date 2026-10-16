@@ -24,6 +24,18 @@
       "format": "date-time",
       "title": "Published",
       "type": "string"
+    },
+    "source": {
+      "default": "",
+      "description": "The display name of the feed it came from, e.g. \"The Atlantic\". Empty for items stored before sources were recorded.",
+      "title": "Source",
+      "type": "string"
+    },
+    "source_url": {
+      "default": "",
+      "description": "The URL of the feed it came from. Empty for items stored before sources were recorded.",
+      "title": "Source Url",
+      "type": "string"
     }
   },
   "required": [
@@ -31,7 +43,9 @@
     "title",
     "url",
     "summary",
-    "published"
+    "published",
+    "source",
+    "source_url"
   ],
   "title": "NewsItem",
   "type": "object"

@@ -81,9 +81,13 @@ def system_prompt(npc: Npc, config: NewsConfig = DEFAULT_CONFIG) -> str:
     )
 
 
+def read_in(item: NewsItem) -> str:
+    return f" in {item.source}" if item.source else ""
+
+
 def article_prompt(item: NewsItem) -> str:
     return (
-        "You've just read this on the village news terminal.\n\n"
+        f"You've just read this{read_in(item)} on the village news terminal.\n\n"
         f"{item.title}\n{item.summary}\n\n"
         "How does it land with you? Something that chimes with what you care about most is "
         "strongly positive, something that goes against it strongly negative, and something "
@@ -98,7 +102,8 @@ def remember(
     return Memory(
         owner=npc.id,
         kind=MemoryKind.NEWS,
-        content=f'I read "{item.title}" on the news terminal. {reaction.take.strip()}',
+        content=f'I read "{item.title}"{read_in(item)} on the news terminal. '
+        f"{reaction.take.strip()}",
         salience=reaction.intensity,
         valence=reaction.valence,
         timestamp=now,

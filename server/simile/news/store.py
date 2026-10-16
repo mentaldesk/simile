@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS news (
     data TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS news_by_published ON news (published);
+CREATE INDEX IF NOT EXISTS news_by_url ON news (json_extract(data, '$.url'));
 
 CREATE TABLE IF NOT EXISTS news_feeds (
     url TEXT PRIMARY KEY,
@@ -65,10 +66,14 @@ class NewsStore:
         self.close()
 
     def add(self, items: Iterable[NewsItem]) -> list[NewsItem]:
-        """Store the items whose ids aren't stored yet, and return them."""
+        """Store the items whose ids and links aren't stored yet, and return them."""
         added = []
         with self._lock, self._db:
             for item in items:
+                if self._db.execute(
+                    "SELECT 1 FROM news WHERE json_extract(data, '$.url') = ?", (item.url,)
+                ).fetchone():
+                    continue
                 cursor = self._db.execute(
                     "INSERT INTO news (id, published, data) VALUES (?, ?, ?)"
                     " ON CONFLICT (id) DO NOTHING",

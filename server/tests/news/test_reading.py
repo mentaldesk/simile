@@ -66,6 +66,7 @@ def test_npcs_at_terminals_remember_what_they_read(feed_xml: bytes) -> None:
     assert all(m.salience == REACTION.intensity for m in memories)
     assert len({(m.owner, m.news_id) for m in memories}) == len(memories)
     assert {npc for npc, topics in raised.items() if topics} == set(readers)
+    assert all(" in Big Think on the news terminal. " in m.content for m in memories)
 
 
 def test_reads_the_news_for_behaviour_while_running(make_package: MakePackage) -> None:

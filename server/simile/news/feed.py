@@ -9,7 +9,6 @@ from urllib.request import Request, urlopen
 
 from simile.schema import NewsItem
 
-FEED_URL = "https://feeds.feedburner.com/bigthink/main"
 USER_AGENT = "Simile/0.1 (village news reader; +https://github.com/mentaldesk/simile)"
 TIMEOUT = 10.0
 SUMMARY_LENGTH = 600
@@ -21,9 +20,32 @@ BREAKS = {
 }
 
 
-def feed_url() -> str:
-    """`$SIMILE_NEWS_FEED`, or Big Think's feed."""
-    return os.environ.get("SIMILE_NEWS_FEED") or FEED_URL
+@dataclass(frozen=True)
+class Feed:
+    """A news feed, and the name its stories are credited to. Unnamed, they take the feed's own
+    title."""
+
+    url: str
+    name: str = ""
+
+
+FEEDS = (
+    Feed("https://www.theatlantic.com/feed/best-of/", "The Atlantic"),
+    Feed("https://openai.com/news/rss.xml", "OpenAI"),
+    Feed("http://rss.sciam.com/ScientificAmerican-Global", "Scientific American"),
+    Feed("https://www.economist.com/the-world-this-week/rss.xml", "The Economist"),
+    Feed("https://www.rnz.co.nz/rss/sport.xml", "RNZ Sport"),
+    Feed("https://feeds.feedburner.com/ign/pc-reviews", "IGN"),
+)
+
+
+def feeds() -> tuple[Feed, ...]:
+    """The feeds at the comma-separated URLs in `$SIMILE_NEWS_FEED`, or `FEEDS`. A URL from
+    `FEEDS` keeps its name."""
+    urls = [url.strip() for url in os.environ.get("SIMILE_NEWS_FEED", "").split(",")]
+    named = {feed.url: feed for feed in FEEDS}
+    chosen = tuple(named.get(url, Feed(url)) for url in dict.fromkeys(urls) if url)
+    return chosen or FEEDS
 
 
 class TextExtractor(HTMLParser):
@@ -60,16 +82,17 @@ def shorten(text: str, limit: int = SUMMARY_LENGTH) -> str:
     return text[: end + 1] if end > limit // 2 else textwrap.shorten(text, limit, placeholder="…")
 
 
-def parse(xml: bytes) -> list[NewsItem]:
-    """The feed's entries as news items, in feed order, without repeated guids. Entries with no
-    link, title or date are skipped."""
+def parse(xml: bytes, feed: Feed | None = None) -> list[NewsItem]:
+    """The feed's entries as news items from `feed`, in feed order, without repeated guids.
+    Entries with no link, title or date are skipped."""
     import feedparser
 
-    feed = feedparser.parse(io.BytesIO(xml))
-    if feed.bozo and not feed.entries:
-        raise ValueError(f"not a feed: {feed.bozo_exception}")
+    parsed = feedparser.parse(io.BytesIO(xml))
+    if parsed.bozo and not parsed.entries:
+        raise ValueError(f"not a feed: {parsed.bozo_exception}")
+    source = feed.name if feed and feed.name else plain(parsed.feed.get("title", ""))
     items: dict[str, NewsItem] = {}
-    for entry in feed.entries:
+    for entry in parsed.entries:
         guid = entry.get("id") or entry.get("link")
         published = entry.get("published_parsed") or entry.get("updated_parsed")
         title = plain(entry.get("title", ""))
@@ -81,6 +104,8 @@ def parse(xml: bytes) -> list[NewsItem]:
             url=entry.link,
             summary=shorten(plain(entry.get("summary", ""))),
             published=datetime(*published[:6], tzinfo=UTC),
+            source=source,
+            source_url=feed.url if feed else "",
         )
     return list(items.values())
 
@@ -95,18 +120,18 @@ class Fetched:
 
 
 def fetch(
-    url: str, etag: str | None = None, modified: str | None = None, timeout: float = TIMEOUT
+    feed: Feed, etag: str | None = None, modified: str | None = None, timeout: float = TIMEOUT
 ) -> Fetched:
-    """Download and parse the feed, asking only for changes since `etag`/`modified`. Blocks."""
+    """Download and parse `feed`, asking only for changes since `etag`/`modified`. Blocks."""
     headers = {"User-Agent": USER_AGENT}
     if etag:
         headers["If-None-Match"] = etag
     if modified:
         headers["If-Modified-Since"] = modified
     try:
-        with urlopen(Request(url, headers=headers), timeout=timeout) as response:
+        with urlopen(Request(feed.url, headers=headers), timeout=timeout) as response:
             return Fetched(
-                parse(response.read()),
+                parse(response.read(), feed),
                 response.headers.get("ETag"),
                 response.headers.get("Last-Modified"),
             )

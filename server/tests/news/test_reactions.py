@@ -24,6 +24,8 @@ RULES = NewsItem(
     url="https://example.com/rules",
     summary="A historian argues that progress comes from people who ignore the rules.",
     published=NOW - timedelta(hours=2),
+    source="The Atlantic",
+    source_url="https://www.theatlantic.com/feed/best-of/",
 )
 SHRUG = Reaction(take="Huh.", valence=0.1, intensity=0.2, topics=["news"]).model_dump_json()
 
@@ -110,13 +112,38 @@ async def test_an_article_clashing_with_a_high_value_lands_badly(
     assert reaction.salience == pytest.approx(0.9)
     assert reaction.news_id == RULES.id
     assert reaction.timestamp == NOW
-    assert reaction.content == f'I read "{RULES.title}" on the news terminal. ' + (
+    assert reaction.content == f'I read "{RULES.title}" in The Atlantic on the news terminal. ' + (
         "Rules are there for a reason."
     )
     assert reaction.topics == ["rules", "civic life", "history"]
     [other] = news_memories(memory, "rebel")
     assert other.valence == pytest.approx(0.8)
     assert all(request.model == Model.HAIKU_5_5 for request in fake.requests)
+    assert (
+        fake.requests[0]
+        .messages[-1]
+        .content.startswith("You've just read this in The Atlantic on the village news terminal.")
+    )
+
+
+@pytest.mark.anyio
+async def test_an_article_from_an_unnamed_feed_is_read_on_the_terminal(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    news.add([article(0)])
+    fake = FakeProvider(default=SHRUG)
+    reader = reader_for(news, memory, fake)
+
+    reader.read(npc("mei"))
+    await settle(reader)
+
+    [reaction] = news_memories(memory, "mei")
+    assert reaction.content == 'I read "Article 0" on the news terminal. Huh.'
+    assert (
+        fake.requests[0]
+        .messages[-1]
+        .content.startswith("You've just read this on the village news terminal.")
+    )
 
 
 @pytest.mark.anyio
