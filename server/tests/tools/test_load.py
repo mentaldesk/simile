@@ -81,9 +81,12 @@ def record(**fields: object) -> CallRecord:
         "usage": Usage(
             input_tokens=10,
             output_tokens=20,
+            thinking_tokens=12,
             cache_read_tokens=300,
             model="claude-haiku-4-5",
-            rate_limit=RateLimit("allowed", "five_hour", 0.25),
+            rate_limit=RateLimit(
+                "allowed", "five_hour", 0.25, windows={"five_hour": 0.25, "seven_day": 0.6}
+            ),
         ),
         "error": None,
     }
@@ -165,13 +168,14 @@ def test_reads_each_llm_call(database: Path) -> None:
         "claude-haiku-4-5",
         "claude-code",
     )
-    assert (first.tokens_in, first.tokens_out) == (310, 20)
+    assert (first.tokens_in, first.tokens_out, first.thinking_tokens) == (310, 20, 12)
     assert (first.latency_ms, first.ttft_ms, first.queued_ms) == (900.0, 600.0, 5.0)
     assert first.rate_limit == {
         "status": "allowed",
         "window": "five_hour",
         "utilization": 0.25,
         "resets_at": None,
+        "windows": {"five_hour": 0.25, "seven_day": 0.6},
     }
     assert (failed.purpose, failed.error) == ("call", "LLMError: nope")
 

@@ -35,13 +35,13 @@ the run: memories, interaction events and flags.
 | Section | |
 |---|---|
 | Problems | Signs of degenerate behaviour: most of the village at one place, one place taking most of the time out, the same few pairs or one NPC in most conversations, NPCs who never talked, lines repeated word for word, conversations that loop, catchphrases, B3 or B4 storing nothing, failing LLM calls and usage limits. Thresholds are in `ReportConfig`. |
-| Conversations | Per pair: how many, their lines and sim minutes. |
+| Conversations | Per pair: how many, their lines and sim minutes. Conversations that ended before anyone spoke are left out here and everywhere else. |
 | Relationship drift | End minus start as a matrix, owner by row, for each aspect that moved, and the largest shifts. |
 | Reflections and flags | What B3 stored, and every flag opened or resolved. |
 | Repeated topics and phrases | Topics of conversation memories, lines said more than once, and 4-word phrases by how many conversations they come up in. |
 | News | Articles read, lines mentioning the news, and lines that bring up an article the speaker read (one of its topics, or two of its title's longer words). |
 | Time per location | Sim minutes per NPC per place, as B1's fast-forward counts places, plus time asleep and talking. |
-| LLM usage | Calls, tokens and latency by purpose and model, errors, and the last usage-limit report. |
+| LLM usage | Calls, tokens (thinking included), API-equivalent cost and latency by purpose and model, errors, and for every usage-limit window Claude Code reported, the fraction used at the first and last report and the most. |
 
 Under `SIMILE_LLM=fake` the report says so: every line is canned, so it flags repeated dialogue, and
 B3's reflections never store anything.

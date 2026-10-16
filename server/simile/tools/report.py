@@ -99,6 +99,8 @@ class Call:
     queued_ms: float
     tokens_in: int
     tokens_out: int
+    """Every token the model wrote, thinking included."""
+    thinking_tokens: int
     cost_usd: float | None
     error: str | None
     rate_limit: dict[str, Any] | None
@@ -120,6 +122,7 @@ class Call:
                 for key in ("input_tokens", "cache_read_tokens", "cache_creation_tokens")
             ),
             tokens_out=usage.get("output_tokens", 0),
+            thinking_tokens=usage.get("thinking_tokens", 0),
             cost_usd=usage.get("cost_usd"),
             error=record["error"],
             rate_limit=usage.get("rate_limit"),
@@ -332,14 +335,14 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
     fake = is_fake(run)
     expected = " Expected with canned lines." if fake else ""
     found = []
-    talks = [c for c in run.conversations if c.lines]
+    talks = with_lines(run)
     if not talks:
         found.append("Nobody talked.")
 
     need = crowd_size(run, config)
     crowded = crowded_minutes(run, need)
     if len(crowded) >= config.crowd_minutes:
-        place, _ = Counter(crowded.values()).most_common(1)[0]
+        place, _ = _top(Counter(crowded.values()), 1)[0]
         found.append(
             f"At least {need} of {len(run.npcs)} NPCs were at one place for {len(crowded)} sim "
             f"minutes, mostly the {place}."
@@ -347,7 +350,7 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
     totals = Counter(s.place for s in run.samples if s.place not in (HOME, STREET))
     total = sum(totals.values())
     if total >= config.min_place_minutes:
-        place, minutes = totals.most_common(1)[0]
+        place, minutes = _top(totals, 1)[0]
         if minutes / total > config.dominant_share:
             found.append(
                 f"The {place} had {minutes / total:.0%} of the time NPCs spent at places other "
@@ -356,9 +359,7 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
 
     if len(talks) >= config.min_conversations:
         pairs = [
-            (p, n)
-            for p, n in Counter(pair_of(c) for c in talks).most_common(config.top_pairs)
-            if n > 1
+            (p, n) for p, n in _top(Counter(pair_of(c) for c in talks), config.top_pairs) if n > 1
         ]
         share = sum(n for _, n in pairs) / len(talks)
         if share >= config.top_pairs_share:
@@ -367,7 +368,7 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
                 f"{share:.0%} of conversations were between {_n(len(pairs), 'pair')}: {names}."
             )
         held = Counter(npc for c in talks for npc in c.participants if npc in run.npcs)
-        for npc, n in held.most_common():
+        for npc, n in _top(held):
             if n / len(talks) > config.hub_share:
                 found.append(f"{npc} was in {n} of {len(talks)} conversations.")
         quiet = [npc for npc in run.npcs if npc not in held]
@@ -390,7 +391,7 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
     if len(talks) >= config.min_conversations:
         common = [
             (phrase, n)
-            for phrase, n in phrases(talks, config.phrase_words).most_common(3)
+            for phrase, n in _top(phrases(talks, config.phrase_words), 3)
             if n / len(talks) > config.catchphrase_share
         ]
         if common:
@@ -412,23 +413,24 @@ def problems(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> list[st
 
     failed = [c for c in run.calls if c.error and c.error != "cancelled"]
     if run.calls and len(failed) / len(run.calls) > config.error_share:
-        top, n = Counter(c.error for c in failed).most_common(1)[0]
+        top, n = _top(Counter(c.error or "" for c in failed), 1)[0]
         found.append(
             f"{len(failed)} of {len(run.calls)} LLM calls failed, most often ({n}) with: {top}"
         )
-    for window, limit in rate_limits(run).items():
-        if limit.get("status") == "rejected":
-            found.append(f"Claude Code rejected calls at the {window} usage limit.")
-        elif (limit["max"] or 0) >= config.rate_limit_warning:
-            found.append(f"Used {limit['max']:.0%} of the {window} usage limit.")
+    for name, window in rate_limits(run).items():
+        if window.status == "rejected":
+            found.append(f"Claude Code rejected calls at the {name} usage limit.")
+        elif (window.highest or 0) >= config.rate_limit_warning:
+            found.append(f"Used {window.highest:.0%} of the {name} usage limit.")
     return found
 
 
 def conversation_section(run: RecordedRun) -> list[str]:
-    talks = run.conversations
+    talks = with_lines(run)
+    unspoken = len(run.conversations) - len(talks)
     lines = ["## Conversations", ""]
     if not talks:
-        return [*lines, "None."]
+        return [*lines, "None with any lines."]
     counts = [len(c.lines) for c in talks]
     minutes = [_minutes(c) for c in talks]
     pairs: dict[tuple[str, str], list[Conversation]] = defaultdict(list)
@@ -442,7 +444,9 @@ def conversation_section(run: RecordedRun) -> list[str]:
         f"{_n(len(pairs), 'pair')} "
         f"({possible} possible among the NPCs). Lines per conversation: {min(counts)} to "
         f"{max(counts)}, median {median(counts):g}. Sim minutes: median {median(minutes):.1f}, "
-        f"longest {max(minutes):.1f}." + (f" {player} with the player." if player else ""),
+        f"longest {max(minutes):.1f}."
+        + (f" {player} with the player." if player else "")
+        + (f" Left out: {unspoken} that ended before a line was said." if unspoken else ""),
         "",
         "| Pair | Conversations | Lines | Lines each | Minutes each | Most lines |",
         "|---|--:|--:|--:|--:|--:|",
@@ -546,22 +550,20 @@ def repetition_section(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) 
     if topics:
         lines.append(
             "Topics of conversation memories: "
-            + ", ".join(f"{t} ({n})" for t, n in topics.most_common(10))
+            + ", ".join(f"{t} ({n})" for t, n in _top(topics, 10))
             + "."
         )
     else:
         lines.append("No conversation memories, so no topics.")
     said = spoken(run)
     repeated = [
-        (text, n)
-        for text, n in Counter(normalise(line.text) for line in said).most_common(5)
-        if n > 1
+        (text, n) for text, n in _top(Counter(normalise(line.text) for line in said), 5) if n > 1
     ]
     if repeated:
         lines += ["", "Lines said more than once:", ""]
         lines += [f'- {n}× "{text}"' for text, n in repeated]
-    talks = [c for c in run.conversations if c.lines]
-    common = [(p, n) for p, n in phrases(talks, config.phrase_words).most_common(8) if n > 1]
+    talks = with_lines(run)
+    common = [(p, n) for p, n in _top(phrases(talks, config.phrase_words), 8) if n > 1]
     if common:
         lines += [
             "",
@@ -611,7 +613,7 @@ def news_section(run: RecordedRun) -> list[str]:
         lines += [
             "",
             "Topics of what they read: "
-            + ", ".join(f"{t} ({n})" for t, n in topics.most_common(8))
+            + ", ".join(f"{t} ({n})" for t, n in _top(topics, 8))
             + ".",
         ]
     return lines
@@ -631,7 +633,7 @@ def place_section(run: RecordedRun) -> list[str]:
             asleep[s.npc] += 1
     held: Counter[str] = Counter()
     talking: Counter[str] = Counter()
-    for c in run.conversations:
+    for c in with_lines(run):
         held.update(c.participants)
         talking.update(dict.fromkeys(c.participants, _minutes(c)))
     lines += [
@@ -662,10 +664,12 @@ def llm_section(run: RecordedRun) -> list[str]:
     hours = max((run.ended - run.started) / timedelta(hours=1), 1e-9)
     tokens_in = sum(c.tokens_in for c in run.calls)
     tokens_out = sum(c.tokens_out for c in run.calls)
+    thinking = sum(c.thinking_tokens for c in run.calls)
     costs = [c.cost_usd for c in run.calls if c.cost_usd is not None]
     lines.append(
         f"{len(run.calls)} calls ({len(run.calls) / hours:.0f} per sim hour), {tokens_in:,} "
-        f"tokens in and {tokens_out:,} out ({(tokens_in + tokens_out) / hours:,.0f} per sim hour)."
+        f"tokens in and {tokens_out:,} out, {thinking:,} of them thinking "
+        f"({(tokens_in + tokens_out) / hours:,.0f} per sim hour)."
         + (
             f" ${sum(costs):.2f} if it were billed per call on the API; the subscription isn't."
             if costs
@@ -677,39 +681,45 @@ def llm_section(run: RecordedRun) -> list[str]:
         groups[call.purpose, call.model].append(call)
     lines += [
         "",
-        "| Purpose | Model | Calls | Failed | Tokens in | Tokens out | Latency p50 | p95 | "
-        "First token p50 | Queued p95 |",
-        "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|",
+        "| Purpose | Model | Calls | Failed | Tokens in | Tokens out | Thinking | API cost | "
+        "Latency p50 | p95 | First token p50 | Queued p95 |",
+        "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
     ]
-    for (purpose, model), calls in sorted(groups.items(), key=lambda item: -len(item[1])):
+    for (purpose, model), calls in sorted(groups.items(), key=lambda g: (-len(g[1]), g[0])):
         latency = [c.latency_ms for c in calls]
         ttft = [c.ttft_ms for c in calls if c.ttft_ms is not None]
         failed = sum(1 for c in calls if c.error and c.error != "cancelled")
         cancelled = sum(1 for c in calls if c.error == "cancelled")
+        cost = [c.cost_usd for c in calls if c.cost_usd is not None]
         lines.append(
             f"| {purpose} | {model} | {len(calls)} | {failed}"
             + (f" (+{cancelled} cancelled)" if cancelled else "")
             + f" | {sum(c.tokens_in for c in calls):,} | {sum(c.tokens_out for c in calls):,} | "
-            f"{_ms(percentile(latency, 0.5))} | {_ms(percentile(latency, 0.95))} | "
+            f"{sum(c.thinking_tokens for c in calls):,} | "
+            + (f"${sum(cost):.4f}" if cost else "-")
+            + f" | {_ms(percentile(latency, 0.5))} | {_ms(percentile(latency, 0.95))} | "
             f"{_ms(percentile(ttft, 0.5))} | "
             f"{_ms(percentile([c.queued_ms for c in calls], 0.95))} |"
         )
-    errors = Counter(c.error for c in run.calls if c.error and c.error != "cancelled")
+    errors = Counter(c.error or "" for c in run.calls if c.error and c.error != "cancelled")
     if errors:
         lines += ["", "Errors:", ""]
-        lines += [f"- {n}× {_cell(error)}" for error, n in errors.most_common(5)]
+        lines += [f"- {n}× {_cell(error)}" for error, n in _top(errors, 5)]
     limits = rate_limits(run)
     lines.append("")
     if not limits:
-        lines.append("Rate limits: none reported.")
-    for window, limit in limits.items():
-        last = limit.get("utilization")
-        resets = limit.get("resets_at")
+        lines.append("Usage limits: none reported.")
+    for name, window in limits.items():
         lines.append(
-            f"Rate limit {window}: last {limit.get('status')}"
-            + (f" at {last:.0%}" if last is not None else "")
-            + (f", at most {limit['max']:.0%}" if limit["max"] is not None else "")
-            + (f", resets {_time(resets):%Y-%m-%d %H:%M} UTC" if resets else "")
+            f"Usage limit {name}: "
+            + (
+                f"{window.first:.0%} at the first report, {window.last:.0%} at the last, "
+                f"at most {window.highest:.0%}"
+                if window.first is not None and window.last is not None
+                else "no utilisation reported"
+            )
+            + (f"; last status {window.status}" if window.status else "")
+            + (f"; resets {_time(window.resets_at):%Y-%m-%d %H:%M} UTC" if window.resets_at else "")
             + "."
         )
     return lines
@@ -722,6 +732,11 @@ def is_fake(run: RecordedRun) -> bool:
 def pair_of(conversation: Conversation) -> tuple[str, str]:
     a, b, *_ = sorted(conversation.participants)
     return a, b
+
+
+def with_lines(run: RecordedRun) -> list[Conversation]:
+    """The conversations in which anyone said anything."""
+    return [c for c in run.conversations if c.lines]
 
 
 def spoken(run: RecordedRun) -> list[Line]:
@@ -798,20 +813,36 @@ def article_mentions(run: RecordedRun) -> list[tuple[Line, str]]:
     return found
 
 
-def rate_limits(run: RecordedRun) -> dict[str, dict[str, Any]]:
-    """The last rate-limit report for each usage window, with the highest utilisation seen."""
-    limits: dict[str, dict[str, Any]] = {}
+@dataclass
+class UsageWindow:
+    first: float | None = None
+    last: float | None = None
+    highest: float | None = None
+    status: str | None = None
+    resets_at: int | None = None
+
+
+def rate_limits(run: RecordedRun) -> dict[str, UsageWindow]:
+    """Every usage-limit window Claude Code reported: the fraction used at the first and last
+    reports and the most, and the last status and reset time given for it."""
+    windows: dict[str, UsageWindow] = {}
     for call in run.calls:
-        if not call.rate_limit:
+        limit = call.rate_limit
+        if not limit:
             continue
-        window = call.rate_limit.get("window") or "unknown"
-        used = call.rate_limit.get("utilization")
-        highest = limits.get(window, {}).get("max")
-        limits[window] = {
-            **call.rate_limit,
-            "max": max((u for u in (used, highest) if u is not None), default=None),
-        }
-    return limits
+        name = limit.get("window") or "unknown"
+        used = dict(limit.get("windows") or {})
+        if limit.get("utilization") is not None:
+            used.setdefault(name, limit["utilization"])
+        for key, fraction in used.items():
+            window = windows.setdefault(key, UsageWindow())
+            window.first = fraction if window.first is None else window.first
+            window.last = fraction
+            window.highest = max(fraction, window.highest or 0.0)
+        window = windows.setdefault(name, UsageWindow())
+        window.status = limit.get("status")
+        window.resets_at = limit.get("resets_at") or window.resets_at
+    return windows
 
 
 def percentile(values: Sequence[float], p: float) -> float | None:
@@ -819,6 +850,11 @@ def percentile(values: Sequence[float], p: float) -> float | None:
         return None
     ordered = sorted(values)
     return ordered[max(math.ceil(p * len(ordered)) - 1, 0)]
+
+
+def _top[K: str | tuple[str, ...]](counts: Counter[K], k: int | None = None) -> list[tuple[K, int]]:
+    """Like `most_common`, with ties in order of their keys so the report is the same each run."""
+    return sorted(counts.items(), key=lambda item: (-item[1], item[0]))[:k]
 
 
 def _at_places(run: RecordedRun) -> dict[str, Counter[datetime]]:

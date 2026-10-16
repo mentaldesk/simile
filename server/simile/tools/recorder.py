@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import logging
 import sqlite3
 import time
 from collections.abc import Callable, Iterable
@@ -14,6 +15,8 @@ from simile.memory import MemoryStore
 from simile.schema import Conversation, LocationKind, Relationship
 from simile.sim import ConversationEnded, World
 from simile.social import as_of, meet
+
+logger = logging.getLogger(__name__)
 
 HOME = "home"
 STREET = "street"
@@ -238,11 +241,17 @@ class Recorder:
         return found
 
     def _flush(self) -> None:
+        """Write what's buffered. A failed write is logged and kept for the next try, so it
+        never stops the sim."""
         assert self.run is not None
-        self.store.add(
-            self.run,
-            samples=self._samples,
-            conversations=self._conversations,
-            calls=self._calls,
-        )
+        try:
+            self.store.add(
+                self.run,
+                samples=self._samples,
+                conversations=self._conversations,
+                calls=self._calls,
+            )
+        except Exception:
+            logger.exception("Couldn't record run %d in %s", self.run, self.store.path)
+            return
         self._samples, self._conversations, self._calls = [], [], []

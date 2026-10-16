@@ -20,6 +20,7 @@ from simile.tools.report import (
     RecordedRun,
     Sample,
     article_mentions,
+    conversation_section,
     drift_section,
     llm_section,
     news_section,
@@ -27,6 +28,7 @@ from simile.tools.report import (
     place_section,
     problems,
     reflection_section,
+    repetition_section,
     report,
 )
 
@@ -77,6 +79,7 @@ def call(purpose: str = "conversation", **fields: Any) -> Call:
         "queued_ms": 0.0,
         "tokens_in": 1000,
         "tokens_out": 30,
+        "thinking_tokens": 0,
         "cost_usd": None,
         "error": None,
         "rate_limit": None,
@@ -328,26 +331,57 @@ def test_finds_lines_that_bring_up_an_article_the_speaker_read() -> None:
 
 
 def test_summarises_llm_usage_by_purpose_and_model() -> None:
+    resets = int(datetime(2026, 1, 1, 13, tzinfo=UTC).timestamp())
+    limits = [
+        {
+            "status": "allowed",
+            "window": "five_hour",
+            "utilization": 0.4,
+            "resets_at": resets,
+            "windows": {"five_hour": 0.4, "seven_day": 0.6},
+        },
+        {
+            "status": "allowed_warning",
+            "window": "five_hour",
+            "utilization": 0.43,
+            "resets_at": resets,
+            "windows": {"five_hour": 0.43, "seven_day": 0.61},
+        },
+    ]
     calls = [
-        call(latency_ms=100.0),
+        call(latency_ms=100.0, thinking_tokens=10),
         call(latency_ms=200.0, cost_usd=0.01),
         call(latency_ms=300.0, error="cancelled", ttft_ms=None),
         call(latency_ms=4000.0, error="LLMError: boom"),
-        call("reflection", model="claude-sonnet-5", tokens_in=3000, tokens_out=200),
+        *(call(rate_limit=limit) for limit in limits),
+        call(
+            "reflection",
+            model="claude-sonnet-5",
+            tokens_in=3000,
+            tokens_out=200,
+            thinking_tokens=150,
+            cost_usd=0.002,
+        ),
     ]
-    limit = {"status": "allowed", "window": "five_hour", "utilization": 0.4, "resets_at": 0}
 
-    section = "\n".join(llm_section(change(healthy(), calls=[*calls, call(rate_limit=limit)])))
+    section = "\n".join(llm_section(change(healthy(), calls=calls)))
 
-    assert "6 calls (6 per sim hour), 8,000 tokens in and 350 out" in section
+    assert "7 calls (7 per sim hour), 9,000 tokens in and 380 out, 160 of them thinking" in section
     assert "$0.01 if it were billed per call on the API" in section
     assert (
-        "| conversation | claude-haiku-4-5 | 5 | 1 (+1 cancelled) | 5,000 | 150 | 300 ms | 4.0 s "
-        "| 700 ms | 0 ms |"
+        "| conversation | claude-haiku-4-5 | 6 | 1 (+1 cancelled) | 6,000 | 180 | 10 | $0.0100 | "
+        "300 ms | 4.0 s | 700 ms | 0 ms |"
     ) in section
-    assert "| reflection | claude-sonnet-5 | 1 | 0 | 3,000 | 200 |" in section
+    assert "| reflection | claude-sonnet-5 | 1 | 0 | 3,000 | 200 | 150 | $0.0020 |" in section
     assert "- 1× LLMError: boom" in section
-    assert "Rate limit five_hour: last allowed at 40%, at most 40%." in section
+    assert (
+        "Usage limit five_hour: 40% at the first report, 43% at the last, at most 43%; last "
+        "status allowed_warning; resets 2026-01-01 13:00 UTC."
+    ) in section
+    assert "Usage limit seven_day: 60% at the first report, 61% at the last, at most 61%." in (
+        section
+    )
+    assert "Usage limits: none reported." in llm_section(change(healthy(), calls=[call()]))
 
 
 def test_counts_minutes_per_place_and_talking() -> None:
@@ -358,6 +392,35 @@ def test_counts_minutes_per_place_and_talking() -> None:
     )
     assert "| ada | · | 60 | · | · | · | 2.0 | 2 |" in section
     assert "| **Most at once** |  | 1 | 1 | 1 | | | |" in section
+
+
+def test_leaves_out_conversations_nobody_spoke_in() -> None:
+    run = healthy()
+    empty = Conversation(id="empty", participants=["ed", "fi"], started=at(50), ended=at(50))
+    with_empty = change(run, conversations=[*run.conversations, empty])
+
+    assert conversation_section(with_empty)[2] == conversation_section(run)[2] + (
+        " Left out: 1 that ended before a line was said."
+    )
+    assert conversation_section(with_empty)[3:] == conversation_section(run)[3:]
+    assert place_section(with_empty) == place_section(run)
+    assert problems(with_empty) == []
+
+
+def test_lists_tied_lines_and_phrases_in_order() -> None:
+    script = ("Zulu yankee xray whiskey.", "Alpha bravo charlie delta.")
+    run = change(healthy(), conversations=[talk("ada", "bo", *script, start=i) for i in range(2)])
+
+    section = repetition_section(run)
+
+    assert section[section.index("Lines said more than once:") + 2 :][:2] == [
+        '- 2× "alpha bravo charlie delta"',
+        '- 2× "zulu yankee xray whiskey"',
+    ]
+    assert section[-2:] == [
+        '- "alpha bravo charlie delta": 2 of 2',
+        '- "zulu yankee xray whiskey": 2 of 2',
+    ]
 
 
 def test_says_when_the_provider_was_fake() -> None:

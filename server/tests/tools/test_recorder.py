@@ -2,6 +2,7 @@ import logging
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from starlette.applications import Starlette
@@ -13,7 +14,7 @@ from simile.memory import memory_of
 from simile.schema import Relationship
 from simile.sim import Clock, FakeWallClock, World
 from simile.social import meet
-from simile.tools import load_run, report
+from simile.tools import RecordStore, load_run, report
 from simile.tools.lifespan import RECORD_ENV
 
 START = datetime(2026, 1, 1, 9, tzinfo=UTC)
@@ -104,6 +105,27 @@ async def test_each_run_is_recorded_separately(database: Path) -> None:
     assert latest.id == 2
     assert latest.started == START + timedelta(minutes=10)
     assert len(latest.samples) == 20 * len(latest.npcs)
+
+
+@pytest.mark.anyio
+@pytest.mark.usefixtures("recording")
+async def test_a_failed_write_is_logged_and_retried_without_stopping_the_sim(
+    database: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    add = RecordStore.add
+    failures = iter([True, True])
+
+    def locked(store: RecordStore, run: int, **rows: Any) -> None:
+        if rows.get("samples") and next(failures, False):
+            raise sqlite3.OperationalError("database is locked")
+        add(store, run, **rows)
+
+    monkeypatch.setattr(RecordStore, "add", locked)
+    with caplog.at_level(logging.ERROR, logger="simile.tools.recorder"):
+        await run_village(timedelta(minutes=5))
+
+    assert caplog.text.count("Couldn't record run 1") == 2
+    assert len(load_run(database).samples) == 5 * len(load_run(database).npcs)
 
 
 @pytest.mark.anyio
