@@ -34,7 +34,10 @@ class ConversationConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     max_conversations: int = Field(
-        default=2, ge=0, description="Conversations going on at once. Requests beyond it decline."
+        default=2,
+        ge=0,
+        description="Conversations between NPCs going on at once. Requests beyond it decline. "
+        "The player's conversation doesn't count; I1's max_voiced caps what's voiced.",
     )
 
     accept_base: float = Field(default=0.2, description="Base score for accepting a request.")

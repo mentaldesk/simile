@@ -4,7 +4,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
-from simile.schema import CoreValue, Id, Location, LocationKind, Relationship
+from simile.schema import PLAYER_ID, CoreValue, Id, Location, LocationKind, Relationship
 from simile.world.map import WALKING_SPEED, TownMap
 from simile.world.movement import Point, inside
 
@@ -142,7 +142,7 @@ def score(
     total = config.base.get(activity, 0.0)
     total += sum(w * (values[v] - 0.5) for v, w in config.value_weights.get(activity, {}).items())
     total += sum(w * needs[n] for n, w in config.need_weights.get(activity, {}).items())
-    on_offer = situation.news if activity is Activity.NEWS else 1.0
+    on_offer = offered(goal, situation, config)
     total += sum(
         urgency.weight
         * relief(needs[need], on_offer * promised(activity, need, config), urgency.power)
@@ -165,6 +165,16 @@ def score(
         if activity is not Activity.HOME:
             total += company(location.id, situation, config)
     return total
+
+
+def offered(goal: Goal, situation: Situation, config: BehaviourConfig) -> float:
+    """The share of a typical stay's relief `goal` holds out: a terminal's by how interesting the
+    news is, and the player's by `player_relief`."""
+    if goal.activity is Activity.NEWS:
+        return situation.news
+    if goal == Goal(Activity.SEEK, PLAYER_ID):
+        return config.player_relief
+    return 1.0
 
 
 def company(location_id: str, situation: Situation, config: BehaviourConfig) -> float:

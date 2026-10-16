@@ -171,6 +171,12 @@ class BehaviourConfig(BaseModel):
     talk_minutes: float = Field(
         default=3.0, gt=0, description="How long seeking someone out promises to talk for."
     )
+    player_relief: float = Field(
+        default=0.5,
+        ge=0,
+        description="How much of a talk's social relief talking with the player brings, and "
+        "seeking them out promises, so residents still look for each other.",
+    )
     daily: dict[Activity, Curve] = Field(
         default=DAILY,
         description="Score by time of day: (hour, bonus) points, linear between them and 0 "

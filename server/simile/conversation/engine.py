@@ -122,23 +122,30 @@ class ConversationEngine:
             return self.player_request is not None and self.player_request(a, b)
         if self.talking(a) or self.talking(b):
             return False
-        if len(self._talks) >= self.config.max_conversations:
-            self._log("%s and %s can't talk: %d conversations going on", a, b, len(self._talks))
-            return False
-        target = self.behaviour.npcs[b]
-        score = acceptance(
-            target.values,
-            self._relationship(b, a),
-            self.behaviour.goal(b),
-            self.behaviour.needs(b)[Need.SOCIAL],
-            self.config,
+        going = sum(
+            PLAYER_ID not in talk.conversation.participants for talk in self._talks.values()
         )
+        if going >= self.config.max_conversations:
+            self._log("%s and %s can't talk: %d conversations going on", a, b, going)
+            return False
+        score = self.accept_score(a, b)
         accepted = accepts(score, self.rng, self.config)
         verdict = "accepted" if accepted else "declined"
         self._log("%s asked %s to talk: %s (score %.2f)", a, b, verdict, score)
         if accepted:
             self.start(a, b)
         return accepted
+
+    def accept_score(self, a: Id, b: Id) -> float:
+        """How keen `b` is to talk if `a` walks up to them now: positive accepts at
+        `accept_temperature` 0."""
+        return acceptance(
+            self.behaviour.npcs[b].values,
+            self._relationship(b, a),
+            self.behaviour.goal(b),
+            self.behaviour.needs(b)[Need.SOCIAL],
+            self.config,
+        )
 
     def start(self, a: Id, b: Id) -> Conversation:
         """Start a conversation that `a` opens, whatever `b` thinks of it."""
