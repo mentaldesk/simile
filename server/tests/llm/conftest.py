@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-from simile.llm.claude_code import API_CREDENTIALS
+from simile.llm.claude_code import unwanted_variables
 
 FAKE_CLI = """#!{python}
 import json
@@ -141,9 +141,9 @@ FIRST_PARTY = {"apiProvider": "firstParty", "subscriptionType": "Claude Max"}
 
 
 @pytest.fixture(autouse=True)
-def no_api_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in API_CREDENTIALS:
-        monkeypatch.delenv(name, raising=False)
+def no_unwanted_variables(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in unwanted_variables():
+        monkeypatch.delenv(name)
 
 
 @pytest.fixture
