@@ -12,7 +12,7 @@ from simile.reflection.extraction import (
     relationship,
 )
 from simile.schema import Flag, Id, InteractionEvent, Memory, MemoryKind, Relationship
-from simile.social import apply_event, open_flag, resolve_flag
+from simile.social import apply_events, open_flag, resolve_flag
 
 
 @dataclass
@@ -58,7 +58,7 @@ def outcome(
             events = _events(
                 npc, other, [deed for by, deed in deeds if by == other], context, config
             )
-            result.after[(npc, other)] = _feel(result.after[(npc, other)], events, context)
+            result.after[(npc, other)] = apply_events(result.after[(npc, other)], events, now)
             result.events += events
         if reflection is not None and reflection.summary.strip():
             result.memories.append(_memory(npc, reflection, context, config))
@@ -127,24 +127,6 @@ def _events(
         )
         for deed in deeds
     ]
-
-
-def _feel(rel: Relationship, events: list[InteractionEvent], context: Context) -> Relationship:
-    """Events apply at the pair's familiarity going in, which then grows once."""
-    familiarity = rel.familiarity
-    for event in events:
-        rel = apply_event(rel, event, context.now).model_copy(update={"familiarity": familiarity})
-    contact = InteractionEvent(
-        actor=rel.about,
-        target=rel.owner,
-        action="talked",
-        aspects=[],
-        valence=0,
-        magnitude=0,
-        timestamp=context.now,
-        conversation_id=context.conversation.id,
-    )
-    return apply_event(rel, contact, context.now)
 
 
 def _memory(npc: Id, reflection: Reflection, context: Context, config: ReflectionConfig) -> Memory:

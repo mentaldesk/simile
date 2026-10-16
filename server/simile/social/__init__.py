@@ -2,6 +2,7 @@ from simile.social.config import DEFAULT_CONFIG, RelationshipConfig
 from simile.social.describe import describe
 from simile.social.relationship import (
     apply_event,
+    apply_events,
     as_of,
     decay,
     meet,
@@ -13,6 +14,7 @@ __all__ = [
     "DEFAULT_CONFIG",
     "RelationshipConfig",
     "apply_event",
+    "apply_events",
     "as_of",
     "decay",
     "describe",

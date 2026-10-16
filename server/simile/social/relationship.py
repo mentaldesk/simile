@@ -1,7 +1,11 @@
+import math
+from collections.abc import Iterable
 from datetime import datetime, timedelta
 
 from simile.schema import Aspect, Baseline, Flag, InteractionEvent, Npc, Relationship
 from simile.social.config import DEFAULT_CONFIG, RelationshipConfig
+
+NEUTRAL = 0.5
 
 
 def meet(owner: Npc, about: str, *, config: RelationshipConfig = DEFAULT_CONFIG) -> Relationship:
@@ -32,15 +36,35 @@ def apply_event(
     config: RelationshipConfig = DEFAULT_CONFIG,
 ) -> Relationship:
     """How `rel.owner` feels about `rel.about` after `event`, something `rel.about` did to them."""
-    if (event.actor, event.target) != (rel.about, rel.owner):
-        raise ValueError(
-            f"{event.actor}'s event for {event.target} doesn't change how {rel.owner} "
-            f"feels about {rel.about}"
-        )
-    bias = config.negativity_bias if event.valence < 0 else 1.0
-    dampening = max(config.dampening_floor, 1 - rel.familiarity)
-    shift = event.valence * event.magnitude * config.max_shift * bias * dampening
-    scores = {aspect.value: _clamp(getattr(rel, aspect.value) + shift) for aspect in event.aspects}
+    return apply_events(rel, [event], now, config=config)
+
+
+def apply_events(
+    rel: Relationship,
+    events: Iterable[InteractionEvent],
+    now: datetime,
+    *,
+    config: RelationshipConfig = DEFAULT_CONFIG,
+) -> Relationship:
+    """How `rel.owner` feels about `rel.about` after one encounter, such as a conversation, in
+    which `rel.about` did `events` to them. The events add up per aspect and move it once, so
+    splitting one in two changes nothing. Familiarity grows once, events or not."""
+    shifts: dict[Aspect, float] = {}
+    for event in events:
+        if (event.actor, event.target) != (rel.about, rel.owner):
+            raise ValueError(
+                f"{event.actor}'s event for {event.target} doesn't change how {rel.owner} "
+                f"feels about {rel.about}"
+            )
+        bias = config.negativity_bias if event.valence < 0 else 1.0
+        for aspect in set(event.aspects):
+            shifts[aspect] = shifts.get(aspect, 0.0) + (
+                event.valence * event.magnitude * config.max_shift * bias
+            )
+    scores = {
+        aspect.value: _moved(getattr(rel, aspect.value), shift, config.resistance_step)
+        for aspect, shift in shifts.items()
+    }
     familiarity = rel.familiarity + config.familiarity_gain * (1 - rel.familiarity)
     last = now if rel.last_interaction is None else max(rel.last_interaction, now)
     return _with(rel, **scores, familiarity=_clamp(familiarity), last_interaction=last)
@@ -83,6 +107,22 @@ def resolve_flag(rel: Relationship, flag_id: str, when: datetime) -> Relationshi
         for flag in rel.flags
     ]
     return _with(rel, flags=flags)
+
+
+def _moved(score: float, shift: float, step: float) -> float:
+    """`score` after a shift that would move a neutral score by `shift`. Toward neutral it moves
+    the whole way. Away from it, 10 ** (distance / step) grows as much as it would from neutral."""
+    if not shift:
+        return score
+    offset = score - NEUTRAL
+    if offset * shift < 0:
+        if abs(shift) <= abs(offset):
+            return score + shift
+        score, shift, offset = NEUTRAL, shift + offset, 0.0
+    # A shift of 1 already crosses the whole scale, and much more would overflow.
+    distance, push = abs(offset) / step, min(abs(shift), 1.0) / step
+    further = step * math.log10(10**distance + 10**push - 1) - abs(offset)
+    return _clamp(score + math.copysign(max(further, 0.0), shift))
 
 
 def _baseline(owner: Npc, aspect: Aspect, config: RelationshipConfig) -> float:

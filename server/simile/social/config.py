@@ -43,24 +43,25 @@ class RelationshipConfig(BaseModel):
         default=0.3,
         gt=0,
         le=1,
-        description="How far a positive event of full valence and magnitude moves a stranger's "
-        "score.",
+        description="How far a positive event of full valence and magnitude moves a neutral "
+        "score. An encounter's events add up per aspect before they move it.",
     )
     negativity_bias: float = Field(
         default=2.5, ge=1, description="How many times more a negative event weighs."
     )
-    dampening_floor: float = Field(
-        default=0.25,
-        ge=0,
-        le=1,
-        description="The share of an event's effect that still lands at full familiarity, so old "
-        "friends can still be moved.",
+    resistance_step: float = Field(
+        default=0.15,
+        ge=0.05,
+        le=0.5,
+        description="Each this much further from neutral a score is, moving it further away is "
+        "ten times harder: the encounter that takes 0.5 to 0.65 has to happen 10 more times to "
+        "reach 0.8 and 100 more to reach 0.95. Moving toward neutral isn't resisted.",
     )
     familiarity_gain: float = Field(
         default=0.06,
         ge=0,
         le=1,
-        description="The share of the gap to full familiarity that any event closes.",
+        description="The share of the gap to full familiarity that each encounter closes.",
     )
     like_half_life: timedelta = Field(
         default=timedelta(days=2),
