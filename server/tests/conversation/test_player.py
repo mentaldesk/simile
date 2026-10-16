@@ -12,6 +12,7 @@ from simile.conversation import (
     ConversationEngine,
     Facing,
     LineDrafted,
+    player,
     system_prompt,
 )
 from simile.conversation.player import (
@@ -48,6 +49,7 @@ from simile.sim import (
     World,
 )
 from simile.social import describe, meet
+from simile.voice import SpeakingRate
 from simile.world import Movement, Point
 from simile.world.map import load_map
 
@@ -194,6 +196,50 @@ async def test_the_player_talks_and_the_npc_replies_a_sentence_at_a_time() -> No
     assert live.lines == village.spoken
     assert village.engine.talking(PLAYER_ID) and village.engine.talking("ana")
     assert village.engine.state("ana")["talking_to"] == PLAYER_ID
+
+
+async def test_a_measured_voice_paces_the_npcs_sentences(monkeypatch: pytest.MonkeyPatch) -> None:
+    rate = SpeakingRate(base_seconds=0.7, seconds_per_word=0.27)
+    monkeypatch.setattr(player, "speaking_rate", lambda npc: rate if npc == "ana" else None)
+    village = Village()
+
+    heard = village.players.say("Hi, I'm new here.", "ana")
+    await village.run()
+
+    assert heard is not None and heard.duration == 1.2
+    _, first, second = village.spoken
+    assert (first.duration, second.duration) == (1.78, 1.24)
+    assert second.timestamp == first.timestamp + timedelta(seconds=1.78)
+
+
+async def test_voiced_sentences_last_as_long_as_their_audio() -> None:
+    village = Village(["One. Two. Three."])
+    made: dict[int, float] = {}
+    village.engine.voiced_duration = lambda line: made.get(line.id)
+    village.world.bus.subscribe(LineDrafted, lambda event: made.setdefault(event.line.id, 2.5))
+    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 3.0))
+
+    village.players.say("Count for me.", "ana")
+    await village.run(seconds=10)
+
+    _, one, two, three = village.spoken
+    assert (one.duration, two.duration, three.duration) == (2.5, 2.5, 2.5)
+    assert two.timestamp == one.timestamp + timedelta(seconds=2.5)
+    assert three.timestamp == two.timestamp + timedelta(seconds=2.5)
+
+
+async def test_the_next_sentence_waits_for_audio_that_runs_longer_than_its_line() -> None:
+    village = Village(["One. Two."])
+    made: dict[int, float] = {}
+    village.engine.voiced_duration = lambda line: made.get(line.id)
+    village.world.bus.subscribe(LineSpoken, lambda event: made.setdefault(event.line.id, 3.0))
+
+    village.players.say("Count for me.", "ana")
+    await village.run(seconds=10)
+
+    _, one, two = village.spoken
+    assert one.duration == 1.0
+    assert two.timestamp == one.timestamp + timedelta(seconds=3.0)
 
 
 async def test_the_first_sentence_is_out_before_the_rest_is_written() -> None:

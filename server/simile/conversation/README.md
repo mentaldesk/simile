@@ -81,9 +81,10 @@ resident towards their social need.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
-  said. The player's lines are spoken when they arrive and have no `LineDrafted`. If the player
-  says something while the NPC is still writing or speaking, the NPC stops: the rest of that reply
-  is dropped and they answer the new line.
+  said. Sentences are paced as in *Pacing* above, back to back without `turn_gap`. The player's
+  lines are spoken when they arrive and have no `LineDrafted`. If the player says something while
+  the NPC is still writing or speaking, the NPC stops: the rest of that reply is dropped and they
+  answer the new line.
 - **News the player mentions.** B4's `mentioned` matches the player's lines since the NPC last
   spoke against each article the NPC read: its title, tags and summary from the news store (looked
   up through `news_of` when needed, or just the title quoted in the memory if it's gone) and the
