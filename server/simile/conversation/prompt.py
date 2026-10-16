@@ -66,6 +66,7 @@ LEAVING = re.compile(
     re.IGNORECASE,
 )
 SENTENCE_BREAK = re.compile(r"(?<=[.!?…])\s+")
+ABBREVIATION = re.compile(r"\b(?:mr|mrs|ms|dr|st|prof|vs|etc|e\.g|i\.e)\.$", re.IGNORECASE)
 OPENING_WORDS = 3
 OPENINGS = 4
 
@@ -178,7 +179,11 @@ def turn_prompt(
     openings = [opening(line.text) for line in lines if line.speaker == speaker][-OPENINGS:]
     if openings:
         listed = ", ".join(f'"{words}..."' for words in openings)
-        parts.append(f"Your lines so far began {listed}. Begin this one another way.")
+        parts.append(
+            f"Your lines so far began {listed}. Begin this one another way, and don't greet "
+            f"{other} again."
+        )
+    parts.append(f"Say one or two sentences, at most {config.max_words} words.")
     return "\n\n".join([*parts, CUES[cue].format(other=other)])
 
 
@@ -195,9 +200,14 @@ def takes_leave(text: str) -> bool:
     return LEAVING.search(last) is not None
 
 
-def parse_reply(text: str, names: Sequence[str] = (), others: Sequence[str] = ()) -> Draft:
+def parse_reply(
+    text: str,
+    names: Sequence[str] = (),
+    others: Sequence[str] = (),
+    config: ConversationConfig = DEFAULT_CONFIG,
+) -> Draft:
     """The speaker's line and its values from a reply, without the tag, labels, stage directions
-    or any turn written for `others`."""
+    or any turn written for `others`, and without sentences that start past `max_words`."""
     values: tuple[CoreValue, ...] = ()
     for match in TAG.finditer(text):
         values = _values(match.group(1) or match.group(2) or "")
@@ -213,12 +223,22 @@ def parse_reply(text: str, names: Sequence[str] = (), others: Sequence[str] = ()
             break
     if len(spoken) >= 2 and QUOTES.get(spoken[0]) == spoken[-1]:
         spoken = spoken[1:-1].strip()
-    return Draft(spoken, values)
+    return Draft(_trim(spoken, config.max_words), values)
 
 
 def duration(text: str, config: ConversationConfig = DEFAULT_CONFIG) -> float:
     """Seconds to say `text` aloud at the configured pace."""
     return max(config.min_line_seconds, len(text.split()) * 60 / config.words_per_minute)
+
+
+def _trim(text: str, max_words: int) -> str:
+    """`text` without the sentences that start after its first `max_words` words."""
+    for match in SENTENCE_BREAK.finditer(text):
+        if len(text[: match.start()].split()) >= max_words and not ABBREVIATION.search(
+            text, 0, match.start()
+        ):
+            return text[: match.start()]
+    return text
 
 
 def _values(listed: str) -> tuple[CoreValue, ...]:
