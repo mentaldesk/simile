@@ -447,7 +447,7 @@ async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_convers
 
     village.walk_to("ben", 1)
     village.players.say("Hi Ben.", "ben")
-    await village.run(1)
+    await village.run(6)
 
     first, second = village.of(ConversationStarted)
     [ended] = village.ended
@@ -466,6 +466,8 @@ async def test_talking_to_someone_else_gets_a_goodbye_and_ends_the_first_convers
     assert order == [first, LineSpoken(goodbye), ended, second]
     assert second.conversation.participants == [PLAYER_ID, "ben"]
     assert village.said(PLAYER_ID) == ["Hi Ana.", "Hi Ben."]
+    reply = next(line for line in village.spoken if line.speaker == "ben")
+    assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
 async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
@@ -476,7 +478,7 @@ async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
 
     village.walk_to("ben", 1)
     village.players.say("Hi Ben.", "ben")
-    await village.run(1)
+    await village.run(6)
 
     [ended] = village.ended
     assert [line.speaker for line in ended.conversation.lines] == [PLAYER_ID, "ana"]
