@@ -167,6 +167,7 @@ def test_a_turn_is_the_background_the_transcript_and_the_cue() -> None:
     assert prompt == (
         "BACKGROUND\n\n"
         "The conversation so far:\nKofi: Morning!\nHenrietta: Hm. Morning.\n\n"
+        "Say one or two sentences, at most 40 words.\n\n"
         "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
         "goodbye yet."
     )
@@ -180,11 +181,18 @@ def test_a_speaker_sees_how_their_latest_lines_began() -> None:
 
     assert prompt.endswith(
         'Your lines so far began "Ha, mostly paint...", "Ha! Fair enough...", "Go on, then...", '
-        '"Ha, a wall...". Begin this one another way.\n\n'
+        '"Ha, a wall...". Begin this one another way, and don\'t greet Henrietta again.\n\n'
+        "Say one or two sentences, at most 40 words.\n\n"
         "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
         "goodbye yet."
     )
     assert "began" not in turn_prompt("B", lines, NAMES, Cue.REPLY, "Kofi", speaker="henrietta")
+
+
+def test_a_turn_asks_for_at_most_max_words() -> None:
+    prompt = turn_prompt("B", [], NAMES, Cue.OPEN, "Kofi", ConversationConfig(max_words=25))
+
+    assert "Say one or two sentences, at most 25 words." in prompt
 
 
 def test_a_long_transcript_keeps_the_latest_lines() -> None:
@@ -317,6 +325,29 @@ def test_parsing_a_reply(reply: str, draft: Draft) -> None:
     speaker, other = ["Kofi", "Kofi Lindqvist-Mensah"], ["Henrietta", "Henrietta Okonkwo-Bell"]
 
     assert parse_reply(reply, speaker, other) == draft
+
+
+LONG = (
+    "Kia orana, Marguerite. I read that Mars piece in Scientific American this morning, and I "
+    "keep thinking about the families on my list who can't make rent. Mrs. Puna down the road "
+    "has had three notices this year. Right, so, who pays for the domes?"
+)
+
+
+def test_sentences_that_start_past_max_words_are_dropped() -> None:
+    draft = parse_reply(f"{LONG} The council won't say.\n[values: justice, compassion]")
+
+    assert draft == Draft(LONG, (CoreValue.JUSTICE, CoreValue.COMPASSION))
+
+
+def test_the_sentence_that_crosses_max_words_is_kept() -> None:
+    assert parse_reply(LONG, config=ConversationConfig(max_words=40)).text == LONG
+
+
+def test_a_trim_never_ends_on_an_abbreviation() -> None:
+    draft = parse_reply(LONG, config=ConversationConfig(max_words=28))
+
+    assert draft.text == LONG.removesuffix(" Right, so, who pays for the domes?")
 
 
 def test_a_line_takes_as_long_as_saying_it_at_200_words_a_minute() -> None:
