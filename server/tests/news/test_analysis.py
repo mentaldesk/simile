@@ -1,11 +1,12 @@
 import asyncio
 import json
 import logging
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from simile.llm import FakeProvider, LLMClient, LLMError, Model
+from simile.llm import FakeProvider, LLMClient, LLMError, Model, Request
 from simile.news import NewsStore
 from simile.news.analysis import NewsAnalyser, analyse
 from simile.news.config import NewsConfig
@@ -155,7 +156,61 @@ async def test_a_failed_call_stops_until_next_time(store: NewsStore) -> None:
 
     assert await analyser.analyse_pending() == []
     assert len(fake.requests) == 1
-    assert len(await analyser.analyse_pending()) == 2
+    assert [item.id for item in await analyser.analyse_pending()] == ["item-1", "item-0"]
+
+
+def fails_on(title: str) -> Callable[[Request], str]:
+    def answer(request: Request) -> str:
+        if request.messages[-1].content.startswith(title):
+            raise LLMError("the CLI crashed")
+        return reply()
+
+    return answer
+
+
+@pytest.mark.anyio
+async def test_an_article_that_keeps_failing_doesnt_hold_back_the_rest(
+    store: NewsStore, caplog: pytest.LogCaptureFixture
+) -> None:
+    store.add(article(n) for n in range(3))
+    fake = FakeProvider(default=fails_on("Article 0 "))
+    analyser, _ = analyser_for(store, fake)
+
+    first = await analyser.analyse_pending()
+    second = await analyser.analyse_pending()
+    third = await analyser.analyse_pending()
+
+    assert first == third == []
+    assert [item.id for item in second] == ["item-1", "item-2"]
+    assert [item.id for item in store.latest(analysed=False)] == ["item-0"]
+    failures = [r for r in caplog.records if r.getMessage().startswith("Couldn't analyse")]
+    assert [bool(r.exc_info) for r in failures] == [True, True, False]
+    assert failures[2].getMessage() == (
+        "Couldn't analyse 'Article 0' (2 failures in a row): the CLI crashed"
+    )
+
+
+@pytest.mark.anyio
+async def test_waits_longer_after_each_failure_in_a_row(store: NewsStore) -> None:
+    store.add([article(0)])
+    fake = FakeProvider([LLMError("usage limit reached")] * 3, default=reply())
+    analyser, _ = analyser_for(
+        store, fake, analyse_every=timedelta(minutes=1), analyse_backoff=timedelta(minutes=3)
+    )
+
+    async def check_after(seconds: float) -> bool:
+        analyser.tick(seconds)
+        task = analyser.task
+        if task is not None:
+            await task
+        return task is not None
+
+    assert await check_after(0)
+    assert [await check_after(60), await check_after(60)] == [False, True]
+    assert [await check_after(120), await check_after(60)] == [False, True]
+    assert [await check_after(120), await check_after(60)] == [False, True]
+    assert store.latest(analysed=True) != []
+    assert analyser.wait == 60
 
 
 @pytest.mark.anyio

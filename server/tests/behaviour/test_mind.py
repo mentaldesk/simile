@@ -344,6 +344,23 @@ def test_reads_the_news_at_a_terminal() -> None:
     assert location is not None and location.id.startswith("terminal")
 
 
+def test_reading_at_a_terminal_meets_curiosity_as_well_as_the_news() -> None:
+    readers: list[str] = []
+    village = Village([ANA], config=keen(A.NEWS))
+    village.behaviour.hooks.set(
+        read_news=lambda npc: readers.append(npc.id), news_interest=lambda npc: 1.0
+    )
+    village.run_until(lambda: bool(readers))
+    needs = village.behaviour.minds["ana"].needs
+    needs[Need.CURIOSITY] = needs[Need.NEWS] = 0.8
+
+    village.run(minutes=4)
+
+    assert village.behaviour.goal("ana").activity is A.NEWS
+    assert village.behaviour.needs("ana")[Need.CURIOSITY] < 0.65
+    assert village.behaviour.needs("ana")[Need.NEWS] < 0.6
+
+
 def test_nobody_goes_to_a_terminal_with_nothing_worth_reading() -> None:
     village = Village([ANA], config=keen(A.NEWS))
     asked: list[str] = []

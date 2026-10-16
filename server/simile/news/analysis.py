@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import Counter
 from collections.abc import Callable, Iterable
 
 from pydantic import BaseModel, Field, create_model
@@ -102,7 +103,8 @@ class NewsAnalyser:
     """Analyses each new article once, off the tick, for every NPC to share. Every
     `config.analyse_every` of sim time it looks for articles among the newest
     `config.candidates` that aren't analysed yet. One the provider can't analyse is remembered
-    and left unanalysed."""
+    and left unanalysed. While calls keep failing it checks less and less often, and tries the
+    articles that have failed least first."""
 
     def __init__(
         self,
@@ -114,14 +116,21 @@ class NewsAnalyser:
         self.store = store
         self.llm = llm
         self.config = config
-        self.interval = config.analyse_every.total_seconds()
-        self.since = self.interval
         self.task: asyncio.Task[list[NewsItem]] | None = None
         self.warned = False
+        self.failed: Counter[str] = Counter()
+        self.failing = 0
+        self.since = self.wait
+
+    @property
+    def wait(self) -> float:
+        """Sim seconds between checks: `analyse_every`, doubled for each failure in a row."""
+        every = self.config.analyse_every.total_seconds() * 2**self.failing
+        return min(every, self.config.analyse_backoff.total_seconds())
 
     def tick(self, dt: float) -> None:
         self.since += dt
-        if self.task is None and self.since >= self.interval:
+        if self.task is None and self.since >= self.wait:
             self.since = 0.0
             self.task = asyncio.create_task(self._run())
 
@@ -132,14 +141,16 @@ class NewsAnalyser:
             self.task = None
 
     async def analyse_pending(self) -> list[NewsItem]:
-        """Analyse the articles waiting, newest first and one at a time, and store each. Returns
-        them. Stops at the first call that fails, to try again next time."""
+        """Analyse the articles waiting, one at a time, and store each. Returns them. Those that
+        have failed least go first, newest first among them. Stops at the first call that fails,
+        to try again next time."""
         llm = self.llm()
         if llm is None:
             return []
         provider = llm.provider.name
+        waiting = self.store.unanalysed(self.config.candidates, provider)
         analysed = []
-        for item in self.store.unanalysed(self.config.candidates, provider):
+        for item in sorted(waiting, key=lambda item: self.failed[item.id]):
             try:
                 result = await analyse(llm, item, self.config)
             except StructuredOutputError:
@@ -148,9 +159,18 @@ class NewsAnalyser:
                 self.warned = True
                 logger.log(level, "%s couldn't analyse %r, so left it out", provider, item.title)
                 continue
-            except Exception:
-                logger.warning("Couldn't analyse %r yet", item.title, exc_info=True)
+            except Exception as error:
+                self.failed[item.id] += 1
+                self.failing += 1
+                logger.warning(
+                    "Couldn't analyse %r (%d failures in a row): %s",
+                    item.title,
+                    self.failing,
+                    error,
+                    exc_info=self.failing == 1,
+                )
                 break
+            self.failing = 0
             self.store.update(result)
             analysed.append(result)
             logger.info("Analysed %r: %s", item.title, ", ".join(result.tags))

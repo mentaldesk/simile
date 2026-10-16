@@ -24,6 +24,11 @@ class NewsConfig(BaseModel):
     analyse_every: timedelta = Field(
         default=timedelta(minutes=1), description="Sim time between checks for new articles."
     )
+    analyse_backoff: timedelta = Field(
+        default=timedelta(hours=1),
+        description="The longest wait between checks while analysis calls keep failing. The "
+        "wait doubles with each failure in a row.",
+    )
     value_decay: float = Field(
         default=2.0,
         ge=1,

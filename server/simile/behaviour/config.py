@@ -92,7 +92,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.SLEEP: {Need.REST: -0.25},
     A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1},
     A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.05},
-    A.NEWS: {Need.NEWS: -3.6},
+    A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6},
     A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.05},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
     A.MAKER_SPACE: {Need.CURIOSITY: -1.2},
