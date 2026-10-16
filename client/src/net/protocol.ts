@@ -4,6 +4,7 @@
 export type Message = ServerMessage | ClientMessage;
 export type ServerMessage =
   | SnapshotMessage
+  | ClockMessage
   | EntityMovedMessage
   | ConversationStartedMessage
   | ConversationEndedMessage
@@ -73,6 +74,20 @@ export interface Line {
    * Estimated seconds to say it aloud.
    */
   duration: number;
+}
+/**
+ * The sim clock, sent after the snapshot, when the speed changes and every sim minute.
+ */
+export interface ClockMessage {
+  type: 'clock';
+  /**
+   * Sim time.
+   */
+  time: string;
+  /**
+   * Sim seconds per real second.
+   */
+  speed: number;
 }
 export interface EntityMovedMessage {
   type: 'entity_moved';

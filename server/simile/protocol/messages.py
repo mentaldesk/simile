@@ -35,6 +35,14 @@ class SnapshotMessage(Model):
     conversations: list[Conversation] = Field(description="Only those still going on.")
 
 
+class ClockMessage(Model):
+    """The sim clock, sent after the snapshot, when the speed changes and every sim minute."""
+
+    type: Literal["clock"] = "clock"
+    time: Timestamp = Field(description="Sim time.")
+    speed: float = Field(gt=0, description="Sim seconds per real second.")
+
+
 class EntityMovedMessage(Model):
     type: Literal["entity_moved"] = "entity_moved"
     entity_id: Id
@@ -109,6 +117,7 @@ class WatchNpcMessage(Model):
 
 type ServerMessage = Annotated[
     SnapshotMessage
+    | ClockMessage
     | EntityMovedMessage
     | ConversationStartedMessage
     | ConversationEndedMessage

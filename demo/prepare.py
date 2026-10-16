@@ -1,5 +1,5 @@
-"""Build the demo village in a fresh database: the article, who has read it, everyone's
-acquaintance with everyone else, and where each resident is at the start.
+"""Build the demo village in a fresh database: the article, the rest of the news, who has read
+the article, everyone's acquaintance with everyone else, and where each resident is at the start.
 
     cd server && uv run python ../demo/prepare.py --db data/demo.db
 """
@@ -10,8 +10,11 @@ from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
+from pydantic import TypeAdapter
+
 from simile.memory import MemoryStore
 from simile.news.config import DEFAULT_CONFIG
+from simile.news.interest import interest
 from simile.news.reactions import Reaction, remember
 from simile.news.store import NewsStore
 from simile.npc import load_npcs
@@ -28,9 +31,11 @@ def prepare(db: Path) -> None:
     """Replace whatever is at `db` with the demo village."""
     scenario = json.loads((HERE / "scenario.json").read_text())
     article = NewsItem.model_validate_json((HERE / "article.json").read_text())
+    others = TypeAdapter(list[NewsItem]).validate_json((HERE / "news.json").read_text())
     world = SavedWorld.model_validate({"now": scenario["now"], "npcs": scenario["residents"]})
     npcs = {npc.id: npc for npc in load_npcs()}
     validate(world, npcs.keys(), scenario["read"].keys())
+    validate_news(article, others, [npc for npc in npcs.values() if npc.id not in scenario["read"]])
 
     memories = [news_memory(npcs[npc], article, read) for npc, read in scenario["read"].items()]
     relationships = [
@@ -45,7 +50,7 @@ def prepare(db: Path) -> None:
     for suffix in ("", "-journal", "-wal", "-shm"):
         Path(f"{db}{suffix}").unlink(missing_ok=True)
     with NewsStore(db) as news:
-        news.add([article])
+        news.add([article, *others])
     with MemoryStore(db) as memory, WorldStore(memory) as store:
         memory.add(*relationships, *memories)
         store.save(world)
@@ -70,6 +75,19 @@ def validate(world: SavedWorld, npcs: Iterable[str], readers: Iterable[str]) -> 
         if tile in tiles:
             raise SystemExit(f"{npc} and {tiles[tile]} both start on {tile}")
         tiles[tile] = npc
+
+
+def validate_news(article: NewsItem, others: list[NewsItem], unread: Iterable[Npc]) -> None:
+    """Every article is listed at the terminals and needs no analysis call, and whoever hasn't
+    read the article will read it before any of the others."""
+    if (total := len(others) + 1) > DEFAULT_CONFIG.articles:
+        raise SystemExit(f"A terminal lists {DEFAULT_CONFIG.articles} articles, not {total}")
+    if unanalysed := [item.title for item in others if not item.analysed]:
+        raise SystemExit(f"news.json has articles with no analysis: {unanalysed}")
+    for npc in unread:
+        rather = [item.title for item in others if interest(npc, item) >= interest(npc, article)]
+        if rather:
+            raise SystemExit(f"{npc.id} would read {rather} before {article.title!r}")
 
 
 def main() -> None:
