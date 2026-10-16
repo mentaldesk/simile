@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -13,6 +13,7 @@ from simile.protocol.messages import (
     Position,
     ServerMessage,
 )
+from simile.schema import Line
 from simile.sim import (
     ConversationEnded,
     ConversationStarted,
@@ -25,7 +26,13 @@ from simile.sim import (
 FORWARDED = (EntityMoved, ConversationStarted, LineSpoken, ConversationEnded)
 
 
-def message_for(event: Event, now: datetime) -> ServerMessage:
+def unvoiced(line: Line) -> bool:
+    return False
+
+
+def message_for(
+    event: Event, now: datetime, voiced: Callable[[Line], bool] = unvoiced
+) -> ServerMessage:
     match event:
         case EntityMoved():
             return EntityMovedMessage(
@@ -34,7 +41,7 @@ def message_for(event: Event, now: datetime) -> ServerMessage:
         case ConversationStarted():
             return ConversationStartedMessage(conversation=event.conversation)
         case LineSpoken():
-            return LineMessage(line=event.line, voiced=False)
+            return LineMessage(line=event.line, voiced=voiced(event.line))
         case ConversationEnded():
             return ConversationEndedMessage(
                 conversation_id=event.conversation.id, ended=event.conversation.ended or now
@@ -47,7 +54,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     world, hub = world_of(app), hub_of(app)
 
     def forward(event: Event) -> None:
-        hub.broadcast(message_for(event, world.clock.now))
+        voiced = getattr(app.state, "voiced", unvoiced)
+        hub.broadcast(message_for(event, world.clock.now, voiced))
 
     unsubscribes = [world.bus.subscribe(event_type, forward) for event_type in FORWARDED]
     yield
