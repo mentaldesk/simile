@@ -7,6 +7,7 @@ the ambient director off.
 
 import argparse
 import asyncio
+import os
 import time
 from datetime import timedelta
 
@@ -69,7 +70,7 @@ class ScriptHold:
         self._let_go([pair for pair in self.waiting if pair & talking])
 
     def tick(self, dt: float) -> None:
-        if self.clock.now >= self.until:
+        if self.waiting and self.clock.now >= self.until:
             self._let_go(list(self.waiting))
 
     def _let_go(self, pairs: list[frozenset[str]]) -> None:
@@ -91,13 +92,8 @@ def without_director(app: Starlette) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the demo village's sim server.")
     parser.add_argument("--port", type=int, default=8000)
-    parser.add_argument(
-        "--script-cap",
-        type=float,
-        default=SCRIPT_CAP.total_seconds(),
-        help="Sim seconds from the first step before the scripted pairs are let go regardless.",
-    )
     args = parser.parse_args()
+    cap = float(os.environ.get("SIMILE_DEMO_SCRIPT_CAP", SCRIPT_CAP.total_seconds()))
 
     wall = HeldWallClock()
     app = create_app()
@@ -109,7 +105,7 @@ def main() -> None:
         if not first:
             first.append(here)
         elif here != first[0] and not wall.released.is_set():
-            ScriptHold(app, timedelta(seconds=args.script_cap))
+            ScriptHold(app, timedelta(seconds=cap))
             without_director(app)
             wall.release()
             print("The player has taken a step, so the village starts.", flush=True)

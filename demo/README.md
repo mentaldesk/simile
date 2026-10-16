@@ -35,15 +35,16 @@ don't seek you out or greet you until their own conversation has started, and un
 nobody's choices are left to chance. Everyone takes their best option, and accepts a conversation
 whenever they're more for it than against. That's the first 7 seconds or so, and only Tobias,
 Desmond and Raymond decide in them. If a pair still hasn't talked 2 sim minutes after your first
-step, it lets go of everyone anyway (`serve.py --script-cap` sets that, in sim seconds). The
-[ambient director](../server/simile/ambient/README.md) is off for the whole demo, so nobody is sent
-over to talk near you and the later beats stay where the walk-through puts them.
+step, it lets go of everyone anyway (`SIMILE_DEMO_SCRIPT_CAP` below). The [ambient
+director](../server/simile/ambient/README.md) is off for the whole demo, so nobody is sent over to
+talk near you and the later beats stay where the walk-through puts them.
 
 | Variable | Default | |
 |---|---|---|
 | `DEMO_DB` | `server/data/demo.db` | The database to rebuild. Your normal village in `simile.db` is never touched. |
 | `SIMILE_PORT`, `CLIENT_PORT` | 8000, 5173 | Ports, to run it next to `make dev`. |
 | `SIMILE_VOICE` | 1 | 0 runs it unvoiced. |
+| `SIMILE_DEMO_SCRIPT_CAP` | 120 | Sim seconds from your first step before the scripted pairs are let go, whether or not they've talked. |
 
 `SIMILE_NEWS` is turned off, so the Mars article is the only news and nothing is fetched or
 analysed.

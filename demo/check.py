@@ -15,11 +15,12 @@ import random
 import statistics
 import tempfile
 from collections import deque
-from datetime import datetime, timedelta
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from types import SimpleNamespace
 
 from prepare import HERE, prepare
+from pydantic import BaseModel
 from serve import SCRIPTED, ScriptHold, without_director
 from starlette.applications import Starlette
 
@@ -136,56 +137,92 @@ async def opening(
     return seen
 
 
+START = datetime(2026, 10, 16, 10, 30, tzinfo=UTC)
 CAP = timedelta(seconds=60)
-"""The hold's cap in `check_cap`, where the pairs that talk start 10 sim seconds in."""
+"""The hold's cap in `check_cap`."""
+TALK = timedelta(seconds=10)
+TICK = timedelta(seconds=STEP)
+USUAL = BehaviourConfig(), ConversationConfig()
+HOLDING = BehaviourConfig(temperature=0.0), ConversationConfig(accept_temperature=0.0)
+
+
+class StandIn:
+    """Behaviour or the conversation engine as far as the hold sees them, keeping every config."""
+
+    def __init__(self, config: BaseModel) -> None:
+        self.configs = [config]
+        self.leave_player_alone: set[str] = set()
+
+    @property
+    def config(self) -> BaseModel:
+        return self.configs[-1]
+
+    @config.setter
+    def config(self, config: BaseModel) -> None:
+        self.configs.append(config)
+
+
+class Talk:
+    """Starts each pair's conversation when it's due, ticking before the hold as the engine does."""
+
+    def __init__(self, world: World, when: dict[frozenset[str], timedelta]) -> None:
+        self.world, self.when = world, when
+
+    def tick(self, dt: float) -> None:
+        now = self.world.clock.now
+        publish(self.world, [pair for pair, at in self.when.items() if now == START + at])
+
+
+def publish(world: World, pairs: Iterable[frozenset[str]]) -> None:
+    for pair in pairs:
+        now = world.clock.now
+        conversation = Conversation(id=f"{pair}", participants=sorted(pair), started=now)
+        world.bus.publish(ConversationStarted(conversation))
 
 
 def check_cap() -> None:
-    """Whether none, one or both scripted pairs talk before the cap, the hold lets go of each pair
-    as it starts talking and of everything at the cap, and leaves everything be after that."""
-    for talk in ((), SCRIPTED[:1], SCRIPTED):
-        check_cap_after(talk)
+    """Whether none, one or both scripted pairs talk before the cap, or the last talks on the
+    cap's tick, the hold lets go of each pair as it starts talking and of everything at the cap,
+    once, and leaves everything be after that."""
+    first, second = SCRIPTED
+    for when in ({}, {first: TALK}, {first: TALK, second: TALK}, {first: TALK, second: CAP}):
+        check_cap_with(when)
     print(f"The hold on the script lets go at its cap, {CAP.total_seconds():.0f} sim seconds here.")
 
 
-def check_cap_after(talk: tuple[frozenset[str], ...]) -> None:
-    world = World(Clock(), FakeWallClock())
-    behaviour = SimpleNamespace(config=BehaviourConfig(), leave_player_alone=set())
-    engine = SimpleNamespace(config=ConversationConfig())
+def check_cap_with(when: dict[frozenset[str], timedelta]) -> None:
+    world = World(Clock(START), FakeWallClock())
+    world.loop.register(Talk(world, when))
+    behaviour, engine = StandIn(USUAL[0]), StandIn(USUAL[1])
     app = Starlette()
     app.state.world, app.state.behaviour, app.state.conversation = world, behaviour, engine
-    usual, start = (behaviour.config, engine.config), world.clock.now
-
-    def run_to(at: timedelta) -> None:
-        while world.clock.now < start + at:
-            world.loop.tick()
-
-    def publish(pairs: tuple[frozenset[str], ...]) -> None:
-        for pair in pairs:
-            now = world.clock.now
-            conversation = Conversation(id=f"{pair}", participants=sorted(pair), started=now)
-            world.bus.publish(ConversationStarted(conversation))
-
-    def held() -> tuple[set[str], bool]:
-        return behaviour.leave_player_alone, (behaviour.config, engine.config) != usual
-
     ScriptHold(app, CAP)
-    assert held() == (set().union(*SCRIPTED), True), held()
-    run_to(timedelta(seconds=10))
-    publish(talk)
-    waiting = [pair for pair in SCRIPTED if pair not in talk]
-    holding = set().union(*waiting), bool(waiting)
-    assert held() == holding, (talk, held())
-    run_to(CAP - timedelta(seconds=STEP))
-    assert held() == holding, (talk, held())
-    run_to(CAP)
-    assert held() == (set(), False), (talk, held())
+
+    def holds() -> tuple[set[str], tuple[BaseModel, BaseModel]]:
+        return behaviour.leave_player_alone, (behaviour.config, engine.config)
+
+    def should_hold(at: timedelta) -> tuple[set[str], tuple[BaseModel, BaseModel]]:
+        waiting = [pair for pair in SCRIPTED if at < min(when.get(pair, CAP), CAP)]
+        return set().union(*waiting), HOLDING if waiting else USUAL
+
+    def history() -> tuple[set[str], list[float], list[float]]:
+        return (
+            behaviour.leave_player_alone,
+            [config.temperature for config in behaviour.configs],
+            [config.accept_temperature for config in engine.configs],
+        )
+
+    for at in (timedelta(0), TALK - TICK, TALK, CAP - TICK, CAP):
+        while world.clock.now < START + at:
+            world.loop.tick()
+        assert holds() == should_hold(at), (when, at, history())
     behaviour.leave_player_alone.add("tobias")
-    behaviour.config = behaviour.config.model_copy(update={"temperature": 0.5})
-    publish(SCRIPTED)
-    run_to(2 * CAP)
-    assert behaviour.leave_player_alone == {"tobias"}, (talk, held())
-    assert behaviour.config.temperature == 0.5, (talk, held())
+    publish(world, SCRIPTED)
+    for _ in range(round(CAP / TICK)):
+        world.loop.tick()
+    assert behaviour.leave_player_alone == {"tobias"}, (when, history())
+    assert behaviour.configs == [USUAL[0], HOLDING[0], USUAL[0]], (when, history())
+    assert engine.configs == [USUAL[1], HOLDING[1], USUAL[1]], (when, history())
 
 
 def main() -> None:
