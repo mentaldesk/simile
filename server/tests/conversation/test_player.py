@@ -599,6 +599,34 @@ async def test_the_new_resident_waits_for_the_goodbye_however_much_the_player_sa
     assert lines[len(said)].timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
+@pytest.mark.parametrize("then", ["cal", "ana"])
+async def test_turning_away_again_during_the_goodbye_waits_for_it_without_another(
+    then: str,
+) -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(0.3)
+    village.walk_to(then, 1)
+    village.players.say("Oh, hello!", then)
+    await village.run(6)
+
+    to_ana, to_ben = village.ended
+    assert [line.speaker for line in to_ben.conversation.lines] == [PLAYER_ID]
+    goodbye = to_ana.conversation.lines[-1]
+    goodbyes = {text.format(name=name) for text in TURNED_AWAY for name in ("Ben", "Cal", "Ana")}
+    assert [event.line for event in village.of(LineDrafted) if event.line.text in goodbyes] == [
+        goodbye
+    ]
+    talk = village.players.talk()
+    assert talk is not None and talk.npc == then
+    reply = talk.conversation.lines[1]
+    assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+
+
 async def test_turning_away_mid_reply_cuts_it_short_for_the_goodbye() -> None:
     hang = asyncio.Event()
     village = Village(provider=FakeProvider([["Well, ", hang], "Hello! [values: connection]"]))
