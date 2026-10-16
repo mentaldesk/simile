@@ -33,6 +33,16 @@
   color: #1d2b26;
 }
 
+.dialogue-bubble-thinking {
+  animation: dialogue-thinking 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes dialogue-thinking {
+  to {
+    color: #9a9a8a;
+  }
+}
+
 .dialogue-bubble::after {
   content: '';
   position: absolute;

@@ -25,6 +25,7 @@ class FakeProvider:
         self.replies: deque[Reply] = deque(replies)
         self.default = default
         self.requests: list[Request] = []
+        self.warmed: list[tuple[str, str]] = []
 
     async def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
         self.requests.append(request)
@@ -43,6 +44,9 @@ class FakeProvider:
             output_tokens=len(text.split()),
             model=f"fake-{request.model}",
         )
+
+    def warm(self, system: str, model: str) -> None:
+        self.warmed.append((system, model))
 
     async def _next_steps(self, request: Request) -> list[Step]:
         if self.replies:

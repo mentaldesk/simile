@@ -1,6 +1,7 @@
 import type { Dialogue } from './dialogue';
 
 const HINT_MS = 2500;
+const INVITATION_MS = 6000;
 
 export class ChatBox {
   private readonly form: HTMLFormElement;
@@ -46,7 +47,7 @@ export class ChatBox {
 
   open(target = this.findTarget()): void {
     if (!target) {
-      this.flash("Nobody's close enough to talk to.");
+      this.flash('Nobody nearby is free to talk.');
       return;
     }
     this.target = target;
@@ -72,10 +73,16 @@ export class ChatBox {
     }
   }
 
-  private flash(message: string): void {
+  invite(npcId: string): void {
+    if (this.isOpen) return;
+    const name = this.dialogue.nameOf(npcId);
+    this.flash(`${name} wants to talk. Press Enter to reply.`, INVITATION_MS);
+  }
+
+  private flash(message: string, ms = HINT_MS): void {
     this.hint.textContent = message;
     this.hint.hidden = false;
     clearTimeout(this.hideHint);
-    this.hideHint = setTimeout(() => (this.hint.hidden = true), HINT_MS);
+    this.hideHint = setTimeout(() => (this.hint.hidden = true), ms);
   }
 }

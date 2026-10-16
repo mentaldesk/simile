@@ -7,6 +7,7 @@ import {
   FULL_ALPHA_TILES,
   MIN_BUBBLE_SECONDS,
   SECONDS_PER_WORD,
+  THINKING_SECONDS,
 } from './tuning';
 
 describe('SpeechBubbles', () => {
@@ -51,6 +52,34 @@ describe('SpeechBubbles', () => {
     expect(bubbles.current().map(({ speaker, text }) => [speaker, text])).toEqual([
       ['mei', 'Second'],
     ]);
+  });
+});
+
+describe('thinking', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it('shows an ellipsis until the speaker says something or stops', () => {
+    const bubbles = new SpeechBubbles();
+    bubbles.think('mei');
+    expect(bubbles.current()).toMatchObject([{ speaker: 'mei', text: '…', thinking: true }]);
+
+    vi.advanceTimersByTime(1000);
+    bubbles.show('mei', 'Hello!', 2);
+    bubbles.stopThinking('mei');
+    expect(bubbles.current()).toMatchObject([{ speaker: 'mei', text: 'Hello!' }]);
+
+    bubbles.think('mei');
+    bubbles.stopThinking('mei');
+    expect(bubbles.current()).toEqual([]);
+  });
+
+  it('gives up after a while', () => {
+    const bubbles = new SpeechBubbles();
+    bubbles.think('mei');
+
+    vi.advanceTimersByTime((THINKING_SECONDS + BUBBLE_FADE_SECONDS) * 1000);
+    expect(bubbles.current()).toEqual([]);
   });
 });
 
