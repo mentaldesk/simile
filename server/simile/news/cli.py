@@ -44,7 +44,10 @@ def register(app: typer.Typer) -> None:
                         typer.echo(f"Couldn't fetch {label}: {result}", err=True)
                         failed = True
                     else:
-                        typer.echo(f"{len(result)} new items from {label}")
+                        typer.echo(
+                            f"{len(result.added)} new items from {label}, "
+                            f"{len(result.skipped)} skipped as too short to react to"
+                        )
                 typer.echo()
             if analyse:
                 waiting, analysed = asyncio.run(analyse_waiting(store))
