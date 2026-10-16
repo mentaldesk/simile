@@ -171,15 +171,16 @@ reach Claude.
   process's environment says) rather than the hour Claude Code picks on a subscription, because
   one-hour writes cost more. No prompt is sent twice, so the only reads are of a system prompt used
   again within minutes, like the speaker's next line in a conversation;
-- `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL` and every
-  `CLAUDE_CODE_USE_*` backend switch (Bedrock, Vertex, Foundry, Anthropic AWS and Google Cloud,
-  Mantle, gateway) are removed from this process's environment before every call;
+- `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_BASE_URL`, every `CLAUDE_CODE_USE_*`
+  backend switch (Bedrock, Vertex, Foundry, Anthropic AWS and Google Cloud, Mantle, gateway) and
+  every `DISABLE_PROMPT_CACHING` switch (all models, or one family like `_HAIKU`) are removed from
+  this process's environment before every call;
 - once connected, and before any prompt is sent, the account Claude Code reports must have the API
   provider `firstParty` and no API key source. That also catches a gateway forced by host policy;
 - no text is passed on until the turn's `init` frame reports the API key source `none`.
 
-`ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process: it drops the
-credentials and checks the account. `turn(sdk, request)` streams one turn. If the caller leaves
+`ClaudeCodeProvider.session(request)` is the only way to start a Claude Code process: it drops
+those variables and checks the account. `turn(sdk, request)` streams one turn. If the caller leaves
 early, it interrupts the turn and reads the rest of it, so the same session can take another turn.
 Warm processes and `SessionProvider` in `smoke.py` both build on these two.
 
