@@ -104,6 +104,25 @@ async def test_the_oldest_warm_process_makes_way(fake_cli: MakeFakeCli, tmp_path
     await provider.aclose()
 
 
+async def test_warming_again_saves_it_from_making_way(
+    fake_cli: MakeFakeCli, tmp_path: Path
+) -> None:
+    provider = provider_for(fake_cli(), tmp_path, max_warm=2)
+    provider.warm(SYSTEM, "haiku")
+    kept = provider._warm[(SYSTEM, "haiku")]
+    provider.warm(SYSTEM, "sonnet")
+    stale = provider._warm[(SYSTEM, "sonnet")]
+    provider.warm(SYSTEM, "haiku")
+
+    provider.warm(SYSTEM, "opus")
+
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(stale.task, 10)
+    assert list(provider._warm) == [(SYSTEM, "haiku"), (SYSTEM, "opus")]
+    assert provider._warm[(SYSTEM, "haiku")] is kept
+    await provider.aclose()
+
+
 async def test_closing_the_client_closes_warm_processes(
     fake_cli: MakeFakeCli, tmp_path: Path
 ) -> None:

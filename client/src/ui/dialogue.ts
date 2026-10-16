@@ -8,11 +8,10 @@ type Server = Pick<typeof server, 'on' | 'send'>;
 
 type Talks = Pick<Dialogue, 'partner' | 'busy'>;
 
-/** The NPC the player is talking with while they're in range, else the nearest free one. */
+/** The NPC the player is talking with until the server ends it, else the nearest free one. */
 export function chatTarget(view: WorldView, talks?: Talks): string | undefined {
   const partner = talks?.partner();
-  const partnerDistance = partner === undefined ? undefined : distanceFromPlayer(view, partner);
-  if (partnerDistance !== undefined && partnerDistance <= CHAT_RANGE_TILES) return partner;
+  if (partner !== undefined) return partner;
   let nearest: string | undefined;
   let nearestDistance = Infinity;
   for (const id of view.npcIds()) {

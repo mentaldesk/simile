@@ -66,6 +66,7 @@ def make_npc(id: str, home: str, **values: float) -> Npc:
 
 ANA = make_npc("ana", "house_1", connection=1.0, justice=1.0, tradition=0.0)
 BEN = make_npc("ben", "house_2", connection=0.0, independence=1.0, peace_of_mind=1.0)
+CAL = make_npc("cal", "house_3")
 
 
 def feeling(owner: Npc, about: str, **scores: float) -> Relationship:
@@ -447,6 +448,37 @@ async def test_talking_to_someone_else_ends_the_first_conversation() -> None:
     first, second = village.of(ConversationStarted)
     assert [event.conversation.id for event in village.ended] == [first.conversation.id]
     assert second.conversation.participants == [PLAYER_ID, "ben"]
+
+
+async def test_talking_to_someone_busy_keeps_the_conversation_going_on() -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+    village.engine.start("ben", "cal")
+
+    village.walk_to("ben", 1)
+    assert village.players.say("Hi Ben.", "ben") is None
+
+    assert village.ended == []
+    talk = village.players.talk()
+    assert talk is not None and talk.npc == "ana"
+
+
+async def test_the_npc_hears_the_player_until_the_conversation_ends() -> None:
+    village = Village()
+    village.players.say("Hi Ana.", "ana")
+    await village.run(4)
+
+    config = DEFAULT_PLAYER_CONFIG
+    village.walk_to("ana", (config.say_range + config.leave_range) / 2)
+    await village.run(0.2)
+    assert village.players.say("Can you hear me from here?", "ana") is not None
+    await village.run(4)
+
+    assert village.ended == []
+    assert len(village.script.requests) == 2
+    village.walk_to("ana", config.leave_range + 0.5)
+    assert village.players.say("And from here?", "ana") is None
 
 
 async def test_nobody_answers_from_too_far_or_while_busy() -> None:

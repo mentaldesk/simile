@@ -44,9 +44,10 @@ Starting Claude Code takes about half a second before a call can begin. `llm.war
 model=...)` starts a process for a later `stream` with that system prompt and model, so that call
 skips the startup. Each process takes one call and is then closed, so no history builds up. One
 that isn't used within `warm_for` (120 s, counted again from each `warm`) is closed, and so is the
-oldest when more than `max_warm` (2) are waiting. Warming costs no usage. `llm.aclose()`, which the
-lifespan calls on shutdown, closes those still waiting. A warm process that died is replaced by a
-fresh one before any text, and providers without `warm` (the fake ones) ignore it.
+least recently warmed when more than `max_warm` (2) are waiting. Warming costs no usage.
+`llm.aclose()`, which the lifespan calls on shutdown, closes those still waiting. A warm process
+that died is replaced by a fresh one before any text, and providers without `warm` (the fake ones)
+ignore it.
 
 ```python
 llm.warm(system=mara_persona, model="claude-haiku-4-5")  # when the player walks up to Mara

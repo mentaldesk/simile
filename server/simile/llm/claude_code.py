@@ -112,8 +112,9 @@ class ClaudeCodeProvider:
     def warm(self, system: str, model: str) -> None:
         """Start a process for one later call with this system prompt and model."""
         key = (system, model)
-        if warm := self._warm.get(key):
+        if warm := self._warm.pop(key, None):
             warm.keep()
+            self._warm[key] = warm
             return
         while self._warm and len(self._warm) >= self.max_warm:
             self._warm.pop(next(iter(self._warm))).close()
