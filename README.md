@@ -71,7 +71,7 @@ The town should have some houses, a coffee shop, a town square and a couple of o
 
 ### News / External Inputs
 
-The town also has a newspaper covering all the stories from https://feeds.feedburner.com/bigthink/main... the NPCs can, if they wish, check the news on public terminals that are available in the town. 
+The town also has a newspaper covering the stories from six feeds: [The Atlantic](https://www.theatlantic.com/feed/best-of/), [OpenAI](https://openai.com/news/rss.xml), [Scientific American](http://rss.sciam.com/ScientificAmerican-Global), [The Economist](https://www.economist.com/the-world-this-week/rss.xml), [RNZ Sport](https://www.rnz.co.nz/rss/sport.xml) and [IGN](https://feeds.feedburner.com/ign/pc-reviews)... the NPCs can, if they wish, check the news on public terminals that are available in the town, and remember where they read each story. 
 
 If they read something that triggers them (either it really aligns with one of their core values or it really rubs them the wrong way) they would be likely to bring that up in a conversation with one of the other NPCs or the player ("Hey did you hear the news?" kind of thing). Their likelinees to bring a news story up will depend on how recently they read the article and how strongly it made them feel (negative or positive). 
 
