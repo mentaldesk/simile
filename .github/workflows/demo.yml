@@ -1,0 +1,31 @@
+name: Demo
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  UV_LOCKED: "1"
+
+jobs:
+  check:
+    name: Demo check (fake LLM)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-server
+      - run: uv run ruff check --config pyproject.toml ../demo
+      - run: uv run ruff format --config pyproject.toml --check ../demo
+      - run: uv run python ../demo/serve.py --help
+      - run: uv run python ../demo/check.py --runs 3
