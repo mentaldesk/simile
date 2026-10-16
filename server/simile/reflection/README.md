@@ -25,10 +25,18 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
   down to it, so a conversation moves a pair at most as far as one full-strength event however
   many events the model lists. R1 adds them up per aspect and moves each score once, so R1's
   curve holds per conversation, not per event, and familiarity grows once per conversation,
-  events or not. New flags go on their owner's relationship with `open_flag`, at most `flags`
-  per owner. The refs in `flags_resolved` close those flags with `resolve_flag`, whoever owns
-  them, but not ones resolved meanwhile. Each summary becomes a `conversation` memory about the
-  others. Everything is stored with one R2 `add`.
+  events or not. Then flags, settled before any open: the refs in `flags_resolved` close those
+  flags with `resolve_flag`, whoever owns them, but not ones resolved meanwhile. After that, new
+  flags go on their owner's relationship with `open_flag`, at most `flags` per owner. Each
+  summary becomes a `conversation` memory about the others. Everything is stored with one R2
+  `add`.
+- **Broken promises.** The prompt asks for a broken promise to be resolved by its ref and opened
+  again as a `broken_promise`, and Haiku does both. If a reply only opens the `broken_promise`,
+  and its owner holds just one open `promise` about whoever broke it, that promise is closed
+  too. With more than one, B3 can't tell which was broken and leaves them open. A broken promise
+  always costs trust: if the owner's own events about whoever broke it don't already lower
+  trust, B3 adds one that does (`broken_promise_valence` and `broken_promise_magnitude`) to
+  those events before `apply_events`, so it counts towards `max_magnitude` like the rest.
 - **Failures.** A reply that doesn't match the schema after L1's retry (always, under
   `SIMILE_LLM=fake`) logs one warning and changes nothing. So does an `LLMError`.
 

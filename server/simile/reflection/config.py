@@ -33,6 +33,16 @@ class ReflectionConfig(BaseModel):
         "however many there are: a total magnitude above it is scaled down to it.",
     )
     flags: int = Field(default=3, ge=0, description="Most flags opened per NPC per conversation.")
+    broken_promise_valence: float = Field(
+        default=-0.4,
+        ge=-1,
+        lt=0,
+        description="Valence of the trust event a broken promise adds when its owner's own "
+        "events don't already lower their trust in whoever broke it.",
+    )
+    broken_promise_magnitude: float = Field(
+        default=0.4, gt=0, le=1, description="Magnitude of that trust event."
+    )
     topics: int = Field(default=3, ge=0, description="Most topics kept per memory.")
     player_name: str = Field(
         default="Visitor", min_length=1, description="What the player is called in the prompt."
