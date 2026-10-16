@@ -93,19 +93,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run the demo village's sim server.")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
-
-    wall = HeldWallClock()
-    world = World(wall=wall)
     seconds = os.environ.get("SIMILE_DEMO_SCRIPT_CAP", str(SCRIPT_CAP.total_seconds()))
     try:
         cap = timedelta(seconds=float(seconds))
-        world.clock.now + cap
     except (ValueError, OverflowError) as error:
         parser.error(
             f"SIMILE_DEMO_SCRIPT_CAP={seconds} isn't a usable number of sim seconds: {error}"
         )
+
+    wall = HeldWallClock()
     app = create_app()
-    app.state.world = world
+    app.state.world = World(wall=wall)
     first: list[tuple[float, float]] = []
 
     def on_move(message: PlayerMoveMessage) -> None:
