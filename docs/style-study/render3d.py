@@ -1281,7 +1281,7 @@ def render_lightmap(out: Path, timings: dict):
     white = bpy.data.materials.new("white")
     for obj in bpy.context.scene.objects:
         obj.visible_camera = obj.name.startswith("ground_")
-        obj.visible_shadow = not obj.name.startswith(GROUND_MARKINGS)
+        obj.hide_render = obj.name.startswith(GROUND_MARKINGS)
         for slot in obj.material_slots if obj.visible_camera else ():
             slot.material = white
     glowing = [
