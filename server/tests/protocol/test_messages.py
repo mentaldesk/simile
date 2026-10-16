@@ -7,6 +7,7 @@ from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from simile.protocol import (
+    ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
     EntityMovedMessage,
@@ -36,6 +37,7 @@ ARTICLE = NewsArticle(
     read=False,
 )
 
+CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
@@ -46,6 +48,7 @@ SERVER = [
     LineMessage(line=CONVERSATION.lines[-1], voiced=True),
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
     NewsMessage(articles=[ARTICLE, ARTICLE.model_copy(update={"news_id": "n2", "read": True})]),
+    CLOCK,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -82,6 +85,20 @@ def test_messages_carry_their_type() -> None:
         "entity_id": "mei",
         "position": {"x": 4.5, "y": 6.0},
     }
+
+
+def test_the_clock_carries_sim_time_and_speed() -> None:
+    assert json.loads(CLOCK.model_dump_json()) == {
+        "type": "clock",
+        "time": "2026-03-14T09:10:03Z",
+        "speed": 60.0,
+    }
+
+
+@pytest.mark.parametrize("speed", [0, -1])
+def test_the_clock_never_stops_or_runs_backwards(speed: float) -> None:
+    with pytest.raises(ValidationError):
+        ClockMessage(time=SNAPSHOT.time, speed=speed)
 
 
 def test_stopping_watching_sends_a_null_npc_id() -> None:

@@ -2,6 +2,7 @@ from simile.protocol.audio import SAMPLE_RATE, AudioChunk
 from simile.protocol.hub import Connection, Hub, hub_of
 from simile.protocol.messages import (
     ClientMessage,
+    ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
     Entity,
@@ -26,6 +27,7 @@ __all__ = [
     "SAMPLE_RATE",
     "AudioChunk",
     "ClientMessage",
+    "ClockMessage",
     "Connection",
     "ConversationEndedMessage",
     "ConversationStartedMessage",
