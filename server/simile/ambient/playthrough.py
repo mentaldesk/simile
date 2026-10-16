@@ -470,16 +470,18 @@ async def playthrough(
     prepare: Callable[[Starlette], None] | None = None,
     config: AmbientConfig = DEFAULT_CONFIG,
 ) -> Result:
-    """Run the village on the padded fake LLM for `warmup` sim minutes with nobody connected,
-    then for `minutes` with the scripted player, and return what they heard. `prepare` gets the
-    app between the two."""
+    """Run a village in memory on the padded fake LLM for `warmup` sim minutes with nobody
+    connected, then for `minutes` with the scripted player, and return what they heard. `prepare`
+    gets the app between the two."""
     from simile.app import create_app
     from simile.behaviour.mind import create_behaviour
     from simile.conversation import create_engine
+    from simile.memory import MemoryStore
 
     world = World(Clock(start), FakeWallClock())
     app = create_app()
     app.state.world, app.state.headless = world, True
+    app.state.memory = MemoryStore(":memory:")
     app.state.behaviour = create_behaviour(app, seed=seed)
     app.state.conversation = create_engine(app, seed=seed)
     rng = random.Random(seed)

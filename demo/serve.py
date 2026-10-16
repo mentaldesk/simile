@@ -1,5 +1,6 @@
 """`simile serve` for the demo, with the village held still until the player takes their first
-step, so the opening plays to someone listening, and then kept to the opener's script.
+step, so the opening plays to someone listening, and then kept to the opener's script, with
+the ambient director off.
 
     cd server && uv run --extra voice python ../demo/serve.py --port 8000
 """
@@ -11,6 +12,7 @@ import time
 import uvicorn
 from starlette.applications import Starlette
 
+from simile.ambient import director_of
 from simile.app import create_app
 from simile.behaviour import behaviour_of
 from simile.conversation import conversations_of
@@ -63,6 +65,12 @@ def keep_to_script(app: Starlette) -> None:
     unsubscribe = world_of(app).bus.subscribe(ConversationStarted, started)
 
 
+def without_director(app: Starlette) -> None:
+    """The ambient director nudges nobody, so the walk-through's later beats stay put."""
+    director = director_of(app)
+    director.config = director.config.model_copy(update={"enabled": False})
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run the demo village's sim server.")
     parser.add_argument("--port", type=int, default=8000)
@@ -79,6 +87,7 @@ def main() -> None:
             first.append(here)
         elif here != first[0] and not wall.released.is_set():
             keep_to_script(app)
+            without_director(app)
             wall.release()
             print("The player has taken a step, so the village starts.", flush=True)
 

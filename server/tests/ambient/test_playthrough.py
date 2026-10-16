@@ -1,6 +1,7 @@
 import asyncio
 import random
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -84,6 +85,21 @@ async def test_a_short_playthrough_chats_and_overhears() -> None:
     assert result.overheard
     assert 0 < result.heard < 600
     assert result.calls["conversation"] and result.calls["player-reply"]
+
+
+async def test_the_village_is_kept_in_memory_whatever_simile_db_says(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db = tmp_path / "simile.db"
+    monkeypatch.setenv("SIMILE_DB", str(db))
+    databases: list[Path] = []
+
+    await playthrough(
+        minutes=1, warmup=1, prepare=lambda app: databases.append(app.state.memory.path)
+    )
+
+    assert databases == [Path(":memory:")]
+    assert not db.exists()
 
 
 def test_cli_prints_the_table() -> None:

@@ -2,6 +2,8 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from simile.voicing import DEFAULT_CONFIG as VOICING
+
 
 class AmbientConfig(BaseModel):
     """Every constant of the ambient director. Distances are in tiles, times in sim seconds."""
@@ -20,14 +22,15 @@ class AmbientConfig(BaseModel):
     )
     look_every: float = Field(default=5, gt=0, description="Time between looks at the village.")
     earshot: float = Field(
-        default=8.0,
+        default=VOICING.earshot,
         gt=0,
         description="A conversation comes into earshot once the player is this near one of its "
-        "speakers, as I1 voices it and C2 draws its bubbles.",
+        "speakers. I1's, by default.",
     )
     out_of_earshot: float = Field(
-        default=11.0,
-        description="It stays in earshot until the player is further than this from all of them.",
+        default=VOICING.out_of_earshot,
+        description="It stays in earshot until the player is further than this from all of them. "
+        "I1's, by default.",
     )
     reach: float = Field(
         default=24.0, gt=0, description="Furthest a seeker may be from the one they're nudged to."

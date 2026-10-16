@@ -111,11 +111,7 @@ class Director:
         return pair
 
     def choose(self) -> tuple[Id, Id] | None:
-        """Who to nudge, seeker first: two residents who would each accept the other. The target
-        is out, staying put within earshot of the player, and free to be sought out as B1 has
-        it. The seeker is within `reach` of them, not talking or in bed, and neither has a
-        cooldown on the other. The pair whose less keen member is keenest wins, then the target
-        nearest the player."""
+        """The two keenest residents who would accept each other near the player, seeker first."""
         behaviour, engine, config = self.behaviour, self.engine, self.config
         best: tuple[tuple[float, float], tuple[Id, Id]] | None = None
         for target in behaviour.npcs:

@@ -26,7 +26,7 @@ def register(app: typer.Typer) -> None:
         import asyncio
         import os
 
-        os.environ.update({"SIMILE_DB": ":memory:", "SIMILE_LLM": "fake"})
+        os.environ["SIMILE_LLM"] = "fake"
         for name in QUIET_ENV:
             os.environ.pop(name, None)
         from simile.ambient.playthrough import playthrough as play

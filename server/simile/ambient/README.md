@@ -7,15 +7,15 @@ who would happily talk to start one. `director_of(app)` returns the server's `Di
 
 ## Nudging
 
-- **Earshot.** `Earshot` follows the bus and decides as I1 does: a conversation between NPCs comes
-  into earshot once the player is within `earshot` (8 tiles) of one of its speakers, and stays in
-  it until they're further than `out_of_earshot` (11) from all of them. Nothing is in earshot while
-  no client is connected or the player isn't on the map.
+- **Earshot.** `Earshot` follows the bus and decides as I1 does, with I1's distances by default: a
+  conversation between NPCs comes into earshot once the player is within `earshot` (8 tiles) of
+  one of its speakers, and stays in it until they're further than `out_of_earshot` (11) from all
+  of them. Nothing is in earshot while no client is connected or the player isn't on the map.
 - **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (2 minutes) and
   at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected
   and the player is on the map, and starts again whenever a conversation is in earshot. It waits
-  while `max_conversations` NPC
-  conversations are already going on elsewhere, since B2 would decline another.
+  while `max_conversations` NPC conversations are already going on elsewhere, since B2 would
+  decline another.
 - **Who.** Two residents who would each accept the other: both score above `accept_bar` (0) on
   B2's `accept_score`, which weighs how they feel about each other, their values, their social need
   and what they're doing. The target is out, staying put within `earshot` of the player, and free

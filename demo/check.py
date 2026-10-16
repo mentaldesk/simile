@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from prepare import HERE, prepare
-from serve import keep_to_script
+from serve import keep_to_script, without_director
 from starlette.applications import Starlette
 
 from simile.app import create_app
@@ -126,6 +126,7 @@ async def opening(
     app.state.world, app.state.headless = world, True
     async with app.router.lifespan_context(app):
         keep_to_script(app)
+        without_director(app)
         world.loop.register(Player(app, towards, rng))
         await world.loop.run(timedelta(minutes=minutes))
     return seen

@@ -239,9 +239,7 @@ class Behaviour:
         self._publish(mind)
 
     def nudge(self, npc: Id, goal: Goal, bonus: float) -> bool:
-        """Add `bonus` to `goal`'s score when the NPC next decides, which they do on the next
-        think, stopping where they are if they're walking. False, changing nothing, if they're
-        paused or asleep."""
+        """Add `bonus` to `goal` when they decide, on the next think. False if paused or asleep."""
         mind = self.minds[npc]
         if mind.paused or asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
             return False
@@ -396,6 +394,7 @@ class Behaviour:
 
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
+        mind.nudge = None
         self._publish(mind)
         match goal.activity:
             case Activity.IDLE:

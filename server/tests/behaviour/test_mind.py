@@ -318,6 +318,17 @@ def test_a_nudge_stops_a_walk_and_waits_for_anyone_talking_or_asleep() -> None:
     assert not night.behaviour.nudge("ana", Goal(A.PARK, "park"), 50.0)
 
 
+def test_a_nudge_left_at_bedtime_is_dropped_with_the_new_goal() -> None:
+    village = Village([ANA], start=datetime(2026, 1, 1, 22, 29, 58, tzinfo=UTC))
+    assert village.behaviour.minds["ana"].bedtime == 22.5
+
+    assert village.behaviour.nudge("ana", Goal(A.PARK, "park"), 50.0)
+    village.run(minutes=0.2)
+
+    assert village.behaviour.goal("ana").activity is A.SLEEP
+    assert village.behaviour.minds["ana"].nudge is None
+
+
 def test_seekers_ask_to_talk_and_both_pause_when_accepted() -> None:
     requests: list[tuple[str, str]] = []
     village = Village(

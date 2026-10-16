@@ -19,6 +19,7 @@ from simile.sim import (
     World,
 )
 from simile.social import meet
+from simile.voicing import VoicingConfig
 from simile.world import Movement
 from simile.world.map import load_map
 
@@ -264,6 +265,12 @@ def test_earshot_comes_in_at_earshot_and_goes_beyond_out_of_earshot() -> None:
     assert list(earshot.live) == ["c"]
     earshot.on_ended(ConversationEnded(conversation))
     assert earshot.update() == set()
+
+
+def test_earshot_is_i1s_by_default() -> None:
+    ambient, voicing = AmbientConfig(), VoicingConfig()
+
+    assert (ambient.earshot, ambient.out_of_earshot) == (voicing.earshot, voicing.out_of_earshot)
 
 
 def test_unknown_positions_are_out_of_earshot() -> None:
