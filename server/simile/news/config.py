@@ -83,11 +83,17 @@ class NewsConfig(BaseModel):
         description="The salience of the player's memory of reading an article. They don't "
         "react to it, so its valence is 0.",
     )
-    shared: int = Field(
-        default=3,
+    mention_words: int = Field(
+        default=2,
+        ge=1,
+        description="Words the player's latest lines must share with an article an NPC read, "
+        "its title, tags, summary or the NPC's topics, to bring it to the NPC's mind. One will "
+        "do only if they name the news too and it's in the title or a one-word tag or topic.",
+    )
+    mentions: int = Field(
+        default=2,
         ge=0,
-        description="Most articles that both an NPC and the player have read noted in the NPC's "
-        "prompt when they talk.",
+        description="Most articles the player's latest lines bring to an NPC's mind for a reply.",
     )
 
 

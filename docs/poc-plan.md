@@ -57,7 +57,7 @@ Each track owns its own directory, so agents can't collide.
 | C3 | Client | Streamed audio playback positioned at the speaker, volume/pan by distance | F3 |
 | N1 | NPCs | NPC generator: 10 NPCs with value scores, name, age, job, home, persona, appearance, voice description, neutral reference line. Values must visibly drive persona and voice | F2, L1 |
 | N2 | NPCs | Batch voice design: a reference clip per generated NPC (from `voice-lab/design_then_clone.py`) | N1 |
-| R1 | Social | Relationship model: like/trust/respect/familiarity, familiarity dampening, 2–3× negativity bias, decay toward a personality baseline, persistent flags (debts, grudges, broken promises). Pure functions, heavily unit-tested | F2 |
+| R1 | Social | Relationship model: like/trust/respect/familiarity, each step away from neutral harder than the last (moving back toward it isn't), 2.5× negativity bias, decay toward a personality baseline, persistent flags (debts, grudges, broken promises), and `describe()` for prompts. Pure functions, heavily unit-tested | F2 |
 | R2 | Social | Memory store: per-pair event log, conversation summaries, retrieval ranked by recency × salience, in SQLite | F2 |
 | L1 | LLM | LLM client over local Claude Code (Agent SDK, subscription login, no tools, own system prompt): streaming, structured-output helper, concurrency cap, latency/usage logging, a fake provider for tests. Measures cold-start and time-to-first-token early, since both drive player-reply latency | F1 |
 | V1 | Voice | TTS service from `clone_mlx.py`: load model once, cache each NPC's processed reference, sentence in → streamed audio chunks out, priority queue with a concurrency cap | F2 |
