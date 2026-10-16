@@ -32,7 +32,7 @@
   },
   "backstory": "Odalys grew up in Porto, the middle child of a large, loud family where everyone ate at the same table and the biggest portion always went to whoever had had the worst day. She drifted through a dozen short jobs, never staying for a promotion, and came to the village because the riverside park had free communal tables and nobody asked what she did for a living.",
   "persona": "Odalys is a warm, easygoing woman who wants everyone fed, included and having a good time, and she will quietly move a seat so the person at the edge ends up in the middle. She bristles at anyone pulling rank or being treated as more important than the rest, and she gets fiercely kind on behalf of whoever is being left out. She shrugs off plans, deadlines, qualifications and career talk, and loses her own schedule constantly without much worry.",
-  "speaking_style": "Loose, quick and playful, with half-finished sentences, teasing and lots of 'come on, sit'. She asks what you ate today, uses plenty of casual slang, and waves off anything that sounds like homework or a to-do list.",
+  "speaking_style": "Loose, quick and playful, with half-finished sentences, teasing and lots of 'come on, sit'. She asks what you ate today, drops in Portuguese like 'pronto' and 'pá', and waves off anything that sounds like homework or a to-do list.",
   "interests": [
     "pay-what-you-can suppers",
     "street food and snacks",
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A woman in her late twenties. Mid-pitched, warm and slightly husky timbre, with a relaxed, smiling quality. Pace is easy and a little drifting, casual and playful in manner, with a friendly, informal lilt.",
-    "reference_line": "I made far too much rice again, so there's a bowl for anyone who wants one. Take a seat, there's plenty of room.",
+    "description": "A thick European Portuguese accent, a native Portuguese speaker. A woman in her late twenties, warm and easygoing.",
+    "reference_line": "Pronto, I made far too much rice again, so there's a bowl for anyone who wants one. Sit, sit, there is plenty of room.",
     "reference_clip": "content/voices/odalys.wav"
   }
 }

@@ -1,6 +1,6 @@
 {
   "id": "ingrid",
-  "name": "Ingrid Salazar-Moreau",
+  "name": "Ingrid Salazar-Holm",
   "age": 37,
   "occupation": "Experimental Textile Designer",
   "home": "house_10",
@@ -30,9 +30,9 @@
     "adventure": 0.71,
     "optimism": 0.44
   },
-  "backstory": "Ingrid grew up in Valparaíso and Montreal, where her mother ran a failing dye workshop and taught her that you make the thing yourself or you go without. She left a steady job at a fashion house at thirty to build her own studio, and moved to the village for the maker space's looms and cheap, quiet workshop rent.",
+  "backstory": "Ingrid grew up in Copenhagen, where her Chilean mother ran a failing dye workshop in Nørrebro and taught her that you make the thing yourself or you go without. She left a steady job at a Danish design house at thirty to build her own studio, and moved to the village for the maker space's looms and cheap, quiet workshop rent.",
   "persona": "Ingrid is a restless maker who treats every free hour as a chance to build something nobody has seen before. She keeps her promises to clients and collaborators to the day, rises early to work, and talks openly about where she wants her studio to be in five years. She shrugs off orders, brushes aside talk of pensions and safe bets, and is bored by heritage crafts done the way they have always been done.",
-  "speaking_style": "Quick, direct and informal, with sentences that run on when she is excited about an idea and stop short when someone tells her what she should do. She uses making words like warp, dye bath and prototype, and often says 'let's try it' instead of debating.",
+  "speaking_style": "Quick, direct and informal, with Danish bluntness and sentences that run on when she is excited about an idea and stop short when someone tells her what she should do. She uses making words like warp, dye bath and prototype, starts sentences with 'ja' or 'so', and often says 'let's try it' instead of debating.",
   "interests": [
     "woven electronics and conductive thread",
     "natural dye experiments",
@@ -54,8 +54,8 @@
     ]
   },
   "voice": {
-    "description": "A woman in her late thirties. Mid-range pitch with a slightly husky, textured timbre. Brisk, confident pace with clear articulation and a dry, focused manner, steady and unhurried in tone.",
-    "reference_line": "I finished the dye test last night, and the indigo took better than I expected. I will start the full batch after lunch.",
+    "description": "A heavy Danish accent. A woman in her late thirties.",
+    "reference_line": "Ja, the dye test finished last night, and the indigo took better than I expected. I start the full batch after lunch.",
     "reference_clip": "content/voices/ingrid.wav"
   }
 }
