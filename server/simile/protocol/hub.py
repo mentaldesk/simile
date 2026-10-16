@@ -10,7 +10,12 @@ from starlette.websockets import WebSocket
 
 from simile.protocol.audio import AudioChunk
 from simile.protocol.fixtures import fixture_snapshot
-from simile.protocol.messages import ServerMessage, SnapshotMessage, client_messages
+from simile.protocol.messages import (
+    ClockMessage,
+    ServerMessage,
+    SnapshotMessage,
+    client_messages,
+)
 from simile.sim import world_of
 
 logger = logging.getLogger(__name__)
@@ -48,6 +53,7 @@ class Hub:
 
     def __init__(self, snapshot: Callable[[], SnapshotMessage]) -> None:
         self.snapshot = snapshot
+        self.clock: Callable[[], ClockMessage] | None = None
         self.connections: set[Connection] = set()
         self._subscribers: list[tuple[type[BaseModel], Callable[[Any], None]]] = []
 
@@ -74,6 +80,8 @@ class Hub:
         await websocket.accept()
         connection = Connection(websocket)
         connection.send(self.snapshot())
+        if self.clock:
+            connection.send(self.clock())
         self.connections.add(connection)
         writer = asyncio.create_task(connection.write())
         try:
