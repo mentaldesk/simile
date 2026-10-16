@@ -1,6 +1,7 @@
 """Approach 1 and 1b: the square modelled in code and pre-rendered at a 2:1 isometric angle.
 
-blender -b -P render3d.py -- --level xcom|fallout --part scene|sprites|walk|all
+blender -b -P render3d.py -- --level xcom|fallout --part scene|sprites|walk|objects|lightmap|all
+    [--time night|morning|afternoon|evening|neutral]
 """
 
 import argparse
@@ -16,6 +17,8 @@ import bpy
 from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.modules.setdefault("render3d", sys.modules[__name__])  # Blender runs this file as __main__.
+import character as C  # noqa: E402
 import scene as S  # noqa: E402
 
 LEVELS = {
@@ -31,7 +34,7 @@ LEVELS = {
         "sat": 0.6,
         "val": 0.78,
         "filter": 1.2,
-        "sun": {"elevation": 38, "energy": 2.8, "colour": (1.0, 0.64, 0.38)},
+        "sun": {"azimuth": 225, "elevation": 38, "energy": 2.8, "colour": (1.0, 0.64, 0.38)},
         "look": "AgX - Medium High Contrast",
         "sky": {"colour": (0.21, 0.28, 0.46), "strength": 0.6},
         "frame": (2.2, 1.45, 0.24),
@@ -48,12 +51,48 @@ LEVELS = {
         "sat": 0.8,
         "val": 1.0,
         "filter": 1.0,
-        "sun": {"elevation": 50, "energy": 2.7, "colour": (1.0, 0.84, 0.64)},
+        "sun": {"azimuth": 225, "elevation": 50, "energy": 2.7, "colour": (1.0, 0.84, 0.64)},
         "sky": {"colour": (0.5, 0.53, 0.62), "strength": 0.85},
         "look": "AgX - Punchy",
         "frame": (1.9, 1.45, 0.3),
     },
 }
+
+# Per time of day, over a level; the sun's position is in S.TIMES and `emit` dials the lights.
+LIGHTING = {
+    "night": {
+        "sun": {"energy": 0.35, "colour": (0.55, 0.68, 1.0)},
+        "sun_angle": 1.5,
+        "sky": {"colour": (0.04, 0.07, 0.18), "strength": 0.45},
+        "emit": {"lamp": 1.0, "neon": 1.0, "window": 1.0, "screen": 1.0},
+        "exposure": 0.5,
+    },
+    "morning": {
+        "sun": {"energy": 4.0, "colour": (1.0, 0.88, 0.74)},
+        "sun_angle": 1.5,
+        "sky": {"colour": (0.52, 0.62, 0.82), "strength": 0.6},
+        "emit": {"lamp": 0.0, "neon": 0.12, "window": 0.1, "screen": 0.6},
+    },
+    "afternoon": {
+        "sun": {"energy": 3.4, "colour": (1.0, 0.96, 0.9)},
+        "sun_angle": 1.5,
+        "sky": {"colour": (0.48, 0.6, 0.88), "strength": 0.6},
+        "emit": {"lamp": 0.0, "neon": 0.12, "window": 0.1, "screen": 0.6},
+    },
+    "evening": {
+        "sun": {"energy": 5.5, "colour": (1.0, 0.5, 0.25)},
+        "sun_angle": 1.5,
+        "sky": {"colour": (0.3, 0.27, 0.48), "strength": 0.5},
+        "emit": {"lamp": 0.7, "neon": 0.8, "window": 0.7, "screen": 0.9},
+    },
+    "neutral": {
+        "sun": {"azimuth": 160, "elevation": 55, "energy": 2.8, "colour": (1.0, 1.0, 1.0)},
+        "sun_angle": 10.0,
+        "sky": {"colour": (0.8, 0.8, 0.8), "strength": 0.9},
+    },
+}
+LIGHTMAP_PX = 8
+LIGHTMAP_EXPOSURE = -2.0
 
 T = S.TILE_M
 PAL = S.a1_palette()
@@ -82,6 +121,10 @@ def colour(name: str, sat: float | None = None, val: float = 1.0, tone: bool = T
         val *= L["val"]
     lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
     return tuple(val * (lum + (c - lum) * s) for c in (r, g, b)) + (1.0,)
+
+
+def emit(kind: str, strength: float) -> float:
+    return strength * L.get("emit", {}).get(kind, 1.0)
 
 
 def tree_of(mat):
@@ -355,20 +398,32 @@ def mats():
         "wood": material("wood", "brown", 0.7, sat=0.6),
         "concrete": material("concrete", "concrete", 0.85, pattern="noise" if d else None, sat=0.3),
         "soil": material("soil", "espresso", 1.0, sat=0.5),
-        "lamp": material("lamp", "cream", 0.4, emit="cream", strength=14.0, sat=1.0),
+        "lamp": material("lamp", "cream", 0.4, emit="cream", strength=emit("lamp", 14.0), sat=1.0),
         "glass": material("glass", "night", 0.08, sat=0.5, val=0.9),
         "glass_lit": material(
-            "glass_lit", "amber", 0.15, emit="amber", strength=1.6, sat=0.7, val=0.5
+            "glass_lit", "amber", 0.15, emit="amber", strength=emit("window", 1.6), sat=0.7, val=0.5
         ),
         "glass_cool": material(
-            "glass_cool", "ice", 0.15, emit="ice", strength=1.2, sat=0.6, val=0.4
+            "glass_cool", "ice", 0.15, emit="ice", strength=emit("window", 1.2), sat=0.6, val=0.4
         ),
-        "screen_cyan": material("screen_cyan", "blue", 0.3, emit="cyan", strength=2.2, sat=1.0),
-        "screen_pink": material("screen_pink", "magenta", 0.3, emit="neon", strength=2.2, sat=1.0),
-        "neon_pink": material("neon_pink", "neon", 0.3, emit="neon", strength=6.0, sat=1.0),
-        "neon_cyan": material("neon_cyan", "cyan", 0.3, emit="cyan", strength=5.0, sat=1.0),
-        "neon_amber": material("neon_amber", "amber", 0.3, emit="amber", strength=5.0, sat=1.0),
-        "neon_violet": material("neon_violet", "violet", 0.3, emit="violet", strength=5.0, sat=1.0),
+        "screen_cyan": material(
+            "screen_cyan", "blue", 0.3, emit="cyan", strength=emit("screen", 2.2), sat=1.0
+        ),
+        "screen_pink": material(
+            "screen_pink", "magenta", 0.3, emit="neon", strength=emit("screen", 2.2), sat=1.0
+        ),
+        "neon_pink": material(
+            "neon_pink", "neon", 0.3, emit="neon", strength=emit("neon", 6.0), sat=1.0
+        ),
+        "neon_cyan": material(
+            "neon_cyan", "cyan", 0.3, emit="cyan", strength=emit("neon", 5.0), sat=1.0
+        ),
+        "neon_amber": material(
+            "neon_amber", "amber", 0.3, emit="amber", strength=emit("neon", 5.0), sat=1.0
+        ),
+        "neon_violet": material(
+            "neon_violet", "violet", 0.3, emit="violet", strength=emit("neon", 5.0), sat=1.0
+        ),
         "white": material("white", "white", 0.6, sat=0.5),
         "red_box": material("red_box", "red", 0.4, sat=0.8),
         "flower_pink": material("flower_pink", "pink", 0.8, sat=0.9),
@@ -869,9 +924,9 @@ def build_prop(kind, tx, ty, town: S.TownMap, M, rnd):
             z + 3.78,
             M["lamp"],
         )
-        if detail:
+        if detail and emit("lamp", 1.0):
             light = bpy.data.lights.new("lamp", "POINT")
-            light.energy = 900
+            light.energy = emit("lamp", 900)
             light.color = (1.0, 0.82, 0.6)
             light.shadow_soft_size = 0.2
             obj = link(bpy.data.objects.new("lamp_light", light))
@@ -1077,244 +1132,6 @@ def frond(top, ang, mat):
     mesh_object("frond", bm, mat)
 
 
-BONES = {
-    "hips": ((0, 0, 0.93), (0, 0, 1.05), None),
-    "spine": ((0, 0, 1.05), (0, 0, 1.47), "hips"),
-    "head": ((0, 0, 1.47), (0, 0, 1.8), "spine"),
-    "thigh.L": ((0.1, 0, 0.93), (0.1, 0, 0.5), "hips"),
-    "thigh.R": ((-0.1, 0, 0.93), (-0.1, 0, 0.5), "hips"),
-    "shin.L": ((0.1, 0, 0.5), (0.1, 0, 0.06), "thigh.L"),
-    "shin.R": ((-0.1, 0, 0.5), (-0.1, 0, 0.06), "thigh.R"),
-    "arm.L": ((0.22, 0, 1.42), (0.24, 0, 1.13), "spine"),
-    "arm.R": ((-0.22, 0, 1.42), (-0.24, 0, 1.13), "spine"),
-    "forearm.L": ((0.24, 0, 1.13), (0.25, 0, 0.86), "arm.L"),
-    "forearm.R": ((-0.24, 0, 1.13), (-0.25, 0, 0.86), "arm.R"),
-}
-
-
-def build_rig(name: str, shoulder: float):
-    arm = bpy.data.armatures.new(name)
-    rig = link(bpy.data.objects.new(name, arm))
-    bpy.context.view_layer.objects.active = rig
-    bpy.ops.object.mode_set(mode="EDIT")
-    knees = L["knees"]
-    for bone, (head, tail, parent) in BONES.items():
-        if not knees and bone.startswith(("shin", "forearm")):
-            continue
-        eb = arm.edit_bones.new(bone)
-        hx = head[0] * shoulder / 0.22 if bone.startswith(("arm", "forearm")) else head[0]
-        tx = tail[0] * shoulder / 0.22 if bone.startswith(("arm", "forearm")) else tail[0]
-        eb.head = (hx, head[1], head[2])
-        eb.tail = (tx, tail[1], tail[2])
-        if not knees and bone.startswith(("thigh", "arm")):
-            eb.tail = (tx, tail[1], 0.06 if bone.startswith("thigh") else 0.86)
-        if parent:
-            eb.parent = arm.edit_bones[parent]
-    bpy.ops.object.mode_set(mode="OBJECT")
-    return rig
-
-
-def attach(rig, bone: str, objs):
-    bpy.context.view_layer.update()
-    for obj in objs:
-        mw = obj.matrix_world.copy()
-        obj.parent = rig
-        obj.parent_type = "BONE"
-        obj.parent_bone = bone
-        bpy.context.view_layer.update()
-        obj.matrix_world = mw
-
-
-def bone_of(part: str) -> str:
-    if L["knees"]:
-        return part
-    return {
-        "shin.L": "thigh.L",
-        "shin.R": "thigh.R",
-        "forearm.L": "arm.L",
-        "forearm.R": "arm.R",
-    }.get(part, part)
-
-
-def build_character(npc_id: str):
-    a = S.appearance(npc_id)
-    cl = S.colours(npc_id)
-    raw = {k: a[k] for k in ("skin", "hair_colour", "top_colour", "bottom_colour", "shoe_colour")}
-
-    def m(hexv, rough=0.7, name=None):
-        return material(name or f"{npc_id}_{hexv}", hexv, rough, sat=0.9)
-
-    skin = m(raw["skin"], 0.55)
-    hair = m(raw["hair_colour"], 0.6)
-    top = m(raw["top_colour"], 0.8)
-    bottom = m(raw["bottom_colour"], 0.8)
-    shoe = m(raw["shoe_colour"], 0.5)
-    accent = m(PAL.PALETTE[cl["accent"]], 0.6)
-    apron = m(PAL.PALETTE[cl["apron"]], 0.8)
-    ink = material("ink", "ink", 0.4, sat=1.0)
-
-    build = a["build"]
-    sw = {"slim": 0.17, "average": 0.2, "broad": 0.24}[build]
-    depth = {"slim": 0.11, "average": 0.13, "broad": 0.15}[build]
-    rig = build_rig(npc_id, sw + 0.04)
-    seg = L["seg"]
-    detail = L["detail"]
-    parts: dict[str, list] = {b: [] for b in BONES}
-
-    parts["spine"].append(
-        ellipsoid("shoulders", (0, 0, 1.36), (sw * 1.02, depth, 0.09), top, seg=seg)
-    )
-    chest = cyl("chest", 0, 0, 1.0, 1.37, sw * 0.86, top, r_top=sw * 1.02, seg=seg)
-    chest.scale = (1, depth / sw, 1)
-    parts["spine"].append(chest)
-    parts["hips"].append(ellipsoid("pelvis", (0, 0, 0.95), (sw * 0.85, depth * 0.95, 0.13), bottom))
-    parts["spine"].append(cyl("neck", 0, 0, 1.4, 1.52, 0.055, skin))
-    head = ellipsoid("head", (0, 0, 1.63), (0.105, 0.115, 0.13), skin)
-    parts["head"].append(head)
-    if detail:
-        for ex in (-0.04, 0.04):
-            parts["head"].append(blob("eye", ex, -0.1, 1.645, 0.014, ink, subdiv=1))
-        parts["head"].append(blob("nose", 0, -0.115, 1.6, 0.018, skin, subdiv=1))
-
-    for side, sx in (("L", 1), ("R", -1)):
-        x = 0.1 * sx
-        if L["knees"]:
-            parts[f"thigh.{side}"].append(cyl("thigh", x, 0, 0.5, 0.95, 0.07, bottom, r_top=0.085))
-            parts[f"shin.{side}"].append(cyl("shin", x, 0, 0.08, 0.52, 0.055, bottom, r_top=0.068))
-        else:
-            parts[f"thigh.{side}"].append(cyl("leg", x, 0, 0.08, 0.95, 0.065, bottom, r_top=0.085))
-        parts[bone_of(f"shin.{side}")].append(
-            box("shoe", x - 0.055, -0.15, 0, x + 0.055, 0.07, 0.09, shoe, bevel=0.025)
-        )
-        ax = (sw + 0.035) * sx
-        parts[f"arm.{side}"].append(cyl("sleeve", ax, 0, 1.12, 1.43, 0.05, top, r_top=0.06))
-        parts[bone_of(f"forearm.{side}")].append(cyl("forearm", ax, 0, 0.88, 1.13, 0.04, skin))
-        parts[bone_of(f"forearm.{side}")].append(blob("hand", ax, 0, 0.84, 0.045, skin, subdiv=1))
-
-    hair_parts(a["hair_style"], hair, parts["head"])
-    acc = set(a["accessories"])
-    hp = parts["head"]
-    if "cap" in acc:
-        hp.append(
-            ellipsoid(
-                "cap", (0, 0, 1.68), (0.118, 0.128, 0.11), accent, cut=((0, 0, 0.0), (0, 0, 1))
-            )
-        )
-        brim = box("brim", -0.09, -0.24, 1.69, 0.09, -0.06, 1.71, accent)
-        hp.append(brim)
-    if "beanie" in acc:
-        hp.append(
-            ellipsoid(
-                "beanie", (0, 0, 1.67), (0.12, 0.128, 0.15), accent, cut=((0, 0, -0.02), (0, 0, 1))
-            )
-        )
-    if "headphones" in acc:
-        band = material("headphones", "night", 0.4, sat=0.8)
-        for ex in (-0.115, 0.115):
-            hp.append(cyl("earcup", 0, 0, -0.025, 0.025, 0.045, band, seg=max(seg // 2, 6)))
-            hp[-1].rotation_euler.y = math.radians(90)
-            hp[-1].location = (ex, 0, 1.62)
-        hp.append(rod("band", (-0.11, 0, 1.66), (0, 0, 1.79), 0.015, band))
-        hp.append(rod("band", (0, 0, 1.79), (0.11, 0, 1.66), 0.015, band))
-    if "glasses" in acc or "sunglasses" in acc:
-        lens = ink if "sunglasses" in acc else material("frames", "night", 0.3, sat=0.8)
-        hp.append(box("glasses", -0.085, -0.125, 1.635, 0.085, -0.11, 1.665, lens))
-    if "scarf" in acc:
-        parts["spine"].append(cyl("scarf", 0, 0, 1.38, 1.48, 0.09, accent, r_top=0.08))
-        parts["spine"].append(box("scarf_tail", 0.02, -0.15, 1.15, 0.09, -0.11, 1.4, accent))
-    if "backpack" in acc:
-        parts["spine"].append(
-            box(
-                "backpack",
-                -sw * 0.7,
-                depth * 0.7,
-                1.0,
-                sw * 0.7,
-                depth + 0.16,
-                1.4,
-                accent,
-                bevel=0.04,
-            )
-        )
-    if "apron" in acc:
-        parts["spine"].append(
-            box("apron", -sw * 0.7, -depth - 0.02, 0.6, sw * 0.7, -depth + 0.01, 1.3, apron)
-        )
-
-    for bone, objs in parts.items():
-        if objs:
-            attach(rig, bone if bone in rig.data.bones else bone_of(bone), objs)
-    return rig
-
-
-def hair_parts(style: str, mat, out: list):
-    if style == "bald":
-        return
-    cap_cut = ((0, 0, -0.005), (0, 0.565, 1))
-    thick = {"buzz": 1.04, "short": 1.1}.get(style, 1.12)
-    out.append(
-        ellipsoid(
-            "hair_cap",
-            (0, 0.005, 1.645),
-            (0.105 * thick, 0.115 * thick, 0.13 * thick),
-            mat,
-            cut=cap_cut,
-        )
-    )
-    if style == "curly":
-        rnd = random.Random(7)
-        for _ in range(14 if L["detail"] else 6):
-            th = rnd.uniform(0, math.tau)
-            ph = rnd.uniform(0.1, 1.2)
-            x, y = 0.12 * math.sin(ph) * math.cos(th), 0.13 * math.sin(ph) * math.sin(th)
-            if y < -0.07:
-                y = -0.07
-            out.append(blob("curl", x, y + 0.01, 1.65 + 0.13 * math.cos(ph), 0.055, mat, subdiv=1))
-    elif style == "bob":
-        out.append(
-            ellipsoid(
-                "bob", (0, 0.02, 1.6), (0.13, 0.135, 0.13), mat, cut=((0, -0.05, 0), (0, 1, 0.15))
-            )
-        )
-    elif style == "long":
-        out.append(box("long", -0.11, 0.02, 1.25, 0.11, 0.12, 1.66, mat, bevel=0.04))
-    elif style == "ponytail":
-        out.append(blob("tie", 0, 0.12, 1.68, 0.05, mat, subdiv=1))
-        out.append(rod("tail", (0, 0.14, 1.67), (0, 0.2, 1.38), 0.045, mat))
-    elif style == "bun":
-        out.append(blob("bun", 0, 0.09, 1.76, 0.07, mat))
-
-
-def pose(rig, phase: float | None):
-    """phase in radians along the walk cycle; None stands still."""
-    amp = math.radians(24)
-    for pb in rig.pose.bones:
-        pb.matrix_basis = Matrix.Identity(4)
-    if phase is None:
-        return
-
-    def swing(bone, angle):
-        if bone not in rig.pose.bones:
-            return
-        pb = rig.pose.bones[bone]
-        axis = pb.bone.matrix_local.to_3x3().inverted() @ Vector((1, 0, 0))
-        pb.matrix_basis = Matrix.Rotation(-angle, 4, axis)
-
-    s = math.sin(phase)
-    leg = 0.87
-    drop = 0.8 * leg * (1 - math.cos(amp * s))
-    swing("thigh.L", amp * s)
-    swing("thigh.R", -amp * s)
-    swing("shin.L", -math.radians(45) * max(0.0, math.cos(phase)) ** 1.5)
-    swing("shin.R", -math.radians(45) * max(0.0, -math.cos(phase)) ** 1.5)
-    swing("arm.L", -0.6 * amp * s)
-    swing("arm.R", 0.6 * amp * s)
-    swing("forearm.L", math.radians(18))
-    swing("forearm.R", math.radians(18))
-    hips = rig.pose.bones["hips"]
-    hips.matrix_basis = Matrix.Translation((0, -drop, 0))
-
-
 def setup_render(width: int, height: int, transparent: bool):
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
@@ -1340,7 +1157,7 @@ def setup_render(width: int, height: int, transparent: bool):
     sc.render.image_settings.color_mode = "RGBA" if transparent else "RGB"
     sc.view_settings.view_transform = "AgX"
     sc.view_settings.look = L["look"]
-    sc.view_settings.exposure = 0.0
+    sc.view_settings.exposure = L.get("exposure", 0.0)
 
 
 def setup_lights():
@@ -1355,11 +1172,12 @@ def setup_lights():
     sun.color = L["sun"]["colour"]
     sun.angle = math.radians(L["sun_angle"])
     obj = link(bpy.data.objects.new("sun", sun))
-    elevation = math.radians(L["sun"]["elevation"])
-    travel = Vector(
-        (0.70710678 * math.cos(elevation), 0.70710678 * math.cos(elevation), -math.sin(elevation))
-    )
-    obj.rotation_euler = Vector((0, 0, -1)).rotation_difference(travel).to_euler()
+    obj.rotation_euler = Vector((0, 0, -1)).rotation_difference(sunlight()).to_euler()
+
+
+def sunlight() -> Vector:
+    """The direction the sun's light travels."""
+    return -Vector(S.to_sun(L["sun"]["azimuth"], L["sun"]["elevation"]))
 
 
 def camera(width: int, height: int, ppm: float, centre: Vector):
@@ -1415,9 +1233,7 @@ def render(path: Path):
     return time.time() - start
 
 
-def render_scene(out: Path, timings: dict):
-    clear()
-    t0 = time.time()
+def build_town() -> S.TownMap:
     town = S.TownMap()
     M = mats()
     build_ground(town, M)
@@ -1426,6 +1242,13 @@ def render_scene(out: Path, timings: dict):
     rnd = random.Random(1)
     for kind, tx, ty in town.props():
         build_prop(kind, tx, ty, town, M, rnd)
+    return town
+
+
+def render_scene(out: Path, timings: dict):
+    clear()
+    t0 = time.time()
+    build_town()
     setup_lights()
     unit = L["tile_px"] / 2
     (sx0, sx1), (sy0, sy1) = S.VIEW["sx"], S.VIEW["sy"]
@@ -1450,12 +1273,80 @@ def render_scene(out: Path, timings: dict):
     (out / "scene.json").write_text(json.dumps(meta, indent=2))
 
 
+def render_lightmap(out: Path, timings: dict):
+    """The direct light reaching the ground, from above: sun + sky, sun, and lamps and signs."""
+    clear()
+    town = build_town()
+    white = bpy.data.materials.new("white")
+    for obj in bpy.context.scene.objects:
+        obj.visible_camera = obj.name.startswith("ground_")
+        for slot in obj.material_slots if obj.visible_camera else ():
+            slot.material = white
+    glowing = [
+        (n.inputs["Emission Strength"], n.inputs["Emission Strength"].default_value)
+        for m in bpy.data.materials
+        if m.node_tree
+        for n in m.node_tree.nodes
+        if n.type == "BSDF_PRINCIPLED" and n.inputs["Emission Strength"].default_value > 0
+    ]
+    setup_lights()
+    w, h = town.width * LIGHTMAP_PX, town.height * LIGHTMAP_PX
+    cam = bpy.data.cameras.new("top")
+    cam.type = "ORTHO"
+    cam.sensor_fit = "HORIZONTAL"
+    cam.ortho_scale = town.width * T
+    top = link(bpy.data.objects.new("top", cam))
+    top.location = W(town.width / 2, town.height / 2, 100)
+    bpy.context.scene.camera = top
+    setup_render(w, h, transparent=False)
+    sc = bpy.context.scene
+    sc.cycles.samples = 32
+    sc.cycles.max_bounces = 0
+    sc.view_settings.view_transform = "Standard"
+    sc.view_settings.look = "None"
+    sc.view_settings.exposure = LIGHTMAP_EXPOSURE
+    sun = sc.objects["sun"]
+    sky = next(n for n in sc.world.node_tree.nodes if n.type == "BACKGROUND").inputs["Strength"]
+    lamps = [o for o in sc.objects if o.type == "LIGHT" and o.name.startswith("lamp")]
+    start = time.time()
+    for name, with_sun, with_sky, with_lights in (
+        ("sunsky", True, True, False),
+        ("sun", True, False, False),
+        ("lights", False, False, True),
+    ):
+        sun.hide_render = not with_sun
+        sky.default_value = L["sky"]["strength"] if with_sky else 0.0
+        for lamp in lamps:
+            lamp.hide_render = not with_lights
+        for socket, strength in glowing:
+            socket.default_value = strength if with_lights else 0.0
+        render(out / f"light_{name}.png")
+    timings["lightmap_render_s"] = round(time.time() - start, 1)
+    (out / "lightmap.json").write_text(json.dumps({"px_per_tile": LIGHTMAP_PX}))
+
+
 def sprite_frame():
+    if "time" in L:
+        return fitted_frame()
     fw, fh, fx = L["frame"]
     w = round(L["tile_px"] * fw)
     h = round(L["tile_px"] * fh)
     anchor = (round(w * fx), round(h * 0.86))
     return w, h, anchor
+
+
+def fitted_frame():
+    """A frame that holds a walking figure and, when it casts one, its whole shadow."""
+    pts = [Vector((x, y, z)) for x in (-0.45, 0.45) for y in (-0.45, 0.45) for z in (0.0, 2.0)]
+    if L["time"] != "neutral":
+        light = sunlight()
+        pts += [p + light * (p.z / -light.z) for p in pts if p.z]
+    k, pad = ppm(), 4
+    xs = [p.dot(CAM_RIGHT) * k for p in pts]
+    ys = [-p.dot(CAM_UP) * k for p in pts]
+    w = math.ceil(max(xs) - min(xs)) + 2 * pad
+    h = math.ceil(max(ys) - min(ys)) + 2 * pad
+    return w, h, (round(pad - min(xs)), round(pad - min(ys)))
 
 
 def sprite_camera(w, h, anchor):
@@ -1466,11 +1357,12 @@ def sprite_camera(w, h, anchor):
 
 def character_scene(npc_id):
     clear()
-    rig = build_character(npc_id)
+    rig = C.build_character(npc_id)
     bm = bmesh.new()
-    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=6)
+    bmesh.ops.create_grid(bm, x_segments=1, y_segments=1, size=30)
     catcher = mesh_object("catcher", bm, material("catcher", "white"))
     catcher.is_shadow_catcher = True
+    catcher.hide_render = L.get("time") == "neutral"
     setup_lights()
     w, h, anchor = sprite_frame()
     sprite_camera(w, h, anchor)
@@ -1489,7 +1381,7 @@ def render_sprites(out: Path, timings: dict):
         rig, (w, h, anchor) = character_scene(npc_id)
         timings[f"{npc_id}_triangles"] = poly_count()
         rig.rotation_euler.z = math.radians(S.FACING_DEG[facing])
-        pose(rig, None if frame is None else walk_phase(frame))
+        C.pose(rig, None if frame is None else walk_phase(frame))
         timings[f"{npc_id}_render_s"] = round(render(out / f"sprite_{npc_id}.png"), 1)
         frames[npc_id] = {"anchor": anchor, "size": [w, h]}
     (out / "sprites.json").write_text(json.dumps(frames, indent=2))
@@ -1502,7 +1394,7 @@ def render_walk(out: Path, timings: dict):
     for facing in L["dirs"]:
         rig.rotation_euler.z = math.radians(S.FACING_DEG[facing])
         for f in range(L["frames"]):
-            pose(rig, walk_phase(f))
+            C.pose(rig, walk_phase(f))
             render(out / "walk" / f"{facing}_{f}.png")
             count += 1
     timings["walk_frames"] = count
@@ -1567,14 +1459,22 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--level", choices=list(LEVELS), default="xcom")
     parser.add_argument(
-        "--part", choices=["scene", "sprites", "walk", "objects", "all"], default="all"
+        "--part",
+        choices=["scene", "sprites", "walk", "objects", "lightmap", "all"],
+        default="all",
     )
+    parser.add_argument("--time", choices=list(LIGHTING))
     parser.add_argument("--samples", type=int)
     args = parser.parse_args(argv)
     L.update(LEVELS[args.level])
+    out = S.OUT / args.level
+    if args.time:
+        L.update(LIGHTING[args.time], time=args.time)
+        sun = S.TIMES.get(args.time, {})
+        L["sun"] = {**L["sun"], **{k: sun[k] for k in ("azimuth", "elevation") if k in sun}}
+        out = out / args.time
     if args.samples:
         L["samples"] = args.samples
-    out = S.OUT / args.level
     out.mkdir(parents=True, exist_ok=True)
     timings_path = out / "timings.json"
     timings = json.loads(timings_path.read_text()) if timings_path.exists() else {}
@@ -1587,6 +1487,8 @@ def main():
         render_walk(out, timings)
     if args.part in ("objects", "all"):
         render_objects(out, timings)
+    if args.part == "lightmap" or (args.part == "all" and args.time in S.TIMES):
+        render_lightmap(out, timings)
     timings_path.write_text(json.dumps(timings, indent=2))
     print("TIMINGS", json.dumps(timings))
 

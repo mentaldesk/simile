@@ -176,13 +176,138 @@ would be a paint-over on top of approach 1.
   XCOM-realistic. Whether that's charming or a placeholder is a taste call, and realism is the
   +2–4 days above.
 - Baked light fixes the time of day. The XCOM mock-up is at dusk and the Fallout one in daylight,
-  and either level can use either. Day and night at runtime would be a tint over the sprites, or a
-  second render set at twice the disk.
+  and either level can use either. [Four times of day](#four-times-of-day-122) renders a set for
+  each.
 - Only the three residents shown were reviewed. Every `appearance` option is modelled, but bob,
   long, bun, beanie, scarf, glasses, sunglasses and headphones haven't been looked at in a render.
 - The camera looks from the south-east. The alternative is the south-west, which would show west
   faces instead of east ones.
 - In approach 2, decide whether low A1-height buildings are acceptable.
+
+## Four times of day (#122)
+
+The XCOM-level square rendered four times, so the world doesn't feel like a casino. Each set has its
+own sun (the moon at night), sky and ambient light, so the shadows move. Lamps are off by day, and
+neon, lit windows and screens drop to 12%, 10% and 60%. In the evening they're at 70–90%, and at
+night at full strength. The residents here are drawn as (b) with the light map, described below.
+
+| Night | Morning |
+|---|---|
+| ![Night, 1:1 crop](lighting/1-night-crop.jpg) | ![Morning, 1:1 crop](lighting/2-morning-crop.jpg) |
+| **Afternoon** | **Evening** |
+| ![Afternoon, 1:1 crop](lighting/3-afternoon-crop.jpg) | ![Evening, 1:1 crop](lighting/4-evening-crop.jpg) |
+
+The whole scene at half size: [night](lighting/1-night.jpg), [morning](lighting/2-morning.jpg),
+[afternoon](lighting/3-afternoon.jpg), [evening](lighting/4-evening.jpg).
+
+**Hour spans.** `scene.TIMES` has the spans and the sun's positions:
+
+| Set | Sim hours | Sun | Shadows on screen | Why these hours |
+|---|---|---|---|---|
+| Night | 21:00–05:00 | Moon from the SSE (150°), 50° up | Short, up | The first residents go to bed at 21:00, and nobody is out from 00:00 to 05:00 |
+| Morning | 05:00–11:00 | ESE (105°), 26° | Long, up-left | Wake times run 05:30–09:00, then the café's morning peak |
+| Afternoon | 11:00–17:00 | SW (215°), 52° | Short, right | Lunch at the noodle bar, then the square's and the café's busiest hours |
+| Evening | 17:00–21:00 | WSW (248°), 16° | Long, right and a little down | Dinner. The street is busiest from 18:00 to 20:00 |
+
+In `simile behaviour simulate --hours 24 --seed 0`, of the time residents spend out of home, 25% is
+in the morning, 40% in the afternoon, 26% in the evening and 9% at night. So residents are out in
+daylight two thirds of the time, and under the neon look a third of it.
+
+The iso view squashes the ground, so afternoon and evening shadows both point right on screen. What
+mostly sets them apart is length: 1.4 m against 6.3 m.
+
+**Crossfade: 60 sim minutes, centred on each boundary**, so 04:30–05:30, 10:30–11:30 and so on, with
+smoothstep weights. `scene.blend(hour)` gives the sets to draw and their weights. Phaser draws the
+outgoing set's ground and object layers, then the incoming set's on top at alpha = weight. Halfway
+through, every shadow shows twice at half strength. Smoothstep gets through the 25–75% stretch in
+35% of the fade, rather than half of it. At 1× a fade lasts an hour of real time. At 60× it lasts a
+minute, and the doubled shadows are obvious for about 20 s.
+
+![Crossfade at 17:00, halfway from afternoon to evening](lighting/5-crossfade-afternoon-evening-crop.jpg)
+
+([Whole scene](lighting/5-crossfade-afternoon-evening.jpg).)
+
+**Characters under the light.** The same three residents, one row per set:
+
+![The residents in each set: (a), (b), and (b) with the light map](lighting/6-characters.jpg)
+
+- **(a) Sprites rendered per set.** Each set's sun and sky, with the shadow baked into each frame
+  by a shadow catcher. The frame grows to hold the shadow: 483 × 239 px in the evening, against
+  87 × 155 px without one.
+- **(b) One neutral sprite set, a tint and a drop shadow.** The neutral render has a soft white
+  light and no shadow. Each set has a tint and a shadow strength, measured once by comparing a probe
+  frame with the neutral render:
+
+  | | Night | Morning | Afternoon | Evening |
+  |---|---|---|---|---|
+  | Tint (RGB) | 0.17, 0.25, 0.36 | 0.98, 0.96, 0.95 | 0.85, 0.88, 0.92 | 0.62, 0.49, 0.46 |
+  | Shadow alpha | 0.64 | 0.57 | 0.70 | 0.59 |
+
+  The drop shadow is a soft ellipse on the ground, from the feet away from the sun, with length
+  height ÷ tan(elevation). In Phaser that's an image rotated to the sun, inside a container
+  scaled to half height for the iso ground plane. During a fade each resident has two, weighted
+  like the layers.
+- **(b) with the light map.** For each set, a top-down render of the direct light on the ground
+  from the sun, the sky, and the lamps and lit signs, at 8 px a tile, in about 3 s. A resident's
+  tint is scaled by the light where they stand compared with the open square, and their drop shadow
+  fades out where the sun doesn't reach. So at night Ingrid under the lamp and Odalys by the café
+  window are lit. In the evening Ingrid, standing in a tree's shadow, loses her own. At runtime it
+  would be one small RGBA texture per set: the tint in RGB and the sun in A, sampled at the feet.
+  Phaser's `setTint` can't go above 1, so the neutral sprites are lit brighter than any set and a
+  tint that would pass 1 is scaled down, keeping its hue.
+
+Neither (a) nor plain (b) can react to where a resident stands. Sprites are rendered once per frame,
+not once per place.
+
+**Costs**, measured on the M2 Max, Cycles at 48 samples. "Scenery set" is what C1 needs for one
+set. That's the ground layer (the mock-up's render time × 4.9, as in [Costs](#costs)), 32 object
+sprites and the light map. Its disk size is the ground as a JPEG plus the object sprites at 256
+colours. Characters are Ingrid's walk cycle (8 directions × 8 frames), extrapolated to 11 residents
+× 72 frames, with atlases at 256 colours with alpha.
+
+| Set | Mock-up scene | 32 object sprites | Light map | Scenery set | Scenery on disk | One walk frame | 11 residents | Atlas per resident |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| Night | 16.5 s | 48.5 s | 3.6 s | 2.2 min | 2.2 MB | 0.54 s at 114 × 155 px | 7.2 min | 0.07 MB |
+| Morning | 16.3 s | 46.6 s | 3.5 s | 2.2 min | 2.9 MB | 0.59 s at 214 × 157 px | 7.8 min | 0.13 MB |
+| Afternoon | 14.3 s | 45.9 s | 3.2 s | 2.0 min | 2.9 MB | 0.58 s at 182 × 155 px | 7.7 min | 0.11 MB |
+| Evening | 16.4 s | 47.7 s | 3.2 s | 2.2 min | 2.5 MB | 0.85 s at 483 × 239 px | 11.2 min | 0.15 MB |
+| Neutral, once | | | | | | 0.50 s at 87 × 155 px | 6.5 min | 0.09 MB |
+
+- **(a), all four sets: 42 min and 15.5 MB.** 3,168 character frames.
+- **(b), all four sets: 15 min and 11.5 MB.** 792 character frames, and each new animation or
+  resident is rendered once rather than four times.
+
+#116 estimated 40 min and 52 MB. The time holds for (a). The disk is lower because a resident's
+atlas measures 0.07–0.15 MB, not the 0.8 MB #106 estimated, so the scenery is most of it.
+
+**Recommendation: (b) with the light map.**
+
+- Its shadows point the same way and are the same length as (a)'s in every set (compare the
+  columns).
+- It's the only one that lights a resident by where they stand. (a)'s shadows are baked into every
+  frame, so a resident in a building's shadow still casts one.
+- Fades are smooth: the tint and shadows follow the fade weight. With (a), every resident is two
+  sprites through every fade.
+- It takes about a third of the machine time.
+
+What it gives up: the shading on the body doesn't turn with the sun. In the evening, (a) has a warm
+sunlit side and a cooler shaded one, while (b) is evenly warm. At 1:1 the difference is small (the
+evening row). If it matters later, a normal-mapped sprite under Phaser's Light2D brings it back,
+still from one render.
+
+**Needs a human's eye:**
+
+- The look of each set: whether the evening should be more golden than this dusky orange-pink, how
+  bright the night's lamp pools are (exposure +0.5), and whether neon at 12% in daylight is too
+  much or too little.
+- The doubled shadows mid-fade, and whether 60 minutes is the right length.
+- The evening sun at 16° casts 6 m shadows (5.7 tiles), which reads as evening but could get busy
+  with ten residents.
+- Whether residents lit by a lamp at night (near-neutral tint) read as lamp-lit or as daylight.
+- Whether (b)'s fixed body shading is acceptable.
+
+The lit windows are the same 45% in every set. Glow is a post effect at 100% at night, 85% in the
+evening and 25% by day.
 
 ## What a switch would touch
 
@@ -218,12 +343,13 @@ The simulation stays on its square grid. Only the projection changes. Screen pos
 
 | | |
 |---|---|
-| `scene.py` | The shared scene: reads the map, the residents and A1's palette; the view, crop and resident placements |
-| `render3d.py` | Approaches 1 and 1b: `blender -b -P render3d.py -- --level xcom\|fallout --part scene\|sprites\|walk\|objects\|all` |
-| `compose.py` | Composites the residents, adds glow, the painterly filter and the palette, and writes `images/` |
+| `scene.py` | The shared scene: reads the map, the residents and A1's palette; the view, crop and resident placements; the times of day and `blend(hour)` |
+| `render3d.py` | Approaches 1 and 1b: `blender -b -P render3d.py -- --level xcom\|fallout --part scene\|sprites\|walk\|objects\|lightmap\|all`, plus `--time night\|morning\|afternoon\|evening\|neutral` for a lighting set |
+| `character.py` | The residents from primitives on the armature, and their walk cycle. A body mesh can replace it |
+| `compose.py` | Composites the residents, adds glow, the painterly filter and the palette, and writes `images/`. `compose.py lighting costs` writes `lighting/` and prints the costs |
 | `pixel_iso.py` | Approach 2, run from `server/` so it can import A1 |
 | `flux.sh` | Approach 3, as attempted |
-| `render.sh` | Everything, in order |
+| `render.sh` | Everything, in order. `./render.sh lighting` does the four times of day in about 9 min |
 
 Renders and scratch files go to `out/`, which is gitignored. `make test` and `make lint` don't reach
 this folder: ruff runs in `server/` and eslint in `client/`. The scripts pass the server's ruff
