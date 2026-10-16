@@ -83,6 +83,7 @@ class ClaudeCodeProvider:
             verbatim_prompts=True,
             cwd=self.cwd,
             cli_path=self.cli_path,
+            env={"CLAUDE_CODE_PROMPT_CACHE_TTL": "5m"},
             extra_args={
                 "safe-mode": None,
                 "disable-slash-commands": None,
