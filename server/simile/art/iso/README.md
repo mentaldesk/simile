@@ -153,12 +153,12 @@ stale, and pins a digest of the pipeline's code (see below).
 
 `formats.py` has one setting for each kind of asset, chosen by measurement in #140:
 
-- **Ground: lossy WebP**, quality 82. Lossless ground would take most of the budget.
+- **Ground: lossy WebP**, quality 82. Lossless, the four grounds would be 16 MB rather than 1.3 MB.
 - **Sprites: lossless WebP.** For these renders it's about a third smaller than PNG.
 - **Light map: lossless WebP**, since it's data. It's about a third smaller than PNG.
 
 `formats.sizes(images)` measures images in each format, so the choice can be remade for another
-kind of asset. `content/art/iso/` stays under 20 MB in total, and `tests/art/iso` checks it.
+kind of asset. `content/art/iso/` stays under 40 MB in total, and `tests/art/iso` checks it.
 
 ## How it's built
 

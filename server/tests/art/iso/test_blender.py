@@ -41,6 +41,21 @@ def test_a_failing_script_reports_blenders_output(
         blender.run("render_scenery.py", {}, tmp_path)
 
 
+def test_a_crashed_blender_is_run_again(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    fake = tmp_path / "blender"
+    fake.write_text(
+        "#!/bin/sh\n"
+        f"if [ ! -f {tmp_path}/crashed ]; then touch {tmp_path}/crashed; kill -ABRT $$; fi\n"
+        'for last; do :; done; echo \'{"ok": true}\' > "$last"\n'
+    )
+    fake.chmod(0o755)
+    monkeypatch.setenv("BLENDER", str(fake))
+    lines: list[str] = []
+
+    assert blender.run("render_scenery.py", {}, tmp_path / "work", lines.append) == {"ok": True}
+    assert lines == ["Blender crashed (-6); running it again"]
+
+
 @needs_blender
 def test_blender_renders_a_sprite_and_says_where_it_landed(tmp_path: Path) -> None:
     town = Town(VILLAGE)

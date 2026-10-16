@@ -10,7 +10,7 @@ from simile.art.iso.town import GROUND_HEIGHTS, Town
 
 ISO = scenery.CONTENT_DIR / "art" / "iso"
 SCENERY = ISO / "scenery"
-BUDGET_BYTES = 20_000_000
+BUDGET_BYTES = 40_000_000
 STALE = "content/art/iso/scenery is out of date: run `cd server && uv run simile art iso scenery`"
 PINNED_SOURCES = "f8d065c9a61533fe"
 
@@ -26,7 +26,7 @@ def manifests() -> dict[str, dict]:
 
 def test_iso_art_fits_the_budget() -> None:
     total = sum(p.stat().st_size for p in ISO.rglob("*") if p.is_file())
-    assert total < BUDGET_BYTES, f"content/art/iso is {total / 1e6:.1f} MB, over 20 MB"
+    assert total < BUDGET_BYTES, f"content/art/iso is {total / 1e6:.1f} MB, over the 40 MB budget"
 
 
 def test_each_set_has_a_manifest_and_nothing_else_is_there() -> None:

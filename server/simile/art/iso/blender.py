@@ -13,6 +13,7 @@ SCRIPTS = Path(__file__).resolve().parent / "in_blender"
 SERVER = Path(__file__).resolve().parents[3]
 MAC_APP = Path("/Applications/Blender.app/Contents/MacOS/Blender")
 PROGRESS = "ISO "
+ATTEMPTS = 3
 
 
 class BlenderError(RuntimeError):
@@ -58,6 +59,18 @@ def run(
         str(job_path),
         str(result_path),
     ]
+    for attempt in range(ATTEMPTS):
+        code, tail = _blender(command, progress)
+        # Cycles' Metal kernel cache sometimes aborts Blender (NSInvalidArgumentException).
+        if code >= 0 or attempt == ATTEMPTS - 1:
+            break
+        progress(f"Blender crashed ({code}); running it again")
+    if code != 0 or not result_path.exists():
+        raise BlenderError(f"{script} failed ({code}):\n" + "\n".join(tail))
+    return json.loads(result_path.read_text())
+
+
+def _blender(command: list[str], progress: Callable[[str], None]) -> tuple[int, deque[str]]:
     tail: deque[str] = deque(maxlen=40)
     with subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
@@ -67,6 +80,4 @@ def run(
             tail.append(line.rstrip())
             if line.startswith(PROGRESS):
                 progress(line[len(PROGRESS) :].rstrip())
-    if proc.returncode != 0 or not result_path.exists():
-        raise BlenderError(f"{script} failed ({proc.returncode}):\n" + "\n".join(tail))
-    return json.loads(result_path.read_text())
+    return proc.returncode, tail
