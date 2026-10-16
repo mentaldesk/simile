@@ -33,6 +33,10 @@ from simile.voice import speaking_rate
 logger = logging.getLogger(__name__)
 
 SENTENCE_END = re.compile(r"[.!?…]+[\"'”’)\]*]*(?=\s)")
+CLAUSE_END = re.compile(r"\s*(?:[—–]|--|\s-(?=\s))|;(?=\s)|(?P<comma>,)(?=\s)")
+CLAUSE_WORDS = 6
+COMMA_CLAUSE_WORDS = 10
+FOLLOWING_WORDS = 4
 ABBREVIATION = re.compile(r"\b(?:mr|mrs|ms|dr|st|prof|vs|etc|e\.g|i\.e)\.$", re.IGNORECASE)
 TAG = re.compile(r"\[\s*values?\s*:[^\]\n]*\]?|^\s*values?\s*:.*$", re.IGNORECASE | re.MULTILINE)
 UNCLOSED = re.compile(r"\[[^\]\n]*$")
@@ -524,12 +528,33 @@ class Sentences:
         for end in _boundaries(speakable, self._start):
             pieces.append(speakable[self._start : end])
             self._start = end
+        if not (pieces or self.said or over or final) and (end := self._first_clause(speakable)):
+            pieces.append(speakable[self._start : end])
+            self._start = end
         if over or final:
             pieces.append(speakable[self._start :])
             self._over = True
         sentences = [s for s in map(self._clean, pieces) if s]
         self.said += len(sentences)
         return sentences
+
+    def _first_clause(self, speakable: str) -> int | None:
+        """Where to cut a long first sentence so its voice starts sooner: at a dash or semicolon, or
+        a comma outside a list, with enough words before it and streamed after it."""
+        for match in CLAUSE_END.finditer(speakable, self._start):
+            end, comma = match.end(), match["comma"] is not None
+            if speakable.count("*", 0, end) % 2:
+                continue
+            words = self._clean(speakable[self._start : end]).split()
+            if len(words) < (COMMA_CLAUSE_WORDS if comma else CLAUSE_WORDS):
+                continue
+            following = speakable[end:].split()
+            if len(following) - (not speakable[-1].isspace()) < FOLLOWING_WORDS:
+                return None
+            near = words[-FOLLOWING_WORDS - 1 : -1] + following[:FOLLOWING_WORDS]
+            if not (comma and any(word.endswith(",") for word in near)):
+                return end
+        return None
 
     def _speakable(self) -> tuple[str, bool]:
         """The text up to the values tag or the other person's turn, and whether either began."""

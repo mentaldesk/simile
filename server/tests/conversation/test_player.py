@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import re
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 
@@ -278,6 +279,24 @@ async def test_the_first_sentence_is_out_before_the_rest_is_written() -> None:
     rest.set()
     await village.run(2)
     assert village.said("ana") == ["Oh, hello!", "Welcome to the village."]
+
+
+async def test_a_long_first_sentence_starts_at_its_first_clause() -> None:
+    rest = asyncio.Event()
+    chunks = ["Go and find Marcus at the maker space—", "he knows everyone ", "around ", rest]
+    provider = FakeProvider([[*chunks, "here.\n[values: x]"]])
+    village = Village(provider=provider)
+
+    village.players.say("Who should I meet?", "ana")
+    await village.run(2)
+
+    assert village.said("ana") == ["Go and find Marcus at the maker space—"]
+    rest.set()
+    await village.run(4)
+    assert village.said("ana") == [
+        "Go and find Marcus at the maker space—",
+        "he knows everyone around here.",
+    ]
 
 
 async def test_a_sentence_written_late_still_waits_for_the_audio_before_it() -> None:
@@ -938,6 +957,74 @@ def test_a_sentence_is_out_as_soon_as_the_next_begins_or_the_tag_starts() -> Non
     assert splitter.feed("ues: connection]") == []
     assert splitter.end() == []
     assert splitter.draft.values == (CoreValue.CONNECTION,)
+
+
+def streamed(text: str) -> list[str]:
+    splitter = Sentences()
+    words = re.findall(r"\S+\s*", f"{text}\n[values: connection]")
+    return [sentence for word in words for sentence in splitter.feed(word)] + splitter.end()
+
+
+@pytest.mark.parametrize(
+    ("text", "sentences"),
+    [
+        (
+            "Oh mate, depends who you ask—some people do the whole farmers market thing.",
+            ["Oh mate, depends who you ask—", "some people do the whole farmers market thing."],
+        ),
+        (
+            "I painted the east wall last spring; it took me most of the summer.",
+            ["I painted the east wall last spring;", "it took me most of the summer."],
+        ),
+        (
+            "The market is the place to be - everyone turns up on a Saturday morning.",
+            ["The market is the place to be -", "everyone turns up on a Saturday morning."],
+        ),
+        (
+            "The coffee is decent but the pastries are something else, so get there before nine.",
+            [
+                "The coffee is decent but the pastries are something else,",
+                "so get there before nine.",
+            ],
+        ),
+        (
+            "Hi there. Go and find Marcus at the maker space—he knows everyone around here.",
+            ["Hi there.", "Go and find Marcus at the maker space—he knows everyone around here."],
+        ),
+    ],
+)
+def test_a_long_first_sentence_is_cut_at_a_clause(text: str, sentences: list[str]) -> None:
+    assert streamed(text) == sentences
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Oh man, honestly I just grab whatever's cheapest and they always throw in a pastry.",
+        "The space, man—nobody's watching what you do or telling you it's wrong.",
+        "Go and find Marcus at the maker space—you know?",
+        "The coffee is decent but the pastries are something else, really.",
+        "When I'm not working at the bakery I like painting, hiking, swimming and old novels.",
+        "It's a well-known spot for the after-work crowd and their dogs on a sunny evening.",
+    ],
+)
+def test_a_first_sentence_without_a_good_clause_stays_whole(text: str) -> None:
+    assert streamed(text) == [text]
+
+
+def test_a_dash_in_a_stage_direction_isnt_a_clause() -> None:
+    text = "*gestures broadly at the big painted wall behind her—grinning* Come and see it."
+
+    assert streamed(text) == ["Come and see it."]
+
+
+def test_a_clause_is_cut_once_enough_words_follow_it() -> None:
+    splitter = Sentences()
+
+    assert splitter.feed("Go and find Marcus at the maker space—he knows") == []
+    assert splitter.feed(" everyone around") == []
+    assert splitter.feed(" ") == ["Go and find Marcus at the maker space—"]
+    assert splitter.feed("here. Bye") == ["he knows everyone around here."]
 
 
 def test_split() -> None:
