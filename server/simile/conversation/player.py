@@ -376,6 +376,8 @@ class PlayerConversations:
     def _greets(self, npc: Id, now: datetime) -> bool:
         engine, behaviour = self.engine, self.engine.behaviour
         mind = behaviour.minds[npc]
+        if npc in behaviour.leave_player_alone:
+            return False
         if mind.goal.activity in (Activity.HOME, Activity.SLEEP):
             return False
         if max(self._considered.get(npc, now), mind.cooldowns.get(PLAYER_ID, now)) > now:
