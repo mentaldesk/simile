@@ -24,7 +24,6 @@ export function figureAt(
   };
 }
 
-/** Where a figure's sprite is drawn on the canvas, after the camera's scroll and zoom. */
 export function figureBox(figure: Figure, camera: IsoCamera): ScreenBox {
   const scroll = { x: camera.scrollX, y: camera.scrollY };
   const top = toCanvas({ x: figure.x, y: figure.top }, scroll, camera, camera.zoom);

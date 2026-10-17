@@ -45,9 +45,10 @@ The renders are drawn at one art pixel per CSS pixel, so a bigger window shows m
 Under `?renderer=iso`, `main.ts` sizes the game to the window in device pixels and shows it at
 `1 / devicePixelRatio` (`nativeCanvas` in `canvas.ts`). Phaser's `RESIZE` mode would size it in CSS
 pixels, which a 2× screen blows up. The camera's zoom is whole device pixels per art pixel
-(`isoZoom`): the pixel ratio, rounded, until the view would be wider than `MAX_TILES_ACROSS` (20),
-and then the smallest whole zoom that keeps it within that. Top-down keeps `main.ts`'s 640 × 360
-canvas, scaled in whole steps.
+(`isoZoom`): the pixel ratio rounded, or the canvas width over `MAX_TILES_ACROSS` (20) tiles rounded,
+whichever is larger. So a 1× window keeps one art pixel per CSS pixel up to 2880 px wide (30 tiles)
+and steps up there, and past 1920 px the view stays 15 to 30 tiles across. Top-down keeps
+`main.ts`'s 640 × 360 canvas, scaled in whole steps.
 
 ## What it provides
 

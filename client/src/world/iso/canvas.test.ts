@@ -38,14 +38,21 @@ describe('isoZoom', () => {
     expect(tilesAcross(1920, 2)).toBe(MAX_TILES_ACROSS);
   });
 
-  it('scales up in whole steps past the cap, so the view never shows more than it', () => {
-    expect(isoZoom(2560, 1, TILE)).toBe(2);
+  it('keeps one art pixel per CSS pixel on a 1x window up to 1.5 times the cap', () => {
+    expect(isoZoom(2560, 1, TILE)).toBe(1);
+    expect(tilesAcross(2560, 1)).toBeCloseTo(26.7, 1);
+    expect(isoZoom(2879, 1, TILE)).toBe(1);
+  });
+
+  it('scales up in whole steps past that, so the view stays 15 to 30 tiles across', () => {
+    expect(isoZoom(2880, 1, TILE)).toBe(2);
     expect(isoZoom(3840, 1, TILE)).toBe(2);
-    expect(isoZoom(3841, 1, TILE)).toBe(3);
+    expect(isoZoom(4800, 1, TILE)).toBe(3);
     expect(isoZoom(5120, 2, TILE)).toBe(3);
-    for (const cssWidth of [1921, 2560, 3000, 3840, 5120]) {
+    for (const cssWidth of [1921, 2560, 2879, 2880, 3840, 4799, 5120]) {
       for (const ratio of [1, 2]) {
-        expect(tilesAcross(cssWidth, ratio)).toBeLessThanOrEqual(MAX_TILES_ACROSS);
+        expect(tilesAcross(cssWidth, ratio)).toBeGreaterThanOrEqual(MAX_TILES_ACROSS * 0.75);
+        expect(tilesAcross(cssWidth, ratio)).toBeLessThanOrEqual(MAX_TILES_ACROSS * 1.5);
       }
     }
   });

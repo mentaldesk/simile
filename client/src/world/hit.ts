@@ -33,7 +33,6 @@ export function npcAt(point: ScreenPoint, view: WorldView): string | undefined {
   return (hits.find((hit) => hit.opaqueAt?.(point)) ?? hits[0])?.id;
 }
 
-/** The pixel of a frame drawn over `box` that a canvas point falls on. */
 export function framePixel(point: ScreenPoint, box: Box, frame: Size): Point {
   return {
     x: Math.floor(((point.x - box.x) * frame.width) / box.width),

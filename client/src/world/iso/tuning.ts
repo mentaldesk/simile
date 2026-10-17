@@ -1,4 +1,4 @@
-/** Beyond this, a bigger window draws bigger pixels instead of more of the village. */
+/** A window much wider than this draws bigger pixels instead of more of the village. */
 export const MAX_TILES_ACROSS = 20;
 
 /** Today's 16 × 24 px atlases stand in for A2b's sprites, at the size they're drawn top-down. */
