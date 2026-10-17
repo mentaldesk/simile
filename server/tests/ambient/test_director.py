@@ -8,6 +8,7 @@ from simile.behaviour import Activity, Behaviour, Goal
 from simile.conversation import DEFAULT_CONFIG, ConversationConfig, ConversationEngine
 from simile.conversation.player import PlayerConversations
 from simile.llm import FakeProvider, LLMClient
+from simile.llm.fake import scene
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Npc, Relationship, Tile
@@ -83,7 +84,9 @@ class Village:
             needs = {need: 0.5 for need in mind.needs}
             later = START + timedelta(hours=1)
             self.behaviour.restore(npc, Goal(Activity.SQUARE, "square"), needs, START, later, {})
-        llm = LLMClient(FakeProvider(default="Lovely morning. [values: connection]"))
+        llm = LLMClient(
+            FakeProvider(default=lambda request: scene(request, ["Lovely morning."]) or "Morning.")
+        )
         self.engine = ConversationEngine(
             self.clock, self.world.bus, self.behaviour, self.store, lambda: llm, config=engine
         )

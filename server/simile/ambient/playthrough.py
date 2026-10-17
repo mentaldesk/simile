@@ -19,6 +19,7 @@ from simile.behaviour import Activity
 from simile.conversation import LineDrafted
 from simile.conversation.player import DEFAULT_PLAYER_CONFIG
 from simile.llm import CallRecord, LLMClient, Request, Usage
+from simile.llm.fake import cast
 from simile.protocol import PlayerMoveMessage, PlayerSayMessage, Position
 from simile.reflection.extraction import SYSTEM as REFLECTING
 from simile.schema import PLAYER_ID, CoreValue, Id, Npc
@@ -45,6 +46,10 @@ AGAIN = timedelta(minutes=10)
 
 WORDS = 33
 """Words in a line from Claude, on average, in D2's soak."""
+SCENE_WORDS = 16
+"""Words in a line of a scene's script, on average, in B2's comparison with real Claude."""
+SCENE_FIRST, SCENE_LINE = 2.3, 0.4
+"""Sim seconds a scene takes to stream its first line, then each line after, at 1x."""
 TOP_VALUES, ON_TOPIC = 5, 0.6
 """The chance each value a line touches is one of the speaker's top five, as in D2."""
 LINE, REPLY, REFLECTION, OTHER = 3.1, (1.1, 0.9), 13.9, 3.0
@@ -103,13 +108,14 @@ class Delays:
 
 
 class Padded:
-    """A fake LLM whose lines are as long as Claude's, touch values as Claude's do, and take as
-    long to write at 1x. Reflections store nothing."""
+    """A fake LLM whose lines and scenes are as long as Claude's, touch values as Claude's do,
+    and take as long to write at 1x. Reflections store nothing."""
 
     name = "padded"
 
     def __init__(self, npcs: Iterable[Npc], delays: Delays, rng: random.Random) -> None:
         self.npcs = {npc.name: npc for npc in npcs}
+        self.first_names = {npc.name.split()[0]: npc for npc in npcs}
         self.delays = delays
         self.rng = rng
 
@@ -129,6 +135,8 @@ class Padded:
     def _steps(self, request: Request) -> list[tuple[float, str]]:
         if request.system.startswith(REFLECTING):
             return [(REFLECTION, '{"reflections": []}')]
+        if (scene := cast(request)) is not None:
+            return self.scene(*scene)
         found = SPEAKER.match(request.system)
         npc = self.npcs.get(found.group(1)) if found else None
         if npc is None:
@@ -138,6 +146,16 @@ class Padded:
             first, rest = self.sentences(WORDS, 2).split("\n")
             return [(REPLY[0], first + " "), (REPLY[1], rest + tag)]
         return [(LINE, self.sentences(WORDS, 2).replace("\n", " ") + tag)]
+
+    def scene(self, a: str, b: str, length: int) -> list[tuple[float, str]]:
+        """A script of `length` lines taking turns from `a`, streamed a line at a time."""
+        steps = []
+        for n in range(length):
+            name = (a, b)[n % 2]
+            tags = ", ".join(self.values(self.first_names[name]))
+            line = self.sentences(SCENE_WORDS, 2).replace("\n", " ")
+            steps.append((SCENE_LINE if n else SCENE_FIRST, f"{name}: {line} [values: {tags}]\n"))
+        return steps
 
     def sentences(self, words: int, count: int) -> str:
         """`count` sentences of `words` words in all, one a line."""

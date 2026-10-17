@@ -45,12 +45,13 @@ class Village:
         await self.world.loop.run(timedelta(seconds=seconds))
 
 
-async def test_ending_a_conversation_now_ends_it_as_if_it_had_run_its_course() -> None:
+async def test_ending_a_conversation_now_ends_it_at_its_last_spoken_line() -> None:
     hang = asyncio.Event()
-    village = Village(FakeProvider(["Morning! [values: connection]", ["Well", hang]]))
+    script = ["Kofi: Morning! [values: connection]\n", "Henrietta: Well", hang]
+    village = Village(FakeProvider([script]))
     started = village.engine.start(KOFI, HENRIETTA)
     await village.run(seconds=1)
-    assert [record.error for record in village.records] == [None]
+    assert village.records == []
 
     ended = village.engine.end(started.id)
 
@@ -68,11 +69,11 @@ async def test_ending_a_conversation_now_ends_it_as_if_it_had_run_its_course() -
         assert not mind.paused
         assert mind.cooldowns == {other: cooldown}
     await asyncio.sleep(0)
-    assert [record.error for record in village.records] == [None, "cancelled"]
+    assert [record.error for record in village.records] == ["cancelled"]
 
 
 async def test_ending_a_conversation_that_is_not_live_does_nothing() -> None:
-    village = Village(FakeProvider(default="Morning! [values: connection]"))
+    village = Village(FakeProvider(default="Kofi: Morning! [values: connection]"))
     started = village.engine.start(KOFI, HENRIETTA)
     first = village.engine.end(started.id)
 

@@ -61,8 +61,7 @@ async def test_records_where_everyone_is_what_they_said_and_the_llm_calls(databa
     }
     assert run.conversations
     assert all(c.ended and c.lines for c in run.conversations)
-    lines = sum(len(c.lines) for c in run.conversations)
-    assert sum(call.purpose == "conversation" for call in run.calls) >= lines
+    assert sum(call.purpose == "conversation" for call in run.calls) >= len(run.conversations)
     assert {call.provider for call in run.calls} == {"canned"}
     assert any(call.purpose == "reflection" for call in run.calls)
     summary = report(run)
