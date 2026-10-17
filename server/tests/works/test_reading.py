@@ -129,6 +129,7 @@ def test_reading_stores_a_memory_about_the_artist_with_the_works_tags(
     assert "The Footbridge\n\nThe arch has held for ninety-one." in asked
     assert "Viktor Hale says of it: Things last when people look after them." in asked
     assert "You like Viktor Hale a lot" in asked
+    assert "given what you care about and how you feel about Viktor Hale?" in asked
     assert request.system.startswith("You are Mei Lin")
     assert request.model == DEFAULT_CONFIG.reaction_model == Model.HAIKU_5_5
 

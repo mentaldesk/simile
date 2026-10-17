@@ -43,9 +43,6 @@ def name_of(npcs: Mapping[Id, Npc], id: Id) -> str:
 def interest(
     reader: Npc, work: Work, feeling: Relationship, config: WorksConfig = DEFAULT_CONFIG
 ) -> float:
-    """How much `reader` wants to read `work`: its interest as if it were an article, plus
-    `config.artist_weight` times B1's affinity for the artist, so a friend's piece pulls harder
-    than a stranger's and a rival's less."""
     return article_interest(reader, work) + config.artist_weight * affinity(feeling)
 
 
@@ -55,9 +52,10 @@ def work_prompt(work: Work, artist: str, feeling: str) -> str:
         f"they write. It's by {artist}, who writes {work.form}.\n\n"
         f"{work.title}\n\n{work.text}\n\n"
         f"{artist} says of it: {work.statement}\n\n{feeling}\n\n"
-        "How does it land with you? Judge it by what it says: something that chimes with what "
-        "you care about most is strongly positive, something that goes against it strongly "
-        "negative, and something you don't care about is mild either way."
+        f"How does it land with you, given what you care about and how you feel about {artist}? "
+        "Something that chimes with what you care about most is strongly positive, something "
+        "that goes against it strongly negative, and something you don't care about is mild "
+        "either way."
     )
 
 
@@ -78,11 +76,7 @@ def remember(
 
 
 class WorksReader:
-    """B1's `news_interest` and `read_news` hooks, wrapped around the news's: a terminal offers
-    the best unread article or work, and an NPC there reads the unread piece of writing that
-    interests them most if no article interests them more, and the news's pick as well. A task
-    asks the LLM how the piece lands and stores it as a `work` memory about the artist. Nobody
-    reads their own."""
+    """B1's `news_interest` and `read_news` hooks, wrapped around the news's."""
 
     def __init__(
         self,
@@ -108,8 +102,7 @@ class WorksReader:
         self.tasks: set[asyncio.Task[None]] = set()
 
     def ranked(self, npc: Npc) -> list[tuple[Work, float]]:
-        """The newest writing by others that `npc` hasn't read, with its interest, most
-        interesting first. Those below `config.min_interest` are left out."""
+        """Unread writing by others worth reading, most interesting first."""
         seen = self._seen_by(npc.id)
         works = [
             work
@@ -126,9 +119,7 @@ class WorksReader:
         return max(self.news_interest(npc), self._best(npc)[1])
 
     def read(self, npc: Npc) -> None:
-        """Start reading the unread work that interests `npc` most if no article interests them
-        more, then hand over to the news, so a work never costs them an article. Doesn't
-        block."""
+        """The best unread work if no article interests `npc` more, and the news's pick as well."""
         work, best = self._best(npc)
         llm = self.llm()
         if work is not None and llm is not None and best >= self.news_interest(npc):

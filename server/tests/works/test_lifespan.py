@@ -98,9 +98,7 @@ def test_wraps_the_news_at_the_terminals_and_puts_it_back(make_package: MakePack
 async def fast_forward(
     hours: float, *, with_works: bool = True
 ) -> tuple[dict[str, str], list[Memory], list[Memory], Counter[str]]:
-    """Writers keen to write, everyone keen on the terminals, and a fake provider that writes
-    every piece and rates every article and work. The works made, the residents' work and news
-    memories, and their visits to the terminals."""
+    """Works made, residents' work and news memories, and their visits to the terminals."""
     app = Starlette()
     world = World(Clock(START), FakeWallClock())
     app.state.world = world

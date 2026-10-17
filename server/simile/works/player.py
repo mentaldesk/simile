@@ -11,9 +11,7 @@ from simile.works.store import WorksStore
 
 
 class PlayerWorks:
-    """The player at a news terminal's Village tab: `list_works` and `read_work` each get the
-    `works` to send back, and reading a piece stores it as the player's own `work` memory. No
-    LLM call."""
+    """`list_works` and `read_work` for the player at a terminal's Village tab."""
 
     def __init__(
         self,
