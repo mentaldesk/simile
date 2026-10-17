@@ -48,5 +48,9 @@
     "description": "A young woman in her twenties. Light, energetic voice, speaks quickly and brightly.",
     "reference_line": "I've got three drops before lunch and then I'm free. Want to see the view from the water tower?",
     "reference_clip": null
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "bright murals of the village seen from the air"
   }
 }

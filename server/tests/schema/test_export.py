@@ -65,6 +65,7 @@ def test_cli_check_fails_when_out_of_date(monkeypatch: pytest.MonkeyPatch) -> No
         ("InteractionEvent", "interaction_events.json"),
         ("Memory", "memories.json"),
         ("NewsItem", "news_items.json"),
+        ("Work", "works.json"),
         ("Conversation", "conversations.json"),
     ],
 )

@@ -10,11 +10,23 @@ export type ServerMessage =
   | ConversationEndedMessage
   | LineMessage
   | NpcStateMessage
-  | NewsMessage;
+  | NewsMessage
+  | WorksMessage
+  | MuralsMessage;
 export type EntityKind = 'npc' | 'player';
 export type JsonValue = unknown;
+/**
+ * The way a wall faces. The iso camera sees only south and east faces.
+ */
+export type Face = 'south' | 'east';
 export type ClientMessage =
-  PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage | ListNewsMessage | ReadNewsMessage;
+  | PlayerMoveMessage
+  | PlayerSayMessage
+  | WatchNpcMessage
+  | ListNewsMessage
+  | ReadNewsMessage
+  | ListWorksMessage
+  | ReadWorkMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -148,6 +160,90 @@ export interface NewsArticle {
    */
   read: boolean;
 }
+/**
+ * Residents' writing at the terminals, newest first. The reply to list_works and read_work.
+ */
+export interface WorksMessage {
+  type: 'works';
+  works: WrittenWork[];
+}
+export interface WrittenWork {
+  work_id: string;
+  title: string;
+  artist: Artist;
+  /**
+   * What the artist makes, e.g. "short poems about the river".
+   */
+  form: string;
+  /**
+   * The piece itself, with its line breaks.
+   */
+  text: string;
+  /**
+   * The artist on what it's saying.
+   */
+  statement: string;
+  /**
+   * Sim time.
+   */
+  created: string;
+  /**
+   * Whether the player has read it.
+   */
+  read: boolean;
+}
+export interface Artist {
+  id: string;
+  name: string;
+}
+/**
+ * Every mural wall and what's on it. Sent on connect and whenever a mural changes.
+ */
+export interface MuralsMessage {
+  type: 'murals';
+  walls: Wall[];
+}
+export interface Wall {
+  id: string;
+  /**
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   */
+  x: number;
+  /**
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   */
+  y: number;
+  /**
+   * In tiles, east from (x, y) for a south face or south for an east face.
+   */
+  width: number;
+  face: Face;
+  /**
+   * The mural's lower edge, in storeys above the ground.
+   */
+  bottom: number;
+  /**
+   * The mural's upper edge, in storeys above the ground.
+   */
+  top: number;
+  /**
+   * Null while the wall is blank.
+   */
+  mural: Mural | null;
+}
+export interface Mural {
+  work_id: string;
+  title: string;
+  artist: Artist;
+  /**
+   * The artist on what it's saying.
+   */
+  statement: string;
+  /**
+   * The URL of the mural's image, /api/works/<work_id>.png.
+   */
+  image: string;
+}
 export interface PlayerMoveMessage {
   type: 'player_move';
   position: Position;
@@ -176,4 +272,14 @@ export interface ReadNewsMessage {
    * The article the player reads.
    */
   news_id: string;
+}
+export interface ListWorksMessage {
+  type: 'list_works';
+}
+export interface ReadWorkMessage {
+  type: 'read_work';
+  /**
+   * The work the player reads.
+   */
+  work_id: string;
 }

@@ -1,7 +1,7 @@
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field, JsonValue, TypeAdapter
+from pydantic import Field, JsonValue, TypeAdapter, model_validator
 
 from simile.schema import Conversation, Id, Key, Line, Model, Timestamp
 
@@ -90,6 +90,77 @@ class NewsMessage(Model):
     articles: list[NewsArticle]
 
 
+class Artist(Model):
+    id: Id
+    name: str
+
+
+class WrittenWork(Model):
+    work_id: Key
+    title: str
+    artist: Artist
+    form: str = Field(description='What the artist makes, e.g. "short poems about the river".')
+    text: str = Field(description="The piece itself, with its line breaks.")
+    statement: str = Field(description="The artist on what it's saying.")
+    created: Timestamp = Field(description="Sim time.")
+    read: bool = Field(description="Whether the player has read it.")
+
+
+class WorksMessage(Model):
+    """Residents' writing at the terminals, newest first. The reply to list_works and read_work."""
+
+    type: Literal["works"] = "works"
+    works: list[WrittenWork]
+
+
+class Face(StrEnum):
+    """The way a wall faces. The iso camera sees only south and east faces."""
+
+    SOUTH = "south"
+    EAST = "east"
+
+
+class Mural(Model):
+    work_id: Key
+    title: str
+    artist: Artist
+    statement: str = Field(description="The artist on what it's saying.")
+    image: str = Field(description="The URL of the mural's image, /api/works/<work_id>.png.")
+
+
+WALL_TILE = (
+    "(x, y) is the building's tile at the west end of a south face or the north end of an east "
+    "face: on its south row or east column, whatever storeys the mural spans. The face runs along "
+    "that tile's south edge (y + 1) or east edge (x + 1)."
+)
+
+
+class Wall(Model):
+    id: Id
+    x: int = Field(ge=0, description=WALL_TILE)
+    y: int = Field(ge=0, description=WALL_TILE)
+    width: int = Field(
+        ge=1, description="In tiles, east from (x, y) for a south face or south for an east face."
+    )
+    face: Face
+    bottom: float = Field(ge=0, description="The mural's lower edge, in storeys above the ground.")
+    top: float = Field(description="The mural's upper edge, in storeys above the ground.")
+    mural: Mural | None = Field(description="Null while the wall is blank.")
+
+    @model_validator(mode="after")
+    def _top_above_bottom(self) -> Self:
+        if self.top <= self.bottom:
+            raise ValueError("top must be above bottom")
+        return self
+
+
+class MuralsMessage(Model):
+    """Every mural wall and what's on it. Sent on connect and whenever a mural changes."""
+
+    type: Literal["murals"] = "murals"
+    walls: list[Wall]
+
+
 class PlayerMoveMessage(Model):
     type: Literal["player_move"] = "player_move"
     position: Position
@@ -110,6 +181,15 @@ class ReadNewsMessage(Model):
     news_id: Key = Field(description="The article the player reads.")
 
 
+class ListWorksMessage(Model):
+    type: Literal["list_works"] = "list_works"
+
+
+class ReadWorkMessage(Model):
+    type: Literal["read_work"] = "read_work"
+    work_id: Key = Field(description="The work the player reads.")
+
+
 class WatchNpcMessage(Model):
     type: Literal["watch_npc"] = "watch_npc"
     npc_id: Id | None = Field(description="The NPC to send npc_state for, or null to stop.")
@@ -123,12 +203,20 @@ type ServerMessage = Annotated[
     | ConversationEndedMessage
     | LineMessage
     | NpcStateMessage
-    | NewsMessage,
+    | NewsMessage
+    | WorksMessage
+    | MuralsMessage,
     Field(discriminator="type"),
 ]
 
 type ClientMessage = Annotated[
-    PlayerMoveMessage | PlayerSayMessage | WatchNpcMessage | ListNewsMessage | ReadNewsMessage,
+    PlayerMoveMessage
+    | PlayerSayMessage
+    | WatchNpcMessage
+    | ListNewsMessage
+    | ReadNewsMessage
+    | ListWorksMessage
+    | ReadWorkMessage,
     Field(discriminator="type"),
 ]
 

@@ -10,17 +10,21 @@ from simile.schema import (
     PLAYER_ID,
     Conversation,
     CoreValue,
+    Craft,
     Flag,
     InteractionEvent,
     Line,
+    Medium,
     Memory,
     Model,
     NewsItem,
     Npc,
     Relationship,
+    Work,
 )
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
+CONTENT_NPCS = Path(__file__).parents[3] / "content" / "npcs"
 
 
 def fixture(name: str, index: int | None = None) -> dict[str, Any]:
@@ -43,6 +47,7 @@ TIMESTAMPS = [
     (Relationship, fixture("relationships.json", 1), "last_interaction"),
     (Memory, fixture("memories.json", 0), "timestamp"),
     (NewsItem, fixture("news_items.json", 0), "published"),
+    (Work, fixture("works.json", 0), "created"),
 ]
 
 
@@ -76,6 +81,17 @@ def test_conversation_ids_are_not_empty(model: type[Model], data: dict[str, Any]
     rejects(model, data | {"conversation_id": ""}, "at least 1 character")
 
 
+def test_memory_work_ids_are_not_empty() -> None:
+    rejects(Memory, fixture("memories.json", 6) | {"work_id": ""}, "at least 1 character")
+
+
+def test_memories_stored_before_works_load_without_a_work() -> None:
+    memory = fixture("memories.json", 0)
+    del memory["work_id"]
+
+    assert Memory.model_validate_json(json.dumps(memory)).work_id is None
+
+
 def test_there_are_24_core_values() -> None:
     assert len(CoreValue) == 24
 
@@ -97,6 +113,37 @@ def test_ids_are_slugs() -> None:
 
 def test_unknown_fields_are_rejected() -> None:
     rejects(Npc, fixture("npcs/mei.json") | {"mood": "sleepy"}, "Extra inputs are not permitted")
+
+
+@pytest.mark.parametrize("path", sorted(CONTENT_NPCS.glob("*.json")), ids=lambda path: path.name)
+def test_committed_npcs_still_load(path: Path) -> None:
+    Npc.model_validate_json(path.read_bytes())
+
+
+def test_npcs_without_a_craft_load_with_none() -> None:
+    npc = fixture("npcs/viktor.json")
+    del npc["craft"]
+
+    assert Npc.model_validate_json(json.dumps(npc)).craft is None
+
+
+def test_npc_craft_round_trips() -> None:
+    npc = Npc.model_validate(fixture("npcs/viktor.json"))
+
+    assert npc.craft == Craft(medium=Medium.WRITING, form="plain verse about old bridges")
+    assert Npc.model_validate_json(npc.model_dump_json()) == npc
+
+
+@pytest.mark.parametrize(
+    ("craft", "match"),
+    [
+        ({"medium": "music", "form": "sea shanties"}, "medium"),
+        ({"medium": "writing", "form": ""}, "at least 1 character"),
+        ({"medium": "writing"}, "form"),
+    ],
+)
+def test_crafts_are_a_known_medium_and_a_form(craft: dict[str, Any], match: str) -> None:
+    rejects(Npc, fixture("npcs/viktor.json") | {"craft": craft}, match)
 
 
 def test_colours_are_hex() -> None:
@@ -212,3 +259,44 @@ def test_news_tags_are_few_and_short(tags: list[str], match: str) -> None:
 @pytest.mark.parametrize("sentiment", [-1.5, 1.5])
 def test_news_sentiment_is_signed_unit(sentiment: float) -> None:
     rejects(NewsItem, fixture("news_items.json", 1) | {"sentiment": sentiment}, "sentiment")
+
+
+def test_a_mural_is_on_a_wall() -> None:
+    rejects(Work, fixture("works.json", 1) | {"wall": None}, "a mural needs a wall")
+
+
+def test_writing_is_not_on_a_wall() -> None:
+    rejects(Work, fixture("works.json", 0) | {"wall": "square_north"}, "only a mural has one")
+
+
+def test_a_work_relates_to_every_core_value() -> None:
+    work = fixture("works.json", 0)
+    del work["values"]["optimism"]
+
+    rejects(Work, work, "missing core values: optimism")
+
+
+@pytest.mark.parametrize("field", ["values", "tags", "sentiment"])
+def test_a_work_is_always_analysed(field: str) -> None:
+    work = fixture("works.json", 0)
+    del work[field]
+
+    rejects(Work, work, f"{field}\n  Field required")
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"values": fixture("works.json", 0)["values"] | {"freedom": 1.1}}, "values.freedom"),
+        ({"tags": [f"tag {n}" for n in range(11)]}, "at most 10 items"),
+        ({"tags": ["x" * 41]}, "at most 40 characters"),
+        ({"sentiment": -1.5}, "sentiment"),
+        ({"artist": "Viktor"}, "String should match pattern"),
+        ({"medium": "music"}, "medium"),
+        ({"form": ""}, "at least 1 character"),
+        ({"title": ""}, "at least 1 character"),
+        ({"inspired_by": [""]}, "at least 1 character"),
+    ],
+)
+def test_work_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
+    rejects(Work, fixture("works.json", 0) | update, match)

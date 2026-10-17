@@ -1,13 +1,34 @@
 {
   "title": "Message",
   "$defs": {
+    "Artist": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Artist",
+      "type": "object"
+    },
     "ClientMessage": {
       "discriminator": {
         "mapping": {
           "list_news": "#/$defs/ListNewsMessage",
+          "list_works": "#/$defs/ListWorksMessage",
           "player_move": "#/$defs/PlayerMoveMessage",
           "player_say": "#/$defs/PlayerSayMessage",
           "read_news": "#/$defs/ReadNewsMessage",
+          "read_work": "#/$defs/ReadWorkMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -27,6 +48,12 @@
         },
         {
           "$ref": "#/$defs/ReadNewsMessage"
+        },
+        {
+          "$ref": "#/$defs/ListWorksMessage"
+        },
+        {
+          "$ref": "#/$defs/ReadWorkMessage"
         }
       ]
     },
@@ -213,6 +240,15 @@
       "title": "EntityMovedMessage",
       "type": "object"
     },
+    "Face": {
+      "description": "The way a wall faces. The iso camera sees only south and east faces.",
+      "enum": [
+        "south",
+        "east"
+      ],
+      "title": "Face",
+      "type": "string"
+    },
     "JsonValue": {},
     "Line": {
       "additionalProperties": false,
@@ -293,6 +329,76 @@
         "type"
       ],
       "title": "ListNewsMessage",
+      "type": "object"
+    },
+    "ListWorksMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "list_works",
+          "default": "list_works",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type"
+      ],
+      "title": "ListWorksMessage",
+      "type": "object"
+    },
+    "Mural": {
+      "additionalProperties": false,
+      "properties": {
+        "work_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "artist": {
+          "$ref": "#/$defs/Artist"
+        },
+        "statement": {
+          "description": "The artist on what it's saying.",
+          "type": "string"
+        },
+        "image": {
+          "description": "The URL of the mural's image, /api/works/<work_id>.png.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "work_id",
+        "title",
+        "artist",
+        "statement",
+        "image"
+      ],
+      "title": "Mural",
+      "type": "object"
+    },
+    "MuralsMessage": {
+      "additionalProperties": false,
+      "description": "Every mural wall and what's on it. Sent on connect and whenever a mural changes.",
+      "properties": {
+        "type": {
+          "const": "murals",
+          "default": "murals",
+          "type": "string"
+        },
+        "walls": {
+          "items": {
+            "$ref": "#/$defs/Wall"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "walls"
+      ],
+      "title": "MuralsMessage",
       "type": "object"
     },
     "NewsArticle": {
@@ -470,6 +576,27 @@
       "title": "ReadNewsMessage",
       "type": "object"
     },
+    "ReadWorkMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "read_work",
+          "default": "read_work",
+          "type": "string"
+        },
+        "work_id": {
+          "description": "The work the player reads.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "work_id"
+      ],
+      "title": "ReadWorkMessage",
+      "type": "object"
+    },
     "ServerMessage": {
       "discriminator": {
         "mapping": {
@@ -478,9 +605,11 @@
           "conversation_started": "#/$defs/ConversationStartedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
           "line": "#/$defs/LineMessage",
+          "murals": "#/$defs/MuralsMessage",
           "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
-          "snapshot": "#/$defs/SnapshotMessage"
+          "snapshot": "#/$defs/SnapshotMessage",
+          "works": "#/$defs/WorksMessage"
         },
         "propertyName": "type"
       },
@@ -508,6 +637,12 @@
         },
         {
           "$ref": "#/$defs/NewsMessage"
+        },
+        {
+          "$ref": "#/$defs/WorksMessage"
+        },
+        {
+          "$ref": "#/$defs/MuralsMessage"
         }
       ]
     },
@@ -553,6 +688,66 @@
       "title": "SnapshotMessage",
       "type": "object"
     },
+    "Wall": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "x": {
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "y": {
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "width": {
+          "description": "In tiles, east from (x, y) for a south face or south for an east face.",
+          "minimum": 1,
+          "type": "integer"
+        },
+        "face": {
+          "$ref": "#/$defs/Face"
+        },
+        "bottom": {
+          "description": "The mural's lower edge, in storeys above the ground.",
+          "minimum": 0,
+          "type": "number"
+        },
+        "top": {
+          "description": "The mural's upper edge, in storeys above the ground.",
+          "type": "number"
+        },
+        "mural": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Mural"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the wall is blank."
+        }
+      },
+      "required": [
+        "id",
+        "x",
+        "y",
+        "width",
+        "face",
+        "bottom",
+        "top",
+        "mural"
+      ],
+      "title": "Wall",
+      "type": "object"
+    },
     "WatchNpcMessage": {
       "additionalProperties": false,
       "properties": {
@@ -580,6 +775,77 @@
         "npc_id"
       ],
       "title": "WatchNpcMessage",
+      "type": "object"
+    },
+    "WorksMessage": {
+      "additionalProperties": false,
+      "description": "Residents' writing at the terminals, newest first. The reply to list_works and read_work.",
+      "properties": {
+        "type": {
+          "const": "works",
+          "default": "works",
+          "type": "string"
+        },
+        "works": {
+          "items": {
+            "$ref": "#/$defs/WrittenWork"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "works"
+      ],
+      "title": "WorksMessage",
+      "type": "object"
+    },
+    "WrittenWork": {
+      "additionalProperties": false,
+      "properties": {
+        "work_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "artist": {
+          "$ref": "#/$defs/Artist"
+        },
+        "form": {
+          "description": "What the artist makes, e.g. \"short poems about the river\".",
+          "type": "string"
+        },
+        "text": {
+          "description": "The piece itself, with its line breaks.",
+          "type": "string"
+        },
+        "statement": {
+          "description": "The artist on what it's saying.",
+          "type": "string"
+        },
+        "created": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "read": {
+          "description": "Whether the player has read it.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "work_id",
+        "title",
+        "artist",
+        "form",
+        "text",
+        "statement",
+        "created",
+        "read"
+      ],
+      "title": "WrittenWork",
       "type": "object"
     }
   },

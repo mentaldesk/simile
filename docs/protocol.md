@@ -82,6 +82,34 @@ client shows the latest one. Hub subscribers don't know which connection a messa
 reply goes to every client, which is fine with one player. A client ignores `news` while its news
 panel is closed.
 
+### `works`
+
+`works`: residents' writing at the terminals, newest first. Each has its `work_id` (the F2 `Work`
+id), `title`, `artist` (`id` and `name`), `form`, `text` (the piece itself, line breaks and all),
+`statement` (the artist on what it's saying), `created` (sim time) and `read`, whether the player
+has read it. `form` is the work's own, copied from the artist's craft when they made it, so it
+doesn't change if their craft does. The server sends it in reply to [`list_works`](#list_works) and
+[`read_work`](#read_work), to every client, as with `news`.
+
+### `murals`
+
+`walls`: every wall that takes a mural, painted or not. The server sends it after the `snapshot`
+and `clock` on connect, and again to everyone whenever a mural changes, and the client replaces
+what it had.
+
+| Field | Type | |
+|---|---|---|
+| `id` | string | The wall's id. |
+| `x`, `y` | integer | The building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (`y + 1`) or east edge (`x + 1`). |
+| `width` | integer | Tiles, running east from (`x`, `y`) for a south face, or south for an east face. |
+| `face` | `"south"` or `"east"` | Which way the wall faces. The iso camera sees only these. |
+| `bottom`, `top` | number | The mural's lower and upper edges, in storeys above the ground: `0` is the ground and `1` the top of the ground floor. Fractions are fine, and `top` is above `bottom`. |
+| `mural` | `Mural` or `null` | What's painted there now, or `null` while it's blank. |
+
+A `Mural` has its `work_id`, `title`, `artist` (`id` and `name`), `statement`, and `image`, the URL
+of its picture, `/api/works/<work_id>.png`. A new mural is a new work with its own id, so the URL
+changes when the wall is painted over. A mural's F2 `Work.wall` is the wall's `id`.
+
 ### `audio_chunk`
 
 A binary frame: part of a line's audio, as Qwen3-TTS produces it. A 12-byte header, then the
@@ -137,6 +165,17 @@ replies with [`news`](#news).
 with its `news_id`, and replies with [`news`](#news), where it's now `read`. An unknown `news_id`
 stores nothing, and still gets a `news` reply.
 
+### `list_works`
+
+No fields. The client sends it when the player opens residents' writing at a terminal, and the
+server replies with [`works`](#works).
+
+### `read_work`
+
+`work_id`: the work the player reads. The server stores it as the player's own `work` memory, with
+its `work_id`, and replies with [`works`](#works), where it's now `read`. An unknown `work_id`
+stores nothing, and still gets a `works` reply.
+
 ## Sim events
 
 `server/simile/protocol/lifespan.py` forwards the sim's bus events to every client:
@@ -162,6 +201,7 @@ hub = hub_of(app)
 hub.broadcast(EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)))
 hub.broadcast(audio_chunk)  # an AudioChunk goes out as a binary frame
 unsubscribe = hub.subscribe(PlayerSayMessage, on_player_say)
+stop = hub.greet(current_murals)  # returns a server message, or None to send nothing
 hub.snapshot = world_snapshot  # returns a SnapshotMessage; the fixtures at sim time by default
 ```
 
@@ -170,6 +210,10 @@ hub.snapshot = world_snapshot  # returns a SnapshotMessage; the fixtures at sim 
   broadcast, after its snapshot.
 - The protocol lifespan sets `hub.clock`, which sends the `clock` after each snapshot. Without the
   lifespan, a new client gets only the snapshot.
+- `greet(greeter)` adds a message for each new client, such as `murals`. The hub calls every greeter
+  after the snapshot and clock, in the order they were added, and sends what each returns unless
+  it's `None`, before any broadcast. One that raises is logged and skipped. Call the returned
+  `stop()` when your lifespan exits.
 - Subscribers to client messages are called on the event loop, in the order they subscribed, and
   mustn't block. One that raises is logged and doesn't affect the others.
 - Call the hub from the event loop. From a worker thread, such as a TTS model running in one, use

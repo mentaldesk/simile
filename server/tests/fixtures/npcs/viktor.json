@@ -48,5 +48,9 @@
     "description": "An old man in his seventies. Deep, gravelly voice, speaks slowly and deliberately, gruff but warm.",
     "reference_line": "The old footbridge was built to last a hundred years. They don't make them like that any more.",
     "reference_clip": null
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "plain verse about old bridges"
   }
 }

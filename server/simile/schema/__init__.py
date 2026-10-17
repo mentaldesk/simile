@@ -1,7 +1,17 @@
 from simile.schema.common import PLAYER_ID, Colour, Id, Key, Model, Signed, Timestamp, Unit
 from simile.schema.conversation import Conversation, Line
 from simile.schema.news import NewsItem
-from simile.schema.npc import Accessory, Appearance, Build, CoreValue, HairStyle, Npc, Voice
+from simile.schema.npc import (
+    Accessory,
+    Appearance,
+    Build,
+    CoreValue,
+    Craft,
+    HairStyle,
+    Medium,
+    Npc,
+    Voice,
+)
 from simile.schema.social import (
     Aspect,
     Baseline,
@@ -12,17 +22,20 @@ from simile.schema.social import (
     MemoryKind,
     Relationship,
 )
+from simile.schema.works import Work
 from simile.schema.world import Location, LocationKind, Tile, TileArea
 
 MODELS: tuple[type[Model], ...] = (
     Npc,
     Appearance,
     Voice,
+    Craft,
     Relationship,
     InteractionEvent,
     Flag,
     Memory,
     NewsItem,
+    Work,
     Location,
     Conversation,
     Line,
@@ -39,6 +52,7 @@ __all__ = [
     "Colour",
     "Conversation",
     "CoreValue",
+    "Craft",
     "Flag",
     "FlagKind",
     "HairStyle",
@@ -48,6 +62,7 @@ __all__ = [
     "Line",
     "Location",
     "LocationKind",
+    "Medium",
     "Memory",
     "MemoryKind",
     "Model",
@@ -60,4 +75,5 @@ __all__ = [
     "Timestamp",
     "Unit",
     "Voice",
+    "Work",
 ]

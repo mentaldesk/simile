@@ -1,0 +1,159 @@
+{
+  "$defs": {
+    "CoreValue": {
+      "enum": [
+        "freedom",
+        "independence",
+        "self_respect",
+        "self_actualization",
+        "creativity",
+        "honesty",
+        "compassion",
+        "loyalty",
+        "justice",
+        "responsibility",
+        "security",
+        "equality",
+        "tradition",
+        "obedience",
+        "success",
+        "ambition",
+        "discipline",
+        "knowledge",
+        "open_mindedness",
+        "peace_of_mind",
+        "pleasure",
+        "connection",
+        "adventure",
+        "optimism"
+      ],
+      "title": "CoreValue",
+      "type": "string"
+    },
+    "Medium": {
+      "enum": [
+        "writing",
+        "mural"
+      ],
+      "title": "Medium",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Something a resident made: a piece of writing, or a mural on a wall.",
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "artist": {
+      "description": "The NPC who made it.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Artist",
+      "type": "string"
+    },
+    "medium": {
+      "$ref": "#/$defs/Medium"
+    },
+    "form": {
+      "description": "The form of the artist's craft when they made it.",
+      "minLength": 1,
+      "title": "Form",
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "created": {
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+    },
+    "text": {
+      "description": "The piece itself for writing, or for a mural a plain description of what it shows.",
+      "title": "Text",
+      "type": "string"
+    },
+    "statement": {
+      "description": "A sentence or two in the artist's voice on what it's saying.",
+      "title": "Statement",
+      "type": "string"
+    },
+    "inspired_by": {
+      "description": "The ids of the news items, conversations and other works it came from.",
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Inspired By",
+      "type": "array"
+    },
+    "values": {
+      "additionalProperties": {
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
+      "description": "How related it is to each of the 24 core values, 0-1, with no direction, as for NewsItem. All are present.",
+      "propertyNames": {
+        "$ref": "#/$defs/CoreValue"
+      },
+      "title": "Values",
+      "type": "object"
+    },
+    "tags": {
+      "description": "Up to 10 short topic tags, e.g. \"mars\".",
+      "items": {
+        "maxLength": 40,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 10,
+      "title": "Tags",
+      "type": "array"
+    },
+    "sentiment": {
+      "description": "Its overall tone, from -1 to 1.",
+      "maximum": 1,
+      "minimum": -1,
+      "title": "Sentiment",
+      "type": "number"
+    },
+    "wall": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The wall a mural is painted on. Null for writing.",
+      "title": "Wall"
+    }
+  },
+  "required": [
+    "id",
+    "artist",
+    "medium",
+    "form",
+    "title",
+    "created",
+    "text",
+    "statement",
+    "inspired_by",
+    "values",
+    "tags",
+    "sentiment",
+    "wall"
+  ],
+  "title": "Work",
+  "type": "object"
+}

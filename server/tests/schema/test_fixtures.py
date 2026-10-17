@@ -15,6 +15,7 @@ from simile.schema import (
     NewsItem,
     Npc,
     Relationship,
+    Work,
 )
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -25,6 +26,7 @@ LISTS: dict[str, type[Model]] = {
     "interaction_events.json": InteractionEvent,
     "memories.json": Memory,
     "news_items.json": NewsItem,
+    "works.json": Work,
     "conversations.json": Conversation,
 }
 
@@ -60,8 +62,15 @@ def test_fixtures_refer_to_each_other() -> None:
     conversations = load("conversations.json", Conversation)
     conversation_ids = {conversation.id for conversation in conversations} | {None}
     news_ids = {item.id for item in load("news_items.json", NewsItem)} | {None}
+    works = load("works.json", Work)
+    crafts = {npc.id: npc.craft for npc in npcs}
 
     assert {npc.home for npc in npcs} <= locations
+    for work in works:
+        craft = crafts[work.artist]
+        assert craft is not None
+        assert (work.medium, work.form) == (craft.medium, craft.form)
+        assert set(work.inspired_by) <= news_ids | conversation_ids
     for conversation in conversations:
         assert set(conversation.participants) <= entities
     for rel in load("relationships.json", Relationship):
@@ -73,6 +82,7 @@ def test_fixtures_refer_to_each_other() -> None:
         assert {memory.owner, *memory.about} <= entities
         assert memory.conversation_id in conversation_ids
         assert memory.news_id in news_ids
+        assert memory.work_id in {work.id for work in works} | {None}
 
 
 def test_line_ids_are_unique() -> None:
