@@ -1,0 +1,383 @@
+{
+ "format": 1,
+ "frame": {
+  "width": 72,
+  "height": 129,
+  "anchor": [
+   36,
+   110
+  ]
+ },
+ "columns": 12,
+ "directions": [
+  {
+   "name": "s",
+   "row": 0,
+   "vector": [
+    0,
+    1
+   ]
+  },
+  {
+   "name": "se",
+   "row": 1,
+   "vector": [
+    1,
+    1
+   ]
+  },
+  {
+   "name": "e",
+   "row": 2,
+   "vector": [
+    1,
+    0
+   ]
+  },
+  {
+   "name": "ne",
+   "row": 3,
+   "vector": [
+    1,
+    -1
+   ]
+  },
+  {
+   "name": "n",
+   "row": 4,
+   "vector": [
+    0,
+    -1
+   ]
+  },
+  {
+   "name": "nw",
+   "row": 5,
+   "vector": [
+    -1,
+    -1
+   ]
+  },
+  {
+   "name": "w",
+   "row": 6,
+   "vector": [
+    -1,
+    0
+   ]
+  },
+  {
+   "name": "sw",
+   "row": 7,
+   "vector": [
+    -1,
+    1
+   ]
+  }
+ ],
+ "animations": {
+  "walk": {
+   "fps": 8,
+   "tiles_per_cycle": 1.287,
+   "frames": {
+    "s": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7
+    ],
+    "se": [
+     12,
+     13,
+     14,
+     15,
+     16,
+     17,
+     18,
+     19
+    ],
+    "e": [
+     24,
+     25,
+     26,
+     27,
+     28,
+     29,
+     30,
+     31
+    ],
+    "ne": [
+     36,
+     37,
+     38,
+     39,
+     40,
+     41,
+     42,
+     43
+    ],
+    "n": [
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54,
+     55
+    ],
+    "nw": [
+     60,
+     61,
+     62,
+     63,
+     64,
+     65,
+     66,
+     67
+    ],
+    "w": [
+     72,
+     73,
+     74,
+     75,
+     76,
+     77,
+     78,
+     79
+    ],
+    "sw": [
+     84,
+     85,
+     86,
+     87,
+     88,
+     89,
+     90,
+     91
+    ]
+   }
+  },
+  "idle": {
+   "fps": 1,
+   "frames": {
+    "s": [
+     8,
+     9,
+     10,
+     11
+    ],
+    "se": [
+     20,
+     21,
+     22,
+     23
+    ],
+    "e": [
+     32,
+     33,
+     34,
+     35
+    ],
+    "ne": [
+     44,
+     45,
+     46,
+     47
+    ],
+    "n": [
+     56,
+     57,
+     58,
+     59
+    ],
+    "nw": [
+     68,
+     69,
+     70,
+     71
+    ],
+    "w": [
+     80,
+     81,
+     82,
+     83
+    ],
+    "sw": [
+     92,
+     93,
+     94,
+     95
+    ]
+   }
+  }
+ },
+ "figure_m": 1.8,
+ "constants_hash": "d78aac39a1d5cdad",
+ "sets": {
+  "night": {
+   "sun": {
+    "azimuth": 150,
+    "elevation": 50
+   },
+   "tint": [
+    0.162,
+    0.242,
+    0.349
+   ],
+   "shadow": {
+    "strength": 0.639,
+    "direction": [
+     -0.5,
+     -0.866
+    ],
+    "length": 1.373,
+    "tip": [
+     24.1,
+     -45.0
+    ]
+   }
+  },
+  "morning": {
+   "sun": {
+    "azimuth": 105,
+    "elevation": 26
+   },
+   "tint": [
+    1.0,
+    0.988,
+    0.988
+   ],
+   "shadow": {
+    "strength": 0.565,
+    "direction": [
+     -0.9659,
+     -0.2588
+    ],
+    "length": 3.355,
+    "tip": [
+     -113.9,
+     -98.6
+    ]
+   }
+  },
+  "afternoon": {
+   "sun": {
+    "azimuth": 215,
+    "elevation": 52
+   },
+   "tint": [
+    0.802,
+    0.862,
+    0.904
+   ],
+   "shadow": {
+    "strength": 0.702,
+    "direction": [
+     0.5736,
+     -0.8192
+    ],
+    "length": 1.278,
+    "tip": [
+     85.5,
+     -7.5
+    ]
+   }
+  },
+  "evening": {
+   "sun": {
+    "azimuth": 248,
+    "elevation": 16
+   },
+   "tint": [
+    0.557,
+    0.427,
+    0.421
+   ],
+   "shadow": {
+    "strength": 0.592,
+    "direction": [
+     0.9272,
+     -0.3746
+    ],
+    "length": 5.707,
+    "tip": [
+     356.6,
+     75.7
+    ]
+   }
+  }
+ },
+ "characters": {
+  "player": {
+   "image": "player.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "7bbff20b18038a98"
+  },
+  "desmond": {
+   "image": "desmond.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "56d7144cbcdb8418"
+  },
+  "henrietta": {
+   "image": "henrietta.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "ae23d535b90b2bfd"
+  },
+  "ingrid": {
+   "image": "ingrid.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "41014c03fa977448"
+  },
+  "kofi": {
+   "image": "kofi.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "83364d29035ea15b"
+  },
+  "lachlan": {
+   "image": "lachlan.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "f86e1575aa107bc6"
+  },
+  "marguerite": {
+   "image": "marguerite.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "fc87f5229b18dbe5"
+  },
+  "odalys": {
+   "image": "odalys.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "00d3c754a982d640"
+  },
+  "priya": {
+   "image": "priya.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "8a5a4d5e2a3feb27"
+  },
+  "raymond": {
+   "image": "raymond.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "f6b0ad3e4bc4d91b"
+  },
+  "tobias": {
+   "image": "tobias.webp",
+   "width": 864,
+   "height": 1032,
+   "hash": "2b8c0f6048d55326"
+  }
+ }
+}

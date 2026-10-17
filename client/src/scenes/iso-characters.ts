@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Position } from '../net';
-import { PLAYER_ID } from '../ui/world-view';
+import { PLAYER_ID, type ScreenBox, type ScreenPoint } from '../ui/world-view';
 import {
   characterFor,
   characterKeys,
@@ -11,6 +11,7 @@ import {
   type Body,
   type Facing,
 } from '../world';
+import { framePixel } from '../world/hit';
 import { PLACEHOLDER_SCALE, project, type Figure, type IsoTile } from '../world/iso';
 
 type Character = { sprite: Phaser.GameObjects.Sprite; last: Position; facing: Facing };
@@ -44,6 +45,13 @@ export class IsoCharacters {
       sprite.destroy();
       this.characters.delete(id);
     }
+  }
+
+  opaqueAt(id: string, box: ScreenBox, point: ScreenPoint): boolean {
+    const sprite = this.characters.get(id)?.sprite;
+    if (!sprite) return false;
+    const { x, y } = framePixel(point, box, sprite.frame);
+    return (this.scene.textures.getPixelAlpha(x, y, sprite.texture.key, sprite.frame.name) ?? 0) > 0;
   }
 
   private add(id: string, position: Position): Character {

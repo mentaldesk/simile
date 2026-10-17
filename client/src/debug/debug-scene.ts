@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { server } from '../net';
+import { fitOverlay } from '../ui/overlay';
 import { claimClicks } from '../ui/target';
 import { worldView } from '../ui/world-view';
 import { npcAt, spriteBox } from '../world/hit';
@@ -8,6 +9,7 @@ import { renderPanel } from './panel';
 import { DebugWatch } from './watch';
 
 const MARKER_COLOUR = 0xe8b04a;
+const MARKER_WIDTH = 2;
 
 export const debugWatch = new DebugWatch(server);
 
@@ -55,9 +57,11 @@ export class DebugScene extends Phaser.Scene {
     this.marker.clear();
     const npcId = debugWatch.watching;
     const box = npcId ? spriteBox(npcId, worldView()) : undefined;
-    if (box) {
-      this.marker.lineStyle(2, MARKER_COLOUR).strokeRect(box.x, box.y, box.width, box.height);
-    }
+    if (!box) return;
+    const { fromGame } = fitOverlay(this.game.canvas.getBoundingClientRect(), this.scale.gameSize);
+    this.marker
+      .lineStyle(MARKER_WIDTH / fromGame, MARKER_COLOUR)
+      .strokeRect(box.x, box.y, box.width, box.height);
   }
 
   private render(): void {

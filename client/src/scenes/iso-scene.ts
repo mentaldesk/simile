@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
+import { setPositionProvider } from '../audio';
 import { server, type Position } from '../net';
-import { PLAYER_ID } from '../ui/world-view';
+import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import {
   CollisionMap,
   entryOf,
@@ -14,18 +15,18 @@ import {
 import {
   CLOCK_WAIT_MS,
   Cutaway,
-  feetOf,
+  figureAt,
+  figureBox,
   FIGURE_HEIGHT,
   gridDirection,
   GROUND_DEPTH,
   groundHeights,
   hides,
-  ISO_ZOOM,
   isoScroll,
+  isoZoom,
   lightingSetAt,
-  project,
-  residentDepth,
   sceneryImages,
+  screenAligned,
   simClock,
   sliceDraws,
   type Figure,
@@ -62,11 +63,28 @@ export class IsoScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setZoom(ISO_ZOOM).setRoundPixels(true);
+    this.cameras.main.setRoundPixels(true);
     this.keys = this.input.keyboard!.addKeys(KEYS, false) as Keys;
     world.spawnPlayer(entryOf(village, 'square') ?? { x: village.width / 2, y: village.height / 2 });
-    const unsubscribe = server.on('snapshot', () => this.throttle.forget());
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, unsubscribe);
+
+    const view: WorldView = {
+      positionOf: (id) => world.positionOf(id),
+      npcIds: () => world.npcs.keys(),
+      bubbleAnchor: (id) => {
+        const box = this.spriteOf(id)?.box;
+        return box && { x: box.x + box.width / 2, y: box.y };
+      },
+      spriteOf: (id) => this.spriteOf(id),
+    };
+    const cleanups = [
+      setWorldView(view),
+      setPositionProvider({
+        positionOf: (id) => screenAligned(world.positionOf(id)),
+        listenerPosition: () => screenAligned(world.player?.position),
+      }),
+      server.on('snapshot', () => this.throttle.forget()),
+    ];
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
     void this.loadScenery();
   }
 
@@ -133,14 +151,16 @@ export class IsoScene extends Phaser.Scene {
 
   private figureAt(position: Position): Figure {
     const { manifest, heightAt } = this.scenery!;
-    const feet = feetOf(position);
-    const screen = project(manifest.tile, feet, heightAt(position));
-    return {
-      x: screen.x,
-      top: screen.y - FIGURE_HEIGHT,
-      bottom: screen.y,
-      depth: residentDepth(feet, manifest.tile),
-    };
+    return figureAt(position, manifest.tile, heightAt);
+  }
+
+  private spriteOf(id: string): ScreenSprite | undefined {
+    const position = world.positionOf(id);
+    if (!this.scenery || !position) return undefined;
+    const figure = this.figureAt(position);
+    const box = figureBox(figure, this.cameras.main);
+    const { characters } = this.scenery;
+    return { box, depth: figure.depth, opaqueAt: (point) => characters.opaqueAt(id, box, point) };
   }
 
   private cutAway(player: Figure, dt: number): void {
@@ -155,8 +175,10 @@ export class IsoScene extends Phaser.Scene {
   private follow(player: Figure): void {
     const { manifest } = this.scenery!;
     const camera = this.cameras.main;
+    const zoom = isoZoom(camera.width, window.devicePixelRatio, manifest.tile);
+    if (zoom !== camera.zoom) camera.setZoom(zoom);
     const target = { x: player.x, y: player.bottom - FIGURE_HEIGHT / 2 };
-    const scroll = isoScroll(target, camera, manifest.map, manifest.tile, ISO_ZOOM);
+    const scroll = isoScroll(target, camera, manifest.map, manifest.tile, zoom);
     camera.setScroll(scroll.x, scroll.y);
   }
 
