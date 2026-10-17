@@ -12,7 +12,7 @@ from simile.schema import PLAYER_ID, Id, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.social import as_of, describe, meet
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
-from simile.works.reading import Reaction, name_of
+from simile.works.reading import Reaction, how_it_lands, name_of
 from simile.works.store import WorksStore
 from simile.works.walls import wall_name
 from simile.world.map import MuralWall
@@ -38,11 +38,7 @@ def mural_prompt(mural: Work, artist: str, wall: str, feeling: str, yours: Work 
     return (
         f"You've just walked past a mural on {wall}, by {artist}, who paints {mural.form}.{over}"
         f'\n\nIt\'s called "{mural.title}". {mural.text}\n\n'
-        f"{artist} says of it: {mural.statement}\n\n{feeling}\n\n"
-        f"How does it land with you, given what you care about and how you feel about {artist}? "
-        "Something that chimes with what you care about most is strongly positive, something "
-        "that goes against it strongly negative, and something you don't care about is mild "
-        "either way."
+        f"{artist} says of it: {mural.statement}\n\n{feeling}\n\n{how_it_lands(artist)}"
     )
 
 

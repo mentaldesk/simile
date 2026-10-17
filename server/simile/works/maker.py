@@ -168,14 +168,13 @@ def mural_prompt(
     memories: Sequence[Memory],
     past: Sequence[Work],
     wall: MuralWall,
-    over: str | None,
+    on_it: str = "It's blank.",
     config: WorksConfig = DEFAULT_CONFIG,
 ) -> str:
-    """`over` is what's on the wall now, if anything."""
+    """`on_it` says what's on the wall now."""
     mind, start = on_your_mind(memories, past, "murals")
     width, height = canvas(wall)
     across, up = metres(wall)
-    on_it = f"You're painting over {over}." if over else "It's blank."
     return (
         f"{mind}\n\n"
         f"You've come to paint a new mural on {wall_name(wall.id)}, {across:.1f} m wide and "
@@ -303,12 +302,14 @@ class Maker:
     ) -> Work | None:
         memories, past = self.on_mind(npc, now)
         showing = self.works.showing().get(wall.id)
-        over = (
-            f'{self._whose(npc, showing)} "{showing.title}": {showing.statement}'
-            if showing
-            else None
-        )
-        ask = first = mural_prompt(craft, memories, past, wall, over, self.config)
+        on_it = "It's blank."
+        if showing:
+            who = "you" if showing.artist == npc.id else name_of(self.npcs, showing.artist)
+            on_it = (
+                f'You\'re painting over {self._whose(npc, showing)} "{showing.title}", of which '
+                f'{who} said: "{showing.statement}"'
+            )
+        ask = first = mural_prompt(craft, memories, past, wall, on_it, self.config)
         key = uuid.uuid4().hex[:8]
         for _ in range(2):
             reply = await self._ask(llm, npc, craft, ask, MuralReply, "mural")

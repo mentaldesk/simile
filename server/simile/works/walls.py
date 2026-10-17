@@ -78,18 +78,18 @@ class Walls:
         free = [wall for wall in self.walls if wall.id not in busy]
         showing = self.works.showing()
         if blank := [wall for wall in free if wall.id not in showing]:
-            here = self.positions().get(npc.id)
-            wall = min(blank, key=lambda w: math.dist(here, (w.stand.x, w.stand.y)) if here else 0)
-            return MuralSpot(wall.id, wall.stand)
+            if (here := self.positions().get(npc.id)) is not None:
+                blank.sort(key=lambda wall: math.dist(here, (wall.stand.x, wall.stand.y)))
+            return MuralSpot(blank[0].id, blank[0].stand)
         ready = [
             (score, wall)
             for wall in free
             if (score := self.readiness(npc, showing[wall.id])) is not None
         ]
-        score, wall = max(ready, key=lambda pair: pair[0], default=(None, None))
-        if wall is None or score is None or score < self.config.min_readiness:
+        best = max(ready, key=lambda pair: pair[0], default=None)
+        if best is None or best[0] < self.config.min_readiness:
             return None
-        return MuralSpot(wall.id, wall.stand)
+        return MuralSpot(best[1].id, best[1].stand)
 
     def readiness(self, painter: Npc, mural: Work) -> float | None:
         fondness = 0.0

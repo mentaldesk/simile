@@ -324,8 +324,13 @@ def test_painting_over_a_mural_keeps_it_and_remembers_whose_it_was(
     assert works.covered(over_his.id) == works.get("old")
     assert works.covered(over_mine.id) == over_his
     asked = [request.messages[-1].content for request in fake.requests]
-    assert "You're painting over Viktor Hale's \"Piece old\": What old says." in asked[0]
-    assert 'You\'re painting over your own "Sunrise Over the Square"' in asked[1]
+    assert (
+        "m high. You're painting over Viktor Hale's \"Piece old\", of which Viktor Hale said: "
+        '"What old says."\n\n'
+    ) in asked[0]
+    assert (
+        'You\'re painting over your own "Sunrise Over the Square", of which you said: "Morning'
+    ) in asked[1]
     said = " ".join(m.content for m in memory.recall("suki", NOW, kind=MemoryKind.WORK))
     assert 'on the wall 1 wall over Viktor Hale\'s "Piece old". Morning' in said
     assert 'I painted "Again" on the wall 1 wall over my "Sunrise Over the Square".' in said
