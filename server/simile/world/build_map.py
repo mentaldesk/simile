@@ -218,9 +218,15 @@ class Town:
         front: int = 1,
     ) -> None:
         """The location takes in `front` rows outside; the doorstep is its entry."""
+        step = self.doorstep(location_id, area, door)
         grown = area.model_copy(update={"height": area.height + front})
-        self.doorsteps[location_id] = Tile(x=door, y=area.y + area.height)
-        self.place(location_id, name, kind, grown, (door, area.y + area.height))
+        self.place(location_id, name, kind, grown, (step.x, step.y))
+
+    def doorstep(self, building_id: str, area: TileArea, door: int) -> Tile:
+        """The tile in front of a building's door, where a door to its interior would go."""
+        step = Tile(x=door, y=area.y + area.height)
+        self.doorsteps[building_id] = step
+        return step
 
     def house(
         self,
@@ -598,11 +604,10 @@ def banyan_row(town: Town) -> None:
     town.put(29, 31, "screen_l", "screen_r")
     town.put(33, 34, "bike_yellow", "bike_yellow")
 
-    town.fill("G", 36, 28, 8, 5)
-    for x, y in ((37, 30), (41, 32)):
-        town.tree(x, y)
-    town.tall(42, 29, "palm")
-    town.put(40, 29, "bush")
+    town.fill("G", 36, 28, 2, 5)
+    town.put(36, 30, "bush")
+    gallery = town.building(38, 28, "cream", (".wwww.", ".sDss."), roof="roof_green")
+    town.doorstep("gallery", gallery, 40)
 
 
 def riverside(town: Town) -> None:

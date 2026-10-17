@@ -31,7 +31,7 @@
    "road": -0.08,
    "crosswalk": -0.08
   },
-  "hash": "423c6bead3c2aa07",
+  "hash": "f9209e6b3277e946",
   "chunks": [
    {
     "image": "afternoon/ground-0-0.webp",
@@ -84,7 +84,7 @@
   "height": 336,
   "sun_y": 336,
   "scale": 1.008,
-  "hash": "63c28cbc2f7ca6c6"
+  "hash": "de05c724ef3de63b"
  },
  "objects": [
   {
@@ -972,6 +972,80 @@
      "x": 488,
      "width": 56,
      "depth": 1488.0
+    }
+   ]
+  },
+  {
+   "id": "building-38-28",
+   "kind": "building",
+   "anchor": [
+    44,
+    33
+   ],
+   "footprint": [
+    38,
+    28,
+    44,
+    33
+   ],
+   "image": "afternoon/building-38-28.webp",
+   "width": 544,
+   "height": 621,
+   "offset": [
+    -296,
+    -617
+   ],
+   "hash": "74403ddda0f52adb",
+   "slices": [
+    {
+     "x": 0,
+     "width": 56,
+     "depth": 1704.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1728.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1752.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1776.0
+    },
+    {
+     "x": 200,
+     "width": 48,
+     "depth": 1800.0
+    },
+    {
+     "x": 248,
+     "width": 96,
+     "depth": 1824.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1800.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1776.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1752.0
+    },
+    {
+     "x": 488,
+     "width": 56,
+     "depth": 1728.0
     }
    ]
   },
@@ -3063,7 +3137,7 @@
     -109,
     -272
    ],
-   "hash": "cb9ddc524cb56ae1",
+   "hash": "63208797a79a008d",
    "slices": [
     {
      "x": 0,
@@ -3189,7 +3263,7 @@
     -107,
     -281
    ],
-   "hash": "a6dd330a75190869",
+   "hash": "be2c0e4a74946ebe",
    "slices": [
     {
      "x": 0,
@@ -3199,89 +3273,31 @@
    ]
   },
   {
-   "id": "bush-40-29",
+   "id": "bush-36-30",
    "kind": "bush",
    "anchor": [
-    40.5,
-    29.5
+    36.5,
+    30.5
    ],
    "footprint": [
-    40.5,
-    29.5,
-    40.5,
-    29.5
+    36.5,
+    30.5,
+    36.5,
+    30.5
    ],
-   "image": "afternoon/bush-40-29.webp",
+   "image": "afternoon/bush-36-30.webp",
    "width": 90,
    "height": 73,
    "offset": [
     -42,
     -61
    ],
-   "hash": "3fb1add833cf156d",
+   "hash": "5d667cff9bf93fd0",
    "slices": [
     {
      "x": 0,
      "width": 90,
-     "depth": 1680.0
-    }
-   ]
-  },
-  {
-   "id": "palm-42-29",
-   "kind": "palm",
-   "anchor": [
-    42.5,
-    29.5
-   ],
-   "footprint": [
-    42.5,
-    29.5,
-    42.5,
-    29.5
-   ],
-   "image": "afternoon/palm-42-29.webp",
-   "width": 205,
-   "height": 266,
-   "offset": [
-    -94,
-    -267
-   ],
-   "hash": "a19c0ed2db312f42",
-   "slices": [
-    {
-     "x": 0,
-     "width": 205,
-     "depth": 1728.0
-    }
-   ]
-  },
-  {
-   "id": "tree-37-30",
-   "kind": "tree",
-   "anchor": [
-    38.0,
-    30.5
-   ],
-   "footprint": [
-    38.0,
-    30.5,
-    38.0,
-    30.5
-   ],
-   "image": "afternoon/tree-37-30.webp",
-   "width": 217,
-   "height": 272,
-   "offset": [
-    -109,
-    -272
-   ],
-   "hash": "c61130963bd3f294",
-   "slices": [
-    {
-     "x": 0,
-     "width": 217,
-     "depth": 1644.0
+     "depth": 1608.0
     }
    ]
   },
@@ -3340,35 +3356,6 @@
      "x": 0,
      "width": 90,
      "depth": 2208.0
-    }
-   ]
-  },
-  {
-   "id": "tree-41-32",
-   "kind": "tree",
-   "anchor": [
-    42.0,
-    32.5
-   ],
-   "footprint": [
-    42.0,
-    32.5,
-    42.0,
-    32.5
-   ],
-   "image": "afternoon/tree-41-32.webp",
-   "width": 212,
-   "height": 278,
-   "offset": [
-    -105,
-    -278
-   ],
-   "hash": "6fc4fd96d5efb30b",
-   "slices": [
-    {
-     "x": 0,
-     "width": 212,
-     "depth": 1788.0
     }
    ]
   },
