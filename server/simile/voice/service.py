@@ -29,7 +29,8 @@ class Synthesiser(Protocol):
     def add_voice(self, npc_id: str, clip: Path, transcript: str) -> None: ...
 
     def generate(self, npc_id: str, sentence: str) -> Generator[bytes, None, None]:
-        """24 kHz mono 16-bit little-endian PCM, in chunks of whole samples."""
+        """24 kHz mono 16-bit little-endian PCM, in chunks of whole samples. An empty chunk
+        means nothing is ready yet, and lets a cancel through."""
         ...
 
 
@@ -123,7 +124,8 @@ class VoiceService:
             for pcm in chunks:
                 if job.cancelled.is_set():
                     return
-                loop.call_soon_threadsafe(job.chunks.put_nowait, pcm)
+                if pcm:
+                    loop.call_soon_threadsafe(job.chunks.put_nowait, pcm)
 
     async def _run(self, function: Callable[..., None], *args: object) -> None:
         await asyncio.get_running_loop().run_in_executor(self._thread, function, *args)

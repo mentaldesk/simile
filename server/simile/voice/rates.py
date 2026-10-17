@@ -11,6 +11,7 @@ from simile.schema import Id, Model, Npc, Voice
 from simile.voice.service import REPO_ROOT
 
 RATES = REPO_ROOT / "content" / "voices" / "rates.json"
+SYNTHESIS = 2
 
 
 class SpeakingRate(Model):
@@ -38,11 +39,12 @@ _rates_file = TypeAdapter(dict[Id, MeasuredRate])
 
 
 def voice_digest(voice: Voice) -> str:
-    """Changes whenever the voice's clip or transcript does."""
+    """Changes whenever the voice's clip or transcript does, or `SYNTHESIS`."""
     if voice.reference_clip is None:
         raise ValueError("the voice has no reference clip")
     clip = (REPO_ROOT / voice.reference_clip).read_bytes()
-    return hashlib.sha256(clip + voice.reference_line.encode()).hexdigest()
+    synthesis = f"synthesis {SYNTHESIS}\n".encode()
+    return hashlib.sha256(synthesis + clip + voice.reference_line.encode()).hexdigest()
 
 
 def outdated(npcs: Iterable[Npc], rates: Mapping[Id, MeasuredRate]) -> list[Npc]:
