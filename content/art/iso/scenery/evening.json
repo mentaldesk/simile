@@ -31,7 +31,7 @@
    "road": -0.08,
    "crosswalk": -0.08
   },
-  "hash": "0c4a19ededafd339",
+  "hash": "9facb5ef0ef962fe",
   "chunks": [
    {
     "image": "evening/ground-0-0.webp",
@@ -83,8 +83,8 @@
   "width": 512,
   "height": 336,
   "sun_y": 336,
-  "scale": 1.613,
-  "hash": "9c2605911e3d37df"
+  "scale": 1.611,
+  "hash": "d5f11b12a41b9980"
  },
  "objects": [
   {
@@ -972,6 +972,80 @@
      "x": 488,
      "width": 56,
      "depth": 1488.0
+    }
+   ]
+  },
+  {
+   "id": "building-38-28",
+   "kind": "building",
+   "anchor": [
+    44,
+    33
+   ],
+   "footprint": [
+    38,
+    28,
+    44,
+    33
+   ],
+   "image": "evening/building-38-28.webp",
+   "width": 544,
+   "height": 621,
+   "offset": [
+    -296,
+    -617
+   ],
+   "hash": "248d765e2b269c9d",
+   "slices": [
+    {
+     "x": 0,
+     "width": 56,
+     "depth": 1704.0
+    },
+    {
+     "x": 56,
+     "width": 48,
+     "depth": 1728.0
+    },
+    {
+     "x": 104,
+     "width": 48,
+     "depth": 1752.0
+    },
+    {
+     "x": 152,
+     "width": 48,
+     "depth": 1776.0
+    },
+    {
+     "x": 200,
+     "width": 48,
+     "depth": 1800.0
+    },
+    {
+     "x": 248,
+     "width": 96,
+     "depth": 1824.0
+    },
+    {
+     "x": 344,
+     "width": 48,
+     "depth": 1800.0
+    },
+    {
+     "x": 392,
+     "width": 48,
+     "depth": 1776.0
+    },
+    {
+     "x": 440,
+     "width": 48,
+     "depth": 1752.0
+    },
+    {
+     "x": 488,
+     "width": 56,
+     "depth": 1728.0
     }
    ]
   },
@@ -2340,7 +2414,7 @@
     -54,
     -63
    ],
-   "hash": "686d3e40f9e6d827",
+   "hash": "0e36114c5d2faab0",
    "slices": [
     {
      "x": 0,
@@ -3150,7 +3224,7 @@
     -54,
     -63
    ],
-   "hash": "f84464df27325d32",
+   "hash": "48b86566b9d071b6",
    "slices": [
     {
      "x": 0,
@@ -3189,7 +3263,7 @@
     -107,
     -281
    ],
-   "hash": "51a041a632e71b0b",
+   "hash": "94219d5b244a344c",
    "slices": [
     {
      "x": 0,
@@ -3199,89 +3273,31 @@
    ]
   },
   {
-   "id": "bush-40-29",
+   "id": "bush-36-30",
    "kind": "bush",
    "anchor": [
-    40.5,
-    29.5
+    36.5,
+    30.5
    ],
    "footprint": [
-    40.5,
-    29.5,
-    40.5,
-    29.5
+    36.5,
+    30.5,
+    36.5,
+    30.5
    ],
-   "image": "evening/bush-40-29.webp",
+   "image": "evening/bush-36-30.webp",
    "width": 90,
    "height": 73,
    "offset": [
     -42,
     -61
    ],
-   "hash": "b958ca2e0e975b52",
+   "hash": "cfa11360e517c2e5",
    "slices": [
     {
      "x": 0,
      "width": 90,
-     "depth": 1680.0
-    }
-   ]
-  },
-  {
-   "id": "palm-42-29",
-   "kind": "palm",
-   "anchor": [
-    42.5,
-    29.5
-   ],
-   "footprint": [
-    42.5,
-    29.5,
-    42.5,
-    29.5
-   ],
-   "image": "evening/palm-42-29.webp",
-   "width": 205,
-   "height": 266,
-   "offset": [
-    -94,
-    -267
-   ],
-   "hash": "095b74f291dff2df",
-   "slices": [
-    {
-     "x": 0,
-     "width": 205,
-     "depth": 1728.0
-    }
-   ]
-  },
-  {
-   "id": "tree-37-30",
-   "kind": "tree",
-   "anchor": [
-    38.0,
-    30.5
-   ],
-   "footprint": [
-    38.0,
-    30.5,
-    38.0,
-    30.5
-   ],
-   "image": "evening/tree-37-30.webp",
-   "width": 217,
-   "height": 272,
-   "offset": [
-    -109,
-    -272
-   ],
-   "hash": "4d6bf40d7be1a25e",
-   "slices": [
-    {
-     "x": 0,
-     "width": 217,
-     "depth": 1644.0
+     "depth": 1608.0
     }
    ]
   },
@@ -3305,7 +3321,7 @@
     -42,
     -61
    ],
-   "hash": "f24c547ef2f9558c",
+   "hash": "4962b24897be653d",
    "slices": [
     {
      "x": 0,
@@ -3344,35 +3360,6 @@
    ]
   },
   {
-   "id": "tree-41-32",
-   "kind": "tree",
-   "anchor": [
-    42.0,
-    32.5
-   ],
-   "footprint": [
-    42.0,
-    32.5,
-    42.0,
-    32.5
-   ],
-   "image": "evening/tree-41-32.webp",
-   "width": 212,
-   "height": 278,
-   "offset": [
-    -105,
-    -278
-   ],
-   "hash": "a5deb7f1d77c97aa",
-   "slices": [
-    {
-     "x": 0,
-     "width": 212,
-     "depth": 1788.0
-    }
-   ]
-  },
-  {
    "id": "tree-50-32",
    "kind": "tree",
    "anchor": [
@@ -3392,7 +3379,7 @@
     -105,
     -278
    ],
-   "hash": "9e47b306551cfd87",
+   "hash": "46884a552be05f9f",
    "slices": [
     {
      "x": 0,
