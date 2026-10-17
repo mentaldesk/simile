@@ -43,6 +43,11 @@ CASES = [
         id="entity_moved",
     ),
     pytest.param(
+        EntityMoved("mei", 10, 13, "coffee_shop"),
+        EntityMovedMessage(entity_id="mei", position=Position(x=10, y=13, map="coffee_shop")),
+        id="entity_moved_inside",
+    ),
+    pytest.param(
         ConversationStarted(CONVERSATION),
         ConversationStartedMessage(conversation=CONVERSATION),
         id="conversation_started",

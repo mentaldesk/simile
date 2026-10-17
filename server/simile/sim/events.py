@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from simile.schema import Conversation, Id, Line
+from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line
 
 
 @dataclass(frozen=True)
@@ -13,6 +13,7 @@ class EntityMoved(Event):
     entity: Id
     x: float
     y: float
+    map: Key = VILLAGE_MAP
 
 
 @dataclass(frozen=True)

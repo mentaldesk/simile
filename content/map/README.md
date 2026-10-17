@@ -117,11 +117,12 @@ The `coffee_shop_counter` interactable's `stand` is the front of the queue, and 
 `coffee_shop`. Walking to `coffee_shop_queue` takes the front if it's free, and otherwise the next
 free tile down the lane.
 
-**The buildings' locations are on two maps until #168.** `coffee_shop`, `noodle_bar` and
-`maker_space` are on the village, as before, and on their interiors. The game still finds them on
-the village. #168 removes the village copies, adds the terrace as `cafe_terrace`, and makes
-movement plan through the doors. `tests/world/test_interiors.py` checks that these three are the
-only ids on two maps.
+**The buildings' locations are on two maps for now.** `coffee_shop`, `noodle_bar` and
+`maker_space` are on the village, as before, and on their interiors. Movement plans through the
+doors, but `movement.town` resolves these three ids to the village, so the game still sends
+residents there. #169 removes the village copies and adds the terrace as `cafe_terrace` once the
+player can go inside. `tests/world/test_interiors.py` checks that these three are the only ids on
+two maps.
 
 **The gallery isn't on the village yet.** A new building changes the iso scenery, which is rendered
 from the village (`server/simile/art/iso/`), so the building lands in its own task with the
@@ -176,6 +177,9 @@ Server: `simile.world.map.load_map()` returns the village as a `TownMap` with `w
 `interactables` (F2 `Interactable`s). A `MuralWall` has the `id`, `x`, `y`, `width`, `face`,
 `bottom` and `top` of M1's `Wall`, and `stand`, the F2 `Tile` its painter stands on.
 `load_map(path)` reads any of the maps, and `load_maps()` returns them all by id, the village first.
+`with_every_location(maps)` is the village carrying every map's locations, as `Movement.town` has
+it. [`server/simile/world/README.md`](../../server/simile/world/README.md) covers walking between
+maps.
 
 Client: `village` in `client/src/world/assets.ts` is the village's JSON. The client doesn't load the
 interiors yet: K5 (#171) does. The player collides with the village's `collision` layer, starts at

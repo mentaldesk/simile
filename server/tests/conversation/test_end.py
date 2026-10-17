@@ -10,7 +10,7 @@ from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.sim import Clock, ConversationEnded, FakeWallClock, World
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 pytestmark = pytest.mark.anyio
 
@@ -23,7 +23,7 @@ class Village:
 
     def __init__(self, provider: FakeProvider) -> None:
         self.world = World(Clock(START), FakeWallClock())
-        self.movement = Movement(load_map(), self.world.bus)
+        self.movement = Movement(load_maps(), self.world.bus)
         npcs = [npc for npc in load_npcs() if npc.id in (KOFI, HENRIETTA)]
         for npc in npcs:
             self.movement.place(npc.id, "coffee_shop")

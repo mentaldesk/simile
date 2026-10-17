@@ -18,11 +18,12 @@ from simile.persistence import (
     restore,
 )
 from simile.reflection import Reflector
+from simile.schema import VILLAGE_MAP, MapTile
 from simile.sim import STEP, Clock, FakeWallClock, World
-from simile.world import Movement
-from simile.world.map import load_map
+from simile.world import Movement, Point
+from simile.world.map import load_maps
 
-TOWN = load_map()
+MAPS = load_maps()
 NPCS = load_npcs()
 MORNING = datetime(2026, 1, 1, 8, tzinfo=UTC)
 
@@ -30,7 +31,7 @@ MORNING = datetime(2026, 1, 1, 8, tzinfo=UTC)
 class Village:
     def __init__(self, start: datetime = MORNING, seed: int = 0) -> None:
         self.world = World(Clock(start), FakeWallClock())
-        self.movement = Movement(TOWN, self.world.bus)
+        self.movement = Movement(MAPS, self.world.bus)
         self.behaviour = Behaviour(self.world.clock, self.world.bus, self.movement, NPCS, seed=seed)
         self.goals: list[GoalChosen] = []
         self.world.bus.subscribe(GoalChosen, self.goals.append)
@@ -141,6 +142,28 @@ def test_npcs_missing_from_the_save_start_afresh_and_strangers_are_ignored() -> 
     assert "stranger" not in after.movement.entities()
     assert after.movement.position("kofi") == home
     assert after.behaviour.minds["kofi"].until is not None
+
+
+def test_a_resident_inside_saves_and_reloads_inside() -> None:
+    before = Village()
+    before.movement.place("kofi", MapTile(map="coffee_shop", x=5, y=6))
+    saved = capture(before.behaviour)
+    assert (saved.npcs["kofi"].map, saved.npcs["henrietta"].map) == ("coffee_shop", VILLAGE_MAP)
+
+    after = Village(seed=1)
+    restore(saved, after.behaviour)
+
+    assert after.movement.position("kofi") == Point(5, 6, "coffee_shop")
+
+
+def test_a_save_from_before_interiors_loads_onto_the_village() -> None:
+    saved = capture(Village().behaviour).model_dump(mode="json")
+    for state in saved["npcs"].values():
+        del state["map"]
+
+    old = SavedWorld.model_validate(saved)
+
+    assert {state.map for state in old.npcs.values()} == {VILLAGE_MAP}
 
 
 def test_cooldowns_that_have_run_out_are_not_saved() -> None:

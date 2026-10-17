@@ -35,7 +35,8 @@ Speeds and distances are in [`tuning.ts`](tuning.ts).
 
 `IsoScene` registers itself as the dialogue UI's `WorldView` and as audio's position provider, with
 the player as the listener. Other code can read `world` (`world.positionOf(id)`, `world.npcs`,
-`world.player`) from `world/model.ts`.
+`world.player`) from `world/model.ts`. Only the NPCs on the player's map are drawn, heard and
+picked: `world.here()` lists them, and `positionOf` is `undefined` for the others.
 
 `terminalsOf(map)` in [`terminals.ts`](terminals.ts) lists the map's news terminals, each with its
 label and area in tiles, and `terminalAt(terminals, position)` finds the one within

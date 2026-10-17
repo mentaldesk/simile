@@ -16,7 +16,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     world, movement = world_of(app), movement_of(app)
 
     def on_player_move(message: PlayerMoveMessage) -> None:
-        movement.track(PLAYER_ID, Point(message.position.x, message.position.y))
+        position = message.position
+        movement.track(PLAYER_ID, Point(position.x, position.y, position.map))
 
     stops = [
         world.loop.register(movement),

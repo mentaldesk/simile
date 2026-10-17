@@ -14,7 +14,7 @@ from simile.npc import load_npcs
 from simile.sim import Clock, ConversationEnded, FakeWallClock, LineSpoken, World
 from simile.tools import Recorder, RecordStore, load_run, report
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 pytestmark = pytest.mark.anyio
 
@@ -38,7 +38,7 @@ class Town:
     def __init__(self, db: Path | str = ":memory:") -> None:
         self.world = World(Clock(START), FakeWallClock())
         self.memory = MemoryStore(db)
-        movement = Movement(load_map(), self.world.bus)
+        movement = Movement(load_maps(), self.world.bus)
         npcs = load_npcs()
         for npc in npcs:
             movement.place(npc.id, "coffee_shop")

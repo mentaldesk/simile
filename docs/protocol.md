@@ -60,7 +60,8 @@ it arrived.
 
 `entity_id`, `position`. There's no facing: the client works it out from the direction of travel.
 An entity going through a door arrives as an `entity_moved` onto the other map, and the client
-snaps it there rather than walking it.
+snaps it there rather than walking it. The `entity_moved` before that is the door's tile on the map
+it's leaving, a step's time earlier.
 
 ### `conversation_started`
 

@@ -47,13 +47,13 @@ from simile.sim import (
 from simile.social import meet
 from simile.voice import SpeakingRate
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
-TOWN = load_map()
+MAPS = load_maps()
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 
@@ -127,7 +127,7 @@ class Village:
         self.world = World(Clock(START), FakeWallClock())
         self.store = MemoryStore(":memory:")
         self.store.add(*relationships)
-        self.movement = Movement(TOWN, self.world.bus)
+        self.movement = Movement(MAPS, self.world.bus)
         for npc in npcs:
             self.movement.place(npc.id, "coffee_shop")
         self.behaviour = Behaviour(
