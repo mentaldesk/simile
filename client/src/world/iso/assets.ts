@@ -1,6 +1,8 @@
+import type { CharacterManifest } from './sheets';
 import type { LightingSet } from './time-of-day';
 
 const SCENERY = '../../../../content/art/iso/scenery/';
+const CHARACTERS = '../../../../content/art/iso/characters/';
 
 const manifests = import.meta.glob<string>('../../../../content/art/iso/scenery/*.json', {
   eager: true,
@@ -12,8 +14,37 @@ const images = import.meta.glob<string>('../../../../content/art/iso/scenery/*/*
   query: '?no-inline',
   import: 'default',
 });
+const characters = import.meta.glob<CharacterManifest>(
+  '../../../../content/art/iso/characters/characters.json',
+  { eager: true, import: 'default' },
+);
+const sheets = import.meta.glob<string>('../../../../content/art/iso/characters/*.webp', {
+  eager: true,
+  query: '?no-inline',
+  import: 'default',
+});
 
 export const manifestUrl = (set: LightingSet): string | undefined => manifests[`${SCENERY}${set}.json`];
 
 /** A manifest names its images relative to its own folder. */
 export const imageUrl = (image: string): string | undefined => images[SCENERY + image];
+
+export const characterManifest: CharacterManifest = characters[`${CHARACTERS}characters.json`];
+
+export const sheetUrl = (image: string): string | undefined => sheets[CHARACTERS + image];
+
+export async function loadImage(url: string): Promise<HTMLImageElement> {
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+  return image;
+}
+
+export async function imagePixels(url: string): Promise<Uint8ClampedArray> {
+  const image = await loadImage(url);
+  const canvas = document.createElement('canvas');
+  [canvas.width, canvas.height] = [image.width, image.height];
+  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  context.drawImage(image, 0, 0);
+  return context.getImageData(0, 0, image.width, image.height).data;
+}

@@ -5,7 +5,7 @@ import type { Figure } from './cutaway';
 import { residentDepth } from './depth';
 import type { IsoTile } from './manifest';
 import { feetOf, project } from './projection';
-import { FIGURE_HEIGHT, FIGURE_WIDTH } from './tuning';
+import { FIGURE_HEIGHT, FRAME } from './tuning';
 
 export type IsoCamera = Size & { scrollX: number; scrollY: number; zoom: number };
 
@@ -24,12 +24,12 @@ export function figureAt(
   };
 }
 
+/** The figure's sheet frame down to the feet, on the canvas: the UI rings its bottom edge. */
 export function figureBox(figure: Figure, camera: IsoCamera): ScreenBox {
   const scroll = { x: camera.scrollX, y: camera.scrollY };
-  const top = toCanvas({ x: figure.x, y: figure.top }, scroll, camera, camera.zoom);
-  const width = FIGURE_WIDTH * camera.zoom;
-  const height = (figure.bottom - figure.top) * camera.zoom;
-  return { x: top.x - width / 2, y: top.y, width, height };
+  const corner = { x: figure.x - FRAME.anchor.x, y: figure.bottom - FRAME.anchor.y };
+  const { x, y } = toCanvas(corner, scroll, camera, camera.zoom);
+  return { x, y, width: FRAME.width * camera.zoom, height: FRAME.anchor.y * camera.zoom };
 }
 
 /** Turned 45° so x runs left to right on screen, which audio pans by. Distances don't change. */
