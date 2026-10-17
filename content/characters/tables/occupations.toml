@@ -1,0 +1,537 @@
+# Jobs by ISCO-08 sub-major group. `employed` is the group's EU-27 employment in 2023, in
+# thousands, from Eurostat's lfsa_egai2d; its titles share it equally. `skill` is ISCO-08's skill
+# level for the group, and [skill] says how likely each education level is to hold a job at
+# each skill level, 1 to 4. `ages` is who can hold the job, and a title can override it or
+# `degree` (whether it needs a university degree). How it was made is in README.md.
+
+[skill]
+early_leaver = [3.0, 1.0, 0.25, 0.03]
+school = [1.2, 1.0, 0.6, 0.15]
+vocational = [0.8, 1.3, 0.9, 0.12]
+degree = [0.25, 0.45, 1.0, 2.5]
+postgraduate = [0.12, 0.25, 0.7, 3.5]
+
+[[group]]
+id = "chief_executives"
+isco = "11"
+major = "managers"
+skill = 4
+employed = 1565.9
+ages = [30, 75]
+titles = [
+  "managing director of a manufacturing firm",
+  "chief executive of a housing association",
+  "senior civil servant",
+  "director of a regional charity",
+]
+
+[[group]]
+id = "administrative_managers"
+isco = "12"
+major = "managers"
+skill = 4
+employed = 2752.1
+ages = [27, 72]
+titles = ["finance manager", "HR manager", "sales and marketing manager", "procurement manager", "office manager"]
+
+[[group]]
+id = "production_managers"
+isco = "13"
+major = "managers"
+skill = 4
+employed = 3367.1
+ages = [27, 72]
+titles = [
+  { name = "head teacher", degree = true },
+  "construction site manager",
+  "IT manager",
+  "factory production manager",
+  "care home manager",
+  "logistics manager",
+  "practice manager at a GP surgery",
+]
+
+[[group]]
+id = "services_managers"
+isco = "14"
+major = "managers"
+skill = 3
+employed = 2402.5
+ages = [23, 78]
+titles = ["hotel manager", "restaurant owner", "shop manager", "pub landlord", "gym manager", "garden centre owner"]
+
+[[group]]
+id = "science_professionals"
+isco = "21"
+major = "professionals"
+skill = 4
+employed = 7277.1
+ages = [23, 72]
+degree = true
+titles = ["civil engineer", "mechanical engineer", "architect", "chemist", "environmental scientist", "town planner", "electrical engineer"]
+
+[[group]]
+id = "health_professionals"
+isco = "22"
+major = "professionals"
+skill = 4
+employed = 5864.4
+ages = [24, 72]
+degree = true
+titles = [
+  { name = "nurse", ages = [21, 70], degree = false },
+  { name = "GP", ages = [28, 72] },
+  { name = "hospital doctor", ages = [25, 70] },
+  "pharmacist",
+  "physiotherapist",
+  "midwife",
+  "dentist",
+  "vet",
+]
+
+[[group]]
+id = "teaching_professionals"
+isco = "23"
+major = "professionals"
+skill = 4
+employed = 10782.2
+ages = [22, 70]
+degree = true
+titles = [
+  "primary school teacher",
+  "secondary school maths teacher",
+  "secondary school English teacher",
+  "science teacher",
+  "PE teacher",
+  "nursery teacher",
+  "special needs teacher",
+  { name = "university lecturer", ages = [26, 75] },
+  { name = "music teacher", ages = [22, 80], degree = false },
+]
+
+[[group]]
+id = "business_professionals"
+isco = "24"
+major = "professionals"
+skill = 4
+employed = 9283.3
+ages = [22, 72]
+titles = ["accountant", "financial adviser", "management consultant", "marketing executive", "HR adviser", "business analyst", "public relations officer"]
+
+[[group]]
+id = "ict_professionals"
+isco = "25"
+major = "professionals"
+skill = 4
+employed = 4921.2
+ages = [20, 70]
+titles = ["software developer", "web designer", "database administrator", "IT security analyst", "games programmer"]
+
+[[group]]
+id = "legal_social_professionals"
+isco = "26"
+major = "professionals"
+skill = 4
+employed = 5872.7
+ages = [22, 78]
+titles = [
+  { name = "solicitor", degree = true },
+  { name = "social worker", degree = true },
+  { name = "psychologist", degree = true },
+  "librarian",
+  "journalist",
+  "graphic designer",
+  "church minister",
+  { name = "musician", ages = [18, 85] },
+  "translator",
+]
+
+[[group]]
+id = "science_technicians"
+isco = "31"
+major = "technicians"
+skill = 3
+employed = 6908.1
+ages = [18, 70]
+titles = ["lab technician", "electrical engineering technician", "building inspector", "CAD technician", "quality inspector at a factory", "ship's engineer", "air traffic controller"]
+
+[[group]]
+id = "health_associates"
+isco = "32"
+major = "technicians"
+skill = 3
+employed = 6176.5
+ages = [19, 70]
+titles = [
+  { name = "paramedic", ages = [20, 62] },
+  "dental hygienist",
+  "pharmacy technician",
+  "optician",
+  "dental nurse",
+  "nutritionist",
+  "sports massage therapist",
+]
+
+[[group]]
+id = "business_associates"
+isco = "33"
+major = "technicians"
+skill = 3
+employed = 13131.3
+ages = [18, 75]
+titles = [
+  "estate agent",
+  "bookkeeper",
+  "insurance broker",
+  "sales representative",
+  "legal secretary",
+  "medical secretary",
+  "payroll officer",
+  "buyer for a supermarket chain",
+  "events organiser",
+  "recruitment consultant",
+]
+
+[[group]]
+id = "legal_social_associates"
+isco = "34"
+major = "technicians"
+skill = 3
+employed = 3580.4
+ages = [18, 75]
+titles = [
+  "paralegal",
+  "chef",
+  { name = "fitness instructor", ages = [18, 60] },
+  "youth worker",
+  "photographer",
+  "community support worker",
+  "museum technician",
+  { name = "football coach", ages = [20, 70] },
+]
+
+[[group]]
+id = "ict_technicians"
+isco = "35"
+major = "technicians"
+skill = 3
+employed = 2055.9
+ages = [18, 70]
+titles = ["IT support technician", "network technician", "broadcast engineer", "sound engineer"]
+
+[[group]]
+id = "general_clerks"
+isco = "41"
+major = "clerical"
+skill = 2
+employed = 8357.1
+ages = [16, 72]
+titles = ["office administrator", "data entry clerk", "school secretary", "administrative assistant", "court clerk"]
+
+[[group]]
+id = "customer_clerks"
+isco = "42"
+major = "clerical"
+skill = 2
+employed = 3524.0
+ages = [16, 72]
+titles = ["receptionist", "call centre agent", "bank clerk", "travel agent", "hotel receptionist", "post office counter clerk"]
+
+[[group]]
+id = "recording_clerks"
+isco = "43"
+major = "clerical"
+skill = 2
+employed = 6011.2
+ages = [16, 72]
+titles = ["payroll clerk", "accounts clerk", "stock control clerk", "warehouse dispatcher", "transport planner"]
+
+[[group]]
+id = "other_clerks"
+isco = "44"
+major = "clerical"
+skill = 2
+employed = 1601.9
+ages = [16, 75]
+titles = ["library assistant", "postal worker", "filing clerk", "proofreader"]
+
+[[group]]
+id = "personal_service"
+isco = "51"
+major = "service"
+skill = 2
+employed = 8757.9
+ages = [16, 78]
+titles = ["hairdresser", "cook", "waiter", "bartender", "beautician", "driving instructor", "school caretaker", "barista"]
+
+[[group]]
+id = "sales"
+isco = "52"
+major = "service"
+skill = 2
+employed = 13535.1
+ages = [16, 80]
+titles = [
+  "shop assistant",
+  "supermarket cashier",
+  { name = "market stall trader", ages = [16, 88] },
+  { name = "shopkeeper", ages = [18, 88] },
+  "car salesperson",
+  "pharmacy assistant",
+  "florist",
+  "petrol station attendant",
+]
+
+[[group]]
+id = "personal_care"
+isco = "53"
+major = "service"
+skill = 2
+employed = 6433.0
+ages = [17, 72]
+titles = ["care worker", "childminder", "teaching assistant", "healthcare assistant on a hospital ward", "nursery nurse", "home help"]
+
+[[group]]
+id = "protective_services"
+isco = "54"
+major = "service"
+skill = 2
+employed = 3121.7
+ages = [18, 66]
+titles = [
+  { name = "police officer", ages = [18, 60] },
+  { name = "firefighter", ages = [18, 60] },
+  { name = "security guard", ages = [18, 72] },
+  "prison officer",
+  { name = "lifeguard", ages = [16, 45] },
+  "traffic warden",
+]
+
+[[group]]
+id = "farmers"
+isco = "61"
+major = "agricultural"
+skill = 2
+employed = 5052.8
+ages = [16, 88]
+titles = ["dairy farmer", "market gardener", "sheep farmer", "arable farmer", "beekeeper", { name = "gardener", ages = [16, 80] }]
+
+[[group]]
+id = "forestry_fishing"
+isco = "62"
+major = "agricultural"
+skill = 2
+employed = 268.1
+ages = [16, 70]
+titles = ["forester", "fishing boat skipper", "gamekeeper"]
+
+[[group]]
+id = "building_trades"
+isco = "71"
+major = "craft"
+skill = 2
+employed = 7598.8
+ages = [16, 67]
+titles = ["bricklayer", "carpenter", "plumber", "roofer", "plasterer", "painter and decorator", "tiler", { name = "scaffolder", ages = [16, 60] }]
+
+[[group]]
+id = "metal_trades"
+isco = "72"
+major = "craft"
+skill = 2
+employed = 7320.8
+ages = [16, 67]
+titles = ["car mechanic", "welder", "toolmaker", "farm machinery mechanic", "aircraft mechanic", { name = "locksmith", ages = [16, 75] }, "bicycle mechanic"]
+
+[[group]]
+id = "handicraft_printing"
+isco = "73"
+major = "craft"
+skill = 2
+employed = 904.6
+ages = [16, 80]
+titles = ["printer", "jeweller", "potter", "sign maker", "piano tuner"]
+
+[[group]]
+id = "electrical_trades"
+isco = "74"
+major = "craft"
+skill = 2
+employed = 3032.8
+ages = [16, 68]
+titles = ["electrician", "aerial installer", "solar panel installer", "lift engineer"]
+
+[[group]]
+id = "food_wood_garment_trades"
+isco = "75"
+major = "craft"
+skill = 2
+employed = 3845.4
+ages = [16, 75]
+titles = ["baker", "butcher", "tailor", "upholsterer", "furniture maker", "cheesemaker", "dressmaker"]
+
+[[group]]
+id = "plant_operators"
+isco = "81"
+major = "operators"
+skill = 2
+employed = 4807.7
+ages = [17, 67]
+titles = ["factory machine operator", "food factory line worker", "printing press operator", "laundry machine operator", "water treatment operator"]
+
+[[group]]
+id = "assemblers"
+isco = "82"
+major = "operators"
+skill = 2
+employed = 1719.4
+ages = [17, 67]
+titles = ["car plant assembly worker", "electronics assembler", "furniture assembler"]
+
+[[group]]
+id = "drivers"
+isco = "83"
+major = "operators"
+skill = 2
+employed = 8299.5
+ages = [18, 72]
+titles = [
+  "bus driver",
+  "lorry driver",
+  "taxi driver",
+  "forklift driver",
+  { name = "train driver", ages = [21, 65] },
+  "delivery van driver",
+  { name = "crane operator", ages = [18, 65] },
+  "digger driver",
+]
+
+[[group]]
+id = "cleaners"
+isco = "91"
+major = "elementary"
+skill = 1
+employed = 6344.6
+ages = [16, 75]
+titles = ["cleaner", "hotel housekeeper", "window cleaner", "car washer", "hospital cleaner"]
+
+[[group]]
+id = "farm_labourers"
+isco = "92"
+major = "elementary"
+skill = 1
+employed = 1495.9
+ages = [16, 70]
+titles = ["fruit picker", "farm labourer", "groundskeeper"]
+
+[[group]]
+id = "labourers"
+isco = "93"
+major = "elementary"
+skill = 1
+employed = 5344.4
+ages = [16, 66]
+titles = ["building labourer", "warehouse picker", "factory packer", "removal worker", "road worker"]
+
+[[group]]
+id = "food_assistants"
+isco = "94"
+major = "elementary"
+skill = 1
+employed = 1464.5
+ages = [16, 72]
+titles = ["kitchen porter", "fast food worker", "school kitchen assistant"]
+
+[[group]]
+id = "street_vendors"
+isco = "95"
+major = "elementary"
+skill = 1
+employed = 93.0
+ages = [16, 80]
+titles = ["street food seller", "ice cream van driver"]
+
+[[group]]
+id = "refuse_and_other"
+isco = "96"
+major = "elementary"
+skill = 1
+employed = 1871.6
+ages = [16, 70]
+titles = ["refuse collector", "street sweeper", "odd-job handyman", "car park attendant", "bicycle courier", "meter reader"]
+
+[[group]]
+id = "armed_forces_officers"
+isco = "01"
+major = "armed_forces"
+skill = 4
+employed = 245.8
+ages = [21, 57]
+titles = ["army officer", "navy officer"]
+
+[[group]]
+id = "armed_forces_ncos"
+isco = "02"
+major = "armed_forces"
+skill = 2
+employed = 339.7
+ages = [18, 55]
+titles = ["army sergeant", "air force sergeant"]
+
+[[group]]
+id = "armed_forces_ranks"
+isco = "03"
+major = "armed_forces"
+skill = 1
+employed = 587.9
+ages = [17, 45]
+titles = ["soldier", "navy rating"]
+
+[[study]]
+education = "early_leaver"
+titles = ["taking evening classes in English and maths", "on a back-to-work training course", "on a college access course"]
+
+[[study]]
+education = "school"
+titles = ["at college studying for their exams", "resitting their exams at college", "on a foundation course"]
+
+[[study]]
+education = "vocational"
+titles = [
+  "an apprentice electrician",
+  "an apprentice plumber",
+  "an apprentice mechanic",
+  "a trainee chef at catering college",
+  "an apprentice carpenter",
+  "a trainee hairdresser",
+  "studying childcare at college",
+  "an apprentice bricklayer",
+]
+
+[[study]]
+education = "degree"
+titles = [
+  "a nursing student",
+  "a law student",
+  "an engineering student",
+  "a history student",
+  "a medical student",
+  "a computer science student",
+  "an art student",
+  "a geography student",
+  "a trainee teacher",
+  "a music student",
+  "a biology student",
+  "an economics student",
+]
+
+[[study]]
+education = "postgraduate"
+titles = [
+  "a PhD student in chemistry",
+  "studying for a master's in social work",
+  "a PhD student in history",
+  "studying for a master's in architecture",
+  "a PhD student in marine biology",
+  "studying for a master's in psychology",
+]
