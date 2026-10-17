@@ -104,6 +104,21 @@ async def test_analyses_each_waiting_article_once_newest_first(store: NewsStore)
 
 
 @pytest.mark.anyio
+async def test_says_how_many_articles_it_analyses(
+    store: NewsStore, caplog: pytest.LogCaptureFixture
+) -> None:
+    store.add(article(n) for n in range(3))
+    analyser, _ = analyser_for(store, FakeProvider(default=reply()))
+
+    with caplog.at_level(logging.INFO, logger="simile.news.analysis"):
+        await analyser.analyse_pending()
+        await analyser.analyse_pending()
+
+    counts = [r.getMessage() for r in caplog.records if r.getMessage().startswith("Analysing")]
+    assert counts == ["Analysing 3 news articles, one fake call each"]
+
+
+@pytest.mark.anyio
 async def test_only_the_newest_are_analysed(store: NewsStore) -> None:
     store.add(article(n) for n in range(3))
     fake = FakeProvider(default=reply())

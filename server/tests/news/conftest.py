@@ -13,7 +13,8 @@ FIXTURE = FIXTURES / "bigthink.xml"
 
 class FeedServer(ThreadingHTTPServer):
     """Serves saved feeds on localhost, with an ETag, and records each request's path and
-    headers. `url` is the saved Big Think feed's."""
+    headers. `url` is the saved Big Think feed's. Clearing `gate` holds every reply until it's
+    set again."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
@@ -23,6 +24,8 @@ class FeedServer(ThreadingHTTPServer):
         self.modified = "Wed, 15 Sep 2021 20:05:26 GMT"
         self.requests: list[dict[str, str]] = []
         self.paths: list[str] = []
+        self.gate = threading.Event()
+        self.gate.set()
 
     @property
     def url(self) -> str:
@@ -43,6 +46,7 @@ class FeedHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         self.server.requests.append(dict(self.headers))
         self.server.paths.append(self.path)
+        self.server.gate.wait(5)
         xml = self.server.feeds.get(self.path)
         if xml is None:
             self.send_error(404)

@@ -10,9 +10,8 @@ from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import TypeAdapter
-
 from simile.memory import MemoryStore
+from simile.news.bundled import BUNDLED, bundled
 from simile.news.config import DEFAULT_CONFIG
 from simile.news.interest import interest
 from simile.news.reactions import Reaction, remember
@@ -25,13 +24,18 @@ from simile.social import meet
 from simile.world.map import load_map
 
 HERE = Path(__file__).resolve().parent
+ARTICLE = (
+    "https://www.scientificamerican.com/article/"
+    "what-would-it-take-to-terraform-mars-erika-debenedictis-has-ideas/"
+)
 
 
 def prepare(db: Path) -> None:
     """Replace whatever is at `db` with the demo village."""
     scenario = json.loads((HERE / "scenario.json").read_text())
-    article = NewsItem.model_validate_json((HERE / "article.json").read_text())
-    others = TypeAdapter(list[NewsItem]).validate_json((HERE / "news.json").read_text())
+    news = bundled()
+    article = next(item for item in news if item.id == ARTICLE)
+    others = [item for item in news if item.id != ARTICLE]
     world = SavedWorld.model_validate({"now": scenario["now"], "npcs": scenario["residents"]})
     npcs = {npc.id: npc for npc in load_npcs()}
     validate(world, npcs.keys(), scenario["read"].keys())
@@ -83,7 +87,7 @@ def validate_news(article: NewsItem, others: list[NewsItem], unread: Iterable[Np
     if (total := len(others) + 1) > DEFAULT_CONFIG.articles:
         raise SystemExit(f"A terminal lists {DEFAULT_CONFIG.articles} articles, not {total}")
     if unanalysed := [item.title for item in others if not item.analysed]:
-        raise SystemExit(f"news.json has articles with no analysis: {unanalysed}")
+        raise SystemExit(f"{BUNDLED} has articles with no analysis: {unanalysed}")
     for npc in unread:
         rather = [item.title for item in others if interest(npc, item) >= interest(npc, article)]
         if rather:

@@ -1,12 +1,16 @@
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import AsyncExitStack, asynccontextmanager
 
 from starlette.applications import Starlette
 
+from simile.news.bundled import fall_back
 from simile.news.refresh import NewsRefresher
 from simile.news.store import news_of
 from simile.sim import world_of
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -40,7 +44,12 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         analyser = NewsAnalyser(store, llm)
         stack.push_async_callback(analyser.stop)
         stack.callback(world.loop.register(analyser))
-        if os.environ.get("SIMILE_NEWS") == "1":
+        if os.environ.get("SIMILE_NEWS") != "0":
+            if fallback := fall_back(store):
+                logger.info(
+                    f"No news stored yet, so the terminals list {len(fallback)} bundled articles "
+                    "until the feeds' are in"
+                )
             refresher = NewsRefresher(store)
             stack.push_async_callback(refresher.stop)
             stack.callback(world.loop.register(refresher))

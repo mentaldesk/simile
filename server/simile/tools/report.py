@@ -631,7 +631,7 @@ def news_section(run: RecordedRun) -> list[str]:
         f"{_n(len(readers), 'NPC')}, from {_n(calls, 'news-reaction call')}.",
     ]
     if not run.news_items:
-        lines.append("Nothing to read: `SIMILE_NEWS=1` fetches the feed.")
+        lines.append("Nothing to read: `SIMILE_NEWS=0` turned the news off.")
     said = spoken(run)
     mentions = [line for line in said if NEWS_WORDS.search(line.text.lower())]
     if said:

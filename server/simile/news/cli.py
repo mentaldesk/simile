@@ -21,8 +21,8 @@ def register(app: typer.Typer) -> None:
     ) -> None:
         """List the latest stored news, newest first.
 
-        `simile serve` and `simile headless` keep it fresh only with SIMILE_NEWS=1, and analyse
-        new articles as they come.
+        `simile serve` and `simile headless` keep it fresh and analyse new articles as they come,
+        unless SIMILE_NEWS=0.
 
         SIMILE_NEWS_FEED overrides the feeds with a comma-separated list of URLs.
         """
