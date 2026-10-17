@@ -14,7 +14,5 @@ def bundled(path: Path = BUNDLED) -> list[NewsItem]:
 
 
 def fall_back(store: NewsStore, path: Path = BUNDLED) -> list[NewsItem]:
-    """Store the bundled articles if there's no news at all yet, so the terminals have something
-    to list while the feeds are fetched and analysed, or when they can't be. Returns those
-    stored."""
+    """Store the bundled articles if no news is stored yet, and return those stored."""
     return [] if store.latest(1) else store.add(bundled(path))

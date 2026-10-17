@@ -13,8 +13,7 @@ FIXTURE = FIXTURES / "bigthink.xml"
 
 class FeedServer(ThreadingHTTPServer):
     """Serves saved feeds on localhost, with an ETag, and records each request's path and
-    headers. `url` is the saved Big Think feed's. Clearing `gate` holds every reply until it's
-    set again."""
+    headers. `url` is the saved Big Think feed's."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
