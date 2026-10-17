@@ -1,0 +1,61 @@
+.mural {
+  position: absolute;
+  left: 200px;
+  right: 4px;
+  top: 4px;
+  max-height: calc(100% - 28px);
+  display: flex;
+  flex-direction: column;
+  padding: 3px 4px;
+  border: 1px solid #e8b04a;
+  border-radius: 3px;
+  background: rgb(17 17 17 / 92%);
+  pointer-events: auto;
+  outline: none;
+}
+
+.mural header {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #555;
+  color: #e8b04a;
+}
+
+.mural header span {
+  opacity: 0.7;
+  font-size: 7px;
+}
+
+.mural > div {
+  min-height: 0;
+  display: flex;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.mural img {
+  max-width: 55%;
+  max-height: 240px;
+  object-fit: contain;
+  align-self: flex-start;
+  border-radius: 2px;
+}
+
+.mural > div > div {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.mural small {
+  font-size: 7px;
+  color: #7fc8a9;
+}
+
+.mural p {
+  margin: 3px 0 0;
+  white-space: pre-line;
+}
