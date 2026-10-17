@@ -276,11 +276,11 @@ def test_starts_with_the_next_line_when_the_player_comes_near(
 ) -> None:
     async def scenario() -> tuple[bool, bool, list[AudioChunk]]:
         async with village(synthesiser) as world:
-            world.move_player(5.5, 0)
+            world.move_player(6.5, 0)
             talk = world.start("mei", "viktor")
             _, far = world.say(talk, "mei", "Morning, Viktor.")
             line = world.draft(talk, "viktor", "Morning, Mei.")
-            world.move_player(4, 2)
+            world.move_player(5, 2)
             near = world.speak(line)
             return far, near, await world.heard(line)
 
@@ -302,10 +302,10 @@ def test_stops_when_the_player_walks_away(synthesiser: FakeSynthesiser) -> None:
             gate.release(1)
             await until(lambda: len(world.chunks(line)) == 1)
             ahead = world.draft(talk, "viktor", "I have.")
-            world.move_player(6, 0)
+            world.move_player(7, 0)
             await settle()
             sent_nearby = len(world.chunks(line))
-            world.move_player(8, 0)
+            world.move_player(9, 0)
             chunks = await world.heard(line)
             gate.release(synthesiser.chunks)
             await until(lambda: sentence in synthesiser.closed)

@@ -15,8 +15,8 @@ from where the speaker stands.
   towards their side. A line is the partner's if its conversation includes the player, as told by
   `snapshot`, `conversation_started` and `conversation_ended`, so a goodbye said as the
   conversation ends still plays at full volume.
-- Overheard voices are capped at a third of full volume (about −9.5 dB) within 2 tiles of the
-  listener and fall to silence at `SILENT_BEYOND` (5.5), where the server stops voicing them
+- Overheard voices are capped at a quarter of full volume (about −12 dB) within 2 tiles of the
+  listener and fall to silence at `SILENT_BEYOND` (6.5), where the server stops voicing them
   (`out_of_earshot`). Pan follows the speaker's direction, up to 0.8 either side. `spatial.ts`
   has both mixes, and `server/tests/voicing/test_client_earshot.py` fails if `SILENT_BEYOND` and
   `out_of_earshot` drift apart.

@@ -12,10 +12,12 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 
 ## Earshot
 
-- A conversation is in earshot once the player is within `earshot` (4 tiles) of one of its NPCs,
-  and stays in it until they're further than `out_of_earshot` (5.5) from all of them. Nothing is in
-  earshot while no client is connected. At the client's zoom the screen shows about 4 tiles above
-  and below the player, so a conversation starts being voiced only once it's on screen.
+- A conversation is in earshot once the player is within `earshot` (5 tiles) of one of its NPCs,
+  and stays in it until they're further than `out_of_earshot` (6.5) from all of them. Nothing is in
+  earshot while no client is connected. The iso view shows at least 10 tiles to either side of the
+  player, so all of earshot is on screen. Top-down shows about 6.5 tiles to either side but only 4
+  above and below, so a speaker almost straight above or below can be voiced before they're on
+  screen.
 - Coming into earshot voices the next line on, including one already written and waiting for its
   turn. Leaving it cuts the line being said and drops the rest.
 - The player's own conversation is always in earshot: B5 ends it beyond 6 tiles.
@@ -24,9 +26,9 @@ an M2 Max, then follows the bus and ticks on the sim loop.
   bubbles, with three up to 13 s, and dropped lines. Another conversation coming into earshot stays
   unvoiced, from its next line on, until one of them ends or leaves earshot. The player starting a
   conversation silences the farthest voiced one instead.
-- C2 draws bubbles within the same 4 tiles, so the player hears the conversations whose bubbles they
-  see. C3 plays the player's own partner at full volume. It caps an overheard voice at a third
-  (about −9.5 dB) within 2 tiles and fades it to silence at 5.5, so it's about −24 dB at 4 tiles.
+- C2 draws bubbles within the same 5 tiles, so the player hears the conversations whose bubbles they
+  see. C3 plays the player's own partner at full volume. It caps an overheard voice at a quarter
+  (about −12 dB) within 2 tiles and fades it to silence at 6.5, so it's about −31 dB at 5 tiles.
   `server/tests/voicing/test_client_earshot.py` keeps both sides' distances the same.
 
 ## Lines
