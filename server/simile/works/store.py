@@ -19,6 +19,18 @@ CREATE TABLE IF NOT EXISTS works (
 );
 CREATE INDEX IF NOT EXISTS works_by_medium ON works (medium, created);
 CREATE INDEX IF NOT EXISTS works_by_artist ON works (artist, created);
+CREATE TABLE IF NOT EXISTS murals (
+    work_id TEXT PRIMARY KEY,
+    wall TEXT NOT NULL,
+    covers TEXT,
+    png BLOB NOT NULL,
+    svg TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS murals_by_wall ON murals (wall);
+"""
+SHOWING = """
+SELECT w.data FROM murals m JOIN works w ON w.id = m.work_id
+WHERE NOT EXISTS (SELECT 1 FROM murals c WHERE c.covers = m.work_id)
 """
 
 NEWEST = "ORDER BY created DESC, rowid DESC"
@@ -52,17 +64,45 @@ class WorksStore:
     def add(self, work: Work) -> None:
         """Store `work`, replacing any with its id."""
         with self._lock, self._db:
+            self._insert(work)
+
+    def paint(self, mural: Work, svg: str, png: bytes) -> Work | None:
+        """Store `mural` and its picture over whatever is on its wall, and return what that was.
+        Covered murals are kept."""
+        with self._lock, self._db:
+            row = self._db.execute(
+                f"{SHOWING} AND m.wall = ? AND m.work_id != ?", (mural.wall, mural.id)
+            ).fetchone()
+            covered = Work.model_validate_json(row[0]) if row else None
+            self._insert(mural)
             self._db.execute(
-                "INSERT OR REPLACE INTO works (id, artist, medium, created, data)"
+                "INSERT OR REPLACE INTO murals (work_id, wall, covers, png, svg)"
                 " VALUES (?, ?, ?, ?, ?)",
-                (
-                    work.id,
-                    work.artist,
-                    work.medium,
-                    work.created.timestamp(),
-                    work.model_dump_json(),
-                ),
+                (mural.id, mural.wall, covered.id if covered else None, png, svg),
             )
+        return covered
+
+    def showing(self) -> dict[str, Work]:
+        """The mural on each painted wall, by wall id."""
+        with self._lock:
+            rows = self._db.execute(SHOWING).fetchall()
+        murals = [Work.model_validate_json(data) for (data,) in rows]
+        return {mural.wall: mural for mural in murals if mural.wall}
+
+    def covered(self, id: str) -> Work | None:
+        """The mural that `id` was painted over."""
+        with self._lock:
+            row = self._db.execute(
+                "SELECT w.data FROM murals m JOIN works w ON w.id = m.covers WHERE m.work_id = ?",
+                (id,),
+            ).fetchone()
+        return Work.model_validate_json(row[0]) if row else None
+
+    def picture(self, id: str) -> bytes | None:
+        """A mural's PNG."""
+        with self._lock:
+            row = self._db.execute("SELECT png FROM murals WHERE work_id = ?", (id,)).fetchone()
+        return row[0] if row else None
 
     def get(self, id: str) -> Work | None:
         with self._lock:
@@ -76,6 +116,13 @@ class WorksStore:
     def by(self, artist: Id, n: int = -1) -> list[Work]:
         """`artist`'s works, newest first: the `n` newest, or all of them."""
         return self._select(f"WHERE artist = ? {NEWEST} LIMIT ?", (artist, n))
+
+    def _insert(self, work: Work) -> None:
+        self._db.execute(
+            "INSERT OR REPLACE INTO works (id, artist, medium, created, data)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (work.id, work.artist, work.medium, work.created.timestamp(), work.model_dump_json()),
+        )
 
     def _select(self, where: str, params: tuple[object, ...]) -> list[Work]:
         with self._lock:

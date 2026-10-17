@@ -120,6 +120,7 @@ def test_the_terminal_lists_and_reads_works_over_the_websocket(
         works_of(app).add(work("w0", artist="tobias"))
         works_of(app).add(work("w1", artist="tobias", hours_ago=1))
         assert ws.receive_json()["type"] == "snapshot"
+        assert ws.receive_json()["type"] == "murals"
 
         ws.send_json({"type": "list_works"})
         listed = ws.receive_json()

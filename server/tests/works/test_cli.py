@@ -1,16 +1,19 @@
 from pathlib import Path
 
 import pytest
+from PIL import Image
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
 from simile.llm import FakeProvider
 from simile.memory import MemoryStore
+from simile.npc import load_npcs
 from simile.persistence import SavedWorld, WorldStore
 from simile.schema import Memory, MemoryKind
 from simile.works import WorksStore
+from simile.world.map import load_map
 
-from .conftest import NOW, reply
+from .conftest import NOW, mural, mural_reply, reply, svg
 
 runner = CliRunner()
 
@@ -69,11 +72,88 @@ def test_says_when_the_model_couldnt_write_a_piece(database: Path) -> None:
         assert works.by("tobias") == []
 
 
-def test_only_residents_who_write_can_make_a_piece(database: Path) -> None:
-    mural = runner.invoke(create_cli(), ["works", "make", "kofi"])
+def test_paints_a_mural_on_the_wall_they_pick_and_saves_its_picture(
+    database: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "simile.llm.lifespan.CannedProvider",
+        lambda: FakeProvider([mural_reply(svg=svg(384, 563))]),
+    )
+
+    result = runner.invoke(
+        create_cli(), ["works", "make", "kofi", "--png", str(tmp_path / "mural.png")]
+    )
+
+    assert result.exit_code == 0, result.output
+    with WorksStore(database) as works:
+        [made] = works.by("kofi")
+        assert works.showing() == {"corner_shop": made}
+    assert Image.open(tmp_path / "mural.png").size == (384, 563)
+    assert (
+        '"Sunrise Over the Square", political street murals, by Kofi Lindqvist-Mensah on the '
+        "corner shop wall\n\nA red wall with a yellow sun in the middle.\n\n"
+    ) in result.output
+    assert result.output.endswith(f"Stored as {made.id}.\n")
+
+
+def test_paints_nothing_while_no_wall_is_worth_painting_unless_told_which(
+    database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with MemoryStore(database) as memory, WorldStore(memory) as world:
+        world.save(SavedWorld(now=NOW, npcs={}))
+        with WorksStore(database) as works:
+            for n, wall in enumerate(load_map().murals):
+                works.paint(mural(f"fresh-{n}", "ingrid", wall.id), "<svg/>", b"")
+    fake = FakeProvider([mural_reply(svg=svg(288, 223))])
+    monkeypatch.setattr("simile.llm.lifespan.CannedProvider", lambda: fake)
+
+    result = runner.invoke(create_cli(), ["works", "make", "kofi"])
+    told = runner.invoke(create_cli(), ["works", "make", "kofi", "--wall", "daily_grind"])
+
+    assert result.exit_code == 1
+    assert (
+        "Kofi Lindqvist-Mensah has no wall worth painting just now. Name one with --wall."
+        in result.output
+    )
+    assert told.exit_code == 0, told.output
+    assert len(fake.requests) == 1
+    with WorksStore(database) as works:
+        assert [m.wall for m in works.by("kofi")] == ["daily_grind"]
+
+
+def test_paints_the_wall_its_told_to(database: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "simile.llm.lifespan.CannedProvider",
+        lambda: FakeProvider([mural_reply(svg=svg(288, 223))]),
+    )
+
+    result = runner.invoke(create_cli(), ["works", "make", "odalys", "--wall", "daily_grind"])
+    nowhere = runner.invoke(create_cli(), ["works", "make", "odalys", "--wall", "nowhere"])
+
+    assert result.exit_code == 0, result.output
+    with WorksStore(database) as works:
+        assert [m.wall for m in works.by("odalys")] == ["daily_grind"]
+    assert nowhere.exit_code == 2
+    assert "no such wall: nowhere" in nowhere.output
+
+
+def test_says_when_a_muralist_couldnt_paint(database: Path) -> None:
+    result = runner.invoke(create_cli(), ["works", "make", "kofi"])
+
+    assert result.exit_code == 1
+    assert "Kofi Lindqvist-Mensah couldn't paint a mural." in result.output
+
+
+def test_only_residents_with_a_craft_can_make_something(
+    database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    [kofi] = [npc for npc in load_npcs() if npc.id == "kofi"]
+    monkeypatch.setattr("simile.npc.load_npcs", lambda: [kofi.model_copy(update={"craft": None})])
+
+    idle = runner.invoke(create_cli(), ["works", "make", "kofi"])
     nobody = runner.invoke(create_cli(), ["works", "make", "nobody"])
 
-    assert mural.exit_code == 1
-    assert "Kofi Lindqvist-Mensah doesn't write." in mural.output
+    assert idle.exit_code == 1
+    assert "Kofi Lindqvist-Mensah doesn't make anything." in idle.output
     assert nobody.exit_code == 2
     assert "no such resident: nobody" in nobody.output

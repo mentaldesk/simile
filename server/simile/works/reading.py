@@ -46,16 +46,21 @@ def interest(
     return article_interest(reader, work) + config.artist_weight * affinity(feeling)
 
 
+def how_it_lands(artist: str) -> str:
+    return (
+        f"How does it land with you, given what you care about and how you feel about {artist}? "
+        "Something that chimes with what you care about most is strongly positive, something "
+        "that goes against it strongly negative, and something you don't care about is mild "
+        "either way."
+    )
+
+
 def work_prompt(work: Work, artist: str, feeling: str) -> str:
     return (
         f"You've just read this on the village news terminal, where your neighbours put up what "
         f"they write. It's by {artist}, who writes {work.form}.\n\n"
         f"{work.title}\n\n{work.text}\n\n"
-        f"{artist} says of it: {work.statement}\n\n{feeling}\n\n"
-        f"How does it land with you, given what you care about and how you feel about {artist}? "
-        "Something that chimes with what you care about most is strongly positive, something "
-        "that goes against it strongly negative, and something you don't care about is mild "
-        "either way."
+        f"{artist} says of it: {work.statement}\n\n{feeling}\n\n{how_it_lands(artist)}"
     )
 
 
