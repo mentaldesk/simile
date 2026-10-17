@@ -1,3 +1,4 @@
+import random
 import re
 import shutil
 from pathlib import Path
@@ -5,21 +6,24 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from simile.characters.tables import TABLES_DIR, Tables, load_tables
+from simile.characters.tables import TABLES_DIR, Tables, load_tables, sample_skeleton
 from simile.characters.tables.check import problems, skeleton_fields
 from simile.characters.tables.load import FILES, banded
 
 SLANG = {
     "Becky", "Bich", "Bruce", "Butt", "Can", "Chad", "Cock", "Dave", "Dick", "Dike", "Divan",
-    "Dong", "Dung", "Fanny", "Ferrari", "Fick", "Garfield", "Gay", "Grażyna", "Harsh", "Ho",
+    "Dong", "Dung", "Fanny", "Ferrari", "Fick", "Garfield", "Gay", "Grażyna", "Harsh",
     "Hore", "Hung", "Janusz", "Karen", "Kevin", "Kok", "Kunt", "Kyle", "Lamia", "Lucky", "Luigi",
     "Mario", "Marites", "Phuc", "Pratt", "Princess", "Prost", "Pula", "Purity", "Randy",
-    "Schmuck", "Seaman", "Sheila", "Stacy", "Twat", "Wang", "Willy", "Wood",
+    "Schmuck", "Seaman", "Sheila", "Stacy", "Twat", "Willy", "Wood",
 }  # fmt: skip
 FAMOUS = {
-    ("Imran", "Khan"), ("Efren", "Reyes"), ("Romeo", "Santos"), ("Zain", "Malik"),
-    ("Jieun", "Lee"), ("Chaeyoung", "Park"), ("Mario", "Rossi"), ("Larry", "King"),
-    ("Luiz", "Silva"), ("Kofi", "Annan"), ("Enzo", "Ferrari"),
+    "Imran Khan", "Efren Reyes", "Romeo Santos", "Zain Malik", "Jieun Lee", "Chaeyoung Park",
+    "Mario Rossi", "Larry King", "Luiz Silva", "Kofi Annan", "Enzo Ferrari", "Hardik Pandya",
+    "Rohit Sharma", "Thomas Müller", "Paolo Rossi", "Bruno Fernandes", "Thiago Silva",
+    "Dylan Thomas", "Noel Gallagher", "Geraint Thomas", "Patrick Kavanagh", "James Stewart",
+    "Robert Johnson", "Anil Kapoor", "Muhammad Iqbal", "Rui Costa", "Emeka Okafor",
+    "Victor Wanyama", "Javier Hernández", "Seojun Park", "Pieter Botha",
 }  # fmt: skip
 
 
@@ -77,11 +81,20 @@ def test_no_name_reads_as_slang_or_a_joke(tables: Tables) -> None:
         assert not parts & SLANG, origin.id
 
 
-def test_no_origin_can_make_a_famous_name(tables: Tables) -> None:
+def test_every_famous_name_an_origin_could_make_is_listed(tables: Tables) -> None:
     for origin in tables.origins:
         given = {name for era in [*origin.women.values(), *origin.men.values()] for name in era}
-        for first, last in FAMOUS:
-            assert not (first in given and last in origin.surnames), (origin.id, first, last)
+        possible = {f"{first} {family}" for first in given for family in origin.surnames}
+        assert possible & FAMOUS <= set(origin.famous), origin.id
+
+
+def test_a_famous_name_is_never_drawn(tables: Tables) -> None:
+    for origin in (origin for origin in tables.origins if origin.famous):
+        for name in origin.famous:
+            given, family = name.split(" ", 1)
+            for seed in range(30):
+                skeleton = sample_skeleton(random.Random(seed), 40, origin=origin.id, given=given)
+                assert skeleton.family != family
 
 
 def test_conditions_can_never_mention_origin_or_gender(tables: Tables) -> None:

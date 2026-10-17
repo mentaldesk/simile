@@ -4,7 +4,15 @@ from collections.abc import Callable
 
 import pytest
 
-from simile.characters.tables import YEAR, Skeleton, Tables, Village, jobs_for, sample_skeleton
+from simile.characters.tables import (
+    YEAR,
+    Skeleton,
+    Tables,
+    Village,
+    jobs_for,
+    origins_for,
+    sample_skeleton,
+)
 
 type Skeletons = Callable[..., Skeleton]
 
@@ -157,3 +165,37 @@ def test_fixed_fields_are_kept_and_the_rest_follow_them(skeleton: Skeletons) -> 
 def test_an_unknown_fixed_field_is_an_error(skeleton: Skeletons) -> None:
     with pytest.raises(TypeError, match="star_sign"):
         skeleton(30, star_sign="leo")
+
+
+def test_the_household_fits_the_upbringing(tables: Tables) -> None:
+    upbringings = {row.id: row for row in tables.census.upbringing}
+    backgrounds = {row.id: row for row in tables.census.background}
+    rng = random.Random(7)
+    for _ in range(1000):
+        s = sample_skeleton(rng, rng.randint(18, 90))
+        kinds = upbringings[s.upbringing].households
+        fits = {h for kind in kinds for h in backgrounds[s.background].households.get(kind, [])}
+        assert s.household in fits
+
+
+def test_alone_and_both_parents_never_meet(tables: Tables, skeleton: Skeletons) -> None:
+    alone = {h for row in tables.census.background for h in row.households["one"]}
+    both = {h for row in tables.census.background for h in row.households["parents"]}
+
+    for seed in range(200):
+        assert skeleton(40, seed=seed, upbringing="two_parents").household not in alone
+        assert skeleton(40, seed=seed, upbringing="single_parent").household not in both
+        assert skeleton(40, seed=seed, upbringing="care").household not in alone | both
+
+
+def test_origins_for_a_country(tables: Tables) -> None:
+    assert origins_for("India") == ["india_hindi", "india_gujarati", "india_malayali"]
+    assert origins_for("the Philippines") == origins_for("philippines") == ["philippines"]
+    assert len(origins_for("South Africa")) == 2
+    with pytest.raises(ValueError, match="no origins for country 'Atlantis'; known countries:"):
+        origins_for("Atlantis")
+
+
+def test_an_unknown_origin_is_a_clear_error(skeleton: Skeletons) -> None:
+    with pytest.raises(ValueError, match="unknown origin 'India': use origins_for"):
+        skeleton(30, origin="India")

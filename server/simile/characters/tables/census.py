@@ -68,11 +68,13 @@ def sample_skeleton(
         s["gender"] = choose(rng, list(census.gender), list(census.gender.values()))
     if unset("origin"):
         s["origin"] = choose(rng, [o.id for o in t.origins], [o.weight for o in t.origins])
-    origin = t.origin[str(s["origin"])]
+    if (origin := t.origin.get(str(s["origin"]))) is None:
+        raise ValueError(f"unknown origin '{s['origin']}': use origins_for(country) for its ids")
     if unset("given"):
         s["given"] = fresh(rng, origin.given_names(str(s["gender"]), born), taken.names)
     if unset("family"):
-        s["family"] = fresh(rng, origin.surnames, taken.names | {str(s["given"])})
+        given = str(s["given"])
+        s["family"] = fresh(rng, origin.surnames_for(given), taken.names | {given})
     if unset("born_here"):
         s["born_here"] = rng.random() < census.born_here
     if s["born_here"]:
@@ -87,13 +89,14 @@ def sample_skeleton(
     if unset("background"):
         rows = census.background
         s["background"] = choose(rng, [r.id for r in rows], [banded(r.weight, born) for r in rows])
-    if unset("household"):
-        [background] = [r for r in census.background if r.id == s["background"]]
-        homes = background.households
-        s["household"] = choose(rng, homes, [taken.damping(home) for home in homes]) or homes[0]
     if unset("upbringing"):
         rows = census.upbringing
         s["upbringing"] = choose(rng, [r.id for r in rows], [banded(r.weight, born) for r in rows])
+    if unset("household"):
+        [background] = [r for r in census.background if r.id == s["background"]]
+        [upbringing] = [r for r in census.upbringing if r.id == s["upbringing"]]
+        homes = [h for kind in upbringing.households for h in background.households.get(kind, [])]
+        s["household"] = choose(rng, homes, [taken.damping(home) for home in homes]) or homes[0]
     if unset("siblings"):
         weights = banded(census.siblings, born)
         s["siblings"] = choose(rng, range(len(weights)), weights)
@@ -124,6 +127,20 @@ def sample_skeleton(
             village.jobs.add(skeleton.occupation.removeprefix("retired "))
         village.drawn[skeleton.household] += 1
     return skeleton
+
+
+def origins_for(country: str, *, tables: Tables | None = None) -> list[str]:
+    """The origin ids for a country, such as a locked origin. India, for one, has several."""
+    t = tables or load_tables()
+    key = _country(country)
+    if found := [origin.id for origin in t.origins if _country(origin.country) == key]:
+        return found
+    known = ", ".join(sorted({origin.country for origin in t.origins}))
+    raise ValueError(f"no origins for country '{country}'; known countries: {known}")
+
+
+def _country(name: str) -> str:
+    return name.casefold().strip().removeprefix("the ")
 
 
 def jobs_for(t: Tables, age: int, education: str) -> list[tuple[Job, float]]:

@@ -10,8 +10,9 @@ Each stage is conditioned on what's already decided, so the facts hang together,
 what the player has fixed and samples only the rest:
 
 1. **Census skeleton** (`sample_skeleton`): birth year, gender, origin, name, where they came from,
-   class background and household, upbringing, siblings, education, partnership, children, health,
-   work and occupation, in that order.
+   class background, upbringing, the household they grew up in (one that fits the upbringing),
+   siblings, education, partnership, children, health, work and occupation, in that order.
+   `origins_for(country)` gives the origin ids for a locked country.
 2. **Values**: `simile.npc.values`, unchanged.
 3. **Temperament** (`sample_temperament`): HEXACO domains pulled by the values, facets around them.
 4. **Life events** (`sample_events`): 2 to 6, conditioned on all of the above and on each other.
@@ -71,15 +72,18 @@ Brasil*.
 - A country with very different naming communities is split, so a given name and a surname never
   come from different communities: India (Hindi, Gujarati, Malayali), Nigeria (Yoruba, Igbo) and
   South Africa (Afrikaans, isiZulu). Polish surnames are ones that don't change with gender.
-- **Checked for slang and jokes**, for an English-speaking player especially, and removed: "Marites"
-  (Filipino slang for a gossip), "Karen", "Kevin", "Kyle", "Chad", "Stacy", "Becky" (memes), "Butt",
-  "Wang", "Dong", "Fanny", "Randy", "Wood", Vietnamese "Phúc", "Dũng", "Hùng", "Bích", "Hồ" and
-  "Đức", Gujarati "Dave", "Harsh" and "Meet", Polish "Grażyna" and "Janusz" (memes in Poland),
-  Australian "Bruce" and "Sheila", "Garfield", "Ariel", "Lucky", "Princess", "Purity", "Divan",
-  "Lamia", "Can", and "Mario", "Luigi" and "Ferrari" together. `test_load.py` keeps them out.
-- **No real individuals.** Name lists hold no full names, and given names that would pair with a
-  surname in the same origin to make a famous person were dropped (Imran Khan, Efren Reyes, Romeo
-  Santos, Zain Malik, Lee Ji-eun, Park Chae-young, Mario Rossi, Larry King, Luiz Silva).
+- **Checked for slang and jokes**, for an English-speaking player especially, and left out:
+  "Marites" (Filipino slang for a gossip), "Karen", "Kevin", "Kyle", "Chad", "Stacy", "Becky"
+  (memes), "Butt", "Dong", "Fanny", "Randy", "Wood", Vietnamese "Phúc", "Dũng", "Hùng" and "Bích",
+  Gujarati "Dave", "Harsh" and "Meet", Polish "Grażyna" and "Janusz" (memes in Poland), Australian
+  "Bruce" and "Sheila", "Garfield", "Ariel", "Lucky", "Princess", "Purity", "Divan", "Lamia",
+  "Can", and "Mario", "Luigi" and "Ferrari" together. `test_load.py` keeps them out. The most
+  common names stay even when they look like an English word, such as Wang, Hồ, Đức and Hardik.
+- **No real individuals.** Name lists hold no full names. Where a given name and a surname from the
+  same origin would make a famous person, the full name is in that origin's `famous` list and the
+  sampler never draws it (Hardik Pandya, Rohit Sharma, Thomas Müller, Paolo Rossi, Bruno
+  Fernandes, Thiago Silva, Dylan Thomas, Noel Gallagher and others). A few given names were left
+  out for the same reason (Imran, Efren, Romeo, Zain, Ji-eun, Chae-young, Mario, Larry, Luiz).
 
 ### Census
 
@@ -90,7 +94,10 @@ Brasil*.
 | Has a long-standing condition, by age | Eurostat [hlth_silc_05](https://ec.europa.eu/eurostat/databrowser/view/hlth_silc_05/default/table), EU-27, 2023. Which condition is judgement |
 | Everything else | Judgement, aiming at the rough shape of European statistics: gender, born here, arrivals, class background and households, upbringing, siblings, partnership and children by age, the statuses of people not in work, and how background shifts education |
 
-People still studying have the education level they're working towards, and are students.
+People still studying have the education level they're working towards, and are students. The
+household someone grew up in comes from the kinds their upbringing allows: one naming both parents,
+one parent raising them alone, or neither, so a two-parent upbringing never gets a mother raising
+them alone.
 
 ### Occupations
 

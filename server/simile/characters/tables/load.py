@@ -72,6 +72,8 @@ class Origin(Table):
     surnames: list[Text] = Field(min_length=8)
     women: dict[int, list[Text]]
     men: dict[int, list[Text]]
+    famous: list[Text] = []
+    """Full names of famous people the lists could otherwise make, which are never drawn."""
 
     def given_names(self, gender: str, birth_year: int) -> list[str]:
         if gender == "woman":
@@ -79,6 +81,9 @@ class Origin(Table):
         if gender == "man":
             return banded(self.men, birth_year)
         return banded(self.women, birth_year) + banded(self.men, birth_year)
+
+    def surnames_for(self, given: str) -> list[str]:
+        return [family for family in self.surnames if f"{given} {family}" not in self.famous]
 
 
 class Arrival(Table):
@@ -92,13 +97,18 @@ class Background(Table):
     id: Id
     text: Text
     weight: Banded
-    households: list[Text] = Field(min_length=5)
+    households: dict[Id, list[Text]]
 
 
 class Category(Table):
     id: Id
     text: Text
     weight: Banded
+
+
+class Upbringing(Category):
+    households: list[Id] = Field(min_length=1)
+    """The kinds of household in each background that fit this upbringing."""
 
 
 class Education(Table):
@@ -138,7 +148,7 @@ class Census(Table):
     born_here: Annotated[float, Field(ge=0, le=1)]
     arrival: list[Arrival]
     background: list[Background]
-    upbringing: list[Category]
+    upbringing: list[Upbringing]
     siblings: dict[int, list[Share]]
     education: list[Education]
     partnership: list[Category]

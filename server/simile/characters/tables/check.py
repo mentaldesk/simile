@@ -68,6 +68,14 @@ def _names(tables: "Tables") -> Iterator[str]:
                 if len(names) < 5:
                     yield f"{where}: {gender} born from {era} have fewer than 5 names"
                 yield from _unique(f"{where} {gender} born from {era}", names)
+        given = {
+            name for eras in (origin.women, origin.men) for era in eras.values() for name in era
+        }
+        for name in origin.famous:
+            if not any(
+                name == f"{first} {family}" for first in given for family in origin.surnames
+            ):
+                yield f"{where}: its lists can't make the famous name '{name}' anyway"
 
 
 def _census(tables: "Tables") -> Iterator[str]:
@@ -109,6 +117,14 @@ def _census(tables: "Tables") -> Iterator[str]:
     for row in census.background + census.upbringing + census.partnership + census.education:
         if not any(row.weight.values()):
             yield f"census.toml '{row.id}': every weight is zero"
+    for upbringing in census.upbringing:
+        for background in census.background:
+            kinds = [k for k in upbringing.households if background.households.get(k)]
+            if not kinds:
+                where = f"census.toml upbringing '{upbringing.id}'"
+                yield f"{where}: no household in background '{background.id}' fits it"
+            for kind in set(upbringing.households) - set(background.households):
+                yield f"census.toml background '{background.id}': no '{kind}' households"
     if not any(row.done_by <= YOUNGEST_AGE for row in census.education):
         yield f"census.toml education: nobody can have finished by {YOUNGEST_AGE}"
 

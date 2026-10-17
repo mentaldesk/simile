@@ -955,7 +955,7 @@ when = { children = { min = 1 } }
 
 [[event]]
 id = "child_died"
-text = "their child died"
+text = "lost a child"
 ages = [22, 90]
 weight = 0.1
 impact = 100

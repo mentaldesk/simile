@@ -1,4 +1,4 @@
-from simile.characters.tables.census import YEAR, Skeleton, jobs_for, sample_skeleton
+from simile.characters.tables.census import YEAR, Skeleton, jobs_for, origins_for, sample_skeleton
 from simile.characters.tables.conditions import Context, Village
 from simile.characters.tables.events import Happening, sample_events
 from simile.characters.tables.load import TABLES_DIR, Tables, load_tables
@@ -36,6 +36,7 @@ __all__ = [
     "describe_temperament",
     "jobs_for",
     "load_tables",
+    "origins_for",
     "sample_attachment",
     "sample_contradiction",
     "sample_events",

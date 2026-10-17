@@ -1,7 +1,8 @@
 # Names by origin, gender and birth era. Under [origin.women] and [origin.men], each key is the
 # first birth year its list covers, and it runs until the next key. Surnames don't change with
 # era. Where a country has very different naming communities, each is its own origin with the
-# same country, so a given name and a surname never come from different communities.
+# same country, so a given name and a surname never come from different communities. `famous`
+# lists full names of famous people the lists could make, which are never drawn.
 # How the lists were made and checked is in README.md.
 
 [[origin]]
@@ -10,6 +11,7 @@ country = "England"
 accent = "English"
 weight = 14
 surnames = ["Smith", "Jones", "Taylor", "Brown", "Wilson", "Walker", "Wright", "Hughes", "Clarke", "Robinson", "Thompson", "Hall", "Green", "Edwards", "Harris", "Turner"]
+famous = ["James Taylor", "Paul Walker"]
 
 [origin.women]
 1930 = ["Margaret", "Patricia", "Susan", "Christine", "Linda", "Janet", "Barbara", "Pauline", "Jean", "Brenda"]
@@ -27,6 +29,7 @@ country = "Scotland"
 accent = "Scottish"
 weight = 4
 surnames = ["Macdonald", "Campbell", "Stewart", "Robertson", "Murray", "Mackay", "Reid", "Paterson", "Mackenzie", "Henderson", "Ferguson", "Morrison"]
+famous = ["James Stewart"]
 
 [origin.women]
 1930 = ["Margaret", "Elizabeth", "Agnes", "Isobel", "Jean", "Moira", "Morag", "Helen"]
@@ -44,6 +47,7 @@ country = "Wales"
 accent = "Welsh"
 weight = 3
 surnames = ["Jones", "Williams", "Davies", "Evans", "Thomas", "Roberts", "Griffiths", "Owen", "Price", "Pritchard", "Rees", "Lloyd", "Morris", "Jenkins"]
+famous = ["Dylan Thomas", "Geraint Thomas"]
 
 [origin.women]
 1930 = ["Megan", "Gwen", "Mair", "Glenys", "Eirlys", "Olwen", "Myfanwy", "Beryl"]
@@ -61,6 +65,7 @@ country = "Ireland"
 accent = "Irish"
 weight = 4
 surnames = ["Murphy", "Kelly", "O'Sullivan", "Walsh", "Byrne", "Ryan", "Doyle", "Kavanagh", "Quinn", "O'Brien", "McCarthy", "Gallagher", "Brennan", "Nolan"]
+famous = ["Noel Gallagher", "Patrick Kavanagh"]
 
 [origin.women]
 1930 = ["Mary", "Bridget", "Kathleen", "Eileen", "Nora", "Maureen", "Philomena", "Margaret"]
@@ -78,6 +83,7 @@ country = "the United States"
 accent = "American"
 weight = 3
 surnames = ["Johnson", "Miller", "Davis", "Anderson", "Moore", "Martin", "Hill", "White", "Harris", "Clark", "Young", "Allen", "Baker", "Nelson"]
+famous = ["Kimberly Clark", "Robert Johnson"]
 
 [origin.women]
 1930 = ["Linda", "Barbara", "Patricia", "Donna", "Sandra", "Carol", "Sharon", "Deborah", "Judith"]
@@ -129,6 +135,7 @@ country = "South Africa"
 accent = "South African, a first-language Afrikaans speaker"
 weight = 1
 surnames = ["Botha", "Pretorius", "Nel", "du Plessis", "van Wyk", "Venter", "Joubert", "Steyn", "Coetzee", "Fourie", "Kruger", "du Toit", "Smit", "Swanepoel"]
+famous = ["Pieter Botha"]
 
 [origin.women]
 1930 = ["Elsabe", "Marietjie", "Susanna", "Hester", "Johanna", "Magda", "Riana", "Annatjie"]
@@ -146,6 +153,7 @@ country = "South Africa"
 accent = "South African, a first-language isiZulu speaker"
 weight = 1
 surnames = ["Dlamini", "Nkosi", "Ndlovu", "Khumalo", "Mkhize", "Ngcobo", "Mthembu", "Cele", "Shabalala", "Zungu", "Ntuli", "Buthelezi", "Mhlongo", "Gumede"]
+famous = ["Bongani Khumalo"]
 
 [origin.women]
 1930 = ["Nomvula", "Thandiwe", "Nokuthula", "Sibongile", "Lindiwe", "Ntombi", "Busisiwe", "Zodwa"]
@@ -163,6 +171,7 @@ country = "Jamaica"
 accent = "Jamaican"
 weight = 2
 surnames = ["Campbell", "Williams", "Brown", "Thompson", "Gordon", "Grant", "Francis", "Morgan", "Reid", "Clarke", "Bailey", "Robinson", "Henry", "Lewis"]
+famous = ["Errol Brown", "Leroy Brown"]
 
 [origin.women]
 1930 = ["Gloria", "Hyacinth", "Myrtle", "Beverley", "Joyce", "Pearline", "Norma", "Icilda"]
@@ -197,6 +206,7 @@ country = "Romania"
 accent = "Romanian"
 weight = 4
 surnames = ["Popescu", "Ionescu", "Popa", "Dumitru", "Stan", "Stoica", "Munteanu", "Lazăr", "Matei", "Ciobanu", "Rusu", "Moldovan", "Dinu", "Tudor"]
+famous = ["Gheorghe Popescu"]
 
 [origin.women]
 1930 = ["Maria", "Elena", "Florica", "Viorica", "Aurelia", "Ileana", "Doina", "Silvia"]
@@ -214,6 +224,7 @@ country = "Italy"
 accent = "Italian"
 weight = 3
 surnames = ["Rossi", "Russo", "Fontana", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco", "Gallo", "Conti", "De Luca", "Mancini"]
+famous = ["Paolo Rossi"]
 
 [origin.women]
 1930 = ["Maria", "Anna", "Giuseppina", "Rosa", "Angela", "Carla", "Franca", "Lucia"]
@@ -231,6 +242,7 @@ country = "Germany"
 accent = "German"
 weight = 3
 surnames = ["Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner", "Becker", "Schulz", "Hoffmann", "Koch", "Richter", "Wolf", "Schröder"]
+famous = ["Thomas Müller"]
 
 [origin.women]
 1930 = ["Ursula", "Helga", "Renate", "Ingrid", "Gisela", "Brigitte", "Christa", "Hannelore"]
@@ -265,6 +277,7 @@ country = "Portugal"
 accent = "European Portuguese"
 weight = 2
 surnames = ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira", "Costa", "Rodrigues", "Martins", "Sousa", "Fernandes", "Gonçalves", "Gomes", "Lopes", "Marques"]
+famous = ["Bruno Fernandes", "Nuno Gomes", "Rui Costa"]
 
 [origin.women]
 1930 = ["Maria", "Rosa", "Fernanda", "Lurdes", "Conceição", "Graça", "Fátima", "Isabel"]
@@ -299,6 +312,7 @@ country = "Turkey"
 accent = "Turkish"
 weight = 2
 surnames = ["Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Yıldız", "Aydın", "Öztürk", "Arslan", "Doğan", "Kılıç", "Aslan", "Koç", "Kurt"]
+famous = ["Burak Yılmaz"]
 
 [origin.women]
 1930 = ["Fatma", "Ayşe", "Emine", "Hatice", "Hanife", "Sevim", "Nermin", "Gülsüm"]
@@ -316,6 +330,7 @@ country = "India"
 accent = "North Indian, a Hindi speaker"
 weight = 3
 surnames = ["Sharma", "Gupta", "Verma", "Agarwal", "Mishra", "Srivastava", "Tiwari", "Pandey", "Yadav", "Saxena", "Joshi", "Chauhan", "Malhotra", "Kapoor"]
+famous = ["Anil Kapoor", "Arjun Kapoor", "Rohit Sharma"]
 
 [origin.women]
 1930 = ["Kamla", "Savitri", "Shanti", "Sushila", "Pushpa", "Usha", "Kusum", "Saroj"]
@@ -333,6 +348,7 @@ country = "India"
 accent = "Indian, a Gujarati speaker"
 weight = 2
 surnames = ["Patel", "Shah", "Desai", "Mehta", "Parekh", "Pandya", "Bhatt", "Trivedi", "Thakkar", "Doshi", "Amin", "Vyas", "Raval", "Soni"]
+famous = ["Hardik Pandya", "Jay Shah"]
 
 [origin.women]
 1930 = ["Kokila", "Hansa", "Jyotsna", "Manjula", "Sarla", "Chandrika", "Kanta", "Vimla"]
@@ -367,6 +383,7 @@ country = "Pakistan"
 accent = "Pakistani, a Punjabi and Urdu speaker"
 weight = 4
 surnames = ["Khan", "Ahmed", "Hussain", "Malik", "Iqbal", "Qureshi", "Chaudhry", "Raza", "Shah", "Siddiqui", "Akhtar", "Javed", "Mirza", "Sheikh"]
+famous = ["Muhammad Iqbal", "Rashid Khan", "Shahid Khan"]
 
 [origin.women]
 1930 = ["Bilquis", "Zubaida", "Razia", "Parveen", "Naseem", "Shamim", "Kulsoom", "Rashida"]
@@ -400,7 +417,7 @@ id = "china"
 country = "China"
 accent = "Mandarin Chinese"
 weight = 3
-surnames = ["Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Zhao", "Wu", "Zhou", "Xu", "Sun", "Zhu", "Hu", "Guo", "Lin", "Gao"]
+surnames = ["Wang", "Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Zhao", "Wu", "Zhou", "Xu", "Sun", "Zhu", "Hu", "Guo", "Lin", "Gao"]
 
 [origin.women]
 1930 = ["Guiying", "Xiulan", "Yulan", "Shuzhen", "Guilan", "Fengying", "Xiuying", "Lihua"]
@@ -418,6 +435,7 @@ country = "the Philippines"
 accent = "Filipino"
 weight = 3
 surnames = ["Santos", "Reyes", "Cruz", "Bautista", "Mendoza", "Villanueva", "Ramos", "Pascual", "Garcia", "Dela Cruz", "Castillo", "Navarro", "Torres", "Gonzales"]
+famous = ["Christian Bautista"]
 
 [origin.women]
 1930 = ["Lourdes", "Corazon", "Remedios", "Teresita", "Erlinda", "Leonora", "Rosario", "Natividad"]
@@ -434,7 +452,7 @@ id = "vietnam"
 country = "Vietnam"
 accent = "Vietnamese"
 weight = 2
-surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Ngô", "Dương", "Lý"]
+surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"]
 
 [origin.women]
 1930 = ["Lan", "Hoa", "Mai", "Hương", "Thu", "Hạnh", "Hằng", "Tuyết"]
@@ -443,7 +461,7 @@ surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Phan", "Vũ", "Võ
 
 [origin.men]
 1930 = ["Thanh", "Quang", "Hải", "Sơn", "Tùng", "Vinh", "Trung", "Bình"]
-1965 = ["Minh", "Tuấn", "Cường", "Thắng", "Toàn", "Tâm", "Lâm", "Khải"]
+1965 = ["Minh", "Đức", "Tuấn", "Cường", "Thắng", "Toàn", "Tâm", "Lâm", "Khải"]
 1990 = ["Huy", "Khoa", "Bảo", "Nam", "Long", "Khánh", "Hiếu", "Việt"]
 
 [[origin]]
@@ -469,6 +487,7 @@ country = "South Korea"
 accent = "Korean"
 weight = 1
 surnames = ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Cho", "Yoon", "Jang", "Lim", "Han", "Oh", "Seo", "Shin"]
+famous = ["Seojun Park"]
 
 [origin.women]
 1930 = ["Youngja", "Soonja", "Jungsook", "Myungsook", "Kyungja", "Younghee", "Mija", "Jungja"]
@@ -486,6 +505,7 @@ country = "Iran"
 accent = "Iranian, a Persian speaker"
 weight = 2
 surnames = ["Hosseini", "Ahmadi", "Mohammadi", "Karimi", "Rezaei", "Moradi", "Jafari", "Rahimi", "Sadeghi", "Kazemi", "Ebrahimi", "Tehrani", "Azizi", "Najafi"]
+famous = ["Ali Karimi"]
 
 [origin.women]
 1930 = ["Parvin", "Mahin", "Fereshteh", "Shahla", "Pouran", "Mehri", "Simin", "Touran"]
@@ -503,6 +523,7 @@ country = "Nigeria"
 accent = "Nigerian, a Yoruba speaker"
 weight = 2
 surnames = ["Adeyemi", "Balogun", "Adebayo", "Ogunleye", "Afolabi", "Adeleke", "Ogundipe", "Akinola", "Oyelaran", "Bello", "Ajayi", "Ogunbiyi", "Oyewole", "Adesanya"]
+famous = ["Femi Adebayo"]
 
 [origin.women]
 1930 = ["Adunni", "Abosede", "Titilayo", "Folasade", "Olufunke", "Mojisola", "Iyabo", "Bolanle"]
@@ -520,6 +541,7 @@ country = "Nigeria"
 accent = "Nigerian, an Igbo speaker"
 weight = 2
 surnames = ["Okafor", "Okeke", "Eze", "Nwosu", "Okonkwo", "Nwachukwu", "Obi", "Okoro", "Chukwu", "Igwe", "Nnaji", "Ugwu", "Anyanwu", "Ibe"]
+famous = ["Emeka Okafor"]
 
 [origin.women]
 1930 = ["Ngozi", "Chinyere", "Nkechi", "Ifeoma", "Obiageli", "Nneka", "Ebere", "Adaeze"]
@@ -554,6 +576,7 @@ country = "Kenya"
 accent = "Kenyan"
 weight = 2
 surnames = ["Kamau", "Otieno", "Mwangi", "Odhiambo", "Njoroge", "Ochieng", "Mutua", "Kariuki", "Onyango", "Wanyama", "Kiprono", "Korir", "Omondi", "Njenga"]
+famous = ["Victor Wanyama"]
 
 [origin.women]
 1930 = ["Grace", "Mary", "Esther", "Rose", "Ruth", "Wanjiku", "Jane", "Wambui"]
@@ -571,6 +594,7 @@ country = "Brazil"
 accent = "Brazilian Portuguese"
 weight = 2
 surnames = ["Silva", "Santos", "Oliveira", "Souza", "Costa", "Pereira", "Almeida", "Carvalho", "Ribeiro", "Lima", "Araújo", "Rodrigues", "Ferreira", "Nascimento"]
+famous = ["Thiago Silva"]
 
 [origin.women]
 1930 = ["Maria", "Francisca", "Antônia", "Terezinha", "Raimunda", "Sebastiana", "Aparecida", "Benedita"]
@@ -588,6 +612,7 @@ country = "Mexico"
 accent = "Mexican Spanish"
 weight = 1
 surnames = ["Hernández", "García", "Martínez", "López", "González", "Pérez", "Rodríguez", "Sánchez", "Ramírez", "Flores", "Cruz", "Torres", "Gómez", "Morales"]
+famous = ["Javier Hernández"]
 
 [origin.women]
 1930 = ["María", "Guadalupe", "Josefina", "Rosa", "Juana", "Margarita", "Socorro", "Esperanza"]

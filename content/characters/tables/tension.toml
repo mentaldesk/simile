@@ -598,7 +598,8 @@ boost = { miscarriage = 3, sibling_died = 2 }
 [[wound]]
 id = "parent_who_left"
 text = "is still angry at the parent who left"
-boost = { parents_divorced = 3, "upbringing=single_parent" = 2 }
+when = { upbringing = ["single_parent", "blended"] }
+boost = { parents_divorced = 3 }
 
 [[wound]]
 id = "disappointed_everyone"
