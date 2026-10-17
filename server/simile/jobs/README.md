@@ -63,8 +63,9 @@ sprite or an NPC file in `content/` is refused.
 ## Where jobs write
 
 Under `$SIMILE_JOBS`, or `server/data/jobs/` (ignored by git), and never in `content/`: the runner
-refuses a directory there. A job runs in `work/<id>/`, which is deleted when it ends, or when the
-server next starts if it was killed. Only when a job succeeds are its outputs moved to `<kind>/`, and
+refuses a directory there. A job runs in `work/<id>/`, which is deleted when it ends. If the server
+was killed, the next server to start deletes it once it's been untouched for a day, which leaves
+other servers' running jobs alone. Only when a job succeeds are its outputs moved to `<kind>/`, and
 only names its kind declares are served from there.
 
 ## Adding a kind

@@ -1,3 +1,5 @@
+import os
+import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
@@ -36,13 +38,17 @@ def job(client: TestClient, job_id: str) -> dict[str, Any]:
 
 
 def test_clears_up_after_a_killed_server(app: Starlette, root: Path) -> None:
-    left = root / "work" / "0123456789abcdef"
-    left.mkdir(parents=True)
-    (left / "params.json").write_text("{}")
-    (root / "work" / "notes").mkdir()
+    two_days_ago = time.time() - 2 * 24 * 60 * 60
+    for name in ("0123456789abcdef", "fedcba9876543210", "notes"):
+        (root / "work" / name).mkdir(parents=True)
+        (root / "work" / name / "params.json").write_text("{}")
+    for name in ("0123456789abcdef", "notes"):
+        os.utime(root / "work" / name, (two_days_ago, two_days_ago))
 
     with TestClient(app):
-        assert sorted(path.name for path in (root / "work").iterdir()) == ["notes"]
+        left = sorted(path.name for path in (root / "work").iterdir())
+
+    assert left == ["fedcba9876543210", "notes"]
 
 
 def test_reports_what_this_machine_can_run(app: Starlette, root: Path) -> None:

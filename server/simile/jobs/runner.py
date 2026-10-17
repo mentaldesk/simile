@@ -39,6 +39,7 @@ LINE_KEPT = 4096
 MESSAGE_LIMIT = 200
 DRAIN = 1.0
 POLL = 0.05
+LEFTOVER_AGE = 24 * 60 * 60
 
 
 class State(StrEnum):
@@ -208,11 +209,15 @@ class Jobs:
             await changed.wait()
 
     def remove_leftovers(self) -> None:
-        """Deletes the work directories that jobs of a killed server left behind."""
+        """Deletes the work directories, untouched for a day, that a killed server left behind."""
         work = self.root / "work"
-        if work.is_dir():
-            for path in work.iterdir():
-                if JOB_ID.fullmatch(path.name) and path.name not in self._entries:
+        if not work.is_dir():
+            return
+        for path in work.iterdir():
+            if not JOB_ID.fullmatch(path.name) or path.name in self._entries:
+                continue
+            with suppress(FileNotFoundError):
+                if time.time() - path.stat().st_mtime > LEFTOVER_AGE:
                     shutil.rmtree(path, ignore_errors=True)
 
     def file(self, kind_name: str, name: str) -> Path | None:
