@@ -186,7 +186,8 @@ def mural_prompt(
         "shapes, paths, text, gradients, patterns, clip paths, masks and filters. No scripts, "
         "<image>, <foreignObject> or links, and nothing that loads from outside the SVG. Keep it "
         f"under {config.svg_chars // 3:,} characters. Any words on it should be few, and big "
-        "enough to read from across the street.\n\n"
+        "enough to read from across the street. Keep them well inside the edges, allowing each "
+        "letter 0.7 of the font size, since the wall may not have your font.\n\n"
         "Describe what it shows in a few plain sentences, as a passer-by would see it, and say in "
         f"a sentence or two of your own what it's saying.\n\n{analysis('mural')}"
     )

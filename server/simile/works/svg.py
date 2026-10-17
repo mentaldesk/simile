@@ -52,6 +52,7 @@ ELEMENTS = frozenset(
 EXTERNAL_URL = re.compile(r"url\((?!\s*['\"]?\s*#)", re.IGNORECASE)
 NUMBER = r"\s*(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)\s*,?"
 VIEWBOX = re.compile(rf"^{NUMBER * 4}\s*$", re.IGNORECASE)
+BARE_AMPERSAND = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|[A-Za-z]\w*;)")
 
 ET.register_namespace("", SVG)
 ET.register_namespace("xlink", XLINK)
@@ -75,7 +76,7 @@ def checked(
     if re.search(r"<!(DOCTYPE|ENTITY)", svg, re.IGNORECASE):
         raise BadSvg("it has a DOCTYPE or ENTITY declaration")
     try:
-        root = ET.fromstring(svg.strip())
+        root = ET.fromstring(BARE_AMPERSAND.sub("&amp;", svg.strip()))
     except ET.ParseError as error:
         raise BadSvg(f"it isn't well-formed XML ({error})") from None
     every = list(root.iter())

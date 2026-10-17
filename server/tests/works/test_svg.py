@@ -34,6 +34,12 @@ def test_keeps_local_references_and_drops_comments() -> None:
     assert cleaned.count("<use") == 2
 
 
+def test_escapes_a_bare_ampersand_in_words() -> None:
+    cleaned = check(svg(inside="<text>Bread &amp; salt &#38; tea & cake</text>"))
+
+    assert ET.fromstring(cleaned)[2].text == "Bread & salt & tea & cake"
+
+
 def test_adds_the_svg_namespace_when_it_is_missing() -> None:
     cleaned = check('<svg viewBox="0 0 288 262"><rect width="9" height="9"/></svg>')
 
