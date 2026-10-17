@@ -5,14 +5,15 @@ import pytest
 from PIL import Image
 
 from simile.art.iso import camera, depth, formats, scenery
-from simile.art.iso.lighting import SETS
+from simile.art.iso.interior import find
+from simile.art.iso.lighting import INSIDE, SETS
 from simile.art.iso.town import GROUND_HEIGHTS, Town
 
 ISO = scenery.CONTENT_DIR / "art" / "iso"
 SCENERY = ISO / "scenery"
 BUDGET_BYTES = 40_000_000
-STALE = "content/art/iso/scenery is out of date: run `cd server && uv run simile art iso scenery`"
-PINNED_SOURCES = "43c84d9f00e74d57"
+STALE = "content/art/iso is out of date: run `cd server && uv run simile art iso scenery`"
+PINNED_SOURCES = "70a2a376919ff8e2"
 
 
 def load(name: str) -> dict:
@@ -151,3 +152,80 @@ def test_committed_files_are_all_in_a_manifest(manifests: dict[str, dict]) -> No
 def test_paths_are_relative_to_the_manifest(manifests: dict[str, dict]) -> None:
     for name, m in manifests.items():
         assert all(Path(o["image"]).parts[0] == name for o in m["objects"])
+
+
+INTERIORS = ISO / "interiors"
+ROOMS = {room.id: room for room in find(scenery.CONTENT_DIR)}
+
+
+@pytest.fixture(scope="module")
+def rooms() -> dict[str, dict]:
+    return {name: json.loads((INTERIORS / f"{name}.json").read_text()) for name in ROOMS}
+
+
+def images(m: dict) -> list[str]:
+    return [
+        *(c["image"] for c in m["ground"]["chunks"]),
+        m["light_map"]["image"],
+        *(o["image"] for o in m["objects"]),
+    ]
+
+
+def test_each_interior_has_a_manifest_and_nothing_else_is_there() -> None:
+    expected = {f"{name}.json" for name in ROOMS} | set(ROOMS)
+    assert {p.name for p in INTERIORS.iterdir()} == expected
+
+
+def test_interiors_are_up_to_date_with_their_maps_and_the_pipeline(rooms: dict[str, dict]) -> None:
+    for name, m in rooms.items():
+        room = ROOMS[name]
+        plan = scenery.plan(room, INSIDE)
+        assert (m["set"], m["map"]["id"]) == ("inside", name)
+        assert m["ground"]["hash"] == plan.ground_hash, STALE
+        assert m["light_map"]["hash"] == plan.light_map_hash, STALE
+        assert [o["id"] for o in m["objects"]] == [o.id for o in room.objects], STALE
+        assert [o["hash"] for o in m["objects"]] == [
+            plan.sprites[o.id].hash for o in room.objects
+        ], STALE
+        for o in m["objects"]:
+            left = round(camera.project(*o["anchor"])[0]) + o["offset"][0]
+            assert o["slices"] == depth.slices(o["footprint"], left, o["width"]), STALE
+
+
+def test_every_image_in_an_interior_is_there_at_its_size(rooms: dict[str, dict]) -> None:
+    for name, m in rooms.items():
+        for o in m["objects"]:
+            with Image.open(INTERIORS / o["image"]) as image:
+                assert image.size == (o["width"], o["height"]), o["image"]
+                assert image.mode == "RGBA", o["image"]
+        for chunk in m["ground"]["chunks"]:
+            with Image.open(INTERIORS / chunk["image"]) as image:
+                assert image.size == (chunk["width"], chunk["height"]), chunk["image"]
+        light = m["light_map"]
+        with Image.open(INTERIORS / light["image"]) as image:
+            assert image.size == (light["width"], light["sun_y"] + light["height"])
+        assert all(Path(image).parts[0] == name for image in images(m))
+        assert all(image.endswith(".webp") for image in images(m))
+
+
+def test_committed_interior_files_are_all_in_a_manifest(rooms: dict[str, dict]) -> None:
+    used = {image for m in rooms.values() for image in images(m)}
+    on_disk = {
+        str(p.relative_to(INTERIORS))
+        for p in INTERIORS.rglob("*")
+        if p.is_file() and p.parent != INTERIORS
+    }
+    assert on_disk == used
+
+
+def test_frames_are_empty_inside_their_canvas(rooms: dict[str, dict]) -> None:
+    frames = [o for o in rooms["gallery"]["objects"] if o["kind"] == "frame"]
+    assert len(frames) == 13
+    for frame in frames:
+        xs = [x for x, _ in frame["canvas"]]
+        ys = [y for _, y in frame["canvas"]]
+        assert 0 < min(xs) < max(xs) < frame["width"] and 0 < min(ys) < max(ys) < frame["height"]
+        middle = (round(sum(xs) / 4), round(sum(ys) / 4))
+        with Image.open(INTERIORS / frame["image"]) as image:
+            assert image.getchannel("A").getpixel(middle) == 0, frame["id"]
+            assert image.getchannel("A").getextrema()[1] == 255, frame["id"]

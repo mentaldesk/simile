@@ -31,7 +31,7 @@
    "road": -0.08,
    "crosswalk": -0.08
   },
-  "hash": "21488eeb034f4062",
+  "hash": "423c6bead3c2aa07",
   "chunks": [
    {
     "image": "afternoon/ground-0-0.webp",
@@ -84,7 +84,7 @@
   "height": 336,
   "sun_y": 336,
   "scale": 1.008,
-  "hash": "a37b72611417a1b5"
+  "hash": "63c28cbc2f7ca6c6"
  },
  "objects": [
   {
@@ -191,7 +191,7 @@
     -323,
     -824
    ],
-   "hash": "a1c86a5e9a77e1ae",
+   "hash": "23e6ef6b58a41bce",
    "slices": [
     {
      "x": 0,
@@ -408,7 +408,7 @@
     -467,
     -872
    ],
-   "hash": "76ae6c2ea9a5aa21",
+   "hash": "3286325d5ac48128",
    "slices": [
     {
      "x": 0,
@@ -497,7 +497,7 @@
     -419,
     -665
    ],
-   "hash": "87707128a855baa2",
+   "hash": "6f63318f48c4cd5b",
    "slices": [
     {
      "x": 0,
@@ -581,7 +581,7 @@
     -248,
     -593
    ],
-   "hash": "fc61779ac963542e",
+   "hash": "a7bc72dea7eff6c5",
    "slices": [
     {
      "x": 0,
@@ -1271,7 +1271,7 @@
     -10,
     -55
    ],
-   "hash": "2f5e3956b27c53fa",
+   "hash": "ebf0cb5df0c4a768",
    "slices": [
     {
      "x": 0,
@@ -1329,7 +1329,7 @@
     -10,
     -55
    ],
-   "hash": "2ebbd3952231fd03",
+   "hash": "7b8a4779ab878c0a",
    "slices": [
     {
      "x": 0,
@@ -1358,7 +1358,7 @@
     -10,
     -55
    ],
-   "hash": "3060b9ee9e9374ec",
+   "hash": "67f9b74ccd9cc2f1",
    "slices": [
     {
      "x": 0,
@@ -1445,7 +1445,7 @@
     -8,
     -219
    ],
-   "hash": "b1c6153df41d567e",
+   "hash": "bafbb025c6efbc87",
    "slices": [
     {
      "x": 0,
@@ -1474,7 +1474,7 @@
     -107,
     -272
    ],
-   "hash": "95a048700df9bb12",
+   "hash": "6805cc9edd1cdb30",
    "slices": [
     {
      "x": 0,
@@ -1503,7 +1503,7 @@
     -107,
     -272
    ],
-   "hash": "3b1e0cc1ce2cfa13",
+   "hash": "84ddd2f93524e14f",
    "slices": [
     {
      "x": 0,
@@ -1532,7 +1532,7 @@
     -8,
     -219
    ],
-   "hash": "01773840daa4c9fe",
+   "hash": "b3767306ef43426f",
    "slices": [
     {
      "x": 0,
@@ -1561,7 +1561,7 @@
     -105,
     -268
    ],
-   "hash": "4a3a6ec271e3d054",
+   "hash": "5820d2840395058e",
    "slices": [
     {
      "x": 0,
@@ -1648,7 +1648,7 @@
     -37,
     -124
    ],
-   "hash": "741859b3ceee65ca",
+   "hash": "ef8f5fdbf1d2faa4",
    "slices": [
     {
      "x": 0,
@@ -1827,7 +1827,7 @@
     -45,
     -72
    ],
-   "hash": "832b106a3efc8bb8",
+   "hash": "0b9b04b8af182c5f",
    "slices": [
     {
      "x": 0,
@@ -1890,7 +1890,7 @@
     -45,
     -72
    ],
-   "hash": "6c12cdf3981d7f1e",
+   "hash": "1aae787e2eef8fad",
    "slices": [
     {
      "x": 0,
@@ -1924,7 +1924,7 @@
     -45,
     -72
    ],
-   "hash": "459d62ea9c6bf353",
+   "hash": "990352faa6126e3e",
    "slices": [
     {
      "x": 0,
