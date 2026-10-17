@@ -123,6 +123,7 @@ def test_load_map_reads_locations_in_tiles(tmp_path: Path) -> None:
     assert location.name == "Noodles" and location.kind == LocationKind.AMENITY
     assert location.area.model_dump() == {"x": 1, "y": 2, "width": 3, "height": 1}
     assert location.entry.model_dump() == {"x": 2, "y": 2}
+    assert tiny.murals == ()
 
 
 def test_the_map_is_a_tiled_map_with_the_tileset_embedded() -> None:
@@ -137,7 +138,7 @@ def test_the_map_is_a_tiled_map_with_the_tileset_embedded() -> None:
     assert {k: v for k, v in tileset.items() if k not in ("firstgid", "image")} == {
         k: v for k, v in standalone.items() if k not in ("type", "version", "tiledversion", "image")
     }
-    names = ["ground", "buildings", "decor", "above", "collision", "locations"]
+    names = ["ground", "buildings", "decor", "above", "collision", "locations", "murals"]
     assert [layer["name"] for layer in data["layers"]] == names
 
 
