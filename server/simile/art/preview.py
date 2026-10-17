@@ -339,6 +339,7 @@ def characters_sheet(
 
 
 WALK_CYCLE = (0, 1, 2, 1)
+WALK_ORDER = ("down", "down_left", "left", "up_left", "up", "up_right", "right", "down_right")
 
 
 def walk_frames(people: Sequence[Appearance], tile: Tile, scale: int = 3) -> list[Image.Image]:
@@ -350,7 +351,7 @@ def walk_frames(people: Sequence[Appearance], tile: Tile, scale: int = 3) -> lis
         for x in range(0, width, TILE_SIZE):
             floor.paste(tile.canvas, x, y)
     frames = []
-    for direction in ("down", "left", "up", "right"):
+    for direction in WALK_ORDER:
         for _ in range(2):
             for step in WALK_CYCLE:
                 c = Canvas(width, height)

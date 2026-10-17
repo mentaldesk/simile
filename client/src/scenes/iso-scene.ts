@@ -43,7 +43,7 @@ import {
   type SceneryObject,
   type TiledMapWithTiles,
 } from '../world/iso';
-import { IsoCharacters, sheetArt } from './iso-characters';
+import { IsoCharacters, pixelArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
 
@@ -150,8 +150,7 @@ export class IsoScene extends Phaser.Scene {
   }
 
   private async loadCharacters(tile: IsoTile, assets: Assets): Promise<IsoCharacters> {
-    const art = sheetArt(assets.characterManifest, tile, assets.sheetUrl, assets.loadImage);
-    return (this.characters = await IsoCharacters.load(this, tile, art, assets.characterLights));
+    return (this.characters = await IsoCharacters.load(this, tile, pixelArt(), assets.characterLights));
   }
 
   private async loadSet(set: LightingSet): Promise<void> {

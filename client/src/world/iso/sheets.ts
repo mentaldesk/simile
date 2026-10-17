@@ -1,55 +1,55 @@
+import { SPRITE_HEIGHT, WALKING_SPEED } from '../tuning';
 import type { Point } from '../view';
-import type { SetLight } from './lighting';
-import type { IsoTile } from './manifest';
 import type { SpriteFrame } from './screen';
-import type { LightingSet } from './time-of-day';
 
-export type SheetDirection = { name: string; row: number; vector: [x: number, y: number] };
+/** A1's facings on screen (`content/art/README.md`): top-down's four and the three-quarter views. */
+export type IsoFacing =
+  | 'down_right'
+  | 'down'
+  | 'down_left'
+  | 'left'
+  | 'up_left'
+  | 'up'
+  | 'up_right'
+  | 'right';
 
-/** `content/art/iso/characters/characters.json`: `server/simile/art/iso/README.md`. */
-export type CharacterManifest = {
-  format: number;
-  frame: { width: number; height: number; anchor: [x: number, y: number] };
-  columns: number;
-  directions: SheetDirection[];
-  animations: {
-    walk: { fps: number; tiles_per_cycle: number; frames: Record<string, number[]> };
-    idle: { fps: number; frames: Record<string, number[]> };
-  };
-  figure_m: number;
-  sets: Record<LightingSet, SetLight>;
-  characters: Record<string, { image: string; width: number; height: number }>;
-};
+/** By the angle of a step on the map, x east and y south, from east round through south. */
+export const ISO_FACINGS: readonly IsoFacing[] = [
+  'down_right',
+  'down',
+  'down_left',
+  'left',
+  'up_left',
+  'up',
+  'up_right',
+  'right',
+];
 
-export function sheetFrame({ frame, figure_m }: CharacterManifest, tile: IsoTile): SpriteFrame {
-  const [x, y] = frame.anchor;
-  const figureHeight = Math.round(figure_m * tile.px_per_metre_up);
-  return { width: frame.width, height: frame.height, anchor: { x, y }, figureHeight };
-}
+/** A1's frame in texture px, with the feet on its bottom row. */
+export const PIXEL_TEXTURE = { width: 16, height: SPRITE_HEIGHT };
 
-const turn = (from: number, to: number) =>
-  Math.abs(Math.atan2(Math.sin(to - from), Math.cos(to - from)));
+/** Scene px per texture px: a 24 px figure 96 px tall, 1.8 m by the scenery's scale. */
+export const PIXEL_SCALE = 4;
 
-export function directionFor(
-  step: Point,
-  directions: readonly SheetDirection[],
-  previous: string,
-): string {
+const WALK_COLUMNS = [0, 1, 2, 1];
+const STANDING_COLUMN = 1;
+
+export function facingFor(step: Point, previous: IsoFacing): IsoFacing {
   if (step.x === 0 && step.y === 0) return previous;
-  const angle = Math.atan2(step.y, step.x);
-  const off = ({ vector: [x, y] }: SheetDirection) => turn(angle, Math.atan2(y, x));
-  return directions.reduce((best, each) => (off(each) < off(best) ? each : best)).name;
+  const eighths = Math.round(Math.atan2(step.y, step.x) / (Math.PI / 4));
+  return ISO_FACINGS[(eighths + 8) % 8];
 }
 
-export function walkTimeScale(speed: number, walk: CharacterManifest['animations']['walk']): number {
-  const frames = Object.values(walk.frames)[0].length;
-  return (frames * speed) / walk.tiles_per_cycle / walk.fps;
+/** The frame in scene px: whole scene px per texture px, so every texture px stays square. */
+export function pixelFrame(scale: number = PIXEL_SCALE, texture = PIXEL_TEXTURE): SpriteFrame {
+  if (!Number.isInteger(scale) || scale < 1) throw new RangeError(`scale ${scale} isn't a whole number`);
+  const [width, height] = [texture.width * scale, texture.height * scale];
+  return { width, height, anchor: { x: width / 2, y: height }, figureHeight: height };
 }
 
-const hash = (text: string) => [...text].reduce((sum, char) => (sum * 31 + char.charCodeAt(0)) >>> 0, 7);
+export const isoWalkFrames = (facing: IsoFacing) => WALK_COLUMNS.map((column) => `${facing}-${column}`);
 
-export function sheetFor(id: string, sheets: readonly string[], player: string): string {
-  if (sheets.includes(id)) return id;
-  const residents = sheets.filter((sheet) => sheet !== player);
-  return residents[hash(id) % residents.length] ?? player;
-}
+export const standingFrame = (facing: IsoFacing) => `${facing}-${STANDING_COLUMN}`;
+
+/** The walk is `WALK_FPS` at `WALKING_SPEED`, as in top-down, so its pace follows the speed. */
+export const walkTimeScale = (speed: number) => speed / WALKING_SPEED;

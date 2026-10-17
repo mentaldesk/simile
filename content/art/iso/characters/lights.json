@@ -1,0 +1,25 @@
+{
+  "figure_m": 1.8,
+  "sets": {
+    "night": {
+      "sun": {"azimuth": 150, "elevation": 50},
+      "tint": [0.162, 0.242, 0.349],
+      "shadow": {"strength": 0.639, "direction": [-0.5, -0.866], "length": 1.373, "tip": [24.1, -45.0]}
+    },
+    "morning": {
+      "sun": {"azimuth": 105, "elevation": 26},
+      "tint": [1.0, 0.988, 0.988],
+      "shadow": {"strength": 0.565, "direction": [-0.9659, -0.2588], "length": 3.355, "tip": [-113.9, -98.6]}
+    },
+    "afternoon": {
+      "sun": {"azimuth": 215, "elevation": 52},
+      "tint": [0.802, 0.862, 0.904],
+      "shadow": {"strength": 0.702, "direction": [0.5736, -0.8192], "length": 1.278, "tip": [85.5, -7.5]}
+    },
+    "evening": {
+      "sun": {"azimuth": 248, "elevation": 16},
+      "tint": [0.557, 0.427, 0.421],
+      "shadow": {"strength": 0.592, "direction": [0.9272, -0.3746], "length": 5.707, "tip": [356.6, 75.7]}
+    }
+  }
+}

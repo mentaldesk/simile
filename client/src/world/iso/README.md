@@ -10,11 +10,12 @@ the manifests, the projection, the depth slices and the ground heights.
 
 ## Assets
 
-`assets.ts` globs `content/art/iso/scenery/` and the character sheets in `content/art/iso/characters/`.
-Manifests are imported `?url`, images `?no-inline` and `characters.json` as data, so the build emits
-each image under `dist/assets/` with a hash and inlines none of them. The scene imports `assets.ts`
-itself, once it starts, so the map of their URLs is a lazy chunk and the top-down page loads none of
-it. In dev, Vite serves them straight from `content/`.
+`assets.ts` globs `content/art/iso/scenery/` and the characters' light constants,
+`content/art/iso/characters/lights.json`. Manifests are imported `?url`, images `?no-inline` and
+`lights.json` as data, so the build emits each image under `dist/assets/` with a hash and inlines
+none of them. The scene imports `assets.ts` itself, once it starts, so the map of their URLs is a
+lazy chunk and the top-down page loads none of it. In dev, Vite serves them straight from
+`content/`. The characters are A1's sprite atlases, which `BootScene` loads for both renderers.
 
 ## Time of day
 
@@ -60,12 +61,20 @@ draws `DEFAULT_HOUR`, the afternoon.
 - **Controls** (`controls.ts`): arrows and WASD are screen directions, turned into grid directions,
   so up is north-west. The player still walks and collides in tiles.
 - **Characters**: `IsoCharacters` in `scenes/iso-characters.ts` places, tints and shadows sprites
-  from any `CharacterArt`: a `SpriteFrame` (the drawn size, the feet and the head's height) and a
-  sprite per character with a `pose` for each step. Picking, bubbles, the cutaway and the lighting
-  use only those. `sheetArt` is A2b's sheets: anchored at the feet, facing the sheet direction
-  nearest their step on the map (`sheets.ts`), with the walk played faster or slower with how fast
-  they move, so the feet don't slide, and the idle when they stop. Other art replaces `sheetArt`
-  alone. Shadows are drawn on the ground, under every object.
+  from any `CharacterArt`: a `SpriteFrame` (the drawn size, the feet and the head's height, in scene
+  px, which are texture px times the sprite's scale) and a sprite per character with a `pose` for
+  each step. Picking, bubbles, the cutaway and the lighting use only those. Shadows are drawn on the
+  ground, under every object.
+- **Pixel art** (`pixelArt`, with `sheets.ts`): A1's 16 × 24 sprites, the same atlas top-down
+  draws, at `PIXEL_SCALE` (4) scene px to a texture px with nearest-neighbour filtering. A whole
+  number of scene px and the camera's whole-number zoom keep every texture px a square of whole
+  device px, so the sprites stay crisp. At 4× a resident is 96 px tall, the 1.8 m figure the scenery
+  was modelled and the drop shadows measured for, so they stand at the right height beside benches,
+  café tables and doors. At 3× they'd be 1.35 m, child-sized next to a bench. Each step on the map
+  picks one of eight facings (`facingFor`): grid east, south, west and north run along the screen's
+  diagonals and use A1's three-quarter views, and the grid diagonals use its front, side and back
+  views. The walk is A1's step, stand, step, stand at `WALK_FPS` for `WALKING_SPEED`, faster or
+  slower with how fast they move, and they stand on the middle frame when they stop.
 
 ## Resolution
 

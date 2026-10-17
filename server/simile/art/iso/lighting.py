@@ -85,18 +85,6 @@ SETS: dict[str, LightingSet] = {
     )
 }
 
-NEUTRAL = LightingSet(
-    "neutral",
-    (0, 24),
-    azimuth=160,
-    elevation=55,
-    sun_energy=2.8,
-    sun_colour=(1.0, 1.0, 1.0),
-    sky_colour=(0.8, 0.8, 0.8),
-    sky_strength=0.9,
-    sun_angle=10.0,
-)
-
 LOOK: dict[str, Any] = {
     "samples": 48,
     "segments": 16,

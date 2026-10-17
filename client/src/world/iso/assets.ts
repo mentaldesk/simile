@@ -1,9 +1,7 @@
-import type { SetLight } from './lighting';
-import type { CharacterManifest } from './sheets';
+import type { CharacterLights, SetLight } from './lighting';
 import type { LightingSet } from './time-of-day';
 
 const SCENERY = '../../../../content/art/iso/scenery/';
-const CHARACTERS = '../../../../content/art/iso/characters/';
 
 const manifests = import.meta.glob<string>('../../../../content/art/iso/scenery/*.json', {
   eager: true,
@@ -15,13 +13,8 @@ const images = import.meta.glob<string>('../../../../content/art/iso/scenery/*/*
   query: '?no-inline',
   import: 'default',
 });
-const characters = import.meta.glob<CharacterManifest>(
-  '../../../../content/art/iso/characters/characters.json',
-  { eager: true, import: 'default' },
-);
-const sheets = import.meta.glob<string>('../../../../content/art/iso/characters/*.webp', {
+const lights = import.meta.glob<CharacterLights>('../../../../content/art/iso/characters/lights.json', {
   eager: true,
-  query: '?no-inline',
   import: 'default',
 });
 
@@ -30,12 +23,8 @@ export const manifestUrl = (set: LightingSet): string | undefined => manifests[`
 /** A manifest names its images relative to its own folder. */
 export const imageUrl = (image: string): string | undefined => images[SCENERY + image];
 
-export const characterManifest: CharacterManifest = characters[`${CHARACTERS}characters.json`];
-
 /** Each lighting set's tint and drop shadow for characters, whatever art draws them. */
-export const characterLights: Record<LightingSet, SetLight> = characterManifest.sets;
-
-export const sheetUrl = (image: string): string | undefined => sheets[CHARACTERS + image];
+export const characterLights: Record<LightingSet, SetLight> = Object.values(lights)[0].sets;
 
 export async function loadImage(url: string): Promise<HTMLImageElement> {
   const image = new Image();

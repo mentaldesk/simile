@@ -8,7 +8,10 @@ from simile.schema import Appearance
 
 FRAME_WIDTH = 16
 FRAME_HEIGHT = 24
-DIRECTIONS = ("down", "left", "right", "up")
+TOP_DOWN = ("down", "left", "right", "up")
+THREE_QUARTER = ("down_left", "down_right", "up_left", "up_right")
+DIRECTIONS = TOP_DOWN + THREE_QUARTER
+MIRRORED = {"right": "left", "down_right": "down_left", "up_right": "up_left"}
 FRAMES = 3
 
 SKIN_TONES = ("cream", "peach", "sand", "tan", "brown", "umber")
@@ -73,6 +76,7 @@ class Colours:
 
 
 FRONT_TORSO = {"slim": (4, 11), "average": (3, 12), "broad": (2, 13)}
+QUARTER_TORSO = {"slim": (5, 11), "average": (4, 12), "broad": (3, 13)}
 SIDE_TORSO = {"slim": (6, 9), "average": (5, 9), "broad": (5, 10)}
 
 FRONT_HEAD = [
@@ -84,6 +88,16 @@ FRONT_HEAD = [
     "...ssssssssssS..",
     "....sssssssSS...",
     ".....sssssSS....",
+]
+QUARTER_HEAD = [
+    "....ssssssss....",
+    "...ssssssssssS..",
+    "...ssssssssssS..",
+    "...ssssssssssS..",
+    "..sssssssssssS..",
+    "...ssssssssssS..",
+    "...sssssssSS....",
+    "....sssssS......",
 ]
 SIDE_HEAD = [
     ".....ssssss.....",
@@ -111,6 +125,32 @@ FRONT_LEGS = {
         "....FFF..bB.....",
         ".........fff....",
         ".........FFF....",
+    ],
+}
+QUARTER_LEGS = {
+    1: [
+        ".....bbbbbb.....",
+        ".....bbbbbB.....",
+        ".....bb..bB.....",
+        ".....bb..bB.....",
+        "....fff.fff.....",
+        "....FFF.FFF.....",
+    ],
+    0: [
+        "",
+        ".....bbbbbb.....",
+        "...fff...bB.....",
+        "...FFF...bB.....",
+        "........fff.....",
+        "........FFF.....",
+    ],
+    2: [
+        "",
+        ".....bbbbbb.....",
+        ".....bB..fff....",
+        ".....bB..FFF....",
+        "....fff.........",
+        "....FFF.........",
     ],
 }
 SIDE_LEGS = {
@@ -145,6 +185,8 @@ SIDE_ARMS = {
 
 
 def _legs(direction: str, frame: int) -> list[str]:
+    if direction in ("down_left", "up_left"):
+        return QUARTER_LEGS[frame]
     if direction == "left":
         rows = SIDE_LEGS[1 if frame == 1 else 0]
         near, far = ("b", "B") if frame == 0 else ("B", "b")
@@ -172,6 +214,24 @@ def _front_body(c: Canvas, build: str, frame: int, back: bool) -> None:
         c.vline(10, 7, 2, "e")
 
 
+def _quarter_body(c: Canvas, build: str, frame: int, back: bool) -> None:
+    left, right = QUARTER_TORSO[build]
+    c.rect(left + 1, 11, right - left - 1, 6, "t")
+    c.vline(right - 1, 12, 5, "T")
+    c.hline(left + 1, 16, right - left - 1, "T")
+    if not back:
+        c.px(6, 11, "s")
+        c.px(7, 11, "s")
+    for side, x in enumerate((left, right)):
+        swing = 0 if frame == 1 else (-1 if (frame == 0) == (side == 0) else 1)
+        c.vline(x, 12, 4 + swing, "T")
+        c.px(x, 16 + swing, "s")
+    c.stamp(QUARTER_HEAD, {"s": "s", "S": "S"}, 0, 3)
+    if not back:
+        c.vline(4, 7, 2, "e")
+        c.vline(8, 7, 2, "e")
+
+
 def _side_body(c: Canvas, build: str, frame: int) -> None:
     left, right = SIDE_TORSO[build]
     c.rect(left, 11, right - left + 1, 6, "t")
@@ -184,7 +244,13 @@ def _side_body(c: Canvas, build: str, frame: int) -> None:
 
 
 HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
-    "bald": {"down": ([], []), "up": ([], []), "left": ([], [])},
+    "bald": {
+        "down": ([], []),
+        "up": ([], []),
+        "left": ([], []),
+        "down_left": ([], []),
+        "up_left": ([], []),
+    },
     "buzz": {
         "down": ([], ["", "", ".....HhhhhH.....", "...HhhhhhhhhH...", "...h........h..."]),
         "up": (
@@ -212,6 +278,32 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 "........hhhH....",
                 ".........hhH....",
                 ".........HH.....",
+            ],
+        ),
+        "down_left": (
+            [],
+            [
+                "",
+                "",
+                ".....hhhhhH.....",
+                "...hhhhhhhhhH...",
+                "...h.....hhhH...",
+                "..........hhH...",
+                "...........hH...",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "...hhhhhhhhhH...",
+                "....hhhhhhhhH...",
+                ".....hhhhhhhH...",
+                ".....HhhhhhhH...",
+                "......HHHHHH....",
             ],
         ),
     },
@@ -258,6 +350,35 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 ".........HHH....",
             ],
         ),
+        "down_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hh.hhhhhhhHH..",
+                "..h......hhhHH..",
+                "..........hhH...",
+                "...........H....",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                ".....hhhhhhhH...",
+                ".....HhhhhhhH...",
+                "......HHHHHH....",
+            ],
+        ),
     },
     "curly": {
         "down": (
@@ -302,6 +423,36 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 "........hhhhhhH.",
                 ".........HhHhH..",
                 "..........HHH...",
+            ],
+        ),
+        "down_left": (
+            [],
+            [
+                "",
+                "...hhhhhhhhhh...",
+                "..hhHhhHhhHhhh..",
+                ".hhhhhhhhhhhhhH.",
+                ".hhHhhHhhHhhHhH.",
+                ".hhh.hhhhhhhhhH.",
+                ".hH......hHhhhH.",
+                ".h........hhhhH.",
+                "..........HhHH..",
+                "...........HH...",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                "...hhhhhhhhhh...",
+                "..hhHhhHhhHhhh..",
+                ".hhhhhhhhhhhhhH.",
+                ".hhHhhHhhHhhHhH.",
+                ".hhhhhhhhhhhhhH.",
+                ".hhhhHhhHhhHhhH.",
+                "....hhhhhhhhhhH.",
+                ".....HhhHhhHhH..",
+                "......HHhHHhH...",
             ],
         ),
     },
@@ -352,6 +503,38 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 ".......hhhhhhH..",
                 ".......hhhhhhH..",
                 ".......HHHHHHH..",
+            ],
+        ),
+        "down_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..H.......HHHH..",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "....HHHHHHHHHH..",
             ],
         ),
     },
@@ -429,6 +612,60 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 "..........HHH...",
             ],
         ),
+        "down_left": (
+            [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...hhhhhhhhhhh..",
+                "...HHHHHHHHHHH..",
+            ],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhh.hhhhhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..h.......hhHH..",
+                "..h........hHH..",
+                "...........hhH..",
+                "...........hhH..",
+                "...........HH...",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "....hhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                "...hhhhhhhhhH...",
+                "...HHHHHHHHHH...",
+            ],
+        ),
     },
     "ponytail": {
         "down": (
@@ -481,6 +718,42 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 "............H...",
             ],
         ),
+        "down_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhHH.",
+                "..h......hhhHaH.",
+                "..........hhhhH.",
+                "...........hhhH.",
+                ".............hH.",
+                ".............hH.",
+                "............hH..",
+                "............H...",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                ".....hhhhhh.....",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                ".....hhhhhhhH...",
+                ".....HhhaahhH...",
+                "......HhhhHH....",
+                ".......hhH......",
+                ".......hhH......",
+                ".......hhH......",
+                "........H.......",
+            ],
+        ),
     },
     "bun": {
         "down": (
@@ -527,6 +800,36 @@ HAIR: dict[str, dict[str, tuple[list[str], list[str]]]] = {
                 ".........HHH....",
             ],
         ),
+        "down_left": (
+            [],
+            [
+                "",
+                ".......hhhhH....",
+                ".....hhhhhhHH...",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhH..",
+                "..hhhhhhhhhhhH..",
+                "..h......hhhHH..",
+                "..........hhH...",
+                "...........H....",
+            ],
+        ),
+        "up_left": (
+            [],
+            [
+                "",
+                "......hhhhhH....",
+                ".....HhhhhhHH...",
+                "...hhhhhhhhhh...",
+                "..hhhhhhhhhhhh..",
+                "..hhhhhhhhhhhH..",
+                "...hhhhhhhhhhH..",
+                ".....hhhhhhhhH..",
+                ".....hhhhhhhH...",
+                ".....HhhhhhhH...",
+                "......HHHHHH....",
+            ],
+        ),
     },
 }
 
@@ -535,11 +838,15 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
         "down": ["", "", "", "", "", "", "....ggg..ggg....", "....g.gggg.g...."],
         "left": ["", "", "", "", "", "", "...ggg..........", "...g.gggggg....."],
         "up": [],
+        "down_left": ["", "", "", "", "", "", "...ggg.ggg......", "...g.ggg.ggg...."],
+        "up_left": [],
     },
     "sunglasses": {
         "down": ["", "", "", "", "", "", "", "....eeeeeeee....", "....eke..eke...."],
         "left": ["", "", "", "", "", "", "", "...eeeeeee......", "...eke..........."],
         "up": [],
+        "down_left": ["", "", "", "", "", "", "", "...eeeeeeeee....", "...eke.eke......"],
+        "up_left": [],
     },
     "cap": {
         "down": [
@@ -567,6 +874,24 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             "....aaaaaaaaaA..",
             ".AAAAAAAAAAAAA..",
         ],
+        "down_left": [
+            "",
+            ".....aaaaaa.....",
+            "....aaaaaaaa....",
+            "...aawwaaaaaA...",
+            "...aaaaaaaaaA...",
+            ".AAAAAAAAAAAA...",
+            "..AAAA..........",
+        ],
+        "up_left": [
+            "",
+            ".....aaaaaa.....",
+            "....aaaaaaaa....",
+            "...aaaaaaaaaA...",
+            "...aaaaaaaaaA...",
+            ".AAAAAaaaaAAA...",
+            ".......AAAA.....",
+        ],
     },
     "beanie": {
         "down": [
@@ -592,6 +917,22 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             "....aaaaaaaaaa..",
             "...AaAaAaAaAaA..",
             "...AAAAAAAAAAA..",
+        ],
+        "down_left": [
+            "",
+            "....aaaaaaaa....",
+            "...aAaAaAaAaA...",
+            "...aaaaaaaaaa...",
+            "..AaAaAaAaAaAA..",
+            "..AAAAAAAAAAAA..",
+        ],
+        "up_left": [
+            "",
+            "....aaaaaaaa....",
+            "...aAaAaAaAaA...",
+            "...aaaaaaaaaa...",
+            "..AaAaAaAaAaAA..",
+            "..AAAAAAAAAAAA..",
         ],
     },
     "headphones": {
@@ -625,6 +966,26 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             ".........kck....",
             ".........kkk....",
         ],
+        "down_left": [
+            "",
+            "....kkkkkkkk....",
+            "...k........k...",
+            "............k...",
+            "............k...",
+            "...........kkk..",
+            "...........kck..",
+            "...........kkk..",
+        ],
+        "up_left": [
+            "",
+            "....kkkkkkkk....",
+            "...k........k...",
+            "...k............",
+            "...k............",
+            "..kkk...........",
+            "..kck...........",
+            "..kkk...........",
+        ],
     },
     "scarf": {
         "down": [
@@ -642,6 +1003,14 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             ".........aA.....",
             ".........aA.....",
         ],
+        "down_left": [
+            *[""] * 10,
+            "...aaaaaaaaaa...",
+            "....AaaaaaaA....",
+            "......aA........",
+            "......aA........",
+        ],
+        "up_left": [*[""] * 10, "...aaaaaaaaaa...", "....AAAAAAAA...."],
     },
     "apron": {
         "down": [
@@ -655,6 +1024,16 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
         ],
         "up": [*[""] * 14, "....pppPPppp....", ".......PP.......", "......P..P......"],
         "left": [*[""] * 12, "....p...", "....p...", "...pp...", "...pP...", "...PP..."],
+        "down_left": [
+            *[""] * 11,
+            ".....P..P.......",
+            ".....pppp.......",
+            ".....pppp.......",
+            "....pppppp......",
+            "....pppppP......",
+            "....PPPPPP......",
+        ],
+        "up_left": [*[""] * 14, ".....ppPPppp....", "........PP......", ".......P..P....."],
     },
     "backpack": {
         "down": [
@@ -674,24 +1053,62 @@ ACCESSORY_ART: dict[str, dict[str, list[str]]] = {
             "....aaaaaaaA....",
             "....AAAAAAAA....",
         ],
-        "left": [
+        "left": [],
+        "down_left": [
             *[""] * 11,
-            "..........AaA...",
-            "..........aaaA..",
-            "..........aaaA..",
-            "..........aaaA..",
-            "..........aaaA..",
-            "..........AAAA..",
+            "....A....A......",
+            "....A....A......",
+            "....A....A......",
+            "....A....A......",
+        ],
+        "up_left": [
+            *[""] * 11,
+            ".....AaaaaaaA...",
+            ".....aaaaaaaaA..",
+            ".....aAAAAAAaA..",
+            ".....aaaaaaaaA..",
+            ".....aaaaaaaaA..",
+            ".....aaaaaaaAA..",
+            ".....AAAAAAAA...",
         ],
     },
 }
+BACKPACK_BEHIND = {
+    "left": [
+        *[""] * 11,
+        "..........AaA...",
+        "..........aaaA..",
+        "..........aaaA..",
+        "..........aaaA..",
+        "..........aaaA..",
+        "..........AAAA..",
+    ],
+    "down_left": [
+        *[""] * 11,
+        "...........aaA..",
+        "...........aaaA.",
+        "...........aaaA.",
+        "...........aaaA.",
+        "...........aaaA.",
+        "...........AAA..",
+    ],
+}
+
+
+def _body(c: Canvas, direction: str, build: str, frame: int) -> None:
+    if direction == "left":
+        _side_body(c, build, frame)
+    elif direction in ("down_left", "up_left"):
+        _quarter_body(c, build, frame, back=direction == "up_left")
+    else:
+        _front_body(c, build, frame, back=direction == "up")
 
 
 def draw_frame(
     appearance: Appearance, direction: str, frame: int, seed: str | None = None
 ) -> Canvas:
-    if direction == "right":
-        return draw_frame(appearance, "left", frame, seed).flipped()
+    if direction in MIRRORED:
+        return draw_frame(appearance, MIRRORED[direction], frame, seed).flipped()
     key = Colours.of(appearance, seed).key()
     accessories = set(appearance.accessories)
     behind, front = HAIR[appearance.hair_style][direction]
@@ -699,21 +1116,16 @@ def draw_frame(
         front = [row if i > 4 else "" for i, row in enumerate(front)]
 
     upper = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
-    if direction == "left" and "backpack" in accessories:
-        upper.stamp(ACCESSORY_ART["backpack"]["left"], key)
+    if "backpack" in accessories and direction in BACKPACK_BEHIND:
+        upper.stamp(BACKPACK_BEHIND[direction], key)
     upper.stamp(behind, key)
     body = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
-    if direction == "left":
-        _side_body(body, appearance.build, frame)
-    else:
-        _front_body(body, appearance.build, frame, back=direction == "up")
+    _body(body, direction, appearance.build, frame)
     body.recolour(key)
     upper.paste(body)
-    for name in ("apron", "scarf"):
+    for name in ("apron", "scarf", "backpack"):
         if name in accessories:
             upper.stamp(ACCESSORY_ART[name][direction], key)
-    if "backpack" in accessories and direction != "left":
-        upper.stamp(ACCESSORY_ART["backpack"][direction], key)
     upper.stamp(front, key)
     for name in ("cap", "beanie", "headphones", "glasses", "sunglasses"):
         if name in accessories:

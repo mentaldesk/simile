@@ -30,7 +30,6 @@ FORMATS = (LOSSY_WEBP, PNG, LOSSLESS_WEBP)
 GROUND = LOSSY_WEBP
 SPRITES = LOSSLESS_WEBP
 LIGHT_MAP = LOSSLESS_WEBP
-CHARACTERS = LOSSLESS_WEBP
 
 
 def sizes(images: Iterable[Image.Image], formats: Iterable[Format] = FORMATS) -> dict[str, int]:
