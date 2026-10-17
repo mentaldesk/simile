@@ -105,11 +105,11 @@ def prompt(
     )
     return (
         f"{mind}{works}\n\n"
-        f"Write a new piece of {craft.form}. {start} something in line with what you care about. "
-        "Where you care strongly, take a side, even a provocative one: your neighbours should be "
-        "able to tell where you stand, and guess it's yours without your name on it. Write in "
-        f"your own voice and the style of your craft, and keep it short: {config.words} words at "
-        "most.\n\n"
+        f"Write something new in your craft, {craft.form}. {start} something in line with what you "
+        "care about. Where you care strongly, take a side, even a provocative one: your "
+        "neighbours should be able to tell where you stand, and guess it's yours without your "
+        "name on it. Write in your own voice and the style of your craft, and keep it short: "
+        f"{config.words} words at most.\n\n"
         "Then step outside the piece and analyse it: which of the numbered things on your mind "
         f"it came from, if any, its topic tags, its overall tone, and how closely it relates to "
         f"each of the 24 values, from 0 (not at all) to {SCALE} (it's what the piece is about). "

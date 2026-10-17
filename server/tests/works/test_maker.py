@@ -85,7 +85,7 @@ def test_writes_from_the_strongest_memories_and_the_latest_works(
     assert '- "Old Stones": Stone outlasts us.\n- "Rust": Rust is neglect.' in asked
     assert '"First"' not in asked
     assert "Not His" not in asked
-    assert "Write a new piece of plain verse about old bridges." in asked
+    assert "Write something new in your craft, plain verse about old bridges." in asked
     assert VIKTOR.persona in request.system
     assert "You care most about: " in request.system
     assert "In your own time you write plain verse about old bridges." in request.system
