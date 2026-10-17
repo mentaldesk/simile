@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from simile.behaviour import Activity, Need
 from simile.conversation.engagement import acceptance, accepts, engage, leaving
-from simile.conversation.engine import ConversationEngine, Talk, facing
+from simile.conversation.engine import PLAYER, ConversationEngine, Talk, facing
 from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
     Cue,
@@ -121,6 +121,8 @@ DEFAULT_PLAYER_CONFIG = PlayerConfig()
 class PlayerTalk(Talk):
     """A conversation with the player. `speaker` is the NPC while they reply, else the player."""
 
+    speaker: Id
+    cue: Cue = Cue.OPEN
     queued: deque[Line] = field(default_factory=deque)
     """Sentences written and waiting for their turn."""
     turns: int = 0
@@ -134,6 +136,9 @@ class PlayerTalk(Talk):
     @property
     def npc(self) -> Id:
         return self.other(PLAYER_ID)
+
+    def leaving(self, npc: Id) -> bool:
+        return self.cue is Cue.GOODBYE and self.speaker == npc
 
 
 class PlayerConversations:
@@ -181,13 +186,15 @@ class PlayerConversations:
             self.engine._log("The player is too far from %s to talk (%s tiles)", target, distance)
             return None
         if joined is None:
-            if not self._free(target):
+            if not self._free(target, interrupting=True):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
-            goodbye_ends = self._turned_away(talk, target) if talk is not None else None
+            goodbyes = [
+                self._turned_away(talk, target) if talk is not None else None,
+                self.engine.cut(target, PLAYER),
+            ]
             joined = self._start(target, opener=PLAYER_ID)
-            if goodbye_ends is not None:
-                joined.quiet_until = goodbye_ends
+            joined.quiet_until = max([joined.quiet_until, *filter(None, goodbyes)])
         return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
@@ -464,9 +471,14 @@ class PlayerConversations:
     def _player_free(self) -> bool:
         return self.connected() and self._distance_known() and not self.engine.talking(PLAYER_ID)
 
-    def _free(self, npc: Id) -> bool:
+    def _free(self, npc: Id, *, interrupting: bool = False) -> bool:
+        """Whether `npc` is awake and not talking, or when `interrupting`, talking only to
+        another resident."""
         mind = self.engine.behaviour.minds.get(npc)
-        if mind is None or self.engine.talking(npc):
+        if mind is None or (self.engine.talking(npc) and not interrupting):
+            return False
+        talk = self.engine._talk_of(npc)
+        if talk is not None and PLAYER_ID in talk.conversation.participants:
             return False
         return not (mind.goal.activity is Activity.SLEEP and mind.walk is None)
 

@@ -18,44 +18,63 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   player's doesn't count: I1's `max_voiced` already caps how many are voiced. Requests involving
   the player go to `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
-  `a` speaks first.
-- **Lines.** Each line is one L1 `stream()` call with Haiku 5.5 and `purpose="conversation"`. The
-  system prompt is the speaker's persona, backstory, speaking style, values and interests. The
-  prompt is R1's `describe()` of how they feel about the other, R2's `shared_history` (events, and
-  the other's open flags about them), R2's `recall` (memories of the other, then recent or salient
-  ones), B4's `topics_to_raise`, where and when they are, the latest lines, how the speaker's last
-  few lines began (so they begin this one another way rather than with the same pet word) and a
-  cue: open, reply (keep it going, no goodbyes yet), goodbye or answer a goodbye. The system prompt
-  asks for pet words and phrases now and then, not in every line. The model ends each line with
-  `[values: ...]`, the core values the conversation touches. `parse_reply` takes it off, even cut
-  short, along with any name label, quotes, `*stage directions*` and anything the model wrote for
-  the other speaker. It also cuts a line at the first sentence boundary past `max_words` (40), so
-  no sentence starts after the 40th word.
-- **Engagement.** Each participant starts from `start_engagement`, more if they like the other or
-  value Connection. After every line, both lose `fatigue` and gain `topic_weight` times how much
-  the values it brings up for the first time in the conversation matter to them (from -1 to 1)
-  plus `like_weight` times how much they like the other. A conversation that keeps circling the
-  same values runs out of steam; one that moves on to things they care about keeps going. From
-  `min_lines` on, whoever's turn it is says goodbye when theirs is below `leave_below`, and the
-  other answers. Pairs who dislike each other start lower and drop faster, so their conversations
-  are short; strangers usually part within 5 to 20 lines and friends on good form can go on for 30
-  or more. `max_lines` (60) is only a backstop.
-- **Goodbyes.** From `min_lines` on, a reply whose last sentence says goodbye anyway ("I'll leave
-  you to it", "see you at the riverside", "catch you later") counts as one: the other answers it
-  and the conversation ends. A goodbye mentioned in passing, or asked as a question ("Will I see you
-  at the quiz?"), doesn't count.
+  `a` opens. On the next tick the engine asks for the script.
+- **The plan.** What would have decided engagement turn by turn plans the scene instead. Each side
+  gets a keenness from 0 to 1: `initial_engagement` (how much they like the other, and Connection),
+  plus `keen_social` times their social need above or below 0.5, `keen_topics` times their topic
+  interest, `keen_goal` times what they were doing's `accept_goals` score (`seeking_them` if they
+  were looking for the other), less `keen_pressing` times their most pressing need (rest, curiosity
+  or news) over `pressing`. Topic interest is how much the values of what both sides are likely to
+  bring up matter to them, from -1 to 1: B4's articles behind their news topics, weighted by how
+  much each relates to each value, or for someone with no news, their own top three values. Someone
+  at `leave_below` or less wants to wrap up after `min_lines`, someone at 1 after `long_talk` (30),
+  in a straight line between. Whoever wants to leave first does (the one approached, on a tie), and
+  the scene runs that many lines plus the goodbye and its answer. The direction says each side's
+  keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk") with
+  their reasons (came looking for them, was off to read the news, could do with company, tired),
+  who'll want to leave after about how many lines, and the length.
+- **The script.** One L1 `stream()` call with Haiku 5.5 and `purpose="conversation"` writes the
+  whole scene. The system prompt, the same for every scene, asks for it like a scene in a novel:
+  each character knows only their own notes, what's between them and what's been said; they know
+  what someone with their life and job would know, and otherwise ask, admit they don't know or give
+  their own angle; it's a chat between neighbours, not a consultation; a topic the other doesn't
+  take up is let go and nobody goes back over a point; pet words now and then. The prompt has, for
+  each side, their persona, backstory, speaking style, values and interests, R1's `describe()` of
+  how they feel about the other told in the third person, and, each marked as only theirs, R2's
+  `recall` (memories of the other, then recent or salient ones) and the secrets others told them
+  (open `secret` flags about anyone else), and B4's `topics_to_raise`. Then what's between them:
+  R2's
+  `shared_history` events and each side's open flags about the other, which both know, a secret
+  told between them marked as known only to the two. Then where and when they are, and the
+  direction. Each line is the speaker's first name, a colon, the line and its `[values: ...]` tag.
+- **Streaming.** Each line is parsed as soon as its newline streams, cleaned like a reply
+  (`parse_reply`: tag, stage directions, quotes, cut at the first sentence boundary past
+  `max_words`), and played from the first. Lines naming anyone else, narration and headings are left
+  out, and a script is cut at `max_lines`. A script that streams to its end short of its planned
+  length, without a goodbye in its last two lines, gets another call with the lines so far for the
+  rest, until it reaches the length or a call adds nothing. A reply that names nobody, in a scene
+  whose replies never have, takes turns line by line from whoever's next: that's how L1's fake
+  providers answer, so under `SIMILE_LLM=fake` scenes still run to their length a line a call.
 - **Pacing.** A line takes as long as its speaker's voice takes to say it (at least
   `min_line_seconds`), then `turn_gap` before the next. That's the voice's measured rate
   ([*Speaking rates*](../voice/README.md#speaking-rates)), or `words_per_minute` (200) for a voice
   without one. A voiced line whose audio I1 has finished making by the time it's spoken lasts
   exactly as long as its audio instead. And the next line waits while the last one's audio is still
   being made or playing, at most `voice_wait` (3 s) past its end, so speech keeps pace with the
-  bubbles. The next line is written while the current one plays, so lines follow each other
-  without gaps unless the LLM is slower than the line. `Line.timestamp` is when it starts and
-  `Line.duration` how long it lasts.
-- **Ending.** After the last line plays, the conversation ends. So does one whose next line fails
-  or takes longer than `line_timeout` real seconds (30) to write, once the current line has
-  played. Both NPCs resume deciding, and neither seeks the other for `cooldown` minutes.
+  bubbles. Each line is drafted one line ahead of being spoken, and the script streams far faster
+  than it's spoken, so lines follow each other without gaps. `Line.timestamp` is when it starts and
+  `Line.duration` how long it lasts. Engagement still moves with each line's values, as for the
+  player below, for the debug overlay and the logs, but no longer ends anything.
+- **Interruptions.** A resident is pulled out of a conversation when the player starts one with
+  them, or when their rest, curiosity or news rises past `urgent_need` (0.95) during it. The line
+  being said finishes, then they say a short goodbye (`GOODBYES`), unless they've just said one; if
+  the other has, a "Bye" back. Nothing after that is said, and the rest of the script never happened.
+  Pulled away before anyone has spoken, the conversation ends with no lines.
+- **Ending.** After the last line plays, the conversation ends. So does one whose script fails or
+  stops streaming for `line_timeout` real seconds (30) between lines: after its last complete line,
+  or with no lines if there wasn't one, which B3 and D1 treat as never having happened. Both NPCs
+  resume deciding, unless one is now talking to the player, and neither seeks the other for
+  `cooldown` minutes.
 
 Every constant is in `ConversationConfig`.
 
@@ -70,15 +89,16 @@ reaches an NPC's prompt. B1 counts a talk with the player as `player_relief` (ha
 resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
-  they're talking to another NPC or asleep. From then on, the player's lines reach the NPC for as
-  long as the conversation lasts. Saying something to a different NPC who is free ends the one going
-  on: the old partner says a short canned goodbye, and the new resident's first line waits until it
-  ends. Saying it to one who isn't free changes nothing. An NPC who walks up to the player (B1's
-  seek) says hello. So does a free NPC within `near` (3 tiles) whose acceptance score beats
-  `greet_bar` (0.5): every `look_every` (5 s), each nearby NPC is considered once per
-  `greet_cooldown` (10 min), so high Connection NPCs greet strangers and those who dislike the
-  player don't. Nobody greets a player who's already talking or not connected, and nobody in B1's
-  `leave_player_alone` greets them.
+  they're asleep. One talking to another resident is pulled out of it (see *Interruptions*) and
+  answers once their goodbye ends. From then on, the player's lines reach the NPC for as long as the
+  conversation lasts. Saying something to a different NPC who is awake ends the one going on: the
+  old partner says a short canned goodbye, and the new resident's first line waits until it ends.
+  Saying it to one who's asleep changes nothing. An NPC who walks up to the player (B1's seek) says
+  hello. So does a free NPC within `near` (3 tiles) whose acceptance score beats `greet_bar` (0.5):
+  every `look_every` (5 s), each nearby NPC is considered once per `greet_cooldown` (10 min), so
+  high Connection NPCs greet strangers and those who dislike the player don't. Nobody greets a
+  player who's already talking or not connected, and nobody in B1's `leave_player_alone` greets
+  them.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been
@@ -102,10 +122,18 @@ resident towards their social need.
 - **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
   off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
   Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.
-- **Ending.** Engagement works as in B2, with each player line and each reply counting as a line,
-  and each player line touching the values the NPC's last reply did. When the NPC's engagement is
-  low, they answer with a goodbye; a player line within `farewell_wait` (8 s) of that goodbye joins
-  the conversation and ends it. If the player says goodbye ("bye", "see you", "gotta go", ...), the
+- **What they know.** The resident's system prompt adds that they know what someone with their life
+  and job would know, and otherwise ask, admit they don't know or give their own angle rather than
+  expert advice; that it's a chat between neighbours, not a consultation; and that when the player
+  changes the subject they go with it, or say once that they'd rather not and let it go.
+- **Engagement.** The NPC starts from `start_engagement`, more if they like the player or value
+  Connection. After every line they lose `fatigue` and gain `topic_weight` times how much the values
+  it brings up for the first time in the conversation matter to them (from -1 to 1) plus
+  `like_weight` times how much they like the player. Each player line and each reply counts as a
+  line, and each player line touches the values the NPC's last reply did.
+- **Ending.** From `min_lines` on, an NPC whose engagement is below `leave_below` answers with a
+  goodbye. A player line within `farewell_wait` (8 s) of that goodbye joins the conversation and
+  ends it. If the player says goodbye ("bye", "see you", "gotta go", ...), the
   NPC says goodbye back and it ends. It ends at once if the player walks beyond `leave_range` (6
   tiles) or disconnects. After `silence` (60 s) without a word from the player, the NPC says
   goodbye, or just leaves if the player never answered their hello. A reply that fails or says
@@ -128,19 +156,24 @@ published.
 
 ## For other modules
 
-- **Transcripts (B3).** Subscribe to `ConversationEnded`. `engine.conversation(id)` returns a live
-  or recently finished conversation, and `engine.finished` keeps the last `keep_finished` (50).
+- **Transcripts (B3).** Subscribe to `ConversationEnded`. Its lines are the ones spoken: the rest
+  of a script cut short never happened. `engine.conversation(id)` returns a live or recently
+  finished conversation, and `engine.finished` keeps the last `keep_finished` (50).
 - **Player conversations (B5).** Conversations with the player have `player` as a participant
   and publish the same events, with the player's lines included.
 - **Voicing (I1).** `LineDrafted` gives each NPC line's text one line ahead of `LineSpoken`. In a
   conversation with the player, each line is a sentence and `LineDrafted` comes as soon as it has
   streamed, so voicing can start on the first sentence. A sentence dropped because the player talked
-  over the NPC or left gets a `LineDrafted` but no `LineSpoken`.
+  over the NPC or left, or a scripted line drafted before an interruption, gets a `LineDrafted` but
+  no `LineSpoken`.
 - **Debug overlay (I2).** `engine.state(npc)` has their conversation, who they're talking to,
-  engagement, facing and whether they're about to leave.
-- **Ending one now (I3).** `engine.end(conversation_id)` ends a live conversation as if it had run
-  its course, dropping any line still being written, and returns it with `ended` set, or None if
-  it isn't live. `ConversationEnded` follows as usual, so B3 reflects on it.
+  engagement, facing and whether they're saying goodbye.
+- **Ending one now (I3).** `engine.end(conversation_id)` ends a live conversation at its last
+  spoken line, dropping any line still being written or waiting, and returns it with `ended` set,
+  or None if it isn't live. `ConversationEnded` follows as usual, so B3 reflects on it.
+- **Pulling someone away.** `engine.cut(npc, why)` pulls a resident out of a conversation with
+  another, as in *Interruptions*, for `why`: `PLAYER` or a `Need`. It returns when they've finished
+  their goodbye, or None if they weren't in one.
 - **The ambient director.** `engine.accept_score(a, b)` says how keen `b` would be if `a` walked up
   now, so [`simile.ambient`](../ambient/README.md) only nudges pairs who would accept each other.
 

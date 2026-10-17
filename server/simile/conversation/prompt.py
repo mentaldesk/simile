@@ -95,10 +95,10 @@ def first_name(person: Npc | Player) -> str:
 
 
 def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
-    """Who the speaker is and how to answer. The same for every line they say."""
+    """Who the resident is and how to answer the player. The same for every line they say."""
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
-    most = ", ".join(_value_name(value) for value, _ in ranked[:5])
-    least = ", ".join(_value_name(value) for value, _ in reversed(ranked[-3:]))
+    most = ", ".join(value_name(value) for value, _ in ranked[:5])
+    least = ", ".join(value_name(value) for value, _ in reversed(ranked[-3:]))
     return "\n\n".join(
         [
             f"You are {npc.name}, aged {npc.age}. Occupation: {npc.occupation}. You live in a "
@@ -113,6 +113,11 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             f"most {config.max_words} words, usually one or two sentences. Plain speech: no "
             "stage directions, quotation marks or name label. React to what was just said and "
             "don't repeat yourself.",
+            "You know what someone with your life and job would know. Outside that, ask, admit "
+            "you don't know, or give your own angle rather than expert advice. This is a chat "
+            "between neighbours, not a consultation: listen and react more than you advise. If "
+            "they want to change the subject, go with it, or say once that you'd rather not and "
+            "let it go.",
             "After the line, on a last line of its own, list the one to three core values the "
             "conversation is touching now, like this: [values: honesty, ambition]\n"
             f"Choose from: {VALUE_NAMES}.",
@@ -140,7 +145,7 @@ def background(
     )
     parts = [f"It's {now:%H:%M}, {where}. You're with {name} ({who}).", describe(rel, name)]
     events = [
-        f"- {_ago(event.timestamp, now)}, {'you' if event.actor == speaker.id else name}: "
+        f"- {ago(event.timestamp, now)}, {'you' if event.actor == speaker.id else name}: "
         f"{event.action}"
         for event in history.events
     ]
@@ -261,11 +266,11 @@ def _values(listed: str) -> tuple[CoreValue, ...]:
     return tuple(found)
 
 
-def _value_name(value: CoreValue) -> str:
+def value_name(value: CoreValue) -> str:
     return value.value.replace("_", " ")
 
 
-def _ago(then: datetime, now: datetime) -> str:
+def ago(then: datetime, now: datetime) -> str:
     elapsed = now - then
     if elapsed < timedelta(hours=1):
         return "just now"

@@ -16,6 +16,7 @@ from simile.conversation import (
     player,
     system_prompt,
 )
+from simile.conversation.engine import GOODBYES, PLAYER
 from simile.conversation.player import (
     DEFAULT_PLAYER_CONFIG,
     TURNED_AWAY,
@@ -800,18 +801,49 @@ async def test_an_npc_who_has_said_goodbye_doesnt_say_another() -> None:
     assert village.players.talk() is not None
 
 
-async def test_talking_to_someone_busy_keeps_the_conversation_going_on() -> None:
-    village = Village(npcs=(ANA, BEN, CAL))
-    village.players.say("Hi Ana.", "ana")
-    await village.run(4)
+SCENE = "".join(
+    f"{name}: Line {n} about the allotments. [values: connection]\n"
+    for n, name in enumerate(["Ben", "Cal"] * 4, 1)
+)
+
+
+def scene_or_reply(request: Request) -> str:
+    if request.system.startswith("You write the dialogue"):
+        return SCENE
+    return "Oh, hello! Settling in? [values: connection]"
+
+
+async def test_talking_to_a_resident_in_another_conversation_pulls_them_out_of_it() -> None:
+    village = Village(npcs=(ANA, BEN, CAL), provider=FakeProvider(default=scene_or_reply))
     village.engine.start("ben", "cal")
+    while len(village.spoken) < 2:
+        await village.run(0.1)
 
     village.walk_to("ben", 1)
-    assert village.players.say("Hi Ben.", "ben") is None
+    assert village.players.say("Hi Ben.", "ben") is not None
+    await village.run(10)
 
-    assert village.ended == []
+    scene, *_ = village.of(ConversationStarted)
+    [ended] = village.ended
+    assert ended.conversation.id == scene.conversation.id
+    lines = ended.conversation.lines
+    assert [line.text for line in lines[:2]] == [
+        "Line 1 about the allotments.",
+        "Line 2 about the allotments.",
+    ]
+    goodbye = lines[-1]
+    assert len(lines) == 3
+    assert goodbye.speaker == "ben"
+    assert goodbye.text in [text.format(name="Cal") for text in GOODBYES[PLAYER]]
+    assert goodbye.timestamp == lines[1].timestamp + timedelta(seconds=lines[1].duration + 0.5)
     talk = village.players.talk()
-    assert talk is not None and talk.npc == "ana"
+    assert talk is not None and talk.npc == "ben"
+    said, reply, *_ = talk.conversation.lines
+    assert said.text == "Hi Ben."
+    assert reply.timestamp == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+    assert village.engine.state("ben")["talking_to"] == PLAYER_ID
+    assert village.behaviour.minds["cal"].paused is False
+    assert village.behaviour.minds["ben"].paused is True
 
 
 async def test_the_npc_hears_the_player_until_the_conversation_ends() -> None:
@@ -831,7 +863,7 @@ async def test_the_npc_hears_the_player_until_the_conversation_ends() -> None:
     assert village.players.say("And from here?", "ana") is None
 
 
-async def test_nobody_answers_from_too_far_or_while_busy() -> None:
+async def test_nobody_answers_from_too_far_or_while_asleep() -> None:
     village = Village()
     village.walk_to("ana", DEFAULT_PLAYER_CONFIG.say_range + 0.5)
 
@@ -839,7 +871,10 @@ async def test_nobody_answers_from_too_far_or_while_busy() -> None:
     assert village.players.say("Hello?", "nobody") is None
 
     village.walk_to("ana", 1)
-    village.engine.start("ana", "ben")
+    village.behaviour.minds["ana"].goal, village.behaviour.minds["ana"].walk = (
+        Goal(Activity.SLEEP),
+        None,
+    )
     assert village.players.say("Hello?", "ana") is None
     assert [type(event) for event in village.events if isinstance(event, LineSpoken)] == []
 

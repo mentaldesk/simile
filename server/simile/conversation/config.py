@@ -89,10 +89,48 @@ class ConversationConfig(BaseModel):
     max_lines: int = Field(
         default=60,
         ge=2,
-        description="A backstop: most lines, goodbyes included, before a conversation ends. "
-        "Engagement ends them long before this.",
+        description="A backstop: most lines in a conversation, goodbyes included. Engagement, "
+        "or the scene's plan, ends them long before this.",
     )
     farewell: bool = Field(default=True, description="Whether the other answers a goodbye.")
+
+    long_talk: int = Field(
+        default=30,
+        ge=2,
+        description="Lines before someone as keen as can be wants to wrap up a scripted "
+        "conversation. Someone at `leave_below` or less wants to after `min_lines`.",
+    )
+    keen_social: float = Field(
+        default=0.3, description="Keenness per unit of social need above or below 0.5."
+    )
+    keen_topics: float = Field(
+        default=0.2,
+        description="Keenness per unit of topic interest: how much the values of what each side "
+        "is likely to bring up matter to them, from -1 to 1.",
+    )
+    keen_goal: float = Field(
+        default=0.3,
+        description="Keenness per unit of what they were doing's accept score "
+        "(`accept_goals`, or `seeking_them`).",
+    )
+    keen_pressing: float = Field(
+        default=0.6,
+        description="Keenness lost per unit of their most pressing need over `pressing`.",
+    )
+    pressing: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Rest, curiosity or news above this is mentioned in the direction and makes "
+        "them less keen.",
+    )
+    urgent_need: float = Field(
+        default=0.95,
+        ge=0,
+        le=1,
+        description="Rest, curiosity or news rising past this during a scripted conversation "
+        "pulls them away from it.",
+    )
 
     words_per_minute: float = Field(
         default=200,
@@ -116,8 +154,8 @@ class ConversationConfig(BaseModel):
     line_timeout: float = Field(
         default=30,
         gt=0,
-        description="Real seconds a line may take to write before it counts as failed, which "
-        "ends the conversation.",
+        description="Real seconds a line may take to write, or a script's next line to stream, "
+        "before the call counts as failed.",
     )
     max_words: int = Field(
         default=40,
