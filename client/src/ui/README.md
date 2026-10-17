@@ -12,7 +12,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   reply.";
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
-- the news and residents' writing at a terminal (see *Reading the news*).
+- the news and residents' writing at a terminal (see *Reading the news*);
+- a mural up close, in the iso renderer (see *Looking at a mural*).
 
 ## Choosing who to talk to
 
@@ -54,6 +55,22 @@ tab says nobody has written anything, rather than waiting on a server that may n
 Esc or E closes the panel, and so does walking away from the terminal. ↑, ↓, Enter, Tab and the
 focus trap work the same in both tabs. The panel keeps its key-downs from `window`, like the chat
 input, so the player doesn't walk while reading, and it ignores `news` and `works` while closed.
+
+## Looking at a mural
+
+Only the iso renderer draws murals (see [`world/iso/README.md`](../world/iso/README.md#murals)).
+Within `MURAL_REACH_TILES` (3) in front of a painted wall, a hint says "Press E to look at
+“<title>”", and E opens the mural panel: the picture, its title, the artist and their statement.
+Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or E
+closes it, and so does walking off: out of the wall's reach and more than a tile from where the
+panel opened. At a terminal E opens the news instead, and only one of the two panels is open at a
+time. If the wall is painted over while the panel is open it shows the new mural, and if the wall
+goes blank it closes. The panel keeps its key-downs from `window`, like the news panel, and sends
+nothing: the server notices a player near a mural itself.
+
+`MuralPanel` reads the walls from `muralWalls` and asks the scene drawing murals for the one under
+a click through `muralView()`, both in [`world/iso/murals.ts`](../world/iso/murals.ts). With no
+such scene, as in top-down, it never hints or opens.
 
 ## Keys
 

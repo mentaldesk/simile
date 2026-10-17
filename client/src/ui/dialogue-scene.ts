@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { server } from '../net';
+import { server, type Position } from '../net';
 import { village } from '../world/assets';
+import { muralWalls } from '../world/iso/murals';
 import { terminalAt, terminalsOf, type Terminal } from '../world/terminals';
 import { BubbleLayer } from './bubble-layer';
 import { ChatBox } from './chat-box';
@@ -8,6 +9,7 @@ import { dialogue } from './dialogue';
 import './dialogue.css';
 import { onGameKey } from './keys';
 import { LogPanel } from './log-panel';
+import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
 import { fitOverlay, inOverlay } from './overlay';
 import { ChatTarget, clicked } from './target';
@@ -23,6 +25,7 @@ export class DialogueScene extends Phaser.Scene {
   private marker!: TargetMarker;
   private news!: NewsPanel;
   private newsHint!: HTMLElement;
+  private murals!: MuralPanel;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
   private fromGame = 1;
@@ -45,16 +48,23 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint = this.root.appendChild(document.createElement('div'));
     this.newsHint.className = 'news-hint';
     this.newsHint.textContent = `Press ${NEWS_KEY.toUpperCase()} to read the news.`;
+    this.murals = new MuralPanel(this.root, muralWalls);
     const onKeyDown = onGameKey({
       chat,
       news: () => {
         const terminal = this.terminal();
-        if (terminal) this.news.open(terminal.label);
+        if (!terminal) {
+          this.murals.look(this.player());
+          return;
+        }
+        this.murals.close();
+        this.news.open(terminal.label);
       },
     });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
+      else if (this.murals.click({ x, y }, this.player())) this.news.close();
     };
     window.addEventListener('keydown', onKeyDown);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
@@ -63,6 +73,7 @@ export class DialogueScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       stopInvitations();
       this.news.stop();
+      this.murals.stop();
       log.stop();
       this.root.remove();
     });
@@ -80,11 +91,16 @@ export class DialogueScene extends Phaser.Scene {
     this.bubbles.render(dialogue.bubbles.current(), view);
     const atTerminal = this.terminal() !== undefined;
     if (!atTerminal && this.news.isOpen) this.news.close();
-    this.newsHint.hidden = !atTerminal || this.news.isOpen;
+    this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
+    this.murals.update(this.player(), !atTerminal && !this.news.isOpen);
+  }
+
+  private player(): Position | undefined {
+    return worldView().positionOf(PLAYER_ID);
   }
 
   private terminal(): Terminal | undefined {
-    return terminalAt(terminals, worldView().positionOf(PLAYER_ID));
+    return terminalAt(terminals, this.player());
   }
 
   private fitToCanvas(): void {

@@ -43,6 +43,15 @@ import {
   type SceneryObject,
   type TiledMapWithTiles,
 } from '../world/iso';
+import {
+  cropPixels,
+  IsoMurals,
+  muralWalls,
+  setMuralView,
+  skewed,
+  type Box,
+  type Pixels,
+} from '../world/iso/murals';
 import { IsoCharacters, pixelArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
@@ -84,6 +93,7 @@ export class IsoScene extends Phaser.Scene {
   private charactersLoad?: Promise<IsoCharacters>;
   private characters?: IsoCharacters;
   private geometry?: Geometry;
+  private murals?: IsoMurals<ImageBitmap>;
 
   constructor() {
     super(ISO_SCENE);
@@ -110,6 +120,10 @@ export class IsoScene extends Phaser.Scene {
         listenerPosition: () => screenAligned(world.player?.position),
       }),
       server.on('snapshot', () => this.throttle.forget()),
+      setMuralView({
+        wallAt: ({ x, y }) => this.murals?.wallAt(this.cameras.main.getWorldPoint(x, y)),
+      }),
+      () => this.murals?.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
     void this.start();
@@ -141,6 +155,12 @@ export class IsoScene extends Phaser.Scene {
       lightMap: this.loaded.get(set)!.lightMap,
     }));
     characters.draw(bodies, dt, (at) => this.figureAt(at), layers, (feet) => residentLight(lit, feet));
+    this.murals?.draw(
+      dt,
+      layers,
+      (feet) => residentLight(lit, feet).tint,
+      (id) => geometry.buildings.find(({ object }) => object.id === id)?.cutaway.alpha ?? 1,
+    );
     this.follow(figure);
   }
 
@@ -186,6 +206,45 @@ export class IsoScene extends Phaser.Scene {
         .filter(({ kind }) => kind === 'building')
         .map((object) => ({ object, cutaway: new Cutaway() })),
     };
+    this.murals ??= new IsoMurals(muralWalls, manifest, assets.characterLights, {
+      load: (url) => assets.loadBitmap(url),
+      sample: (set, image, crop, read) => this.sampleScenery(set, image, crop, read),
+      paint: (key, bitmap, box, transform) => {
+        this.textures.addCanvas(key, skewed(bitmap, box, transform));
+      },
+      unpaint: (key) => this.textures.remove(key),
+      image: (key, x, y) => this.add.image(x, y, key).setOrigin(0),
+    });
+  }
+
+  /** From the set's loaded image if it has one, else fetched for this and closed. */
+  private async sampleScenery<T>(
+    set: LightingSet,
+    image: string,
+    crop: Box,
+    read: (pixels: Pixels) => T,
+  ): Promise<T> {
+    const held = this.loaded.get(set);
+    const index = held ? sceneryImages(held.manifest).indexOf(image) : -1;
+    const url = this.assets!.imageUrl(image);
+    if (index < 0 && !url) throw new Error(`No image ${image}`);
+    const bitmap = index >= 0 ? held!.bitmaps[index] : await this.assets!.loadBitmap(url!);
+    const sampled = new Promise<T>((resolve, reject) => {
+      void this.uploads.add([
+        () => {
+          try {
+            resolve(read(cropPixels(bitmap, crop)));
+          } catch (error) {
+            reject(error);
+          }
+        },
+      ]);
+    });
+    try {
+      return await sampled;
+    } finally {
+      if (index < 0) bitmap.close();
+    }
   }
 
   private placing(scenery: SetScenery): (() => void)[] {

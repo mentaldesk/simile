@@ -76,6 +76,37 @@ draws `DEFAULT_HOUR`, the afternoon.
   views. The walk is A1's step, stand, step, stand at `WALK_FPS` for `WALKING_SPEED`, faster or
   slower with how fast they move, and they stand on the middle frame when they stop.
 
+## Murals
+
+`murals.ts` paints M1's `murals` ([`docs/protocol.md`](../../../../docs/protocol.md#murals)) on the
+walls, and only the iso renderer draws them. `muralWalls` keeps the latest message from startup,
+since the server sends it on connect. The scene hands `IsoMurals` a `MuralStage` to load, paint and
+place images, so the module stays Phaser-free.
+
+- **Quad** (`wallQuad`): the face stands on the south edge (`y + 1`) or east edge (`x + 1`) of the
+  wall's tiles, from `bottom` to `top` storeys of `STOREY_METRES` (3 m, `STOREY_M` in `town.py`). The
+  PNG is drawn onto it in a canvas (`skewed`), its left edge at the face's left end on screen,
+  whatever its size.
+- **Depth** (`muralSlices`): the mural is cropped where its building's slices are, each crop
+  `MURAL_DEPTH` above its slice: over both of the building's crossfading images, under anyone in
+  front. So it hides and sorts with its building, and takes the building's cutaway alpha.
+- **Light** comes from the building's own render, which knows which way the face points, its
+  shadows and the lamps on it. Once a wall is known, `IsoMurals` samples its building's image in all
+  four sets around each slice edge (`facadeColours`, every other pixel of the face's rows). It uses
+  a set's image while the scene holds it, and otherwise fetches it, reads and averages it within the
+  upload budget and closes it. That's about 4 MB
+  once, after the first set loads, of images the scene fetches later anyway. `facadeLight` then
+  makes each edge as bright, against the facade's brightest edge in any set, as the facade is there,
+  with that edge at its set's tint, and colours it as the facade's light changes from there. The
+  sets blend by the crossfade's weights, and each crop is tinted at its left and right edges, so the
+  light changes along the wall without steps. Until the samples are in, a mural is lit from the light
+  map half a tile in front of it, as residents are, and then it eases to its facade's light over
+  `MURAL_LIGHT_SECONDS`.
+- **Changes**: a new mural fades in over the old one in `MURAL_FADE_SECONDS`, and a wall painted
+  out fades away. The murals there when the scene starts appear at once.
+- **Picking**: the scene registers `setMuralView`, whose `wallAt(point)` is the wall whose quad is
+  under a point on the canvas, for the mural panel (see `ui/README.md`).
+
 ## Resolution
 
 The renders are drawn at one art pixel per CSS pixel, so a bigger window shows more of the village.
