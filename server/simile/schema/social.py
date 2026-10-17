@@ -93,12 +93,13 @@ class Relationship(Model):
 
 
 class MemoryKind(StrEnum):
-    """`work` is making, reading or seeing a work."""
+    """`work` is making, reading or seeing a work. `past` is from their life before the game."""
 
     CONVERSATION = "conversation"
     NEWS = "news"
     OBSERVATION = "observation"
     WORK = "work"
+    PAST = "past"
 
 
 class Memory(Model):

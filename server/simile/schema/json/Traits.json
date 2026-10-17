@@ -1,0 +1,46 @@
+{
+  "additionalProperties": false,
+  "description": "The numbers social/ and behaviour/ read. Each is 0-1, and 0.5 is how residents behave\nwithout traits.",
+  "properties": {
+    "sociability": {
+      "default": 0.5,
+      "description": "How often they start a conversation and how long they stay.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Sociability",
+      "type": "number"
+    },
+    "negativity_bias": {
+      "default": 0.5,
+      "description": "How much more a bad turn weighs with them than a good one.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Negativity Bias",
+      "type": "number"
+    },
+    "forgiveness": {
+      "default": 0.5,
+      "description": "How fast a grudge fades.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Forgiveness",
+      "type": "number"
+    },
+    "first_impressions": {
+      "default": 0.5,
+      "description": "How far a first meeting swings their opinion of someone.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "First Impressions",
+      "type": "number"
+    }
+  },
+  "required": [
+    "sociability",
+    "negativity_bias",
+    "forgiveness",
+    "first_impressions"
+  ],
+  "title": "Traits",
+  "type": "object"
+}

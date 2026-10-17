@@ -1,0 +1,41 @@
+{
+  "additionalProperties": false,
+  "description": "A memory of their life before the game, which casting turns into a `past` Memory.",
+  "properties": {
+    "age": {
+      "description": "How old they were when it happened.",
+      "maximum": 120,
+      "minimum": 0,
+      "title": "Age",
+      "type": "integer"
+    },
+    "content": {
+      "description": "The memory in their own words, ready for a prompt.",
+      "minLength": 1,
+      "title": "Content",
+      "type": "string"
+    },
+    "salience": {
+      "description": "How much it matters to them, 0-1.",
+      "maximum": 1,
+      "minimum": 0,
+      "title": "Salience",
+      "type": "number"
+    },
+    "valence": {
+      "description": "How they feel about it, from -1 to 1.",
+      "maximum": 1,
+      "minimum": -1,
+      "title": "Valence",
+      "type": "number"
+    }
+  },
+  "required": [
+    "age",
+    "content",
+    "salience",
+    "valence"
+  ],
+  "title": "PastMemory",
+  "type": "object"
+}

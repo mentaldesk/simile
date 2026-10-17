@@ -1,0 +1,114 @@
+{
+  "id": "danuta_sobczak",
+  "name": "Danuta Sobczak",
+  "birth_year": 1968,
+  "gender": "woman",
+  "origin": "Poland",
+  "arrival": {
+    "age": 34,
+    "reason": "for a job"
+  },
+  "occupation": "Bus driver",
+  "values": {
+    "freedom": 0.3,
+    "independence": 0.62,
+    "self_respect": 0.7,
+    "self_actualization": 0.3,
+    "creativity": 0.15,
+    "honesty": 0.82,
+    "compassion": 0.5,
+    "loyalty": 0.88,
+    "justice": 0.6,
+    "responsibility": 0.93,
+    "security": 0.8,
+    "equality": 0.45,
+    "tradition": 0.66,
+    "obedience": 0.58,
+    "success": 0.35,
+    "ambition": 0.2,
+    "discipline": 0.9,
+    "knowledge": 0.4,
+    "open_mindedness": 0.25,
+    "peace_of_mind": 0.55,
+    "pleasure": 0.12,
+    "connection": 0.4,
+    "adventure": 0.08,
+    "optimism": 0.3
+  },
+  "backstory": "Danuta grew up in a shipyard town on the Baltic, the eldest of three, and was running the household by eleven after her father's hours were cut. She trained as a bus driver at twenty-two because it paid on time, came to the village at thirty-four when the regional line hired drivers from abroad, and has driven the same early route for most of the years since. Her brother stopped speaking to her after their mother's funeral, and she still sends him a card every Christmas.",
+  "persona": "Danuta is a dry, exacting woman who keeps every promise and expects the same of everyone else. She shows care by turning up on time, fixing what's broken and never mentioning it. She has no patience for daydreams, treats, or anyone who calls a plan an adventure.",
+  "speaking_style": "Brisk and economical, with short sentences and the odd Polish word when she's annoyed. She answers questions with times and numbers, and her rare jokes are so deadpan that people miss them.",
+  "interests": [
+    "timetables and route changes",
+    "Polish crime novels",
+    "growing tomatoes on her allotment",
+    "keeping her bus spotless"
+  ],
+  "past": [
+    {
+      "age": 11,
+      "content": "When Dad's hours were cut, I was the one who stood in the bread queue and made the money last till Friday. Nobody asked me to. Somebody had to.",
+      "salience": 0.8,
+      "valence": -0.3
+    },
+    {
+      "age": 22,
+      "content": "I passed the bus test first time, the only woman on the course. The instructor gave me a month. I drove for him for six years.",
+      "salience": 0.6,
+      "valence": 0.6
+    },
+    {
+      "age": 34,
+      "content": "I came here with one suitcase and a job offer, and spent the first winter learning the route in the dark before my shift.",
+      "salience": 0.5,
+      "valence": 0.2
+    },
+    {
+      "age": 49,
+      "content": "At Mum's funeral my brother said I'd only ever cared about rules. He hasn't spoken to me since. I still send the card.",
+      "salience": 0.9,
+      "valence": -0.8
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "Lent most of her savings to someone who swore they'd pay it back within a year. That was four years ago."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "Saw someone take something that wasn't theirs on her late bus, and has said nothing so far."
+    }
+  ],
+  "traits": {
+    "sociability": 0.35,
+    "negativity_bias": 0.6,
+    "forgiveness": 0.3,
+    "first_impressions": 0.4
+  },
+  "appearance": {
+    "skin": "#c99a78",
+    "hair_style": "bob",
+    "hair_colour": "#8a8a8a",
+    "top_colour": "#2f4f6f",
+    "bottom_colour": "#3a3a40",
+    "shoe_colour": "#262b44",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A light Polish accent, softened by twenty years away. A woman in her late fifties, low and dry, speaks briskly.",
+    "reference_line": "The twenty to seven leaves at twenty to seven. If you're running, I'll see you in the mirror and I'll wait.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-01T09:00:00Z",
+  "updated": "2026-10-01T09:00:00Z",
+  "version": 1
+}
