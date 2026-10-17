@@ -43,7 +43,7 @@ BEATS = {
 }
 
 WALKS: dict[str, tuple[str, ...]] = {
-    "steps left and waits": (),
+    "walks left and waits": (),
     "walks up to tobias or kofi": ("tobias", "kofi"),
     "walks up to desmond or marguerite": ("desmond", "marguerite"),
 }
@@ -57,8 +57,9 @@ decisions."""
 
 
 class Player:
-    """A connected client whose player takes a step left from the square's entry, then maybe
-    walks up to one of `towards`, sending a `player_move` from wherever they get to each tick."""
+    """A connected client whose player walks two tiles left on screen (south-west on the map) from
+    the square's entry, then maybe walks up to one of `towards`, sending a `player_move` from
+    wherever they get to each tick."""
 
     def __init__(self, app: Starlette, towards: tuple[str, ...], rng: random.Random) -> None:
         self.hub, self.clock, self.movement = hub_of(app), world_of(app).clock, movement_of(app)
@@ -66,7 +67,7 @@ class Player:
         self.leaves = self.clock.now + timedelta(seconds=rng.uniform(0, LEAVES_WITHIN))
         spawn = self.movement.town.location("square").entry
         self.position: tuple[float, float] = (spawn.x, spawn.y)
-        self.path = deque([(spawn.x - 1, spawn.y)])
+        self.path = deque([(spawn.x - 2, spawn.y + 2)])
         self.hub.connections.add(self)
         self._send()
 

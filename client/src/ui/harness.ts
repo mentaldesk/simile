@@ -4,7 +4,7 @@ import { npcAt } from '../world/hit';
 import { speakingSeconds } from './bubbles';
 import './harness.css';
 import { CHAT_RANGE_TILES } from './tuning';
-import { PLAYER_ID, TILE_PX, trackedWorld } from './world-view';
+import { PLAYER_ID, trackedWorld } from './world-view';
 
 const entities: Entity[] = [
   { id: PLAYER_ID, kind: 'player', name: 'Player', position: { x: 14, y: 13 } },
@@ -101,14 +101,14 @@ class HarnessScene extends Phaser.Scene {
     const player = trackedWorld.positionOf(PLAYER_ID);
     const centre = player && trackedWorld.feetOnScreen(player);
     if (!centre) return;
-    const range = CHAT_RANGE_TILES * TILE_PX;
-    g.lineStyle(1, 0x7fc8a9).strokeCircle(centre.x, centre.y - TILE_PX / 2, range);
+    const { scale, tilePx: tile } = trackedWorld;
+    g.lineStyle(scale, 0x7fc8a9).strokeCircle(centre.x, centre.y - tile / 2, CHAT_RANGE_TILES * tile);
     for (const entity of trackedWorld.all()) {
       const feet = trackedWorld.feetOnScreen(entity.position)!;
-      g.fillStyle(0x2f4a40).fillRect(feet.x - TILE_PX / 2, feet.y - TILE_PX, TILE_PX, TILE_PX);
+      g.fillStyle(0x2f4a40).fillRect(feet.x - tile / 2, feet.y - tile, tile, tile);
       g.fillStyle(entity.kind === 'player' ? 0x7fc8a9 : 0xe8b04a);
-      g.fillRect(feet.x - 12, feet.y - 72, 24, 72);
-      this.names.get(entity.id)?.setPosition(feet.x, feet.y + 2);
+      g.fillRect(feet.x - tile / 4, feet.y - 1.5 * tile, tile / 2, 1.5 * tile);
+      this.names.get(entity.id)?.setPosition(feet.x, feet.y + 2 * scale).setScale(scale);
     }
   }
 }

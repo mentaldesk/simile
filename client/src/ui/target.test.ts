@@ -7,12 +7,18 @@ import { PLAYER_ID, TILE_PX, type WorldView } from './world-view';
 type Positions = Record<string, Position | undefined>;
 
 function viewOf(positions: Positions): WorldView {
+  const anchor = (id: string) => {
+    const at = positions[id];
+    return at && { x: at.x * TILE_PX, y: at.y * TILE_PX };
+  };
   return {
     positionOf: (id) => positions[id],
     npcIds: () => Object.keys(positions).filter((id) => id !== PLAYER_ID),
-    bubbleAnchor: (id) => {
-      const at = positions[id];
-      return at && { x: at.x * TILE_PX, y: at.y * TILE_PX };
+    bubbleAnchor: anchor,
+    spriteOf: (id) => {
+      const at = anchor(id);
+      const box = at && { x: at.x - TILE_PX / 2, y: at.y, width: TILE_PX, height: 1.5 * TILE_PX };
+      return box && { box, depth: box.y };
     },
   };
 }

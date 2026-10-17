@@ -12,6 +12,7 @@ const view: WorldView = {
   positionOf: (id) => positions[id],
   npcIds: () => Object.keys(positions).filter((id) => id !== PLAYER_ID),
   bubbleAnchor: () => undefined,
+  spriteOf: () => undefined,
 };
 
 const snapshot: SnapshotMessage = {

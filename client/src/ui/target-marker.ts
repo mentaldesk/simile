@@ -1,4 +1,3 @@
-import { spriteBox } from '../world/hit';
 import type { WorldView } from './world-view';
 
 export class TargetMarker {
@@ -14,7 +13,7 @@ export class TargetMarker {
   }
 
   render(npcId: string | undefined, view: WorldView, nameOf: (id: string) => string): void {
-    const box = npcId === undefined ? undefined : spriteBox(npcId, view);
+    const box = npcId === undefined ? undefined : view.spriteOf(npcId)?.box;
     this.ring.hidden = this.name.hidden = !box;
     if (!box || npcId === undefined) return;
     const name = nameOf(npcId);

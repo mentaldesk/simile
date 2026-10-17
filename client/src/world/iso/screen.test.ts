@@ -67,7 +67,7 @@ describe('iso picking', () => {
         return { box: figureBox(figure, camera, FRAME), depth: figure.depth };
       },
     };
-    return { view, boxOf: (id: string) => view.spriteOf!(id)!.box };
+    return { view, boxOf: (id: string) => view.spriteOf(id)!.box };
   }
 
   it('picks a resident from above their head down to their feet', () => {

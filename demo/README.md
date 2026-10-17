@@ -23,10 +23,10 @@ demo/run.sh
 
 It rebuilds the demo database (`server/data/demo.db`) from this folder, then starts the sim server
 with `SIMILE_VOICE=1` on port 8000 and the client on 5173. When it prints the address, open
-<http://localhost:5173> and take a step: hold an arrow key for a moment. Until that first step the
-village holds still, with the clock stopped at 10:30, so take your time setting up the recording.
-The key press is also what lets the browser play sound, which it keeps muted until the page gets a
-key press or click. Ctrl-C stops both.
+<http://localhost:5173> and take the walk-through's first step: hold the left arrow for about a
+second. Until that first step the village holds still, with the clock stopped at 10:30, so take your
+time setting up the recording. The key press is also what lets the browser play sound, which it
+keeps muted until the page gets a key press or click. Ctrl-C stops both.
 
 [`serve.py`](serve.py) does the holding. It's `simile serve` with the tick loop's wall clock
 standing still until the first `player_move` that moves the player. It also keeps the opening to
@@ -57,10 +57,13 @@ Ctrl-C), run the village on the demo database:
 
 ## The walk-through (2 to 3 minutes)
 
-Times are from your first step. Lines quoted are from a real run; yours will differ.
+Times are from your first step. Lines quoted are from a real run; yours will differ. The arrow keys
+move you on the screen, which is turned 45° from the map, so up is north-west.
 
-1. **0:00, the square.** You start south of the fountain. Take one step left and stand still. On
-   your left, Tobias walks over to Kofi and opens on the Mars story within about 10 seconds.
+1. **0:00, the square.** You start just left of the fountain. Hold the left arrow for about a second
+   and stand still. The tall building on your left fades out once you're behind it, and straight up
+   the screen from you, Tobias walks down from the lamp to Kofi and opens on the Mars story within
+   about 10 seconds.
    Tobias, the retired lockkeeper: "I'd sooner we looked after the one world we have before we set
    about remaking another." Kofi, the mural painter: "What if they clean up Earth too? Half the
    walls in this square could use a fresh coat of hope." Their chat runs about a minute.
@@ -69,10 +72,10 @@ Times are from your first step. Lines quoted are from a real run; yours will dif
    the article (feeling −0.60), and his relationships: everyone at the same first impression, with
    familiarity 0.15. Then click Kofi, whose memory of it is the opposite (+0.85), and leave the
    overlay on him.
-3. **0:45, the coffee shop terrace.** Walk north (up arrow, a few seconds). Desmond, the tenants'
-   rights caseworker, is telling Marguerite, the patent strategist, that the money should go to
-   housing; she calls Mars research "a rounding error beside housing budgets". Theirs is short, so
-   you'll catch the end.
+3. **0:45, the coffee shop terrace.** Walk up and to the right, to the coffee shop (up and right
+   arrows together, about four seconds). Desmond, the tenants' rights caseworker, is telling
+   Marguerite, the patent strategist, that the money should go to housing; she calls Mars research
+   "a rounding error beside housing budgets". Theirs is short, so you'll catch the end.
 4. **1:00, Desmond.** Still lonely, Desmond may come over and greet you ("Kia orana. Mind if I
    sit?"). Press Enter and ask him about Mars, or walk on. About 10 seconds after Kofi and Tobias
    finish, once the reflection lands, Kofi's row for Tobias jumps to the top of his table, which is
@@ -80,16 +83,17 @@ Times are from your first step. Lines quoted are from a real run; yours will dif
    (0.71 → 0.72), because Kofi's first impressions are already warm and each step further from
    neutral is harder than the last. They disagreed about Mars and came away thinking better of each
    other.
-5. **1:20, Raymond at the terminal.** Walk east along the square, then south to the news terminal
-   on its east edge, by the park gate. Raymond, the franchise broker, walked there at the start and
-   read the article live: click him to see the new memory ("Frankly, Mars is the biggest territory
-   nobody has franchised yet"). Press Enter and say "Morning, Raymond. Anything good on the terminal
-   today?", then push back: "Mars? Isn't that money better spent down here?" ("The principle is the
-   same whether it's Mars or the village: you identify the gap, you scale the solution.")
-6. **2:00, Henrietta in the park.** A few steps east, through the gate. Press Enter: "Henrietta,
-   have you heard they want to make Mars liveable?" ("Mars has no planning permission and no
-   residents' association.") Then "Raymond says it's the future. You're not tempted?" She'll be done
-   with you quickly.
+5. **1:20, Raymond at the terminal.** Walk down the screen, keeping right of the fountain, to the
+   news terminal on the square's lower-right edge, by the park gate (the down arrow, about seven
+   seconds). Raymond, the franchise broker, walked there at the start and read the article live:
+   click him to see the new memory ("Frankly, Mars is the biggest territory nobody has franchised
+   yet"). Press Enter and say "Morning, Raymond. Anything good on the terminal today?", then push
+   back: "Mars? Isn't that money better spent down here?" ("The principle is the same whether it's
+   Mars or the village: you identify the gap, you scale the solution.")
+6. **2:00, Henrietta in the park.** A few steps down and to the right (down and right arrows
+   together), through the gate. Press Enter: "Henrietta, have you heard they want to make Mars
+   liveable?" ("Mars has no planning permission and no residents' association.") Then "Raymond says
+   it's the future. You're not tempted?" She'll be done with you quickly.
 7. **2:30, what Raymond makes of you.** Talking to Henrietta ended your chat with Raymond. Click
    him again (by the terminal, or heading for the coffee shop): there's a new row for Player, with
    like and respect a little below his first impression (0.47 and 0.42, from 0.50 and 0.44) after
@@ -183,7 +187,7 @@ cd server && uv run python ../demo/check.py --runs 20
 Runs the opening headless on the fake LLM, kept to script and with the director off as `serve.py`
 has it, and counts how often each scripted beat happens: Tobias seeking out Kofi, Desmond seeking
 out Marguerite, both conversations starting, and Raymond going to read. A simulated client is
-connected throughout, and `--runs` is per way the player starts: stepping left and waiting, as in
+connected throughout, and `--runs` is per way the player starts: walking left and waiting, as in
 the walk-through, or heading for Tobias or Kofi, or for Desmond or Marguerite, within 2 seconds of
 the first step. 1000 runs of each went to script, the conversations starting 7 sim seconds in. Run
 it after changing `scenario.json`. Before the runs, it checks that the hold lets go at its cap

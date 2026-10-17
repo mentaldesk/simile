@@ -113,5 +113,6 @@ export class DialogueScene extends Phaser.Scene {
     this.fitted = fit;
     Object.assign(this.root.style, { width: `${width}px`, height: `${height}px`, transform });
     trackedWorld.viewport = { width: this.scale.width, height: this.scale.height };
+    trackedWorld.scale = 1 / fromGame;
   }
 }

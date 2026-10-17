@@ -1,6 +1,6 @@
 # Concept
 
-Simile is a simulation that takes the form of a 2d pixel art video game set in a small village. 
+Simile is a simulation that takes the form of an isometric video game set in a small village: pixel art characters walking through pre-rendered 3D scenery. 
 
 ## NPCs (agents)
 
