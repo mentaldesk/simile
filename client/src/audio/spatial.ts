@@ -5,8 +5,8 @@ export type Mix = { gain: number; pan: number };
 
 export const FULL_VOLUME_WITHIN = 2;
 /** Tiles: the server's `out_of_earshot`, checked by server/tests/voicing/test_client_earshot.py. */
-export const SILENT_BEYOND = 5.5;
-export const OVERHEARD_GAIN = 1 / 3;
+export const SILENT_BEYOND = 6.5;
+export const OVERHEARD_GAIN = 1 / 4;
 const MAX_PAN = 0.8;
 const PARTNER_MAX_PAN = 0.3;
 
