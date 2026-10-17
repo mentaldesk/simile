@@ -863,6 +863,31 @@ async def test_the_npc_hears_the_player_until_the_conversation_ends() -> None:
     assert village.players.say("And from here?", "ana") is None
 
 
+async def test_the_reply_waits_until_the_goodbye_has_been_said_and_heard() -> None:
+    village = Village(npcs=(ANA, BEN, CAL), provider=FakeProvider(default=scene_or_reply))
+    village.engine.audio = audio = Audio(village.clock)
+    village.world.bus.subscribe(LineSpoken, audio.make(4.0))
+    village.engine.start("ben", "cal")
+    while not village.spoken:
+        await village.run(0.1)
+
+    village.walk_to("ben", 1)
+    village.players.say("Hi Ben.", "ben")
+    await village.run(15)
+
+    [ended] = village.ended
+    goodbye = ended.conversation.lines[-1]
+    assert goodbye.speaker == "ben"
+    assert goodbye.text in [text.format(name="Cal") for text in GOODBYES[PLAYER]]
+    talk = village.players.talk()
+    assert talk is not None
+    reply = next(line for line in talk.conversation.lines if line.speaker == "ben")
+    heard = goodbye.timestamp + timedelta(seconds=4.0)
+    assert heard <= reply.timestamp < heard + timedelta(seconds=0.2)
+    assert ended.conversation.ended is not None and ended.conversation.ended <= reply.timestamp
+    assert village.spoken.index(goodbye) < village.spoken.index(reply)
+
+
 async def test_nobody_answers_from_too_far_or_while_asleep() -> None:
     village = Village()
     village.walk_to("ana", DEFAULT_PLAYER_CONFIG.say_range + 0.5)

@@ -38,7 +38,7 @@ def keen(
 
 def test_a_neutral_stranger_starts_where_engagement_does() -> None:
     assert keen().keen == DEFAULT_CONFIG.start_engagement
-    assert keen().reasons == ()
+    assert (keen().drawn, keen().held) == ((), ())
 
 
 @pytest.mark.parametrize(
@@ -65,17 +65,14 @@ def test_what_makes_someone_keen(warmer: Stance, cooler: Stance) -> None:
     assert warmer.leaves_after >= cooler.leaves_after
 
 
-def test_the_reasons_are_what_they_were_doing_their_company_and_what_presses() -> None:
-    assert keen(goal=Goal(Activity.SEEK, "ben"), social=0.8).reasons == (
-        "came looking for Ben",
-        "could do with company",
-    )
-    assert keen(goal=Goal(Activity.SEEK, "cal"), social=0.2, rest=0.9).reasons == (
-        "was looking for someone else",
-        "has had plenty of company today",
-        "tired",
-    )
-    assert keen(goal=Goal(Activity.NEWS, "t"), news=0.9, rest=0.7).reasons == (
+def test_what_draws_them_in_and_what_holds_them_back() -> None:
+    seeking = keen(goal=Goal(Activity.SEEK, "ben"), social=0.8, rest=0.9)
+    assert seeking.drawn == ("came looking for Ben", "could do with company")
+    assert seeking.held == ("tired",)
+    elsewhere = keen(goal=Goal(Activity.SEEK, "cal"), social=0.2)
+    assert elsewhere.drawn == ()
+    assert elsewhere.held == ("was looking for someone else", "has had plenty of company today")
+    assert keen(goal=Goal(Activity.NEWS, "t"), news=0.9, rest=0.7).held == (
         "was off to read the news",
         "itching to catch up on the news",
     )
@@ -114,13 +111,13 @@ def test_whoever_wants_to_leave_first_leaves_and_the_other_answers() -> None:
 def test_the_direction_says_whos_keen_who_leaves_when_and_how_long_it_runs() -> None:
     names = {"ana": "Ana", "ben": "Ben"}
     stances = {
-        "ana": Stance(0.8, 22, ("came looking for Ben",)),
-        "ben": Stance(0.42, 5, ("was off to read the news", "tired")),
+        "ana": Stance(0.8, 22, ("came looking for Ben", "could do with company"), ("tired",)),
+        "ben": Stance(0.42, 5, ("could do with company",), ("was off to read the news", "tired")),
     }
 
     assert direction(plan(names, stances, "ana")) == (
-        "- Ana is keen to talk: came looking for Ben.\n"
-        "- Ben is lukewarm: was off to read the news, tired.\n"
+        "- Ana is keen to talk (came looking for Ben, could do with company), though tired.\n"
+        "- Ben is lukewarm (was off to read the news, tired), though could do with company.\n"
         "- Ben will want to wrap up after about 5 lines; Ana would happily go on for 22.\n"
         "- Ana speaks first. About 7 lines in all, ending when Ben takes their leave and Ana "
         "answers."

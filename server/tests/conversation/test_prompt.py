@@ -356,6 +356,11 @@ def test_the_first_turn_has_no_transcript() -> None:
         ),
         ("Kofi: Hi.\nHenrietta Okonkwo-Bell: Hello, Kofi.", Draft("Hi.")),
         ("I told Henrietta: no.", Draft("I told Henrietta: no.")),
+        (
+            "Sit, will you? [connection, warmth]",
+            Draft("Sit, will you?", (CoreValue.CONNECTION,)),
+        ),
+        ("Hi. [laughs] Okay.", Draft("Hi. [laughs] Okay.")),
     ],
 )
 def test_parsing_a_reply(reply: str, draft: Draft) -> None:

@@ -153,8 +153,13 @@ Each call takes the next reply:
 
 `FakeProvider(default="...")` answers every call after the script runs out.
 
-With `SIMILE_LLM=fake`, the server's client answers every call with a few stock lines instead of
-calling Claude. The test suite sets it for every test, so a test that starts the real app can't
+`scene(request, lines)` answers a B2 scene request (one whose prompt says who "has just walked
+up to" whom) with its script: `lines` in turn between the two, then a goodbye and its answer, as
+many lines as the prompt plans. It's None for any other request, so a reply function can fall back:
+`FakeProvider(default=lambda request: scene(request, LINES) or "Hello.")`.
+
+With `SIMILE_LLM=fake`, the server's client answers every call with a few stock lines, and every
+B2 scene with a script of them, instead of calling Claude. The test suite sets it for every test, so a test that starts the real app can't
 reach Claude.
 
 ## How Claude Code is called

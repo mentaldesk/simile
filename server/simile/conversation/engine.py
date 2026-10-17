@@ -139,8 +139,8 @@ class Scene(Talk):
     written: list[ScriptLine] = field(default_factory=list)
     asked: int = 0
     """Lines written when the latest call was made."""
-    named: bool = False
-    """Whether a reply has named its speakers."""
+    retried: bool = False
+    continued: bool = False
     streamed: bool = False
     """No more lines are coming."""
     pending: tuple[Line, tuple[CoreValue, ...]] | None = None
@@ -404,11 +404,9 @@ class ConversationEngine:
                 self._end(scene)
 
     async def _write(self, scene: Scene) -> None:
-        config, plan = self.config, scene.plan
+        config = self.config
         spellings = {npc: [scene.names[npc], p.npc.name] for npc, p in scene.parties.items()}
-        last = scene.written[-1].speaker if scene.written else None
-        after = plan.other(last) if last else plan.opener
-        parser = ScriptParser(spellings, after, config, unnamed=not scene.named)
+        parser = ScriptParser(spellings, config)
         scene.asked = len(scene.written)
         prompt = scene.prompt
         if scene.written:
@@ -417,15 +415,14 @@ class ConversationEngine:
             prompt, system=script_system(config), model=config.model, purpose="conversation"
         )
         loop = asyncio.get_running_loop()
-        async with asyncio.timeout(config.line_timeout) as deadline, aclosing(stream) as chunks:
+        first = config.first_line_timeout
+        async with asyncio.timeout(first) as deadline, aclosing(stream) as chunks:
             async for chunk in chunks:
                 if self._add(scene, parser.feed(chunk)):
                     deadline.reschedule(loop.time() + config.line_timeout)
-                scene.named = scene.named or parser.named
                 if len(scene.written) >= config.max_lines:
                     return
         self._add(scene, parser.end())
-        scene.named = scene.named or parser.named
 
     def _add(self, scene: Scene, lines: list[ScriptLine]) -> bool:
         if scene.streamed:
@@ -442,19 +439,29 @@ class ConversationEngine:
             return
         if task.cancelled():
             scene.streamed = True
+        elif isinstance(task.exception(), TimeoutError) and not scene.written and not scene.retried:
+            scene.retried = True
+            logger.warning(
+                "%s had no line within %gs, so asking again",
+                scene.conversation.id,
+                self.config.first_line_timeout,
+            )
         elif error := task.exception():
             logger.warning("Couldn't write %s: %r", scene.conversation.id, error)
             scene.streamed = True
         elif self._unfinished(scene):
+            scene.continued = True
             self._log("%s stopped short, so asking for the rest", scene.conversation.id)
         else:
             scene.streamed = True
 
     def _unfinished(self, scene: Scene) -> bool:
-        """Whether a script whose latest call streamed to its end and added lines stopped short
-        of its planned length without a goodbye."""
+        """Whether a script that streamed to its end in its first call stopped well short of its
+        planned length, without a goodbye."""
         written = scene.written
-        if len(written) <= scene.asked or len(written) >= scene.plan.length:
+        if scene.continued or not written:
+            return False
+        if len(written) >= scene.plan.length * self.config.continue_below:
             return False
         return not any(takes_leave(line.draft.text) for line in written[-2:])
 

@@ -9,6 +9,7 @@ from simile.app import create_app
 from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import DEFAULT_CONFIG, conversations_of, create_engine
+from simile.llm.fake import GOODBYES
 from simile.llm.lifespan import CANNED, FAKE_ENV
 from simile.protocol import hub_of
 from simile.sim import (
@@ -71,7 +72,7 @@ def test_the_llm_uses_claude_unless_told_otherwise(
         assert app.state.llm.provider.name == "claude-code"
 
 
-async def run_village(hours: float) -> list[object]:
+async def run_village(hours: float, calls: list[str] | None = None) -> list[object]:
     app = create_app()
     world = World(Clock(START), FakeWallClock())
     app.state.world = world
@@ -82,6 +83,8 @@ async def run_village(hours: float) -> list[object]:
     for kind in (ConversationStarted, LineSpoken, ConversationEnded):
         world.bus.subscribe(kind, events.append)
     async with app.router.lifespan_context(app):
+        if calls is not None:
+            app.state.llm.listeners.append(lambda record: calls.append(record.purpose))
         await world.loop.run(timedelta(hours=hours))
     return events
 
@@ -93,12 +96,15 @@ async def test_the_village_talks_with_the_fake_provider(monkeypatch: pytest.Monk
 
     monkeypatch.setattr("simile.llm.claude_code.ClaudeCodeProvider.__init__", no_claude)
 
-    events = await run_village(hours=2)
+    calls: list[str] = []
+    events = await run_village(hours=2, calls=calls)
 
     ended = [event.conversation for event in events if isinstance(event, ConversationEnded)]
     assert ended
     assert all(conversation.ended for conversation in ended)
     lines = [event.line for event in events if isinstance(event, LineSpoken)]
     assert all(len(c.lines) >= DEFAULT_CONFIG.min_lines + 2 for c in ended)
-    assert {line.text for line in lines} <= set(CANNED)
+    assert all(c.lines[-1].text == GOODBYES[-1] for c in ended)
+    assert {line.text for line in lines} <= {*CANNED, *GOODBYES}
     assert len(lines) == len({line.id for line in lines})
+    assert calls.count("conversation") == len(ended)

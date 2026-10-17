@@ -2,13 +2,18 @@ import asyncio
 import inspect
 import re
 from collections import deque
-from collections.abc import AsyncGenerator, Awaitable, Callable, Iterable
+from collections.abc import AsyncGenerator, Awaitable, Callable, Iterable, Sequence
+from itertools import cycle, islice
 from typing import TYPE_CHECKING
 
 from simile.llm.provider import Request, Usage
 
 if TYPE_CHECKING:
     from pydantic import BaseModel
+
+CAST = re.compile(r"^It's [^\n]*?\. (\w+) has just walked up to (\w+)\.$", re.MULTILINE)
+PLANNED = re.compile(r"\bAbout (\d+) lines in all\b")
+GOODBYES = ("Anyway, I'd better get on. Bye for now!", "Bye, take care!")
 
 type Step = str | asyncio.Event | BaseException
 type Reply = (
@@ -66,3 +71,27 @@ class FakeProvider:
         if isinstance(reply, BaseException):
             return [reply]
         return [reply.model_dump_json()]
+
+
+def cast(request: Request) -> tuple[str, str, int] | None:
+    """Who a B2 scene request is between, the one who walks up first, and how many lines it's
+    planned to run. None for any other request."""
+    prompt = request.messages[-1].content
+    found = CAST.search(prompt)
+    if found is None:
+        return None
+    planned = PLANNED.search(prompt)
+    return found[1], found[2], int(planned[1]) if planned else 2 * len(GOODBYES)
+
+
+def scene(request: Request, lines: Sequence[str]) -> str | None:
+    """A B2 scene request answered with its script: `lines` in turn, then a goodbye and its
+    answer, as many lines in all as it's planned to run. None for any other request."""
+    found = cast(request)
+    if found is None:
+        return None
+    a, b, length = found
+    said = [*islice(cycle(lines), max(length - len(GOODBYES), 0)), *GOODBYES]
+    return "".join(
+        f"{name}: {line} [values: connection]\n" for name, line in zip(cycle((a, b)), said)
+    )

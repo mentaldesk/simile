@@ -71,7 +71,7 @@ class PlayerConfig(BaseModel):
 
     model: str = Field(
         default=Model.HAIKU_4_5,
-        description="The model that writes NPC replies to the player. Haiku 4.5 rather than B2's "
+        description="The model that writes NPC replies to the player. Haiku 4.5 rather than "
         "Haiku 5.5, which can't turn thinking off and thinks for over a second before its first "
         "word.",
     )
@@ -132,6 +132,8 @@ class PlayerTalk(Talk):
     ends: datetime | None = None
     quiet_until: datetime
     """The NPC's lines wait for the goodbye of the resident the player turned away from."""
+    pulled_from: str | None = None
+    """The conversation the NPC was pulled out of, whose end their lines wait for."""
 
     @property
     def npc(self) -> Id:
@@ -189,12 +191,15 @@ class PlayerConversations:
             if not self._free(target, interrupting=True):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
+            left = self.engine._talk_of(target)
             goodbyes = [
                 self._turned_away(talk, target) if talk is not None else None,
                 self.engine.cut(target, PLAYER),
             ]
             joined = self._start(target, opener=PLAYER_ID)
             joined.quiet_until = max([joined.quiet_until, *filter(None, goodbyes)])
+            if left is not None and left.conversation.id in self.engine._talks:
+                joined.pulled_from = left.conversation.id
         return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
@@ -338,7 +343,7 @@ class PlayerConversations:
         talk.free_at = line.timestamp + timedelta(seconds=line.duration)
         talk.said += 1
         engine.bus.publish(LineDrafted(line))
-        if line.timestamp <= now:
+        if line.timestamp <= now and not self._pulled_away(talk):
             self._speak(talk, line)
         else:
             talk.queued.append(line)
@@ -364,7 +369,7 @@ class PlayerConversations:
             self.engine._log("The player left %s", talk.conversation.id)
             self._end(talk)
             return
-        while talk.queued and talk.queued[0].timestamp <= now:
+        while talk.queued and talk.queued[0].timestamp <= now and not self._pulled_away(talk):
             ends = self.engine.still_playing(talk.conversation)
             if ends is not None and ends > now:
                 self._follow(talk, ends)
@@ -411,6 +416,22 @@ class PlayerConversations:
         else:
             talk.speaker = PLAYER_ID
             engine.llm().warm(system=party.system, model=self.config.model)
+
+    def _pulled_away(self, talk: PlayerTalk) -> bool:
+        """Whether the NPC is still saying goodbye in the conversation they were pulled out of,
+        or its audio is still playing. Once they're done, their sentences follow."""
+        engine, now = self.engine, self.engine.clock.now
+        if talk.pulled_from is None:
+            return False
+        if talk.pulled_from in engine._talks:
+            return True
+        left = engine.conversation(talk.pulled_from)
+        if left is not None and (ends := engine.still_playing(left)) is not None and ends > now:
+            return True
+        talk.pulled_from = None
+        if talk.queued and talk.queued[0].timestamp < now:
+            self._follow(talk, now)
+        return False
 
     def _end(self, talk: PlayerTalk) -> None:
         self._interrupt(talk)

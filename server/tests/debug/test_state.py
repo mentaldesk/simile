@@ -9,6 +9,7 @@ from simile.conversation.player import PlayerConversations
 from simile.debug import Village
 from simile.debug.state import MAX_FLAGS, MAX_LINES, MAX_MEMORIES, MAX_RELATIONSHIPS, MAX_TEXT
 from simile.llm import FakeProvider, LLMClient
+from simile.llm.fake import scene
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.protocol import NpcStateMessage
@@ -41,7 +42,11 @@ class Town:
             self.world.clock, self.world.bus, movement, NPCS.values(), self.memory, seed=0
         )
         self.behaviour.start()
-        llm = LLMClient(FakeProvider(default=f"{reply} [values: connection]"))
+        llm = LLMClient(
+            FakeProvider(
+                default=lambda request: scene(request, [reply]) or f"{reply} [values: connection]"
+            )
+        )
         self.engine = ConversationEngine(
             self.world.clock,
             self.world.bus,

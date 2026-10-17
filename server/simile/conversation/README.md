@@ -30,31 +30,35 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   at `leave_below` or less wants to wrap up after `min_lines`, someone at 1 after `long_talk` (30),
   in a straight line between. Whoever wants to leave first does (the one approached, on a tie), and
   the scene runs that many lines plus the goodbye and its answer. The direction says each side's
-  keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk") with
-  their reasons (came looking for them, was off to read the news, could do with company, tired),
-  who'll want to leave after about how many lines, and the length.
-- **The script.** One L1 `stream()` call with Haiku 5.5 and `purpose="conversation"` writes the
-  whole scene. The system prompt, the same for every scene, asks for it like a scene in a novel:
+  keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk"), what
+  draws them in (came looking for them, could do with company) and what holds them back (was off
+  to read the news, has had plenty of company, tired): the reasons that agree with their keenness
+  in brackets, the others after "though". Then who'll want to leave after about how many lines,
+  and the length.
+- **The script.** One L1 `stream()` call with Haiku 4.5 and `purpose="conversation"` writes the
+  whole scene. Haiku 5.5 thinks before it writes and can't be told not to: on the same scenes it
+  sometimes took over 20 s to its first line, where Haiku 4.5 took 2 to 7 s. The system prompt, the same for every scene, asks for it like a scene in a novel:
   each character knows only their own notes, what's between them and what's been said; they know
   what someone with their life and job would know, and otherwise ask, admit they don't know or give
   their own angle; it's a chat between neighbours, not a consultation; a topic the other doesn't
   take up is let go and nobody goes back over a point; pet words now and then. The prompt has, for
   each side, their persona, backstory, speaking style, values and interests, R1's `describe()` of
-  how they feel about the other told in the third person, and, each marked as only theirs, R2's
-  `recall` (memories of the other, then recent or salient ones) and the secrets others told them
-  (open `secret` flags about anyone else), and B4's `topics_to_raise`. Then what's between them:
-  R2's
-  `shared_history` events and each side's open flags about the other, which both know, a secret
-  told between them marked as known only to the two. Then where and when they are, and the
-  direction. Each line is the speaker's first name, a colon, the line and its `[values: ...]` tag.
+  how they feel about the other told in the third person, and, each marked as only theirs, any
+  grudge they hold against the other, R2's `recall` (memories of the other, then recent or salient
+  ones) and the secrets others told them (open `secret` flags about anyone else), and B4's
+  `topics_to_raise`. Then what's between them, which both know: R2's `shared_history` events and
+  their open debts, promises, broken promises and saved lives, and a secret told between them,
+  marked as known only to the two. Then where and when they are, and the direction. Each line is
+  the speaker's first name, a colon, the line and its `[values: ...]` tag.
 - **Streaming.** Each line is parsed as soon as its newline streams, cleaned like a reply
   (`parse_reply`: tag, stage directions, quotes, cut at the first sentence boundary past
-  `max_words`), and played from the first. Lines naming anyone else, narration and headings are left
-  out, and a script is cut at `max_lines`. A script that streams to its end short of its planned
-  length, without a goodbye in its last two lines, gets another call with the lines so far for the
-  rest, until it reaches the length or a call adds nothing. A reply that names nobody, in a scene
-  whose replies never have, takes turns line by line from whoever's next: that's how L1's fake
-  providers answer, so under `SIMILE_LLM=fake` scenes still run to their length a line a call.
+  `max_words`), and played from the first. Lines that don't start with one of the two names
+  (narration, headings, anyone else) are left out, and a script is cut at `max_lines`. A script
+  with no line within `first_line_timeout` real seconds is asked for once more; if that one misses
+  too, the conversation ends before anyone speaks, with a warning. A script that streams to its end
+  in under `continue_below` (half) of its planned length, without a goodbye in its last two lines,
+  gets one more call, with the lines so far, for the rest ("if it has already ended, write
+  nothing"). L1's fakes answer a scene with a whole script (`simile.llm.fake.scene`).
 - **Pacing.** A line takes as long as its speaker's voice takes to say it (at least
   `min_line_seconds`), then `turn_gap` before the next. That's the voice's measured rate
   ([*Speaking rates*](../voice/README.md#speaking-rates)), or `words_per_minute` (200) for a voice
@@ -90,7 +94,7 @@ resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
   they're asleep. One talking to another resident is pulled out of it (see *Interruptions*) and
-  answers once their goodbye ends. From then on, the player's lines reach the NPC for as long as the
+  answers once that conversation has ended and their goodbye's audio has played. From then on, the player's lines reach the NPC for as long as the
   conversation lasts. Saying something to a different NPC who is awake ends the one going on: the
   old partner says a short canned goodbye, and the new resident's first line waits until it ends.
   Saying it to one who's asleep changes nothing. An NPC who walks up to the player (B1's seek) says

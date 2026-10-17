@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
 from simile.behaviour import Activity, Goal, Need
@@ -18,6 +18,7 @@ BUSY: dict[Activity, str] = {
 }
 
 KEEN = ((0.75, "is keen to talk"), (0.55, "is happy to chat"), (0.4, "is lukewarm"))
+WILLING = KEEN[1][0]
 RELUCTANT = "would rather not talk"
 LONELY, SOCIABLE = 0.7, 0.3
 
@@ -25,11 +26,12 @@ LONELY, SOCIABLE = 0.7, 0.3
 @dataclass(frozen=True)
 class Stance:
     """How someone comes into a conversation: how keen they are, from 0 to 1, after how many
-    lines they'd want to wrap it up, and why."""
+    lines they'd want to wrap it up, and what draws them in or holds them back."""
 
     keen: float
     leaves_after: int
-    reasons: tuple[str, ...] = ()
+    drawn: tuple[str, ...] = ()
+    held: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,20 +84,20 @@ def stance(
     keen -= config.keen_pressing * max(0.0, level - config.pressing)
     keen = min(max(keen, 0.0), 1.0)
 
-    reasons = []
+    drawn, held = [], []
     if seeking:
-        reasons.append(f"came looking for {other}")
+        drawn.append(f"came looking for {other}")
     elif goal.activity is Activity.SEEK:
-        reasons.append("was looking for someone else")
+        held.append("was looking for someone else")
     elif goal.activity in BUSY:
-        reasons.append(BUSY[goal.activity])
+        held.append(BUSY[goal.activity])
     if social >= LONELY:
-        reasons.append("could do with company")
+        drawn.append("could do with company")
     elif social <= SOCIABLE:
-        reasons.append("has had plenty of company today")
+        held.append("has had plenty of company today")
     if level > config.pressing:
-        reasons.append(PRESSING[need])
-    return Stance(round(keen, 3), leaves_after(keen, config), tuple(reasons))
+        held.append(PRESSING[need])
+    return Stance(round(keen, 3), leaves_after(keen, config), tuple(drawn), tuple(held))
 
 
 def leaves_after(keen: float, config: ConversationConfig = DEFAULT_CONFIG) -> int:
@@ -128,8 +130,12 @@ def direction(plan: Plan) -> str:
     lines = []
     for npc, name in plan.names.items():
         stance = plan.stances[npc]
-        why = f": {', '.join(stance.reasons)}" if stance.reasons else ""
-        lines.append(f"- {name} {keenness(stance.keen)}{why}.")
+        agree, disagree = (stance.drawn, stance.held)
+        if stance.keen < WILLING:
+            agree, disagree = disagree, agree
+        why = f" ({', '.join(agree)})" if agree else ""
+        though = f", though {joined(disagree)}" if disagree else ""
+        lines.append(f"- {name} {keenness(stance.keen)}{why}{though}.")
     leaver, stayer = plan.leaver, plan.other(plan.leaver)
     leaving, staying = plan.stances[leaver], plan.stances[stayer]
     names = plan.names
@@ -146,6 +152,10 @@ def direction(plan: Plan) -> str:
         f"{names[leaver]} takes their leave{answer}."
     )
     return "\n".join(lines)
+
+
+def joined(reasons: Sequence[str]) -> str:
+    return reasons[0] if len(reasons) == 1 else f"{', '.join(reasons[:-1])} and {reasons[-1]}"
 
 
 def keenness(keen: float) -> str:

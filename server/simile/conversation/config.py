@@ -148,14 +148,30 @@ class ConversationConfig(BaseModel):
     turn_gap: float = Field(default=0.5, ge=0, description="Sim seconds between two lines.")
 
     model: str = Field(
-        default=Model.HAIKU_5_5,
-        description="The model that writes lines. See *Which model* in the L1 README.",
+        default=Model.HAIKU_4_5,
+        description="The model that writes scenes. Haiku 4.5 rather than Haiku 5.5, whose "
+        "thinking can't be turned off and held some scenes' first line back over 20 s. See "
+        "*Which model* in the L1 README.",
     )
     line_timeout: float = Field(
         default=30,
         gt=0,
-        description="Real seconds a line may take to write, or a script's next line to stream, "
-        "before the call counts as failed.",
+        description="Real seconds a line may take to write, or a script's next line to stream "
+        "after its first, before the call counts as failed.",
+    )
+    first_line_timeout: float = Field(
+        default=10,
+        gt=0,
+        description="Real seconds a script's first line may take to stream. A script with no "
+        "line by then is asked for once more, and if that one misses too, the conversation ends "
+        "before anyone speaks.",
+    )
+    continue_below: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Share of its planned length a script must stop short of, without a "
+        "goodbye in its last two lines, to get one more call for the rest.",
     )
     max_words: int = Field(
         default=40,

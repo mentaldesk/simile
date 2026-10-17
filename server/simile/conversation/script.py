@@ -12,7 +12,6 @@ from simile.social import describe
 
 BETWEEN: dict[FlagKind, str] = {
     FlagKind.DEBT: "{about} still owes {owner} for {description}.",
-    FlagKind.GRUDGE: "{owner} holds a grudge against {about} over {description}.",
     FlagKind.PROMISE: "{about} promised {owner}: {description}.",
     FlagKind.BROKEN_PROMISE: "{about} broke a promise to {owner}: {description}.",
     FlagKind.SAVED_LIFE: "{about} once saved {owner}'s life: {description}.",
@@ -101,8 +100,8 @@ def scene_prompt(
     where = f"at {place}" if place else "out in the street"
     parts = [
         f"It's {now:%H:%M}, {where}. {names[a.npc.id]} has just walked up to {names[b.npc.id]}.",
-        character(a, names[b.npc.id]),
-        character(b, names[a.npc.id]),
+        character(a, names[b.npc.id], grudges(history, a.npc.id)),
+        character(b, names[a.npc.id], grudges(history, b.npc.id)),
     ]
     between = [
         f"- {ago(event.timestamp, now)}, {names.get(event.actor, event.actor)}: {event.action}"
@@ -116,7 +115,10 @@ def scene_prompt(
             description=flag.description.strip().rstrip("."),
         )
         for flag in history.flags
-        if flag.resolved is None and flag.owner in names and flag.about in names
+        if flag.resolved is None
+        and flag.kind in BETWEEN
+        and flag.owner in names
+        and flag.about in names
     ]
     if between:
         parts.append("## Between them\n" + "\n".join(between))
@@ -124,7 +126,15 @@ def scene_prompt(
     return "\n\n".join(parts)
 
 
-def character(side: Character, other: str) -> str:
+def grudges(history: SharedHistory, owner: Id) -> list[str]:
+    return [
+        flag.description.strip().rstrip(".")
+        for flag in history.flags
+        if flag.kind is FlagKind.GRUDGE and flag.owner == owner and flag.resolved is None
+    ]
+
+
+def character(side: Character, other: str, grudges: Sequence[str] = ()) -> str:
     npc, name = side.npc, first_name(side.npc)
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
     most = ", ".join(value_name(value) for value, _ in ranked[:5])
@@ -138,6 +148,10 @@ def character(side: Character, other: str) -> str:
         f"Cares most about: {most}. Cares least about: {least}.\n"
         f"Interests: {', '.join(npc.interests)}.",
         feelings,
+    ]
+    parts += [
+        f"{name} holds a grudge against {other} over {grudge}, which only {name} knows."
+        for grudge in grudges
     ]
     if side.memories:
         parts.append(
@@ -161,7 +175,8 @@ def continue_prompt(scene: str, written: Sequence[ScriptLine], names: Mapping[Id
     so_far = "\n".join(f"{names[line.speaker]}: {line.draft.text}" for line in written)
     return (
         f"{scene}\n\n## The scene so far\n{so_far}\n\n"
-        "Write the rest of the scene, from the next line to the goodbyes, in the same format."
+        "Write the rest of the scene, from the next line to the goodbyes, in the same format. "
+        "If it has already ended, write nothing."
     )
 
 
@@ -178,25 +193,15 @@ def third_person(text: str, name: str) -> str:
 
 
 class ScriptParser:
-    """A script's lines as they finish streaming, each cleaned like `parse_reply`. Lines without
-    a speaker's name are left out. With `unnamed`, if no line has one, they take turns from
-    `next_speaker` once the stream ends, as the fake providers' replies do."""
+    """A script's lines as they finish streaming, each cleaned like `parse_reply`. Lines that
+    don't start with a speaker's name are left out."""
 
     def __init__(
-        self,
-        names: Mapping[Id, Sequence[str]],
-        next_speaker: Id,
-        config: ConversationConfig = DEFAULT_CONFIG,
-        *,
-        unnamed: bool = True,
+        self, names: Mapping[Id, Sequence[str]], config: ConversationConfig = DEFAULT_CONFIG
     ) -> None:
         self.names = {npc: list(spelt) for npc, spelt in names.items()}
-        self.next_speaker = next_speaker
         self.config = config
-        self.unnamed = unnamed
-        self.named = False
         self._text = ""
-        self._unlabelled: list[str] = []
         spellings = sorted(
             ((spelling, npc) for npc, spelt in names.items() for spelling in spelt),
             key=lambda item: -len(item[0]),
@@ -211,30 +216,14 @@ class ScriptParser:
         return [line for text in complete if (line := self._line(text))]
 
     def end(self) -> list[ScriptLine]:
-        """The rest, once the stream has finished."""
-        found = self.feed("\n")
-        if self.named or not self.unnamed:
-            return found
-        lines = []
-        for text in self._unlabelled:
-            speaker = self.next_speaker
-            if line := self._spoken(speaker, text):
-                lines.append(line)
-        return lines
+        """The last line, once the stream has finished."""
+        return self.feed("\n")
 
     def _line(self, text: str) -> ScriptLine | None:
         labelled = self._label.match(text)
         if labelled is None:
-            if text.strip() and not self.named:
-                self._unlabelled.append(text)
             return None
-        self.named = True
-        return self._spoken(self._speakers[labelled["name"].lower()], labelled["text"])
-
-    def _spoken(self, speaker: Id, text: str) -> ScriptLine | None:
+        speaker = self._speakers[labelled["name"].lower()]
         others = [name for npc, spelt in self.names.items() if npc != speaker for name in spelt]
-        draft = parse_reply(text, self.names[speaker], others, self.config)
-        if not draft.text:
-            return None
-        self.next_speaker = next((npc for npc in self.names if npc != speaker), speaker)
-        return ScriptLine(speaker, draft)
+        draft = parse_reply(labelled["text"], self.names[speaker], others, self.config)
+        return ScriptLine(speaker, draft) if draft.text else None

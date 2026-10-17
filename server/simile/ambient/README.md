@@ -49,10 +49,11 @@ it for `--warmup` (60) sim minutes with nobody connected, then connects a player
   resident within 12 tiles they haven't talked to for 10 minutes and say hello. They answer anyone
   who greets them, say two to four lines, each 4 to 10 s after the resident finishes, then
   goodbye. That's about 9 conversations with the player in 30 minutes.
-- **The fake LLM** (`Padded`) writes lines of 33 words, as long as Claude's in D2's soak, each
-  touching two values, 60% of the time from the speaker's top five. A line takes 3.1 sim seconds
-  to write, a reply to the player 1.1 s to its first sentence and 2 s in all, and a reflection
-  13.9 s, I4's medians. Reflections store nothing.
+- **The fake LLM** (`Padded`) writes a B2 scene as a script as long as its plan, in lines of 16
+  words, as long as Haiku 4.5's in B2's comparison, the first streamed after 2.3 sim seconds and
+  each next 0.4 s later. Replies to the player are 33 words, as in D2's soak, 1.1 s to their first
+  sentence and 2 s in all, and a reflection takes 13.9 s, I4's medians. Each line touches two
+  values, 60% of the time from the speaker's top five. Reflections store nothing.
 
 The report gives the mean, least and most over the runs of: the share of the time an NPC
 conversation was in earshot, overheard conversations (ones the player heard a line of) every 5

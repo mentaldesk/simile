@@ -14,6 +14,8 @@ from simile.conversation.script import (
     script_system,
     third_person,
 )
+from simile.llm import Message, Request
+from simile.llm.fake import cast
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import Aspect, CoreValue, Flag, FlagKind, InteractionEvent, Memory, MemoryKind
@@ -26,13 +28,13 @@ NAMES = {"kofi": ["Kofi", KOFI.name], "henrietta": ["Henrietta", HENRIETTA.name]
 C, H = CoreValue.CONNECTION, CoreValue.HONESTY
 
 
-def parser(**kwargs: object) -> ScriptParser:
-    return ScriptParser(NAMES, "kofi", **kwargs)  # type: ignore[arg-type]
+def parser() -> ScriptParser:
+    return ScriptParser(NAMES)
 
 
-def streamed(text: str, size: int = 3, **kwargs: object) -> list[ScriptLine]:
+def streamed(text: str, size: int = 3) -> list[ScriptLine]:
     """`text` fed to a parser `size` characters at a time, then ended."""
-    found = parser(**kwargs)
+    found = parser()
     lines = [line for n in range(0, len(text), size) for line in found.feed(text[n : n + size])]
     return lines + found.end()
 
@@ -98,31 +100,16 @@ def test_narration_headings_and_other_people_are_left_out() -> None:
 
 
 def test_a_long_line_is_cut_at_a_sentence_past_max_words() -> None:
-    script = ScriptParser(NAMES, "kofi", ConversationConfig(max_words=4))
+    script = ScriptParser(NAMES, ConversationConfig(max_words=4))
 
     lines = script.feed("Kofi: One two three four. Five six. Seven.\n")
 
     assert lines == [ScriptLine("kofi", Draft("One two three four."))]
 
 
-def test_lines_without_names_take_turns_once_the_stream_ends() -> None:
-    text = "Morning! How are things?\nOh, not bad.\n\nCan't complain."
-
-    assert [(line.speaker, line.draft.text) for line in streamed(text)] == [
-        ("kofi", "Morning! How are things?"),
-        ("henrietta", "Oh, not bad."),
-        ("kofi", "Can't complain."),
-    ]
-    assert streamed(text, unnamed=False) == []
+def test_lines_without_a_speakers_name_are_left_out() -> None:
+    assert streamed("Morning! How are things?\nOh, not bad.") == []
     assert [line.speaker for line in streamed("Hello.\nKofi: Hi.\nBye.")] == ["kofi"]
-
-
-def test_the_next_speaker_after_unnamed_lines_is_whoever_didnt_speak_last() -> None:
-    script = ScriptParser(NAMES, "henrietta")
-    script.feed("Lovely weather.")
-
-    assert script.end() == [ScriptLine("henrietta", Draft("Lovely weather."))]
-    assert script.next_speaker == "kofi"
 
 
 @pytest.mark.parametrize(
@@ -224,12 +211,17 @@ def test_a_scene_has_both_sides_whats_between_them_and_the_direction() -> None:
     prompt = scene_prompt(kofi, henrietta, history, "The Daily Grind", NOW, PLAN)
 
     intro, kofis, henriettas, between, direction = prompt.split("\n\n## ")
+    assert cast(Request((Message("user", prompt),), "", "haiku")) == ("Kofi", "Henrietta", 5)
     assert intro == "It's 09:30, at The Daily Grind. Kofi has just walked up to Henrietta."
     assert kofis.startswith(f"Kofi\n{KOFI.name}, aged 21. Occupation: {KOFI.occupation}.")
     assert f"How Kofi speaks: {KOFI.speaking_style}" in kofis
     assert "Cares most about: open mindedness, adventure, creativity" in kofis
     assert "Cares least about: discipline, security, obedience." in kofis
-    assert "Kofi can't stand Henrietta but trusts them. Kofi knows them a little." in kofis
+    assert (
+        "Kofi can't stand Henrietta but trusts them. Kofi knows them a little.\n\n"
+        "Kofi holds a grudge against Henrietta over the mural, which only Kofi knows."
+    ) in kofis
+    assert "grudge" not in henriettas
     assert "On Kofi's mind, which only Kofi knows:\n- Odalys fed half" in kofis
     assert (
         "Told to Kofi in confidence, which only Kofi knows:\n"
@@ -246,7 +238,6 @@ def test_a_scene_has_both_sides_whats_between_them_and_the_direction() -> None:
         "Between them\n"
         "- 3 days ago, Henrietta: reported his mural to the council\n"
         "- Kofi still owes Henrietta for a broken window.\n"
-        "- Kofi holds a grudge against Henrietta over the mural.\n"
         "- Kofi told Henrietta a secret: he can't read music. Only the two of them know it."
     )
     assert direction.startswith("Direction\n- Kofi is keen to talk.\n")
@@ -288,5 +279,6 @@ def test_asking_for_the_rest_shows_the_scene_so_far() -> None:
 
     assert prompt == (
         "SCENE\n\n## The scene so far\nKofi: Morning!\nHenrietta: Hm.\n\n"
-        "Write the rest of the scene, from the next line to the goodbyes, in the same format."
+        "Write the rest of the scene, from the next line to the goodbyes, in the same format. "
+        "If it has already ended, write nothing."
     )

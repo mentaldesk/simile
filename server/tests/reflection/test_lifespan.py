@@ -12,6 +12,7 @@ from simile.app import create_app
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import create_engine
 from simile.llm import FakeProvider, LLMClient, Request, Usage
+from simile.llm.fake import scene
 from simile.memory import memory_of
 from simile.reflection import SYSTEM, Deed, Extraction, Reflection
 from simile.schema import Conversation, Line, Memory, MemoryKind, Relationship
@@ -52,7 +53,8 @@ class Village:
     def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
         if request.system.startswith(SYSTEM):
             return FakeProvider([reflect_on]).stream(request)
-        return FakeProvider(["Lovely weather today. [values: connection]"]).stream(request)
+        reply = scene(request, ["Lovely weather today."]) or "Lovely weather today."
+        return FakeProvider([reply]).stream(request)
 
 
 def conversation(started: datetime) -> Conversation:

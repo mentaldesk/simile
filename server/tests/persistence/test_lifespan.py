@@ -12,6 +12,7 @@ from simile.behaviour.mind import create_behaviour
 from simile.conversation import conversations_of, create_engine
 from simile.conversation.player import PlayerConversations
 from simile.llm import FakeProvider, LLMClient, Request, Usage
+from simile.llm.fake import scene
 from simile.memory import MemoryStore, memory_of
 from simile.news import news_of
 from simile.persistence import SavedWorld, WorldStore, capture
@@ -117,7 +118,8 @@ class Chat:
     def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
         if request.system.startswith(SYSTEM):
             return FakeProvider([reflection()]).stream(request)
-        return FakeProvider(["Lovely weather today. [values: connection]"]).stream(request)
+        reply = scene(request, ["Lovely weather today."]) or "Lovely weather today."
+        return FakeProvider([reply]).stream(request)
 
 
 @pytest.mark.anyio
