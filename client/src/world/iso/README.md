@@ -10,15 +10,38 @@ the manifests, the projection, the depth slices and the ground heights.
 
 ## Assets
 
-`assets.ts` globs `content/art/iso/scenery/`. Manifests are imported `?url` and images `?no-inline`,
-so the build emits each file under `dist/assets/` with a hash and inlines none of them. The scene
-imports `assets.ts` itself, once it starts, so the map of their URLs is a lazy chunk and the top-down
-page loads none of it. The scene then fetches one manifest and the 115 images it names (about
-4.5 MB), so only the set in use is downloaded. In dev, Vite serves them straight from `content/`.
+`assets.ts` globs `content/art/iso/scenery/` and the character sheets in `content/art/iso/characters/`.
+Manifests are imported `?url`, images `?no-inline` and `characters.json` as data, so the build emits
+each image under `dist/assets/` with a hash and inlines none of them. The scene imports `assets.ts`
+itself, once it starts, so the map of their URLs is a lazy chunk and the top-down page loads none of
+it. In dev, Vite serves them straight from `content/`.
 
-**Which set:** the one whose hours hold the sim time from the snapshot or the latest `clock` message
-(`time-of-day.ts`). The scene waits up to `CLOCK_WAIT_MS` for it, then draws the afternoon. The spans
-mirror `lighting.py`, and a test checks them against every manifest.
+## Time of day
+
+The sim clock (`SimClock` in `time-of-day.ts`) is the latest time from the snapshot or a `clock`
+message, run on at the clock's speed in real time. The scene waits up to `CLOCK_WAIT_MS` for it, then
+draws `DEFAULT_HOUR`, the afternoon.
+
+- **Which sets:** `blend(hour)` mirrors `lighting.blend`: one set, or two with smoothstep weights in
+  the 60 sim minutes around each boundary, outgoing first. A test checks it against values from
+  `lighting.py`, and the spans against every manifest.
+- **Loading** (`SetLoader` in `crossfade.ts`): a set is about 4.5 MB of images. Only the sets the
+  clock needs now are in memory, plus any whose fade starts within `PRELOAD_SECONDS` of real time,
+  up to `MAX_LOOKAHEAD_HOURS` of sim time. A set that's no longer needed is destroyed with its
+  textures. Until every set the hour needs has loaded, the scene keeps drawing what it drew, so a
+  jump in the clock switches once.
+- **Uploads** (`Uploads`): images are decoded off the main thread with `createImageBitmap`, then
+  added as textures and placed in the scene `UPLOAD_MS_PER_FRAME` at a time, about 8 frames for a
+  set. The set's drop-shadow mask is built then too, rather than on the first frame of its fade.
+- **Crossfade:** every set has the same objects and slices, so each slice is drawn once per set, the
+  incoming image `PAIR_DEPTH` above the outgoing one, at alpha = weight (`layerAlphas`). The outgoing
+  image stays opaque until the last 5% of the weight, so at most 1.25% of the background shows
+  through and soft edges end the fade as one image draws them. A cut-away building fades both images
+  so that together they're as see-through as one. The two grounds pair the same way.
+- **Characters** (`lighting.ts`): each set's tint times the light map's tint at the feet, scaled
+  down to keep its hue, then blended by weight. Each set has its own drop shadow (`shadow.ts`), away
+  from its sun at its strength times the light map's sun at the feet times its weight, so both show
+  mid-fade, each pointing its own way. The contact shadow under the feet doesn't change.
 
 ## Drawing
 
@@ -36,8 +59,13 @@ mirror `lighting.py`, and a test checks them against every manifest.
   at the edges and corners so the player stays within `TARGET_REACH` of the centre.
 - **Controls** (`controls.ts`): arrows and WASD are screen directions, turned into grid directions,
   so up is north-west. The player still walks and collides in tiles.
-- **Characters**: `scenes/iso-characters.ts` draws today's atlases at 3×, anchored at the feet and
-  facing their direction of travel on screen, until A2b's sprites replace them (#144).
+- **Characters**: `IsoCharacters` in `scenes/iso-characters.ts` places, tints and shadows sprites
+  from any `CharacterArt`: a `SpriteFrame` (the drawn size, the feet and the head's height) and a
+  sprite per character with a `pose` for each step. Picking, bubbles, the cutaway and the lighting
+  use only those. `sheetArt` is A2b's sheets: anchored at the feet, facing the sheet direction
+  nearest their step on the map (`sheets.ts`), with the walk played faster or slower with how fast
+  they move, so the feet don't slide, and the idle when they stop. Other art replaces `sheetArt`
+  alone. Shadows are drawn on the ground, under every object.
 
 ## Resolution
 
@@ -58,10 +86,9 @@ and steps up there, and past 1920 px the view stays 15 to 30 tiles across. Top-d
   after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point.
   `npcAt` in `world/hit.ts` goes front to back by depth and picks the first opaque one there, else
   the first whose box holds the point, so click-to-talk and the debug overlay pick the resident in
-  front where sprites overlap. A resident is picked by their body, up to 1.5 tiles above their tile.
-- **Bubbles**: `bubbleAnchor(id)` is the top centre of that box: the feet on screen, ground height
-  included, less the sprite's height.
+  front where sprites overlap. The box is the sprite's frame down to the feet, so the dialogue UI's
+  ring sits at the feet.
+- **Bubbles**: `bubbleAnchor(id)` is the top centre of that box: the top of the frame, a little above
+  the head.
 - **Audio**: positions are tiles turned 45° (`screenAligned`), so audio's pan follows left and right
   on screen. Distances don't change, so earshot is still in tiles.
-
-The crossfade, tint and drop shadow are #144's.

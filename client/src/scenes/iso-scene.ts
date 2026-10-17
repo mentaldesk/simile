@@ -15,38 +15,56 @@ import {
 import {
   CLOCK_WAIT_MS,
   Cutaway,
+  DEFAULT_HOUR,
   figureAt,
   figureBox,
-  FIGURE_HEIGHT,
   gridDirection,
   GROUND_DEPTH,
   groundHeights,
   hides,
   isoScroll,
   isoZoom,
-  lightingSetAt,
+  layerAlphas,
+  LightMap,
+  PAIR_DEPTH,
+  residentLight,
   sceneryImages,
   screenAligned,
+  SetLoader,
   simClock,
   sliceDraws,
+  UPLOAD_MS_PER_FRAME,
+  Uploads,
   type Figure,
+  type IsoTile,
+  type Layer,
+  type LightingSet,
   type SceneryManifest,
   type SceneryObject,
   type TiledMapWithTiles,
 } from '../world/iso';
-import { IsoCharacters } from './iso-characters';
+import { IsoCharacters, sheetArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
 
 const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
 
 type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
-type Building = { object: SceneryObject; slices: Phaser.GameObjects.Image[]; cutaway: Cutaway };
-type Scenery = {
+type Assets = typeof import('../world/iso/assets');
+type Placed = { image: Phaser.GameObjects.Image; depth: number };
+/** `rank` is the set's place in the drawn layers, or -1 while it's hidden. */
+type SetScenery = {
   manifest: SceneryManifest;
-  buildings: Building[];
-  characters: IsoCharacters;
+  lightMap: LightMap;
+  bitmaps: ImageBitmap[];
+  placed: Placed[];
+  objects: Map<string, Placed[]>;
+  rank: number;
+};
+type Geometry = {
+  manifest: SceneryManifest;
   heightAt: (position: Position) => number;
+  buildings: { object: SceneryObject; cutaway: Cutaway }[];
 };
 
 const textureKey = (image: string) => `iso/${image}`;
@@ -55,8 +73,17 @@ const textureKey = (image: string) => `iso/${image}`;
 export class IsoScene extends Phaser.Scene {
   private readonly collision = CollisionMap.of(village);
   private readonly throttle = new MoveThrottle();
+  private readonly sets = new SetLoader(
+    (set) => this.loadSet(set),
+    (set) => this.unloadSet(set),
+  );
+  private readonly loaded = new Map<LightingSet, SetScenery>();
+  private readonly uploads = new Uploads();
   private keys!: Keys;
-  private scenery?: Scenery;
+  private assets?: Assets;
+  private charactersLoad?: Promise<IsoCharacters>;
+  private characters?: IsoCharacters;
+  private geometry?: Geometry;
 
   constructor() {
     super(ISO_SCENE);
@@ -85,11 +112,15 @@ export class IsoScene extends Phaser.Scene {
       server.on('snapshot', () => this.throttle.forget()),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
-    void this.loadScenery();
+    void this.start();
   }
 
   update(time: number, delta: number): void {
-    if (!this.scenery) return;
+    if (!this.assets) return;
+    this.uploads.run(UPLOAD_MS_PER_FRAME);
+    const layers = this.sets.update(simClock.hour() ?? DEFAULT_HOUR, simClock.speed);
+    const { characters, geometry } = this;
+    if (layers.length === 0 || !characters || !geometry) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
     const player = world.player!;
     player.move(gridDirection(this.direction()), dt, this.collision);
@@ -98,86 +129,147 @@ export class IsoScene extends Phaser.Scene {
     const position = this.throttle.next(player.position, time / 1000);
     if (position) server.send({ type: 'player_move', position });
 
-    const bodies = new Map<string, Body>([...world.npcs].map(([id, { mover }]) => [id, mover]));
-    bodies.set(PLAYER_ID, player);
-    this.scenery.characters.draw(bodies, (at) => this.figureAt(at));
-
     const figure = this.figureAt(player.position);
     this.cutAway(figure, dt);
+    this.drawLayers(layers);
+
+    const bodies = new Map<string, Body>([...world.npcs].map(([id, { mover }]) => [id, mover]));
+    bodies.set(PLAYER_ID, player);
+    const lit = layers.map(({ set, weight }) => ({
+      weight,
+      light: this.assets!.characterLights[set],
+      lightMap: this.loaded.get(set)!.lightMap,
+    }));
+    characters.draw(bodies, dt, (at) => this.figureAt(at), layers, (feet) => residentLight(lit, feet));
     this.follow(figure);
   }
 
-  private async loadScenery(): Promise<void> {
-    const set = lightingSetAt(await simClock.known(CLOCK_WAIT_MS));
-    const { imageUrl, manifestUrl } = await import('../world/iso/assets');
-    const key = `iso/${set}`;
-    this.load.json(key, manifestUrl(set));
-    await this.loadQueued();
-    const manifest = this.cache.json.get(key) as SceneryManifest;
-    for (const image of sceneryImages(manifest)) this.load.image(textureKey(image), imageUrl(image));
-    await this.loadQueued();
-    this.drawScenery(manifest);
+  private async start(): Promise<void> {
+    await simClock.known(CLOCK_WAIT_MS);
+    this.assets = await import('../world/iso/assets');
   }
 
-  private loadQueued(): Promise<void> {
-    return new Promise((resolve) => {
-      this.load.once(Phaser.Loader.Events.COMPLETE, () => resolve());
-      this.load.start();
-    });
+  private async loadCharacters(tile: IsoTile, assets: Assets): Promise<IsoCharacters> {
+    const art = sheetArt(assets.characterManifest, tile, assets.sheetUrl, assets.loadImage);
+    return (this.characters = await IsoCharacters.load(this, tile, art, assets.characterLights));
   }
 
-  private drawScenery(manifest: SceneryManifest): void {
-    for (const { image, x, y } of manifest.ground.chunks) {
-      this.add.image(x, y, textureKey(image)).setOrigin(0).setDepth(GROUND_DEPTH);
-    }
-    const buildings: Building[] = [];
-    for (const object of manifest.objects) {
-      const slices = sliceDraws(object, manifest.tile).map(({ x, y, cropX, cropWidth, depth }) =>
-        this.add
-          .image(x, y, textureKey(object.image))
-          .setOrigin(0)
-          .setCrop(cropX, 0, cropWidth, object.height)
-          .setDepth(depth),
-      );
-      if (object.kind === 'building') buildings.push({ object, slices, cutaway: new Cutaway() });
-    }
-    this.scenery = {
+  private async loadSet(set: LightingSet): Promise<void> {
+    const assets = this.assets!;
+    const manifest = (await (await fetch(assets.manifestUrl(set)!)).json()) as SceneryManifest;
+    this.charactersLoad ??= this.loadCharacters(manifest.tile, assets);
+    const images = sceneryImages(manifest);
+    const [pixels, bitmaps, characters] = await Promise.all([
+      assets.imagePixels(assets.imageUrl(manifest.light_map.image)!),
+      Promise.all(images.map((image) => assets.loadBitmap(assets.imageUrl(image)!))),
+      this.charactersLoad,
+    ]);
+    const scenery: SetScenery = {
       manifest,
-      buildings,
-      characters: new IsoCharacters(this, manifest.tile),
+      lightMap: new LightMap(manifest.light_map, pixels),
+      bitmaps,
+      placed: [],
+      objects: new Map(),
+      rank: -1,
+    };
+    await this.uploads.add([
+      ...images.map((image, i) => () => {
+        this.textures.addImage(textureKey(image), bitmaps[i] as unknown as HTMLImageElement);
+      }),
+      ...this.placing(scenery),
+      () => characters.prepare(set),
+    ]);
+    this.loaded.set(set, scenery);
+    this.geometry ??= {
+      manifest,
       heightAt: groundHeights(village as TiledMapWithTiles, manifest.ground.heights),
+      buildings: manifest.objects
+        .filter(({ kind }) => kind === 'building')
+        .map((object) => ({ object, cutaway: new Cutaway() })),
     };
   }
 
+  private placing(scenery: SetScenery): (() => void)[] {
+    const { manifest } = scenery;
+    const place = (x: number, y: number, image: string, depth: number) => {
+      const placed = {
+        image: this.add.image(x, y, textureKey(image)).setOrigin(0).setDepth(depth).setVisible(false),
+        depth,
+      };
+      scenery.placed.push(placed);
+      return placed;
+    };
+    return [
+      ...manifest.ground.chunks.map(({ image, x, y }) => () => {
+        place(x, y, image, GROUND_DEPTH);
+      }),
+      ...manifest.objects.map((object) => () => {
+        const slices = sliceDraws(object, manifest.tile).map(({ x, y, cropX, cropWidth, depth }) => {
+          const slice = place(x, y, object.image, depth);
+          slice.image.setCrop(cropX, 0, cropWidth, object.height);
+          return slice;
+        });
+        scenery.objects.set(object.id, slices);
+      }),
+    ];
+  }
+
+  private unloadSet(set: LightingSet): void {
+    const scenery = this.loaded.get(set);
+    if (!scenery) return;
+    this.loaded.delete(set);
+    for (const { image } of scenery.placed) image.destroy();
+    for (const image of sceneryImages(scenery.manifest)) this.textures.remove(textureKey(image));
+    for (const bitmap of scenery.bitmaps) bitmap.close();
+  }
+
+  private drawLayers(layers: readonly Layer[]): void {
+    const open = layerAlphas(layers);
+    for (const [set, scenery] of this.loaded) {
+      const rank = layers.findIndex((layer) => layer.set === set);
+      if (rank !== scenery.rank) {
+        scenery.rank = rank;
+        for (const { image, depth } of scenery.placed) {
+          image.setVisible(rank >= 0).setDepth(depth + Math.max(rank, 0) * PAIR_DEPTH);
+        }
+      }
+      if (rank < 0) continue;
+      for (const { image } of scenery.placed) image.setAlpha(open[rank]);
+      for (const { object, cutaway } of this.geometry!.buildings) {
+        if (cutaway.alpha === 1) continue;
+        const faded = layerAlphas(layers, cutaway.alpha)[rank];
+        for (const { image } of scenery.objects.get(object.id) ?? []) image.setAlpha(faded);
+      }
+    }
+  }
+
   private figureAt(position: Position): Figure {
-    const { manifest, heightAt } = this.scenery!;
-    return figureAt(position, manifest.tile, heightAt);
+    const { manifest, heightAt } = this.geometry!;
+    return figureAt(position, manifest.tile, heightAt, this.characters!.frame);
   }
 
   private spriteOf(id: string): ScreenSprite | undefined {
     const position = world.positionOf(id);
-    if (!this.scenery || !position) return undefined;
+    const characters = this.characters;
+    if (!this.geometry || !characters || !position) return undefined;
     const figure = this.figureAt(position);
-    const box = figureBox(figure, this.cameras.main);
-    const { characters } = this.scenery;
+    const box = figureBox(figure, this.cameras.main, characters.frame);
     return { box, depth: figure.depth, opaqueAt: (point) => characters.opaqueAt(id, box, point) };
   }
 
   private cutAway(player: Figure, dt: number): void {
-    const { manifest, buildings } = this.scenery!;
-    for (const { object, slices, cutaway } of buildings) {
-      const before = cutaway.alpha;
-      const alpha = cutaway.update(hides(object, player, manifest.tile), dt);
-      if (alpha !== before) for (const slice of slices) slice.setAlpha(alpha);
+    const { manifest, buildings } = this.geometry!;
+    for (const { object, cutaway } of buildings) {
+      cutaway.update(hides(object, player, manifest.tile), dt);
     }
   }
 
   private follow(player: Figure): void {
-    const { manifest } = this.scenery!;
+    const { manifest } = this.geometry!;
     const camera = this.cameras.main;
     const zoom = isoZoom(camera.width, window.devicePixelRatio, manifest.tile);
     if (zoom !== camera.zoom) camera.setZoom(zoom);
-    const target = { x: player.x, y: player.bottom - FIGURE_HEIGHT / 2 };
+    const target = { x: player.x, y: (player.top + player.bottom) / 2 };
     const scroll = isoScroll(target, camera, manifest.map, manifest.tile, zoom);
     camera.setScroll(scroll.x, scroll.y);
   }

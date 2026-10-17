@@ -5,11 +5,13 @@ import type { WorldView } from '../../ui/world-view';
 import { npcAt } from '../hit';
 import { residentDepth } from './depth';
 import { feetOf, project } from './projection';
-import { figureAt, figureBox, screenAligned, type IsoCamera } from './screen';
-import { FIGURE_HEIGHT, FIGURE_WIDTH } from './tuning';
+import { figureAt, figureBox, screenAligned, type IsoCamera, type SpriteFrame } from './screen';
 
 const TILE = { width: 96, height: 48, px_per_metre_up: 53.443 };
 const flat = () => 0;
+/** Any art's frame: a 20 × 32 pixel-art cell drawn at 3×, say. */
+const FRAME: SpriteFrame = { width: 60, height: 96, anchor: { x: 30, y: 90 }, figureHeight: 78 };
+const FIGURE_HEIGHT = FRAME.figureHeight;
 
 function cameraOn(zoom: number): IsoCamera {
   const centre = project(TILE, { x: 20.5, y: 20.5 });
@@ -20,7 +22,7 @@ function cameraOn(zoom: number): IsoCamera {
 describe('figureAt', () => {
   it('stands on the middle of its tile, raised by the ground, sorted on the ground plane', () => {
     const feet = project(TILE, feetOf({ x: 20, y: 20 }));
-    const figure = figureAt({ x: 20, y: 20 }, TILE, () => 0.18);
+    const figure = figureAt({ x: 20, y: 20 }, TILE, () => 0.18, FRAME);
 
     expect(figure.x).toBe(feet.x);
     expect(figure.bottom).toBeCloseTo(feet.y - 0.18 * TILE.px_per_metre_up);
@@ -30,25 +32,26 @@ describe('figureAt', () => {
 });
 
 describe('figureBox', () => {
-  it.each([1, 2, 3])('covers the sprite through the camera at zoom %i', (zoom) => {
+  it.each([1, 2, 3])("covers the sprite's frame down to the feet at zoom %i", (zoom) => {
     const camera = cameraOn(zoom);
-    const box = figureBox(figureAt({ x: 20, y: 20 }, TILE, flat), camera);
+    const box = figureBox(figureAt({ x: 20, y: 20 }, TILE, flat, FRAME), camera, FRAME);
 
-    expect(box.width).toBe(FIGURE_WIDTH * zoom);
-    expect(box.height).toBe(FIGURE_HEIGHT * zoom);
-    expect(box.x + box.width / 2).toBe(camera.width / 2);
+    expect(box.width).toBe(FRAME.width * zoom);
+    expect(box.height).toBe(FRAME.anchor.y * zoom);
+    expect(box.x + FRAME.anchor.x * zoom).toBe(camera.width / 2);
     expect(box.y + box.height).toBe(camera.height / 2);
   });
 
-  it("puts the bubble anchor at the feet's screen position less the sprite's height", () => {
+  it("puts the bubble anchor at the top of the frame, above the feet's screen position", () => {
     const camera = cameraOn(2);
     const feet = project(TILE, feetOf({ x: 22, y: 19 }), 0.18);
-    const box = figureBox(figureAt({ x: 22, y: 19 }, TILE, () => 0.18), camera);
+    const box = figureBox(figureAt({ x: 22, y: 19 }, TILE, () => 0.18, FRAME), camera, FRAME);
     const onCanvas = (at: number, scroll: number, size: number) =>
       (at - scroll - size / 2) * 2 + size / 2;
 
     expect(box.x + box.width / 2).toBeCloseTo(onCanvas(feet.x, camera.scrollX, camera.width));
-    expect(box.y).toBeCloseTo(onCanvas(feet.y, camera.scrollY, camera.height) - FIGURE_HEIGHT * 2);
+    expect(box.y).toBeCloseTo(onCanvas(feet.y, camera.scrollY, camera.height) - FRAME.anchor.y * 2);
+    expect(FRAME.anchor.y).toBeGreaterThan(FIGURE_HEIGHT);
   });
 });
 
@@ -60,21 +63,22 @@ describe('iso picking', () => {
       npcIds: () => Object.keys(positions),
       bubbleAnchor: () => undefined,
       spriteOf: (id) => {
-        const figure = figureAt(positions[id], TILE, () => heights[id] ?? 0);
-        return { box: figureBox(figure, camera), depth: figure.depth };
+        const figure = figureAt(positions[id], TILE, () => heights[id] ?? 0, FRAME);
+        return { box: figureBox(figure, camera, FRAME), depth: figure.depth };
       },
     };
     return { view, boxOf: (id: string) => view.spriteOf!(id)!.box };
   }
 
-  it('picks a resident by their body, standing up to 1.5 tiles above their tile', () => {
+  it('picks a resident from above their head down to their feet', () => {
     const { view, boxOf } = crowd({ mei: { x: 20, y: 20 } });
     const box = boxOf('mei');
-    const [x, feet, tile] = [box.x + box.width / 2, box.y + box.height, TILE.height * 2];
+    const [x, feet, zoom] = [box.x + box.width / 2, box.y + box.height, 2];
 
-    expect(npcAt({ x, y: feet - 1.4 * tile }, view)).toBe('mei');
-    expect(npcAt({ x, y: feet - 1.6 * tile }, view)).toBeUndefined();
-    expect(npcAt({ x, y: feet + 4 }, view)).toBeUndefined();
+    expect(npcAt({ x, y: feet - FIGURE_HEIGHT * zoom }, view)).toBe('mei');
+    expect(npcAt({ x, y: feet - 1 }, view)).toBe('mei');
+    expect(npcAt({ x, y: feet - (FRAME.anchor.y + 1) * zoom }, view)).toBeUndefined();
+    expect(npcAt({ x, y: feet + 1 }, view)).toBeUndefined();
   });
 
   it('picks the one in front where one stands behind the other on screen', () => {

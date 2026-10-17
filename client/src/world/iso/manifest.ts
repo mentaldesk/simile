@@ -1,3 +1,5 @@
+import type { LightMapInfo } from './lighting';
+
 /** A scenery manifest, `content/art/iso/scenery/<set>.json`: `server/simile/art/iso/README.md`. */
 export type SceneryManifest = {
   format: number;
@@ -13,6 +15,7 @@ export type SceneryManifest = {
     heights: Record<string, number>;
     chunks: GroundChunk[];
   };
+  light_map: LightMapInfo;
   objects: SceneryObject[];
 };
 

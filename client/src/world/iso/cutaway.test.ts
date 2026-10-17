@@ -3,7 +3,8 @@ import { CUTAWAY_ALPHA, CUTAWAY_HOLD_SECONDS, CUTAWAY_SECONDS, Cutaway, hides } 
 import { imageOrigin, residentDepth } from './depth';
 import type { SceneryManifest } from './manifest';
 import { feetOf, project } from './projection';
-import { FIGURE_HEIGHT } from './tuning';
+
+const FIGURE_HEIGHT = 96;
 
 const manifests = import.meta.glob<SceneryManifest>('../../../../content/art/iso/scenery/*.json', {
   eager: true,
