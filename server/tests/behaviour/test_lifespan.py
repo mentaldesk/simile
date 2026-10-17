@@ -8,9 +8,9 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.behaviour import Activity, behaviour_of
 from simile.npc import load_npcs
-from simile.protocol import EntityKind, SnapshotMessage, hub_of
+from simile.protocol import EntityKind, Position, SnapshotMessage, hub_of
 from simile.protocol.fixtures import fixture_world
-from simile.schema import PLAYER_ID
+from simile.schema import PLAYER_ID, MapTile
 from simile.sim import STEP, Clock, World, world_of
 from simile.world import movement_of
 from simile.world.movement import inside
@@ -67,6 +67,14 @@ def test_clients_get_the_village_in_their_snapshot(app: Starlette) -> None:
     assert snapshot.map_id == "village"
     assert snapshot.conversations == []
     assert snapshot.time >= START
+
+
+def test_the_snapshot_puts_a_resident_inside_on_the_interiors_map(app: Starlette) -> None:
+    with TestClient(app):
+        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=5, y=6))
+        entity = next(e for e in hub_of(app).snapshot().entities if e.id == NPCS[0].id)
+
+    assert entity.position == Position(x=5, y=6, map="coffee_shop")
 
 
 def test_the_player_starts_in_the_square_then_is_where_they_moved(app: Starlette) -> None:

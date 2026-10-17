@@ -41,7 +41,7 @@ def test_runs_for_the_given_sim_hours_and_logs_events(
 
     assert world.clock.now == START + timedelta(hours=1)
     assert wall.now() == pytest.approx(3600 / 10)
-    moved = "EntityMoved(entity='ada', x=1.0, y=2.0)"
+    moved = "EntityMoved(entity='ada', x=1.0, y=2.0, map='village')"
     assert caplog.messages == [
         "2026-01-01 08:00:00  Running at 10x",
         f"2026-01-01 08:20:00  {moved}",

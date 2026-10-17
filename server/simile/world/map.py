@@ -1,5 +1,6 @@
 import json
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -103,6 +104,16 @@ def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
     """The village and every interior in directory/interiors/, by map id."""
     paths = [directory / f"{MAP_ID}.tmj", *sorted((directory / INTERIORS).glob("*.tmj"))]
     return {town.id: town for town in map(load_map, paths)}
+
+
+def with_every_location(maps: Mapping[str, TownMap], home: str = MAP_ID) -> TownMap:
+    """The home map, carrying the locations of every map, so `location(id)` finds any of them.
+    An id on more than one map is the home map's location, or else the first map's."""
+    found: dict[str, Location] = {}
+    for town in (maps[home], *maps.values()):
+        for location in town.locations:
+            found.setdefault(location.id, location)
+    return replace(maps[home], locations=tuple(found.values()))
 
 
 def _props(obj: dict[str, Any]) -> dict[str, Any]:

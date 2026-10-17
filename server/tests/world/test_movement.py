@@ -4,19 +4,24 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from simile.schema import PLAYER_ID, LocationKind, Tile
+from simile.schema import PLAYER_ID, VILLAGE_MAP, Location, LocationKind, MapTile, Tile
 from simile.sim import STEP, Clock, EntityMoved, FakeWallClock, World
 from simile.world import Movement, Outcome, Point, Walk
-from simile.world.map import WALKING_SPEED, TownMap, load_map
+from simile.world.map import WALKING_SPEED, TownMap, load_map, load_maps
 from simile.world.movement import inside
+from simile.world.paths import DOOR
 
 TOWN = load_map()
+MAPS = load_maps()
 HOUSES = [location for location in TOWN.locations if location.kind is LocationKind.HOUSE]
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
+[CAFE_DOOR] = [door for door in TOWN.doors if door.id == "coffee_shop"]
+[COUNTER] = MAPS["coffee_shop"].interactables
+FRONT = MapTile(map="coffee_shop", x=COUNTER.stand[0].x, y=COUNTER.stand[0].y)
 
 
 class Village:
-    def __init__(self, town: TownMap = TOWN) -> None:
+    def __init__(self, town: TownMap | dict[str, TownMap] = MAPS) -> None:
         self.world = World(Clock(START), FakeWallClock())
         self.movement = Movement(town, self.world.bus)
         self.world.loop.register(self.movement)
@@ -38,6 +43,13 @@ class Village:
 
     def tiles(self, entity: str) -> list[tuple[float, float]]:
         return [(event.x, event.y) for _, event in self.moves if event.entity == entity]
+
+    def spots(self, entity: str) -> list[tuple[str, float, float]]:
+        return [(e.map, e.x, e.y) for _, e in self.moves if e.entity == entity]
+
+
+def entry_of(location: Location) -> MapTile:
+    return MapTile(map=location.map, x=location.entry.x, y=location.entry.y)
 
 
 def assert_on_time(elapsed: float, distance: float) -> None:
@@ -117,7 +129,7 @@ def test_walks_from_every_house_to_the_coffee_shop(house) -> None:
 
     entry = TOWN.location("coffee_shop").entry
     assert walk.outcome is Outcome.ARRIVED
-    assert walk.destination == entry
+    assert walk.destination == entry_of(TOWN.location("coffee_shop"))
     assert village.movement.position("mei") == (entry.x, entry.y)
     assert_on_time(village.now, walk.distance)
     steps = [(house.entry.x, house.entry.y), *village.tiles("mei")]
@@ -150,8 +162,8 @@ def test_two_npcs_walking_to_the_same_tile_end_side_by_side() -> None:
     walks = [village.movement.walk_to(npc, Tile(x=4, y=4)) for npc in ("mei", "suki")]
     village.finish(*walks)
 
-    assert walks[0].destination == Tile(x=4, y=4)
-    assert walks[1].destination != Tile(x=4, y=4)
+    assert walks[0].destination == MapTile(map="field", x=4, y=4)
+    assert walks[1].destination != MapTile(map="field", x=4, y=4)
     mei, suki = village.movement.position("mei"), village.movement.position("suki")
     assert max(abs(mei.x - suki.x), abs(mei.y - suki.y)) == 1
 
@@ -172,11 +184,11 @@ def test_steps_aside_when_someone_is_standing_on_the_destination() -> None:
     walk = village.movement.walk_to("mei", Tile(x=5, y=0))
     village.run(1)
 
-    village.movement.track(PLAYER_ID, Point(5.2, 0))
+    village.movement.track(PLAYER_ID, Point(5.2, 0, "corridor"))
     village.finish(walk)
 
     assert walk.outcome is Outcome.ARRIVED
-    assert walk.destination == Tile(x=4, y=0)
+    assert walk.destination == MapTile(map="corridor", x=4, y=0)
     assert walk.distance == 4
     assert village.movement.position("mei") == (4, 0)
 
@@ -224,7 +236,7 @@ def test_a_new_walk_supersedes_the_last() -> None:
     second = village.movement.walk_to("mei", Tile(x=0, y=0))
 
     assert first.outcome is Outcome.SUPERSEDED
-    assert second.destination == Tile(x=0, y=0)
+    assert second.destination == MapTile(map="corridor", x=0, y=0)
     assert second.distance == pytest.approx((7 - (5 + WALKING_SPEED)) + 7)
     village.finish(second)
     assert second.outcome is Outcome.ARRIVED
@@ -263,7 +275,7 @@ def test_place_publishes_and_keeps_entities_apart() -> None:
     suki = village.movement.place("suki", "house_1")
 
     house = TOWN.location("house_1")
-    assert mei == house.entry
+    assert mei == entry_of(house)
     assert suki != mei and inside(house, (suki.x, suki.y))
     assert village.tiles("mei") == [(mei.x, mei.y)]
     assert village.tiles("suki") == [(suki.x, suki.y)]
@@ -306,7 +318,7 @@ def test_tracks_the_player_without_publishing() -> None:
     assert village.movement.position(PLAYER_ID) == (31.4, 21.6)
     assert village.movement.entities() == {PLAYER_ID: (31.4, 21.6)}
     assert village.moves == []
-    assert village.movement.place("mei", Tile(x=31, y=22)) != Tile(x=31, y=22)
+    assert village.movement.place("mei", Tile(x=31, y=22)) != MapTile(map=VILLAGE_MAP, x=31, y=22)
 
 
 def test_lists_entities_and_distances() -> None:
@@ -358,7 +370,7 @@ def test_a_callback_can_start_the_next_walk() -> None:
     village.finish(walks[-1])
 
     assert [walk.outcome for walk in walks] == [Outcome.CANCELLED, Outcome.ARRIVED]
-    assert walks[1].destination == TOWN.location("square").entry
+    assert walks[1].destination == entry_of(TOWN.location("square"))
 
 
 def test_placing_someone_from_a_callback_mid_tick_publishes_no_stale_move() -> None:
@@ -394,3 +406,158 @@ def test_a_failing_callback_is_logged_and_the_others_still_run(
 
     assert heard == [walk]
     assert caplog.text.count("RuntimeError: boom") == 2
+
+
+def assert_steps_between_neighbours(spots: list[tuple[str, float, float]]) -> list[int]:
+    """Where the walk changes map."""
+    crossings = []
+    for n, ((map_a, x, y), (map_b, nx, ny)) in enumerate(zip(spots, spots[1:], strict=False)):
+        if map_a == map_b:
+            assert max(abs(nx - x), abs(ny - y)) == 1, (spots[n], spots[n + 1])
+        else:
+            crossings.append(n + 1)
+    return crossings
+
+
+def door_ends(door_map: str) -> tuple[tuple[str, float, float], tuple[str, float, float]]:
+    outside, inside = CAFE_DOOR.outside, CAFE_DOOR.inside
+    ends = ((outside.map, outside.x, outside.y), (inside.map, inside.x, inside.y))
+    return ends if door_map == VILLAGE_MAP else (ends[1], ends[0])
+
+
+def test_walks_from_a_house_to_the_coffee_shop_counter_and_back_through_the_door() -> None:
+    village = Village()
+    village.movement.place("mei", "house_1")
+    village.moves.clear()
+
+    there = village.movement.walk_to("mei", FRONT)
+    village.finish(there)
+
+    assert there.outcome is Outcome.ARRIVED
+    assert there.destination == FRONT
+    assert village.movement.position("mei") == Point(FRONT.x, FRONT.y, "coffee_shop")
+    assert_on_time(village.now, there.distance)
+    home = TOWN.location("house_1").entry
+    spots = [(VILLAGE_MAP, home.x, home.y), *village.spots("mei")]
+    [crossing] = assert_steps_between_neighbours(spots)
+    assert (spots[crossing - 1], spots[crossing]) == door_ends(VILLAGE_MAP)
+
+    village.moves.clear()
+    back = village.movement.walk_to("mei", "house_1")
+    village.finish(back)
+
+    assert back.outcome is Outcome.ARRIVED
+    assert village.movement.position("mei") == Point(home.x, home.y)
+    assert back.distance == pytest.approx(there.distance)
+    spots = [("coffee_shop", FRONT.x, FRONT.y), *village.spots("mei")]
+    [crossing] = assert_steps_between_neighbours(spots)
+    assert (spots[crossing - 1], spots[crossing]) == door_ends("coffee_shop")
+
+
+def test_going_through_a_door_publishes_a_jump_onto_the_other_map_a_step_later() -> None:
+    village = Village()
+    outside, inside = CAFE_DOOR.outside, CAFE_DOOR.inside
+    village.movement.place("mei", MapTile(map=VILLAGE_MAP, x=outside.x, y=outside.y + 1))
+    village.moves.clear()
+
+    walk = village.movement.walk_to("mei", MapTile(map=inside.map, x=inside.x, y=inside.y - 1))
+    village.finish(walk)
+
+    [(stepped, doorstep), (jumped, mat), (_, last)] = village.moves
+    assert (doorstep.map, doorstep.x, doorstep.y) == (VILLAGE_MAP, outside.x, outside.y)
+    assert (mat.map, mat.x, mat.y) == (inside.map, inside.x, inside.y)
+    assert (last.map, last.x, last.y) == (inside.map, inside.x, inside.y - 1)
+    assert_on_time(stepped, 1)
+    assert_on_time(jumped, 1 + DOOR)
+    assert walk.distance == 2 + DOOR
+
+
+def test_position_stays_on_the_doorstep_until_through_and_a_stop_still_goes_through() -> None:
+    village = Village()
+    outside, inside = CAFE_DOOR.outside, CAFE_DOOR.inside
+    village.movement.place("mei", MapTile(map=VILLAGE_MAP, x=outside.x, y=outside.y))
+    walk = village.movement.walk_to("mei", MapTile(map=inside.map, x=inside.x, y=inside.y - 2))
+    village.run(DOOR / WALKING_SPEED / 2)
+
+    assert village.movement.position("mei") == Point(outside.x, outside.y)
+    village.movement.stop("mei")
+    village.run(1)
+
+    assert walk.outcome is Outcome.CANCELLED
+    assert village.movement.position("mei") == Point(inside.x, inside.y, inside.map)
+
+
+def test_a_walker_on_a_doorstep_that_hasnt_set_off_stays_put() -> None:
+    village = Village()
+    outside, inside = CAFE_DOOR.outside, CAFE_DOOR.inside
+    village.movement.place("mei", MapTile(map=VILLAGE_MAP, x=outside.x, y=outside.y))
+    walk = village.movement.walk_to("mei", MapTile(map=inside.map, x=inside.x, y=inside.y - 2))
+
+    village.movement.stop("mei")
+    village.run(1)
+
+    assert walk.outcome is Outcome.CANCELLED
+    assert village.movement.position("mei") == Point(outside.x, outside.y)
+    village.movement.walk_to("mei", MapTile(map=inside.map, x=inside.x, y=inside.y - 2))
+    away = village.movement.walk_to("mei", Tile(x=outside.x, y=outside.y + 2))
+    village.finish(away)
+    assert away.distance == 2
+    assert village.spots("mei")[-2:] == [
+        (VILLAGE_MAP, outside.x, outside.y + 1),
+        (VILLAGE_MAP, outside.x, outside.y + 2),
+    ]
+
+
+def test_distance_between_maps_is_infinite() -> None:
+    village = Village()
+    village.movement.place("mei", FRONT)
+    village.movement.place("suki", "coffee_shop_staff")
+    village.movement.place("kofi", Tile(x=FRONT.x, y=FRONT.y + 30))
+
+    assert village.movement.distance("mei", "suki") == pytest.approx(2)
+    assert village.movement.distance("mei", "kofi") == math.inf
+    assert village.movement.position("kofi").map == VILLAGE_MAP
+
+
+def test_a_tracked_player_inside_reports_the_interiors_map() -> None:
+    village = Village()
+
+    village.movement.track(PLAYER_ID, Point(10, 12.5, "coffee_shop"))
+
+    assert village.movement.position(PLAYER_ID).map == "coffee_shop"
+    assert village.movement.entities()[PLAYER_ID] == Point(10, 12.5, "coffee_shop")
+    mat = MapTile(map="coffee_shop", x=10, y=13)
+    assert village.movement.place("mei", mat) != mat
+    assert village.movement.place("suki", Tile(x=10, y=13)) == MapTile(map=VILLAGE_MAP, x=10, y=13)
+
+
+def test_locations_on_two_maps_are_the_villages() -> None:
+    village = Village()
+    village.movement.place("mei", "house_1")
+
+    for location_id in ("coffee_shop", "noodle_bar", "maker_space"):
+        assert village.movement.town.location(location_id).map == VILLAGE_MAP
+    assert village.movement.town.location("coffee_shop_queue").map == "coffee_shop"
+    village.finish(walk := village.movement.walk_to("mei", "coffee_shop"))
+    assert walk.outcome is Outcome.ARRIVED
+    assert village.movement.position("mei").map == VILLAGE_MAP
+
+
+def test_nobody_reaches_a_map_without_a_door() -> None:
+    village = Village()
+    village.movement.place("mei", "square")
+
+    assert village.movement.walk_to("mei", "gallery").outcome is Outcome.UNREACHABLE
+    with pytest.raises(KeyError):
+        village.movement.walk_to("mei", MapTile(map="moon", x=0, y=0))
+
+
+def test_points_compare_their_maps_but_measure_as_pairs() -> None:
+    inside, outside = Point(5, 6, "coffee_shop"), Point(5, 6)
+
+    assert inside != outside and inside == (5, 6) == outside
+    assert outside.map == VILLAGE_MAP and len({inside, outside}) == 2
+    assert math.dist(inside, Point(8, 10)) == 5
+    x, y = inside
+    assert (x, y, inside.x, inside.y) == (5, 6, 5, 6)
+    assert repr(inside) == "Point(5, 6, 'coffee_shop')"

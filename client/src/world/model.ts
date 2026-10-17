@@ -3,7 +3,9 @@ import { PLAYER_ID } from '../ui/world-view';
 import { Mover } from './motion';
 import { Player } from './player';
 
-export type Npc = { id: string; name: string; mover: Mover };
+export type Npc = { id: string; name: string; map: string; mover: Mover };
+
+const mapOf = (position: Position) => position.map ?? 'village';
 
 /** The client owns the player: only the first snapshot places it, so reconnecting doesn't. */
 export class WorldModel {
@@ -19,15 +21,27 @@ export class WorldModel {
         continue;
       }
       ids.add(id);
-      const npc = this.npcs.get(id);
-      if (npc) npc.mover.moveTo(position);
-      else this.npcs.set(id, { id, name, mover: new Mover(position) });
+      if (this.npcs.has(id)) this.move(id, position);
+      else this.npcs.set(id, { id, name, map: mapOf(position), mover: new Mover(position) });
     }
     for (const id of this.npcs.keys()) if (!ids.has(id)) this.npcs.delete(id);
   }
 
   move(entityId: string, position: Position): void {
-    this.npcs.get(entityId)?.mover.moveTo(position);
+    const npc = this.npcs.get(entityId);
+    if (!npc) return;
+    if (mapOf(position) === npc.map) return npc.mover.moveTo(position);
+    npc.map = mapOf(position);
+    npc.mover.place(position);
+  }
+
+  /** The NPCs on the player's map, the only ones drawn, heard or picked. */
+  *here(): Iterable<Npc> {
+    for (const npc of this.npcs.values()) if (npc.map === this.map) yield npc;
+  }
+
+  private get map(): string {
+    return this.player ? mapOf(this.player.position) : 'village';
   }
 
   spawnPlayer(position: Position): Player {
@@ -39,7 +53,9 @@ export class WorldModel {
   }
 
   positionOf(entityId: string): Position | undefined {
-    return entityId === PLAYER_ID ? this.player?.position : this.npcs.get(entityId)?.mover.position;
+    if (entityId === PLAYER_ID) return this.player?.position;
+    const npc = this.npcs.get(entityId);
+    return npc?.map === this.map ? npc.mover.position : undefined;
   }
 
   private placePlayer(position: Position): void {

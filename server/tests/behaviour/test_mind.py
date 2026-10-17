@@ -22,6 +22,7 @@ from simile.schema import (
     Baseline,
     CoreValue,
     Craft,
+    MapTile,
     Medium,
     Npc,
     Relationship,
@@ -29,10 +30,11 @@ from simile.schema import (
 )
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps, with_every_location
 from simile.world.movement import inside
 
-TOWN = load_map()
+MAPS = load_maps()
+TOWN = with_every_location(MAPS)
 MORNING = datetime(2026, 1, 1, 8, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 A = Activity
@@ -78,7 +80,7 @@ class Village:
         placed: dict[str, str] | None = None,
     ) -> None:
         self.world = World(Clock(start), FakeWallClock())
-        self.movement = Movement(TOWN, self.world.bus)
+        self.movement = Movement(MAPS, self.world.bus)
         self.behaviour = Behaviour(
             self.world.clock, self.world.bus, self.movement, npcs, store, config=config, seed=seed
         )
@@ -389,6 +391,22 @@ def test_seekers_can_seek_the_player() -> None:
     village.run_until(lambda: bool(requests))
 
     assert requests == [("ana", PLAYER_ID)]
+
+
+def test_seekers_follow_someone_through_a_door() -> None:
+    requests: list[tuple[str, str]] = []
+    village = Village([ANA], start=at(11), config=keen(A.SEEK))
+    village.movement.place(PLAYER_ID, MapTile(map="coffee_shop", x=5, y=6))
+
+    def decline(a: str, b: str) -> bool:
+        requests.append((a, b))
+        return False
+
+    village.behaviour.hooks.set(request_conversation=decline)
+    village.run_until(lambda: bool(requests))
+
+    assert requests == [("ana", PLAYER_ID)]
+    assert village.movement.position("ana").map == "coffee_shop"
 
 
 def test_npcs_who_leave_the_player_alone_dont_seek_them_until_let_go() -> None:

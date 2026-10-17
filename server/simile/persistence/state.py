@@ -1,10 +1,11 @@
 from simile.behaviour import Activity, Behaviour, Goal, Need
-from simile.schema import Id, Model, Tile, Timestamp
+from simile.schema import VILLAGE_MAP, Id, Key, MapTile, Model, Tile, Timestamp
 from simile.world.movement import Point, cell_of
 
 
 class SavedNpc(Model):
     position: Tile
+    map: Key = VILLAGE_MAP
     activity: Activity
     target: str | None = None
     needs: dict[Need, float]
@@ -33,6 +34,7 @@ def capture(behaviour: Behaviour) -> SavedWorld:
         npcs={
             npc: SavedNpc(
                 position=tile_of(movement.position(npc)),
+                map=movement.position(npc).map,
                 activity=mind.goal.activity,
                 target=mind.goal.target,
                 needs=dict(mind.needs),
@@ -56,8 +58,9 @@ def restore(world: SavedWorld, behaviour: Behaviour) -> None:
     behaviour.clock.now = world.now
     for _ in range(2):  # the second pass gets tiles that someone was still standing on
         for npc, state in saved.items():
-            if movement.position(npc) != (state.position.x, state.position.y):
-                movement.place(npc, state.position)
+            x, y = state.position.x, state.position.y
+            if movement.position(npc) != Point(x, y, state.map):
+                movement.place(npc, MapTile(map=state.map, x=x, y=y))
     for npc, state in saved.items():
         behaviour.restore(
             npc,

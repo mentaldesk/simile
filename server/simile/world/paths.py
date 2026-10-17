@@ -1,8 +1,9 @@
 import heapq
 import math
 from collections import deque
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from itertools import pairwise
+from typing import NamedTuple, Protocol
 
 from simile.world.map import TownMap
 
@@ -11,6 +12,25 @@ type Cell = tuple[int, int]
 STRAIGHT = ((1, 0), (-1, 0), (0, 1), (0, -1))
 DIAGONAL = ((1, 1), (1, -1), (-1, 1), (-1, -1))
 ROOT_2 = math.sqrt(2)
+DOOR = 1.0
+"""Going through a door takes as long as a step."""
+
+
+class Spot(NamedTuple):
+    """A tile on one of the maps."""
+
+    map: str
+    x: int
+    y: int
+
+
+class OnMap(Protocol):
+    @property
+    def map(self) -> str: ...
+    @property
+    def x(self) -> float: ...
+    @property
+    def y(self) -> float: ...
 
 
 def steps(town: TownMap, cell: Cell) -> Iterator[tuple[Cell, float]]:
@@ -31,27 +51,8 @@ def octile(a: Cell, b: Cell) -> float:
 
 def find_path(town: TownMap, start: Cell, goal: Cell) -> list[Cell] | None:
     """The shortest path from start to goal, both included, or None if there isn't one."""
-    if not (town.walkable(*start) and town.walkable(*goal)):
-        return None
-    came_from: dict[Cell, Cell | None] = {start: None}
-    cost = {start: 0.0}
-    frontier = [(octile(start, goal), 0.0, start)]
-    while frontier:
-        _, so_far, cell = heapq.heappop(frontier)
-        if cell == goal:
-            path = [cell]
-            while (previous := came_from[path[-1]]) is not None:
-                path.append(previous)
-            return path[::-1]
-        if so_far > cost[cell]:
-            continue
-        for neighbour, step in steps(town, cell):
-            new_cost = so_far + step
-            if new_cost < cost.get(neighbour, math.inf):
-                cost[neighbour] = new_cost
-                came_from[neighbour] = cell
-                heapq.heappush(frontier, (new_cost + octile(neighbour, goal), new_cost, neighbour))
-    return None
+    route = find_route({town.id: town}, Spot(town.id, *start), Spot(town.id, *goal), {})
+    return None if route is None else [(spot.x, spot.y) for spot in route]
 
 
 def path_length(path: Sequence[tuple[float, float]]) -> float:
@@ -71,3 +72,70 @@ def nearby(town: TownMap, origin: Cell) -> Iterator[tuple[Cell, int]]:
             if neighbour not in seen:
                 seen.add(neighbour)
                 queue.append((neighbour, depth + 1))
+
+
+def door_ends(maps: Mapping[str, TownMap]) -> dict[Spot, Spot]:
+    """Each end of every door between these maps, and the tile at its other end."""
+    ends: dict[Spot, Spot] = {}
+    for town in maps.values():
+        for door in town.doors:
+            outside = Spot(door.outside.map, door.outside.x, door.outside.y)
+            inside = Spot(door.inside.map, door.inside.x, door.inside.y)
+            if outside.map in maps and inside.map in maps:
+                ends[outside], ends[inside] = inside, outside
+    return ends
+
+
+def route_length(route: Sequence[OnMap]) -> float:
+    """In tiles, with each change of map a door."""
+    return sum(
+        math.dist((a.x, a.y), (b.x, b.y)) if a.map == b.map else DOOR for a, b in pairwise(route)
+    )
+
+
+def find_route(
+    maps: Mapping[str, TownMap], start: Spot, goal: Spot, doors: Mapping[Spot, Spot]
+) -> list[Spot] | None:
+    """The shortest walk from start to goal, both included, or None if there isn't one. Each door
+    is an edge between its two tiles, so going through one is two spots on different maps."""
+
+    def walkable(spot: Spot) -> bool:
+        return spot.map in maps and maps[spot.map].walkable(spot.x, spot.y)
+
+    if not (walkable(start) and walkable(goal)):
+        return None
+    exits: dict[str, list[Cell]] = {}
+    for end in doors:
+        exits.setdefault(end.map, []).append((end.x, end.y))
+
+    def estimate(spot: Spot) -> float:
+        cell = (spot.x, spot.y)
+        if spot.map == goal.map:
+            return octile(cell, (goal.x, goal.y))
+        return min((octile(cell, end) + DOOR for end in exits.get(spot.map, [])), default=0.0)
+
+    def moves(spot: Spot) -> Iterator[tuple[Spot, float]]:
+        if spot in doors:
+            yield doors[spot], DOOR
+        for cell, step in steps(maps[spot.map], (spot.x, spot.y)):
+            yield Spot(spot.map, *cell), step
+
+    came_from: dict[Spot, Spot | None] = {start: None}
+    cost = {start: 0.0}
+    frontier = [(estimate(start), 0.0, start)]
+    while frontier:
+        _, so_far, spot = heapq.heappop(frontier)
+        if spot == goal:
+            route = [spot]
+            while (previous := came_from[route[-1]]) is not None:
+                route.append(previous)
+            return route[::-1]
+        if so_far > cost[spot]:
+            continue
+        for neighbour, step in moves(spot):
+            new_cost = so_far + step
+            if new_cost < cost.get(neighbour, math.inf):
+                cost[neighbour] = new_cost
+                came_from[neighbour] = spot
+                heapq.heappush(frontier, (new_cost + estimate(neighbour), new_cost, neighbour))
+    return None
