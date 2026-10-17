@@ -4,7 +4,16 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
-from simile.schema import PLAYER_ID, CoreValue, Id, Location, LocationKind, Relationship
+from simile.schema import (
+    PLAYER_ID,
+    CoreValue,
+    Id,
+    Location,
+    LocationKind,
+    Medium,
+    Relationship,
+    Tile,
+)
 from simile.world.map import WALKING_SPEED, TownMap
 from simile.world.movement import Point, inside
 
@@ -20,7 +29,7 @@ AMENITIES = (Activity.PARK, Activity.NOODLE_BAR, Activity.MAKER_SPACE)
 class Goal:
     activity: Activity
     target: str | None = None
-    """A location id, or for `seek` and `talk` the entity's id."""
+    """A location id, for `seek` and `talk` the entity's id, or for painting a mural the wall's."""
 
     def __str__(self) -> str:
         return self.activity if self.target is None else f"{self.activity} {self.target}"
@@ -41,10 +50,21 @@ class Places:
     def location(self, location_id: str) -> Location:
         return self.town.location(location_id)
 
+    def ids(self, activity: Activity) -> list[Id]:
+        return [location.id for location in self.by_activity.get(activity, [])]
+
     def at(self, point: Point) -> Location | None:
         """The smallest location the point is in, so a terminal wins over the square around it."""
         cell = (math.floor(point.x + 0.5), math.floor(point.y + 0.5))
         return next((loc for loc in self._by_size if inside(loc, cell)), None)
+
+
+@dataclass(frozen=True)
+class MuralSpot:
+    """A wall to paint, and the tile to stand on to paint it."""
+
+    wall: Id
+    tile: Tile
 
 
 @dataclass(frozen=True)
@@ -71,6 +91,9 @@ class Situation:
     news: float = 0.0
     """How interesting the best article they haven't read is, 0-1. 0 if nothing's worth reading,
     and then the terminals aren't an option."""
+    craft: Medium | None = None
+    mural: MuralSpot | None = None
+    """For a muralist, the wall they'd paint. Without one they don't create."""
 
 
 AFFINITY = ("like", "trust", "respect")
@@ -124,7 +147,9 @@ def walk_minutes(a: Point, b: Point) -> float:
     return math.dist(a, b) / WALKING_SPEED / 60
 
 
-def candidates(situation: Situation, places: Places) -> list[Goal]:
+def candidates(
+    situation: Situation, places: Places, config: BehaviourConfig = DEFAULT_CONFIG
+) -> list[Goal]:
     goals = [Goal(Activity.HOME, situation.home)]
     for activity, locations in places.by_activity.items():
         if activity is Activity.NEWS and situation.news <= 0:
@@ -132,7 +157,24 @@ def candidates(situation: Situation, places: Places) -> list[Goal]:
         goals.extend(Goal(activity, location.id) for location in locations)
     goals += [Goal(Activity.WANDER), Goal(Activity.IDLE)]
     goals.extend(Goal(Activity.SEEK, o.id) for o in situation.others if o.available)
-    return goals
+    return goals + creating(situation, places, config)
+
+
+def creating(situation: Situation, places: Places, config: BehaviourConfig) -> list[Goal]:
+    """Where they could make something, if they have a craft and time for a typical stay before
+    bed. Writers have their `writing_places`, and muralists their wall."""
+    low, high = config.dwell.get(Activity.CREATE, (0.0, 0.0))
+    if situation.bedtime - situation.hour < (low + high) / 2 / 60:
+        return []
+    if situation.craft is Medium.MURAL and situation.mural is not None:
+        return [Goal(Activity.CREATE, situation.mural.wall)]
+    if situation.craft is not Medium.WRITING:
+        return []
+    return [
+        Goal(Activity.CREATE, location)
+        for activity in config.writing_places
+        for location in ([situation.home] if activity is Activity.HOME else places.ids(activity))
+    ]
 
 
 def score(
@@ -158,13 +200,36 @@ def score(
         other = next(o for o in situation.others if o.id == goal.target)
         total += config.seek_weight * sociability(values, config) * other.affinity
         total -= config.travel_weight * walk_minutes(situation.position, other.position)
+    elif (spot := painting(goal, situation)) is not None:
+        total -= config.travel_weight * walk_minutes(
+            situation.position, Point(spot.tile.x, spot.tile.y)
+        )
     elif goal.target is not None:
         location = places.location(goal.target)
         entry = Point(location.entry.x, location.entry.y)
         total -= config.travel_weight * walk_minutes(situation.position, entry)
-        if activity is not Activity.HOME:
+        if location.id != situation.home:
             total += company(location.id, situation, config)
+        if activity is Activity.CREATE:
+            where = writing_place(location.id, situation, places)
+            weights = config.writing_places.get(where, {})
+            total += config.writing_base.get(where, 0.0)
+            total += sum(w * (values[v] - 0.5) for v, w in weights.items())
     return total
+
+
+def painting(goal: Goal, situation: Situation) -> MuralSpot | None:
+    """The wall `goal` is to paint, if it's a muralist's `create`."""
+    spot = situation.mural
+    if goal.activity is Activity.CREATE and spot is not None and goal.target == spot.wall:
+        return spot
+    return None
+
+
+def writing_place(location: Id, situation: Situation, places: Places) -> Activity:
+    if location == situation.home:
+        return Activity.HOME
+    return next(a for a in places.by_activity if location in places.ids(a))
 
 
 def offered(goal: Goal, situation: Situation, config: BehaviourConfig) -> float:
@@ -198,17 +263,22 @@ def relief(need: float, change: float, power: float) -> float:
 
 
 def promised(activity: Activity, need: Need, config: BehaviourConfig = DEFAULT_CONFIG) -> float:
-    """How a typical stay at `activity` changes `need`. Seeking someone out promises a talk."""
+    """How a typical stay at `activity` changes `need`, finishing it included. Seeking someone
+    out promises a talk."""
     if activity is Activity.SEEK:
         return config.effects.get(Activity.TALK, {}).get(need, 0.0) * config.talk_minutes / 60
     low, high = config.dwell.get(activity, (0.0, 0.0))
-    return config.effects.get(activity, {}).get(need, 0.0) * (low + high) / 2 / 60
+    during = config.effects.get(activity, {}).get(need, 0.0) * (low + high) / 2 / 60
+    return during + config.finishing.get(activity, {}).get(need, 0.0)
 
 
 def scores(
     situation: Situation, places: Places, config: BehaviourConfig = DEFAULT_CONFIG
 ) -> dict[Goal, float]:
-    return {goal: score(goal, situation, places, config) for goal in candidates(situation, places)}
+    return {
+        goal: score(goal, situation, places, config)
+        for goal in candidates(situation, places, config)
+    }
 
 
 def best_per_activity(options: Mapping[Goal, float]) -> dict[Activity, tuple[Goal, float]]:
