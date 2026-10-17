@@ -1,0 +1,600 @@
+# Names by origin, gender and birth era. Under [origin.women] and [origin.men], each key is the
+# first birth year its list covers, and it runs until the next key. Surnames don't change with
+# era. Where a country has very different naming communities, each is its own origin with the
+# same country, so a given name and a surname never come from different communities.
+# How the lists were made and checked is in README.md.
+
+[[origin]]
+id = "england"
+country = "England"
+accent = "English"
+weight = 14
+surnames = ["Smith", "Jones", "Taylor", "Brown", "Wilson", "Walker", "Wright", "Hughes", "Clarke", "Robinson", "Thompson", "Hall", "Green", "Edwards", "Harris", "Turner"]
+
+[origin.women]
+1930 = ["Margaret", "Patricia", "Susan", "Christine", "Linda", "Janet", "Barbara", "Pauline", "Jean", "Brenda"]
+1965 = ["Sarah", "Claire", "Nicola", "Joanne", "Lisa", "Michelle", "Rachel", "Helen", "Kelly", "Donna"]
+1990 = ["Jessica", "Lauren", "Chloe", "Megan", "Hannah", "Amy", "Sophie", "Charlotte", "Georgia", "Emily"]
+
+[origin.men]
+1930 = ["John", "David", "Michael", "Peter", "Brian", "Alan", "Keith", "Graham", "Roger", "Derek"]
+1965 = ["Paul", "Mark", "Andrew", "Darren", "Lee", "Stuart", "Jason", "Richard", "Neil", "Simon"]
+1990 = ["Thomas", "Jack", "Joshua", "Luke", "Daniel", "Ryan", "James", "Callum", "Harry", "Liam"]
+
+[[origin]]
+id = "scotland"
+country = "Scotland"
+accent = "Scottish"
+weight = 4
+surnames = ["Macdonald", "Campbell", "Stewart", "Robertson", "Murray", "Mackay", "Reid", "Paterson", "Mackenzie", "Henderson", "Ferguson", "Morrison"]
+
+[origin.women]
+1930 = ["Margaret", "Elizabeth", "Agnes", "Isobel", "Jean", "Moira", "Morag", "Helen"]
+1965 = ["Fiona", "Lorraine", "Gillian", "Kirsty", "Shona", "Catriona", "Lynsey", "Joanne"]
+1990 = ["Eilidh", "Ailsa", "Rebecca", "Erin", "Kirsten", "Caitlin", "Isla", "Rachael"]
+
+[origin.men]
+1930 = ["James", "William", "Alexander", "Robert", "Hugh", "Angus", "Malcolm", "Kenneth"]
+1965 = ["Iain", "Craig", "Alasdair", "Gordon", "Stuart", "Graeme", "Duncan", "Ewan"]
+1990 = ["Callum", "Ross", "Fraser", "Euan", "Lewis", "Jamie", "Scott", "Cameron"]
+
+[[origin]]
+id = "wales"
+country = "Wales"
+accent = "Welsh"
+weight = 3
+surnames = ["Jones", "Williams", "Davies", "Evans", "Thomas", "Roberts", "Griffiths", "Owen", "Price", "Pritchard", "Rees", "Lloyd", "Morris", "Jenkins"]
+
+[origin.women]
+1930 = ["Megan", "Gwen", "Mair", "Glenys", "Eirlys", "Olwen", "Myfanwy", "Beryl"]
+1965 = ["Sian", "Rhian", "Bethan", "Nia", "Ceri", "Angharad", "Delyth", "Carys"]
+1990 = ["Ffion", "Seren", "Cerys", "Lowri", "Elin", "Catrin", "Alaw", "Mali"]
+
+[origin.men]
+1930 = ["Gareth", "Emyr", "Glyn", "Islwyn", "Gwilym", "Huw", "Elwyn", "Idris"]
+1965 = ["Rhys", "Gethin", "Aled", "Dylan", "Iwan", "Owain", "Geraint", "Steffan"]
+1990 = ["Osian", "Ioan", "Cai", "Tomos", "Rhodri", "Ieuan", "Morgan", "Sion"]
+
+[[origin]]
+id = "ireland"
+country = "Ireland"
+accent = "Irish"
+weight = 4
+surnames = ["Murphy", "Kelly", "O'Sullivan", "Walsh", "Byrne", "Ryan", "Doyle", "Kavanagh", "Quinn", "O'Brien", "McCarthy", "Gallagher", "Brennan", "Nolan"]
+
+[origin.women]
+1930 = ["Mary", "Bridget", "Kathleen", "Eileen", "Nora", "Maureen", "Philomena", "Margaret"]
+1965 = ["Siobhán", "Niamh", "Gráinne", "Deirdre", "Orla", "Sinéad", "Aoife", "Ciara"]
+1990 = ["Aisling", "Caoimhe", "Róisín", "Saoirse", "Clodagh", "Sorcha", "Aoibhinn", "Ellen"]
+
+[origin.men]
+1930 = ["Patrick", "Michael", "Seamus", "Thomas", "Brendan", "Gerard", "Noel", "Dermot"]
+1965 = ["Declan", "Ciarán", "Colm", "Fergal", "Donal", "Eoin", "Barry", "Seán"]
+1990 = ["Cian", "Oisín", "Darragh", "Conor", "Ruairí", "Shane", "Fionn", "Tadhg"]
+
+[[origin]]
+id = "united_states"
+country = "the United States"
+accent = "American"
+weight = 3
+surnames = ["Johnson", "Miller", "Davis", "Anderson", "Moore", "Martin", "Hill", "White", "Harris", "Clark", "Young", "Allen", "Baker", "Nelson"]
+
+[origin.women]
+1930 = ["Linda", "Barbara", "Patricia", "Donna", "Sandra", "Carol", "Sharon", "Deborah", "Judith"]
+1965 = ["Jennifer", "Jessica", "Amanda", "Melissa", "Heather", "Kimberly", "Angela", "Tracy"]
+1990 = ["Madison", "Ashley", "Brianna", "Taylor", "Alexis", "Kayla", "Samantha", "Hailey"]
+
+[origin.men]
+1930 = ["Robert", "James", "Richard", "Donald", "Gary", "Larry", "Ronald", "Dennis"]
+1965 = ["Christopher", "Jason", "Brian", "Eric", "Scott", "Jeffrey", "Matthew", "Timothy"]
+1990 = ["Tyler", "Austin", "Brandon", "Justin", "Zachary", "Dylan", "Hunter", "Logan"]
+
+[[origin]]
+id = "australia"
+country = "Australia"
+accent = "Australian"
+weight = 2
+surnames = ["Smith", "Jones", "Williams", "Brown", "Wilson", "Taylor", "Kelly", "Ryan", "Martin", "Anderson", "Walker", "Harris", "Young", "Thompson"]
+
+[origin.women]
+1930 = ["Margaret", "Judith", "Robyn", "Gail", "Dianne", "Lorraine", "Jillian", "Wendy"]
+1965 = ["Kylie", "Melissa", "Nicole", "Rebecca", "Belinda", "Danielle", "Natalie", "Leanne"]
+1990 = ["Chloe", "Georgia", "Brooke", "Tahlia", "Mikayla", "Ella", "Matilda", "Jessica"]
+
+[origin.men]
+1930 = ["Graeme", "Ian", "Warren", "Russell", "Allan", "Neville", "Raymond", "Colin"]
+1965 = ["Shane", "Troy", "Brett", "Jason", "Matthew", "Dean", "Darren", "Glenn"]
+1990 = ["Lachlan", "Mitchell", "Blake", "Riley", "Cooper", "Jayden", "Bailey", "Jack"]
+
+[[origin]]
+id = "new_zealand"
+country = "New Zealand"
+accent = "New Zealand"
+weight = 1
+surnames = ["Smith", "Wilson", "Williams", "Brown", "Taylor", "Walker", "Thompson", "Anderson", "Campbell", "Ngata", "Parata", "Tipene", "Rewi", "Henare"]
+
+[origin.women]
+1930 = ["Margaret", "Judith", "Raewyn", "Glenys", "Heather", "Lynette", "Marilyn", "Beverley"]
+1965 = ["Michelle", "Nicola", "Tania", "Aroha", "Kirsty", "Joanne", "Rachel", "Anna"]
+1990 = ["Olivia", "Ruby", "Grace", "Hana", "Aria", "Charlotte", "Anahera", "Kaia"]
+
+[origin.men]
+1930 = ["Graeme", "Colin", "Murray", "Neville", "Trevor", "Wiremu", "Bryan", "Ross"]
+1965 = ["Craig", "Shane", "Hamish", "Rawiri", "Grant", "Glenn", "Andrew", "Tama"]
+1990 = ["Liam", "Nikau", "Tāne", "Riley", "Mason", "Ethan", "Jack", "Ihaia"]
+
+[[origin]]
+id = "south_africa_afrikaans"
+country = "South Africa"
+accent = "South African, a first-language Afrikaans speaker"
+weight = 1
+surnames = ["Botha", "Pretorius", "Nel", "du Plessis", "van Wyk", "Venter", "Joubert", "Steyn", "Coetzee", "Fourie", "Kruger", "du Toit", "Smit", "Swanepoel"]
+
+[origin.women]
+1930 = ["Elsabe", "Marietjie", "Susanna", "Hester", "Johanna", "Magda", "Riana", "Annatjie"]
+1965 = ["Elmarie", "Annelize", "Liezel", "Marelize", "Mariska", "Ilze", "Karin", "Charlene"]
+1990 = ["Anika", "Carla", "Chanté", "Elize", "Lizanne", "Marli", "Jana", "Monique"]
+
+[origin.men]
+1930 = ["Johannes", "Petrus", "Hendrik", "Jacobus", "Gert", "Pieter", "Andries", "Willem"]
+1965 = ["Francois", "Gerhard", "Jaco", "Riaan", "Wynand", "Johan", "Deon", "Hennie"]
+1990 = ["Ruan", "Wian", "Morné", "Schalk", "Christiaan", "Werner", "Dewald", "Jacques"]
+
+[[origin]]
+id = "south_africa_zulu"
+country = "South Africa"
+accent = "South African, a first-language isiZulu speaker"
+weight = 1
+surnames = ["Dlamini", "Nkosi", "Ndlovu", "Khumalo", "Mkhize", "Ngcobo", "Mthembu", "Cele", "Shabalala", "Zungu", "Ntuli", "Buthelezi", "Mhlongo", "Gumede"]
+
+[origin.women]
+1930 = ["Nomvula", "Thandiwe", "Nokuthula", "Sibongile", "Lindiwe", "Ntombi", "Busisiwe", "Zodwa"]
+1965 = ["Zanele", "Thembi", "Nonhlanhla", "Phumzile", "Gugu", "Nompumelelo", "Hlengiwe", "Duduzile"]
+1990 = ["Amahle", "Zinhle", "Nandi", "Minenhle", "Nosipho", "Thandeka", "Nokwanda", "Zama"]
+
+[origin.men]
+1930 = ["Sipho", "Themba", "Bongani", "Mandla", "Mbongeni", "Vusi", "Bheki", "Sibusiso"]
+1965 = ["Thulani", "Sifiso", "Mduduzi", "Nkosinathi", "Jabulani", "Zakhele", "Musa", "Sandile"]
+1990 = ["Lwazi", "Sizwe", "Siyabonga", "Lungelo", "Mthokozisi", "Andile", "Bandile", "Sanele"]
+
+[[origin]]
+id = "jamaica"
+country = "Jamaica"
+accent = "Jamaican"
+weight = 2
+surnames = ["Campbell", "Williams", "Brown", "Thompson", "Gordon", "Grant", "Francis", "Morgan", "Reid", "Clarke", "Bailey", "Robinson", "Henry", "Lewis"]
+
+[origin.women]
+1930 = ["Gloria", "Hyacinth", "Myrtle", "Beverley", "Joyce", "Pearline", "Norma", "Icilda"]
+1965 = ["Marcia", "Sharon", "Paulette", "Andrea", "Sophia", "Simone", "Kerry-Ann", "Tanya"]
+1990 = ["Shanice", "Kimberley", "Jada", "Alicia", "Gabrielle", "Tamara", "Danielle", "Shauna-Kay"]
+
+[origin.men]
+1930 = ["Winston", "Lloyd", "Clive", "Errol", "Delroy", "Neville", "Desmond", "Cecil"]
+1965 = ["Andre", "Marlon", "Devon", "Courtney", "Dwayne", "Fitzroy", "Donovan", "Leroy"]
+1990 = ["Kemar", "Javon", "Jermaine", "Shamar", "Akeem", "Romario", "Dwight", "Tajay"]
+
+[[origin]]
+id = "poland"
+country = "Poland"
+accent = "Polish"
+weight = 5
+surnames = ["Nowak", "Wójcik", "Kowalczyk", "Woźniak", "Mazur", "Krawczyk", "Kaczmarek", "Zając", "Król", "Wieczorek", "Pawlak", "Dudek", "Adamczyk", "Sikora"]
+
+[origin.women]
+1930 = ["Barbara", "Krystyna", "Danuta", "Halina", "Teresa", "Janina", "Elżbieta", "Wanda"]
+1965 = ["Agnieszka", "Katarzyna", "Magdalena", "Joanna", "Anna", "Monika", "Beata", "Ewa"]
+1990 = ["Natalia", "Aleksandra", "Weronika", "Julia", "Karolina", "Paulina", "Wiktoria", "Zuzanna"]
+
+[origin.men]
+1930 = ["Stanisław", "Józef", "Tadeusz", "Jerzy", "Zbigniew", "Kazimierz", "Ryszard", "Henryk"]
+1965 = ["Piotr", "Tomasz", "Krzysztof", "Paweł", "Marcin", "Grzegorz", "Andrzej", "Marek"]
+1990 = ["Jakub", "Mateusz", "Kacper", "Bartosz", "Szymon", "Michał", "Dawid", "Filip"]
+
+[[origin]]
+id = "romania"
+country = "Romania"
+accent = "Romanian"
+weight = 4
+surnames = ["Popescu", "Ionescu", "Popa", "Dumitru", "Stan", "Stoica", "Munteanu", "Lazăr", "Matei", "Ciobanu", "Rusu", "Moldovan", "Dinu", "Tudor"]
+
+[origin.women]
+1930 = ["Maria", "Elena", "Florica", "Viorica", "Aurelia", "Ileana", "Doina", "Silvia"]
+1965 = ["Mihaela", "Daniela", "Gabriela", "Carmen", "Cristina", "Luminița", "Mariana", "Adriana"]
+1990 = ["Andreea", "Alexandra", "Bianca", "Ioana", "Larisa", "Denisa", "Roxana", "Alina"]
+
+[origin.men]
+1930 = ["Ion", "Gheorghe", "Vasile", "Constantin", "Nicolae", "Petru", "Mircea", "Ilie"]
+1965 = ["Adrian", "Florin", "Bogdan", "Marius", "Cătălin", "Mihai", "Cristian", "Sorin"]
+1990 = ["Andrei", "Alexandru", "Ștefan", "Răzvan", "Ionuț", "Vlad", "Darius", "Gabriel"]
+
+[[origin]]
+id = "italy"
+country = "Italy"
+accent = "Italian"
+weight = 3
+surnames = ["Rossi", "Russo", "Fontana", "Esposito", "Bianchi", "Romano", "Colombo", "Ricci", "Marino", "Greco", "Gallo", "Conti", "De Luca", "Mancini"]
+
+[origin.women]
+1930 = ["Maria", "Anna", "Giuseppina", "Rosa", "Angela", "Carla", "Franca", "Lucia"]
+1965 = ["Francesca", "Paola", "Barbara", "Silvia", "Monica", "Elena", "Simona", "Laura"]
+1990 = ["Giulia", "Chiara", "Martina", "Sara", "Alessia", "Federica", "Valentina", "Sofia"]
+
+[origin.men]
+1930 = ["Giuseppe", "Giovanni", "Antonio", "Franco", "Bruno", "Sergio", "Vittorio", "Enzo"]
+1965 = ["Marco", "Andrea", "Roberto", "Stefano", "Massimo", "Luca", "Paolo", "Davide"]
+1990 = ["Matteo", "Alessandro", "Lorenzo", "Simone", "Federico", "Riccardo", "Gabriele", "Tommaso"]
+
+[[origin]]
+id = "germany"
+country = "Germany"
+accent = "German"
+weight = 3
+surnames = ["Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Meyer", "Wagner", "Becker", "Schulz", "Hoffmann", "Koch", "Richter", "Wolf", "Schröder"]
+
+[origin.women]
+1930 = ["Ursula", "Helga", "Renate", "Ingrid", "Gisela", "Brigitte", "Christa", "Hannelore"]
+1965 = ["Sabine", "Katrin", "Anja", "Claudia", "Stefanie", "Nicole", "Susanne", "Petra"]
+1990 = ["Lena", "Laura", "Lisa", "Anna", "Lea", "Sarah", "Johanna", "Marie"]
+
+[origin.men]
+1930 = ["Klaus", "Jürgen", "Dieter", "Wolfgang", "Manfred", "Günter", "Horst", "Werner"]
+1965 = ["Stefan", "Andreas", "Thomas", "Michael", "Frank", "Matthias", "Markus", "Christian"]
+1990 = ["Lukas", "Jonas", "Leon", "Tim", "Niklas", "Felix", "Maximilian", "Jan"]
+
+[[origin]]
+id = "spain"
+country = "Spain"
+accent = "Spanish"
+weight = 2
+surnames = ["García", "Fernández", "González", "Rodríguez", "López", "Martínez", "Sánchez", "Pérez", "Gómez", "Ruiz", "Díaz", "Moreno", "Navarro", "Serrano"]
+
+[origin.women]
+1930 = ["Carmen", "Dolores", "Pilar", "Josefa", "Mercedes", "Rosario", "Concepción", "Antonia"]
+1965 = ["Cristina", "Marta", "Laura", "Beatriz", "Raquel", "Susana", "Nuria", "Elena"]
+1990 = ["Lucía", "Paula", "Sara", "Andrea", "Alba", "Claudia", "Irene", "Marina"]
+
+[origin.men]
+1930 = ["José", "Antonio", "Manuel", "Francisco", "Juan", "Ramón", "Joaquín", "Rafael"]
+1965 = ["Javier", "David", "Carlos", "Sergio", "Jorge", "Óscar", "Alberto", "Raúl"]
+1990 = ["Pablo", "Alejandro", "Álvaro", "Adrián", "Daniel", "Hugo", "Iván", "Diego"]
+
+[[origin]]
+id = "portugal"
+country = "Portugal"
+accent = "European Portuguese"
+weight = 2
+surnames = ["Silva", "Santos", "Ferreira", "Pereira", "Oliveira", "Costa", "Rodrigues", "Martins", "Sousa", "Fernandes", "Gonçalves", "Gomes", "Lopes", "Marques"]
+
+[origin.women]
+1930 = ["Maria", "Rosa", "Fernanda", "Lurdes", "Conceição", "Graça", "Fátima", "Isabel"]
+1965 = ["Ana", "Sandra", "Sónia", "Paula", "Carla", "Cláudia", "Susana", "Patrícia"]
+1990 = ["Inês", "Beatriz", "Mariana", "Catarina", "Joana", "Rita", "Sara", "Leonor"]
+
+[origin.men]
+1930 = ["José", "Manuel", "António", "Joaquim", "Fernando", "Armando", "Albano", "Américo"]
+1965 = ["Paulo", "Rui", "Nuno", "Pedro", "Luís", "Jorge", "Carlos", "Sérgio"]
+1990 = ["João", "Tiago", "Diogo", "Rodrigo", "Gonçalo", "André", "Ricardo", "Bruno"]
+
+[[origin]]
+id = "france"
+country = "France"
+accent = "French"
+weight = 2
+surnames = ["Martin", "Dubois", "Robert", "Richard", "Petit", "Durand", "Leroy", "Moreau", "Lefebvre", "Garnier", "Fournier", "Girard", "Bonnet", "Mercier"]
+
+[origin.women]
+1930 = ["Monique", "Françoise", "Jacqueline", "Nicole", "Danielle", "Josiane", "Michèle", "Colette"]
+1965 = ["Nathalie", "Isabelle", "Sandrine", "Valérie", "Stéphanie", "Véronique", "Céline", "Sophie"]
+1990 = ["Camille", "Manon", "Chloé", "Pauline", "Léa", "Marine", "Clara", "Inès"]
+
+[origin.men]
+1930 = ["Jean", "Michel", "Jacques", "Bernard", "Gérard", "Alain", "Daniel", "Claude"]
+1965 = ["Christophe", "Stéphane", "Laurent", "Sébastien", "Frédéric", "Nicolas", "Olivier", "Thierry"]
+1990 = ["Hugo", "Lucas", "Théo", "Maxime", "Thomas", "Antoine", "Julien", "Clément"]
+
+[[origin]]
+id = "turkey"
+country = "Turkey"
+accent = "Turkish"
+weight = 2
+surnames = ["Yılmaz", "Kaya", "Demir", "Şahin", "Çelik", "Yıldız", "Aydın", "Öztürk", "Arslan", "Doğan", "Kılıç", "Aslan", "Koç", "Kurt"]
+
+[origin.women]
+1930 = ["Fatma", "Ayşe", "Emine", "Hatice", "Hanife", "Sevim", "Nermin", "Gülsüm"]
+1965 = ["Hülya", "Sevgi", "Filiz", "Esra", "Gülşen", "Nurcan", "Serpil", "Derya"]
+1990 = ["Elif", "Zeynep", "Merve", "Selin", "Büşra", "Ece", "Kübra", "Irmak"]
+
+[origin.men]
+1930 = ["Mehmet", "Mustafa", "Ahmet", "Hüseyin", "Hasan", "İsmail", "Osman", "Halil"]
+1965 = ["Murat", "Levent", "Kemal", "Erkan", "Volkan", "Tamer", "Cengiz", "Serkan"]
+1990 = ["Emre", "Burak", "Berk", "Mert", "Eren", "Kaan", "Yusuf", "Onur"]
+
+[[origin]]
+id = "india_hindi"
+country = "India"
+accent = "North Indian, a Hindi speaker"
+weight = 3
+surnames = ["Sharma", "Gupta", "Verma", "Agarwal", "Mishra", "Srivastava", "Tiwari", "Pandey", "Yadav", "Saxena", "Joshi", "Chauhan", "Malhotra", "Kapoor"]
+
+[origin.women]
+1930 = ["Kamla", "Savitri", "Shanti", "Sushila", "Pushpa", "Usha", "Kusum", "Saroj"]
+1965 = ["Sunita", "Anita", "Kavita", "Rekha", "Seema", "Poonam", "Meena", "Alka"]
+1990 = ["Pooja", "Neha", "Priyanka", "Shreya", "Ritika", "Divya", "Aditi", "Ananya"]
+
+[origin.men]
+1930 = ["Ram", "Krishan", "Mohan", "Hari", "Satish", "Ramesh", "Prem", "Govind"]
+1965 = ["Rajesh", "Sanjay", "Sunil", "Anil", "Manoj", "Ajay", "Vinod", "Ashok"]
+1990 = ["Rahul", "Rohit", "Amit", "Vikas", "Ankit", "Arjun", "Aditya", "Karan"]
+
+[[origin]]
+id = "india_gujarati"
+country = "India"
+accent = "Indian, a Gujarati speaker"
+weight = 2
+surnames = ["Patel", "Shah", "Desai", "Mehta", "Parekh", "Pandya", "Bhatt", "Trivedi", "Thakkar", "Doshi", "Amin", "Vyas", "Raval", "Soni"]
+
+[origin.women]
+1930 = ["Kokila", "Hansa", "Jyotsna", "Manjula", "Sarla", "Chandrika", "Kanta", "Vimla"]
+1965 = ["Nisha", "Bhavna", "Rupal", "Hetal", "Dipti", "Falguni", "Hina", "Mittal"]
+1990 = ["Krupa", "Dhruvi", "Riya", "Khushi", "Jinal", "Prachi", "Nidhi", "Shivani"]
+
+[origin.men]
+1930 = ["Ramesh", "Mahesh", "Dinesh", "Jayant", "Navin", "Kantilal", "Bhupendra", "Harshad"]
+1965 = ["Hitesh", "Ketan", "Jignesh", "Paresh", "Nilesh", "Bhavesh", "Mehul", "Chirag"]
+1990 = ["Dhruv", "Jay", "Rushil", "Parth", "Kunal", "Nisarg", "Yash", "Hardik"]
+
+[[origin]]
+id = "india_malayali"
+country = "India"
+accent = "South Indian, a Malayalam speaker from Kerala"
+weight = 1
+surnames = ["Nair", "Menon", "Pillai", "Kurup", "Panicker", "Warrier", "Nambiar", "Unnithan", "Kaimal", "Marar"]
+
+[origin.women]
+1930 = ["Lakshmi", "Sarojini", "Bhavani", "Parvathy", "Sumathi", "Leela", "Kamalam", "Radha"]
+1965 = ["Sreeja", "Bindu", "Sindhu", "Latha", "Deepa", "Reshma", "Shobha", "Asha"]
+1990 = ["Anjali", "Aiswarya", "Gopika", "Athira", "Arya", "Sreelakshmi", "Keerthana", "Meera"]
+
+[origin.men]
+1930 = ["Gopalan", "Krishnan", "Narayanan", "Raghavan", "Madhavan", "Balan", "Velayudhan", "Sankaran"]
+1965 = ["Suresh", "Rajeev", "Biju", "Shaji", "Sajan", "Prakash", "Sreekumar", "Unnikrishnan"]
+1990 = ["Vishnu", "Akhil", "Abhijith", "Nikhil", "Sreejith", "Anand", "Arun", "Gokul"]
+
+[[origin]]
+id = "pakistan"
+country = "Pakistan"
+accent = "Pakistani, a Punjabi and Urdu speaker"
+weight = 4
+surnames = ["Khan", "Ahmed", "Hussain", "Malik", "Iqbal", "Qureshi", "Chaudhry", "Raza", "Shah", "Siddiqui", "Akhtar", "Javed", "Mirza", "Sheikh"]
+
+[origin.women]
+1930 = ["Bilquis", "Zubaida", "Razia", "Parveen", "Naseem", "Shamim", "Kulsoom", "Rashida"]
+1965 = ["Nadia", "Rabia", "Shazia", "Saima", "Asma", "Farzana", "Uzma", "Samina"]
+1990 = ["Ayesha", "Fatima", "Sana", "Hira", "Zainab", "Maryam", "Iqra", "Mahnoor"]
+
+[origin.men]
+1930 = ["Muhammad", "Bashir", "Nazir", "Rashid", "Aslam", "Akram", "Sharif", "Yousaf"]
+1965 = ["Tariq", "Waqas", "Asif", "Kamran", "Khalid", "Shahid", "Nadeem", "Faisal"]
+1990 = ["Bilal", "Usman", "Hamza", "Ali", "Hassan", "Rayyan", "Umar", "Saad"]
+
+[[origin]]
+id = "bangladesh"
+country = "Bangladesh"
+accent = "Bangladeshi, a Bengali and Sylheti speaker"
+weight = 2
+surnames = ["Rahman", "Hossain", "Islam", "Uddin", "Miah", "Chowdhury", "Sarkar", "Alam", "Haque", "Karim", "Talukdar", "Ahmed", "Siddique", "Majumder"]
+
+[origin.women]
+1930 = ["Rokeya", "Jahanara", "Momtaz", "Sufia", "Rahima", "Nurjahan", "Hasina", "Anwara"]
+1965 = ["Nasima", "Shahnaz", "Nazma", "Rehana", "Ruksana", "Taslima", "Jesmin", "Shirin"]
+1990 = ["Sumaiya", "Tasnim", "Nusrat", "Farhana", "Sadia", "Tahmina", "Raisa", "Anika"]
+
+[origin.men]
+1930 = ["Rafiq", "Habib", "Mizanur", "Shafiq", "Anwar", "Jalal", "Kamal", "Motin"]
+1965 = ["Shahid", "Monir", "Jamal", "Faruk", "Mamun", "Selim", "Delwar", "Kabir"]
+1990 = ["Rakib", "Tanvir", "Sabbir", "Nayeem", "Fahim", "Arif", "Shakil", "Rifat"]
+
+[[origin]]
+id = "china"
+country = "China"
+accent = "Mandarin Chinese"
+weight = 3
+surnames = ["Li", "Zhang", "Liu", "Chen", "Yang", "Huang", "Zhao", "Wu", "Zhou", "Xu", "Sun", "Zhu", "Hu", "Guo", "Lin", "Gao"]
+
+[origin.women]
+1930 = ["Guiying", "Xiulan", "Yulan", "Shuzhen", "Guilan", "Fengying", "Xiuying", "Lihua"]
+1965 = ["Hong", "Yan", "Jing", "Hui", "Ping", "Min", "Xia", "Lan"]
+1990 = ["Xinyi", "Siyu", "Jiayi", "Yutong", "Zihan", "Mengqi", "Xiaoyu", "Yuqi"]
+
+[origin.men]
+1930 = ["Jianguo", "Jianhua", "Guoqiang", "Zhiming", "Weiguo", "Deming", "Yongsheng", "Guohua"]
+1965 = ["Wei", "Lei", "Jun", "Yong", "Tao", "Bin", "Peng", "Hai"]
+1990 = ["Hao", "Haoran", "Yuhang", "Zixuan", "Junjie", "Yifan", "Tianyu", "Zhiwei"]
+
+[[origin]]
+id = "philippines"
+country = "the Philippines"
+accent = "Filipino"
+weight = 3
+surnames = ["Santos", "Reyes", "Cruz", "Bautista", "Mendoza", "Villanueva", "Ramos", "Pascual", "Garcia", "Dela Cruz", "Castillo", "Navarro", "Torres", "Gonzales"]
+
+[origin.women]
+1930 = ["Lourdes", "Corazon", "Remedios", "Teresita", "Erlinda", "Leonora", "Rosario", "Natividad"]
+1965 = ["Maricel", "Rowena", "Jocelyn", "Analyn", "Rhea", "Marivic", "Glenda", "Lorna"]
+1990 = ["Kristine", "Angelica", "Jasmine", "Nicole", "Camille", "Patricia", "Joanna", "Mikaela"]
+
+[origin.men]
+1930 = ["Rogelio", "Wilfredo", "Ernesto", "Rodrigo", "Danilo", "Renato", "Eduardo", "Leonardo"]
+1965 = ["Rodel", "Arnel", "Ramon", "Edwin", "Reynaldo", "Noel", "Alvin", "Jomar"]
+1990 = ["John Paul", "Christian", "Kenneth", "Jerome", "Carlo", "Rafael", "Miguel", "Paolo"]
+
+[[origin]]
+id = "vietnam"
+country = "Vietnam"
+accent = "Vietnamese"
+weight = 2
+surnames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Ngô", "Dương", "Lý"]
+
+[origin.women]
+1930 = ["Lan", "Hoa", "Mai", "Hương", "Thu", "Hạnh", "Hằng", "Tuyết"]
+1965 = ["Thủy", "Diệp", "Phương", "Hà", "Yến", "Nhung", "Liên", "Oanh"]
+1990 = ["Linh", "Trang", "Thảo", "Ngọc", "Vy", "Quỳnh", "Anh", "Châu"]
+
+[origin.men]
+1930 = ["Thanh", "Quang", "Hải", "Sơn", "Tùng", "Vinh", "Trung", "Bình"]
+1965 = ["Minh", "Tuấn", "Cường", "Thắng", "Toàn", "Tâm", "Lâm", "Khải"]
+1990 = ["Huy", "Khoa", "Bảo", "Nam", "Long", "Khánh", "Hiếu", "Việt"]
+
+[[origin]]
+id = "japan"
+country = "Japan"
+accent = "Japanese"
+weight = 1
+surnames = ["Sato", "Suzuki", "Takahashi", "Tanaka", "Watanabe", "Ito", "Yamamoto", "Nakamura", "Kobayashi", "Kato", "Yoshida", "Yamada", "Sasaki", "Matsumoto"]
+
+[origin.women]
+1930 = ["Kazuko", "Yoshiko", "Keiko", "Michiko", "Sachiko", "Hiroko", "Yoko", "Fumiko"]
+1965 = ["Yuko", "Naoko", "Akiko", "Tomoko", "Megumi", "Kumiko", "Mayumi", "Ayumi"]
+1990 = ["Haruka", "Misaki", "Yui", "Sakura", "Nanami", "Aoi", "Rin", "Mei"]
+
+[origin.men]
+1930 = ["Hiroshi", "Takashi", "Kazuo", "Masao", "Shigeru", "Yoshio", "Isamu", "Minoru"]
+1965 = ["Kenji", "Makoto", "Daisuke", "Takuya", "Kazuya", "Tetsuya", "Naoki", "Hideki"]
+1990 = ["Shota", "Ryota", "Haruto", "Yuto", "Sota", "Ren", "Daiki", "Kaito"]
+
+[[origin]]
+id = "south_korea"
+country = "South Korea"
+accent = "Korean"
+weight = 1
+surnames = ["Kim", "Lee", "Park", "Choi", "Jung", "Kang", "Cho", "Yoon", "Jang", "Lim", "Han", "Oh", "Seo", "Shin"]
+
+[origin.women]
+1930 = ["Youngja", "Soonja", "Jungsook", "Myungsook", "Kyungja", "Younghee", "Mija", "Jungja"]
+1965 = ["Jiyoung", "Eunjung", "Mikyung", "Hyejin", "Sunyoung", "Sunhee", "Soojin", "Eunhee"]
+1990 = ["Seoyeon", "Minseo", "Yerin", "Subin", "Gaeun", "Hayoon", "Yujin", "Dahye"]
+
+[origin.men]
+1930 = ["Youngsoo", "Youngho", "Sangchul", "Jongsoo", "Kwangsoo", "Byungho", "Chulsoo", "Myungho"]
+1965 = ["Jihoon", "Sungmin", "Donghyun", "Jaewon", "Hyunwoo", "Sanghoon", "Junho", "Seungwoo"]
+1990 = ["Minjun", "Seojun", "Dohyun", "Jiho", "Joonwoo", "Hyunjun", "Siwoo", "Yejun"]
+
+[[origin]]
+id = "iran"
+country = "Iran"
+accent = "Iranian, a Persian speaker"
+weight = 2
+surnames = ["Hosseini", "Ahmadi", "Mohammadi", "Karimi", "Rezaei", "Moradi", "Jafari", "Rahimi", "Sadeghi", "Kazemi", "Ebrahimi", "Tehrani", "Azizi", "Najafi"]
+
+[origin.women]
+1930 = ["Parvin", "Mahin", "Fereshteh", "Shahla", "Pouran", "Mehri", "Simin", "Touran"]
+1965 = ["Maryam", "Fatemeh", "Zahra", "Shirin", "Leila", "Nasrin", "Mitra", "Azadeh"]
+1990 = ["Niloufar", "Parisa", "Sara", "Negar", "Ghazal", "Kimia", "Mahsa", "Yasaman"]
+
+[origin.men]
+1930 = ["Hassan", "Mahmoud", "Ahmad", "Jafar", "Abbas", "Bahram", "Parviz", "Manouchehr"]
+1965 = ["Reza", "Mohammad", "Hossein", "Mehdi", "Ali", "Babak", "Kaveh", "Dariush"]
+1990 = ["Amir", "Arash", "Pouya", "Sina", "Kian", "Arman", "Omid", "Behnam"]
+
+[[origin]]
+id = "nigeria_yoruba"
+country = "Nigeria"
+accent = "Nigerian, a Yoruba speaker"
+weight = 2
+surnames = ["Adeyemi", "Balogun", "Adebayo", "Ogunleye", "Afolabi", "Adeleke", "Ogundipe", "Akinola", "Oyelaran", "Bello", "Ajayi", "Ogunbiyi", "Oyewole", "Adesanya"]
+
+[origin.women]
+1930 = ["Adunni", "Abosede", "Titilayo", "Folasade", "Olufunke", "Mojisola", "Iyabo", "Bolanle"]
+1965 = ["Folake", "Yetunde", "Funmilayo", "Bisola", "Kemi", "Bukola", "Ronke", "Tolulope"]
+1990 = ["Temitope", "Damilola", "Ayomide", "Morenike", "Toluwani", "Ifeoluwa", "Adeola", "Simisola"]
+
+[origin.men]
+1930 = ["Adewale", "Babatunde", "Akinwale", "Olusegun", "Oladipo", "Kolawole", "Ayodele", "Adeniyi"]
+1965 = ["Femi", "Tunde", "Kayode", "Segun", "Olumide", "Gbenga", "Wale", "Dapo"]
+1990 = ["Tobi", "Seyi", "Damilare", "Ayodeji", "Tomiwa", "Kunle", "Dayo", "Fisayo"]
+
+[[origin]]
+id = "nigeria_igbo"
+country = "Nigeria"
+accent = "Nigerian, an Igbo speaker"
+weight = 2
+surnames = ["Okafor", "Okeke", "Eze", "Nwosu", "Okonkwo", "Nwachukwu", "Obi", "Okoro", "Chukwu", "Igwe", "Nnaji", "Ugwu", "Anyanwu", "Ibe"]
+
+[origin.women]
+1930 = ["Ngozi", "Chinyere", "Nkechi", "Ifeoma", "Obiageli", "Nneka", "Ebere", "Adaeze"]
+1965 = ["Chioma", "Amaka", "Uju", "Ebele", "Ifeyinwa", "Ogechi", "Chinwe", "Nkiru"]
+1990 = ["Chiamaka", "Adaora", "Chidinma", "Ebube", "Ugochi", "Ifunanya", "Chinenye", "Oluchi"]
+
+[origin.men]
+1930 = ["Chukwuemeka", "Ikechukwu", "Nnamdi", "Okechukwu", "Chinedu", "Uchenna", "Obiora", "Azubuike"]
+1965 = ["Obinna", "Chidi", "Ifeanyi", "Kelechi", "Nnaemeka", "Chibuzo", "Ejike", "Emeka"]
+1990 = ["Chinonso", "Tochukwu", "Chukwudi", "Ebuka", "Munachi", "Chimezie", "Kenechukwu", "Somto"]
+
+[[origin]]
+id = "ghana"
+country = "Ghana"
+accent = "Ghanaian, a Twi speaker"
+weight = 2
+surnames = ["Asante", "Owusu", "Boateng", "Osei", "Agyeman", "Appiah", "Darko", "Amoah", "Ofori", "Mensah", "Antwi", "Asamoah", "Frimpong", "Acheampong"]
+
+[origin.women]
+1930 = ["Akua", "Yaa", "Comfort", "Adwoa", "Abena", "Esi", "Afua", "Felicia"]
+1965 = ["Akosua", "Gifty", "Efua", "Ama", "Mavis", "Agnes", "Abigail", "Vida"]
+1990 = ["Adjoa", "Priscilla", "Rebecca", "Belinda", "Josephine", "Eunice", "Nhyira", "Afia"]
+
+[origin.men]
+1930 = ["Kwame", "Kofi", "Kwaku", "Yaw", "Kwabena", "Kojo", "Kwesi", "Ekow"]
+1965 = ["Kwasi", "Fiifi", "Kweku", "Emmanuel", "Isaac", "Samuel", "Kwadwo", "Ebenezer"]
+1990 = ["Kelvin", "Derrick", "Bernard", "Elijah", "Daniel", "Kwame", "Yaw", "Kojo"]
+
+[[origin]]
+id = "kenya"
+country = "Kenya"
+accent = "Kenyan"
+weight = 2
+surnames = ["Kamau", "Otieno", "Mwangi", "Odhiambo", "Njoroge", "Ochieng", "Mutua", "Kariuki", "Onyango", "Wanyama", "Kiprono", "Korir", "Omondi", "Njenga"]
+
+[origin.women]
+1930 = ["Grace", "Mary", "Esther", "Rose", "Ruth", "Wanjiku", "Jane", "Wambui"]
+1965 = ["Mercy", "Faith", "Joyce", "Caroline", "Lucy", "Beatrice", "Njeri", "Achieng"]
+1990 = ["Sharon", "Cynthia", "Diana", "Brenda", "Ivy", "Akinyi", "Wairimu", "Naomi"]
+
+[origin.men]
+1930 = ["John", "Peter", "Joseph", "Samuel", "Francis", "Josphat", "Wilson", "Daniel"]
+1965 = ["Dennis", "Moses", "Collins", "Kennedy", "Geoffrey", "Patrick", "Evans", "Wycliffe"]
+1990 = ["Brian", "Victor", "Ian", "Felix", "Alvin", "Eric", "Kelvin", "Allan"]
+
+[[origin]]
+id = "brazil"
+country = "Brazil"
+accent = "Brazilian Portuguese"
+weight = 2
+surnames = ["Silva", "Santos", "Oliveira", "Souza", "Costa", "Pereira", "Almeida", "Carvalho", "Ribeiro", "Lima", "Araújo", "Rodrigues", "Ferreira", "Nascimento"]
+
+[origin.women]
+1930 = ["Maria", "Francisca", "Antônia", "Terezinha", "Raimunda", "Sebastiana", "Aparecida", "Benedita"]
+1965 = ["Cláudia", "Adriana", "Patrícia", "Fernanda", "Luciana", "Simone", "Andréa", "Márcia"]
+1990 = ["Juliana", "Camila", "Amanda", "Bruna", "Larissa", "Letícia", "Gabriela", "Beatriz"]
+
+[origin.men]
+1930 = ["José", "João", "Antônio", "Francisco", "Sebastião", "Raimundo", "Geraldo", "Benedito"]
+1965 = ["Marcelo", "Carlos", "Paulo", "Fábio", "Rodrigo", "Alexandre", "Eduardo", "Marcos"]
+1990 = ["Lucas", "Gabriel", "Matheus", "Felipe", "Guilherme", "Rafael", "Gustavo", "Thiago"]
+
+[[origin]]
+id = "mexico"
+country = "Mexico"
+accent = "Mexican Spanish"
+weight = 1
+surnames = ["Hernández", "García", "Martínez", "López", "González", "Pérez", "Rodríguez", "Sánchez", "Ramírez", "Flores", "Cruz", "Torres", "Gómez", "Morales"]
+
+[origin.women]
+1930 = ["María", "Guadalupe", "Josefina", "Rosa", "Juana", "Margarita", "Socorro", "Esperanza"]
+1965 = ["Verónica", "Patricia", "Leticia", "Araceli", "Claudia", "Gabriela", "Adriana", "Alejandra"]
+1990 = ["Daniela", "Fernanda", "Andrea", "Valeria", "Mariana", "Ximena", "Karla", "Paola"]
+
+[origin.men]
+1930 = ["José", "Juan", "Francisco", "Pedro", "Manuel", "Salvador", "Ramón", "Alfonso"]
+1965 = ["Jorge", "Arturo", "Ricardo", "Fernando", "Alejandro", "Roberto", "Javier", "Rubén"]
+1990 = ["Luis", "Diego", "Eduardo", "Carlos", "Miguel Ángel", "Sebastián", "Emiliano", "Óscar"]

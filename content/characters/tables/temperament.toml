@@ -1,0 +1,210 @@
+# Temperament: the six HEXACO domains and their 24 facets (Lee and Ashton), with descriptions
+# of each end in our own words. `values` says how strongly each core value pulls a domain up
+# (positive) or down. Then the four adult attachment styles (Bartholomew and Horowitz), with
+# base weights and conditions as in events.toml. Sources are in README.md.
+
+[[domain]]
+id = "honesty_humility"
+name = "Honesty-Humility"
+values = { honesty = 1.0, equality = 0.4, justice = 0.3, success = -0.8, ambition = -0.6, pleasure = -0.4 }
+
+[[domain.facet]]
+id = "sincerity"
+name = "Sincerity"
+low = "flatters and works on people to get what they want"
+high = "says what they mean and won't flatter anyone to get ahead"
+
+[[domain.facet]]
+id = "fairness"
+name = "Fairness"
+low = "will cut corners or bend the rules for their own gain"
+high = "won't cheat, even when nobody would ever know"
+
+[[domain.facet]]
+id = "greed_avoidance"
+name = "Greed Avoidance"
+low = "wants money and nice things, and wants people to see them"
+high = "unbothered by money, status or showing off"
+
+[[domain.facet]]
+id = "modesty"
+name = "Modesty"
+low = "thinks they deserve more respect than most people"
+high = "doesn't think of themselves as anyone special"
+
+[[domain]]
+id = "emotionality"
+name = "Emotionality"
+values = { security = 0.7, connection = 0.5, compassion = 0.3, peace_of_mind = 0.3, adventure = -0.8, independence = -0.4 }
+
+[[domain.facet]]
+id = "fearfulness"
+name = "Fearfulness"
+low = "physically fearless and shrugs off danger"
+high = "avoids risk and is scared of getting hurt"
+
+[[domain.facet]]
+id = "anxiety"
+name = "Anxiety"
+low = "rarely worries and stays calm under pressure"
+high = "worries over small things and frets about what might go wrong"
+
+[[domain.facet]]
+id = "dependence"
+name = "Dependence"
+low = "handles their troubles alone and doesn't look for comfort"
+high = "leans on other people for support and reassurance"
+
+[[domain.facet]]
+id = "sentimentality"
+name = "Sentimentality"
+low = "rarely moved, and dry-eyed at goodbyes"
+high = "easily moved, and feels other people's feelings as their own"
+
+[[domain]]
+id = "extraversion"
+name = "Extraversion"
+values = { connection = 0.6, optimism = 0.7, adventure = 0.5, pleasure = 0.3, success = 0.2, peace_of_mind = -0.2 }
+
+[[domain.facet]]
+id = "social_self_esteem"
+name = "Social Self-Esteem"
+low = "suspects people don't like them much"
+high = "comfortable in their own skin and sure they're liked"
+
+[[domain.facet]]
+id = "social_boldness"
+name = "Social Boldness"
+low = "shy in a group and hates having to speak up"
+high = "speaks up, takes charge and talks easily to strangers"
+
+[[domain.facet]]
+id = "sociability"
+name = "Sociability"
+low = "would rather be on their own than at a party"
+high = "loves company and will talk to anyone"
+
+[[domain.facet]]
+id = "liveliness"
+name = "Liveliness"
+low = "low-key and rarely bubbly"
+high = "cheerful, energetic and full of enthusiasm"
+
+[[domain]]
+id = "agreeableness"
+name = "Agreeableness"
+values = { peace_of_mind = 0.6, compassion = 0.5, loyalty = 0.2, self_respect = -0.4, justice = -0.2, ambition = -0.3 }
+
+[[domain.facet]]
+id = "forgivingness"
+name = "Forgivingness"
+low = "holds a grudge for years"
+high = "forgives quickly and gives people second chances"
+
+[[domain.facet]]
+id = "gentleness"
+name = "Gentleness"
+low = "blunt and quick to criticise"
+high = "mild and lenient in judging other people"
+
+[[domain.facet]]
+id = "flexibility"
+name = "Flexibility"
+low = "stubborn and argues rather than give ground"
+high = "happy to compromise and go along with others"
+
+[[domain.facet]]
+id = "patience"
+name = "Patience"
+low = "quick-tempered and snaps easily"
+high = "slow to anger and stays calm when provoked"
+
+[[domain]]
+id = "conscientiousness"
+name = "Conscientiousness"
+values = { discipline = 1.0, responsibility = 0.7, security = 0.3, success = 0.3, pleasure = -0.6, freedom = -0.3 }
+
+[[domain.facet]]
+id = "organization"
+name = "Organization"
+low = "messy, and loses track of things"
+high = "tidy, and plans everything ahead"
+
+[[domain.facet]]
+id = "diligence"
+name = "Diligence"
+low = "does the minimum and avoids hard work"
+high = "works hard and pushes themselves"
+
+[[domain.facet]]
+id = "perfectionism"
+name = "Perfectionism"
+low = "happy with rough work and a few mistakes"
+high = "checks every detail and can't leave things imperfect"
+
+[[domain.facet]]
+id = "prudence"
+name = "Prudence"
+low = "acts on impulse"
+high = "thinks hard before acting and is careful with decisions"
+
+[[domain]]
+id = "openness"
+name = "Openness to Experience"
+values = { creativity = 0.9, open_mindedness = 0.8, knowledge = 0.6, adventure = 0.3, tradition = -0.7, obedience = -0.5 }
+
+[[domain.facet]]
+id = "aesthetic_appreciation"
+name = "Aesthetic Appreciation"
+low = "indifferent to art and scenery"
+high = "moved by beauty in art and in nature"
+
+[[domain.facet]]
+id = "inquisitiveness"
+name = "Inquisitiveness"
+low = "incurious about how things work or about faraway places"
+high = "curious about science, other places and how things work"
+
+[[domain.facet]]
+id = "originality"
+name = "Creativity"
+low = "sticks to proven ways and isn't inventive"
+high = "inventive, always coming up with new ideas"
+
+[[domain.facet]]
+id = "unconventionality"
+name = "Unconventionality"
+low = "conventional, and likes things done the normal way"
+high = "drawn to unusual ideas and unusual people"
+
+[[attachment]]
+id = "secure"
+name = "secure"
+text = "comfortable with closeness and with being alone; trusts people until given a reason not to"
+weight = 55
+lean = { emotionality = -0.5, extraversion = 0.5, agreeableness = 0.3 }
+boost = { "upbringing=two_parents" = 1.2 }
+
+[[attachment]]
+id = "anxious"
+name = "anxious-preoccupied"
+text = "craves closeness, fears being left, and reads any distance as rejection"
+weight = 20
+lean = { emotionality = 1.2, social_self_esteem = -0.8 }
+boost = { lost_parent_young = 1.8, parents_divorced = 1.5, "upbringing=care" = 2, "upbringing=single_parent" = 1.2 }
+
+[[attachment]]
+id = "dismissing"
+name = "dismissive-avoidant"
+text = "prizes independence, keeps people at arm's length and is uneasy being needed"
+weight = 15
+lean = { dependence = -1, sentimentality = -0.6, sociability = -0.3 }
+boost = { "upbringing=care" = 1.5, boarding_school = 1.8 }
+
+[[attachment]]
+id = "fearful"
+name = "fearful-avoidant"
+text = "wants closeness but expects to be hurt, so pulls away first"
+weight = 10
+lean = { emotionality = 0.8, social_self_esteem = -1 }
+boost = { "upbringing=care" = 2.5, bullied = 1.8, parent_in_prison = 1.5, family_lost_home = 1.3 }

@@ -1,0 +1,1180 @@
+# What pushes against a character being consistent and nice. Each resident gets one of each:
+#   contradiction  a time they acted against one of their own top values (`value`)
+#   wound          an old hurt they still carry
+#   secret         something they keep from the people around them
+#   want           what they think they want, and the need it stands in for
+# Conditions are as in README.md; `boost` and `after` can also name a wound or contradiction
+# drawn earlier, and `attachment=...` tests their attachment style.
+
+# Contradictions, three for each core value.
+
+[[contradiction]]
+id = "stayed_in_safe_job"
+value = "freedom"
+text = "stayed for years in a job they hated because it was safe"
+ages = [22, 110]
+
+[[contradiction]]
+id = "talked_friend_out_of_adventure"
+value = "freedom"
+text = "talked a friend out of a big adventure because they'd miss them"
+
+[[contradiction]]
+id = "signed_away_a_decade"
+value = "freedom"
+text = "signed a contract that ran their life for ten years"
+ages = [20, 110]
+
+[[contradiction]]
+id = "parents_paid"
+value = "independence"
+text = "let their parents pay their way well into their thirties"
+ages = [32, 110]
+
+[[contradiction]]
+id = "stayed_to_avoid_being_alone"
+value = "independence"
+text = "stayed with a partner mostly because they couldn't face living alone"
+ages = [22, 110]
+
+[[contradiction]]
+id = "let_relative_decide"
+value = "independence"
+text = "let a relative make a big decision for them, then blamed them for it"
+
+[[contradiction]]
+id = "kept_quiet_humiliated"
+value = "self_respect"
+text = "kept quiet while a boss humiliated them in front of everyone"
+ages = [18, 110]
+
+[[contradiction]]
+id = "begged_ex"
+value = "self_respect"
+text = "begged an ex who treated them badly to come back"
+ages = [18, 110]
+
+[[contradiction]]
+id = "laughed_at_own_expense"
+value = "self_respect"
+text = "laughed along at jokes about themselves for years to keep a job"
+ages = [18, 110]
+
+[[contradiction]]
+id = "buried_talent"
+value = "self_actualization"
+text = "gave up a real talent because it was easier not to try"
+
+[[contradiction]]
+id = "studied_to_please"
+value = "self_actualization"
+text = "turned down a place to study what they loved, to please their parents"
+ages = [18, 110]
+
+[[contradiction]]
+id = "job_below_them"
+value = "self_actualization"
+text = "spent years in a job far below what they could do, out of fear"
+ages = [25, 110]
+
+[[contradiction]]
+id = "passed_off_design"
+value = "creativity"
+text = "passed off someone else's design as their own"
+ages = [18, 110]
+
+[[contradiction]]
+id = "mocked_friends_art"
+value = "creativity"
+text = "mocked a friend's art out of jealousy"
+
+[[contradiction]]
+id = "stopped_making"
+value = "creativity"
+text = "stopped making anything for twenty years after one harsh review"
+ages = [36, 110]
+
+[[contradiction]]
+id = "lied_in_court"
+value = "honesty"
+text = "lied in court to protect a friend"
+ages = [18, 110]
+
+[[contradiction]]
+id = "let_someone_take_blame"
+value = "honesty"
+text = "let a colleague take the blame for their mistake"
+ages = [18, 110]
+
+[[contradiction]]
+id = "kept_the_money"
+value = "honesty"
+text = "kept a large sum paid to them by mistake"
+ages = [18, 110]
+
+[[contradiction]]
+id = "walked_past"
+value = "compassion"
+text = "walked past someone who needed help and still thinks about it"
+
+[[contradiction]]
+id = "didnt_visit_dying_friend"
+value = "compassion"
+text = "never visited a dying friend because they couldn't face it"
+ages = [20, 110]
+
+[[contradiction]]
+id = "ignored_struggling_colleague"
+value = "compassion"
+text = "ignored a colleague who was clearly struggling until they quit"
+ages = [20, 110]
+
+[[contradiction]]
+id = "left_friend_to_take_fall"
+value = "loyalty"
+text = "let a friend take the fall for something they did together"
+
+[[contradiction]]
+id = "switched_sides"
+value = "loyalty"
+text = "switched sides in a family feud when it suited them"
+
+[[contradiction]]
+id = "cheated_on_partner"
+value = "loyalty"
+text = "cheated on a partner who trusted them completely"
+ages = [18, 110]
+
+[[contradiction]]
+id = "kept_quiet_about_unfairness"
+value = "justice"
+text = "kept quiet about a colleague being treated unfairly, to protect their own job"
+ages = [20, 110]
+
+[[contradiction]]
+id = "voted_to_sack"
+value = "justice"
+text = "backed the sacking of a co-worker they knew was innocent"
+ages = [22, 110]
+
+[[contradiction]]
+id = "took_team_credit"
+value = "justice"
+text = "took the credit for a whole team's work"
+ages = [22, 110]
+
+[[contradiction]]
+id = "walked_out_on_commitment"
+value = "responsibility"
+text = "walked out on a commitment and left others to pick up the pieces"
+
+[[contradiction]]
+id = "missed_childs_years"
+value = "responsibility"
+text = "missed most of their child's early years for a job"
+ages = [28, 110]
+when = { children = { min = 1 } }
+
+[[contradiction]]
+id = "drove_off"
+value = "responsibility"
+text = "dented a parked car and drove off without leaving a note"
+ages = [18, 110]
+
+[[contradiction]]
+id = "risked_savings"
+value = "security"
+text = "put the family savings into a risky scheme without telling anyone"
+ages = [25, 110]
+
+[[contradiction]]
+id = "quit_on_a_whim"
+value = "security"
+text = "quit a steady job on a whim"
+ages = [22, 110]
+
+[[contradiction]]
+id = "moved_for_stranger"
+value = "security"
+text = "moved across the world for someone they'd known three weeks"
+ages = [18, 110]
+
+[[contradiction]]
+id = "treated_cleaner_as_invisible"
+value = "equality"
+text = "treated the people who cleaned their office as if they were invisible"
+ages = [20, 110]
+
+[[contradiction]]
+id = "used_connections"
+value = "equality"
+text = "used family connections to get a job ahead of better candidates"
+ages = [20, 110]
+
+[[contradiction]]
+id = "laughed_at_people_like_parents"
+value = "equality"
+text = "laughed at a joke that sneered at people like their own parents"
+
+[[contradiction]]
+id = "missed_funeral"
+value = "tradition"
+text = "missed a parent's funeral and never explained why"
+ages = [20, 110]
+
+[[contradiction]]
+id = "hid_marriage"
+value = "tradition"
+text = "married outside the family's faith and hid it for a year"
+ages = [20, 110]
+
+[[contradiction]]
+id = "sold_heirloom"
+value = "tradition"
+text = "sold a family heirloom to pay for a holiday"
+ages = [20, 110]
+
+[[contradiction]]
+id = "ignored_safety_rule"
+value = "obedience"
+text = "ignored a safety rule at work and caused an accident"
+ages = [18, 110]
+
+[[contradiction]]
+id = "expelled"
+value = "obedience"
+text = "got themselves expelled from school for defying a teacher"
+
+[[contradiction]]
+id = "lied_about_where_lived"
+value = "obedience"
+text = "lied to their parents about where they were living for two years"
+
+[[contradiction]]
+id = "threw_away_career"
+value = "success"
+text = "threw away a promising career over a grudge"
+ages = [25, 110]
+
+[[contradiction]]
+id = "failed_interview_on_purpose"
+value = "success"
+text = "deliberately failed an interview for a job they wanted"
+ages = [20, 110]
+
+[[contradiction]]
+id = "let_business_slide"
+value = "success"
+text = "let a business they'd built slide while they chased something else"
+ages = [30, 110]
+
+[[contradiction]]
+id = "turned_down_leading"
+value = "ambition"
+text = "turned down the chance to lead because they were scared of failing"
+ages = [25, 110]
+
+[[contradiction]]
+id = "coasted"
+value = "ambition"
+text = "coasted for ten years while others overtook them"
+ages = [30, 110]
+
+[[contradiction]]
+id = "stayed_when_chance_was_elsewhere"
+value = "ambition"
+text = "stayed put when their big chance was in another city"
+ages = [20, 110]
+
+[[contradiction]]
+id = "gave_up_training"
+value = "discipline"
+text = "gave up halfway through training they'd sworn to finish"
+
+[[contradiction]]
+id = "let_health_go"
+value = "discipline"
+text = "let their health go for years despite knowing better"
+ages = [25, 110]
+
+[[contradiction]]
+id = "blew_savings"
+value = "discipline"
+text = "spent a whole year's savings in a month"
+ages = [18, 110]
+
+[[contradiction]]
+id = "faked_qualification"
+value = "knowledge"
+text = "made up a qualification on their CV"
+ages = [18, 110]
+
+[[contradiction]]
+id = "refused_to_read_other_side"
+value = "knowledge"
+text = "refused for years to read anything that disagreed with them"
+
+[[contradiction]]
+id = "pretended_to_have_read"
+value = "knowledge"
+text = "pretended to have read books they'd never opened, to impress people"
+
+[[contradiction]]
+id = "cut_off_friend_over_opinion"
+value = "open_mindedness"
+text = "cut off a friend over a difference of opinion"
+
+[[contradiction]]
+id = "refused_to_meet_childs_partner"
+value = "open_mindedness"
+text = "refused to meet their child's partner"
+ages = [40, 110]
+when = { children = { min = 1 } }
+
+[[contradiction]]
+id = "dismissed_new_idea"
+value = "open_mindedness"
+text = "shot down a new idea at work that turned out to be right"
+ages = [20, 110]
+
+[[contradiction]]
+id = "started_feud"
+value = "peace_of_mind"
+text = "started a family feud that's still going"
+
+[[contradiction]]
+id = "sleepless_debt"
+value = "peace_of_mind"
+text = "took on so much debt they couldn't sleep"
+ages = [20, 110]
+
+[[contradiction]]
+id = "neighbour_fight"
+value = "peace_of_mind"
+text = "picked a fight with a neighbour that ran for years"
+ages = [20, 110]
+
+[[contradiction]]
+id = "denied_themselves"
+value = "pleasure"
+text = "spent years denying themselves anything nice out of guilt"
+
+[[contradiction]]
+id = "worked_every_holiday"
+value = "pleasure"
+text = "worked through every holiday for ten years"
+ages = [28, 110]
+
+[[contradiction]]
+id = "turned_down_trip"
+value = "pleasure"
+text = "turned down the trip of a lifetime to impress a boss"
+ages = [20, 110]
+
+[[contradiction]]
+id = "let_best_friend_drift"
+value = "connection"
+text = "let a best friend drift away and never called back"
+
+[[contradiction]]
+id = "missed_siblings_wedding"
+value = "connection"
+text = "missed a sibling's wedding over a petty quarrel"
+ages = [18, 110]
+when = { siblings = { min = 1 } }
+
+[[contradiction]]
+id = "left_without_goodbye"
+value = "connection"
+text = "moved away without saying goodbye to anyone"
+
+[[contradiction]]
+id = "backed_out_of_year_abroad"
+value = "adventure"
+text = "backed out of a year abroad at the last minute"
+
+[[contradiction]]
+id = "turned_down_expedition"
+value = "adventure"
+text = "turned down a place on an expedition because of what people would say"
+ages = [18, 110]
+
+[[contradiction]]
+id = "never_left_town"
+value = "adventure"
+text = "stayed in their home town for decades after swearing they'd leave"
+ages = [35, 110]
+
+[[contradiction]]
+id = "pulled_out_and_it_failed"
+value = "optimism"
+text = "told a friend their plan would fail, then made sure it did by pulling out"
+ages = [20, 110]
+
+[[contradiction]]
+id = "ended_it_before_it_began"
+value = "optimism"
+text = "ended a relationship before it started, sure it would go wrong"
+
+[[contradiction]]
+id = "talked_sibling_out_of_dream"
+value = "optimism"
+text = "talked a sibling out of a dream they were sure wouldn't work"
+when = { siblings = { min = 1 } }
+
+# Wounds
+
+[[wound]]
+id = "everyone_leaves"
+text = "believes anyone they love will leave in the end"
+boost = { lost_parent_young = 3, parents_divorced = 2.5, "attachment=anxious" = 2.5, "attachment=fearful" = 2 }
+
+[[wound]]
+id = "never_good_enough"
+text = "never felt good enough for one of their parents"
+weight = 1.5
+boost = { "attachment=anxious" = 1.5, failed_exams = 1.5 }
+
+[[wound]]
+id = "worth_what_they_earn"
+text = "thinks they're only worth what they earn"
+boost = { family_lost_home = 2, parent_lost_job = 2, "background=working" = 1.3 }
+lean = { success = 1 }
+
+[[wound]]
+id = "ashamed_of_roots"
+text = "ashamed of where they come from, and ashamed of being ashamed"
+boost = { "background=working" = 1.5, bullied = 2, first_in_family_university = 2 }
+
+[[wound]]
+id = "distrusts_kindness"
+text = "can't trust anyone who's kind to them for no reason"
+boost = { "attachment=fearful" = 2.5, friend_betrayed = 2, "upbringing=care" = 2 }
+
+[[wound]]
+id = "blames_self_for_death"
+text = "blames themselves for a death they couldn't have prevented"
+boost = { sibling_died = 4, friend_died = 2, child_died = 4, widowed = 2, parent_died = 1.5 }
+
+[[wound]]
+id = "invisible"
+text = "feels invisible in any room"
+boost = { bullied = 2 }
+lean = { extraversion = -1 }
+
+[[wound]]
+id = "expects_blame"
+text = "expects to be blamed whenever anything goes wrong"
+boost = { wrongly_accused = 3, miserable_boss = 2 }
+
+[[wound]]
+id = "wasted_best_years"
+text = "thinks they wasted their best years"
+boost = { prison = 3, caring_for_parent = 1.5, long_unemployed = 2 }
+lean = { optimism = -1 }
+
+[[wound]]
+id = "public_humiliation"
+text = "never got over being humiliated in public"
+boost = { dismissed = 2, failed_exams = 1.5, bullied = 2 }
+lean = { social_self_esteem = -0.8 }
+
+[[wound]]
+id = "earn_love"
+text = "feels they have to earn every bit of love"
+boost = { "upbringing=care" = 2.5, "attachment=anxious" = 2 }
+
+[[wound]]
+id = "afraid_of_poverty"
+text = "terrified of being poor again"
+boost = { family_lost_home = 3, homeless = 3, bankrupt = 3, repossessed = 3, debts = 2, "background=working" = 1.3 }
+
+[[wound]]
+id = "outsider"
+text = "feels like an outsider everywhere, even at home"
+boost = { "born_here=false" = 1.5, moved_schools_often = 2, boarding_school = 1.5 }
+
+[[wound]]
+id = "life_not_lived"
+text = "still grieving a life they planned and never got"
+boost = { couldnt_have_children = 3, knee_injury = 3, dismissed = 1.5 }
+
+[[wound]]
+id = "ruined_family"
+text = "believes they broke their own family"
+boost = { had_affair = 2.5, divorced = 1.5, child_estranged = 3 }
+
+[[wound]]
+id = "young_mistake"
+text = "can't forgive themselves for something they did when they were young"
+boost = { prison = 2, shoplifting = 1.5, ran_away = 1.5, let_friend_down = 2 }
+
+[[wound]]
+id = "used"
+text = "thinks people only want them for what they can do"
+boost = { young_carer = 2.5, caring_for_parent = 2 }
+
+[[wound]]
+id = "unprotected"
+text = "feels nobody ever stood up for them"
+boost = { "upbringing=care" = 2, parent_in_prison = 2, bullied = 1.5, "attachment=fearful" = 1.5 }
+
+[[wound]]
+id = "dreads_being_burden"
+text = "dreads being a burden on anyone"
+boost = { childhood_illness = 1.5, cancer = 2, heart_attack = 2, stroke = 2 }
+lean = { dependence = -0.8 }
+
+[[wound]]
+id = "peaked_young"
+text = "suspects their best moment came too early"
+boost = { sport_champion = 2, national_competition = 2, scholarship = 1.5, band = 2 }
+
+[[wound]]
+id = "owed_apology"
+text = "never got the apology they were owed"
+boost = { friend_betrayed = 2, partner_affair = 2.5, wrongly_accused = 2 }
+lean = { forgivingness = -1 }
+
+[[wound]]
+id = "fraud"
+text = "is quietly sure they're a fraud and will be found out"
+boost = { first_in_family_university = 2, promoted_to_run = 2, phd = 2 }
+lean = { social_self_esteem = -1 }
+
+[[wound]]
+id = "lost_home"
+text = "lost their sense of home when the family moved"
+boost = { moved_schools_often = 2.5, family_lost_home = 2, "arrival=family" = 2 }
+
+[[wound]]
+id = "crushed_by_authority"
+text = "feels small in front of anyone with authority over them"
+boost = { miserable_boss = 2.5, joined_army = 1.5, boarding_school = 2 }
+
+[[wound]]
+id = "became_their_parent"
+text = "worries they've turned into the parent they swore they wouldn't be"
+when = { children = { min = 1 } }
+
+[[wound]]
+id = "gave_life_away"
+text = "feels they gave up their own life for other people"
+boost = { caring_for_parent = 2.5, young_carer = 2.5, nursed_partner = 2, turned_down_promotion = 2 }
+
+[[wound]]
+id = "afraid_of_temper"
+text = "is afraid of their own temper"
+lean = { patience = -1.5 }
+
+[[wound]]
+id = "unwanted_child"
+text = "never felt wanted as a child"
+boost = { "upbringing=care" = 2.5, "upbringing=grandparents" = 1.5, boarding_school = 1.5 }
+
+[[wound]]
+id = "happiness_never_lasts"
+text = "is sure that happiness never lasts"
+boost = { cancer = 1.5, house_fire = 2, flooded = 1.5, widowed = 2 }
+lean = { optimism = -1 }
+
+[[wound]]
+id = "cant_bear_laughter"
+text = "can't bear being laughed at"
+boost = { bullied = 2 }
+lean = { social_self_esteem = -1 }
+
+[[wound]]
+id = "sibling_went_wrong"
+text = "feels responsible for a brother or sister whose life went wrong"
+when = { siblings = { min = 1 } }
+boost = { young_carer = 1.5 }
+
+[[wound]]
+id = "grief_nobody_remembers"
+text = "carries a grief that nobody else remembers"
+boost = { miscarriage = 3, sibling_died = 2 }
+
+[[wound]]
+id = "parent_who_left"
+text = "is still angry at the parent who left"
+boost = { parents_divorced = 3, "upbringing=single_parent" = 2 }
+
+[[wound]]
+id = "disappointed_everyone"
+text = "feels they let everyone down by not going further"
+boost = { dropped_out = 2.5, failed_exams = 2, left_school_early = 1.5 }
+
+[[wound]]
+id = "old_and_alone"
+text = "is afraid of growing old alone"
+boost = { divorced = 1.5, widowed = 2, "partnership=single" = 1.5, couldnt_have_children = 1.5 }
+
+[[wound]]
+id = "made_to_feel_stupid"
+text = "was made to feel stupid at school and still believes it"
+boost = { failed_exams = 2, learned_to_read = 3, "education=early_leaver" = 1.5 }
+
+# Secrets
+
+[[secret]]
+id = "prison_past"
+text = "has never told anyone around them about their time in prison"
+weight = 12
+after = ["prison"]
+
+[[secret]]
+id = "hidden_debt"
+text = "is still paying off a debt nobody knows about"
+boost = { debts = 3, gambling = 3 }
+lean = { discipline = -0.5 }
+
+[[secret]]
+id = "still_gambles"
+text = "still gambles online when they can't sleep"
+weight = 0.5
+boost = { gambling = 6 }
+lean = { pleasure = 0.8, discipline = -0.8 }
+
+[[secret]]
+id = "unknown_child"
+text = "has a child from a short relationship whom they've never met"
+weight = 0.4
+rare = true
+when = { age = { min = 25 } }
+
+[[secret]]
+id = "unfinished_degree"
+text = "never actually finished the degree they mention"
+weight = 0.5
+when = { education = ["school", "vocational"] }
+boost = { dropped_out = 6 }
+lean = { honesty = -1 }
+
+[[secret]]
+id = "reads_post"
+text = "reads other people's post before passing it on"
+weight = 0.4
+rare = true
+lean = { honesty = -1, inquisitiveness = 1 }
+
+[[secret]]
+id = "in_love_with_friend"
+text = "is in love with a married friend"
+weight = 0.7
+lean = { pleasure = 0.5, honesty = -0.3 }
+
+[[secret]]
+id = "undiscovered_affair"
+text = "had an affair their partner never found out about"
+when = { partnership = ["married", "partnered", "divorced", "widowed"] }
+boost = { had_affair = 4 }
+lean = { honesty = -1, loyalty = -1 }
+
+[[secret]]
+id = "supports_outcast_sibling"
+text = "secretly sends money to a brother or sister the rest of the family has cut off"
+when = { siblings = { min = 1 } }
+boost = { sibling_estranged = 2 }
+lean = { loyalty = 1, compassion = 1 }
+
+[[secret]]
+id = "planning_to_leave"
+text = "is planning to leave their partner"
+when = { partnership = ["married", "partnered"] }
+boost = { partner_affair = 3 }
+
+[[secret]]
+id = "poorer_than_they_seem"
+text = "is far less well-off than they let on"
+boost = { lost_savings = 2, bankrupt = 2, scammed = 1.5 }
+lean = { self_respect = 0.8, success = 0.8 }
+
+[[secret]]
+id = "richer_than_they_seem"
+text = "is far richer than they let on"
+weight = 0.6
+boost = { inheritance = 3, lottery = 5, business_sold = 3 }
+lean = { security = 0.6, modesty = 0.5 }
+
+[[secret]]
+id = "anonymous_reviews"
+text = "writes anonymous online reviews of local businesses, some of them cruel"
+weight = 0.5
+rare = true
+lean = { agreeableness = -1 }
+
+[[secret]]
+id = "stole_from_employer"
+text = "once stole money from an employer and was never caught"
+weight = 0.4
+rare = true
+when = { age = { min = 20 } }
+lean = { honesty = -1.5, fairness = -1 }
+
+[[secret]]
+id = "took_the_blame"
+text = "took the blame for a relative's crime"
+weight = 0.3
+rare = true
+boost = { prison = 3 }
+lean = { loyalty = 1.5 }
+
+[[secret]]
+id = "drinking_again"
+text = "has started drinking again"
+weight = 0.3
+boost = { stopped_drinking = 10 }
+
+[[secret]]
+id = "sober_past"
+text = "has been sober for years, and nobody around them knows they ever drank"
+weight = 5
+after = ["stopped_drinking"]
+
+[[secret]]
+id = "hidden_diagnosis"
+text = "is hiding a diagnosis from their family"
+when = { health = { not = ["none"] } }
+lean = { dependence = -1 }
+
+[[secret]]
+id = "job_offer_far_away"
+text = "has been offered a job far away and hasn't told anyone"
+when = { work = ["working"] }
+lean = { ambition = 0.8, adventure = 0.6 }
+
+[[secret]]
+id = "in_touch_with_ex"
+text = "is still in touch with an ex everyone thinks they hate"
+when = { partnership = ["divorced", "married", "partnered", "single"] }
+boost = { divorced = 2 }
+
+[[secret]]
+id = "first_love_letters"
+text = "keeps a box of letters from their first love"
+lean = { sentimentality = 1 }
+
+[[secret]]
+id = "gave_up_driving"
+text = "failed their driving test so often they gave up, and says they prefer the bus"
+weight = 0.5
+lean = { social_self_esteem = -0.5 }
+
+[[secret]]
+id = "hides_reading"
+text = "can barely read and has hidden it all their life"
+weight = 0.5
+rare = true
+when = { education = ["early_leaver"] }
+
+[[secret]]
+id = "sends_money_home"
+text = "sends most of their spare money to relatives they grew up with"
+weight = 0.6
+boost = { "born_here=false" = 2 }
+lean = { loyalty = 1, responsibility = 0.8 }
+
+[[secret]]
+id = "sacked_not_left"
+text = "was sacked from their last job, and tells everyone they left"
+boost = { dismissed = 3, sacked_first_job = 1.5 }
+lean = { honesty = -0.6, self_respect = 0.6 }
+
+[[secret]]
+id = "anonymous_donor"
+text = "is the anonymous donor behind a local charity"
+weight = 0.3
+rare = true
+lean = { compassion = 1.5, modesty = 1 }
+
+[[secret]]
+id = "applied_reality_tv"
+text = "once applied to go on a reality TV show"
+weight = 0.5
+lean = { pleasure = 0.8, social_boldness = 1 }
+
+[[secret]]
+id = "secret_unbeliever"
+text = "doesn't believe in the faith they practise in public"
+boost = { lost_faith = 4 }
+lean = { tradition = 0.6, honesty = -0.4 }
+
+[[secret]]
+id = "pushed_out"
+text = "says they chose to retire, but they were pushed out"
+when = { work = ["retired"] }
+boost = { made_redundant = 2 }
+
+[[secret]]
+id = "famous_relative"
+text = "is closely related to someone famous and never mentions it"
+weight = 0.3
+rare = true
+lean = { modesty = 1 }
+
+[[secret]]
+id = "tattoo"
+text = "has a tattoo of an ex's name that they keep covered"
+weight = 0.6
+lean = { prudence = -0.8 }
+
+[[secret]]
+id = "cheated_exam"
+text = "cheated in the exam that got them their first proper job"
+weight = 0.6
+lean = { honesty = -1, ambition = 1 }
+
+[[secret]]
+id = "biological_father"
+text = "found out their father isn't their biological father, and has told no one"
+weight = 0.3
+rare = true
+boost = { found_half_brother = 4 }
+
+[[secret]]
+id = "found_out_adopted"
+text = "was adopted, and only found out as an adult"
+weight = 0.3
+rare = true
+boost = { met_birth_parent = 8 }
+
+[[secret]]
+id = "sleeps_with_light"
+text = "still sleeps with a light on"
+weight = 0.6
+lean = { fearfulness = 1 }
+
+[[secret]]
+id = "writes_poetry"
+text = "writes poetry and has never shown it to anyone"
+lean = { creativity = 1, sentimentality = 0.5 }
+
+[[secret]]
+id = "cash_under_floor"
+text = "keeps a fortune in cash under the floorboards"
+weight = 0.4
+rare = true
+lean = { security = 1.2, prudence = 1 }
+
+[[secret]]
+id = "says_parent_dead"
+text = "tells people their father is dead; he isn't"
+weight = 0.3
+rare = true
+lean = { forgivingness = -1 }
+
+[[secret]]
+id = "still_drives"
+text = "still drives sometimes, despite the ban"
+weight = 3
+after = ["drink_driving"]
+lean = { obedience = -1 }
+
+[[secret]]
+id = "reported_neighbour"
+text = "reported a neighbour to the council anonymously"
+weight = 0.6
+lean = { obedience = 1, agreeableness = -0.6 }
+
+[[secret]]
+id = "watches_ex_online"
+text = "keeps an eye on an ex through a fake profile"
+weight = 0.4
+lean = { honesty = -0.8, forgivingness = -0.6 }
+
+[[secret]]
+id = "called_off_own_wedding"
+text = "was the one who called off their wedding, though they say they were jilted"
+weight = 4
+after = ["called_off_wedding"]
+
+[[secret]]
+id = "hides_medication"
+text = "takes medication for anxiety and hides the packets"
+weight = 0.6
+lean = { anxiety = 1.2 }
+boost = { "health=anxiety" = 4 }
+
+[[secret]]
+id = "cant_swim"
+text = "can't swim, and always has an excuse ready"
+weight = 0.6
+
+[[secret]]
+id = "writing_about_neighbours"
+text = "is writing a novel about people they know"
+weight = 0.3
+rare = true
+lean = { creativity = 1 }
+
+[[secret]]
+id = "grudge_list"
+text = "keeps a written list of everyone who has wronged them"
+weight = 0.5
+lean = { forgivingness = -1.5 }
+
+[[secret]]
+id = "guilty_inheritance"
+text = "inherited money from someone they barely visited, and feels guilty about it"
+weight = 3
+after = ["inheritance"]
+
+# Wants and needs
+
+[[want]]
+id = "be_in_charge"
+want = "to be made head of something, anything"
+need = "to believe they matter without a title"
+lean = { ambition = 1.2, success = 1 }
+boost = { worth_what_they_earn = 2 }
+
+[[want]]
+id = "owe_nobody"
+want = "to pay off every debt and owe nobody anything"
+need = "to accept help without shame"
+lean = { independence = 1, security = 0.8 }
+boost = { afraid_of_poverty = 2, dreads_being_burden = 2 }
+
+[[want]]
+id = "win_back_child"
+want = "to win back their estranged child"
+need = "to admit what they did wrong"
+weight = 3
+after = ["child_estranged"]
+
+[[want]]
+id = "be_relied_on"
+want = "to be the one everyone turns to"
+need = "to let someone look after them for once"
+lean = { compassion = 1, connection = 0.8 }
+boost = { earn_love = 2, gave_life_away = 2 }
+
+[[want]]
+id = "recognition"
+want = "to finally get the recognition their work deserves"
+need = "to make things for their own sake"
+lean = { success = 1, creativity = 0.8 }
+
+[[want]]
+id = "start_again"
+want = "to move somewhere bigger and start again"
+need = "to stop running from themselves"
+lean = { adventure = 1, freedom = 1 }
+boost = { outsider = 1.5 }
+
+[[want]]
+id = "quiet_life"
+want = "a quiet life where nothing changes"
+need = "to face the grief they're avoiding"
+lean = { security = 1, peace_of_mind = 1 }
+boost = { grief_nobody_remembers = 2, blames_self_for_death = 2 }
+
+[[want]]
+id = "be_right"
+want = "to be proved right"
+need = "to be close to someone"
+lean = { self_respect = 1, knowledge = 0.6, agreeableness = -1 }
+
+[[want]]
+id = "find_partner"
+want = "to find a partner before it's too late"
+need = "to like their own company"
+when = { partnership = ["single", "divorced", "widowed"] }
+lean = { connection = 1 }
+boost = { old_and_alone = 3 }
+
+[[want]]
+id = "make_parents_proud"
+want = "to make their parents proud"
+need = "to decide what they want for themselves"
+lean = { tradition = 0.8, obedience = 0.8 }
+boost = { never_good_enough = 3 }
+
+[[want]]
+id = "get_even"
+want = "to get even with someone who wronged them"
+need = "to let it go and get their life back"
+lean = { justice = 0.8, self_respect = 0.8, forgivingness = -1 }
+boost = { owed_apology = 3 }
+
+[[want]]
+id = "own_home"
+want = "to own a house with their name on it"
+need = "to feel at home anywhere"
+lean = { security = 1 }
+boost = { lost_home = 2.5 }
+
+[[want]]
+id = "taken_seriously"
+want = "to be taken seriously"
+need = "to stop proving themselves to people who don't matter"
+lean = { self_respect = 1, ambition = 0.6 }
+boost = { fraud = 2, made_to_feel_stupid = 2.5 }
+
+[[want]]
+id = "have_fun"
+want = "to have as much fun as they can while they can"
+need = "to stay with something long enough for it to matter"
+lean = { pleasure = 1.2, adventure = 0.8, conscientiousness = -0.8 }
+
+[[want]]
+id = "keep_family_together"
+want = "to keep the family together at any cost"
+need = "to let others make their own mistakes"
+lean = { loyalty = 1.2, tradition = 0.8, responsibility = 0.6 }
+
+[[want]]
+id = "money_fast"
+want = "to make a lot of money fast"
+need = "to feel safe without it"
+lean = { success = 1, ambition = 1 }
+boost = { afraid_of_poverty = 2 }
+
+[[want]]
+id = "left_alone"
+want = "to be left alone"
+need = "to let one person in"
+lean = { independence = 1.2, extraversion = -1 }
+boost = { "attachment=dismissing" = 3 }
+
+[[want]]
+id = "loved_by_all"
+want = "to be liked by everyone"
+need = "to be known properly by one person"
+lean = { connection = 1, extraversion = 1 }
+boost = { "attachment=anxious" = 2 }
+
+[[want]]
+id = "fix_others"
+want = "to fix everyone else's problems"
+need = "to look at their own"
+lean = { compassion = 1, responsibility = 1 }
+
+[[want]]
+id = "prove_changed"
+want = "to prove they've changed"
+need = "to forgive themselves"
+boost = { prison = 3, young_mistake = 3 }
+
+[[want]]
+id = "young_again"
+want = "to feel young again"
+need = "to make peace with getting older"
+when = { age = { min = 45 } }
+lean = { pleasure = 0.6, adventure = 0.6 }
+
+[[want]]
+id = "write_the_book"
+want = "to write the book they've always talked about"
+need = "to stop waiting for the perfect moment"
+lean = { creativity = 1, self_actualization = 1 }
+
+[[want]]
+id = "nothing_changes"
+want = "to keep things exactly as they've always been"
+need = "to accept that the people around them change"
+lean = { tradition = 1.2, security = 0.8, openness = -1 }
+
+[[want]]
+id = "see_the_world"
+want = "to see the world before they die"
+need = "to stop thinking life is happening somewhere else"
+lean = { adventure = 1.2 }
+
+[[want]]
+id = "own_time"
+want = "to answer to nobody"
+need = "to commit to something"
+lean = { freedom = 1.2, independence = 0.8 }
+
+[[want]]
+id = "win_arguments"
+want = "to win every argument"
+need = "to listen"
+lean = { self_respect = 0.8, agreeableness = -1 }
+
+[[want]]
+id = "be_needed"
+want = "to be needed"
+need = "to be wanted for themselves"
+lean = { compassion = 0.8, connection = 0.8 }
+boost = { used = 3 }
+
+[[want]]
+id = "make_up_lost_time"
+want = "to make up for lost time"
+need = "to stop punishing themselves"
+boost = { wasted_best_years = 3 }
+
+[[want]]
+id = "family_truth"
+want = "to know the truth about their family"
+need = "to accept the family they have"
+lean = { knowledge = 0.8 }
+boost = { found_half_brother = 3, met_birth_parent = 3 }
+
+[[want]]
+id = "be_safe"
+want = "to be safe"
+need = "to risk being hurt again"
+lean = { security = 1.2 }
+boost = { "attachment=fearful" = 2.5, distrusts_kindness = 2 }
+
+[[want]]
+id = "be_the_best"
+want = "to be the best at what they do"
+need = "to accept being good enough"
+lean = { ambition = 1, discipline = 0.8, perfectionism = 1 }
+
+[[want]]
+id = "be_famous"
+want = "to be known for something"
+need = "to matter to the people near them"
+lean = { success = 1, pleasure = 0.5, social_boldness = 1 }
+
+[[want]]
+id = "rescue_sibling"
+want = "to rescue a brother or sister from their own choices"
+need = "to let them fail"
+when = { siblings = { min = 1 } }
+lean = { loyalty = 1, responsibility = 0.8 }
+boost = { sibling_went_wrong = 4 }
+
+[[want]]
+id = "settle_down"
+want = "to settle down at last"
+need = "to admit they like being restless"
+lean = { adventure = 0.6, security = 0.6 }
+
+[[want]]
+id = "retire_somewhere_warm"
+want = "to retire somewhere warm"
+need = "to find a purpose beyond work"
+when = { age = { min = 45 } }
+lean = { pleasure = 0.8, peace_of_mind = 0.8 }
+
+[[want]]
+id = "change_the_world"
+want = "to change the world"
+need = "to change one thing nearby"
+lean = { justice = 1, equality = 1 }
+
+[[want]]
+id = "be_understood"
+want = "to be understood"
+need = "to say what they actually feel"
+lean = { connection = 0.6, sentimentality = 1 }
+
+[[want]]
+id = "free_of_expectations"
+want = "to be free of everyone's expectations"
+need = "to admit they care what people think"
+lean = { freedom = 1, independence = 1 }
+boost = { disappointed_everyone = 2 }
+
+[[want]]
+id = "stay_out_of_trouble"
+want = "to stay out of trouble"
+need = "to stand up for something"
+lean = { peace_of_mind = 1, obedience = 0.8 }
