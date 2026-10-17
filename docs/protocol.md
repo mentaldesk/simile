@@ -15,11 +15,20 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
 ## Conventions
 
 - Field names are `snake_case` on both sides.
-- Every field is always present. Optional values are `null`, never missing.
+- Every field is always present. Optional values are `null`, never missing. The one exception is a
+  position's `map`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
-- A **position** is `{"x": 4.5, "y": 6}` in tiles, measured like F2's `Tile`: `(4, 6)` is
-  standing on tile (4, 6), and fractions are part-way between tiles while walking.
+- A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
+  `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
+  `map` is the map it's on: `"village"`, or an interior's id, such as `"coffee_shop"`.
+  - The server always sends `map`. A client may leave it out of `player_move`, which means the
+    village, so clients that predate interiors keep working.
+  - So the generated TypeScript has `map?: string`, and the client can keep using `Position` as a
+    plain point. Read it as `position.map ?? 'village'`. K5 (#171) may tighten the type.
 - Entity ids are F2 `Id`s. The player is always `"player"`.
+- The maps aren't sent: the client bundles the village and its interiors as Tiled maps. F2's
+  `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
+  you can use inside, and a `Location` says which map it's on.
 - A message the server can't parse is logged and ignored. The connection stays open.
 
 ## Server → client
@@ -32,8 +41,8 @@ client replaces whatever it had.
 | Field | Type | |
 |---|---|---|
 | `time` | timestamp | Sim time now. |
-| `map_id` | string | Which map to load, e.g. `"village"`. |
-| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`. |
+| `map_id` | string | The map the player starts on, e.g. `"village"`. |
+| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`. Each position has its own `map`. |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
@@ -50,6 +59,8 @@ it arrived.
 ### `entity_moved`
 
 `entity_id`, `position`. There's no facing: the client works it out from the direction of travel.
+An entity going through a door arrives as an `entity_moved` onto the other map, and the client
+snaps it there rather than walking it.
 
 ### `conversation_started`
 
@@ -141,6 +152,8 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 ### `player_move`
 
 `position`. The client sends the player's position as it changes, and the server trusts it.
+Going through a door is a `player_move` with the other map's `map`. A position without `map` puts
+the player on the village.
 
 ### `player_say`
 

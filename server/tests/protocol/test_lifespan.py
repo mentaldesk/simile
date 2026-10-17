@@ -143,5 +143,5 @@ def test_clients_receive_events_published_on_the_bus() -> None:
         assert ws.receive_json() == {
             "type": "entity_moved",
             "entity_id": "suki",
-            "position": {"x": 18, "y": 7.5},
+            "position": {"x": 18, "y": 7.5, "map": "village"},
         }

@@ -56,6 +56,10 @@ export interface Entity {
 export interface Position {
   x: number;
   y: number;
+  /**
+   * The map it's on. The server always sends it, and a client that leaves it out means the village.
+   */
+  map?: string;
 }
 export interface Conversation {
   id: string;

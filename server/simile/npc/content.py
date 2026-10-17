@@ -2,14 +2,16 @@ import re
 from collections.abc import Sequence
 from pathlib import Path
 
-from simile.npc.generate import craft_label, first_sentence
+from simile.npc.generate import Brief, craft_label, first_sentence
 from simile.npc.values import format_scores, ranked
 from simile.schema import Npc
 
 NPCS_DIR = Path(__file__).resolve().parents[3] / "content" / "npcs"
 
 
-def write_npcs(npcs: Sequence[Npc], directory: Path, seed: int) -> list[Path]:
+def write_npcs(
+    npcs: Sequence[Npc], directory: Path, seed: int, briefs: Sequence[Brief] = ()
+) -> list[Path]:
     """Write each NPC as `<id>.json` plus a README, replacing any NPCs already there."""
     directory.mkdir(parents=True, exist_ok=True)
     ids = {npc.id for npc in npcs}
@@ -22,7 +24,7 @@ def write_npcs(npcs: Sequence[Npc], directory: Path, seed: int) -> list[Path]:
         path.write_text(npc.model_dump_json(indent=2) + "\n", encoding="utf-8")
         written.append(path)
     readme_path = directory / "README.md"
-    readme_path.write_text(readme(npcs, seed), encoding="utf-8")
+    readme_path.write_text(readme(npcs, seed, briefs), encoding="utf-8")
     return [*written, readme_path]
 
 
@@ -40,8 +42,11 @@ def readme_seed(directory: Path = NPCS_DIR) -> int:
     raise ValueError(f"{directory / 'README.md'} doesn't say which seed made the NPCs")
 
 
-def readme(npcs: Sequence[Npc], seed: int) -> str:
+def readme(npcs: Sequence[Npc], seed: int, briefs: Sequence[Brief] = ()) -> str:
+    facts = {brief.home: brief.facts for brief in briefs if brief.facts}
     command = f"uv run simile generate-npcs --count {len(npcs)} --seed {seed}"
+    if facts:
+        command += " --rich-brief --out <dir>"
     lines = [
         "# NPCs",
         "",
@@ -80,5 +85,27 @@ def readme(npcs: Sequence[Npc], seed: int) -> str:
             format_scores(order[::-1][:3]),
             first_sentence(npc.persona),
         ]
-        lines.append("| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |")
+        lines.append(_row(cells))
+    if facts:
+        lines += [
+            "",
+            "## Sampled facts",
+            "",
+            "With `--rich-brief`, each resident's name, origin, occupation and life events are",
+            "sampled in code too, from the tables in `server/simile/npc/tables.py`, and Claude",
+            "writes the rest around them:",
+            "",
+            "| NPC | Origin | Occupation | Life events |",
+            "|---|---|---|---|",
+        ]
+        for npc in sorted(npcs, key=lambda npc: npc.id):
+            if sampled := facts.get(npc.home):
+                events = "; ".join(f"{age}: {event}" for age, event in sampled.events)
+                lines.append(
+                    _row([f"`{npc.id}` {npc.name}", sampled.origin, sampled.occupation, events])
+                )
     return "\n".join(lines) + "\n"
+
+
+def _row(cells: Sequence[str]) -> str:
+    return "| " + " | ".join(cell.replace("|", "\\|") for cell in cells) + " |"

@@ -546,6 +546,12 @@
         },
         "y": {
           "type": "number"
+        },
+        "map": {
+          "default": "village",
+          "description": "The map it's on. The server always sends it, and a client that leaves it out means the village.",
+          "minLength": 1,
+          "type": "string"
         }
       },
       "required": [

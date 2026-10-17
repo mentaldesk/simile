@@ -4,7 +4,8 @@ from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
+from pydantic.json_schema import JsonSchemaMode
 
 from simile.protocol import (
     Artist,
@@ -16,6 +17,7 @@ from simile.protocol import (
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
+    Message,
     Mural,
     MuralsMessage,
     NewsArticle,
@@ -79,6 +81,7 @@ CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
+    EntityMovedMessage(entity_id="suki", position=Position(x=10, y=12, map="coffee_shop")),
     ConversationStartedMessage(conversation=CONVERSATION.model_copy(update={"lines": []})),
     ConversationEndedMessage(
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
@@ -92,6 +95,7 @@ SERVER = [
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
+    PlayerMoveMessage(position=Position(x=10, y=11.5, map="coffee_shop")),
     PlayerSayMessage(text="Hello!", target="mei"),
     WatchNpcMessage(npc_id="mei"),
     WatchNpcMessage(npc_id=None),
@@ -125,8 +129,44 @@ def test_messages_carry_their_type() -> None:
     assert json.loads(SERVER[1].model_dump_json()) == {
         "type": "entity_moved",
         "entity_id": "mei",
-        "position": {"x": 4.5, "y": 6.0},
+        "position": {"x": 4.5, "y": 6.0, "map": "village"},
     }
+
+
+def test_positions_say_which_map_they_are_on() -> None:
+    assert json.loads(SERVER[2].model_dump_json())["position"] == {
+        "x": 10.0,
+        "y": 12.0,
+        "map": "coffee_shop",
+    }
+
+
+def test_a_client_that_sends_no_map_stays_on_the_village() -> None:
+    data = {"type": "player_move", "position": {"x": 14, "y": 12.5}}
+
+    validator().validate(data)
+    assert client_messages.validate_python(data).position.map == "village"
+
+
+def test_the_exported_position_has_a_map_but_does_not_require_it() -> None:
+    position = json.loads(SCHEMA_FILE.read_text())["$defs"]["Position"]
+
+    assert list(position["properties"]) == ["x", "y", "map"]
+    assert position["required"] == ["x", "y"]
+
+
+@pytest.mark.parametrize("mode", ["validation", "serialization"])
+def test_a_position_schema_never_requires_a_map(mode: JsonSchemaMode) -> None:
+    in_messages = TypeAdapter(Message).json_schema(mode=mode)["$defs"]["Position"]
+
+    assert Position.model_json_schema(mode=mode)["required"] == ["x", "y"]
+    assert in_messages["required"] == ["x", "y"]
+
+
+def test_snapshot_entities_carry_their_map() -> None:
+    entities = json.loads(SNAPSHOT.model_dump_json())["entities"]
+
+    assert {entity["position"]["map"] for entity in entities} == {"village"}
 
 
 def test_the_clock_carries_sim_time_and_speed() -> None:
@@ -245,6 +285,8 @@ def test_timestamps_are_utc() -> None:
     [
         {"type": "snapshot"},
         {"type": "player_move", "position": {"x": 1, "y": 2}, "speed": 3},
+        {"type": "player_move", "position": {"x": 1, "y": 2, "map": ""}},
+        {"type": "player_move", "position": {"x": 1, "y": 2, "map": None}},
         {"type": "player_say", "text": "", "target": "mei"},
         {"type": "player_say", "text": "Hi", "target": "Mei"},
         {"type": "watch_npc"},

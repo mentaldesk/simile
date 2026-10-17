@@ -180,8 +180,10 @@ def test_dispatches_client_messages_to_subscribers(client: TestClient, hub: Hub)
         welcome(ws)
         ws.send_json({"type": "player_say", "text": "Hi Mei", "target": "mei"})
         ws.send_json({"type": "player_move", "position": {"x": 3, "y": 4}})
+        ws.send_json({"type": "player_move", "position": {"x": 5, "y": 6, "map": "gallery"}})
 
-        assert ws.receive_json()["position"] == {"x": 3, "y": 4}
+        assert ws.receive_json()["position"] == {"x": 3, "y": 4, "map": "village"}
+        assert ws.receive_json()["position"] == {"x": 5, "y": 6, "map": "gallery"}
 
     assert said == [PlayerSayMessage(text="Hi Mei", target="mei")]
 
