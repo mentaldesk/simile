@@ -1,15 +1,30 @@
 import asyncio
+import io
 from datetime import timedelta
 
 import pytest
+from PIL import Image
 
 from simile.llm import FakeProvider, LLMClient, LLMError, Model
 from simile.memory import MemoryStore
-from simile.schema import CoreValue, Memory, MemoryKind, Npc, Work
+from simile.schema import CoreValue, Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.works import DEFAULT_CONFIG, Maker, WorksStore
+from simile.works.render import canvas
 
-from .conftest import MEI, NOW, SUKI, VIKTOR, reply, work
+from .conftest import (
+    MEI,
+    NOW,
+    OTHER_WALL,
+    SUKI,
+    VIKTOR,
+    WALL,
+    mural,
+    mural_reply,
+    reply,
+    svg,
+    work,
+)
 
 CONFIG = DEFAULT_CONFIG.model_copy(update={"memories": 3, "past_works": 2})
 
@@ -149,16 +164,25 @@ def test_writes_from_their_values_alone_with_nothing_on_their_mind(
     assert made.inspired_by == []
 
 
-def test_makes_nothing_for_residents_who_dont_write(memory: MemoryStore, works: WorksStore) -> None:
+def test_makes_nothing_without_a_craft_a_wall_for_a_mural_or_an_llm(
+    memory: MemoryStore, works: WorksStore
+) -> None:
     fake = FakeProvider([reply()])
     llm = LLMClient(fake)
 
     async def scenario() -> list[object]:
-        maker = Maker(works, memory, Clock(NOW), lambda: llm)
-        silent = Maker(works, memory, Clock(NOW), lambda: None)
-        return [maker.make(MEI), maker.make(SUKI), silent.make(VIKTOR)]
+        maker = Maker(works, memory, Clock(NOW), lambda: llm, walls=[WALL])
+        silent = Maker(works, memory, Clock(NOW), lambda: None, walls=[WALL])
+        made = [
+            maker.make(MEI, "wall_1"),
+            maker.make(SUKI),
+            maker.make(SUKI, "nowhere"),
+            silent.make(VIKTOR),
+            silent.make(SUKI, "wall_1"),
+        ]
+        return made
 
-    assert asyncio.run(scenario()) == [None, None, None]
+    assert asyncio.run(scenario()) == [None] * 5
     assert fake.requests == []
 
 
@@ -221,3 +245,123 @@ def test_stopping_cancels_pieces_under_way(memory: MemoryStore, works: WorksStor
 
     assert asyncio.run(scenario()).cancelled()
     assert works.by("viktor") == []
+
+
+NPCS = {npc.id: npc for npc in (VIKTOR, SUKI, MEI)}
+SKY = memory_of(
+    MemoryKind.NEWS, "I read about drones over the square.", 0.8, owner="suki", news_id="news-9"
+)
+
+
+def muralist(
+    works: WorksStore, memory: MemoryStore, fake: FakeProvider, painted: list[Work] | None = None
+) -> Maker:
+    llm = LLMClient(fake)
+    return Maker(
+        works,
+        memory,
+        Clock(NOW),
+        lambda: llm,
+        walls=[WALL, OTHER_WALL],
+        npcs=NPCS,
+        painted=(painted if painted is not None else []).append,
+        config=CONFIG,
+    )
+
+
+async def paint(maker: Maker, npc: Npc = SUKI, wall: str = "wall_1") -> Work | None:
+    task = maker.make(npc, wall)
+    assert task is not None
+    return await task
+
+
+def test_paints_a_mural_at_its_walls_size_and_says_so(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    memory.add(SKY)
+    fake, painted = FakeProvider([mural_reply()]), []
+
+    made = asyncio.run(paint(muralist(works, memory, fake, painted)))
+
+    assert made is not None
+    assert painted == [made]
+    assert works.showing() == {"wall_1": made}
+    assert made.id.startswith("suki-")
+    assert (made.medium, made.wall, made.form) == (Medium.MURAL, "wall_1", SUKI.craft.form)
+    assert made.title == "Sunrise Over the Square"
+    assert made.text == "A red wall with a yellow sun in the middle."
+    assert made.inspired_by == ["news-9"]
+    assert made.tags == ["mornings", "the square"]
+    assert made.values[CoreValue.FREEDOM] == pytest.approx(0.8)
+    picture = Image.open(io.BytesIO(works.picture(made.id) or b""))
+    assert picture.size == canvas(WALL) == (288, 262)
+    [remembered] = memory.recall("suki", NOW, kind=MemoryKind.WORK)
+    assert remembered.content == (
+        'I painted "Sunrise Over the Square" on the wall 1 wall. Morning belongs to everyone.'
+    )
+    assert remembered.work_id == made.id
+    [request] = fake.requests
+    asked = request.messages[-1].content
+    assert f"1. {SKY.content}" in asked
+    assert "a new mural on the wall 1 wall, 3.3 m wide and 3.0 m high. It's blank." in asked
+    assert f"Paint something new in your craft, {SUKI.craft.form}." in asked
+    assert 'one SVG document with viewBox="0 0 288 262"' in asked
+    assert f"In your own time you paint {SUKI.craft.form} on the village's walls" in request.system
+    assert request.model == Model.SONNET
+
+
+def test_painting_over_a_mural_keeps_it_and_remembers_whose_it_was(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    works.paint(mural("old", "viktor", hours_ago=50), "<svg/>", b"")
+    fake = FakeProvider([mural_reply(), mural_reply(title="Again")])
+    maker = muralist(works, memory, fake)
+
+    over_his = asyncio.run(paint(maker))
+    over_mine = asyncio.run(paint(maker))
+
+    assert over_his is not None and over_mine is not None
+    assert works.covered(over_his.id) == works.get("old")
+    assert works.covered(over_mine.id) == over_his
+    asked = [request.messages[-1].content for request in fake.requests]
+    assert "You're painting over Viktor Hale's \"Piece old\": What old says." in asked[0]
+    assert 'You\'re painting over your own "Sunrise Over the Square"' in asked[1]
+    said = " ".join(m.content for m in memory.recall("suki", NOW, kind=MemoryKind.WORK))
+    assert 'on the wall 1 wall over Viktor Hale\'s "Piece old". Morning' in said
+    assert 'I painted "Again" on the wall 1 wall over my "Sunrise Over the Square".' in said
+
+
+def test_a_bad_svg_is_tried_again_once_with_what_was_wrong(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    fake = FakeProvider([mural_reply(svg=svg(inside="<script>go()</script>")), mural_reply()])
+
+    made = asyncio.run(paint(muralist(works, memory, fake)))
+
+    assert made is not None
+    first, second = (request.messages[-1].content for request in fake.requests)
+    assert (
+        second
+        == f"{first}\n\nYour last try couldn't go up, because <script> isn't allowed. Fix that."
+    )
+
+
+@pytest.mark.parametrize("second", [svg(100, 262), "<svg"])
+def test_gives_up_quietly_after_two_bad_svgs(
+    second: str, memory: MemoryStore, works: WorksStore
+) -> None:
+    fake = FakeProvider([mural_reply(svg="<svg/>"), mural_reply(svg=second), mural_reply()])
+    painted: list[Work] = []
+
+    async def scenario() -> list[Work | None]:
+        maker = muralist(works, memory, fake, painted)
+        return [await paint(maker), await paint(maker)]
+
+    failed, then = asyncio.run(scenario())
+
+    assert failed is None
+    assert then is not None
+    assert len(fake.requests) == 3
+    assert painted == [then]
+    assert works.latest(Medium.MURAL) == [then]
+    assert [m.work_id for m in memory.recall("suki", NOW)] == [then.id]

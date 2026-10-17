@@ -1,18 +1,19 @@
 # simile.works
 
-What the residents make from what's on their mind: for now, writing in their `craft`. Works are
-stored in the `works` table of the memory store's file, and go up on the news terminals for the
-residents and the player to read.
+What the residents make from what's on their mind, in their `craft`: writing, which goes up on the
+news terminals, and murals, painted on M7's walls. Works are stored in the `works` table of the
+memory store's file, and a mural's picture beside it in `murals`.
 
 ## Making a work
 
-`Maker.make(npc)` starts a resident writing and returns at once, so a tick can call it. The task it
-returns stores the `Work`, gives the artist a `work` memory of making it (with `work_id`), and
-returns the work, or None if the call failed. It does nothing for residents without a writing
-craft, or with a piece already under way. `simile serve` and `simile headless` keep one on
-`app.state.maker`, and B1's `create` hook calls it when a writer finishes a stay making something.
+`Maker.make(npc, wall=None)` starts a resident writing, or painting a mural on `wall`, and returns
+at once, so a tick can call it. The task it returns stores the `Work`, gives the artist a `work`
+memory of making it (with `work_id`), and returns the work, or None if it failed. It does nothing
+for residents without a craft, muralists without a known wall, or anyone with a work already under
+way. `simile serve` and `simile headless` keep one on `app.state.maker`, and B1's `create` hook
+calls it when a resident finishes a stay making something.
 
-One Sonnet call through L1, below conversations' priority, writes the piece and analyses it. The
+One Sonnet call through L1, below conversations' priority, makes the work and analyses it. The
 prompt has:
 
 - their 8 strongest memories by salience × recency (news, conversations, others' works), with how
@@ -20,10 +21,36 @@ prompt has:
 - their values, persona, backstory, interests, way of talking and craft;
 - the titles and statements of their last 3 works, so they don't repeat themselves.
 
-It asks for a short piece in their voice that says something in line with their values, taking a
-side where they care strongly. The reply has the title, text and statement, which of the memories
-it came from (stored as `inspired_by`: their news, conversation or work ids), and its tags, tone and
-relatedness to every core value, scored as for news.
+It asks for a work in their voice that says something in line with their values, taking a side
+where they care strongly. The reply has the title, the work and its statement, which of the
+memories it came from (stored as `inspired_by`: their news, conversation or work ids), and its tags,
+tone and relatedness to every core value, scored as for news.
+
+## Murals
+
+- **Choosing a wall.** B1's `mural_wall` hook is `Walls.pick`. A blank wall comes first, the
+  nearest of them. Otherwise each painted wall gets a readiness to paint over it: its age up to
+  `mural_age` (2 days), plus `own_mural` (0.3) for the painter's own, or for someone else's their
+  boldness above 0.5 (the mean of 1 - Tradition, 1 - Obedience and Freedom) minus half their B1
+  affinity for the artist. The readiest wall at or above 0.5 is picked, and None while there's none.
+  A painter less bold than 0.75 never paints over a friend's (affinity 0.4 or more), and nobody
+  picks a wall someone else is off to paint.
+- **Painting.** The prompt also has the wall's size, what's on it now, and asks for an SVG with
+  the wall's `viewBox`, beside a plain description of what it shows (the work's `text`). The SVG
+  must be under 60,000 characters and 2,000 elements, roughly the wall's shape, and only shapes,
+  text, gradients, patterns, masks and filters: no scripts, images, foreign objects, event handlers,
+  or references to anything outside it. A bad one is asked for again once, with the reason, and
+  then given up quietly. `resvg` draws it at the wall's size in the iso scenery (96 px per tile, at
+  the same scale up the wall), and it's painted onto weathered plaster or brick.
+- **Replacing.** The new mural covers the old one, which stays in the store with its picture, and
+  `covered(id)` says what each mural covered. The artist remembers painting it, and over whose.
+- **Telling the client.** Each new client gets `murals` once there's a mural to show, and everyone
+  gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture, and 404s
+  for anything else.
+- **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen says
+  how it lands in one Haiku call, as at the terminals. The memory is about the artist, with
+  `work_id`. An artist who finds their mural painted over is told so in the same call, and
+  remembers it with a salience of at least 0.7. The player remembers seeing it, with no call.
 
 ## Reading at the terminals
 
@@ -55,4 +82,5 @@ Every constant is in `WorksConfig`.
 ```bash
 cd server
 uv run simile works make tobias   # what's on his mind, then the piece, stored in $SIMILE_DB
+uv run simile works make kofi --wall tower --png kofi.png   # a mural, and its picture
 ```

@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 
 from simile.memory import MemoryStore
-from simile.schema import CoreValue, Medium, Npc, Work
+from simile.schema import CoreValue, Medium, Npc, Tile, Work
 from simile.works import WorksStore
-from simile.works.maker import Reply
+from simile.works.maker import MuralReply, Reply
+from simile.world.map import MuralWall
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 NOW = datetime(2026, 3, 14, 12, tzinfo=UTC)
@@ -21,6 +22,8 @@ def npc(name: str) -> Npc:
 VIKTOR = npc("viktor")
 SUKI = npc("suki")
 MEI = npc("mei")
+WALL = MuralWall("wall_1", 10, 5, 3, "south", 0.5, 1.5, Tile(x=11, y=7))
+OTHER_WALL = MuralWall("wall_2", 20, 5, 2, "east", 0.0, 1.0, Tile(x=22, y=6))
 FIXTURE_WORKS = [
     Work.model_validate(work) for work in json.loads((FIXTURES / "works.json").read_text())
 ]
@@ -46,6 +49,10 @@ def work(id: str, artist: str = "viktor", hours_ago: float = 0, **fields: object
             **fields,
         }
     )
+
+
+def mural(id: str, artist: str = "suki", wall: str = "wall_1", hours_ago: float = 0) -> Work:
+    return work(id, artist, hours_ago, medium=Medium.MURAL, wall=wall, form="bright murals")
 
 
 def reply(**fields: object) -> str:
@@ -75,3 +82,29 @@ def works() -> Iterator[WorksStore]:
 def memory() -> Iterator[MemoryStore]:
     with MemoryStore(":memory:") as store:
         yield store
+
+
+def svg(width: int = 288, height: int = 262, inside: str = "") -> str:
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}">'
+        f'<rect width="{width}" height="{height}" fill="#e63946"/>'
+        f'<circle cx="{width / 2}" cy="{height / 2}" r="{height / 3}" fill="#ffd166"/>'
+        f"{inside}</svg>"
+    )
+
+
+def mural_reply(**fields: object) -> str:
+    return MuralReply.model_validate(
+        {
+            "title": " Sunrise Over the Square ",
+            "description": "A red wall with a yellow sun in the middle.",
+            "statement": "Morning belongs to everyone.",
+            "svg": svg(),
+            "inspired_by": [1],
+            "tags": ["Mornings", "the square"],
+            "sentiment": 7.0,
+            **{value.value: 0.0 for value in CoreValue},
+            "freedom": 8.0,
+            **fields,
+        }
+    ).model_dump_json()
