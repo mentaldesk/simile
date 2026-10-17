@@ -23,9 +23,11 @@ from simile.conversation.player import (
     PlayerConfig,
     PlayerConversations,
     Sentences,
+    came_up,
     says_goodbye,
     split,
 )
+from simile.conversation.prompt import WorkTopic
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -36,10 +38,12 @@ from simile.schema import (
     CoreValue,
     InteractionEvent,
     Line,
+    Medium,
     Memory,
     MemoryKind,
     Npc,
     Relationship,
+    Work,
 )
 from simile.sim import (
     Clock,
@@ -54,6 +58,8 @@ from simile.social import describe, meet
 from simile.voice import SpeakingRate
 from simile.world import Movement, Point
 from simile.world.map import load_map
+
+from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
@@ -1143,3 +1149,102 @@ def test_goodbyes(text: str) -> None:
 )
 def test_not_goodbyes(text: str) -> None:
     assert not says_goodbye(text)
+
+
+RED_PLANET = work("cal-1", "cal", "Red Planet", START - timedelta(hours=3), tags=["mars"])
+SAW_IT = 'I saw Cal Test\'s mural "Red Planet" on the tower. Brave stuff.'
+
+
+async def test_a_work_is_listed_until_the_resident_has_answered_it_coming_up() -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {RED_PLANET.id: RED_PLANET}.get
+    village.store.add(remembers("ana", RED_PLANET, SAW_IT, START - timedelta(hours=1)))
+
+    for said in ("Hi!", "What do you make of Cal's mural?", "Anything else new?"):
+        village.players.say(said, "ana")
+        await village.run(1)
+
+    *answering, after = village.script.prompts
+    for prompt in answering:
+        assert f"Works by others you might bring up:\n- {SAW_IT}\n\n" in prompt
+    assert "Red Planet" not in after
+
+
+async def test_a_resident_stands_by_their_own_work_and_never_sees_the_players() -> None:
+    theirs = work("ana-1", "ana", "Fair Shares", START - timedelta(hours=2))
+    painted = 'I painted "Fair Shares" on the tower. Everyone eats.'
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {w.id: w for w in (theirs, RED_PLANET)}.get
+    village.store.add(
+        remembers("ana", theirs, painted, START - timedelta(hours=2)),
+        remembers(PLAYER_ID, RED_PLANET, SAW_IT, START),
+    )
+
+    village.players.say("Hi!", "ana")
+    await village.run(1)
+
+    [prompt] = village.script.prompts
+    assert f"Your own works, which you might bring up and stand by:\n- {painted}" in prompt
+    assert "Red Planet" not in prompt
+
+
+def said(speaker: str, text: str) -> Line:
+    return Line(id=1, conversation_id="c", speaker=speaker, text=text, timestamp=START, duration=1)
+
+
+def writing(id: str, artist: str, title: str, *tags: str) -> Work:
+    return work(id, artist, title, START, medium=Medium.WRITING, tags=tags)
+
+
+SUPPER = writing("tobias-2", "tobias", "Look Before You Tell the Supper Table", "river", "village")
+TABLES = writing("tobias-1", "tobias", "The Tables by the Water", "river", "repair")
+NOTICE = writing("henrietta-1", "henrietta", "Notice: Devices in Your Dwelling", "passwords")
+TARGETS = writing("raymond-1", "raymond", "Q4 Targets: Plan the Mountain, Then Climb It", "mars")
+DOOR = work("ingrid-1", "ingrid", "Open The Door", START, tags=["freedom", "raven"])
+FIRST_COAT = work("kofi-1", "kofi", "First Coat", START, tags=["mars"]).model_copy(
+    update={"wall": "daily_grind"}
+)
+
+
+@pytest.mark.parametrize(
+    ("work", "owner", "speaker", "text", "expected"),
+    [
+        (RED_PLANET, "ana", "ana", "Have you seen that Red Planet thing?", True),
+        (RED_PLANET, "ana", PLAYER_ID, "What do you make of Cal's mural?", True),
+        (RED_PLANET, "ana", "ana", "That Mars business of Cal's? Brave.", True),
+        (RED_PLANET, "ana", PLAYER_ID, "Seen the new mural on the tower?", True),
+        (RED_PLANET, "cal", "cal", "Have you seen my mural yet?", True),
+        (RED_PLANET, "cal", PLAYER_ID, "I love your painting!", True),
+        (DOOR, "ana", "ana", 'Have you seen "Open The Door" yet?', True),
+        (DOOR, "ana", PLAYER_ID, "Ingrid's open the door thing is lovely.", True),
+        (NOTICE, "henrietta", "henrietta", "Have you read my notice about devices?", True),
+        (TABLES, "tobias", PLAYER_ID, "I read your poem about the river.", True),
+        (TABLES, "tobias", PLAYER_ID, "Tobias, I loved your poem.", True),
+        (NOTICE, "ana", PLAYER_ID, "Have you read the notice about devices?", True),
+        (FIRST_COAT, "priya", PLAYER_ID, "Seen the new mural by the Daily Grind?", True),
+        (RED_PLANET, "ana", PLAYER_ID, "I love your painting!", False),
+        (RED_PLANET, "ana", "ana", "My painting days are over.", False),
+        (RED_PLANET, "ana", PLAYER_ID, "Cal's been busy.", False),
+        (RED_PLANET, "ana", PLAYER_ID, "There are murals everywhere here.", False),
+        (RED_PLANET, "ana", "ana", "First time at the tower, yes?", False),
+        (SUPPER, "ana", PLAYER_ID, "Tell me about the village.", False),
+        (SUPPER, "ana", PLAYER_ID, "Where can I get a decent table for supper?", False),
+        (TABLES, "ana", PLAYER_ID, "Is the river water clean?", False),
+        (NOTICE, "ana", PLAYER_ID, "Did you notice anything odd today?", False),
+        (DOOR, "ana", PLAYER_ID, "Could you open the door for me?", False),
+        (TABLES, "tobias", PLAYER_ID, "Hi! What's your story?", False),
+        (TARGETS, "raymond", PLAYER_ID, "What's your plan for today?", False),
+        (TABLES, "tobias", PLAYER_ID, "Tobias, how's the river today?", False),
+        (SUPPER, "tobias", PLAYER_ID, "Morning Tobias! Tell me about the village.", False),
+        (TARGETS, "raymond", PLAYER_ID, "Hi Raymond! Any plans for the weekend?", False),
+        (FIRST_COAT, "priya", PLAYER_ID, "Did you notice the new menu at the Daily Grind?", False),
+        (RED_PLANET, "ana", PLAYER_ID, "Did you notice the tower on the way in?", False),
+        (TABLES, "ana", PLAYER_ID, "Did you notice how high the river is?", False),
+    ],
+)
+def test_when_a_work_has_come_up(
+    work: Work, owner: str, speaker: str, text: str, expected: bool
+) -> None:
+    topic = WorkTopic(remembers(owner, work, "I know it.", START), work)
+
+    assert came_up(topic, work.artist.title(), [said(speaker, text)]) is expected

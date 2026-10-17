@@ -5,7 +5,15 @@ from datetime import datetime
 
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.plan import Plan, direction
-from simile.conversation.prompt import VALUE_NAMES, Draft, ago, first_name, parse_reply, value_name
+from simile.conversation.prompt import (
+    VALUE_NAMES,
+    Draft,
+    WorkTopic,
+    ago,
+    first_name,
+    parse_reply,
+    value_name,
+)
 from simile.memory import SharedHistory
 from simile.schema import FlagKind, Id, Memory, Npc, Relationship
 from simile.social import describe
@@ -46,6 +54,7 @@ class Character:
     """News they might bring up."""
     secrets: Sequence[tuple[str, str]] = ()
     """Who told them what in confidence, among people other than the other."""
+    works: Sequence[WorkTopic] = ()
 
 
 @dataclass(frozen=True)
@@ -100,8 +109,8 @@ def scene_prompt(
     where = f"at {place}" if place else "out in the street"
     parts = [
         f"It's {now:%H:%M}, {where}. {names[a.npc.id]} has just walked up to {names[b.npc.id]}.",
-        character(a, names[b.npc.id], grudges(history, a.npc.id)),
-        character(b, names[a.npc.id], grudges(history, b.npc.id)),
+        character(a, b.npc, grudges(history, a.npc.id)),
+        character(b, a.npc, grudges(history, b.npc.id)),
     ]
     between = [
         f"- {ago(event.timestamp, now)}, {names.get(event.actor, event.actor)}: {event.action}"
@@ -134,8 +143,8 @@ def grudges(history: SharedHistory, owner: Id) -> list[str]:
     ]
 
 
-def character(side: Character, other: str, grudges: Sequence[str] = ()) -> str:
-    npc, name = side.npc, first_name(side.npc)
+def character(side: Character, them: Npc, grudges: Sequence[str] = ()) -> str:
+    npc, name, other = side.npc, first_name(side.npc), first_name(them)
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
     most = ", ".join(value_name(value) for value, _ in ranked[:5])
     least = ", ".join(value_name(value) for value, _ in reversed(ranked[-3:]))
@@ -163,12 +172,29 @@ def character(side: Character, other: str, grudges: Sequence[str] = ()) -> str:
             f"Told to {name} in confidence, which only {name} knows:\n"
             + "\n".join(f"- {who}: {what.strip()}" for who, what in side.secrets)
         )
+    own = [topic for topic in side.works if topic.work.artist == npc.id]
+    by_others = [topic for topic in side.works if topic.work.artist != npc.id]
+    if own:
+        parts.append(
+            f"{name}'s own works, which {name} might bring up and stand by, in notes only {name} "
+            "knows:\n" + "\n".join(work_line(topic, them) for topic in own)
+        )
+    if by_others:
+        parts.append(
+            f"Works by others {name} might bring up, which only {name} knows:\n"
+            + "\n".join(work_line(topic, them) for topic in by_others)
+        )
     if side.topics:
         parts.append(
             f"News {name} read and might bring up:\n"
             + "\n".join(f"- {m.content}" for m in side.topics)
         )
     return "\n\n".join(parts)
+
+
+def work_line(topic: WorkTopic, them: Npc) -> str:
+    made = f" ({first_name(them)} made it.)" if topic.work.artist == them.id else ""
+    return f"- {topic.memory.content}{made}"
 
 
 def continue_prompt(scene: str, written: Sequence[ScriptLine], names: Mapping[Id, str]) -> str:

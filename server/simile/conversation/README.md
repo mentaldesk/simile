@@ -25,16 +25,16 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   interest, `keen_goal` times what they were doing's `accept_goals` score (`seeking_them` if they
   were looking for the other), less `keen_pressing` times their most pressing need (rest, curiosity
   or news) over `pressing`. Topic interest is how much the values of what both sides are likely to
-  bring up matter to them, from -1 to 1: B4's articles behind their news topics, weighted by how
-  much each relates to each value, or for someone with no news, their own top three values. Someone
-  at `leave_below` or less wants to wrap up after `min_lines`, someone at 1 after `long_talk` (30),
-  in a straight line between. Whoever wants to leave first does (the one approached, on a tie), and
-  the scene runs that many lines plus the goodbye and its answer. The direction says each side's
-  keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk"), what
-  draws them in (came looking for them, could do with company) and what holds them back (was off
-  to read the news, has had plenty of company, tired): the reasons that agree with their keenness
-  in brackets, the others after "though". Then who'll want to leave after about how many lines,
-  and the length.
+  bring up matter to them, from -1 to 1: B4's articles behind their news topics and the works they
+  might bring up, weighted by how much each relates to each value, or for someone with neither,
+  their own top three values. Someone at `leave_below` or less wants to wrap up after `min_lines`,
+  someone at 1 after `long_talk` (30), in a straight line between. Whoever wants to leave first does
+  (the one approached, on a tie), and the scene runs that many lines plus the goodbye and its
+  answer. The direction says each side's keenness in words ("keen to talk", "happy to chat",
+  "lukewarm", "would rather not talk"), what draws them in (came looking for them, could do with
+  company) and what holds them back (was off to read the news, has had plenty of company, tired):
+  the reasons that agree with their keenness in brackets, the others after "though". Then who'll
+  want to leave after about how many lines, and the length.
 - **The script.** One L1 `stream()` call with Haiku 4.5 and `purpose="conversation"` writes the
   whole scene. Haiku 5.5 thinks before it writes and can't be told not to: on the same scenes it
   sometimes took over 20 s to its first line, where Haiku 4.5 took 2 to 7 s. The system prompt, the same for every scene, asks for it like a scene in a novel:
@@ -45,11 +45,22 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   each side, their persona, backstory, speaking style, values and interests, R1's `describe()` of
   how they feel about the other told in the third person, and, each marked as only theirs, any
   grudge they hold against the other, R2's `recall` (memories of the other, then recent or salient
-  ones) and the secrets others told them (open `secret` flags about anyone else), and B4's
-  `topics_to_raise`. Then what's between them, which both know: R2's `shared_history` events and
-  their open debts, promises, broken promises and saved lives, and a secret told between them,
-  marked as known only to the two. Then where and when they are, and the direction. Each line is
-  the speaker's first name, a colon, the line and its `[values: ...]` tag.
+  ones) and the secrets others told them (open `secret` flags about anyone else), the works they
+  might bring up (see *Works*), and B4's `topics_to_raise`. Then what's between them, which both
+  know: R2's `shared_history` events and their open debts, promises, broken promises and saved
+  lives, and a secret told between them, marked as known only to the two. Then where and when they
+  are, and the direction. Each line is the speaker's first name, a colon, the line and its
+  `[values: ...]` tag.
+- **Works.** Each side's work topics are their memories of works they made, read or saw (`work`
+  memories from `simile.works`), up to `works` (2): those about the other first (the other's works,
+  or the other painting over theirs), then their strongest by salience × recency, with a
+  `works_half_life` of a day, leaving out any below `works_min_score`. Each side also gets their
+  memory of making any of their works in the other's topics, so the artist knows a work the other
+  might bring up is theirs. In their section, their own works are ones they "might bring up and
+  stand by", and both lists are marked as only theirs, with "(Kofi made it.)" after a work when the
+  other is the artist. A work memory that's a topic isn't listed again among their memories, so each
+  appears once. The engine looks works up through `engine.work`, which the lifespan points at
+  `works_of(app)`.
 - **Streaming.** Each line is parsed as soon as its newline streams, cleaned like a reply
   (`parse_reply`: tag, stage directions, quotes, cut at the first sentence boundary past
   `max_words`), and played from the first. Lines that don't start with one of the two names
@@ -88,9 +99,9 @@ Every constant is in `ConversationConfig`.
 engine, so `live`, `conversation(id)`, `talking`, `state` and the events below cover them too. The
 player is `Visitor` in prompts (B3 uses the same name), "a newcomer to the village", and NPCs bring
 their relationship with `player`, shared history and memories as with anyone else, and the news they
-might bring up is their own (B4's `topics_to_raise`), as with a resident. Nothing the player has read
-reaches an NPC's prompt. B1 counts a talk with the player as `player_relief` (half) of one with a
-resident towards their social need.
+might bring up is their own (B4's `topics_to_raise`), as with a resident. So are their work topics,
+as in *Works* above. Nothing the player has read or seen reaches an NPC's prompt. B1 counts a talk
+with the player as `player_relief` (half) of one with a resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
   they're asleep. One talking to another resident is pulled out of it (see *Interruptions*) and
@@ -123,6 +134,14 @@ resident towards their social need.
   memory of each article that counts, with their take, follows the transcript in that reply's
   prompt, for at most `mentions` (2) articles, most shared words first. An NPC who didn't read it
   gets nothing and answers from their values.
+- **Works that have come up.** Each reply's prompt lists the NPC's work topics after the background,
+  their own and others' in two lists. A work has come up once a line names its title (quoted, as
+  written if it's more than a word, or in any case beside a word for a work or its artist), names a
+  mural's wall beside a word for a mural ("mural", "painting", "wall"), or has two of: words from
+  its title, tags or topics, however many, other than words for a work; a word for a work ("mural",
+  "poem", "piece", "the notice", ...); and its artist (their first name, or for the NPC's own work,
+  "my mural" in their line or "your mural" to them). It's left out of the prompts after the NPC's
+  next reply, which still has it.
 - **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
   off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
   Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.

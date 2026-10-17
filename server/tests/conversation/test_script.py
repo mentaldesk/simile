@@ -5,6 +5,7 @@ import pytest
 
 from simile.conversation import ConversationConfig, Draft
 from simile.conversation.plan import Plan, Stance
+from simile.conversation.prompt import WorkTopic
 from simile.conversation.script import (
     Character,
     ScriptLine,
@@ -18,8 +19,19 @@ from simile.llm import Message, Request
 from simile.llm.fake import cast
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
-from simile.schema import Aspect, CoreValue, Flag, FlagKind, InteractionEvent, Memory, MemoryKind
+from simile.schema import (
+    Aspect,
+    CoreValue,
+    Flag,
+    FlagKind,
+    InteractionEvent,
+    Medium,
+    Memory,
+    MemoryKind,
+)
 from simile.social import describe, meet
+
+from .conftest import remembers, work
 
 NPCS = {npc.id: npc for npc in load_npcs()}
 KOFI, HENRIETTA = NPCS["kofi"], NPCS["henrietta"]
@@ -250,8 +262,42 @@ def test_a_scene_leaves_out_what_there_isnt() -> None:
     prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
 
     assert prompt.startswith("It's 09:30, out in the street.")
-    for missing in ("Between them", "'s mind", "confidence", "News"):
+    for missing in ("Between them", "'s mind", "confidence", "News", "works"):
         assert missing not in prompt
+
+
+def test_each_side_has_their_works_with_the_artist_marked() -> None:
+    mural = work("kofi-1", "kofi", "First Coat", NOW, tags=["mars"])
+    poem = work("tobias-1", "tobias", "The Tables", NOW, medium=Medium.WRITING)
+    painted = 'I painted "First Coat" on the tower.'
+    saw = 'I saw Kofi\'s mural "First Coat". A disgrace.'
+    read = 'I read Tobias\'s "The Tables". Sound.'
+    kofi = Character(
+        KOFI,
+        meet(KOFI, "henrietta"),
+        works=[WorkTopic(remembers("kofi", mural, painted, NOW), mural)],
+    )
+    henrietta = Character(
+        HENRIETTA,
+        meet(HENRIETTA, "kofi"),
+        works=[
+            WorkTopic(remembers("henrietta", mural, saw, NOW), mural),
+            WorkTopic(remembers("henrietta", poem, read, NOW), poem),
+        ],
+    )
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
+
+    _, kofis, henriettas, _ = prompt.split("\n\n## ")
+    assert kofis.endswith(
+        f"Kofi's own works, which Kofi might bring up and stand by, in notes only Kofi knows:\n"
+        f"- {painted}"
+    )
+    assert henriettas.endswith(
+        "Works by others Henrietta might bring up, which only Henrietta knows:\n"
+        f"- {saw} (Kofi made it.)\n- {read}"
+    )
+    assert cast(Request((Message("user", prompt),), "", "haiku")) == ("Kofi", "Henrietta", 5)
 
 
 def test_the_system_prompt_sets_the_rules_and_the_format() -> None:

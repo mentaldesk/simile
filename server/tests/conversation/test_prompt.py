@@ -12,7 +12,7 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, first_name, takes_leave
+from simile.conversation.prompt import Player, WorkTopic, first_name, takes_leave
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -23,11 +23,14 @@ from simile.schema import (
     FlagKind,
     InteractionEvent,
     Line,
+    Medium,
     Memory,
     MemoryKind,
 )
 from simile.social import describe, meet
 from simile.voice import SpeakingRate
+
+from .conftest import remembers, work
 
 NPCS = {npc.id: npc for npc in load_npcs()}
 KOFI, HENRIETTA = NPCS["kofi"], NPCS["henrietta"]
@@ -181,6 +184,24 @@ def test_a_turn_is_the_background_the_transcript_and_the_cue() -> None:
         "Say one or two sentences, at most 40 words.\n\n"
         "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
         "goodbye yet."
+    )
+
+
+def test_a_turn_has_the_works_they_might_bring_up_after_the_background() -> None:
+    mural = work("kofi-1", "kofi", "First Coat", NOW)
+    poem = work("tobias-1", "tobias", "The Tables", NOW, medium=Medium.WRITING)
+    works = [
+        WorkTopic(remembers("kofi", mural, 'I painted "First Coat".', NOW), mural),
+        WorkTopic(remembers("kofi", poem, "I read Tobias's poem. Lovely.", NOW), poem),
+    ]
+
+    prompt = turn_prompt("B", [], NAMES, Cue.OPEN, "Henrietta", speaker="kofi", works=works)
+
+    assert prompt.startswith(
+        "B\n\n"
+        'Your own works, which you might bring up and stand by:\n- I painted "First Coat".\n\n'
+        "Works by others you might bring up:\n- I read Tobias's poem. Lovely.\n\n"
+        "The conversation hasn't started yet."
     )
 
 

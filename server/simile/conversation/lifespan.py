@@ -11,16 +11,20 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.conversation.player import PlayerConversations
     from simile.news import news_of
     from simile.protocol import PlayerSayMessage, hub_of
-    from simile.schema import NewsItem
+    from simile.schema import NewsItem, Work
     from simile.sim import world_of
+    from simile.works import works_of
 
     engine, hub, loop = conversations_of(app), hub_of(app), world_of(app).loop
 
     def article(news_id: str) -> NewsItem | None:
         return news_of(app).get(news_id)
 
+    def work(work_id: str) -> Work | None:
+        return works_of(app).get(work_id)
+
     players = PlayerConversations(engine, connected=lambda: bool(hub.connections), article=article)
-    engine.player_request, engine.article = players.request, article
+    engine.player_request, engine.article, engine.work = players.request, article, work
     stops = [
         behaviour_of(app).hooks.set(request_conversation=engine.request, conversations=engine.live),
         hub.subscribe(PlayerSayMessage, lambda message: players.say(message.text, message.target)),

@@ -49,6 +49,8 @@ from simile.voice import SpeakingRate
 from simile.world import Movement
 from simile.world.map import load_map
 
+from .conftest import remembers, work
+
 pytestmark = pytest.mark.anyio
 
 TOWN = load_map()
@@ -886,3 +888,108 @@ async def test_a_script_that_stalls_times_out_and_frees_its_slot() -> None:
     assert village.engine.live() == []
     assert not any(mind.paused for mind in village.behaviour.minds.values())
     assert await asyncio.wait_for(village.llm.complete("Still there?"), 1) == "Free again."
+
+
+RED_PLANET = work("cal-1", "cal", "Red Planet", START - timedelta(hours=3), tags=["mars"])
+SAW_IT = 'I saw Cal Test\'s mural "Red Planet" on the tower. Brave stuff.'
+
+
+def sides(prompt: str) -> tuple[str, str]:
+    a, b, *_ = prompt.split("\n\n## ")[1:]
+    return a, b
+
+
+async def test_a_mural_someone_saw_is_theirs_to_bring_up_once() -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {RED_PLANET.id: RED_PLANET}.get
+    village.store.add(remembers("ana", RED_PLANET, SAW_IT, START - timedelta(hours=1)))
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.1)
+
+    prompt = village.script.prompts[0]
+    ana, ben = sides(prompt)
+    assert f"Works by others Ana might bring up, which only Ana knows:\n- {SAW_IT}" in ana
+    assert "Red Planet" not in ben
+    assert prompt.count("Red Planet") == 1
+
+
+async def test_talking_to_the_artist_both_know_whose_work_it_is() -> None:
+    village = Village(npcs=(ANA, CAL))
+    village.engine.work = {RED_PLANET.id: RED_PLANET}.get
+    painted = 'I painted "Red Planet" on the tower. Mars is for everyone.'
+    village.store.add(
+        remembers("ana", RED_PLANET, SAW_IT, START - timedelta(hours=1)),
+        remembers("cal", RED_PLANET, painted, START - timedelta(days=5), salience=0.6),
+    )
+    village.engine.start("ana", "cal")
+
+    await village.run(minutes=0.1)
+
+    prompt = village.script.prompts[0]
+    ana, cal = sides(prompt)
+    assert f"- {SAW_IT} (Cal made it.)" in ana
+    assert (
+        f"Cal's own works, which Cal might bring up and stand by, in notes only Cal knows:\n"
+        f"- {painted}" in cal
+    )
+    assert "Brave stuff" not in cal
+    assert prompt.count(painted) == 1
+
+
+async def test_whoever_painted_over_your_mural_reminds_you_of_it() -> None:
+    gulls = work("ben-1", "ben", "Gulls", START - timedelta(days=1))
+    over = work("ana-1", "ana", "Red Planet", START - timedelta(hours=2))
+    covered = 'Ana Test has painted "Red Planet" over my mural "Gulls" on the tower. Rude.'
+    painted = 'I painted "Red Planet" on the tower over Ben Test\'s "Gulls". Bold.'
+    village = Village(npcs=(ANA, BEN, DOT), config=ConversationConfig(works=1))
+    village.engine.work = {w.id: w for w in (gulls, over, RED_PLANET)}.get
+    village.store.add(
+        remembers("ben", over, covered, START - timedelta(hours=2), salience=0.7),
+        remembers("ben", RED_PLANET, SAW_IT, START, salience=0.9),
+        remembers("ana", over, painted, START - timedelta(days=5), salience=0.6),
+    )
+    prompts = []
+    for other in ("ana", "dot"):
+        village.engine.start("ben", other)
+        prompts.append(village.scene().prompt)
+        village.engine.end(village.scene().conversation.id)
+
+    works = "Works by others Ben might bring up, which only Ben knows:\n- "
+    ben, ana = sides(prompts[0])
+    assert ben.endswith(f"{works}{covered} (Ana made it.)")
+    assert (
+        f"Ana's own works, which Ana might bring up and stand by, in notes only Ana knows:\n"
+        f"- {painted}" in ana
+    )
+    ben, _ = sides(prompts[1])
+    assert ben.endswith(f"{works}{SAW_IT}")
+
+
+async def test_faded_and_lost_works_and_the_players_memories_arent_raised() -> None:
+    lost = work("cal-2", "cal", "Gone", START)
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {RED_PLANET.id: RED_PLANET}.get
+    village.store.add(
+        remembers("ana", RED_PLANET, SAW_IT, START - timedelta(days=5), salience=0.6),
+        remembers("ana", lost, "I saw Cal Test's mural Gone.", START),
+        remembers(PLAYER_ID, RED_PLANET, SAW_IT, START),
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.1)
+
+    assert "Works by others" not in village.script.prompts[0]
+
+
+async def test_what_a_work_is_about_makes_them_keener() -> None:
+    justice = work("cal-3", "cal", "Fair Shares", START, values={CoreValue.JUSTICE: 1.0})
+    keen = []
+    for memories in ((), (remembers("ana", justice, "I saw Fair Shares. Yes!", START),)):
+        village = Village(npcs=(ANA, BEN, CAL))
+        village.engine.work = {justice.id: justice}.get
+        village.store.add(*memories)
+        village.engine.start("ana", "ben")
+        keen.append(village.scene().plan.stances["ana"].keen)
+
+    assert keen[1] > keen[0]

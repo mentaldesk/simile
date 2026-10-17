@@ -18,6 +18,7 @@ from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
     Cue,
     Draft,
+    WorkTopic,
     duration,
     first_name,
     parse_reply,
@@ -25,6 +26,7 @@ from simile.conversation.prompt import (
     turn_prompt,
 )
 from simile.llm import Model
+from simile.news.interest import shared, words
 from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
@@ -52,6 +54,15 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
+MURAL_WORD = r"(?:murals?|paint(?:s|ed|ing|ings)?|walls?)"
+WORK_WORD = rf"(?:{MURAL_WORD}|poems?|verses?|pieces?|notices|writing|wrote|written)"
+NOTICE = r"\b(?:the|a|your|my|her|his|their|that|this) notice\b"
+A_WORK = re.compile(rf"\b{WORK_WORD}\b|{NOTICE}", re.IGNORECASE)
+A_MURAL = re.compile(rf"\b{MURAL_WORD}\b", re.IGNORECASE)
+MY_WORK = re.compile(rf"\bmy (?:{WORK_WORD}|notice)\b", re.IGNORECASE)
+YOUR_WORK = re.compile(rf"\byour (?:{WORK_WORD}|notice)\b", re.IGNORECASE)
+QUOTES_OPEN, QUOTES_CLOSE = "\"“‘'", "\"”’'"
+
 TURNED_AWAY = (
     "I'll let you talk to {name}. See you around.",
     "Go on, {name}'s waiting. Catch you later.",
@@ -62,6 +73,40 @@ TURNED_AWAY = (
 
 def says_goodbye(text: str) -> bool:
     return GOODBYE.search(text) is not None
+
+
+def came_up(topic: WorkTopic, artist: str, lines: Sequence[Line]) -> bool:
+    """Whether a line has brought the work up."""
+    work = topic.work
+    labels = [label for label in [*work.tags, *topic.memory.topics] if label.isalpha()]
+    headline = words(" ".join([work.title, *labels]))
+    wall = words(work.wall.replace("_", " ")) if work.wall else set()
+    named = re.compile(rf"\b{re.escape(artist)}\b", re.IGNORECASE)
+    own = work.artist == topic.memory.owner
+    for line in lines:
+        text = line.text
+        a_work = A_WORK.search(text) is not None
+        if line.speaker == work.artist:
+            by = MY_WORK.search(text) is not None
+        elif own:
+            by = YOUR_WORK.search(text) is not None
+        else:
+            by = named.search(text) is not None
+        on_wall = A_MURAL.search(text) is not None and bool(words(text) & wall)
+        if on_wall or titled(work.title, text, loosely=a_work or by):
+            return True
+        if bool(shared(words(A_WORK.sub(" ", text)), headline)) + a_work + by >= 2:
+            return True
+    return False
+
+
+def titled(title: str, text: str, *, loosely: bool) -> bool:
+    """Whether `text` names `title` quoted, as written, or, if `loosely`, in any case."""
+    title = title.strip().rstrip(".!?")
+    if loosely and title.lower() in text.lower():
+        return True
+    quoted = rf"[{QUOTES_OPEN}]{re.escape(title)}[.,!?]?[{QUOTES_CLOSE}]"
+    return re.search(quoted, text, re.IGNORECASE) is not None or (" " in title and title in text)
 
 
 class PlayerConfig(BaseModel):
@@ -296,6 +341,7 @@ class PlayerConversations:
             engine.config,
             speaker=npc,
             recalled=self._recalled(npc, lines),
+            works=self._works(talk, lines),
         )
         stream = engine.llm().stream(
             prompt,
@@ -312,6 +358,16 @@ class PlayerConversations:
         for sentence in sentences.end():
             self._sentence(talk, sentence)
         return sentences.draft
+
+    def _works(self, talk: PlayerTalk, lines: Sequence[Line]) -> list[WorkTopic]:
+        """The NPC's works that haven't come up before their last reply."""
+        npc = talk.npc
+        last = max((n for n, line in enumerate(lines) if line.speaker == npc), default=-1)
+        return [
+            topic
+            for topic in talk.parties[npc].works
+            if not came_up(topic, self.engine._name(topic.work.artist), lines[: last + 1])
+        ]
 
     def _recalled(self, npc: Id, lines: Sequence[Line]) -> list[Memory]:
         """What `npc` read about the articles the player has mentioned since `npc` last spoke."""

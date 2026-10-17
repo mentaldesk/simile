@@ -20,6 +20,9 @@ from simile.sim import (
     LineSpoken,
     World,
 )
+from simile.works import works_of
+
+from .conftest import work
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -44,6 +47,10 @@ def test_plugs_into_the_behaviour_hooks_until_shutdown(app: Starlette) -> None:
         engine, hooks = conversations_of(app), behaviour_of(app).hooks
         assert hooks.request_conversation == engine.request
         assert hooks.conversations == engine.live
+
+        mural = work("kofi-1", "kofi", "First Coat", START)
+        works_of(app).add(mural)
+        assert engine.work(mural.id) == mural
 
         started = client.portal.call(engine.start, "kofi", "henrietta")
         snapshot = client.portal.call(hub_of(app).snapshot)

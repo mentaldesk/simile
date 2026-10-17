@@ -6,7 +6,17 @@ from enum import StrEnum
 
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.memory import SharedHistory
-from simile.schema import PLAYER_ID, CoreValue, FlagKind, Id, Line, Memory, Npc, Relationship
+from simile.schema import (
+    PLAYER_ID,
+    CoreValue,
+    FlagKind,
+    Id,
+    Line,
+    Memory,
+    Npc,
+    Relationship,
+    Work,
+)
 from simile.social import describe
 from simile.voice import SpeakingRate
 
@@ -89,6 +99,14 @@ class Draft:
 
     text: str
     values: tuple[CoreValue, ...] = ()
+
+
+@dataclass(frozen=True)
+class WorkTopic:
+    """A work someone might bring up: their memory of making, reading or seeing it."""
+
+    memory: Memory
+    work: Work
 
 
 def first_name(person: Npc | Player) -> str:
@@ -175,6 +193,7 @@ def turn_prompt(
     *,
     speaker: Id | None = None,
     recalled: Sequence[Memory] = (),
+    works: Sequence[WorkTopic] = (),
 ) -> str:
     recent = lines[-config.transcript_lines :]
     if recent:
@@ -184,7 +203,7 @@ def turn_prompt(
         so_far = f"The conversation so far:\n{transcript}"
     else:
         so_far = "The conversation hasn't started yet."
-    parts = [background, so_far]
+    parts = [background, *your_works(works, speaker), so_far]
     if recalled:
         parts.append(
             f"You read about what {other} just mentioned:\n"
@@ -199,6 +218,17 @@ def turn_prompt(
         )
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
     return "\n\n".join([*parts, CUES[cue].format(other=other)])
+
+
+def your_works(works: Sequence[WorkTopic], speaker: Id | None) -> list[str]:
+    own = [f"- {topic.memory.content}" for topic in works if topic.work.artist == speaker]
+    others = [f"- {topic.memory.content}" for topic in works if topic.work.artist != speaker]
+    parts = []
+    if own:
+        parts.append("Your own works, which you might bring up and stand by:\n" + "\n".join(own))
+    if others:
+        parts.append("Works by others you might bring up:\n" + "\n".join(others))
+    return parts
 
 
 def opening(text: str) -> str:
