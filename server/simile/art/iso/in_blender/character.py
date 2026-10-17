@@ -1,9 +1,9 @@
-"""Inside Blender: a resident from primitives on an 11-bone armature, facing south (-Y), and its
-poses. A skinned body mesh can replace this module if it keeps `build`, `pose` and BONES."""
+"""Inside Blender: a resident from primitives on the armature, replaceable by a skinned mesh."""
 
 import math
 import random
 
+import bmesh
 import bpy
 from mathutils import Matrix, Vector
 
@@ -15,6 +15,7 @@ from simile.art.iso.in_blender.common import (
     ellipsoid,
     link,
     material,
+    mesh_object,
     rod,
 )
 
@@ -128,17 +129,17 @@ def accessories(acc: set, parts: dict, sw: float, depth: float, accent, apron, i
             )
         )
     if "headphones" in acc:
-        band = material("headphones", "night", 0.4, sat=0.8)
         for ex in (-0.115, 0.115):
-            cup = cyl("earcup", 0, 0, -0.025, 0.025, 0.045, band, seg=max(L["segments"] // 2, 6))
+            cup = cyl("earcup", 0, 0, -0.025, 0.025, 0.045, accent, seg=max(L["segments"] // 2, 6))
             cup.rotation_euler.y = math.radians(90)
             cup.location = (ex, 0, 1.62)
             hp.append(cup)
-        hp.append(rod("band", (-0.11, 0, 1.66), (0, 0, 1.79), 0.015, band))
-        hp.append(rod("band", (0, 0, 1.79), (0.11, 0, 1.66), 0.015, band))
-    if "glasses" in acc or "sunglasses" in acc:
-        lens = ink if "sunglasses" in acc else material("frames", "night", 0.3, sat=0.8)
-        hp.append(box("glasses", -0.085, -0.125, 1.635, 0.085, -0.11, 1.665, lens))
+        hp.append(rod("band", (-0.11, 0, 1.66), (0, 0, 1.79), 0.015, accent))
+        hp.append(rod("band", (0, 0, 1.79), (0.11, 0, 1.66), 0.015, accent))
+    if "sunglasses" in acc:
+        hp.append(visor("sunglasses", 1.627, 1.667, ink))
+    elif "glasses" in acc:
+        hp.append(visor("glasses", 1.638, 1.656, material("frames", "steel", 0.3, 0.6, sat=0.8)))
     if "scarf" in acc:
         parts["spine"].append(cyl("scarf", 0, 0, 1.38, 1.48, 0.09, accent, r_top=0.08))
         parts["spine"].append(box("scarf_tail", 0.02, -0.15, 1.15, 0.09, -0.11, 1.4, accent))
@@ -152,6 +153,20 @@ def accessories(acc: set, parts: dict, sw: float, depth: float, accent, apron, i
         for side, sx in (("L", 1), ("R", -1)):
             x0, x1 = sorted((0.0, half * sx))
             parts[f"thigh.{side}"].append(box("apron", x0, y0, 0.6, x1, y1, 0.92, apron))
+
+
+def visor(name: str, z0: float, z1: float, mat):
+    """A band across the front of the head, just proud of the face, so no end shows behind."""
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=32, v_segments=16, radius=1.0)
+    bmesh.ops.scale(bm, vec=(0.111, 0.121, 0.136), verts=bm.verts)
+    bmesh.ops.translate(bm, vec=(0, 0, 1.63), verts=bm.verts)
+    cuts = (((0, 0, z0), (0, 0, 1)), ((0, 0, z1), (0, 0, -1)), ((0, -0.05, 0), (0, -1, 0)))
+    for point, normal in cuts:
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+        bmesh.ops.bisect_plane(bm, geom=geom, plane_co=point, plane_no=normal, clear_inner=True)
+    bmesh.ops.holes_fill(bm, edges=[e for e in bm.edges if e.is_boundary])
+    return mesh_object(name, bm, mat, smooth=True)
 
 
 def hair_parts(style: str, mat, out: list) -> None:

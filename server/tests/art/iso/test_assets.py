@@ -12,7 +12,7 @@ ISO = scenery.CONTENT_DIR / "art" / "iso"
 SCENERY = ISO / "scenery"
 BUDGET_BYTES = 40_000_000
 STALE = "content/art/iso/scenery is out of date: run `cd server && uv run simile art iso scenery`"
-PINNED_SOURCES = "27c69f9584c39426"
+PINNED_SOURCES = "bfd7abe00f05ffc5"
 
 
 def load(name: str) -> dict:

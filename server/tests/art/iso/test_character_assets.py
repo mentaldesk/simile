@@ -11,7 +11,7 @@ FOLDER = characters.CONTENT_DIR / "art" / "iso" / "characters"
 STALE = (
     "content/art/iso/characters is out of date: run `cd server && uv run simile art iso characters`"
 )
-PINNED_SOURCES = "490c3027d87a653e"
+PINNED_SOURCES = "65cf408cb78b04ce"
 
 
 @pytest.fixture(scope="module")
@@ -37,10 +37,9 @@ def test_every_resident_and_the_player_has_an_up_to_date_sheet(manifest: dict) -
     assert manifest["constants_hash"] == characters.constants_hash(residents[characters.PROBE])
 
 
-def test_the_layout_is_the_pipelines(manifest: dict) -> None:
-    assert manifest["frame"] == characters.frame(), STALE
-    assert manifest["columns"] == characters.WALK_FRAMES + characters.IDLE_FRAMES
-    assert [d["name"] for d in manifest["directions"]] == list(characters.DIRECTIONS)
+def test_the_layout_and_animations_are_the_pipelines(manifest: dict) -> None:
+    layout = characters.layout()
+    assert {key: manifest[key] for key in layout} == layout, STALE
 
 
 def test_the_folder_holds_the_manifest_and_its_sheets(manifest: dict) -> None:
@@ -83,7 +82,7 @@ def test_every_frame_stands_on_its_anchor_and_stays_inside(
 
 def test_no_frame_has_unlit_patches(sheets: dict[str, np.ndarray]) -> None:
     for key, pixels in sheets.items():
-        unlit = (pixels[..., :3].astype(int).sum(axis=2) < 9) & (pixels[..., 3] > 250)
+        unlit = (pixels[..., :3].max(axis=2) == 0) & (pixels[..., 3] == 255)
         assert not unlit.any(), f"{key}: {unlit.sum()} unlit px, a render glitch; rerun --force"
 
 

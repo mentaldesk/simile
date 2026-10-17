@@ -1,5 +1,4 @@
-"""`simile art iso characters`: each resident's walk and idle sheet, neutrally lit, and the
-per-set constants that light them at runtime."""
+"""`simile art iso characters`: each resident's neutrally lit sheet and the per-set constants."""
 
 import hashlib
 import json
@@ -42,7 +41,7 @@ MANIFEST_FORMAT = 1
 DIRECTIONS = {"s": 0, "se": 45, "e": 90, "ne": 135, "n": 180, "nw": 225, "w": 270, "sw": 315}
 WALK_FRAMES = 8
 IDLE_FRAMES = 4
-IDLE_FPS = 3
+IDLE_FPS = 1
 STRIDE_DEG = 24.0
 LEG_M = 0.87
 FEET_REACH_M = 0.55
@@ -77,8 +76,7 @@ def sources_digest() -> str:
 
 
 def frame() -> dict[str, Any]:
-    """One frame's size and the feet within it, holding a figure HEIGHT_M tall whose feet reach
-    FEET_REACH_M from where it stands, and its head HEAD_REACH_M."""
+    """One frame's size and where the feet are in it, with room for a whole stride."""
     feet = FEET_REACH_M * camera.PX_PER_M
     squash = math.sin(math.radians(camera.ELEVATION))
     half = math.ceil(feet) + PAD_PX
@@ -105,6 +103,37 @@ def tiles_per_cycle() -> float:
 
 def columns() -> int:
     return WALK_FRAMES + IDLE_FRAMES
+
+
+def layout() -> dict[str, Any]:
+    """The part of the manifest that is the same for every sheet."""
+    cols, walk = columns(), range(WALK_FRAMES)
+    idle = range(WALK_FRAMES, WALK_FRAMES + IDLE_FRAMES)
+
+    def vector(degrees: float) -> list[int]:
+        a = math.radians(degrees)
+        return [round(math.sin(a)), round(math.cos(a))]
+
+    return {
+        "frame": frame(),
+        "columns": cols,
+        "directions": [
+            {"name": name, "row": row, "vector": vector(degrees)}
+            for row, (name, degrees) in enumerate(DIRECTIONS.items())
+        ],
+        "animations": {
+            "walk": {
+                "fps": round(WALK_FRAMES * WALKING_SPEED / tiles_per_cycle()),
+                "tiles_per_cycle": round(tiles_per_cycle(), 3),
+                "frames": {d: [r * cols + c for c in walk] for r, d in enumerate(DIRECTIONS)},
+            },
+            "idle": {
+                "fps": IDLE_FPS,
+                "frames": {d: [r * cols + c for c in idle] for r, d in enumerate(DIRECTIONS)},
+            },
+        },
+        "figure_m": FIGURE_M,
+    }
 
 
 @dataclass(frozen=True)
@@ -291,14 +320,7 @@ class Build:
             self.report.rendered, self.report.probed = keys, probe
         manifest = {
             "format": MANIFEST_FORMAT,
-            "frame": frame(),
-            "columns": columns(),
-            "directions": [
-                {"name": name, "row": row, "vector": self._vector(degrees)}
-                for row, (name, degrees) in enumerate(DIRECTIONS.items())
-            ],
-            "animations": self._animations(),
-            "figure_m": FIGURE_M,
+            **layout(),
             "constants_hash": self.constants_hash,
             "sets": self._sets(probe),
             "characters": {key: self._sheet(key, key in keys) for key in self.characters},
@@ -311,26 +333,6 @@ class Build:
             self.report.bytes[key] = (self.root / sheet["image"]).stat().st_size
         self.report.bytes[MANIFEST] = (self.root / MANIFEST).stat().st_size
         return self.report
-
-    @staticmethod
-    def _vector(degrees: float) -> list[int]:
-        a = math.radians(degrees)
-        return [round(math.sin(a)), round(math.cos(a))]
-
-    def _animations(self) -> dict[str, Any]:
-        cols, walk = columns(), range(WALK_FRAMES)
-        idle = range(WALK_FRAMES, WALK_FRAMES + IDLE_FRAMES)
-        return {
-            "walk": {
-                "fps": round(WALK_FRAMES * WALKING_SPEED / tiles_per_cycle()),
-                "tiles_per_cycle": round(tiles_per_cycle(), 3),
-                "frames": {d: [r * cols + c for c in walk] for r, d in enumerate(DIRECTIONS)},
-            },
-            "idle": {
-                "fps": IDLE_FPS,
-                "frames": {d: [r * cols + c for c in idle] for r, d in enumerate(DIRECTIONS)},
-            },
-        }
 
     def _sets(self, probed: bool) -> dict[str, Any]:
         if not probed:

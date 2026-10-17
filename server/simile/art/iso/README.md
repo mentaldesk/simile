@@ -207,7 +207,7 @@ and a rig that faces south (−Y) with the bones in `BONES`.
   "directions": [{"name": "s", "row": 0, "vector": [0, 1]}, {"name": "se", "row": 1, "vector": [1, 1]}, …],
   "animations": {
     "walk": {"fps": 8, "tiles_per_cycle": 1.287, "frames": {"s": [0, …, 7], "se": [12, …, 19], …}},
-    "idle": {"fps": 3, "frames": {"s": [8, 9, 10, 11], …}}
+    "idle": {"fps": 1, "frames": {"s": [8, 9, 10, 11], …}}
   },
   "figure_m": 1.8,
   "constants_hash": "…",
@@ -232,12 +232,14 @@ column, so `load.spritesheet(id, image, {frameWidth, frameHeight})` loads a shee
 and a bubble above the head, are always in the same place in it.
 
 **Directions.** `vector` is a step on the map in tiles, x east and y south. Use the direction whose
-vector is closest to the way a resident is walking. `se` faces the camera and `nw` faces away.
+vector is closest in angle to the way a resident is walking. The vectors aren't unit length, so
+compare angles rather than dot products, which favour the diagonals. `se` faces the camera and `nw`
+faces away.
 
 **Walk and idle.** The walk is a two-step cycle that covers `tiles_per_cycle`. Its `fps` is for
 `WALKING_SPEED` (1.3 tiles per sim second). At any other speed, play it at
 `frames × speed / tiles_per_cycle` frames per second, so the feet don't slide. The idle is a slow
-breath, looped at its `fps`.
+breath, about 4 s long at its `fps`.
 
 **Lighting.** Characters use option (b) from #122: one neutrally lit sheet, plus constants for each
 set that the client applies at runtime.
@@ -254,18 +256,23 @@ set that the client applies at runtime.
 - **Drop shadow:** a soft dark ellipse on the ground, from the feet to `tip` (screen px from the
   feet), about 0.4 m wide, at an alpha of `strength` times the light map's sun at the feet.
   `direction` and `length` say the same in tiles, for a figure `figure_m` tall. The mock-up's
-  `drop_shadow` in `docs/style-study/compose.py` is a reference.
-- **Crossfade:** blend the two sets' tints and shadow alphas by the weights from
-  `lighting.blend(hour)`, or draw both shadows, weighted like the layers, as the mock-up did.
+  `drop_shadow` in `docs/style-study/compose.py` is a reference. It also draws a contact shadow
+  under the feet, an ellipse with radii of 0.3 and 0.26 tiles at an alpha of 0.35, which the sun
+  doesn't scale.
+- **Crossfade:** work out each set's tint and shadow alpha with that set's own light map first.
+  Then blend the two tints by the weights from `lighting.blend(hour)`, and always draw both
+  shadows, each in its own set's direction, at its alpha × its weight. One shadow with a blended
+  alpha would have to snap from one direction to the other somewhere in the fade.
 
-The shadow's direction and length come from `lighting.py`: `shadow_direction(azimuth)`, and
-`figure_m / tan(elevation)`. The tint and strength are measured, as in the #122 mock-up. The player
-standing in each direction is rendered under each set's light over a shadow catcher, and under the
-neutral light. The tint is the ratio of their colour sums over the pixels solid in both, scaled
-down so no channel passes 1. The strength is the 95th percentile of the catcher's alpha around the
-figure. One tint can't fit every outfit: measured on each resident alone, the evening's red runs
-from 0.43 to 0.62 and the night's from 0.05 to 0.22. The player is the probe because they're
-defined in code, so adding or regenerating residents never changes the constants.
+The shadow's direction comes from `lighting.py`'s `shadow_direction(azimuth)`, and its length in
+tiles is `figure_m / tan(elevation) / 1.1`, a tile being 1.1 m. The tint and strength are measured,
+as in the #122 mock-up. The player standing in each direction is rendered under each set's light
+over a shadow catcher, and under the neutral light. The tint is the ratio of their colour sums over
+the pixels solid in both, scaled down so no channel passes 1. The strength is the 95th percentile
+of the catcher's alpha around the figure. One tint can't fit every outfit: measured on each
+resident alone, the evening's red runs from 0.43 to 0.62 and the night's from 0.05 to 0.22. The
+player is the probe because they're defined in code, so adding or regenerating residents never
+changes the constants.
 
 **Rebuilds.** A sheet's `hash` covers the pipeline version, the look, the neutral light, the camera,
 the palette, the frame, the directions, the animations, the format, and the character's appearance
