@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable
+from dataclasses import replace
 
 import pytest
 from pydantic import ValidationError
@@ -15,8 +16,10 @@ MakeDraft = Callable[..., Draft]
 pytestmark = pytest.mark.anyio
 
 
-async def village(llm: LLMClient, count: int = 10, seed: int = 0) -> list[Npc]:
-    return [npc async for npc in generate(llm, count, seed)]
+async def village(
+    llm: LLMClient, count: int = 10, seed: int = 0, *, rich: bool = False
+) -> list[Npc]:
+    return [npc async for npc in generate(llm, count, seed, rich=rich)]
 
 
 def test_plan_is_deterministic_for_a_seed() -> None:
@@ -68,6 +71,69 @@ def test_the_prompt_puts_the_values_up_front() -> None:
 
 def test_the_prompt_asks_for_a_craft() -> None:
     assert CRAFT in prompt(plan(10, 0)[0], 1, 10, [])
+
+
+@pytest.mark.parametrize("seed", range(3))
+def test_a_rich_plan_samples_facts_on_top_of_the_same_plan(seed: int) -> None:
+    rich = plan(10, seed, rich=True)
+
+    assert [replace(brief, facts=None) for brief in rich] == plan(10, seed)
+    assert all(brief.facts for brief in rich)
+    assert plan(10, seed, rich=True) == rich
+    assert [b.facts for b in plan(10, seed + 1, rich=True)] != [b.facts for b in rich]
+
+
+def test_the_sampled_name_occupation_and_events_reach_the_prompt() -> None:
+    brief = plan(10, 0, rich=True)[3]
+    assert (facts := brief.facts)
+
+    text = prompt(brief, 4, 10, [])
+
+    assert f"- Name: {facts.name}\n" in text
+    assert f"- Origin: {facts.origin}\n" in text
+    assert f"- Occupation: {facts.occupation}\n" in text
+    for age, event in facts.events:
+        assert f"\n  - {age}: {event}\n" in text
+    assert f'- name: "{facts.name}", exactly as given.' in text
+    assert f'- occupation: "{facts.occupation}", exactly as given.' in text
+    assert "The village is international." not in text
+    assert "why they live here" not in text
+
+
+def test_the_default_prompt_samples_nothing_more() -> None:
+    text = prompt(plan(10, 0)[3], 4, 10, [])
+
+    assert "- Name:" not in text and "Life events" not in text
+    assert f"- Gender: {plan(10, 0)[3].gender}\n\nCore values" in text
+    assert "- name: a first and last name. The village is international." in text
+
+
+async def test_a_rich_village_takes_names_and_occupations_from_the_facts(
+    residents: Callable[[], FakeProvider],
+) -> None:
+    fake = residents()
+
+    npcs = await village(LLMClient(fake), seed=2, rich=True)
+
+    briefs = plan(10, 2, rich=True)
+    for npc, brief, request in zip(npcs, briefs, fake.requests, strict=True):
+        assert (facts := brief.facts)
+        assert npc.name == facts.name
+        assert npc.occupation == facts.occupation[0].upper() + facts.occupation[1:]
+        assert f"- Name: {facts.name}\n" in request.messages[-1].content
+    assert len({npc.id for npc in npcs}) == 10
+
+
+async def test_a_rich_village_sends_the_same_prompts_for_a_seed(
+    residents: Callable[[], FakeProvider],
+) -> None:
+    first, second, other = residents(), residents(), residents()
+
+    for fake, seed in [(first, 4), (second, 4), (other, 5)]:
+        await village(LLMClient(fake), seed=seed, rich=True)
+
+    assert first.requests == second.requests
+    assert first.requests[0] != other.requests[0]
 
 
 async def test_each_resident_gets_the_craft_claude_chose(make_draft: MakeDraft) -> None:

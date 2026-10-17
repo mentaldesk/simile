@@ -9,6 +9,7 @@ from pydantic import Field, field_validator
 from simile.art.characters import SKIN_TONES
 from simile.art.palette import PALETTE, hex_to_rgb, nearest
 from simile.llm import LLMClient, Model
+from simile.npc.facts import Facts, sample_facts
 from simile.npc.values import Profile, format_scores, ranked, sample_values
 from simile.schema import PLAYER_ID, Appearance, CoreValue, Craft, Npc, Voice
 from simile.schema import Model as Schema
@@ -28,9 +29,11 @@ class Brief:
     age: int
     gender: str
     values: Profile
+    facts: Facts | None = None
 
 
-def plan(count: int, seed: int) -> list[Brief]:
+def plan(count: int, seed: int, *, rich: bool = False) -> list[Brief]:
+    """With `rich`, also sample each resident's name, origin, occupation and life events."""
     if not 1 <= count <= len(HOMES):
         raise ValueError(f"count must be 1-{len(HOMES)}, one per home")
     rng = random.Random(seed)
@@ -38,9 +41,12 @@ def plan(count: int, seed: int) -> list[Brief]:
     ages = _ages(profiles, rng)
     genders = [("woman", "man")[i % 2] for i in range(count)]
     rng.shuffle(genders)
+    facts = sample_facts(zip(ages, genders, strict=True), rng) if rich else [None] * count
     return [
-        Brief(home, age, gender, profile)
-        for home, age, gender, profile in zip(HOMES, ages, genders, profiles, strict=False)
+        Brief(home, age, gender, profile, fact)
+        for home, age, gender, profile, fact in zip(
+            HOMES, ages, genders, profiles, facts, strict=False
+        )
     ]
 
 
@@ -125,6 +131,20 @@ def craft_label(craft: Craft | None) -> str:
     return f"{craft.medium}: {craft.form}" if craft else "none"
 
 
+def facts_brief(facts: Facts) -> str:
+    events = "\n".join(f"  - {age}: {event}" for age, event in facts.events)
+    return f"""\
+- Name: {facts.name}
+- Origin: {facts.origin}
+- Occupation: {facts.occupation}
+- Life events, at the age each happened:
+{events}
+
+These facts are settled. Where one sits oddly with their values, that's part of who they are: \
+show how they live with it.
+"""
+
+
 def prompt(brief: Brief, number: int, count: int, others: Sequence[Npc]) -> str:
     residents = "\n".join(
         f"- {n.name}, {n.age}, {n.occupation}. {first_sentence(n.backstory)} {_look(n)} "
@@ -133,24 +153,43 @@ def prompt(brief: Brief, number: int, count: int, others: Sequence[Npc]) -> str:
     )
     skins = ", ".join(PALETTE[name] for name in SKIN_TONES)
     palette = ", ".join(f"{name} {colour}" for name, colour in PALETTE.items())
+    if facts := brief.facts:
+        sampled = facts_brief(facts)
+        different = "background and craft"
+        name = f'"{facts.name}", exactly as given.'
+        occupation = f'"{facts.occupation}", exactly as given.'
+        backstory = (
+            "two or three sentences that make the life events above into one life and show how "
+            "their strongest values formed."
+        )
+    else:
+        sampled = ""
+        different = "first name, surname, occupation, background and craft"
+        name = "a first and last name. The village is international."
+        occupation = (
+            "a short job title, two to five words, for work someone with these values would "
+            "choose or end up in, done in or from the village."
+        )
+        backstory = (
+            "two or three sentences on how their strongest values formed and why they live here."
+        )
     return f"""\
 Create resident {number} of {count}.
 
 Fixed facts:
 - Age: {brief.age}
 - Gender: {brief.gender}
-
+{sampled}
 {values_brief(brief.values)}
 
-Residents so far. Give this one a different first name, surname, occupation, background and \
-craft, and a look that's easy to tell apart from theirs at sprite size:
+Residents so far. Give this one a different {different}, and a look that's easy to tell apart \
+from theirs at sprite size:
 {residents or "- none yet"}
 
 Write:
-- name: a first and last name. The village is international.
-- occupation: a short job title, two to five words, for work someone with these values would \
-choose or end up in, done in or from the village.
-- backstory: two or three sentences on how their strongest values formed and why they live here.
+- name: {name}
+- occupation: {occupation}
+- backstory: {backstory}
 - persona: two or three sentences. The first sums them up in one line. Show the top values in how \
 they behave, and the bottom ones in what they ignore or dismiss.
 - speaking_style: one or two sentences on pace, formality, vocabulary and verbal habits, \
@@ -203,11 +242,14 @@ def npc_id(name: str, taken: Collection[str]) -> str:
 
 
 def assemble(brief: Brief, draft: Draft, taken: Collection[str]) -> Npc:
+    name, occupation = draft.name, draft.occupation
+    if facts := brief.facts:
+        name, occupation = facts.name, facts.occupation[0].upper() + facts.occupation[1:]
     return Npc(
-        id=npc_id(draft.name, taken),
-        name=draft.name,
+        id=npc_id(name, taken),
+        name=name,
         age=brief.age,
-        occupation=draft.occupation,
+        occupation=occupation,
         home=brief.home,
         values=brief.values,
         backstory=draft.backstory,
@@ -221,11 +263,11 @@ def assemble(brief: Brief, draft: Draft, taken: Collection[str]) -> Npc:
 
 
 async def generate(
-    llm: LLMClient, count: int, seed: int, *, model: str = Model.SONNET
+    llm: LLMClient, count: int, seed: int, *, model: str = Model.SONNET, rich: bool = False
 ) -> AsyncIterator[Npc]:
     """Plan the village from the seed, then have Claude write each resident in turn."""
     npcs: list[Npc] = []
-    for number, brief in enumerate(plan(count, seed), start=1):
+    for number, brief in enumerate(plan(count, seed, rich=rich), start=1):
         draft = await llm.structured(
             prompt(brief, number, count, npcs),
             Draft,
