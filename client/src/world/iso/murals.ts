@@ -5,6 +5,7 @@ import { imageOrigin } from './depth';
 import { tintColour, type Rgb } from './lighting';
 import type { IsoTile, SceneryObject } from './manifest';
 import { feetOf, project } from './projection';
+import { LIGHTING_SETS, type Layer, type LightingSet } from './time-of-day';
 
 /** `STOREY_M` in server/simile/art/iso/town.py. */
 export const STOREY_METRES = 3;
@@ -57,7 +58,6 @@ export function wallQuad(wall: Wall, tile: IsoTile): Quad {
   };
 }
 
-/** The whole-pixel box around a quad. */
 export function quadBox({ origin, across, down }: Quad): Box {
   const xs = [0, across.x, down.x, across.x + down.x].map((dx) => origin.x + dx);
   const ys = [0, across.y, down.y, across.y + down.y].map((dy) => origin.y + dy);
@@ -169,6 +169,77 @@ export function fadeAlphas(
   return [over === 1 ? 0 : (alpha - over) / (1 - over), over];
 }
 
+export type Pixels = { data: Uint8ClampedArray; width: number; height: number };
+
+/** Each set's tint at each slice edge. */
+export type FacadeLight = Record<LightingSet, Rgb[]>;
+
+const SETS = Object.keys(LIGHTING_SETS) as LightingSet[];
+
+const luminance = ([r, g, b]: Rgb) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+const keepHue = (rgb: Rgb): Rgb => {
+  const over = Math.max(1, ...rgb);
+  return rgb.map((channel) => channel / over) as Rgb;
+};
+
+export const sliceEdges = (slices: readonly MuralSlice[], box: Box): number[] => [
+  ...slices.map(({ cropX }) => box.x + cropX),
+  box.x + box.width,
+];
+
+/** The face's mean colour, 0 to 1, in its building's render within half a slice of each edge. */
+export function facadeColours(
+  pixels: Pixels,
+  quad: Quad,
+  box: Box,
+  edges: readonly number[],
+  tile: IsoTile,
+): Rgb[] | undefined {
+  const reach = tile.width / 4;
+  const colours: Rgb[] = [];
+  for (const edge of edges) {
+    const sum: Rgb = [0, 0, 0];
+    let count = 0;
+    const end = Math.min(edge + reach, box.x + box.width);
+    for (let x = Math.max(Math.floor(edge - reach), box.x); x < end; x++) {
+      for (let y = box.y; y < box.y + box.height; y++) {
+        const i = ((y - box.y) * pixels.width + x - box.x) * 4;
+        if (pixels.data[i + 3] < 255 || !inQuad(quad, { x: x + 0.5, y: y + 0.5 })) continue;
+        for (let c = 0; c < 3; c++) sum[c] += pixels.data[i + c];
+        count++;
+      }
+    }
+    if (count === 0) return undefined;
+    colours.push(sum.map((channel) => channel / count / 255) as Rgb);
+  }
+  return colours;
+}
+
+/** Lights each edge as the facade is lit there, against its brightest edge in any set. */
+export function facadeLight(
+  colours: Record<LightingSet, Rgb[]>,
+  lights: Record<LightingSet, { tint: Rgb }>,
+): FacadeLight {
+  const brightest = SETS.flatMap((set) => colours[set].map((colour) => ({ set, colour }))).reduce(
+    (best, edge) => (luminance(edge.colour) > luminance(best.colour) ? edge : best),
+  );
+  const reference = brightest.colour;
+  const { tint } = lights[brightest.set];
+  const lit = (colour: Rgb): Rgb => {
+    const hue = colour.map((value, c) => (tint[c] * value) / Math.max(reference[c], 1e-3)) as Rgb;
+    const bright = luminance(hue);
+    if (bright === 0) return [0, 0, 0];
+    const scale = (luminance(tint) * luminance(colour)) / luminance(reference) / bright;
+    return keepHue(hue.map((value) => value * scale) as Rgb);
+  };
+  return Object.fromEntries(SETS.map((set) => [set, colours[set].map(lit)])) as FacadeLight;
+}
+
+/** A building image's path in another set: every set names its images alike, in its own folder. */
+export const imageIn = (set: LightingSet, image: string): string =>
+  `${set}/${image.slice(image.indexOf('/') + 1)}`;
+
 type Server = Pick<typeof server, 'on'>;
 
 /** The walls from the latest `murals` message, kept from startup since it comes on connect. */
@@ -197,7 +268,6 @@ export const muralWalls = new MuralWalls(server);
 
 /** What the mural panel needs from the scene drawing the murals: only the iso one does. */
 export interface MuralView {
-  /** The wall whose mural is at a point on the game canvas. */
   wallAt(point: Point): string | undefined;
 }
 
@@ -212,7 +282,6 @@ export function setMuralView(view: MuralView): () => void {
 
 export const muralView = (): MuralView | undefined => registered;
 
-/** The part of a Phaser image the murals use. */
 export type MuralImage = {
   setCrop(x: number, y: number, width: number, height: number): unknown;
   setDepth(depth: number): unknown;
@@ -226,10 +295,9 @@ export type Picture = { width: number; height: number; close?(): void };
 /** How the murals reach the scene: Phaser in the game, a fake in tests. */
 export type MuralStage<P extends Picture = Picture> = {
   load(url: string): Promise<P>;
-  /** Adds the picture as a texture, drawn into the box through the transform. */
+  pixels(set: LightingSet, image: string, crop: Box): Promise<Pixels>;
   paint(key: string, picture: P, box: Box, transform: Transform): void;
   unpaint(key: string): void;
-  /** An image of the texture with its top-left at (x, y). */
   image(key: string, x: number, y: number): MuralImage;
 };
 
@@ -241,41 +309,48 @@ type Painted = {
   quad: Quad;
   box: Box;
   slices: MuralSlice[];
+  light?: FacadeLight;
   workId?: string;
   shown?: Painting;
   leaving?: Painting;
   fade: number;
 };
 
-/** Each wall's mural on its face, lit, cut away and sorted with its building. */
 export class IsoMurals<P extends Picture = Picture> {
   private readonly painted = new Map<string, Painted>();
   private readonly objects: readonly SceneryObject[];
   private readonly tile: IsoTile;
+  private readonly lights: Record<LightingSet, { tint: Rgb }>;
   private readonly stage: MuralStage<P>;
   private readonly stop: () => void;
   private textures = 0;
 
   constructor(
     walls: MuralWalls,
-    objects: readonly SceneryObject[],
-    tile: IsoTile,
+    { objects, tile }: { objects: readonly SceneryObject[]; tile: IsoTile },
+    lights: Record<LightingSet, { tint: Rgb }>,
     stage: MuralStage<P>,
   ) {
     this.objects = objects;
     this.tile = tile;
+    this.lights = lights;
     this.stage = stage;
     this.show(walls.walls, true);
     this.stop = walls.onChange((changed) => this.show(changed, false));
   }
 
-  /** Moves each fade on, and lights and fades every mural like the scenery around it. */
-  draw(dt: number, light: (feet: Point) => Rgb, alphaOf: (building: string) => number): void {
+  /** `ground` lights a wall from the ground in front of it until its facade has been sampled. */
+  draw(
+    dt: number,
+    layers: readonly Layer[],
+    ground: (feet: Point) => Rgb,
+    alphaOf: (building: string) => number,
+  ): void {
     for (const wall of this.painted.values()) {
       wall.fade = Math.min(wall.fade + dt / MURAL_FADE_SECONDS, 1);
       if (wall.fade === 1 && wall.leaving) wall.leaving = this.remove(wall.leaving);
       const [outgoing, incoming] = fadeAlphas(wall.fade, alphaOf(wall.building), !!wall.shown);
-      const tints = wall.slices.map(({ feet }) => feet.map((at) => tintColour(light(at))));
+      const tints = this.lit(wall, layers, ground);
       const apply = (painting: Painting | undefined, alpha: number) =>
         painting?.images.forEach((image, i) => {
           const [left, right] = tints[i];
@@ -285,6 +360,21 @@ export class IsoMurals<P extends Picture = Picture> {
       apply(wall.leaving, outgoing);
       apply(wall.shown, incoming);
     }
+  }
+
+  private lit(wall: Painted, layers: readonly Layer[], ground: (feet: Point) => Rgb): number[][] {
+    const { light, slices } = wall;
+    if (!light || layers.length === 0) {
+      return slices.map(({ feet }) => feet.map((at) => tintColour(ground(at))));
+    }
+    const edges = light[layers[0].set].map((_, edge) => {
+      const tint: Rgb = [0, 0, 0];
+      for (const { set, weight } of layers) {
+        light[set][edge].forEach((channel, i) => (tint[i] += weight * channel));
+      }
+      return tintColour(tint);
+    });
+    return slices.map((_, i) => [edges[i], edges[i + 1]]);
   }
 
   wallAt(point: Point): string | undefined {
@@ -335,7 +425,7 @@ export class IsoMurals<P extends Picture = Picture> {
     }
     const quad = wallQuad(wall, this.tile);
     const box = quadBox(quad);
-    const painted = {
+    const painted: Painted = {
       wall,
       building: building.id,
       quad,
@@ -344,7 +434,27 @@ export class IsoMurals<P extends Picture = Picture> {
       fade: 1,
     };
     this.painted.set(wall.id, painted);
+    this.sample(painted, building).catch((error: unknown) =>
+      console.error(`Couldn't light the mural on ${wall.id} from its facade`, error),
+    );
     return painted;
+  }
+
+  private async sample(painted: Painted, building: SceneryObject): Promise<void> {
+    const { quad, box, slices } = painted;
+    const origin = imageOrigin(building, this.tile);
+    const crop = { ...box, x: box.x - origin.x, y: box.y - origin.y };
+    const edges = sliceEdges(slices, box);
+    const colours = await Promise.all(
+      SETS.map(async (set) => {
+        const pixels = await this.stage.pixels(set, imageIn(set, building.image), crop);
+        const sampled = facadeColours(pixels, quad, box, edges, this.tile);
+        if (!sampled) throw new Error(`no facade behind it in ${set}`);
+        return [set, sampled] as const;
+      }),
+    );
+    const sampled = Object.fromEntries(colours) as Record<LightingSet, Rgb[]>;
+    painted.light = facadeLight(sampled, this.lights);
   }
 
   private paint(painted: Painted, workId: string, picture: P, instant: boolean): void {
@@ -369,7 +479,6 @@ export class IsoMurals<P extends Picture = Picture> {
     painted.fade = instant ? 1 : 0;
   }
 
-  /** The shown mural goes under, to fade out. */
   private retire(painted: Painted): void {
     if (!painted.shown) return;
     this.remove(painted.leaving);
@@ -387,7 +496,6 @@ export class IsoMurals<P extends Picture = Picture> {
   }
 }
 
-/** A picture drawn onto its quad, in its box, for `MuralStage.paint`. */
 export function skewed(
   picture: CanvasImageSource,
   box: Box,
@@ -400,4 +508,11 @@ export function skewed(
   context.setTransform(...transform);
   context.drawImage(picture, 0, 0);
   return canvas;
+}
+
+export function cropPixels(picture: CanvasImageSource, { x, y, width, height }: Box): Pixels {
+  const canvas = new OffscreenCanvas(width, height);
+  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  context.drawImage(picture, -x, -y);
+  return context.getImageData(0, 0, width, height);
 }

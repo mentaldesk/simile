@@ -4,9 +4,10 @@ import { server, type Face, type Mural, type Wall } from '../../net';
 import { village } from '../assets';
 import type { Point } from '../view';
 import { PAIR_DEPTH } from './crossfade';
-import { residentDepth } from './depth';
-import type { Rgb } from './lighting';
+import { imageOrigin, residentDepth } from './depth';
+import { tintColour, type Rgb } from './lighting';
 import type { IsoTile, SceneryManifest } from './manifest';
+import type { Layer, LightingSet } from './time-of-day';
 import {
   buildingOf,
   fadeAlphas,
@@ -23,8 +24,13 @@ import {
   STOREY_METRES,
   wallNear,
   wallQuad,
+  facadeColours,
+  facadeLight,
+  imageIn,
+  sliceEdges,
   type Box,
   type MuralImage,
+  type Pixels,
   type MuralStage,
   type Picture,
   type Quad,
@@ -32,7 +38,7 @@ import {
 } from './murals';
 import { feetOf } from './projection';
 
-const { afternoon } = Object.fromEntries(
+const scenery = Object.fromEntries(
   Object.values(
     import.meta.glob<SceneryManifest>('../../../../content/art/iso/scenery/*.json', {
       eager: true,
@@ -40,6 +46,7 @@ const { afternoon } = Object.fromEntries(
     }),
   ).map((manifest) => [manifest.set, manifest]),
 );
+const { afternoon } = scenery;
 const TILE: IsoTile = afternoon.tile;
 
 const mural = (workId: string): Mural => ({
@@ -290,7 +297,23 @@ class FakeStage implements MuralStage {
   readonly loads: string[] = [];
   readonly pictures = new Map<string, Picture & { close: () => void }>();
   private readonly pending = new Map<string, (picture: Picture) => void>();
+  readonly sampled: { set: LightingSet; image: string; crop: Box }[] = [];
   hold = false;
+  holdPixels = false;
+  facades: Record<LightingSet, number[]> = {
+    morning: [60, 60, 60, 255],
+    afternoon: [120, 120, 120, 255],
+    evening: [90, 60, 30, 255],
+    night: [30, 30, 60, 255],
+  };
+
+  pixels(set: LightingSet, image: string, crop: Box): Promise<Pixels> {
+    this.sampled.push({ set, image, crop });
+    if (this.holdPixels) return new Promise(() => {});
+    const data = new Uint8ClampedArray(crop.width * crop.height * 4);
+    for (let i = 0; i < data.length; i += 4) data.set(this.facades[set], i);
+    return Promise.resolve({ data, width: crop.width, height: crop.height });
+  }
 
   load(url: string): Promise<Picture> {
     this.loads.push(url);
@@ -337,10 +360,98 @@ class FakeStage implements MuralStage {
   }
 }
 
+const LIGHTS: Record<LightingSet, { tint: Rgb }> = {
+  morning: { tint: [1, 1, 1] },
+  afternoon: { tint: [0.8, 0.85, 0.9] },
+  evening: { tint: [0.6, 0.45, 0.4] },
+  night: { tint: [0.2, 0.25, 0.35] },
+};
+
+describe('facade light', () => {
+  const quad = wallQuad(DAILY_GRIND, TILE);
+  const box = quadBox(quad);
+  const building = buildingOf(DAILY_GRIND, afternoon.objects)!;
+  const edges = sliceEdges(muralSlices(DAILY_GRIND, building, box, TILE), box);
+
+  /** Red on the face's left half and blue on its right, and see-through above it. */
+  function facade(): Pixels {
+    const data = new Uint8ClampedArray(box.width * box.height * 4);
+    for (let y = 0; y < box.height; y++) {
+      for (let x = 0; x < box.width; x++) {
+        const left = x < box.width / 2;
+        data.set([left ? 200 : 0, 0, left ? 0 : 100, y < 10 ? 0 : 255], (y * box.width + x) * 4);
+      }
+    }
+    return { data, width: box.width, height: box.height };
+  }
+
+  it('averages the face around each slice edge, leaving out see-through pixels', () => {
+    const colours = facadeColours(facade(), quad, box, edges, TILE)!;
+
+    expect(colours).toHaveLength(edges.length);
+    expect(colours[0]).toEqual([200 / 255, 0, 0]);
+    expect(colours.at(-1)).toEqual([0, 0, 100 / 255]);
+  });
+
+  it('samples nothing where the face has no pixels', () => {
+    const { width, height } = box;
+    const empty = { data: new Uint8ClampedArray(width * height * 4), width, height };
+    expect(facadeColours(empty, quad, box, edges, TILE)).toBeUndefined();
+  });
+
+  it('lights each edge as bright as the facade is there, against its brightest edge', () => {
+    const grey = (v: number): Rgb => [v, v, v];
+    const light = facadeLight(
+      {
+        morning: [grey(0.2), grey(0.3)],
+        afternoon: [grey(0.4), grey(0.4)],
+        evening: [[0.3, 0.2, 0.1], [0.3, 0.2, 0.1]],
+        night: [grey(0.1), grey(0.1)],
+      },
+      LIGHTS,
+    );
+
+    light.afternoon.flat().forEach((c, i) => expect(c).toBeCloseTo(LIGHTS.afternoon.tint[i % 3]));
+    expect(light.morning[0][0]).toBeCloseTo(0.4);
+    expect(light.morning[1][1]).toBeCloseTo(0.6375);
+    const lum = ([r, g, b]: Rgb) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    const expected = (lum(LIGHTS.afternoon.tint) * lum([0.3, 0.2, 0.1])) / 0.4;
+    expect(lum(light.evening[0])).toBeCloseTo(expected);
+    expect(light.evening[0][0] / light.evening[0][1]).toBeCloseTo(0.6 / 0.425);
+    expect(light.night[0][2]).toBeCloseTo(0.225);
+  });
+
+  it('keeps a tint over 1 to its hue', () => {
+    const light = facadeLight(
+      {
+        morning: [[0.1, 0.1, 0.1]],
+        afternoon: [[0.6, 0.6, 0.1]],
+        evening: [[0.1, 0.1, 0.1]],
+        night: [[0.1, 0.1, 0.9]],
+      },
+      LIGHTS,
+    );
+    const [r, g, b] = light.night[0];
+    expect(b).toBe(1);
+    expect(r / g).toBeCloseTo(0.8 / 0.85);
+  });
+
+  it('finds a building image in every set', () => {
+    const sets = Object.values(scenery);
+    for (const object of afternoon.objects) {
+      for (const manifest of sets) {
+        const twin = manifest.objects.find(({ id }) => id === object.id)!;
+        expect(imageIn(manifest.set as LightingSet, object.image)).toBe(twin.image);
+      }
+    }
+  });
+});
+
 describe('IsoMurals', () => {
   const flush = () => new Promise((resolve) => setTimeout(resolve));
   const white = (): Rgb => [1, 1, 1];
   const opaque = () => 1;
+  const AFTERNOON: Layer[] = [{ set: 'afternoon', weight: 1 }];
   let murals: IsoMurals | undefined;
 
   afterEach(() => {
@@ -349,11 +460,12 @@ describe('IsoMurals', () => {
     vi.restoreAllMocks();
   });
 
-  function start(walls: Wall[]): { stage: FakeStage; store: MuralWalls } {
+  function start(walls: Wall[], holdPixels = false): { stage: FakeStage; store: MuralWalls } {
     const store = new MuralWalls(server);
     store.walls = walls;
     const stage = new FakeStage();
-    murals = new IsoMurals(store, afternoon.objects, TILE, stage);
+    stage.holdPixels = holdPixels;
+    murals = new IsoMurals(store, afternoon, LIGHTS, stage);
     return { stage, store };
   }
 
@@ -362,7 +474,7 @@ describe('IsoMurals', () => {
   it('paints each mural into its box, a crop per slice just in front of its building', async () => {
     const { stage } = start([painted(DAILY_GRIND, 'mars'), CORNER_SHOP]);
     await flush();
-    murals!.draw(0, white, opaque);
+    murals!.draw(0, AFTERNOON, white, opaque);
 
     expect(stage.loads).toEqual(['/api/works/mars.png']);
     const quad = wallQuad(DAILY_GRIND, TILE);
@@ -385,15 +497,15 @@ describe('IsoMurals', () => {
     });
   });
 
-  it('lights the mural from the ground in front, without a step between slices', async () => {
-    const { stage } = start([painted(DAILY_GRIND, 'mars')]);
+  it('lights the mural from the ground in front until its facade is sampled', async () => {
+    const { stage } = start([painted(DAILY_GRIND, 'mars')], true);
     await flush();
     const lit: Point[] = [];
     const light = (feet: Point): Rgb => {
       lit.push(feet);
       return [1, (feet.x - 28) / 3, 0];
     };
-    murals!.draw(0, light, opaque);
+    murals!.draw(0, AFTERNOON, light, opaque);
 
     const images = stage.live();
     expect(lit.every(({ y }) => y === 11.5)).toBe(true);
@@ -408,7 +520,7 @@ describe('IsoMurals', () => {
   it('cuts the mural away with its building', async () => {
     const { stage } = start([painted(DAILY_GRIND, 'mars'), painted(CORNER_SHOP, 'river')]);
     await flush();
-    murals!.draw(0, white, (building) => (building === 'building-28-6' ? 0.3 : 1));
+    murals!.draw(0, AFTERNOON, white, (building) => (building === 'building-28-6' ? 0.3 : 1));
 
     expect(stage.live('/api/works/mars.png').every(({ alpha }) => alpha === 0.3)).toBe(true);
     expect(stage.live('/api/works/river.png').every(({ alpha }) => alpha === 1)).toBe(true);
@@ -421,12 +533,12 @@ describe('IsoMurals', () => {
     await flush();
     const [old, fresh] = [stage.live('/api/works/mars.png'), stage.live('/api/works/river.png')];
 
-    murals!.draw(MURAL_FADE_SECONDS / 2, white, opaque);
+    murals!.draw(MURAL_FADE_SECONDS / 2, AFTERNOON, white, opaque);
     expect(old.every(({ alpha }) => alpha === 1)).toBe(true);
     expect(fresh.every(({ alpha }) => alpha === 0.5)).toBe(true);
     expect(fresh[0].depth).toBeGreaterThan(old[0].depth);
 
-    murals!.draw(MURAL_FADE_SECONDS / 2, white, opaque);
+    murals!.draw(MURAL_FADE_SECONDS / 2, AFTERNOON, white, opaque);
     expect(old.every(({ destroyed }) => destroyed)).toBe(true);
     expect(fresh.every(({ alpha }) => alpha === 1)).toBe(true);
     expect(stage.textures.size).toBe(1);
@@ -438,11 +550,11 @@ describe('IsoMurals', () => {
     send([DAILY_GRIND]);
     const images = stage.live();
 
-    murals!.draw(MURAL_FADE_SECONDS / 4, white, opaque);
+    murals!.draw(MURAL_FADE_SECONDS / 4, AFTERNOON, white, opaque);
     expect(images.every(({ alpha }) => alpha === 0.75)).toBe(true);
     expect(murals!.wallAt(wallQuad(DAILY_GRIND, TILE).origin)).toBeUndefined();
 
-    murals!.draw(MURAL_FADE_SECONDS, white, opaque);
+    murals!.draw(MURAL_FADE_SECONDS, AFTERNOON, white, opaque);
     expect(images.every(({ destroyed }) => destroyed)).toBe(true);
     expect(stage.textures.size).toBe(0);
   });
@@ -452,7 +564,7 @@ describe('IsoMurals', () => {
     send([painted(DAILY_GRIND, 'mars')]);
     await flush();
 
-    murals!.draw(0, white, opaque);
+    murals!.draw(0, AFTERNOON, white, opaque);
     expect(stage.live().every(({ alpha }) => alpha === 0)).toBe(true);
   });
 
@@ -469,6 +581,46 @@ describe('IsoMurals', () => {
       stage.pictures.get('/api/works/river.png'),
     ]);
     expect(stage.pictures.get('/api/works/mars.png')!.close).toHaveBeenCalled();
+  });
+
+  it('samples its building in all four sets, then lights it from the facade', async () => {
+    const { stage } = start([painted(DAILY_GRIND, 'mars')]);
+    await flush();
+    murals!.draw(0, AFTERNOON, white, opaque);
+
+    const building = buildingOf(DAILY_GRIND, afternoon.objects)!;
+    const box = quadBox(wallQuad(DAILY_GRIND, TILE));
+    const origin = imageOrigin(building, TILE);
+    const sets = ['night', 'morning', 'afternoon', 'evening'] as const;
+    expect(stage.sampled.map(({ set, image }) => [set, image])).toEqual(
+      sets.map((set) => [set, `${set}/building-28-6.webp`]),
+    );
+    expect(stage.sampled[0].crop).toEqual({ ...box, x: box.x - origin.x, y: box.y - origin.y });
+    const lit = tintColour(LIGHTS.afternoon.tint);
+    expect(stage.live().every(({ tint }) => tint.every((c) => c === lit))).toBe(true);
+
+    const fading: Layer[] = [
+      { set: 'afternoon', weight: 0.5 },
+      { set: 'morning', weight: 0.5 },
+    ];
+    murals!.draw(0, fading, white, opaque);
+    const blended: Rgb = [0.6, 0.6375, 0.675];
+    expect(stage.live()[0].tint[0]).toBe(tintColour(blended));
+  });
+
+  it('keeps the ground light if the facade can’t be sampled', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { stage } = start([painted(DAILY_GRIND, 'mars')]);
+    stage.facades.night = [0, 0, 0, 0];
+    murals!.destroy();
+    murals = new IsoMurals(new MuralWalls(server), afternoon, LIGHTS, stage);
+    send([painted(DAILY_GRIND, 'mars')]);
+    await flush();
+    murals.draw(0, AFTERNOON, (): Rgb => [0, 1, 0], opaque);
+
+    expect(error).toHaveBeenCalled();
+    const images = stage.live('/api/works/mars.png');
+    expect(images.every(({ tint }) => tint.every((c) => c === 0x00ff00))).toBe(true);
   });
 
   it('says which mural is at a point', async () => {

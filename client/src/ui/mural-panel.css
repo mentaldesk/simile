@@ -1,12 +1,3 @@
-.mural-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 4px;
-  text-align: center;
-  text-shadow: 0 1px 0 #000;
-}
-
 .mural {
   position: absolute;
   left: 200px;

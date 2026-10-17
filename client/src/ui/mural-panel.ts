@@ -10,7 +10,6 @@ const KEY = NEWS_KEY.toUpperCase();
 /** How far the player can walk from where they opened a mural's panel, out of its wall's reach. */
 const STAY_TILES = 1;
 
-/** A mural up close: its picture, title, artist and statement. */
 export class MuralPanel {
   readonly hint: HTMLElement;
   private readonly panel: HTMLElement;
@@ -21,6 +20,7 @@ export class MuralPanel {
   private readonly walls: MuralWalls;
   private readonly view: () => MuralView | undefined;
   private shown?: { wall: string; from?: Position };
+  private hinted?: string;
   readonly stop: () => void;
 
   constructor(
@@ -31,7 +31,7 @@ export class MuralPanel {
     this.walls = walls;
     this.view = view;
     this.hint = parent.appendChild(document.createElement('div'));
-    this.hint.className = 'mural-hint';
+    this.hint.className = 'news-hint';
     this.hint.hidden = true;
     this.panel = parent.appendChild(document.createElement('section'));
     this.panel.className = 'mural';
@@ -74,7 +74,6 @@ export class MuralPanel {
     return wall !== undefined;
   }
 
-  /** Opens the mural at a point on the game canvas, if there is one. */
   click(point: Point, position: Position | undefined): boolean {
     const wall = this.view()?.wallAt(point);
     if (wall) this.open(wall, position);
@@ -98,9 +97,12 @@ export class MuralPanel {
   /** Each frame: closes the panel once the player walks off, and hints at a mural nearby. */
   update(position: Position | undefined, hint = true): void {
     if (this.shown && !this.stays(this.shown, position)) this.close();
-    const near = this.near(position);
-    this.hint.hidden = !hint || this.isOpen || !near;
-    if (near?.mural) this.hint.textContent = `Press ${KEY} to look at “${near.mural.title}”.`;
+    const mural = this.near(position)?.mural;
+    this.hint.hidden = !hint || this.isOpen || !mural;
+    if (mural && mural.work_id !== this.hinted) {
+      this.hinted = mural.work_id;
+      this.hint.textContent = `Press ${KEY} to look at “${mural.title}”.`;
+    }
   }
 
   private stays({ wall, from }: { wall: string; from?: Position }, position: Position | undefined) {

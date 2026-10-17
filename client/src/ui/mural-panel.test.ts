@@ -30,7 +30,7 @@ let view: MuralView | undefined;
 let panel: MuralPanel;
 
 const section = () => document.querySelector<HTMLElement>('.mural')!;
-const hint = () => document.querySelector<HTMLElement>('.mural-hint')!;
+const hint = () => panel.hint;
 const text = (selector: string) => document.querySelector(`.mural ${selector}`)!.textContent;
 
 function murals(list: Wall[]): void {
@@ -65,6 +65,14 @@ it('hints at a painted wall the player stands in front of', () => {
 
   panel.update(IN_FRONT, false);
   expect(hint().hidden).toBe(true);
+});
+
+it('changes the hint when the wall is painted over', () => {
+  panel.update(IN_FRONT);
+  murals([{ ...GRIND, mural: { ...GRIND.mural!, work_id: 'river', title: 'Slow River' } }, BLANK]);
+  panel.update(IN_FRONT);
+
+  expect(hint().textContent).toBe('Press E to look at “Slow River”.');
 });
 
 it('opens near a wall with its picture, title, artist and statement', () => {

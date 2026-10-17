@@ -90,9 +90,16 @@ place images, so the module stays Phaser-free.
 - **Depth** (`muralSlices`): the mural is cropped where its building's slices are, each crop
   `MURAL_DEPTH` above its slice: over both of the building's crossfading images, under anyone in
   front. So it hides and sorts with its building, and takes the building's cutaway alpha.
-- **Light**: the set's tint times the light map, blended through the crossfade, as for residents,
-  sampled on the ground half a tile in front of the face. Each crop is tinted at its left and right
-  edges, so the light changes along the wall without steps.
+- **Light** comes from the building's own render, which knows which way the face points, its
+  shadows and the lamps on it. Once a wall is known, `IsoMurals` samples its building's image in all
+  four sets around each slice edge (`facadeColours`). It uses a set's image while the scene holds
+  it, and otherwise fetches it, reads it within the upload budget and closes it. That's about 4 MB
+  once, after the first set loads, of images the scene fetches later anyway. `facadeLight` then
+  makes each edge as bright, against the facade's brightest edge in any set, as the facade is there,
+  with that edge at its set's tint, and colours it as the facade's light changes from there. The
+  sets blend by the crossfade's weights, and each crop is tinted at its left and right edges, so the
+  light changes along the wall without steps. Until the samples are in, a mural is lit from the light
+  map half a tile in front of it, as residents are.
 - **Changes**: a new mural fades in over the old one in `MURAL_FADE_SECONDS`, and a wall painted
   out fades away. The murals there when the scene starts appear at once.
 - **Picking**: the scene registers `setMuralView`, whose `wallAt(point)` is the wall whose quad is
