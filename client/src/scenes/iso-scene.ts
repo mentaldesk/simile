@@ -208,7 +208,7 @@ export class IsoScene extends Phaser.Scene {
     };
     this.murals ??= new IsoMurals(muralWalls, manifest, assets.characterLights, {
       load: (url) => assets.loadBitmap(url),
-      pixels: (set, image, crop) => this.facadePixels(set, image, crop),
+      sample: (set, image, crop, read) => this.sampleScenery(set, image, crop, read),
       paint: (key, bitmap, box, transform) => {
         this.textures.addCanvas(key, skewed(bitmap, box, transform));
       },
@@ -218,17 +218,22 @@ export class IsoScene extends Phaser.Scene {
   }
 
   /** From the set's loaded image if it has one, else fetched for this and closed. */
-  private async facadePixels(set: LightingSet, image: string, crop: Box): Promise<Pixels> {
+  private async sampleScenery<T>(
+    set: LightingSet,
+    image: string,
+    crop: Box,
+    read: (pixels: Pixels) => T,
+  ): Promise<T> {
     const held = this.loaded.get(set);
     const index = held ? sceneryImages(held.manifest).indexOf(image) : -1;
     const url = this.assets!.imageUrl(image);
     if (index < 0 && !url) throw new Error(`No image ${image}`);
     const bitmap = index >= 0 ? held!.bitmaps[index] : await this.assets!.loadBitmap(url!);
-    const read = new Promise<Pixels>((resolve, reject) => {
+    const sampled = new Promise<T>((resolve, reject) => {
       void this.uploads.add([
         () => {
           try {
-            resolve(cropPixels(bitmap, crop));
+            resolve(read(cropPixels(bitmap, crop)));
           } catch (error) {
             reject(error);
           }
@@ -236,7 +241,7 @@ export class IsoScene extends Phaser.Scene {
       ]);
     });
     try {
-      return await read;
+      return await sampled;
     } finally {
       if (index < 0) bitmap.close();
     }

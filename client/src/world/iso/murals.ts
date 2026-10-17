@@ -15,6 +15,12 @@ export const MURAL_DEPTH = 3 * PAIR_DEPTH;
 
 export const MURAL_FADE_SECONDS = 1.5;
 
+/** How long a mural takes to go from the ground's light to its facade's, once sampled. */
+export const MURAL_LIGHT_SECONDS = 0.5;
+
+/** Every other pixel each way is plenty for a facade's mean. */
+const SAMPLE_STEP = 2;
+
 export const MURAL_REACH_TILES = 3;
 
 /** A wall's face on screen: its top-left corner, and its top and left edges from there. */
@@ -190,8 +196,8 @@ export const sliceEdges = (slices: readonly MuralSlice[], box: Box): number[] =>
 
 /** The face's mean colour, 0 to 1, in its building's render within half a slice of each edge. */
 export function facadeColours(
-  pixels: Pixels,
-  quad: Quad,
+  { data, width }: Pixels,
+  { origin, across, down }: Quad,
   box: Box,
   edges: readonly number[],
   tile: IsoTile,
@@ -202,11 +208,15 @@ export function facadeColours(
     const sum: Rgb = [0, 0, 0];
     let count = 0;
     const end = Math.min(edge + reach, box.x + box.width);
-    for (let x = Math.max(Math.floor(edge - reach), box.x); x < end; x++) {
-      for (let y = box.y; y < box.y + box.height; y++) {
-        const i = ((y - box.y) * pixels.width + x - box.x) * 4;
-        if (pixels.data[i + 3] < 255 || !inQuad(quad, { x: x + 0.5, y: y + 0.5 })) continue;
-        for (let c = 0; c < 3; c++) sum[c] += pixels.data[i + c];
+    for (let x = Math.max(Math.floor(edge - reach), box.x); x < end; x += SAMPLE_STEP) {
+      const along = (x + 0.5 - origin.x) / across.x;
+      if (along < 0 || along > 1) continue;
+      const top = origin.y + along * across.y;
+      const last = Math.min(top + down.y - 0.5, box.y + box.height - 1);
+      for (let y = Math.max(Math.ceil(top - 0.5), box.y); y <= last; y += SAMPLE_STEP) {
+        const i = ((y - box.y) * width + x - box.x) * 4;
+        if (data[i + 3] < 255) continue;
+        for (let c = 0; c < 3; c++) sum[c] += data[i + c];
         count++;
       }
     }
@@ -235,6 +245,15 @@ export function facadeLight(
   };
   return Object.fromEntries(SETS.map((set) => [set, colours[set].map(lit)])) as FacadeLight;
 }
+
+const blendEdges = (light: FacadeLight, layers: readonly Layer[]): Rgb[] =>
+  light[layers[0].set].map((_, edge) => {
+    const tint: Rgb = [0, 0, 0];
+    for (const { set, weight } of layers) {
+      light[set][edge].forEach((channel, i) => (tint[i] += weight * channel));
+    }
+    return tint;
+  });
 
 /** A building image's path in another set: every set names its images alike, in its own folder. */
 export const imageIn = (set: LightingSet, image: string): string =>
@@ -295,7 +314,8 @@ export type Picture = { width: number; height: number; close?(): void };
 /** How the murals reach the scene: Phaser in the game, a fake in tests. */
 export type MuralStage<P extends Picture = Picture> = {
   load(url: string): Promise<P>;
-  pixels(set: LightingSet, image: string, crop: Box): Promise<Pixels>;
+  /** Reads a crop of a scenery image within the scene's per-frame budget. */
+  sample<T>(set: LightingSet, image: string, crop: Box, read: (pixels: Pixels) => T): Promise<T>;
   paint(key: string, picture: P, box: Box, transform: Transform): void;
   unpaint(key: string): void;
   image(key: string, x: number, y: number): MuralImage;
@@ -310,6 +330,8 @@ type Painted = {
   box: Box;
   slices: MuralSlice[];
   light?: FacadeLight;
+  /** How far it has gone from the ground's light to its facade's. */
+  lit: number;
   workId?: string;
   shown?: Painting;
   leaving?: Painting;
@@ -348,9 +370,10 @@ export class IsoMurals<P extends Picture = Picture> {
   ): void {
     for (const wall of this.painted.values()) {
       wall.fade = Math.min(wall.fade + dt / MURAL_FADE_SECONDS, 1);
+      if (wall.light) wall.lit = Math.min(wall.lit + dt / MURAL_LIGHT_SECONDS, 1);
       if (wall.fade === 1 && wall.leaving) wall.leaving = this.remove(wall.leaving);
       const [outgoing, incoming] = fadeAlphas(wall.fade, alphaOf(wall.building), !!wall.shown);
-      const tints = this.lit(wall, layers, ground);
+      const tints = this.tints(wall, layers, ground);
       const apply = (painting: Painting | undefined, alpha: number) =>
         painting?.images.forEach((image, i) => {
           const [left, right] = tints[i];
@@ -362,19 +385,17 @@ export class IsoMurals<P extends Picture = Picture> {
     }
   }
 
-  private lit(wall: Painted, layers: readonly Layer[], ground: (feet: Point) => Rgb): number[][] {
-    const { light, slices } = wall;
-    if (!light || layers.length === 0) {
-      return slices.map(({ feet }) => feet.map((at) => tintColour(ground(at))));
-    }
-    const edges = light[layers[0].set].map((_, edge) => {
-      const tint: Rgb = [0, 0, 0];
-      for (const { set, weight } of layers) {
-        light[set][edge].forEach((channel, i) => (tint[i] += weight * channel));
-      }
-      return tintColour(tint);
-    });
-    return slices.map((_, i) => [edges[i], edges[i + 1]]);
+  private tints(wall: Painted, layers: readonly Layer[], ground: (feet: Point) => Rgb): number[][] {
+    const { light, lit, slices } = wall;
+    const facade = light && layers.length > 0 ? blendEdges(light, layers) : undefined;
+    return slices.map(({ feet }, i) =>
+      feet.map((at, side) => {
+        const edge = facade?.[i + side];
+        if (edge && lit === 1) return tintColour(edge);
+        const below = ground(at);
+        return tintColour(edge ? (below.map((c, k) => c + (edge[k] - c) * lit) as Rgb) : below);
+      }),
+    );
   }
 
   wallAt(point: Point): string | undefined {
@@ -432,6 +453,7 @@ export class IsoMurals<P extends Picture = Picture> {
       box,
       slices: muralSlices(wall, building, box, this.tile),
       fade: 1,
+      lit: 0,
     };
     this.painted.set(wall.id, painted);
     this.sample(painted, building).catch((error: unknown) =>
@@ -447,8 +469,9 @@ export class IsoMurals<P extends Picture = Picture> {
     const edges = sliceEdges(slices, box);
     const colours = await Promise.all(
       SETS.map(async (set) => {
-        const pixels = await this.stage.pixels(set, imageIn(set, building.image), crop);
-        const sampled = facadeColours(pixels, quad, box, edges, this.tile);
+        const sampled = await this.stage.sample(set, imageIn(set, building.image), crop, (pixels) =>
+          facadeColours(pixels, quad, box, edges, this.tile),
+        );
         if (!sampled) throw new Error(`no facade behind it in ${set}`);
         return [set, sampled] as const;
       }),

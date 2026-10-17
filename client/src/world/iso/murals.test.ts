@@ -17,6 +17,7 @@ import {
   IsoMurals,
   MURAL_DEPTH,
   MURAL_FADE_SECONDS,
+  MURAL_LIGHT_SECONDS,
   MURAL_REACH_TILES,
   muralSlices,
   MuralWalls,
@@ -307,12 +308,12 @@ class FakeStage implements MuralStage {
     night: [30, 30, 60, 255],
   };
 
-  pixels(set: LightingSet, image: string, crop: Box): Promise<Pixels> {
+  sample<T>(set: LightingSet, image: string, crop: Box, read: (pixels: Pixels) => T): Promise<T> {
     this.sampled.push({ set, image, crop });
     if (this.holdPixels) return new Promise(() => {});
     const data = new Uint8ClampedArray(crop.width * crop.height * 4);
     for (let i = 0; i < data.length; i += 4) data.set(this.facades[set], i);
-    return Promise.resolve({ data, width: crop.width, height: crop.height });
+    return Promise.resolve(read({ data, width: crop.width, height: crop.height }));
   }
 
   load(url: string): Promise<Picture> {
@@ -586,7 +587,7 @@ describe('IsoMurals', () => {
   it('samples its building in all four sets, then lights it from the facade', async () => {
     const { stage } = start([painted(DAILY_GRIND, 'mars')]);
     await flush();
-    murals!.draw(0, AFTERNOON, white, opaque);
+    murals!.draw(MURAL_LIGHT_SECONDS, AFTERNOON, white, opaque);
 
     const building = buildingOf(DAILY_GRIND, afternoon.objects)!;
     const box = quadBox(wallQuad(DAILY_GRIND, TILE));
@@ -606,6 +607,19 @@ describe('IsoMurals', () => {
     murals!.draw(0, fading, white, opaque);
     const blended: Rgb = [0.6, 0.6375, 0.675];
     expect(stage.live()[0].tint[0]).toBe(tintColour(blended));
+  });
+
+  it('eases from the ground light to the facade light once sampled', async () => {
+    const { stage } = start([painted(DAILY_GRIND, 'mars')]);
+    await flush();
+    const tint = () => stage.live()[0].tint[0];
+
+    murals!.draw(0, AFTERNOON, white, opaque);
+    expect(tint()).toBe(0xffffff);
+    murals!.draw(MURAL_LIGHT_SECONDS / 2, AFTERNOON, white, opaque);
+    expect(tint()).toBe(tintColour(LIGHTS.afternoon.tint.map((c) => (1 + c) / 2) as Rgb));
+    murals!.draw(MURAL_LIGHT_SECONDS / 2, AFTERNOON, white, opaque);
+    expect(tint()).toBe(tintColour(LIGHTS.afternoon.tint));
   });
 
   it('keeps the ground light if the facade can’t be sampled', async () => {
