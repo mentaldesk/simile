@@ -84,7 +84,8 @@ async def test_short_playthroughs_chat_and_overhear() -> None:
     assert all(r.calls["player-reply"] for r in results)
     assert sum(r.nudges for r in results) and sum(r.calls["conversation"] for r in results)
     assert sum(len(r.overheard) for r in results) >= 2
-    assert 0 < sum(r.heard for r in results) < 600 * len(results)
+    assert sum(r.heard for r in results) > 0
+    assert all(r.heard < 600 for r in results)
 
 
 async def test_the_village_is_kept_in_memory_whatever_simile_db_says(
