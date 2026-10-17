@@ -10,6 +10,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.jobs.sprite import SPRITE
 
     jobs = jobs_of(app)
+    jobs.remove_leftovers()
     unregister = jobs.register(SPRITE)
     try:
         yield

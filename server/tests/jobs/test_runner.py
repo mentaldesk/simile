@@ -61,10 +61,27 @@ async def test_cancels_a_running_job_and_everything_it_started(root: Path, tmp_p
     cancelled = await jobs.cancel(job.id)
 
     assert cancelled.state is State.CANCELLED and cancelled.finished is not None
-    assert gone(int(pid.read_text()))
-    await until(lambda: gone(int(child.read_text())))
+    assert gone(int(pid.read_text())) and gone(int(child.read_text()))
     assert not (root / "fake" / "out.txt").exists()
     assert not any((root / "work").iterdir())
+
+
+@pytest.mark.parametrize(
+    ("detach", "stubborn"),
+    [(True, False), (False, False), (False, True)],
+    ids=["detached", "inherited", "ignores-sigterm"],
+)
+async def test_ends_what_a_job_leaves_behind(
+    root: Path, tmp_path: Path, detach: bool, stubborn: bool
+) -> None:
+    jobs = jobs_with(root, grace=0.2)
+    child = tmp_path / "child"
+
+    job = jobs.submit("fake", {"child": str(child), "detach": detach, "stubborn": stubborn})
+    await until(lambda: state(jobs, job.id).finished)
+
+    assert state(jobs, job.id) is State.SUCCEEDED
+    assert gone(int(child.read_text()))
 
 
 async def test_kills_a_job_that_ignores_being_asked_to_stop(root: Path, tmp_path: Path) -> None:
@@ -166,6 +183,16 @@ async def test_fails_with_the_tools_last_words(root: Path) -> None:
     assert failed.error == "the fake job exited with code 3\n" + "\n".join(noise)
     assert failed.result is None
     assert not (root / "fake" / "out.txt").exists()
+
+
+async def test_keeps_only_the_start_of_a_long_line(root: Path) -> None:
+    jobs = jobs_with(root)
+
+    job = jobs.submit("fake", {"noise": ["x" * 200_000, "Boom"], "exit": 1})
+    await until(lambda: state(jobs, job.id).finished)
+
+    error = current(jobs, job.id).error
+    assert error == "the fake job exited with code 1\n" + "x" * 4096 + "\nBoom"
 
 
 async def test_refuses_bad_params_and_unknown_kinds(root: Path) -> None:

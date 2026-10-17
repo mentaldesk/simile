@@ -82,8 +82,6 @@ def published(request: Request) -> Response:
 
 
 async def watch(websocket: WebSocket) -> None:
-    """Sends the job as JSON now and after each change, then closes once it has finished.
-    Closing early leaves the job running."""
     jobs, job_id = jobs_of(websocket.app), websocket.path_params["job_id"]
     await websocket.accept()
     if jobs.get(job_id) is None:

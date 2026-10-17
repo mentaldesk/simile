@@ -35,6 +35,16 @@ def job(client: TestClient, job_id: str) -> dict[str, Any]:
     return client.get(f"/api/jobs/{job_id}").json()
 
 
+def test_clears_up_after_a_killed_server(app: Starlette, root: Path) -> None:
+    left = root / "work" / "0123456789abcdef"
+    left.mkdir(parents=True)
+    (left / "params.json").write_text("{}")
+    (root / "work" / "notes").mkdir()
+
+    with TestClient(app):
+        assert sorted(path.name for path in (root / "work").iterdir()) == ["notes"]
+
+
 def test_reports_what_this_machine_can_run(app: Starlette, root: Path) -> None:
     app.state.jobs = Jobs(root, {"blender": False, "apple_silicon": True})
     with TestClient(app) as client:

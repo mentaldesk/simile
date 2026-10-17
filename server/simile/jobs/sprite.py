@@ -1,5 +1,4 @@
-"""Draws one character's pixel-art sprite sheet with A1's generator, in a subprocess:
-`python -m simile.jobs.sprite <work>`."""
+"""Draws a character's sprite sheet with A1's generator: `python -m simile.jobs.sprite <work>`."""
 
 import os
 import sys

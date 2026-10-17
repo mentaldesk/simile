@@ -7,6 +7,7 @@ import re
 import secrets
 import shutil
 import signal
+import time
 from collections import deque
 from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from contextlib import suppress
@@ -14,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 from pydantic import BaseModel
 from starlette.applications import Starlette
@@ -28,12 +29,16 @@ CONTENT = Path(__file__).resolve().parents[3] / "content"
 DEFAULT_ROOT = Path(__file__).resolve().parents[2] / "data" / "jobs"
 FILES = "/api/jobs/files"
 NAME = re.compile(r"[a-z][a-z0-9_]*")
+JOB_ID = re.compile(r"[0-9a-f]{16}")
 WAITING = 4
 KEEP = 100
 GRACE = 5.0
 TAIL = 20
-LINE_LIMIT = 1 << 20
+CHUNK = 64 * 1024
+LINE_KEPT = 4096
 MESSAGE_LIMIT = 200
+DRAIN = 1.0
+POLL = 0.05
 
 
 class State(StrEnum):
@@ -63,8 +68,7 @@ class Job(BaseModel):
 
 @dataclass(frozen=True)
 class Kind[P: BaseModel]:
-    """A kind of job. Its `command` runs with the params in `work/params.json`; on success
-    `publish` moves what it made from `work` into `out` and returns the job's result."""
+    """`command` runs in `work`; on success `publish` moves its outputs into `out`."""
 
     name: str
     params: type[P]
@@ -155,8 +159,7 @@ class Jobs:
         return {"machine": dict(self.found), "kinds": kinds}
 
     def submit(self, kind_name: str, params: Any) -> Job:
-        """Queues a job, or fails it at once if this machine can't run it. Raises
-        `UnknownKind`, pydantic's `ValidationError` for bad params, or `Busy`."""
+        """Queues a job, or fails it at once if this machine can't run its kind."""
         kind = self._kinds.get(kind_name)
         if kind is None:
             raise UnknownKind(f"there's no {kind_name!r} job")
@@ -204,6 +207,14 @@ class Jobs:
                 return
             await changed.wait()
 
+    def remove_leftovers(self) -> None:
+        """Deletes the work directories that jobs of a killed server left behind."""
+        work = self.root / "work"
+        if work.is_dir():
+            for path in work.iterdir():
+                if JOB_ID.fullmatch(path.name) and path.name not in self._entries:
+                    shutil.rmtree(path, ignore_errors=True)
+
     def file(self, kind_name: str, name: str) -> Path | None:
         """A file a job of this kind published, if `name` is one it may publish."""
         kind = self._kinds.get(kind_name)
@@ -241,44 +252,72 @@ class Jobs:
                 shutil.rmtree(work, ignore_errors=True)
 
     async def _execute(self, entry: Entry, command: Sequence[str], work: Path) -> None:
+        # Our own pipe, so a stray child holding it open can't stop process.wait() returning.
+        read_end, write_end = os.pipe()
         try:
             process = await asyncio.create_subprocess_exec(
                 *command,
                 cwd=work,
                 stdin=asyncio.subprocess.DEVNULL,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
+                stdout=write_end,
+                stderr=write_end,
                 start_new_session=True,
-                limit=LINE_LIMIT,
             )
         except OSError as error:
+            os.close(read_end)
             raise Failed(f"couldn't start {command[0]}: {error.strerror or error}") from None
-        tail: deque[str] = deque(maxlen=TAIL)
-        try:
-            assert process.stdout is not None
-            async for raw in process.stdout:
-                line = raw.decode(errors="replace").rstrip()
-                if not self._report(entry, line):
-                    tail.append(line)
-            code = await process.wait()
         except BaseException:
-            await self._stop(process)
+            os.close(read_end)
             raise
+        finally:
+            os.close(write_end)
+        output = os.fdopen(read_end, "rb", buffering=0)
+        tail: deque[str] = deque(maxlen=TAIL)
+        reading = asyncio.create_task(self._read(entry, output, tail))
+        try:
+            code = await process.wait()
+        finally:
+            await self._stop(process)
+            with suppress(TimeoutError):
+                await asyncio.wait_for(reading, DRAIN)
+            output.close()
         if code != 0:
-            output = "".join(f"\n{line}" for line in tail)
-            raise Failed(f"the {entry.job.kind} job exited with code {code}{output}")
+            lines = "".join(f"\n{line}" for line in tail)
+            raise Failed(f"the {entry.job.kind} job exited with code {code}{lines}")
+
+    async def _read(self, entry: Entry, output: BinaryIO, tail: deque[str]) -> None:
+        reader = asyncio.StreamReader()
+        transport, _ = await asyncio.get_running_loop().connect_read_pipe(
+            lambda: asyncio.StreamReaderProtocol(reader), output
+        )
+        try:
+            line = b""
+            while chunk := await reader.read(CHUNK):
+                *ended, rest = chunk.split(b"\n")
+                for piece in ended:
+                    self._line(entry, (line + piece)[:LINE_KEPT], tail)
+                    line = b""
+                line = (line + rest)[:LINE_KEPT]
+            if line:
+                self._line(entry, line, tail)
+        finally:
+            transport.close()
+
+    def _line(self, entry: Entry, raw: bytes, tail: deque[str]) -> None:
+        line = raw.decode(errors="replace").rstrip()
+        if not self._report(entry, line):
+            tail.append(line)
 
     async def _stop(self, process: asyncio.subprocess.Process) -> None:
-        if process.returncode is not None:
-            return
-        with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
+        """Ends what's left of the job's process group: SIGTERM, then SIGKILL after `grace`."""
         try:
-            await asyncio.wait_for(process.wait(), self.grace)
-        except TimeoutError:
-            with suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGKILL)
-            await process.wait()
+            if _signal(process.pid, signal.SIGTERM):
+                deadline = time.monotonic() + self.grace
+                while _signal(process.pid, 0) and time.monotonic() < deadline:
+                    await asyncio.sleep(POLL)
+        finally:
+            _signal(process.pid, signal.SIGKILL)
+        await process.wait()
 
     def _report(self, entry: Entry, line: str) -> bool:
         if not line.startswith(PREFIX):
@@ -315,6 +354,14 @@ class Jobs:
             del self._entries[old.job.id]
 
 
+def _signal(group: int, number: int) -> bool:
+    try:
+        os.killpg(group, number)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
+
+
 def _cancel(task: asyncio.Task[None]) -> None:
     # A second cancel would interrupt the first one's cleanup and leave its subprocess running.
     if not task.cancelling():
@@ -322,8 +369,7 @@ def _cancel(task: asyncio.Task[None]) -> None:
 
 
 def jobs_of(app: Starlette) -> Jobs:
-    """The server's jobs on `app.state.jobs`, created on first use in `$SIMILE_JOBS` or
-    `server/data/jobs`, with this machine's capabilities."""
+    """The server's jobs on `app.state.jobs`, created on first use."""
     if not hasattr(app.state, "jobs"):
         from simile.jobs.capabilities import detect
 

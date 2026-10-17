@@ -63,8 +63,9 @@ sprite or an NPC file in `content/` is refused.
 ## Where jobs write
 
 Under `$SIMILE_JOBS`, or `server/data/jobs/` (ignored by git), and never in `content/`: the runner
-refuses a directory there. A job runs in `work/<id>/`, which is deleted when it ends. Only when it
-succeeds are its outputs moved to `<kind>/`, and only names its kind declares are served from there.
+refuses a directory there. A job runs in `work/<id>/`, which is deleted when it ends, or when the
+server next starts if it was killed. Only when a job succeeds are its outputs moved to `<kind>/`, and
+only names its kind declares are served from there.
 
 ## Adding a kind
 
@@ -93,5 +94,9 @@ async def lifespan(app):
 
 The command runs in `work`, where the runner has written the params as `params.json`. It reports
 progress by printing `simile.jobs.report.progress(fraction, message)`'s line, `JOB {"progress": 0.5,
-"message": "..."}`. Anything else it prints is kept, and the last 20 lines are the error if it exits
-with a non-zero code. Cancelling sends its process group SIGTERM, then SIGKILL after 5 s.
+"message": "..."}`. Anything else it prints is kept, and the last 20 lines, each cut to 4 KB, are the
+error if it exits with a non-zero code.
+
+The command runs in its own process group. Once it exits, anything it left running in that group
+is sent SIGTERM, then SIGKILL after 5 s, so a stray child can't outlive its job or hold up the
+queue. Cancelling does the same to the whole group.

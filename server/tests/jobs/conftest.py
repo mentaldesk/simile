@@ -21,6 +21,7 @@ class Fake(BaseModel):
     hold: str | None = None
     pid: str | None = None
     child: str | None = None
+    detach: bool = False
     stubborn: bool = False
     noise: list[str] = []
     exit: int = 0

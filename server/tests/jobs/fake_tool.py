@@ -23,7 +23,9 @@ def main(work: Path) -> int:
     if params["stubborn"]:
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
     if params["child"]:
-        child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        output = subprocess.DEVNULL if params["detach"] else None
+        sleeper = [sys.executable, "-c", "import time; time.sleep(60)"]
+        child = subprocess.Popen(sleeper, stdout=output, stderr=output)
         Path(params["child"]).write_text(str(child.pid))
     for line in params["noise"]:
         print(line, flush=True)
