@@ -16,6 +16,7 @@ function viewOf(positions: Record<string, Position | undefined>): WorldView {
     positionOf: (id) => positions[id],
     npcIds: () => Object.keys(positions).filter((id) => id !== PLAYER_ID),
     bubbleAnchor: () => ({ x: 0, y: 0 }),
+    spriteOf: () => undefined,
   };
 }
 

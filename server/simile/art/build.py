@@ -60,33 +60,14 @@ def write_character(
     ]
 
 
-def scene_walkers() -> list[preview.Walker]:
-    s = SAMPLES
-    return [
-        preview.Walker(PLAYER, 13 * 16, 11 * 16, "down"),
-        preview.Walker(s["sample_barista"], 14 * 16, 10 * 16, "down"),
-        preview.Walker(s["sample_coder"], 21 * 16 + 2, 12 * 16, "left"),
-        preview.Walker(s["sample_student"], 8 * 16, 10 * 16, "right", 0),
-        preview.Walker(s["sample_courier"], 24 * 16, 4 * 16, "left", 2),
-        preview.Walker(s["sample_artist"], 4 * 16, 17 * 16, "up"),
-        preview.Walker(s["sample_elder"], 1 * 16 + 8, 12 * 16, "right"),
-        preview.Walker(s["sample_runner"], 17 * 16, 17 * 16, "left", 0),
-        preview.Walker(s["sample_skater"], 8 * 16, 14 * 16, "down", 2),
-        preview.Walker(s["sample_teacher"], 23 * 16, 16 * 16, "up"),
-        preview.Walker(s["sample_gardener"], 6 * 16, 14 * 16, "left"),
-    ]
-
-
 def write_previews(directory: Path) -> list[Path]:
     directory.mkdir(parents=True, exist_ok=True)
     cells = tiles.layout()
     by_name = {t.name: t for t in cells if t is not None}
-    scene = preview.render_scene(preview.village(), by_name, scene_walkers())
     walk = directory / "walk.gif"
     preview.save_gif(preview.walk_frames(list(BUILTIN.values()), by_name["pavement"]), str(walk))
     return [
         _save(preview.tiles_sheet(cells), directory / "tiles.png"),
-        _save(preview.scaled(scene, 3), directory / "scene.png"),
         _save(preview.characters_sheet(BUILTIN), directory / "characters.png"),
         walk,
     ]

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { facingFor, Mover } from './motion';
+import { Mover } from './motion';
 import { IDLE_AFTER_SECONDS, WALKING_SPEED } from './tuning';
 
 const FRAME = 1 / 60;
@@ -7,35 +7,6 @@ const FRAME = 1 / 60;
 function run(mover: Mover, seconds: number): void {
   for (let t = 0; t < seconds - 1e-9; t += FRAME) mover.update(FRAME);
 }
-
-describe('facingFor', () => {
-  it.each([
-    [1, 0, 'right'],
-    [-1, 0, 'left'],
-    [0, 1, 'down'],
-    [0, -1, 'up'],
-    [1, 0.2, 'right'],
-    [-0.2, -1, 'up'],
-  ] as const)('faces the main axis of (%d, %d)', (dx, dy, facing) => {
-    expect(facingFor(dx, dy, 'down')).toBe(facing);
-    expect(facingFor(dx, dy, 'up')).toBe(facing);
-  });
-
-  it('keeps facing when not moving', () => {
-    expect(facingFor(0, 0, 'left')).toBe('left');
-  });
-
-  it('keeps the vertical facing on a diagonal that continues it', () => {
-    expect(facingFor(1, -1, 'up')).toBe('up');
-    expect(facingFor(-1, 1, 'down')).toBe('down');
-  });
-
-  it('faces sideways on a diagonal otherwise', () => {
-    expect(facingFor(1, -1, 'down')).toBe('right');
-    expect(facingFor(-1, 1, 'left')).toBe('left');
-    expect(facingFor(-1, -1, 'right')).toBe('left');
-  });
-});
 
 describe('Mover', () => {
   it('walks to the next tile at walking speed', () => {
@@ -45,7 +16,6 @@ describe('Mover', () => {
     run(mover, 0.5);
     expect(mover.position.x).toBeCloseTo(4 + 0.5 * WALKING_SPEED, 5);
     expect(mover.position.y).toBe(6);
-    expect(mover.facing).toBe('right');
     expect(mover.walking).toBe(true);
 
     run(mover, 1 / WALKING_SPEED);
@@ -53,12 +23,11 @@ describe('Mover', () => {
   });
 
   it('walks a diagonal step over its length', () => {
-    const mover = new Mover({ x: 4, y: 6 }, 'up');
+    const mover = new Mover({ x: 4, y: 6 });
     mover.moveTo({ x: 5, y: 5 });
 
     run(mover, 1 / WALKING_SPEED);
     expect(mover.position.x).toBeLessThan(5);
-    expect(mover.facing).toBe('up');
 
     run(mover, (Math.SQRT2 - 1) / WALKING_SPEED + FRAME);
     expect(mover.position).toEqual({ x: 5, y: 5 });
@@ -73,7 +42,6 @@ describe('Mover', () => {
     expect(mover.position.y).toBe(0);
     run(mover, 1);
     expect(mover.position.x).toBe(1);
-    expect(mover.facing).toBe('down');
   });
 
   it('walks continuously when each tile arrives as it reaches the last', () => {
@@ -94,7 +62,6 @@ describe('Mover', () => {
     expect(mover.walking).toBe(true);
     run(mover, IDLE_AFTER_SECONDS + FRAME);
     expect(mover.walking).toBe(false);
-    expect(mover.facing).toBe('right');
   });
 
   it('snaps to a position more than a step and a half away', () => {

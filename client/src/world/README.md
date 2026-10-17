@@ -1,19 +1,21 @@
 # World
 
-The village as the player sees it. `scenes/` has the Phaser side: `BootScene` loads the map and
-every character atlas, then starts `WorldScene`, which draws the map and the characters and moves
-the player. Everything here in `world/` is Phaser-free and tested under vitest.
+The village as the player sees it. `scenes/` has the Phaser side: `BootScene` loads every character
+atlas, then starts `IsoScene`, which draws the village isometric from the pre-rendered scenery and
+moves the player ([`iso/README.md`](iso/README.md)). Everything here in `world/` is Phaser-free and
+tested under vitest.
 
 Run it with `make dev` and open http://localhost:5173. The residents go about their day (B1's
 `simile.behaviour`); at 1x the first ones leave home a few minutes after the server starts.
 
-Arrow keys or WASD move the player.
+Arrow keys or WASD move the player in screen directions, so up is north-west on the map.
 
 ## Assets
 
-`assets.ts` imports the map, the tileset and every `content/art/characters/*` atlas through Vite,
-so they're bundled into the build and new NPC sprites show up without code changes. An NPC without
-its own atlas gets one of the `sample_*` sprites, the same one every time (`characterFor`).
+`assets.ts` imports the map and every `content/art/characters/*` atlas through Vite, so they're
+bundled into the build and new NPC sprites show up without code changes. An NPC without its own
+atlas gets one of the `sample_*` sprites, the same one every time (`characterFor`). The scenery's
+renders are `iso/assets.ts`'s.
 
 ## Movement
 
@@ -26,33 +28,21 @@ its own atlas gets one of the `sample_*` sprites, the same one every time (`char
   times a second. The footprint always covers the tile W2 reads the position as, `floor(p + 0.5)`,
   so the server never thinks the player is standing in a wall. Only the first `snapshot` places it;
   after a reconnection it stays put and sends its position again.
-- Facing comes from the direction of travel, picking a 4-way facing on diagonals. Walk cycles play
-  at `WALK_FPS` at walking speed, faster for the player.
 
 Speeds and distances are in [`tuning.ts`](tuning.ts).
 
 ## What it provides
 
-`WorldScene` registers itself as the dialogue UI's `WorldView` (bubbles anchor on the top centre of
-each sprite) and as audio's position provider, with the player as the listener. Other code can read
-`world` (`world.positionOf(id)`, `world.npcs`, `world.player`) from `world/model.ts`.
+`IsoScene` registers itself as the dialogue UI's `WorldView` and as audio's position provider, with
+the player as the listener. Other code can read `world` (`world.positionOf(id)`, `world.npcs`,
+`world.player`) from `world/model.ts`.
 
 `terminalsOf(map)` in [`terminals.ts`](terminals.ts) lists the map's news terminals, each with its
 label and area in tiles, and `terminalAt(terminals, position)` finds the one within
 `TERMINAL_REACH_TILES` (1) of the tile the player stands on. The dialogue UI opens the news there.
 
-`npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point: the 48 × 72 box
-under their `bubbleAnchor`, the one in front where sprites overlap, or the view's own `spriteOf` boxes
-as the iso scene gives them. Choosing who to talk to and the debug overlay both click with it.
-
-## Rendering
-
-Tiles and sprites are 16 px, drawn at 3× (`ZOOM`). The camera follows the player and stops at the
-map's edges, and keeps its centre on a whole world pixel so every art pixel is exactly 3×3 canvas
-pixels. Layers `ground`, `buildings` and `decor` are under the characters, `above` over them, and
-characters are sorted by where their feet are. `main.ts` shows the 640×360 canvas at the largest
-zoom that fits the window and draws each canvas pixel as whole device pixels (`pixelZoom`). It
-sizes from the window, not the page, and hides page overflow, so scrollbars can't feed back into the
-zoom (`fitZoom`).
+`npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point from the view's
+`spriteOf` boxes: front to back, the first whose frame is opaque there, else the first whose box
+holds it. Choosing who to talk to and the debug overlay both click with it.
 
 The dev harnesses (`?harness=dialogue`, `?audio-harness`) don't start the world scene.

@@ -1,4 +1,3 @@
-import tilesUrl from '../../../content/art/tiles.png?url';
 import villageJson from '../../../content/map/village.tmj?raw';
 import type { TiledMap } from './map';
 
@@ -11,11 +10,6 @@ const images = import.meta.glob<string>('../../../content/art/characters/*.png',
   query: '?url',
   import: 'default',
 });
-
-export const MAP_KEY = 'village';
-export const TILESET = 'simile';
-export const TILES_KEY = 'tiles';
-export { tilesUrl };
 
 export const village = JSON.parse(villageJson) as TiledMap;
 

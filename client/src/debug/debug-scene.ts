@@ -3,7 +3,7 @@ import { server } from '../net';
 import { fitOverlay } from '../ui/overlay';
 import { claimClicks } from '../ui/target';
 import { worldView } from '../ui/world-view';
-import { npcAt, spriteBox } from '../world/hit';
+import { npcAt } from '../world/hit';
 import './debug.css';
 import { renderPanel } from './panel';
 import { DebugWatch } from './watch';
@@ -56,7 +56,7 @@ export class DebugScene extends Phaser.Scene {
   update(): void {
     this.marker.clear();
     const npcId = debugWatch.watching;
-    const box = npcId ? spriteBox(npcId, worldView()) : undefined;
+    const box = npcId ? worldView().spriteOf(npcId)?.box : undefined;
     if (!box) return;
     const { fromGame } = fitOverlay(this.game.canvas.getBoundingClientRect(), this.scale.gameSize);
     this.marker

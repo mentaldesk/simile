@@ -1,4 +1,4 @@
-import { SPRITE_HEIGHT, WALKING_SPEED } from '../tuning';
+import { WALKING_SPEED } from '../tuning';
 import type { Point } from '../view';
 import type { SpriteFrame } from './screen';
 
@@ -24,7 +24,7 @@ export const ISO_FACINGS: readonly IsoFacing[] = [
   'right',
 ];
 
-export const PIXEL_TEXTURE = { width: 16, height: SPRITE_HEIGHT };
+export const PIXEL_TEXTURE = { width: 16, height: 24 };
 
 /** Scene px per texture px: a 24 px figure 96 px tall, 1.8 m by the scenery's scale. */
 export const PIXEL_SCALE = 4;

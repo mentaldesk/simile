@@ -11,7 +11,7 @@ export interface WorldView {
   positionOf(entityId: string): Position | undefined;
   npcIds(): Iterable<string>;
   bubbleAnchor(entityId: string): ScreenPoint | undefined;
-  spriteOf?(entityId: string): ScreenSprite | undefined;
+  spriteOf(entityId: string): ScreenSprite | undefined;
 }
 
 export const TILE_PX = 48;
@@ -19,6 +19,8 @@ const SPRITE_HEIGHT_PX = 72;
 
 export class TrackedWorld implements WorldView {
   viewport = { width: 640, height: 360 };
+  /** Game-canvas px per overlay px, so a tile is `TILE_PX` on the overlay. */
+  scale = 1;
   private readonly entities = new Map<string, Entity>();
 
   reset(entities: readonly Entity[]): void {
@@ -43,12 +45,16 @@ export class TrackedWorld implements WorldView {
     for (const { id, kind } of this.entities.values()) if (kind === 'npc') yield id;
   }
 
+  get tilePx(): number {
+    return TILE_PX * this.scale;
+  }
+
   feetOnScreen(position: Position): ScreenPoint | undefined {
     const player = this.positionOf(PLAYER_ID);
     if (!player) return undefined;
     return {
-      x: this.viewport.width / 2 + (position.x - player.x) * TILE_PX,
-      y: this.viewport.height / 2 + (position.y - player.y + 0.5) * TILE_PX,
+      x: this.viewport.width / 2 + (position.x - player.x) * this.tilePx,
+      y: this.viewport.height / 2 + (position.y - player.y + 0.5) * this.tilePx,
     };
   }
 
@@ -56,15 +62,22 @@ export class TrackedWorld implements WorldView {
     const player = this.positionOf(PLAYER_ID);
     if (!player) return undefined;
     return {
-      x: Math.round(player.x + (point.x - this.viewport.width / 2) / TILE_PX),
-      y: Math.round(player.y + (point.y - this.viewport.height / 2) / TILE_PX),
+      x: Math.round(player.x + (point.x - this.viewport.width / 2) / this.tilePx),
+      y: Math.round(player.y + (point.y - this.viewport.height / 2) / this.tilePx),
     };
   }
 
   bubbleAnchor(entityId: string): ScreenPoint | undefined {
     const position = this.positionOf(entityId);
     const feet = position && this.feetOnScreen(position);
-    return feet && { x: feet.x, y: feet.y - SPRITE_HEIGHT_PX };
+    return feet && { x: feet.x, y: feet.y - SPRITE_HEIGHT_PX * this.scale };
+  }
+
+  spriteOf(entityId: string): ScreenSprite | undefined {
+    const anchor = this.bubbleAnchor(entityId);
+    if (!anchor) return undefined;
+    const [width, height] = [this.tilePx, SPRITE_HEIGHT_PX * this.scale];
+    return { box: { x: anchor.x - width / 2, y: anchor.y, width, height }, depth: anchor.y + height };
   }
 }
 

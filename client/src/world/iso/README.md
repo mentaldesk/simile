@@ -1,9 +1,8 @@
 # Iso world
 
-The village drawn isometric from A2a's pre-rendered scenery (#116). `?renderer=iso` in the URL opts
-in: `BootScene` then starts `IsoScene` (`scenes/iso-scene.ts`) instead of `WorldScene`. The map,
-collisions, the server and `player_move` are the same; only the drawing changes. Everything in this
-folder is Phaser-free and tested under vitest.
+The village drawn isometric from A2a's pre-rendered scenery (#116): `BootScene` starts `IsoScene`
+(`scenes/iso-scene.ts`). The map, collisions, the server and `player_move` are in tiles; only the
+drawing is isometric. Everything in this folder is Phaser-free and tested under vitest.
 
 [`server/simile/art/iso/README.md`](../../../../server/simile/art/iso/README.md) is the contract for
 the manifests, the projection, the depth slices and the ground heights.
@@ -14,8 +13,8 @@ the manifests, the projection, the depth slices and the ground heights.
 `content/art/iso/characters/lights.json`. Manifests are imported `?url`, images `?no-inline` and
 `lights.json` as data, so the build emits each image under `dist/assets/` with a hash and inlines
 none of them. The scene imports `assets.ts` itself, once it starts, so the map of their URLs is a
-lazy chunk and the top-down page loads none of it. In dev, Vite serves them straight from
-`content/`. The characters are A1's sprite atlases, which `BootScene` loads for both renderers.
+lazy chunk that the dev harnesses never load. In dev, Vite serves them straight from `content/`. The
+characters are A1's sprite atlases, which `BootScene` loads.
 
 ## Time of day
 
@@ -65,10 +64,9 @@ draws `DEFAULT_HOUR`, the afternoon.
   px, which are texture px times the sprite's scale) and a sprite per character with a `pose` for
   each step. Picking, bubbles, the cutaway and the lighting use only those. Shadows are drawn on the
   ground, under every object.
-- **Pixel art** (`pixelArt`, with `sheets.ts`): A1's 16 × 24 sprites, the same atlas top-down
-  draws, at `PIXEL_SCALE` (4) scene px to a texture px with nearest-neighbour filtering. A whole
-  number of scene px and the camera's whole-number zoom keep every texture px a square of whole
-  device px, so the sprites stay crisp. At 4× a resident is 96 px tall, the 1.8 m figure the scenery
+- **Pixel art** (`pixelArt`, with `sheets.ts`): A1's 16 × 24 sprites at `PIXEL_SCALE` (4) scene px
+  to a texture px with nearest-neighbour filtering. A whole number of scene px and the camera's
+  whole-number zoom keep every texture px a square of whole device px, so the sprites stay crisp. At 4× a resident is 96 px tall, the 1.8 m figure the scenery
   was modelled and the drop shadows measured for, so they stand at the right height beside benches,
   café tables and doors. At 3× they'd be 1.35 m, child-sized next to a bench. Each step on the map
   picks one of eight facings (`facingFor`): grid east, south, west and north run along the screen's
@@ -79,9 +77,9 @@ draws `DEFAULT_HOUR`, the afternoon.
 ## Murals
 
 `murals.ts` paints M1's `murals` ([`docs/protocol.md`](../../../../docs/protocol.md#murals)) on the
-walls, and only the iso renderer draws them. `muralWalls` keeps the latest message from startup,
-since the server sends it on connect. The scene hands `IsoMurals` a `MuralStage` to load, paint and
-place images, so the module stays Phaser-free.
+walls. `muralWalls` keeps the latest message from startup, since the server sends it on connect.
+The scene hands `IsoMurals` a `MuralStage` to load, paint and place images, so the module stays
+Phaser-free.
 
 - **Quad** (`wallQuad`): the face stands on the south edge (`y + 1`) or east edge (`x + 1`) of the
   wall's tiles, from `bottom` to `top` storeys of `STOREY_METRES` (3 m, `STOREY_M` in `town.py`). The
@@ -110,13 +108,14 @@ place images, so the module stays Phaser-free.
 ## Resolution
 
 The renders are drawn at one art pixel per CSS pixel, so a bigger window shows more of the village.
-Under `?renderer=iso`, `main.ts` sizes the game to the window in device pixels and shows it at
-`1 / devicePixelRatio` (`nativeCanvas` in `canvas.ts`). Phaser's `RESIZE` mode would size it in CSS
-pixels, which a 2× screen blows up. The camera's zoom is whole device pixels per art pixel
-(`isoZoom`): the pixel ratio rounded, or the canvas width over `MAX_TILES_ACROSS` (20) tiles rounded,
-whichever is larger. So a 1× window keeps one art pixel per CSS pixel up to 2880 px wide (30 tiles)
-and steps up there, and past 1920 px the view stays 15 to 30 tiles across. Top-down keeps
-`main.ts`'s 640 × 360 canvas, scaled in whole steps.
+`main.ts` sizes the game to the window in device pixels and shows it at `1 / devicePixelRatio`
+(`nativeCanvas` in `canvas.ts`). Phaser's `RESIZE` mode would size it in CSS pixels, which a 2×
+screen blows up. The camera's zoom is whole device pixels per art pixel (`isoZoom`): the pixel ratio
+rounded, or the canvas width over `MAX_TILES_ACROSS` (20) tiles rounded, whichever is larger. So a
+1× window keeps one art pixel per CSS pixel up to 2880 px wide (30 tiles) and steps up there, and
+past 1920 px the view stays 15 to 30 tiles across. A tile's distance is 96 / √2 ≈ 68 art px across
+the screen and 34 up it, so a window of about 950 × 540 art px shows the whole of earshot (see
+[`voicing/README.md`](../../../../server/simile/voicing/README.md#earshot)).
 
 ## What it provides
 

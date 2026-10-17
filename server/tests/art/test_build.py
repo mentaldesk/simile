@@ -48,7 +48,7 @@ def test_generate_writes_the_tileset_sprites_and_previews(content: Path) -> None
 
     art = content / "art"
     sprites = {f"characters/{i}.{ext}" for i in [*BUILTIN, *FIXTURE_IDS] for ext in ("png", "json")}
-    previews = {f"preview/{name}" for name in ("tiles.png", "scene.png", "characters.png")}
+    previews = {f"preview/{name}" for name in ("tiles.png", "characters.png")}
     previews |= {"preview/walk.gif", "preview/npcs.png"}
     assert files(art) == {"tiles.png", "tiles.tsj", "tiles.md"} | sprites | previews
 

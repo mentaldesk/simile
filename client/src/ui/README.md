@@ -13,7 +13,7 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
 - the news and residents' writing at a terminal (see *Reading the news*);
-- a mural up close, in the iso renderer (see *Looking at a mural*).
+- a mural up close (see *Looking at a mural*).
 
 ## Choosing who to talk to
 
@@ -58,7 +58,7 @@ input, so the player doesn't walk while reading, and it ignores `news` and `work
 
 ## Looking at a mural
 
-Only the iso renderer draws murals (see [`world/iso/README.md`](../world/iso/README.md#murals)).
+The world scene paints murals on walls (see [`world/iso/README.md`](../world/iso/README.md#murals)).
 Within `MURAL_REACH_TILES` (3) in front of a painted wall, a hint says "Press E to look at
 “<title>”", and E opens the mural panel: the picture, its title, the artist and their statement.
 Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or E
@@ -70,7 +70,7 @@ nothing: the server notices a player near a mural itself.
 
 `MuralPanel` reads the walls from `muralWalls` and asks the scene drawing murals for the one under
 a click through `muralView()`, both in [`world/iso/murals.ts`](../world/iso/murals.ts). With no
-such scene, as in top-down, it never hints or opens.
+such scene, as in the dialogue harness, it never hints or opens.
 
 ## Keys
 
@@ -80,7 +80,7 @@ Tab and Esc.
 
 ## What the world scene provides
 
-The UI needs three things from the world scene (C1). Implement `WorldView` and register it when the
+The UI needs four things from the world scene (C1). Implement `WorldView` and register it when the
 scene starts. Import from `ui/world-view`, not `ui`, so tests don't load Phaser.
 
 ```ts
@@ -91,6 +91,7 @@ const unregister = setWorldView({
   positionOf: (id) => ...,
   npcIds: () => ...,
   bubbleAnchor: (id) => ...,
+  spriteOf: (id) => ...,
 });
 this.events.once(Phaser.Scenes.Events.SHUTDOWN, unregister);
 ```
@@ -100,16 +101,15 @@ this.events.once(Phaser.Scenes.Events.SHUTDOWN, unregister);
 | `positionOf(id)` | Where an entity is now, in tiles as in the protocol, or `undefined`. Include the player as `"player"`, at the position the client sends in `player_move`. |
 | `npcIds()` | The id of every NPC in the world. |
 | `bubbleAnchor(id)` | Where to pin the entity's bubble: the top centre of its sprite, in game-canvas pixels after the camera's scroll and zoom, or `undefined`. Off-screen points are fine; bubbles stay on screen. |
-| `spriteOf(id)` | Optional. The sprite's box in game-canvas pixels, its draw depth, and optionally whether it's opaque at a point. Without it, `world/hit.ts` assumes a 48 × 72 box below the bubble anchor. |
+| `spriteOf(id)` | The sprite's box in game-canvas pixels, its draw depth, and optionally whether it's opaque at a point. Clicks pick NPCs by it (`world/hit.ts`), the ring sits at its bottom edge and the debug overlay outlines it. |
 
 The UI calls these every frame, after the world scene's `update`. Until a view is registered it uses
-`TrackedWorld`, which follows `snapshot` and `entity_moved` and centres a 48 px-tile camera on the
-player.
+`TrackedWorld`, which follows `snapshot` and `entity_moved`, centres a camera of 48 overlay px tiles
+on the player and gives each sprite a 48 × 72 box.
 
 The overlay is laid out in at least 640 × 360 px and scaled to cover the canvas (`fitOverlay` in
-[`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. On the top-down canvas
-that's the canvas's own zoom, and game-canvas pixels are overlay pixels. The iso scene's canvas is
-in device pixels, so `inOverlay` maps the view's anchors and boxes into the overlay.
+[`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. The canvas is in device
+pixels, so `inOverlay` maps the view's anchors and boxes into the overlay.
 
 The chat input stops its key-downs from reaching `window`, so the game's keys (Phaser's keyboard
 included) don't fire while the player types. Key-ups still get through, so no key sticks down.

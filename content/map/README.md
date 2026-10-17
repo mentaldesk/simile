@@ -25,8 +25,8 @@ bottom to top:
 |---|---|
 | `ground` | Terrain: pavement, plaza, grass, road, water. Every cell is filled. |
 | `buildings` | Roofs and facades. |
-| `decor` | Props, signs and awnings, drawn under characters. |
-| `above` | Tree crowns and the tops of lamps, palms and terminals, drawn over characters. |
+| `decor` | Props, signs and awnings. |
+| `above` | Tree crowns and the tops of lamps, palms and terminals. |
 | `collision` | Hidden. A `blocked` tile marks every cell where some tile on another layer has `collides`. |
 | `locations` | Objects, one rectangle per location. |
 | `murals` | Objects, one rectangle per mural wall. |
@@ -83,16 +83,8 @@ Server: `simile.world.map.load_map()` returns a `TownMap` with `width`, `height`
 `mural(id)`. A `MuralWall` has the `id`, `x`, `y`, `width`, `face`, `bottom` and `top` of M1's
 `Wall`, and `stand`, the F2 `Tile` its painter stands on.
 
-Phaser (3.90 loads it as is):
-
-```ts
-this.load.image('tiles', 'art/tiles.png');
-this.load.tilemapTiledJSON('village', 'map/village.tmj');
-// later
-const map = this.make.tilemap({ key: 'village' });
-const tiles = map.addTilesetImage('simile', 'tiles')!;
-for (const name of ['ground', 'buildings', 'decor']) map.createLayer(name, tiles);
-// characters go here, then
-map.createLayer('above', tiles);
-const locations = map.getObjectLayer('locations')!.objects;
-```
+Client: `village` in `client/src/world/assets.ts` is the map's JSON. The player collides with its
+`collision` layer, starts at the square's entry and finds the news terminals in `locations`, and the
+iso scene reads the ground tiles for how high feet stand. The village itself is drawn from the iso
+renders ([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)), not from these
+tiles.

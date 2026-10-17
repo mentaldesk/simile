@@ -7,25 +7,9 @@ import {
   WALKING_SPEED,
 } from './tuning';
 
-export type Facing = 'down' | 'left' | 'right' | 'up';
-export const FACINGS: readonly Facing[] = ['down', 'left', 'right', 'up'];
-
 export interface Body {
   readonly position: Position;
-  readonly facing: Facing;
   readonly walking: boolean;
-}
-
-const DIAGONAL = 0.5;
-
-/** The 4-way facing for a direction of travel. Near diagonals it keeps the previous facing if it can. */
-export function facingFor(dx: number, dy: number, previous: Facing): Facing {
-  const horizontal: Facing = dx < 0 ? 'left' : 'right';
-  const vertical: Facing = dy < 0 ? 'up' : 'down';
-  const [ax, ay] = [Math.abs(dx), Math.abs(dy)];
-  if (ax === 0 && ay === 0) return previous;
-  if (Math.min(ax, ay) < DIAGONAL * Math.max(ax, ay)) return ax > ay ? horizontal : vertical;
-  return previous === vertical ? vertical : horizontal;
 }
 
 const distance = (a: Position, b: Position) => Math.hypot(b.x - a.x, b.y - a.y);
@@ -33,13 +17,11 @@ const distance = (a: Position, b: Position) => Math.hypot(b.x - a.x, b.y - a.y);
 /** An entity the server moves: it walks through each position the server sends, in order. */
 export class Mover implements Body {
   position: Position;
-  facing: Facing;
   private readonly waypoints: Position[] = [];
   private still = Infinity;
 
-  constructor(position: Position, facing: Facing = 'down') {
+  constructor(position: Position) {
     this.position = { ...position };
-    this.facing = facing;
   }
 
   get walking(): boolean {
@@ -66,7 +48,6 @@ export class Mover implements Body {
       const next = this.waypoints[0];
       const [dx, dy] = [next.x - this.position.x, next.y - this.position.y];
       const gap = Math.hypot(dx, dy);
-      this.facing = facingFor(dx, dy, this.facing);
       if (gap <= step) {
         this.position = { ...next };
         this.waypoints.shift();
