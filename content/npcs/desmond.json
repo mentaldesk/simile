@@ -57,5 +57,9 @@
     "description": "A heavy Cook Islands accent. A man in his early forties.",
     "reference_line": "Kia orana. The form is due on Friday and I've read it twice, so bring your letters and we'll go through it together.",
     "reference_clip": "content/voices/desmond.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "plain tenants' rights guides and stories"
   }
 }

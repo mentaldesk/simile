@@ -1,15 +1,14 @@
 import asyncio
-import re
 from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 
 from simile.llm import FakeProvider, LLMClient
-from simile.npc.content import NPCS_DIR, load_npcs, readme, write_npcs
+from simile.npc.content import NPCS_DIR, load_npcs, readme, readme_seed, write_npcs
 from simile.npc.generate import HOMES, MAX_WORDS, MIN_WORDS, first_sentence, generate, plan
 from simile.npc.values import format_scores, ranked
-from simile.schema import Npc
+from simile.schema import Medium, Npc
 
 
 @pytest.fixture
@@ -47,6 +46,14 @@ def test_the_readme_tables_top_values_against_persona(npcs: list[Npc]) -> None:
         assert format_scores(order[::-1][:3]) in row
         assert first_sentence(npc.persona) in row
         assert npc.persona not in row
+        assert npc.craft and f"| {npc.craft.medium}: {npc.craft.form} |" in row
+
+
+def test_the_readme_shows_a_resident_without_a_craft(npcs: list[Npc]) -> None:
+    npc = npcs[0].model_copy(update={"craft": None})
+
+    [row] = [line for line in readme([npc], seed=0).splitlines() if line.startswith("| `")]
+    assert f"| {npc.occupation} | none |" in row
 
 
 def test_the_readme_escapes_pipes(npcs: list[Npc]) -> None:
@@ -81,21 +88,29 @@ def test_the_committed_reference_lines_are_neutral_and_short() -> None:
         assert "!" not in npc.voice.reference_line, npc.id
 
 
-def committed_seed() -> int:
-    seed = re.search(r"--seed (\d+)", (NPCS_DIR / "README.md").read_text())
-    assert seed, "README.md doesn't say which seed made the village"
-    return int(seed[1])
+def test_readme_seed_reads_the_seed_from_the_readme(npcs: list[Npc], tmp_path: Path) -> None:
+    write_npcs(npcs, tmp_path, seed=7)
+
+    assert readme_seed(tmp_path) == 7
 
 
 def test_the_committed_readme_matches_the_npcs() -> None:
-    expected = readme(load_npcs(NPCS_DIR), committed_seed())
+    expected = readme(load_npcs(NPCS_DIR), readme_seed())
 
     assert (NPCS_DIR / "README.md").read_text() == expected
 
 
 def test_the_committed_values_and_ages_come_from_the_seed() -> None:
-    briefs = {brief.home: brief for brief in plan(len(HOMES), committed_seed())}
+    briefs = {brief.home: brief for brief in plan(len(HOMES), readme_seed())}
 
     for npc in load_npcs(NPCS_DIR):
         assert npc.values == briefs[npc.home].values, npc.id
         assert npc.age == briefs[npc.home].age, npc.id
+
+
+def test_most_of_the_committed_cast_has_a_craft_in_either_medium() -> None:
+    crafts = [npc.craft for npc in load_npcs(NPCS_DIR) if npc.craft]
+
+    assert len(crafts) > len(HOMES) / 2
+    assert {craft.medium for craft in crafts} == set(Medium)
+    assert len({craft.form for craft in crafts}) == len(crafts)

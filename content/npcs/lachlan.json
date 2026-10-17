@@ -57,5 +57,9 @@
     "description": "A heavy New Zealand accent. A man in his early sixties.",
     "reference_line": "Half past eight sharp tomorrow, so bring your drink bottle and your boots. I reckon we'll go through the passing drills again.",
     "reference_clip": "content/voices/lachlan.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "short pep talks for young players"
   }
 }
