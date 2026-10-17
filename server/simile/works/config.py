@@ -78,7 +78,10 @@ class WorksConfig(BaseModel):
     render_timeout: float = Field(
         default=5.0,
         gt=0,
-        description="Real seconds a mural's child process gets to start and draw it.",
+        description="Real seconds a mural's child process gets to draw it, once it has started.",
+    )
+    render_memory: int = Field(
+        default=1024, ge=1, description="Megabytes a mural's child process may use to draw it."
     )
     aspect_tolerance: float = Field(
         default=0.1,

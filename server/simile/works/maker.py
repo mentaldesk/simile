@@ -352,7 +352,13 @@ class Maker:
             tolerance=config.aspect_tolerance,
         )
         png = await asyncio.to_thread(
-            draw, svg, width, height, seed=seed, timeout=config.render_timeout
+            draw,
+            svg,
+            width,
+            height,
+            seed=seed,
+            timeout=config.render_timeout,
+            memory=config.render_memory * 2**20,
         )
         return svg, png
 

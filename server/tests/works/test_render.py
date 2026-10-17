@@ -13,8 +13,9 @@ from .conftest import WALL, svg
 WIDTH, HEIGHT = canvas(WALL)
 
 
-def picture(drawing: str, seed: int = 1, timeout: float = 30) -> Image.Image:
-    return Image.open(io.BytesIO(draw(drawing, WIDTH, HEIGHT, seed=seed, timeout=timeout)))
+def picture(drawing: str, seed: int = 1, timeout: float = 30, memory: int = 2**30) -> Image.Image:
+    png = draw(drawing, WIDTH, HEIGHT, seed=seed, timeout=timeout, memory=memory)
+    return Image.open(io.BytesIO(png))
 
 
 def test_a_mural_is_an_iso_tile_wide_per_tile_and_as_tall_at_that_scale() -> None:
@@ -69,3 +70,13 @@ def test_an_svg_that_takes_too_long_to_draw_is_bad() -> None:
 
     with pytest.raises(BadSvg, match="took more than 2 s to draw"):
         picture(slow, timeout=2)
+
+
+def test_an_svg_that_takes_too_much_memory_to_draw_is_bad() -> None:
+    tile = '<pattern id="p" width="1" height="1" patternUnits="userSpaceOnUse">'
+    tile += '<rect width="1" height="1"/></pattern>'
+    fill = '<rect width="0.003" height="0.003" fill="url(#p)"/>'
+    huge = svg(inside=f'{tile}<g transform="scale(100000)">{fill}</g>')
+
+    with pytest.raises(BadSvg, match="took more than 200 MB to draw"):
+        picture(huge, memory=200 * 2**20)

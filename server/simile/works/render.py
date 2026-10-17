@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 PX_PER_M = TILE_W / TILE_M
 PLASTER = (0.84, 0.8, 0.72)
+STARTING = 60.0
+WATCH_EVERY = 0.05
 
 
 def metres(wall: MuralWall) -> tuple[float, float]:
@@ -23,11 +25,12 @@ def canvas(wall: MuralWall) -> tuple[int, int]:
     return round(width * PX_PER_M), round(height * PX_PER_M)
 
 
-def draw(svg: str, width: int, height: int, *, seed: int, timeout: float) -> bytes:
-    """`render` in a child process, so an SVG that crashes resvg or keeps it busy can't take the
-    sim with it. Blocks for up to `timeout` seconds. `BadSvg` if it fails, crashes or runs out
-    of time."""
+def draw(svg: str, width: int, height: int, *, seed: int, timeout: float, memory: int) -> bytes:
+    """`render` in a child process, so an SVG that crashes resvg, keeps it busy or eats memory
+    can't take the sim with it. Blocks until the child has started, and then for up to `timeout`
+    seconds. `BadSvg` if it fails, crashes, runs out of time or uses more than `memory` bytes."""
     import multiprocessing
+    import time
 
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)
@@ -35,8 +38,15 @@ def draw(svg: str, width: int, height: int, *, seed: int, timeout: float) -> byt
     child.start()
     send.close()
     try:
-        if not receive.poll(timeout):
-            raise BadSvg(f"it took more than {timeout:g} s to draw")
+        if not receive.poll(STARTING):
+            raise BadSvg("the renderer didn't start")
+        receive.recv()
+        deadline = time.monotonic() + timeout
+        while not receive.poll(WATCH_EVERY):
+            if time.monotonic() > deadline:
+                raise BadSvg(f"it took more than {timeout:g} s to draw")
+            if child.pid is not None and resident(child.pid) > memory:
+                raise BadSvg(f"it took more than {memory // 2**20:,} MB to draw")
         drawn, result = receive.recv()
     except EOFError:
         raise BadSvg("it crashed the renderer") from None
@@ -49,7 +59,31 @@ def draw(svg: str, width: int, height: int, *, seed: int, timeout: float) -> byt
     return result
 
 
+def resident(pid: int) -> int:
+    """The bytes of memory process `pid` has resident, or 0 if that can't be found out."""
+    import os
+    import subprocess
+
+    try:
+        with open(f"/proc/{pid}/statm") as statm:
+            return int(statm.read().split()[1]) * os.sysconf("SC_PAGE_SIZE")
+    except OSError:
+        pass
+    try:
+        ps = subprocess.run(
+            ["ps", "-o", "rss=", "-p", str(pid)], capture_output=True, text=True, timeout=1
+        )
+        return int(ps.stdout.strip() or 0) * 1024
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0
+
+
 def _draw(send: Connection, svg: str, width: int, height: int, seed: int) -> None:
+    import importlib
+
+    for module in ("numpy", "PIL.Image", "resvg_py"):
+        importlib.import_module(module)
+    send.send(None)
     try:
         send.send((True, render(svg, width, height, seed=seed)))
     except BaseException as error:  # resvg's panics are BaseExceptions

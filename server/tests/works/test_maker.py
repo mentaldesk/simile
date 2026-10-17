@@ -1,6 +1,7 @@
 import asyncio
 import io
 from datetime import timedelta
+from typing import Any
 
 import pytest
 from PIL import Image
@@ -10,7 +11,8 @@ from simile.memory import MemoryStore
 from simile.schema import CoreValue, Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.works import DEFAULT_CONFIG, Maker, WorksConfig, WorksStore
-from simile.works.render import canvas
+from simile.works.render import canvas, draw
+from simile.works.svg import BadSvg
 
 from .conftest import (
     MEI,
@@ -376,15 +378,30 @@ def test_gives_up_quietly_after_two_bad_svgs(
     assert [m.work_id for m in memory.recall("suki", NOW)] == [then.id]
 
 
-def test_an_svg_that_panics_resvg_is_tried_again(memory: MemoryStore, works: WorksStore) -> None:
-    huge = svg(inside='<g transform="scale(1e30)"><circle r="1"/></g>')
-    fake = FakeProvider([mural_reply(svg=huge), mural_reply()])
+def test_a_mural_the_renderer_fails_on_is_tried_again(
+    memory: MemoryStore, works: WorksStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    drawn: list[str] = []
+
+    def crashing_once(svg: str, *args: Any, **kwargs: Any) -> bytes:
+        drawn.append(svg)
+        if len(drawn) == 1:
+            raise BadSvg("it crashed the renderer")
+        return draw(svg, *args, **kwargs)
+
+    monkeypatch.setattr("simile.works.maker.draw", crashing_once)
+    fake = FakeProvider([mural_reply(), mural_reply()])
 
     made = asyncio.run(paint(muralist(works, memory, fake)))
 
     assert made is not None
-    assert "Your last try couldn't go up, because it couldn't be drawn (" in (
-        fake.requests[1].messages[-1].content
+    assert len(drawn) == 2
+    assert (
+        fake.requests[1]
+        .messages[-1]
+        .content.endswith(
+            "Your last try couldn't go up, because it crashed the renderer. Fix that."
+        )
     )
 
 
