@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from simile.behaviour import Activity, Behaviour, Goal
+from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.conversation import (
     DEFAULT_CONFIG,
     ConversationConfig,
@@ -16,14 +16,18 @@ from simile.conversation import (
     LineDrafted,
     engine,
 )
+from simile.conversation.engine import GOODBYES, Scene
 from simile.conversation.player import PlayerConversations
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
+from simile.reflection import Extraction, Reflector
 from simile.schema import (
     PLAYER_ID,
     Aspect,
     CoreValue,
+    Flag,
+    FlagKind,
     InteractionEvent,
     Line,
     Memory,
@@ -74,6 +78,20 @@ def friends(a: Npc, b: Npc) -> list[Relationship]:
     return [feeling(a, b.id, like=0.9, trust=0.8), feeling(b, a.id, like=0.9, trust=0.8)]
 
 
+def script(*lines: str, values: str = "connection") -> str:
+    """Lines that take turns from Ana, each with a values tag."""
+    speakers = itertools.cycle(["Ana", "Ben"])
+    return "".join(f"{next(speakers)}: {line} [values: {values}]\n" for line in lines)
+
+
+CHAT = script(
+    "Morning, Ben!",
+    "Morning. Lovely day.",
+    "It is. Right, I'll let you get on.",
+    "Bye then.",
+)
+
+
 class Script:
     """Replies in turn, recording when each was asked for."""
 
@@ -97,7 +115,7 @@ class Village:
 
     def __init__(
         self,
-        replies: Sequence[str] = ("Lovely morning for it. [values: connection]",),
+        replies: Sequence[str] = (CHAT,),
         *,
         npcs: Sequence[Npc] = (ANA, BEN),
         relationships: Sequence[Relationship] = (),
@@ -139,6 +157,12 @@ class Village:
     async def run(self, minutes: float = 3) -> None:
         await self.world.loop.run(timedelta(minutes=minutes))
 
+    async def run_until(self, done: Callable[[], bool], minutes: float = 3) -> None:
+        stop = self.clock.now + timedelta(minutes=minutes)
+        while not done():
+            assert self.clock.now < stop, "timed out"
+            await self.world.loop.run(timedelta(seconds=0.1))
+
     def of[E: Event](self, kind: type[E]) -> list[E]:
         return [event for event in self.events if isinstance(event, kind)]
 
@@ -147,8 +171,16 @@ class Village:
         return [event.line for event in self.of(LineSpoken)]
 
     @property
+    def drafted(self) -> list[Line]:
+        return [event.line for event in self.of(LineDrafted)]
+
+    @property
     def ended(self) -> list[ConversationEnded]:
         return self.of(ConversationEnded)
+
+    def scene(self) -> Scene:
+        [scene] = [talk for talk in self.engine._talks.values() if isinstance(talk, Scene)]
+        return scene
 
 
 async def test_a_friend_accepts_and_they_stop_and_face_each_other() -> None:
@@ -170,7 +202,7 @@ async def test_a_friend_accepts_and_they_stop_and_face_each_other() -> None:
     assert village.engine.state("ben") == {
         "conversation": started[0].conversation.id,
         "talking_to": "ana",
-        "engagement": 0.84,
+        "engagement": village.scene().plan.stances["ben"].keen,
         "facing": facing["ben"].direction,
         "leaving": False,
     }
@@ -230,10 +262,66 @@ async def test_a_request_is_decided_on_the_accept_score() -> None:
     assert village.engine.request("cal", "dot")
 
 
+async def test_the_whole_conversation_is_one_call_and_plays_line_by_line() -> None:
+    village = Village(relationships=friends(ANA, BEN))
+    village.engine.start("ana", "ben")
+
+    await village.run()
+
+    [ended] = village.ended
+    conversation = ended.conversation
+    assert [(line.speaker, line.text) for line in conversation.lines] == [
+        ("ana", "Morning, Ben!"),
+        ("ben", "Morning. Lovely day."),
+        ("ana", "It is. Right, I'll let you get on."),
+        ("ben", "Bye then."),
+    ]
+    assert conversation.lines == village.spoken
+    [(asked, request)] = village.script.calls
+    assert asked < START + timedelta(seconds=0.5)
+    assert request.model == "claude-haiku-4-5"
+    assert [record.purpose for record in village.records] == ["conversation"]
+    last = village.spoken[-1]
+    assert conversation.ended == last.timestamp + timedelta(seconds=last.duration)
+    assert village.engine.live() == []
+    assert not any(mind.paused for mind in village.behaviour.minds.values())
+    cooldown = conversation.ended + timedelta(minutes=DEFAULT_CONFIG.cooldown)
+    assert village.behaviour.minds["ana"].cooldowns["ben"] == cooldown
+    assert village.behaviour.minds["ben"].cooldowns["ana"] == cooldown
+
+
+async def test_lines_take_as_long_as_saying_them_with_a_gap_between() -> None:
+    lines = ["One two three four five."] * 4
+    village = Village([script(*lines), ""])
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    spoken = village.spoken
+    assert [line.speaker for line in spoken] == ["ana", "ben", "ana", "ben"]
+    assert spoken[0].timestamp < START + timedelta(seconds=2)
+    assert {line.duration for line in spoken} == {1.5}
+    for line, after in itertools.pairwise(spoken):
+        assert after.timestamp == line.timestamp + timedelta(seconds=1.5 + 0.5)
+
+
+async def test_a_measured_voice_paces_its_speakers_lines(monkeypatch: pytest.MonkeyPatch) -> None:
+    rate = SpeakingRate(base_seconds=0.4, seconds_per_word=0.26)
+    monkeypatch.setattr(engine, "speaking_rate", lambda npc: rate if npc == "ana" else None)
+    village = Village([script("One two three four five.", "Six seven eight nine ten."), ""])
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=1)
+
+    ana, ben = village.spoken
+    assert (ana.duration, ben.duration) == (1.7, 1.5)
+    assert ben.timestamp == ana.timestamp + timedelta(seconds=1.7 + 0.5)
+
+
 async def test_a_line_past_max_words_is_cut_at_a_sentence() -> None:
-    replies = ["One two three four. Five six seven. Eight nine. [values: connection]"]
     village = Village(
-        replies, relationships=friends(ANA, BEN), config=ConversationConfig(max_words=5)
+        [script("One two three four. Five six seven. Eight nine.", "Bye now.")],
+        config=ConversationConfig(max_words=5),
     )
     village.engine.start("ana", "ben")
 
@@ -242,39 +330,162 @@ async def test_a_line_past_max_words_is_cut_at_a_sentence() -> None:
     assert village.spoken[0].text == "One two three four. Five six seven."
 
 
-async def test_lines_take_as_long_as_saying_them_and_are_written_one_ahead() -> None:
-    replies = ["One two three four five. [values: connection]", "Six seven eight nine ten."]
-    village = Village(replies, relationships=friends(ANA, BEN))
+async def test_each_line_is_drafted_one_ahead_of_being_spoken() -> None:
+    village = Village()
     village.engine.start("ana", "ben")
 
+    await village.run(minutes=1)
+
+    order = [
+        (type(event).__name__, event.line.id)
+        for event in village.events
+        if isinstance(event, LineDrafted | LineSpoken)
+    ]
+    assert order == [
+        ("LineDrafted", 1),
+        ("LineSpoken", 1),
+        ("LineDrafted", 2),
+        ("LineSpoken", 2),
+        ("LineDrafted", 3),
+        ("LineSpoken", 3),
+        ("LineDrafted", 4),
+        ("LineSpoken", 4),
+    ]
+    spoken = village.spoken
+    for line, drafted in zip(spoken, village.drafted[1:], strict=False):
+        assert drafted.timestamp == line.timestamp + timedelta(seconds=line.duration + 0.5)
+    assert [line.text for line in village.drafted] == [line.text for line in spoken]
+
+
+async def test_the_first_line_plays_while_the_rest_is_still_streaming() -> None:
+    more = asyncio.Event()
+    first, rest = CHAT.split("\n", 1)
+    village = Village(provider=FakeProvider([[first + "\n", more, rest]]))
+
+    class Release:
+        def tick(self, dt: float) -> None:
+            if village.clock.now >= START + timedelta(seconds=20):
+                more.set()
+
+    village.world.loop.register(Release())
+    village.engine.start("ana", "ben")
     await village.run(minutes=1)
 
     lines = village.spoken
-    assert len(lines) > 4
-    assert [line.speaker for line in lines[:4]] == ["ana", "ben", "ana", "ben"]
-    assert [line.text for line in lines[:2]] == [
-        "One two three four five.",
-        "Six seven eight nine ten.",
-    ]
-    assert {line.duration for line in lines} == {1.5}
-    for line, after in itertools.pairwise(lines):
-        assert after.timestamp == line.timestamp + timedelta(seconds=1.5 + 0.5)
-    asked = [when for when, _ in village.script.calls]
-    for line, next_asked in zip(lines, asked[1:], strict=False):
-        assert line.timestamp <= next_asked < line.timestamp + timedelta(seconds=line.duration)
+    assert lines[0].text == "Morning, Ben!" and lines[0].timestamp < START + timedelta(seconds=1)
+    assert lines[1].timestamp >= START + timedelta(seconds=20)
+    assert len(lines) == 4
 
 
-async def test_a_measured_voice_paces_its_speakers_lines(monkeypatch: pytest.MonkeyPatch) -> None:
-    rate = SpeakingRate(base_seconds=0.4, seconds_per_word=0.26)
-    monkeypatch.setattr(engine, "speaking_rate", lambda npc: rate if npc == "ana" else None)
-    village = Village(["One two three four five.", "Six seven eight nine ten."])
+async def test_a_stream_that_breaks_mid_line_ends_at_the_last_complete_line() -> None:
+    first, second, *_ = CHAT.split("\n")
+    broken = [f"{first}\n", f"{second}\n", "Ana: It is. Right, I'll", LLMError("cut short")]
+    village = Village(provider=FakeProvider([broken]))
     village.engine.start("ana", "ben")
 
-    await village.run(minutes=1)
+    await village.run()
 
-    ana, ben, *_ = village.spoken
-    assert (ana.duration, ben.duration) == (1.7, 1.5)
-    assert ben.timestamp == ana.timestamp + timedelta(seconds=1.7 + 0.5)
+    [ended] = village.ended
+    assert [line.text for line in ended.conversation.lines] == [
+        "Morning, Ben!",
+        "Morning. Lovely day.",
+    ]
+    last = ended.conversation.lines[-1]
+    assert ended.conversation.ended == last.timestamp + timedelta(seconds=last.duration)
+    assert [record.error for record in village.records] == ["LLMError: cut short"]
+    assert not any(mind.paused for mind in village.behaviour.minds.values())
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [LLMError("usage limit reached"), ["Ana: Morning, B", LLMError("cut short")], ""],
+)
+async def test_a_script_that_never_gets_to_a_line_ends_before_anyone_speaks(
+    reply: object,
+) -> None:
+    village = Village(provider=FakeProvider([reply]))  # type: ignore[list-item]
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.2)
+
+    [ended] = village.ended
+    assert ended.conversation.lines == []
+    assert village.spoken == [] and village.drafted == []
+    assert not village.engine.talking("ana") and not village.engine.talking("ben")
+    assert not any(mind.paused for mind in village.behaviour.minds.values())
+
+
+async def test_a_script_that_stops_well_short_gets_one_call_for_the_rest() -> None:
+    replies = [
+        script("Morning, Ben!", "Morning."),
+        "Ana: Lovely day for it. [values: connection]",
+        "Ben: It is. [values: connection]",
+    ]
+    village = Village(replies)
+    village.engine.start("ana", "ben")
+
+    await village.run()
+
+    [ended] = village.ended
+    assert [(line.speaker, line.text) for line in ended.conversation.lines] == [
+        ("ana", "Morning, Ben!"),
+        ("ben", "Morning."),
+        ("ana", "Lovely day for it."),
+    ]
+    first, more = village.script.prompts
+    assert "## The scene so far\nAna: Morning, Ben!\nBen: Morning.\n\nWrite the rest" in more
+    assert "If it has already ended, write nothing." in more
+    assert more.startswith(first)
+
+
+async def test_a_script_past_half_its_plan_isnt_continued_whatever_its_last_line() -> None:
+    village = Village(["", ""])
+    village.engine.start("ana", "ben")
+    half = -(-village.scene().plan.length // 2)
+    village.script.replies = itertools.cycle([script(*["Nice day."] * (half - 1), "Ta-ra, then.")])
+
+    await village.run()
+
+    assert len(village.script.calls) == 1
+    assert village.ended[0].conversation.lines[-1].text == "Ta-ra, then."
+
+
+async def test_a_reply_without_names_adds_nothing() -> None:
+    village = Village([script("Morning, Ben!", "Morning."), "The scene has ended."])
+    village.engine.start("ana", "ben")
+
+    await village.run()
+
+    assert len(village.script.calls) == 2
+    assert [line.text for line in village.ended[0].conversation.lines] == [
+        "Morning, Ben!",
+        "Morning.",
+    ]
+
+
+async def test_a_script_that_says_goodbye_early_isnt_continued() -> None:
+    village = Village([script("Morning! Can't stop, see you later.", "Bye!")])
+    village.engine.start("ana", "ben")
+
+    await village.run()
+
+    assert len(village.script.calls) == 1
+    assert [line.text for line in village.ended[0].conversation.lines] == [
+        "Morning! Can't stop, see you later.",
+        "Bye!",
+    ]
+
+
+async def test_a_script_longer_than_max_lines_is_cut_there() -> None:
+    village = Village(
+        [script(*[f"Line {n}." for n in range(10)])],
+        config=ConversationConfig(max_lines=6),
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run()
+
+    assert len(village.ended[0].conversation.lines) == 6
 
 
 class Audio:
@@ -313,6 +524,7 @@ async def test_a_voiced_line_lasts_as_long_as_its_audio() -> None:
     await village.run(minutes=1)
 
     lines = village.spoken
+    assert len(lines) == 4
     assert {line.duration for line in lines} == {2.35}
     for line, after in itertools.pairwise(lines):
         assert after.timestamp == line.timestamp + timedelta(seconds=2.35 + 0.5)
@@ -327,7 +539,7 @@ async def test_the_next_line_waits_for_audio_that_runs_longer_than_its_line() ->
     await village.run(minutes=1)
 
     first, second, *_ = village.spoken
-    assert first.duration == 1.2
+    assert first.duration == 1.0
     assert second.timestamp == first.timestamp + timedelta(seconds=4.0 + 0.5)
 
 
@@ -344,173 +556,109 @@ async def test_the_next_line_waits_a_while_for_audio_still_being_made() -> None:
     assert second.timestamp <= first_ends + timedelta(seconds=2 + 0.1 + 0.5)
 
 
-async def test_each_line_is_announced_before_it_is_spoken() -> None:
-    village = Village(relationships=friends(ANA, BEN))
+LONG_CHAT = script(*[f"Line number {n}, all about the weather." for n in range(1, 9)])
+
+
+async def test_an_urgent_need_cuts_it_short_and_b3_hears_only_what_was_said() -> None:
+    provider = FakeProvider([LONG_CHAT, Extraction(reflections=[])])
+    village = Village(provider=provider)
+    reflector = Reflector(village.store, lambda: village.behaviour.npcs, lambda: village.llm)
+    village.world.bus.subscribe(ConversationEnded, reflector.on_ended)
     village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 2)
 
-    await village.run(minutes=1)
+    village.behaviour.minds["ben"].needs[Need.REST] = 0.99
+    await village.run()
+    await asyncio.gather(*reflector.tasks)
 
-    order = [
-        (type(event).__name__, event.line.id)
-        for event in village.events
-        if isinstance(event, LineDrafted | LineSpoken)
+    [ended] = village.ended
+    lines = ended.conversation.lines
+    assert [line.text for line in lines[:2]] == [
+        "Line number 1, all about the weather.",
+        "Line number 2, all about the weather.",
     ]
-    spoken = [line.id for line in village.spoken]
-    for line_id in spoken:
-        assert order.index(("LineDrafted", line_id)) < order.index(("LineSpoken", line_id))
-    drafted = [event.line for event in village.of(LineDrafted)]
-    assert drafted[: len(spoken)] == village.spoken
+    goodbye = lines[2]
+    assert len(lines) == 3
+    assert (goodbye.speaker, goodbye.text) == ("ben", GOODBYES[Need.REST][0].format(name="Ana"))
+    assert goodbye.timestamp == lines[1].timestamp + timedelta(seconds=lines[1].duration + 0.5)
+    assert ended.conversation.ended == goodbye.timestamp + timedelta(seconds=goodbye.duration)
+    unspoken = [line for line in village.drafted if line not in lines]
+    assert [line.text for line in unspoken] == ["Line number 3, all about the weather."]
+    reflecting = provider.requests[1].messages[-1].content
+    assert "Line number 2, all about the weather." in reflecting
+    assert goodbye.text in reflecting
+    assert "Line number 3" not in reflecting
 
 
-async def test_a_slow_line_waits_and_the_conversation_carries_on() -> None:
-    release = asyncio.Event()
-    village = Village(relationships=friends(ANA, BEN))
-    village.provider.replies.appendleft(["Sorry, ", "where was I? ", release])
-    village.provider.replies.appendleft("Hello! [values: connection]")
-
-    class Release:
-        def tick(self, dt: float) -> None:
-            if village.clock.now >= START + timedelta(seconds=30):
-                release.set()
-
-    village.world.loop.register(Release())
-    village.engine.start("ana", "ben")
-    await village.run(minutes=1)
-
-    first, second = village.spoken[:2]
-    assert first.text == "Hello!"
-    assert second.text == "Sorry, where was I?"
-    assert second.timestamp >= START + timedelta(seconds=30)
-    assert len(village.spoken) > 2
-
-
-async def test_a_conversation_on_topics_they_dislike_ends_with_a_goodbye() -> None:
-    village = Village(["Tradition matters. [values: tradition]"])
+async def test_a_need_that_was_already_urgent_doesnt_cut_it_short() -> None:
+    village = Village()
+    village.behaviour.minds["ben"].needs[Need.NEWS] = 0.99
     village.engine.start("ana", "ben")
 
     await village.run()
 
-    [ended] = village.ended
-    conversation = ended.conversation
-    assert [line.speaker for line in conversation.lines] == ["ana", "ben", "ana", "ben", "ana"]
-    assert conversation.lines == village.spoken
-    last = village.spoken[-1]
-    assert conversation.ended == last.timestamp + timedelta(seconds=last.duration)
-    prompts = village.script.prompts
-    assert "You've just walked up to Ben." in prompts[0]
-    assert "Say your next line to Ana." in prompts[1]
-    assert "Say your next line to Ben." in prompts[2]
-    assert "goodbye to Ana." in prompts[3]
-    assert "Ben is leaving. Say a brief goodbye back." in prompts[4]
-    assert len(prompts) == 5
-    assert village.engine.live() == []
-    assert not any(mind.paused for mind in village.behaviour.minds.values())
-    cooldown = conversation.ended + timedelta(minutes=DEFAULT_CONFIG.cooldown)
-    assert village.behaviour.minds["ana"].cooldowns["ben"] == cooldown
-    assert village.behaviour.minds["ben"].cooldowns["ana"] == cooldown
+    assert len(village.ended[0].conversation.lines) == 4
 
 
-TOPICS = ["justice", "equality", "honesty", "freedom", "creativity", "knowledge", "adventure"]
-EVE = make_npc("eve", "house_1", **dict.fromkeys(TOPICS, 1.0))
-FAY = make_npc("fay", "house_2", **dict.fromkeys(TOPICS, 1.0))
-
-
-async def lines_talked(replies: Sequence[str], relationships: Sequence[Relationship] = ()) -> int:
-    village = Village(replies, npcs=(EVE, FAY), relationships=relationships)
-    village.engine.start("eve", "fay")
-    await village.run(minutes=10)
-    [ended] = village.ended
-    assert "goodbye to" in village.script.prompts[-2]
-    return len(ended.conversation.lines)
-
-
-async def test_new_topics_keep_them_talking_and_one_topic_runs_out_of_steam() -> None:
-    moving_on = await lines_talked([f"And {topic}? [values: {topic}]" for topic in TOPICS])
-    circling = await lines_talked(["And justice? [values: justice]"])
-
-    assert circling < moving_on < DEFAULT_CONFIG.max_lines
-
-
-async def test_friends_on_good_form_talk_at_length() -> None:
-    replies = [f"And {topic}? [values: {topic}]" for topic in TOPICS]
-
-    assert 20 < await lines_talked(replies, friends(EVE, FAY)) < DEFAULT_CONFIG.max_lines
-
-
-async def test_saying_goodbye_unprompted_ends_the_conversation() -> None:
-    replies = [
-        "Morning! [values: connection]",
-        "Morning to you. [values: connection]",
-        "Right, I'll leave you to your coffee. [values: connection]",
-        "Bye then. [values: connection]",
-    ]
-    village = Village(replies, relationships=friends(ANA, BEN))
+async def test_someone_pulled_away_mid_line_lets_it_finish_then_says_goodbye() -> None:
+    village = Village([LONG_CHAT])
     village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 1)
+    first = village.spoken[0]
 
+    free = village.engine.cut("ana", "player")
+    assert village.engine.state("ana")["leaving"] is True
     await village.run()
 
     [ended] = village.ended
-    assert [line.text for line in ended.conversation.lines] == [
-        "Morning!",
-        "Morning to you.",
-        "Right, I'll leave you to your coffee.",
-        "Bye then.",
-    ]
-    assert "Ana is leaving. Say a brief goodbye back." in village.script.prompts[3]
+    first, goodbye = ended.conversation.lines
+    assert goodbye.speaker == "ana"
+    assert goodbye.text in [text.format(name="Ben") for text in GOODBYES["player"]]
+    assert goodbye.timestamp == first.timestamp + timedelta(seconds=first.duration + 0.5)
+    assert free == goodbye.timestamp + timedelta(seconds=goodbye.duration)
 
 
-async def test_a_goodbye_before_min_lines_is_just_a_greeting() -> None:
-    replies = ["Morning! [values: connection]", "Good day to you, Ana! [values: connection]"]
-    village = Village(
-        [*replies, "So, the bins. [values: connection]"], relationships=friends(ANA, BEN)
-    )
+async def test_no_goodbye_after_one_has_been_said() -> None:
+    village = Village([script("Morning! Can't stop, see you later.", "Bye!", "What?")])
     village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 1)
 
-    await village.run(minutes=0.5)
-
-    assert len(village.spoken) > 3
-    assert "Say your next line to Ben." in village.script.prompts[2]
-
-
-async def test_a_speaker_is_shown_how_their_lines_began() -> None:
-    village = Village(["Ha, lovely morning. [values: connection]"], relationships=friends(ANA, BEN))
-    village.engine.start("ana", "ben")
-
-    await village.run(minutes=0.5)
-
-    prompts = village.script.prompts
-    assert "Your lines so far began" not in prompts[0] + prompts[1]
-    assert 'Your lines so far began "Ha, lovely morning...".' in prompts[2]
-
-
-async def test_a_pair_who_dislike_each_other_talk_less_than_friends() -> None:
-    enemies = [feeling(ANA, "ben", like=0.15), feeling(BEN, "ana", like=0.15)]
-    lengths = []
-    for relationships in (enemies, friends(ANA, BEN)):
-        village = Village(["Hm. Right."], relationships=relationships)
-        village.engine.start("ana", "ben")
-        await village.run(minutes=5)
-        [ended] = village.ended
-        lengths.append(len(ended.conversation.lines))
-
-    assert lengths[0] == DEFAULT_CONFIG.min_lines + 2
-    assert lengths[0] < lengths[1]
-
-
-async def test_a_failed_line_ends_the_conversation() -> None:
-    provider = FakeProvider(["Hello. [values: connection]", LLMError("usage limit reached")])
-    village = Village(relationships=friends(ANA, BEN), provider=provider)
-    village.engine.start("ana", "ben")
-
+    village.engine.cut("ana", "player")
     await village.run()
 
+    assert [line.text for line in village.ended[0].conversation.lines] == [
+        "Morning! Can't stop, see you later."
+    ]
+
+
+async def test_pulled_away_after_the_other_said_goodbye_gets_a_short_one_back() -> None:
+    village = Village([script("Morning! Can't stop, see you later.", "Bye!", "What?")])
+    village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 1)
+
+    village.engine.cut("ben", Need.REST)
+    await village.run()
+
+    _, goodbye = village.ended[0].conversation.lines
+    assert (goodbye.speaker, goodbye.text) in [("ben", "Bye, Ana."), ("ben", "See you, Ana.")]
+
+
+async def test_pulled_away_before_anyone_spoke_it_never_starts() -> None:
+    hang = asyncio.Event()
+    village = Village(provider=FakeProvider([["Ana: Morn", hang]]))
+    village.engine.start("ana", "ben")
+    await village.run(minutes=0.1)
+
+    assert village.engine.cut("ben", "player") == village.clock.now
+    await asyncio.sleep(0)
+
     [ended] = village.ended
-    assert [line.text for line in ended.conversation.lines] == ["Hello."]
-    assert ended.conversation.ended == village.spoken[0].timestamp + timedelta(seconds=1.5)
-    assert not any(mind.paused for mind in village.behaviour.minds.values())
+    assert ended.conversation.lines == []
+    assert [record.error for record in village.records] == ["cancelled"]
+    assert village.engine.cut("ben", "player") is None
 
 
-async def test_the_prompt_brings_in_the_relationship_memories_history_and_news(
+async def test_the_prompt_brings_in_both_sides_and_what_is_between_them(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def topics_to_raise(memory: object, npc_id: str, now: datetime, k: int = 3) -> list[Memory]:
@@ -553,16 +701,52 @@ async def test_the_prompt_brings_in_the_relationship_memories_history_and_news(
 
     await village.run(minutes=0.1)
 
-    _, request = village.script.calls[0]
+    [(_, request)] = village.script.calls
     prompt = request.messages[-1].content
-    assert ANA.persona in request.system
-    assert "You like Ben a lot" in prompt
-    assert "You know them well." in prompt
-    assert "- 2 days ago, Ben: fixed her bike" in prompt
-    assert "- Ben lent me his ladder." in prompt
-    assert "- ana read that octopuses dream." in prompt
-    assert "at The Daily Grind" in prompt
-    assert request.model == "claude-haiku-5-5"
+    assert "You write the dialogue" in request.system
+    assert prompt.startswith("It's 10:00, at The Daily Grind. Ana has just walked up to Ben.")
+    ana, ben, between, direction = prompt.split("\n\n## ")[1:]
+    assert ana.startswith("Ana\nAna Test, aged")
+    assert ANA.persona in ana and f"How Ana speaks: {ANA.speaking_style}" in ana
+    assert "Ana likes Ben a lot" in ana and "Ana knows them well." in ana
+    assert "On Ana's mind, which only Ana knows:\n- Ben lent me his ladder." in ana
+    assert "News Ana read and might bring up:\n- ana read that octopuses dream." in ana
+    assert ben.startswith("Ben\n") and "Ben barely knows them." in ben
+    assert "ladder" not in ben and "- ben read that octopuses dream." in ben
+    assert between == "Between them\n- 2 days ago, Ben: fixed her bike"
+    assert direction.startswith("Direction\n- Ana is ")
+    assert "Ana speaks first." in direction
+
+
+async def test_a_secret_stays_with_whoever_was_told_it() -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    secret = "they're selling the bakery"
+    told = Flag(
+        id="s1", kind=FlagKind.SECRET, owner="ana", about="cal", description=secret, created=START
+    )
+    village.store.add(
+        feeling(ANA, "cal").model_copy(update={"flags": [told]}),
+        Memory(
+            owner="ana",
+            kind=MemoryKind.CONVERSATION,
+            content="Cal swore me to secrecy about the bakery.",
+            salience=0.9,
+            valence=-0.2,
+            timestamp=START - timedelta(hours=1),
+            about=["cal"],
+        ),
+    )
+    village.engine.start("ana", "ben")
+
+    await village.run(minutes=0.1)
+
+    [(_, request)] = village.script.calls
+    ana, ben, *_ = request.messages[-1].content.split("\n\n## ")[1:]
+    assert f"Told to Ana in confidence, which only Ana knows:\n- Cal: {secret}" in ana
+    assert "On Ana's mind, which only Ana knows:\n- Cal swore me to secrecy" in ana
+    assert "bakery" not in ben
+    assert "Neither mentions what only the other knows" in request.system
+    assert "what someone was told in confidence stays with them" in request.system
 
 
 async def test_without_news_reactions_there_are_no_topics(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -572,34 +756,26 @@ async def test_without_news_reactions_there_are_no_topics(monkeypatch: pytest.Mo
 
     await village.run(minutes=0.1)
 
-    assert "News you might bring up" not in village.script.prompts[0]
+    assert "News" not in village.script.prompts[0]
 
 
-async def test_news_they_reacted_to_comes_up() -> None:
-    village = Village(relationships=friends(ANA, BEN))
-    village.store.add(
-        Memory(
-            owner="ana",
-            kind=MemoryKind.NEWS,
-            content="The river is getting a tidal barrier, and about time.",
-            salience=0.9,
-            valence=0.6,
-            timestamp=START - timedelta(hours=1),
-            news_id="barrier",
-        )
-    )
-    village.engine.start("ana", "ben")
+async def test_friends_get_a_longer_scene_than_a_pair_who_dislike_each_other() -> None:
+    enemies = [feeling(ANA, "ben", like=0.15), feeling(BEN, "ana", like=0.15)]
+    lengths = []
+    for relationships in (enemies, friends(ANA, BEN)):
+        village = Village(relationships=relationships)
+        village.engine.start("ana", "ben")
+        lengths.append(village.scene().plan.length)
 
-    await village.run(minutes=0.1)
-
-    news = "News you might bring up:\n- The river is getting a tidal barrier, and about time."
-    assert news in village.script.prompts[0]
-    assert news not in village.script.prompts[1]
+    assert DEFAULT_CONFIG.min_lines + 2 <= lengths[0] < lengths[1]
 
 
 async def test_line_ids_are_unique_across_conversations() -> None:
+    chat = "".join(
+        f"{name}: Hello. [values: connection]\n" for name in ["Ana", "Ben", "Cal", "Dot"]
+    )
     village = Village(
-        npcs=(ANA, BEN, CAL, DOT), relationships=[*friends(ANA, BEN), *friends(CAL, DOT)]
+        [chat], npcs=(ANA, BEN, CAL, DOT), relationships=[*friends(ANA, BEN), *friends(CAL, DOT)]
     )
     village.engine.start("ana", "ben")
     village.engine.start("cal", "dot")
@@ -612,7 +788,7 @@ async def test_line_ids_are_unique_across_conversations() -> None:
 
 
 async def test_finished_conversations_stay_reachable() -> None:
-    village = Village(["Tradition matters. [values: tradition]"])
+    village = Village()
     started = village.engine.start("ana", "ben")
 
     await village.run()
@@ -627,7 +803,7 @@ async def test_finished_conversations_stay_reachable() -> None:
 
 async def test_closing_stops_writing() -> None:
     hang = asyncio.Event()
-    provider = FakeProvider([["Well", hang]])
+    provider = FakeProvider([["Ana: Well", hang]])
     village = Village(provider=provider)
     village.engine.start("ana", "ben")
     await village.run(minutes=0.1)
@@ -641,14 +817,62 @@ async def test_closing_stops_writing() -> None:
     assert [record.error for record in village.records] == ["cancelled"]
 
 
-async def test_a_line_that_never_comes_back_times_out_and_frees_its_slots() -> None:
+async def test_a_first_line_that_takes_too_long_is_asked_for_once_more() -> None:
+    hang = asyncio.Event()
+    provider = FakeProvider([["Ana: Well", hang], CHAT])
+    village = Village(config=ConversationConfig(first_line_timeout=0.05), provider=provider)
+    village.engine.start("ana", "ben")
+
+    for _ in range(3):
+        await village.run(minutes=0.1)
+        await asyncio.sleep(0.1)
+    await village.run()
+
+    [ended] = village.ended
+    assert len(ended.conversation.lines) == 4
+    assert [record.error for record in village.records] == ["cancelled", None]
+
+
+async def test_a_second_slow_first_line_ends_it_before_anyone_speaks() -> None:
+    hang = asyncio.Event()
+    provider = FakeProvider([["Ana: Well", hang], ["Ana: Um", hang]])
+    village = Village(config=ConversationConfig(first_line_timeout=0.05), provider=provider)
+    village.engine.start("ana", "ben")
+
+    for _ in range(3):
+        await village.run(minutes=0.1)
+        await asyncio.sleep(0.1)
+
+    [ended] = village.ended
+    assert ended.conversation.lines == []
+    assert [record.error for record in village.records] == ["cancelled", "cancelled"]
+    assert not any(mind.paused for mind in village.behaviour.minds.values())
+
+
+async def test_a_cut_while_the_script_streams_drops_the_rest() -> None:
+    more = asyncio.Event()
+    first, rest = LONG_CHAT.split("\n", 1)
+    village = Village(provider=FakeProvider([[first + "\n", more, rest]]))
+    village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 1)
+
+    village.engine.cut("ben", "player")
+    more.set()
+    await village.run()
+
+    [ended] = village.ended
+    said, goodbye = ended.conversation.lines
+    assert said.text == "Line number 1, all about the weather."
+    assert goodbye.speaker == "ben"
+    assert [line.text for line in village.drafted] == [said.text, goodbye.text]
+    assert [record.error for record in village.records] == ["cancelled"]
+
+
+async def test_a_script_that_stalls_times_out_and_frees_its_slot() -> None:
     never = asyncio.Event()
-    provider = FakeProvider(["Hello. [values: connection]", ["Well, ", never], "Free again."])
-    village = Village(
-        relationships=friends(ANA, BEN),
-        config=ConversationConfig(line_timeout=0.05),
-        provider=provider,
-    )
+    first = CHAT.split("\n")[0] + "\n"
+    provider = FakeProvider([[first, never], "Free again."])
+    village = Village(config=ConversationConfig(line_timeout=0.05), provider=provider)
     village.llm = LLMClient(provider, max_concurrency=1, listeners=[village.records.append])
     village.engine.start("ana", "ben")
 
@@ -657,8 +881,8 @@ async def test_a_line_that_never_comes_back_times_out_and_frees_its_slots() -> N
     await village.run(minutes=0.1)
 
     [ended] = village.ended
-    assert [line.text for line in ended.conversation.lines] == ["Hello."]
-    assert [record.error for record in village.records] == [None, "cancelled"]
+    assert [line.text for line in ended.conversation.lines] == ["Morning, Ben!"]
+    assert [record.error for record in village.records] == ["cancelled"]
     assert village.engine.live() == []
     assert not any(mind.paused for mind in village.behaviour.minds.values())
     assert await asyncio.wait_for(village.llm.complete("Still there?"), 1) == "Free again."

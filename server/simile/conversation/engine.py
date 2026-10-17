@@ -3,40 +3,50 @@ import itertools
 import logging
 import random
 from collections import deque
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterator
 from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Protocol
+from typing import Any, Protocol
 
 from pydantic import JsonValue
 from starlette.applications import Starlette
 
 from simile.behaviour import Behaviour, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
-from simile.conversation.engagement import (
-    acceptance,
-    accepts,
-    engage,
-    initial_engagement,
-    leaving,
-)
+from simile.conversation.engagement import acceptance, accepts, engage, initial_engagement
 from simile.conversation.events import Direction, Facing, LineDrafted
+from simile.conversation.plan import PRESSING, Plan, plan, stance
 from simile.conversation.prompt import (
-    Cue,
-    Draft,
     Player,
     background,
     duration,
     first_name,
-    parse_reply,
     system_prompt,
     takes_leave,
-    turn_prompt,
+)
+from simile.conversation.script import (
+    Character,
+    ScriptLine,
+    ScriptParser,
+    continue_prompt,
+    scene_prompt,
+    script_system,
 )
 from simile.llm import LLMClient
 from simile.memory import SharedHistory
-from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, Npc, Relationship
+from simile.schema import (
+    PLAYER_ID,
+    Conversation,
+    CoreValue,
+    FlagKind,
+    Id,
+    Line,
+    Memory,
+    NewsItem,
+    Npc,
+    Relationship,
+)
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
 from simile.voice import speaking_rate
@@ -45,10 +55,26 @@ from simile.world import Point
 logger = logging.getLogger(__name__)
 
 RECHECK = timedelta(seconds=0.1)
+PLAYER = "player"
+"""Why a resident leaves a conversation when the player starts one with them."""
+
+GOODBYES: dict[str, tuple[str, ...]] = {
+    PLAYER: (
+        "Sorry, {name}, I'd better say hello to our newcomer. Catch you later.",
+        "Oh, excuse me, {name}, someone's after me. Talk later.",
+        "Hang on, {name}, I'm wanted. See you soon.",
+    ),
+    Need.REST: ("Sorry, {name}, I'm flagging. I'll head off. See you.",),
+    Need.NEWS: ("I must catch up on the news, {name}. See you later.",),
+    Need.CURIOSITY: ("Sorry, {name}, I must get on. Catch you later.",),
+}
+FAREWELLS = ("Bye, {name}.", "See you, {name}.")
 
 
 class Memories(Protocol):
     def relationship(self, owner: str, about: str) -> Relationship | None: ...
+
+    def relationships(self, owner: str) -> list[Relationship]: ...
 
     def recall(
         self, owner: str, now: datetime, *, about: str | None = None, k: int = 5
@@ -72,38 +98,67 @@ class Audio(Protocol):
 @dataclass
 class Party:
     npc: Npc
-    system: str
-    background: str
     like: float
     """How much they like the other person."""
     engagement: float
     facing: Direction
+    system: str = ""
+    background: str = ""
 
 
 @dataclass
 class Talk:
     conversation: Conversation
     parties: dict[Id, Party]
-    speaker: Id
-    """Whose line is being written or waiting to be spoken."""
     free_at: datetime
     """When the line being spoken, and the pause after it, ends."""
-    cue: Cue = Cue.OPEN
-    writing: asyncio.Task[Draft] | None = None
-    pending: tuple[Line, tuple[CoreValue, ...]] | None = None
-    """The next line, written and waiting for its turn, with the values it touches."""
+    names: dict[Id, str] = field(default_factory=dict)
     closing: bool = False
     """The last line has been spoken."""
-    names: dict[Id, str] = field(default_factory=dict)
-    touched: set[CoreValue] = field(default_factory=set)
-    """The values the conversation has touched so far."""
+    writing: asyncio.Task[Any] | None = None
 
     def other(self, npc: Id) -> Id:
         return next(other for other in self.conversation.participants if other != npc)
 
+    def leaving(self, npc: Id) -> bool:
+        """Whether `npc` is saying goodbye."""
+        return False
+
+
+@dataclass(kw_only=True)
+class Scene(Talk):
+    """A conversation between two residents, written as one script and played line by line."""
+
+    plan: Plan
+    prompt: str
+    """Both sides, what's between them and the direction."""
+    needs: dict[Id, dict[Need, float]]
+    """Each side's needs when it started."""
+    script: deque[ScriptLine] = field(default_factory=deque)
+    """Lines streamed and not yet drafted."""
+    written: list[ScriptLine] = field(default_factory=list)
+    asked: int = 0
+    """Lines written when the latest call was made."""
+    retried: bool = False
+    continued: bool = False
+    streamed: bool = False
+    """No more lines are coming."""
+    pending: tuple[Line, tuple[CoreValue, ...]] | None = None
+    """The next line, drafted and waiting for its turn, with the values it touches."""
+    leaver: Id | None = None
+    """Who was pulled away, cutting it short."""
+    touched: set[CoreValue] = field(default_factory=set)
+
+    def leaving(self, npc: Id) -> bool:
+        if self.leaver is not None:
+            return self.leaver == npc
+        line = self.pending[0] if self.pending else None
+        return line is not None and line.speaker == npc and takes_leave(line.text)
+
 
 class ConversationEngine:
-    """NPC-NPC conversations, written a line ahead and spoken at talking pace. Tick it."""
+    """Conversations between NPCs, each written as one script and spoken at talking pace, and
+    the player's, which `PlayerConversations` runs. Tick it."""
 
     def __init__(
         self,
@@ -131,6 +186,8 @@ class ConversationEngine:
         """Answers requests involving the player, which this engine declines without it."""
         self.audio: Audio | None = None
         """The audio being made for each line, which I1 sets while the server is voiced."""
+        self.article: Callable[[str], NewsItem | None] = lambda _: None
+        """B4's article by id, for what its news topics are about."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
@@ -139,9 +196,7 @@ class ConversationEngine:
             return self.player_request is not None and self.player_request(a, b)
         if self.talking(a) or self.talking(b):
             return False
-        going = sum(
-            PLAYER_ID not in talk.conversation.participants for talk in self._talks.values()
-        )
+        going = sum(isinstance(talk, Scene) for talk in self._talks.values())
         if going >= self.config.max_conversations:
             self._log("%s and %s can't talk: %d conversations going on", a, b, going)
             return False
@@ -165,36 +220,78 @@ class ConversationEngine:
         )
 
     def start(self, a: Id, b: Id) -> Conversation:
-        """Start a conversation that `a` opens, whatever `b` thinks of it."""
-        now = self.clock.now
-        movement = self.behaviour.movement
+        """Start a conversation that `a` opens, whatever `b` thinks of it. Its script is asked
+        for on the next tick."""
+        now, config = self.clock.now, self.config
+        npcs, movement = self.behaviour.npcs, self.behaviour.movement
         here, there = movement.position(a), movement.position(b)
-        parties = {
-            a: self._party(a, b, facing(here, there)),
-            b: self._party(b, a, facing(there, here)),
+        names = {a: first_name(npcs[a]), b: first_name(npcs[b])}
+        rels = {a: self._relationship(a, b), b: self._relationship(b, a)}
+        topics = {npc: self._topics(npc, now) for npc in names}
+        on_table = [topic for npc in names for topic in self._topic_values(npcs[npc], topics[npc])]
+        needs = {npc: self.behaviour.needs(npc) for npc in names}
+        stances = {
+            npc: stance(
+                npcs[npc].values,
+                rels[npc],
+                self.behaviour.goal(npc),
+                needs[npc],
+                on_table,
+                names[other],
+                config,
+            )
+            for npc, other in ((a, b), (b, a))
         }
+        scene_plan = plan(names, stances, a, config)
+        sides = {
+            npc: Character(
+                npcs[npc],
+                rels[npc],
+                self._memories(npc, other, now, topics[npc]),
+                topics[npc],
+                self._secrets(npc, other),
+            )
+            for npc, other in ((a, b), (b, a))
+        }
+        location = self.behaviour.places.at(here)
+        prompt = scene_prompt(
+            sides[a],
+            sides[b],
+            self.memory.shared_history(a, b, now, k=config.history),
+            location.name if location else None,
+            now,
+            scene_plan,
+        )
         conversation = Conversation(
             id=f"{now:%Y%m%dT%H%M%S}-{a}-{b}", participants=[a, b], started=now
         )
-        talk = Talk(
-            conversation,
-            parties,
-            speaker=a,
-            free_at=now,
-            names={npc: first_name(party.npc) for npc, party in parties.items()},
+        directions = {a: facing(here, there), b: facing(there, here)}
+        parties = {
+            npc: Party(npcs[npc], rels[npc].like, stances[npc].keen, directions[npc])
+            for npc in names
+        }
+        scene = Scene(
+            conversation, parties, now, names, plan=scene_plan, prompt=prompt, needs=needs
         )
-        self._talks[conversation.id] = talk
+        self._talks[conversation.id] = scene
         for npc, party in parties.items():
-            other = talk.other(npc)
+            other = scene.other(npc)
             self.behaviour.pause(npc, other)
             self.bus.publish(Facing(npc, other, party.facing))
         self.bus.publish(ConversationStarted(conversation.model_copy(deep=True)))
+        self._log(
+            "%s planned for %d lines, %s leaving (keen %s)",
+            conversation.id,
+            scene_plan.length,
+            scene_plan.leaver,
+            ", ".join(f"{npc} {stances[npc].keen:.2f}" for npc in names),
+        )
         return conversation
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
-            if PLAYER_ID not in talk.conversation.participants:
-                self._advance(talk)
+            if isinstance(talk, Scene):
+                self._play(talk)
 
     def live(self) -> list[Conversation]:
         """Conversations going on, with their lines so far, for the snapshot."""
@@ -222,12 +319,12 @@ class ConversationEngine:
             "talking_to": talk.other(npc),
             "engagement": round(party.engagement, 3),
             "facing": party.facing,
-            "leaving": talk.cue is Cue.GOODBYE and talk.speaker == npc,
+            "leaving": talk.leaving(npc),
         }
 
     def end(self, conversation_id: str) -> Conversation | None:
-        """End a live conversation now, as if it had run its course, dropping any line still
-        being written. Returns it with `ended` set, or None if it isn't live."""
+        """End a live conversation now, at its last spoken line, dropping any line still being
+        written. Returns it with `ended` set, or None if it isn't live."""
         talk = self._talks.get(conversation_id)
         if talk is None:
             return None
@@ -236,6 +333,44 @@ class ConversationEngine:
         self._end(talk)
         return talk.conversation.model_copy(deep=True)
 
+    def cut(self, npc: Id, why: str) -> datetime | None:
+        """Pull `npc` out of their conversation with another resident, for `why`: the player
+        (`PLAYER`) or an urgent need. It ends after the line being said, with `npc`'s goodbye
+        where one fits. Returns when they're done, or None if they weren't in one."""
+        scene = next(
+            (
+                talk
+                for talk in self._talks.values()
+                if isinstance(talk, Scene) and npc in talk.conversation.participants
+            ),
+            None,
+        )
+        if scene is None:
+            return None
+        now, lines = self.clock.now, scene.conversation.lines
+        if scene.closing:
+            return max(now, scene.free_at)
+        if scene.leaver is not None and scene.pending is not None:
+            line = scene.pending[0]
+            return line.timestamp + timedelta(seconds=line.duration)
+        if scene.writing is not None:
+            scene.writing.cancel()
+        scene.streamed, scene.pending = True, None
+        scene.script.clear()
+        if not lines:
+            self._end(scene)
+            return now
+        scene.leaver = npc
+        self._log("%s left %s (%s)", npc, scene.conversation.id, why)
+        goodbye = self._goodbye(scene, npc, why)
+        if goodbye is None:
+            self._close(scene)
+            return max(now, scene.free_at)
+        line = self._line(scene, npc, goodbye)
+        scene.pending = (line, ())
+        self.bus.publish(LineDrafted(line))
+        return line.timestamp + timedelta(seconds=line.duration)
+
     async def close(self) -> None:
         """Stop writing lines. Conversations still going on are left as they are."""
         tasks = [talk.writing for talk in self._talks.values() if talk.writing]
@@ -243,114 +378,151 @@ class ConversationEngine:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
 
-    def _advance(self, talk: Talk) -> None:
+    def _play(self, scene: Scene) -> None:
         now = self.clock.now
-        if talk.closing:
-            if now >= talk.free_at:
-                self._end(talk)
+        if scene.closing:
+            if now >= scene.free_at:
+                self._end(scene)
             return
-        if talk.writing is not None and talk.writing.done():
-            task, talk.writing = talk.writing, None
-            if not self._drafted(talk, task):
-                talk.closing = True
-                return
-        if talk.pending is not None and now >= talk.pending[0].timestamp:
-            self._speak(talk)
-        if not talk.closing and talk.writing is None and talk.pending is None:
-            lines = list(talk.conversation.lines)
-            talk.writing = asyncio.get_running_loop().create_task(
-                self._write(talk, talk.speaker, talk.cue, lines)
-            )
+        if scene.writing is not None and scene.writing.done():
+            self._written(scene)
+        if scene.writing is None and not scene.streamed:
+            scene.writing = asyncio.get_running_loop().create_task(self._write(scene))
+        self._check_needs(scene)
+        if scene.conversation.ended:
+            return
+        if scene.pending is None and scene.script:
+            self._draft(scene)
+        due = scene.pending is not None and now >= scene.pending[0].timestamp
+        if due and self._speak(scene) and scene.script:
+            self._draft(scene)
+        if scene.pending is None and not scene.script and scene.streamed:
+            if scene.conversation.lines:
+                self._close(scene)
+            else:
+                logger.warning("%s never started", scene.conversation.id)
+                self._end(scene)
 
-    async def _write(self, talk: Talk, speaker: Id, cue: Cue, lines: Sequence[Line]) -> Draft:
-        party, other = talk.parties[speaker], talk.parties[talk.other(speaker)]
-        prompt = turn_prompt(
-            party.background,
-            lines,
-            talk.names,
-            cue,
-            first_name(other.npc),
-            self.config,
-            speaker=speaker,
-        )
+    async def _write(self, scene: Scene) -> None:
+        config = self.config
+        spellings = {npc: [scene.names[npc], p.npc.name] for npc, p in scene.parties.items()}
+        parser = ScriptParser(spellings, config)
+        scene.asked = len(scene.written)
+        prompt = scene.prompt
+        if scene.written:
+            prompt = continue_prompt(scene.prompt, scene.written, scene.names)
         stream = self.llm().stream(
-            prompt, system=party.system, model=self.config.model, purpose="conversation"
+            prompt, system=script_system(config), model=config.model, purpose="conversation"
         )
-        async with asyncio.timeout(self.config.line_timeout), aclosing(stream) as chunks:
-            text = "".join([chunk async for chunk in chunks])
-        return parse_reply(
-            text,
-            [talk.names[speaker], party.npc.name],
-            [talk.names[talk.other(speaker)], other.npc.name],
-            self.config,
-        )
+        loop = asyncio.get_running_loop()
+        first = config.first_line_timeout
+        async with asyncio.timeout(first) as deadline, aclosing(stream) as chunks:
+            async for chunk in chunks:
+                if self._add(scene, parser.feed(chunk)):
+                    deadline.reschedule(loop.time() + config.line_timeout)
+                if len(scene.written) >= config.max_lines:
+                    return
+        self._add(scene, parser.end())
 
-    def _drafted(self, talk: Talk, task: asyncio.Task[Draft]) -> bool:
+    def _add(self, scene: Scene, lines: list[ScriptLine]) -> bool:
+        if scene.streamed:
+            return False
+        lines = lines[: self.config.max_lines - len(scene.written)]
+        scene.script.extend(lines)
+        scene.written.extend(lines)
+        return bool(lines)
+
+    def _written(self, scene: Scene) -> None:
+        task, scene.writing = scene.writing, None
+        assert task is not None
+        if scene.streamed:
+            return
         if task.cancelled():
-            return False
-        if error := task.exception():
+            scene.streamed = True
+        elif isinstance(task.exception(), TimeoutError) and not scene.written and not scene.retried:
+            scene.retried = True
             logger.warning(
-                "Couldn't write %s's line in %s: %r", talk.speaker, talk.conversation.id, error
+                "%s had no line within %gs, so asking again",
+                scene.conversation.id,
+                self.config.first_line_timeout,
             )
-            return False
-        draft = task.result()
-        if not draft.text:
-            logger.warning("%s's line in %s came back empty", talk.speaker, talk.conversation.id)
-            return False
-        line = Line(
-            id=next(self.line_ids),
-            conversation_id=talk.conversation.id,
-            speaker=talk.speaker,
-            text=draft.text,
-            timestamp=max(self.clock.now, talk.free_at),
-            duration=round(duration(draft.text, self.config, speaking_rate(talk.speaker)), 2),
-        )
-        talk.pending = (line, draft.values)
-        self.bus.publish(LineDrafted(line))
-        return True
+        elif error := task.exception():
+            logger.warning("Couldn't write %s: %r", scene.conversation.id, error)
+            scene.streamed = True
+        elif self._unfinished(scene):
+            scene.continued = True
+            self._log("%s stopped short, so asking for the rest", scene.conversation.id)
+        else:
+            scene.streamed = True
 
-    def _speak(self, talk: Talk) -> None:
-        assert talk.pending is not None
-        line, values = talk.pending
-        if (ends := self.still_playing(talk.conversation)) is not None:
+    def _unfinished(self, scene: Scene) -> bool:
+        """Whether a script that streamed to its end in its first call stopped well short of its
+        planned length, without a goodbye."""
+        written = scene.written
+        if scene.continued or not written:
+            return False
+        if len(written) >= scene.plan.length * self.config.continue_below:
+            return False
+        return not any(takes_leave(line.draft.text) for line in written[-2:])
+
+    def _check_needs(self, scene: Scene) -> None:
+        if scene.leaver is not None:
+            return
+        for npc in scene.conversation.participants:
+            needs = self.behaviour.needs(npc)
+            for need in PRESSING:
+                if needs[need] >= self.config.urgent_need > scene.needs[npc][need]:
+                    self.cut(npc, need)
+                    return
+
+    def _draft(self, scene: Scene) -> None:
+        written = scene.script.popleft()
+        line = self._line(scene, written.speaker, written.draft.text)
+        scene.pending = (line, written.draft.values)
+        self.bus.publish(LineDrafted(line))
+
+    def _line(self, scene: Scene, speaker: Id, text: str) -> Line:
+        return Line(
+            id=next(self.line_ids),
+            conversation_id=scene.conversation.id,
+            speaker=speaker,
+            text=text,
+            timestamp=max(self.clock.now, scene.free_at),
+            duration=round(duration(text, self.config, speaking_rate(speaker)), 2),
+        )
+
+    def _speak(self, scene: Scene) -> bool:
+        assert scene.pending is not None
+        line, values = scene.pending
+        if (ends := self.still_playing(scene.conversation)) is not None:
             free_at = ends + timedelta(seconds=self.config.turn_gap)
             if free_at > self.clock.now:
-                talk.pending = (line.model_copy(update={"timestamp": free_at}), values)
-                return
-        talk.pending = None
+                scene.pending = (line.model_copy(update={"timestamp": free_at}), values)
+                return False
+        scene.pending = None
         line = self.as_voiced(line)
-        talk.conversation.lines.append(line)
+        scene.conversation.lines.append(line)
         self.bus.publish(LineSpoken(line))
-        new = [value for value in values if value not in talk.touched]
-        talk.touched.update(values)
-        for party in talk.parties.values():
+        new = [value for value in values if value not in scene.touched]
+        scene.touched.update(values)
+        for party in scene.parties.values():
             party.engagement = engage(
                 party.engagement, party.npc.values, party.like, new, self.config
             )
         ends = line.timestamp + timedelta(seconds=line.duration)
-        talk.free_at = ends + timedelta(seconds=self.config.turn_gap)
-        said = talk.cue
-        spoken = len(talk.conversation.lines)
-        if said is Cue.REPLY and spoken > self.config.min_lines and takes_leave(line.text):
-            said = Cue.GOODBYE
-            self._log("%s said goodbye in %s", talk.speaker, talk.conversation.id)
-        talk.speaker = talk.other(talk.speaker)
-        if said is Cue.GOODBYE and self.config.farewell:
-            talk.cue = Cue.FAREWELL
-        elif said in (Cue.GOODBYE, Cue.FAREWELL):
-            talk.closing, talk.free_at = True, ends
-        elif leaving(
-            talk.parties[talk.speaker].engagement, len(talk.conversation.lines), self.config
-        ):
-            talk.cue = Cue.GOODBYE
-            self._log(
-                "%s is leaving %s (engagement %.2f)",
-                talk.speaker,
-                talk.conversation.id,
-                talk.parties[talk.speaker].engagement,
-            )
-        else:
-            talk.cue = Cue.REPLY
+        scene.free_at = ends + timedelta(seconds=self.config.turn_gap)
+        return True
+
+    def _close(self, scene: Scene) -> None:
+        last = scene.conversation.lines[-1]
+        scene.closing = True
+        scene.free_at = last.timestamp + timedelta(seconds=last.duration)
+
+    def _goodbye(self, scene: Scene, npc: Id, why: str) -> str | None:
+        last, name = scene.conversation.lines[-1], scene.names[scene.other(npc)]
+        if takes_leave(last.text):
+            return None if last.speaker == npc else self.rng.choice(FAREWELLS).format(name=name)
+        return self.rng.choice(GOODBYES[why]).format(name=name)
 
     def as_voiced(self, line: Line) -> Line:
         """The line lasting as long as its audio, if that's all made."""
@@ -389,9 +561,11 @@ class ConversationEngine:
             mind = self.behaviour.minds.get(npc)
             if mind is not None:
                 mind.cooldowns[talk.other(npc)] = cooldown
-            self.behaviour.resume(npc)
+            if not self.talking(npc):
+                self.behaviour.resume(npc)
 
     def _party(self, npc: Id, other: Id, direction: Direction) -> Party:
+        """`npc`'s side of a conversation with `other`, written a line at a time."""
         now = self.clock.now
         speaker, them = self.behaviour.npcs[npc], self._person(other)
         rel = self._relationship(npc, other)
@@ -399,6 +573,9 @@ class ConversationEngine:
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
         return Party(
             npc=speaker,
+            like=rel.like,
+            engagement=initial_engagement(speaker.values, rel.like, self.config),
+            facing=direction,
             system=system_prompt(speaker, self.config),
             background=background(
                 speaker,
@@ -410,9 +587,6 @@ class ConversationEngine:
                 location.name if location else None,
                 now,
             ),
-            like=rel.like,
-            engagement=initial_engagement(speaker.values, rel.like, self.config),
-            facing=direction,
         )
 
     def _person(self, id: Id) -> Npc | Player:
@@ -449,12 +623,44 @@ class ConversationEngine:
             logger.exception("Couldn't get %s's news topics", npc)
             return []
 
+    def _topic_values(self, npc: Npc, topics: list[Memory]) -> list[dict[CoreValue, float]]:
+        """What the news `npc` might bring up is about, or else what they care about most."""
+        found = []
+        for memory in topics:
+            item = self.article(memory.news_id) if memory.news_id else None
+            if item is not None and item.values:
+                found.append(dict(item.values))
+        if found:
+            return found
+        ranked = sorted(npc.values, key=lambda value: -npc.values[value])
+        return [dict.fromkeys(ranked[:3], 1.0)]
+
+    def _secrets(self, npc: Id, other: Id) -> list[tuple[str, str]]:
+        """What people besides `other` told `npc` in confidence."""
+        found = []
+        for rel in self.memory.relationships(npc):
+            if rel.about == other:
+                continue
+            for flag in rel.flags:
+                if flag.kind is FlagKind.SECRET and flag.resolved is None:
+                    found.append((self._name(rel.about), flag.description))
+        return found
+
+    def _name(self, id: Id) -> str:
+        known = id == PLAYER_ID or id in self.behaviour.npcs
+        return first_name(self._person(id)) if known else id
+
     def _log(self, message: str, *args: object) -> None:
         logger.info(f"%s  {message}", self.clock, *args)
 
     def _talk_of(self, npc: Id) -> Talk | None:
         return next(
-            (talk for talk in self._talks.values() if npc in talk.conversation.participants), None
+            (
+                talk
+                for talk in reversed(self._talks.values())
+                if npc in talk.conversation.participants
+            ),
+            None,
         )
 
 

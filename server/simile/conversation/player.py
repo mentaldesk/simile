@@ -13,7 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from simile.behaviour import Activity, Need
 from simile.conversation.engagement import acceptance, accepts, engage, leaving
-from simile.conversation.engine import ConversationEngine, Talk, facing
+from simile.conversation.engine import PLAYER, ConversationEngine, Talk, facing
 from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
     Cue,
@@ -71,7 +71,7 @@ class PlayerConfig(BaseModel):
 
     model: str = Field(
         default=Model.HAIKU_4_5,
-        description="The model that writes NPC replies to the player. Haiku 4.5 rather than B2's "
+        description="The model that writes NPC replies to the player. Haiku 4.5 rather than "
         "Haiku 5.5, which can't turn thinking off and thinks for over a second before its first "
         "word.",
     )
@@ -121,6 +121,8 @@ DEFAULT_PLAYER_CONFIG = PlayerConfig()
 class PlayerTalk(Talk):
     """A conversation with the player. `speaker` is the NPC while they reply, else the player."""
 
+    speaker: Id
+    cue: Cue = Cue.OPEN
     queued: deque[Line] = field(default_factory=deque)
     """Sentences written and waiting for their turn."""
     turns: int = 0
@@ -130,10 +132,15 @@ class PlayerTalk(Talk):
     ends: datetime | None = None
     quiet_until: datetime
     """The NPC's lines wait for the goodbye of the resident the player turned away from."""
+    pulled_from: str | None = None
+    """The conversation the NPC was pulled out of, whose end their lines wait for."""
 
     @property
     def npc(self) -> Id:
         return self.other(PLAYER_ID)
+
+    def leaving(self, npc: Id) -> bool:
+        return self.cue is Cue.GOODBYE and self.speaker == npc
 
 
 class PlayerConversations:
@@ -181,13 +188,18 @@ class PlayerConversations:
             self.engine._log("The player is too far from %s to talk (%s tiles)", target, distance)
             return None
         if joined is None:
-            if not self._free(target):
+            if not self._free(target, interrupting=True):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
-            goodbye_ends = self._turned_away(talk, target) if talk is not None else None
+            left = self.engine._talk_of(target)
+            goodbyes = [
+                self._turned_away(talk, target) if talk is not None else None,
+                self.engine.cut(target, PLAYER),
+            ]
             joined = self._start(target, opener=PLAYER_ID)
-            if goodbye_ends is not None:
-                joined.quiet_until = goodbye_ends
+            joined.quiet_until = max([joined.quiet_until, *filter(None, goodbyes)])
+            if left is not None and left.conversation.id in self.engine._talks:
+                joined.pulled_from = left.conversation.id
         return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
@@ -331,7 +343,7 @@ class PlayerConversations:
         talk.free_at = line.timestamp + timedelta(seconds=line.duration)
         talk.said += 1
         engine.bus.publish(LineDrafted(line))
-        if line.timestamp <= now:
+        if line.timestamp <= now and not self._pulled_away(talk):
             self._speak(talk, line)
         else:
             talk.queued.append(line)
@@ -357,7 +369,7 @@ class PlayerConversations:
             self.engine._log("The player left %s", talk.conversation.id)
             self._end(talk)
             return
-        while talk.queued and talk.queued[0].timestamp <= now:
+        while talk.queued and talk.queued[0].timestamp <= now and not self._pulled_away(talk):
             ends = self.engine.still_playing(talk.conversation)
             if ends is not None and ends > now:
                 self._follow(talk, ends)
@@ -404,6 +416,22 @@ class PlayerConversations:
         else:
             talk.speaker = PLAYER_ID
             engine.llm().warm(system=party.system, model=self.config.model)
+
+    def _pulled_away(self, talk: PlayerTalk) -> bool:
+        """Whether the NPC is still saying goodbye in the conversation they were pulled out of,
+        or its audio is still playing. Once they're done, their sentences follow."""
+        engine, now = self.engine, self.engine.clock.now
+        if talk.pulled_from is None:
+            return False
+        if talk.pulled_from in engine._talks:
+            return True
+        left = engine.conversation(talk.pulled_from)
+        if left is not None and (ends := engine.still_playing(left)) is not None and ends > now:
+            return True
+        talk.pulled_from = None
+        if talk.queued and talk.queued[0].timestamp < now:
+            self._follow(talk, now)
+        return False
 
     def _end(self, talk: PlayerTalk) -> None:
         self._interrupt(talk)
@@ -464,9 +492,14 @@ class PlayerConversations:
     def _player_free(self) -> bool:
         return self.connected() and self._distance_known() and not self.engine.talking(PLAYER_ID)
 
-    def _free(self, npc: Id) -> bool:
+    def _free(self, npc: Id, *, interrupting: bool = False) -> bool:
+        """Whether `npc` is awake and not talking, or when `interrupting`, talking only to
+        another resident."""
         mind = self.engine.behaviour.minds.get(npc)
-        if mind is None or self.engine.talking(npc):
+        if mind is None or (self.engine.talking(npc) and not interrupting):
+            return False
+        talk = self.engine._talk_of(npc)
+        if talk is not None and PLAYER_ID in talk.conversation.participants:
             return False
         return not (mind.goal.activity is Activity.SLEEP and mind.walk is None)
 

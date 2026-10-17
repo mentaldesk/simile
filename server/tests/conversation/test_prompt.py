@@ -53,6 +53,16 @@ def test_the_system_prompt_is_the_speakers_persona_values_and_style() -> None:
     assert "peace of mind" in prompt
 
 
+def test_the_system_prompt_keeps_the_resident_within_what_they_would_know() -> None:
+    prompt = system_prompt(KOFI)
+
+    assert "what someone with your life and job would know" in prompt
+    assert "admit you don't know, or give your own angle rather than expert advice" in prompt
+    assert "a chat between neighbours, not a consultation" in prompt
+    assert "If they want to change the subject, go with it" in prompt
+    assert "say once that you'd rather not and let it go" in prompt
+
+
 def test_the_background_has_the_relationship_history_memories_and_news() -> None:
     rel = meet(KOFI, "henrietta").model_copy(update={"like": 0.1, "familiarity": 0.5})
     history = SharedHistory(
@@ -346,6 +356,11 @@ def test_the_first_turn_has_no_transcript() -> None:
         ),
         ("Kofi: Hi.\nHenrietta Okonkwo-Bell: Hello, Kofi.", Draft("Hi.")),
         ("I told Henrietta: no.", Draft("I told Henrietta: no.")),
+        (
+            "Sit, will you? [connection, warmth]",
+            Draft("Sit, will you?", (CoreValue.CONNECTION,)),
+        ),
+        ("Hi. [laughs] Okay.", Draft("Hi. [laughs] Okay.")),
     ],
 )
 def test_parsing_a_reply(reply: str, draft: Draft) -> None:
