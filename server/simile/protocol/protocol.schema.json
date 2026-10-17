@@ -690,7 +690,6 @@
     },
     "Wall": {
       "additionalProperties": false,
-      "description": "A wall that takes a mural. (x, y) is the westmost tile of a south face, or the northmost\nof an east face, and the wall runs `width` tiles east or south from it.",
       "properties": {
         "id": {
           "maxLength": 64,
@@ -698,15 +697,17 @@
           "type": "string"
         },
         "x": {
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
           "minimum": 0,
           "type": "integer"
         },
         "y": {
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
           "minimum": 0,
           "type": "integer"
         },
         "width": {
-          "description": "In tiles.",
+          "description": "In tiles, east from (x, y) for a south face or south for an east face.",
           "minimum": 1,
           "type": "integer"
         },

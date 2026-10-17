@@ -128,14 +128,20 @@ class Mural(Model):
     image: str = Field(description="The URL of the mural's image, /api/works/<work_id>.png.")
 
 
-class Wall(Model):
-    """A wall that takes a mural. (x, y) is the westmost tile of a south face, or the northmost
-    of an east face, and the wall runs `width` tiles east or south from it."""
+WALL_TILE = (
+    "(x, y) is the building's tile at the west end of a south face or the north end of an east "
+    "face: on its south row or east column, whatever storeys the mural spans. The face runs along "
+    "that tile's south edge (y + 1) or east edge (x + 1)."
+)
 
+
+class Wall(Model):
     id: Id
-    x: int = Field(ge=0)
-    y: int = Field(ge=0)
-    width: int = Field(ge=1, description="In tiles.")
+    x: int = Field(ge=0, description=WALL_TILE)
+    y: int = Field(ge=0, description=WALL_TILE)
+    width: int = Field(
+        ge=1, description="In tiles, east from (x, y) for a south face or south for an east face."
+    )
     face: Face
     bottom: float = Field(ge=0, description="The mural's lower edge, in storeys above the ground.")
     top: float = Field(description="The mural's upper edge, in storeys above the ground.")

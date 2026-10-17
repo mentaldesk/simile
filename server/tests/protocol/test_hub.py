@@ -12,6 +12,7 @@ from simile.protocol import (
     ClockMessage,
     EntityMovedMessage,
     Hub,
+    MuralsMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     Position,
@@ -95,6 +96,43 @@ def test_sends_only_the_snapshot_without_a_clock(client: TestClient, hub: Hub) -
 
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "snapshot"
+        client.portal.call(hub.broadcast, MOVED)
+
+        assert ws.receive_json() == MOVED.model_dump(mode="json")
+
+
+def test_greets_each_new_client_after_the_clock(client: TestClient, hub: Hub) -> None:
+    murals = MuralsMessage(walls=[])
+    hub.greet(lambda: murals)
+    hub.greet(lambda: None)
+    hub.greet(lambda: MOVED)
+
+    with client.websocket_connect("/ws") as ws:
+        welcome(ws)
+        assert ws.receive_json() == murals.model_dump(mode="json")
+        assert ws.receive_json() == MOVED.model_dump(mode="json")
+
+
+def test_a_failing_greeter_is_logged_and_skipped(
+    client: TestClient, hub: Hub, caplog: pytest.LogCaptureFixture
+) -> None:
+    hub.greet(lambda: 1 / 0)
+    hub.greet(lambda: MOVED)
+
+    with caplog.at_level(logging.ERROR), client.websocket_connect("/ws") as ws:
+        welcome(ws)
+        assert ws.receive_json() == MOVED.model_dump(mode="json")
+
+    assert [r.levelname for r in caplog.records] == ["ERROR"]
+
+
+def test_stop_greeting(client: TestClient, hub: Hub) -> None:
+    stop = hub.greet(lambda: MuralsMessage(walls=[]))
+    stop()
+    stop()
+
+    with client.websocket_connect("/ws") as ws:
+        welcome(ws)
         client.portal.call(hub.broadcast, MOVED)
 
         assert ws.receive_json() == MOVED.model_dump(mode="json")

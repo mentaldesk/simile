@@ -203,16 +203,18 @@ export interface MuralsMessage {
   type: 'murals';
   walls: Wall[];
 }
-/**
- * A wall that takes a mural. (x, y) is the westmost tile of a south face, or the northmost
- * of an east face, and the wall runs `width` tiles east or south from it.
- */
 export interface Wall {
   id: string;
+  /**
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   */
   x: number;
+  /**
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   */
   y: number;
   /**
-   * In tiles.
+   * In tiles, east from (x, y) for a south face or south for an east face.
    */
   width: number;
   face: Face;

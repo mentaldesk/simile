@@ -56,6 +56,7 @@ class Hub:
         self.clock: Callable[[], ClockMessage] | None = None
         self.connections: set[Connection] = set()
         self._subscribers: list[tuple[type[BaseModel], Callable[[Any], None]]] = []
+        self._greeters: list[Callable[[], ServerMessage | None]] = []
 
     def broadcast(self, message: Outgoing) -> None:
         if not self.connections:
@@ -76,12 +77,28 @@ class Hub:
 
         return unsubscribe
 
+    def greet(self, greeter: Callable[[], ServerMessage | None]) -> Callable[[], None]:
+        """Send each new client `greeter()`'s message, if any, after the snapshot and clock."""
+        self._greeters.append(greeter)
+
+        def stop() -> None:
+            with suppress(ValueError):
+                self._greeters.remove(greeter)
+
+        return stop
+
     async def serve(self, websocket: WebSocket) -> None:
         await websocket.accept()
         connection = Connection(websocket)
         connection.send(self.snapshot())
         if self.clock:
             connection.send(self.clock())
+        for greeter in tuple(self._greeters):
+            try:
+                if (message := greeter()) is not None:
+                    connection.send(message)
+            except Exception:
+                logger.exception("%r failed to greet a client", greeter)
         self.connections.add(connection)
         writer = asyncio.create_task(connection.write())
         try:
