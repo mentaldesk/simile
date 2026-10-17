@@ -49,6 +49,31 @@ def test_the_readme_tables_top_values_against_persona(npcs: list[Npc]) -> None:
         assert npc.craft and f"| {npc.craft.medium}: {npc.craft.form} |" in row
 
 
+def test_the_readme_lists_the_facts_a_rich_brief_sampled(
+    residents: Callable[[], FakeProvider],
+) -> None:
+    async def run() -> list[Npc]:
+        return [npc async for npc in generate(LLMClient(residents()), 3, seed=5, rich=True)]
+
+    npcs, briefs = asyncio.run(run()), plan(3, 5, rich=True)
+
+    text = readme(npcs, 5, briefs)
+
+    assert "\nuv run simile generate-npcs --count 3 --seed 5 --rich-brief --out <dir>\n" in text
+    sampled = text.split("## Sampled facts")[1]
+    for npc, brief in zip(npcs, briefs, strict=True):
+        assert (facts := brief.facts)
+        [row] = [line for line in sampled.splitlines() if line.startswith(f"| `{npc.id}` ")]
+        assert f"| {facts.origin} | {facts.occupation} | " in row
+        assert all(f"{age}: {event}" in row for age, event in facts.events)
+
+
+def test_the_readme_lists_no_facts_without_a_rich_brief(npcs: list[Npc]) -> None:
+    text = readme(npcs, 5, plan(3, 5))
+
+    assert "Sampled facts" not in text and "--rich-brief" not in text
+
+
 def test_the_readme_shows_a_resident_without_a_craft(npcs: list[Npc]) -> None:
     npc = npcs[0].model_copy(update={"craft": None})
 

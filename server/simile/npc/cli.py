@@ -13,31 +13,41 @@ def register(app: typer.Typer) -> None:
             Path | None, typer.Option(help="Defaults to the repo's content/npcs/.")
         ] = None,
         model: Annotated[str, typer.Option(help="Claude model that writes the NPCs.")] = "sonnet",
+        rich_brief: Annotated[
+            bool,
+            typer.Option(
+                "--rich-brief",
+                help="Also sample each resident's name, origin, occupation and life events in "
+                "code. Needs an --out outside content/.",
+            ),
+        ] = False,
     ) -> None:
         """Generate the village's residents with Claude and write them to content/npcs/."""
         import asyncio
 
         from simile.llm import CallRecord, LLMClient
         from simile.npc.content import NPCS_DIR, write_npcs
-        from simile.npc.generate import HOMES, generate
+        from simile.npc.generate import HOMES, generate, plan
         from simile.schema import Npc
 
         if not 1 <= count <= len(HOMES):
             raise typer.BadParameter(f"must be 1-{len(HOMES)}, one per home", param_hint="--count")
+        if rich_brief and (out is None or out.resolve().is_relative_to(NPCS_DIR.parent)):
+            raise typer.BadParameter("--rich-brief needs one outside content/", param_hint="--out")
 
         calls: list[CallRecord] = []
         llm = LLMClient(listeners=[calls.append])
 
         async def run() -> list[Npc]:
             npcs = []
-            async for npc in generate(llm, count, seed, model=model):
+            async for npc in generate(llm, count, seed, model=model, rich=rich_brief):
                 typer.echo(f"{npc.home}: {npc.name} ({npc.id}), {npc.age}, {npc.occupation}")
                 npcs.append(npc)
             return npcs
 
         npcs = asyncio.run(run())
         directory = out or NPCS_DIR
-        write_npcs(npcs, directory, seed)
+        write_npcs(npcs, directory, seed, briefs=plan(count, seed, rich=True) if rich_brief else ())
         typer.echo(f"Wrote {len(npcs)} NPCs to {directory} with {len(calls)} Claude calls")
 
     npc = typer.Typer(no_args_is_help=True, help="The village's residents.")
