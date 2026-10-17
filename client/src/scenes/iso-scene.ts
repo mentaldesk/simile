@@ -43,6 +43,7 @@ import {
   type SceneryObject,
   type TiledMapWithTiles,
 } from '../world/iso';
+import { IsoMurals, muralWalls, setMuralView, skewed } from '../world/iso/murals';
 import { IsoCharacters, pixelArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
@@ -84,6 +85,7 @@ export class IsoScene extends Phaser.Scene {
   private charactersLoad?: Promise<IsoCharacters>;
   private characters?: IsoCharacters;
   private geometry?: Geometry;
+  private murals?: IsoMurals<ImageBitmap>;
 
   constructor() {
     super(ISO_SCENE);
@@ -110,6 +112,8 @@ export class IsoScene extends Phaser.Scene {
         listenerPosition: () => screenAligned(world.player?.position),
       }),
       server.on('snapshot', () => this.throttle.forget()),
+      setMuralView({ wallAt: ({ x, y }) => this.murals?.wallAt(this.cameras.main.getWorldPoint(x, y)) }),
+      () => this.murals?.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
     void this.start();
@@ -141,6 +145,11 @@ export class IsoScene extends Phaser.Scene {
       lightMap: this.loaded.get(set)!.lightMap,
     }));
     characters.draw(bodies, dt, (at) => this.figureAt(at), layers, (feet) => residentLight(lit, feet));
+    this.murals?.draw(
+      dt,
+      (feet) => residentLight(lit, feet).tint,
+      (id) => geometry.buildings.find(({ object }) => object.id === id)?.cutaway.alpha ?? 1,
+    );
     this.follow(figure);
   }
 
@@ -186,6 +195,14 @@ export class IsoScene extends Phaser.Scene {
         .filter(({ kind }) => kind === 'building')
         .map((object) => ({ object, cutaway: new Cutaway() })),
     };
+    this.murals ??= new IsoMurals(muralWalls, manifest.objects, manifest.tile, {
+      load: (url) => assets.loadBitmap(url),
+      paint: (key, bitmap, box, transform) => {
+        this.textures.addCanvas(key, skewed(bitmap, box, transform));
+      },
+      unpaint: (key) => this.textures.remove(key),
+      image: (key, x, y) => this.add.image(x, y, key).setOrigin(0),
+    });
   }
 
   private placing(scenery: SetScenery): (() => void)[] {
