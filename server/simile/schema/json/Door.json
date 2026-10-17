@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "MapTile": {
+      "additionalProperties": false,
+      "description": "A tile on a given map: the village or an interior.",
+      "properties": {
+        "map": {
+          "minLength": 1,
+          "title": "Map",
+          "type": "string"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "map",
+        "x",
+        "y"
+      ],
+      "title": "MapTile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A way into a building. Stepping onto either tile puts you on the other one.",
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "outside": {
+      "$ref": "#/$defs/MapTile",
+      "description": "The walkable tile in front of the building's door."
+    },
+    "inside": {
+      "$ref": "#/$defs/MapTile",
+      "description": "The mat just inside the interior's entrance."
+    }
+  },
+  "required": [
+    "id",
+    "outside",
+    "inside"
+  ],
+  "title": "Door",
+  "type": "object"
+}

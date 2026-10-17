@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "InteractableKind": {
+      "enum": [
+        "counter",
+        "painting",
+        "machine"
+      ],
+      "title": "InteractableKind",
+      "type": "string"
+    },
+    "Tile": {
+      "additionalProperties": false,
+      "description": "A cell of the map grid, counted in tiles from the top-left corner.",
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "title": "Tile",
+      "type": "object"
+    },
+    "TileArea": {
+      "additionalProperties": false,
+      "properties": {
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        },
+        "width": {
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "TileArea",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Something on an interior's map that you can use, from one of its stand tiles.",
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "label": {
+      "description": "What it's called, e.g. \"3D printer\".",
+      "minLength": 1,
+      "title": "Label",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/InteractableKind"
+    },
+    "map": {
+      "minLength": 1,
+      "title": "Map",
+      "type": "string"
+    },
+    "area": {
+      "$ref": "#/$defs/TileArea",
+      "description": "The tiles it covers."
+    },
+    "stand": {
+      "description": "The tiles you use it from, on the same map.",
+      "items": {
+        "$ref": "#/$defs/Tile"
+      },
+      "minItems": 1,
+      "title": "Stand",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "label",
+    "kind",
+    "map",
+    "area",
+    "stand"
+  ],
+  "title": "Interactable",
+  "type": "object"
+}

@@ -6,6 +6,7 @@ import type {
   ClockMessage,
   EntityMovedMessage,
   MuralsMessage,
+  PlayerMoveMessage,
   SnapshotMessage,
   WatchNpcMessage,
   WorksMessage,
@@ -170,6 +171,27 @@ describe('ServerConnection', () => {
     expect(received.mock.calls).toEqual([[snapshot], [moved]]);
   });
 
+  it('delivers positions with their map, and without one from older servers', () => {
+    const inside: SnapshotMessage = {
+      ...snapshot,
+      entities: [
+        { id: 'mei', kind: 'npc', name: 'Mei Lin', position: { x: 4, y: 6, map: 'gallery' } },
+      ],
+    };
+    const through: EntityMovedMessage = {
+      type: 'entity_moved',
+      entity_id: 'mei',
+      position: { x: 31, y: 13, map: 'village' },
+    };
+    const received = vi.fn();
+    connection.on('snapshot', received);
+    connection.on('entity_moved', received);
+
+    for (const message of [inside, through, moved]) connection.dispatch(JSON.stringify(message));
+
+    expect(received.mock.calls).toEqual([[inside], [through], [moved]]);
+  });
+
   it('delivers the clock to its handlers', () => {
     const received = vi.fn();
     connection.on('clock', received);
@@ -246,6 +268,19 @@ describe('ServerConnection', () => {
     expect(connection.send(move)).toBe(true);
 
     expect(latest().sent.map((text) => JSON.parse(text))).toEqual([move]);
+  });
+
+  it('sends player_move with the map the player is on, or without one for the village', () => {
+    const moves: PlayerMoveMessage[] = [
+      { type: 'player_move', position: { x: 10, y: 11.5, map: 'coffee_shop' } },
+      { type: 'player_move', position: { x: 31, y: 13 } },
+    ];
+    connection.connect();
+    latest().open();
+
+    for (const move of moves) connection.send(move);
+
+    expect(latest().sent.map((text) => JSON.parse(text))).toEqual(moves);
   });
 
   it('sends watch_npc with an NPC id, and with null to stop watching', () => {

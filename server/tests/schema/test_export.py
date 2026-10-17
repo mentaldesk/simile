@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -7,6 +8,8 @@ from typer.testing import CliRunner
 
 from simile.cli import create_cli
 from simile.schema import MODELS, export
+
+from .conftest import COUNTER, DOOR
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
@@ -77,6 +80,12 @@ def test_exported_schema_accepts_fixtures(name: str, pattern: str) -> None:
         data = json.loads(path.read_text())
         for item in data if isinstance(data, list) else [data]:
             schema(name).validate(item)
+
+
+@pytest.mark.parametrize(("name", "item"), [("Door", DOOR), ("Interactable", COUNTER)])
+def test_exported_schema_accepts_doors_and_interactables(name: str, item: dict[str, Any]) -> None:
+    assert schema(name).is_valid(item)
+    assert not schema(name).is_valid(item | {"extra": 1})
 
 
 def test_exported_schema_rejects_unknown_fields() -> None:
