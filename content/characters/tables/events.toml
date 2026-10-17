@@ -1,0 +1,1500 @@
+# Life events: the ages each can happen at, a rough base weight, an impact from 1 to 100
+# anchored on Holmes and Rahe where one maps, and a valence from -1 to 1. README.md explains the
+# conditions. Text never says how old they were: the age is a separate field.
+
+# Childhood
+
+[[event]]
+id = "parents_divorced"
+text = "their parents divorced"
+ages = [2, 16]
+weight = 6
+impact = 60
+valence = -0.6
+when = { upbringing = ["single_parent", "blended"] }
+
+[[event]]
+id = "lost_parent_young"
+text = "lost a parent"
+ages = [2, 16]
+weight = 3
+impact = 85
+valence = -0.9
+when = { upbringing = ["single_parent", "blended", "grandparents", "care"] }
+
+[[event]]
+id = "went_into_care"
+text = "went into foster care"
+ages = [1, 14]
+impact = 70
+valence = -0.7
+when = { upbringing = ["care"] }
+implied = { upbringing = ["care"] }
+
+[[event]]
+id = "gained_stepfamily"
+text = "gained a stepfamily when a parent remarried"
+ages = [3, 16]
+impact = 39
+valence = 0.1
+when = { upbringing = ["blended"] }
+implied = { upbringing = ["blended"] }
+
+[[event]]
+id = "family_lost_home"
+text = "their family lost its home"
+ages = [3, 16]
+weight = 0.8
+impact = 45
+valence = -0.6
+boost = { "background=working" = 1.5 }
+
+[[event]]
+id = "childhood_illness"
+text = "a long illness kept them out of school for a year"
+ages = [5, 15]
+weight = 0.6
+impact = 50
+valence = -0.4
+
+[[event]]
+id = "sibling_died"
+text = "a brother or sister died"
+ages = [3, 18]
+weight = 0.3
+impact = 80
+valence = -0.9
+rare = true
+when = { siblings = { min = 1 } }
+
+[[event]]
+id = "bullied"
+text = "bullied badly at school"
+ages = [8, 15]
+weight = 2
+impact = 35
+valence = -0.6
+lean = { social_self_esteem = -0.6, social_boldness = -0.4 }
+
+[[event]]
+id = "scholarship"
+text = "won a scholarship to a selective school"
+ages = [10, 13]
+weight = 0.5
+impact = 30
+valence = 0.6
+when = { background = ["working", "intermediate"] }
+lean = { knowledge = 1, inquisitiveness = 0.5 }
+
+[[event]]
+id = "moved_schools_often"
+text = "changed schools five times as the family followed work"
+ages = [5, 15]
+weight = 0.7
+impact = 30
+valence = -0.3
+
+[[event]]
+id = "boarding_school"
+text = "sent away to boarding school"
+ages = [7, 13]
+weight = 0.6
+impact = 35
+valence = -0.2
+when = { background = ["professional"] }
+
+[[event]]
+id = "parent_lost_job"
+text = "a parent lost their job and the family struggled for years"
+ages = [4, 16]
+weight = 1.5
+impact = 40
+valence = -0.5
+boost = { "background=working" = 1.5 }
+
+[[event]]
+id = "parent_seriously_ill"
+text = "a parent was seriously ill for much of their childhood"
+ages = [4, 16]
+weight = 0.8
+impact = 50
+valence = -0.6
+
+[[event]]
+id = "young_carer"
+text = "looked after a disabled parent while still at school"
+ages = [9, 17]
+weight = 0.4
+impact = 50
+valence = -0.4
+lean = { responsibility = 1 }
+
+[[event]]
+id = "hospital_months"
+text = "spent months in hospital after a bad fall"
+ages = [5, 14]
+weight = 0.4
+impact = 45
+valence = -0.4
+
+[[event]]
+id = "national_competition"
+text = "won a national competition at school"
+ages = [9, 17]
+weight = 0.5
+impact = 28
+valence = 0.7
+rare = true
+lean = { success = 0.8, diligence = 0.6 }
+
+[[event]]
+id = "family_shop"
+text = "helped run the family shop after school"
+ages = [9, 16]
+weight = 0.6
+impact = 20
+valence = 0.2
+when = { background = ["intermediate"] }
+
+[[event]]
+id = "parent_in_prison"
+text = "a parent went to prison"
+ages = [4, 16]
+weight = 0.3
+impact = 55
+valence = -0.7
+rare = true
+
+[[event]]
+id = "grandparent_died"
+text = "lost the grandparent who raised them"
+ages = [10, 40]
+weight = 2
+impact = 63
+valence = -0.8
+when = { upbringing = ["grandparents"] }
+
+[[event]]
+id = "best_friend_moved"
+text = "their best friend moved away and they never found another like them"
+ages = [8, 15]
+weight = 0.5
+impact = 20
+valence = -0.4
+lean = { sentimentality = 0.6 }
+
+# Growing up
+
+[[event]]
+id = "left_school_early"
+text = "left school to start work"
+ages = [15, 17]
+weight = 2
+impact = 26
+valence = 0
+when = { education = ["early_leaver", "vocational"] }
+
+[[event]]
+id = "teenage_parent"
+text = "became a parent while still a teenager"
+ages = [16, 19]
+weight = 0.6
+impact = 60
+valence = 0
+when = { children = { min = 1 } }
+
+[[event]]
+id = "ran_away"
+text = "ran away from home for a week"
+ages = [13, 17]
+weight = 0.3
+impact = 30
+valence = -0.4
+lean = { freedom = 1, obedience = -0.8 }
+
+[[event]]
+id = "sport_champion"
+text = "won a regional championship in their sport"
+ages = [12, 28]
+weight = 0.8
+impact = 28
+valence = 0.8
+lean = { discipline = 0.8, success = 0.6 }
+
+[[event]]
+id = "knee_injury"
+text = "an injury ended their hopes of playing sport for a living"
+ages = [16, 26]
+weight = 0.4
+impact = 40
+valence = -0.6
+rare = true
+boost = { sport_champion = 6 }
+
+[[event]]
+id = "band"
+text = "played in a band that nearly got signed"
+ages = [16, 30]
+weight = 0.5
+impact = 25
+valence = 0.3
+rare = true
+lean = { creativity = 1.2, adventure = 0.5 }
+
+[[event]]
+id = "came_out"
+text = "came out to their family"
+ages = [14, 45]
+weight = 1.2
+impact = 45
+valence = 0.2
+
+[[event]]
+id = "shoplifting"
+text = "got caught shoplifting and cautioned by the police"
+ages = [13, 18]
+weight = 0.5
+impact = 20
+valence = -0.3
+lean = { honesty = -1, obedience = -0.8 }
+
+[[event]]
+id = "school_exchange"
+text = "spent a year abroad on a school exchange"
+ages = [15, 18]
+weight = 0.4
+impact = 25
+valence = 0.6
+when = { background = ["intermediate", "professional"] }
+lean = { adventure = 1, open_mindedness = 0.8 }
+
+[[event]]
+id = "failed_exams"
+text = "failed their final exams and had to resit a year"
+ages = [16, 18]
+weight = 0.8
+impact = 30
+valence = -0.5
+lean = { discipline = -0.8 }
+
+[[event]]
+id = "first_in_family_university"
+text = "first in their family to go to university"
+ages = [18, 20]
+weight = 2
+impact = 30
+valence = 0.6
+when = { education = ["degree", "postgraduate"], background = ["working", "intermediate"] }
+
+[[event]]
+id = "dropped_out"
+text = "dropped out of university"
+ages = [18, 22]
+weight = 1.2
+impact = 35
+valence = -0.3
+when = { education = ["school", "vocational"] }
+lean = { discipline = -0.7, freedom = 0.5 }
+
+[[event]]
+id = "travelled_broke"
+text = "spent a year travelling on almost no money"
+ages = [18, 30]
+impact = 25
+valence = 0.7
+lean = { adventure = 1.5, freedom = 1, security = -0.8 }
+
+[[event]]
+id = "joined_army"
+text = "joined the army"
+ages = [16, 24]
+weight = 0.6
+impact = 40
+valence = 0.1
+lean = { obedience = 1.2, discipline = 1, adventure = 0.5 }
+boost = { "occupation_group=armed_forces" = 20 }
+
+[[event]]
+id = "apprenticeship"
+text = "took an apprenticeship with a local firm"
+ages = [16, 19]
+weight = 1.5
+impact = 25
+valence = 0.4
+when = { education = ["vocational"] }
+
+[[event]]
+id = "teenage_depression"
+text = "a long spell of depression in their teens"
+ages = [14, 19]
+weight = 0.6
+impact = 40
+valence = -0.6
+lean = { anxiety = 0.8 }
+
+[[event]]
+id = "summer_fruit_picking"
+text = "spent a summer picking fruit abroad"
+ages = [17, 25]
+weight = 0.5
+impact = 10
+valence = 0.4
+lean = { adventure = 0.6 }
+
+[[event]]
+id = "driving_test"
+text = "passed their driving test on the seventh attempt"
+ages = [17, 50]
+weight = 0.4
+impact = 10
+valence = 0.3
+lean = { diligence = 0.5, prudence = -0.4 }
+
+# Study
+
+[[event]]
+id = "top_of_year"
+text = "graduated top of their year"
+ages = [21, 26]
+weight = 0.5
+impact = 28
+valence = 0.8
+when = { education = ["degree", "postgraduate"] }
+lean = { ambition = 0.8, knowledge = 1 }
+
+[[event]]
+id = "phd"
+text = "finished a PhD"
+ages = [26, 40]
+impact = 30
+valence = 0.6
+when = { education = ["postgraduate"] }
+lean = { knowledge = 1.5 }
+
+[[event]]
+id = "back_to_study"
+text = "went back to study as an adult"
+ages = [25, 60]
+weight = 1.2
+impact = 26
+valence = 0.5
+lean = { knowledge = 1, self_actualization = 1 }
+
+[[event]]
+id = "failed_qualifying_exam"
+text = "failed the exam to qualify in their profession, twice"
+ages = [22, 35]
+weight = 0.4
+impact = 30
+valence = -0.5
+when = { education = ["degree", "postgraduate"] }
+
+[[event]]
+id = "learned_to_read"
+text = "learned to read properly as an adult"
+ages = [20, 60]
+weight = 0.3
+impact = 30
+valence = 0.7
+rare = true
+when = { education = ["early_leaver"] }
+
+[[event]]
+id = "night_school"
+text = "got their qualifications at night school while working"
+ages = [18, 40]
+weight = 0.8
+impact = 25
+valence = 0.6
+when = { education = ["school", "vocational", "degree"] }
+lean = { discipline = 1, ambition = 0.8 }
+
+[[event]]
+id = "learned_language"
+text = "became fluent in a new language as an adult"
+ages = [20, 70]
+weight = 0.6
+impact = 15
+valence = 0.6
+lean = { knowledge = 0.8, open_mindedness = 0.8 }
+
+# Work
+
+[[event]]
+id = "sacked_first_job"
+text = "sacked from their first job"
+ages = [16, 24]
+impact = 30
+valence = -0.3
+lean = { discipline = -0.7, obedience = -0.7 }
+
+[[event]]
+id = "made_redundant"
+text = "made redundant"
+ages = [22, 64]
+weight = 2.5
+impact = 45
+valence = -0.6
+
+[[event]]
+id = "dismissed"
+text = "dismissed from a job they loved"
+ages = [22, 60]
+weight = 0.7
+impact = 47
+valence = -0.7
+
+[[event]]
+id = "business_failed"
+text = "a business they started went bust"
+ages = [25, 65]
+impact = 45
+valence = -0.6
+lean = { ambition = 1, adventure = 0.6, security = -0.6 }
+
+[[event]]
+id = "business_sold"
+text = "built a small business from nothing and sold it"
+ages = [30, 68]
+weight = 0.4
+impact = 35
+valence = 0.7
+rare = true
+lean = { ambition = 1.2, success = 1 }
+
+[[event]]
+id = "promoted_to_run"
+text = "promoted to run the place they worked"
+ages = [28, 62]
+weight = 1.2
+impact = 29
+valence = 0.6
+when = { work = ["working", "retired"] }
+lean = { ambition = 1, success = 0.8 }
+
+[[event]]
+id = "career_change"
+text = "changed career completely"
+ages = [26, 55]
+weight = 1.5
+impact = 36
+valence = 0.3
+lean = { self_actualization = 1, freedom = 0.6, security = -0.5 }
+
+[[event]]
+id = "whistleblower"
+text = "reported their employer for fraud and lost their job"
+ages = [25, 62]
+weight = 0.3
+impact = 50
+valence = -0.3
+rare = true
+lean = { justice = 1.5, honesty = 1.5, obedience = -0.8 }
+
+[[event]]
+id = "work_accident"
+text = "badly hurt in an accident at work"
+ages = [18, 64]
+weight = 0.6
+impact = 53
+valence = -0.6
+boost = { "occupation_group=craft" = 2.5, "occupation_group=elementary" = 2, "occupation_group=operators" = 2, "occupation_group=agricultural" = 2.5 }
+
+[[event]]
+id = "miserable_boss"
+text = "worked for years under a boss who made their life a misery"
+ages = [20, 60]
+impact = 30
+valence = -0.5
+lean = { obedience = 0.5, social_boldness = -0.5 }
+
+[[event]]
+id = "on_strike"
+text = "spent months on strike"
+ages = [18, 64]
+weight = 0.5
+impact = 30
+valence = 0
+when = { work = ["working", "retired", "unemployed"] }
+lean = { equality = 1, justice = 0.8, loyalty = 0.6 }
+
+[[event]]
+id = "burned_out"
+text = "burned out and was off work for six months"
+ages = [25, 60]
+impact = 45
+valence = -0.5
+lean = { ambition = 0.6, perfectionism = 0.8 }
+
+[[event]]
+id = "worked_abroad"
+text = "worked abroad for several years"
+ages = [22, 50]
+weight = 0.8
+impact = 30
+valence = 0.5
+lean = { adventure = 1, open_mindedness = 0.6 }
+
+[[event]]
+id = "national_award"
+text = "won a national award for their work"
+ages = [28, 68]
+weight = 0.3
+impact = 28
+valence = 0.8
+rare = true
+when = { work = ["working", "retired"] }
+lean = { success = 1, ambition = 0.8 }
+
+[[event]]
+id = "turned_down_promotion"
+text = "turned down a big promotion to stay near family"
+ages = [28, 55]
+weight = 0.6
+impact = 25
+valence = 0.2
+lean = { connection = 1, loyalty = 1, ambition = -1 }
+
+[[event]]
+id = "took_over_family_business"
+text = "took over the family business"
+ages = [22, 45]
+weight = 0.6
+impact = 30
+valence = 0.3
+when = { background = ["intermediate"] }
+lean = { tradition = 1, responsibility = 0.8 }
+
+[[event]]
+id = "long_unemployed"
+text = "out of work for two years"
+ages = [20, 60]
+impact = 40
+valence = -0.6
+boost = { "work=unemployed" = 3 }
+
+[[event]]
+id = "two_jobs"
+text = "worked two jobs for years to pay the bills"
+ages = [20, 55]
+weight = 1.2
+impact = 25
+valence = -0.3
+boost = { "background=working" = 1.5 }
+
+[[event]]
+id = "crash_2008"
+text = "lost their job in the 2008 financial crash"
+ages = [20, 64]
+years = [2008, 2010]
+weight = 0.8
+impact = 47
+valence = -0.6
+
+[[event]]
+id = "wrongly_accused"
+text = "wrongly accused of stealing at work"
+ages = [18, 65]
+weight = 0.5
+impact = 40
+valence = -0.6
+
+[[event]]
+id = "mentor"
+text = "an older colleague took them under their wing and changed their life"
+ages = [16, 35]
+weight = 0.8
+impact = 25
+valence = 0.8
+
+[[event]]
+id = "retired_early_ill"
+text = "had to stop working early because of their health"
+ages = [45, 64]
+weight = 2
+impact = 45
+valence = -0.5
+when = { work = ["retired", "sick"], health = { not = ["none"] } }
+
+# Money
+
+[[event]]
+id = "inheritance"
+text = "an unexpected inheritance"
+ages = [18, 85]
+weight = 0.6
+impact = 38
+valence = 0.5
+
+[[event]]
+id = "lottery"
+text = "won a modest lottery prize"
+ages = [18, 85]
+weight = 0.3
+impact = 30
+valence = 0.6
+rare = true
+
+[[event]]
+id = "lost_savings"
+text = "lost their savings in a bad investment"
+ages = [30, 75]
+weight = 0.7
+impact = 38
+valence = -0.6
+lean = { ambition = 0.5, prudence = -1 }
+
+[[event]]
+id = "bankrupt"
+text = "declared bankrupt"
+ages = [25, 70]
+weight = 0.4
+impact = 45
+valence = -0.7
+rare = true
+boost = { business_failed = 4 }
+
+[[event]]
+id = "repossessed"
+text = "their home was repossessed"
+ages = [25, 70]
+weight = 0.4
+impact = 45
+valence = -0.7
+rare = true
+
+[[event]]
+id = "debts"
+text = "ran up debts that took ten years to pay off"
+ages = [20, 60]
+impact = 35
+valence = -0.5
+lean = { pleasure = 0.8, discipline = -0.8 }
+
+[[event]]
+id = "first_home"
+text = "bought their first home"
+ages = [22, 50]
+weight = 1.2
+impact = 32
+valence = 0.6
+lean = { security = 0.8 }
+
+[[event]]
+id = "scammed"
+text = "lost thousands to a phone scam"
+ages = [30, 90]
+weight = 0.5
+impact = 30
+valence = -0.5
+
+[[event]]
+id = "lent_savings"
+text = "lent a friend their savings and never got them back"
+ages = [20, 70]
+weight = 0.6
+impact = 30
+valence = -0.5
+lean = { loyalty = 1, compassion = 0.6 }
+
+[[event]]
+id = "gambling"
+text = "lost a lot of money gambling before they stopped"
+ages = [20, 65]
+weight = 0.5
+impact = 40
+valence = -0.5
+lean = { pleasure = 1, adventure = 0.5, discipline = -1 }
+
+[[event]]
+id = "evicted"
+text = "evicted from a flat they loved"
+ages = [18, 70]
+weight = 0.6
+impact = 30
+valence = -0.6
+boost = { "background=working" = 1.3 }
+
+# Home
+
+[[event]]
+id = "homeless"
+text = "homeless for several months"
+ages = [16, 60]
+weight = 0.3
+impact = 45
+valence = -0.8
+rare = true
+
+[[event]]
+id = "house_fire"
+text = "a fire destroyed most of what they owned"
+ages = [8, 85]
+weight = 0.3
+impact = 40
+valence = -0.7
+rare = true
+
+[[event]]
+id = "flooded"
+text = "their home flooded and they lived in a caravan for a year"
+ages = [10, 85]
+weight = 0.3
+impact = 35
+valence = -0.5
+rare = true
+
+[[event]]
+id = "moved_to_city"
+text = "moved to a big city on their own"
+ages = [17, 30]
+weight = 1.5
+impact = 20
+valence = 0.4
+lean = { adventure = 0.8, independence = 0.8 }
+
+[[event]]
+id = "burgled"
+text = "their home was burgled"
+ages = [18, 90]
+impact = 20
+valence = -0.4
+
+[[event]]
+id = "built_house"
+text = "built their own house"
+ages = [28, 65]
+weight = 0.3
+impact = 32
+valence = 0.7
+rare = true
+lean = { independence = 1, discipline = 0.8 }
+
+[[event]]
+id = "moved_back_home"
+text = "moved back in with their parents"
+ages = [25, 40]
+weight = 0.8
+impact = 25
+valence = -0.3
+
+[[event]]
+id = "narrowboat"
+text = "lived on a narrowboat for five years"
+ages = [20, 60]
+weight = 0.3
+impact = 20
+valence = 0.4
+rare = true
+lean = { freedom = 1.2, adventure = 0.8, security = -0.6 }
+
+[[event]]
+id = "emigrated_back"
+text = "emigrated, then came back after two years"
+ages = [20, 55]
+weight = 0.4
+impact = 30
+valence = -0.2
+lean = { adventure = 0.8 }
+
+# Love and family
+
+[[event]]
+id = "married"
+text = "married"
+ages = [18, 70]
+weight = 1.2
+impact = 50
+valence = 0.7
+when = { partnership = ["married", "divorced", "widowed"] }
+
+[[event]]
+id = "divorced"
+text = "their marriage ended in divorce"
+ages = [22, 85]
+impact = 73
+valence = -0.6
+when = { partnership = ["divorced", "married", "partnered"], age = { min = 25 } }
+implied = { partnership = ["divorced"] }
+
+[[event]]
+id = "widowed"
+text = "widowed"
+ages = [25, 95]
+impact = 100
+valence = -1
+when = { partnership = ["widowed", "married", "partnered"], age = { min = 30 } }
+implied = { partnership = ["widowed"] }
+weight = 0.3
+
+[[event]]
+id = "remarried"
+text = "married again"
+ages = [28, 85]
+weight = 3
+impact = 50
+valence = 0.6
+when = { partnership = ["married"] }
+after = ["divorced", "widowed"]
+
+[[event]]
+id = "separated_reconciled"
+text = "separated from their partner for a year, then got back together"
+ages = [25, 70]
+weight = 0.6
+impact = 45
+valence = 0.2
+when = { partnership = ["married", "partnered"] }
+
+[[event]]
+id = "partner_affair"
+text = "found out their partner was having an affair"
+ages = [22, 70]
+impact = 50
+valence = -0.8
+
+[[event]]
+id = "had_affair"
+text = "had an affair that nearly ended their marriage"
+ages = [25, 70]
+weight = 0.7
+impact = 45
+valence = -0.4
+when = { partnership = ["married", "divorced", "widowed"] }
+lean = { honesty = -1, pleasure = 0.8, loyalty = -0.8 }
+
+[[event]]
+id = "first_child"
+text = "had their first child"
+ages = [18, 45]
+weight = 1.2
+impact = 40
+valence = 0.8
+when = { children = { min = 1 } }
+not_with = ["teenage_parent"]
+
+[[event]]
+id = "twins"
+text = "had twins"
+ages = [20, 45]
+weight = 0.3
+impact = 40
+valence = 0.6
+rare = true
+when = { children = { min = 2 } }
+
+[[event]]
+id = "adopted"
+text = "adopted a child"
+ages = [26, 50]
+weight = 0.4
+impact = 39
+valence = 0.8
+when = { children = { min = 1 } }
+
+[[event]]
+id = "fostered"
+text = "fostered children for several years"
+ages = [30, 65]
+weight = 0.4
+impact = 30
+valence = 0.5
+lean = { compassion = 1.5, responsibility = 0.8 }
+
+[[event]]
+id = "miscarriage"
+text = "lost a baby before it was born"
+ages = [20, 45]
+impact = 55
+valence = -0.8
+
+[[event]]
+id = "couldnt_have_children"
+text = "tried for years to have children and couldn't"
+ages = [28, 45]
+weight = 0.8
+impact = 50
+valence = -0.7
+when = { children = { max = 0 } }
+
+[[event]]
+id = "youngest_left_home"
+text = "their youngest left home"
+ages = [40, 70]
+weight = 1.2
+impact = 29
+valence = -0.1
+when = { children = { min = 1 }, age = { min = 42 } }
+
+[[event]]
+id = "child_estranged"
+text = "a grown child stopped speaking to them"
+ages = [42, 90]
+weight = 0.6
+impact = 50
+valence = -0.8
+when = { children = { min = 1 } }
+
+[[event]]
+id = "grandparent"
+text = "became a grandparent"
+ages = [38, 90]
+weight = 1.5
+impact = 39
+valence = 0.8
+when = { children = { min = 1 } }
+
+[[event]]
+id = "child_heart_condition"
+text = "their child was born with a serious heart condition"
+ages = [20, 45]
+weight = 0.3
+impact = 50
+valence = -0.3
+when = { children = { min = 1 } }
+
+[[event]]
+id = "child_died"
+text = "lost a child"
+ages = [22, 90]
+weight = 0.1
+impact = 100
+valence = -1
+rare = true
+when = { children = { min = 1 } }
+
+[[event]]
+id = "sibling_estranged"
+text = "fell out with a brother or sister and stopped speaking"
+ages = [18, 80]
+weight = 1.2
+impact = 35
+valence = -0.6
+when = { siblings = { min = 1 } }
+lean = { forgivingness = -0.8 }
+
+[[event]]
+id = "caring_for_parent"
+text = "spent years caring for a sick parent"
+ages = [30, 70]
+weight = 1.5
+impact = 44
+valence = -0.3
+lean = { responsibility = 1, compassion = 0.8, loyalty = 0.6 }
+
+[[event]]
+id = "nursed_partner"
+text = "nursed their partner through a long illness"
+ages = [35, 90]
+weight = 0.8
+impact = 44
+valence = -0.4
+when = { partnership = ["married", "partnered", "widowed"] }
+
+[[event]]
+id = "long_distance"
+text = "spent years in a long-distance relationship"
+ages = [20, 45]
+weight = 0.6
+impact = 25
+valence = 0.1
+
+[[event]]
+id = "called_off_wedding"
+text = "called off their wedding a month before the day"
+ages = [22, 45]
+weight = 0.5
+impact = 40
+valence = -0.4
+
+[[event]]
+id = "met_birth_parent"
+text = "met their birth mother for the first time"
+ages = [16, 60]
+weight = 0.2
+impact = 40
+valence = 0.2
+rare = true
+
+[[event]]
+id = "found_half_brother"
+text = "found out they had a half-brother through a DNA test"
+ages = [18, 75]
+weight = 0.4
+impact = 30
+valence = 0.1
+years = [2012, 2026]
+
+[[event]]
+id = "parent_died"
+text = "a parent died"
+ages = [20, 85]
+weight = 3
+impact = 63
+valence = -0.7
+
+[[event]]
+id = "both_parents_died"
+text = "both parents died within a year of each other"
+ages = [30, 80]
+weight = 0.5
+impact = 70
+valence = -0.8
+not_with = ["parent_died", "lost_parent_young"]
+
+[[event]]
+id = "friend_died"
+text = "their closest friend died suddenly"
+ages = [16, 85]
+weight = 1.2
+impact = 37
+valence = -0.8
+
+[[event]]
+id = "nursed_friend"
+text = "looked after a dying friend through their last months"
+ages = [25, 85]
+weight = 0.5
+impact = 37
+valence = -0.3
+lean = { compassion = 1 }
+
+[[event]]
+id = "parent_care_home"
+text = "moved a parent into a care home against their wishes"
+ages = [35, 75]
+weight = 0.6
+impact = 35
+valence = -0.4
+
+[[event]]
+id = "first_love_returned"
+text = "got back together with their first love decades later"
+ages = [40, 85]
+weight = 0.3
+impact = 40
+valence = 0.8
+rare = true
+when = { partnership = ["married", "partnered"] }
+
+[[event]]
+id = "gave_kidney"
+text = "gave a kidney to their brother"
+ages = [20, 65]
+weight = 0.15
+impact = 40
+valence = 0.5
+rare = true
+when = { siblings = { min = 1 } }
+lean = { compassion = 1.5, loyalty = 1 }
+
+[[event]]
+id = "friend_betrayed"
+text = "a close friend betrayed them"
+ages = [16, 70]
+impact = 37
+valence = -0.7
+
+[[event]]
+id = "let_friend_down"
+text = "let a friend down badly and lost them"
+ages = [16, 70]
+weight = 0.6
+impact = 30
+valence = -0.5
+lean = { loyalty = -0.8 }
+
+# Health
+
+[[event]]
+id = "cancer"
+text = "treated for cancer, now in remission"
+ages = [25, 85]
+impact = 53
+valence = -0.4
+
+[[event]]
+id = "heart_attack"
+text = "survived a heart attack"
+ages = [40, 85]
+weight = 0.8
+impact = 53
+valence = -0.5
+boost = { "health=heart" = 4 }
+
+[[event]]
+id = "car_crash"
+text = "a car crash and a long recovery"
+ages = [17, 80]
+weight = 0.8
+impact = 53
+valence = -0.6
+
+[[event]]
+id = "depression"
+text = "a long spell of depression"
+ages = [18, 70]
+weight = 1.5
+impact = 45
+valence = -0.6
+lean = { anxiety = 0.8, liveliness = -0.6 }
+boost = { "health=depression" = 4 }
+
+[[event]]
+id = "stopped_drinking"
+text = "stopped drinking after years of drinking too much"
+ages = [25, 70]
+weight = 0.8
+impact = 40
+valence = 0.5
+lean = { pleasure = 0.6 }
+
+[[event]]
+id = "lost_eye_sight"
+text = "lost the sight in one eye"
+ages = [10, 85]
+weight = 0.3
+impact = 45
+valence = -0.5
+rare = true
+
+[[event]]
+id = "adhd_diagnosis"
+text = "diagnosed with ADHD as an adult"
+ages = [25, 60]
+weight = 0.4
+impact = 30
+valence = 0.3
+lean = { organization = -0.8, prudence = -0.6 }
+
+[[event]]
+id = "back_surgery"
+text = "had major back surgery and learned to walk again"
+ages = [30, 80]
+weight = 0.3
+impact = 50
+valence = -0.4
+rare = true
+boost = { "health=back_pain" = 4, "health=wheelchair" = 4 }
+
+[[event]]
+id = "nearly_drowned"
+text = "nearly drowned"
+ages = [6, 60]
+weight = 0.3
+impact = 40
+valence = -0.5
+rare = true
+
+[[event]]
+id = "covid_hospital"
+text = "spent weeks in hospital with Covid"
+ages = [25, 95]
+years = [2020, 2022]
+weight = 0.5
+impact = 53
+valence = -0.6
+boost = { "health=long_covid" = 5 }
+
+[[event]]
+id = "lockdown_alone"
+text = "spent the Covid lockdowns on their own"
+ages = [18, 95]
+years = [2020, 2021]
+weight = 0.6
+impact = 30
+valence = -0.4
+when = { partnership = ["single", "divorced", "widowed"] }
+
+[[event]]
+id = "stroke"
+text = "had a stroke and fought back from it"
+ages = [45, 90]
+weight = 0.5
+impact = 53
+valence = -0.5
+boost = { "health=stroke" = 8 }
+
+# The law
+
+[[event]]
+id = "prison"
+text = "spent eight months in prison"
+ages = [18, 60]
+weight = 0.3
+impact = 63
+valence = -0.7
+rare = true
+lean = { obedience = -0.8, prudence = -0.6 }
+
+[[event]]
+id = "drink_driving"
+text = "banned from driving for drink-driving"
+ages = [18, 70]
+weight = 0.5
+impact = 30
+valence = -0.5
+lean = { pleasure = 0.6, prudence = -1 }
+
+[[event]]
+id = "jury_service"
+text = "sat on the jury in a long trial"
+ages = [18, 75]
+weight = 0.5
+impact = 20
+valence = 0.1
+
+[[event]]
+id = "boundary_dispute"
+text = "a long legal fight with a neighbour over a boundary"
+ages = [30, 85]
+weight = 0.4
+impact = 30
+valence = -0.4
+lean = { self_respect = 0.6, agreeableness = -1 }
+
+[[event]]
+id = "gave_evidence"
+text = "gave evidence in court against someone they knew"
+ages = [18, 75]
+weight = 0.3
+impact = 40
+valence = -0.2
+rare = true
+lean = { justice = 1, honesty = 1 }
+
+[[event]]
+id = "beat_landlord"
+text = "won a court case against their landlord"
+ages = [20, 70]
+weight = 0.3
+impact = 30
+valence = 0.5
+lean = { justice = 1, self_respect = 0.8 }
+
+# Belief and community
+
+[[event]]
+id = "found_religion"
+text = "found religion"
+ages = [16, 75]
+weight = 0.8
+impact = 30
+valence = 0.5
+lean = { tradition = 0.8, peace_of_mind = 0.6 }
+
+[[event]]
+id = "lost_faith"
+text = "lost their faith"
+ages = [16, 70]
+weight = 0.8
+impact = 30
+valence = -0.2
+lean = { open_mindedness = 0.8, tradition = -0.8 }
+not_with = ["found_religion"]
+
+[[event]]
+id = "pilgrimage"
+text = "walked a long pilgrimage route on their own"
+ages = [20, 75]
+weight = 0.4
+impact = 25
+valence = 0.6
+lean = { peace_of_mind = 0.8, adventure = 0.6 }
+
+[[event]]
+id = "elected_councillor"
+text = "elected to the local council"
+ages = [25, 80]
+weight = 0.4
+impact = 29
+valence = 0.5
+rare = true
+lean = { responsibility = 1, justice = 0.8, success = 0.5 }
+
+[[event]]
+id = "volunteered_abroad"
+text = "volunteered for a year at a clinic abroad"
+ages = [18, 40]
+weight = 0.4
+impact = 30
+valence = 0.6
+lean = { compassion = 1.2, adventure = 0.8 }
+
+[[event]]
+id = "pulled_from_river"
+text = "pulled a stranger out of a river"
+ages = [14, 70]
+weight = 0.2
+impact = 35
+valence = 0.6
+rare = true
+lean = { fearfulness = -1 }
+
+[[event]]
+id = "food_bank"
+text = "set up a food bank"
+ages = [25, 80]
+weight = 0.3
+impact = 25
+valence = 0.6
+rare = true
+lean = { compassion = 1.2, responsibility = 0.8 }
+
+[[event]]
+id = "stood_for_parliament"
+text = "stood for parliament and lost badly"
+ages = [30, 70]
+weight = 0.1
+impact = 30
+valence = -0.2
+rare = true
+lean = { ambition = 1, justice = 0.8, social_boldness = 1 }
+
+[[event]]
+id = "coached_kids"
+text = "coached a children's football team for ten years"
+ages = [20, 65]
+weight = 0.5
+impact = 15
+valence = 0.6
+lean = { connection = 0.8, responsibility = 0.6 }
+
+# Achievements and adventures
+
+[[event]]
+id = "marathon"
+text = "ran their first marathon"
+ages = [20, 70]
+weight = 0.6
+impact = 15
+valence = 0.7
+lean = { discipline = 1, adventure = 0.5 }
+
+[[event]]
+id = "high_mountain"
+text = "climbed a mountain over five thousand metres high"
+ages = [20, 60]
+weight = 0.3
+impact = 20
+valence = 0.7
+rare = true
+lean = { adventure = 1.5, fearfulness = -0.8 }
+
+[[event]]
+id = "published_book"
+text = "had a book published"
+ages = [25, 85]
+weight = 0.2
+impact = 28
+valence = 0.8
+rare = true
+lean = { creativity = 1.5, success = 0.6 }
+
+[[event]]
+id = "quiz_show"
+text = "won a TV quiz show"
+ages = [20, 80]
+weight = 0.15
+impact = 25
+valence = 0.7
+rare = true
+lean = { knowledge = 1.2 }
+
+[[event]]
+id = "exhibition"
+text = "showed their paintings in a gallery"
+ages = [20, 85]
+weight = 0.3
+impact = 25
+valence = 0.7
+rare = true
+lean = { creativity = 1.5, aesthetic_appreciation = 0.8 }
+
+[[event]]
+id = "touring_theatre"
+text = "acted in a touring theatre company"
+ages = [18, 35]
+weight = 0.3
+impact = 20
+valence = 0.5
+rare = true
+lean = { creativity = 1, adventure = 0.6, social_boldness = 0.8 }
+
+[[event]]
+id = "antarctica"
+text = "spent a winter at a research station in Antarctica"
+ages = [22, 50]
+weight = 0.1
+impact = 25
+valence = 0.7
+rare = true
+lean = { adventure = 1.5, knowledge = 1 }
+
+[[event]]
+id = "sailed_ocean"
+text = "sailed across an ocean"
+ages = [20, 70]
+weight = 0.15
+impact = 25
+valence = 0.8
+rare = true
+lean = { adventure = 1.5, fearfulness = -0.8 }
+
+[[event]]
+id = "lost_on_mountain"
+text = "got lost on a mountain overnight and was rescued"
+ages = [16, 70]
+weight = 0.2
+impact = 30
+valence = -0.2
+rare = true
+lean = { adventure = 0.8, prudence = -0.8 }
+
+[[event]]
+id = "piano_late"
+text = "took up the piano late in life"
+ages = [50, 85]
+weight = 0.4
+impact = 10
+valence = 0.6
+lean = { creativity = 0.8 }
+
+[[event]]
+id = "allotment_prize"
+text = "won first prize at a vegetable show"
+ages = [30, 90]
+weight = 0.3
+impact = 8
+valence = 0.5
+rare = true
+lean = { diligence = 0.6, tradition = 0.6 }
+
+[[event]]
+id = "dream_trip"
+text = "saved for twenty years for one big trip, and took it"
+ages = [35, 85]
+weight = 0.4
+impact = 20
+valence = 0.8
+lean = { discipline = 0.8, adventure = 0.8 }
+
+[[event]]
+id = "handed_in_cash"
+text = "found a bag of cash in the street and handed it in"
+ages = [12, 85]
+weight = 0.3
+impact = 15
+valence = 0.5
+rare = true
+lean = { honesty = 1.2, fairness = 0.8 }
+
+[[event]]
+id = "won_tournament"
+text = "won a national chess tournament"
+ages = [14, 80]
+weight = 0.1
+impact = 20
+valence = 0.7
+rare = true
+lean = { knowledge = 1, discipline = 0.8 }

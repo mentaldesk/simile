@@ -1,0 +1,434 @@
+# The census skeleton, drawn roughly in the order it appears here. A key like 1930 is a birth year
+# and a key like 35 is an age: each band runs until the next key. Sources, and which weights are
+# statistics and which are judgement, are in README.md.
+
+born_here = 0.25
+childless = { single = 2.5, partnered = 1.2, married = 0.6, divorced = 0.8, widowed = 0.8 }
+
+[gender]
+woman = 51
+man = 49
+
+[[arrival]]
+id = "family"
+text = "came with their family as a child"
+ages = [1, 15]
+weight = 3
+
+[[arrival]]
+id = "study"
+text = "came to study and stayed"
+ages = [18, 24]
+
+[[arrival]]
+id = "job"
+text = "came for a job"
+ages = [20, 60]
+weight = 4
+
+[[arrival]]
+id = "partner_job"
+text = "came for a partner's job"
+ages = [22, 60]
+weight = 2
+
+[[arrival]]
+id = "partner"
+text = "came to live with a partner"
+ages = [20, 65]
+weight = 2
+
+[[arrival]]
+id = "rent"
+text = "came because the rent was cheap"
+ages = [19, 50]
+weight = 1.5
+
+[[arrival]]
+id = "fresh_start"
+text = "came for a fresh start after a break-up"
+ages = [25, 65]
+
+[[arrival]]
+id = "parent_care"
+text = "came to look after an elderly parent"
+ages = [35, 65]
+
+[[arrival]]
+id = "grandchildren"
+text = "came to be near their grown-up children"
+ages = [55, 85]
+
+[[arrival]]
+id = "retired"
+text = "came when they retired"
+ages = [58, 80]
+
+[[arrival]]
+id = "housing"
+text = "came when they were offered social housing"
+ages = [19, 75]
+weight = 0.8
+
+[[arrival]]
+id = "inherited"
+text = "came after inheriting a house"
+ages = [25, 80]
+weight = 0.5
+
+[[arrival]]
+id = "seasonal"
+text = "came for seasonal work and stayed"
+ages = [18, 40]
+weight = 0.8
+
+# A household is drawn after the upbringing, from the kinds of household that upbringing allows:
+# `parents` names both parents, `one` a parent bringing them up alone, and `family` names neither.
+[[background]]
+id = "working"
+text = "grew up in a working-class family"
+weight = { 1930 = 50, 1965 = 42, 1990 = 35 }
+
+[background.households]
+parents = [
+  "a father who drove lorries and a mother who cleaned offices",
+  "parents who both worked shifts at the same factory",
+  "a father on building sites and a mother who took in sewing",
+  "parents who worked on someone else's farm",
+  "a father who fixed cars and a mother who worked in a school kitchen",
+  "a father who worked in a warehouse and a mother who minded neighbours' children",
+  "parents who were often out of work",
+  "a father who was a bus conductor and a mother who worked in a laundry",
+  "a mother who worked on a supermarket till and a father who worked on the docks",
+]
+one = [
+  "a mother who raised them alone on a care worker's wage",
+  "a father who brought them up alone on a warehouse wage",
+  "a mother who worked nights as a hospital cleaner to keep them",
+]
+family = [
+  "a large family squeezed into a small rented flat",
+  "a home where the money ran out before the end of every month",
+  "a street where every door was open and everyone knew everyone's business",
+]
+
+[[background]]
+id = "intermediate"
+text = "grew up in a lower-middle-class family"
+weight = { 1930 = 32, 1965 = 33, 1990 = 32 }
+
+[background.households]
+parents = [
+  "parents who ran a corner shop and lived above it",
+  "a father who was a police sergeant and a mother who was a bank clerk",
+  "a mother who ran a hair salon and a father who drove a taxi",
+  "parents who both worked for the post office",
+  "an electrician father with his own van and a mother who did his books",
+  "a mother who was a nurse and a father who was a prison officer",
+  "parents who ran a small restaurant",
+  "a father who managed a supermarket and a mother who was a school secretary",
+  "a mother who taught at the primary school and a father who sold insurance",
+  "parents who farmed their own small plot",
+  "a mother who kept the accounts for a builder and a father who was a postman",
+]
+one = [
+  "a mother who ran a hair salon and brought them up on her own",
+  "a father who raised them alone on a police sergeant's pay",
+  "a mother who kept the books for a builder and raised them by herself",
+]
+family = [
+  "a tidy home where money was watched but never short",
+  "a family business that everyone was expected to help with",
+  "a household that saved hard all year for one holiday",
+]
+
+[[background]]
+id = "professional"
+text = "grew up in a middle-class professional family"
+weight = { 1930 = 18, 1965 = 25, 1990 = 33 }
+
+[background.households]
+parents = [
+  "two parents who were doctors",
+  "a father who was an engineer and a mother who was a lawyer",
+  "a mother who was a university lecturer and a father who was an architect",
+  "parents who were both secondary school teachers",
+  "a mother who was a hospital consultant and a father who stayed at home",
+  "parents who were senior civil servants",
+  "a father in the diplomatic service, so they moved every few years",
+  "a mother who was a pharmacist and a father who was a bank manager",
+  "parents who were journalists",
+  "a mother who ran an engineering company and a father who taught music",
+]
+one = [
+  "a mother, a hospital consultant, who brought them up alone",
+  "a father who ran his own accountancy firm and raised them on his own",
+  "a mother who lectured at a university and raised them by herself",
+]
+family = [
+  "a big house full of books and arguments",
+  "a home where university was taken for granted",
+  "a household with piano lessons and long summer holidays abroad",
+]
+
+[[upbringing]]
+id = "two_parents"
+text = "raised by both parents"
+weight = { 1930 = 82, 1965 = 74, 1990 = 64 }
+households = ["parents", "family"]
+
+[[upbringing]]
+id = "single_parent"
+text = "raised by one parent"
+weight = { 1930 = 8, 1965 = 14, 1990 = 22 }
+households = ["one", "family"]
+
+[[upbringing]]
+id = "blended"
+text = "raised in a stepfamily"
+weight = { 1930 = 4, 1965 = 7, 1990 = 10 }
+households = ["parents", "family"]
+
+[[upbringing]]
+id = "grandparents"
+text = "raised mostly by grandparents"
+weight = { 1930 = 5, 1965 = 4, 1990 = 3 }
+households = ["family"]
+
+[[upbringing]]
+id = "care"
+text = "spent part of their childhood in foster care"
+weight = { 1930 = 1, 1965 = 1, 1990 = 1 }
+households = ["family"]
+
+# Weights for 0, 1, 2, 3, 4 and 5 brothers and sisters.
+[siblings]
+1930 = [8, 18, 24, 20, 14, 16]
+1965 = [10, 32, 30, 15, 7, 6]
+1990 = [14, 40, 28, 11, 4, 3]
+
+# Highest level reached, or being studied for if they're younger than done_by.
+[[education]]
+id = "early_leaver"
+text = "left school without upper-secondary qualifications"
+isced = "0-2"
+done_by = 16
+weight = { 16 = 14.5, 35 = 17.3, 45 = 21.3, 55 = 26.7, 65 = 35.0, 75 = 45 }
+background = { working = 1.6, professional = 0.4 }
+
+[[education]]
+id = "school"
+text = "finished school with general qualifications"
+isced = "3-4 general"
+done_by = 18
+weight = { 16 = 11.4, 35 = 9.5, 45 = 9.6, 55 = 9.1, 65 = 8.5, 75 = 9 }
+
+[[education]]
+id = "vocational"
+text = "finished a vocational course or an apprenticeship"
+isced = "3-4 vocational"
+done_by = 19
+weight = { 16 = 31.0, 35 = 32.3, 45 = 36.3, 55 = 39.2, 65 = 35.4, 75 = 29 }
+background = { working = 1.2, professional = 0.7 }
+
+[[education]]
+id = "degree"
+text = "a university degree"
+isced = "5-6"
+degree = true
+done_by = 22
+weight = { 16 = 25.9, 35 = 24.6, 45 = 19.7, 55 = 15.0, 65 = 12.7, 75 = 10.2 }
+background = { working = 0.6, professional = 1.6 }
+
+[[education]]
+id = "postgraduate"
+text = "a master's degree or a doctorate"
+isced = "7-8"
+degree = true
+done_by = 24
+weight = { 16 = 17.2, 35 = 16.4, 45 = 13.1, 55 = 10.0, 65 = 8.5, 75 = 6.8 }
+background = { working = 0.4, professional = 2.0 }
+
+[[partnership]]
+id = "single"
+text = "single"
+weight = { 16 = 92, 25 = 40, 35 = 20, 45 = 13, 55 = 9, 65 = 7, 75 = 6, 85 = 6 }
+
+[[partnership]]
+id = "partnered"
+text = "living with a partner"
+weight = { 16 = 7, 25 = 30, 35 = 18, 45 = 11, 55 = 8, 65 = 5, 75 = 3, 85 = 1 }
+
+[[partnership]]
+id = "married"
+text = "married"
+weight = { 16 = 1, 25 = 28, 35 = 52, 45 = 56, 55 = 58, 65 = 57, 75 = 48, 85 = 30 }
+
+[[partnership]]
+id = "divorced"
+text = "divorced or separated"
+weight = { 16 = 0, 25 = 2, 35 = 9, 45 = 18, 55 = 20, 65 = 16, 75 = 11, 85 = 7 }
+
+[[partnership]]
+id = "widowed"
+text = "widowed"
+weight = { 16 = 0, 25 = 0, 35 = 1, 45 = 2, 55 = 5, 65 = 15, 75 = 32, 85 = 56 }
+
+# Weights for 0, 1, 2, 3 and 4 children; `childless` above scales the first by partnership.
+[children]
+16 = [97, 2.5, 0.5, 0, 0]
+20 = [88, 9, 2.5, 0.5, 0]
+25 = [62, 20, 13, 4, 1]
+30 = [42, 25, 23, 7, 3]
+35 = [28, 24, 31, 11, 6]
+45 = [20, 21, 35, 15, 9]
+65 = [16, 18, 34, 18, 14]
+
+[health]
+share = { 16 = 14.7, 25 = 19.5, 35 = 23.6, 45 = 31.6, 55 = 44.0, 65 = 54.8, 75 = 65.7, 85 = 73.2 }
+
+[[health.condition]]
+id = "asthma"
+text = "asthma"
+weight = { 16 = 8, 45 = 5, 65 = 4 }
+
+[[health.condition]]
+id = "back_pain"
+text = "chronic back pain"
+weight = { 16 = 4, 45 = 8, 65 = 7 }
+
+[[health.condition]]
+id = "arthritis"
+text = "arthritis"
+weight = { 16 = 1, 45 = 5, 65 = 12 }
+
+[[health.condition]]
+id = "blood_pressure"
+text = "high blood pressure, kept in check with tablets"
+weight = { 16 = 1, 45 = 8, 65 = 12 }
+
+[[health.condition]]
+id = "type2_diabetes"
+text = "type 2 diabetes"
+weight = { 16 = 0.5, 45 = 5, 65 = 8 }
+
+[[health.condition]]
+id = "type1_diabetes"
+text = "type 1 diabetes since childhood"
+weight = { 16 = 1.5, 45 = 1, 65 = 0.7 }
+
+[[health.condition]]
+id = "migraine"
+text = "migraines"
+weight = { 16 = 5, 45 = 4, 65 = 1 }
+
+[[health.condition]]
+id = "depression"
+text = "depression that comes and goes"
+weight = { 16 = 5, 45 = 4, 65 = 2 }
+
+[[health.condition]]
+id = "anxiety"
+text = "an anxiety disorder"
+weight = { 16 = 6, 45 = 3, 65 = 1.5 }
+
+[[health.condition]]
+id = "hearing"
+text = "hearing loss, and wears hearing aids"
+weight = { 16 = 0.7, 45 = 2, 65 = 9 }
+
+[[health.condition]]
+id = "sight"
+text = "poor sight that glasses can't fully correct"
+weight = { 16 = 0.5, 45 = 1, 65 = 4 }
+
+[[health.condition]]
+id = "heart"
+text = "a heart condition"
+weight = { 16 = 0.3, 45 = 2, 65 = 7 }
+
+[[health.condition]]
+id = "lungs"
+text = "a lung condition that leaves them short of breath"
+weight = { 16 = 0.2, 45 = 1.5, 65 = 5 }
+
+[[health.condition]]
+id = "epilepsy"
+text = "epilepsy, mostly controlled"
+weight = { 16 = 1.5, 45 = 1, 65 = 0.7 }
+
+[[health.condition]]
+id = "crohns"
+text = "Crohn's disease"
+weight = { 16 = 1.5, 45 = 1, 65 = 0.5 }
+
+[[health.condition]]
+id = "multiple_sclerosis"
+text = "multiple sclerosis"
+weight = { 16 = 0.5, 45 = 1, 65 = 0.5 }
+
+[[health.condition]]
+id = "wheelchair"
+text = "uses a wheelchair after a spinal injury"
+weight = { 16 = 0.5, 45 = 0.7, 65 = 0.7 }
+
+[[health.condition]]
+id = "long_covid"
+text = "long Covid that never fully cleared"
+weight = { 16 = 1, 45 = 1.5, 65 = 1 }
+
+[[health.condition]]
+id = "chronic_fatigue"
+text = "chronic fatigue"
+weight = { 16 = 1, 45 = 1, 65 = 0.5 }
+
+[[health.condition]]
+id = "parkinsons"
+text = "Parkinson's disease in its early stages"
+weight = { 16 = 0, 45 = 0.2, 65 = 1.5 }
+
+[[health.condition]]
+id = "stroke"
+text = "weakness down one side after a stroke"
+weight = { 16 = 0, 45 = 0.5, 65 = 3 }
+
+[[health.condition]]
+id = "knees"
+text = "worn-out knees that need replacing"
+weight = { 16 = 0.2, 45 = 2, 65 = 5 }
+
+# Percent in work at each age; the rest get a status below, weighted by `share`.
+[work]
+employed = { 16 = 16.1, 20 = 54.1, 25 = 77.1, 30 = 81.8, 35 = 83.1, 40 = 84.3, 45 = 84.2, 50 = 81.7, 55 = 76.0, 60 = 50.9, 65 = 15.2, 70 = 5.6, 75 = 1.6, 85 = 0 }
+
+[[work.status]]
+id = "student"
+text = "studying"
+share = { 16 = 85, 20 = 60, 25 = 20, 30 = 7, 35 = 3, 45 = 1, 55 = 0.3, 65 = 0 }
+
+[[work.status]]
+id = "unemployed"
+text = "out of work"
+share = { 16 = 10, 20 = 25, 25 = 32, 30 = 30, 35 = 28, 45 = 25, 55 = 18, 60 = 8, 65 = 0 }
+
+[[work.status]]
+id = "home"
+text = "at home looking after the children"
+share = { 16 = 1, 20 = 5, 25 = 20, 30 = 28, 35 = 28, 45 = 18, 55 = 10, 60 = 5, 65 = 1 }
+when = { children = { min = 1 } }
+
+[[work.status]]
+id = "carer"
+text = "a full-time carer for a relative"
+share = { 16 = 1, 20 = 2, 25 = 5, 35 = 8, 45 = 12, 55 = 12, 60 = 6, 65 = 2 }
+
+[[work.status]]
+id = "sick"
+text = "off work with a long-term illness"
+share = { 16 = 3, 20 = 8, 25 = 15, 35 = 25, 45 = 35, 55 = 30, 60 = 15, 65 = 3 }
+when = { health = { not = ["none"] } }
+
+[[work.status]]
+id = "retired"
+text = "retired"
+share = { 16 = 0, 50 = 3, 55 = 25, 60 = 66, 65 = 94 }
