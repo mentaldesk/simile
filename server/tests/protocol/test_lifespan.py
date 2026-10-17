@@ -136,6 +136,7 @@ def test_clients_receive_events_published_on_the_bus() -> None:
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "snapshot"
         assert ws.receive_json()["type"] == "clock"
+        assert ws.receive_json()["type"] == "murals"
 
         client.portal.call(world_of(app).bus.publish, EntityMoved("suki", 18, 7.5))
 

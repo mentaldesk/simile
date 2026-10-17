@@ -44,8 +44,8 @@ tone and relatedness to every core value, scored as for news.
   the same scale up the wall), and it's painted onto weathered plaster or brick.
 - **Replacing.** The new mural covers the old one, which stays in the store with its picture, and
   `covered(id)` says what each mural covered. The artist remembers painting it, and over whose.
-- **Telling the client.** Each new client gets `murals` once there's a mural to show, and everyone
-  gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture, and 404s
+- **Telling the client.** Each new client gets `murals`, with every wall, painted or not, and
+  everyone gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture, and 404s
   for anything else.
 - **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen says
   how it lands in one Haiku call, as at the terminals. The memory is about the artist, with

@@ -98,10 +98,6 @@ class Walls:
             fondness = affinity(as_of(rel, self.clock.now))
         return readiness(painter, mural, fondness, self.clock.now, self.config)
 
-    def greeting(self) -> MuralsMessage | None:
-        """The `murals` message for a new client, once there's a mural to show."""
-        return self.message() if self.works.showing() else None
-
     def message(self) -> MuralsMessage:
         showing = self.works.showing()
         return MuralsMessage(

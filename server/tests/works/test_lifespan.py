@@ -198,12 +198,16 @@ def test_new_clients_get_the_murals_and_everyone_hears_of_a_new_one(
         app.state.llm = LLMClient(FakeProvider([mural_reply(svg=svg(288, 223))]))
         with client.websocket_connect("/ws") as early:
             assert early.receive_json()["type"] == "snapshot"
+            blank = early.receive_json()
             client.portal.call(paint)
             broadcast = early.receive_json()
         with client.websocket_connect("/ws") as late:
             assert late.receive_json()["type"] == "snapshot"
             greeted = late.receive_json()
 
+    assert blank["type"] == "murals"
+    assert len(blank["walls"]) == 5
+    assert all(wall["mural"] is None for wall in blank["walls"])
     assert broadcast == greeted
     assert broadcast["type"] == "murals"
     [painted] = [wall for wall in broadcast["walls"] if wall["mural"]]

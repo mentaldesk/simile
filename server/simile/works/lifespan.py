@@ -77,7 +77,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         )
         stack.push_async_callback(passers.stop)
         stack.callback(world.loop.register(passers))
-        stack.callback(hub.greet(walls.greeting))
+        stack.callback(hub.greet(walls.message))
         player = PlayerWorks(store, memory, world.clock, npcs)
         stack.callback(hub.subscribe(ListWorksMessage, lambda _: hub.broadcast(player.listing())))
         stack.callback(

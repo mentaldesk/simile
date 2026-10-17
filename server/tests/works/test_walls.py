@@ -135,33 +135,29 @@ def test_the_murals_message_has_every_wall_and_what_is_on_it(
     works: WorksStore, memory: MemoryStore
 ) -> None:
     picker = walls(works, memory)
-    assert picker.greeting() is None
+    assert [wall.mural for wall in picker.message().walls] == [None, None]
 
     works.paint(mural("first", "viktor"), "<svg/>", b"")
     works.paint(mural("second", "suki"), "<svg/>", b"")
 
-    assert (
-        picker.greeting()
-        == picker.message()
-        == MuralsMessage(
-            walls=[
-                Wall(
-                    id="wall_1",
-                    x=10,
-                    y=5,
-                    width=3,
-                    face="south",
-                    bottom=0.5,
-                    top=1.5,
-                    mural=Mural(
-                        work_id="second",
-                        title="Piece second",
-                        artist=Artist(id="suki", name=SUKI.name),
-                        statement="What second says.",
-                        image="/api/works/second.png",
-                    ),
+    assert picker.message() == MuralsMessage(
+        walls=[
+            Wall(
+                id="wall_1",
+                x=10,
+                y=5,
+                width=3,
+                face="south",
+                bottom=0.5,
+                top=1.5,
+                mural=Mural(
+                    work_id="second",
+                    title="Piece second",
+                    artist=Artist(id="suki", name=SUKI.name),
+                    statement="What second says.",
+                    image="/api/works/second.png",
                 ),
-                Wall(id="wall_2", x=20, y=5, width=2, face="east", bottom=0, top=1, mural=None),
-            ]
-        )
+            ),
+            Wall(id="wall_2", x=20, y=5, width=2, face="east", bottom=0, top=1, mural=None),
+        ]
     )
