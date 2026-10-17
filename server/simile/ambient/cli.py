@@ -2,7 +2,7 @@ from typing import Annotated
 
 import typer
 
-QUIET_ENV = ("SIMILE_VOICE", "SIMILE_NEWS", "SIMILE_RECORD", "SIMILE_FRESH", "SIMILE_DEMO")
+QUIET_ENV = ("SIMILE_VOICE", "SIMILE_RECORD", "SIMILE_FRESH", "SIMILE_DEMO")
 
 
 def register(app: typer.Typer) -> None:
@@ -26,7 +26,7 @@ def register(app: typer.Typer) -> None:
         import asyncio
         import os
 
-        os.environ["SIMILE_LLM"] = "fake"
+        os.environ.update(SIMILE_LLM="fake", SIMILE_NEWS="0")
         for name in QUIET_ENV:
             os.environ.pop(name, None)
         from simile.ambient.playthrough import playthrough as play

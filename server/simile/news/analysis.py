@@ -149,6 +149,8 @@ class NewsAnalyser:
             return []
         provider = llm.provider.name
         waiting = self.store.unanalysed(self.config.candidates, provider)
+        if waiting:
+            logger.info("Analysing %d news articles, one %s call each", len(waiting), provider)
         analysed = []
         for item in sorted(waiting, key=lambda item: self.failed[item.id]):
             try:

@@ -306,12 +306,27 @@ async def test_logs_a_failed_refresh_and_tries_again_later(
     with caplog.at_level(logging.WARNING):
         await run(world, refresher, timedelta(seconds=50))
     assert len(feed.calls) == 1
-    assert f"Couldn't refresh the news from {FEED.url}" in caplog.text
+    assert f"Couldn't refresh the news from {FEED.url}: no route to host" in caplog.text
+    assert "Traceback" not in caplog.text
 
     del feed.errors[FEED]
     await run(world, refresher, timedelta(seconds=20))
     assert len(feed.calls) == 2
     assert store.latest(10) == feed.items[FEED]
+
+
+@pytest.mark.anyio
+async def test_logs_a_feed_that_isnt_one_with_its_traceback(
+    store: NewsStore, feed: FakeFeeds, caplog: pytest.LogCaptureFixture
+) -> None:
+    feed.errors[FEED] = ValueError("not a feed")
+    world, refresher = village(store, feed, speed=1)
+
+    with caplog.at_level(logging.WARNING):
+        await run(world, refresher, timedelta(seconds=1))
+
+    assert f"Couldn't refresh the news from {FEED.url}\nTraceback" in caplog.text
+    assert "ValueError: not a feed" in caplog.text
 
 
 @pytest.mark.anyio

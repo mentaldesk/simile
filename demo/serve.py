@@ -101,6 +101,7 @@ def main() -> None:
             f"SIMILE_DEMO_SCRIPT_CAP={seconds} isn't a usable number of sim seconds: {error}"
         )
 
+    os.environ.setdefault("SIMILE_NEWS", "0")
     wall = HeldWallClock()
     app = create_app()
     app.state.world = World(wall=wall)

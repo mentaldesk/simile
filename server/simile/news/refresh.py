@@ -128,7 +128,9 @@ class NewsRefresher:
                 self.store, feeds, fetch=self.fetch, at=at, limit=self.limit, config=self.config
             )
             for feed, result in zip(feeds, results, strict=True):
-                if isinstance(result, BaseException):
+                if isinstance(result, OSError):
+                    logger.warning(f"Couldn't refresh the news from {feed.url}: {result}")
+                elif isinstance(result, BaseException):
                     logger.warning(f"Couldn't refresh the news from {feed.url}", exc_info=result)
                 else:
                     logger.info(

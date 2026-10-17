@@ -10,7 +10,8 @@ export SIMILE_DB="${DEMO_DB:-$root/server/data/demo.db}"
 export SIMILE_PORT="${SIMILE_PORT:-8000}"
 CLIENT_PORT="${CLIENT_PORT:-5173}"
 export SIMILE_VOICE="${SIMILE_VOICE:-1}"
-unset SIMILE_FRESH SIMILE_NEWS SIMILE_NEWS_FEED
+export SIMILE_NEWS=0
+unset SIMILE_FRESH SIMILE_NEWS_FEED
 
 for port in "$SIMILE_PORT" "$CLIENT_PORT"; do
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then

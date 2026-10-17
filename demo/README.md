@@ -46,14 +46,14 @@ talk near you and the later beats stay where the walk-through puts them.
 | `SIMILE_VOICE` | 1 | 0 runs it unvoiced. |
 | `SIMILE_DEMO_SCRIPT_CAP` | 120 | Sim seconds from your first step before the scripted pairs are let go, whether or not they've talked. |
 
-`SIMILE_NEWS` is turned off, so nothing is fetched or analysed. The terminals list the Mars
-article and twelve more real ones, all analysed already (see [below](#what-it-starts-from)).
+`SIMILE_NEWS=0`, so nothing is fetched or analysed. The terminals list the Mars article and
+twelve more real ones, all analysed already (see [below](#what-it-starts-from)).
 
 **Resetting** is Ctrl-C and `demo/run.sh` again: every run starts from the same state, so that's
 also how to retake the opening. To carry on from where a demo stopped instead (the server saves on
 Ctrl-C), run the village on the demo database:
-`SIMILE_DB="$PWD/server/data/demo.db" SIMILE_VOICE=1 make dev`. Don't use `simile reset` or
-`SIMILE_FRESH=1` on it: they forget who has read the article.
+`SIMILE_DB="$PWD/server/data/demo.db" SIMILE_VOICE=1 SIMILE_NEWS=0 make dev`. Don't use
+`simile reset` or `SIMILE_FRESH=1` on it: they forget who has read the article.
 
 ## The walk-through (2 to 3 minutes)
 
@@ -100,8 +100,10 @@ told him about the Mars piece over breakfast talk.
 
 ## What it starts from
 
-[`scenario.json`](scenario.json), [`article.json`](article.json) and [`news.json`](news.json)
-hold everything, and [`prepare.py`](prepare.py) writes them into a fresh database.
+[`scenario.json`](scenario.json) and the articles bundled in
+[`content/news/articles.json`](../content/news/articles.json) hold everything, and
+[`prepare.py`](prepare.py) writes them into a fresh database. A fresh `make dev` lists the same
+articles until the live feeds' are in.
 
 - **The time** is 10:30 on 16 October 2026, the morning after the article came out.
 - **The article** is "What would it take to terraform Mars? Erika DeBenedictis has ideas",

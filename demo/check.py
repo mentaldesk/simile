@@ -231,8 +231,8 @@ def main() -> None:
     parser.add_argument("--minutes", type=float, default=2.0, help="Sim minutes per run.")
     args = parser.parse_args()
     check_cap()
-    os.environ["SIMILE_LLM"] = "fake"
-    for name in ("SIMILE_FRESH", "SIMILE_NEWS", "SIMILE_NEWS_FEED", "SIMILE_RECORD"):
+    os.environ.update(SIMILE_LLM="fake", SIMILE_NEWS="0")
+    for name in ("SIMILE_FRESH", "SIMILE_NEWS_FEED", "SIMILE_RECORD"):
         os.environ.pop(name, None)
     logging.basicConfig(level=logging.ERROR)
     start = datetime.fromisoformat(json.loads((HERE / "scenario.json").read_text())["now"])
