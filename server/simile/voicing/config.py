@@ -9,14 +9,13 @@ class VoicingConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     earshot: float = Field(
-        default=4.0,
+        default=5.0,
         gt=0,
         description="A conversation is voiced, from its next line, once the player is this near "
-        "one of its speakers. C2 draws bubbles within the same 4 tiles (`EARSHOT_TILES`), about "
-        "as far as the screen shows above and below the player.",
+        "one of its speakers. C2 draws bubbles within the same 5 tiles (`EARSHOT_TILES`).",
     )
     out_of_earshot: float = Field(
-        default=5.5,
+        default=6.5,
         description="Voicing stops, cutting the line being said, once the player is further than "
         "this from every speaker. C3 fades an overheard voice to silence here (`SILENT_BEYOND`). "
         "The gap from `earshot` keeps lines from cutting in and out at the edge.",

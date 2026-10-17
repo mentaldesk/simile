@@ -9,8 +9,8 @@ ticks on the sim loop.
 ## Nudging
 
 - **Earshot.** `Earshot` follows the bus and decides as I1 does, with I1's distances by default: a
-  conversation between NPCs comes into earshot once the player is within `earshot` (4 tiles) of
-  one of its speakers, and stays in it until they're further than `out_of_earshot` (5.5) from all
+  conversation between NPCs comes into earshot once the player is within `earshot` (5 tiles) of
+  one of its speakers, and stays in it until they're further than `out_of_earshot` (6.5) from all
   of them. Nothing is in earshot while no client is connected or the player isn't on the map.
 - **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (1 minute) and
   at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected,

@@ -16,14 +16,14 @@ describe('overheardMix', () => {
     expect(overheard(0)).toEqual({ gain: OVERHEARD_GAIN, pan: 0 });
   });
 
-  it('caps an overheard voice at about a third of full volume', () => {
-    expect(20 * Math.log10(OVERHEARD_GAIN)).toBeCloseTo(-9.5, 1);
+  it('caps an overheard voice at about a quarter of full volume', () => {
+    expect(20 * Math.log10(OVERHEARD_GAIN)).toBeCloseTo(-12, 1);
     expect(overheard(0, FULL_VOLUME_WITHIN).gain).toBe(OVERHEARD_GAIN);
     expect(overheard(-1.2, 1.2).gain).toBe(OVERHEARD_GAIN);
   });
 
   it('gets quieter with distance in any direction', () => {
-    const distances = [2, 2.5, 3, 4, 5, 5.4];
+    const distances = [2, 2.5, 3, 4, 5, 6, 6.4];
     const gains = distances.map((distance) => overheard(distance).gain);
 
     expect(gains).toEqual([...gains].sort((a, b) => b - a));
@@ -33,8 +33,8 @@ describe('overheardMix', () => {
   });
 
   it('is faint at the edge of earshot', () => {
-    expect(overheard(4).gain).toBeGreaterThan(0);
-    expect(overheard(4).gain).toBeLessThan(OVERHEARD_GAIN / 4);
+    expect(overheard(5).gain).toBeGreaterThan(0);
+    expect(overheard(5).gain).toBeLessThan(OVERHEARD_GAIN / 4);
   });
 
   it('is silent where the server stops voicing and beyond', () => {
