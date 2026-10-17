@@ -10,7 +10,7 @@ from simile.art.characters import SKIN_TONES
 from simile.art.palette import PALETTE, hex_to_rgb, nearest
 from simile.llm import LLMClient, Model
 from simile.npc.values import Profile, format_scores, ranked, sample_values
-from simile.schema import PLAYER_ID, Appearance, CoreValue, Npc, Voice
+from simile.schema import PLAYER_ID, Appearance, CoreValue, Craft, Npc, Voice
 from simile.schema import Model as Schema
 
 HOMES = tuple(f"house_{n}" for n in range(1, 11))
@@ -65,6 +65,7 @@ class Draft(Schema):
     persona: str
     speaking_style: str
     interests: list[str] = Field(min_length=3, max_length=6)
+    craft: Craft | None
     voice_description: str
     reference_line: str
     appearance: Appearance
@@ -82,12 +83,14 @@ class Draft(Schema):
         return line
 
 
-SYSTEM = """\
-You create residents for Simile, a simulation of a small village in 2026 with a slightly \
-futuristic feel, like a quiet corner of Shenzhen: delivery drones overhead, solar roofs, public \
-news terminals. It has a coffee shop (The Daily Grind), a town square, a noodle bar, a maker space \
-and a riverside park. The residents talk to each other and to the player, out loud, each in their \
-own voice.
+VILLAGE = """\
+Simile, a simulation of a small village in 2026 with a slightly futuristic feel, like a quiet \
+corner of Shenzhen: delivery drones overhead, solar roofs, public news terminals. It has a coffee \
+shop (The Daily Grind), a town square, a noodle bar, a maker space and a riverside park. The \
+residents talk to each other and to the player, out loud, each in their own voice."""
+
+SYSTEM = f"""\
+You create residents for {VILLAGE}
 
 Every resident has a score from 0 to 1 for each of 24 core values. The values are the character. \
 Their job, history, persona, way of speaking, interests, looks and voice all follow from what \
@@ -96,10 +99,36 @@ them. Write grounded, specific, contemporary people rather than fantasy archetyp
 English with British spelling."""
 
 
+CRAFT = """\
+- craft: what they make in their own time, which can differ from their job, or null if they make \
+nothing. Its medium is "writing", which goes up on the public news terminals beside the news, or \
+"mural", painted on one of the few walls around town. Each work starts from whatever is on their \
+mind, such as news they've read or a conversation they've had, and says something about it in \
+line with their values, taking a side where they care strongly. So a craft is how they have their \
+say in public, in a style that suits them, and a neighbour should be able to guess the maker from \
+the work. Its form names the kind of work, and its subject or slant if that's part of it, in two \
+to six words, such as "political street murals", "plain verse about the river" or "stern notices \
+for the residents' board". Most residents have one, but someone with little creativity and \
+nothing they want to say may have none."""
+
+
+def values_brief(values: Profile) -> str:
+    order = ranked(values)
+    return f"""\
+Core values (0 = indifferent, 1 = central to who they are):
+- Cares most about: {format_scores(order[:5])}
+- Cares least about: {format_scores(order[::-1][:5])}
+- All 24: {format_scores(list(values.items()))}"""
+
+
+def craft_label(craft: Craft | None) -> str:
+    return f"{craft.medium}: {craft.form}" if craft else "none"
+
+
 def prompt(brief: Brief, number: int, count: int, others: Sequence[Npc]) -> str:
-    order = ranked(brief.values)
     residents = "\n".join(
-        f"- {n.name}, {n.age}, {n.occupation}. {first_sentence(n.backstory)} {_look(n)}"
+        f"- {n.name}, {n.age}, {n.occupation}. {first_sentence(n.backstory)} {_look(n)} "
+        f"Craft: {craft_label(n.craft)}."
         for n in others
     )
     skins = ", ".join(PALETTE[name] for name in SKIN_TONES)
@@ -111,13 +140,10 @@ Fixed facts:
 - Age: {brief.age}
 - Gender: {brief.gender}
 
-Core values (0 = indifferent, 1 = central to who they are):
-- Cares most about: {format_scores(order[:5])}
-- Cares least about: {format_scores(order[::-1][:5])}
-- All 24: {format_scores(list(brief.values.items()))}
+{values_brief(brief.values)}
 
-Residents so far. Give this one a different first name, surname, occupation and background, and \
-a look that's easy to tell apart from theirs at sprite size:
+Residents so far. Give this one a different first name, surname, occupation, background and \
+craft, and a look that's easy to tell apart from theirs at sprite size:
 {residents or "- none yet"}
 
 Write:
@@ -132,6 +158,7 @@ following from their values and age. For example, high discipline and tradition:
 formal; high adventure and optimism: quick and bright; high compassion and connection: warm, \
 asks about you; high knowledge: precise, explains things.
 - interests: three to six short topics they bring up in conversation, driven by their values.
+{CRAFT}
 - voice_description: for a text-to-speech voice design model. Start with gender and age \
 ("A woman in her late sixties."), then pitch, timbre, pace and manner, shaped by age and values \
 like the speaking style. Describe only the sound, in 25-50 words, without names.
@@ -189,6 +216,7 @@ def assemble(brief: Brief, draft: Draft, taken: Collection[str]) -> Npc:
         interests=draft.interests,
         appearance=draft.appearance,
         voice=Voice(description=draft.voice_description, reference_line=draft.reference_line),
+        craft=draft.craft,
     )
 
 

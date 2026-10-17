@@ -57,5 +57,9 @@
     "description": "A thick, broad Scots accent. A stern old Scottish woman in her early seventies.",
     "reference_line": "The recycling uplift is on Thursday, as it says on the notice. Bins are to be out by seven and in again by noon.",
     "reference_clip": "content/voices/henrietta.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "numbered rules and reminders for residents"
   }
 }

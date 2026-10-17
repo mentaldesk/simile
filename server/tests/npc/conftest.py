@@ -28,6 +28,7 @@ def draft(name: str = "Ana Folau", **changes: Any) -> Draft:
         "persona": f"{name} is steady and kind. They notice who is missing.",
         "speaking_style": "Measured and warm.",
         "interests": ["tides", "bread", "local history"],
+        "craft": {"medium": "writing", "form": "short poems about the tide"},
         "voice_description": "A woman in her forties. Low, warm voice, speaks slowly and evenly.",
         "reference_line": "I open the bakery at six and close when the bread runs out, most days.",
         "appearance": {
