@@ -549,7 +549,7 @@ def test_the_same_seed_gives_the_same_day() -> None:
 
 
 def test_state_is_json_for_the_debug_overlay() -> None:
-    village = Village([ANA])
+    village = Village([ANA, crafter("wren", "house_2", Medium.WRITING)])
     village.run(hours=1)
 
     state = village.behaviour.state("ana")
@@ -558,6 +558,7 @@ def test_state_is_json_for_the_debug_overlay() -> None:
     needs = state["needs"]
     assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest", "news"}
     assert state["goal"] == str(village.behaviour.goal("ana"))
+    assert "inspiration" in village.behaviour.state("wren")["needs"]
 
 
 def test_npcs_already_on_the_map_stay_where_they_are() -> None:

@@ -327,7 +327,7 @@ class Behaviour:
             "needs": {
                 need.value: round(value, 3)
                 for need, value in mind.needs.items()
-                if need is not Need.INSPIRATION
+                if mind.npc.craft or need is not Need.INSPIRATION
             },
             "options": dict(mind.options),
             "bedtime": round(mind.bedtime, 2),

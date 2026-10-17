@@ -45,8 +45,8 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
     A.PARK: {V.PEACE_OF_MIND: 0.7, V.FREEDOM: 0.2, V.ADVENTURE: 0.1},
     A.NOODLE_BAR: {V.PLEASURE: 0.6, V.CONNECTION: 0.3},
     A.MAKER_SPACE: {
-        V.CREATIVITY: 0.8,
-        V.SELF_ACTUALIZATION: 0.4,
+        V.CREATIVITY: 0.3,
+        V.SELF_ACTUALIZATION: 0.2,
         V.KNOWLEDGE: 0.2,
         V.AMBITION: 0.2,
     },
@@ -57,11 +57,11 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
 
 NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: 0.8},
-    A.COFFEE_SHOP: {Need.REST: 0.2},
-    A.SQUARE: {Need.CURIOSITY: 0.1},
-    A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.1},
+    A.COFFEE_SHOP: {Need.REST: 0.2, Need.CURIOSITY: 0.2},
+    A.SQUARE: {Need.CURIOSITY: 0.3},
+    A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.2},
     A.NOODLE_BAR: {Need.REST: 0.2},
-    A.MAKER_SPACE: {Need.CURIOSITY: 0.6},
+    A.MAKER_SPACE: {Need.CURIOSITY: 0.4},
     A.WANDER: {Need.CURIOSITY: 0.4},
     A.IDLE: {Need.REST: 0.2},
 }
@@ -106,12 +106,12 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
 EFFECTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: -0.3},
     A.SLEEP: {Need.REST: -0.25},
-    A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1},
-    A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.05},
+    A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.CURIOSITY: -0.3},
+    A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.4},
     A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6},
-    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.05},
+    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
-    A.MAKER_SPACE: {Need.CURIOSITY: -1.2},
+    A.MAKER_SPACE: {Need.CURIOSITY: -0.9},
     A.WANDER: {Need.CURIOSITY: -0.3},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},

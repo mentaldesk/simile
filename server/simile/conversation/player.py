@@ -473,7 +473,7 @@ class PlayerConversations:
         mind = behaviour.minds[npc]
         if npc in behaviour.leave_player_alone:
             return False
-        if mind.goal.activity in (Activity.HOME, Activity.SLEEP):
+        if behaviour.at_home(npc):
             return False
         if max(self._considered.get(npc, now), mind.cooldowns.get(PLAYER_ID, now)) > now:
             return False

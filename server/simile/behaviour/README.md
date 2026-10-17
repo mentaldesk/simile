@@ -17,7 +17,9 @@ sets F3's snapshot to the NPCs' real positions.
   away from seeking company), Adventure to wander, Creativity to the maker space. Needs (`social`,
   `curiosity`, `rest`, `news`, `inspiration`, 0 to 1) pull towards whatever meets them. The coffee
   shop peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before
-  bed. The activity just finished scores less.
+  bed. The activity just finished scores less. Curiosity is met fastest at the maker space, but
+  also at the square, the coffee shop and the park, by wandering and by reading, so it sends people
+  all over town rather than into one room.
 - **Loneliness.** `social` feels urgent on a convex curve, `need ** 3` (`urgency`), so a little
   barely registers and a lot crowds out everything else. An option scores the relief it brings:
   the area under that curve between the need now and after a typical stay (`effects` over the
@@ -106,7 +108,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
-| `state(npc)` | JSON for F3's `npc_state`: goal, needs (not yet inspiration), last decision's scores, bedtime. |
+| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft), last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
