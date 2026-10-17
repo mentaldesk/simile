@@ -5,9 +5,9 @@ import pytest
 from pydantic import ValidationError
 
 from simile.llm import FakeProvider, LLMClient, Model, StructuredOutputError
-from simile.npc.generate import HOMES, SYSTEM, Draft, generate, npc_id, plan, prompt
+from simile.npc.generate import CRAFT, HOMES, SYSTEM, Draft, generate, npc_id, plan, prompt
 from simile.npc.values import ranked
-from simile.schema import LocationKind, Npc
+from simile.schema import Craft, LocationKind, Medium, Npc
 from simile.world.map import load_map
 
 MakeDraft = Callable[..., Draft]
@@ -64,6 +64,28 @@ def test_the_prompt_puts_the_values_up_front() -> None:
     assert f"Age: {brief.age}" in text
     assert f"Gender: {brief.gender}" in text
     assert "resident 2 of 10" in text
+
+
+def test_the_prompt_asks_for_a_craft() -> None:
+    assert CRAFT in prompt(plan(10, 0)[0], 1, 10, [])
+
+
+async def test_each_resident_gets_the_craft_claude_chose(make_draft: MakeDraft) -> None:
+    mural = Craft(medium=Medium.MURAL, form="political street murals")
+    fake = FakeProvider([make_draft(craft=mural), make_draft("Bram de Wit", craft=None)])
+
+    npcs = await village(LLMClient(fake), count=2)
+
+    assert [npc.craft for npc in npcs] == [mural, None]
+    assert "Craft: mural: political street murals." in fake.requests[1].messages[-1].content
+
+
+def test_draft_must_say_whether_they_have_a_craft(make_draft: MakeDraft) -> None:
+    fields = make_draft().model_dump(mode="json")
+    del fields["craft"]
+
+    with pytest.raises(ValidationError):
+        Draft.model_validate(fields)
 
 
 async def test_generates_valid_npcs_for_every_home(llm: LLMClient, names: list[str]) -> None:

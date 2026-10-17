@@ -57,5 +57,9 @@
     "description": "A heavy Singaporean accent. A man in his mid sixties.",
     "reference_line": "Good morning. I got three meetings before lunch, and by Friday the new noodle bar licence must be signed and filed already.",
     "reference_clip": "content/voices/raymond.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "motivational quarterly targets and sales-floor maxims"
   }
 }

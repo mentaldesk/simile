@@ -57,5 +57,9 @@
     "description": "A heavy French accent. A woman in her early fifties.",
     "reference_line": "I read the filing twice last night. In fact, the claims are broader than they look, and the value is in paragraph two.",
     "reference_clip": "content/voices/marguerite.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "blunt valuation notes on local inventions"
   }
 }

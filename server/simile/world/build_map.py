@@ -11,7 +11,14 @@ from simile.art.palette import rgba
 from simile.art.preview import label
 from simile.art.tiles import edge_variant
 from simile.schema import Location, LocationKind, Tile, TileArea
-from simile.world.map import COLLISION_LAYER, LOCATIONS_LAYER, MAP_ID
+from simile.world.map import (
+    COLLISION_LAYER,
+    LOCATIONS_LAYER,
+    MAP_ID,
+    MURALS_LAYER,
+    Face,
+    MuralWall,
+)
 
 TILE_SIZE = 16
 WIDTH, HEIGHT = 64, 42
@@ -91,6 +98,7 @@ class Town:
         self.overrides: dict[tuple[int, int], str] = {}
         self.layers: dict[str, dict[tuple[int, int], str]] = {name: {} for name in TILE_LAYERS[1:]}
         self.locations: list[Location] = []
+        self.murals: list[MuralWall] = []
 
     def fill(self, terrain: str, x: int, y: int, w: int, h: int) -> None:
         for yy in range(max(y, 0), min(y + h, HEIGHT)):
@@ -196,6 +204,16 @@ class Town:
         door = x + rows[-1].index("d")
         self.place_building(f"house_{number}", name, LocationKind.HOUSE, area, door)
 
+    def mural(
+        self, wall_id: str, face: Face, x: int, y: int, width: int, bottom: float, top: float
+    ) -> None:
+        """A mural wall, with its painter on the middle tile in front of it."""
+        if face == "south":
+            stand = Tile(x=x + width // 2, y=y + 1)
+        else:
+            stand = Tile(x=x + 1, y=y + width // 2)
+        self.murals.append(MuralWall(wall_id, x, y, width, face, bottom, top, stand))
+
     def terminal(self, number: int, name: str, x: int, y: int) -> None:
         self.tall(x, y, "terminal")
         area = TileArea(x=x, y=y - 1, width=1, height=3)
@@ -293,6 +311,7 @@ def village(tileset: Tileset) -> Town:
     park(town)
     banyan_row(town)
     riverside(town)
+    mural_walls(town)
     scatter_grass(town)
     town.check()
     return town
@@ -501,6 +520,14 @@ def riverside(town: Town) -> None:
         town.tall(x, 36, "palm")
 
 
+def mural_walls(town: Town) -> None:
+    town.mural("corner_shop", "east", 21, 6, 4, 0.7, 2.85)
+    town.mural("daily_grind", "south", 28, 10, 3, 1.05, 1.9)
+    town.mural("tower", "east", 62, 5, 5, 0.15, 3.0)
+    town.mural("garden_flats", "east", 33, 29, 4, 0.15, 2.5)
+    town.mural("banyan_row", "east", 17, 31, 3, 0.15, 1.85)
+
+
 def tmj(town: Town) -> dict[str, Any]:
     ids = town.tileset.ids
     layers: list[dict[str, Any]] = []
@@ -517,19 +544,9 @@ def tmj(town: Town) -> dict[str, Any]:
     collision = [marker if (x, y) in blocked else 0 for y in range(HEIGHT) for x in range(WIDTH)]
     layers.append(_tile_layer(len(layers) + 1, COLLISION_LAYER, collision, visible=False))
     objects = [_object(i + 1, location) for i, location in enumerate(town.locations)]
-    layers.append(
-        {
-            "draworder": "topdown",
-            "id": len(layers) + 1,
-            "name": LOCATIONS_LAYER,
-            "objects": objects,
-            "opacity": 1,
-            "type": "objectgroup",
-            "visible": True,
-            "x": 0,
-            "y": 0,
-        }
-    )
+    layers.append(_object_layer(len(layers) + 1, LOCATIONS_LAYER, objects))
+    walls = [_wall(len(objects) + i + 1, wall) for i, wall in enumerate(town.murals)]
+    layers.append(_object_layer(len(layers) + 1, MURALS_LAYER, walls))
     tileset = {
         k: v for k, v in town.tileset.data.items() if k not in ("type", "version", "tiledversion")
     }
@@ -540,7 +557,7 @@ def tmj(town: Town) -> dict[str, Any]:
         "infinite": False,
         "layers": layers,
         "nextlayerid": len(layers) + 1,
-        "nextobjectid": len(objects) + 1,
+        "nextobjectid": len(objects) + len(walls) + 1,
         "orientation": "orthogonal",
         "renderorder": "right-down",
         "tiledversion": town.tileset.data["tiledversion"],
@@ -568,6 +585,20 @@ def _tile_layer(layer_id: int, name: str, data: list[int], visible: bool = True)
     }
 
 
+def _object_layer(layer_id: int, name: str, objects: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "draworder": "topdown",
+        "id": layer_id,
+        "name": name,
+        "objects": objects,
+        "opacity": 1,
+        "type": "objectgroup",
+        "visible": True,
+        "x": 0,
+        "y": 0,
+    }
+
+
 def _object(object_id: int, location: Location) -> dict[str, Any]:
     area = location.area
     return {
@@ -585,6 +616,29 @@ def _object(object_id: int, location: Location) -> dict[str, Any]:
         "width": area.width * TILE_SIZE,
         "x": area.x * TILE_SIZE,
         "y": area.y * TILE_SIZE,
+    }
+
+
+def _wall(object_id: int, wall: MuralWall) -> dict[str, Any]:
+    along, across = wall.width * TILE_SIZE, TILE_SIZE
+    width, height = (along, across) if wall.face == "south" else (across, along)
+    return {
+        "height": height,
+        "id": object_id,
+        "name": wall.id,
+        "properties": [
+            {"name": "bottom", "type": "float", "value": wall.bottom},
+            {"name": "face", "type": "string", "value": wall.face},
+            {"name": "stand_x", "type": "int", "value": wall.stand.x},
+            {"name": "stand_y", "type": "int", "value": wall.stand.y},
+            {"name": "top", "type": "float", "value": wall.top},
+        ],
+        "rotation": 0,
+        "type": "mural_wall",
+        "visible": True,
+        "width": width,
+        "x": wall.x * TILE_SIZE,
+        "y": wall.y * TILE_SIZE,
     }
 
 
@@ -635,9 +689,23 @@ def annotate(town: Town, image: Image.Image, scale: int = 2) -> Image.Image:
         draw.rectangle(box, outline=rgba("neon"), width=2)
         ex, ey = location.entry.x * cell, location.entry.y * cell
         draw.rectangle((ex + 8, ey + 8, ex + cell - 9, ey + cell - 9), fill=rgba("yellow"))
+    labels = []
     for location in town.locations:
         text = label(location.id.upper(), "white")
-        x, y = location.area.x * cell + 4, location.area.y * cell + 4
+        labels.append((text, location.area.x * cell + 4, location.area.y * cell + 4))
+    for wall in town.murals:
+        x0, y0 = wall.x * cell, wall.y * cell
+        text = label(wall.id.upper(), "cyan")
+        if wall.face == "south":
+            bar = (x0, y0 + cell - 3, x0 + wall.width * cell - 1, y0 + cell + 2)
+            labels.append((text, x0 + 4, y0 + cell - 7 - text.height))
+        else:
+            bar = (x0 + cell - 3, y0, x0 + cell + 2, y0 + wall.width * cell - 1)
+            labels.append((text, x0 + cell - 7 - text.width, y0 + 4))
+        draw.rectangle(bar, fill=rgba("cyan"))
+        sx, sy = wall.stand.x * cell, wall.stand.y * cell
+        draw.rectangle((sx + 8, sy + 8, sx + cell - 9, sy + cell - 9), fill=rgba("cyan"))
+    for text, x, y in labels:
         draw.rectangle((x - 3, y - 3, x + text.width + 2, y + text.height + 2), fill=rgba("ink"))
         out.alpha_composite(text, (x, y))
     return out

@@ -56,5 +56,9 @@
     "description": "A heavy Irish accent. A man in his mid seventies.",
     "reference_line": "I do come down to the square at nine each morning, as I always have. It's a grand quiet hour, so it is.",
     "reference_clip": "content/voices/tobias.wav"
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "plain verse about the river"
   }
 }

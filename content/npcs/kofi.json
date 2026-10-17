@@ -57,5 +57,9 @@
     "description": "A heavy Ghanaian accent. A man in his early twenties.",
     "reference_line": "Chale, I found a stack of old shutters behind the maker space this morning. I think they will make a fine wall for painting.",
     "reference_clip": "content/voices/kofi.wav"
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "political street murals"
   }
 }

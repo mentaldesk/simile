@@ -1,7 +1,8 @@
+import re
 from collections.abc import Sequence
 from pathlib import Path
 
-from simile.npc.generate import first_sentence
+from simile.npc.generate import craft_label, first_sentence
 from simile.npc.values import format_scores, ranked
 from simile.schema import Npc
 
@@ -32,6 +33,13 @@ def load_npcs(directory: Path = NPCS_DIR) -> list[Npc]:
     ]
 
 
+def readme_seed(directory: Path = NPCS_DIR) -> int:
+    """The seed the README says made the NPCs in `directory`."""
+    if found := re.search(r"--seed (\d+)", (directory / "README.md").read_text(encoding="utf-8")):
+        return int(found[1])
+    raise ValueError(f"{directory / 'README.md'} doesn't say which seed made the NPCs")
+
+
 def readme(npcs: Sequence[Npc], seed: int) -> str:
     command = f"uv run simile generate-npcs --count {len(npcs)} --seed {seed}"
     lines = [
@@ -50,14 +58,16 @@ def readme(npcs: Sequence[Npc], seed: int) -> str:
         "  (`server/simile/npc/values.py`). Age, gender and home are fixed in code too.",
         "- **Everything else** is written by Claude, one Sonnet call per NPC, from those values,",
         "  so a rerun gives new names and stories.",
+        "- **Crafts**, what each resident makes in their own time, can be chosen again without",
+        "  changing anything else with `uv run simile npc crafts`, one Sonnet call per NPC.",
         "- `voice.reference_clip` stays null until N2 records each voice. Sprites come from",
         "  `uv run simile art --npcs`.",
         "",
-        "Each NPC's strongest and weakest values next to the first line of their persona, to",
-        "check at a glance that the values drive the personality:",
+        "Each NPC's strongest and weakest values next to their craft and the first line of their",
+        "persona, to check at a glance that the values drive the personality:",
         "",
-        "| NPC | Age | Occupation | Cares most about | Cares least about | Persona |",
-        "|---|--:|---|---|---|---|",
+        "| NPC | Age | Occupation | Craft | Cares most about | Cares least about | Persona |",
+        "|---|--:|---|---|---|---|---|",
     ]
     for npc in sorted(npcs, key=lambda npc: npc.id):
         order = ranked(npc.values)
@@ -65,6 +75,7 @@ def readme(npcs: Sequence[Npc], seed: int) -> str:
             f"`{npc.id}` {npc.name}",
             str(npc.age),
             npc.occupation,
+            craft_label(npc.craft),
             format_scores(order[:3]),
             format_scores(order[::-1][:3]),
             first_sentence(npc.persona),
