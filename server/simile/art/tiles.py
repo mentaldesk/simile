@@ -1032,6 +1032,503 @@ def fountain() -> Canvas:
     return c.outlined("slate")
 
 
+def planks(name: str, base: str, line: str, grain: str | None = None) -> Canvas:
+    c = Canvas(fill=base)
+    r = _rng(name)
+    for top, joint in ((0, 5), (8, 12)):
+        if grain:
+            for _ in range(2):
+                c.hline(r.randrange(13), top + r.randrange(1, 6), 3, grain)
+        c.hline(0, top + 7, 16, line)
+        c.vline(joint, top, 7, line)
+    return c
+
+
+def floor_tiles() -> Canvas:
+    c = Canvas(fill="cream")
+    c.rect(0, 0, 8, 8, "peach")
+    c.rect(8, 8, 8, 8, "peach")
+    for i in (7, 15):
+        c.hline(0, i, 16, "sand")
+        c.vline(i, 0, 16, "sand")
+    return c
+
+
+def floor_concrete() -> Canvas:
+    c = Canvas(fill="concrete")
+    r = _rng("floor_concrete")
+    for colour, count in (("steel", 5), ("pavement", 3)):
+        for _ in range(count):
+            c.px(r.randrange(16), r.randrange(16), colour)
+    return c
+
+
+def mat() -> Canvas:
+    c = Canvas()
+    c.rect(1, 3, 14, 11, "espresso")
+    c.rect(2, 4, 12, 9, "maroon")
+    for y in range(5, 12, 2):
+        c.hline(3, y, 10, "red")
+    return c
+
+
+@dataclass(frozen=True)
+class Finish:
+    face: str
+    light: str
+    dark: str
+    trim: str
+
+
+FINISHES = {
+    "plaster": Finish("white", "white", "pavement", "concrete"),
+    "panel": Finish("cream", "white", "sand", "umber"),
+    "brick": Finish("brown", "tan", "umber", "espresso"),
+    "block": Finish("concrete", "pavement", "steel", "slate"),
+}
+
+
+def inner_wall(material: str, base: bool, end: str = "") -> Canvas:
+    """A room's back wall seen face on: the upper row with the wall's top, or the base row."""
+    f = FINISHES[material]
+    c = Canvas(fill=f.face)
+    if material == "brick":
+        for y in range(0, 16, 4):
+            c.hline(0, y + 3, 16, f.dark)
+            for x in range(y // 4 % 2 * 4, 16, 8):
+                c.vline(x, y, 3, f.dark)
+                c.px(x + 1, y, f.light)
+    elif material == "block":
+        c.hline(0, 7, 16, f.dark)
+        c.hline(0, 15, 16, f.dark)
+        c.vline(7, 0, 7, f.dark)
+        c.vline(15, 8, 7, f.dark)
+    if base:
+        if material == "panel":
+            c.rect(0, 2, 16, 11, "brown")
+            for x in (3, 7, 11, 15):
+                c.vline(x, 2, 11, "umber")
+            c.hline(0, 1, 16, "tan")
+        c.rect(0, 13, 16, 3, f.trim)
+        c.hline(0, 15, 16, shade(f.trim))
+    else:
+        c.hline(0, 0, 16, "ink")
+        c.rect(0, 1, 16, 2, "slate")
+        c.hline(0, 3, 16, "steel")
+        c.hline(0, 4, 16, f.dark)
+    face = 1 if base else 5
+    if end == "l":
+        c.vline(0, 0, 16, "ink")
+        c.vline(1, face, 16 - face, f.light)
+    if end == "r":
+        c.vline(15, 0, 16, "ink")
+        c.vline(14, face, 16 - face, f.dark)
+    return c
+
+
+def inner_wall_set(material: str) -> list[Tile]:
+    tiles = []
+    for base in (False, True):
+        for end in ("l", "", "r"):
+            name = "_".join(p for p in ("inwall", material, "base" if base else "", end) if p)
+            tiles.append(Tile(name, inner_wall(material, base, end), collides=True))
+    return tiles
+
+
+def wall_top(side: str) -> Canvas:
+    """The top of a side or front wall, seen from above, with the dark outside beyond it."""
+    c = Canvas(fill="ink")
+    if side == "w":
+        c.rect(10, 0, 6, 16, "slate")
+        c.vline(10, 0, 16, "night")
+        c.vline(15, 0, 16, "steel")
+    elif side == "e":
+        c.rect(0, 0, 6, 16, "slate")
+        c.vline(5, 0, 16, "night")
+        c.vline(0, 0, 16, "steel")
+    elif side == "s":
+        c.rect(0, 0, 16, 6, "slate")
+        c.hline(0, 5, 16, "night")
+        c.hline(0, 0, 16, "steel")
+    elif side == "sw":
+        c.rect(10, 0, 6, 6, "slate")
+        c.vline(10, 0, 6, "night")
+        c.hline(10, 5, 6, "night")
+        c.px(15, 0, "steel")
+    elif side == "se":
+        c.rect(0, 0, 6, 6, "slate")
+        c.vline(5, 0, 6, "night")
+        c.hline(0, 5, 6, "night")
+        c.px(0, 0, "steel")
+    return c
+
+
+def counter(end: str = "") -> Canvas:
+    c = Canvas()
+    c.rect(0, 3, 16, 5, "cream")
+    c.hline(0, 3, 16, "white")
+    c.hline(0, 7, 16, "sand")
+    c.rect(0, 8, 16, 6, "brown")
+    for x in (3, 11):
+        c.vline(x, 9, 4, "umber")
+    c.hline(0, 14, 16, "umber")
+    c.hline(0, 15, 16, "espresso")
+    if end == "l":
+        c.vline(0, 3, 13, "espresso")
+        c.vline(1, 8, 6, "tan")
+    if end == "r":
+        c.vline(15, 3, 13, "espresso")
+        c.vline(14, 8, 6, "umber")
+    return c
+
+
+def counter_corner() -> Canvas:
+    c = counter("r")
+    c.rect(3, 0, 10, 4, "cream")
+    c.vline(3, 0, 3, "sand")
+    c.vline(12, 0, 4, "sand")
+    c.vline(2, 0, 3, "espresso")
+    c.vline(13, 0, 3, "espresso")
+    c.hline(4, 3, 8, "cream")
+    return c
+
+
+def counter_run() -> Canvas:
+    c = Canvas()
+    c.rect(3, 0, 10, 16, "cream")
+    c.vline(3, 0, 16, "sand")
+    c.vline(12, 0, 16, "sand")
+    c.vline(2, 0, 16, "espresso")
+    c.vline(13, 0, 16, "espresso")
+    return c
+
+
+def counter_till() -> Canvas:
+    c = counter()
+    c.rect(4, 0, 8, 6, "night")
+    c.rect(5, 1, 6, 2, "cyan")
+    c.hline(5, 4, 6, "steel")
+    c.px(10, 4, "lime")
+    return c
+
+
+def counter_case() -> Canvas:
+    c = counter()
+    c.rect(1, 0, 14, 8, "steel")
+    c.rect(2, 1, 12, 6, "ice")
+    c.hline(2, 1, 12, "white")
+    for x, colour in ((3, "tan"), (6, "pink"), (9, "amber"), (12, "brown")):
+        c.rect(x, 4, 2, 2, colour)
+    c.hline(2, 6, 12, "pavement")
+    return c
+
+
+def stool() -> Canvas:
+    c = Canvas()
+    c.stamp(
+        [
+            "....mmmmmm....",
+            "...mrrrrrrm...",
+            "...mrpprrrm...",
+            "....mmmmmm....",
+            "......ss......",
+            "......ss......",
+            ".....cccc.....",
+            "......ss......",
+            "....kkkkkk....",
+        ],
+        {"m": "maroon", "r": "red", "p": "pink", "s": "steel", "c": "concrete", "k": "slate"},
+        1,
+        6,
+    )
+    return c
+
+
+def shelf(name: str = "shelf") -> Canvas:
+    c = Canvas()
+    r = _rng(name)
+    for y in (7, 13):
+        x = 2
+        while x < 13:
+            colour = r.choice(["white", "amber", "red", "cyan", "lime", "brown", "pavement"])
+            height = r.randrange(2, 5)
+            c.rect(x, y - height, 2, height, colour)
+            c.px(x, y - height, "pavement" if colour == "white" else "white")
+            x += r.randrange(3, 5)
+        c.hline(1, y, 14, "tan")
+        c.hline(1, y + 1, 14, "umber")
+    return c
+
+
+def back_counter() -> Canvas:
+    c = Canvas()
+    c.rect(0, 4, 16, 4, "sand")
+    c.hline(0, 4, 16, "cream")
+    c.rect(0, 8, 16, 8, "umber")
+    c.vline(7, 9, 6, "espresso")
+    c.vline(8, 9, 6, "brown")
+    for x in (5, 10):
+        c.px(x, 11, "amber")
+    c.hline(0, 15, 16, "espresso")
+    return c
+
+
+def espresso_machine() -> Canvas:
+    c = back_counter()
+    c.rect(1, 0, 14, 7, "steel")
+    c.hline(1, 0, 14, "pavement")
+    c.rect(2, 1, 12, 3, "concrete")
+    c.px(12, 2, "red")
+    c.px(3, 2, "white")
+    for x in (4, 10):
+        c.rect(x, 4, 2, 2, "night")
+    c.hline(2, 7, 12, "slate")
+    return c
+
+
+def grinder() -> Canvas:
+    c = back_counter()
+    c.rect(6, 0, 4, 3, "espresso")
+    c.hline(6, 0, 4, "umber")
+    c.px(7, 1, "brown")
+    c.rect(5, 3, 6, 4, "night")
+    c.px(9, 4, "cyan")
+    for x in (1, 13):
+        c.rect(x, 4, 2, 3, "white")
+        c.px(x, 4, "pavement")
+    return c
+
+
+def menu_board() -> Canvas:
+    c = Canvas(32, 16)
+    c.rect(1, 1, 30, 14, "tan")
+    c.rect(2, 2, 28, 12, "night")
+    text = "MENU"
+    draw_text(c, text, (32 - text_width(text)) // 2, 3, "white")
+    for y, width in ((10, 18), (12, 14)):
+        c.hline(4, y, width, "cream")
+        c.px(26, y, "amber")
+        c.px(27, y, "amber")
+    return c
+
+
+def steel_counter() -> Canvas:
+    c = Canvas()
+    c.rect(0, 4, 16, 4, "pavement")
+    c.hline(0, 4, 16, "white")
+    c.rect(0, 8, 16, 8, "concrete")
+    c.vline(7, 8, 8, "steel")
+    c.hline(0, 15, 16, "steel")
+    return c
+
+
+def kitchen_counter() -> Canvas:
+    c = steel_counter()
+    for x in (2, 9):
+        for y in (1, 3, 5):
+            c.hline(x, y, 5, "white")
+            c.hline(x + 1, y + 1, 3, "ice")
+    return c
+
+
+def stove() -> Canvas:
+    c = steel_counter()
+    c.rect(3, 1, 10, 6, "steel")
+    c.hline(3, 1, 10, "pavement")
+    c.rect(4, 2, 8, 1, "amber")
+    c.hline(4, 7, 8, "orange")
+    for x in (5, 8, 11):
+        c.px(x, 7, "yellow")
+    c.px(6, 0, "white")
+    c.px(9, 0, "white")
+    return c
+
+
+def lantern() -> Canvas:
+    c = Canvas()
+    c.stamp(
+        [
+            "......kk......",
+            ".....kkkk.....",
+            "...mrrrrrrm...",
+            "..mroaaaaorm..",
+            "..mraayyaarm..",
+            "..mroaaaaorm..",
+            "...mrrrrrrm...",
+            ".....kkkk.....",
+            "......yy......",
+            "......yy......",
+        ],
+        {
+            "k": "espresso",
+            "m": "maroon",
+            "r": "red",
+            "o": "orange",
+            "a": "amber",
+            "y": "yellow",
+        },
+        1,
+        2,
+    )
+    return c
+
+
+def noodle_table() -> Canvas:
+    c = Canvas()
+    c.stamp(
+        [
+            "................",
+            "................",
+            "................",
+            "................",
+            ".....uuuuuu.....",
+            "..m.ubwwbwwu.m..",
+            ".mrm.uaawaau.mrm",
+            "..s.ubwwbwwu..s.",
+            "..s..uuuuuu...s.",
+            ".kkk...ss....kkk",
+            ".......ss.......",
+            ".......ss.......",
+            "......ssss......",
+        ],
+        {
+            "u": "umber",
+            "b": "brown",
+            "w": "white",
+            "a": "amber",
+            "m": "maroon",
+            "r": "red",
+            "s": "slate",
+            "k": "steel",
+        },
+    )
+    return c
+
+
+def workbench() -> Canvas:
+    c = Canvas(32, 16)
+    c.rect(0, 5, 32, 4, "tan")
+    c.hline(0, 5, 32, "sand")
+    c.hline(0, 8, 32, "brown")
+    c.rect(0, 9, 32, 2, "umber")
+    for x in (1, 29):
+        c.rect(x, 11, 2, 5, "slate")
+    c.hline(3, 13, 26, "steel")
+    c.rect(3, 2, 4, 3, "steel")
+    c.hline(2, 4, 6, "slate")
+    c.hline(12, 3, 7, "brown")
+    c.rect(18, 1, 2, 4, "steel")
+    c.rect(23, 3, 5, 2, "amber")
+    c.px(25, 3, "ink")
+    return c
+
+
+def printer_3d() -> Canvas:
+    c = Canvas()
+    c.rect(2, 0, 12, 10, "night")
+    c.rect(3, 1, 10, 8, "navy")
+    c.hline(3, 2, 10, "steel")
+    c.rect(7, 3, 2, 1, "cyan")
+    c.rect(6, 6, 4, 2, "orange")
+    c.hline(3, 8, 10, "steel")
+    c.rect(1, 10, 14, 6, "slate")
+    c.hline(1, 10, 14, "steel")
+    c.px(12, 12, "lime")
+    return c
+
+
+def laser_cutter() -> Canvas:
+    c = Canvas(32, 16)
+    c.rect(0, 2, 32, 14, "slate")
+    c.hline(0, 2, 32, "steel")
+    c.rect(2, 3, 22, 5, "night")
+    c.rect(3, 4, 20, 3, "navy")
+    c.hline(4, 4, 18, "blue")
+    c.px(12, 5, "red")
+    c.px(13, 5, "pink")
+    c.rect(26, 3, 4, 5, "ink")
+    c.px(27, 4, "cyan")
+    c.px(28, 6, "lime")
+    c.hline(0, 9, 32, "night")
+    c.hline(0, 15, 32, "ink")
+    return c
+
+
+def loom() -> Canvas:
+    c = Canvas(32, 16)
+    threads = ("violet", "pink", "cyan", "amber")
+    for x in range(5, 27):
+        c.vline(x, 2, 10, threads[x % 4])
+    for y in range(8, 12):
+        c.hline(5, y, 22, ("magenta", "plum")[y % 2])
+    for x in (2, 28):
+        c.rect(x, 0, 2, 16, "brown")
+        c.vline(x, 0, 16, "tan")
+    c.rect(2, 1, 28, 2, "tan")
+    c.rect(2, 12, 28, 2, "brown")
+    c.hline(2, 13, 28, "umber")
+    return c
+
+
+def sewing_machine() -> Canvas:
+    c = Canvas()
+    c.rect(1, 8, 14, 2, "tan")
+    c.hline(1, 10, 14, "brown")
+    for x in (2, 12):
+        c.rect(x, 11, 2, 5, "slate")
+    c.rect(3, 5, 10, 3, "white")
+    c.rect(10, 1, 3, 5, "white")
+    c.rect(4, 1, 8, 2, "white")
+    c.hline(4, 2, 8, "red")
+    c.vline(5, 3, 2, "steel")
+    c.px(8, 0, "amber")
+    c.vline(12, 1, 7, "pavement")
+    return c
+
+
+def pegboard() -> Canvas:
+    c = Canvas(32, 16)
+    c.rect(1, 1, 30, 13, "sand")
+    for y in range(3, 13, 3):
+        for x in range(3, 30, 3):
+            c.px(x, y, "tan")
+    c.vline(5, 3, 7, "steel")
+    c.rect(4, 3, 3, 2, "steel")
+    c.vline(11, 4, 8, "brown")
+    c.rect(10, 3, 3, 2, "steel")
+    c.rect(16, 5, 4, 4, "amber")
+    c.rect(17, 6, 2, 2, "ink")
+    c.vline(23, 3, 6, "red")
+    c.vline(25, 3, 6, "red")
+    c.hline(23, 9, 3, "steel")
+    c.hline(1, 14, 30, "tan")
+    return c
+
+
+def frame() -> Canvas:
+    c = Canvas(32, 16)
+    c.rect(2, 2, 28, 12, "espresso")
+    c.rect(3, 3, 26, 10, "pavement")
+    c.rect(5, 5, 22, 6, "cream")
+    c.hline(5, 5, 22, "white")
+    return c
+
+
+def plinth() -> Canvas:
+    c = Canvas()
+    c.rect(4, 7, 8, 9, "white")
+    c.vline(11, 7, 9, "pavement")
+    c.hline(4, 7, 8, "pavement")
+    c.hline(4, 15, 8, "concrete")
+    c.stamp(
+        [".aa.", "aooa", ".ao.", "..o.", ".oa.", "aaoo"],
+        {"a": "amber", "o": "orange"},
+        6,
+        1,
+    )
+    return c
+
+
 def blocked() -> Canvas:
     c = Canvas()
     c.rect(0, 0, 16, 16, "red")
@@ -1152,6 +1649,76 @@ def groups() -> list[Group]:
             ],
         ),
         Group("editor", [Tile("blocked", blocked(), collides=True)]),
+        Group(
+            "floors",
+            [
+                Tile("floor_wood", planks("floor_wood", "tan", "brown", "sand")),
+                Tile("floor_tiles", floor_tiles()),
+                Tile("floor_concrete", floor_concrete()),
+                Tile("floor_gallery", planks("floor_gallery", "cream", "sand")),
+            ],
+        ),
+        Group(
+            "interior walls",
+            [
+                *(tile for material in FINISHES for tile in inner_wall_set(material)),
+                *(
+                    Tile(f"inwall_top_{side}", wall_top(side), collides=True)
+                    for side in ("w", "e", "s", "sw", "se")
+                ),
+            ],
+        ),
+        Group(
+            "furniture",
+            [
+                Tile("mat", mat()),
+                Tile("counter_l", counter("l"), collides=True),
+                Tile("counter", counter(), collides=True),
+                Tile("counter_r", counter("r"), collides=True),
+                Tile("counter_corner", counter_corner(), collides=True),
+                Tile("counter_run", counter_run(), collides=True),
+                Tile("counter_till", counter_till(), collides=True),
+                Tile("stool", stool()),
+                Tile("shelf", shelf()),
+            ],
+        ),
+        Group(
+            "coffee shop interior",
+            [
+                Tile("back_counter", back_counter(), collides=True),
+                Tile("espresso_machine", espresso_machine(), collides=True),
+                Tile("grinder", grinder(), collides=True),
+                Tile("counter_case", counter_case(), collides=True),
+                *_split(menu_board(), [["menu_board_l", "menu_board_r"]]),
+            ],
+        ),
+        Group(
+            "noodle bar interior",
+            [
+                Tile("kitchen_counter", kitchen_counter(), collides=True),
+                Tile("stove", stove(), collides=True),
+                Tile("noodle_table", noodle_table(), collides=True),
+                Tile("lantern", lantern()),
+            ],
+        ),
+        Group(
+            "maker space interior",
+            [
+                *_split(workbench(), [["workbench_l", "workbench_r"]], collides=True),
+                Tile("printer_3d", printer_3d(), collides=True),
+                *_split(laser_cutter(), [["laser_cutter_l", "laser_cutter_r"]], collides=True),
+                *_split(loom(), [["loom_l", "loom_r"]], collides=True),
+                Tile("sewing_machine", sewing_machine(), collides=True),
+                *_split(pegboard(), [["pegboard_l", "pegboard_r"]]),
+            ],
+        ),
+        Group(
+            "gallery interior",
+            [
+                *_split(frame(), [["frame_l", "frame_r"]]),
+                Tile("plinth", plinth(), collides=True),
+            ],
+        ),
     ]
 
 

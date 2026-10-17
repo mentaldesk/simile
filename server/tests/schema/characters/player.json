@@ -1,0 +1,111 @@
+{
+  "id": "cathal_dunphy",
+  "name": "Cathal Dunphy",
+  "birth_year": 1989,
+  "gender": "man",
+  "origin": "Ireland",
+  "arrival": {
+    "age": 29,
+    "reason": "to move in with a partner"
+  },
+  "occupation": "Plasterer",
+  "values": {
+    "freedom": 0.9,
+    "independence": 0.72,
+    "self_respect": 0.5,
+    "self_actualization": 0.55,
+    "creativity": 0.8,
+    "honesty": 0.6,
+    "compassion": 0.7,
+    "loyalty": 0.65,
+    "justice": 0.45,
+    "responsibility": 0.2,
+    "security": 0.15,
+    "equality": 0.6,
+    "tradition": 0.4,
+    "obedience": 0.05,
+    "success": 0.3,
+    "ambition": 0.25,
+    "discipline": 0.3,
+    "knowledge": 0.35,
+    "open_mindedness": 0.7,
+    "peace_of_mind": 0.4,
+    "pleasure": 0.92,
+    "connection": 0.88,
+    "adventure": 0.75,
+    "optimism": 0.85
+  },
+  "backstory": "Cathal grew up above his uncle's pub in a small town in the west of Ireland and left school at sixteen to plaster ceilings with him. He came to the village at twenty-nine to move in with a partner, and stayed for the work and the sea swimming after it ended two years later. He sings in the pub most Fridays and owes a friend more money than he likes to think about.",
+  "persona": "Cathal is a warm, loud, generous man who makes friends in a queue and forgets their birthdays. He takes nothing seriously for long except a level wall. He bristles at being told what to do and drifts away from anything that feels like a duty.",
+  "speaking_style": "Fast and musical, with long stories that wander off and come back. He calls everyone 'boss', swears fondly, and ends a serious point with a joke so nobody has to sit with it.",
+  "interests": [
+    "sea swimming",
+    "old ballads",
+    "restoring lime plaster",
+    "hurling on the radio"
+  ],
+  "past": [
+    {
+      "age": 16,
+      "content": "The day I left school, my uncle handed me a hawk and trowel and said the ceiling wouldn't plaster itself. I've never once missed the classroom.",
+      "salience": 0.6,
+      "valence": 0.5
+    },
+    {
+      "age": 24,
+      "content": "I came off a scaffold tower and cracked two ribs, and lay there laughing because the wall I'd done was still perfect.",
+      "salience": 0.5,
+      "valence": 0.1
+    },
+    {
+      "age": 31,
+      "content": "The night it ended, I was told I'd never stayed serious for more than an afternoon. I made a joke. I wish I hadn't.",
+      "salience": 0.85,
+      "valence": -0.7
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "Was with someone for two years who ended it because he never took anything seriously. He still thinks they were half right."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "Borrowed money from a friend to fix his van and keeps meaning to pay it back."
+    }
+  ],
+  "traits": {
+    "sociability": 0.85,
+    "negativity_bias": 0.35,
+    "forgiveness": 0.8,
+    "first_impressions": 0.7
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "curly",
+    "hair_colour": "#a5462b",
+    "top_colour": "#3e8948",
+    "bottom_colour": "#5a6988",
+    "shoe_colour": "#4a3326",
+    "build": "broad",
+    "accessories": [
+      "beanie"
+    ]
+  },
+  "voice": {
+    "description": "A strong West of Ireland accent. A man in his late thirties, bright and quick, with a laugh never far off.",
+    "reference_line": "Ah, sure look, the ceiling's done and it's level, boss. Put the kettle on and I'll tell you how.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "big cheerful seascapes on gable ends"
+  },
+  "source": "player",
+  "created": "2026-09-12T19:30:00Z",
+  "updated": "2026-10-03T21:05:00Z",
+  "version": 3
+}

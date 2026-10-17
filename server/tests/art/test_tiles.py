@@ -3,6 +3,7 @@ import pytest
 from simile.art.palette import PALETTE
 from simile.art.tiles import (
     COLUMNS,
+    FINISHES,
     MATERIALS,
     TERRAINS,
     TILE_SIZE,
@@ -25,6 +26,8 @@ OPAQUE_GROUPS = {
     "green roofs",
     "cream facades",
     "slate facades",
+    "floors",
+    "interior walls",
 }
 
 
@@ -150,3 +153,33 @@ def test_collision_and_draw_order_flags() -> None:
         assert TILES[name].above and not TILES[name].collides, name
     for name in ("tree_bl", "terminal", "lamp", "palm", "vending", "bench_l", "fountain_br"):
         assert TILES[name].collides and not TILES[name].above, name
+
+
+def test_rooms_are_walked_on_their_floors_mats_and_stools_and_nothing_else() -> None:
+    interior = groups()[-7:]
+    walk_on = {"mat", "stool"}
+    on_walls = {"shelf", "menu_board_l", "menu_board_r", "lantern", "pegboard_l", "pegboard_r"}
+    on_walls |= {"frame_l", "frame_r"}
+
+    assert interior[0].name == "floors"
+    for group in interior:
+        for tile in group.tiles:
+            walkable = group.name == "floors" or tile.name in walk_on | on_walls
+            assert tile.collides != walkable, tile.name
+            assert not tile.above, tile.name
+
+
+def test_interior_walls_come_in_every_finish_with_ends_for_free_standing_walls() -> None:
+    for material in FINISHES:
+        for row in (f"inwall_{material}", f"inwall_{material}_base"):
+            for name in (f"{row}_l", row, f"{row}_r"):
+                assert TILES[name].collides, name
+            assert column(f"{row}_l", 15) == column(row, 15)
+            assert column(f"{row}_r", 0) == column(row, 0)
+
+
+def test_interior_tiles_are_added_after_the_village_tiles() -> None:
+    ids = tile_ids(CELLS)
+    village = max(ids[name] for name in ("blocked", "fountain_br", "vending"))
+    assert min(ids[name] for name in ("floor_wood", "mat", "inwall_plaster", "plinth")) > village
+    assert ids["blocked"] == 208
