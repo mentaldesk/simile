@@ -303,6 +303,24 @@ describe('Dialogue', () => {
     ]);
   });
 
+  it('logs each piece once when a held clause was released before the rest', () => {
+    start('conv_1', 'player', 'mei');
+    deliver('mei', 'Go and find Marcus at the maker space—');
+    deliver('suki', 'Morning!', 2, 'c2');
+    deliver('mei', 'he knows everyone—');
+    deliver('mei', 'Anyway.');
+
+    expect(dialogue.log.entries.map(({ text }) => text)).toEqual([
+      'Go and find Marcus at the maker space—',
+      'Morning!',
+      'he knows everyone—Anyway.',
+    ]);
+    expect(dialogue.bubbles.current()[0]).toMatchObject({
+      speaker: 'mei',
+      text: 'Go and find Marcus at the maker space—he knows everyone—Anyway.',
+    });
+  });
+
   it('joins nothing across someone else speaking, and keeps the log in order', () => {
     deliver('mei', 'I was thinking,', 2, 'c3');
     deliver('suki', 'Go on, then.', 2, 'c4');

@@ -86,7 +86,7 @@ export class Dialogue {
     const entry = {
       speaker: line.speaker,
       name: this.nameOf(line.speaker),
-      text: held && continues ? text : line.text,
+      text: held && continues ? joined(held.text, line.text) : line.text,
       to: partner ? this.nameOf(PLAYER_ID) : null,
     };
     if (partner && CUT.test(text)) this.held.set(conversation, entry);
