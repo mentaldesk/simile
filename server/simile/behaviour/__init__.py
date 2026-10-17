@@ -8,9 +8,20 @@ from simile.behaviour.mind import (
     Mind,
     NewsInterest,
     NewsReader,
+    WallPicker,
+    WorkMaker,
     behaviour_of,
 )
-from simile.behaviour.scoring import Goal, Other, Places, Situation, choose, score, scores
+from simile.behaviour.scoring import (
+    Goal,
+    MuralSpot,
+    Other,
+    Places,
+    Situation,
+    choose,
+    score,
+    scores,
+)
 
 __all__ = [
     "DEFAULT_CONFIG",
@@ -23,12 +34,15 @@ __all__ = [
     "Hooks",
     "LiveConversations",
     "Mind",
+    "MuralSpot",
     "Need",
     "NewsInterest",
     "NewsReader",
     "Other",
     "Places",
     "Situation",
+    "WallPicker",
+    "WorkMaker",
     "behaviour_of",
     "choose",
     "score",

@@ -1,6 +1,7 @@
 import math
 import time
 from collections import Counter, defaultdict
+from collections.abc import Iterable
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -16,7 +17,8 @@ from simile.behaviour.mind import (
     no_conversations,
     skip_news,
 )
-from simile.schema import CoreValue, Id, LocationKind
+from simile.behaviour.scoring import MuralSpot
+from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Tile
 from simile.sim import Clock, FakeWallClock, World
 
 HOME = "home"
@@ -25,6 +27,13 @@ TERMINAL = "terminal"
 PLACES = (HOME, STREET, "coffee_shop", "square", TERMINAL, "park", "noodle_bar", "maker_space")
 NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
+STAND_IN_WALLS = (
+    MuralSpot("lane_wall", Tile(x=19, y=12)),
+    MuralSpot("tower_wall", Tile(x=59, y=12)),
+    MuralSpot("tea_wall", Tile(x=23, y=34)),
+)
+"""Walls on the street by the noodle bar, above the park and south of the square, until M7 puts
+real ones in the map."""
 
 
 @dataclass
@@ -39,12 +48,24 @@ class Observer:
     near: Counter[Id] = field(default_factory=Counter)
     out_at_night: Counter[datetime] = field(default_factory=Counter)
     goals: dict[Id, Counter[str]] = field(default_factory=lambda: defaultdict(Counter))
+    awake: Counter[Id] = field(default_factory=Counter)
+    creating: Counter[Id] = field(default_factory=Counter)
+    works: dict[Id, Counter[str]] = field(default_factory=lambda: defaultdict(Counter))
+    """Where each NPC made their works: home, a place, or `wall` for a mural."""
 
     def __post_init__(self) -> None:
         self.next = self.behaviour.clock.now
 
     def on_goal(self, event: GoalChosen) -> None:
         self.goals[event.npc][event.activity] += 1
+
+    def on_create(self, npc: Npc, wall: Id | None) -> None:
+        target = self.behaviour.goal(npc.id).target
+        self.works[npc.id]["wall" if wall else HOME if target == npc.home else str(target)] += 1
+
+    def mural_wall(self, npc: Npc) -> MuralSpot:
+        muralists = sorted(n.id for n in self.behaviour.npcs.values() if _medium(n) is Medium.MURAL)
+        return STAND_IN_WALLS[muralists.index(npc.id) % len(STAND_IN_WALLS)]
 
     def tick(self, dt: float) -> None:
         clock = self.behaviour.clock
@@ -57,6 +78,11 @@ class Observer:
         for npc in self.behaviour.npcs.values():
             place = self.place(npc.id, npc.home)
             self.by_hour[int(hour)][place] += 1
+            mind = self.behaviour.minds[npc.id]
+            if mind.goal.activity is not Activity.SLEEP:
+                self.awake[npc.id] += 1
+            if mind.goal.activity is Activity.CREATE and mind.walk is None:
+                self.creating[npc.id] += 1
             if place == HOME:
                 continue
             self.out[npc.id] += 1
@@ -81,10 +107,13 @@ class Observer:
         return location.id
 
 
-async def simulate(hours: float, *, start: datetime, seed: int = 0) -> tuple[Observer, float]:
-    """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows.
-    Conversations and news stay stubbed, so nothing calls Claude: there's always an article of
-    `NEWS_INTEREST` to read, and reading it does nothing."""
+async def simulate(
+    hours: float, *, start: datetime, seed: int = 0, npcs: Iterable[Npc] | None = None
+) -> tuple[Observer, float]:
+    """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows, with
+    N1's NPCs unless given others. Conversations, news and works stay stubbed, so nothing calls
+    Claude: there's always an article of `NEWS_INTEREST` to read, muralists always have one of
+    the `STAND_IN_WALLS`, and reading or making something does nothing."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
@@ -93,7 +122,7 @@ async def simulate(hours: float, *, start: datetime, seed: int = 0) -> tuple[Obs
     world = World(Clock(start), FakeWallClock())
     app.state.world = world
     app.state.headless = True
-    app.state.behaviour = create_behaviour(app, seed=seed)
+    app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs)
     observer = Observer(app.state.behaviour)
     world.bus.subscribe(GoalChosen, observer.on_goal)
     started = time.perf_counter()
@@ -105,6 +134,8 @@ async def simulate(hours: float, *, start: datetime, seed: int = 0) -> tuple[Obs
             read_news=skip_news,
             news_interest=lambda npc: NEWS_INTEREST,
             conversations=no_conversations,
+            create=observer.on_create,
+            mural_wall=observer.mural_wall,
         )
         world.loop.register(observer)
         await world.loop.run(timedelta(hours=hours))
@@ -185,7 +216,36 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     for npc in npcs:
         goals = observer.goals[npc.id]
         lines.append(f"| {npc.id} | " + " | ".join(str(goals[a]) for a in GOALS) + " |")
+    lines += ["", *works(observer, hours)]
     return "\n".join(lines) + "\n"
+
+
+def works(observer: Observer, hours: float) -> list[str]:
+    crafters = sorted(
+        (npc for npc in observer.behaviour.npcs.values() if npc.craft),
+        key=lambda npc: -npc.values[CoreValue.CREATIVITY],
+    )
+    if not crafters:
+        return ["**Works.** Nobody has a craft."]
+    lines = [
+        "**Works.** What each resident with a craft made, where, and the share of their waking "
+        f"time spent making it. Muralists paint the {len(STAND_IN_WALLS)} stand-in walls.",
+        "",
+        "| NPC | Craft | Creativity | Self-actualization | Works | Per sim-day | Where | Making |",
+        "|---|---|--:|--:|--:|--:|---|--:|",
+    ]
+    for npc in crafters:
+        made = observer.works[npc.id]
+        count = sum(made.values())
+        where = ", ".join(f"{place} {n}" for place, n in made.most_common()) or "-"
+        awake = observer.awake[npc.id]
+        making = f"{observer.creating[npc.id] / awake:.0%}" if awake else "-"
+        lines.append(
+            f"| {npc.id} | {_medium(npc)} | {npc.values[CoreValue.CREATIVITY]:.2f} | "
+            f"{npc.values[CoreValue.SELF_ACTUALIZATION]:.2f} | {count} | "
+            f"{count / hours * 24:.1f} | {where} | {making} |"
+        )
+    return lines
 
 
 GOALS = tuple(a for a in Activity if a is not Activity.TALK)
@@ -193,3 +253,7 @@ GOALS = tuple(a for a in Activity if a is not Activity.TALK)
 
 def _count(value: float) -> str:
     return f"{value:.1f}" if value else "·"
+
+
+def _medium(npc: Npc) -> Medium | None:
+    return npc.craft.medium if npc.craft else None

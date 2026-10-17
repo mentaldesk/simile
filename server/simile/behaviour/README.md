@@ -10,14 +10,14 @@ sets F3's snapshot to the NPCs' real positions.
 ## Deciding
 
 - **Activities.** Go home, the coffee shop, the square, a news terminal, the park, the noodle bar,
-  the maker space, wander, seek someone out (an NPC or the player), or idle. `sleep` and `talk` are
-  set by the loop rather than chosen.
+  the maker space, wander, seek someone out (an NPC or the player), idle, or make something
+  (`create`). `sleep` and `talk` are set by the loop rather than chosen.
 - **Score** = base + values + needs + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
   away from seeking company), Adventure to wander, Creativity to the maker space. Needs (`social`,
-  `curiosity`, `rest`, `news`, 0 to 1) pull towards whatever meets them. The coffee shop
-  peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before bed.
-  The activity just finished scores less.
+  `curiosity`, `rest`, `news`, `inspiration`, 0 to 1) pull towards whatever meets them. The coffee
+  shop peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before
+  bed. The activity just finished scores less.
 - **Loneliness.** `social` feels urgent on a convex curve, `need ** 3` (`urgency`), so a little
   barely registers and a lot crowds out everything else. An option scores the relief it brings:
   the area under that curve between the need now and after a typical stay (`effects` over the
@@ -34,6 +34,23 @@ sets F3's snapshot to the NPCs' real positions.
   interesting the best article they haven't read is (0 to 1), and a terminal's relief is scaled by
   it, so a gripping article pulls harder than a so-so one. With nothing worth reading, the
   terminals aren't an option.
+- **Making things.** Residents with a craft (`Npc.craft`) have an `inspiration` need, on the same
+  kind of curve as the news (`need ** 2`, from a lower base), so it builds slowly and then wins. It
+  rises with Creativity and Self-actualization, from about one work every two sim-days for the
+  least creative crafter to one a day for the most, and never without a craft. `create` meets it: a
+  stay of about an hour, and the need is met all at once as they leave (`finishing`), when B1 calls
+  the `create` hook. A stay cut short by a nudge or bedtime makes nothing, but a talk only pauses
+  it, and afterwards they go back for the rest of the stay. Nobody starts one with less than a
+  typical stay left before bed.
+- **Where they make things.** Writers write at home, the coffee shop or the maker space, wherever
+  their values fit best (`writing_places`): Peace of Mind, Independence, Security and Tradition at
+  home, Connection, Pleasure and Open-mindedness at the coffee shop, and Ambition and Success at the
+  maker space, which starts 0.1 behind (`writing_base`) because its regulars already crowd it.
+  Creativity plays no part, since every crafter has plenty and it already draws people to the maker
+  space. Walking time and company count as for any place, so a writer who dislikes crowds goes
+  elsewhere when it's busy. Someone writing at home is at home, so nobody seeks them out there.
+  Muralists paint the wall the `mural_wall` hook names, standing on its tile, and without a wall
+  they don't create.
 - **People.** Affinity is a weighted sum of R1's like, trust, respect and familiarity, read from R2
   with `as_of`, or `meet` for strangers. Seeking someone scores their affinity, scaled up by
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
@@ -44,7 +61,8 @@ sets F3's snapshot to the NPCs' real positions.
 - **Night.** Each NPC has a bedtime (21:00 to 23:45) and a wake time (05:30 to 09:00) from their
   values. Outside them they go home and sleep, whatever the scores say.
 - **When.** An NPC decides when their stay somewhere runs out (a few minutes for a wander, up to an
-  hour at home or the maker space), not every tick. Needs update every 5 sim seconds.
+  hour at home or the maker space, an hour and a quarter making something), not every tick. Needs
+  update every 5 sim seconds.
 
 Every weight and constant is in `BehaviourConfig`.
 
@@ -68,6 +86,8 @@ restore()
 | `read_news(npc)` | With the `Npc` when they reach a terminal | Does nothing |
 | `news_interest(npc)` | With the `Npc` at each decision: how interesting the best unread article is, 0 to 1 | 0, so nobody goes to the terminals |
 | `conversations()` | For each snapshot | `[]` |
+| `create(npc, wall)` | With the `Npc` when they finish a stay making something, and the wall's id for a mural (`None` for writing) | Does nothing |
+| `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, or `None` | `None`, so muralists don't paint |
 
 Hooks run inside a tick, so they mustn't block. One that raises is logged and counts as a decline.
 
@@ -79,13 +99,13 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | | |
 |---|---|
 | `pause(npc, talking_to=None)` | Stops their walk and their decisions. Does nothing for the player. |
-| `resume(npc)` | They decide again on the next think. |
+| `resume(npc)` | They decide again on the next think, or go back to what they were making. |
 | `nudge(npc, goal, bonus)` | Adds `bonus` to `goal`'s score at their next decision, which they make on the next think, stopping where they are if walking. False, changing nothing, if they're paused or asleep. The ambient director nudges through it. |
 | `available(seeker, other)` | Whether `seeker` could seek `other` out: B1's rules for who is sought, and `seeker`'s cooldowns. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
-| `goal(npc)` | Their `Goal`: `activity` and `target`, a location or entity id. |
+| `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
-| `state(npc)` | JSON for F3's `npc_state`: goal, needs, last decision's scores, bedtime. |
+| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft), last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
@@ -99,5 +119,8 @@ cd server && uv run simile behaviour simulate --hours 24 --seed 0
 
 Runs memory, world and behaviour on a `FakeWallClock` as fast as the CPU allows (a sim-day in
 about 15 s) and prints where everyone spent their time: minutes near others by Connection, places
-by hour and who was out at night. Conversations and news stay stubbed, so nothing calls Claude:
-there's always an article of middling interest unread, and reading it does nothing.
+by hour, who was out at night, and what each resident with a craft made per sim-day. Conversations,
+news and works stay stubbed, so nothing calls Claude: there's always an article of middling
+interest unread, and reading it does nothing. Until M7 puts mural walls in the map, muralists paint
+one of three stand-in walls on the street (`STAND_IN_WALLS`), and making something does nothing.
+`simulate(..., npcs=...)` runs another cast, such as one given crafts.

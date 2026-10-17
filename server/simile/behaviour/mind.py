@@ -13,6 +13,7 @@ from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, N
 from simile.behaviour.events import GoalChosen
 from simile.behaviour.scoring import (
     Goal,
+    MuralSpot,
     Other,
     Places,
     Situation,
@@ -24,7 +25,16 @@ from simile.behaviour.scoring import (
     scores,
     wake,
 )
-from simile.schema import PLAYER_ID, Conversation, Id, LocationKind, Npc, Relationship, Tile
+from simile.schema import (
+    PLAYER_ID,
+    Conversation,
+    Id,
+    LocationKind,
+    Medium,
+    Npc,
+    Relationship,
+    Tile,
+)
 from simile.sim import Clock, EventBus
 from simile.social import as_of, meet
 from simile.world.movement import Movement, Outcome, Point, Walk
@@ -35,6 +45,8 @@ type ConversationRequest = Callable[[Id, Id], bool]
 type NewsReader = Callable[[Npc], None]
 type NewsInterest = Callable[[Npc], float]
 type LiveConversations = Callable[[], list[Conversation]]
+type WorkMaker = Callable[[Npc, Id | None], None]
+type WallPicker = Callable[[Npc], MuralSpot | None]
 
 AT_HOME = (Activity.HOME, Activity.SLEEP)
 GOING_TO_A_PLACE = (
@@ -46,6 +58,7 @@ GOING_TO_A_PLACE = (
     Activity.PARK,
     Activity.NOODLE_BAR,
     Activity.MAKER_SPACE,
+    Activity.CREATE,
 )
 
 
@@ -65,6 +78,14 @@ def no_conversations() -> list[Conversation]:
     return []
 
 
+def make_nothing(npc: Npc, wall: Id | None) -> None:
+    return None
+
+
+def no_wall(npc: Npc) -> MuralSpot | None:
+    return None
+
+
 class Hooks:
     """The interfaces other modules implement, stubbed until they do. See the README."""
 
@@ -73,6 +94,8 @@ class Hooks:
         self.read_news: NewsReader = skip_news
         self.news_interest: NewsInterest = no_news
         self.conversations: LiveConversations = no_conversations
+        self.create: WorkMaker = make_nothing
+        self.mural_wall: WallPicker = no_wall
 
     def set(
         self,
@@ -81,6 +104,8 @@ class Hooks:
         read_news: NewsReader | None = None,
         news_interest: NewsInterest | None = None,
         conversations: LiveConversations | None = None,
+        create: WorkMaker | None = None,
+        mural_wall: WallPicker | None = None,
     ) -> Callable[[], None]:
         """Plug in the hooks given and return a function that puts back what they replaced."""
         given = {
@@ -88,6 +113,8 @@ class Hooks:
             "read_news": read_news,
             "news_interest": news_interest,
             "conversations": conversations,
+            "create": create,
+            "mural_wall": mural_wall,
         }
         hooks = {name: hook for name, hook in given.items() if hook is not None}
         previous = {name: getattr(self, name) for name in hooks}
@@ -123,6 +150,12 @@ class Mind:
     cooldowns: dict[Id, datetime] = field(default_factory=dict)
     nudge: tuple[Goal, float] | None = None
     """A goal and the bonus it gets at the next decision."""
+    finishes: bool = False
+    """Whether they're staying at their goal until `until`, so leaving then finishes it."""
+    mural: MuralSpot | None = None
+    """The wall a muralist would paint at the last decision."""
+    interrupted: tuple[Goal, timedelta] | None = None
+    """What they were making when a talk paused them, and how long it had left."""
 
 
 class Behaviour:
@@ -162,7 +195,12 @@ class Behaviour:
         for npc in self.npcs.values():
             if npc.id not in placed:
                 self.movement.place(npc.id, npc.home)
-            needs = {need: self.rng.uniform(*self.config.start_needs[need]) for need in Need}
+            needs = {
+                need: self.rng.uniform(*self.config.start_needs[need])
+                if npc.craft or need is not Need.INSPIRATION
+                else 0.0
+                for need in Need
+            }
             mind = Mind(
                 npc,
                 needs,
@@ -197,7 +235,9 @@ class Behaviour:
         if npc == PLAYER_ID:
             return
         mind = self.minds[npc]
-        mind.paused = True
+        if mind.finishes and mind.goal.activity is Activity.CREATE and mind.until is not None:
+            mind.interrupted = (mind.goal, mind.until - self.clock.now)
+        mind.paused, mind.finishes = True, False
         mind.until, mind.nudge = None, None
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -211,9 +251,15 @@ class Behaviour:
         if npc == PLAYER_ID:
             return
         mind = self.minds[npc]
-        if mind.paused:
-            mind.paused = False
-            mind.until = self.clock.now
+        if not mind.paused:
+            return
+        mind.paused = False
+        mind.until = self.clock.now
+        if mind.interrupted is not None:
+            (goal, left), mind.interrupted = mind.interrupted, None
+            mind.goal, mind.since, mind.finishes = goal, self.clock.now, True
+            mind.until += left
+            self._publish(mind)
 
     def restore(
         self,
@@ -235,6 +281,7 @@ class Behaviour:
         mind.needs.update(needs)
         mind.cooldowns = dict(cooldowns)
         mind.paused, mind.chases, mind.options, mind.nudge = False, 0, {}, None
+        mind.finishes, mind.interrupted = until is not None, None
         self._needs_at = self.clock.now
         self._publish(mind)
 
@@ -246,7 +293,7 @@ class Behaviour:
         walk, mind.walk = mind.walk, None
         if walk is not None:
             self.movement.stop(npc)
-        mind.nudge, mind.until = (goal, bonus), self.clock.now
+        mind.nudge, mind.until, mind.finishes = (goal, bonus), self.clock.now, False
         return True
 
     def available(self, seeker: Id, other: Id) -> bool:
@@ -271,7 +318,11 @@ class Behaviour:
             "paused": mind.paused,
             "since": mind.since.isoformat(),
             "until": mind.until.isoformat() if mind.until else None,
-            "needs": {need.value: round(value, 3) for need, value in mind.needs.items()},
+            "needs": {
+                need.value: round(value, 3)
+                for need, value in mind.needs.items()
+                if mind.npc.craft or need is not Need.INSPIRATION
+            },
             "options": dict(mind.options),
             "bedtime": round(mind.bedtime, 2),
             "wake": round(mind.wake, 2),
@@ -304,7 +355,7 @@ class Behaviour:
                 rate = 0.0 if sleeping else self._rise(mind.npc, need)
                 rate += effects.get(need, 0.0)
                 mind.needs[need] = _clamp(mind.needs[need] + rate * hours)
-            if activity not in AT_HOME and self._has_company(mind.npc.id, positions):
+            if not self._home_bound(mind) and self._has_company(mind.npc.id, positions):
                 mind.needs[Need.SOCIAL] = _clamp(mind.needs[Need.SOCIAL] - config.company * hours)
 
     def _effects(self, mind: Mind) -> Mapping[Need, float]:
@@ -316,6 +367,8 @@ class Behaviour:
         return effects
 
     def _rise(self, npc: Npc, need: Need) -> float:
+        if need is Need.INSPIRATION and npc.craft is None:
+            return 0.0
         weights = self.config.rise_values.get(need, {})
         return self.config.rise.get(need, 0.0) + sum(w * npc.values[v] for v, w in weights.items())
 
@@ -328,10 +381,14 @@ class Behaviour:
         )
 
     def _decide(self, mind: Mind) -> None:
+        if mind.finishes:
+            self._finish(mind)
         if asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
             self._sleep(mind)
             return
-        options = scores(self._situation(mind), self.places, self.config)
+        situation = self._situation(mind)
+        mind.mural = situation.mural
+        options = scores(situation, self.places, self.config)
         if mind.nudge is not None:
             (goal, bonus), mind.nudge = mind.nudge, None
             if goal in options:
@@ -363,6 +420,8 @@ class Behaviour:
                 )
             )
         news = self._call(self.hooks.news_interest, npc)
+        craft = npc.craft.medium if npc.craft else None
+        mural = self._call(self.hooks.mural_wall, npc) if craft is Medium.MURAL else None
         return Situation(
             npc.values,
             mind.needs,
@@ -373,11 +432,23 @@ class Behaviour:
             others,
             mind.goal,
             _clamp(news) if isinstance(news, int | float) else 0.0,
+            craft,
+            mural if isinstance(mural, MuralSpot) else None,
         )
+
+    def _finish(self, mind: Mind) -> None:
+        """At the end of a stay: apply `finishing`, and hand over whatever they made."""
+        mind.finishes = False
+        activity = mind.goal.activity
+        for need, change in self.config.finishing.get(activity, {}).items():
+            mind.needs[need] = _clamp(mind.needs[need] + change)
+        if activity is Activity.CREATE:
+            wall = mind.goal.target if _paints(mind.npc) else None
+            self._call(self.hooks.create, mind.npc, wall)
 
     def _place_of(self, entity: Id, position: Point) -> str | None:
         mind = self.minds.get(entity)
-        if mind and mind.goal.activity in GOING_TO_A_PLACE:
+        if mind and mind.goal.activity in GOING_TO_A_PLACE and not _painting(mind):
             return mind.goal.target
         location = self.places.at(position)
         return location.id if location else None
@@ -389,12 +460,16 @@ class Behaviour:
             return False
         mind = self.minds.get(other)
         return mind is None or not (
-            mind.paused or mind.goal.activity in AT_HOME or asleep(hour, mind.bedtime, mind.wake)
+            mind.paused or self._home_bound(mind) or asleep(hour, mind.bedtime, mind.wake)
         )
+
+    def _home_bound(self, mind: Mind) -> bool:
+        """At or heading home, to rest, sleep or make something there."""
+        return mind.goal.activity in AT_HOME or mind.goal == Goal(Activity.CREATE, mind.npc.home)
 
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
-        mind.nudge = None
+        mind.nudge, mind.finishes, mind.interrupted = None, False, None
         self._publish(mind)
         match goal.activity:
             case Activity.IDLE:
@@ -407,6 +482,8 @@ class Behaviour:
                     self._walk(mind, tile)
             case Activity.SEEK:
                 self._walk(mind, self._tile_of(goal.target))
+            case Activity.CREATE if mind.mural is not None and _paints(mind.npc):
+                self._walk(mind, mind.mural.tile)
             case _:
                 self._walk(mind, goal.target)
 
@@ -444,6 +521,7 @@ class Behaviour:
         else:
             dwell = self.config.dwell.get(goal.activity, (5, 15))
             mind.until = self.clock.now + self._minutes(dwell)
+            mind.finishes = True
 
     def _approach(self, mind: Mind) -> bool:
         """At the end of a walk to someone: talk, hang around, or follow them. True if the NPC
@@ -518,6 +596,14 @@ def _clamp(value: float) -> float:
     return min(max(value, 0.0), 1.0)
 
 
+def _paints(npc: Npc) -> bool:
+    return npc.craft is not None and npc.craft.medium is Medium.MURAL
+
+
+def _painting(mind: Mind) -> bool:
+    return mind.goal.activity is Activity.CREATE and _paints(mind.npc)
+
+
 def behaviour_of(app: Starlette) -> Behaviour:
     """The server's `Behaviour` on `app.state.behaviour`, created with N1's NPCs on first use."""
     if not hasattr(app.state, "behaviour"):
@@ -526,7 +612,11 @@ def behaviour_of(app: Starlette) -> Behaviour:
 
 
 def create_behaviour(
-    app: Starlette, *, config: BehaviourConfig = DEFAULT_CONFIG, seed: int | None = None
+    app: Starlette,
+    *,
+    config: BehaviourConfig = DEFAULT_CONFIG,
+    seed: int | None = None,
+    npcs: Iterable[Npc] | None = None,
 ) -> Behaviour:
     from simile.memory import memory_of
     from simile.npc import load_npcs
@@ -538,7 +628,7 @@ def create_behaviour(
         world.clock,
         world.bus,
         movement_of(app),
-        load_npcs(),
+        load_npcs() if npcs is None else npcs,
         memory_of(app),
         config=config,
         seed=seed,

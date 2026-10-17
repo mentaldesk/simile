@@ -13,10 +13,20 @@ from simile.behaviour import (
     BehaviourConfig,
     Goal,
     GoalChosen,
+    MuralSpot,
     Need,
 )
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, Baseline, CoreValue, Npc, Relationship
+from simile.schema import (
+    PLAYER_ID,
+    Baseline,
+    CoreValue,
+    Craft,
+    Medium,
+    Npc,
+    Relationship,
+    Tile,
+)
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement
 from simile.world.map import load_map
@@ -539,7 +549,7 @@ def test_the_same_seed_gives_the_same_day() -> None:
 
 
 def test_state_is_json_for_the_debug_overlay() -> None:
-    village = Village([ANA])
+    village = Village([ANA, crafter("wren", "house_2", Medium.WRITING)])
     village.run(hours=1)
 
     state = village.behaviour.state("ana")
@@ -548,6 +558,7 @@ def test_state_is_json_for_the_debug_overlay() -> None:
     needs = state["needs"]
     assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest", "news"}
     assert state["goal"] == str(village.behaviour.goal("ana"))
+    assert "inspiration" in village.behaviour.state("wren")["needs"]
 
 
 def test_npcs_already_on_the_map_stay_where_they_are() -> None:
@@ -565,3 +576,163 @@ def test_places_others_are_heading_for_count_as_where_they_are() -> None:
     situation = village.behaviour._situation(village.behaviour.minds["ana"])
 
     assert [(o.id, o.place) for o in situation.others] == [("ben", "coffee_shop")]
+
+
+def crafter(id: str, home: str, medium: Medium, **values: float) -> Npc:
+    return make_npc(id, home, **values).model_copy(
+        update={"craft": Craft(medium=medium, form="something")}
+    )
+
+
+WRITER = crafter("wren", "house_1", Medium.WRITING)
+PAINTER = crafter("pia", "house_2", Medium.MURAL)
+WALL = MuralSpot("wall_a", Tile(x=19, y=12))
+
+
+class Made:
+    def __init__(self, village: Village) -> None:
+        self.village = village
+        self.works: list[tuple[datetime, str, str | None]] = []
+
+    def __call__(self, npc: Npc, wall: str | None) -> None:
+        self.works.append((self.village.clock.now, npc.id, wall))
+
+
+def arrived(village: Village, npc: str) -> datetime:
+    village.run_until(lambda: village.behaviour.goal(npc).activity is A.CREATE)
+    village.run_until(lambda: village.behaviour.minds[npc].walk is None)
+    return village.clock.now
+
+
+def test_inspiration_rises_only_with_a_craft_and_faster_with_creativity() -> None:
+    config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (180, 180)})
+    keen = crafter("keen", "house_1", Medium.WRITING, creativity=0.9)
+    dull = crafter("dull", "house_2", Medium.WRITING, creativity=0.2)
+    none = make_npc("none", "house_3", creativity=0.9)
+    village = Village([keen, dull, none], config=config)
+    assert village.behaviour.needs("none")[Need.INSPIRATION] == 0
+    for mind in village.behaviour.minds.values():
+        mind.needs[Need.INSPIRATION] = 0.1
+
+    village.run(hours=2)
+
+    rise = {npc: village.behaviour.needs(npc)[Need.INSPIRATION] - 0.1 for npc in ("keen", "dull")}
+    assert rise["keen"] > 1.5 * rise["dull"] > 0
+    assert village.behaviour.needs("none")[Need.INSPIRATION] == 0.1
+
+
+def test_writers_hand_over_their_work_at_the_end_of_their_stay() -> None:
+    village = Village([WRITER], config=keen(A.CREATE))
+    made = Made(village)
+    village.behaviour.hooks.set(create=made)
+    village.behaviour.minds["wren"].needs[Need.INSPIRATION] = 0.9
+
+    there = arrived(village, "wren")
+    assert made.works == []
+    village.run_until(lambda: bool(made.works), minutes=90)
+
+    when, npc, wall = made.works[0]
+    low, high = DEFAULT_CONFIG.dwell[A.CREATE]
+    assert (npc, wall) == ("wren", None)
+    assert timedelta(minutes=low) <= when - there <= timedelta(minutes=high)
+    assert village.behaviour.needs("wren")[Need.INSPIRATION] < 0.01
+
+
+def test_muralists_paint_the_wall_the_hook_names_from_its_tile() -> None:
+    village = Village([PAINTER], config=keen(A.CREATE))
+    made = Made(village)
+    village.behaviour.hooks.set(create=made, mural_wall=lambda npc: WALL)
+
+    arrived(village, "pia")
+    assert village.behaviour.goal("pia") == Goal(A.CREATE, "wall_a")
+    assert village.movement.position("pia") == (WALL.tile.x, WALL.tile.y)
+    village.run_until(lambda: bool(made.works), minutes=90)
+
+    assert [(npc, wall) for _, npc, wall in made.works] == [("pia", "wall_a")]
+
+
+def test_a_muralist_with_no_wall_never_creates() -> None:
+    village = Village([PAINTER], config=keen(A.CREATE))
+    asked: list[str] = []
+
+    def nowhere(npc: Npc) -> None:
+        asked.append(npc.id)
+
+    village.behaviour.hooks.set(mural_wall=nowhere)
+    village.behaviour.minds["pia"].needs[Need.INSPIRATION] = 1.0
+
+    village.run(hours=3)
+
+    assert asked and set(asked) == {"pia"}
+    assert len(village.chosen("pia")) > 3
+    assert "create" not in {e.activity for _, e in village.goals}
+
+
+def test_a_stay_cut_short_makes_nothing() -> None:
+    village = Village([WRITER], config=keen(A.CREATE))
+    made = Made(village)
+    village.behaviour.hooks.set(create=made)
+    village.behaviour.minds["wren"].needs[Need.INSPIRATION] = 0.9
+    arrived(village, "wren")
+    village.run(minutes=20)
+
+    village.behaviour.nudge("wren", Goal(A.PARK, "park"), 50.0)
+    village.run(minutes=0.1)
+
+    assert village.behaviour.goal("wren") == Goal(A.PARK, "park")
+    assert made.works == []
+    assert village.behaviour.needs("wren")[Need.INSPIRATION] > 0.9
+
+
+def test_a_talk_pauses_making_something_and_they_go_back_to_it() -> None:
+    village = Village([WRITER, BEN], config=keen(A.CREATE))
+    made = Made(village)
+    village.behaviour.hooks.set(create=made)
+    there = arrived(village, "wren")
+    writing = village.behaviour.goal("wren")
+    planned = village.behaviour.minds["wren"].until
+    assert planned is not None
+
+    village.run(minutes=10)
+    village.behaviour.pause("wren", "ben")
+    village.run(minutes=15)
+    village.behaviour.resume("wren")
+
+    assert village.behaviour.goal("wren") == writing
+    assert village.behaviour.minds["wren"].until == planned + timedelta(minutes=15)
+    village.run_until(lambda: bool(made.works), minutes=90)
+    assert made.works[0][0] - there >= timedelta(minutes=DEFAULT_CONFIG.dwell[A.CREATE][0] + 15)
+
+
+def test_writing_at_home_keeps_seekers_away_and_writing_out_does_not() -> None:
+    village = Village([WRITER, BEN], start=at(11), config=keen(A.IDLE))
+    now = village.clock.now
+    needs = village.behaviour.needs("wren")
+
+    village.behaviour.restore("wren", Goal(A.CREATE, "house_1"), needs, now, now, {})
+    assert not village.behaviour.available("ben", "wren")
+
+    village.behaviour.restore("wren", Goal(A.CREATE, "coffee_shop"), needs, now, now, {})
+    assert village.behaviour.available("ben", "wren")
+
+
+def test_a_restored_stay_making_something_still_finishes() -> None:
+    village = Village([WRITER], config=keen(A.IDLE))
+    made = Made(village)
+    village.behaviour.hooks.set(create=made)
+    now = village.clock.now
+    needs = village.behaviour.needs("wren")
+
+    village.behaviour.restore(
+        "wren", Goal(A.CREATE, "house_1"), needs, now, now + timedelta(minutes=10), {}
+    )
+    village.run(minutes=11)
+
+    assert [(npc, wall) for _, npc, wall in made.works] == [("wren", None)]
+
+
+def test_the_new_stubs_make_nothing_and_pick_no_wall() -> None:
+    hooks = Village([ANA]).behaviour.hooks
+
+    assert hooks.create(WRITER, None) is None
+    assert hooks.mural_wall(PAINTER) is None
