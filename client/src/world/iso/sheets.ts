@@ -2,7 +2,6 @@ import { SPRITE_HEIGHT, WALKING_SPEED } from '../tuning';
 import type { Point } from '../view';
 import type { SpriteFrame } from './screen';
 
-/** A1's facings on screen (`content/art/README.md`): top-down's four and the three-quarter views. */
 export type IsoFacing =
   | 'down_right'
   | 'down'
@@ -25,7 +24,6 @@ export const ISO_FACINGS: readonly IsoFacing[] = [
   'right',
 ];
 
-/** A1's frame in texture px, with the feet on its bottom row. */
 export const PIXEL_TEXTURE = { width: 16, height: SPRITE_HEIGHT };
 
 /** Scene px per texture px: a 24 px figure 96 px tall, 1.8 m by the scenery's scale. */
@@ -40,7 +38,6 @@ export function facingFor(step: Point, previous: IsoFacing): IsoFacing {
   return ISO_FACINGS[(eighths + 8) % 8];
 }
 
-/** The frame in scene px: whole scene px per texture px, so every texture px stays square. */
 export function pixelFrame(scale: number = PIXEL_SCALE, texture = PIXEL_TEXTURE): SpriteFrame {
   if (!Number.isInteger(scale) || scale < 1) throw new RangeError(`scale ${scale} isn't a whole number`);
   const [width, height] = [texture.width * scale, texture.height * scale];
@@ -51,5 +48,4 @@ export const isoWalkFrames = (facing: IsoFacing) => WALK_COLUMNS.map((column) =>
 
 export const standingFrame = (facing: IsoFacing) => `${facing}-${STANDING_COLUMN}`;
 
-/** The walk is `WALK_FPS` at `WALKING_SPEED`, as in top-down, so its pace follows the speed. */
 export const walkTimeScale = (speed: number) => speed / WALKING_SPEED;

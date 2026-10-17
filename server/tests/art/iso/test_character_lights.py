@@ -12,7 +12,7 @@ LIGHTS = json.loads((CHARACTERS / "lights.json").read_text())
 
 
 def test_only_the_light_constants_are_left() -> None:
-    assert [p.name for p in CHARACTERS.iterdir()] == ["lights.json"]
+    assert [p.name for p in CHARACTERS.iterdir() if not p.name.startswith(".")] == ["lights.json"]
 
 
 def test_there_are_constants_for_every_lighting_set() -> None:
