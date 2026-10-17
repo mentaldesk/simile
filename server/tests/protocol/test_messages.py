@@ -4,7 +4,8 @@ from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
+from pydantic.json_schema import JsonSchemaMode
 
 from simile.protocol import (
     Artist,
@@ -16,6 +17,7 @@ from simile.protocol import (
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
+    Message,
     Mural,
     MuralsMessage,
     NewsArticle,
@@ -151,6 +153,14 @@ def test_the_exported_position_has_a_map_but_does_not_require_it() -> None:
 
     assert list(position["properties"]) == ["x", "y", "map"]
     assert position["required"] == ["x", "y"]
+
+
+@pytest.mark.parametrize("mode", ["validation", "serialization"])
+def test_a_position_schema_never_requires_a_map(mode: JsonSchemaMode) -> None:
+    in_messages = TypeAdapter(Message).json_schema(mode=mode)["$defs"]["Position"]
+
+    assert Position.model_json_schema(mode=mode)["required"] == ["x", "y"]
+    assert in_messages["required"] == ["x", "y"]
 
 
 def test_snapshot_entities_carry_their_map() -> None:

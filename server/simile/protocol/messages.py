@@ -7,7 +7,7 @@ from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line, Model, Times
 
 
 def _map_not_required(schema: dict[str, Any]) -> None:
-    schema["required"].remove("map")
+    schema["required"] = [name for name in schema["required"] if name != "map"]
 
 
 class Position(Model):
