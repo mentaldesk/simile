@@ -224,3 +224,103 @@ In a map whose tileset has `firstgid` 1, a tile's gid is its id + 1.
 | id | name | collides | above |
 |---:|---|:---:|:---:|
 | 208 | `blocked` | yes |  |
+
+## Floors
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 224 | `floor_wood` |  |  |
+| 225 | `floor_tiles` |  |  |
+| 226 | `floor_concrete` |  |  |
+| 227 | `floor_gallery` |  |  |
+
+## Interior walls
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 240 | `inwall_plaster_l` | yes |  |
+| 241 | `inwall_plaster` | yes |  |
+| 242 | `inwall_plaster_r` | yes |  |
+| 243 | `inwall_plaster_base_l` | yes |  |
+| 244 | `inwall_plaster_base` | yes |  |
+| 245 | `inwall_plaster_base_r` | yes |  |
+| 246 | `inwall_panel_l` | yes |  |
+| 247 | `inwall_panel` | yes |  |
+| 248 | `inwall_panel_r` | yes |  |
+| 249 | `inwall_panel_base_l` | yes |  |
+| 250 | `inwall_panel_base` | yes |  |
+| 251 | `inwall_panel_base_r` | yes |  |
+| 252 | `inwall_brick_l` | yes |  |
+| 253 | `inwall_brick` | yes |  |
+| 254 | `inwall_brick_r` | yes |  |
+| 255 | `inwall_brick_base_l` | yes |  |
+| 256 | `inwall_brick_base` | yes |  |
+| 257 | `inwall_brick_base_r` | yes |  |
+| 258 | `inwall_block_l` | yes |  |
+| 259 | `inwall_block` | yes |  |
+| 260 | `inwall_block_r` | yes |  |
+| 261 | `inwall_block_base_l` | yes |  |
+| 262 | `inwall_block_base` | yes |  |
+| 263 | `inwall_block_base_r` | yes |  |
+| 264 | `inwall_top_w` | yes |  |
+| 265 | `inwall_top_e` | yes |  |
+| 266 | `inwall_top_s` | yes |  |
+| 267 | `inwall_top_sw` | yes |  |
+| 268 | `inwall_top_se` | yes |  |
+
+## Furniture
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 272 | `mat` |  |  |
+| 273 | `counter_l` | yes |  |
+| 274 | `counter` | yes |  |
+| 275 | `counter_r` | yes |  |
+| 276 | `counter_corner` | yes |  |
+| 277 | `counter_run` | yes |  |
+| 278 | `counter_till` | yes |  |
+| 279 | `stool` |  |  |
+| 280 | `shelf` |  |  |
+
+## Coffee shop interior
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 288 | `back_counter` | yes |  |
+| 289 | `espresso_machine` | yes |  |
+| 290 | `grinder` | yes |  |
+| 291 | `counter_case` | yes |  |
+| 292 | `menu_board_l` |  |  |
+| 293 | `menu_board_r` |  |  |
+
+## Noodle bar interior
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 304 | `kitchen_counter` | yes |  |
+| 305 | `stove` | yes |  |
+| 306 | `noodle_table` | yes |  |
+| 307 | `lantern` |  |  |
+
+## Maker space interior
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 320 | `workbench_l` | yes |  |
+| 321 | `workbench_r` | yes |  |
+| 322 | `printer_3d` | yes |  |
+| 323 | `laser_cutter_l` | yes |  |
+| 324 | `laser_cutter_r` | yes |  |
+| 325 | `loom_l` | yes |  |
+| 326 | `loom_r` | yes |  |
+| 327 | `sewing_machine` | yes |  |
+| 328 | `pegboard_l` |  |  |
+| 329 | `pegboard_r` |  |  |
+
+## Gallery interior
+
+| id | name | collides | above |
+|---:|---|:---:|:---:|
+| 336 | `frame_l` |  |  |
+| 337 | `frame_r` |  |  |
+| 338 | `plinth` | yes |  |

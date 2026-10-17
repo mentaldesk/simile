@@ -361,7 +361,7 @@
             }
           ],
           "rotation": 0,
-          "type": "amenity",
+          "type": "noodle_bar",
           "visible": true,
           "width": 80,
           "x": 208,
@@ -417,7 +417,7 @@
             }
           ],
           "rotation": 0,
-          "type": "amenity",
+          "type": "maker_space",
           "visible": true,
           "width": 96,
           "x": 592,
@@ -995,10 +995,132 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 24,
+          "name": "coffee_shop",
+          "properties": [
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "coffee_shop"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 10
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 13
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 496,
+          "y": 176
+        },
+        {
+          "height": 16,
+          "id": 25,
+          "name": "maker_space",
+          "properties": [
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "maker_space"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 14
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 13
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 656,
+          "y": 176
+        },
+        {
+          "height": 16,
+          "id": 26,
+          "name": "noodle_bar",
+          "properties": [
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "noodle_bar"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 15
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 13
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 256,
+          "y": 176
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 8,
-  "nextobjectid": 24,
+  "nextlayerid": 10,
+  "nextobjectid": 27,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",
@@ -1009,10 +1131,10 @@
       "name": "simile",
       "image": "../art/tiles.png",
       "imagewidth": 256,
-      "imageheight": 224,
+      "imageheight": 352,
       "tilewidth": 16,
       "tileheight": 16,
-      "tilecount": 224,
+      "tilecount": 352,
       "columns": 16,
       "margin": 0,
       "spacing": 0,
@@ -4034,6 +4156,1306 @@
               "name": "name",
               "type": "string",
               "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 224,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "floor_wood"
+            }
+          ]
+        },
+        {
+          "id": 225,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "floor_tiles"
+            }
+          ]
+        },
+        {
+          "id": 226,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "floor_concrete"
+            }
+          ]
+        },
+        {
+          "id": 227,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "floor_gallery"
+            }
+          ]
+        },
+        {
+          "id": 240,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster_l"
+            }
+          ]
+        },
+        {
+          "id": 241,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster"
+            }
+          ]
+        },
+        {
+          "id": 242,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster_r"
+            }
+          ]
+        },
+        {
+          "id": 243,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster_base_l"
+            }
+          ]
+        },
+        {
+          "id": 244,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster_base"
+            }
+          ]
+        },
+        {
+          "id": 245,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_plaster_base_r"
+            }
+          ]
+        },
+        {
+          "id": 246,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel_l"
+            }
+          ]
+        },
+        {
+          "id": 247,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel"
+            }
+          ]
+        },
+        {
+          "id": 248,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel_r"
+            }
+          ]
+        },
+        {
+          "id": 249,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel_base_l"
+            }
+          ]
+        },
+        {
+          "id": 250,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel_base"
+            }
+          ]
+        },
+        {
+          "id": 251,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_panel_base_r"
+            }
+          ]
+        },
+        {
+          "id": 252,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick_l"
+            }
+          ]
+        },
+        {
+          "id": 253,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick"
+            }
+          ]
+        },
+        {
+          "id": 254,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick_r"
+            }
+          ]
+        },
+        {
+          "id": 255,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick_base_l"
+            }
+          ]
+        },
+        {
+          "id": 256,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick_base"
+            }
+          ]
+        },
+        {
+          "id": 257,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_brick_base_r"
+            }
+          ]
+        },
+        {
+          "id": 258,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block_l"
+            }
+          ]
+        },
+        {
+          "id": 259,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block"
+            }
+          ]
+        },
+        {
+          "id": 260,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block_r"
+            }
+          ]
+        },
+        {
+          "id": 261,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block_base_l"
+            }
+          ]
+        },
+        {
+          "id": 262,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block_base"
+            }
+          ]
+        },
+        {
+          "id": 263,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_block_base_r"
+            }
+          ]
+        },
+        {
+          "id": 264,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_top_w"
+            }
+          ]
+        },
+        {
+          "id": 265,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_top_e"
+            }
+          ]
+        },
+        {
+          "id": 266,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_top_s"
+            }
+          ]
+        },
+        {
+          "id": 267,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_top_sw"
+            }
+          ]
+        },
+        {
+          "id": 268,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "inwall_top_se"
+            }
+          ]
+        },
+        {
+          "id": 272,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "mat"
+            }
+          ]
+        },
+        {
+          "id": 273,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_l"
+            }
+          ]
+        },
+        {
+          "id": 274,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter"
+            }
+          ]
+        },
+        {
+          "id": 275,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_r"
+            }
+          ]
+        },
+        {
+          "id": 276,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_corner"
+            }
+          ]
+        },
+        {
+          "id": 277,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_run"
+            }
+          ]
+        },
+        {
+          "id": 278,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_till"
+            }
+          ]
+        },
+        {
+          "id": 279,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stool"
+            }
+          ]
+        },
+        {
+          "id": 280,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "shelf"
+            }
+          ]
+        },
+        {
+          "id": 288,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "back_counter"
+            }
+          ]
+        },
+        {
+          "id": 289,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "espresso_machine"
+            }
+          ]
+        },
+        {
+          "id": 290,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "grinder"
+            }
+          ]
+        },
+        {
+          "id": 291,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "counter_case"
+            }
+          ]
+        },
+        {
+          "id": 292,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "menu_board_l"
+            }
+          ]
+        },
+        {
+          "id": 293,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "menu_board_r"
+            }
+          ]
+        },
+        {
+          "id": 304,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "kitchen_counter"
+            }
+          ]
+        },
+        {
+          "id": 305,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stove"
+            }
+          ]
+        },
+        {
+          "id": 306,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "noodle_table"
+            }
+          ]
+        },
+        {
+          "id": 307,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "lantern"
+            }
+          ]
+        },
+        {
+          "id": 320,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "workbench_l"
+            }
+          ]
+        },
+        {
+          "id": 321,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "workbench_r"
+            }
+          ]
+        },
+        {
+          "id": 322,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "printer_3d"
+            }
+          ]
+        },
+        {
+          "id": 323,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "laser_cutter_l"
+            }
+          ]
+        },
+        {
+          "id": 324,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "laser_cutter_r"
+            }
+          ]
+        },
+        {
+          "id": 325,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "loom_l"
+            }
+          ]
+        },
+        {
+          "id": 326,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "loom_r"
+            }
+          ]
+        },
+        {
+          "id": 327,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "sewing_machine"
+            }
+          ]
+        },
+        {
+          "id": 328,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "pegboard_l"
+            }
+          ]
+        },
+        {
+          "id": 329,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "pegboard_r"
+            }
+          ]
+        },
+        {
+          "id": 336,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "frame_l"
+            }
+          ]
+        },
+        {
+          "id": 337,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "frame_r"
+            }
+          ]
+        },
+        {
+          "id": 338,
+          "properties": [
+            {
+              "name": "above",
+              "type": "bool",
+              "value": false
+            },
+            {
+              "name": "collides",
+              "type": "bool",
+              "value": true
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "value": "plinth"
             }
           ]
         }
