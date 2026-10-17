@@ -12,7 +12,6 @@ export type LightingSet = keyof typeof LIGHTING_SETS;
 
 export const CROSSFADE_MINUTES = 60;
 
-/** The hour drawn until the server sends the sim time: the afternoon. */
 export const DEFAULT_HOUR = 14;
 
 export type Layer = { set: LightingSet; weight: number };
@@ -41,6 +40,16 @@ export function blend(hour: number): Layer[] {
   return [{ set: SETS.find((set) => within(modulo(hour, 24), LIGHTING_SETS[set]))!, weight: 1 }];
 }
 
+/** Every set `blend` draws from `hour` until `hours` later. */
+export function setsWithin(hour: number, hours: number): Set<LightingSet> {
+  const sets = new Set(blend(hour).map(({ set }) => set));
+  const half = CROSSFADE_MINUTES / 120;
+  for (const set of SETS) {
+    if (modulo(LIGHTING_SETS[set][0] - half - hour, 24) <= hours) sets.add(set);
+  }
+  return sets;
+}
+
 /** The hour of a sim time, `YYYY-MM-DDTHH:MM[:SS]…`, with minutes and seconds as a fraction. */
 export function hourOf(time: string): number | undefined {
   const match = /T(\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?/.exec(time);
@@ -48,7 +57,6 @@ export function hourOf(time: string): number | undefined {
   return Number(match[1]) + Number(match[2]) / 60 + Number(match[3] ?? 0) / 3600;
 }
 
-/** The sim clock: the latest time from the server, run on at its speed. */
 export class SimClock {
   speed = 1;
   private reading?: { hour: number; at: number };

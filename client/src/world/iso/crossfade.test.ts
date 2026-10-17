@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { layerAlphas, PAIR_DEPTH, PRELOAD_SECONDS, SetLoader } from './crossfade';
+import {
+  layerAlphas,
+  MAX_LOOKAHEAD_HOURS,
+  PAIR_DEPTH,
+  PRELOAD_SECONDS,
+  SetLoader,
+  Uploads,
+} from './crossfade';
 import { residentDepth } from './depth';
-import type { Layer, LightingSet } from './time-of-day';
+import { blend, type Layer, type LightingSet } from './time-of-day';
 
 const fade = (incoming: number): Layer[] => [
   { set: 'afternoon', weight: 1 - incoming },
@@ -175,5 +182,83 @@ describe('SetLoader', () => {
     expect(sets.update(17, 1)).toEqual([{ set: 'afternoon', weight: 1 }]);
     sets.update(17.1, 1);
     expect(loads(load)).toEqual(['afternoon', 'evening']);
+  });
+
+  it(`looks no more than ${MAX_LOOKAHEAD_HOURS} sim hours ahead, however fast the clock`, () => {
+    const { sets, load } = loader();
+    sets.update(16.5 - MAX_LOOKAHEAD_HOURS - 0.01, 600);
+    expect(loads(load)).toEqual(['afternoon']);
+    sets.update(16.5 - MAX_LOOKAHEAD_HOURS + 0.01, 600);
+    expect(loads(load)).toEqual(['afternoon', 'evening']);
+  });
+
+  it.each([60, 200, 600, 3600])(
+    'loads each set once at %i×, so the fades never jump while one loads',
+    async (speed) => {
+      const seconds = 0.25;
+      let real = 0;
+      const loading: [number, () => void][] = [];
+      const loaded: LightingSet[] = [];
+      const sets = new SetLoader(
+        (set) => {
+          loaded.push(set);
+          return new Promise<void>((resolve) => loading.push([real + 2, resolve]));
+        },
+        () => {},
+      );
+      for (let hour = 13; hour < 23; hour += (speed * seconds) / 3600, real += seconds) {
+        for (const [at, resolve] of loading) if (at <= real) resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        const layers = sets.update(hour, speed);
+        if (real > 2) expect(layers, `${hour} h`).toEqual(blend(hour));
+      }
+      expect(loaded).toEqual(['afternoon', 'evening', 'night']);
+    },
+  );
+});
+
+describe('Uploads', () => {
+  function clocked(msPerTask: number) {
+    let now = 0;
+    const ran: number[] = [];
+    const task = (n: number) => () => {
+      ran.push(n);
+      now += msPerTask;
+    };
+    return { ran, task, now: () => now };
+  }
+
+  it('runs tasks in order, as many a frame as fit in the budget', () => {
+    const uploads = new Uploads();
+    const { ran, task, now } = clocked(1.5);
+    void uploads.add([0, 1, 2, 3, 4].map(task));
+    uploads.run(4, now);
+    expect(ran).toEqual([0, 1, 2]);
+    uploads.run(4, now);
+    expect(ran).toEqual([0, 1, 2, 3, 4]);
+  });
+
+  it('runs one task a frame even when it takes longer than the budget', () => {
+    const uploads = new Uploads();
+    const { ran, task, now } = clocked(10);
+    void uploads.add([0, 1].map(task));
+    uploads.run(4, now);
+    expect(ran).toEqual([0]);
+  });
+
+  it('resolves each batch once its last task has run', async () => {
+    const uploads = new Uploads();
+    const { task, now } = clocked(3);
+    const done = vi.fn();
+    void uploads.add([0, 1].map(task)).then(() => done('first'));
+    void uploads.add([2].map(task)).then(() => done('second'));
+    await expect(uploads.add([])).resolves.toBeUndefined();
+    uploads.run(4, now);
+    await Promise.resolve();
+    expect(done).toHaveBeenCalledExactlyOnceWith('first');
+    uploads.run(4, now);
+    await Promise.resolve();
+    expect(done).toHaveBeenLastCalledWith('second');
   });
 });

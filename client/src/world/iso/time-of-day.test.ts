@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SceneryManifest } from './manifest';
-import { blend, CROSSFADE_MINUTES, hourOf, LIGHTING_SETS, SimClock, type Layer } from './time-of-day';
+import {
+  blend,
+  CROSSFADE_MINUTES,
+  hourOf,
+  LIGHTING_SETS,
+  setsWithin,
+  SimClock,
+  type Layer,
+} from './time-of-day';
 
 const manifests = import.meta.glob<SceneryManifest & { crossfade_minutes: number }>(
   '../../../../content/art/iso/scenery/*.json',
@@ -65,6 +73,23 @@ describe('blend', () => {
     for (const manifest of Object.values(manifests)) {
       expect(manifest.crossfade_minutes).toBe(CROSSFADE_MINUTES);
     }
+  });
+});
+
+describe('setsWithin', () => {
+  const sorted = (sets: Set<string>) => [...sets].sort();
+
+  it('is the set in use, and any whose fade starts within the hours ahead', () => {
+    expect(sorted(setsWithin(14, 0))).toEqual(['afternoon']);
+    expect(sorted(setsWithin(14, 2.4))).toEqual(['afternoon']);
+    expect(sorted(setsWithin(14, 2.5))).toEqual(['afternoon', 'evening']);
+    expect(sorted(setsWithin(14, 7))).toEqual(['afternoon', 'evening', 'night']);
+  });
+
+  it('has both sets of a fade under way, and wraps past midnight', () => {
+    expect(sorted(setsWithin(17, 0))).toEqual(['afternoon', 'evening']);
+    expect(sorted(setsWithin(23, 6))).toEqual(['morning', 'night']);
+    expect(setsWithin(14, 24).size).toBe(4);
   });
 });
 

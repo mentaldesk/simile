@@ -26,14 +26,18 @@ draws `DEFAULT_HOUR`, the afternoon.
   the 60 sim minutes around each boundary, outgoing first. A test checks it against values from
   `lighting.py`, and the spans against every manifest.
 - **Loading** (`SetLoader` in `crossfade.ts`): a set is about 4.5 MB of images. Only the sets the
-  clock needs now, and the next one from `PRELOAD_SECONDS` of real time before its fade, are in
-  memory. A set that's no longer needed is destroyed with its textures. Until every set the hour
-  needs has loaded, the scene keeps drawing what it drew, so a jump in the clock switches once.
+  clock needs now are in memory, plus any whose fade starts within `PRELOAD_SECONDS` of real time,
+  up to `MAX_LOOKAHEAD_HOURS` of sim time. A set that's no longer needed is destroyed with its
+  textures. Until every set the hour needs has loaded, the scene keeps drawing what it drew, so a
+  jump in the clock switches once.
+- **Uploads** (`Uploads`): images are decoded off the main thread with `createImageBitmap`, then
+  added as textures and placed in the scene `UPLOAD_MS_PER_FRAME` at a time, about 8 frames for a
+  set. The set's drop-shadow mask is built then too, rather than on the first frame of its fade.
 - **Crossfade:** every set has the same objects and slices, so each slice is drawn once per set, the
   incoming image `PAIR_DEPTH` above the outgoing one, at alpha = weight (`layerAlphas`). The outgoing
-  image stays opaque until the last 5% of the weight, so the background never shows through and soft
-  edges end the fade as one image draws them. A cut-away building fades both images so that together
-  they're as see-through as one. The two grounds pair the same way.
+  image stays opaque until the last 5% of the weight, so at most 1.25% of the background shows
+  through and soft edges end the fade as one image draws them. A cut-away building fades both images
+  so that together they're as see-through as one. The two grounds pair the same way.
 - **Characters** (`lighting.ts`): each set's tint times the light map's tint at the feet, scaled
   down to keep its hue, then blended by weight. Each set has its own drop shadow (`shadow.ts`), away
   from its sun at its strength times the light map's sun at the feet times its weight, so both show

@@ -46,7 +46,6 @@ const sheetKey = (id: string) => `iso-character/${id}`;
 const animationKey = (sheet: string, name: string, direction: string) => `${sheet}/${name}/${direction}`;
 const shadowKey = (set: LightingSet) => `iso-shadow/${set}`;
 
-/** The player and residents from A2b's sheets, lit by the lighting sets they stand in. */
 export class IsoCharacters {
   private readonly scene: Phaser.Scene;
   private readonly tile: IsoTile;
@@ -166,12 +165,16 @@ export class IsoCharacters {
     return character;
   }
 
-  private addShadow(character: Character, set: LightingSet): Phaser.GameObjects.Image {
+  /** Builds a set's drop shadow while it loads, rather than in the first frame of its fade. */
+  prepare(set: LightingSet): void {
     const key = shadowKey(set);
-    if (!this.scene.textures.exists(key)) {
-      addMask(this.scene, key, dropShadow(this.manifest.sets[set].shadow, this.tile));
-    }
-    const shadow = this.shadowImage(key);
+    if (this.scene.textures.exists(key)) return;
+    addMask(this.scene, key, dropShadow(this.manifest.sets[set].shadow, this.tile));
+  }
+
+  private addShadow(character: Character, set: LightingSet): Phaser.GameObjects.Image {
+    this.prepare(set);
+    const shadow = this.shadowImage(shadowKey(set));
     character.shadows.set(set, shadow);
     return shadow;
   }

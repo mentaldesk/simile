@@ -34,6 +34,8 @@ import {
   SetLoader,
   simClock,
   sliceDraws,
+  UPLOAD_MS_PER_FRAME,
+  Uploads,
   type Figure,
   type Layer,
   type LightingSet,
@@ -54,6 +56,7 @@ type Placed = { image: Phaser.GameObjects.Image; depth: number };
 type SetScenery = {
   manifest: SceneryManifest;
   lightMap: LightMap;
+  bitmaps: ImageBitmap[];
   placed: Placed[];
   objects: Map<string, Placed[]>;
   rank: number;
@@ -75,6 +78,7 @@ export class IsoScene extends Phaser.Scene {
     (set) => this.unloadSet(set),
   );
   private readonly loaded = new Map<LightingSet, SetScenery>();
+  private readonly uploads = new Uploads();
   private keys!: Keys;
   private assets?: Assets;
   private charactersLoad?: Promise<IsoCharacters>;
@@ -113,6 +117,7 @@ export class IsoScene extends Phaser.Scene {
 
   update(time: number, delta: number): void {
     if (!this.assets) return;
+    this.uploads.run(UPLOAD_MS_PER_FRAME);
     const layers = this.sets.update(simClock.hour() ?? DEFAULT_HOUR, simClock.speed);
     const { characters, geometry } = this;
     if (layers.length === 0 || !characters || !geometry) return;
@@ -151,13 +156,27 @@ export class IsoScene extends Phaser.Scene {
       (characters) => (this.characters = characters),
     );
     const images = sceneryImages(manifest);
-    const [pixels, sources] = await Promise.all([
+    const [pixels, bitmaps, characters] = await Promise.all([
       assets.imagePixels(assets.imageUrl(manifest.light_map.image)!),
-      Promise.all(images.map((image) => assets.loadImage(assets.imageUrl(image)!))),
+      Promise.all(images.map((image) => assets.loadBitmap(assets.imageUrl(image)!))),
       this.charactersLoad,
     ]);
-    images.forEach((image, i) => this.textures.addImage(textureKey(image), sources[i]));
-    this.loaded.set(set, this.placeSet(manifest, new LightMap(manifest.light_map, pixels)));
+    const scenery: SetScenery = {
+      manifest,
+      lightMap: new LightMap(manifest.light_map, pixels),
+      bitmaps,
+      placed: [],
+      objects: new Map(),
+      rank: -1,
+    };
+    await this.uploads.add([
+      ...images.map((image, i) => () => {
+        this.textures.addImage(textureKey(image), bitmaps[i] as unknown as HTMLImageElement);
+      }),
+      ...this.placing(scenery),
+      () => characters.prepare(set),
+    ]);
+    this.loaded.set(set, scenery);
     this.geometry ??= {
       manifest,
       heightAt: groundHeights(village as TiledMapWithTiles, manifest.ground.heights),
@@ -167,24 +186,29 @@ export class IsoScene extends Phaser.Scene {
     };
   }
 
-  private placeSet(manifest: SceneryManifest, lightMap: LightMap): SetScenery {
-    const place = (x: number, y: number, image: string, depth: number): Placed => ({
-      image: this.add.image(x, y, textureKey(image)).setOrigin(0).setDepth(depth).setVisible(false),
-      depth,
-    });
-    const ground = manifest.ground.chunks.map(({ image, x, y }) => place(x, y, image, GROUND_DEPTH));
-    const objects = new Map(
-      manifest.objects.map((object) => {
+  private placing(scenery: SetScenery): (() => void)[] {
+    const { manifest } = scenery;
+    const place = (x: number, y: number, image: string, depth: number) => {
+      const placed = {
+        image: this.add.image(x, y, textureKey(image)).setOrigin(0).setDepth(depth).setVisible(false),
+        depth,
+      };
+      scenery.placed.push(placed);
+      return placed;
+    };
+    return [
+      ...manifest.ground.chunks.map(({ image, x, y }) => () => {
+        place(x, y, image, GROUND_DEPTH);
+      }),
+      ...manifest.objects.map((object) => () => {
         const slices = sliceDraws(object, manifest.tile).map(({ x, y, cropX, cropWidth, depth }) => {
           const slice = place(x, y, object.image, depth);
           slice.image.setCrop(cropX, 0, cropWidth, object.height);
           return slice;
         });
-        return [object.id, slices];
+        scenery.objects.set(object.id, slices);
       }),
-    );
-    const placed = [...ground, ...[...objects.values()].flat()];
-    return { manifest, lightMap, placed, objects, rank: -1 };
+    ];
   }
 
   private unloadSet(set: LightingSet): void {
@@ -193,6 +217,7 @@ export class IsoScene extends Phaser.Scene {
     this.loaded.delete(set);
     for (const { image } of scenery.placed) image.destroy();
     for (const image of sceneryImages(scenery.manifest)) this.textures.remove(textureKey(image));
+    for (const bitmap of scenery.bitmaps) bitmap.close();
   }
 
   private drawLayers(layers: readonly Layer[]): void {

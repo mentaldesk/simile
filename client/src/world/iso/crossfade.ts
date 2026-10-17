@@ -1,10 +1,15 @@
-import { blend, type Layer, type LightingSet } from './time-of-day';
+import { blend, setsWithin, type Layer, type LightingSet } from './time-of-day';
 
 /** Lifts the incoming image of a pair above the outgoing, and stays below `RESIDENT_TIE`. */
 export const PAIR_DEPTH = 1e-4;
 
-/** Real seconds ahead to load the next set, so it's ready when its fade starts. */
 export const PRELOAD_SECONDS = 120;
+
+/** Bounds how many sets a fast clock keeps in memory. */
+export const MAX_LOOKAHEAD_HOURS = 3;
+
+/** How long a frame spends adding a loaded set to the scene, after its first task. */
+export const UPLOAD_MS_PER_FRAME = 4;
 
 /** The outgoing image goes in the last 1 / this of the weight, so soft edges end the fade single. */
 const OUTGOING_FADE = 20;
@@ -20,7 +25,6 @@ export function layerAlphas(layers: readonly Layer[], alpha = 1): number[] {
 
 type State = 'loading' | 'ready' | 'failed';
 
-/** Keeps in memory only the sets the sim clock needs now and in the next `PRELOAD_SECONDS`. */
 export class SetLoader {
   layers: Layer[] = [];
   private readonly states = new Map<LightingSet, State>();
@@ -33,11 +37,10 @@ export class SetLoader {
   }
 
   update(hour: number, speed: number): Layer[] {
-    const now = blend(hour);
-    const soon = blend(hour + (speed * PRELOAD_SECONDS) / 3600);
-    const wanted = new Set([...now, ...soon].map(({ set }) => set));
+    const ahead = Math.min((speed * PRELOAD_SECONDS) / 3600, MAX_LOOKAHEAD_HOURS);
+    const wanted = setsWithin(hour, ahead);
     for (const set of wanted) if (!this.states.has(set)) this.start(set);
-    this.layers = this.drawable(now);
+    this.layers = this.drawable(blend(hour));
     const drawn = new Set(this.layers.map(({ set }) => set));
     for (const [set, state] of this.states) {
       if (state !== 'ready' || wanted.has(set) || drawn.has(set)) continue;
@@ -47,7 +50,6 @@ export class SetLoader {
     return this.layers;
   }
 
-  /** What was drawn until every set in `layers` has loaded, leaving out any that failed. */
   private drawable(layers: Layer[]): Layer[] {
     if (layers.some(({ set }) => this.states.get(set) === 'loading')) return this.layers;
     const ready = layers.filter(({ set }) => this.states.get(set) === 'ready');
@@ -65,5 +67,28 @@ export class SetLoader {
         this.states.set(set, 'failed');
       },
     );
+  }
+}
+
+export class Uploads {
+  private readonly queue: { run: () => void; done?: () => void }[] = [];
+
+  add(tasks: (() => void)[]): Promise<void> {
+    if (tasks.length === 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      const last = tasks.length - 1;
+      tasks.forEach((run, i) => this.queue.push({ run, done: i === last ? resolve : undefined }));
+    });
+  }
+
+  /** Runs one task, then more until `budgetMs` has passed. */
+  run(budgetMs: number, now: () => number = () => performance.now()): void {
+    const start = now();
+    do {
+      const task = this.queue.shift();
+      if (!task) return;
+      task.run();
+      task.done?.();
+    } while (now() - start < budgetMs);
   }
 }

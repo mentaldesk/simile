@@ -26,7 +26,6 @@ export type LightMapInfo = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-/** The light a standing resident gets at each spot: tint in the top half, sun below `sun_y`. */
 export class LightMap {
   private readonly info: LightMapInfo;
   private readonly rgba: Uint8ClampedArray;
@@ -36,14 +35,12 @@ export class LightMap {
     this.rgba = rgba;
   }
 
-  /** How much more light than in the open square a figure gets at its feet, per channel. */
   tintAt(feet: Point): Rgb {
     const i = this.index(feet, 0);
     const k = this.info.scale / 255;
     return [this.rgba[i] * k, this.rgba[i + 1] * k, this.rgba[i + 2] * k];
   }
 
-  /** How much of the sun, or the moon, reaches the feet, from 0 to 1. */
   sunAt(feet: Point): number {
     return this.rgba[this.index(feet, this.info.sun_y)] / 255;
   }
@@ -58,10 +55,8 @@ export class LightMap {
 
 export type LitLayer = { weight: number; light: SetLight; lightMap: LightMap };
 
-/** A resident's tint, and each layer's drop shadow alpha, weighted. */
 export type ResidentLight = { tint: Rgb; shadows: number[] };
 
-/** Each set lit by its own light map at the feet, then blended by the weights. */
 export function residentLight(layers: readonly LitLayer[], feet: Point): ResidentLight {
   const tint: Rgb = [0, 0, 0];
   const shadows = layers.map(({ weight, light, lightMap }) => {

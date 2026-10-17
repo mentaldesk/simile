@@ -4,7 +4,6 @@ import type { SetLight } from './lighting';
 import type { IsoTile } from './manifest';
 import { project, unproject } from './projection';
 
-/** On the ground, under every object and resident. */
 export const SHADOW_DEPTH = GROUND_DEPTH + 1;
 
 export const CONTACT_ALPHA = 0.35;
@@ -12,10 +11,9 @@ export const CONTACT_ALPHA = 0.35;
 /** About 0.4 m wide, a tile being 1.1 m. */
 const HALF_WIDTH_TILES = 0.2 / 1.1;
 const CONTACT = { along: 0.3, across: 0.26, blur: 1.5 };
-const SUPERSAMPLE = 4;
+const SUPERSAMPLE = 2;
 const OUTLINE_POINTS = 48;
 
-/** A soft shape on screen: `alpha` is `width` × `height` bytes, with the feet at `origin`. */
 export type ShadowMask = { width: number; height: number; origin: Point; alpha: Uint8ClampedArray };
 
 /** In tiles from the feet: `axis` is a unit step on the map, with radii along and across it. */
@@ -33,7 +31,6 @@ export function dropShadow(shadow: SetLight['shadow'], tile: IsoTile): ShadowMas
   return rasterise(ellipse, Math.min(1 + length * 0.4, 5), tile);
 }
 
-/** Under the feet, the same in every set: wider across the screen than up it. */
 export function contactShadow(tile: IsoTile): ShadowMask {
   const ellipse = {
     centre: { x: 0, y: 0 },
@@ -42,13 +39,6 @@ export function contactShadow(tile: IsoTile): ShadowMask {
     across: CONTACT.across,
   };
   return rasterise(ellipse, CONTACT.blur, tile);
-}
-
-function inside({ centre, axis, along, across }: Ellipse, { x, y }: Point): boolean {
-  const [dx, dy] = [x - centre.x, y - centre.y];
-  const u = (dx * axis.x + dy * axis.y) / along;
-  const v = (dy * axis.x - dx * axis.y) / across;
-  return u * u + v * v <= 1;
 }
 
 function rasterise(ellipse: Ellipse, blur: number, tile: IsoTile): ShadowMask {
@@ -66,47 +56,58 @@ function rasterise(ellipse: Ellipse, blur: number, tile: IsoTile): ShadowMask {
   const height = Math.ceil(Math.max(...outline.map(({ y }) => y))) + pad - y0;
   const cover = new Float32Array(width * height);
   const step = 1 / SUPERSAMPLE;
-  for (let j = 0; j < height; j++) {
-    for (let i = 0; i < width; i++) {
-      let hits = 0;
-      for (let b = 0; b < SUPERSAMPLE; b++) {
-        for (let a = 0; a < SUPERSAMPLE; a++) {
-          const screen = { x: x0 + i + (a + 0.5) * step, y: y0 + j + (b + 0.5) * step };
-          if (inside(ellipse, unproject(tile, screen))) hits++;
-        }
-      }
-      cover[j * width + i] = hits * step * step;
+  const origin = unproject(tile, { x: x0 + step / 2, y: y0 + step / 2 });
+  const right = unproject(tile, { x: step, y: 0 });
+  const down = unproject(tile, { x: 0, y: step });
+  for (let j = 0; j < height * SUPERSAMPLE; j++) {
+    for (let i = 0; i < width * SUPERSAMPLE; i++) {
+      const dx = origin.x + i * right.x + j * down.x - centre.x;
+      const dy = origin.y + i * right.y + j * down.y - centre.y;
+      const u = (dx * axis.x + dy * axis.y) / along;
+      const v = (dy * axis.x - dx * axis.y) / across;
+      if (u * u + v * v > 1) continue;
+      cover[((j / SUPERSAMPLE) | 0) * width + ((i / SUPERSAMPLE) | 0)] += step * step;
     }
   }
-  const blurred = gaussianBlur(cover, width, height, blur);
-  return {
-    width,
-    height,
-    origin: { x: -x0, y: -y0 },
-    alpha: Uint8ClampedArray.from(blurred, (value) => Math.round(value * 255)),
-  };
+  let blurred: Float32Array = cover;
+  for (const box of boxesForGaussian(blur)) {
+    blurred = boxBlur(blurred, (box - 1) / 2, width, 1, height, width);
+    blurred = boxBlur(blurred, (box - 1) / 2, height, width, width, 1);
+  }
+  const alpha = new Uint8ClampedArray(blurred.length);
+  for (let i = 0; i < blurred.length; i++) alpha[i] = blurred[i] * 255;
+  return { width, height, origin: { x: -x0, y: -y0 }, alpha };
 }
 
-function gaussianBlur(values: Float32Array, width: number, height: number, sigma: number): Float32Array {
-  const radius = Math.ceil(sigma * 3);
-  const kernel = Array.from({ length: 2 * radius + 1 }, (_, i) =>
-    Math.exp(-((i - radius) ** 2) / (2 * sigma * sigma)),
+/** Three box blurs come close to a Gaussian, as in PIL's `GaussianBlur`. */
+function boxesForGaussian(sigma: number, boxes = 3): number[] {
+  const ideal = Math.sqrt((12 * sigma * sigma) / boxes + 1);
+  const lower = Math.floor(ideal) % 2 === 0 ? Math.floor(ideal) - 1 : Math.floor(ideal);
+  const narrow = Math.round(
+    (12 * sigma * sigma - boxes * lower * lower - 4 * boxes * lower - 3 * boxes) / (-4 * lower - 4),
   );
-  const total = kernel.reduce((sum, weight) => sum + weight, 0);
-  const pass = (source: Float32Array, dx: number, dy: number) => {
-    const out = new Float32Array(source.length);
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        let sum = 0;
-        for (let k = -radius; k <= radius; k++) {
-          const [sx, sy] = [x + k * dx, y + k * dy];
-          if (sx < 0 || sx >= width || sy < 0 || sy >= height) continue;
-          sum += source[sy * width + sx] * kernel[k + radius];
-        }
-        out[y * width + x] = sum / total;
-      }
+  return Array.from({ length: boxes }, (_, i) => (i < narrow ? lower : lower + 2));
+}
+
+/** Each of `lines` runs of `count` values, `stride` apart, starting `gap` apart. */
+function boxBlur(
+  source: Float32Array,
+  radius: number,
+  count: number,
+  stride: number,
+  lines: number,
+  gap: number,
+): Float32Array {
+  const out = new Float32Array(source.length);
+  for (let line = 0; line < lines; line++) {
+    const start = line * gap;
+    let sum = 0;
+    for (let k = 0; k <= Math.min(radius, count - 1); k++) sum += source[start + k * stride];
+    for (let at = 0; at < count; at++) {
+      out[start + at * stride] = sum / (2 * radius + 1);
+      if (at + radius + 1 < count) sum += source[start + (at + radius + 1) * stride];
+      if (at - radius >= 0) sum -= source[start + (at - radius) * stride];
     }
-    return out;
-  };
-  return pass(pass(values, 1, 0), 0, 1);
+  }
+  return out;
 }

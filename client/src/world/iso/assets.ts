@@ -40,6 +40,13 @@ export async function loadImage(url: string): Promise<HTMLImageElement> {
   return image;
 }
 
+/** Decoded off the main thread, and premultiplied as Phaser's WebGL textures expect. */
+export async function loadBitmap(url: string): Promise<ImageBitmap> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`${url}: ${response.status}`);
+  return createImageBitmap(await response.blob(), { premultiplyAlpha: 'premultiply' });
+}
+
 export async function imagePixels(url: string): Promise<Uint8ClampedArray> {
   const image = await loadImage(url);
   const canvas = document.createElement('canvas');
