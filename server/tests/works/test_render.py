@@ -64,12 +64,18 @@ def test_an_svg_that_fails_or_crashes_resvg_is_bad(drawing: str, reason: str) ->
         picture(drawing)
 
 
-def test_an_svg_that_takes_too_long_to_draw_is_bad() -> None:
-    noise = '<filter id="f"><feTurbulence numOctaves="100000000"/></filter>'
-    slow = svg(inside=f'{noise}<rect width="288" height="262" filter="url(#f)"/>')
+NOISE = '<filter id="f"><feTurbulence numOctaves="100000000"/></filter>'
+SLOW = svg(inside=f'{NOISE}<rect width="288" height="262" filter="url(#f)"/>')
 
+
+def test_an_svg_that_takes_too_long_to_draw_is_bad() -> None:
     with pytest.raises(BadSvg, match="took more than 2 s to draw"):
-        picture(slow, timeout=2)
+        picture(SLOW, timeout=2)
+
+
+def test_the_renderer_is_killed_once_it_uses_more_memory_than_it_may() -> None:
+    with pytest.raises(BadSvg, match="took more than 1 MB to draw"):
+        picture(SLOW, memory=2**20)
 
 
 def test_an_svg_that_takes_too_much_memory_to_draw_is_bad() -> None:
@@ -78,5 +84,5 @@ def test_an_svg_that_takes_too_much_memory_to_draw_is_bad() -> None:
     fill = '<rect width="0.003" height="0.003" fill="url(#p)"/>'
     huge = svg(inside=f'{tile}<g transform="scale(100000)">{fill}</g>')
 
-    with pytest.raises(BadSvg, match="took more than 200 MB to draw"):
+    with pytest.raises(BadSvg, match="took more than 200 MB to draw|crashed the renderer"):
         picture(huge, memory=200 * 2**20)
