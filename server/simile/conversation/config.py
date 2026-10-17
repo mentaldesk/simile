@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -187,6 +188,22 @@ class ConversationConfig(BaseModel):
     )
     history: int = Field(default=5, ge=0, description="Shared events in a speaker's prompt.")
     topics: int = Field(default=3, ge=0, description="News topics from B4 in a speaker's prompt.")
+    works: int = Field(
+        default=2,
+        ge=0,
+        description="Works a speaker might bring up: their strongest memories of works they made, "
+        "read or saw, those of the other's works first. In a scene each side also gets the works "
+        "of theirs the other might bring up.",
+    )
+    works_half_life: timedelta = Field(
+        default=timedelta(hours=24),
+        description="Sim time over which a work memory's pull as a topic halves.",
+    )
+    works_min_score: float = Field(
+        default=0.05,
+        ge=0,
+        description="Work memories scoring less than this (salience × recency) aren't raised.",
+    )
     transcript_lines: int = Field(
         default=12, ge=1, description="Latest lines of the conversation in a speaker's prompt."
     )

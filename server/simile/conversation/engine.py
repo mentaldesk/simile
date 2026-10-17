@@ -2,6 +2,7 @@ import asyncio
 import itertools
 import logging
 import random
+import sys
 from collections import deque
 from collections.abc import Callable, Iterator
 from contextlib import aclosing
@@ -19,6 +20,7 @@ from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.plan import PRESSING, Plan, plan, stance
 from simile.conversation.prompt import (
     Player,
+    WorkTopic,
     background,
     duration,
     first_name,
@@ -35,6 +37,7 @@ from simile.conversation.script import (
 )
 from simile.llm import LLMClient
 from simile.memory import SharedHistory
+from simile.memory.store import recency
 from simile.schema import (
     PLAYER_ID,
     Conversation,
@@ -43,9 +46,11 @@ from simile.schema import (
     Id,
     Line,
     Memory,
+    MemoryKind,
     NewsItem,
     Npc,
     Relationship,
+    Work,
 )
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
@@ -77,7 +82,14 @@ class Memories(Protocol):
     def relationships(self, owner: str) -> list[Relationship]: ...
 
     def recall(
-        self, owner: str, now: datetime, *, about: str | None = None, k: int = 5
+        self,
+        owner: str,
+        now: datetime,
+        *,
+        about: str | None = None,
+        kind: MemoryKind | None = None,
+        k: int = 5,
+        half_life: timedelta = ...,
     ) -> list[Memory]: ...
 
     def shared_history(self, a: str, b: str, now: datetime, *, k: int = 10) -> SharedHistory: ...
@@ -104,6 +116,8 @@ class Party:
     facing: Direction
     system: str = ""
     background: str = ""
+    works: list[WorkTopic] = field(default_factory=list)
+    """Works they might bring up, in a conversation written a line at a time."""
 
 
 @dataclass
@@ -188,6 +202,8 @@ class ConversationEngine:
         """The audio being made for each line, which I1 sets while the server is voiced."""
         self.article: Callable[[str], NewsItem | None] = lambda _: None
         """B4's article by id, for what its news topics are about."""
+        self.work: Callable[[str], Work | None] = lambda _: None
+        """A work by id, for the works residents might bring up."""
         self._talks: dict[str, Talk] = {}
 
     def request(self, a: Id, b: Id) -> bool:
@@ -228,7 +244,12 @@ class ConversationEngine:
         names = {a: first_name(npcs[a]), b: first_name(npcs[b])}
         rels = {a: self._relationship(a, b), b: self._relationship(b, a)}
         topics = {npc: self._topics(npc, now) for npc in names}
-        on_table = [topic for npc in names for topic in self._topic_values(npcs[npc], topics[npc])]
+        works = self._scene_works(a, b, now)
+        on_table = [
+            topic
+            for npc in names
+            for topic in self._topic_values(npcs[npc], topics[npc], works[npc])
+        ]
         needs = {npc: self.behaviour.needs(npc) for npc in names}
         stances = {
             npc: stance(
@@ -247,9 +268,10 @@ class ConversationEngine:
             npc: Character(
                 npcs[npc],
                 rels[npc],
-                self._memories(npc, other, now, topics[npc]),
+                self._memories(npc, other, now, [*topics[npc], *noted(works[npc])]),
                 topics[npc],
                 self._secrets(npc, other),
+                works[npc],
             )
             for npc, other in ((a, b), (b, a))
         }
@@ -570,6 +592,7 @@ class ConversationEngine:
         speaker, them = self.behaviour.npcs[npc], self._person(other)
         rel = self._relationship(npc, other)
         topics = self._topics(npc, now)
+        works = self._works(npc, other, now)
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
         return Party(
             npc=speaker,
@@ -582,11 +605,12 @@ class ConversationEngine:
                 them,
                 rel,
                 self.memory.shared_history(npc, other, now, k=self.config.history),
-                self._memories(npc, other, now, topics),
+                self._memories(npc, other, now, [*topics, *noted(works)]),
                 topics,
                 location.name if location else None,
                 now,
             ),
+            works=works,
         )
 
     def _person(self, id: Id) -> Npc | Player:
@@ -623,13 +647,60 @@ class ConversationEngine:
             logger.exception("Couldn't get %s's news topics", npc)
             return []
 
-    def _topic_values(self, npc: Npc, topics: list[Memory]) -> list[dict[CoreValue, float]]:
-        """What the news `npc` might bring up is about, or else what they care about most."""
+    def _works(self, npc: Id, other: Id, now: datetime) -> list[WorkTopic]:
+        """`npc`'s strongest memories of works they made, read or saw that haven't faded, those
+        about `other` first: `other`'s works, or `other` painting over theirs."""
+        config = self.config
+        if not config.works:
+            return []
+        half_life = config.works_half_life
+        found = [
+            *self.memory.recall(
+                npc, now, about=other, kind=MemoryKind.WORK, k=config.works, half_life=half_life
+            ),
+            *self.memory.recall(
+                npc, now, kind=MemoryKind.WORK, k=config.works, half_life=half_life
+            ),
+        ]
+        strong = [m for m in found if pull(m, now, half_life) >= config.works_min_score]
+        return self._work_topics(strong)[: config.works]
+
+    def _scene_works(self, a: Id, b: Id, now: datetime) -> dict[Id, list[WorkTopic]]:
+        """Each side's works to bring up, with their memories of making the works of theirs that
+        the other might bring up."""
+        found = {a: self._works(a, b, now), b: self._works(b, a, now)}
+        result = {}
+        for npc, other in ((a, b), (b, a)):
+            ids = {topic.work.id for topic in found[other] if topic.work.artist == npc}
+            ids -= {topic.work.id for topic in found[npc]}
+            made = []
+            if ids:
+                memories = self.memory.recall(npc, now, kind=MemoryKind.WORK, k=sys.maxsize)
+                made = self._work_topics([memory for memory in memories if memory.work_id in ids])
+            result[npc] = [*found[npc], *made]
+        return result
+
+    def _work_topics(self, memories: list[Memory]) -> list[WorkTopic]:
+        """A topic for each memory of a work still stored, one for each work."""
+        topics, seen = [], set()
+        for memory in memories:
+            work = self.work(memory.work_id) if memory.work_id else None
+            if work is not None and work.id not in seen:
+                seen.add(work.id)
+                topics.append(WorkTopic(memory, work))
+        return topics
+
+    def _topic_values(
+        self, npc: Npc, topics: list[Memory], works: list[WorkTopic]
+    ) -> list[dict[CoreValue, float]]:
+        """What the news and works `npc` might bring up are about, or else what they care about
+        most."""
         found = []
         for memory in topics:
             item = self.article(memory.news_id) if memory.news_id else None
             if item is not None and item.values:
                 found.append(dict(item.values))
+        found += [dict(topic.work.values) for topic in works]
         if found:
             return found
         ranked = sorted(npc.values, key=lambda value: -npc.values[value])
@@ -662,6 +733,16 @@ class ConversationEngine:
             ),
             None,
         )
+
+
+def pull(memory: Memory, now: datetime, half_life: timedelta) -> float:
+    """Salience × recency."""
+    age = (now - memory.timestamp).total_seconds()
+    return memory.salience * recency(age, half_life.total_seconds())
+
+
+def noted(works: list[WorkTopic]) -> list[Memory]:
+    return [topic.memory for topic in works]
 
 
 def facing(here: Point, there: Point) -> Direction:

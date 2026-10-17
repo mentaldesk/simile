@@ -18,6 +18,7 @@ from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
     Cue,
     Draft,
+    WorkTopic,
     duration,
     first_name,
     parse_reply,
@@ -25,6 +26,7 @@ from simile.conversation.prompt import (
     turn_prompt,
 )
 from simile.llm import Model
+from simile.news.interest import shared, words
 from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
@@ -52,6 +54,12 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
+A_WORK = re.compile(
+    r"\b(?:murals?|paint(?:s|ed|ing|ings)?|walls?|poems?|verses?|pieces?|stor(?:y|ies)|"
+    r"notices?|writing|wrote|written)\b",
+    re.IGNORECASE,
+)
+
 TURNED_AWAY = (
     "I'll let you talk to {name}. See you around.",
     "Go on, {name}'s waiting. Catch you later.",
@@ -62,6 +70,28 @@ TURNED_AWAY = (
 
 def says_goodbye(text: str) -> bool:
     return GOODBYE.search(text) is not None
+
+
+def came_up(topic: WorkTopic, artist: str, lines: Sequence[Line]) -> bool:
+    """Whether a line has named the work, or its wall beside a word for a work, or had two of:
+    words of its title, tags or topics (each counts), a word for a work, and its artist: their first
+    name, or "my" in theirs, or "your" to them."""
+    work = topic.work
+    labels = [label for label in [*work.tags, *topic.memory.topics] if label.isalpha()]
+    headline = words(" ".join([work.title, *labels]))
+    wall = words(work.wall.replace("_", " ")) if work.wall else set()
+    theirs = re.escape(artist)
+    own = work.artist == topic.memory.owner
+    for line in lines:
+        said, a_work = words(line.text), A_WORK.search(line.text) is not None
+        if work.title.lower() in line.text.lower() or (a_work and said & wall):
+            return True
+        who = "my" if line.speaker == work.artist else f"your|{theirs}" if own else theirs
+        found = shared(said, headline) + a_work
+        found += re.search(rf"\b(?:{who})\b", line.text, re.IGNORECASE) is not None
+        if found >= 2:
+            return True
+    return False
 
 
 class PlayerConfig(BaseModel):
@@ -296,6 +326,7 @@ class PlayerConversations:
             engine.config,
             speaker=npc,
             recalled=self._recalled(npc, lines),
+            works=self._works(talk, lines),
         )
         stream = engine.llm().stream(
             prompt,
@@ -312,6 +343,16 @@ class PlayerConversations:
         for sentence in sentences.end():
             self._sentence(talk, sentence)
         return sentences.draft
+
+    def _works(self, talk: PlayerTalk, lines: Sequence[Line]) -> list[WorkTopic]:
+        """The NPC's works that haven't come up before their last reply."""
+        npc = talk.npc
+        last = max((n for n, line in enumerate(lines) if line.speaker == npc), default=-1)
+        return [
+            topic
+            for topic in talk.parties[npc].works
+            if not came_up(topic, self.engine._name(topic.work.artist), lines[: last + 1])
+        ]
 
     def _recalled(self, npc: Id, lines: Sequence[Line]) -> list[Memory]:
         """What `npc` read about the articles the player has mentioned since `npc` last spoke."""

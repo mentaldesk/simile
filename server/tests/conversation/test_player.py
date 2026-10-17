@@ -23,9 +23,11 @@ from simile.conversation.player import (
     PlayerConfig,
     PlayerConversations,
     Sentences,
+    came_up,
     says_goodbye,
     split,
 )
+from simile.conversation.prompt import WorkTopic
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -54,6 +56,8 @@ from simile.social import describe, meet
 from simile.voice import SpeakingRate
 from simile.world import Movement, Point
 from simile.world.map import load_map
+
+from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
@@ -1143,3 +1147,66 @@ def test_goodbyes(text: str) -> None:
 )
 def test_not_goodbyes(text: str) -> None:
     assert not says_goodbye(text)
+
+
+RED_PLANET = work("cal-1", "cal", "Red Planet", START - timedelta(hours=3), tags=["mars"])
+SAW_IT = 'I saw Cal Test\'s mural "Red Planet" on the tower. Brave stuff.'
+
+
+async def test_a_work_is_listed_until_the_resident_has_answered_it_coming_up() -> None:
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {RED_PLANET.id: RED_PLANET}.get
+    village.store.add(remembers("ana", RED_PLANET, SAW_IT, START - timedelta(hours=1)))
+
+    for said in ("Hi!", "What do you make of Cal's mural?", "Anything else new?"):
+        village.players.say(said, "ana")
+        await village.run(1)
+
+    *answering, after = village.script.prompts
+    for prompt in answering:
+        assert f"Works by others you might bring up:\n- {SAW_IT}\n\n" in prompt
+    assert "Red Planet" not in after
+
+
+async def test_a_resident_stands_by_their_own_work_and_never_sees_the_players() -> None:
+    theirs = work("ana-1", "ana", "Fair Shares", START - timedelta(hours=2))
+    painted = 'I painted "Fair Shares" on the tower. Everyone eats.'
+    village = Village(npcs=(ANA, BEN, CAL))
+    village.engine.work = {w.id: w for w in (theirs, RED_PLANET)}.get
+    village.store.add(
+        remembers("ana", theirs, painted, START - timedelta(hours=2)),
+        remembers(PLAYER_ID, RED_PLANET, SAW_IT, START),
+    )
+
+    village.players.say("Hi!", "ana")
+    await village.run(1)
+
+    [prompt] = village.script.prompts
+    assert f"Your own works, which you might bring up and stand by:\n- {painted}" in prompt
+    assert "Red Planet" not in prompt
+
+
+def said(speaker: str, text: str) -> Line:
+    return Line(id=1, conversation_id="c", speaker=speaker, text=text, timestamp=START, duration=1)
+
+
+@pytest.mark.parametrize(
+    ("owner", "speaker", "text", "expected"),
+    [
+        ("ana", "ana", "Have you seen that Red Planet thing?", True),
+        ("ana", PLAYER_ID, "What do you make of Cal's mural?", True),
+        ("ana", "ana", "That Mars business of Cal's? Brave.", True),
+        ("ana", PLAYER_ID, "Seen the new mural on the tower?", True),
+        ("cal", "cal", "Have you seen my mural yet?", True),
+        ("cal", PLAYER_ID, "I love your painting!", True),
+        ("ana", PLAYER_ID, "I love your painting!", False),
+        ("ana", "ana", "My painting days are over.", False),
+        ("ana", PLAYER_ID, "Cal's been busy.", False),
+        ("ana", PLAYER_ID, "There are murals everywhere here.", False),
+        ("ana", "ana", "First time at the tower, yes?", False),
+    ],
+)
+def test_when_a_work_has_come_up(owner: str, speaker: str, text: str, expected: bool) -> None:
+    topic = WorkTopic(remembers(owner, RED_PLANET, SAW_IT, START), RED_PLANET)
+
+    assert came_up(topic, "Cal", [said(speaker, text)]) is expected
