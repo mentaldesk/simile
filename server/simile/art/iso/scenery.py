@@ -1,4 +1,5 @@
-"""`simile art iso scenery`: each lighting set's ground, object sprites, light map and manifest."""
+"""`simile art iso scenery`: the ground, object sprites, light map and manifest of each lighting set
+and each interior."""
 
 import hashlib
 import json
@@ -15,8 +16,9 @@ from PIL import Image
 
 from simile.art import palette
 from simile.art.iso import blender, camera, depth, formats, post
-from simile.art.iso.lighting import CROSSFADE_MINUTES, LOOK, SETS, LightingSet
-from simile.art.iso.town import GROUND_HEIGHTS, Building, Object, Town
+from simile.art.iso.interior import Interior, Piece, find
+from simile.art.iso.lighting import CROSSFADE_MINUTES, INSIDE, LOOK, SETS, LightingSet
+from simile.art.iso.town import Building, Object, Town
 
 PIPELINE_VERSION = 2
 CONTENT_DIR = Path(__file__).resolve().parents[4] / "content"
@@ -25,6 +27,7 @@ SOURCES = (
     "art/palette.py",
     "art/iso/camera.py",
     "art/iso/formats.py",
+    "art/iso/interior.py",
     "art/iso/lighting.py",
     "art/iso/post.py",
     "art/iso/scenery.py",
@@ -32,10 +35,13 @@ SOURCES = (
     "art/iso/in_blender",
 )
 MANIFEST_FORMAT = 1
+SCENERY = Path("art") / "iso" / "scenery"
+INTERIORS = Path("art") / "iso" / "interiors"
 LIGHT_MAP_PX = 8
 MARGIN_PX = 24
 
 Renderer = Callable[[dict[str, Any], Path], dict[str, Any]]
+Scene = Town | Interior
 
 
 def blender_renderer(job: dict[str, Any], work: Path) -> dict[str, Any]:
@@ -59,7 +65,7 @@ def sources_digest() -> str:
     return h.hexdigest()[:16]
 
 
-def ground_rect(town: Town) -> tuple[int, int, int, int]:
+def ground_rect(town: Scene) -> tuple[int, int, int, int]:
     x0 = -town.height * camera.TILE_W // 2 - MARGIN_PX
     x1 = town.width * camera.TILE_W // 2 + MARGIN_PX
     y1 = (town.width + town.height) * camera.TILE_H // 2 + MARGIN_PX
@@ -68,7 +74,7 @@ def ground_rect(town: Town) -> tuple[int, int, int, int]:
 
 @dataclass
 class SpriteTask:
-    obj: Object
+    obj: Object | Piece
     context: list[dict[str, Any]]
     hash: str
 
@@ -89,13 +95,13 @@ class SpriteTask:
 @dataclass
 class Plan:
     light: LightingSet
-    town: Town
+    town: Scene
     sprites: dict[str, SpriteTask] = field(default_factory=dict)
     ground_hash: str = ""
     light_map_hash: str = ""
 
 
-def plan(town: Town, light: LightingSet) -> Plan:
+def plan(town: Scene, light: LightingSet) -> Plan:
     """What one set's renders depend on, and so each one's hash."""
     base = {
         "pipeline": PIPELINE_VERSION,
@@ -104,6 +110,8 @@ def plan(town: Town, light: LightingSet) -> Plan:
         "camera": [camera.TILE_W, camera.TILE_H, camera.TILE_M, camera.ELEVATION],
         "palette": palette.PALETTE,
     }
+    if isinstance(town, Interior):
+        base["room"] = town.room()
     out = Plan(light, town)
     for obj in town.objects:
         context = [o.spec() for o in town.context(obj, light)]
@@ -122,8 +130,9 @@ def plan(town: Town, light: LightingSet) -> Plan:
     return out
 
 
-def corners(b: Building) -> list[tuple[float, float]]:
-    return [(b.x0, b.y0), (b.x1, b.y0), (b.x1, b.y1), (b.x0, b.y1)]
+def corners(footprint: tuple[float, float, float, float]) -> list[tuple[float, float]]:
+    x0, y0, x1, y1 = footprint
+    return [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
 
 
 def _px(x: float, y: float, x0: int, y0: int) -> tuple[float, float]:
@@ -150,9 +159,11 @@ class Report:
 
 
 class SetBuild:
-    def __init__(self, plan: Plan, root: Path, work: Path, force: bool) -> None:
+    def __init__(
+        self, plan: Plan, root: Path, work: Path, force: bool, name: str | None = None
+    ) -> None:
         self.plan, self.root, self.work, self.force = plan, root, work, force
-        self.name = plan.light.name
+        self.name = name or plan.light.name
         self.folder = root / self.name
         self.manifest_path = root / f"{self.name}.json"
         self.old = self._old_manifest()
@@ -199,18 +210,16 @@ class SetBuild:
             "sprites": [t.job() for t in sprites],
         }
         if ground or light_map:
-            job["town"] = {
-                "width": town.width,
-                "height": town.height,
-                "ground": town.ground(),
-                "heights": town.heights(),
-                "buildings": [b.spec() for b in town.buildings],
-                "props": [p.spec() for p in town.props],
-            }
+            job["town"] = town.blender()
         if ground:
-            job["ground"] = {"rect": list(ground_rect(town))}
+            job["ground"] = {
+                "rect": list(ground_rect(town)),
+                "open": [o.id for o in town.open_ground],
+            }
         if light_map:
             job["lightmap"] = {"px_per_tile": LIGHT_MAP_PX}
+        if isinstance(town, Interior):
+            job["room"] = {**town.room(), "ground": town.ground()}
         return job
 
     def run(self, render: Renderer) -> Report:
@@ -229,7 +238,7 @@ class SetBuild:
             ]
         manifest = {
             "format": MANIFEST_FORMAT,
-            "set": self.name,
+            "set": self.plan.light.name,
             "hours": list(self.plan.light.hours),
             "crossfade_minutes": CROSSFADE_MINUTES,
             "sun": {"azimuth": self.plan.light.azimuth, "elevation": self.plan.light.elevation},
@@ -239,7 +248,7 @@ class SetBuild:
                 "metres": camera.TILE_M,
                 "px_per_metre_up": round(camera.UPRIGHT_PX_PER_M, 3),
             },
-            "map": {"width": self.plan.town.width, "height": self.plan.town.height},
+            "map": self._map(),
             "ground": self._ground(ground),
             "light_map": self._light_map(light_map),
             "objects": self._objects(rendered["sprites"]),
@@ -252,6 +261,11 @@ class SetBuild:
         self.report.bytes += self.manifest_path.stat().st_size
         return self.report
 
+    def _map(self) -> dict[str, Any]:
+        town = self.plan.town
+        named = {"id": town.id} if isinstance(town, Interior) else {}
+        return {**named, "width": town.width, "height": town.height}
+
     def _save(self, name: str, data: bytes) -> str:
         image = f"{self.name}/{name}"
         if _write(self.root / image, data):
@@ -263,7 +277,9 @@ class SetBuild:
             return self.old["ground"]
         x0, y0, w, h = ground_rect(self.plan.town)
         work = self.work / self.name
-        under = [[_px(x, y, x0, y0) for x, y in corners(b)] for b in self.plan.town.buildings]
+        under = [
+            [_px(x, y, x0, y0) for x, y in corners(o.footprint)] for o in self.plan.town.open_ground
+        ]
         with Image.open(work / "ground.png") as raw, Image.open(work / "ground_open.png") as bare:
             mask = post.polygon_mask(under, (w, h))
             ground = Image.composite(bare.convert("RGBA"), raw.convert("RGBA"), mask)
@@ -286,7 +302,7 @@ class SetBuild:
             "y": y0,
             "width": w,
             "height": h,
-            "heights": GROUND_HEIGHTS,
+            "heights": self.plan.town.ground_heights,
             "hash": self.plan.ground_hash,
             "chunks": pieces,
         }
@@ -331,16 +347,21 @@ class SetBuild:
             else:
                 sprite = {k: old[key][k] for k in ("image", "width", "height", "offset", "hash")}
             left = round(ax) + sprite["offset"][0]
-            out.append(
-                {
-                    "id": obj.id,
-                    "kind": "building" if isinstance(obj, Building) else obj.kind,
-                    "anchor": list(obj.anchor),
-                    "footprint": list(obj.footprint),
-                    **sprite,
-                    "slices": depth.slices(obj.footprint, left, sprite["width"]),
-                }
-            )
+            entry = {
+                "id": obj.id,
+                "kind": "building" if isinstance(obj, Building) else obj.kind,
+                "anchor": list(obj.anchor),
+                "footprint": list(obj.footprint),
+                **sprite,
+                "slices": depth.slices(obj.footprint, left, sprite["width"]),
+            }
+            if isinstance(obj, Piece) and (canvas := obj.canvas()):
+                top = round(ay) + sprite["offset"][1]
+                entry["canvas"] = [
+                    [round(sx - left, 1), round(sy - top, 1)]
+                    for sx, sy in (camera.project(*p) for p in canvas)
+                ]
+            out.append(entry)
         return out
 
     def _remove_unused(self, manifest: dict[str, Any]) -> None:
@@ -359,17 +380,25 @@ def build(
     work: Path | None = None,
     force: bool = False,
     render: Renderer | None = None,
+    rooms: list[str] | None = None,
 ) -> list[Report]:
-    """Render what changed in each set and rewrite its manifest; unchanged files are left alone."""
+    """Render what changed in each set and interior and rewrite its manifest; unchanged files are
+    left alone. With neither `sets` nor `rooms`, that's every set and every interior."""
+    everything = sets is None and rooms is None
     town = Town(content / "map" / "village.tmj")
-    root = content / "art" / "iso" / "scenery"
     scratch = None if work else Path(tempfile.mkdtemp(prefix="simile-iso-"))
-    reports = []
+    out = work or scratch
     try:
-        for name in sets or list(SETS):
-            build_set = SetBuild(plan(town, SETS[name]), root, work or scratch, force)
-            reports.append(build_set.run(render or blender_renderer))
+        builds = [
+            SetBuild(plan(town, SETS[name]), content / SCENERY, out, force)
+            for name in (list(SETS) if everything else sets or [])
+        ]
+        builds += [
+            SetBuild(plan(room, INSIDE), content / INTERIORS, out, force, room.id)
+            for room in find(content)
+            if everything or room.id in (rooms or [])
+        ]
+        return [b.run(render or blender_renderer) for b in builds]
     finally:
         if scratch:
             shutil.rmtree(scratch, ignore_errors=True)
-    return reports

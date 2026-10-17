@@ -1,12 +1,13 @@
 # Iso art
 
-Pre-rendered isometric art, made in Blender from `content/map/village.tmj` (#116). The map stays
-orthogonal: locations, collisions and entries keep their tile coordinates, and only the drawing is
-isometric.
+Pre-rendered isometric art, made in Blender from `content/map/village.tmj` (#116) and the interiors
+in `content/map/interiors/` (#170). The maps stay orthogonal: locations, collisions and entries keep
+their tile coordinates, and only the drawing is isometric.
 
 ```bash
-cd server && uv run simile art iso scenery                  # every lighting set, only what changed
+cd server && uv run simile art iso scenery                  # every set and interior, only what changed
 cd server && uv run simile art iso scenery --set night --work /tmp/iso   # one set; keep Blender's raw renders
+cd server && uv run simile art iso scenery --interior gallery           # one interior
 ```
 
 Blender is a tool on the machine, not a Python dependency. `blender.py` runs it as a subprocess,
@@ -19,8 +20,9 @@ images they name and the size budget, and the tests that render skip without Ble
 | `camera.py` | The camera and projection every render shares |
 | `lighting.py` | The four lighting sets, the shared look, and `blend(hour)` |
 | `blender.py` | Runs a script from `in_blender/` on a JSON job and returns its JSON result |
-| `in_blender/` | Runs inside Blender: `common.py` (materials, primitives, render setup, camera, lights), `scenery.py` (the village's models), `lightmap.py` (the light map passes), `render_scenery.py` (a set's scenery job) |
+| `in_blender/` | Runs inside Blender: `common.py` (materials, primitives, render setup, camera, lights), `scenery.py` (the village's models), `interior.py` (the interiors' models), `lightmap.py` (the light map passes), `render_scenery.py` (a set's scenery job) |
 | `town.py` | The map as the renders see it: ground, buildings and props, and what shades what |
+| `interior.py` | An interior as the renders see it: floor, walls, fittings, frames and ceiling lights |
 | `scenery.py` | `simile art iso scenery`: plans, renders what changed and writes the manifests |
 | `post.py` | Glow, ground chunks and the runtime light map |
 | `depth.py` | Depth keys and slices |
@@ -149,6 +151,58 @@ renders only what's missing or whose hash changed, and writes a file only if its
 a rerun with nothing changed writes nothing. `tests/art/iso` fails if the committed manifests are
 stale, and pins a digest of the pipeline's code (see below).
 
+## Interiors: `content/art/iso/interiors/<id>.json`
+
+Each interior map has one manifest, in the same format as a set's, with its images in
+`content/art/iso/interiors/<id>/`. Draw it the same way: the ground, then every object's slices by
+depth. The differences:
+
+- **One lighting set.** `set` is `inside` and `hours` is `[0, 24]`. Nothing crossfades.
+- **`map`** has the interior's `id` as well as its size.
+- **Ground.** The floor and the doorway's mat, with the room's shadows and light pools baked in.
+  Outside the walls it's transparent. `heights` is empty: every floor is at 0.
+- **Objects.** `kind` is `wall`, `frame`, or the fitting's kind: `counter`, `back_counter`,
+  `kitchen`, `cafe_table`, `noodle_table`, `stool`, `planter`, `planter_flowers`, `workbench`,
+  `laser_cutter`, `loom`, `printer_3d`, `sewing_machine`, `bench` or `plinth`. A counter is one
+  object however many tiles it runs over. The counter against the back wall is a separate object,
+  so whoever works between the two sorts correctly. A stool's footprint is the point it stands on,
+  since residents stand on stools.
+- **Walls.** The camera looks from the south-east, so the north and west walls stand 3 m tall and the
+  south and east walls are cut down to 0.45 m. Each is a thin wall along the floor's edge, with a
+  dark cap. The gallery's free-standing walls (`partition-<x>-<y>`) are 2.4 m tall, and the ground
+  under them is drawn without them, for a cutaway. Shelves, signs, lanterns and pegboards are part
+  of the wall they hang on.
+- **Frames** render empty, as sprites of their own, so G2 (#173) can hang paintings in them. A
+  frame's `id` is its painting's interactable id (`painting_1` …). Its `canvas` is the opening, in
+  px within the frame's image: top left, top right, bottom right, bottom left. Draw the painting into
+  that parallelogram at the frame's depth, just under the frame.
+
+```jsonc
+{"id": "painting_1", "kind": "frame", "image": "gallery/painting_1.webp",
+ "canvas": [[7.8, 8.4], [66.2, 37.7], [66.2, 82.6], [7.8, 53.3]], …}
+```
+
+**Lighting.** Interiors are lit from inside, by `INSIDE` in `lighting.py`. Its "sun" is a high, soft
+key standing in for the ceiling's light, with a warm ambient. Each room adds a grid of ceiling
+lights, out of sight, in its own colour (`ROOM_LIGHT` in `interior.py`): warm in the café and noodle
+bar, cool white in the maker space, neutral in the gallery. Neon, lanterns and screens glow as they
+do outside. The maps have no windows, so nothing follows the time of day. The light map works as
+the village's does. Its tint is 1 where the key and the ambient alone are brightest, and the
+ceiling lights lift most of the floor to between 1.4 and 1.8. Its sun half is the key, so drop
+shadows inside are short and fall north. `characters/lights.json` has no `inside` entry yet.
+
+**Hashes** also cover the room: its ceiling lights, finish and mats. A piece is rendered with what's
+within 1.5 tiles of it and whatever's shadow reaches it, so changing an interior renders only what
+the change touches, and nothing in the village or the other interiors.
+
+## Entrances
+
+A building whose door is the outside end of a door in `village.tmj`'s `doors` layer gets an
+entrance: a green door with a lit window in a white surround, a canopy and a step. Today that's the
+Daily Grind, Golden Bowl Noodles and Spark Maker Space. The building's spec lists those facade
+columns in `entrances` and leaves the key out when there are none, so a door added to the map
+re-renders just that building and what it shades, along with the ground.
+
 ## Formats
 
 `formats.py` has one setting for each kind of asset, chosen by measurement in #140:
@@ -157,8 +211,9 @@ stale, and pins a digest of the pipeline's code (see below).
 - **Sprites: lossless WebP.** For these renders it's about a third smaller than PNG.
 - **Light map: lossless WebP**, since it's data. It's about a third smaller than PNG.
 
-`formats.sizes(images)` measures images in each format, so the choice can be remade for another
-kind of asset. `content/art/iso/` stays under 40 MB in total, and `tests/art/iso` checks it.
+Interiors use the same formats. `formats.sizes(images)` measures images in each format, so the
+choice can be remade for another kind of asset. `content/art/iso/` stays under 40 MB in total, and
+`tests/art/iso` checks it.
 
 ## How it's built
 
@@ -179,6 +234,9 @@ Each lighting set is one Blender run: Cycles at 48 samples, denoised, with the A
 
 Each set scales the lamps, neon, lit windows, screens and water by its `emit` settings in
 `lighting.py`, so the canal and fountain are dimmer at night than by day.
+
+Each interior is one Blender run too, built the same way. Its ceiling lights are in every render,
+and each sprite stands on the room's own floor, out of sight, rather than on a pavement plane.
 
 To change how something looks, change it in `in_blender/`, `lighting.py` or `post.py`, then rerun
 the command on a Mac with Blender. The hashes see the settings in `lighting.py`, the palette, the

@@ -4,7 +4,9 @@ import pytest
 from PIL import Image
 
 from simile.art.iso import blender, camera, scenery
-from simile.art.iso.lighting import SETS
+from simile.art.iso.interior import find
+from simile.art.iso.lighting import INSIDE, SETS
+from simile.art.iso.scenery import CONTENT_DIR
 from simile.art.iso.town import Town
 
 from .conftest import VILLAGE
@@ -75,3 +77,25 @@ def test_blender_renders_a_sprite_and_says_where_it_landed(tmp_path: Path) -> No
         alpha = image.getchannel("A")
         assert alpha.getpixel((0, 0)) == 0
         assert alpha.getpixel((round(ax) - x0, round(ay) - y0 - 5)) == 255
+
+
+@needs_blender
+def test_blender_renders_a_piece_of_an_interior_in_its_room(tmp_path: Path) -> None:
+    gallery = next(r for r in find(CONTENT_DIR) if r.id == "gallery")
+    frame = gallery.frames[0]
+    plan = scenery.plan(gallery, INSIDE)
+    build = scenery.SetBuild(plan, tmp_path / "content", tmp_path, force=True, name="gallery")
+    job = build.job([plan.sprites[frame.id]], ground=False, light_map=False)
+    job["look"] = {**job["look"], "samples": 4}
+
+    result = blender.run("render_scenery.py", job, tmp_path / "work", progress=lambda _: None)
+
+    x0, y0, w, h = result["sprites"][frame.id]["rect"]
+    with Image.open(tmp_path / "work" / "sprites" / f"{frame.id}.png") as image:
+        assert image.size == (w, h)
+        alpha = image.getchannel("A")
+        canvas = [camera.project(*p) for p in frame.canvas()]
+        middle = (sum(x for x, _ in canvas) / 4 - x0, sum(y for _, y in canvas) / 4 - y0)
+        assert alpha.getpixel((round(middle[0]), round(middle[1]))) == 0
+        top_left = canvas[0]
+        assert alpha.getpixel((round(top_left[0] - x0) - 2, round(top_left[1] - y0) - 2)) == 255

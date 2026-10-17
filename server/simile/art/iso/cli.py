@@ -14,6 +14,10 @@ def register(art: typer.Typer) -> None:
             list[str] | None,
             typer.Option("--set", help="Only this lighting set; repeat for more. Default: all."),
         ] = None,
+        room: Annotated[
+            list[str] | None,
+            typer.Option("--interior", help="Only this interior; repeat for more. Default: all."),
+        ] = None,
         content: Annotated[
             Path | None, typer.Option(help="Content directory. Defaults to the repo's content/.")
         ] = None,
@@ -22,14 +26,21 @@ def register(art: typer.Typer) -> None:
         ] = None,
         force: Annotated[bool, typer.Option(help="Render everything, changed or not.")] = False,
     ) -> None:
-        """Render the ground, object sprites and light map of each lighting set that changed."""
+        """Render the ground, object sprites and light map of each lighting set and interior that
+        changed. With neither --set nor --interior, that's all of them."""
+        from simile.art.iso.interior import find
         from simile.art.iso.lighting import SETS
         from simile.art.iso.scenery import CONTENT_DIR, build
 
+        content = content or CONTENT_DIR
         unknown = [name for name in light or [] if name not in SETS]
         if unknown:
             raise typer.BadParameter(f"unknown set {unknown}; choose from {list(SETS)}")
-        for report in build(content or CONTENT_DIR, light, work, force):
+        ids = [r.id for r in find(content)]
+        unknown = [name for name in room or [] if name not in ids]
+        if unknown:
+            raise typer.BadParameter(f"unknown interior {unknown}; choose from {ids}")
+        for report in build(content, light, work, force, rooms=room):
             if not report.rendered:
                 summary = "up to date"
             else:

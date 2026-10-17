@@ -190,3 +190,136 @@ def test_the_command_rejects_unknown_sets(content: Path) -> None:
     result = CliRunner().invoke(create_cli(), args)
     assert result.exit_code != 0
     assert "dusk" in result.output
+
+
+INTERIORS = Path("art") / "iso" / "interiors"
+
+
+def room_manifest(content: Path, name: str) -> dict:
+    return json.loads((content / INTERIORS / f"{name}.json").read_text())
+
+
+def test_each_interior_gets_a_manifest_in_the_inside_light(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    add_room("coffee_shop")
+
+    reports = build(content, fake_blender)
+
+    assert [r.name for r in reports] == [*SETS, "coffee_shop"]
+    m = room_manifest(content, "coffee_shop")
+    assert (m["set"], m["hours"]) == ("inside", [0, 24])
+    assert m["map"] == {"id": "coffee_shop", "width": 20, "height": 14}
+    assert m["ground"]["heights"] == {}
+    images = [c["image"] for c in m["ground"]["chunks"]]
+    images += [m["light_map"]["image"], *(o["image"] for o in m["objects"])]
+    assert all(image.startswith("coffee_shop/") for image in images)
+    assert all((content / INTERIORS / image).exists() for image in images)
+    assert {o["kind"] for o in m["objects"]} >= {"wall", "counter", "cafe_table"}
+
+
+def test_an_interiors_job_carries_the_room(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    add_room("gallery")
+
+    build(content, fake_blender, rooms=["gallery"])
+
+    [job] = fake_blender.jobs
+    assert job["light"]["name"] == "inside"
+    assert job["room"]["id"] == "gallery" and len(job["room"]["lights"]) == 18
+    assert len(job["room"]["ground"]) == 20
+    assert job["town"]["room"] == {k: v for k, v in job["room"].items() if k != "ground"}
+    assert job["ground"]["open"] == ["partition-4-9", "partition-18-9"]
+
+
+def test_the_villages_ground_is_opened_under_its_buildings(
+    content: Path, fake_blender: FakeBlender
+) -> None:
+    build(content, fake_blender, sets=["night"])
+    [job] = fake_blender.jobs
+    town = Town(content / "map" / "village.tmj")
+    assert job["ground"]["open"] == [b.id for b in town.buildings]
+    assert "room" not in job
+
+
+def test_frames_say_where_their_canvas_is(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    add_room("gallery")
+
+    build(content, fake_blender, rooms=["gallery"])
+
+    m = room_manifest(content, "gallery")
+    frames = [o for o in m["objects"] if o["kind"] == "frame"]
+    assert [f["id"] for f in frames] == [f"painting_{i}" for i in range(1, 14)]
+    assert all(len(f["canvas"]) == 4 for f in frames)
+    assert not any("canvas" in o for o in m["objects"] if o["kind"] != "frame")
+    (left, top), (right, _), _, (_, bottom) = frames[0]["canvas"]
+    assert left < right and top < bottom
+
+
+def test_interiors_and_the_village_render_apart(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    path = add_room("coffee_shop")
+    build(content, fake_blender)
+    fake_blender.jobs.clear()
+    data = json.loads(path.read_text())
+    decor = next(layer for layer in data["layers"] if layer["name"] == "decor")
+    decor["data"][11 * data["width"] + 2] = 0
+    path.write_text(json.dumps(data))
+
+    reports = build(content, fake_blender)
+
+    [job] = fake_blender.jobs
+    objects = room_manifest(content, "coffee_shop")["objects"]
+    assert job["light"]["name"] == "inside" and job.get("ground")
+    assert "cafe_table-2-11" not in {o["id"] for o in objects}
+    assert 0 < len(job["sprites"]) < len(objects)
+    assert [r.name for r in reports if r.rendered] == ["coffee_shop"]
+    assert reports[-1].removed == ["coffee_shop/cafe_table-2-11.webp"]
+
+
+def test_a_second_build_of_an_interior_writes_nothing(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    add_room("noodle_bar")
+    build(content, fake_blender, rooms=["noodle_bar"])
+    fake_blender.jobs.clear()
+
+    [report] = build(content, fake_blender, rooms=["noodle_bar"])
+
+    assert fake_blender.jobs == []
+    assert not report.rendered and not report.written
+
+
+def test_sets_alone_leave_the_interiors_out(
+    content: Path, fake_blender: FakeBlender, add_room
+) -> None:
+    add_room("coffee_shop")
+    reports = build(content, fake_blender, sets=["morning"])
+    assert [r.name for r in reports] == ["morning"]
+    assert not (content / INTERIORS).exists()
+
+
+def test_the_command_renders_the_interiors_it_is_given(
+    content: Path, fake_blender: FakeBlender, monkeypatch: pytest.MonkeyPatch, add_room
+) -> None:
+    add_room("coffee_shop")
+    add_room("gallery")
+    monkeypatch.setattr(scenery, "blender_renderer", fake_blender)
+    args = ["art", "iso", "scenery", "--interior", "gallery", "--content", str(content)]
+
+    result = CliRunner().invoke(create_cli(), args)
+
+    assert result.exit_code == 0, result.output
+    assert result.output.startswith("gallery: rendered")
+    assert [job["room"]["id"] for job in fake_blender.jobs] == ["gallery"]
+
+
+def test_the_command_rejects_unknown_interiors(content: Path) -> None:
+    args = ["art", "iso", "scenery", "--interior", "attic", "--content", str(content)]
+    result = CliRunner().invoke(create_cli(), args)
+    assert result.exit_code != 0
+    assert "attic" in result.output
