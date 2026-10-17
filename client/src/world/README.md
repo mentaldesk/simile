@@ -42,8 +42,8 @@ label and area in tiles, and `terminalAt(terminals, position)` finds the one wit
 `TERMINAL_REACH_TILES` (1) of the tile the player stands on. The dialogue UI opens the news there.
 
 `npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point: the 48 × 72 box
-under their `bubbleAnchor`, the one in front where sprites overlap. Choosing who to talk to and the
-debug overlay both click with it, so a new projection changes it here.
+under their `bubbleAnchor`, the one in front where sprites overlap, or the view's own `spriteOf` boxes
+as the iso scene gives them. Choosing who to talk to and the debug overlay both click with it.
 
 ## Rendering
 

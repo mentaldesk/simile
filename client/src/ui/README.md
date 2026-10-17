@@ -74,10 +74,16 @@ this.events.once(Phaser.Scenes.Events.SHUTDOWN, unregister);
 | `positionOf(id)` | Where an entity is now, in tiles as in the protocol, or `undefined`. Include the player as `"player"`, at the position the client sends in `player_move`. |
 | `npcIds()` | The id of every NPC in the world. |
 | `bubbleAnchor(id)` | Where to pin the entity's bubble: the top centre of its sprite, in game-canvas pixels after the camera's scroll and zoom, or `undefined`. Off-screen points are fine; bubbles stay on screen. |
+| `spriteOf(id)` | Optional. The sprite's box in game-canvas pixels, its draw depth, and optionally whether it's opaque at a point. Without it, `world/hit.ts` assumes a 48 × 72 box below the bubble anchor. |
 
 The UI calls these every frame, after the world scene's `update`. Until a view is registered it uses
 `TrackedWorld`, which follows `snapshot` and `entity_moved` and centres a 48 px-tile camera on the
 player.
+
+The overlay is laid out in at least 640 × 360 px and scaled to cover the canvas (`fitOverlay` in
+[`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. On the top-down canvas
+that's the canvas's own zoom, and game-canvas pixels are overlay pixels. The iso scene's canvas is
+in device pixels, so `inOverlay` maps the view's anchors and boxes into the overlay.
 
 The chat input stops its key-downs from reaching `window`, so the game's keys (Phaser's keyboard
 included) don't fire while the player types. Key-ups still get through, so no key sticks down.
