@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { characterKeys, characters } from './assets';
-import { characterFor, poseOf, walkFrames } from './sprites';
+import { characterKeys } from './assets';
+import { characterFor } from './sprites';
 
 const GENERATED_NPCS = import.meta.glob('../../../content/npcs/*.json');
 const AVAILABLE = ['player', 'mei', 'sample_artist', 'sample_barista', 'sample_coder'];
@@ -35,32 +35,8 @@ describe('characterFor', () => {
 });
 
 describe('the character atlases', () => {
-  it('include the player and the samples, each with a walk cycle in every direction', () => {
+  it('include the player and the samples', () => {
     expect(characterKeys).toContain('player');
     expect(characterKeys.filter((key) => key.startsWith('sample_')).length).toBeGreaterThan(0);
-    for (const { atlas } of characters) {
-      const frames = Object.keys((atlas as { frames: object }).frames);
-      for (const facing of ['down', 'left', 'right', 'up'] as const) {
-        for (const frame of walkFrames(facing)) expect(frames).toContain(frame);
-      }
-    }
-  });
-});
-
-describe('poseOf', () => {
-  it('plays the walk for the facing while walking', () => {
-    expect(poseOf('mei', { position: { x: 0, y: 0 }, facing: 'left', walking: true })).toEqual({
-      animation: 'mei-walk-left',
-    });
-  });
-
-  it('stands on the middle column when still', () => {
-    expect(poseOf('mei', { position: { x: 0, y: 0 }, facing: 'up', walking: false })).toEqual({
-      frame: 'up-1',
-    });
-  });
-
-  it('walks step, stand, step, stand', () => {
-    expect(walkFrames('down')).toEqual(['down-0', 'down-1', 'down-2', 'down-1']);
   });
 });

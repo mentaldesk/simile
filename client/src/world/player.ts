@@ -1,6 +1,6 @@
 import type { Position } from '../net';
 import type { CollisionMap } from './map';
-import { facingFor, type Body, type Facing } from './motion';
+import type { Body } from './motion';
 import { PLAYER_SPEED } from './tuning';
 
 /** Holds (x + 0.5, y + 0.5), so the tile W2 puts the player on, `floor(p + 0.5)`, is never blocked. */
@@ -43,7 +43,6 @@ export type Direction = { x: number; y: number };
 
 export class Player implements Body {
   position: Position;
-  facing: Facing = 'down';
   walking = false;
 
   constructor(position: Position) {
@@ -62,11 +61,7 @@ export class Player implements Body {
     }
     const step = (speed * dt) / length;
     const next = walk(map, this.position, direction.x * step, direction.y * step);
-    const [dx, dy] = [next.x - this.position.x, next.y - this.position.y];
-    this.walking = dx !== 0 || dy !== 0;
-    this.facing = this.walking
-      ? facingFor(dx, dy, this.facing)
-      : facingFor(direction.x, direction.y, this.facing);
+    this.walking = next.x !== this.position.x || next.y !== this.position.y;
     this.position = next;
   }
 }

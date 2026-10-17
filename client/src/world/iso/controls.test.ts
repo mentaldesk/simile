@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CollisionMap } from '../map';
 import { FOOTPRINT, Player } from '../player';
-import { gridDirection, isoRequested } from './controls';
+import { gridDirection } from './controls';
 import { project } from './projection';
 
 const TILE = { width: 96, height: 48, px_per_metre_up: 53.443 };
@@ -74,14 +74,5 @@ describe('the player under iso controls', () => {
     const one = walk({ x: 3, y: 3 }, { x: 0, y: 1 }, 0.25);
     const two = walk({ x: 3, y: 3 }, { x: 1, y: 1 }, 0.25);
     expect(Math.hypot(one.x - 3, one.y - 3)).toBeCloseTo(Math.hypot(two.x - 3, two.y - 3));
-  });
-});
-
-describe('isoRequested', () => {
-  it('opts in with ?renderer=iso only', () => {
-    expect(isoRequested('?renderer=iso')).toBe(true);
-    expect(isoRequested('?debug&renderer=iso')).toBe(true);
-    expect(isoRequested('')).toBe(false);
-    expect(isoRequested('?renderer=top-down')).toBe(false);
   });
 });

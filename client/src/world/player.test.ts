@@ -96,22 +96,19 @@ describe('Player', () => {
     player.move({ x: 1, y: 1 }, 0.1, ROOM);
     expect(Math.hypot(player.position.x - 2, player.position.y - 2)).toBeCloseTo(PLAYER_SPEED * 0.1);
     expect(player.walking).toBe(true);
-    expect(player.facing).toBe('down');
   });
 
-  it('faces the way it was asked to go, and stands still against a wall', () => {
+  it('stands still against a wall', () => {
     const player = new Player({ x: 2, y: 1 - FOOTPRINT.top });
     player.move({ x: 0, y: -1 }, 0.1, ROOM);
-    expect(player.facing).toBe('up');
     expect(player.walking).toBe(false);
   });
 
-  it('faces the way it slides along a wall', () => {
+  it('walks on, sliding along a wall', () => {
     const player = new Player({ x: 2, y: 1 - FOOTPRINT.top });
     player.move({ x: 1, y: -1 }, 0.1, ROOM);
     expect(player.position.y).toBe(1 - FOOTPRINT.top);
     expect(player.walking).toBe(true);
-    expect(player.facing).toBe('right');
   });
 
   it('stops walking when no key is down', () => {
@@ -119,6 +116,5 @@ describe('Player', () => {
     player.move({ x: -1, y: 0 }, 0.1, ROOM);
     player.move({ x: 0, y: 0 }, 0.1, ROOM);
     expect(player.walking).toBe(false);
-    expect(player.facing).toBe('left');
   });
 });

@@ -46,6 +46,32 @@ describe('the stand-in world view', () => {
     expect(viktor.y - player.y).toBe((6 - 13) * 48);
     expect(trackedWorld.tileAt({ x: viktor.x, y: viktor.y + 72 - 24 })).toEqual({ x: 11, y: 6 });
   });
+
+  it('draws a 48 x 72 box below each bubble anchor', () => {
+    server.dispatch(JSON.stringify(snapshot));
+    const viktor = trackedWorld.bubbleAnchor('viktor')!;
+
+    expect(trackedWorld.spriteOf('viktor')).toEqual({
+      box: { x: viktor.x - 24, y: viktor.y, width: 48, height: 72 },
+      depth: viktor.y + 72,
+    });
+    expect(trackedWorld.spriteOf('nobody')).toBeUndefined();
+  });
+
+  it('scales its tiles and boxes to the game canvas', () => {
+    server.dispatch(JSON.stringify(snapshot));
+    const at = (scale: number) => {
+      trackedWorld.scale = scale;
+      const player = trackedWorld.bubbleAnchor('player')!;
+      const viktor = trackedWorld.spriteOf('viktor')!.box;
+      return { ...viktor, x: viktor.x - player.x, y: viktor.y - player.y };
+    };
+
+    const [one, three] = [at(1), at(3)];
+    trackedWorld.scale = 1;
+
+    expect(three).toEqual({ x: 3 * one.x, y: 3 * one.y, width: 144, height: 216 });
+  });
 });
 
 it('uses the world scene once it registers, until it unregisters', () => {
@@ -53,6 +79,7 @@ it('uses the world scene once it registers, until it unregisters', () => {
     positionOf: () => undefined,
     npcIds: () => [],
     bubbleAnchor: () => undefined,
+    spriteOf: () => undefined,
   };
 
   const unregister = setWorldView(scene);

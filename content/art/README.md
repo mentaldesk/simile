@@ -19,21 +19,24 @@ skin snaps to one of six skin tones.
 
 ## Tileset: `tiles.png`, `tiles.tsj`
 
-- 16×16 px tiles, 16 columns, no margin or spacing. The client renders them at 3×.
+The game doesn't draw these tiles: they're what the village is built from. W1's builder lays the map
+out with them (`server/simile/world/build_map.py`) and draws its previews from them, and the iso
+scenery build reads each map cell's tile by name to model the village
+([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)).
+
+- 16×16 px tiles, 16 columns, no margin or spacing.
 - `tiles.tsj` is a Tiled JSON tileset named `simile`. Every tile has three properties:
   - `name`: a stable name. Code should look tiles up by name, not id.
   - `collides`: blocks walking (water, buildings, most props).
-  - `above`: draw it over characters (tree crowns and the tops of lamps, palms, terminals and
-    vending machines).
+  - `above`: goes on the map's `above` layer (tree crowns and the tops of lamps, palms, terminals
+    and vending machines).
 - [`tiles.md`](tiles.md) lists every id and name. Ids are positions in `tiles.png`. Each group
   starts a new row, so add new tiles in a group's free slots or as a new group at the end, or
   existing maps break.
-- [`preview/tiles.png`](preview/tiles.png) shows every tile with its id, and
-  [`preview/scene.png`](preview/scene.png) is a street built from them (`village()` in
-  `server/simile/art/preview.py`).
+- [`preview/tiles.png`](preview/tiles.png) shows every tile with its id.
 
 Suggested map layers: ground (terrain), buildings (roofs and facades), decor (everything with a
-transparent background: props, signs, awnings), then above (`above` tiles, over the characters).
+transparent background: props, signs, awnings), then above (`above` tiles).
 `blocked`, a red cross, is for a hidden collision layer and is never drawn in the game.
 
 **Terrain.** Grass, road and water patches sit inside pavement. Each patch is at least two tiles
@@ -66,48 +69,26 @@ go inside roads; `tactile_h/v` and `plaza*` sit on pavement.
 `bench_l bench_r`, and `<name>_top` above `<name>` for `terminal` (the news terminal), `lamp`,
 `palm` and `vending`.
 
-**Phaser** can't load an external tileset, so embed it in the map (in Tiled, *Embed Tileset*, or
-export with *Embed tilesets*), then:
-
-```ts
-this.load.image('tiles', 'art/tiles.png');
-this.load.tilemapTiledJSON('town', 'map/town.json');
-// later
-const map = this.make.tilemap({ key: 'town' });
-const tiles = map.addTilesetImage('simile', 'tiles');
-```
-
 ## Characters: `characters/<id>.png`, `characters/<id>.json`
 
-- 16×24 px frames in a 3 × 8 grid (48×192 px). Rows: `down`, `left`, `right`, `up` for the
-  top-down view, then the three-quarter views the isometric view adds: `down_left`, `down_right`,
-  `up_left`, `up_right`, facing that way on screen. Columns: 0 and 2 are steps, 1 is standing.
-  Frame index = row × 3 + column.
+- 16×24 px frames in a 3 × 8 grid (48×192 px). Rows: `down`, `left`, `right`, `up`, then the
+  three-quarter views `down_left`, `down_right`, `up_left`, `up_right`, each facing that way on
+  screen. Columns: 0 and 2 are steps, 1 is standing. Frame index = row × 3 + column.
 - Every right-facing frame is its left-facing frame mirrored. `down_left` is the face turned to the
   left and `up_left` the back of the head with the left cheek showing. Every view keeps the feet on
   the frame's bottom row, so one origin works for all of them.
 - `<id>.json` is a Phaser JSON hash atlas naming each frame `<direction>-<column>`, e.g. `left-1`.
   Because the grid is uniform, `load.spritesheet(key, url, { frameWidth: 16, frameHeight: 24 })`
   works too.
-- Walk with columns 0, 1, 2 played as a yoyo; idle on column 1. The feet are at the bottom of the
-  frame, so set the origin to `(0.5, 1)` and place the sprite on the tile's bottom edge.
+- Walk with columns 0, 1, 2, 1; idle on column 1. The feet are at the bottom of the frame, so set
+  the origin to `(0.5, 1)` and place the sprite where the feet go.
 - `player` is the player. `sample_*` are placeholders until the generated NPCs exist. Each NPC in
   `content/npcs/<id>.json` gets `characters/<id>.png` drawn from its `appearance`, plus
   `preview/npcs.png`.
 
-```ts
-this.load.atlas('mei', 'art/characters/mei.png', 'art/characters/mei.json');
-// later
-for (const dir of ['down', 'left', 'right', 'up']) {
-  this.anims.create({
-    key: `mei-walk-${dir}`,
-    frames: this.anims.generateFrameNames('mei', { prefix: `${dir}-`, start: 0, end: 2 }),
-    frameRate: 8,
-    yoyo: true,
-    repeat: -1,
-  });
-}
-```
+The client loads every atlas in `BootScene` and draws them with `pixelArt` in
+`client/src/scenes/iso-characters.ts`, which picks one of the eight rows from each step
+([`client/src/world/iso/README.md`](../../client/src/world/iso/README.md)).
 
 Every `Appearance` option is drawn: hair `bald`, `buzz`, `short`, `curly`, `bob`, `long`,
 `ponytail`, `bun`; build `slim`, `average`, `broad`; accessories `glasses`, `sunglasses`, `cap`,
@@ -116,6 +97,5 @@ accent colour that differs from the outfit; aprons are cream, or brown over a li
 
 ## Previews
 
-`preview/` is for reviewing the art: `tiles.png`, `scene.png`, `characters.png` (the player and
-samples at 1×, 2× and 3×), `walk.gif` (every walk cycle, round all eight facings) and `npcs.png` once
-NPCs exist.
+`preview/` is for reviewing the art: `tiles.png`, `characters.png` (the player and samples at 1×,
+2× and 3×), `walk.gif` (every walk cycle, round all eight facings) and `npcs.png` once NPCs exist.

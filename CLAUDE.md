@@ -137,7 +137,7 @@ can still resolve and install them:
 ## Adding to the client without editing shared files
 
 `client/src/main.ts` collects the `scenes` export of every `client/src/<area>/index.ts`
-(`export const scenes = [WorldScene]`) and adds them to the game in area order `scenes`, `world`,
+(`export const scenes = [DialogueScene]`) and adds them to the game in area order `scenes`, `world`,
 `ui`, `debug`, then any others alphabetically. Later scenes draw on top. The first scene starts
 automatically; give overlay scenes `active: true` in their scene config. Areas without scenes
 (`net/`, `audio/`) don't export `scenes`.

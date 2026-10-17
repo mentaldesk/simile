@@ -1,4 +1,3 @@
-import { spriteOf } from '../world/hit';
 import type { Size } from '../world/view';
 import type { ScreenBox, ScreenPoint, WorldView } from './world-view';
 
@@ -19,7 +18,6 @@ export function fitOverlay(canvas: Size, game: Size): OverlayFit {
 }
 
 export function inOverlay(view: WorldView, fromGame: number): WorldView {
-  if (fromGame === 1) return view;
   const point = ({ x, y }: ScreenPoint): ScreenPoint => ({ x: x * fromGame, y: y * fromGame });
   const box = ({ x, y, width, height }: ScreenBox): ScreenBox => ({
     ...point({ x, y }),
@@ -34,7 +32,7 @@ export function inOverlay(view: WorldView, fromGame: number): WorldView {
       return anchor && point(anchor);
     },
     spriteOf: (id) => {
-      const sprite = spriteOf(id, view);
+      const sprite = view.spriteOf(id);
       return sprite && { box: box(sprite.box), depth: sprite.depth };
     },
   };
