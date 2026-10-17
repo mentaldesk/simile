@@ -161,7 +161,7 @@ class Village:
     def walk_to(self, npc: str, tiles: float) -> None:
         """Put the player `tiles` to the right of `npc`."""
         here = self.movement.position(npc)
-        self.movement.track(PLAYER_ID, Point(here.x + tiles, here.y))
+        self.movement.track(PLAYER_ID, Point(here.x + tiles, here.y, here.map))
 
     async def run(self, seconds: float = 5) -> None:
         await self.world.loop.run(timedelta(seconds=seconds))

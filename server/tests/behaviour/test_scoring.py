@@ -454,7 +454,7 @@ def test_places_are_looked_up_on_the_points_own_map() -> None:
     cafe = Places(load_maps()["coffee_shop"])
 
     assert PLACES.at(Point(3, 8)) == PLACES.location("house_1")
-    assert PLACES.at(Point(3, 8, "coffee_shop")) is None
+    assert PLACES.at(Point(3, 8, "coffee_shop")) == PLACES.location("coffee_shop")
     assert cafe.at(Point(3, 8, "coffee_shop")) == cafe.location("coffee_shop")
     assert cafe.at(Point(3, 8)) is None
 

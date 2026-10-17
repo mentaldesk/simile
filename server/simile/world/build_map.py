@@ -450,7 +450,7 @@ def lychee_lane(town: Town) -> None:
     town.put(17, 8, "neon_vertical_top")
     town.put(17, 9, "neon_vertical_bottom")
     town.put(13, 11, "bike_yellow", "bike_yellow")
-    town.place_building("noodle_bar", "Golden Bowl Noodles", LocationKind.NOODLE_BAR, noodles, 16)
+    town.doorstep("noodle_bar", noodles, 16)
 
     town.building(18, 6, "cream", (".ww.", "....", ".Dss"), roof_rows=2, extras=[(2, 0, "roof_ac")])
     town.put(20, 10, "awning_blue_l", "awning_blue_r")
@@ -477,9 +477,9 @@ def lychee_lane(town: Town) -> None:
     town.put(30, 11, "cafe_menu")
     town.put(33, 11, "cafe_table")
     town.put(35, 11, "cafe_table")
-    town.place_building(
-        "coffee_shop", "The Daily Grind", LocationKind.COFFEE_SHOP, cafe, 31, front=2
-    )
+    town.doorstep("coffee_shop", cafe, 31)
+    terrace = TileArea(x=cafe.x, y=cafe.y + cafe.height, width=cafe.width, height=2)
+    town.place("cafe_terrace", "The Daily Grind's terrace", LocationKind.AMENITY, terrace, (34, 11))
 
     maker = town.building(
         37,
@@ -492,7 +492,7 @@ def lychee_lane(town: Town) -> None:
     town.put(38, 9, "screen_l", "screen_r")
     town.put(41, 9, "neon_bolt")
     town.put(37, 11, "bike_blue")
-    town.place_building("maker_space", "Spark Maker Space", LocationKind.MAKER_SPACE, maker, 41)
+    town.doorstep("maker_space", maker, 41)
 
     town.house(3, "3 Lychee Lane", 45, 6, "cream", (".d.w.", ".dww."), roof="roof_green")
     town.put(49, 11, "planter")

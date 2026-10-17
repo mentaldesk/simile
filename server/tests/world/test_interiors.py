@@ -1,5 +1,5 @@
 import json
-from collections import Counter, deque
+from collections import deque
 from pathlib import Path
 
 import pytest
@@ -9,7 +9,6 @@ from simile.world.map import TownMap, load_map, load_maps
 
 MAPS = load_maps()
 INTERIORS = ["coffee_shop", "gallery", "maker_space", "noodle_bar"]
-MOVING_INSIDE = {"coffee_shop", "maker_space", "noodle_bar"}
 
 
 def reachable(town: TownMap, start: Tile) -> set[tuple[int, int]]:
@@ -87,14 +86,14 @@ def test_every_location_entry_is_walkable_on_its_own_map() -> None:
             assert area.y <= entry.y < area.y + area.height, location.id
 
 
-def test_only_the_buildings_moving_inside_are_on_two_maps_for_now() -> None:
-    copies = Counter(location.id for town in MAPS.values() for location in town.locations)
+def test_each_building_with_a_door_has_its_location_inside_and_ids_are_unique() -> None:
+    ids = [location.id for town in MAPS.values() for location in town.locations]
 
-    assert {location_id for location_id, n in copies.items() if n > 1} == MOVING_INSIDE
-    for location_id in MOVING_INSIDE:
-        outside = MAPS[VILLAGE_MAP].location(location_id)
-        inside = MAPS[location_id].location(location_id)
-        assert (outside.name, outside.kind) == (inside.name, inside.kind)
+    assert len(ids) == len(set(ids))
+    for location_id in INTERIORS:
+        assert MAPS[location_id].location(location_id).map == location_id
+    terrace = MAPS[VILLAGE_MAP].location("cafe_terrace")
+    assert terrace.kind is LocationKind.AMENITY
 
 
 @pytest.mark.parametrize("map_id", INTERIORS)

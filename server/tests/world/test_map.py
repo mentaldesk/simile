@@ -11,7 +11,15 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.schema import Location, LocationKind
 from simile.world.build_map import Tileset, Town
-from simile.world.map import CONTENT_DIR, MAP_PATH, WALKING_SPEED, TownMap, load_map
+from simile.world.map import (
+    CONTENT_DIR,
+    MAP_PATH,
+    WALKING_SPEED,
+    TownMap,
+    load_map,
+    load_maps,
+    with_every_location,
+)
 
 ART = CONTENT_DIR / "art"
 MAP_FILES = [MAP_PATH, *sorted((MAP_PATH.parent / "interiors").glob("*.tmj"))]
@@ -35,8 +43,9 @@ def distances(town: TownMap, start: tuple[int, int]) -> dict[tuple[int, int], in
 
 
 def test_every_required_location_exists(town: TownMap) -> None:
-    ids = [location.id for location in town.locations]
-    kinds = Counter(location.kind for location in town.locations)
+    everywhere = with_every_location(load_maps()).locations
+    ids = [location.id for location in everywhere]
+    kinds = Counter(location.kind for location in everywhere)
 
     assert len(ids) == len(set(ids))
     assert {f"house_{n}" for n in range(1, 11)} | {"coffee_shop", "square"} <= set(ids)
@@ -45,7 +54,7 @@ def test_every_required_location_exists(town: TownMap) -> None:
     assert kinds[LocationKind.NOODLE_BAR] == kinds[LocationKind.MAKER_SPACE] == 1
     assert 2 <= kinds[LocationKind.TERMINAL] <= 3
     amenities = [loc.id for loc in town.locations if loc.kind is LocationKind.AMENITY]
-    assert amenities == ["park"]
+    assert amenities == ["cafe_terrace", "park"]
 
 
 def test_every_entry_is_reachable_from_the_square(town: TownMap) -> None:
@@ -79,13 +88,14 @@ def test_f2_location_fixtures_stand_where_the_map_puts_them(town: TownMap) -> No
     fixtures = Path(__file__).parents[1] / "fixtures" / "locations.json"
     locations = TypeAdapter(list[Location]).validate_json(fixtures.read_bytes())
 
+    everywhere = with_every_location(load_maps())
     for location in locations:
-        expected = town.location(location.id).model_copy(update={"name": location.name})
+        expected = everywhere.location(location.id).model_copy(update={"name": location.name})
         assert location == expected, location.id
 
 
 def test_walkable(town: TownMap) -> None:
-    cafe = town.location("coffee_shop").entry
+    cafe = town.location("cafe_terrace").entry
 
     assert len(town.blocked) == town.height
     assert {len(row) for row in town.blocked} == {town.width}
