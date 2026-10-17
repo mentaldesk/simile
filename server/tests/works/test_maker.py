@@ -1,0 +1,223 @@
+import asyncio
+from datetime import timedelta
+
+import pytest
+
+from simile.llm import FakeProvider, LLMClient, LLMError, Model
+from simile.memory import MemoryStore
+from simile.schema import CoreValue, Memory, MemoryKind, Npc, Work
+from simile.sim import Clock
+from simile.works import DEFAULT_CONFIG, Maker, WorksStore
+
+from .conftest import MEI, NOW, SUKI, VIKTOR, reply, work
+
+CONFIG = DEFAULT_CONFIG.model_copy(update={"memories": 3, "past_works": 2})
+
+
+def memory_of(kind: MemoryKind, content: str, salience: float, **fields: object) -> Memory:
+    return Memory.model_validate(
+        {
+            "owner": "viktor",
+            "kind": kind,
+            "content": content,
+            "salience": salience,
+            "valence": 0.0,
+            "timestamp": NOW - timedelta(hours=1),
+            **fields,
+        }
+    )
+
+
+NEWS = memory_of(
+    MemoryKind.NEWS,
+    'I read "Council to replace the footbridge" on the news terminal. A disgrace.',
+    0.9,
+    valence=-0.7,
+    news_id="news-1",
+)
+TALK = memory_of(
+    MemoryKind.CONVERSATION,
+    "Mei and I talked about the bridge repairs. She wants a new one.",
+    0.7,
+    valence=-0.3,
+    conversation_id="conv-1",
+    about=["mei"],
+)
+MURAL = memory_of(
+    MemoryKind.WORK, "I saw Suki's mural of the village from the air.", 0.5, work_id="mural-1"
+)
+WEAK = memory_of(MemoryKind.NEWS, "I read something about the weather.", 0.1, news_id="news-2")
+MADE = memory_of(MemoryKind.WORK, 'I wrote "Old Stones".', 1.0, work_id="old")
+
+
+async def make(maker: Maker, npc: Npc = VIKTOR) -> Work | None:
+    task = maker.make(npc)
+    assert task is not None
+    return await task
+
+
+@pytest.fixture
+def remembered(memory: MemoryStore, works: WorksStore) -> None:
+    memory.add(NEWS, TALK, MURAL, WEAK, MADE)
+    works.add(work("old", title="Old Stones", statement="Stone outlasts us.", hours_ago=30))
+    works.add(work("older", title="Rust", statement="Rust is neglect.", hours_ago=60))
+    works.add(work("oldest", title="First", statement="The first.", hours_ago=90))
+    works.add(work("hers", artist="mei", title="Not His", statement="Mei's piece."))
+
+
+@pytest.mark.usefixtures("remembered")
+def test_writes_from_the_strongest_memories_and_the_latest_works(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    fake = FakeProvider([reply()])
+    llm = LLMClient(fake)
+
+    asyncio.run(make(Maker(works, memory, Clock(NOW), lambda: llm, config=CONFIG)))
+
+    [request] = fake.requests
+    asked = request.messages[-1].content
+    assert asked.index(f"1. {NEWS.content} (It upset you, and you keep coming back to it.)") < (
+        asked.index(f"2. {TALK.content} (It bothered you, and you keep coming back to it.)")
+    )
+    assert f"3. {MURAL.content} (You had mixed feelings about it.)" in asked
+    assert WEAK.content not in asked
+    assert MADE.content not in asked
+    assert '- "Old Stones": Stone outlasts us.\n- "Rust": Rust is neglect.' in asked
+    assert '"First"' not in asked
+    assert "Not His" not in asked
+    assert "Write something new in your craft, plain verse about old bridges." in asked
+    assert VIKTOR.persona in request.system
+    assert "You care most about: " in request.system
+    assert "In your own time you write plain verse about old bridges." in request.system
+    assert request.model == Model.SONNET
+
+
+@pytest.mark.usefixtures("remembered")
+def test_stores_the_work_with_what_inspired_it(memory: MemoryStore, works: WorksStore) -> None:
+    llm = LLMClient(FakeProvider([reply()]))
+
+    made = asyncio.run(make(Maker(works, memory, Clock(NOW), lambda: llm, config=CONFIG)))
+
+    assert made is not None
+    assert works.get(made.id) == made
+    assert made.id.startswith("viktor-")
+    assert made.artist == "viktor"
+    assert made.form == "plain verse about old bridges"
+    assert made.title == "The Footbridge"
+    assert made.created == NOW
+    assert made.inspired_by == ["conv-1", "news-1"]
+    assert made.tags == ["repair", "the old footbridge", "boredom", "bridges"]
+    assert made.sentiment == pytest.approx(-0.4)
+    assert made.values[CoreValue.TRADITION] == pytest.approx(0.8)
+    assert made.values[CoreValue.FREEDOM] == 0.0
+    assert made.wall is None
+
+
+@pytest.mark.usefixtures("remembered")
+def test_the_artist_remembers_making_it(memory: MemoryStore, works: WorksStore) -> None:
+    llm = LLMClient(FakeProvider([reply()]))
+
+    made = asyncio.run(make(Maker(works, memory, Clock(NOW), lambda: llm, config=CONFIG)))
+
+    assert made is not None
+    [remembered] = [m for m in memory.recall("viktor", NOW, k=10) if m.work_id == made.id]
+    assert remembered == Memory(
+        owner="viktor",
+        kind=MemoryKind.WORK,
+        content='I wrote "The Footbridge" and put it up on the news terminals. '
+        "Things last when people look after them.",
+        salience=CONFIG.salience,
+        valence=CONFIG.valence,
+        timestamp=NOW,
+        topics=["repair", "the old footbridge", "boredom"],
+        work_id=made.id,
+    )
+
+
+def test_writes_from_their_values_alone_with_nothing_on_their_mind(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    fake = FakeProvider([reply(inspired_by=[1])])
+    llm = LLMClient(fake)
+
+    made = asyncio.run(make(Maker(works, memory, Clock(NOW), lambda: llm)))
+
+    asked = fake.requests[0].messages[-1].content
+    assert asked.startswith("Nothing in particular has been on your mind lately.\n\n")
+    assert "Your last few pieces" not in asked
+    assert made is not None
+    assert made.inspired_by == []
+
+
+def test_makes_nothing_for_residents_who_dont_write(memory: MemoryStore, works: WorksStore) -> None:
+    fake = FakeProvider([reply()])
+    llm = LLMClient(fake)
+
+    async def scenario() -> list[object]:
+        maker = Maker(works, memory, Clock(NOW), lambda: llm)
+        silent = Maker(works, memory, Clock(NOW), lambda: None)
+        return [maker.make(MEI), maker.make(SUKI), silent.make(VIKTOR)]
+
+    assert asyncio.run(scenario()) == [None, None, None]
+    assert fake.requests == []
+
+
+def test_writes_without_blocking_and_one_piece_at_a_time(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    resume = asyncio.Event()
+    llm = LLMClient(FakeProvider([[resume, reply()], reply(title="Next")]))
+    clock = Clock(NOW)
+
+    async def scenario() -> list[Work | None]:
+        maker = Maker(works, memory, clock, lambda: llm)
+        task = maker.make(VIKTOR)
+        assert task is not None
+        await asyncio.sleep(0.01)
+        assert not task.done()
+        assert maker.make(VIKTOR) is None
+        clock.now = NOW + timedelta(hours=1)
+        resume.set()
+        first = await task
+        return [first, await make(maker)]
+
+    first, second = asyncio.run(scenario())
+
+    assert first is not None and first.created == NOW
+    assert second is not None and second.title == "Next"
+    assert works.by("viktor") == [second, first]
+
+
+@pytest.mark.parametrize(
+    "failure", [[LLMError("usage limit reached")], ["not json", "still not json"]]
+)
+def test_a_failed_call_makes_nothing(
+    failure: list[object], memory: MemoryStore, works: WorksStore
+) -> None:
+    llm = LLMClient(FakeProvider([*failure, reply()]))
+
+    async def scenario() -> list[Work | None]:
+        maker = Maker(works, memory, Clock(NOW), lambda: llm)
+        return [await make(maker), await make(maker)]
+
+    failed, then = asyncio.run(scenario())
+
+    assert failed is None
+    assert then is not None
+    assert works.by("viktor") == [then]
+    assert [m.work_id for m in memory.recall("viktor", NOW)] == [then.id]
+
+
+def test_stopping_cancels_pieces_under_way(memory: MemoryStore, works: WorksStore) -> None:
+    llm = LLMClient(FakeProvider([[asyncio.Event(), reply()]]))
+
+    async def scenario() -> asyncio.Task[Work | None]:
+        maker = Maker(works, memory, Clock(NOW), lambda: llm)
+        task = maker.make(VIKTOR)
+        assert task is not None
+        await asyncio.sleep(0.01)
+        await maker.stop()
+        return task
+
+    assert asyncio.run(scenario()).cancelled()
+    assert works.by("viktor") == []
