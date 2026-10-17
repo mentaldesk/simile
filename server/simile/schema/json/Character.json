@@ -1,0 +1,538 @@
+{
+  "$defs": {
+    "Accessory": {
+      "enum": [
+        "glasses",
+        "sunglasses",
+        "cap",
+        "beanie",
+        "headphones",
+        "scarf",
+        "backpack",
+        "apron"
+      ],
+      "title": "Accessory",
+      "type": "string"
+    },
+    "Appearance": {
+      "additionalProperties": false,
+      "description": "What a character looks like, for the sprite generator. Colours are #rrggbb.",
+      "properties": {
+        "skin": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Skin",
+          "type": "string"
+        },
+        "hair_style": {
+          "$ref": "#/$defs/HairStyle"
+        },
+        "hair_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Hair Colour",
+          "type": "string"
+        },
+        "top_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Top Colour",
+          "type": "string"
+        },
+        "bottom_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Bottom Colour",
+          "type": "string"
+        },
+        "shoe_colour": {
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Shoe Colour",
+          "type": "string"
+        },
+        "build": {
+          "$ref": "#/$defs/Build"
+        },
+        "accessories": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Accessory"
+          },
+          "title": "Accessories",
+          "type": "array"
+        }
+      },
+      "required": [
+        "skin",
+        "hair_style",
+        "hair_colour",
+        "top_colour",
+        "bottom_colour",
+        "shoe_colour",
+        "build",
+        "accessories"
+      ],
+      "title": "Appearance",
+      "type": "object"
+    },
+    "Arrival": {
+      "additionalProperties": false,
+      "description": "When and why a character came to the village.",
+      "properties": {
+        "age": {
+          "maximum": 120,
+          "minimum": 0,
+          "title": "Age",
+          "type": "integer"
+        },
+        "reason": {
+          "description": "Why they came, e.g. \"for a job\".",
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "age",
+        "reason"
+      ],
+      "title": "Arrival",
+      "type": "object"
+    },
+    "Build": {
+      "enum": [
+        "slim",
+        "average",
+        "broad"
+      ],
+      "title": "Build",
+      "type": "string"
+    },
+    "CharacterSource": {
+      "description": "`premade` characters ship with the game and are read-only; `player` ones a player made.",
+      "enum": [
+        "premade",
+        "player"
+      ],
+      "title": "CharacterSource",
+      "type": "string"
+    },
+    "CharacterVoice": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "description": "What the voice sounds like, for the voice design model.",
+          "title": "Description",
+          "type": "string"
+        },
+        "reference_line": {
+          "description": "A neutral line in character, 5-10 seconds of speech. The clip's transcript.",
+          "title": "Reference Line",
+          "type": "string"
+        },
+        "reference_clip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The recorded reference clip, relative to the repository root. Null until the voice is designed.",
+          "title": "Reference Clip"
+        },
+        "needs_recording": {
+          "default": false,
+          "description": "True when VoiceDesign can't do the accent, so the clip has to be recorded.",
+          "title": "Needs Recording",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "description",
+        "reference_line",
+        "reference_clip",
+        "needs_recording"
+      ],
+      "title": "CharacterVoice",
+      "type": "object"
+    },
+    "CoreValue": {
+      "enum": [
+        "freedom",
+        "independence",
+        "self_respect",
+        "self_actualization",
+        "creativity",
+        "honesty",
+        "compassion",
+        "loyalty",
+        "justice",
+        "responsibility",
+        "security",
+        "equality",
+        "tradition",
+        "obedience",
+        "success",
+        "ambition",
+        "discipline",
+        "knowledge",
+        "open_mindedness",
+        "peace_of_mind",
+        "pleasure",
+        "connection",
+        "adventure",
+        "optimism"
+      ],
+      "title": "CoreValue",
+      "type": "string"
+    },
+    "Craft": {
+      "additionalProperties": false,
+      "description": "What a resident makes in their own time, which can differ from their job.",
+      "properties": {
+        "medium": {
+          "$ref": "#/$defs/Medium"
+        },
+        "form": {
+          "description": "What they make, in a few words, e.g. \"short poems about the river\".",
+          "minLength": 1,
+          "title": "Form",
+          "type": "string"
+        }
+      },
+      "required": [
+        "medium",
+        "form"
+      ],
+      "title": "Craft",
+      "type": "object"
+    },
+    "Gender": {
+      "enum": [
+        "woman",
+        "man",
+        "nonbinary"
+      ],
+      "title": "Gender",
+      "type": "string"
+    },
+    "HairStyle": {
+      "enum": [
+        "bald",
+        "buzz",
+        "short",
+        "curly",
+        "bob",
+        "long",
+        "ponytail",
+        "bun"
+      ],
+      "title": "HairStyle",
+      "type": "string"
+    },
+    "Hook": {
+      "additionalProperties": false,
+      "description": "An open tie to another resident, which casting binds to someone in the cast.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/HookKind"
+        },
+        "side": {
+          "$ref": "#/$defs/HookSide",
+          "description": "`mutual` for a mutual kind, else `actor` or `target`."
+        },
+        "description": {
+          "description": "The tie from this character's side in a sentence, without naming the other resident.",
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "side",
+        "description"
+      ],
+      "title": "Hook",
+      "type": "object"
+    },
+    "HookKind": {
+      "description": "Mutual: `estranged_sibling`, `ex_partner`, `old_friend`, `rival`. One-way, where the actor\ndid it to the target: `debt`, the actor borrowed money from the target and still owes it;\n`secret`, the target saw the actor do something the actor wants kept hidden; `betrayal`, the\nactor betrayed the target; `saved_life`, the actor saved the target's life.",
+      "enum": [
+        "estranged_sibling",
+        "ex_partner",
+        "old_friend",
+        "rival",
+        "debt",
+        "secret",
+        "betrayal",
+        "saved_life"
+      ],
+      "title": "HookKind",
+      "type": "string"
+    },
+    "HookSide": {
+      "enum": [
+        "mutual",
+        "actor",
+        "target"
+      ],
+      "title": "HookSide",
+      "type": "string"
+    },
+    "Medium": {
+      "enum": [
+        "writing",
+        "mural"
+      ],
+      "title": "Medium",
+      "type": "string"
+    },
+    "PastMemory": {
+      "additionalProperties": false,
+      "description": "A memory of their life before the game, which casting turns into a `past` Memory.",
+      "properties": {
+        "age": {
+          "description": "How old they were when it happened.",
+          "maximum": 120,
+          "minimum": 0,
+          "title": "Age",
+          "type": "integer"
+        },
+        "content": {
+          "description": "The memory in their own words, ready for a prompt.",
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "salience": {
+          "description": "How much it matters to them, 0-1.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Salience",
+          "type": "number"
+        },
+        "valence": {
+          "description": "How they feel about it, from -1 to 1.",
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Valence",
+          "type": "number"
+        }
+      },
+      "required": [
+        "age",
+        "content",
+        "salience",
+        "valence"
+      ],
+      "title": "PastMemory",
+      "type": "object"
+    },
+    "Traits": {
+      "additionalProperties": false,
+      "description": "The numbers social/ and behaviour/ read. Each is 0-1, and 0.5 is how residents behave\nwithout traits.",
+      "properties": {
+        "sociability": {
+          "default": 0.5,
+          "description": "How often they start a conversation and how long they stay.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Sociability",
+          "type": "number"
+        },
+        "negativity_bias": {
+          "default": 0.5,
+          "description": "How much more a bad turn weighs with them than a good one.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Negativity Bias",
+          "type": "number"
+        },
+        "forgiveness": {
+          "default": 0.5,
+          "description": "How fast a grudge fades.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Forgiveness",
+          "type": "number"
+        },
+        "first_impressions": {
+          "default": 0.5,
+          "description": "How far a first meeting swings their opinion of someone.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "First Impressions",
+          "type": "number"
+        }
+      },
+      "required": [
+        "sociability",
+        "negativity_bias",
+        "forgiveness",
+        "first_impressions"
+      ],
+      "title": "Traits",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A character in the library, apart from any village. Casting makes an Npc from it.",
+  "properties": {
+    "id": {
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "birth_year": {
+      "title": "Birth Year",
+      "type": "integer"
+    },
+    "gender": {
+      "$ref": "#/$defs/Gender"
+    },
+    "origin": {
+      "description": "Where they were born, or for someone born in the village where their family is from, e.g. \"Vietnam\".",
+      "minLength": 1,
+      "title": "Origin",
+      "type": "string"
+    },
+    "arrival": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Arrival"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Null if they were born in the village."
+    },
+    "occupation": {
+      "minLength": 1,
+      "title": "Occupation",
+      "type": "string"
+    },
+    "values": {
+      "additionalProperties": {
+        "maximum": 1,
+        "minimum": 0,
+        "type": "number"
+      },
+      "description": "How much they care about each of the 24 core values, 0-1. All are present.",
+      "propertyNames": {
+        "$ref": "#/$defs/CoreValue"
+      },
+      "title": "Values",
+      "type": "object"
+    },
+    "backstory": {
+      "description": "Their whole life in prose, for the debug UI and for assets.",
+      "minLength": 1,
+      "title": "Backstory",
+      "type": "string"
+    },
+    "persona": {
+      "minLength": 1,
+      "title": "Persona",
+      "type": "string"
+    },
+    "speaking_style": {
+      "minLength": 1,
+      "title": "Speaking Style",
+      "type": "string"
+    },
+    "interests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Interests",
+      "type": "array"
+    },
+    "past": {
+      "items": {
+        "$ref": "#/$defs/PastMemory"
+      },
+      "title": "Past",
+      "type": "array"
+    },
+    "hooks": {
+      "items": {
+        "$ref": "#/$defs/Hook"
+      },
+      "title": "Hooks",
+      "type": "array"
+    },
+    "traits": {
+      "$ref": "#/$defs/Traits"
+    },
+    "appearance": {
+      "$ref": "#/$defs/Appearance"
+    },
+    "voice": {
+      "$ref": "#/$defs/CharacterVoice"
+    },
+    "craft": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Craft"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Null if they don't make anything."
+    },
+    "source": {
+      "$ref": "#/$defs/CharacterSource"
+    },
+    "created": {
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+    },
+    "updated": {
+      "format": "date-time",
+      "title": "Updated",
+      "type": "string"
+    },
+    "version": {
+      "description": "Goes up by one on every edit.",
+      "minimum": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "birth_year",
+    "gender",
+    "origin",
+    "arrival",
+    "occupation",
+    "values",
+    "backstory",
+    "persona",
+    "speaking_style",
+    "interests",
+    "past",
+    "hooks",
+    "traits",
+    "appearance",
+    "voice",
+    "craft",
+    "source",
+    "created",
+    "updated",
+    "version"
+  ],
+  "title": "Character",
+  "type": "object"
+}

@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "HookKind": {
+      "description": "Mutual: `estranged_sibling`, `ex_partner`, `old_friend`, `rival`. One-way, where the actor\ndid it to the target: `debt`, the actor borrowed money from the target and still owes it;\n`secret`, the target saw the actor do something the actor wants kept hidden; `betrayal`, the\nactor betrayed the target; `saved_life`, the actor saved the target's life.",
+      "enum": [
+        "estranged_sibling",
+        "ex_partner",
+        "old_friend",
+        "rival",
+        "debt",
+        "secret",
+        "betrayal",
+        "saved_life"
+      ],
+      "title": "HookKind",
+      "type": "string"
+    },
+    "HookSide": {
+      "enum": [
+        "mutual",
+        "actor",
+        "target"
+      ],
+      "title": "HookSide",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "An open tie to another resident, which casting binds to someone in the cast.",
+  "properties": {
+    "kind": {
+      "$ref": "#/$defs/HookKind"
+    },
+    "side": {
+      "$ref": "#/$defs/HookSide",
+      "description": "`mutual` for a mutual kind, else `actor` or `target`."
+    },
+    "description": {
+      "description": "The tie from this character's side in a sentence, without naming the other resident.",
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "side",
+    "description"
+  ],
+  "title": "Hook",
+  "type": "object"
+}

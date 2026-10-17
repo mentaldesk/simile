@@ -1,12 +1,13 @@
 {
   "$defs": {
     "MemoryKind": {
-      "description": "`work` is making, reading or seeing a work.",
+      "description": "`work` is making, reading or seeing a work. `past` is from their life before the game.",
       "enum": [
         "conversation",
         "news",
         "observation",
-        "work"
+        "work",
+        "past"
       ],
       "title": "MemoryKind",
       "type": "string"
