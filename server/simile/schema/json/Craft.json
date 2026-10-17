@@ -1,0 +1,31 @@
+{
+  "$defs": {
+    "Medium": {
+      "enum": [
+        "writing",
+        "mural"
+      ],
+      "title": "Medium",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "What a resident makes in their own time, which can differ from their job.",
+  "properties": {
+    "medium": {
+      "$ref": "#/$defs/Medium"
+    },
+    "form": {
+      "description": "What they make, in a few words, e.g. \"short poems about the river\".",
+      "minLength": 1,
+      "title": "Form",
+      "type": "string"
+    }
+  },
+  "required": [
+    "medium",
+    "form"
+  ],
+  "title": "Craft",
+  "type": "object"
+}

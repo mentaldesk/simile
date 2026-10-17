@@ -48,5 +48,6 @@
     "description": "A woman in her late twenties. Bright, warm mid-range voice, speaks quickly with a smile in it.",
     "reference_line": "Morning! The usual? I saved you the last almond croissant, but don't tell anyone.",
     "reference_clip": "content/voices/mei.wav"
-  }
+  },
+  "craft": null
 }

@@ -9,7 +9,8 @@
     "about": ["viktor"],
     "topics": ["latte art", "the old footbridge"],
     "conversation_id": "conv_1",
-    "news_id": null
+    "news_id": null,
+    "work_id": null
   },
   {
     "owner": "viktor",
@@ -21,7 +22,8 @@
     "about": ["mei"],
     "topics": ["latte art", "the old footbridge"],
     "conversation_id": "conv_1",
-    "news_id": null
+    "news_id": null,
+    "work_id": null
   },
   {
     "owner": "viktor",
@@ -33,7 +35,8 @@
     "about": [],
     "topics": ["boredom"],
     "conversation_id": null,
-    "news_id": "https://bigthink.com/?p=900101"
+    "news_id": "https://bigthink.com/?p=900101",
+    "work_id": null
   },
   {
     "owner": "suki",
@@ -45,7 +48,8 @@
     "about": [],
     "topics": ["drones", "regulation"],
     "conversation_id": null,
-    "news_id": "https://bigthink.com/?p=900202"
+    "news_id": "https://bigthink.com/?p=900202",
+    "work_id": null
   },
   {
     "owner": "suki",
@@ -57,7 +61,8 @@
     "about": ["viktor"],
     "topics": ["drones"],
     "conversation_id": null,
-    "news_id": null
+    "news_id": null,
+    "work_id": null
   },
   {
     "owner": "mei",
@@ -69,6 +74,33 @@
     "about": ["player"],
     "topics": [],
     "conversation_id": null,
-    "news_id": null
+    "news_id": null,
+    "work_id": null
+  },
+  {
+    "owner": "viktor",
+    "kind": "work",
+    "content": "I wrote a few plain lines about the footbridge. Somebody has to say it needs looking after.",
+    "salience": 0.5,
+    "valence": 0.4,
+    "timestamp": "2026-03-14T08:40:00Z",
+    "about": [],
+    "topics": ["the old footbridge", "repair"],
+    "conversation_id": null,
+    "news_id": null,
+    "work_id": "work_1"
+  },
+  {
+    "owner": "mei",
+    "kind": "work",
+    "content": "Viktor's poem about the footbridge is up at the terminal. It mentions my latte art. Gruff, but sweet.",
+    "salience": 0.5,
+    "valence": 0.6,
+    "timestamp": "2026-03-14T09:20:00Z",
+    "about": ["viktor"],
+    "topics": ["the old footbridge", "latte art"],
+    "conversation_id": null,
+    "news_id": null,
+    "work_id": "work_1"
   }
 ]

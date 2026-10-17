@@ -82,6 +82,39 @@ client shows the latest one. Hub subscribers don't know which connection a messa
 reply goes to every client, which is fine with one player. A client ignores `news` while its news
 panel is closed.
 
+### `works`
+
+`works`: residents' writing at the terminals, newest first. Each has its `work_id` (the F2 `Work`
+id), `title`, `artist` (`id` and `name`), `form`, `text` (the piece itself, line breaks and all),
+`statement` (the artist on what it's saying), `created` (sim time) and `read`, whether the player
+has read it. `form` is the work's own, copied from the artist's craft when they made it, so it
+doesn't change if their craft does. The server sends it in reply to [`list_works`](#list_works) and
+[`read_work`](#read_work), to every client, as with `news`.
+
+### `murals`
+
+`walls`: every wall that takes a mural, painted or not. The server sends it after the `snapshot`
+on connect, and again to everyone whenever a mural changes, and the client replaces what it had.
+
+| Field | Type | |
+|---|---|---|
+| `id` | string | The wall's id, which a mural's F2 `Work.wall` holds. |
+| `x`, `y` | integer | The wall's first tile: the westmost of a south face, or the northmost of an east face. |
+| `width` | integer | Tiles, running east from (`x`, `y`) for a south face, or south for an east face. |
+| `face` | `"south"` or `"east"` | Which way the wall faces. The iso camera sees only these. |
+| `bottom`, `top` | number | The mural's lower and upper edges, in storeys above the ground: `0` is the ground and `1` the top of the ground floor. Fractions are fine, and `top` is above `bottom`. |
+| `mural` | `Mural` or `null` | What's painted there now, or `null` while it's blank. |
+
+A `Mural` has its `work_id`, `title`, `artist` (`id` and `name`), `statement`, and `image`, the URL
+of its picture, `/api/works/<work_id>.png`. A new mural is a new work with its own id, so the URL
+changes when the wall is painted over.
+
+Both `works` and `murals` come from F2's `Work` (`server/simile/schema/works.py`). A mural's `wall`
+is the wall's `id`, and writing has no wall. Its `values`, `tags` and `sentiment` are always set,
+with the same ranges as a `NewsItem`'s, so works rank like news. `inspired_by` is one list of the
+news, conversation and work ids it came from. A memory of making, reading or seeing a work has the
+kind `work` and its `work_id`.
+
 ### `audio_chunk`
 
 A binary frame: part of a line's audio, as Qwen3-TTS produces it. A 12-byte header, then the
@@ -136,6 +169,17 @@ replies with [`news`](#news).
 `news_id`: the article the player reads. The server stores it as the player's own `news` memory,
 with its `news_id`, and replies with [`news`](#news), where it's now `read`. An unknown `news_id`
 stores nothing, and still gets a `news` reply.
+
+### `list_works`
+
+No fields. The client sends it when the player opens residents' writing at a terminal, and the
+server replies with [`works`](#works).
+
+### `read_work`
+
+`work_id`: the work the player reads. The server stores it as the player's own `work` memory, with
+its `work_id`, and replies with [`works`](#works), where it's now `read`. An unknown `work_id`
+stores nothing, and still gets a `works` reply.
 
 ## Sim events
 

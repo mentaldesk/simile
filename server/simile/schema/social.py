@@ -93,9 +93,12 @@ class Relationship(Model):
 
 
 class MemoryKind(StrEnum):
+    """`work` is making, reading or seeing a work."""
+
     CONVERSATION = "conversation"
     NEWS = "news"
     OBSERVATION = "observation"
+    WORK = "work"
 
 
 class Memory(Model):
@@ -109,3 +112,4 @@ class Memory(Model):
     topics: list[str] = []
     conversation_id: Key | None = None
     news_id: Key | None = None
+    work_id: Key | None = None

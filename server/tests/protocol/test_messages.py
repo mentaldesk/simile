@@ -7,12 +7,17 @@ from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from simile.protocol import (
+    Artist,
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
     EntityMovedMessage,
+    Face,
     LineMessage,
     ListNewsMessage,
+    ListWorksMessage,
+    Mural,
+    MuralsMessage,
     NewsArticle,
     NewsMessage,
     NpcStateMessage,
@@ -20,7 +25,11 @@ from simile.protocol import (
     PlayerSayMessage,
     Position,
     ReadNewsMessage,
+    ReadWorkMessage,
+    Wall,
     WatchNpcMessage,
+    WorksMessage,
+    WrittenWork,
 )
 from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
@@ -37,6 +46,35 @@ ARTICLE = NewsArticle(
     read=False,
 )
 
+VIKTOR = Artist(id="viktor", name="Viktor Petrov")
+POEM = WrittenWork(
+    work_id="work_1",
+    title="The Footbridge",
+    artist=VIKTOR,
+    form="plain verse about old bridges",
+    text="They built it for a hundred years.\nThe arch has held for ninety-one.",
+    statement="Things last when people look after them.",
+    created=datetime(2026, 3, 14, 8, 40, tzinfo=UTC),
+    read=False,
+)
+WORKS = WorksMessage(works=[POEM.model_copy(update={"work_id": "work_3", "read": True}), POEM])
+MURAL = Mural(
+    work_id="work_2",
+    title="Who Owns the Sky",
+    artist=Artist(id="suki", name="Suki Tanaka"),
+    statement="The sky was the one place nobody filled with forms.",
+    image="/api/works/work_2.png",
+)
+SQUARE_WALL = Wall(
+    id="square_north", x=12, y=8, width=4, face=Face.SOUTH, bottom=0, top=1, mural=MURAL
+)
+MURALS = MuralsMessage(
+    walls=[
+        SQUARE_WALL,
+        Wall(id="park_east", x=30, y=14, width=3, face=Face.EAST, bottom=0.2, top=2, mural=None),
+    ]
+)
+
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
@@ -49,6 +87,8 @@ SERVER = [
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
     NewsMessage(articles=[ARTICLE, ARTICLE.model_copy(update={"news_id": "n2", "read": True})]),
     CLOCK,
+    WORKS,
+    MURALS,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -57,6 +97,8 @@ CLIENT = [
     WatchNpcMessage(npc_id=None),
     ListNewsMessage(),
     ReadNewsMessage(news_id=ARTICLE.news_id),
+    ListWorksMessage(),
+    ReadWorkMessage(work_id=POEM.work_id),
 ]
 
 
@@ -124,6 +166,74 @@ def test_news_lists_every_field_of_each_article() -> None:
     }
 
 
+def test_works_lists_every_field_of_each_work() -> None:
+    assert json.loads(WorksMessage(works=[POEM]).model_dump_json()) == {
+        "type": "works",
+        "works": [
+            {
+                "work_id": "work_1",
+                "title": "The Footbridge",
+                "artist": {"id": "viktor", "name": "Viktor Petrov"},
+                "form": "plain verse about old bridges",
+                "text": "They built it for a hundred years.\nThe arch has held for ninety-one.",
+                "statement": "Things last when people look after them.",
+                "created": "2026-03-14T08:40:00Z",
+                "read": False,
+            }
+        ],
+    }
+
+
+def test_murals_lists_every_wall_with_its_mural_or_null() -> None:
+    assert json.loads(MURALS.model_dump_json()) == {
+        "type": "murals",
+        "walls": [
+            {
+                "id": "square_north",
+                "x": 12,
+                "y": 8,
+                "width": 4,
+                "face": "south",
+                "bottom": 0.0,
+                "top": 1.0,
+                "mural": {
+                    "work_id": "work_2",
+                    "title": "Who Owns the Sky",
+                    "artist": {"id": "suki", "name": "Suki Tanaka"},
+                    "statement": "The sky was the one place nobody filled with forms.",
+                    "image": "/api/works/work_2.png",
+                },
+            },
+            {
+                "id": "park_east",
+                "x": 30,
+                "y": 14,
+                "width": 3,
+                "face": "east",
+                "bottom": 0.2,
+                "top": 2.0,
+                "mural": None,
+            },
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"face": "north"}, "face"),
+        ({"width": 0}, "width"),
+        ({"x": -1}, "x"),
+        ({"bottom": -0.5}, "bottom"),
+        ({"top": 0}, "top must be above bottom"),
+        ({"id": "Square North"}, "String should match pattern"),
+    ],
+)
+def test_rejects_invalid_walls(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Wall.model_validate(SQUARE_WALL.model_dump() | update)
+
+
 def test_timestamps_are_utc() -> None:
     sydney = datetime(2026, 3, 14, 20, 10, 3, tzinfo=timezone(timedelta(hours=11)))
 
@@ -142,6 +252,9 @@ def test_timestamps_are_utc() -> None:
         {"type": "list_news", "news_id": "n1"},
         {"type": "read_news"},
         {"type": "read_news", "news_id": ""},
+        {"type": "list_works", "work_id": "work_1"},
+        {"type": "read_work"},
+        {"type": "read_work", "work_id": ""},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

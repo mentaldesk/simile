@@ -2,10 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeAudioChunk } from './audio';
 import { ServerConnection, type Socket } from './connection';
 import type {
+  ClientMessage,
   ClockMessage,
   EntityMovedMessage,
+  MuralsMessage,
   SnapshotMessage,
   WatchNpcMessage,
+  WorksMessage,
 } from './protocol';
 
 class FakeSocket implements Socket {
@@ -56,6 +59,43 @@ const moved: EntityMovedMessage = {
   type: 'entity_moved',
   entity_id: 'mei',
   position: { x: 4.5, y: 6 },
+};
+const works: WorksMessage = {
+  type: 'works',
+  works: [
+    {
+      work_id: 'work_1',
+      title: 'The Footbridge',
+      artist: { id: 'viktor', name: 'Viktor Petrov' },
+      form: 'plain verse about old bridges',
+      text: 'They built it for a hundred years.\nThe arch has held for ninety-one.',
+      statement: 'Things last when people look after them.',
+      created: '2026-03-14T08:40:00Z',
+      read: false,
+    },
+  ],
+};
+const murals: MuralsMessage = {
+  type: 'murals',
+  walls: [
+    {
+      id: 'square_north',
+      x: 12,
+      y: 8,
+      width: 4,
+      face: 'south',
+      bottom: 0,
+      top: 1,
+      mural: {
+        work_id: 'work_2',
+        title: 'Who Owns the Sky',
+        artist: { id: 'suki', name: 'Suki Tanaka' },
+        statement: 'The sky was the one place nobody filled with forms.',
+        image: '/api/works/work_2.png',
+      },
+    },
+    { id: 'park_east', x: 30, y: 14, width: 3, face: 'east', bottom: 0.2, top: 2, mural: null },
+  ],
 };
 
 describe('ServerConnection', () => {
@@ -139,6 +179,17 @@ describe('ServerConnection', () => {
     expect(received).toHaveBeenCalledWith(clock);
   });
 
+  it('delivers works and murals to their handlers', () => {
+    const received = vi.fn();
+    connection.on('works', received);
+    connection.on('murals', received);
+
+    connection.dispatch(JSON.stringify(works));
+    connection.dispatch(JSON.stringify(murals));
+
+    expect(received.mock.calls).toEqual([[works], [murals]]);
+  });
+
   it('decodes binary frames as audio chunks', () => {
     const chunk = { lineId: 6, sequence: 1, last: false, samples: Int16Array.of(5, -5) };
     const received = vi.fn();
@@ -208,6 +259,19 @@ describe('ServerConnection', () => {
     for (const watch of watches) connection.send(watch);
 
     expect(latest().sent.map((text) => JSON.parse(text))).toEqual(watches);
+  });
+
+  it('sends list_works, and read_work with a work id', () => {
+    const messages: ClientMessage[] = [
+      { type: 'list_works' },
+      { type: 'read_work', work_id: 'work_1' },
+    ];
+    connection.connect();
+    latest().open();
+
+    for (const message of messages) connection.send(message);
+
+    expect(latest().sent.map((text) => JSON.parse(text))).toEqual(messages);
   });
 
   it('reconnects with backoff until a connection opens', () => {

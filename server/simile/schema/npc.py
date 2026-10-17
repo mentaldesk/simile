@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Annotated
 
-from pydantic import Field, field_validator
+from pydantic import AfterValidator, Field, field_validator
 
 from simile.schema.common import PLAYER_ID, Colour, Id, Model, Unit
 
@@ -30,6 +31,15 @@ class CoreValue(StrEnum):
     CONNECTION = "connection"
     ADVENTURE = "adventure"
     OPTIMISM = "optimism"
+
+
+def _every_value(values: dict[CoreValue, float]) -> dict[CoreValue, float]:
+    if missing := [value.value for value in CoreValue if value not in values]:
+        raise ValueError(f"missing core values: {', '.join(missing)}")
+    return values
+
+
+EveryValue = Annotated[dict[CoreValue, Unit], AfterValidator(_every_value)]
 
 
 class HairStyle(StrEnum):
@@ -85,13 +95,28 @@ class Voice(Model):
     )
 
 
+class Medium(StrEnum):
+    WRITING = "writing"
+    MURAL = "mural"
+
+
+class Craft(Model):
+    """What a resident makes in their own time, which can differ from their job."""
+
+    medium: Medium
+    form: str = Field(
+        min_length=1,
+        description='What they make, in a few words, e.g. "short poems about the river".',
+    )
+
+
 class Npc(Model):
     id: Id
     name: str
     age: int = Field(ge=0, le=120)
     occupation: str
     home: Id = Field(description="Location id of their house.")
-    values: dict[CoreValue, Unit] = Field(
+    values: EveryValue = Field(
         description="How much they care about each of the 24 core values, 0-1. All are present."
     )
     backstory: str
@@ -100,6 +125,7 @@ class Npc(Model):
     interests: list[str]
     appearance: Appearance
     voice: Voice
+    craft: Craft | None = Field(default=None, description="Null if they don't make anything.")
 
     @field_validator("id")
     @classmethod
@@ -107,10 +133,3 @@ class Npc(Model):
         if id == PLAYER_ID:
             raise ValueError(f"'{PLAYER_ID}' is reserved for the player")
         return id
-
-    @field_validator("values")
-    @classmethod
-    def _every_value(cls, values: dict[CoreValue, float]) -> dict[CoreValue, float]:
-        if missing := [value.value for value in CoreValue if value not in values]:
-            raise ValueError(f"missing core values: {', '.join(missing)}")
-        return values

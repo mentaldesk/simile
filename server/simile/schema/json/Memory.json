@@ -1,10 +1,12 @@
 {
   "$defs": {
     "MemoryKind": {
+      "description": "`work` is making, reading or seeing a work.",
       "enum": [
         "conversation",
         "news",
-        "observation"
+        "observation",
+        "work"
       ],
       "title": "MemoryKind",
       "type": "string"
@@ -89,6 +91,19 @@
       ],
       "default": null,
       "title": "News Id"
+    },
+    "work_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Work Id"
     }
   },
   "required": [
@@ -101,7 +116,8 @@
     "about",
     "topics",
     "conversation_id",
-    "news_id"
+    "news_id",
+    "work_id"
   ],
   "title": "Memory",
   "type": "object"
