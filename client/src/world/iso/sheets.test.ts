@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { WALKING_SPEED } from '../tuning';
 import type { SceneryManifest } from './manifest';
-import { directionFor, sheetFor, walkTimeScale, type CharacterManifest } from './sheets';
+import { directionFor, sheetFor, sheetFrame, walkTimeScale, type CharacterManifest } from './sheets';
 import { LIGHTING_SETS } from './time-of-day';
-import { FIGURE_HEIGHT, FRAME } from './tuning';
 
 const manifest = Object.values(
   import.meta.glob<CharacterManifest>('../../../../content/art/iso/characters/characters.json', {
@@ -20,10 +19,14 @@ const { tile } = Object.values(
 const { directions } = manifest;
 
 describe('the character manifest', () => {
-  it('has the frame and figure the scene draws with', () => {
+  it('gives the scene its frame, feet and figure height', () => {
     expect(manifest.format).toBe(1);
-    expect(manifest.frame).toEqual({ ...FRAME, anchor: [FRAME.anchor.x, FRAME.anchor.y] });
-    expect(FIGURE_HEIGHT).toBeCloseTo(manifest.figure_m * tile.px_per_metre_up, -1);
+    expect(sheetFrame(manifest, tile)).toEqual({
+      width: 72,
+      height: 129,
+      anchor: { x: 36, y: 110 },
+      figureHeight: 96,
+    });
   });
 
   it('has constants for every lighting set', () => {

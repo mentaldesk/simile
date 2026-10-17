@@ -1,5 +1,7 @@
 import type { Point } from '../view';
 import type { SetLight } from './lighting';
+import type { IsoTile } from './manifest';
+import type { SpriteFrame } from './screen';
 import type { LightingSet } from './time-of-day';
 
 export type SheetDirection = { name: string; row: number; vector: [x: number, y: number] };
@@ -18,6 +20,12 @@ export type CharacterManifest = {
   sets: Record<LightingSet, SetLight>;
   characters: Record<string, { image: string; width: number; height: number }>;
 };
+
+export function sheetFrame({ frame, figure_m }: CharacterManifest, tile: IsoTile): SpriteFrame {
+  const [x, y] = frame.anchor;
+  const figureHeight = Math.round(figure_m * tile.px_per_metre_up);
+  return { width: frame.width, height: frame.height, anchor: { x, y }, figureHeight };
+}
 
 const turn = (from: number, to: number) =>
   Math.abs(Math.atan2(Math.sin(to - from), Math.cos(to - from)));

@@ -1,3 +1,4 @@
+import type { SetLight } from './lighting';
 import type { CharacterManifest } from './sheets';
 import type { LightingSet } from './time-of-day';
 
@@ -30,6 +31,9 @@ export const manifestUrl = (set: LightingSet): string | undefined => manifests[`
 export const imageUrl = (image: string): string | undefined => images[SCENERY + image];
 
 export const characterManifest: CharacterManifest = characters[`${CHARACTERS}characters.json`];
+
+/** Each lighting set's tint and drop shadow for characters, whatever art draws them. */
+export const characterLights: Record<LightingSet, SetLight> = characterManifest.sets;
 
 export const sheetUrl = (image: string): string | undefined => sheets[CHARACTERS + image];
 

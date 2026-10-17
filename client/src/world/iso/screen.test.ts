@@ -5,11 +5,13 @@ import type { WorldView } from '../../ui/world-view';
 import { npcAt } from '../hit';
 import { residentDepth } from './depth';
 import { feetOf, project } from './projection';
-import { figureAt, figureBox, screenAligned, type IsoCamera } from './screen';
-import { FIGURE_HEIGHT, FRAME } from './tuning';
+import { figureAt, figureBox, screenAligned, type IsoCamera, type SpriteFrame } from './screen';
 
 const TILE = { width: 96, height: 48, px_per_metre_up: 53.443 };
 const flat = () => 0;
+/** Any art's frame: a 20 × 32 pixel-art cell drawn at 3×, say. */
+const FRAME: SpriteFrame = { width: 60, height: 96, anchor: { x: 30, y: 90 }, figureHeight: 78 };
+const FIGURE_HEIGHT = FRAME.figureHeight;
 
 function cameraOn(zoom: number): IsoCamera {
   const centre = project(TILE, { x: 20.5, y: 20.5 });
@@ -20,7 +22,7 @@ function cameraOn(zoom: number): IsoCamera {
 describe('figureAt', () => {
   it('stands on the middle of its tile, raised by the ground, sorted on the ground plane', () => {
     const feet = project(TILE, feetOf({ x: 20, y: 20 }));
-    const figure = figureAt({ x: 20, y: 20 }, TILE, () => 0.18);
+    const figure = figureAt({ x: 20, y: 20 }, TILE, () => 0.18, FRAME);
 
     expect(figure.x).toBe(feet.x);
     expect(figure.bottom).toBeCloseTo(feet.y - 0.18 * TILE.px_per_metre_up);
@@ -32,7 +34,7 @@ describe('figureAt', () => {
 describe('figureBox', () => {
   it.each([1, 2, 3])("covers the sprite's frame down to the feet at zoom %i", (zoom) => {
     const camera = cameraOn(zoom);
-    const box = figureBox(figureAt({ x: 20, y: 20 }, TILE, flat), camera);
+    const box = figureBox(figureAt({ x: 20, y: 20 }, TILE, flat, FRAME), camera, FRAME);
 
     expect(box.width).toBe(FRAME.width * zoom);
     expect(box.height).toBe(FRAME.anchor.y * zoom);
@@ -43,7 +45,7 @@ describe('figureBox', () => {
   it("puts the bubble anchor at the top of the frame, above the feet's screen position", () => {
     const camera = cameraOn(2);
     const feet = project(TILE, feetOf({ x: 22, y: 19 }), 0.18);
-    const box = figureBox(figureAt({ x: 22, y: 19 }, TILE, () => 0.18), camera);
+    const box = figureBox(figureAt({ x: 22, y: 19 }, TILE, () => 0.18, FRAME), camera, FRAME);
     const onCanvas = (at: number, scroll: number, size: number) =>
       (at - scroll - size / 2) * 2 + size / 2;
 
@@ -61,8 +63,8 @@ describe('iso picking', () => {
       npcIds: () => Object.keys(positions),
       bubbleAnchor: () => undefined,
       spriteOf: (id) => {
-        const figure = figureAt(positions[id], TILE, () => heights[id] ?? 0);
-        return { box: figureBox(figure, camera), depth: figure.depth };
+        const figure = figureAt(positions[id], TILE, () => heights[id] ?? 0, FRAME);
+        return { box: figureBox(figure, camera, FRAME), depth: figure.depth };
       },
     };
     return { view, boxOf: (id: string) => view.spriteOf!(id)!.box };

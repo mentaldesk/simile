@@ -59,10 +59,13 @@ draws `DEFAULT_HOUR`, the afternoon.
   at the edges and corners so the player stays within `TARGET_REACH` of the centre.
 - **Controls** (`controls.ts`): arrows and WASD are screen directions, turned into grid directions,
   so up is north-west. The player still walks and collides in tiles.
-- **Characters**: `scenes/iso-characters.ts` draws A2b's sheets, anchored at the feet, facing the
-  sheet direction nearest their step on the map (`sheets.ts`). The walk plays faster or slower with
-  how fast they move, so the feet don't slide, and the idle plays when they stop. Shadows are drawn
-  on the ground, under every object.
+- **Characters**: `IsoCharacters` in `scenes/iso-characters.ts` places, tints and shadows sprites
+  from any `CharacterArt`: a `SpriteFrame` (the drawn size, the feet and the head's height) and a
+  sprite per character with a `pose` for each step. Picking, bubbles, the cutaway and the lighting
+  use only those. `sheetArt` is A2b's sheets: anchored at the feet, facing the sheet direction
+  nearest their step on the map (`sheets.ts`), with the walk played faster or slower with how fast
+  they move, so the feet don't slide, and the idle when they stop. Other art replaces `sheetArt`
+  alone. Shadows are drawn on the ground, under every object.
 
 ## Resolution
 
@@ -83,7 +86,7 @@ and steps up there, and past 1920 px the view stays 15 to 30 tiles across. Top-d
   after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point.
   `npcAt` in `world/hit.ts` goes front to back by depth and picks the first opaque one there, else
   the first whose box holds the point, so click-to-talk and the debug overlay pick the resident in
-  front where sprites overlap. The box is the sheet's frame down to the feet, so the dialogue UI's
+  front where sprites overlap. The box is the sprite's frame down to the feet, so the dialogue UI's
   ring sits at the feet.
 - **Bubbles**: `bubbleAnchor(id)` is the top centre of that box: the top of the frame, a little above
   the head.

@@ -18,7 +18,6 @@ import {
   DEFAULT_HOUR,
   figureAt,
   figureBox,
-  FIGURE_HEIGHT,
   gridDirection,
   GROUND_DEPTH,
   groundHeights,
@@ -37,13 +36,14 @@ import {
   UPLOAD_MS_PER_FRAME,
   Uploads,
   type Figure,
+  type IsoTile,
   type Layer,
   type LightingSet,
   type SceneryManifest,
   type SceneryObject,
   type TiledMapWithTiles,
 } from '../world/iso';
-import { IsoCharacters } from './iso-characters';
+import { IsoCharacters, sheetArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
 
@@ -137,7 +137,7 @@ export class IsoScene extends Phaser.Scene {
     bodies.set(PLAYER_ID, player);
     const lit = layers.map(({ set, weight }) => ({
       weight,
-      light: this.assets!.characterManifest.sets[set],
+      light: this.assets!.characterLights[set],
       lightMap: this.loaded.get(set)!.lightMap,
     }));
     characters.draw(bodies, dt, (at) => this.figureAt(at), layers, (feet) => residentLight(lit, feet));
@@ -149,12 +149,15 @@ export class IsoScene extends Phaser.Scene {
     this.assets = await import('../world/iso/assets');
   }
 
+  private async loadCharacters(tile: IsoTile, assets: Assets): Promise<IsoCharacters> {
+    const art = sheetArt(assets.characterManifest, tile, assets.sheetUrl, assets.loadImage);
+    return (this.characters = await IsoCharacters.load(this, tile, art, assets.characterLights));
+  }
+
   private async loadSet(set: LightingSet): Promise<void> {
     const assets = this.assets!;
     const manifest = (await (await fetch(assets.manifestUrl(set)!)).json()) as SceneryManifest;
-    this.charactersLoad ??= IsoCharacters.load(this, manifest.tile, assets).then(
-      (characters) => (this.characters = characters),
-    );
+    this.charactersLoad ??= this.loadCharacters(manifest.tile, assets);
     const images = sceneryImages(manifest);
     const [pixels, bitmaps, characters] = await Promise.all([
       assets.imagePixels(assets.imageUrl(manifest.light_map.image)!),
@@ -242,7 +245,7 @@ export class IsoScene extends Phaser.Scene {
 
   private figureAt(position: Position): Figure {
     const { manifest, heightAt } = this.geometry!;
-    return figureAt(position, manifest.tile, heightAt);
+    return figureAt(position, manifest.tile, heightAt, this.characters!.frame);
   }
 
   private spriteOf(id: string): ScreenSprite | undefined {
@@ -250,7 +253,7 @@ export class IsoScene extends Phaser.Scene {
     const characters = this.characters;
     if (!this.geometry || !characters || !position) return undefined;
     const figure = this.figureAt(position);
-    const box = figureBox(figure, this.cameras.main);
+    const box = figureBox(figure, this.cameras.main, characters.frame);
     return { box, depth: figure.depth, opaqueAt: (point) => characters.opaqueAt(id, box, point) };
   }
 
@@ -266,7 +269,7 @@ export class IsoScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const zoom = isoZoom(camera.width, window.devicePixelRatio, manifest.tile);
     if (zoom !== camera.zoom) camera.setZoom(zoom);
-    const target = { x: player.x, y: player.bottom - FIGURE_HEIGHT / 2 };
+    const target = { x: player.x, y: (player.top + player.bottom) / 2 };
     const scroll = isoScroll(target, camera, manifest.map, manifest.tile, zoom);
     camera.setScroll(scroll.x, scroll.y);
   }
