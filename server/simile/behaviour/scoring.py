@@ -45,7 +45,8 @@ class Places:
         ids = {loc.id: loc for loc in town.locations}
         for activity in AMENITIES:
             self.by_activity[activity] = [ids[activity]] if activity in ids else []
-        self._by_size = sorted(town.locations, key=lambda loc: loc.area.width * loc.area.height)
+        whole = [loc for loc in town.locations if not _part_of_another(loc, town.locations)]
+        self._by_size = sorted(whole, key=lambda loc: loc.area.width * loc.area.height)
 
     def location(self, location_id: str) -> Location:
         return self.town.location(location_id)
@@ -54,9 +55,24 @@ class Places:
         return [location.id for location in self.by_activity.get(activity, [])]
 
     def at(self, point: Point) -> Location | None:
-        """The smallest location the point is in, so a terminal wins over the square around it."""
-        cell = (math.floor(point.x + 0.5), math.floor(point.y + 0.5))
-        return next((loc for loc in self._by_size if inside(loc, cell)), None)
+        """The smallest location the point is in, so a terminal wins over the square around it.
+        An amenity inside another location, like the café's queue, counts as that location."""
+        return next((loc for loc in self._by_size if inside(loc, point)), None)
+
+
+def _part_of_another(location: Location, locations: Sequence[Location]) -> bool:
+    if location.kind is not LocationKind.AMENITY:
+        return False
+    a = location.area
+    return any(
+        other is not location
+        and other.map == location.map
+        and other.area.x <= a.x
+        and a.x + a.width <= other.area.x + other.area.width
+        and other.area.y <= a.y
+        and a.y + a.height <= other.area.y + other.area.height
+        for other in locations
+    )
 
 
 @dataclass(frozen=True)

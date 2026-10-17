@@ -1,6 +1,7 @@
 from simile.behaviour.mind import Behaviour
 from simile.protocol import Entity, EntityKind, Position, SnapshotMessage
 from simile.schema import PLAYER_ID
+from simile.world import Point
 
 PLAYER_NAME = "Player"
 PLAYER_SPAWN = "square"
@@ -29,5 +30,5 @@ def snapshot(behaviour: Behaviour) -> SnapshotMessage:
     )
 
 
-def _position(point: tuple[float, float]) -> Position:
-    return Position(x=point[0], y=point[1])
+def _position(point: Point) -> Position:
+    return Position(x=point.x, y=point.y, map=point.map)

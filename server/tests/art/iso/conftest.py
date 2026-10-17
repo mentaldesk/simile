@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -75,3 +76,16 @@ class FakeBlender:
 @pytest.fixture
 def fake_blender() -> FakeBlender:
     return FakeBlender()
+
+
+@pytest.fixture
+def add_room(content: Path) -> Callable[[str], Path]:
+    """Copy one of the repo's interiors into the test content."""
+
+    def add(name: str) -> Path:
+        target = content / "map" / "interiors" / f"{name}.tmj"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text((CONTENT_DIR / "map" / "interiors" / f"{name}.tmj").read_text())
+        return target
+
+    return add

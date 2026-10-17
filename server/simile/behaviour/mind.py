@@ -30,6 +30,7 @@ from simile.schema import (
     Conversation,
     Id,
     LocationKind,
+    MapTile,
     Medium,
     Npc,
     Relationship,
@@ -495,7 +496,7 @@ class Behaviour:
     def _sleep(self, mind: Mind) -> None:
         self._begin(mind, Goal(Activity.SLEEP, mind.npc.home))
 
-    def _walk(self, mind: Mind, target: Tile | str | None) -> None:
+    def _walk(self, mind: Mind, target: Tile | MapTile | str | None) -> None:
         mind.walk = None
         if target is None:
             self._arrive(mind)
@@ -562,11 +563,11 @@ class Behaviour:
             logger.exception("%r failed for %r", hook, args)
             return None
 
-    def _tile_of(self, entity: Id | None) -> Tile | None:
+    def _tile_of(self, entity: Id | None) -> MapTile | None:
         if entity is None or entity not in self.movement.entities():
             return None
         position = self.movement.position(entity)
-        return Tile(x=max(round(position.x), 0), y=max(round(position.y), 0))
+        return MapTile(map=position.map, x=max(round(position.x), 0), y=max(round(position.y), 0))
 
     def _wander_tile(self, mind: Mind) -> Tile | None:
         here = self.movement.position(mind.npc.id)

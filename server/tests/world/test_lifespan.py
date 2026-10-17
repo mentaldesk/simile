@@ -9,10 +9,10 @@ from starlette.testclient import TestClient
 
 from simile.app import create_app
 from simile.protocol import hub_of
-from simile.schema import PLAYER_ID, Tile
+from simile.schema import PLAYER_ID, VILLAGE_MAP, Tile
 from simile.sim import Clock, FakeWallClock, World, world_of
 from simile.sim.headless import run_headless
-from simile.world import movement_of
+from simile.world import Point, movement_of
 from simile.world.demo import DEMO_ENV
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -37,8 +37,26 @@ def test_tracks_the_player_from_player_move(make_package: MakePackage) -> None:
 
     with TestClient(app):
         hub_of(app).receive('{"type": "player_move", "position": {"x": 14, "y": 12.5}}')
+        outside = movement_of(app).position(PLAYER_ID)
+        inside = '{"x": 10, "y": 12, "map": "coffee_shop"}'
+        hub_of(app).receive(f'{{"type": "player_move", "position": {inside}}}')
 
-        assert movement_of(app).position(PLAYER_ID) == (14, 12.5)
+        assert outside == Point(14, 12.5, VILLAGE_MAP)
+        assert movement_of(app).position(PLAYER_ID) == Point(10, 12, "coffee_shop")
+
+
+def test_ignores_a_player_move_onto_an_unknown_map(
+    make_package: MakePackage, caplog: pytest.LogCaptureFixture
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        hub_of(app).receive('{"type": "player_move", "position": {"x": 14, "y": 12.5}}')
+        hub_of(app).receive('{"type": "player_move", "position": {"x": 5, "y": 6, "map": "moon"}}')
+        world_of(app).loop.tick()
+
+        assert movement_of(app).position(PLAYER_ID) == Point(14, 12.5, VILLAGE_MAP)
+    assert "Ignored a player_move onto an unknown map" in caplog.text
 
 
 def test_stops_on_shutdown(make_package: MakePackage) -> None:
@@ -59,7 +77,7 @@ def walk_demo(package: str) -> None:
     asyncio.run(run_headless(world, timedelta(minutes=1), package))
 
 
-def test_demo_walks_mei_from_home_to_the_coffee_shop(
+def test_demo_walks_mei_from_home_into_the_coffee_shop(
     make_package: MakePackage, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     monkeypatch.setenv(DEMO_ENV, "1")
@@ -67,9 +85,10 @@ def test_demo_walks_mei_from_home_to_the_coffee_shop(
 
     walk_demo(make_package(WORLD_LIFESPAN))
 
-    assert "EntityMoved(entity='mei', x=3.0, y=11.0)" in caplog.messages[0]
-    assert "EntityMoved(entity='mei', x=31.0, y=11.0)" in caplog.text
-    arrival = next(m for m in caplog.messages if "walked from house_1 to coffee_shop" in m)
+    assert "EntityMoved(entity='mei', x=3.0, y=11.0, map='village')" in caplog.messages[0]
+    assert "EntityMoved(entity='mei', x=31.0, y=11.0, map='village')" in caplog.text
+    assert "EntityMoved(entity='mei', x=10.0, y=13.0, map='coffee_shop')" in caplog.text
+    arrival = next(m for m in caplog.messages if "walked from house_1 to coffee_shop_queue" in m)
     speed = re.search(r"arrived\): [\d.]+ tiles in [\d.]+ s, ([\d.]+) tiles/s", arrival)
     assert speed and float(speed[1]) == pytest.approx(1.3, abs=0.01)
 

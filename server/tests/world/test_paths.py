@@ -1,13 +1,27 @@
 import heapq
 import math
+from dataclasses import replace
 
 import pytest
 
-from simile.schema import LocationKind
-from simile.world.map import TownMap, load_map
-from simile.world.paths import Cell, find_path, nearby, path_length, steps
+from simile.schema import VILLAGE_MAP, Door, LocationKind, MapTile
+from simile.world.map import TownMap, load_map, load_maps
+from simile.world.paths import (
+    DOOR,
+    Cell,
+    Spot,
+    door_ends,
+    find_path,
+    find_route,
+    nearby,
+    path_length,
+    route_length,
+    steps,
+)
 
 TOWN = load_map()
+MAPS = load_maps()
+DOORS = door_ends(MAPS)
 HOUSES = [location for location in TOWN.locations if location.kind is LocationKind.HOUSE]
 
 
@@ -35,6 +49,14 @@ def assert_walkable(town: TownMap, path: list[Cell]) -> None:
         assert town.walkable(nx, ny)
         assert max(abs(nx - x), abs(ny - y)) == 1
         assert town.walkable(nx, y) and town.walkable(x, ny), "cut a corner"
+
+
+def door(outside: tuple[int, int], inside: tuple[int, int]) -> Door:
+    return Door(
+        id="shop",
+        outside=MapTile(map="street", x=outside[0], y=outside[1]),
+        inside=MapTile(map="shop", x=inside[0], y=inside[1]),
+    )
 
 
 @pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
@@ -97,3 +119,74 @@ def test_lists_nearby_tiles_nearest_first() -> None:
 
 def test_lists_nothing_near_a_wall() -> None:
     assert list(nearby(grid(".#."), (1, 0))) == []
+
+
+@pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
+def test_routes_from_every_house_through_the_door_to_the_coffee_shop_counter(house) -> None:
+    cafe = MAPS["coffee_shop"]
+    counter = cafe.location("coffee_shop").entry
+    [doorstep] = [end for end, there in DOORS.items() if there.map == cafe.id]
+    mat = DOORS[doorstep]
+    start = Spot(VILLAGE_MAP, house.entry.x, house.entry.y)
+    goal = Spot(cafe.id, counter.x, counter.y)
+
+    route = find_route(MAPS, start, goal, DOORS)
+
+    assert route is not None
+    assert route[0] == start and route[-1] == goal
+    crossing = route.index(doorstep)
+    assert route[crossing + 1] == mat
+    assert {spot.map for spot in route[: crossing + 1]} == {VILLAGE_MAP}
+    assert {spot.map for spot in route[crossing + 1 :]} == {cafe.id}
+    outside = [(spot.x, spot.y) for spot in route[: crossing + 1]]
+    inside = [(spot.x, spot.y) for spot in route[crossing + 1 :]]
+    assert_walkable(TOWN, outside)
+    assert_walkable(cafe, inside)
+    assert route_length(route) == pytest.approx(
+        shortest_distance(TOWN, outside[0], outside[-1])
+        + DOOR
+        + shortest_distance(cafe, inside[0], inside[-1])
+    )
+
+
+def test_a_door_is_an_edge_between_its_two_tiles() -> None:
+    maps = {
+        "street": replace(grid("...", "..."), id="street", doors=(door((1, 0), (0, 0)),)),
+        "shop": replace(grid(".."), id="shop"),
+    }
+    doors = door_ends(maps)
+
+    along = find_route(maps, Spot("street", 0, 0), Spot("street", 2, 0), doors)
+    inside = find_route(maps, Spot("street", 0, 0), Spot("shop", 1, 0), doors)
+    out = find_route(maps, Spot("shop", 1, 0), Spot("street", 2, 1), doors)
+
+    assert along == [Spot("street", 0, 0), Spot("street", 1, 0), Spot("street", 2, 0)]
+    assert inside == [
+        Spot("street", 0, 0),
+        Spot("street", 1, 0),
+        Spot("shop", 0, 0),
+        Spot("shop", 1, 0),
+    ]
+    assert out == [
+        Spot("shop", 1, 0),
+        Spot("shop", 0, 0),
+        Spot("street", 1, 0),
+        Spot("street", 2, 1),
+    ]
+    assert route_length(inside) == 2 + DOOR
+    assert route_length(out) == pytest.approx(1 + DOOR + math.sqrt(2))
+
+
+def test_finds_no_route_to_a_map_without_a_door() -> None:
+    gallery = MAPS["gallery"].location("gallery").entry
+    square = TOWN.location("square").entry
+    start = Spot(VILLAGE_MAP, square.x, square.y)
+
+    assert find_route(MAPS, start, Spot("gallery", gallery.x, gallery.y), DOORS) is None
+    assert find_route(MAPS, start, Spot("moon", 0, 0), DOORS) is None
+
+
+def test_every_door_end_leads_to_the_other() -> None:
+    assert len(DOORS) == 2 * len(TOWN.doors)
+    for end, there in DOORS.items():
+        assert DOORS[there] == end and end.map != there.map

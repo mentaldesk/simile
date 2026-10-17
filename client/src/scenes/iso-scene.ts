@@ -106,7 +106,7 @@ export class IsoScene extends Phaser.Scene {
 
     const view: WorldView = {
       positionOf: (id) => world.positionOf(id),
-      npcIds: () => world.npcs.keys(),
+      npcIds: () => [...world.here()].map(({ id }) => id),
       bubbleAnchor: (id) => {
         const box = this.spriteOf(id)?.box;
         return box && { x: box.x + box.width / 2, y: box.y };
@@ -147,7 +147,7 @@ export class IsoScene extends Phaser.Scene {
     this.cutAway(figure, dt);
     this.drawLayers(layers);
 
-    const bodies = new Map<string, Body>([...world.npcs].map(([id, { mover }]) => [id, mover]));
+    const bodies = new Map<string, Body>([...world.here()].map(({ id, mover }) => [id, mover]));
     bodies.set(PLAYER_ID, player);
     const lit = layers.map(({ set, weight }) => ({
       weight,

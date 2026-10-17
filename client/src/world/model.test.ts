@@ -49,6 +49,23 @@ describe('WorldModel', () => {
     expect([...model.npcs.keys()]).toEqual(['suki']);
   });
 
+  it('shows only the NPCs on the map the player is on, snapping them across a door', () => {
+    const model = new WorldModel();
+    model.reset([
+      ...ENTITIES,
+      { id: 'suki', kind: 'npc', name: 'Suki Tan', position: { x: 5, y: 6, map: 'coffee_shop' } },
+    ]);
+    expect([...model.here()].map(({ id }) => id)).toEqual(['mei', 'viktor']);
+    expect(model.positionOf('suki')).toBeUndefined();
+
+    model.move('mei', { x: 31, y: 11, map: 'village' });
+    model.move('mei', { x: 10, y: 13, map: 'coffee_shop' });
+    model.move('suki', { x: 31, y: 11, map: 'village' });
+    expect([...model.here()].map(({ id }) => id)).toEqual(['viktor', 'suki']);
+    expect(model.positionOf('mei')).toBeUndefined();
+    expect(model.positionOf('suki')).toEqual({ x: 31, y: 11, map: 'village' });
+  });
+
   it('lets the first snapshot move a player spawned before it', () => {
     const model = new WorldModel();
     model.spawnPlayer({ x: 1, y: 1 });

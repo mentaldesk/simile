@@ -38,7 +38,7 @@ def message_for(
     match event:
         case EntityMoved():
             return EntityMovedMessage(
-                entity_id=event.entity, position=Position(x=event.x, y=event.y)
+                entity_id=event.entity, position=Position(x=event.x, y=event.y, map=event.map)
             )
         case ConversationStarted():
             return ConversationStartedMessage(conversation=event.conversation)

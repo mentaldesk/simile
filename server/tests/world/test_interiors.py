@@ -87,7 +87,7 @@ def test_every_location_entry_is_walkable_on_its_own_map() -> None:
             assert area.y <= entry.y < area.y + area.height, location.id
 
 
-def test_only_the_buildings_moving_inside_are_on_two_maps_until_168() -> None:
+def test_only_the_buildings_moving_inside_are_on_two_maps_for_now() -> None:
     copies = Counter(location.id for town in MAPS.values() for location in town.locations)
 
     assert {location_id for location_id, n in copies.items() if n > 1} == MOVING_INSIDE

@@ -11,7 +11,8 @@ def register(app: typer.Typer) -> None:
             Path | None, typer.Option(help="Content directory. Defaults to the repo's content/.")
         ] = None,
     ) -> None:
-        """Regenerate the village map and its previews in content/map/ from content/art/."""
+        """Regenerate the village, its interiors and their previews in content/map/ from
+        content/art/."""
         from simile.world.build_map import generate
         from simile.world.map import CONTENT_DIR
 

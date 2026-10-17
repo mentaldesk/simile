@@ -29,10 +29,10 @@ from simile.behaviour.scoring import (
     wake,
 )
 from simile.schema import PLAYER_ID, Baseline, CoreValue, Medium, Relationship, Tile
-from simile.world.map import load_map
+from simile.world.map import load_maps, with_every_location
 from simile.world.movement import Point
 
-PLACES = Places(load_map())
+PLACES = Places(with_every_location(load_maps()))
 SQUARE = Point(31, 22)
 NEUTRAL = {value: 0.5 for value in CoreValue}
 CONTENT = {need: 0.2 for need in Need}
@@ -448,3 +448,22 @@ def test_nobody_starts_making_something_just_before_bed() -> None:
 def test_finishing_counts_towards_what_a_stay_promises() -> None:
     assert promised(A.CREATE, Need.INSPIRATION) == -1.0
     assert promised(A.CREATE, Need.CURIOSITY) == pytest.approx(-0.6)
+
+
+def test_places_are_looked_up_on_the_points_own_map() -> None:
+    cafe = Places(load_maps()["coffee_shop"])
+
+    assert PLACES.at(Point(3, 8)) == PLACES.location("house_1")
+    assert PLACES.at(Point(3, 8, "coffee_shop")) is None
+    assert cafe.at(Point(3, 8, "coffee_shop")) == cafe.location("coffee_shop")
+    assert cafe.at(Point(3, 8)) is None
+
+
+def test_residents_at_the_counter_or_behind_it_are_at_the_coffee_shop() -> None:
+    cafe = Places(load_maps()["coffee_shop"])
+    coffee_shop = cafe.location("coffee_shop")
+
+    for spot in ("coffee_shop_queue", "coffee_shop_staff"):
+        entry = cafe.location(spot).entry
+        assert cafe.at(Point(entry.x, entry.y, coffee_shop.map)) == coffee_shop
+    assert PLACES.at(Point(47, 24)) == PLACES.location("park")

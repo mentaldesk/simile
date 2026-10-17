@@ -10,17 +10,17 @@ logger = logging.getLogger(__name__)
 DEMO_ENV = "SIMILE_DEMO_WALK"
 WALKER = "mei"
 HOME = "house_1"
-COFFEE_SHOP = "coffee_shop"
+COUNTER = "coffee_shop_queue"
 REST = 30.0
 
 
 class WalkDemo:
-    """Mei walks from home to the coffee shop and back, resting at each end."""
+    """Mei walks from home to the Daily Grind's counter and back, resting at each end."""
 
     def __init__(self, movement: Movement, clock: Clock) -> None:
         self.movement = movement
         self.clock = clock
-        self.trips = cycle([(HOME, COFFEE_SHOP), (COFFEE_SHOP, HOME)])
+        self.trips = cycle([(HOME, COUNTER), (COUNTER, HOME)])
         self.walking = False
         self.resting = 0.0
         movement.place(WALKER, HOME)

@@ -51,6 +51,19 @@ def test_a_building_has_a_facade_row_per_storey(town: Town) -> None:
     assert all(len(row) == cafe.x1 - cafe.x0 for row in cafe.facade)
 
 
+def test_buildings_with_an_interior_have_an_entrance_at_its_door(town: Town) -> None:
+    entrances = {b.id: b.entrances for b in town.buildings if b.entrances}
+    assert entrances == {"building-28-6": (3,), "building-13-6": (3,), "building-37-5": (4,)}
+    for b in town.buildings:
+        for col in b.entrances:
+            assert (b.x0 + col, b.y1) in town.doorsteps
+            assert b.facade[-1][col][0] in ("cafe_door", "shop_door")
+
+
+def test_only_buildings_with_an_entrance_say_so_in_their_spec(town: Town) -> None:
+    assert sum("entrances" in b.spec() for b in town.buildings) == 3
+
+
 def block(x0: int, y0: int, storeys: int = 3) -> Building:
     return Building(x0, y0, x0 + 4, y0 + 4, storeys, False, "cream", (), ())
 
