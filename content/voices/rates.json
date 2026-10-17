@@ -2,51 +2,51 @@
   "desmond": {
     "base_seconds": -0.055,
     "seconds_per_word": 0.2728,
-    "digest": "649d031b373d60ad489a5b5954dd2927841bed28a39787cf9edfb404ed283ed5"
+    "digest": "2ff2702663ca985439bf59edf8adeac1146252e9ec164bf2af8e0200caf9df0a"
   },
   "henrietta": {
-    "base_seconds": 0.469,
-    "seconds_per_word": 0.2539,
-    "digest": "6f6447bfc3a7256ae11191228458bad6c168c7e51ee7b613f6c2355f61e609b0"
+    "base_seconds": 0.353,
+    "seconds_per_word": 0.2574,
+    "digest": "6b93ac06369371a9fbc1efe197376c40d6d99b6bdc775dfdb34ef544a5bc23ce"
   },
   "ingrid": {
-    "base_seconds": 0.297,
-    "seconds_per_word": 0.2795,
-    "digest": "3a3fd7f13c72e8857e5a7071c3199c653a25cd1466217ade62955cdc19fbd6b1"
+    "base_seconds": 0.278,
+    "seconds_per_word": 0.2787,
+    "digest": "dd4023990a46bb2312d49312a611ac8ba4ad6503ea4bd84d82f149dbd38a5b4d"
   },
   "kofi": {
-    "base_seconds": 0.815,
-    "seconds_per_word": 0.2625,
-    "digest": "c275b69204aaec74b5a2f639ca996911d7885dc5cd4f974eae4df31ac0ada9d3"
+    "base_seconds": 0.518,
+    "seconds_per_word": 0.269,
+    "digest": "38f9ac946884cec921f4549920ea23397b02bd5a62704733ea413532fe793694"
   },
   "lachlan": {
-    "base_seconds": 0.116,
-    "seconds_per_word": 0.268,
-    "digest": "27785abfb6acbdfa2ea26d8647e8063978040f0a632b36b93eab9106b02bfc92"
+    "base_seconds": 0.016,
+    "seconds_per_word": 0.2695,
+    "digest": "7d781760bc8c8c4709ae32c04d549a33ea3427487c8185c5b957db4d9fb35932"
   },
   "marguerite": {
-    "base_seconds": 0.792,
-    "seconds_per_word": 0.2704,
-    "digest": "ade2cabad54c08e6dbde271e6a64ef257ce31ee252da12e902b57ffc508b6f9c"
+    "base_seconds": 0.542,
+    "seconds_per_word": 0.2754,
+    "digest": "ce73781d4fa4a6d813e352d63f8e7607459d17aeb5ccdc88dfaba222ba433a3f"
   },
   "odalys": {
-    "base_seconds": 0.394,
-    "seconds_per_word": 0.2575,
-    "digest": "912de71e6c1993f1860dbbe46d0858e672156fb17354cb5760fd51a695c87faf"
+    "base_seconds": 0.324,
+    "seconds_per_word": 0.2595,
+    "digest": "9a4c4c9862a904757e29f9916edb9eb13e78fc24d406449439638bd70388ae04"
   },
   "priya": {
-    "base_seconds": 0.39,
-    "seconds_per_word": 0.2827,
-    "digest": "9ea5da629b96f65326ac0e1295b428f82b0a4e6f65edc9d0d71b16f548d71367"
+    "base_seconds": 0.3,
+    "seconds_per_word": 0.2817,
+    "digest": "c9b57e8761030abce95571630ab2f69c0f798b2476728736f28ab582c3ab57d7"
   },
   "raymond": {
-    "base_seconds": 0.19,
-    "seconds_per_word": 0.2639,
-    "digest": "98352ede838e49a2872cd1052040dc9f2b46a8247f760b0488690342a8f7a4fb"
+    "base_seconds": 0.157,
+    "seconds_per_word": 0.2622,
+    "digest": "a3b1d111a6c9370dd305eaf8ffdbe9eed5b115c6f1177b9518b126a7e90770fe"
   },
   "tobias": {
-    "base_seconds": 0.66,
-    "seconds_per_word": 0.2781,
-    "digest": "b8adedd82c817e3d522dcc76a4d3ccd025210831149e5655139e3d8fc92d7afb"
+    "base_seconds": 0.485,
+    "seconds_per_word": 0.28,
+    "digest": "c178b9cb6ff4a81e0fefb7fc284d74587bb9e6b794014154eab2fb59a09c23e5"
   }
 }

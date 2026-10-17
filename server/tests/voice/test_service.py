@@ -1,6 +1,7 @@
 import asyncio
 import threading
-from collections.abc import AsyncIterator, Callable
+import time
+from collections.abc import AsyncIterator, Callable, Generator
 from contextlib import asynccontextmanager
 
 import pytest
@@ -214,3 +215,45 @@ def test_a_failed_load_stops_the_voice_thread(synthesiser: FakeSynthesiser) -> N
 
     threads[0].join(timeout=2)
     assert not threads[0].is_alive()
+
+
+class Hesitant(FakeSynthesiser):
+    """Sends nothing for `steps` 50 ms steps, like Qwen while the trim holds a silent start."""
+
+    def __init__(self, steps: int) -> None:
+        super().__init__()
+        self.steps = steps
+
+    def generate(self, npc_id: str, sentence: str) -> Generator[bytes, None, None]:
+        self.started.append(sentence)
+        try:
+            for _ in range(self.steps):
+                time.sleep(0.05)
+                yield b""
+            yield self.chunk(0)
+        finally:
+            self.closed.append(sentence)
+
+
+def test_empty_chunks_are_not_passed_on() -> None:
+    async def scenario() -> list[bytes]:
+        async with smith_voice(Hesitant(steps=3)) as voice:
+            return await collect(voice.speak("smith", "Hm."))
+
+    assert asyncio.run(scenario()) == [FakeSynthesiser.chunk(0)]
+
+
+def test_a_sentence_stops_promptly_while_it_has_nothing_to_send_yet() -> None:
+    synthesiser = Hesitant(steps=40)
+
+    async def scenario() -> float:
+        async with smith_voice(synthesiser) as voice:
+            speaking = asyncio.create_task(collect(voice.speak("smith", "Overheard.")))
+            await until(lambda: synthesiser.started == ["Overheard."])
+            await asyncio.sleep(0.1)
+            speaking.cancel()
+            cancelled = time.perf_counter()
+            await until(lambda: synthesiser.closed == ["Overheard."])
+            return time.perf_counter() - cancelled
+
+    assert asyncio.run(scenario()) < 0.2

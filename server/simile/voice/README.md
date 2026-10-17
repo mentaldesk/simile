@@ -53,6 +53,11 @@ async with aclosing(
   after the service has stopped raises `RuntimeError`.
 - A sentence that runs past 3 s plus 1 s per 5 characters is cut off with a warning, so a
   generation that never ends can't hold the queue.
+- Qwen starts most sentences with silence, up to 0.7 s of it. `QwenSynthesiser` drops it but for
+  50 ms before the first sound, so the voice starts sooner (`silence.py`). The first sound is the
+  first 30 ms above about -67 dBFS, which is quieter than a soft "f", so quiet starts and breaths
+  stay. The first 50 ms don't count, since Qwen sometimes opens with a click. It holds a sentence's
+  chunks back until it finds that sound, and leaves a sentence alone if there's none in 1.5 s.
 
 ## Speaking rates
 
@@ -71,8 +76,10 @@ uv run simile voice measure [npc ...] [--force]
   `QwenSynthesiser`, as V1 does, and fits the rate by least squares. Each sentence is seeded, so a
   rerun gives the same rate. It takes a minute or two a voice on an M2 Max.
 - It measures only the voices whose rate is missing or out of date, unless `--force`. Each rate
-  keeps a digest of the clip and transcript it was measured from, and a new clip or reference line
-  makes it out of date. `make test` fails while any resident's voice has no up-to-date rate.
+  keeps a digest of the clip and transcript it was measured from and of `rates.SYNTHESIS`, so a new
+  clip or reference line makes it out of date, and so does bumping `SYNTHESIS`. Bump it whenever a
+  change to `QwenSynthesiser` changes how long lines take. `make test` fails while any resident's
+  voice has no up-to-date rate.
 - voice-lab's `design_npcs.py` and `import_voices.py` run it for each voice they make, so a new
   voice is paced by its own rate. Restart the server to use a new rate.
 

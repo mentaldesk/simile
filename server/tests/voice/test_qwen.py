@@ -1,13 +1,18 @@
+import array
 import asyncio
 import logging
+import math
 import struct
 import time
 
 import pytest
 
+from simile.npc import load_npcs
 from simile.protocol import SAMPLE_RATE
 from simile.schema import Voice
 from simile.voice import VoiceService
+from simile.voice.service import REPO_ROOT
+from simile.voice.silence import SKIP, LeadingSilence
 
 pytestmark = pytest.mark.mlx
 
@@ -89,3 +94,43 @@ def test_warns_when_a_sentence_hits_the_generation_cap(
         asyncio.run(scenario())
 
     assert "Cut dwarf_smith off" in caplog.text
+
+
+class Untrimmed:
+    def feed(self, pcm: bytes) -> bytes:
+        return pcm
+
+    def end(self) -> bytes:
+        return b""
+
+
+def loudest(pcm: bytes) -> float:
+    data = array.array("h", pcm)
+    windows = range(0, len(data) - 239, 240)
+    return max((math.sqrt(sum(x * x for x in data[i : i + 240]) / 240) for i in windows), default=0)
+
+
+def test_drops_the_silence_a_line_starts_with_and_nothing_after_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from simile.voice import qwen
+
+    tobias = next(npc for npc in load_npcs() if npc.id == "tobias")
+    assert tobias.voice.reference_clip is not None
+    synthesiser = qwen.QwenSynthesiser(seed=1)
+    synthesiser.load()
+    clip = REPO_ROOT / tobias.voice.reference_clip
+    synthesiser.add_voice("tobias", clip, tobias.voice.reference_line)
+    lines = ["Fair enough, I suppose.", "So, what brings you here?", "Honestly?"]
+
+    trimmed = [b"".join(synthesiser.generate("tobias", line)) for line in lines]
+    monkeypatch.setattr(qwen, "LeadingSilence", Untrimmed)
+    whole = [b"".join(synthesiser.generate("tobias", line)) for line in lines]
+
+    for raw, out in zip(whole, trimmed, strict=True):
+        dropped = raw[: len(raw) - len(out)]
+        assert raw.endswith(out)
+        assert len(dropped) > 0.05 * SAMPLE_RATE * 2
+        assert loudest(dropped[round(SKIP * SAMPLE_RATE) * 2 :]) < 250
+        retrimmed = LeadingSilence()
+        assert retrimmed.feed(out) + retrimmed.end() == out
