@@ -15,7 +15,7 @@ from simile.schema import CoreValue, Craft, Id, Medium, Memory, MemoryKind, Npc,
 from simile.sim import Clock
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
 from simile.works.reading import name_of
-from simile.works.render import brick, canvas, metres, render
+from simile.works.render import canvas, draw, metres
 from simile.works.store import WorksStore
 from simile.works.svg import BadSvg, checked
 from simile.works.walls import wall_name
@@ -263,7 +263,7 @@ class Maker:
         else:
             return None
         self.making.add(npc.id)
-        task = asyncio.get_running_loop().create_task(making)
+        task = asyncio.get_running_loop().create_task(self._guarded(npc, making))
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)
         task.add_done_callback(lambda _: self.making.discard(npc.id))
@@ -274,6 +274,13 @@ class Maker:
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+
+    async def _guarded(self, npc: Npc, making: Coroutine[Any, Any, Work | None]) -> Work | None:
+        try:
+            return await making
+        except Exception:
+            logger.exception("%s couldn't make anything", npc.id)
+            return None
 
     def on_mind(self, npc: Npc, now: datetime) -> tuple[list[Memory], list[Work]]:
         """`npc`'s strongest memories, leaving out making their own works, and their latest
@@ -344,7 +351,9 @@ class Maker:
             elements=config.svg_elements,
             tolerance=config.aspect_tolerance,
         )
-        png = await asyncio.to_thread(render, svg, width, height, seed=seed, bricks=brick(wall.id))
+        png = await asyncio.to_thread(
+            draw, svg, width, height, seed=seed, timeout=config.render_timeout
+        )
         return svg, png
 
     async def _ask[R: BaseModel](

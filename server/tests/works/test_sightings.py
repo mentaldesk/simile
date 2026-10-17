@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 
 import pytest
 
@@ -139,16 +140,25 @@ def test_an_artist_remembers_being_painted_over_when_they_next_see_the_wall(
     assert memory_of_it.work_id == "over"
 
 
-def test_a_look_that_fails_can_be_had_again(works: WorksStore, memory: MemoryStore) -> None:
+def test_a_look_that_fails_is_had_again_an_hour_later_and_not_before(
+    works: WorksStore, memory: MemoryStore
+) -> None:
     works.paint(mural("m1", "suki"), "<svg/>", b"")
-    fake = FakeProvider([LLMError("usage limit reached"), REACTION])
-    watcher = passers(works, memory, {"viktor": IN_FRONT}, LLMClient(fake))
+    fake = FakeProvider(default=lambda _: [LLMError("usage limit reached")])
+    watcher = passers(works, memory, {"viktor": IN_FRONT, "mei": IN_FRONT}, LLMClient(fake))
 
+    asyncio.run(walk_by(watcher, seconds=60))
+    failed = len(fake.requests)
+    watcher.clock.now = NOW + DEFAULT_CONFIG.look_again - timedelta(seconds=1)
     asyncio.run(walk_by(watcher, seconds=1))
-    asyncio.run(walk_by(watcher, seconds=1))
+    too_soon = len(fake.requests)
+    watcher.clock.now = NOW + DEFAULT_CONFIG.look_again
+    fake.default = REACTION.model_dump_json()
+    asyncio.run(walk_by(watcher, seconds=60))
 
-    assert len(fake.requests) == 2
+    assert (failed, too_soon, len(fake.requests)) == (2, 2, 4)
     assert [m.work_id for m in work_memories(memory, "viktor")] == ["m1"]
+    assert [m.work_id for m in work_memories(memory, "mei")] == ["m1"]
 
 
 def test_nobody_sees_a_mural_without_an_llm_or_twice_across_restarts(

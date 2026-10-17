@@ -75,6 +75,11 @@ class WorksConfig(BaseModel):
     svg_elements: int = Field(
         default=2_000, ge=1, description="The most elements a mural's SVG may have."
     )
+    render_timeout: float = Field(
+        default=5.0,
+        gt=0,
+        description="Real seconds a mural's child process gets to start and draw it.",
+    )
     aspect_tolerance: float = Field(
         default=0.1,
         ge=0,
@@ -122,6 +127,11 @@ class WorksConfig(BaseModel):
     )
     look_every: float = Field(
         default=1.0, gt=0, description="Sim seconds between looks at who's passing a mural."
+    )
+    look_again: timedelta = Field(
+        default=timedelta(hours=1),
+        description="Sim time before a resident tries again to say how a mural lands, after "
+        "the call failed.",
     )
     painted_over_salience: float = Field(
         default=0.7,

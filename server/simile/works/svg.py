@@ -50,9 +50,15 @@ ELEMENTS = frozenset(
     }
 )
 EXTERNAL_URL = re.compile(r"url\((?!\s*['\"]?\s*#)", re.IGNORECASE)
+LOCAL_URL = re.compile(r"url\(\s*['\"]?\s*#([^'\")\s]+)", re.IGNORECASE)
 NUMBER = r"\s*(-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?)\s*,?"
 VIEWBOX = re.compile(rf"^{NUMBER * 4}\s*$", re.IGNORECASE)
 BARE_AMPERSAND = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|[A-Za-z]\w*;)")
+
+DEPTH = 32
+USES = 200
+REFERENCES = 4
+CLAMPED = {("feTurbulence", "numOctaves"): 8.0, ("feMorphology", "radius"): 20.0}
 
 ET.register_namespace("", SVG)
 ET.register_namespace("xlink", XLINK)
@@ -82,13 +88,27 @@ def checked(
     every = list(root.iter())
     if len(every) > elements:
         raise BadSvg(f"it has {len(every):,} elements, and the most is {elements:,}")
+    if _depth(root) > DEPTH:
+        raise BadSvg(f"its elements are nested more than {DEPTH} deep")
     for element in every:
         _check(element)
     if local(root.tag) != "svg":
         raise BadSvg("its root element isn't <svg>")
-    _no_nested_use(every)
+    _check_references(every)
     _fit(root, width, height, tolerance)
-    return ET.tostring(root, encoding="unicode")
+    try:
+        return ET.tostring(root, encoding="unicode")
+    except RecursionError:
+        raise BadSvg("its elements are nested too deep") from None
+
+
+def _depth(root: ET.Element) -> int:
+    deepest, stack = 0, [(root, 1)]
+    while stack:
+        element, depth = stack.pop()
+        deepest = max(deepest, depth)
+        stack.extend((child, depth + 1) for child in element)
+    return deepest
 
 
 def _check(element: ET.Element) -> None:
@@ -104,20 +124,75 @@ def _check(element: ET.Element) -> None:
             raise BadSvg(f'href="{value[:40]}" points outside the SVG')
         if EXTERNAL_URL.search(value):
             raise BadSvg(f'{key}="{value[:40]}" refers to something outside the SVG')
-    style = element.text or ""
-    if name == "style" and (EXTERNAL_URL.search(style) or "@import" in style.lower()):
-        raise BadSvg("its <style> loads something from outside the SVG")
+        if key == "style" and "\\" in value:
+            raise BadSvg("CSS escapes aren't allowed")
+        if (most := CLAMPED.get((name, key))) is not None:
+            element.set(attribute, _clamp(key, value, most))
+    if name == "style":
+        css = element.text or ""
+        if len(element):
+            raise BadSvg("its <style> has elements in it")
+        if "\\" in css:
+            raise BadSvg("CSS escapes aren't allowed")
+        if EXTERNAL_URL.search(css) or "@import" in css.lower():
+            raise BadSvg("its <style> loads something from outside the SVG")
 
 
-def _no_nested_use(every: list[ET.Element]) -> None:
-    ids = {element.get("id"): element for element in every if element.get("id")}
+def _clamp(key: str, value: str, most: float) -> str:
+    try:
+        numbers = [float(number) for number in value.replace(",", " ").split()]
+    except ValueError:
+        raise BadSvg(f"{key}={value[:40]!r} isn't a number") from None
+    return " ".join(f"{min(abs(number), most):g}" for number in numbers)
+
+
+def _check_references(every: list[ET.Element]) -> None:
+    """No duplicate ids, few `<use>`s, none reaching another, and no long chains of references,
+    each of which can take resvg exponentially longer to draw."""
+    ids: dict[str, ET.Element] = {}
     for element in every:
-        if local(element.tag) != "use":
-            continue
-        href = next((v for k, v in element.attrib.items() if local(k) == "href"), "")
-        target = ids.get(href.strip().removeprefix("#"))
+        if (id := element.get("id")) is not None:
+            if id in ids:
+                raise BadSvg(f'the id "{id[:40]}" is used twice')
+            ids[id] = element
+    uses = [element for element in every if local(element.tag) == "use"]
+    if len(uses) > USES:
+        raise BadSvg(f"it has {len(uses)} <use> elements, and the most is {USES}")
+    for use in uses:
+        target = ids.get(_href(use))
         if target is not None and any(local(e.tag) == "use" for e in target.iter()):
             raise BadSvg("a <use> refers to something with another <use> in it")
+    hops: dict[str, int] = {}
+
+    def chain(id: str, seen: tuple[str, ...]) -> int:
+        if id in seen:
+            raise BadSvg(f'"{id[:40]}" refers to itself')
+        if id not in hops:
+            onward = [chain(ref, (*seen, id)) for ref in _references(ids[id]) if ref in ids]
+            hops[id] = 1 + max(onward, default=0)
+            if hops[id] > REFERENCES:
+                raise BadSvg(f"it has references to references more than {REFERENCES} deep")
+        return hops[id]
+
+    for element in every:
+        for ref in _references(element, subtree=False):
+            if ref in ids:
+                chain(ref, ())
+
+
+def _href(element: ET.Element) -> str:
+    href = next((v for k, v in element.attrib.items() if local(k) == "href"), "")
+    return href.strip().removeprefix("#")
+
+
+def _references(element: ET.Element, subtree: bool = True) -> set[str]:
+    found: set[str] = set()
+    for each in element.iter() if subtree else [element]:
+        if href := _href(each):
+            found.add(href)
+        for value in [*each.attrib.values(), each.text or "" if local(each.tag) == "style" else ""]:
+            found.update(LOCAL_URL.findall(value))
+    return found
 
 
 def _fit(root: ET.Element, width: int, height: int, tolerance: float) -> None:

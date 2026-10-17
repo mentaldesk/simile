@@ -7,6 +7,10 @@ if TYPE_CHECKING:
     from simile.schema import Memory, Npc, Work
 
 
+class NoWall(Exception):
+    """No wall is worth a muralist's painting over."""
+
+
 def register(app: typer.Typer) -> None:
     works = typer.Typer(no_args_is_help=True, help="The residents' works.")
 
@@ -44,7 +48,14 @@ def register(app: typer.Typer) -> None:
         if wall is not None and wall not in {w.id for w in walls}:
             raise typer.BadParameter(f"no such wall: {wall}", param_hint="--wall")
         mural = resident.craft.medium is Medium.MURAL
-        memories, work, picture = asyncio.run(create(resident, residents, wall))
+        try:
+            memories, work, picture = asyncio.run(create(resident, residents, wall))
+        except NoWall:
+            typer.echo(
+                f"{resident.name} has no wall worth painting just now. Name one with --wall.",
+                err=True,
+            )
+            raise typer.Exit(1) from None
         typer.echo(on_mind(memories, work))
         if work is None:
             made = "paint a mural" if mural else "write a piece"
@@ -68,13 +79,13 @@ async def create(
     from simile.llm.lifespan import FAKE_ENV, CannedProvider
     from simile.memory import MemoryStore, default_path
     from simile.persistence import WorldStore
+    from simile.schema import Medium
     from simile.sim import Clock
     from simile.works.maker import Maker
     from simile.works.store import WorksStore
     from simile.works.walls import Walls
     from simile.world.map import load_map
 
-    llm = LLMClient(CannedProvider() if os.environ.get(FAKE_ENV) == "fake" else None)
     walls = load_map().murals
     with (
         MemoryStore(default_path()) as memory,
@@ -83,10 +94,13 @@ async def create(
     ):
         saved = world.load()
         clock = Clock(saved.now if saved else datetime.now(UTC))
-        maker = Maker(works, memory, clock, lambda: llm, walls=walls, npcs=npcs)
-        if wall is None:
+        if wall is None and npc.craft is not None and npc.craft.medium is Medium.MURAL:
             spot = Walls(walls, works, memory, clock, npcs).pick(npc)
-            wall = spot.wall if spot else walls[0].id
+            if spot is None:
+                raise NoWall
+            wall = spot.wall
+        llm = LLMClient(CannedProvider() if os.environ.get(FAKE_ENV) == "fake" else None)
+        maker = Maker(works, memory, clock, lambda: llm, walls=walls, npcs=npcs)
         memories, _ = maker.on_mind(npc, clock.now)
         try:
             task = maker.make(npc, wall)

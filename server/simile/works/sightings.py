@@ -67,6 +67,8 @@ class Passers:
         self.positions = positions
         self.config = config
         self.seen: dict[Id, set[str]] = {}
+        self.later: dict[tuple[Id, str], datetime] = {}
+        """When a resident whose look at a mural failed can look again, by their id and its."""
         self.tasks: set[asyncio.Task[None]] = set()
         self._elapsed = 0.0
 
@@ -88,7 +90,9 @@ class Passers:
                 distance = distance_in_front(wall, position)
                 if distance is None or distance > self.config.reach or mural.artist == who:
                     continue
-                if mural.id not in self._seen_by(who):
+                if mural.id in self._seen_by(who):
+                    continue
+                if self.later.get((who, mural.id), self.clock.now) <= self.clock.now:
                     self._see(who, wall, mural)
 
     async def stop(self) -> None:
@@ -107,7 +111,7 @@ class Passers:
             return
         self._seen_by(who).add(mural.id)
         task = asyncio.get_running_loop().create_task(
-            self._react(llm, self.npcs[who], wall, mural, self.clock.now)
+            self._look_at(llm, self.npcs[who], wall, mural, self.clock.now)
         )
         self.tasks.add(task)
         task.add_done_callback(self.tasks.discard)
@@ -132,6 +136,18 @@ class Passers:
             work_id=mural.id,
         )
 
+    async def _look_at(
+        self, llm: LLMClient, npc: Npc, wall: MuralWall, mural: Work, now: datetime
+    ) -> None:
+        try:
+            await self._react(llm, npc, wall, mural, now)
+        except StructuredOutputError:
+            logger.warning("%s couldn't rate %r", npc.id, mural.title)
+        except Exception:
+            logger.warning("%s couldn't look at %r", npc.id, mural.title, exc_info=True)
+            self.seen[npc.id].discard(mural.id)
+            self.later[(npc.id, mural.id)] = self.clock.now + self.config.look_again
+
     async def _react(
         self, llm: LLMClient, npc: Npc, wall: MuralWall, mural: Work, now: datetime
     ) -> None:
@@ -140,22 +156,14 @@ class Passers:
         feeling = describe(as_of(rel, now), artist)
         covered = self.works.covered(mural.id)
         yours = covered if covered is not None and covered.artist == npc.id else None
-        try:
-            reaction = await llm.structured(
-                mural_prompt(mural, artist, wall_name(wall.id), feeling, yours),
-                Reaction,
-                system=system_prompt(npc),
-                model=self.config.reaction_model,
-                purpose="mural-reaction",
-                priority=self.config.priority,
-            )
-        except StructuredOutputError:
-            logger.warning("%s couldn't rate %r", npc.id, mural.title)
-            return
-        except Exception:
-            logger.warning("%s couldn't look at %r", npc.id, mural.title, exc_info=True)
-            self.seen[npc.id].discard(mural.id)
-            return
+        reaction = await llm.structured(
+            mural_prompt(mural, artist, wall_name(wall.id), feeling, yours),
+            Reaction,
+            system=system_prompt(npc),
+            model=self.config.reaction_model,
+            purpose="mural-reaction",
+            priority=self.config.priority,
+        )
         saw = (
             f'{artist} has painted "{mural.title}" over my mural "{yours.title}" on '
             if yours

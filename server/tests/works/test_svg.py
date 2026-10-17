@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
+from simile.works import svg as svg_module
 from simile.works.svg import SVG, BadSvg, checked
 
 from .conftest import svg
@@ -77,6 +78,12 @@ def test_adds_the_svg_namespace_when_it_is_missing() -> None:
             svg(inside='<g id="a"><use href="#b"/></g><g id="b"/><use href="#a"/>'),
             "refers to something with another <use>",
         ),
+        (svg(inside='<rect id="a"/><rect id="a"/>'), 'the id "a" is used twice'),
+        (svg(inside="<style>rect { fill: u\\72l(x.svg) }</style>"), "CSS escapes"),
+        (svg(inside='<rect style="fill: u\\72l(x.svg)"/>'), "CSS escapes"),
+        (svg(inside="<style><g/>@import 'x.css';</style>"), "<style> has elements"),
+        (svg(inside='<pattern id="a"><rect fill="url(#a)"/></pattern>'), '"a" refers to itself'),
+        (svg(inside="<feMorphology radius='lots'/>"), "radius='lots' isn't a number"),
     ],
 )
 def test_rejects_what_could_run_load_or_break_something(text: str, reason: str) -> None:
@@ -91,3 +98,49 @@ def test_rejects_an_svg_too_long_or_with_too_many_elements() -> None:
         check(many, chars=100)
     with pytest.raises(BadSvg, match="23 elements, and the most is 10"):
         check(many, elements=10)
+
+
+def test_rejects_elements_nested_too_deep_before_resvg_can_overflow_on_them() -> None:
+    with pytest.raises(BadSvg, match="nested more than 32 deep"):
+        check(svg(inside="<g>" * 600 + "<rect/>" + "</g>" * 600))
+    check(svg(inside="<g>" * 30 + "<rect/>" + "</g>" * 30))
+
+
+def test_nesting_too_deep_to_write_out_is_bad_svg(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(svg_module, "DEPTH", 10_000)
+
+    with pytest.raises(BadSvg, match="nested too deep"):
+        check(svg(inside="<g>" * 1500 + "<rect/>" + "</g>" * 1500), elements=2_000)
+
+
+def test_rejects_too_many_uses_and_chains_of_patterns_masks_or_clips() -> None:
+    uses = svg(inside='<rect id="r"/>' + '<use href="#r"/>' * 201)
+    patterns = "".join(
+        f'<pattern id="p{n}"><rect fill="url(#p{n + 1})"/><rect fill="url(#p{n + 1})"/></pattern>'
+        for n in range(9)
+    )
+    nested = svg(inside=f'<defs>{patterns}<pattern id="p9"/></defs><rect fill="url(#p0)"/>')
+    four = svg(
+        inside='<defs><linearGradient id="g"/><linearGradient id="h" href="#g"/>'
+        '<pattern id="p"><rect fill="url(#h)"/></pattern>'
+        '<mask id="m"><rect fill="url(#p)"/></mask></defs><rect mask="url(#m)"/>'
+    )
+
+    with pytest.raises(BadSvg, match="201 <use> elements, and the most is 200"):
+        check(uses)
+    with pytest.raises(BadSvg, match="references to references more than 4 deep"):
+        check(nested)
+    check(four)
+
+
+def test_caps_the_filters_that_can_take_resvg_forever() -> None:
+    filters = (
+        '<filter id="f"><feTurbulence numOctaves="100000000"/>'
+        '<feMorphology radius="300, 2"/></filter>'
+    )
+
+    root = ET.fromstring(check(svg(inside=filters)))
+
+    turbulence, morphology = list(root.iter(f"{{{SVG}}}filter"))[0]
+    assert turbulence.get("numOctaves") == "8"
+    assert morphology.get("radius") == "20 2"

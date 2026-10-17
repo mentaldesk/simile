@@ -11,8 +11,9 @@ from simile.npc import load_npcs
 from simile.persistence import SavedWorld, WorldStore
 from simile.schema import Memory, MemoryKind
 from simile.works import WorksStore
+from simile.world.map import load_map
 
-from .conftest import NOW, mural_reply, reply, svg
+from .conftest import NOW, mural, mural_reply, reply, svg
 
 runner = CliRunner()
 
@@ -93,6 +94,31 @@ def test_paints_a_mural_on_the_wall_they_pick_and_saves_its_picture(
         "corner shop wall\n\nA red wall with a yellow sun in the middle.\n\n"
     ) in result.output
     assert result.output.endswith(f"Stored as {made.id}.\n")
+
+
+def test_paints_nothing_while_no_wall_is_worth_painting_unless_told_which(
+    database: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with MemoryStore(database) as memory, WorldStore(memory) as world:
+        world.save(SavedWorld(now=NOW, npcs={}))
+        with WorksStore(database) as works:
+            for n, wall in enumerate(load_map().murals):
+                works.paint(mural(f"fresh-{n}", "ingrid", wall.id), "<svg/>", b"")
+    fake = FakeProvider([mural_reply(svg=svg(288, 223))])
+    monkeypatch.setattr("simile.llm.lifespan.CannedProvider", lambda: fake)
+
+    result = runner.invoke(create_cli(), ["works", "make", "kofi"])
+    told = runner.invoke(create_cli(), ["works", "make", "kofi", "--wall", "daily_grind"])
+
+    assert result.exit_code == 1
+    assert (
+        "Kofi Lindqvist-Mensah has no wall worth painting just now. Name one with --wall."
+        in result.output
+    )
+    assert told.exit_code == 0, told.output
+    assert len(fake.requests) == 1
+    with WorksStore(database) as works:
+        assert [m.wall for m in works.by("kofi")] == ["daily_grind"]
 
 
 def test_paints_the_wall_its_told_to(database: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -9,7 +9,7 @@ from simile.llm import FakeProvider, LLMClient, LLMError, Model
 from simile.memory import MemoryStore
 from simile.schema import CoreValue, Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
-from simile.works import DEFAULT_CONFIG, Maker, WorksStore
+from simile.works import DEFAULT_CONFIG, Maker, WorksConfig, WorksStore
 from simile.works.render import canvas
 
 from .conftest import (
@@ -254,7 +254,11 @@ SKY = memory_of(
 
 
 def muralist(
-    works: WorksStore, memory: MemoryStore, fake: FakeProvider, painted: list[Work] | None = None
+    works: WorksStore,
+    memory: MemoryStore,
+    fake: FakeProvider,
+    painted: list[Work] | None = None,
+    config: WorksConfig = CONFIG,
 ) -> Maker:
     llm = LLMClient(fake)
     return Maker(
@@ -265,7 +269,7 @@ def muralist(
         walls=[WALL, OTHER_WALL],
         npcs=NPCS,
         painted=(painted if painted is not None else []).append,
-        config=CONFIG,
+        config=config,
     )
 
 
@@ -370,3 +374,51 @@ def test_gives_up_quietly_after_two_bad_svgs(
     assert painted == [then]
     assert works.latest(Medium.MURAL) == [then]
     assert [m.work_id for m in memory.recall("suki", NOW)] == [then.id]
+
+
+def test_an_svg_that_panics_resvg_is_tried_again(memory: MemoryStore, works: WorksStore) -> None:
+    huge = svg(inside='<g transform="scale(1e30)"><circle r="1"/></g>')
+    fake = FakeProvider([mural_reply(svg=huge), mural_reply()])
+
+    made = asyncio.run(paint(muralist(works, memory, fake)))
+
+    assert made is not None
+    assert "Your last try couldn't go up, because it couldn't be drawn (" in (
+        fake.requests[1].messages[-1].content
+    )
+
+
+def test_gives_up_quietly_on_murals_that_take_too_long_to_draw(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    fake = FakeProvider([mural_reply(), mural_reply()])
+    hasty = CONFIG.model_copy(update={"render_timeout": 0.001})
+
+    made = asyncio.run(paint(muralist(works, memory, fake, config=hasty)))
+
+    assert made is None
+    assert "it took more than 0.001 s to draw" in fake.requests[1].messages[-1].content
+    assert works.showing() == {}
+
+
+def test_anything_else_that_goes_wrong_makes_nothing_and_raises_nothing(
+    memory: MemoryStore, works: WorksStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def broken(*args: object, **kwargs: object) -> bytes:
+        raise RuntimeError("the disk is full")
+
+    monkeypatch.setattr("simile.works.maker.draw", broken)
+    maker = muralist(works, memory, FakeProvider([mural_reply()]))
+
+    async def scenario() -> asyncio.Task[Work | None]:
+        task = maker.make(SUKI, "wall_1")
+        assert task is not None
+        await asyncio.wait([task])
+        return task
+
+    task = asyncio.run(scenario())
+
+    assert task.exception() is None
+    assert task.result() is None
+    assert maker.making == set()
+    assert works.showing() == {}

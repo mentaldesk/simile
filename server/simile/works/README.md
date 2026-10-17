@@ -35,22 +35,29 @@ tone and relatedness to every core value, scored as for news.
   affinity for the artist. The readiest wall at or above 0.5 is picked, and None while there's none.
   A painter less bold than 0.75 never paints over a friend's (affinity 0.4 or more), and nobody
   picks a wall someone else is off to paint.
-- **Painting.** The prompt also has the wall's size, what's on it now, and asks for an SVG with
-  the wall's `viewBox`, beside a plain description of what it shows (the work's `text`). The SVG
-  must be under 60,000 characters and 2,000 elements, roughly the wall's shape, and only shapes,
-  text, gradients, patterns, masks and filters: no scripts, images, foreign objects, event handlers,
-  or references to anything outside it. A bad one is asked for again once, with the reason, and
-  then given up quietly. `resvg` draws it at the wall's size in the iso scenery (96 px per tile, at
-  the same scale up the wall), and it's painted onto weathered plaster or brick.
+- **Painting.** The prompt also has the wall's size and what's on it now, and asks for an SVG with
+  the wall's `viewBox`, beside a plain description of what it shows (the work's `text`).
+- **Checking the SVG** (`svg.checked`). It must be under 60,000 characters and 2,000 elements,
+  roughly the wall's shape, and only shapes, text, gradients, patterns, masks and filters: no
+  scripts, images, foreign objects, event handlers, CSS escapes, or references to anything outside
+  it. So that resvg can't be kept busy or overflow its stack, elements may nest 32 deep, there may
+  be 200 `<use>`s, none reaching another, and references to references may go 4 deep; ids must be
+  unique, and `numOctaves` and morphology radii are capped. A bad one is asked for again once, with
+  the reason, and then given up quietly.
+- **Drawing it** (`render.draw`). resvg draws it in a child process, at the wall's size in the iso
+  scenery (96 px per tile, at the same scale up the wall), onto lightly weathered plaster. A child
+  that crashes, panics or takes more than `render_timeout` (5 s) is killed, and its SVG counts as
+  bad. Anything else that goes wrong while making a work is logged, and nothing is made.
 - **Replacing.** The new mural covers the old one, which stays in the store with its picture, and
   `covered(id)` says what each mural covered. The artist remembers painting it, and over whose.
 - **Telling the client.** Each new client gets `murals`, with every wall, painted or not, and
-  everyone gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture, and 404s
-  for anything else.
+  everyone gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture,
+  and 404s for anything else.
 - **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen says
   how it lands in one Haiku call, as at the terminals. The memory is about the artist, with
-  `work_id`. An artist who finds their mural painted over is told so in the same call, and
-  remembers it with a salience of at least 0.7. The player remembers seeing it, with no call.
+  `work_id`. If the call fails, they try again on their first look after `look_again` (a sim
+  hour). An artist who finds their mural painted over is told so in the same call, and remembers it
+  with a salience of at least 0.7. The player remembers seeing it, with no call.
 
 ## Reading at the terminals
 
@@ -82,5 +89,6 @@ Every constant is in `WorksConfig`.
 ```bash
 cd server
 uv run simile works make tobias   # what's on his mind, then the piece, stored in $SIMILE_DB
-uv run simile works make kofi --wall tower --png kofi.png   # a mural, and its picture
+uv run simile works make kofi --png kofi.png   # a mural on the wall he'd pick, if any
+uv run simile works make kofi --wall tower     # or on the one named
 ```
