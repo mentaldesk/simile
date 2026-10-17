@@ -1,7 +1,9 @@
 import json
+import os
 import random
 from collections.abc import Iterable
 from dataclasses import dataclass
+from itertools import count
 from pathlib import Path
 from typing import Any
 
@@ -10,9 +12,21 @@ from PIL import Image, ImageDraw
 from simile.art.palette import rgba
 from simile.art.preview import label
 from simile.art.tiles import edge_variant
-from simile.schema import Location, LocationKind, Tile, TileArea
+from simile.schema import (
+    Door,
+    Interactable,
+    InteractableKind,
+    Location,
+    LocationKind,
+    MapTile,
+    Tile,
+    TileArea,
+)
 from simile.world.map import (
     COLLISION_LAYER,
+    DOORS_LAYER,
+    INTERACTABLES_LAYER,
+    INTERIORS,
     LOCATIONS_LAYER,
     MAP_ID,
     MURALS_LAYER,
@@ -23,6 +37,7 @@ from simile.world.map import (
 TILE_SIZE = 16
 WIDTH, HEIGHT = 64, 42
 TERRAIN = {"P": "pavement", "G": "grass", "R": "road", "W": "water", "Z": "plaza"}
+TERRAIN |= {"B": "floor_wood", "T": "floor_tiles", "C": "floor_concrete", "L": "floor_gallery"}
 PATCHES = {"G", "R", "W"}
 TILE_LAYERS = ("ground", "buildings", "decor", "above")
 GROUND_ON = {
@@ -92,17 +107,30 @@ def facade(material: str, *rows: str) -> list[list[str]]:
 
 
 class Town:
-    def __init__(self, tileset: Tileset) -> None:
+    def __init__(
+        self,
+        tileset: Tileset,
+        map_id: str = MAP_ID,
+        width: int = WIDTH,
+        height: int = HEIGHT,
+        terrain: str = "P",
+    ) -> None:
         self.tileset = tileset
-        self.terrain = [["P"] * WIDTH for _ in range(HEIGHT)]
+        self.map_id = map_id
+        self.width, self.height = width, height
+        self.terrain = [[terrain] * width for _ in range(height)]
         self.overrides: dict[tuple[int, int], str] = {}
         self.layers: dict[str, dict[tuple[int, int], str]] = {name: {} for name in TILE_LAYERS[1:]}
         self.locations: list[Location] = []
         self.murals: list[MuralWall] = []
+        self.doors: list[Door] = []
+        self.interactables: list[Interactable] = []
+        self.mat: Tile | None = None
+        self.doorsteps: dict[str, Tile] = {}
 
     def fill(self, terrain: str, x: int, y: int, w: int, h: int) -> None:
-        for yy in range(max(y, 0), min(y + h, HEIGHT)):
-            for xx in range(max(x, 0), min(x + w, WIDTH)):
+        for yy in range(max(y, 0), min(y + h, self.height)):
+            for xx in range(max(x, 0), min(x + w, self.width)):
                 self.terrain[yy][xx] = terrain
 
     def paint(self, x: int, y: int, *names: str, down: bool = False) -> None:
@@ -171,7 +199,12 @@ class Town:
         entry: tuple[int, int],
     ) -> None:
         location = Location(
-            id=location_id, name=name, kind=kind, area=area, entry=Tile(x=entry[0], y=entry[1])
+            id=location_id,
+            name=name,
+            kind=kind,
+            map=self.map_id,
+            area=area,
+            entry=Tile(x=entry[0], y=entry[1]),
         )
         self.locations.append(location)
 
@@ -186,6 +219,7 @@ class Town:
     ) -> None:
         """The location takes in `front` rows outside; the doorstep is its entry."""
         grown = area.model_copy(update={"height": area.height + front})
+        self.doorsteps[location_id] = Tile(x=door, y=area.y + area.height)
         self.place(location_id, name, kind, grown, (door, area.y + area.height))
 
     def house(
@@ -219,6 +253,66 @@ class Town:
         area = TileArea(x=x, y=y - 1, width=1, height=3)
         self.place(f"terminal_{number}", name, LocationKind.TERMINAL, area, (x, y + 1))
 
+    def walls(self, material: str, door: int) -> None:
+        """A room's walls: the back wall face on, the others' tops, and a mat in the doorway."""
+        w, h = self.width, self.height
+        for x in range(1, w - 1):
+            self._set("buildings", x, 0, f"inwall_{material}")
+            self._set("buildings", x, 1, f"inwall_{material}_base")
+            if x != door:
+                self._set("buildings", x, h - 1, "inwall_top_s")
+        for y in range(h - 1):
+            self._set("buildings", 0, y, "inwall_top_w")
+            self._set("buildings", w - 1, y, "inwall_top_e")
+        self._set("buildings", 0, h - 1, "inwall_top_sw")
+        self._set("buildings", w - 1, h - 1, "inwall_top_se")
+        self.put(door, h - 1, "mat")
+        self.mat = Tile(x=door, y=h - 1)
+
+    def floor(self) -> TileArea:
+        """The room inside its walls."""
+        return TileArea(x=1, y=2, width=self.width - 2, height=self.height - 3)
+
+    def partition(self, material: str, x: int, y: int, width: int) -> None:
+        """A free-standing wall, two rows like the back wall, seen face on."""
+        for row, part in ((y, ""), (y + 1, "_base")):
+            for i in range(width):
+                end = "_l" if i == 0 else "_r" if i == width - 1 else ""
+                self._set("buildings", x + i, row, f"inwall_{material}{part}{end}")
+
+    def interactable(
+        self,
+        item_id: str,
+        label: str,
+        kind: InteractableKind,
+        area: TileArea,
+        stand: Iterable[tuple[int, int]],
+    ) -> None:
+        self.interactables.append(
+            Interactable(
+                id=item_id,
+                label=label,
+                kind=kind,
+                map=self.map_id,
+                area=area,
+                stand=[Tile(x=x, y=y) for x, y in stand],
+            )
+        )
+
+    def machine(self, item_id: str, label: str, x: int, y: int, *names: str) -> None:
+        """A machine against the back wall, used from the tiles in front of it."""
+        self.put(x, y, *names)
+        area = TileArea(x=x, y=y, width=len(names), height=1)
+        stand = [(x + i, y + 1) for i in range(len(names))]
+        self.interactable(item_id, label, InteractableKind.MACHINE, area, stand)
+
+    def painting(self, number: int, x: int, y: int) -> None:
+        """A frame on the upper row of a wall, looked at from in front of the wall's base."""
+        self.put(x, y, "frame_l", "frame_r")
+        area = TileArea(x=x, y=y, width=2, height=1)
+        stand = [(x, y + 2), (x + 1, y + 2)]
+        self.interactable(f"painting_{number}", "Painting", InteractableKind.PAINTING, area, stand)
+
     def ground(self, x: int, y: int) -> str:
         if (x, y) in self.overrides:
             return self.overrides[x, y]
@@ -228,13 +322,16 @@ class Town:
 
         def same(dx: int, dy: int) -> bool:
             nx, ny = x + dx, y + dy
-            return not (0 <= nx < WIDTH and 0 <= ny < HEIGHT) or self.terrain[ny][nx] == cell
+            inside = 0 <= nx < self.width and 0 <= ny < self.height
+            return not inside or self.terrain[ny][nx] == cell
 
         return edge_variant(TERRAIN[cell], same)
 
     def tiles(self, layer: str) -> dict[tuple[int, int], str]:
         if layer == "ground":
-            return {(x, y): self.ground(x, y) for y in range(HEIGHT) for x in range(WIDTH)}
+            return {
+                (x, y): self.ground(x, y) for y in range(self.height) for x in range(self.width)
+            }
         return self.layers[layer]
 
     def blocked(self) -> set[tuple[int, int]]:
@@ -247,15 +344,15 @@ class Town:
 
     def check(self) -> None:
         """Raise if terrain patches are too thin or touch, or details sit on the wrong terrain."""
-        for y in range(HEIGHT):
-            for x in range(WIDTH):
+        for y in range(self.height):
+            for x in range(self.width):
                 cell = self.terrain[y][x]
                 if cell in PATCHES and not self._thick(x, y):
                     raise ValueError(f"{TERRAIN[cell]} at ({x}, {y}) is less than two tiles thick")
                 for dy in (-1, 0, 1):
                     for dx in (-1, 0, 1):
                         nx, ny = x + dx, y + dy
-                        if 0 <= nx < WIDTH and 0 <= ny < HEIGHT:
+                        if 0 <= nx < self.width and 0 <= ny < self.height:
                             other = self.terrain[ny][nx]
                             if cell in PATCHES and other in PATCHES and other != cell:
                                 raise ValueError(f"({x}, {y}) touches another terrain patch")
@@ -269,7 +366,8 @@ class Town:
             for oy in (y - 1, y):
                 square = [(ox + dx, oy + dy) for dx in (0, 1) for dy in (0, 1)]
                 if all(
-                    not (0 <= sx < WIDTH and 0 <= sy < HEIGHT) or self.terrain[sy][sx] == cell
+                    not (0 <= sx < self.width and 0 <= sy < self.height)
+                    or self.terrain[sy][sx] == cell
                     for sx, sy in square
                 ):
                     return True
@@ -284,16 +382,15 @@ class Town:
             raise ValueError(f"{name} at ({x}, {y}) would cover {existing}")
         self.layers[layer][x, y] = name
 
-    @staticmethod
-    def _check_bounds(x: int, y: int) -> None:
-        if not (0 <= x < WIDTH and 0 <= y < HEIGHT):
+    def _check_bounds(self, x: int, y: int) -> None:
+        if not (0 <= x < self.width and 0 <= y < self.height):
             raise ValueError(f"({x}, {y}) is off the map")
 
 
 def scatter_grass(town: Town) -> None:
     rng = random.Random(MAP_ID)
-    for y in range(HEIGHT):
-        for x in range(WIDTH):
+    for y in range(town.height):
+        for x in range(town.width):
             if town.terrain[y][x] == "G" and town.ground(x, y) == "grass":
                 roll = rng.random()
                 if roll < 0.04:
@@ -347,7 +444,7 @@ def lychee_lane(town: Town) -> None:
     town.put(17, 8, "neon_vertical_top")
     town.put(17, 9, "neon_vertical_bottom")
     town.put(13, 11, "bike_yellow", "bike_yellow")
-    town.place_building("noodle_bar", "Golden Bowl Noodles", LocationKind.AMENITY, noodles, 16)
+    town.place_building("noodle_bar", "Golden Bowl Noodles", LocationKind.NOODLE_BAR, noodles, 16)
 
     town.building(18, 6, "cream", (".ww.", "....", ".Dss"), roof_rows=2, extras=[(2, 0, "roof_ac")])
     town.put(20, 10, "awning_blue_l", "awning_blue_r")
@@ -389,7 +486,7 @@ def lychee_lane(town: Town) -> None:
     town.put(38, 9, "screen_l", "screen_r")
     town.put(41, 9, "neon_bolt")
     town.put(37, 11, "bike_blue")
-    town.place_building("maker_space", "Spark Maker Space", LocationKind.AMENITY, maker, 41)
+    town.place_building("maker_space", "Spark Maker Space", LocationKind.MAKER_SPACE, maker, 41)
 
     town.house(3, "3 Lychee Lane", 45, 6, "cream", (".d.w.", ".dww."), roof="roof_green")
     town.put(49, 11, "planter")
@@ -528,36 +625,159 @@ def mural_walls(town: Town) -> None:
     town.mural("banyan_row", "east", 17, 31, 3, 0.15, 1.85)
 
 
-def tmj(town: Town) -> dict[str, Any]:
+ROOM = (20, 14)
+GALLERY = (32, 20)
+
+
+def coffee_shop(tileset: Tileset) -> Town:
+    room = Town(tileset, "coffee_shop", *ROOM, terrain="B")
+    room.walls("panel", door=10)
+    room.put(2, 0, "shelf")
+    room.put(4, 0, "menu_board_l", "menu_board_r")
+    room.put(7, 0, "shelf")
+    room.put(13, 0, "neon_cup")
+    room.put(16, 0, "shelf")
+    room.put(1, 2, "back_counter", "grinder", "espresso_machine", "back_counter")
+    room.put(5, 2, "back_counter", "back_counter", "espresso_machine", "back_counter")
+    for y in (2, 3, 4):
+        room.put(9, y, "counter_run")
+    room.put(2, 5, "counter_l", "counter", "counter", "counter_till", "counter_case")
+    room.put(7, 5, "counter_case", "counter", "counter_corner")
+    for x, y in ((12, 3), (15, 3), (12, 7), (15, 7), (12, 10), (15, 10), (2, 8), (2, 11)):
+        room.put(x, y, "cafe_table")
+    room.put(18, 2, "planter_flowers")
+    room.put(18, 12, "planter")
+    front = (5, 6)
+    counter = TileArea(x=2, y=5, width=8, height=1)
+    room.interactable("coffee_shop_counter", "Counter", InteractableKind.COUNTER, counter, [front])
+    room.place("coffee_shop", "The Daily Grind", LocationKind.COFFEE_SHOP, room.floor(), front)
+    staff = TileArea(x=1, y=3, width=8, height=2)
+    behind = "Behind the counter at the Daily Grind"
+    room.place("coffee_shop_staff", behind, LocationKind.AMENITY, staff, (5, 4))
+    queue = TileArea(x=5, y=6, width=1, height=4)
+    room.place(
+        "coffee_shop_queue", "The queue at the Daily Grind", LocationKind.AMENITY, queue, front
+    )
+    return room
+
+
+def gallery(tileset: Tileset) -> Town:
+    room = Town(tileset, "gallery", *GALLERY, terrain="L")
+    room.walls("plaster", door=16)
+    spots = [(x, 0) for x in range(3, 29, 4)]
+    for x in (4, 18):
+        room.partition("plaster", x, 9, 10)
+        spots += [(x + dx, 9) for dx in (1, 4, 7)]
+    for number, (x, y) in enumerate(spots, 1):
+        room.painting(number, x, y)
+    for x, y in ((8, 5), (22, 5), (8, 14), (22, 14)):
+        room.bench(x, y)
+    for x, y in ((15, 5), (16, 15)):
+        room.put(x, y, "plinth")
+    for x, y in ((1, 2), (30, 2), (1, 18), (30, 18)):
+        room.put(x, y, "planter")
+    room.place("gallery", "The Gallery", LocationKind.GALLERY, room.floor(), (16, 12))
+    return room
+
+
+def maker_space(tileset: Tileset) -> Town:
+    room = Town(tileset, "maker_space", *ROOM, terrain="C")
+    room.walls("block", door=14)
+    for x in (2, 8, 16):
+        room.put(x, 0, "pegboard_l", "pegboard_r")
+    room.put(13, 0, "shelf")
+    room.machine("laser_cutter", "Laser cutter", 2, 2, "laser_cutter_l", "laser_cutter_r")
+    room.machine("printer_3d", "3D printer", 6, 2, "printer_3d")
+    room.machine("loom", "Loom", 10, 2, "loom_l", "loom_r")
+    room.machine("sewing_machine", "Sewing machine", 15, 2, "sewing_machine")
+    for x in (3, 8, 13):
+        for y in (6, 9):
+            room.put(x, y, "workbench_l", "workbench_r")
+    room.put(1, 12, "planter")
+    room.place("maker_space", "Spark Maker Space", LocationKind.MAKER_SPACE, room.floor(), (8, 7))
+    return room
+
+
+def noodle_bar(tileset: Tileset) -> Town:
+    room = Town(tileset, "noodle_bar", *ROOM, terrain="T")
+    room.walls("brick", door=15)
+    for x in (2, 6, 12, 16):
+        room.put(x, 0, "lantern")
+    room.put(9, 0, "neon_bowl")
+    room.put(1, 2, "kitchen_counter", "kitchen_counter", "stove", "stove", "kitchen_counter")
+    room.put(6, 2, "kitchen_counter", "kitchen_counter", "stove", "kitchen_counter")
+    room.put(10, 2, "kitchen_counter", "kitchen_counter", "kitchen_counter")
+    for y in (2, 3):
+        room.put(13, y, "counter_run")
+    room.put(2, 4, "counter_l", *["counter"] * 10, "counter_corner")
+    for x in range(3, 13, 2):
+        room.put(x, 5, "stool")
+    for x in (4, 8, 12, 16):
+        for y in (8, 11):
+            room.put(x, y, "noodle_table")
+    room.put(16, 3, "noodle_table")
+    room.place("noodle_bar", "Golden Bowl Noodles", LocationKind.NOODLE_BAR, room.floor(), (7, 5))
+    return room
+
+
+def connect(town: Town, room: Town) -> None:
+    """A door from the doorstep of the room's building on the village to the mat inside."""
+    step, mat = town.doorsteps[room.map_id], room.mat
+    assert mat is not None, room.map_id
+    door = Door(
+        id=room.map_id,
+        outside=MapTile(map=town.map_id, x=step.x, y=step.y),
+        inside=MapTile(map=room.map_id, x=mat.x, y=mat.y),
+    )
+    town.doors.append(door)
+    room.doors.append(door)
+
+
+def world(tileset: Tileset) -> list[Town]:
+    """The village and its interiors, with a door into every building that has one."""
+    town = village(tileset)
+    rooms = [coffee_shop(tileset), gallery(tileset), maker_space(tileset), noodle_bar(tileset)]
+    for room in rooms:
+        if room.map_id in town.doorsteps:
+            connect(town, room)
+    return [town, *rooms]
+
+
+def tmj(town: Town, image: str) -> dict[str, Any]:
     ids = town.tileset.ids
+    width, height = town.width, town.height
+    cells = [(x, y) for y in range(height) for x in range(width)]
     layers: list[dict[str, Any]] = []
     for name in TILE_LAYERS:
         tiles = town.tiles(name)
-        data = [
-            ids[tiles[x, y]] + 1 if (x, y) in tiles else 0
-            for y in range(HEIGHT)
-            for x in range(WIDTH)
-        ]
-        layers.append(_tile_layer(len(layers) + 1, name, data))
+        data = [ids[tiles[cell]] + 1 if cell in tiles else 0 for cell in cells]
+        layers.append(_tile_layer(len(layers) + 1, name, data, width, height))
     blocked = town.blocked()
     marker = ids["blocked"] + 1
-    collision = [marker if (x, y) in blocked else 0 for y in range(HEIGHT) for x in range(WIDTH)]
-    layers.append(_tile_layer(len(layers) + 1, COLLISION_LAYER, collision, visible=False))
-    objects = [_object(i + 1, location) for i, location in enumerate(town.locations)]
-    layers.append(_object_layer(len(layers) + 1, LOCATIONS_LAYER, objects))
-    walls = [_wall(len(objects) + i + 1, wall) for i, wall in enumerate(town.murals)]
-    layers.append(_object_layer(len(layers) + 1, MURALS_LAYER, walls))
+    collision = [marker if cell in blocked else 0 for cell in cells]
+    layers.append(
+        _tile_layer(len(layers) + 1, COLLISION_LAYER, collision, width, height, visible=False)
+    )
+    object_ids = count(1)
+    objects = {
+        LOCATIONS_LAYER: [_object(next(object_ids), location) for location in town.locations],
+        MURALS_LAYER: [_wall(next(object_ids), wall) for wall in town.murals],
+        DOORS_LAYER: [_door(next(object_ids), door, town.map_id) for door in town.doors],
+        INTERACTABLES_LAYER: [_interactable(next(object_ids), i) for i in town.interactables],
+    }
+    for name, group in objects.items():
+        layers.append(_object_layer(len(layers) + 1, name, group))
     tileset = {
         k: v for k, v in town.tileset.data.items() if k not in ("type", "version", "tiledversion")
     }
-    tileset["image"] = f"../art/{tileset['image']}"
+    tileset["image"] = image
     return {
         "compressionlevel": -1,
-        "height": HEIGHT,
+        "height": height,
         "infinite": False,
         "layers": layers,
         "nextlayerid": len(layers) + 1,
-        "nextobjectid": len(objects) + len(walls) + 1,
+        "nextobjectid": next(object_ids),
         "orientation": "orthogonal",
         "renderorder": "right-down",
         "tiledversion": town.tileset.data["tiledversion"],
@@ -566,20 +786,22 @@ def tmj(town: Town) -> dict[str, Any]:
         "tilewidth": TILE_SIZE,
         "type": "map",
         "version": town.tileset.data["version"],
-        "width": WIDTH,
+        "width": width,
     }
 
 
-def _tile_layer(layer_id: int, name: str, data: list[int], visible: bool = True) -> dict[str, Any]:
+def _tile_layer(
+    layer_id: int, name: str, data: list[int], width: int, height: int, visible: bool = True
+) -> dict[str, Any]:
     return {
         "data": data,
-        "height": HEIGHT,
+        "height": height,
         "id": layer_id,
         "name": name,
         "opacity": 1,
         "type": "tilelayer",
         "visible": visible,
-        "width": WIDTH,
+        "width": width,
         "x": 0,
         "y": 0,
     }
@@ -599,24 +821,55 @@ def _object_layer(layer_id: int, name: str, objects: list[dict[str, Any]]) -> di
     }
 
 
-def _object(object_id: int, location: Location) -> dict[str, Any]:
-    area = location.area
+def _rectangle(
+    object_id: int, name: str, kind: str, area: TileArea, properties: list[dict[str, Any]]
+) -> dict[str, Any]:
     return {
         "height": area.height * TILE_SIZE,
         "id": object_id,
-        "name": location.id,
-        "properties": [
-            {"name": "entry_x", "type": "int", "value": location.entry.x},
-            {"name": "entry_y", "type": "int", "value": location.entry.y},
-            {"name": "label", "type": "string", "value": location.name},
-        ],
+        "name": name,
+        "properties": properties,
         "rotation": 0,
-        "type": location.kind.value,
+        "type": kind,
         "visible": True,
         "width": area.width * TILE_SIZE,
         "x": area.x * TILE_SIZE,
         "y": area.y * TILE_SIZE,
     }
+
+
+def _object(object_id: int, location: Location) -> dict[str, Any]:
+    properties = [
+        {"name": "entry_x", "type": "int", "value": location.entry.x},
+        {"name": "entry_y", "type": "int", "value": location.entry.y},
+        {"name": "label", "type": "string", "value": location.name},
+    ]
+    return _rectangle(object_id, location.id, location.kind.value, location.area, properties)
+
+
+def _door(object_id: int, door: Door, map_id: str) -> dict[str, Any]:
+    here, there, side = (
+        (door.outside, door.inside, "outside")
+        if door.outside.map == map_id
+        else (door.inside, door.outside, "inside")
+    )
+    properties = [
+        {"name": "side", "type": "string", "value": side},
+        {"name": "to_map", "type": "string", "value": there.map},
+        {"name": "to_x", "type": "int", "value": there.x},
+        {"name": "to_y", "type": "int", "value": there.y},
+    ]
+    tile = TileArea(x=here.x, y=here.y, width=1, height=1)
+    return _rectangle(object_id, door.id, "door", tile, properties)
+
+
+def _interactable(object_id: int, item: Interactable) -> dict[str, Any]:
+    stand = " ".join(f"{tile.x},{tile.y}" for tile in item.stand)
+    properties = [
+        {"name": "label", "type": "string", "value": item.label},
+        {"name": "stand", "type": "string", "value": stand},
+    ]
+    return _rectangle(object_id, item.id, item.kind.value, item.area, properties)
 
 
 def _wall(object_id: int, wall: MuralWall) -> dict[str, Any]:
@@ -644,14 +897,15 @@ def _wall(object_id: int, wall: MuralWall) -> dict[str, Any]:
 
 def dumps(data: dict[str, Any]) -> str:
     """JSON with one map row per line in each tile layer, so diffs show where tiles moved."""
+    width, height = data["width"], data["height"]
     rows: dict[str, str] = {}
     for layer in data["layers"]:
         if layer["type"] == "tilelayer":
             token = f"@rows:{layer['name']}"
             cells = layer["data"]
             lines = [
-                ",".join(str(gid) for gid in cells[y * WIDTH : (y + 1) * WIDTH])
-                for y in range(HEIGHT)
+                ",".join(str(gid) for gid in cells[y * width : (y + 1) * width])
+                for y in range(height)
             ]
             rows[json.dumps(token)] = (
                 "[\n" + ",\n".join(f"        {line}" for line in lines) + "\n      ]"
@@ -664,7 +918,7 @@ def dumps(data: dict[str, Any]) -> str:
 
 
 def render(town: Town) -> Image.Image:
-    image = Image.new("RGBA", (WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE))
+    image = Image.new("RGBA", (town.width * TILE_SIZE, town.height * TILE_SIZE))
     cache: dict[str, Image.Image] = {}
     for layer in TILE_LAYERS:
         for (x, y), name in town.tiles(layer).items():
@@ -678,19 +932,21 @@ def annotate(town: Town, image: Image.Image, scale: int = 2) -> Image.Image:
     out = image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST)
     draw = ImageDraw.Draw(out)
     cell = TILE_SIZE * scale
-    for location in town.locations:
-        area = location.area
-        box = (
-            area.x * cell,
-            area.y * cell,
-            (area.x + area.width) * cell - 1,
-            (area.y + area.height) * cell - 1,
+
+    def outline(area: TileArea, colour: str) -> None:
+        x1, y1 = (area.x + area.width) * cell - 1, (area.y + area.height) * cell - 1
+        draw.rectangle((area.x * cell, area.y * cell, x1, y1), outline=rgba(colour), width=2)
+
+    def mark(tile: Tile, colour: str) -> None:
+        x0, y0, inset = tile.x * cell, tile.y * cell, cell // 4
+        draw.rectangle(
+            (x0 + inset, y0 + inset, x0 + cell - 1 - inset, y0 + cell - 1 - inset), rgba(colour)
         )
-        draw.rectangle(box, outline=rgba("neon"), width=2)
-        ex, ey = location.entry.x * cell, location.entry.y * cell
-        draw.rectangle((ex + 8, ey + 8, ex + cell - 9, ey + cell - 9), fill=rgba("yellow"))
+
     labels = []
     for location in town.locations:
+        outline(location.area, "neon")
+        mark(location.entry, "yellow")
         text = label(location.id.upper(), "white")
         labels.append((text, location.area.x * cell + 4, location.area.y * cell + 4))
     for wall in town.murals:
@@ -703,23 +959,45 @@ def annotate(town: Town, image: Image.Image, scale: int = 2) -> Image.Image:
             bar = (x0 + cell - 3, y0, x0 + cell + 2, y0 + wall.width * cell - 1)
             labels.append((text, x0 + cell - 7 - text.width, y0 + 4))
         draw.rectangle(bar, fill=rgba("cyan"))
-        sx, sy = wall.stand.x * cell, wall.stand.y * cell
-        draw.rectangle((sx + 8, sy + 8, sx + cell - 9, sy + cell - 9), fill=rgba("cyan"))
+        mark(wall.stand, "cyan")
+    for item in town.interactables:
+        outline(item.area, "orange")
+        for tile in item.stand:
+            mark(tile, "orange")
+        text = label(item.id.upper(), "orange")
+        above = item.area.y * cell - text.height - 6
+        below = (item.area.y + item.area.height) * cell + 4
+        labels.append((text, item.area.x * cell + 4, above if item.area.y else below))
+    for door in town.doors:
+        here = door.outside if door.outside.map == town.map_id else door.inside
+        outline(TileArea(x=here.x, y=here.y, width=1, height=1), "lime")
     for text, x, y in labels:
         draw.rectangle((x - 3, y - 3, x + text.width + 2, y + text.height + 2), fill=rgba("ink"))
         out.alpha_composite(text, (x, y))
     return out
 
 
-def generate(art: Path, out: Path) -> list[Path]:
-    """Build the village from the tileset in art/ and write the map and its previews to out/."""
-    town = village(Tileset.load(art))
-    out.mkdir(parents=True, exist_ok=True)
-    tmj_path = out / f"{MAP_ID}.tmj"
-    tmj_path.write_text(dumps(tmj(town)))
+def write(town: Town, art: Path, folder: Path) -> list[Path]:
+    """Write a map and its previews: the village's are preview.png and locations.png."""
+    folder.mkdir(parents=True, exist_ok=True)
+    image_path = Path(os.path.relpath(art / town.tileset.data["image"], folder)).as_posix()
+    tmj_path = folder / f"{town.map_id}.tmj"
+    tmj_path.write_text(dumps(tmj(town, image_path)))
+    prefix, scale = ("", 2) if town.map_id == MAP_ID else (f"{town.map_id}_", 3)
     image = render(town)
-    preview = out / "preview.png"
-    image.resize((image.width * 2, image.height * 2), Image.Resampling.NEAREST).save(preview)
-    locations = out / "locations.png"
-    annotate(town, image).save(locations)
+    preview = folder / f"{prefix}preview.png"
+    image.resize((image.width * scale, image.height * scale), Image.Resampling.NEAREST).save(
+        preview
+    )
+    locations = folder / f"{prefix}locations.png"
+    annotate(town, image, scale).save(locations)
     return [tmj_path, preview, locations]
+
+
+def generate(art: Path, out: Path) -> list[Path]:
+    """Build the village and its interiors from the tileset in art/, and write them and their
+    previews to out/ and out/interiors/."""
+    written = []
+    for town in world(Tileset.load(art)):
+        written += write(town, art, out if town.map_id == MAP_ID else out / INTERIORS)
+    return written

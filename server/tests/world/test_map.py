@@ -14,6 +14,7 @@ from simile.world.build_map import Tileset, Town
 from simile.world.map import CONTENT_DIR, MAP_PATH, WALKING_SPEED, TownMap, load_map
 
 ART = CONTENT_DIR / "art"
+MAP_FILES = [MAP_PATH, *sorted((MAP_PATH.parent / "interiors").glob("*.tmj"))]
 
 
 @pytest.fixture(scope="module")
@@ -41,8 +42,10 @@ def test_every_required_location_exists(town: TownMap) -> None:
     assert {f"house_{n}" for n in range(1, 11)} | {"coffee_shop", "square"} <= set(ids)
     assert kinds[LocationKind.HOUSE] == 10
     assert kinds[LocationKind.COFFEE_SHOP] == kinds[LocationKind.SQUARE] == 1
+    assert kinds[LocationKind.NOODLE_BAR] == kinds[LocationKind.MAKER_SPACE] == 1
     assert 2 <= kinds[LocationKind.TERMINAL] <= 3
-    assert 2 <= kinds[LocationKind.AMENITY] <= 3
+    amenities = [loc.id for loc in town.locations if loc.kind is LocationKind.AMENITY]
+    assert amenities == ["park"]
 
 
 def test_every_entry_is_reachable_from_the_square(town: TownMap) -> None:
@@ -121,29 +124,33 @@ def test_load_map_reads_locations_in_tiles(tmp_path: Path) -> None:
     assert [x for x in range(4) if not tiny.walkable(x, 1)] == [3]
     [location] = tiny.locations
     assert location.name == "Noodles" and location.kind == LocationKind.AMENITY
+    assert location.map == "tiny"
     assert location.area.model_dump() == {"x": 1, "y": 2, "width": 3, "height": 1}
     assert location.entry.model_dump() == {"x": 2, "y": 2}
-    assert tiny.murals == ()
+    assert tiny.murals == tiny.doors == tiny.interactables == ()
 
 
-def test_the_map_is_a_tiled_map_with_the_tileset_embedded() -> None:
-    data = json.loads(MAP_PATH.read_text())
+@pytest.mark.parametrize("path", MAP_FILES, ids=lambda path: path.stem)
+def test_the_map_is_a_tiled_map_with_the_tileset_embedded(path: Path) -> None:
+    data = json.loads(path.read_text())
     standalone = json.loads((ART / "tiles.tsj").read_text())
     [tileset] = data["tilesets"]
 
     assert (data["type"], data["orientation"], data["infinite"]) == ("map", "orthogonal", False)
     assert data["tilewidth"] == data["tileheight"] == 16
     assert tileset["firstgid"] == 1 and "source" not in tileset
-    assert (MAP_PATH.parent / tileset["image"]).resolve() == (ART / standalone["image"]).resolve()
+    assert (path.parent / tileset["image"]).resolve() == (ART / standalone["image"]).resolve()
     assert {k: v for k, v in tileset.items() if k not in ("firstgid", "image")} == {
         k: v for k, v in standalone.items() if k not in ("type", "version", "tiledversion", "image")
     }
     names = ["ground", "buildings", "decor", "above", "collision", "locations", "murals"]
+    names += ["doors", "interactables"]
     assert [layer["name"] for layer in data["layers"]] == names
 
 
-def test_the_collision_layer_marks_every_tile_that_collides() -> None:
-    data = json.loads(MAP_PATH.read_text())
+@pytest.mark.parametrize("path", MAP_FILES, ids=lambda path: path.stem)
+def test_the_collision_layer_marks_every_tile_that_collides(path: Path) -> None:
+    data = json.loads(path.read_text())
     props = {
         tile["id"] + 1: {p["name"]: p["value"] for p in tile["properties"]}
         for tile in data["tilesets"][0]["tiles"]
@@ -172,11 +179,25 @@ def test_committed_map_is_up_to_date(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.output
     stale = "content/map is out of date: run `cd server && uv run simile map`"
     fresh, committed = tmp_path / "map", MAP_PATH.parent
-    assert {p.name for p in fresh.iterdir()} == {"village.tmj", "preview.png", "locations.png"}
-    assert (fresh / "village.tmj").read_text() == (committed / "village.tmj").read_text(), stale
-    for name in ("preview.png", "locations.png"):
-        with Image.open(fresh / name) as new, Image.open(committed / name) as old:
-            assert new.convert("RGBA").tobytes() == old.convert("RGBA").tobytes(), stale
+
+    def generated(root: Path) -> set[str]:
+        return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.suffix != ".md"}
+
+    names = generated(fresh)
+    assert {"village.tmj", "preview.png", "locations.png", "interiors"} <= names
+    for interior in ("coffee_shop", "gallery", "maker_space", "noodle_bar"):
+        for suffix in (".tmj", "_preview.png", "_locations.png"):
+            assert f"interiors/{interior}{suffix}" in names
+    assert generated(committed) == names, stale
+    for name in names:
+        new, old = fresh / name, committed / name
+        if new.suffix == ".tmj":
+            assert new.read_text() == old.read_text(), f"{name}: {stale}"
+        elif new.suffix == ".png":
+            with Image.open(new) as a, Image.open(old) as b:
+                assert a.convert("RGBA").tobytes() == b.convert("RGBA").tobytes(), (
+                    f"{name}: {stale}"
+                )
 
 
 def test_the_builder_rejects_overlaps_and_thin_terrain() -> None:
