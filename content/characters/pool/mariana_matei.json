@@ -1,0 +1,121 @@
+{
+  "id": "mariana_matei",
+  "name": "Mariana Matei",
+  "birth_year": 1969,
+  "gender": "woman",
+  "origin": "Romania",
+  "arrival": null,
+  "occupation": "Nursery teacher",
+  "values": {
+    "freedom": 0.52,
+    "independence": 0.22,
+    "self_respect": 0.14,
+    "self_actualization": 0.61,
+    "creativity": 0.75,
+    "honesty": 0.38,
+    "compassion": 0.51,
+    "loyalty": 0.3,
+    "justice": 0.48,
+    "responsibility": 0.56,
+    "security": 0.48,
+    "equality": 0.42,
+    "tradition": 0.62,
+    "obedience": 0.3,
+    "success": 0.3,
+    "ambition": 0.39,
+    "discipline": 0.39,
+    "knowledge": 0.16,
+    "open_mindedness": 0.4,
+    "peace_of_mind": 0.65,
+    "pleasure": 0.71,
+    "connection": 0.67,
+    "adventure": 0.64,
+    "optimism": 0.87
+  },
+  "backstory": "Since the year she spent at home ill, while the other children were at school, she has counted the time left in anything good. She still does it at the end of a good afternoon. Her mother's Romanian stories always stopped at the same point, and she never asked what came after, because asking felt like it might end the one thing still going. She tells people the family is fine. Sunday lunch is at one sibling's house, and the same stories come round again there. Her secret is the fake profile she keeps on her ex, scrolling for a new partner or a new flat so she can tell herself the end was fair. Nobody at work or at home knows.",
+  "persona": "She greets every parent at the gate and tells them their child had a brilliant morning, then leaves the paperwork and the training courses to someone else. She laughs first at a bad joke and rings round first when someone goes quiet, but she brushes off praise for her own work and changes the subject to the sunflowers by the car park. Her phone is never more than an arm's length away, and she checks it between parents.",
+  "speaking_style": "She starts answering before the other person has finished the question, in short warm bursts with 'love' and 'right then' scattered through. She tends to answer the thing she wishes she'd been asked. When she settles in to talk she leans on the doorframe with her arms folded, and while washing up she hums the same few bars over and over.",
+  "interests": [
+    "birdsong before the gates open",
+    "Romanian folk songs on repeat",
+    "landscape paintings at the gallery",
+    "charity shop cardigans",
+    "sweet peas on the allotment"
+  ],
+  "past": [
+    {
+      "age": 9,
+      "content": "Every week a box of reading books came up the road with my mum, and I read each one flat on my back until the spines split. Then the doctor said another month, and then another, and the box stopped coming.",
+      "salience": 0.5,
+      "valence": -0.4
+    },
+    {
+      "age": 24,
+      "content": "Nobody ever said outright that I took the cash, but my name was on the rota that shift and they sat me down in the back office anyway. I still remember the smell of carpet cleaner and the manager turning her pen over while she said she believed me, which she clearly didn't.",
+      "salience": 0.4,
+      "valence": -0.6
+    },
+    {
+      "age": 36,
+      "content": "I talked a sibling out of buying a catering van for the seafront, with the sums printed out on the kitchen table between us. I was sure it would fail, which surprised me more than it surprised them.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 50,
+      "content": "The boxes went into the car on a Saturday, and I made the children fish fingers for tea because it was the only thing I could think of that would stop them crying.",
+      "salience": 0.73,
+      "valence": -0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "They still owe her four hundred pounds from the winter she covered their rent, and she has stopped mentioning it but keeps the bank transfer on her phone."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "A rival has spent years making small digs about her being everyone's favourite, and at last year's Christmas raffle they told the whole table she only got on by being pleasant."
+    },
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "She has not spoken to a sibling since the Sunday lunch where they said she had always been the one everybody forgave. She has not answered that, and nobody has asked her to."
+    }
+  ],
+  "traits": {
+    "sociability": 0.83,
+    "negativity_bias": 0.3,
+    "forgiveness": 0.66,
+    "first_impressions": 0.46
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "bun",
+    "hair_colour": "#733e39",
+    "top_colour": "#262b44",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#b86f50",
+    "build": "slim",
+    "accessories": [
+      "glasses",
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman in her late fifties. Mid-range pitch with a warm, slightly husky timbre, a brisk but unhurried pace, and a manner that is friendly but direct, never showy.",
+    "reference_line": "Children learn the most when they are allowed to get muddy, wander between the puddles and bring back treasures for the windowsill.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "birds and beans on garden walls"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:11:41.349642Z",
+  "updated": "2026-10-17T23:11:41.349642Z",
+  "version": 1
+}

@@ -1,0 +1,114 @@
+{
+  "id": "ewan_henderson",
+  "name": "Ewan Henderson",
+  "birth_year": 1973,
+  "gender": "man",
+  "origin": "Scotland",
+  "arrival": null,
+  "occupation": "Taxi driver",
+  "values": {
+    "freedom": 0.2,
+    "independence": 0.36,
+    "self_respect": 0.26,
+    "self_actualization": 0.72,
+    "creativity": 0.27,
+    "honesty": 0.94,
+    "compassion": 0.92,
+    "loyalty": 0.94,
+    "justice": 0.88,
+    "responsibility": 0.98,
+    "security": 0.63,
+    "equality": 0.7,
+    "tradition": 0.73,
+    "obedience": 0.8,
+    "success": 0.1,
+    "ambition": 0.13,
+    "discipline": 0.9,
+    "knowledge": 0.77,
+    "open_mindedness": 0.61,
+    "peace_of_mind": 0.42,
+    "pleasure": 0.02,
+    "connection": 0.85,
+    "adventure": 0.09,
+    "optimism": 0.13
+  },
+  "backstory": "He keeps a tin of spare buttons in the glovebox, sorted by colour and then by size, because a loose button is the kind of small failure he cannot leave lying about. He still thinks the complaint that ended his last job was unfair, and he has never let himself argue it, not even on the long night runs. He tells people he left. The back page of his route book holds a list he wrote a long time ago, headed with the big things: the council, the bank, the world. Most lines are struck through. The one he has kept is smaller: be the father who turns up when he says he will, and drive people home without making them feel like a burden. He is usually apologising before anyone has spoken.",
+  "persona": "He arrives early and checks the mileage twice, and he will hand back a fiver he was owed rather than let a fare feel short-changed. When a passenger cries in the back he turns the radio off without being asked and drives slower. He waves off talk of the bigger firm or the new car, and apologises first when a booking runs late. Phone face up, he answers his children quickly, and a text left unread turns him quiet for the rest of the shift.",
+  "speaking_style": "He speaks slowly and plainly, pausing before he answers and often starting with \"to be fair\" before a point he is about to make. When something goes wrong he goes quieter and offers to wait, asking whether someone would like him to hang on while they fetch their things.",
+  "interests": [
+    "sorting spare buttons by size",
+    "his father's Haynes manuals",
+    "Scottish fiddle records",
+    "crosswords done in biro",
+    "younger child's football"
+  ],
+  "past": [
+    {
+      "age": 26,
+      "content": "The night before the tournament I left the raffle tin in the boot with a note saying I could not do it any more. The others found it at seven in the morning.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 27,
+      "content": "When the papers came through I set a second chair at the kitchen table anyway, and I kept doing it for months after there was no one to sit in it.",
+      "salience": 0.73,
+      "valence": -0.6
+    },
+    {
+      "age": 34,
+      "content": "The letter with the second fail sat on the dashboard for three days while I drove the same loop of streets at night, reading the route cards out loud to nobody.",
+      "salience": 0.3,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "Someone he used to work alongside saw him slumped over the steering wheel in the depot car park for nearly two hours on the morning he was let go, and he has never said a word about it since."
+    },
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "Someone he trusted told the club committee that the missing raffle money was his fault, even though he had left the tin where anyone could find it, and he has not spoken to them since."
+    },
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "Someone he lent four hundred pounds in cash towards a deposit has paid it back a few tens at a time and then stopped, and he has never once raised it."
+    }
+  ],
+  "traits": {
+    "sociability": 0.31,
+    "negativity_bias": 0.95,
+    "forgiveness": 0.9,
+    "first_impressions": 0.15
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#8b9bb4",
+    "top_colour": "#a22633",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#3e2731",
+    "build": "broad",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his early fifties. Mid-low pitch, dry and even, with a slight unhurried weight on each word. Speaks slowly, pausing before answering, and sounds patient rather than warm.",
+    "reference_line": "I have driven the same long roads at night for many years, and I know every bend by the feel of the wheel.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "plain verse about night fares"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:10:36.640347Z",
+  "updated": "2026-10-17T23:10:36.640347Z",
+  "version": 1
+}

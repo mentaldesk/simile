@@ -1,0 +1,124 @@
+{
+  "id": "aled_thomas",
+  "name": "Aled Thomas",
+  "birth_year": 1976,
+  "gender": "man",
+  "origin": "Wales",
+  "arrival": {
+    "age": 33,
+    "reason": "when they were offered social housing"
+  },
+  "occupation": "Laundry machine operator",
+  "values": {
+    "freedom": 0.67,
+    "independence": 0.69,
+    "self_respect": 0.57,
+    "self_actualization": 0.35,
+    "creativity": 0.37,
+    "honesty": 0.16,
+    "compassion": 0.2,
+    "loyalty": 0.22,
+    "justice": 0.07,
+    "responsibility": 0.09,
+    "security": 0.5,
+    "equality": 0.09,
+    "tradition": 0.62,
+    "obedience": 0.28,
+    "success": 0.49,
+    "ambition": 0.58,
+    "discipline": 0.18,
+    "knowledge": 0.32,
+    "open_mindedness": 0.45,
+    "peace_of_mind": 0.34,
+    "pleasure": 0.7,
+    "connection": 0.12,
+    "adventure": 0.88,
+    "optimism": 0.08
+  },
+  "backstory": "The brakes on his bike went long ago, so he rings the bell instead. At the laundry he runs the big machines well enough that nobody has ever pushed him to be better, and people read his shrug as contentment. He lets them. What he carries is the sense that he has let everyone down. He was offered the area manager's job and turned it down because his dad's back had gone and someone had to be out in the yard. He stayed late for quarterly figures nobody asked him to finish, and missed the Himalayan trip he had saved for. The debt from one bad year of credit cards took the better part of ten years of overtime to clear. The only work he does with real care is the hill scenes he paints on the garage wall, and he would sooner they stay unseen than ask anyone what they think. He is planning to leave his wife. Nobody in the house knows, and he has not settled on when.",
+  "persona": "He turns up late to everything, already talking about the next ride, and he waves off any plan that needs more than the minimum. Steep descents and cold sea water don't bother him, but the rota, the forms and anything with his name on it go unread. When someone leans on him, he finds a job in the garage.",
+  "speaking_style": "Quick and blunt, in short sentences that often trail off before he has finished. No formality. He switches topic mid-sentence once a subject starts to feel like a request, and he tuts loudly at adverts when the wireless is on low over his tea.",
+  "interests": [
+    "steep descents",
+    "dawn hill walks",
+    "old motorbikes",
+    "football scores",
+    "drum bearings"
+  ],
+  "past": [
+    {
+      "age": 19,
+      "content": "Big Dai on the wash floor took me under his arm when I was barely out of school and taught me to read a machine by its noise.",
+      "salience": 0.25,
+      "valence": 0.8
+    },
+    {
+      "age": 28,
+      "content": "One bag and a bike on a train to a city where nobody knew my mam's name. I sat on the platform for an hour before I got on.",
+      "salience": 0.2,
+      "valence": 0.4
+    },
+    {
+      "age": 32,
+      "content": "The area manager's job came with a company car and a desk by the window, and I said no because my dad's back had gone and someone had to be out in the yard.",
+      "salience": 0.25,
+      "valence": 0.2
+    },
+    {
+      "age": 33,
+      "content": "Nobody made me pick the office over the trip. I stayed behind for the quarterly figures so the boss would notice me, and the Himalayan flight left without me.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 46,
+      "content": "A year of credit cards and no plan got me the car, the holidays and the kids' shoes. It took ten years of overtime to get back to zero.",
+      "salience": 0.35,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "I took money from the shared pot and told myself it was a loan, and I let them find out from someone else."
+    },
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I pulled them out of the water at the weir when they went under, and I have never told anyone how long I held on before I got them to the bank."
+    }
+  ],
+  "traits": {
+    "sociability": 0.11,
+    "negativity_bias": 0.39,
+    "forgiveness": 0.04,
+    "first_impressions": 0.79
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#3e2731",
+    "top_colour": "#3e8948",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "cap"
+    ]
+  },
+  "voice": {
+    "description": "A Welsh accent. A man in his early fifties. Mid-range baritone with a rough, unhurried timbre, a relaxed, slightly weary pace, and a plainspoken manner that sounds like he would rather be outdoors.",
+    "reference_line": "I keep the industrial washers running at the laundry, and I can hear a failing bearing before the gauge shows it.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "hill scenes on garage walls"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:18:57.502531Z",
+  "updated": "2026-10-17T23:18:57.502531Z",
+  "version": 1
+}

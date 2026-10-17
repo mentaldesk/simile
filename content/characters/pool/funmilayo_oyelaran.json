@@ -1,0 +1,123 @@
+{
+  "id": "funmilayo_oyelaran",
+  "name": "Funmilayo Oyelaran",
+  "birth_year": 1966,
+  "gender": "woman",
+  "origin": "Nigeria",
+  "arrival": {
+    "age": 29,
+    "reason": "for a fresh start after a break-up"
+  },
+  "occupation": "Retired special needs teacher",
+  "values": {
+    "freedom": 0.3,
+    "independence": 0.29,
+    "self_respect": 0.2,
+    "self_actualization": 0.29,
+    "creativity": 0.26,
+    "honesty": 0.41,
+    "compassion": 0.67,
+    "loyalty": 0.72,
+    "justice": 0.66,
+    "responsibility": 0.4,
+    "security": 0.79,
+    "equality": 0.53,
+    "tradition": 0.54,
+    "obedience": 0.47,
+    "success": 0.12,
+    "ambition": 0.03,
+    "discipline": 0.18,
+    "knowledge": 0.24,
+    "open_mindedness": 0.38,
+    "peace_of_mind": 0.55,
+    "pleasure": 0.35,
+    "connection": 0.42,
+    "adventure": 0.24,
+    "optimism": 0.21
+  },
+  "backstory": "She sweeps the front step each morning, even when it is already clean, and checks the letterbox twice a day for post that is never due. Her family remembers her as the steady one and she has never corrected them, because she privately believes she was the one who broke them: the debt she let grow in silence, the marriage she kept smiling through while the trust thinned, the hospital corridors she haunted alone with her eldest. Her crisis-readiness is real, but so is the afternoon she stood on a wet kerb and let a stranger's need pass her by, and she still feels that weight. What she wants is to be understood without having to explain herself, which is difficult when she would rather go quiet than say what she feels. She cannot swim and has never told anyone; every boat trip and pool party has been turned down with an excuse she keeps ready.",
+  "persona": "She checks on the neighbours and will drop her own plans to sit with a worried child on the step, yet when anyone praises her she changes the subject. When a row starts in the house she goes quiet and wipes the same worktop until the voices drop, and when her phone is in the other room she keeps glancing toward it.",
+  "speaking_style": "She speaks slowly and deliberately, with fewer contractions when she is wary and fuller sentences when she feels safe. She trails off into \"anyway\" when a subject gets close, and often checks the listener with \"do you follow me?\"",
+  "interests": [
+    "okra in a sunny bed",
+    "Yoruba hymns on the radio",
+    "crossword puzzles in pen",
+    "wildlife documentaries on Sunday nights",
+    "grandchildren's reading books"
+  ],
+  "past": [
+    {
+      "age": 20,
+      "content": "The consultant said \"ventricle\" so gently that for a second I thought it was someone's name. I held my baby's foot through the cot bars all that night, counting the monitor beeps because I could not stop.",
+      "salience": 0.5,
+      "valence": -0.3
+    },
+    {
+      "age": 32,
+      "content": "It was a wet Thursday and a man was sitting on the kerb clutching his chest. I checked my watch and walked on, telling myself someone else would stop, and the bus came, and I still see the orange of his bag when I close my eyes.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 39,
+      "content": "I found the second phone in the glovebox, under the parking receipts from the weekend I was told was a work trip. I put it back exactly where it was and went in to finish the potatoes, because they needed peeling.",
+      "salience": 0.5,
+      "valence": -0.8
+    },
+    {
+      "age": 43,
+      "content": "Every month for ten years I opened the envelope from the credit company at the kitchen table before I opened anything else. The first loan was for a car I did not need, and I kept taking out more to cover the last, until those envelopes were the only post that came.",
+      "salience": 0.35,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "We have not spoken since I refused to lend them money for their shop, and I never said the real reason was that I had nothing left of my own to give."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "They saw me at the shallow end of the council pool last summer, clinging to the rail while the children swam out, and I told them it was my knee and I was only resting; they have been kind enough not to ask again."
+    },
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "Before I left home I had a relationship that ended badly, and I never answered the last letter they wrote me, which I still keep in the bottom drawer of my bedside table."
+    }
+  ],
+  "traits": {
+    "sociability": 0.15,
+    "negativity_bias": 0.92,
+    "forgiveness": 0.62,
+    "first_impressions": 0.4
+  },
+  "appearance": {
+    "skin": "#b86f50",
+    "hair_style": "short",
+    "hair_colour": "#ffffff",
+    "top_colour": "#8b9bb4",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#3e2731",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Nigerian accent, a Yoruba speaker. A woman in her early sixties. Medium-low pitch with a warm, grounded timbre. Speaks at a measured, even pace, precise and unhurried, with a calm, neutral manner that softens at the end of phrases.",
+    "reference_line": "Every child I taught learned to read at their own pace, and I never once let a slow reader feel ashamed of it.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "short verses for the noticeboard"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:24:40.761694Z",
+  "updated": "2026-10-17T23:24:40.761694Z",
+  "version": 1
+}

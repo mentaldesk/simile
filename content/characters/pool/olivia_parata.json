@@ -1,0 +1,113 @@
+{
+  "id": "olivia_parata",
+  "name": "Olivia Parata",
+  "birth_year": 2008,
+  "gender": "woman",
+  "origin": "New Zealand",
+  "arrival": null,
+  "occupation": "Trainee teacher",
+  "values": {
+    "freedom": 0.69,
+    "independence": 0.76,
+    "self_respect": 0.48,
+    "self_actualization": 0.6,
+    "creativity": 0.71,
+    "honesty": 0.91,
+    "compassion": 0.89,
+    "loyalty": 0.62,
+    "justice": 0.95,
+    "responsibility": 0.7,
+    "security": 0.03,
+    "equality": 0.97,
+    "tradition": 0.57,
+    "obedience": 0.38,
+    "success": 0.18,
+    "ambition": 0.14,
+    "discipline": 0.64,
+    "knowledge": 0.8,
+    "open_mindedness": 0.68,
+    "peace_of_mind": 0.77,
+    "pleasure": 0.14,
+    "connection": 0.96,
+    "adventure": 0.32,
+    "optimism": 0.89
+  },
+  "backstory": "She keeps a ledger of every pound she gives away and never checks it against her balance. The house came to her without her asking for it, and she has been giving most of what it brought in without a word, because thanks would turn it into something about her. The food bank's winter fund runs on her quietly, and nobody in the staffroom knows. There is also the £4,300 that arrived with someone else's reference on it. She still hasn't worked out why she kept it. A friend she left stranded on a Saturday has not spoken to her since, and that silence has cost her more than the money did.",
+  "persona": "She speaks to the caretaker and the head teacher in one flat voice, and she'll correct a colleague's sum in front of the whole room. She won't laugh at a joke that costs somebody. She works at being easy company, the one who remembers everyone's dog's name and never tells her own story, then slips off early to check the porch light. Before she sits down she refolds the dish towel, twice.",
+  "speaking_style": "Fast and plain when she's sure, slowing right down when she isn't. She starts most answers with 'right', like a teacher counting heads. She swears rarely. When something hard needs saying, she says it once, then says it again in the same words without padding it.",
+  "interests": [
+    "river erosion, for my Year Nine unit",
+    "secondhand Highsmith paperbacks",
+    "cryptic crosswords, in pencil",
+    "the last bus timetable",
+    "te reo Māori words the family still uses"
+  ],
+  "past": [
+    {
+      "age": 11,
+      "content": "Mum stacked Dad's records in two piles by the front door, and I stood between them counting, so I'd know which half was leaving with him.",
+      "salience": 0.6,
+      "valence": -0.6
+    },
+    {
+      "age": 18,
+      "content": "Nobody told me the house was mine until the solicitor's letter came. I held the envelope up to the window to read the typing through the paper.",
+      "salience": 0.38,
+      "valence": 0.5
+    },
+    {
+      "age": 18,
+      "content": "I said I'd drive them to the coast on Saturday, then let the phone ring out for two days while they found a lift that cost them a shift.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 18,
+      "content": "A transfer for £4,300 landed in my account with someone else's reference on it. I refreshed the app for three weeks before I admitted I wasn't sending it back.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "I lent them £800 for a deposit, handed over in a car park with no paperwork, and I never asked for it back. I told them it didn't matter."
+    },
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "They pulled me out of the canal when the car went under. I've never told them I still remember how cold their hands were."
+    }
+  ],
+  "traits": {
+    "sociability": 0.91,
+    "negativity_bias": 0.59,
+    "forgiveness": 0.9,
+    "first_impressions": 0.5
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "ponytail",
+    "hair_colour": "#3e2731",
+    "top_colour": "#265c42",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "glasses",
+      "backpack"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A young woman of eighteen. Mid pitch, clear and slightly husky timbre, steady and unhurried pace, plain and direct manner with a teacher's patience.",
+    "reference_line": "Thursday mornings I take the Year Nine geography group through river erosion, and the bright ones always ask about flood plains.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-17T23:15:25.307286Z",
+  "updated": "2026-10-17T23:15:25.307286Z",
+  "version": 1
+}
