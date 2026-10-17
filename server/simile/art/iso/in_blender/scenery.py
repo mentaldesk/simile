@@ -226,10 +226,14 @@ def build_building(b: dict) -> None:
         roof_item(item, W(tx + 0.5, ty + 0.5, height + 0.06), M)
 
     rows = b["facade"]
+    entrances = b.get("entrances", [])
     for i, row in enumerate(rows):
         k = storeys - 1 - i
         for col, (tile, deco) in enumerate(row):
-            facade_item(tile or "", deco, (x0 + col + 0.5) * T, a.y, k * STOREY_M, k, M, rnd)
+            if k == 0 and col in entrances:
+                entrance(deco, (x0 + col + 0.5) * T, a.y, M)
+            else:
+                facade_item(tile or "", deco, (x0 + col + 0.5) * T, a.y, k * STOREY_M, k, M, rnd)
     if rows:
         signs(b, rows, a.y, M)
 
@@ -298,6 +302,33 @@ def facade_item(tile, deco, cx, fy, z, k, M, rnd):
         box("door_frame", cx - 0.48, fy - 0.08, z + 2.4, cx + 0.48, fy, z + 2.5, M["dark"])
     if deco:
         wall_decor(deco, cx, fy, z, M)
+
+
+def entrance(deco, cx, fy, M):
+    """A door into an interior: a coloured leaf in a light surround, a canopy and a step."""
+    leaf = material("entrance_leaf", "forest", 0.55, sat=0.75, val=1.1)
+    brass = material("entrance_brass", "amber", 0.3, 0.8, sat=0.7)
+    box("entrance_door", cx - 0.45, fy - 0.04, 0, cx + 0.45, fy + 0.02, 2.45, leaf, bevel=0.01)
+    box("entrance_glass", cx - 0.28, fy - 0.06, 1.55, cx + 0.28, fy - 0.04, 2.25, M["glass_lit"])
+    box("entrance_panel", cx - 0.28, fy - 0.06, 0.25, cx + 0.28, fy - 0.04, 1.2, M["dark"])
+    box("entrance_handle", cx + 0.26, fy - 0.12, 0.95, cx + 0.34, fy - 0.04, 1.25, brass)
+    for s in (-1, 1):
+        box(
+            "entrance_jamb",
+            cx + s * 0.5 - 0.06,
+            fy - 0.12,
+            0,
+            cx + s * 0.5 + 0.06,
+            fy,
+            2.6,
+            M["white"],
+        )
+    box("entrance_lintel", cx - 0.56, fy - 0.12, 2.45, cx + 0.56, fy, 2.6, M["white"])
+    box("entrance_canopy", cx - 0.62, fy - 0.5, 2.66, cx + 0.62, fy, 2.74, M["dark"], bevel=0.01)
+    box("entrance_light", cx - 0.15, fy - 0.34, 2.62, cx + 0.15, fy - 0.18, 2.66, M["lamp"])
+    box("entrance_step", cx - 0.6, fy - 0.38, 0, cx + 0.6, fy, 0.1, M["concrete"], bevel=0.01)
+    if deco:
+        wall_decor(deco, cx, fy, 0.0, M)
 
 
 def wall_decor(deco, cx, fy, z, M):

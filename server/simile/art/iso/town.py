@@ -46,6 +46,7 @@ class Building:
     material: str
     roof_items: tuple[tuple[int, int, str], ...]
     facade: tuple[tuple[tuple[str | None, str | None], ...], ...]
+    entrances: tuple[int, ...] = ()
 
     @property
     def id(self) -> str:
@@ -64,7 +65,10 @@ class Building:
         return self.storeys * STOREY_M + 2.2
 
     def spec(self) -> dict[str, Any]:
-        return {"id": self.id, "type": "building", **asdict(self)}
+        data = asdict(self)
+        if not self.entrances:
+            del data["entrances"]
+        return {"id": self.id, "type": "building", **data}
 
 
 @dataclass(frozen=True)
@@ -116,6 +120,8 @@ Object = Building | Prop
 
 
 class Town:
+    ground_heights = GROUND_HEIGHTS
+
     def __init__(self, path: Path) -> None:
         data = json.loads(path.read_text())
         self.width: int = data["width"]
@@ -126,12 +132,18 @@ class Town:
             props = {p["name"]: p["value"] for p in tile.get("properties", [])}
             names[tile["id"] + tileset["firstgid"]] = props.get("name")
         self.layers: dict[str, list[list[str | None]]] = {}
+        self.doorsteps: set[tuple[int, int]] = set()
         for layer in data["layers"]:
             if layer["type"] == "tilelayer":
                 cells = [names.get(g) if g else None for g in layer["data"]]
                 self.layers[layer["name"]] = [
                     cells[y * self.width : (y + 1) * self.width] for y in range(self.height)
                 ]
+            elif layer["name"] == "doors":
+                for door in layer["objects"]:
+                    props = {p["name"]: p["value"] for p in door.get("properties", [])}
+                    if props.get("side") == "outside":
+                        self.doorsteps.add((int(door["x"]) // 16, int(door["y"]) // 16))
         self.buildings = self._buildings()
         self.props = self._props()
 
@@ -149,6 +161,22 @@ class Town:
     @property
     def objects(self) -> list[Object]:
         return [*self.buildings, *self.props]
+
+    @property
+    def open_ground(self) -> list[Building]:
+        """What the ground is rendered without underneath, for a cutaway."""
+        return self.buildings
+
+    def blender(self) -> dict[str, Any]:
+        """The whole village for Blender's ground and light map passes."""
+        return {
+            "width": self.width,
+            "height": self.height,
+            "ground": self.ground(),
+            "heights": self.heights(),
+            "buildings": [b.spec() for b in self.buildings],
+            "props": [p.spec() for p in self.props],
+        }
 
     def _buildings(self) -> list[Building]:
         seen: set[tuple[int, int]] = set()
@@ -197,6 +225,7 @@ class Town:
             material=material,
             roof_items=roof_items,
             facade=facade,
+            entrances=tuple(c for c in range(x1 - x0) if (x0 + c, y1) in self.doorsteps),
         )
 
     def _props(self) -> list[Prop]:
@@ -234,7 +263,7 @@ class Town:
                 lamps_on
                 and isinstance(other, Prop)
                 and other.kind == "lamp"
-                and _gap(other.footprint, target.footprint) <= LAMP_REACH
+                and gap(other.footprint, target.footprint) <= LAMP_REACH
             )
             if lamp_lit or shades(other, box, light):
                 out.append(other)
@@ -250,7 +279,7 @@ LAMP_REACH = 12.0
 OVERHANG = 1.0
 
 
-def _gap(a: tuple[float, ...], b: tuple[float, ...]) -> float:
+def gap(a: tuple[float, ...], b: tuple[float, ...]) -> float:
     dx = max(a[0] - b[2], b[0] - a[2], 0.0)
     dy = max(a[1] - b[3], b[1] - a[3], 0.0)
     return max(dx, dy)

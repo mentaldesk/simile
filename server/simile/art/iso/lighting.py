@@ -85,6 +85,21 @@ SETS: dict[str, LightingSet] = {
     )
 }
 
+# Interiors are lit from inside: the "sun" is a high, soft key standing in for the ceiling's light.
+INSIDE = LightingSet(
+    "inside",
+    (0, 24),
+    azimuth=160,
+    elevation=60,
+    sun_energy=1.8,
+    sun_colour=(1.0, 0.93, 0.82),
+    sky_colour=(0.5, 0.46, 0.42),
+    sky_strength=0.5,
+    sun_angle=20.0,
+    emit={"lamp": 1.0, "neon": 1.0, "window": 1.0, "screen": 1.0, "water": 1.0},
+    glow=0.5,
+)
+
 LOOK: dict[str, Any] = {
     "samples": 48,
     "segments": 16,
