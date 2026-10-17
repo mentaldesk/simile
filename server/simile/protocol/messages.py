@@ -1,16 +1,28 @@
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import Field, JsonValue, TypeAdapter, model_validator
+from pydantic import ConfigDict, Field, JsonValue, TypeAdapter, model_validator
 
-from simile.schema import Conversation, Id, Key, Line, Model, Timestamp
+from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line, Model, Timestamp
+
+
+def _map_not_required(schema: dict[str, Any]) -> None:
+    schema["required"].remove("map")
 
 
 class Position(Model):
     """Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step."""
 
+    # The client uses Position as its plain point type, so map stays optional in TypeScript.
+    model_config = ConfigDict(json_schema_extra=_map_not_required)
+
     x: float
     y: float
+    map: Key = Field(
+        default=VILLAGE_MAP,
+        description="The map it's on. The server always sends it, and a client that leaves it "
+        "out means the village.",
+    )
 
 
 class EntityKind(StrEnum):

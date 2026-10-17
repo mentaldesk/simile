@@ -8,20 +8,32 @@ from pydantic import ValidationError
 
 from simile.schema import (
     PLAYER_ID,
+    VILLAGE_MAP,
     Conversation,
     CoreValue,
     Craft,
+    Door,
     Flag,
+    Interactable,
+    InteractableKind,
     InteractionEvent,
     Line,
+    Location,
+    LocationKind,
+    MapTile,
     Medium,
     Memory,
     Model,
     NewsItem,
     Npc,
     Relationship,
+    Tile,
+    TileArea,
     Work,
 )
+from simile.world.map import load_map
+
+from .conftest import COUNTER, DOOR
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 CONTENT_NPCS = Path(__file__).parents[3] / "content" / "npcs"
@@ -300,3 +312,99 @@ def test_a_work_is_always_analysed(field: str) -> None:
 )
 def test_work_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
     rejects(Work, fixture("works.json", 0) | update, match)
+
+
+def test_locations_stored_without_a_map_are_on_the_village() -> None:
+    location = fixture("locations.json", 0)
+    del location["map"]
+
+    assert Location.model_validate_json(json.dumps(location)).map == VILLAGE_MAP
+
+
+def test_the_committed_village_map_still_loads_onto_the_village() -> None:
+    locations = load_map().locations
+
+    assert locations
+    assert {location.map for location in locations} == {VILLAGE_MAP}
+
+
+@pytest.mark.parametrize("kind", ["gallery", "maker_space", "noodle_bar"])
+def test_a_location_can_be_inside_a_building(kind: str) -> None:
+    location = Location.model_validate(
+        fixture("locations.json", 3) | {"id": kind, "kind": kind, "map": kind}
+    )
+
+    assert (location.kind, location.map) == (LocationKind(kind), kind)
+    assert Location.model_validate_json(location.model_dump_json()) == location
+
+
+def test_a_location_map_is_not_empty() -> None:
+    rejects(Location, fixture("locations.json", 0) | {"map": ""}, "at least 1 character")
+
+
+def test_a_door_round_trips() -> None:
+    door = Door.model_validate(DOOR)
+
+    assert door.outside == MapTile(map="village", x=31, y=13)
+    assert door.inside == MapTile(map="coffee_shop", x=10, y=12)
+    assert json.loads(door.model_dump_json()) == DOOR
+    assert Door.model_validate_json(door.model_dump_json()) == door
+
+
+def test_a_door_links_two_maps() -> None:
+    inside = DOOR["inside"] | {"map": "village"}
+
+    rejects(Door, DOOR | {"inside": inside}, "a door links two different maps")
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"id": "Coffee Shop"}, "String should match pattern"),
+        ({"outside": {"map": "", "x": 31, "y": 13}}, "at least 1 character"),
+        ({"inside": {"map": "coffee_shop", "x": -1, "y": 12}}, "inside.x"),
+        ({"inside": {"x": 10, "y": 12}}, "inside.map"),
+    ],
+)
+def test_door_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
+    rejects(Door, DOOR | update, match)
+
+
+def test_an_interactable_round_trips() -> None:
+    counter = Interactable.model_validate(COUNTER)
+
+    assert counter.kind is InteractableKind.COUNTER
+    assert counter.area == TileArea(x=6, y=4, width=6, height=1)
+    assert counter.stand == [Tile(x=9, y=6)]
+    assert json.loads(counter.model_dump_json()) == COUNTER
+    assert Interactable.model_validate_json(counter.model_dump_json()) == counter
+
+
+@pytest.mark.parametrize("kind", ["counter", "painting", "machine"])
+def test_interactables_are_counters_paintings_or_machines(kind: str) -> None:
+    assert Interactable.model_validate(COUNTER | {"kind": kind}).kind == InteractableKind(kind)
+
+
+def test_an_interactable_can_be_used_from_several_tiles() -> None:
+    stand = [{"x": 3, "y": 2}, {"x": 4, "y": 2}]
+
+    assert Interactable.model_validate(COUNTER | {"stand": stand}).stand == [
+        Tile(x=3, y=2),
+        Tile(x=4, y=2),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"stand": []}, "at least 1 item"),
+        ({"kind": "bench"}, "kind"),
+        ({"label": ""}, "at least 1 character"),
+        ({"map": ""}, "at least 1 character"),
+        ({"id": "Counter"}, "String should match pattern"),
+        ({"area": {"x": 6, "y": 4, "width": 0, "height": 1}}, "area.width"),
+        ({"stand": [{"x": 9, "y": -1}]}, "stand.0.y"),
+    ],
+)
+def test_interactable_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
+    rejects(Interactable, COUNTER | update, match)

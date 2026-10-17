@@ -23,7 +23,17 @@ from simile.schema.social import (
     Relationship,
 )
 from simile.schema.works import Work
-from simile.schema.world import Location, LocationKind, Tile, TileArea
+from simile.schema.world import (
+    VILLAGE_MAP,
+    Door,
+    Interactable,
+    InteractableKind,
+    Location,
+    LocationKind,
+    MapTile,
+    Tile,
+    TileArea,
+)
 
 MODELS: tuple[type[Model], ...] = (
     Npc,
@@ -37,6 +47,8 @@ MODELS: tuple[type[Model], ...] = (
     NewsItem,
     Work,
     Location,
+    Door,
+    Interactable,
     Conversation,
     Line,
 )
@@ -44,6 +56,7 @@ MODELS: tuple[type[Model], ...] = (
 __all__ = [
     "MODELS",
     "PLAYER_ID",
+    "VILLAGE_MAP",
     "Accessory",
     "Appearance",
     "Aspect",
@@ -53,15 +66,19 @@ __all__ = [
     "Conversation",
     "CoreValue",
     "Craft",
+    "Door",
     "Flag",
     "FlagKind",
     "HairStyle",
     "Id",
+    "Interactable",
+    "InteractableKind",
     "InteractionEvent",
     "Key",
     "Line",
     "Location",
     "LocationKind",
+    "MapTile",
     "Medium",
     "Memory",
     "MemoryKind",
