@@ -55,7 +55,7 @@ def test_every_door_links_walkable_tiles_in_both_directions() -> None:
         for door in town.doors:
             ends.setdefault(door.id, []).append((town.id, door))
 
-    assert set(ends) == MOVING_INSIDE
+    assert set(ends) == set(INTERIORS)
     for door_id, found in ends.items():
         [(first, door), (second, same)] = found
         assert door == same, door_id
@@ -156,7 +156,6 @@ def test_the_gallery_hangs_paintings_on_its_walls() -> None:
         area = painting.area
         assert not any(gallery.walkable(area.x + dx, area.y) for dx in range(area.width))
     assert gallery.location("gallery").kind is LocationKind.GALLERY
-    assert gallery.doors == ()
 
 
 def test_the_maker_space_has_its_machines() -> None:

@@ -107,7 +107,7 @@ the map starts with a key of `heights` is that many metres up (negative is down)
 tile is at 0. Draw feet standing on it `metres × px_per_metre_up` px higher on screen: about
 10 px up on grass and 4 px down on a road. Depth keys stay on the ground plane.
 
-**Objects** are everything that can hide a resident: the 16 buildings and every prop (trees,
+**Objects** are everything that can hide a resident: the 17 buildings and every prop (trees,
 palms, lamps, benches, terminals, the fountain, bins, bikes, planters, bollards and café tables),
 each with its own image. Draw an object's image with its top-left at `project(anchor) + offset`.
 A building's anchor is its front (south-east) corner, and a prop's is where it stands.
@@ -199,8 +199,8 @@ the change touches, and nothing in the village or the other interiors.
 
 A building whose door is the outside end of a door in `village.tmj`'s `doors` layer gets an
 entrance: a green door with a lit window in a white surround, a canopy and a step. Today that's the
-Daily Grind, Golden Bowl Noodles and Spark Maker Space. The building's spec lists those facade
-columns in `entrances` and leaves the key out when there are none, so a door added to the map
+Daily Grind, Golden Bowl Noodles, Spark Maker Space and the gallery. The building's spec lists those
+facade columns in `entrances` and leaves the key out when there are none, so a door added to the map
 re-renders just that building and what it shades, along with the ground.
 
 ## Formats
