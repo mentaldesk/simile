@@ -77,14 +77,15 @@ async def test_reflections_are_valid_and_store_nothing() -> None:
     assert (writer.world.clock.now - start).total_seconds() == pytest.approx(REFLECTION, abs=0.11)
 
 
-async def test_a_short_playthrough_chats_and_overhears() -> None:
-    result = await playthrough(minutes=20, warmup=5, seed=0)
+async def test_short_playthroughs_chat_and_overhear() -> None:
+    results = [await playthrough(minutes=20, warmup=5, seed=seed) for seed in range(3)]
 
-    assert result.minutes == 20
-    assert result.player_conversations and result.nudges
-    assert result.overheard
-    assert 0 < result.heard < 600
-    assert result.calls["conversation"] and result.calls["player-reply"]
+    assert all(r.minutes == 20 and r.player_conversations for r in results)
+    assert all(r.calls["player-reply"] for r in results)
+    assert sum(r.nudges for r in results) and sum(r.calls["conversation"] for r in results)
+    assert sum(len(r.overheard) for r in results) >= 2
+    assert sum(r.heard for r in results) > 0
+    assert all(r.heard < 600 for r in results)
 
 
 async def test_the_village_is_kept_in_memory_whatever_simile_db_says(

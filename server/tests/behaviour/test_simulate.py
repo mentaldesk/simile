@@ -6,6 +6,9 @@ from typer.testing import CliRunner
 
 from simile.behaviour.simulate import ranks, report, simulate, spearman
 from simile.cli import create_cli
+from simile.npc import load_npcs
+from simile.schema import Craft, Medium
+from simile.world.map import load_map
 
 runner = CliRunner()
 
@@ -57,3 +60,23 @@ def test_spearman_ranks_ties_together() -> None:
     assert spearman([1, 2, 3], [10, 20, 30]) == pytest.approx(1)
     assert spearman([1, 2, 3], [3, 2, 1]) == pytest.approx(-1)
     assert spearman([1, 1, 1], [1, 2, 3]) == 0
+
+
+def test_reports_the_works_residents_with_a_craft_make() -> None:
+    start = datetime(2026, 1, 1, 8, tzinfo=UTC)
+    media = [Medium.MURAL, Medium.WRITING, None]
+    npcs = [
+        npc.model_copy(update={"craft": Craft(medium=medium, form="x") if medium else None})
+        for npc, medium in zip(load_npcs(), media * 4, strict=False)
+    ]
+
+    observer, seconds = asyncio.run(simulate(12, start=start, npcs=npcs))
+    summary = report(observer, 12, start, 0, seconds)
+
+    places = {place for made in observer.works.values() for place in made}
+    walls = {wall.id for wall in load_map().murals}
+    assert sum(sum(made.values()) for made in observer.works.values()) >= 3
+    assert places & walls and places - walls
+    works = summary.split("**Works.**")[1]
+    listed = {npc.id for npc in npcs if f"| {npc.id} |" in works}
+    assert listed == {npc.id for npc in npcs if npc.craft}

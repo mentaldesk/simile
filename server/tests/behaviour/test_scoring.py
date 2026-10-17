@@ -9,6 +9,7 @@ from simile.behaviour import (
     Activity,
     BehaviourConfig,
     Goal,
+    MuralSpot,
     Need,
     Other,
     Places,
@@ -27,14 +28,14 @@ from simile.behaviour.scoring import (
     relief,
     wake,
 )
-from simile.schema import PLAYER_ID, Baseline, CoreValue, Relationship
+from simile.schema import PLAYER_ID, Baseline, CoreValue, Medium, Relationship, Tile
 from simile.world.map import load_map
 from simile.world.movement import Point
 
 PLACES = Places(load_map())
 SQUARE = Point(31, 22)
 NEUTRAL = {value: 0.5 for value in CoreValue}
-CONTENT = {Need.SOCIAL: 0.2, Need.CURIOSITY: 0.2, Need.REST: 0.2, Need.NEWS: 0.2}
+CONTENT = {need: 0.2 for need in Need}
 
 V = CoreValue
 A = Activity
@@ -49,6 +50,8 @@ def situation(
     last: Goal | None = None,
     position: Point = SQUARE,
     news: float = 0.0,
+    craft: Medium | None = None,
+    mural: MuralSpot | None = None,
 ) -> Situation:
     return Situation(
         {**NEUTRAL, **(values or {})},
@@ -60,6 +63,8 @@ def situation(
         others,
         last,
         news,
+        craft,
+        mural,
     )
 
 
@@ -366,3 +371,80 @@ def test_curve_is_linear_between_points_and_zero_outside() -> None:
     assert [curve(points, h) for h in (7, 8, 9, 10, 11, 12, 13)] == pytest.approx(
         [0, 0, 0.2, 0.4, 0.2, 0, 0]
     )
+
+
+INSPIRED = {Need.INSPIRATION: 0.9}
+WALL = MuralSpot("wall_a", Tile(x=19, y=12))
+
+
+def creating(s: Situation) -> list[Goal]:
+    return [goal for goal in scores(s, PLACES) if goal.activity is A.CREATE]
+
+
+def test_only_crafters_create_and_muralists_only_with_a_wall() -> None:
+    assert creating(situation(needs=INSPIRED)) == []
+    assert creating(situation(needs=INSPIRED, craft=Medium.MURAL)) == []
+    assert creating(situation(needs=INSPIRED, craft=Medium.MURAL, mural=WALL)) == [
+        Goal(A.CREATE, "wall_a")
+    ]
+    assert {goal.target for goal in creating(situation(needs=INSPIRED, craft=Medium.WRITING))} == {
+        "house_1",
+        "coffee_shop",
+        "maker_space",
+    }
+
+
+@pytest.mark.parametrize(
+    ("values", "place"),
+    [
+        ({V.PEACE_OF_MIND: 0.9, V.INDEPENDENCE: 0.9}, "house_1"),
+        ({V.CONNECTION: 0.9, V.PLEASURE: 0.8}, "coffee_shop"),
+        ({V.AMBITION: 0.95, V.SUCCESS: 0.9}, "maker_space"),
+    ],
+)
+def test_writers_write_where_their_values_fit(values: dict[CoreValue, float], place: str) -> None:
+    s = situation(values, INSPIRED, craft=Medium.WRITING)
+
+    assert best(s) == Goal(A.CREATE, place)
+
+
+def test_creativity_alone_does_not_send_writers_to_the_maker_space() -> None:
+    s = situation({V.CREATIVITY: 0.95, V.SELF_ACTUALIZATION: 0.9}, INSPIRED, craft=Medium.WRITING)
+
+    assert best(s).activity is A.CREATE
+    assert best(s).target != "maker_space"
+
+
+def test_inspiration_barely_registers_until_it_builds() -> None:
+    def pull(need: float) -> float:
+        s = situation(needs={Need.INSPIRATION: need}, craft=Medium.MURAL, mural=WALL)
+        return score_of(Goal(A.CREATE, "wall_a"), s)
+
+    assert pull(0.9) - pull(0.6) > 2 * (pull(0.6) - pull(0.3)) > 0
+    assert best(situation(needs={Need.INSPIRATION: 0.3}, craft=Medium.MURAL, mural=WALL)) != (
+        Goal(A.CREATE, "wall_a")
+    )
+    assert best(situation(needs=INSPIRED, craft=Medium.MURAL, mural=WALL)) == Goal(
+        A.CREATE, "wall_a"
+    )
+
+
+def test_a_farther_wall_scores_less() -> None:
+    near = MuralSpot("near", Tile(x=31, y=23))
+    far = MuralSpot("far", Tile(x=59, y=12))
+
+    def pull(spot: MuralSpot) -> float:
+        s = situation(needs=INSPIRED, craft=Medium.MURAL, mural=spot)
+        return score_of(Goal(A.CREATE, spot.wall), s)
+
+    assert pull(near) > pull(far)
+
+
+def test_nobody_starts_making_something_just_before_bed() -> None:
+    assert creating(situation(needs=INSPIRED, craft=Medium.WRITING, hour=20.5))
+    assert creating(situation(needs=INSPIRED, craft=Medium.WRITING, hour=22)) == []
+
+
+def test_finishing_counts_towards_what_a_stay_promises() -> None:
+    assert promised(A.CREATE, Need.INSPIRATION) == -1.0
+    assert promised(A.CREATE, Need.CURIOSITY) == pytest.approx(-0.6)

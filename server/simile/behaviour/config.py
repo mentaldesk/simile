@@ -13,6 +13,7 @@ class Need(StrEnum):
     CURIOSITY = "curiosity"
     REST = "rest"
     NEWS = "news"
+    INSPIRATION = "inspiration"
 
 
 class Activity(StrEnum):
@@ -28,6 +29,7 @@ class Activity(StrEnum):
     WANDER = "wander"
     SEEK = "seek"
     IDLE = "idle"
+    CREATE = "create"
     SLEEP = "sleep"
     TALK = "talk"
 
@@ -43,8 +45,8 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
     A.PARK: {V.PEACE_OF_MIND: 0.7, V.FREEDOM: 0.2, V.ADVENTURE: 0.1},
     A.NOODLE_BAR: {V.PLEASURE: 0.6, V.CONNECTION: 0.3},
     A.MAKER_SPACE: {
-        V.CREATIVITY: 0.8,
-        V.SELF_ACTUALIZATION: 0.4,
+        V.CREATIVITY: 0.3,
+        V.SELF_ACTUALIZATION: 0.2,
         V.KNOWLEDGE: 0.2,
         V.AMBITION: 0.2,
     },
@@ -55,16 +57,28 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
 
 NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: 0.8},
-    A.COFFEE_SHOP: {Need.REST: 0.2},
-    A.SQUARE: {Need.CURIOSITY: 0.1},
-    A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.1},
+    A.COFFEE_SHOP: {Need.REST: 0.2, Need.CURIOSITY: 0.2},
+    A.SQUARE: {Need.CURIOSITY: 0.3},
+    A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.2},
     A.NOODLE_BAR: {Need.REST: 0.2},
-    A.MAKER_SPACE: {Need.CURIOSITY: 0.6},
+    A.MAKER_SPACE: {Need.CURIOSITY: 0.4},
     A.WANDER: {Need.CURIOSITY: 0.4},
     A.IDLE: {Need.REST: 0.2},
 }
 
-BASE: dict[Activity, float] = {A.COFFEE_SHOP: 0.1, A.SQUARE: 0.05, A.NEWS: -0.3, A.IDLE: -0.1}
+BASE: dict[Activity, float] = {
+    A.COFFEE_SHOP: 0.1,
+    A.SQUARE: 0.05,
+    A.NEWS: -0.3,
+    A.IDLE: -0.1,
+    A.CREATE: -1.0,
+}
+
+WRITING_PLACES: dict[Activity, dict[CoreValue, float]] = {
+    A.HOME: {V.PEACE_OF_MIND: 0.5, V.INDEPENDENCE: 0.4, V.SECURITY: 0.2, V.TRADITION: 0.2},
+    A.COFFEE_SHOP: {V.CONNECTION: 0.6, V.PLEASURE: 0.3, V.OPEN_MINDEDNESS: 0.3},
+    A.MAKER_SPACE: {V.AMBITION: 0.4, V.SUCCESS: 0.2},
+}
 
 DAILY: dict[Activity, Curve] = {
     A.COFFEE_SHOP: ((6.5, 0.0), (8.0, 0.3), (10.0, 0.1), (13.0, 0.0), (15.0, 0.15), (17.0, 0.0)),
@@ -78,6 +92,7 @@ RISE: dict[Need, float] = {
     Need.CURIOSITY: 0.03,
     Need.REST: 0.04,
     Need.NEWS: -0.1,
+    Need.INSPIRATION: 0.015,
 }
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
@@ -85,22 +100,26 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
     Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
+    Need.INSPIRATION: {V.CREATIVITY: 0.035, V.SELF_ACTUALIZATION: 0.015},
 }
 
 EFFECTS: dict[Activity, dict[Need, float]] = {
     A.HOME: {Need.REST: -0.3},
     A.SLEEP: {Need.REST: -0.25},
-    A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1},
-    A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.05},
+    A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.CURIOSITY: -0.3},
+    A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.4},
     A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6},
-    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.05},
+    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
-    A.MAKER_SPACE: {Need.CURIOSITY: -1.2},
+    A.MAKER_SPACE: {Need.CURIOSITY: -0.9},
     A.WANDER: {Need.CURIOSITY: -0.3},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
+    A.CREATE: {Need.CURIOSITY: -0.6},
     A.TALK: {Need.SOCIAL: -6.0},
 }
+
+FINISHING: dict[Activity, dict[Need, float]] = {A.CREATE: {Need.INSPIRATION: -1.0}}
 
 DWELL: dict[Activity, tuple[float, float]] = {
     A.HOME: (15, 60),
@@ -113,6 +132,7 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.WANDER: (1, 5),
     A.SEEK: (3, 10),
     A.IDLE: (2, 8),
+    A.CREATE: (45, 75),
 }
 
 
@@ -129,6 +149,7 @@ class Urgency(BaseModel):
 URGENCY: dict[Need, Urgency] = {
     Need.SOCIAL: Urgency(power=3.0, weight=6.0),
     Need.NEWS: Urgency(power=2.0, weight=10.0),
+    Need.INSPIRATION: Urgency(power=2.0, weight=20.0),
 }
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
@@ -226,11 +247,28 @@ class BehaviourConfig(BaseModel):
 
     rise: dict[Need, float] = Field(default=RISE, description="How fast each need rises awake.")
     rise_values: dict[Need, dict[CoreValue, float]] = Field(
-        default=RISE_VALUES, description="Extra rise per unit of each value."
+        default=RISE_VALUES,
+        description="Extra rise per unit of each value. Inspiration rises only for NPCs with a "
+        "craft.",
     )
     effects: dict[Activity, dict[Need, float]] = Field(
         default=EFFECTS,
         description="How each activity changes needs once there. Negative satisfies.",
+    )
+    finishing: dict[Activity, dict[Need, float]] = Field(
+        default=FINISHING,
+        description="How finishing a stay changes needs, all at once as they leave. A stay cut "
+        "short brings none of it.",
+    )
+    writing_places: dict[Activity, dict[CoreValue, float]] = Field(
+        default=WRITING_PLACES,
+        description="Where writers go to write, by the activity whose place it is, with the score "
+        "per unit of `value - 0.5` for writing there.",
+    )
+    writing_base: dict[Activity, float] = Field(
+        default={A.MAKER_SPACE: -0.1},
+        description="Score for writing at each of the writing_places before values. The maker "
+        "space starts behind, since its regulars already crowd it.",
     )
     walking: dict[Need, float] = Field(
         default={Need.REST: 0.1}, description="How walking changes needs."
@@ -263,8 +301,9 @@ class BehaviourConfig(BaseModel):
             Need.CURIOSITY: (0.2, 0.5),
             Need.REST: (0.0, 0.15),
             Need.NEWS: (0.1, 0.6),
+            Need.INSPIRATION: (0.0, 0.6),
         },
-        description="Needs on start, sampled uniformly.",
+        description="Needs on start, sampled uniformly. Inspiration starts at 0 without a craft.",
     )
 
     bedtime: float = Field(default=22.5, description="Hour an average NPC goes home to sleep.")
