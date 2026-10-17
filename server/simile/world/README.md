@@ -21,13 +21,13 @@ if await walk is Outcome.ARRIVED:
 
 | | |
 |---|---|
-| `place(entity, target)` | Puts an entity on the target, ending any walk, and returns the `Tile` it's on. |
+| `place(entity, target)` | Puts an entity on the target, ending any walk, and returns the `MapTile` it's on. |
 | `walk_to(entity, target)` | Starts a walk there, ending any walk already going, and returns a `Walk`. |
 | `stop(entity)` | Cancels the entity's walk. |
 | `position(entity)` | A `Point(x, y, map)` in tiles. Fractions are mid-step. |
 | `entities()` | `{id: Point}` for every entity. |
 | `distance(a, b)` | Straight-line distance between two entities, in tiles, or `math.inf` if they're on different maps. |
-| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position and map on every `player_move`, so `position("player")` raises `KeyError` until the first one. |
+| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position and map on every `player_move`, so `position("player")` raises `KeyError` until the first one. It logs and drops a move onto a map that isn't loaded. |
 | `town` | The village's `TownMap`, carrying every map's locations, so `town.location(id)` finds any of them. An id on two maps is the village's. |
 | `maps` | Every `TownMap` by id. |
 
@@ -54,7 +54,7 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on the village.
   `stop` or `place`) or `SUPERSEDED` (by another `walk_to`). From a tick, poll `walk.outcome`, which
   is `None` until it ends, or use `walk.add_done_callback(callback)`. A callback that raises is
   logged and doesn't affect the others.
-- `walk.destination` is the `Tile` it's heading for and `walk.distance` its length in tiles, on
+- `walk.destination` is the `MapTile` it's heading for and `walk.distance` its length in tiles, on
   every map it crosses, so it takes `walk.distance / WALKING_SPEED` sim seconds.
 - Entities walk at `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second, at any sim speed.
 - Paths are A\* on each map's grid in 8 directions. A diagonal step needs both tiles beside it to be
@@ -63,7 +63,7 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on the village.
   (`simile.world.paths.DOOR`, 1 tile): the walker stands on the door's tile until it's through, then
   is on the tile at the other end.
 - Entities only stop on whole tiles. A walk that ends early finishes the step it's on, or goes
-  through the door it's in, and a new walk starts from that tile. If someone else has that tile,
+  through the door it has started through, and a new walk starts from that tile. If someone else has that tile,
   the entity steps on to the nearest free one.
 - Walkers pass through each other.
 

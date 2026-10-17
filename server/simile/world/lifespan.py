@@ -1,8 +1,11 @@
+import logging
 import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from starlette.applications import Starlette
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -17,6 +20,9 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     def on_player_move(message: PlayerMoveMessage) -> None:
         position = message.position
+        if position.map not in movement.maps:
+            logger.warning("Ignored a player_move onto an unknown map: %s", position)
+            return
         movement.track(PLAYER_ID, Point(position.x, position.y, position.map))
 
     stops = [

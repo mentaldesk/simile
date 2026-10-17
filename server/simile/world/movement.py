@@ -70,7 +70,7 @@ class Walk:
     def __init__(self, entity: Id, target: Target) -> None:
         self.entity = entity
         self.target = target
-        self.destination: Tile | None = None
+        self.destination: MapTile | None = None
         self.distance = 0.0
         self.outcome: Outcome | None = None
         self._callbacks: list[Callable[[Walk], None]] = []
@@ -119,6 +119,10 @@ def point_of(spot: Spot) -> Point:
     return Point(spot.x, spot.y, spot.map)
 
 
+def map_tile(spot: Spot) -> MapTile:
+    return MapTile(map=spot.map, x=spot.x, y=spot.y)
+
+
 @dataclass
 class Body:
     tile: Spot
@@ -131,7 +135,8 @@ class Body:
     @property
     def stepping(self) -> bool:
         return bool(self.path) and (
-            self.path[0].map != self.tile.map or self.position != (self.tile.x, self.tile.y)
+            (self.path[0].map != self.tile.map and self.through > 0)
+            or self.position != (self.tile.x, self.tile.y)
         )
 
     @property
@@ -176,7 +181,7 @@ class Movement:
         self.bus = bus
         self._bodies: dict[Id, Body] = {}
 
-    def place(self, entity: Id, target: Target) -> Tile:
+    def place(self, entity: Id, target: Target) -> MapTile:
         """Put an entity on the target, or the nearest free tile to it, ending any walk."""
         body = self._bodies.get(entity)
         spot = self._resolve(entity, target, body.heading if body else None)
@@ -184,7 +189,7 @@ class Movement:
             raise ValueError(f"{entity} can't stand on {target!r}")
         self._replace(entity, Body(spot, point_of(spot)))
         self._publish(entity, spot)
-        return Tile(x=spot.x, y=spot.y)
+        return map_tile(spot)
 
     def track(self, entity: Id, position: Point) -> None:
         """Record where something the client moves, like the player, is. Publishes nothing."""
@@ -214,7 +219,7 @@ class Movement:
         if path is None:
             self._end(body, Outcome.UNREACHABLE)
         else:
-            walk.destination = Tile(x=path[-1].x, y=path[-1].y)
+            walk.destination = map_tile(path[-1])
             walk.distance = route_length([body.position, *body.path]) - body.through
             if not body.path:
                 self._end(body, Outcome.ARRIVED)
@@ -268,7 +273,7 @@ class Movement:
         if path:
             if walk:
                 walk.distance += route_length(path) - route_length([tile, *body.path])
-                walk.destination = Tile(x=path[-1].x, y=path[-1].y)
+                walk.destination = map_tile(path[-1])
             body.path = deque(path[1:])
 
     def _replace(self, entity: Id, body: Body) -> None:
