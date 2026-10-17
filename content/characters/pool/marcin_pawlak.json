@@ -1,6 +1,6 @@
 {
-  "id": "tomasz_zajac",
-  "name": "Tomasz Zając",
+  "id": "marcin_pawlak",
+  "name": "Marcin Pawlak",
   "birth_year": 1967,
   "gender": "man",
   "origin": "Poland",
@@ -124,6 +124,6 @@
   "craft": null,
   "source": "premade",
   "created": "2026-10-17T23:09:07.711222Z",
-  "updated": "2026-10-17T23:09:07.711222Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:30.452087Z",
+  "version": 2
 }

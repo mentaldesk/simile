@@ -1,11 +1,20 @@
+import json
 import re
 from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 from simile.characters.brief import Brief
-from simile.characters.generate import TooSimilar, character_id, first_sentence, settle, write
+from simile.characters.generate import (
+    TooSimilar,
+    character_id,
+    first_sentence,
+    renamed,
+    settle,
+    write,
+)
 from simile.characters.novelty import Embedder, Novelty
 from simile.characters.sheet import PARTICLES, plan
 from simile.characters.tables import YEAR, Tables, load_tables
@@ -14,8 +23,16 @@ from simile.npc.values import format_scores, ranked
 from simile.schema import Character
 
 POOL_DIR = Path(__file__).resolve().parents[3] / "content" / "characters" / "pool"
+CONTENT_DIR = POOL_DIR.parents[1]
+RENAMES = "renames.json"
+"""Maps the id of a name the plan drew to the id it was renamed to, so a rerun skips it."""
 CALLS_EACH = 2
 """Claude calls a character takes when nothing has to be retried."""
+HEADING = "# Character pool\n"
+
+
+class NotAPool(ValueError):
+    """A folder the generator mustn't write to."""
 
 
 @dataclass
@@ -42,17 +59,19 @@ async def generate_pool(
 ) -> Run:
     """Write the first `count` characters of the seed's plan that aren't in `directory` yet.
     `calls` is the client's call log, which `max_calls` caps."""
+    check_writable(directory)
     t = tables or load_tables()
     directory.mkdir(parents=True, exist_ok=True)
     library = load_pool(directory)
     novelty = Novelty(embedder, library)
+    renames = load_renames(directory)
     run = Run()
     try:
         for sheet in plan(count, seed, tables=t):
             brief = Brief(values=sheet.values)
             id = character_id(settle(brief, sheet, t)["name"])
-            if (directory / f"{id}.json").exists():
-                run.skipped.append(id)
+            if (directory / f"{renames.get(id, id)}.json").exists():
+                run.skipped.append(renames.get(id, id))
                 continue
             if max_calls is not None and len(calls) + CALLS_EACH > max_calls:
                 run.unstarted += 1
@@ -88,11 +107,59 @@ def save(character: Character, directory: Path) -> Path:
     return path
 
 
+def character_files(directory: Path = POOL_DIR) -> list[Path]:
+    return sorted(path for path in directory.glob("*.json") if path.name != RENAMES)
+
+
 def load_pool(directory: Path = POOL_DIR) -> list[Character]:
     return [
         Character.model_validate_json(path.read_text(encoding="utf-8"))
-        for path in sorted(directory.glob("*.json"))
+        for path in character_files(directory)
     ]
+
+
+def load_renames(directory: Path = POOL_DIR) -> dict[str, str]:
+    path = directory / RENAMES
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+def rename(directory: Path, id: str, name: str, *, now: datetime | None = None) -> Character:
+    """Give a pool character a new name and id everywhere, keeping its slot in the plan."""
+    check_writable(directory)
+    old = Character.model_validate_json((directory / f"{id}.json").read_text(encoding="utf-8"))
+    new_id = character_id(name)
+    if new_id != id and (directory / f"{new_id}.json").exists():
+        raise ValueError(f"{new_id} is already in the pool")
+    update = {"id": new_id, "name": name, "updated": now or datetime.now(UTC)}
+    character = renamed(old.model_copy(update=update | {"version": old.version + 1}), old.name)
+    save(character, directory)
+    if new_id != id:
+        (directory / f"{id}.json").unlink()
+    renames = load_renames(directory)
+    planned = next((key for key, value in renames.items() if value == id), id)
+    renames = {key: value for key, value in renames.items() if key != planned}
+    if planned != new_id:
+        renames[planned] = new_id
+    text = json.dumps(renames, indent=2, sort_keys=True) + "\n"
+    (directory / RENAMES).write_text(text, encoding="utf-8")
+    if (directory / "README.md").exists():
+        write_readme(directory, *readme_command(directory))
+    return character
+
+
+def within(path: Path, folder: Path) -> bool:
+    """Whether `path` is `folder` or inside it, also on a disk that ignores case."""
+    resolved, parent = (Path(str(p.resolve()).casefold()) for p in (path, folder))
+    return resolved.is_relative_to(parent)
+
+
+def check_writable(directory: Path) -> None:
+    """Refuse anywhere in content/ but the pool, and a folder whose README.md isn't the pool's."""
+    if within(directory, CONTENT_DIR) and not within(directory, POOL_DIR):
+        raise NotAPool("must be outside content/ or in content/characters/pool/")
+    readme = directory / "README.md"
+    if readme.exists() and not readme.read_text(encoding="utf-8").startswith(HEADING):
+        raise NotAPool(f"{readme} isn't a character pool's README")
 
 
 def write_readme(directory: Path, count: int, seed: int, *, tables: Tables | None = None) -> Path:
@@ -148,7 +215,7 @@ def readme(
 ) -> str:
     t = tables or load_tables()
     lines = [
-        "# Character pool",
+        HEADING.strip(),
         "",
         "Premade characters for the character library (#89). Each `<id>.json` is a `Character`,",
         "generated from `server/` by",
@@ -159,7 +226,9 @@ def readme(
         "",
         "A rerun skips the characters already here, and the first characters of a seed's plan",
         "are the same for any count, so a larger `--count` adds to the pool. Don't edit them by",
-        "hand: delete one and rerun to write it again.",
+        "hand: delete one and rerun to write it again, or rename one with",
+        '`uv run simile characters rename <id> "<new name>"`. `renames.json` records each',
+        "rename, so a rerun doesn't write the name the plan drew again.",
         "",
         f"This first pool has {len(characters)} characters, not the 30 #183 asks for: the user",
         "asked for a small first pool. A larger one waits for #89's question on pool size.",

@@ -1,6 +1,6 @@
 {
-  "id": "ciaran_walsh",
-  "name": "Ciarán Walsh",
+  "id": "fergal_nolan",
+  "name": "Fergal Nolan",
   "birth_year": 1987,
   "gender": "man",
   "origin": "Ireland",
@@ -111,6 +111,6 @@
   "craft": null,
   "source": "premade",
   "created": "2026-10-17T23:23:34.447253Z",
-  "updated": "2026-10-17T23:23:34.447253Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:31.747914Z",
+  "version": 2
 }

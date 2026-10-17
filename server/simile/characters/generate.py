@@ -121,7 +121,7 @@ async def reroll(
         tables=t,
     )
     if "name" in sections:
-        return _renamed(result, character.name)
+        return replace(result, character=renamed(result.character, character.name))
     return result
 
 
@@ -328,9 +328,8 @@ def _suggestions(draft: Mapping[str, Any], revised: Mapping[str, Any]) -> list[S
     return found
 
 
-def _renamed(result: Generated, old: str) -> Generated:
-    """A new name, also wherever the old one slipped into their own prose."""
-    character = result.character
+def renamed(character: Character, old: str) -> Character:
+    """`character` with its new name wherever their `old` one slipped into their own prose."""
     new_given, old_given = split_name(character.name)[0], split_name(old)[0]
 
     def swap(text: str) -> str:
@@ -342,7 +341,7 @@ def _renamed(result: Generated, old: str) -> Generated:
         data[name] = swap(data[name])
     data["past"] = [m | {"content": swap(m["content"])} for m in data["past"]]
     data["hooks"] = [h | {"description": swap(h["description"])} for h in data["hooks"]]
-    return replace(result, character=Character.model_validate(data))
+    return Character.model_validate(data)
 
 
 def _with_look(appearance: Appearance, look: Look | None) -> Appearance:

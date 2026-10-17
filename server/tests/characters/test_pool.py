@@ -1,18 +1,24 @@
+import json
 from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from simile.characters import novelty
 from simile.characters.novelty import Embedder
 from simile.characters.pool import (
+    CONTENT_DIR,
     POOL_DIR,
+    RENAMES,
+    NotAPool,
     generate_pool,
     load_pool,
     name_structure,
     occupation_category,
     readme_command,
+    rename,
 )
 from simile.cli import create_cli
 from simile.llm import CallRecord, FakeProvider, LLMClient, Request
@@ -21,10 +27,16 @@ type Fakes = Callable[..., tuple[LLMClient, FakeProvider]]
 type Reply = Callable[..., str]
 
 runner = CliRunner()
+NOW = datetime(2026, 10, 19, 9, 0, tzinfo=UTC)
 
 
 def quiet(_: str) -> None:
     pass
+
+
+def said(result: Result) -> str:
+    """The CLI's output with the error box's borders and line wrapping taken out."""
+    return " ".join(result.output.replace("│", " ").split())
 
 
 async def run(fakes: Fakes, embedder: Embedder, directory: Path, count: int, **options):
@@ -157,6 +169,110 @@ def test_the_cli_never_writes_where_current_residents_live(
     result = runner.invoke(create_cli(), ["characters", "generate", "--out", str(out)])
 
     assert result.exit_code != 0
-    assert "outside content/" in result.output
+    assert "outside content/" in said(result)
     assert not fake.requests
     assert {path: path.read_bytes() for path in out.rglob("*") if path.is_file()} == before
+
+
+def test_the_write_guard_ignores_case(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeProvider()
+    monkeypatch.setattr(LLMClient, "provider", property(lambda client: fake))
+    tables = CONTENT_DIR / "characters" / "tables"
+    shouted = CONTENT_DIR.parent / "CONTENT" / "characters" / "tables"
+    before = {path: path.read_bytes() for path in tables.iterdir()}
+
+    result = runner.invoke(create_cli(), ["characters", "generate", "--out", str(shouted)])
+
+    assert result.exit_code != 0
+    assert "outside content/" in said(result)
+    assert not fake.requests
+    assert {path: path.read_bytes() for path in tables.iterdir()} == before
+
+
+@pytest.mark.anyio
+async def test_a_readme_the_generator_didnt_write_is_left_alone(
+    fake_llm: Fakes, embedder: Embedder, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "README.md").write_text("# My project\n")
+    llm, fake = fake_llm()
+    monkeypatch.setattr(LLMClient, "provider", property(lambda client: fake))
+
+    result = runner.invoke(create_cli(), ["characters", "generate", "--out", str(tmp_path)])
+    with pytest.raises(NotAPool, match="isn't a character pool's README"):
+        await generate_pool(llm, 1, 0, tmp_path, embedder=embedder, echo=quiet)
+
+    assert result.exit_code != 0
+    assert "isn't a character pool's README" in said(result)
+    assert not fake.requests
+    assert (tmp_path / "README.md").read_text() == "# My project\n"
+    assert not list(tmp_path.glob("*.json"))
+
+
+@pytest.mark.anyio
+async def test_a_renamed_character_keeps_its_slot_in_the_plan(
+    fake_llm: Fakes, embedder: Embedder, tmp_path: Path
+) -> None:
+    first, _ = await run(fake_llm, embedder, tmp_path, 2)
+    old, kept = first.written
+    given = old.name.split()[0]
+    path = tmp_path / f"{old.id}.json"
+    path.write_text(path.read_text().replace(old.persona, f"{given} keeps to himself."))
+
+    character = rename(tmp_path, old.id, "Ana Folau", now=NOW)
+    second, fake = await run(fake_llm, embedder, tmp_path, 2)
+
+    assert (character.id, character.name, character.version) == ("ana_folau", "Ana Folau", 2)
+    assert character.persona == "Ana keeps to himself."
+    assert not path.exists()
+    assert json.loads((tmp_path / RENAMES).read_text()) == {old.id: "ana_folau"}
+    assert not fake.requests
+    assert second.skipped == ["ana_folau", kept.id]
+    readme = (tmp_path / "README.md").read_text()
+    assert "`ana_folau` Ana Folau" in readme
+    assert old.name not in readme
+
+
+@pytest.mark.anyio
+async def test_renaming_again_points_the_slot_at_the_latest_name(
+    fake_llm: Fakes, embedder: Embedder, tmp_path: Path
+) -> None:
+    first, _ = await run(fake_llm, embedder, tmp_path, 1)
+    planned = first.written[0]
+
+    rename(tmp_path, planned.id, "Ana Folau", now=NOW)
+    rename(tmp_path, "ana_folau", "Bram de Wit", now=NOW)
+    assert json.loads((tmp_path / RENAMES).read_text()) == {planned.id: "bram_de_wit"}
+
+    rename(tmp_path, "bram_de_wit", planned.name, now=NOW)
+    assert json.loads((tmp_path / RENAMES).read_text()) == {}
+    assert [c.id for c in load_pool(tmp_path)] == [planned.id]
+
+
+@pytest.mark.anyio
+async def test_a_rename_never_takes_another_characters_id(
+    fake_llm: Fakes, embedder: Embedder, tmp_path: Path
+) -> None:
+    first, _ = await run(fake_llm, embedder, tmp_path, 2)
+    a, b = first.written
+
+    with pytest.raises(ValueError, match="already in the pool"):
+        rename(tmp_path, a.id, b.name)
+    assert len(load_pool(tmp_path)) == 2
+
+
+def test_the_cli_renames_a_character(
+    fake_llm: Fakes, embedder: Embedder, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    _, fake = fake_llm()
+    monkeypatch.setattr(LLMClient, "provider", property(lambda client: fake))
+    monkeypatch.setattr(novelty, "LocalEmbedder", lambda: embedder)
+    args = ["characters", "generate", "--count", "1", "--seed", "1", "--out", str(tmp_path)]
+    assert runner.invoke(create_cli(), args).exit_code == 0
+    [character] = load_pool(tmp_path)
+
+    args = ["characters", "rename", character.id, "Ana Folau", "--dir", str(tmp_path)]
+    result = runner.invoke(create_cli(), args)
+
+    assert result.exit_code == 0, result.output
+    assert f"Renamed {character.id} to Ana Folau (ana_folau)" in result.output
+    assert [c.name for c in load_pool(tmp_path)] == ["Ana Folau"]

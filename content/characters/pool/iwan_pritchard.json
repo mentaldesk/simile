@@ -1,6 +1,6 @@
 {
-  "id": "aled_thomas",
-  "name": "Aled Thomas",
+  "id": "iwan_pritchard",
+  "name": "Iwan Pritchard",
   "birth_year": 1976,
   "gender": "man",
   "origin": "Wales",
@@ -119,6 +119,6 @@
   },
   "source": "premade",
   "created": "2026-10-17T23:18:57.502531Z",
-  "updated": "2026-10-17T23:18:57.502531Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:29.793307Z",
+  "version": 2
 }

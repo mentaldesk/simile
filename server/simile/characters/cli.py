@@ -24,14 +24,14 @@ def register(app: typer.Typer) -> None:
         from collections import Counter
 
         from simile.characters.novelty import LocalEmbedder
-        from simile.characters.pool import POOL_DIR, generate_pool
+        from simile.characters.pool import POOL_DIR, NotAPool, check_writable, generate_pool
         from simile.llm import CallRecord, LLMClient
 
         directory = out or POOL_DIR
-        content = POOL_DIR.parents[1]
-        resolved = directory.resolve()
-        if resolved.is_relative_to(content) and not resolved.is_relative_to(POOL_DIR):
-            raise typer.BadParameter("must be content/characters/pool/ or outside content/")
+        try:
+            check_writable(directory)
+        except NotAPool as e:
+            raise typer.BadParameter(str(e), param_hint="--out") from e
         if count < 1:
             raise typer.BadParameter("must be at least 1", param_hint="--count")
 
@@ -67,5 +67,23 @@ def register(app: typer.Typer) -> None:
             f"already there, {len(run.failed)} failed, {run.unstarted} not started. "
             f"Claude calls: {tally(models)} ({tally(Counter(c.purpose for c in calls))})."
         )
+
+    @characters.command("rename")
+    def rename_character(
+        id: Annotated[str, typer.Argument(help="The character's id.")],
+        name: Annotated[str, typer.Argument(help="Their new full name.")],
+        directory: Annotated[
+            Path | None,
+            typer.Option("--dir", help="Defaults to the repo's content/characters/pool/."),
+        ] = None,
+    ) -> None:
+        """Rename a premade character everywhere, so a rerun doesn't write the old name again."""
+        from simile.characters.pool import POOL_DIR, NotAPool, rename
+
+        try:
+            character = rename(directory or POOL_DIR, id, name)
+        except (NotAPool, ValueError, FileNotFoundError) as e:
+            raise typer.BadParameter(str(e)) from e
+        typer.echo(f"Renamed {id} to {character.name} ({character.id})")
 
     app.add_typer(characters, name="characters")

@@ -1,6 +1,6 @@
 {
-  "id": "darren_hughes",
-  "name": "Darren Hughes",
+  "id": "neil_wright",
+  "name": "Neil Wright",
   "birth_year": 1977,
   "gender": "man",
   "origin": "England",
@@ -126,6 +126,6 @@
   "craft": null,
   "source": "premade",
   "created": "2026-10-17T22:59:35.900517Z",
-  "updated": "2026-10-17T22:59:35.900517Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:29.141699Z",
+  "version": 2
 }

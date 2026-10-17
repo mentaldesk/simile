@@ -1,6 +1,6 @@
 {
-  "id": "davide_bianchi",
-  "name": "Davide Bianchi",
+  "id": "massimo_conti",
+  "name": "Massimo Conti",
   "birth_year": 1979,
   "gender": "man",
   "origin": "Italy",
@@ -124,6 +124,6 @@
   },
   "source": "premade",
   "created": "2026-10-17T23:22:27.358041Z",
-  "updated": "2026-10-17T23:22:27.358041Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:31.102246Z",
+  "version": 2
 }

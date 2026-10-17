@@ -1,6 +1,6 @@
 {
-  "id": "ewan_henderson",
-  "name": "Ewan Henderson",
+  "id": "duncan_morrison",
+  "name": "Duncan Morrison",
   "birth_year": 1973,
   "gender": "man",
   "origin": "Scotland",
@@ -109,6 +109,6 @@
   },
   "source": "premade",
   "created": "2026-10-17T23:10:36.640347Z",
-  "updated": "2026-10-17T23:10:36.640347Z",
-  "version": 1
+  "updated": "2026-10-17T23:53:28.484810Z",
+  "version": 2
 }
