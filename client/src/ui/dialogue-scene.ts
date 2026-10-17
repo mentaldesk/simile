@@ -9,6 +9,7 @@ import './dialogue.css';
 import { onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { NewsPanel } from './news-panel';
+import { fitOverlay, inOverlay } from './overlay';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
 import { NEWS_KEY } from './tuning';
@@ -24,6 +25,7 @@ export class DialogueScene extends Phaser.Scene {
   private newsHint!: HTMLElement;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
+  private fromGame = 1;
 
   constructor() {
     super({ key: 'dialogue', active: true });
@@ -32,9 +34,6 @@ export class DialogueScene extends Phaser.Scene {
   create(): void {
     this.root = document.body.appendChild(document.createElement('div'));
     this.root.className = 'dialogue';
-    this.root.style.width = `${this.scale.width}px`;
-    this.root.style.height = `${this.scale.height}px`;
-    trackedWorld.viewport = { width: this.scale.width, height: this.scale.height };
 
     this.marker = new TargetMarker(this.root);
     this.bubbles = new BubbleLayer(this.root);
@@ -76,7 +75,7 @@ export class DialogueScene extends Phaser.Scene {
 
   update(): void {
     this.fitToCanvas();
-    const view = worldView();
+    const view = inOverlay(worldView(), this.fromGame);
     this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id));
     this.bubbles.render(dialogue.bubbles.current(), view);
     const atTerminal = this.terminal() !== undefined;
@@ -89,8 +88,14 @@ export class DialogueScene extends Phaser.Scene {
   }
 
   private fitToCanvas(): void {
-    const { left, top, width } = this.game.canvas.getBoundingClientRect();
-    const fit = `translate(${left}px, ${top}px) scale(${width / this.scale.width})`;
-    if (fit !== this.fitted) this.root.style.transform = this.fitted = fit;
+    const canvas = this.game.canvas.getBoundingClientRect();
+    const { scale, width, height, fromGame } = fitOverlay(canvas, this.scale.gameSize);
+    this.fromGame = fromGame;
+    const transform = `translate(${canvas.left}px, ${canvas.top}px) scale(${scale})`;
+    const fit = `${transform} ${width}x${height}`;
+    if (fit === this.fitted) return;
+    this.fitted = fit;
+    Object.assign(this.root.style, { width: `${width}px`, height: `${height}px`, transform });
+    trackedWorld.viewport = { width: this.scale.width, height: this.scale.height };
   }
 }

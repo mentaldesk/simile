@@ -3,12 +3,15 @@ import { server, type Entity, type Position } from '../net';
 export const PLAYER_ID = 'player';
 
 export type ScreenPoint = { x: number; y: number };
+export type ScreenBox = { x: number; y: number; width: number; height: number };
+export type ScreenSprite = { box: ScreenBox; depth: number; opaqueAt?(point: ScreenPoint): boolean };
 
 /** What the dialogue UI needs from the world scene. README.md describes it. */
 export interface WorldView {
   positionOf(entityId: string): Position | undefined;
   npcIds(): Iterable<string>;
   bubbleAnchor(entityId: string): ScreenPoint | undefined;
+  spriteOf?(entityId: string): ScreenSprite | undefined;
 }
 
 export const TILE_PX = 48;

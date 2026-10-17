@@ -39,6 +39,28 @@ mirror `lighting.py`, and a test checks them against every manifest.
 - **Characters**: `scenes/iso-characters.ts` draws today's atlases at 3×, anchored at the feet and
   facing their direction of travel on screen, until A2b's sprites replace them (#144).
 
-Still to come: picking, bubbles and audio positions (#143), so under `?renderer=iso` the dialogue UI
-falls back to its own top-down placement and voices play unpositioned. The crossfade, tint and drop
-shadow are #144's.
+## Resolution
+
+The renders are drawn at one art pixel per CSS pixel, so a bigger window shows more of the village.
+Under `?renderer=iso`, `main.ts` sizes the game to the window in device pixels and shows it at
+`1 / devicePixelRatio` (`nativeCanvas` in `canvas.ts`). Phaser's `RESIZE` mode would size it in CSS
+pixels, which a 2× screen blows up. The camera's zoom is whole device pixels per art pixel
+(`isoZoom`): the pixel ratio, rounded, until the view would be wider than `MAX_TILES_ACROSS` (20),
+and then the smallest whole zoom that keeps it within that. Top-down keeps `main.ts`'s 640 × 360
+canvas, scaled in whole steps.
+
+## What it provides
+
+`IsoScene` registers as the dialogue UI's `WorldView` and as audio's position provider.
+
+- **Picking**: `spriteOf(id)` is a resident's sprite box on the canvas (`figureBox` in `screen.ts`,
+  after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point.
+  `npcAt` in `world/hit.ts` goes front to back by depth and picks the first opaque one there, else
+  the first whose box holds the point, so click-to-talk and the debug overlay pick the resident in
+  front where sprites overlap. A resident is picked by their body, up to 1.5 tiles above their tile.
+- **Bubbles**: `bubbleAnchor(id)` is the top centre of that box: the feet on screen, ground height
+  included, less the sprite's height.
+- **Audio**: positions are tiles turned 45° (`screenAligned`), so audio's pan follows left and right
+  on screen. Distances don't change, so earshot is still in tiles.
+
+The crossfade, tint and drop shadow are #144's.
