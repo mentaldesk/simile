@@ -12,7 +12,7 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   reply.";
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
-- the news at a terminal (see *Reading the news*).
+- the news and residents' writing at a terminal (see *Reading the news*).
 
 ## Choosing who to talk to
 
@@ -42,9 +42,18 @@ a hint says "Press E to read the news", and E opens the news panel. It sends `li
 the `news` that comes back: each article's title, source and the start of its summary, newest first,
 with a tick on those the player has read. ↑ and ↓ choose an article, and Enter or a click reads it:
 the panel sends `read_news` and shows the whole summary and a link to the original, which opens in a
-new tab. The server stores what the player read as their own `news` memory. Esc or E closes the
-panel, and so does walking away from the terminal. The panel keeps its key-downs from `window`, like
-the chat input, so the player doesn't walk while reading, and it ignores `news` while closed.
+new tab. The server stores what the player read as their own `news` memory.
+
+Beside the news is a **Village** tab with residents' writing. ← and → switch tabs, or click one,
+and the panel opens on the tab the player left it on. Opening the Village tab sends `list_works` and
+shows the `works` that come back, newest first: each work's title, its artist's name, its form and
+when it was made, with a tick on those the player has read. Reading one sends `read_work` and shows
+the whole piece, with a poem's line breaks, and the artist's statement. Until `works` arrives the
+tab says nobody has written anything, rather than waiting on a server that may not answer.
+
+Esc or E closes the panel, and so does walking away from the terminal. ↑, ↓, Enter, Tab and the
+focus trap work the same in both tabs. The panel keeps its key-downs from `window`, like the chat
+input, so the player doesn't walk while reading, and it ignores `news` and `works` while closed.
 
 ## Keys
 
