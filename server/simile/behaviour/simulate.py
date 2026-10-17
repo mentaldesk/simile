@@ -18,7 +18,7 @@ from simile.behaviour.mind import (
     skip_news,
 )
 from simile.behaviour.scoring import MuralSpot
-from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Tile
+from simile.schema import CoreValue, Id, LocationKind, Medium, Npc
 from simile.sim import Clock, FakeWallClock, World
 
 HOME = "home"
@@ -27,13 +27,6 @@ TERMINAL = "terminal"
 PLACES = (HOME, STREET, "coffee_shop", "square", TERMINAL, "park", "noodle_bar", "maker_space")
 NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
-STAND_IN_WALLS = (
-    MuralSpot("lane_wall", Tile(x=19, y=12)),
-    MuralSpot("tower_wall", Tile(x=59, y=12)),
-    MuralSpot("tea_wall", Tile(x=23, y=34)),
-)
-"""Walls on the street by the noodle bar, above the park and south of the square, until M7 puts
-real ones in the map."""
 
 
 @dataclass
@@ -51,7 +44,7 @@ class Observer:
     awake: Counter[Id] = field(default_factory=Counter)
     creating: Counter[Id] = field(default_factory=Counter)
     works: dict[Id, Counter[str]] = field(default_factory=lambda: defaultdict(Counter))
-    """Where each NPC made their works: home, a place, or `wall` for a mural."""
+    """Where each NPC made their works: home, a place, or for a mural its wall."""
 
     def __post_init__(self) -> None:
         self.next = self.behaviour.clock.now
@@ -61,11 +54,16 @@ class Observer:
 
     def on_create(self, npc: Npc, wall: Id | None) -> None:
         target = self.behaviour.goal(npc.id).target
-        self.works[npc.id]["wall" if wall else HOME if target == npc.home else str(target)] += 1
+        self.works[npc.id][wall or (HOME if target == npc.home else str(target))] += 1
 
-    def mural_wall(self, npc: Npc) -> MuralSpot:
+    def mural_wall(self, npc: Npc) -> MuralSpot | None:
+        """The map's walls in turn, moving on to the next after each mural."""
+        walls = self.behaviour.movement.town.murals
+        if not walls:
+            return None
         muralists = sorted(n.id for n in self.behaviour.npcs.values() if _medium(n) is Medium.MURAL)
-        return STAND_IN_WALLS[muralists.index(npc.id) % len(STAND_IN_WALLS)]
+        wall = walls[(muralists.index(npc.id) + sum(self.works[npc.id].values())) % len(walls)]
+        return MuralSpot(wall.id, wall.stand)
 
     def tick(self, dt: float) -> None:
         clock = self.behaviour.clock
@@ -112,8 +110,8 @@ async def simulate(
 ) -> tuple[Observer, float]:
     """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows, with
     N1's NPCs unless given others. Conversations, news and works stay stubbed, so nothing calls
-    Claude: there's always an article of `NEWS_INTEREST` to read, muralists always have one of
-    the `STAND_IN_WALLS`, and reading or making something does nothing."""
+    Claude: there's always an article of `NEWS_INTEREST` to read, muralists paint the map's walls
+    in turn, and reading or making something does nothing."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
@@ -229,7 +227,7 @@ def works(observer: Observer, hours: float) -> list[str]:
         return ["**Works.** Nobody has a craft."]
     lines = [
         "**Works.** What each resident with a craft made, where, and the share of their waking "
-        f"time spent making it. Muralists paint the {len(STAND_IN_WALLS)} stand-in walls.",
+        "time spent making it. Muralists paint the map's walls in turn.",
         "",
         "| NPC | Craft | Creativity | Self-actualization | Works | Per sim-day | Where | Making |",
         "|---|---|--:|--:|--:|--:|---|--:|",

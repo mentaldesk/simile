@@ -42,7 +42,7 @@ def make_npc(id: str, home: str, **values: float) -> Npc:
     """An NPC who cares about everything at 0.5, except the values given."""
     scores = {value: values.get(value.value, 0.5) for value in CoreValue}
     return TEMPLATE.model_copy(
-        update={"id": id, "name": id.title(), "home": home, "values": scores}
+        update={"id": id, "name": id.title(), "home": home, "values": scores, "craft": None}
     )
 
 
@@ -549,7 +549,7 @@ def test_the_same_seed_gives_the_same_day() -> None:
 
 
 def test_state_is_json_for_the_debug_overlay() -> None:
-    village = Village([ANA, crafter("wren", "house_2", Medium.WRITING)])
+    village = Village([ANA])
     village.run(hours=1)
 
     state = village.behaviour.state("ana")
@@ -558,7 +558,6 @@ def test_state_is_json_for_the_debug_overlay() -> None:
     needs = state["needs"]
     assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest", "news"}
     assert state["goal"] == str(village.behaviour.goal("ana"))
-    assert "inspiration" in village.behaviour.state("wren")["needs"]
 
 
 def test_npcs_already_on_the_map_stay_where_they_are() -> None:
@@ -710,9 +709,11 @@ def test_writing_at_home_keeps_seekers_away_and_writing_out_does_not() -> None:
     needs = village.behaviour.needs("wren")
 
     village.behaviour.restore("wren", Goal(A.CREATE, "house_1"), needs, now, now, {})
+    assert village.behaviour.at_home("wren")
     assert not village.behaviour.available("ben", "wren")
 
     village.behaviour.restore("wren", Goal(A.CREATE, "coffee_shop"), needs, now, now, {})
+    assert not village.behaviour.at_home("wren")
     assert village.behaviour.available("ben", "wren")
 
 

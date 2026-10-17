@@ -272,7 +272,8 @@ class Behaviour:
     ) -> None:
         """Put the NPC back to what they were doing when saved, after the clock has been set:
         their walk stops, and with no `until` (they were walking or talking) they decide again
-        on the next think. Everyone's needs rise from now."""
+        on the next think. A stay that's already over is dropped rather than finished. Everyone's
+        needs rise from now."""
         mind = self.minds[npc]
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -281,7 +282,8 @@ class Behaviour:
         mind.needs.update(needs)
         mind.cooldowns = dict(cooldowns)
         mind.paused, mind.chases, mind.options, mind.nudge = False, 0, {}, None
-        mind.finishes, mind.interrupted = until is not None, None
+        mind.finishes = until is not None and until > self.clock.now
+        mind.interrupted = None
         self._needs_at = self.clock.now
         self._publish(mind)
 
@@ -300,6 +302,10 @@ class Behaviour:
         """Whether `seeker` could seek `other` out: not asleep, at home, talking, recently refused
         or, for the player, left alone."""
         return self._available(self.minds[seeker], other, self.clock.time_of_day)
+
+    def at_home(self, npc: Id) -> bool:
+        """Whether they're at or heading home, to rest, sleep or make something there."""
+        return self._home_bound(self.minds[npc])
 
     def goal(self, npc: Id) -> Goal:
         return self.minds[npc].goal
@@ -321,7 +327,7 @@ class Behaviour:
             "needs": {
                 need.value: round(value, 3)
                 for need, value in mind.needs.items()
-                if mind.npc.craft or need is not Need.INSPIRATION
+                if need is not Need.INSPIRATION
             },
             "options": dict(mind.options),
             "bedtime": round(mind.bedtime, 2),
@@ -464,7 +470,6 @@ class Behaviour:
         )
 
     def _home_bound(self, mind: Mind) -> bool:
-        """At or heading home, to rest, sleep or make something there."""
         return mind.goal.activity in AT_HOME or mind.goal == Goal(Activity.CREATE, mind.npc.home)
 
     def _begin(self, mind: Mind, goal: Goal) -> None:

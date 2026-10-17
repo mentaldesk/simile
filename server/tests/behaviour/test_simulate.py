@@ -4,13 +4,11 @@ from datetime import UTC, datetime
 import pytest
 from typer.testing import CliRunner
 
-from simile.behaviour.scoring import Places
-from simile.behaviour.simulate import STAND_IN_WALLS, ranks, report, simulate, spearman
+from simile.behaviour.simulate import ranks, report, simulate, spearman
 from simile.cli import create_cli
 from simile.npc import load_npcs
 from simile.schema import Craft, Medium
 from simile.world.map import load_map
-from simile.world.movement import Point
 
 runner = CliRunner()
 
@@ -68,24 +66,17 @@ def test_reports_the_works_residents_with_a_craft_make() -> None:
     start = datetime(2026, 1, 1, 8, tzinfo=UTC)
     media = [Medium.MURAL, Medium.WRITING, None]
     npcs = [
-        npc.model_copy(update={"craft": Craft(medium=medium, form="something") if medium else None})
+        npc.model_copy(update={"craft": Craft(medium=medium, form="x") if medium else None})
         for npc, medium in zip(load_npcs(), media * 4, strict=False)
     ]
 
     observer, seconds = asyncio.run(simulate(12, start=start, npcs=npcs))
     summary = report(observer, 12, start, 0, seconds)
 
+    places = {place for made in observer.works.values() for place in made}
+    walls = {wall.id for wall in load_map().murals}
     assert sum(sum(made.values()) for made in observer.works.values()) >= 3
-    assert "wall" in {place for made in observer.works.values() for place in made}
+    assert places & walls and places - walls
     works = summary.split("**Works.**")[1]
     listed = {npc.id for npc in npcs if f"| {npc.id} |" in works}
     assert listed == {npc.id for npc in npcs if npc.craft}
-
-
-def test_the_stand_in_walls_are_on_the_street() -> None:
-    town = load_map()
-    places = Places(town)
-
-    for spot in STAND_IN_WALLS:
-        assert town.walkable(spot.tile.x, spot.tile.y)
-        assert places.at(Point(spot.tile.x, spot.tile.y)) is None

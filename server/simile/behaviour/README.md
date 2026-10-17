@@ -102,10 +102,11 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `resume(npc)` | They decide again on the next think, or go back to what they were making. |
 | `nudge(npc, goal, bonus)` | Adds `bonus` to `goal`'s score at their next decision, which they make on the next think, stopping where they are if walking. False, changing nothing, if they're paused or asleep. The ambient director nudges through it. |
 | `available(seeker, other)` | Whether `seeker` could seek `other` out: B1's rules for who is sought, and `seeker`'s cooldowns. |
+| `at_home(npc)` | Whether they're at or heading home, to rest, sleep or make something there. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
-| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft), last decision's scores, bedtime. |
+| `state(npc)` | JSON for F3's `npc_state`: goal, needs (not yet inspiration), last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
@@ -121,6 +122,6 @@ Runs memory, world and behaviour on a `FakeWallClock` as fast as the CPU allows 
 about 15 s) and prints where everyone spent their time: minutes near others by Connection, places
 by hour, who was out at night, and what each resident with a craft made per sim-day. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
-interest unread, and reading it does nothing. Until M7 puts mural walls in the map, muralists paint
-one of three stand-in walls on the street (`STAND_IN_WALLS`), and making something does nothing.
-`simulate(..., npcs=...)` runs another cast, such as one given crafts.
+interest unread, and reading it does nothing. Muralists paint M7's walls in turn, moving on to
+the next after each mural, and making something does nothing. `simulate(..., npcs=...)` runs
+another cast.
