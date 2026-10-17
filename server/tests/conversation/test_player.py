@@ -1201,6 +1201,9 @@ TABLES = writing("tobias-1", "tobias", "The Tables by the Water", "river", "repa
 NOTICE = writing("henrietta-1", "henrietta", "Notice: Devices in Your Dwelling", "passwords")
 TARGETS = writing("raymond-1", "raymond", "Q4 Targets: Plan the Mountain, Then Climb It", "mars")
 DOOR = work("ingrid-1", "ingrid", "Open The Door", START, tags=["freedom", "raven"])
+FIRST_COAT = work("kofi-1", "kofi", "First Coat", START, tags=["mars"]).model_copy(
+    update={"wall": "daily_grind"}
+)
 
 
 @pytest.mark.parametrize(
@@ -1216,6 +1219,9 @@ DOOR = work("ingrid-1", "ingrid", "Open The Door", START, tags=["freedom", "rave
         (DOOR, "ana", PLAYER_ID, "Ingrid's open the door thing is lovely.", True),
         (NOTICE, "henrietta", "henrietta", "Have you read my notice about devices?", True),
         (TABLES, "tobias", PLAYER_ID, "I read your poem about the river.", True),
+        (TABLES, "tobias", PLAYER_ID, "Tobias, I loved your poem.", True),
+        (NOTICE, "ana", PLAYER_ID, "Have you read the notice about devices?", True),
+        (FIRST_COAT, "priya", PLAYER_ID, "Seen the new mural by the Daily Grind?", True),
         (RED_PLANET, "ana", PLAYER_ID, "I love your painting!", False),
         (RED_PLANET, "ana", "ana", "My painting days are over.", False),
         (RED_PLANET, "ana", PLAYER_ID, "Cal's been busy.", False),
@@ -1228,6 +1234,12 @@ DOOR = work("ingrid-1", "ingrid", "Open The Door", START, tags=["freedom", "rave
         (DOOR, "ana", PLAYER_ID, "Could you open the door for me?", False),
         (TABLES, "tobias", PLAYER_ID, "Hi! What's your story?", False),
         (TARGETS, "raymond", PLAYER_ID, "What's your plan for today?", False),
+        (TABLES, "tobias", PLAYER_ID, "Tobias, how's the river today?", False),
+        (SUPPER, "tobias", PLAYER_ID, "Morning Tobias! Tell me about the village.", False),
+        (TARGETS, "raymond", PLAYER_ID, "Hi Raymond! Any plans for the weekend?", False),
+        (FIRST_COAT, "priya", PLAYER_ID, "Did you notice the new menu at the Daily Grind?", False),
+        (RED_PLANET, "ana", PLAYER_ID, "Did you notice the tower on the way in?", False),
+        (TABLES, "ana", PLAYER_ID, "Did you notice how high the river is?", False),
     ],
 )
 def test_when_a_work_has_come_up(

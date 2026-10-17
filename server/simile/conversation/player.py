@@ -54,13 +54,13 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
-WORK_WORD = (
-    r"(?:murals?|paint(?:s|ed|ing|ings)?|walls?|poems?|verses?|pieces?|notices?|writing|wrote|"
-    r"written)"
-)
-A_WORK = re.compile(rf"\b{WORK_WORD}\b", re.IGNORECASE)
-MY_WORK = re.compile(rf"\bmy {WORK_WORD}\b", re.IGNORECASE)
-YOUR_WORK = re.compile(rf"\byour {WORK_WORD}\b", re.IGNORECASE)
+MURAL_WORD = r"(?:murals?|paint(?:s|ed|ing|ings)?|walls?)"
+WORK_WORD = rf"(?:{MURAL_WORD}|poems?|verses?|pieces?|notices|writing|wrote|written)"
+NOTICE = r"\b(?:the|a|your|my|her|his|their|that|this) notice\b"
+A_WORK = re.compile(rf"\b{WORK_WORD}\b|{NOTICE}", re.IGNORECASE)
+A_MURAL = re.compile(rf"\b{MURAL_WORD}\b", re.IGNORECASE)
+MY_WORK = re.compile(rf"\bmy (?:{WORK_WORD}|notice)\b", re.IGNORECASE)
+YOUR_WORK = re.compile(rf"\byour (?:{WORK_WORD}|notice)\b", re.IGNORECASE)
 QUOTES_OPEN, QUOTES_CLOSE = "\"“‘'", "\"”’'"
 
 TURNED_AWAY = (
@@ -88,9 +88,12 @@ def came_up(topic: WorkTopic, artist: str, lines: Sequence[Line]) -> bool:
         a_work = A_WORK.search(text) is not None
         if line.speaker == work.artist:
             by = MY_WORK.search(text) is not None
+        elif own:
+            by = YOUR_WORK.search(text) is not None
         else:
-            by = named.search(text) is not None or (own and YOUR_WORK.search(text) is not None)
-        if titled(work.title, text, loosely=a_work or by) or (a_work and words(text) & wall):
+            by = named.search(text) is not None
+        on_wall = A_MURAL.search(text) is not None and bool(words(text) & wall)
+        if on_wall or titled(work.title, text, loosely=a_work or by):
             return True
         if bool(shared(words(A_WORK.sub(" ", text)), headline)) + a_work + by >= 2:
             return True

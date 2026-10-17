@@ -137,11 +137,11 @@ with the player as `player_relief` (half) of one with a resident towards their s
 - **Works that have come up.** Each reply's prompt lists the NPC's work topics after the background,
   their own and others' in two lists. A work has come up once a line names its title (quoted, as
   written if it's more than a word, or in any case beside a word for a work or its artist), names a
-  mural's wall beside a word for a work, or has two of: words from its title, tags or topics,
-  however many, other than words for a work; a word for a work ("mural", "painting", "poem",
-  "piece", "notice", ...); and its artist (their first name, "my mural" in the artist's own line, or
-  "your mural" to the artist). It's left out of the prompts after the NPC's next reply, which still
-  has it.
+  mural's wall beside a word for a mural ("mural", "painting", "wall"), or has two of: words from
+  its title, tags or topics, however many, other than words for a work; a word for a work ("mural",
+  "poem", "piece", "the notice", ...); and its artist (their first name, or for the NPC's own work,
+  "my mural" in their line or "your mural" to them). It's left out of the prompts after the NPC's
+  next reply, which still has it.
 - **Latency.** Replies use `PlayerConfig.model`, Haiku 4.5, because Haiku 5.5 can't turn thinking
   off (see [`llm/README.md`](../llm/README.md)). The nearest free NPC within `near` gets a warm
   Claude Code process for their reply (`llm.warm`), and so does the NPC after each reply.
