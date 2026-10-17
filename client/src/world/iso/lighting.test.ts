@@ -3,19 +3,19 @@ import {
   LightMap,
   residentLight,
   tintColour,
+  type CharacterLights,
   type LightMapInfo,
   type Rgb,
   type SetLight,
 } from './lighting';
 import type { SceneryManifest } from './manifest';
-import type { CharacterManifest } from './sheets';
 
 const scenery = import.meta.glob<SceneryManifest>('../../../../content/art/iso/scenery/*.json', {
   eager: true,
   import: 'default',
 });
 const { sets } = Object.values(
-  import.meta.glob<CharacterManifest>('../../../../content/art/iso/characters/characters.json', {
+  import.meta.glob<CharacterLights>('../../../../content/art/iso/characters/lights.json', {
     eager: true,
     import: 'default',
   }),

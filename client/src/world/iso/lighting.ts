@@ -1,8 +1,9 @@
 import type { Point } from '../view';
+import type { LightingSet } from './time-of-day';
 
 export type Rgb = [r: number, g: number, b: number];
 
-/** A set's constants for characters: `sets.<set>` in `characters.json`. */
+/** A set's constants for characters: `sets.<set>` in `content/art/iso/characters/lights.json`. */
 export type SetLight = {
   sun: { azimuth: number; elevation: number };
   tint: Rgb;
@@ -13,6 +14,8 @@ export type SetLight = {
     tip: [x: number, y: number];
   };
 };
+
+export type CharacterLights = { figure_m: number; sets: Record<LightingSet, SetLight> };
 
 /** `light_map` in a scenery manifest. */
 export type LightMapInfo = {

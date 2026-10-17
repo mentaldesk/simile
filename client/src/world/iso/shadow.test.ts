@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Point } from '../view';
 import { GROUND_DEPTH } from './depth';
+import type { CharacterLights } from './lighting';
 import { project } from './projection';
 import { contactShadow, dropShadow, SHADOW_DEPTH, type ShadowMask } from './shadow';
-import type { CharacterManifest } from './sheets';
 
 const TILE = { width: 96, height: 48, px_per_metre_up: 53.443 };
 const { sets } = Object.values(
-  import.meta.glob<CharacterManifest>('../../../../content/art/iso/characters/characters.json', {
+  import.meta.glob<CharacterLights>('../../../../content/art/iso/characters/lights.json', {
     eager: true,
     import: 'default',
   }),
@@ -36,7 +36,7 @@ describe('dropShadow', () => {
     expect(alphaAt(mask, along(shadow.length / 2, 0.6))).toBeLessThan(0.02);
   });
 
-  it("ends at the manifest's tip, in screen px from the feet", () => {
+  it('ends at the tip in lights.json, in screen px from the feet', () => {
     for (const { shadow } of Object.values(sets)) {
       const [dx, dy] = shadow.direction;
       const tip = project(TILE, { x: dx * shadow.length, y: dy * shadow.length });

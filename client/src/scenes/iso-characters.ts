@@ -1,21 +1,24 @@
 import Phaser from 'phaser';
 import type { Position } from '../net';
-import { PLAYER_ID, type ScreenBox, type ScreenPoint } from '../ui/world-view';
-import type { Body, Point } from '../world';
+import type { ScreenBox, ScreenPoint } from '../ui/world-view';
+import { characterFor, characterKeys, WALK_FPS, type Body, type Point } from '../world';
 import { framePixel } from '../world/hit';
 import {
   CONTACT_ALPHA,
   contactShadow,
-  directionFor,
   dropShadow,
+  facingFor,
   feetOf,
+  ISO_FACINGS,
+  isoWalkFrames,
+  PIXEL_SCALE,
+  pixelFrame,
   SHADOW_DEPTH,
-  sheetFor,
-  sheetFrame,
+  standingFrame,
   tintColour,
   walkTimeScale,
-  type CharacterManifest,
   type Figure,
+  type IsoFacing,
   type IsoTile,
   type Layer,
   type LightingSet,
@@ -25,9 +28,9 @@ import {
   type SpriteFrame,
 } from '../world/iso';
 
-/** Where the characters' sprites come from: `sheetArt` is #141's sheets. */
+/** Where the characters' sprites come from: `pixelArt` is A1's sprites. */
 export interface CharacterArt {
-  /** Every character's, as drawn. */
+  /** Every character's, as drawn, in scene px. */
   readonly frame: SpriteFrame;
   load(scene: Phaser.Scene): Promise<void>;
   add(scene: Phaser.Scene, id: string): Puppet;
@@ -177,62 +180,46 @@ function addMask(scene: Phaser.Scene, key: string, mask: ShadowMask): void {
 
 const MIN_TIME_SCALE = 0.25;
 const MAX_TIME_SCALE = 4;
-const FIRST_DIRECTION = 'se';
+const FIRST_FACING: IsoFacing = 'down';
 
-const sheetKey = (id: string) => `iso-character/${id}`;
-const animationKey = (sheet: string, name: string, direction: string) => `${sheet}/${name}/${direction}`;
+const walkKey = (key: string, facing: IsoFacing) => `iso-walk/${key}/${facing}`;
 
-/** #141's 3D sheets: 8 directions, a walk and an idle, all in one frame size. */
-export function sheetArt(
-  manifest: CharacterManifest,
-  tile: IsoTile,
-  sheetUrl: (image: string) => string | undefined,
-  loadImage: (url: string) => Promise<HTMLImageElement>,
-): CharacterArt {
-  const frame = sheetFrame(manifest, tile);
-  const sheets = Object.keys(manifest.characters);
-  const { walk } = manifest.animations;
+/** A1's sprites, which `BootScene` loads, at `scale` scene px to a texture px. */
+export function pixelArt(scale = PIXEL_SCALE): CharacterArt {
+  const frame = pixelFrame(scale);
 
   const load = async (scene: Phaser.Scene) => {
-    const { width: frameWidth, height: frameHeight } = manifest.frame;
-    await Promise.all(
-      Object.entries(manifest.characters).map(async ([id, { image }]) => {
-        const source = await loadImage(sheetUrl(image)!);
-        scene.textures.addSpriteSheet(sheetKey(id), source, { frameWidth, frameHeight });
-        for (const { name: direction } of manifest.directions) {
-          for (const name of ['walk', 'idle'] as const) {
-            const { fps, frames } = manifest.animations[name];
-            scene.anims.create({
-              key: animationKey(id, name, direction),
-              frames: scene.anims.generateFrameNumbers(sheetKey(id), { frames: frames[direction] }),
-              frameRate: fps,
-              repeat: -1,
-            });
-          }
-        }
-      }),
-    );
+    for (const key of characterKeys) {
+      scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+      for (const facing of ISO_FACINGS) {
+        if (scene.anims.exists(walkKey(key, facing))) continue;
+        scene.anims.create({
+          key: walkKey(key, facing),
+          frames: isoWalkFrames(facing).map((name) => ({ key, frame: name })),
+          frameRate: WALK_FPS,
+          repeat: -1,
+        });
+      }
+    }
   };
 
   const add = (scene: Phaser.Scene, id: string): Puppet => {
-    const sheet = sheetFor(id, sheets, PLAYER_ID);
-    const sprite = scene.add
-      .sprite(0, 0, sheetKey(sheet))
-      .setOrigin(frame.anchor.x / frame.width, frame.anchor.y / frame.height);
-    let direction = FIRST_DIRECTION;
+    const key = characterFor(id, characterKeys);
+    let facing = FIRST_FACING;
+    const sprite = scene.add.sprite(0, 0, key, standingFrame(facing)).setOrigin(0.5, 1).setScale(scale);
     const pose = (step: Point, walking: boolean, speed: number) => {
-      direction = directionFor(step, manifest.directions, direction);
-      const key = animationKey(sheet, walking ? 'walk' : 'idle', direction);
-      const current = sprite.anims.currentAnim?.key;
-      if (current !== key) {
-        const stride = walking && current?.startsWith(`${sheet}/walk/`);
-        sprite.play({ key, startFrame: stride ? sprite.anims.currentFrame!.index - 1 : 0 });
+      facing = facingFor(step, facing);
+      if (!walking) {
+        sprite.stop().setFrame(standingFrame(facing));
+        return;
       }
-      if (!walking) sprite.anims.timeScale = 1;
-      else if (speed > 0) {
-        const scale = walkTimeScale(speed, walk);
-        sprite.anims.timeScale = Phaser.Math.Clamp(scale, MIN_TIME_SCALE, MAX_TIME_SCALE);
+      const animation = walkKey(key, facing);
+      const { anims } = sprite;
+      if (!anims.isPlaying) sprite.play(animation);
+      else if (anims.currentAnim?.key !== animation) {
+        sprite.play({ key: animation, startFrame: anims.currentFrame!.index - 1 });
       }
+      if (speed > 0) anims.timeScale = Phaser.Math.Clamp(walkTimeScale(speed), MIN_TIME_SCALE, MAX_TIME_SCALE);
     };
     return { sprite, pose };
   };

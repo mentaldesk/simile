@@ -8,7 +8,7 @@ import { feetOf, project } from './projection';
 
 export type IsoCamera = Size & { scrollX: number; scrollY: number; zoom: number };
 
-/** A character sprite's frame as drawn, in art px, whatever art it comes from. */
+/** A character sprite's frame as drawn, in scene px: texture px times the sprite's scale. */
 export type SpriteFrame = {
   width: number;
   height: number;

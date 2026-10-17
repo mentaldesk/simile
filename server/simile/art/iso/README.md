@@ -7,7 +7,6 @@ isometric.
 ```bash
 cd server && uv run simile art iso scenery                  # every lighting set, only what changed
 cd server && uv run simile art iso scenery --set night --work /tmp/iso   # one set; keep Blender's raw renders
-cd server && uv run simile art iso characters               # the residents' sheets, only what changed
 ```
 
 Blender is a tool on the machine, not a Python dependency. `blender.py` runs it as a subprocess,
@@ -18,12 +17,11 @@ images they name and the size budget, and the tests that render skip without Ble
 | | |
 |---|---|
 | `camera.py` | The camera and projection every render shares |
-| `lighting.py` | The four lighting sets, the neutral light for characters, the shared look, and `blend(hour)` |
+| `lighting.py` | The four lighting sets, the shared look, and `blend(hour)` |
 | `blender.py` | Runs a script from `in_blender/` on a JSON job and returns its JSON result |
-| `in_blender/` | Runs inside Blender: `common.py` (materials, primitives, render setup, camera, lights), `scenery.py` (the village's models), `lightmap.py` (the light map passes), `render_scenery.py` (a set's scenery job), `character.py` (a resident's body and poses), `render_characters.py` (the character job) |
+| `in_blender/` | Runs inside Blender: `common.py` (materials, primitives, render setup, camera, lights), `scenery.py` (the village's models), `lightmap.py` (the light map passes), `render_scenery.py` (a set's scenery job) |
 | `town.py` | The map as the renders see it: ground, buildings and props, and what shades what |
 | `scenery.py` | `simile art iso scenery`: plans, renders what changed and writes the manifests |
-| `characters.py` | `simile art iso characters`: the residents' sheets, the per-set constants and their manifest |
 | `post.py` | Glow, ground chunks and the runtime light map |
 | `depth.py` | Depth keys and slices |
 | `formats.py` | The file format for each kind of asset |
@@ -158,7 +156,6 @@ stale, and pins a digest of the pipeline's code (see below).
 - **Ground: lossy WebP**, quality 82. Lossless, the four grounds would be 19 MB rather than 1.6 MB.
 - **Sprites: lossless WebP.** For these renders it's about a third smaller than PNG.
 - **Light map: lossless WebP**, since it's data. It's about a third smaller than PNG.
-- **Character sheets: lossless WebP.** The eleven sheets are 3.7 MB, against 5.2 MB as PNG.
 
 `formats.sizes(images)` measures images in each format, so the choice can be remade for another
 kind of asset. `content/art/iso/` stays under 40 MB in total, and `tests/art/iso` checks it.
@@ -190,59 +187,26 @@ renders look (`SOURCES` in `scenery.py`) and fails when it changes. Then bump `P
 and rerun if the renders would change, and either way update the pin. A building or prop added to
 the map needs only the rerun.
 
-## Characters: `content/art/iso/characters/`
+## Character lighting: `content/art/iso/characters/lights.json`
 
-The player and every resident in `content/npcs/`, from their `appearance`: the style study's
-toy-like primitives on its 11-bone armature, lit by the neutral light (`lighting.NEUTRAL`), with the
-scenery's camera. The body is built in `in_blender/character.py` and nowhere else, so a skinned body
-mesh can replace it. A replacement keeps `build(spec)` and `pose(rig, animation, frame, params)`,
-and a rig that faces south (−Y) with the bones in `BONES`.
+The residents and the player are A1's pixel-art sprites (`content/art/characters/`, see
+`content/art/README.md`), drawn over these renders by the client, so nothing here renders them. They
+take each set's light from a few constants, option (b) from #122, which the client applies at runtime.
 
 ```jsonc
-// characters.json
+// lights.json
 {
-  "format": 1,
-  "frame": {"width": 72, "height": 129, "anchor": [36, 110]},   // px; the anchor is the feet
-  "columns": 12,
-  "directions": [{"name": "s", "row": 0, "vector": [0, 1]}, {"name": "se", "row": 1, "vector": [1, 1]}, …],
-  "animations": {
-    "walk": {"fps": 8, "tiles_per_cycle": 1.287, "frames": {"s": [0, …, 7], "se": [12, …, 19], …}},
-    "idle": {"fps": 1, "frames": {"s": [8, 9, 10, 11], …}}
-  },
-  "figure_m": 1.8,
-  "constants_hash": "…",
+  "figure_m": 1.8,                                  // the figure the shadows are for
   "sets": {
     "night": {
-      "sun": {"azimuth": 150, "elevation": 50},
+      "sun": {"azimuth": 150, "elevation": 50},     // as in lighting.py
       "tint": [0.162, 0.242, 0.349],
       "shadow": {"strength": 0.639, "direction": [-0.5, -0.866], "length": 1.373, "tip": [24.1, -45.0]}
     },
     …
-  },
-  "characters": {"player": {"image": "player.webp", "width": 864, "height": 1032, "hash": "…"}, …}
+  }
 }
 ```
-
-**Sheets.** One per character, a grid of `frame`-sized cells: a row per direction, in `directions`
-order, and `columns` frames in each, the walk then the idle. Frame index = row × `columns` +
-column, so `load.spritesheet(id, image, {frameWidth, frameHeight})` loads a sheet as it is, and
-`animations.<name>.frames.<direction>` lists the frames to loop. Set the origin to
-`anchor / (width, height)` and draw the sprite at `project(x, y, z)` of the resident's feet, with
-`z` the ground height there (see *Ground heights*). The frame is the same for everyone, so the feet,
-and a bubble above the head, are always in the same place in it.
-
-**Directions.** `vector` is a step on the map in tiles, x east and y south. Use the direction whose
-vector is closest in angle to the way a resident is walking. The vectors aren't unit length, so
-compare angles rather than dot products, which favour the diagonals. `se` faces the camera and `nw`
-faces away.
-
-**Walk and idle.** The walk is a two-step cycle that covers `tiles_per_cycle`. Its `fps` is for
-`WALKING_SPEED` (1.3 tiles per sim second). At any other speed, play it at
-`frames × speed / tiles_per_cycle` frames per second, so the feet don't slide. The idle is a slow
-breath, about 4 s long at its `fps`.
-
-**Lighting.** Characters use option (b) from #122: one neutrally lit sheet, plus constants for each
-set that the client applies at runtime.
 
 | Set | Tint (RGB) | Shadow strength | Shadow direction (tiles) | Length (tiles) | Tip (screen px) |
 |---|---|--:|---|--:|---|
@@ -264,25 +228,15 @@ set that the client applies at runtime.
   shadows, each in its own set's direction, at its alpha × its weight. One shadow with a blended
   alpha would have to snap from one direction to the other somewhere in the fade.
 
-The shadow's direction comes from `lighting.py`'s `shadow_direction(azimuth)`, and its length in
-tiles is `figure_m / tan(elevation) / 1.1`, a tile being 1.1 m. The tint and strength are measured,
-as in the #122 mock-up. The player standing in each direction is rendered under each set's light
-over a shadow catcher, and under the neutral light. The tint is the ratio of their colour sums over
-the pixels solid in both, scaled down so no channel passes 1. The strength is the 95th percentile
-of the catcher's alpha around the figure. One tint can't fit every outfit: measured on each
-resident alone, the evening's red runs from 0.43 to 0.62 and the night's from 0.05 to 0.22. The
-player is the probe because they're defined in code, so adding or regenerating residents never
-changes the constants.
+**Where the values come from.** `sun`, `direction`, `length` and `tip` follow from `lighting.py`: the
+direction is `shadow_direction(azimuth)`, the length in tiles is `figure_m / tan(elevation) / 1.1`, a
+tile being 1.1 m, and the tip is that step projected. `tests/art/iso` checks them against
+`lighting.py`, so a change to a set's sun fails there until they're updated here.
 
-**Rebuilds.** A sheet's `hash` covers the pipeline version, the look, the neutral light, the camera,
-the palette, the frame, the directions, the animations, the format, and the character's appearance
-and colours. `constants_hash` covers the lighting sets and the probe. A rebuild renders only the
-stale sheets, and measures the constants only when the light changed, so adding a resident renders
-only them, in about 15 s. A resident who leaves takes their sheet with them. `tests/art/iso` fails
-if the manifest is stale or a frame touches its cell's edge, and pins a digest of the character
-code (`SOURCES` in `characters.py`), as for the scenery.
-
-**How it's built.** One Blender run renders every stale sheet: Cycles at 48 samples, denoised, with
-the AgX view, one render per frame. The frames are small enough that the CPU beats the GPU's
-per-render setup: about 10 s for a resident's 96 frames, and about 3 min for the probe and all
-eleven sheets. The sheets are 0.29–0.36 MB each, and 3.7 MB in all.
+The tint and strength were measured once, by #141's 3D character pipeline, and are kept as they
+were. It rendered its 3D player standing in each direction under each set's light over a shadow
+catcher, and under a neutral light. The tint is the ratio of their colour sums over the pixels solid
+in both, scaled down so no channel passes 1, and the strength is the 95th percentile of the
+catcher's alpha around the figure, as in the #122 mock-up. #192 replaced those characters with the
+pixel-art sprites and removed the pipeline, which is in the history at `a943d28`
+(`server/simile/art/iso/characters.py` and `in_blender/character.py`).

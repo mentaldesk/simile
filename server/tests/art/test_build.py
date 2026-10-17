@@ -80,7 +80,7 @@ def test_every_opaque_pixel_is_from_the_palette(content: Path) -> None:
 def test_walk_preview_plays_every_direction(content: Path) -> None:
     generate(content)
     with Image.open(content / "art" / "preview" / "walk.gif") as gif:
-        assert gif.n_frames == 4 * 2 * 4
+        assert gif.n_frames == 8 * 2 * 4
 
 
 def test_npcs_only_renders_just_the_npcs(content: Path) -> None:

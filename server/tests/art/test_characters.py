@@ -12,9 +12,12 @@ from simile.art.characters import (
     FRAMES,
     FRONT_TORSO,
     HAIR,
+    MIRRORED,
     PLAYER,
     SAMPLES,
     SKIN_TONES,
+    THREE_QUARTER,
+    TOP_DOWN,
     Colours,
     atlas,
     draw_frame,
@@ -53,8 +56,11 @@ def test_every_schema_option_is_drawn() -> None:
     assert set(HAIR) == {style.value for style in HairStyle}
     assert set(FRONT_TORSO) == {build.value for build in Build}
     assert set(ACCESSORY_ART) == {accessory.value for accessory in Accessory}
+    drawn = {"down", "left", "up", "down_left", "up_left"}
     for style in HAIR.values():
-        assert set(style) == {"down", "left", "up"}
+        assert set(style) == drawn
+    for art in ACCESSORY_ART.values():
+        assert set(art) == drawn
 
 
 @pytest.mark.parametrize(("hair_style", "build"), list(itertools.product(HairStyle, Build)))
@@ -72,9 +78,10 @@ def test_all_accessories_together_render() -> None:
     assert_well_formed(look(hair_style="curly", accessories=list(Accessory)))
 
 
-def test_sheet_is_a_3_by_4_grid_of_16_by_24_frames() -> None:
+def test_sheet_is_a_3_by_8_grid_of_16_by_24_frames() -> None:
     sheet = sprite_sheet(PLAYER)
-    assert (sheet.width, sheet.height) == (48, 96)
+    assert (sheet.width, sheet.height) == (48, 192)
+    assert DIRECTIONS[:4] == TOP_DOWN == ("down", "left", "right", "up")
     for row, direction in enumerate(DIRECTIONS):
         for col in range(FRAMES):
             frame = draw_frame(PLAYER, direction, col)
@@ -89,10 +96,35 @@ def test_frames_have_transparent_corners_and_a_visible_character() -> None:
         assert sum(c.get(x, y) is not None for x in range(16) for y in range(24)) > 150
 
 
-def test_right_mirrors_left() -> None:
+@pytest.mark.parametrize(("right", "left"), MIRRORED.items())
+def test_right_facings_mirror_left_ones(right: str, left: str) -> None:
     for frame in range(FRAMES):
-        left = draw_frame(PLAYER, "left", frame)
-        assert draw_frame(PLAYER, "right", frame).pixels == left.flipped().pixels
+        mirror = draw_frame(PLAYER, left, frame).flipped()
+        assert draw_frame(PLAYER, right, frame).pixels == mirror.pixels
+
+
+@pytest.mark.parametrize(
+    ("quarter", "between"), [("down_left", ("down", "left")), ("up_left", ("up", "left"))]
+)
+def test_three_quarter_views_are_drawn_on_their_own(quarter: str, between: tuple[str, str]) -> None:
+    for appearance in [PLAYER, *SAMPLES.values()]:
+        for frame in range(FRAMES):
+            view = draw_frame(appearance, quarter, frame).pixels
+            assert all(view != draw_frame(appearance, d, frame).pixels for d in between)
+
+
+def test_three_quarter_views_stand_where_the_others_do() -> None:
+    def extent(c: Canvas) -> tuple[int, int]:
+        rows = [y for y in range(FRAME_HEIGHT) if any(c.get(x, y) for x in range(FRAME_WIDTH))]
+        return rows[0], rows[-1]
+
+    for appearance in [PLAYER, *SAMPLES.values()]:
+        for frame in range(FRAMES):
+            front = extent(draw_frame(appearance, "down", frame))
+            for direction in THREE_QUARTER:
+                top, feet = extent(draw_frame(appearance, direction, frame))
+                assert feet == front[1] == FRAME_HEIGHT - 1, direction
+                assert abs(top - front[0]) <= 1, direction
 
 
 def test_walk_frames_step() -> None:
@@ -137,7 +169,7 @@ def test_a_seed_varies_the_accent_but_never_to_an_outfit_colour() -> None:
 def test_atlas_is_a_phaser_json_hash_over_the_grid() -> None:
     data = atlas("mei.png")
     assert data["meta"]["image"] == "mei.png"
-    assert data["meta"]["size"] == {"w": 48, "h": 96}
+    assert data["meta"]["size"] == {"w": 48, "h": 192}
     assert set(data["frames"]) == {f"{d}-{c}" for d in DIRECTIONS for c in range(FRAMES)}
     cells = set()
     for name, frame in data["frames"].items():
@@ -147,7 +179,7 @@ def test_atlas_is_a_phaser_json_hash_over_the_grid() -> None:
         assert frame["sourceSize"] == {"w": 16, "h": 24}
         assert not frame["rotated"] and not frame["trimmed"]
         cells.add((rect["x"], rect["y"]))
-    assert len(cells) == 12
+    assert len(cells) == 24
 
 
 def test_samples_and_f2_fixture_npcs_render() -> None:

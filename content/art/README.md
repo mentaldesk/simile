@@ -79,8 +79,13 @@ const tiles = map.addTilesetImage('simile', 'tiles');
 
 ## Characters: `characters/<id>.png`, `characters/<id>.json`
 
-- 16×24 px frames in a 3 × 4 grid (48×96 px). Rows: `down`, `left`, `right`, `up`. Columns: 0 and
-  2 are steps, 1 is standing. Frame index = row × 3 + column.
+- 16×24 px frames in a 3 × 8 grid (48×192 px). Rows: `down`, `left`, `right`, `up` for the
+  top-down view, then the three-quarter views the isometric view adds: `down_left`, `down_right`,
+  `up_left`, `up_right`, facing that way on screen. Columns: 0 and 2 are steps, 1 is standing.
+  Frame index = row × 3 + column.
+- Every right-facing frame is its left-facing frame mirrored. `down_left` is the face turned to the
+  left and `up_left` the back of the head with the left cheek showing. Every view keeps the feet on
+  the frame's bottom row, so one origin works for all of them.
 - `<id>.json` is a Phaser JSON hash atlas naming each frame `<direction>-<column>`, e.g. `left-1`.
   Because the grid is uniform, `load.spritesheet(key, url, { frameWidth: 16, frameHeight: 24 })`
   works too.
@@ -112,4 +117,5 @@ accent colour that differs from the outfit; aprons are cream, or brown over a li
 ## Previews
 
 `preview/` is for reviewing the art: `tiles.png`, `scene.png`, `characters.png` (the player and
-samples at 1×, 2× and 3×), `walk.gif` (every walk cycle) and `npcs.png` once NPCs exist.
+samples at 1×, 2× and 3×), `walk.gif` (every walk cycle, round all eight facings) and `npcs.png` once
+NPCs exist.
