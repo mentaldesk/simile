@@ -54,11 +54,14 @@ AT_THE_END = (
 )
 GOODBYE = re.compile(rf"\b(?:{ANYWHERE})\b|\b(?:{AT_THE_END})\W*$", re.IGNORECASE)
 
-A_WORK = re.compile(
-    r"\b(?:murals?|paint(?:s|ed|ing|ings)?|walls?|poems?|verses?|pieces?|stor(?:y|ies)|"
-    r"notices?|writing|wrote|written)\b",
-    re.IGNORECASE,
+WORK_WORD = (
+    r"(?:murals?|paint(?:s|ed|ing|ings)?|walls?|poems?|verses?|pieces?|notices?|writing|wrote|"
+    r"written)"
 )
+A_WORK = re.compile(rf"\b{WORK_WORD}\b", re.IGNORECASE)
+MY_WORK = re.compile(rf"\bmy {WORK_WORD}\b", re.IGNORECASE)
+YOUR_WORK = re.compile(rf"\byour {WORK_WORD}\b", re.IGNORECASE)
+QUOTES_OPEN, QUOTES_CLOSE = "\"“‘'", "\"”’'"
 
 TURNED_AWAY = (
     "I'll let you talk to {name}. See you around.",
@@ -73,25 +76,34 @@ def says_goodbye(text: str) -> bool:
 
 
 def came_up(topic: WorkTopic, artist: str, lines: Sequence[Line]) -> bool:
-    """Whether a line has named the work, or its wall beside a word for a work, or had two of:
-    words of its title, tags or topics (each counts), a word for a work, and its artist: their first
-    name, or "my" in theirs, or "your" to them."""
+    """Whether a line has brought the work up."""
     work = topic.work
     labels = [label for label in [*work.tags, *topic.memory.topics] if label.isalpha()]
     headline = words(" ".join([work.title, *labels]))
     wall = words(work.wall.replace("_", " ")) if work.wall else set()
-    theirs = re.escape(artist)
+    named = re.compile(rf"\b{re.escape(artist)}\b", re.IGNORECASE)
     own = work.artist == topic.memory.owner
     for line in lines:
-        said, a_work = words(line.text), A_WORK.search(line.text) is not None
-        if work.title.lower() in line.text.lower() or (a_work and said & wall):
+        text = line.text
+        a_work = A_WORK.search(text) is not None
+        if line.speaker == work.artist:
+            by = MY_WORK.search(text) is not None
+        else:
+            by = named.search(text) is not None or (own and YOUR_WORK.search(text) is not None)
+        if titled(work.title, text, loosely=a_work or by) or (a_work and words(text) & wall):
             return True
-        who = "my" if line.speaker == work.artist else f"your|{theirs}" if own else theirs
-        found = shared(said, headline) + a_work
-        found += re.search(rf"\b(?:{who})\b", line.text, re.IGNORECASE) is not None
-        if found >= 2:
+        if bool(shared(words(A_WORK.sub(" ", text)), headline)) + a_work + by >= 2:
             return True
     return False
+
+
+def titled(title: str, text: str, *, loosely: bool) -> bool:
+    """Whether `text` names `title` quoted, as written, or, if `loosely`, in any case."""
+    title = title.strip().rstrip(".!?")
+    if loosely and title.lower() in text.lower():
+        return True
+    quoted = rf"[{QUOTES_OPEN}]{re.escape(title)}[.,!?]?[{QUOTES_CLOSE}]"
+    return re.search(quoted, text, re.IGNORECASE) is not None or (" " in title and title in text)
 
 
 class PlayerConfig(BaseModel):

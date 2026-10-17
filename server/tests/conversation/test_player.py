@@ -38,10 +38,12 @@ from simile.schema import (
     CoreValue,
     InteractionEvent,
     Line,
+    Medium,
     Memory,
     MemoryKind,
     Npc,
     Relationship,
+    Work,
 )
 from simile.sim import (
     Clock,
@@ -1190,23 +1192,47 @@ def said(speaker: str, text: str) -> Line:
     return Line(id=1, conversation_id="c", speaker=speaker, text=text, timestamp=START, duration=1)
 
 
+def writing(id: str, artist: str, title: str, *tags: str) -> Work:
+    return work(id, artist, title, START, medium=Medium.WRITING, tags=tags)
+
+
+SUPPER = writing("tobias-2", "tobias", "Look Before You Tell the Supper Table", "river", "village")
+TABLES = writing("tobias-1", "tobias", "The Tables by the Water", "river", "repair")
+NOTICE = writing("henrietta-1", "henrietta", "Notice: Devices in Your Dwelling", "passwords")
+TARGETS = writing("raymond-1", "raymond", "Q4 Targets: Plan the Mountain, Then Climb It", "mars")
+DOOR = work("ingrid-1", "ingrid", "Open The Door", START, tags=["freedom", "raven"])
+
+
 @pytest.mark.parametrize(
-    ("owner", "speaker", "text", "expected"),
+    ("work", "owner", "speaker", "text", "expected"),
     [
-        ("ana", "ana", "Have you seen that Red Planet thing?", True),
-        ("ana", PLAYER_ID, "What do you make of Cal's mural?", True),
-        ("ana", "ana", "That Mars business of Cal's? Brave.", True),
-        ("ana", PLAYER_ID, "Seen the new mural on the tower?", True),
-        ("cal", "cal", "Have you seen my mural yet?", True),
-        ("cal", PLAYER_ID, "I love your painting!", True),
-        ("ana", PLAYER_ID, "I love your painting!", False),
-        ("ana", "ana", "My painting days are over.", False),
-        ("ana", PLAYER_ID, "Cal's been busy.", False),
-        ("ana", PLAYER_ID, "There are murals everywhere here.", False),
-        ("ana", "ana", "First time at the tower, yes?", False),
+        (RED_PLANET, "ana", "ana", "Have you seen that Red Planet thing?", True),
+        (RED_PLANET, "ana", PLAYER_ID, "What do you make of Cal's mural?", True),
+        (RED_PLANET, "ana", "ana", "That Mars business of Cal's? Brave.", True),
+        (RED_PLANET, "ana", PLAYER_ID, "Seen the new mural on the tower?", True),
+        (RED_PLANET, "cal", "cal", "Have you seen my mural yet?", True),
+        (RED_PLANET, "cal", PLAYER_ID, "I love your painting!", True),
+        (DOOR, "ana", "ana", 'Have you seen "Open The Door" yet?', True),
+        (DOOR, "ana", PLAYER_ID, "Ingrid's open the door thing is lovely.", True),
+        (NOTICE, "henrietta", "henrietta", "Have you read my notice about devices?", True),
+        (TABLES, "tobias", PLAYER_ID, "I read your poem about the river.", True),
+        (RED_PLANET, "ana", PLAYER_ID, "I love your painting!", False),
+        (RED_PLANET, "ana", "ana", "My painting days are over.", False),
+        (RED_PLANET, "ana", PLAYER_ID, "Cal's been busy.", False),
+        (RED_PLANET, "ana", PLAYER_ID, "There are murals everywhere here.", False),
+        (RED_PLANET, "ana", "ana", "First time at the tower, yes?", False),
+        (SUPPER, "ana", PLAYER_ID, "Tell me about the village.", False),
+        (SUPPER, "ana", PLAYER_ID, "Where can I get a decent table for supper?", False),
+        (TABLES, "ana", PLAYER_ID, "Is the river water clean?", False),
+        (NOTICE, "ana", PLAYER_ID, "Did you notice anything odd today?", False),
+        (DOOR, "ana", PLAYER_ID, "Could you open the door for me?", False),
+        (TABLES, "tobias", PLAYER_ID, "Hi! What's your story?", False),
+        (TARGETS, "raymond", PLAYER_ID, "What's your plan for today?", False),
     ],
 )
-def test_when_a_work_has_come_up(owner: str, speaker: str, text: str, expected: bool) -> None:
-    topic = WorkTopic(remembers(owner, RED_PLANET, SAW_IT, START), RED_PLANET)
+def test_when_a_work_has_come_up(
+    work: Work, owner: str, speaker: str, text: str, expected: bool
+) -> None:
+    topic = WorkTopic(remembers(owner, work, "I know it.", START), work)
 
-    assert came_up(topic, "Cal", [said(speaker, text)]) is expected
+    assert came_up(topic, work.artist.title(), [said(speaker, text)]) is expected

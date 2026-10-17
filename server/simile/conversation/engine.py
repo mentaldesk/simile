@@ -648,8 +648,7 @@ class ConversationEngine:
             return []
 
     def _works(self, npc: Id, other: Id, now: datetime) -> list[WorkTopic]:
-        """`npc`'s strongest memories of works they made, read or saw that haven't faded, those
-        about `other` first: `other`'s works, or `other` painting over theirs."""
+        """`npc`'s strongest unfaded work memories, those about `other` first."""
         config = self.config
         if not config.works:
             return []
@@ -666,8 +665,7 @@ class ConversationEngine:
         return self._work_topics(strong)[: config.works]
 
     def _scene_works(self, a: Id, b: Id, now: datetime) -> dict[Id, list[WorkTopic]]:
-        """Each side's works to bring up, with their memories of making the works of theirs that
-        the other might bring up."""
+        """Each side's works, and their making of any the other might bring up."""
         found = {a: self._works(a, b, now), b: self._works(b, a, now)}
         result = {}
         for npc, other in ((a, b), (b, a)):
@@ -693,8 +691,7 @@ class ConversationEngine:
     def _topic_values(
         self, npc: Npc, topics: list[Memory], works: list[WorkTopic]
     ) -> list[dict[CoreValue, float]]:
-        """What the news and works `npc` might bring up are about, or else what they care about
-        most."""
+        """What `npc`'s news and works are about, or else what they care about most."""
         found = []
         for memory in topics:
             item = self.article(memory.news_id) if memory.news_id else None
