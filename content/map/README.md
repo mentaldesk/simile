@@ -173,5 +173,5 @@ Client: `village` in `client/src/world/assets.ts` is the village's JSON, and `lo
 an interior the first time the scene needs it. The player collides with the `collision` layer of the
 map they're on, goes through its doors, starts at the square's entry and finds the news terminals in
 `locations`, and the iso scene reads the ground tiles for how high feet stand. The village itself is
-drawn from the iso renders ([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)),
-not from these tiles.
+drawn from the iso renders
+([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)), not from these tiles.

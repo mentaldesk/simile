@@ -51,8 +51,9 @@ it for `--warmup` (60) sim minutes with nobody connected, then connects a player
   skip a stop nobody is at, unless nobody is anywhere on the route, and linger 45 to 120 s at each,
   beside someone there if anyone is. At half the stops they walk up to the nearest free resident
   within 12 tiles on their map they haven't talked to for 10 minutes and say hello, following them
-  up to 3 times, through doors too, if they walk off. They answer anyone who greets them, say two
-  to four lines, each 4 to 10 s after the resident finishes, then goodbye. That's about 9 conversations with the player in 30 minutes.
+  up to 3 times, through doors too, if they walk off. They answer anyone who greets them, say two to
+  four lines, each 4 to 10 s after the resident finishes, then goodbye. That's about 9 conversations
+  with the player in 30 minutes.
 - **The fake LLM** (`Padded`) writes a B2 scene as a script as long as its plan, in lines of 16
   words, as long as Haiku 4.5's in B2's comparison, the first streamed after 2.3 sim seconds and
   each next 0.4 s later. Replies to the player are 33 words, as in D2's soak, 1.1 s to their first

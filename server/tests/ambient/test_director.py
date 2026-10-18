@@ -201,6 +201,22 @@ def test_only_residents_on_the_players_map_are_nudged() -> None:
     assert set(village.director.choose() or ()) == {"ana", "ben"}
 
 
+def test_a_seeker_outside_is_within_reach_of_a_target_inside_through_the_door() -> None:
+    def choose(reach: float) -> tuple[str, str] | None:
+        village = Village(
+            {"ana": 27, "ben": 35},
+            relationships=friends(ANA, BEN),
+            config=AmbientConfig(reach=reach),
+        )
+        village.movement.track(PLAYER_ID, Point(11, 9, "coffee_shop"))
+        village.movement.place("ben", MapTile(map="coffee_shop", x=8, y=9))
+        village.movement.place("ana", Tile(x=31, y=12))
+        return village.director.choose()
+
+    assert choose(24) == ("ana", "ben")
+    assert choose(5) is None
+
+
 def test_the_player_inside_the_coffee_shop_doesnt_hear_a_conversation_on_the_square() -> None:
     village = Village({"ana": 20, "ben": 21}, relationships=friends(ANA, BEN))
     village.movement.place("ana", Tile(x=20, y=13))

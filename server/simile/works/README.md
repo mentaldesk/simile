@@ -54,10 +54,11 @@ tone and relatedness to every core value, scored as for news.
   everyone gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture,
   and 404s for anything else.
 - **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen, on the
-  village rather than inside a building, says how it lands in one Haiku call, as at the terminals. The memory is about the artist, with
-  `work_id`. If the call fails, they try again on their first look after `look_again` (a sim
-  hour). An artist who finds their mural painted over is told so in the same call, and remembers it
-  with a salience of at least 0.7. The player remembers seeing it, with no call.
+  village rather than inside a building, says how it lands in one Haiku call, as at the terminals.
+  The memory is about the artist, with `work_id`. If the call fails, they try again on their first
+  look after `look_again` (a sim hour). An artist who finds their mural painted over is told so in
+  the same call, and remembers it with a salience of at least 0.7. The player remembers seeing it,
+  with no call.
 
 ## Reading at the terminals
 

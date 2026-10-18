@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -667,7 +668,7 @@ def test_a_seeker_asks_to_talk_only_on_the_same_map_following_through_a_door(cha
         [ANA, BEN],
         start=at(11),
         config=keen(A.IDLE, chases=chases),
-        placed={"ana": "house_1", "ben": MapTile(map=VILLAGE_MAP, x=31, y=13)},
+        placed={"ana": "house_1", "ben": MapTile(map=VILLAGE_MAP, x=10, y=12)},
     )
 
     def decline(a: str, b: str) -> bool:
@@ -678,16 +679,17 @@ def test_a_seeker_asks_to_talk_only_on_the_same_map_following_through_a_door(cha
     village.behaviour.hooks.set(request_conversation=decline)
     village.behaviour.nudge("ana", seek, 100)
     village.run_until(lambda: village.behaviour.goal("ana") == seek)
-    village.movement.walk_to("ben", MapTile(map="coffee_shop", x=10, y=11))
+    village.movement.place("ben", MapTile(map="coffee_shop", x=10, y=12))
     village.run_until(lambda: village.behaviour.goal("ana") != seek or bool(requests), minutes=5)
 
-    maps = {npc: village.movement.position(npc).map for npc in ("ana", "ben")}
+    ana, ben = (village.movement.position(npc) for npc in ("ana", "ben"))
     if chases:
         assert requests == [("ana", "ben")]
-        assert maps == {"ana": "coffee_shop", "ben": "coffee_shop"}
+        assert (ana.map, ben.map) == ("coffee_shop", "coffee_shop")
     else:
         assert requests == []
-        assert maps == {"ana": VILLAGE_MAP, "ben": "coffee_shop"}
+        assert (ana.map, ben.map) == (VILLAGE_MAP, "coffee_shop")
+        assert math.dist(ana, ben) <= DEFAULT_CONFIG.talk_range
 
 
 def crafter(id: str, home: str, medium: Medium, **values: float) -> Npc:
