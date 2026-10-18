@@ -34,3 +34,34 @@ it('throws the status when there is no reason', async () => {
 
   await expect(new ServerApi(fetcher).characters()).rejects.toThrow('/api/characters: 502');
 });
+
+it('lists the news feeds', async () => {
+  const fetcher = vi.fn(async () => reply(200, { feeds: [] }));
+
+  expect(await new ServerApi(fetcher).feeds()).toEqual({ feeds: [] });
+  expect(fetcher).toHaveBeenCalledWith('/api/news/feeds', undefined);
+});
+
+const FEED = 'https://x/feed';
+
+it.each([
+  ['checkFeed', [FEED], '/api/news/feeds/check', { url: FEED }],
+  ['addFeed', [FEED], '/api/news/feeds', { url: FEED }],
+  ['switchFeed', [FEED, false], '/api/news/feeds/switch', { url: FEED, on: false }],
+  ['removeFeed', [FEED], '/api/news/feeds/remove', { url: FEED }],
+  ['resetFeeds', [], '/api/news/feeds/reset', {}],
+] as const)('%s posts JSON to the news feeds', async (method, args, url, body) => {
+  const fetcher = vi.fn(async () => reply(200, { feeds: [] }));
+  const api = new ServerApi(fetcher) as unknown as Record<
+    string,
+    (...args: unknown[]) => Promise<unknown>
+  >;
+
+  await api[method](...args);
+
+  expect(fetcher).toHaveBeenCalledWith(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+});

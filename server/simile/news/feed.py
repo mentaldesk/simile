@@ -1,16 +1,38 @@
+import contextlib
+import functools
 import io
+import ipaddress
 import os
+import re
+import socket
 import textwrap
+import threading
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from email.message import Message
 from html.parser import HTMLParser
+from http.client import HTTPConnection, HTTPResponse, HTTPSConnection
+from types import TracebackType
+from typing import IO, Any, Self
 from urllib.error import HTTPError
-from urllib.request import Request, urlopen
+from urllib.parse import urljoin, urlsplit
+from urllib.request import (
+    HTTPHandler,
+    HTTPRedirectHandler,
+    HTTPSHandler,
+    Request,
+    build_opener,
+)
 
 from simile.schema import NewsItem
 
 USER_AGENT = "Simile/0.1 (village news reader; +https://github.com/mentaldesk/simile)"
 TIMEOUT = 10.0
+DEADLINE = 30.0
+MAX_BYTES = 4 * 1024 * 1024
+MAX_REDIRECTS = 5
+SCHEMES = ("http", "https")
 SUMMARY_LENGTH = 600
 
 BREAKS = {
@@ -39,13 +61,16 @@ FEEDS = (
 )
 
 
-def feeds() -> tuple[Feed, ...]:
-    """The feeds at the comma-separated URLs in `$SIMILE_NEWS_FEED`, or `FEEDS`. A URL from
+class FeedRefused(ValueError):
+    """Why Simile won't read a URL as a feed, in words for the player."""
+
+
+def override() -> tuple[Feed, ...]:
+    """The feeds at the comma-separated URLs in `$SIMILE_NEWS_FEED`, if it's set. A URL from
     `FEEDS` keeps its name."""
     urls = [url.strip() for url in os.environ.get("SIMILE_NEWS_FEED", "").split(",")]
     named = {feed.url: feed for feed in FEEDS}
-    chosen = tuple(named.get(url, Feed(url)) for url in dict.fromkeys(urls) if url)
-    return chosen or FEEDS
+    return tuple(named.get(url, Feed(url)) for url in dict.fromkeys(urls) if url)
 
 
 class TextExtractor(HTMLParser):
@@ -82,15 +107,29 @@ def shorten(text: str, limit: int = SUMMARY_LENGTH) -> str:
     return text[: end + 1] if end > limit // 2 else textwrap.shorten(text, limit, placeholder="…")
 
 
-def parse(xml: bytes, feed: Feed | None = None) -> list[NewsItem]:
-    """The feed's entries as news items from `feed`, in feed order, without repeated guids.
-    Entries with no link, title or date are skipped."""
+@dataclass(frozen=True)
+class Parsed:
+    title: str
+    items: list[NewsItem]
+
+
+def read(xml: bytes, feed: Feed | None = None) -> Parsed:
+    """The feed's title, and its entries as news items from `feed`, in feed order, without
+    repeated guids. Entries with no link, title or date are skipped. Refuses anything but RSS or
+    Atom, and bytes that declare an XML entity."""
     import feedparser
 
+    if re.search(rb"<!ENTITY", xml, re.IGNORECASE):
+        raise FeedRefused("It declares XML entities, which Simile doesn't read")
     parsed = feedparser.parse(io.BytesIO(xml))
+    if not (parsed.get("version") or "").startswith(("rss", "atom")):
+        if re.search(rb"<html", xml[:4096], re.IGNORECASE):
+            raise FeedRefused("That's a web page, not a feed. Look on it for an RSS or Atom link")
+        raise FeedRefused("That isn't an RSS or Atom feed")
     if parsed.bozo and not parsed.entries:
-        raise ValueError(f"not a feed: {parsed.bozo_exception}")
-    source = feed.name if feed and feed.name else plain(parsed.feed.get("title", ""))
+        raise FeedRefused(f"It looks like a feed but can't be read: {parsed.bozo_exception}")
+    feed_title = plain(parsed.feed.get("title", ""))
+    source = feed.name if feed and feed.name else feed_title
     items: dict[str, NewsItem] = {}
     for entry in parsed.entries:
         guid = entry.get("id") or entry.get("link")
@@ -107,7 +146,12 @@ def parse(xml: bytes, feed: Feed | None = None) -> list[NewsItem]:
             source=source,
             source_url=feed.url if feed else "",
         )
-    return list(items.values())
+    return Parsed(feed_title, list(items.values()))
+
+
+def parse(xml: bytes, feed: Feed | None = None) -> list[NewsItem]:
+    """`read`'s items."""
+    return read(xml, feed).items
 
 
 @dataclass(frozen=True)
@@ -117,25 +161,184 @@ class Fetched:
     items: list[NewsItem] | None
     etag: str | None = None
     modified: str | None = None
+    title: str = ""
+
+
+def is_private(host: str) -> bool:
+    """Whether `host` is, or resolves to, an address off the public internet."""
+    try:
+        addresses = {str(info[4][0]) for info in socket.getaddrinfo(host, None)}
+    except (OSError, UnicodeError):
+        return False
+    try:
+        return not all(ipaddress.ip_address(address).is_global for address in addresses)
+    except ValueError:
+        return True
+
+
+class Redirects(HTTPRedirectHandler):
+    """Follows redirects over http(s) only, and from the internet only to the internet."""
+
+    max_redirections = MAX_REDIRECTS
+
+    def __init__(self, origin: str) -> None:
+        self.origin = origin
+
+    def http_error_302(
+        self, req: Request, fp: IO[bytes], code: int, msg: str, headers: Message
+    ) -> object:
+        if location := headers.get("location") or headers.get("uri"):
+            target = urljoin(req.full_url, location)
+            parts = urlsplit(target)
+            if parts.scheme.lower() not in SCHEMES or (
+                is_private(parts.hostname or "")
+                and not is_private(urlsplit(self.origin).hostname or "")
+            ):
+                fp.close()
+                raise FeedRefused(f"It redirects to {target}, which Simile won't follow")
+        return super().http_error_302(req, fp, code, msg, headers)
+
+    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
+
+
+class Deadline:
+    """Shuts every socket a fetch opens once `seconds` have passed, so nothing it waits for, from
+    connecting to the last byte, outlasts them. Leaving it raises `TimeoutError` if they did."""
+
+    def __init__(self, seconds: float) -> None:
+        self.seconds = seconds
+        self.end = time.monotonic() + seconds
+        self.passed = False
+        self._sockets: list[socket.socket] = []
+        self._lock = threading.Lock()
+        self._timer = threading.Timer(seconds, self._expire)
+        self._timer.daemon = True
+
+    def __enter__(self) -> Self:
+        self._timer.start()
+        return self
+
+    def __exit__(
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self._timer.cancel()
+        if self.passed:
+            raise TimeoutError(f"It took over {self.seconds:g} seconds") from error
+
+    def left(self) -> float:
+        left = self.end - time.monotonic()
+        if left <= 0:
+            raise TimeoutError(f"It took over {self.seconds:g} seconds")
+        return left
+
+    def track(self, sock: socket.socket) -> None:
+        with self._lock:
+            self._sockets.append(sock)
+            if self.passed:
+                _shut(sock)
+
+    def connect(
+        self, address: tuple[str, int], timeout: float, source_address: Any = None
+    ) -> socket.socket:
+        sock = socket.create_connection(address, timeout, source_address)
+        self.track(sock)
+        return sock
+
+    def _expire(self) -> None:
+        with self._lock:
+            self.passed = True
+            for sock in self._sockets:
+                _shut(sock)
+
+
+def _shut(sock: socket.socket) -> None:
+    with contextlib.suppress(OSError):
+        socket.socket.shutdown(sock, socket.SHUT_RDWR)
+
+
+class CutOff:
+    """A connection its deadline can cut off. It connects within what's left of it, and its
+    sockets are shut when it passes: the plain one at once, and a TLS one once it's set up."""
+
+    def __init__(self, *args: Any, deadline: Deadline, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.deadline = deadline
+        self._create_connection = deadline.connect
+
+    def connect(self) -> None:
+        self.timeout = min(self.timeout, self.deadline.left())
+        super().connect()
+        self.deadline.track(self.sock)
+
+
+class CutOffHTTPConnection(CutOff, HTTPConnection):
+    pass
+
+
+class CutOffHTTPSConnection(CutOff, HTTPSConnection):
+    pass
+
+
+class DeadlineHTTPHandler(HTTPHandler):
+    def __init__(self, deadline: Deadline) -> None:
+        super().__init__()
+        self.deadline = deadline
+
+    def http_open(self, req: Request) -> HTTPResponse:
+        return self.do_open(functools.partial(CutOffHTTPConnection, deadline=self.deadline), req)
+
+
+class DeadlineHTTPSHandler(HTTPSHandler):
+    def __init__(self, deadline: Deadline) -> None:
+        super().__init__()
+        self.deadline = deadline
+
+    def https_open(self, req: Request) -> HTTPResponse:
+        connection = functools.partial(CutOffHTTPSConnection, deadline=self.deadline)
+        return self.do_open(connection, req, context=self._context)
+
+
+def download(response: HTTPResponse) -> bytes:
+    """The response's body, refused past `MAX_BYTES`."""
+    too_big = FeedRefused(f"It's over {MAX_BYTES / 2**20:g} MB, too big for a news feed")
+    length = response.headers.get("Content-Length", "")
+    if length.isdigit() and int(length) > MAX_BYTES:
+        raise too_big
+    data = bytearray()
+    while chunk := response.read1(64 * 1024):
+        data += chunk
+        if len(data) > MAX_BYTES:
+            raise too_big
+    return bytes(data)
 
 
 def fetch(
     feed: Feed, etag: str | None = None, modified: str | None = None, timeout: float = TIMEOUT
 ) -> Fetched:
-    """Download and parse `feed`, asking only for changes since `etag`/`modified`. Blocks."""
+    """Download and parse `feed`, asking only for changes since `etag`/`modified`. Blocks.
+    Only over http(s), within `MAX_BYTES`, and all of it, redirects included, within
+    `DEADLINE`."""
+    if urlsplit(feed.url).scheme.lower() not in SCHEMES:
+        raise FeedRefused("Simile reads feeds only over http or https")
     headers = {"User-Agent": USER_AGENT}
     if etag:
         headers["If-None-Match"] = etag
     if modified:
         headers["If-Modified-Since"] = modified
-    try:
-        with urlopen(Request(feed.url, headers=headers), timeout=timeout) as response:
-            return Fetched(
-                parse(response.read(), feed),
-                response.headers.get("ETag"),
-                response.headers.get("Last-Modified"),
-            )
-    except HTTPError as error:
-        if error.code == 304:
-            return Fetched(None, etag, modified)
-        raise
+    with Deadline(DEADLINE) as deadline:
+        opener = build_opener(
+            Redirects(feed.url), DeadlineHTTPHandler(deadline), DeadlineHTTPSHandler(deadline)
+        )
+        try:
+            with opener.open(Request(feed.url, headers=headers), timeout=timeout) as response:
+                xml = download(response)
+                etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
+        except HTTPError as error:
+            if error.code == 304:
+                return Fetched(None, etag, modified)
+            raise
+    parsed = read(xml, feed)
+    return Fetched(parsed.items, etag, modified, parsed.title)

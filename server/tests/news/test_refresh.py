@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -9,10 +9,13 @@ import pytest
 
 from simile.news import (
     Feed,
+    FeedList,
+    FeedRefused,
     FeedState,
     Fetched,
     NewsRefresher,
     NewsStore,
+    SavedFeed,
     parse,
     refresh,
     refresh_all,
@@ -40,10 +43,13 @@ class FakeFeeds:
         self.errors: dict[Feed, Exception] = {}
         self.release = threading.Event()
         self.release.set()
+        self.held: dict[Feed, threading.Event] = {}
 
     def __call__(self, feed: Feed, etag: str | None, modified: str | None) -> Fetched:
         self.calls.append((feed.url, etag, modified))
         self.release.wait(5)
+        if feed in self.held:
+            self.held[feed].wait(5)
         if feed in self.errors:
             raise self.errors[feed]
         if etag == ETAG:
@@ -83,7 +89,10 @@ def two_feeds() -> FakeFeeds:
 
 
 def village(
-    store: NewsStore, fake: FakeFeeds, speed: float, feeds: Sequence[Feed] = (FEED,)
+    store: NewsStore,
+    fake: FakeFeeds,
+    speed: float,
+    feeds: Sequence[Feed] | Callable[[], Sequence[Feed]] = (FEED,),
 ) -> tuple[World, NewsRefresher]:
     world = World(Clock(datetime(2026, 1, 1, 8, tzinfo=UTC), speed=speed), FakeWallClock())
     refresher = NewsRefresher(
@@ -103,8 +112,13 @@ async def run(world: World, refresher: NewsRefresher, duration: timedelta) -> No
     for _ in range(round(duration.total_seconds() / STEP)):
         world.loop.wall.advance(STEP / world.clock.speed)
         world.loop.tick()
-        if refresher.task is not None:
-            await refresher.task
+        await asyncio.gather(*refresher.tasks.values())
+
+
+async def wait_until(condition: Callable[[], object]) -> None:
+    async with asyncio.timeout(5):
+        while not condition():
+            await asyncio.sleep(0.005)
 
 
 @pytest.mark.anyio
@@ -347,6 +361,20 @@ async def test_logs_what_each_feed_skipped(
 
 
 @pytest.mark.anyio
+async def test_logs_a_feed_refused_in_one_line(
+    store: NewsStore, feed: FakeFeeds, caplog: pytest.LogCaptureFixture
+) -> None:
+    feed.errors[FEED] = FeedRefused("That isn't an RSS or Atom feed")
+    world, refresher = village(store, feed, speed=1)
+
+    with caplog.at_level(logging.WARNING):
+        await run(world, refresher, timedelta(seconds=1))
+
+    assert f"from {FEED.url}: That isn't an RSS or Atom feed" in caplog.text
+    assert "Traceback" not in caplog.text
+
+
+@pytest.mark.anyio
 async def test_one_failing_feed_doesnt_stop_the_others(
     store: NewsStore, two_feeds: FakeFeeds, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -373,11 +401,11 @@ async def test_runs_one_refresh_at_a_time(store: NewsStore, feed: FakeFeeds) -> 
         refresher.tick(STEP)
         await asyncio.sleep(0.001)
     feed.release.set()
-    assert refresher.task is not None
-    await refresher.task
+    assert list(refresher.tasks) == [FEED.url]
+    await asyncio.gather(*refresher.tasks.values())
 
     assert len(feed.calls) == 1
-    assert refresher.task is None
+    assert refresher.tasks == {}
 
 
 @pytest.mark.anyio
@@ -391,8 +419,52 @@ async def test_stop_abandons_a_refresh_in_flight(store: NewsStore, feed: FakeFee
     await refresher.stop()
     feed.release.set()
 
-    assert refresher.task is None
+    assert refresher.tasks == {}
     assert store.latest() == []
+
+
+@pytest.mark.anyio
+async def test_a_slow_feed_holds_up_no_other(store: NewsStore, two_feeds: FakeFeeds) -> None:
+    two_feeds.items[ECONOMIST] = saved("economist.xml", ECONOMIST)
+    two_feeds.held[OPENAI] = threading.Event()
+    listed = [OPENAI, RNZ]
+    world, refresher = village(store, two_feeds, speed=1, feeds=lambda: tuple(listed))
+
+    world.loop.tick()
+    await wait_until(lambda: RNZ.url not in refresher.tasks)
+    assert {item.source for item in store.latest(100)} == {"RNZ Sport"}
+
+    listed.append(ECONOMIST)
+    world.loop.tick()
+    await wait_until(lambda: ECONOMIST.url not in refresher.tasks)
+    assert {item.source for item in store.latest(100)} == {"RNZ Sport", "The Economist"}
+    assert list(refresher.tasks) == [OPENAI.url]
+
+    two_feeds.held[OPENAI].set()
+    await asyncio.gather(*refresher.tasks.values())
+    assert {item.source for item in store.latest(100)} == {"OpenAI", "RNZ Sport", "The Economist"}
+
+
+@pytest.mark.anyio
+async def test_gives_up_on_a_feed_whose_fetch_never_returns(
+    store: NewsStore, feed: FakeFeeds
+) -> None:
+    feed.release.clear()
+
+    with pytest.raises(TimeoutError, match="took over 0.05 seconds"):
+        await refresh(store, FEED, fetch=feed, at=100.0, give_up=0.05)
+
+    feed.release.set()
+    assert store.feed(FEED.url) == FeedState(checked=100.0)
+    assert store.latest() == []
+
+
+@pytest.mark.anyio
+async def test_keeps_a_fetchs_own_timeout(store: NewsStore, feed: FakeFeeds) -> None:
+    feed.errors[FEED] = TimeoutError("It took over 30 seconds")
+
+    with pytest.raises(TimeoutError, match="took over 30 seconds"):
+        await refresh(store, FEED, fetch=feed, give_up=5)
 
 
 def test_refreshes_the_configured_feeds_by_default(
@@ -401,3 +473,45 @@ def test_refreshes_the_configured_feeds_by_default(
     monkeypatch.setenv("SIMILE_NEWS_FEED", f"{RNZ.url},https://example.com/feed")
 
     assert NewsRefresher(store).feeds == (RNZ, Feed("https://example.com/feed"))
+
+
+def test_refreshes_the_saved_list_by_default(
+    store: NewsStore, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("SIMILE_NEWS_FEED", raising=False)
+    saved = FeedList()
+    for feed in saved.current()[1:]:
+        saved.remove(feed.url)
+    saved.add(SavedFeed(url=FEED.url, name=FEED.name))
+
+    assert NewsRefresher(store).feeds == (saved.current()[0], FEED)
+
+
+@pytest.mark.anyio
+async def test_the_next_refresh_reads_the_saved_list(
+    store: NewsStore, two_feeds: FakeFeeds, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("SIMILE_NEWS_FEED", raising=False)
+    saved = FeedList()
+    for feed in saved.current():
+        saved.remove(feed.url)
+    saved.add(SavedFeed(url=OPENAI.url, name=OPENAI.name))
+    world, refresher = village(store, two_feeds, speed=1, feeds=saved.current)
+
+    await run(world, refresher, timedelta(seconds=1))
+    assert two_feeds.urls() == [OPENAI.url]
+
+    saved.add(SavedFeed(url=RNZ.url, name=RNZ.name))
+    await run(world, refresher, timedelta(seconds=1))
+    assert two_feeds.urls() == sorted([OPENAI.url, RNZ.url])
+
+    saved.switch(OPENAI.url, False)
+    two_feeds.calls.clear()
+    await run(world, refresher, timedelta(minutes=1))
+    assert two_feeds.urls() == [RNZ.url]
+
+    saved.remove(RNZ.url)
+    two_feeds.calls.clear()
+    await run(world, refresher, timedelta(minutes=2))
+    assert two_feeds.calls == []
+    assert {item.source for item in store.latest(100)} == {"OpenAI", "RNZ Sport"}

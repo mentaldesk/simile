@@ -24,12 +24,14 @@ def register(app: typer.Typer) -> None:
         `simile serve` and `simile headless` keep it fresh and analyse new articles as they come,
         unless SIMILE_NEWS=0.
 
-        SIMILE_NEWS_FEED overrides the feeds with a comma-separated list of URLs.
+        It reads the feeds switched on in the title menu's News feeds, saved in
+        server/data/feeds.json (or $SIMILE_FEEDS_FILE). SIMILE_NEWS_FEED overrides them with a
+        comma-separated list of URLs.
         """
         import asyncio
 
         from simile.memory import default_path
-        from simile.news.feed import feeds
+        from simile.news.feed_list import feeds
         from simile.news.refresh import refresh_all
         from simile.news.store import NewsStore
 
