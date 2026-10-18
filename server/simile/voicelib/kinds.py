@@ -22,6 +22,7 @@ JOB = r"[0-9a-f]{16}"
 UPLOAD = r"^[0-9a-f]{32}\.(wav|mp3|m4a)$"
 MAX_CANDIDATES = 6
 KEEP = 20
+MIN_WORDS, MAX_WORDS = 12, 25
 
 
 class Missing(LookupError):
@@ -37,6 +38,25 @@ def _spoken(text: str) -> str:
 Spoken = Annotated[str, AfterValidator(_spoken)]
 
 
+def _line(text: str) -> str:
+    words = len(text.split())
+    if not MIN_WORDS <= words <= MAX_WORDS:
+        raise PydanticCustomError(
+            "line",
+            f"What the clip says becomes their line, so it has to be {MIN_WORDS}-{MAX_WORDS} "
+            f"words, not {words}",
+        )
+    if "!" in text:
+        raise PydanticCustomError(
+            "line",
+            "What the clip says becomes their line, which stays calm, so it can't have a '!'",
+        )
+    return text
+
+
+Line = Annotated[Spoken, Field(max_length=400), AfterValidator(_line)]
+
+
 class VoiceDesign(Model):
     description: Spoken = Field(max_length=600)
     reference_line: Spoken = Field(max_length=400)
@@ -46,7 +66,7 @@ class VoiceDesign(Model):
 
 class VoiceCheck(Model):
     upload: str = Field(pattern=UPLOAD)
-    reference_line: Spoken = Field(max_length=400)
+    reference_line: Line
 
 
 class Candidate(Model):

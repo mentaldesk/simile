@@ -23,6 +23,30 @@ class MapTile(Model):
     y: int = Field(ge=0)
 
 
+class Facing(StrEnum):
+    """Which way someone faces on the map, x east and y south, by angle from east through south."""
+
+    EAST = "east"
+    SOUTH_EAST = "south_east"
+    SOUTH = "south"
+    SOUTH_WEST = "south_west"
+    WEST = "west"
+    NORTH_WEST = "north_west"
+    NORTH = "north"
+    NORTH_EAST = "north_east"
+
+
+class Pose(StrEnum):
+    """What someone is doing where they are."""
+
+    STANDING = "standing"
+    WALKING = "walking"
+    SITTING = "sitting"
+    READING = "reading"
+    WORKING = "working"
+    LOOKING = "looking"
+
+
 class TileArea(Model):
     x: int = Field(ge=0)
     y: int = Field(ge=0)

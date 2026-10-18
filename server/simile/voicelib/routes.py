@@ -2,7 +2,7 @@ import functools
 from collections.abc import Awaitable, Callable
 from typing import Self
 
-from pydantic import Field, ValidationError, model_validator
+from pydantic import Field, TypeAdapter, ValidationError, model_validator
 from pydantic_core import PydanticCustomError
 from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
@@ -18,6 +18,7 @@ from simile.voicelib import kinds, uploads, voices
 from simile.voicelib.speech import speaker_of
 
 MAX_JSON = 4 * 1024
+TRANSCRIPT = TypeAdapter(kinds.Line)
 UNVOICED = (
     "Try it needs the voice model, so start the server with SIMILE_VOICE=1 on a Mac with Apple "
     "Silicon (see server/simile/voice/README.md)"
@@ -133,10 +134,12 @@ async def record(request: Request) -> Response:
     kind = jobs.capabilities()["kinds"].get(kinds.CHECK)
     if kind is None or not kind["available"]:
         return problem(503, kind["reason"] if kind else "This server can't check recordings")
+    said = request.query_params.get("transcript", character.voice.reference_line)
+    line = TRANSCRIPT.validate_python(said)
     data = await body(request, uploads.MAX_UPLOAD)
     found = await run_in_threadpool(uploads.check, data)
     path = await run_in_threadpool(uploads.store, kinds.uploads_dir(jobs.root), data, found)
-    params = {"upload": path.name, "reference_line": character.voice.reference_line}
+    params = {"upload": path.name, "reference_line": line}
     try:
         job = jobs.submit(kinds.CHECK, params)
     except Busy as error:

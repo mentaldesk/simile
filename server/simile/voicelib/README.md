@@ -7,7 +7,7 @@ transcript as `voice.reference_line`.
 | Way | Needs | How |
 |---|---|---|
 | Design from a description | Apple Silicon, both voice-lab virtualenvs | a `voice_design` job, then pick a candidate |
-| Record or upload | Apple Silicon, both voice-lab virtualenvs | upload to `voice/recording`, which starts a `voice_check` job, then pick it |
+| Record or upload | Apple Silicon, both voice-lab virtualenvs | upload to `voice/recording` with what it says, which starts a `voice_check` job, then pick it |
 | The voice library | nothing | `GET /api/voices`, then pick one |
 
 Once a character has a clip, *Try it* speaks any line in its voice through V1's voice service.
@@ -18,7 +18,7 @@ Once a character has a clip, *Try it* speaks any line in its voice through V1's 
 |---|---|
 | `GET /api/voices` | The voice library (below). |
 | `GET /api/voices/{id}/clip` | A library voice's clip, to listen to. |
-| `POST /api/characters/{id}/voice/recording` | Checks a recording of the character's `reference_line` (below). 202 with the job. |
+| `POST /api/characters/{id}/voice/recording?transcript=...` | Checks a recording, and what it says (below). 202 with the job. |
 | `POST /api/characters/{id}/voice/pick` | Gives the character the voice picked (below). 200 with the character. |
 | `POST /api/characters/{id}/voice/try` | `{"line": "..."}`, at most 300 characters. 200 with the character saying it, as a 24 kHz mono WAV. |
 
@@ -71,17 +71,22 @@ accent. Neither stops the player picking a candidate.
 
 ## Recording or uploading
 
-`POST /api/characters/{id}/voice/recording` takes the audio as the body. It's refused, with the
-reason, when it's empty or over 10 MB, or isn't a WAV, MP3 or M4A file by its first bytes. A WAV has
-to decode in full with Python's `wave`, at most 60 s, so a browser recording should be sent as
-16-bit PCM WAV. WebM, which is what most browsers record, isn't taken. MP3 and M4A are decoded by
-the job, which reports a file that won't, and refuses one over 60 s before any of the slow checks.
+`POST /api/characters/{id}/voice/recording` takes the audio as the body, and exactly what it says
+as `?transcript=`. Without one, the clip has to say the character's `reference_line`. The transcript
+becomes the character's line when the recording is picked, so it's refused before the upload is
+read unless it's 12-25 words, without a `!`, as `import_voices.py` requires. The audio is refused,
+with the reason, when it's empty or over 10 MB, or isn't a WAV, MP3 or M4A file by its first bytes.
+A WAV has to decode in full with Python's `wave`, at most 60 s, so a browser recording should be
+sent as 16-bit PCM WAV. WebM, which is what most browsers record, isn't taken. MP3 and M4A are
+decoded by the job, which reports a file that won't, and refuses one over 60 s before any of the
+slow checks.
 
 The job runs `voice-lab/voice_job.py check`, which runs `import_voices.py`'s checks on the
-character's `reference_line`: it converts the clip to 24 kHz mono, Whisper must hear the line, the
-clip must be 5-25 s, and the line must be 12-25 words without a `!`. The accent classifier listens
-to the clip and to three lines cloned from it, and warns about a North American accent. The result
-says whether the recording is `usable`. One with `errors` isn't kept, so it has no `clip`:
+transcript: it converts the clip to 24 kHz mono, Whisper must hear the transcript, the clip must be
+5-25 s, and the transcript must be 12-25 words without a `!`. The accent classifier listens to the
+clip and to `SAMPLE_LINES` cloned from it, the `samples`, and warns about a North American accent.
+The result says whether the recording is `usable`. One with `errors` isn't kept, so it has no
+`clip`:
 
 ```json
 {
@@ -105,8 +110,8 @@ says whether the recording is `usable`. One with `errors` isn't kept, so it has 
 `POST /api/characters/{id}/voice/pick` takes one of:
 
 - `{"design": "<job id>", "candidate": 2}`: a designed candidate, with the line it says.
-- `{"recording": "<job id>"}`: a checked recording, with the line it says. Refused with the
-  problems unless it's `usable`.
+- `{"recording": "<job id>"}`: a checked recording, with its transcript. Refused with the problems
+  unless it's `usable`, which leaves the voice as it was.
 - `{"library": "henrietta"}`: a copy of a library clip, with its transcript.
 
 It saves the clip with `save_clip`, then sets `reference_line` to what the clip says if that's
