@@ -26,6 +26,7 @@ class Activity(StrEnum):
     PARK = "park"
     NOODLE_BAR = "noodle_bar"
     MAKER_SPACE = "maker_space"
+    GALLERY = "gallery"
     WANDER = "wander"
     SEEK = "seek"
     IDLE = "idle"
@@ -50,6 +51,12 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
         V.KNOWLEDGE: 0.2,
         V.AMBITION: 0.2,
     },
+    A.GALLERY: {
+        V.OPEN_MINDEDNESS: 0.4,
+        V.KNOWLEDGE: 0.3,
+        V.CREATIVITY: 0.2,
+        V.PEACE_OF_MIND: 0.2,
+    },
     A.WANDER: {V.ADVENTURE: 0.8, V.FREEDOM: 0.4, V.OPEN_MINDEDNESS: 0.2, V.SECURITY: -0.3},
     A.SEEK: {V.CONNECTION: 1.0, V.COMPASSION: 0.2, V.INDEPENDENCE: -0.3, V.PEACE_OF_MIND: -0.5},
     A.IDLE: {V.PEACE_OF_MIND: 0.1},
@@ -62,6 +69,7 @@ NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
     A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.2},
     A.NOODLE_BAR: {Need.REST: 0.2},
     A.MAKER_SPACE: {Need.CURIOSITY: 0.4},
+    A.GALLERY: {Need.CURIOSITY: 0.2},
     A.WANDER: {Need.CURIOSITY: 0.4},
     A.IDLE: {Need.REST: 0.2},
 }
@@ -70,6 +78,7 @@ BASE: dict[Activity, float] = {
     A.COFFEE_SHOP: 0.1,
     A.SQUARE: 0.05,
     A.NEWS: -0.3,
+    A.GALLERY: -0.1,
     A.IDLE: -0.1,
     A.CREATE: -1.0,
 }
@@ -112,6 +121,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
     A.MAKER_SPACE: {Need.CURIOSITY: -0.9},
+    A.GALLERY: {Need.CURIOSITY: -0.5, Need.REST: -0.1},
     A.WANDER: {Need.CURIOSITY: -0.3},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
@@ -129,6 +139,7 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.PARK: (15, 50),
     A.NOODLE_BAR: (20, 45),
     A.MAKER_SPACE: (20, 60),
+    A.GALLERY: (15, 40),
     A.WANDER: (1, 5),
     A.SEEK: (3, 10),
     A.IDLE: (2, 8),

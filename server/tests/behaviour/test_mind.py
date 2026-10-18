@@ -19,6 +19,7 @@ from simile.behaviour import (
 from simile.npc import load_npcs
 from simile.schema import (
     PLAYER_ID,
+    VILLAGE_MAP,
     Baseline,
     CoreValue,
     Craft,
@@ -28,9 +29,9 @@ from simile.schema import (
     Relationship,
     Tile,
 )
-from simile.sim import STEP, Clock, FakeWallClock, World
-from simile.world import Movement
-from simile.world.map import load_maps, with_every_location
+from simile.sim import STEP, Clock, EntityMoved, FakeWallClock, World
+from simile.world import Movement, Outcome, Point
+from simile.world.map import WALKING_SPEED, load_maps, with_every_location
 from simile.world.movement import inside
 
 MAPS = load_maps()
@@ -77,7 +78,7 @@ class Village:
         seed: int = 0,
         config: BehaviourConfig = DEFAULT_CONFIG,
         store: Store | None = None,
-        placed: dict[str, str] | None = None,
+        placed: dict[str, str | MapTile] | None = None,
     ) -> None:
         self.world = World(Clock(start), FakeWallClock())
         self.movement = Movement(MAPS, self.world.bus)
@@ -594,6 +595,99 @@ def test_places_others_are_heading_for_count_as_where_they_are() -> None:
     situation = village.behaviour._situation(village.behaviour.minds["ana"])
 
     assert [(o.id, o.place) for o in situation.others] == [("ben", "coffee_shop")]
+
+
+def door_into(map_id: str) -> tuple[Point, Point]:
+    door = next(d for d in MAPS[VILLAGE_MAP].doors if d.inside.map == map_id)
+    outside, inside = door.outside, door.inside
+    return Point(outside.x, outside.y, outside.map), Point(inside.x, inside.y, inside.map)
+
+
+@pytest.mark.parametrize("activity", [A.COFFEE_SHOP, A.NOODLE_BAR, A.MAKER_SPACE, A.GALLERY])
+def test_trips_inside_go_through_the_door_and_take_as_long_as_the_walk(activity: Activity) -> None:
+    village = Village([ANA], config=keen(activity))
+    spots: list[Point] = []
+    village.world.bus.subscribe(EntityMoved, lambda e: spots.append(Point(e.x, e.y, e.map)))
+    village.run_until(lambda: village.behaviour.minds["ana"].walk is not None)
+    walk, left = village.behaviour.minds["ana"].walk, village.clock.now
+    assert walk is not None
+    village.run_until(lambda: walk.done)
+
+    place = MAPS[activity.value].location(activity.value)
+    here = village.movement.position("ana")
+    assert walk.outcome is Outcome.ARRIVED
+    assert here.map == place.map and inside(place, here)
+    assert door_into(place.map) in zip(spots, spots[1:], strict=False)
+    elapsed = (village.clock.now - left).total_seconds()
+    assert elapsed == pytest.approx(walk.distance / WALKING_SPEED, abs=2 * STEP)
+
+
+def test_residents_who_choose_the_coffee_shop_end_up_at_the_counter_inside() -> None:
+    village = Village([ANA, BEN, CAL], config=keen(A.COFFEE_SHOP))
+    minds = village.behaviour.minds.values()
+    village.run_until(lambda: all(m.goal.activity is A.COFFEE_SHOP and not m.walk for m in minds))
+
+    cafe = MAPS["coffee_shop"]
+    [stand] = next(i for i in cafe.interactables if i.id == "coffee_shop_counter").stand
+    spots = [village.movement.position(npc.id) for npc in (ANA, BEN, CAL)]
+    assert Point(stand.x, stand.y, cafe.id) in spots
+    assert all(inside(cafe.location("coffee_shop"), spot) for spot in spots)
+
+
+def test_a_wander_from_inside_goes_out_near_the_door() -> None:
+    village = Village([ANA], config=keen(A.WANDER), placed={"ana": "coffee_shop"})
+
+    walk = village.behaviour.minds["ana"].walk
+    outside, _ = door_into("coffee_shop")
+    assert walk is not None and walk.destination is not None
+    assert walk.destination.map == VILLAGE_MAP
+    reach = DEFAULT_CONFIG.wander_radius
+    assert abs(walk.destination.x - outside.x) <= reach
+    assert abs(walk.destination.y - outside.y) <= reach
+
+
+def test_only_someone_on_the_same_map_is_company() -> None:
+    def social(ben: MapTile | None) -> float:
+        placed: dict[str, str | MapTile] = {"ana": MapTile(map="coffee_shop", x=13, y=4)}
+        if ben is not None:
+            placed["ben"] = ben
+        village = Village([ANA, BEN][: len(placed)], config=keen(A.IDLE), placed=placed)
+        village.run(minutes=30)
+        return village.behaviour.needs("ana")[Need.SOCIAL]
+
+    alone = social(None)
+    assert social(MapTile(map=VILLAGE_MAP, x=13, y=4)) == pytest.approx(alone)
+    assert social(MapTile(map="coffee_shop", x=14, y=4)) < alone - 0.01
+
+
+@pytest.mark.parametrize("chases", [0, 3])
+def test_a_seeker_asks_to_talk_only_on_the_same_map_following_through_a_door(chases: int) -> None:
+    requests: list[tuple[str, str]] = []
+    village = Village(
+        [ANA, BEN],
+        start=at(11),
+        config=keen(A.IDLE, chases=chases),
+        placed={"ana": "house_1", "ben": MapTile(map=VILLAGE_MAP, x=31, y=13)},
+    )
+
+    def decline(a: str, b: str) -> bool:
+        requests.append((a, b))
+        return False
+
+    seek = Goal(A.SEEK, "ben")
+    village.behaviour.hooks.set(request_conversation=decline)
+    village.behaviour.nudge("ana", seek, 100)
+    village.run_until(lambda: village.behaviour.goal("ana") == seek)
+    village.movement.walk_to("ben", MapTile(map="coffee_shop", x=10, y=11))
+    village.run_until(lambda: village.behaviour.goal("ana") != seek or bool(requests), minutes=5)
+
+    maps = {npc: village.movement.position(npc).map for npc in ("ana", "ben")}
+    if chases:
+        assert requests == [("ana", "ben")]
+        assert maps == {"ana": "coffee_shop", "ben": "coffee_shop"}
+    else:
+        assert requests == []
+        assert maps == {"ana": VILLAGE_MAP, "ben": "coffee_shop"}
 
 
 def crafter(id: str, home: str, medium: Medium, **values: float) -> Npc:

@@ -1,5 +1,7 @@
+import math
 import random
 from collections.abc import Sequence
+from dataclasses import replace
 
 import pytest
 from pydantic import ValidationError
@@ -28,11 +30,24 @@ from simile.behaviour.scoring import (
     relief,
     wake,
 )
-from simile.schema import PLAYER_ID, Baseline, CoreValue, Medium, Relationship, Tile
+from simile.schema import (
+    PLAYER_ID,
+    VILLAGE_MAP,
+    Baseline,
+    CoreValue,
+    LocationKind,
+    MapTile,
+    Medium,
+    Relationship,
+    Tile,
+)
+from simile.sim import EventBus
 from simile.world.map import load_maps, with_every_location
-from simile.world.movement import Point
+from simile.world.movement import Movement, Point
+from simile.world.paths import DOOR
 
-PLACES = Places(with_every_location(load_maps()))
+MAPS = load_maps()
+PLACES = Places(with_every_location(MAPS))
 SQUARE = Point(31, 22)
 NEUTRAL = {value: 0.5 for value in CoreValue}
 CONTENT = {need: 0.2 for need in Need}
@@ -129,6 +144,15 @@ def test_creativity_goes_to_the_maker_space() -> None:
     s = situation({V.CREATIVITY: 0.95, V.SELF_ACTUALIZATION: 0.9}, {Need.CURIOSITY: 0.6})
 
     assert best(s) == Goal(A.MAKER_SPACE, "maker_space")
+
+
+def test_open_mindedness_knowledge_and_creativity_go_to_the_gallery() -> None:
+    gallery = Goal(A.GALLERY, "gallery")
+    s = situation({V.OPEN_MINDEDNESS: 0.95, V.KNOWLEDGE: 0.95, V.CREATIVITY: 0.9})
+    unmoved = situation({V.OPEN_MINDEDNESS: 0.1, V.KNOWLEDGE: 0.1, V.CREATIVITY: 0.1})
+
+    assert best(s) == gallery
+    assert score_of(gallery, unmoved) < score_of(gallery, s) - 0.5
 
 
 def test_connection_and_loneliness_seek_someone_out() -> None:
@@ -312,6 +336,7 @@ def test_each_activity_is_offered_once_with_its_best_place() -> None:
         A.PARK,
         A.NOODLE_BAR,
         A.MAKER_SPACE,
+        A.GALLERY,
         A.WANDER,
         A.IDLE,
     }
@@ -467,3 +492,56 @@ def test_residents_at_the_counter_or_behind_it_are_at_the_coffee_shop() -> None:
         entry = cafe.location(spot).entry
         assert cafe.at(Point(entry.x, entry.y, coffee_shop.map)) == coffee_shop
     assert PLACES.at(Point(47, 24)) == PLACES.location("park")
+
+
+@pytest.mark.parametrize(
+    "activity", [A.COFFEE_SHOP, A.NOODLE_BAR, A.MAKER_SPACE, A.GALLERY], ids=str
+)
+def test_each_building_is_inside_on_its_own_map_under_its_own_kind(activity: Activity) -> None:
+    [location] = PLACES.by_activity[activity]
+
+    assert location.id == location.map == activity.value
+    assert location.kind is LocationKind(activity.value)
+
+
+def door(id: str) -> tuple[Point, Point]:
+    """The door's tiles outside and inside."""
+    found = next(d for d in MAPS[VILLAGE_MAP].doors if d.id == id)
+    outside, inside = found.outside, found.inside
+    return Point(outside.x, outside.y, outside.map), Point(inside.x, inside.y, inside.map)
+
+
+def test_trips_inside_are_priced_through_the_door() -> None:
+    cafe, noodles = PLACES.location("coffee_shop"), PLACES.location("noodle_bar")
+    counter = Point(cafe.entry.x, cafe.entry.y, cafe.map)
+    bowl = Point(noodles.entry.x, noodles.entry.y, noodles.map)
+    (cafe_out, cafe_in), (noodles_out, noodles_in) = door("coffee_shop"), door("noodle_bar")
+
+    assert PLACES.tiles(SQUARE, counter) == pytest.approx(
+        math.dist(SQUARE, cafe_out) + DOOR + math.dist(cafe_in, counter)
+    )
+    assert PLACES.tiles(counter, bowl) == pytest.approx(
+        math.dist(counter, cafe_in)
+        + DOOR
+        + math.dist(cafe_out, noodles_out)
+        + DOOR
+        + math.dist(noodles_in, bowl)
+    )
+
+
+def test_a_trip_inside_is_priced_about_as_long_as_the_walk() -> None:
+    movement = Movement(MAPS, EventBus())
+    movement.place("mei", MapTile(map=VILLAGE_MAP, x=31, y=22))
+    cafe = PLACES.location("coffee_shop")
+
+    walk = movement.walk_to("mei", "coffee_shop")
+    estimate = PLACES.tiles(SQUARE, Point(cafe.entry.x, cafe.entry.y, cafe.map))
+
+    assert estimate <= walk.distance <= 1.2 * estimate
+
+
+def test_a_map_without_a_door_is_out_of_reach() -> None:
+    shut = Places(replace(with_every_location(MAPS), doors=()))
+
+    assert shut.walk_minutes(SQUARE, Point(5, 6, "coffee_shop")) == math.inf
+    assert shut.walk_minutes(SQUARE, Point(47, 24)) == PLACES.walk_minutes(SQUARE, Point(47, 24))

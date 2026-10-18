@@ -59,6 +59,7 @@ GOING_TO_A_PLACE = (
     Activity.PARK,
     Activity.NOODLE_BAR,
     Activity.MAKER_SPACE,
+    Activity.GALLERY,
     Activity.CREATE,
 )
 
@@ -382,7 +383,7 @@ class Behaviour:
     def _has_company(self, npc: Id, positions: dict[Id, Point]) -> bool:
         here = positions[npc]
         return any(
-            math.dist(here, there) <= self.config.near
+            there.map == here.map and math.dist(here, there) <= self.config.near
             for other, there in positions.items()
             if other != npc
         )
@@ -569,17 +570,21 @@ class Behaviour:
         position = self.movement.position(entity)
         return MapTile(map=position.map, x=max(round(position.x), 0), y=max(round(position.y), 0))
 
-    def _wander_tile(self, mind: Mind) -> Tile | None:
+    def _wander_tile(self, mind: Mind) -> MapTile | None:
+        """Somewhere near them that isn't a house, or near the door outside if they're indoors."""
         here = self.movement.position(mind.npc.id)
-        reach = self.config.wander_radius
+        door = next((d for d in self.movement.town.doors if d.inside.map == here.map), None)
+        if door is not None:
+            here = Point(door.outside.x, door.outside.y, door.outside.map)
+        town, reach = self.movement.maps[here.map], self.config.wander_radius
         for _ in range(20):
             x = round(here.x) + self.rng.randint(-reach, reach)
             y = round(here.y) + self.rng.randint(-reach, reach)
-            if not self.movement.town.walkable(x, y):
+            if not town.walkable(x, y):
                 continue
-            location = self.places.at(Point(x, y))
+            location = self.places.at(Point(x, y, here.map))
             if location is None or location.kind is not LocationKind.HOUSE:
-                return Tile(x=x, y=y)
+                return MapTile(map=here.map, x=x, y=y)
         return None
 
     def _at_home(self, mind: Mind) -> bool:
