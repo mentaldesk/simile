@@ -36,6 +36,8 @@ export type SceneryObject = {
   height: number;
   offset: [x: number, y: number];
   slices: Slice[];
+  /** A frame's opening: its corners in px in its image, top left first and clockwise. */
+  canvas?: [x: number, y: number][];
 };
 
 export const sceneryImages = (manifest: SceneryManifest): string[] => [

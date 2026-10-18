@@ -15,7 +15,7 @@ from simile.schema import CoreValue, Craft, Id, Medium, Memory, MemoryKind, Npc,
 from simile.sim import Clock
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
 from simile.works.reading import name_of
-from simile.works.render import canvas, draw, metres
+from simile.works.render import PAINTING_M, canvas, draw, metres, painting_canvas
 from simile.works.store import WorksStore
 from simile.works.svg import BadSvg, checked
 from simile.works.walls import wall_name
@@ -72,12 +72,24 @@ class Mural(BaseModel):
     )
 
 
+class Painting(Mural):
+    description: str = Field(
+        min_length=1,
+        description="What it shows, in a few plain sentences, as a visitor to the gallery sees it.",
+    )
+    svg: str = Field(min_length=1, description="The painting, as one SVG document.")
+
+
+type Hang = Callable[[Work, str, bytes], None]
+"""Hangs a painting in the gallery, given its SVG and PNG."""
+
 RELATES: dict[str, Any] = {
     value.value: (float, Field(ge=0, le=SCALE, description=f"How closely it relates to {m}."))
     for value, m in MEANINGS.items()
 }
 Reply = create_model("Piece", __base__=Piece, **RELATES)
 MuralReply = create_model("Mural", __base__=Mural, **RELATES)
+PaintingReply = create_model("Painting", __base__=Painting, **RELATES)
 
 
 def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) -> str:
@@ -92,13 +104,16 @@ def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) 
         f"{least}.\n"
         f"Your interests: {', '.join(npc.interests)}.\n"
         f"How you talk: {npc.speaking_style}\n\n"
-        + (
-            f"In your own time you paint {craft.form} on the village's walls, where everyone who "
-            "walks by sees them. It's how you have your say in public."
-            if craft.medium is Medium.MURAL
-            else f"In your own time you write {craft.form}. They go up on the news terminals "
-            "beside the news, for your neighbours to read. It's how you have your say in public."
-        )
+        + {
+            Medium.MURAL: f"In your own time you paint {craft.form} on the village's walls, where "
+            "everyone who walks by sees them. It's how you have your say in public.",
+            Medium.PAINTING: f"In your own time you paint {craft.form}. They hang in the village "
+            "gallery, where your neighbours come to look at them. It's how you have your say in "
+            "public.",
+            Medium.WRITING: f"In your own time you write {craft.form}. They go up on the news "
+            "terminals beside the news, for your neighbours to read. It's how you have your say "
+            "in public.",
+        }[craft.medium]
     )
 
 
@@ -142,6 +157,14 @@ def analysis(noun: str) -> str:
     )
 
 
+def svg_rules(config: WorksConfig) -> str:
+    return (
+        "Use only shapes, paths, text, gradients, patterns, clip paths, masks and filters. No "
+        "scripts, <image>, <foreignObject> or links, and nothing that loads from outside the SVG. "
+        f"Keep it under {config.svg_chars // 3:,} characters."
+    )
+
+
 TAKE_A_SIDE = (
     "Where you care strongly, take a side, even a provocative one: your neighbours should be able "
     "to tell where you stand, and guess it's yours without your name on it."
@@ -182,14 +205,43 @@ def mural_prompt(
         f"Paint something new in your craft, {craft.form}. {start} something in line with what you "
         f"care about. {TAKE_A_SIDE} The composition, palette and style are yours.\n\n"
         f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
-        "canvas, since it's paint on a wall: no frame and no transparent background. Use only "
-        "shapes, paths, text, gradients, patterns, clip paths, masks and filters. No scripts, "
-        "<image>, <foreignObject> or links, and nothing that loads from outside the SVG. Keep it "
-        f"under {config.svg_chars // 3:,} characters. Any words on it should be few, and big "
-        "enough to read from across the street. Keep them well inside the edges, allowing each "
-        "letter 0.7 of the font size, since the wall may not have your font.\n\n"
+        "canvas, since it's paint on a wall: no frame and no transparent background. "
+        f"{svg_rules(config)} Any words on it should be few, and big enough to read from across "
+        "the street. Keep them well inside the edges, allowing each letter 0.7 of the font size, "
+        "since the wall may not have your font.\n\n"
         "Describe what it shows in a few plain sentences, as a passer-by would see it, and say in "
         f"a sentence or two of your own what it's saying.\n\n{analysis('mural')}"
+    )
+
+
+def painting_prompt(
+    craft: Craft,
+    memories: Sequence[Memory],
+    past: Sequence[Work],
+    config: WorksConfig = DEFAULT_CONFIG,
+) -> str:
+    """For a painter, or a muralist painting a canvas for once."""
+    mind, start = on_your_mind(memories, past, "works")
+    width, height = painting_canvas()
+    across, up = PAINTING_M
+    what = (
+        f"in the spirit of your craft, {craft.form}, but on canvas this time"
+        if craft.medium is Medium.MURAL
+        else f"in your craft, {craft.form}"
+    )
+    return (
+        f"{mind}\n\n"
+        f"You're painting a canvas for the village gallery, {across:.2f} m wide and {up:.2f} m "
+        f"high, to hang beside your neighbours' work. Paint something new {what}. {start} "
+        f"something in line with what you care about. {TAKE_A_SIDE} The composition, palette and "
+        "style are yours.\n\n"
+        f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
+        "canvas: no frame, since it hangs in one, and no transparent background. "
+        f"{svg_rules(config)} Visitors see it close up, so detail rewards them. Any words on it "
+        "should be few. Keep them well inside the edges, allowing each letter 0.7 of the font "
+        "size, since the gallery may not have your font.\n\n"
+        "Describe what it shows in a few plain sentences, as a visitor would see it, and say in "
+        f"a sentence or two of your own what it's saying.\n\n{analysis('painting')}"
     )
 
 
@@ -198,11 +250,12 @@ def source(memory: Memory) -> str | None:
 
 
 def remember(npc: Npc, work: Work, config: WorksConfig, over: str = "") -> Memory:
-    made = (
-        f'I painted "{work.title}" on {wall_name(work.wall)}{over}.'
-        if work.wall
-        else f'I wrote "{work.title}" and put it up on the news terminals.'
-    )
+    if work.wall:
+        made = f'I painted "{work.title}" on {wall_name(work.wall)}{over}.'
+    elif work.medium is Medium.PAINTING:
+        made = f'I painted "{work.title}" for the gallery.'
+    else:
+        made = f'I wrote "{work.title}" and put it up on the news terminals.'
     return Memory(
         owner=npc.id,
         kind=MemoryKind.WORK,
@@ -234,8 +287,10 @@ class Maker:
         walls: Sequence[MuralWall] = (),
         npcs: Mapping[Id, Npc] | None = None,
         painted: Callable[[Work], None] = nothing_painted,
+        hang: Hang | None = None,
         config: WorksConfig = DEFAULT_CONFIG,
     ) -> None:
+        """Without `hang`, nobody paints for the gallery."""
         self.works = works
         self.memory = memory
         self.clock = clock
@@ -243,23 +298,26 @@ class Maker:
         self.walls = {wall.id: wall for wall in walls}
         self.npcs = npcs or {}
         self.painted = painted
+        self.hang = hang
         self.config = config
         self.making: set[Id] = set()
         self.tasks: set[asyncio.Task[Work | None]] = set()
 
     def make(self, npc: Npc, wall: Id | None = None) -> asyncio.Task[Work | None] | None:
-        """Start `npc` writing a piece, or painting a mural on `wall`, unless they don't make
-        that, are making something already, or there's no LLM. Doesn't block. The task stores
-        the work and the artist's memory of making it and returns the work, or None if it
-        fails."""
+        """Start `npc` writing a piece, painting a mural on `wall`, or painting for the gallery:
+        a painter, or a muralist given anything but a wall. Not if they don't make that, are
+        making something already, or there's no LLM. Doesn't block. The task stores the work
+        and the artist's memory of making it and returns the work, or None if it fails."""
         llm, craft = self.llm(), npc.craft
         if llm is None or craft is None or npc.id in self.making:
             return None
         making: Coroutine[Any, Any, Work | None]
         if craft.medium is Medium.WRITING:
             making = self._write(llm, npc, craft, self.clock.now)
-        elif wall in self.walls:
+        elif craft.medium is Medium.MURAL and wall in self.walls:
             making = self._paint(llm, npc, craft, self.walls[wall], self.clock.now)
+        elif self.hang is not None:
+            making = self._canvas(llm, npc, craft, self.hang, self.clock.now)
         else:
             return None
         self.making.add(npc.id)
@@ -299,7 +357,8 @@ class Maker:
         reply = await self._ask(llm, npc, craft, ask, Reply, "work")
         if reply is None:
             return None
-        work = self._work(npc, craft, reply, reply.text, memories, now, uuid.uuid4().hex[:8])
+        key = uuid.uuid4().hex[:8]
+        work = self._work(npc, craft, reply, reply.text, memories, now, key, Medium.WRITING)
         self.works.add(work)
         self.memory.add(remember(npc, work, self.config))
         logger.info("%s wrote %r: %s", npc.id, work.title, work.statement)
@@ -324,7 +383,7 @@ class Maker:
             if reply is None:
                 return None
             try:
-                svg, png = await self._picture(reply.svg, wall, int(key, 16))
+                svg, png = await self._picture(reply.svg, *canvas(wall), int(key, 16))
                 break
             except BadSvg as error:
                 logger.info("%s's mural for %s won't do: %s", npc.id, wall.id, error)
@@ -332,7 +391,9 @@ class Maker:
         else:
             logger.warning("%s couldn't paint a mural that would go up, so made nothing", npc.id)
             return None
-        work = self._work(npc, craft, reply, reply.description, memories, now, key, wall.id)
+        work = self._work(
+            npc, craft, reply, reply.description, memories, now, key, Medium.MURAL, wall.id
+        )
         covered = self.works.paint(work, svg, png)
         over = f' over {self._whose(npc, covered, "my")} "{covered.title}"' if covered else ""
         self.memory.add(remember(npc, work, self.config, over))
@@ -340,8 +401,37 @@ class Maker:
         self.painted(work)
         return work
 
-    async def _picture(self, svg: str, wall: MuralWall, seed: int) -> tuple[str, bytes]:
-        width, height = canvas(wall)
+    async def _canvas(
+        self, llm: LLMClient, npc: Npc, craft: Craft, hang: Hang, now: datetime
+    ) -> Work | None:
+        memories, past = self.on_mind(npc, now)
+        ask = first = painting_prompt(craft, memories, past, self.config)
+        key = uuid.uuid4().hex[:8]
+        for _ in range(2):
+            reply = await self._ask(llm, npc, craft, ask, PaintingReply, "painting")
+            if reply is None:
+                return None
+            try:
+                svg, png = await self._picture(
+                    reply.svg, *painting_canvas(), int(key, 16), on_canvas=True
+                )
+                break
+            except BadSvg as error:
+                logger.info("%s's painting won't do: %s", npc.id, error)
+                ask = f"{first}\n\nYour last try couldn't be hung, because {error}. Fix that."
+        else:
+            logger.warning("%s couldn't paint anything that would hang, so made nothing", npc.id)
+            return None
+        work = self._work(npc, craft, reply, reply.description, memories, now, key, Medium.PAINTING)
+        self.works.add(work)
+        hang(work, svg, png)
+        self.memory.add(remember(npc, work, self.config))
+        logger.info("%s painted %r for the gallery: %s", npc.id, work.title, work.statement)
+        return work
+
+    async def _picture(
+        self, svg: str, width: int, height: int, seed: int, *, on_canvas: bool = False
+    ) -> tuple[str, bytes]:
         config = self.config
         svg = checked(
             svg,
@@ -359,6 +449,7 @@ class Maker:
             seed=seed,
             timeout=config.render_timeout,
             memory=config.render_memory * 2**20,
+            on_canvas=on_canvas,
         )
         return svg, png
 
@@ -389,13 +480,14 @@ class Maker:
         memories: Sequence[Memory],
         now: datetime,
         key: str,
+        medium: Medium,
         wall: Id | None = None,
     ) -> Work:
         sources = (source(memories[n - 1]) for n in reply.inspired_by if 1 <= n <= len(memories))
         return Work(
             id=f"{npc.id}-{key}",
             artist=npc.id,
-            medium=craft.medium,
+            medium=medium,
             form=craft.form,
             title=reply.title,
             created=now,

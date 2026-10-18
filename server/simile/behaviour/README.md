@@ -51,15 +51,17 @@ sets F3's snapshot to the NPCs' real positions.
   the `create` hook. A stay cut short by a nudge or bedtime makes nothing, but a talk only pauses
   it, and afterwards they go back for the rest of the stay. Nobody starts one with less than a
   typical stay left before bed.
-- **Where they make things.** Writers write at home, the coffee shop or the maker space, wherever
-  their values fit best (`writing_places`): Peace of Mind, Independence, Security and Tradition at
+- **Where they make things.** Writers write, and painters paint for the gallery, at home, the
+  coffee shop or the maker space, wherever their values fit best (`writing_places`): Peace of
+  Mind, Independence, Security and Tradition at
   home, Connection, Pleasure and Open-mindedness at the coffee shop, and Ambition and Success at the
   maker space, which starts 0.1 behind (`writing_base`) because its regulars already crowd it.
   Creativity plays no part, since every crafter has plenty and it already draws people to the maker
   space. Walking time and company count as for any place, so a writer who dislikes crowds goes
   elsewhere when it's busy. Someone writing at home is at home, so nobody seeks them out there.
   Muralists paint the wall the `mural_wall` hook names, standing on its tile, and without a wall
-  they don't create.
+  they don't create. When it's a muralist's turn to paint for the gallery, the gallery's hook names
+  their home instead.
 - **People.** Affinity is a weighted sum of R1's like, trust, respect and familiarity, read from R2
   with `as_of`, or `meet` for strangers. Seeking someone scores their affinity, scaled up by
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,

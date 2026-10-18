@@ -107,15 +107,16 @@ English with British spelling."""
 
 CRAFT = """\
 - craft: what they make in their own time, which can differ from their job, or null if they make \
-nothing. Its medium is "writing", which goes up on the public news terminals beside the news, or \
-"mural", painted on one of the few walls around town. Each work starts from whatever is on their \
-mind, such as news they've read or a conversation they've had, and says something about it in \
-line with their values, taking a side where they care strongly. So a craft is how they have their \
-say in public, in a style that suits them, and a neighbour should be able to guess the maker from \
-the work. Its form names the kind of work, and its subject or slant if that's part of it, in two \
-to six words, such as "political street murals", "plain verse about the river" or "stern notices \
-for the residents' board". Most residents have one, but someone with little creativity and \
-nothing they want to say may have none."""
+nothing. Its medium is "writing", which goes up on the public news terminals beside the news, \
+"mural", painted on one of the few walls around town, or "painting", a canvas hung in the village \
+gallery. Each work starts from whatever is on their mind, such as news they've read or a \
+conversation they've had, and says something about it in line with their values, taking a side \
+where they care strongly. So a craft is how they have their say in public, in a style that suits \
+them, and a neighbour should be able to guess the maker from the work. Its form names the kind of \
+work, and its subject or slant if that's part of it, in two to six words, such as "political \
+street murals", "plain verse about the river", "small oil studies of the harbour" or "stern \
+notices for the residents' board". Most residents have one, but someone with little creativity \
+and nothing they want to say may have none."""
 
 
 def values_brief(values: Profile) -> str:

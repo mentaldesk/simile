@@ -419,6 +419,14 @@ def test_only_crafters_create_and_muralists_only_with_a_wall() -> None:
     }
 
 
+def test_painters_paint_where_writers_write() -> None:
+    painting = creating(situation(needs=INSPIRED, craft=Medium.PAINTING))
+    writing = creating(situation(needs=INSPIRED, craft=Medium.WRITING))
+
+    assert painting == writing
+    assert best(situation(needs=INSPIRED, craft=Medium.PAINTING)).activity is A.CREATE
+
+
 @pytest.mark.parametrize(
     ("values", "place"),
     [

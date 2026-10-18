@@ -244,6 +244,18 @@
       "title": "Speaking Style",
       "type": "string"
     },
+    "mannerisms": {
+      "default": [],
+      "description": "Up to 3 habits that show in how they talk, e.g. \"answers a question with another question\". Left out when empty.",
+      "items": {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Mannerisms",
+      "type": "array"
+    },
     "interests": {
       "items": {
         "type": "string"

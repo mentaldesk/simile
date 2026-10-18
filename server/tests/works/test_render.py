@@ -4,7 +4,7 @@ import pytest
 from PIL import Image, ImageStat
 
 from simile.art.iso.camera import TILE_W
-from simile.works.render import canvas, draw
+from simile.works.render import PAINTING_M, canvas, draw, painting_canvas
 from simile.works.svg import BadSvg, checked
 from simile.world.map import load_map
 
@@ -40,6 +40,30 @@ def test_paints_the_svg_onto_plaster_at_the_walls_size() -> None:
     assert corner[1] < 120 < corner[0]
     assert picture(clean).tobytes() == image.tobytes()
     assert picture(clean, seed=2).tobytes() != image.tobytes()
+
+
+def test_a_painting_is_the_frames_opening_960_px_across() -> None:
+    width, height = painting_canvas()
+    across, up = PAINTING_M
+    assert (width, height) == (960, 602)
+    assert (across, up) == pytest.approx((1.34, 0.84))
+    assert width / height == pytest.approx(across / up, rel=0.01)
+
+
+def test_paints_a_painting_onto_a_primed_canvas_without_weathering() -> None:
+    width, height = painting_canvas()
+    clean = checked(svg(width, height), width, height, chars=9999, elements=99, tolerance=0.1)
+
+    def painted(seed: int) -> Image.Image:
+        png = draw(clean, width, height, seed=seed, timeout=30, memory=2**30, on_canvas=True)
+        return Image.open(io.BytesIO(png))
+
+    image = painted(1)
+
+    assert (image.format, image.size, image.mode) == ("PNG", (width, height), "RGB")
+    red = ImageStat.Stat(image.crop((0, 0, 40, 40))).mean
+    assert red[0] > 200 and red[1] < 70
+    assert painted(2).tobytes() == image.tobytes()
 
 
 def test_weathering_never_takes_more_than_about_half_the_paint() -> None:

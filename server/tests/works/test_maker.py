@@ -8,10 +8,11 @@ from PIL import Image
 
 from simile.llm import FakeProvider, LLMClient, LLMError, Model
 from simile.memory import MemoryStore
-from simile.schema import CoreValue, Medium, Memory, MemoryKind, Npc, Work
+from simile.schema import CoreValue, Craft, Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.works import DEFAULT_CONFIG, Maker, WorksConfig, WorksStore
-from simile.works.render import canvas, draw
+from simile.works.maker import PaintingReply
+from simile.works.render import canvas, draw, painting_canvas
 from simile.works.svg import BadSvg
 
 from .conftest import (
@@ -275,7 +276,7 @@ def muralist(
     )
 
 
-async def paint(maker: Maker, npc: Npc = SUKI, wall: str = "wall_1") -> Work | None:
+async def paint(maker: Maker, npc: Npc = SUKI, wall: str | None = "wall_1") -> Work | None:
     task = maker.make(npc, wall)
     assert task is not None
     return await task
@@ -439,3 +440,107 @@ def test_anything_else_that_goes_wrong_makes_nothing_and_raises_nothing(
     assert task.result() is None
     assert maker.making == set()
     assert works.showing() == {}
+
+
+def painting_reply(**fields: object) -> str:
+    return PaintingReply.model_validate(
+        {
+            "title": "Harbour at Dusk",
+            "description": "A yellow sun over a blue harbour.",
+            "statement": "Every boat comes home eventually.",
+            "svg": svg(*painting_canvas()),
+            "inspired_by": [1],
+            "tags": ["Harbour", "dusk"],
+            "sentiment": 6.0,
+            **{value.value: 0.0 for value in CoreValue},
+            "peace_of_mind": 7.0,
+            **fields,
+        }
+    ).model_dump_json()
+
+
+PAINTER = VIKTOR.model_copy(
+    update={"craft": Craft(medium=Medium.PAINTING, form="small oil studies of the harbour")}
+)
+
+
+def gallery_painter(
+    works: WorksStore, memory: MemoryStore, fake: FakeProvider, hung: list[tuple[Work, str, bytes]]
+) -> Maker:
+    llm = LLMClient(fake)
+
+    def hang(work: Work, svg: str, png: bytes) -> None:
+        hung.append((work, svg, png))
+
+    return Maker(
+        works, memory, Clock(NOW), lambda: llm, walls=[WALL], npcs=NPCS, hang=hang, config=CONFIG
+    )
+
+
+def test_a_painter_paints_a_canvas_and_hangs_it(memory: MemoryStore, works: WorksStore) -> None:
+    memory.add(NEWS)
+    fake, hung = FakeProvider([painting_reply()]), []
+
+    made = asyncio.run(paint(gallery_painter(works, memory, fake, hung), PAINTER, None))
+
+    assert made is not None
+    [(work, drawn, png)] = hung
+    assert work == made == works.get(made.id)
+    assert (made.medium, made.wall, made.form) == (Medium.PAINTING, None, PAINTER.craft.form)
+    assert made.text == "A yellow sun over a blue harbour."
+    assert made.inspired_by == ["news-1"]
+    assert 'viewBox="0 0 960 602"' in drawn
+    assert Image.open(io.BytesIO(png)).size == painting_canvas() == (960, 602)
+    [remembered] = memory.recall("viktor", NOW, kind=MemoryKind.WORK)
+    assert remembered.content == (
+        'I painted "Harbour at Dusk" for the gallery. Every boat comes home eventually.'
+    )
+    [request] = fake.requests
+    asked = request.messages[-1].content
+    assert "You're painting a canvas for the village gallery, 1.34 m wide and 0.84 m high" in asked
+    assert "Paint something new in your craft, small oil studies of the harbour." in asked
+    assert 'one SVG document with viewBox="0 0 960 602"' in asked
+    assert "In your own time you paint small oil studies of the harbour. They hang in the " in (
+        request.system
+    )
+    assert request.model == Model.SONNET
+
+
+def test_a_muralist_given_anything_but_a_wall_paints_for_the_gallery(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    fake, hung = FakeProvider([painting_reply()]), []
+
+    made = asyncio.run(paint(gallery_painter(works, memory, fake, hung), SUKI, "house_2"))
+
+    assert made is not None and made.medium is Medium.PAINTING
+    assert [work for work, _, _ in hung] == [made]
+    assert works.showing() == {}
+    asked = fake.requests[0].messages[-1].content
+    assert f"in the spirit of your craft, {SUKI.craft.form}, but on canvas this time" in asked
+    assert "on the village's walls" in fake.requests[0].system
+
+
+def test_a_bad_painting_is_tried_again_once(memory: MemoryStore, works: WorksStore) -> None:
+    fake, hung = FakeProvider([painting_reply(svg=svg()), painting_reply()]), []
+
+    made = asyncio.run(paint(gallery_painter(works, memory, fake, hung), PAINTER, None))
+
+    assert made is not None and len(hung) == 1
+    again = fake.requests[1].messages[-1].content
+    assert again.endswith(
+        "Your last try couldn't be hung, because its viewBox is 288 × 262, not the wall's "
+        'shape: use viewBox="0 0 960 602". Fix that.'
+    )
+
+
+def test_nobody_paints_for_the_gallery_without_one(memory: MemoryStore, works: WorksStore) -> None:
+    fake = FakeProvider([painting_reply()])
+    llm = LLMClient(fake)
+
+    async def scenario() -> list[object]:
+        maker = Maker(works, memory, Clock(NOW), lambda: llm, walls=[WALL])
+        return [maker.make(PAINTER), maker.make(SUKI, "house_2")]
+
+    assert asyncio.run(scenario()) == [None, None]
+    assert fake.requests == []
