@@ -40,6 +40,14 @@ def test_the_bundled_articles_are_analysed_and_all_fit_on_a_terminal() -> None:
     assert len({item.url for item in articles}) == len(articles)
 
 
+def test_the_bundled_articles_come_with_long_summaries() -> None:
+    articles = bundled()
+    summaries = [item.long_summary for item in articles if item.long_summary]
+
+    assert len(summaries) >= len(articles) - 1
+    assert all(3 <= len(summary.split("\n\n")) <= 4 for summary in summaries)
+
+
 def test_falls_back_on_the_bundled_articles_while_no_news_is_stored(store: NewsStore) -> None:
     assert newest_first(fall_back(store)) == newest_first(bundled())
     assert fall_back(store) == []
