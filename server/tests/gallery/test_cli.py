@@ -54,7 +54,7 @@ def test_without_claude_it_hangs_a_stand_in_drawn_by_the_real_renderer(database:
 
 @pytest.mark.usefixtures("database")
 def test_only_painters_and_muralists_paint() -> None:
-    result = runner.invoke(create_cli(), ["gallery", "paint", "tobias"])
+    result = runner.invoke(create_cli(), ["gallery", "paint", "desmond"])
 
     assert result.exit_code == 1
     assert "doesn't paint" in result.output

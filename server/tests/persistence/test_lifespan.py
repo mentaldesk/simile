@@ -25,6 +25,7 @@ from simile.schema import (
     Line,
     MapTile,
     Memory,
+    MemoryKind,
     NewsItem,
     Relationship,
 )
@@ -167,7 +168,8 @@ async def test_a_conversation_going_on_at_shutdown_is_ended_and_reflected_on(
     assert conversation.ended == stop
     assert conversation.lines
     with MemoryStore(database) as store:
-        assert [m.about for m in store.recall("kofi", stop)] == [["henrietta"]]
+        talks = store.recall("kofi", stop, kind=MemoryKind.CONVERSATION)
+        assert [m.about for m in talks] == [["henrietta"]]
         rel = store.relationship("henrietta", "kofi")
         assert rel is not None and rel.like > rel.baseline.like
     world = saved(database)
@@ -214,7 +216,8 @@ async def test_waits_for_reflections_still_going_on(database: Path) -> None:
     await run_village(timedelta(0), after=finish_talking)
 
     with MemoryStore(database) as store:
-        assert [m.conversation_id for m in store.recall("henrietta", START)] == ["c1"]
+        talks = store.recall("henrietta", START, kind=MemoryKind.CONVERSATION)
+        assert [m.conversation_id for m in talks] == ["c1"]
 
 
 @pytest.mark.anyio

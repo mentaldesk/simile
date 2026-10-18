@@ -7,6 +7,7 @@ from enum import StrEnum
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.needs import feels
 from simile.memory import SharedHistory
+from simile.news.reactions import TITLE
 from simile.schema import (
     PLAYER_ID,
     CoreValue,
@@ -214,8 +215,10 @@ def turn_prompt(
     works: Sequence[WorkTopic] = (),
     mood: Sequence[str] = (),
     errand: str | None = None,
+    detail: Memory | None = None,
 ) -> str:
-    """The speaker's next line, feeling `mood`. A goodbye says they're off to do `errand`."""
+    """The speaker's next line, feeling `mood`, with what stuck with them from the article
+    `detail` is of. A goodbye says they're off to do `errand`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)
@@ -231,6 +234,8 @@ def turn_prompt(
             f"You read about what {other} just mentioned:\n"
             + "\n".join(f"- {m.content}" for m in recalled)
         )
+    if detail is not None and detail.points:
+        parts.append(stuck(detail))
     openings = [opening(line.text) for line in lines if line.speaker == speaker][-OPENINGS:]
     if openings:
         listed = ", ".join(f'"{words}..."' for words in openings)
@@ -242,6 +247,18 @@ def turn_prompt(
     off_to = cue is Cue.GOODBYE and errand
     asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
     return "\n\n".join([*parts, asked])
+
+
+def detailed(*memories: Sequence[Memory]) -> Memory | None:
+    """The first of `memories` with points: the one article whose points a prompt gives."""
+    return next((memory for group in memories for memory in group if memory.points), None)
+
+
+def stuck(memory: Memory, who: str = "you") -> str:
+    title = TITLE.match(memory.content)
+    article = f'"{title[1]}"' if title else f"what {who} read"
+    points = "\n".join(f"- {point}" for point in memory.points)
+    return f"What stuck with {who} from {article}:\n{points}"
 
 
 def your_works(works: Sequence[WorkTopic], speaker: Id | None) -> list[str]:

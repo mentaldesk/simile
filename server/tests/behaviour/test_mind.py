@@ -732,7 +732,7 @@ def arrived(village: Village, npc: str) -> datetime:
 
 
 def test_inspiration_rises_only_with_a_craft_and_faster_with_creativity() -> None:
-    config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (180, 180)})
+    config = DEFAULT_CONFIG.model_copy(update={"start_dwell": (180, 180), "head_starts": 0})
     keen = crafter("keen", "house_1", Medium.WRITING, creativity=0.9)
     dull = crafter("dull", "house_2", Medium.WRITING, creativity=0.2)
     none = make_npc("none", "house_3", creativity=0.9)
@@ -749,7 +749,7 @@ def test_inspiration_rises_only_with_a_craft_and_faster_with_creativity() -> Non
 
 
 def test_writers_hand_over_their_work_at_the_end_of_their_stay() -> None:
-    village = Village([WRITER], config=keen(A.CREATE))
+    village = Village([WRITER], config=keen(A.CREATE, head_starts=0))
     made = Made(village)
     village.behaviour.hooks.set(create=made)
     village.behaviour.minds["wren"].needs[Need.INSPIRATION] = 0.9
@@ -796,7 +796,7 @@ def test_a_muralist_with_no_wall_never_creates() -> None:
 
 
 def test_a_stay_cut_short_makes_nothing() -> None:
-    village = Village([WRITER], config=keen(A.CREATE))
+    village = Village([WRITER], config=keen(A.CREATE, head_starts=0))
     made = Made(village)
     village.behaviour.hooks.set(create=made)
     village.behaviour.minds["wren"].needs[Need.INSPIRATION] = 0.9
@@ -812,7 +812,7 @@ def test_a_stay_cut_short_makes_nothing() -> None:
 
 
 def test_a_talk_pauses_making_something_and_they_go_back_to_it() -> None:
-    village = Village([WRITER, BEN], config=keen(A.CREATE))
+    village = Village([WRITER, BEN], config=keen(A.CREATE, head_starts=0))
     made = Made(village)
     village.behaviour.hooks.set(create=made)
     there = arrived(village, "wren")

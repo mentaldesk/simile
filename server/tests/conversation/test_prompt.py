@@ -13,7 +13,7 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, WorkTopic, first_name, takes_leave
+from simile.conversation.prompt import Player, WorkTopic, detailed, first_name, takes_leave
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -270,6 +270,36 @@ def test_news_the_other_just_mentioned_follows_the_transcript() -> None:
         "Say one or two sentences"
     ) in prompt
     assert "You read about" not in turn_prompt("B", lines, NAMES, Cue.REPLY, "Henrietta")
+
+
+def test_a_turn_gives_what_stuck_with_them_from_one_article() -> None:
+    lines = [line(1, "henrietta", "They want to paint murals on Mars now.")]
+    mars = memory("kofi", 'I read "Murals on Mars" in The Atlantic. Wild.', MemoryKind.NEWS)
+    mars = mars.model_copy(update={"points": ["The first mural goes up in 2031.", "It's red."]})
+
+    prompt = turn_prompt("B", lines, NAMES, Cue.REPLY, "Henrietta", recalled=[mars], detail=mars)
+
+    assert (
+        '- I read "Murals on Mars" in The Atlantic. Wild.\n\n'
+        'What stuck with you from "Murals on Mars":\n'
+        "- The first mural goes up in 2031.\n"
+        "- It's red.\n\n"
+        "Say one or two sentences"
+    ) in prompt
+    pointless = mars.model_copy(update={"points": []})
+    assert "What stuck" not in turn_prompt("B", lines, NAMES, Cue.REPLY, "H", detail=pointless)
+
+
+def test_one_article_at_most_gives_its_points() -> None:
+    def read(title: str, *points: str) -> Memory:
+        content = f'I read "{title}" on the news terminal. Huh.'
+        return memory("kofi", content, MemoryKind.NEWS).model_copy(update={"points": points})
+
+    mars, bees, fete = read("Mars", "Red."), read("Bees", "Fewer."), read("Fete", "Rained off.")
+
+    assert detailed([read("Rain")], [mars, bees], [fete]) == mars
+    assert detailed([], [read("Rain"), fete]) == fete
+    assert detailed([read("Rain")], []) is None
 
 
 def test_a_speaker_sees_how_their_latest_lines_began() -> None:

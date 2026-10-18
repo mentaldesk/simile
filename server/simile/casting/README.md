@@ -41,13 +41,19 @@ the day the village starts, which has to fit every resident's age and past.
 ## Choosing
 
 `cast(characters, count, picks, pins, seed)` takes the picks and everyone pinned as given, then
-fills the village's roles, then draws the rest.
+fills the village's roles, then each craft, then draws the rest.
 
 **The village's roles come first** (#235). `content/characters/tables/roles.toml` names them, in
 order: the Daily Grind's barista, the noodle bar's cook, and hosts for the maker space and the
 gallery. A pick whose job fits a role holds it. For each role still open, casting draws a character
 whose job fits, the one farthest from the cast so far among the best three. A role nobody in the
 library fits stays open, and a cast smaller than the roles fills the first ones.
+
+**Then every craft** (#258), so the walls, the terminals and the gallery all get work: for each of
+`crafts` (writing, mural, painting) that nobody cast so far has, while there's room, casting draws
+a character with it, preferring a maker in a job family nobody has, the one farthest from the cast
+among the best three. A craft nobody in the library has is left out. The pool has one muralist,
+so every cast with room for them has them.
 
 **Then everyone else**, so that the cast has:
 

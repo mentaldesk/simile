@@ -33,6 +33,16 @@ CREATE TABLE IF NOT EXISTS news_unanalysable (
     provider TEXT NOT NULL,
     PRIMARY KEY (id, provider)
 );
+
+CREATE TABLE IF NOT EXISTS news_text (
+    id TEXT PRIMARY KEY,
+    text TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS news_no_text (
+    id TEXT PRIMARY KEY,
+    reason TEXT NOT NULL
+);
 """
 
 ANALYSED = "EXISTS (SELECT 1 FROM json_each(data, '$.values'))"
@@ -140,6 +150,43 @@ class NewsStore:
                 "INSERT OR IGNORE INTO news_unanalysable (id, provider) VALUES (?, ?)",
                 (id, provider),
             )
+
+    def keep_text(self, id: str, text: str) -> None:
+        """Hold the article's text until its summary is written."""
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT OR REPLACE INTO news_text (id, text) VALUES (?, ?)", (id, text)
+            )
+            self._db.execute("DELETE FROM news_no_text WHERE id = ?", (id,))
+
+    def text(self, id: str) -> str | None:
+        with self._lock:
+            row = self._db.execute("SELECT text FROM news_text WHERE id = ?", (id,)).fetchone()
+        return row[0] if row else None
+
+    def drop_text(self, id: str) -> None:
+        with self._lock, self._db:
+            self._db.execute("DELETE FROM news_text WHERE id = ?", (id,))
+
+    def drop_texts(self, *, keep: Collection[str]) -> None:
+        """Let go of the text of every article but those in `keep`."""
+        with self._lock, self._db:
+            self._db.execute(
+                "DELETE FROM news_text WHERE id NOT IN (SELECT value FROM json_each(?))",
+                (json.dumps(list(keep)),),
+            )
+
+    def no_text(self, id: str, reason: str) -> None:
+        """Record why the article's text couldn't be had, so its page isn't asked for again."""
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT OR REPLACE INTO news_no_text (id, reason) VALUES (?, ?)", (id, reason)
+            )
+
+    def why_no_text(self, id: str) -> str | None:
+        with self._lock:
+            row = self._db.execute("SELECT reason FROM news_no_text WHERE id = ?", (id,)).fetchone()
+        return row[0] if row else None
 
     def feed(self, url: str) -> FeedState:
         with self._lock:

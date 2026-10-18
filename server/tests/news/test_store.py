@@ -122,3 +122,25 @@ def test_shares_the_memory_stores_file(tmp_path: Path) -> None:
     with MemoryStore(path) as memories, NewsStore(path) as store:
         assert memories.recall("mei", NOON) == [memory]
         assert store.latest() == [news("a")]
+
+
+def test_holds_an_articles_text_until_let_go(store: NewsStore) -> None:
+    store.keep_text("a", "The text of a.")
+    store.keep_text("b", "The text of b.")
+    store.keep_text("c", "The text of c.")
+
+    store.drop_text("a")
+    store.drop_texts(keep={"c", "elsewhere"})
+
+    assert [store.text(id) for id in "abc"] == [None, None, "The text of c."]
+
+
+def test_remembers_why_an_articles_text_couldnt_be_had_until_it_is(store: NewsStore) -> None:
+    store.no_text("a", "The site answered 403 Forbidden")
+
+    assert (store.why_no_text("a"), store.why_no_text("b")) == (
+        "The site answered 403 Forbidden",
+        None,
+    )
+    store.keep_text("a", "The text of a.")
+    assert store.why_no_text("a") is None

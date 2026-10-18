@@ -142,6 +142,27 @@ it('reads the chosen article with Enter, showing a link to the original', () => 
   expect(link()!.href).toBe('https://example.com/barrier');
 });
 
+it('shows an opened article’s long summary a paragraph at a time, or else its short one', () => {
+  const long_summary = 'The council voted for a barrier.\n\nIt opens in spring.';
+  panel.open('Terminal');
+  news([{ ...ARTICLES[0], long_summary }, ARTICLES[1]]);
+  const shown = (item: HTMLElement) =>
+    [...paragraphs(item)[0].childNodes].map((node) => (node.nodeName === 'BR' ? '\n' : node.textContent)).join('');
+
+  expect(shown(items()[0])).toBe('The council votes for a barrier.');
+
+  press('Enter');
+  expect(shown(items()[0])).toBe(long_summary);
+  expect(paragraphs(items()[0])[0].querySelectorAll('br')).toHaveLength(2);
+  expect(link()!.href).toBe('https://example.com/barrier');
+
+  press('ArrowDown');
+  press('Enter');
+  expect(shown(items()[0])).toBe('The council votes for a barrier.');
+  expect(shown(items()[1])).toBe('Fewer bees than ever.');
+  expect(link()!.href).toBe('https://example.com/bees');
+});
+
 it('moves through the articles with the arrow keys, and reads one that was read without asking', () => {
   panel.open('Terminal');
   news(ARTICLES);

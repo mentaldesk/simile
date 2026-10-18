@@ -87,12 +87,29 @@ sets F3's snapshot to the NPCs' real positions.
   terminals aren't an option.
 - **Making things.** Residents with a craft (`Npc.craft`) have an `inspiration` need, on the same
   kind of curve as the news (`need ** 2`, from a lower base), so it builds slowly and then wins. It
-  rises with Creativity and Self-actualization, from about one work every two sim-days for the
-  least creative crafter to one a day for the most, and never without a craft. `create` meets it: a
-  stay of about an hour, and the need is met all at once as they leave (`finishing`), when B1 calls
-  the `create` hook. A stay cut short by a nudge or bedtime makes nothing, but a talk only pauses
-  it, and afterwards they go back for the rest of the stay. Nobody starts one with less than a
-  typical stay left before bed.
+  rises with Creativity and Self-actualization, on its own from about one work every two and a
+  half sim-days for the least creative crafter to one a day for the most, and never without a
+  craft. `create` meets it: a stay of about an hour, and the need is met all at once as they leave
+  (`finishing`), when B1 calls the `create` hook. A stay cut short by a nudge or bedtime makes
+  nothing, but a talk only pauses it, and afterwards they go back for the rest of the stay. Nobody
+  starts one with less than a typical stay left before bed.
+- **What stirs them.** Each new memory a crafter forms raises their inspiration too: a
+  conversation, with a resident or the player, an article read, or someone else's piece read or
+  mural or painting seen (`inspiring`), but not making their own, nor anything from before the game.
+  B1 hears of each from the memory store (`MemoryStore.listen`). A memory adds `inspiration_weight`
+  (0.15) × its salience × its intensity, where intensity is `calm` (0.3) + 0.7 × |valence|, so a
+  strongly felt memory counts for more. It adds `inspiration_craft` (1.5) times as much again if
+  its topics touch their craft (a word of its medium, `craft_words`, or of its form), and
+  `inspiration_values` (0.5) more if they touch one of their 3 strongest values (`value_words`).
+  One memory adds at most `inspiration_cap` (0.35), and memories at most `inspiration_hourly` (0.4)
+  a sim hour. Talking through a mural idea with the player (salience 0.8, valence 0.7, "mural
+  idea") takes Kofi from 0.30 to 0.58, close to the 0.65 at which he'd go and paint, and the work
+  draws on his strongest memories, so what stirred him is what he makes.
+- **A fresh start.** Inspiration starts between 0 and 0.8, and the `head_starts` (2) crafters with
+  the most who are awake at home, aren't muralists (who need a wall) and aren't off to work start
+  partway through making something at home, with `head_start` (4 to 12) minutes left. So the first
+  new work comes within about a quarter of an hour, and then about one an hour across today's
+  village (`simulate` below).
 - **Where they make things.** Writers write, and painters paint for the gallery, at home, the
   coffee shop or the maker space, wherever their values fit best (`writing_places`): Peace of
   Mind, Independence, Security and Tradition at
@@ -176,6 +193,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
+| `inspire(memory)` | Raises the owner's inspiration for a new memory, within the caps, and returns by how much. The lifespan hands it every memory stored. |
 | `traits_of(npc)` | Their `Traits` from the cast, or neutral ones. |
 | `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft, finances only with money), money, their next shift, last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
@@ -189,18 +207,20 @@ Every new goal is published on the bus as `GoalChosen(npc, activity, target)`.
 cd server && uv run simile behaviour simulate --hours 24 --seed 0
 ```
 
-Runs memory, world, behaviour and E3's economy on a `FakeWallClock` as fast as the CPU allows (a
-sim-day in about 15 s) and prints where everyone spent their time: minutes near others by
-Connection, places by hour, who was out at night, the share of waking time in each place, every
-meal by the hour it started and where, each need's mean, most and time at 0.9 or more, and what each
-resident with a craft made per sim-day, and the longest anyone was awake and urgently hungry.
-Then every shift (on time, late, skipped, hours and overtime), the hours each shop was due on
-shift, staffed and sold out, every batch, the grocery orders, each resident's money every 12 sim
-hours, and where the money went. The economy decides when the shops serve. The café doesn't run,
-so whoever arrives at the Daily Grind while its barista is at work and hasn't had a drink in the
-last 90 minutes is served one, as the café does. Conversations,
+Runs memory, on an in-memory store, world, behaviour and E3's economy on a `FakeWallClock` as fast
+as the CPU allows (a sim-day in about 15 s) and prints where everyone spent their time: minutes
+near others by Connection, places by hour, who was out at night, the share of waking time in each
+place, every meal by the hour it started and where, each need's mean, most and time at 0.9 or more,
+the longest anyone was awake and urgently hungry, what each resident with a craft made per
+sim-day, and when the first work came and how many came a sim hour after it. Then every shift (on
+time, late, skipped, hours and overtime), the hours each shop was due on shift, staffed and sold
+out, every batch, the grocery orders, each resident's money every 12 sim hours, and where the money
+went. The economy decides when the shops serve. The café doesn't run, so whoever arrives at the
+Daily Grind while its barista is at work and hasn't had a drink in the last 90 minutes is served
+one, as the café does. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
-interest unread, and reading it does nothing. Muralists paint M7's walls in turn, moving on to
+interest unread. Reading it, and each conversation, leaves a stand-in memory of middling strength
+on two topics from a short list, so new memories raise crafters' inspiration. Muralists paint M7's walls in turn, moving on to
 the next after each mural, and making something does nothing. `simulate(..., npcs=..., traits=...)`
 runs another cast.
 

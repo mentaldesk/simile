@@ -1,6 +1,7 @@
 import logging
 import math
 from collections.abc import Callable, Mapping, Sequence
+from datetime import datetime
 
 from simile.behaviour import MuralSpot, Places, WallPicker
 from simile.gallery.store import FrameKey, GalleryStore
@@ -62,9 +63,10 @@ class Gallery:
         self.npcs = npcs
         self.hung = hung
 
-    def hang(self, work: Work, svg: str, png: bytes) -> FrameKey:
-        """Maker's `hang`."""
-        frame = self.store.hang(work.id, svg, png, [key(f) for f in self.frames], self.clock.now)
+    def hang(self, work: Work, svg: str, png: bytes, when: datetime | None = None) -> FrameKey:
+        """Maker's `hang`, hung `when`, or now."""
+        frames = [key(f) for f in self.frames]
+        frame = self.store.hang(work.id, svg, png, frames, when or self.clock.now)
         logger.info("Hung %s's %r in %s on %s", work.artist, work.title, frame[1], frame[0])
         self.hung()
         return frame

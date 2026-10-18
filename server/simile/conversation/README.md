@@ -144,6 +144,10 @@ with the player as `player_relief` (half) of one with a resident towards their s
   memory of each article that counts, with their take, follows the transcript in that reply's
   prompt, for at most `mentions` (2) articles, most shared words first. An NPC who didn't read it
   gets nothing and answers from their values.
+- **What stuck from one article.** A prompt gives the points a resident kept from one article at
+  most (`Memory.points`, "What stuck with you from ..."): in a reply, the article the player just
+  mentioned or else their first news topic, after the transcript, and in a scene, the first topic
+  with points, the opener's before the other's, in that side's section.
 - **Works that have come up.** Each reply's prompt lists the NPC's work topics after the background,
   their own and others' in two lists. A work has come up once a line names its title (quoted, as
   written if it's more than a word, or in any case beside a word for a work or its artist), names a
