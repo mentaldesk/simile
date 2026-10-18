@@ -217,10 +217,11 @@ async def simulate(
 def daily_grind(behaviour: Behaviour) -> Supply:
     """G1's shifts without the café: the Daily Grind serves food only while it has a barista and
     she's at work."""
+    from simile.cafe.cafe import barista
     from simile.cafe.config import DEFAULT_CONFIG as CAFE
 
     shop = Goal(Activity.COFFEE_SHOP, CAFE.home)
-    staffed = any(npc.home == CAFE.home for npc in behaviour.npcs.values())
+    staffed = barista(behaviour.npcs.values(), CAFE.home) is not None
 
     def supply(goal: Goal, need: Need) -> float:
         if goal != shop or need is not Need.HUNGER:

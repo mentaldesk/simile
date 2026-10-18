@@ -122,7 +122,7 @@ def test_a_day_has_meals_at_mealtimes_and_no_need_runs_away() -> None:
 def test_without_the_cafe_the_daily_grind_feeds_people_during_its_shift() -> None:
     cafe = Goal(Activity.COFFEE_SHOP, "coffee_shop")
     npcs = {npc.id: npc for npc in load_npcs()}
-    nobody = {id: npc for id, npc in npcs.items() if npc.home != "coffee_shop"}
+    nobody = {id: npc for id, npc in npcs.items() if "coffee_shop" not in (npc.home, npc.workplace)}
 
     def fed(
         hour: int, residents: object = npcs, goal: Goal = cafe, need: Need = Need.HUNGER
