@@ -73,7 +73,7 @@ class ScriptLine:
 
 def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
     """How to write a scene. The same for every conversation."""
-    bounds = BOUNDS.format(own="the speaker's own", they="they")
+    bounds = BOUNDS.format(who="the speaker", their="their", they="they")
     return "\n\n".join(
         [
             "You write the dialogue for a life simulation set in a small, modern village. Each "

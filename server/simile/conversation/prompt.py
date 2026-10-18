@@ -59,7 +59,6 @@ VALUE_NAMES = ", ".join(value.value.replace("_", " ") for value in CoreValue)
 VALUES = {value.value for value in CoreValue}
 
 LOW = (0.4, 0.25, 0.15)
-"""A core value below each of these is low, lower and lowest."""
 HIGH = 0.6
 EDGES: dict[CoreValue, tuple[str, str, str]] = {
     CoreValue.HONESTY: (
@@ -95,8 +94,8 @@ COUNTERWEIGHT = (
 )
 BOUNDS = (
     "Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
-    "insults. Any lie stays small and in character: about {own} life, plans or what {they}'ve "
-    "seen, never about anything someone could be harmed by acting on."
+    "insults. Any lie stays small and in character: about {who}, {their} reasons, plans or what "
+    "{they} did or saw. Never make up facts about the village, its places, times or people."
 )
 
 TAG = re.compile(
@@ -166,6 +165,7 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
     most = ", ".join(value_name(value) for value, _ in ranked[:5])
     least = ", ".join(value_name(value) for value, _ in reversed(ranked[-3:]))
+    bounds = BOUNDS.format(who="yourself", their="your", they="you")
     return "\n\n".join(
         [
             f"You are {npc.name}, aged {npc.age}. Occupation: {npc.occupation}. You live in a "
@@ -175,7 +175,7 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             how_you_speak(npc),
             f"What you care about most: {most}. What you care about least: {least}.\n"
             f"Your interests: {', '.join(npc.interests)}.",
-            " ".join([*rough_edges(npc), COUNTERWEIGHT, BOUNDS.format(own="your own", they="you")]),
+            " ".join([*rough_edges(npc), COUNTERWEIGHT, bounds]),
             "You're in a face-to-face conversation. Reply with only your next spoken line: at "
             f"most {config.max_words} words, usually one or two sentences. Plain speech: no "
             "stage directions, quotation marks or name label. React to what was just said and "

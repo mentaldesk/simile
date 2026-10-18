@@ -109,8 +109,8 @@ COUNTERWEIGHT = (
 )
 BOUNDS = (
     "Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
-    "insults. Any lie stays small and in character: about your own life, plans or what you've "
-    "seen, never about anything someone could be harmed by acting on."
+    "insults. Any lie stays small and in character: about yourself, your reasons, plans or what "
+    "you did or saw. Never make up facts about the village, its places, times or people."
 )
 
 

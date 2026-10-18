@@ -211,8 +211,9 @@ Left alone, the model makes everyone kind, candid and agreeable, so low scores b
 B5's system prompt has them after the values, and each side of a scene in the third person
 ("Henrietta will lie when it suits them"). Every resident's prompt, and the script's rules, also
 say not to agree just to be pleasant, and keep to the game's tone: no slurs, abuse or cruelty,
-rudeness is curtness and never insults, and a lie stays small and in character, about their own
-life, plans or what they've seen, never about anything someone could be harmed by acting on.
+rudeness is curtness and never insults, and a lie stays small and in character, about the speaker,
+their reasons, plans or what they did or saw. Nobody makes up facts about the village, its places,
+times or people.
 
 ## Only promising what's possible
 

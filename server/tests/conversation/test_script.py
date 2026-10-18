@@ -395,8 +395,9 @@ def test_the_system_prompt_lets_them_say_no_within_the_games_tone() -> None:
         "- Nobody agrees just to be pleasant. Saying no, being brief, or disagreeing is fine when "
         "it's in character.\n"
         "- Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
-        "insults. Any lie stays small and in character: about the speaker's own life, plans or "
-        "what they've seen, never about anything someone could be harmed by acting on.\n\n"
+        "insults. Any lie stays small and in character: about the speaker, their reasons, plans "
+        "or what they did or saw. Never make up facts about the village, its places, times or "
+        "people.\n\n"
     ) in system
 
 
