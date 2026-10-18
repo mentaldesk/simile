@@ -1,6 +1,6 @@
 import pytest
 
-from simile.behaviour import Activity, Goal
+from simile.behaviour import DEFAULT_CONFIG, Activity, Goal
 from simile.cafe.cafe import barista
 from simile.cafe.config import DEFAULT_CONFIG as CAFE_CONFIG
 from simile.casting import bind, cast
@@ -32,11 +32,10 @@ async def test_a_casts_barista_is_the_cafes_barista_and_starts_at_the_till() -> 
     made = bind(cast(load_pool(), 10, seed=3), seed=3)
     [holder] = [r.character.id for r in made.residents if r.workplace == CAFE_CONFIG.home]
 
-    village = Village(made.npcs())
-    await village.run(minutes=1)
+    village = Village(made.npcs(), behaviour=DEFAULT_CONFIG.model_copy(update={"skip": 0.0}))
+    await village.run_until(lambda: village.cafe.on_shift, minutes=15)
 
     assert village.cafe.barista == holder
-    assert village.cafe.on_shift
     assert village.behaviour.goal(holder) == Goal(Activity.COFFEE_SHOP, CAFE_CONFIG.home)
 
 

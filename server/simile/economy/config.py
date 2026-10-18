@@ -1,4 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.schema import Id
 
@@ -9,7 +11,10 @@ class Shop(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     drink: float = Field(
-        default=0.0, ge=0, description="A drink. The café charges it when it serves someone."
+        default=0.0,
+        ge=0,
+        description="A drink. The café charges it when it serves someone, and any other shop "
+        "when someone comes in while it's staffed, but not again within the café's `again`.",
     )
     meal: float = Field(ge=0, description="Eating there, charged when they start.")
     supplies: float = Field(
@@ -18,11 +23,17 @@ class Shop(BaseModel):
         description="The share of what it takes that its keeper pays outside the village for "
         "supplies.",
     )
+    batch: int | None = Field(
+        default=None,
+        ge=1,
+        description="Meals its keeper cooks when they arrive for a shift. It can sell out, and "
+        "what's left at closing goes off. None never runs out while it's staffed.",
+    )
 
 
 SHOPS: dict[Id, Shop] = {
     "coffee_shop": Shop(drink=3.0, meal=5.0, supplies=0.6),
-    "noodle_bar": Shop(meal=8.0, supplies=0.45),
+    "noodle_bar": Shop(drink=3.0, meal=10.0, supplies=0.3, batch=4),
 }
 
 
@@ -34,7 +45,13 @@ class EconomyConfig(BaseModel):
 
     rent: float = Field(default=30.0, ge=0, description="Each resident's rent, every midnight.")
     groceries: float = Field(
-        default=2.5, ge=0, description="A meal at home, paid outside the village."
+        default=2.5, ge=0, description="A meal's worth of groceries, paid outside the village."
+    )
+    fridge: int = Field(default=8, ge=1, description="Meals a home's fridge holds.")
+    low: int = Field(
+        default=2,
+        ge=0,
+        description="Meals left in a fridge at which someone at home orders groceries to fill it.",
     )
     shops: dict[Id, Shop] = Field(default=SHOPS, description="By location id.")
     takings: float = Field(
@@ -52,6 +69,12 @@ class EconomyConfig(BaseModel):
     every: float = Field(
         default=5.0, gt=0, description="Sim seconds between looking at who's working and eating."
     )
+
+    @model_validator(mode="after")
+    def _low_below_full(self) -> Self:
+        if self.low >= self.fridge:
+            raise ValueError("a fridge must hold more than `low` meals")
+        return self
 
 
 DEFAULT_CONFIG = EconomyConfig()

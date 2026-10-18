@@ -589,7 +589,7 @@ class Behaviour:
         activity = mind.goal.activity
         change = self.config.effects.get(activity, {}).get(need, 0.0)
         change += self.config.finishing.get(activity, {}).get(need, 0.0)
-        return change < 0 and (not self._placed(mind) or self._supply(mind.goal, need) > 0)
+        return change < 0 and (not self._placed(mind) or self._supplied(mind, need) > 0)
 
     def _interrupt(self, mind: Mind) -> None:
         """Drop what they're doing, held or not, to decide again now. A stay cut short brings
@@ -639,7 +639,7 @@ class Behaviour:
             return self.config.walking
         effects = self.config.effects.get(mind.goal.activity, {})
         if self._placed(mind):
-            return {need: rate * self._supply(mind.goal, need) for need, rate in effects.items()}
+            return {need: rate * self._supplied(mind, need) for need, rate in effects.items()}
         if mind.goal.activity is Activity.TALK and Need.SOCIAL in effects:
             relief = effects[Need.SOCIAL] / self._sociable(mind.npc)
             if mind.goal.target == PLAYER_ID:
@@ -649,6 +649,12 @@ class Behaviour:
 
     def _placed(self, mind: Mind) -> bool:
         return mind.goal.activity not in UNPLACED and not _painting(mind)
+
+    def _supplied(self, mind: Mind, need: Need) -> float:
+        """How much of their place's effect on `need` reaches them: all of a meal they've
+        started, even if it was the last or the place shuts."""
+        meal = self.config.urgency[need].appetite > 0 and mind.eating.get(need) == mind.since
+        return 1.0 if meal else self._supply(mind.goal, need)
 
     def _supply(self, goal: Goal, need: Need) -> float:
         supply = self._call(self.hooks.supply, goal, need)

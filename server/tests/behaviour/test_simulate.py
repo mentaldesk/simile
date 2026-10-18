@@ -1,17 +1,15 @@
 import asyncio
 from collections import Counter
-from datetime import UTC, datetime
-from types import SimpleNamespace
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from typer.testing import CliRunner
 
-from simile.behaviour import Activity, Goal, Need
-from simile.behaviour.simulate import daily_grind, ranks, report, simulate, spearman
+from simile.behaviour import Need
+from simile.behaviour.simulate import ranks, report, simulate, spearman
 from simile.cli import create_cli
 from simile.npc import load_npcs
 from simile.schema import Craft, Medium
-from simile.sim import Clock
 from simile.world.map import load_map
 
 runner = CliRunner()
@@ -131,22 +129,25 @@ def test_a_day_has_shifts_and_money_that_add_up() -> None:
     assert {"mirela", "ingrid", "lachlan"} <= worked
     assert economy.ledger.gap(economy.money) == pytest.approx(0, abs=1e-6)
     assert all(amount > 0 for amount in economy.money.values())
-    for heading in ("**Shifts.**", "**Money.**", "**Where the money went.**"):
+    headings = ("**Shifts.**", "**Shops.**", "**Fridges.**", "**Money.**", "**Hunger.**")
+    for heading in (*headings, "**Where the money went.**"):
         assert heading in summary
 
 
-def test_without_the_cafe_the_daily_grind_feeds_people_during_its_shift() -> None:
-    cafe = Goal(Activity.COFFEE_SHOP, "coffee_shop")
-    npcs = {npc.id: npc for npc in load_npcs()}
-    nobody = {id: npc for id, npc in npcs.items() if "coffee_shop" not in (npc.home, npc.workplace)}
+def test_the_shops_feed_people_only_while_their_keepers_are_there() -> None:
+    start = datetime(2026, 1, 3, 6, tzinfo=UTC)
 
-    def fed(
-        hour: int, residents: object = npcs, goal: Goal = cafe, need: Need = Need.HUNGER
-    ) -> float:
-        clock = Clock(datetime(2026, 1, 1, hour, tzinfo=UTC))
-        behaviour = SimpleNamespace(npcs=residents, clock=clock)
-        return daily_grind(behaviour)[0](goal, need)  # type: ignore[arg-type]
+    observer, _ = asyncio.run(simulate(24, start=start, seed=2))
 
-    assert [fed(6), fed(10), fed(18)] == [0.0, 1.0, 0.0]
-    assert fed(18, need=Need.BLADDER) == fed(18, goal=Goal(Activity.HOME, "coffee_shop")) == 1.0
-    assert fed(10, nobody) == 0.0
+    economy = observer.economy
+    assert economy is not None
+    there = {
+        keeper: [(t.arrived, t.end) for t in economy.turns if t.npc == keeper and t.arrived]
+        for keeper in economy.keepers.values()
+    }
+    out = [meal for meal in observer.meals if meal.place in economy.keepers]
+    assert {meal.place for meal in out} == {"coffee_shop", "noodle_bar"}
+    for meal in out:
+        open_at = there[economy.keepers[meal.place]]
+        assert any(a <= meal.at <= end + timedelta(minutes=1) for a, end in open_at), meal
+    assert economy.cooked and all(batch.shop == "noodle_bar" for batch in economy.cooked)
