@@ -21,7 +21,7 @@ def digests() -> dict[str, str]:
 
 
 def test_tags_every_residents_clip() -> None:
-    residents = {path.stem for path in VOICES.glob("*.wav")}
+    residents = json.loads((VOICES / "imported.json").read_text()).keys()
 
     assert tags().keys() == residents
     for id in tags():
