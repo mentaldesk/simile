@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Install what Simile needs, then run the village and open it in the browser. Ctrl-C stops it.
 set -euo pipefail
 set -m
 
@@ -64,7 +63,7 @@ trap stop EXIT INT TERM
 
 (cd "$root/server" && exec uv run ${extras[@]+"${extras[@]}"} simile serve --port "$server_port") &
 server=$!
-(cd "$root/client" && exec node_modules/.bin/vite --port "$client_port" --strictPort </dev/null) &
+(cd "$root/client" && exec node_modules/.bin/vite --port "$client_port" --strictPort --clearScreen false </dev/null) &
 client=$!
 
 if [[ $SIMILE_VOICE == 1 ]]; then
