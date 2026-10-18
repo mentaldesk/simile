@@ -1,0 +1,113 @@
+{
+  "$defs": {
+    "IntentionKind": {
+      "description": "B1's options: `create`, `seek` and `news` are its activities of the same name, and `go` is\nwhichever activity takes them to `target`.",
+      "enum": [
+        "create",
+        "go",
+        "seek",
+        "news"
+      ],
+      "title": "IntentionKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Something `owner` said they'd do, which they favour from when it's due until it's done or\nexpires.",
+  "properties": {
+    "id": {
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "owner": {
+      "description": "The resident who said they'd do it.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Owner",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/IntentionKind"
+    },
+    "target": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "For `go` the location, and for `seek` whom they'll seek out. For `create` the wall or location to make it at, and for `news` the terminal, or null for wherever they'd usually go.",
+      "title": "Target"
+    },
+    "description": {
+      "description": "What they said they'd do, in a few words, for prompts. For `create` the idea itself, e.g. \"a mural of an ocean of coffee with cups half-sunk in it\".",
+      "maxLength": 240,
+      "minLength": 1,
+      "title": "Description",
+      "type": "string"
+    },
+    "promised_to": {
+      "default": [],
+      "description": "Who they said it to. Each remembers if it's broken.",
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "title": "Promised To",
+      "type": "array"
+    },
+    "created": {
+      "description": "When they said it.",
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+    },
+    "due": {
+      "description": "When they mean to do it: `created` for now.",
+      "format": "date-time",
+      "title": "Due",
+      "type": "string"
+    },
+    "expires": {
+      "description": "When it's dropped if they haven't done it.",
+      "format": "date-time",
+      "title": "Expires",
+      "type": "string"
+    },
+    "conversation_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The conversation it came from. The owner's `conversation` memory of it carries the same id. Null if it didn't come from one.",
+      "title": "Conversation Id"
+    }
+  },
+  "required": [
+    "id",
+    "owner",
+    "kind",
+    "target",
+    "description",
+    "promised_to",
+    "created",
+    "due",
+    "expires",
+    "conversation_id"
+  ],
+  "title": "Intention",
+  "type": "object"
+}

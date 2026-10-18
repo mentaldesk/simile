@@ -12,6 +12,7 @@ from simile.schema.character import (
 )
 from simile.schema.common import PLAYER_ID, Colour, Id, Key, Model, Signed, Timestamp, Unit
 from simile.schema.conversation import Conversation, Line
+from simile.schema.intention import Intention, IntentionKind
 from simile.schema.news import NewsItem
 from simile.schema.npc import (
     Accessory,
@@ -68,6 +69,7 @@ MODELS: tuple[type[Model], ...] = (
     InteractionEvent,
     Flag,
     Memory,
+    Intention,
     NewsItem,
     Work,
     Location,
@@ -104,6 +106,8 @@ __all__ = [
     "HookKind",
     "HookSide",
     "Id",
+    "Intention",
+    "IntentionKind",
     "Interactable",
     "InteractableKind",
     "InteractionEvent",

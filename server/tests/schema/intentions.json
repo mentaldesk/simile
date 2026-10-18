@@ -1,0 +1,50 @@
+[
+  {
+    "id": "conv_1/viktor/1",
+    "owner": "viktor",
+    "kind": "create",
+    "target": null,
+    "description": "a few plain lines on the old footbridge, the arch Mei drew wrong",
+    "promised_to": ["mei"],
+    "created": "2026-03-14T08:05:22Z",
+    "due": "2026-03-14T08:05:22Z",
+    "expires": "2026-03-14T10:05:22Z",
+    "conversation_id": "conv_1"
+  },
+  {
+    "id": "conv_1/mei/1",
+    "owner": "mei",
+    "kind": "seek",
+    "target": "viktor",
+    "description": "find Viktor at lunch and show him the arch done properly",
+    "promised_to": ["viktor"],
+    "created": "2026-03-14T08:05:22Z",
+    "due": "2026-03-14T12:30:00Z",
+    "expires": "2026-03-15T12:30:00Z",
+    "conversation_id": "conv_1"
+  },
+  {
+    "id": "suki/1",
+    "owner": "suki",
+    "kind": "go",
+    "target": "park",
+    "description": "fly the drone over the park and sketch the village from above",
+    "promised_to": [],
+    "created": "2026-03-14T07:30:00Z",
+    "due": "2026-03-14T16:00:00Z",
+    "expires": "2026-03-15T16:00:00Z",
+    "conversation_id": null
+  },
+  {
+    "id": "suki/2",
+    "owner": "suki",
+    "kind": "news",
+    "target": "terminal_1",
+    "description": "read up on the new drone rules",
+    "promised_to": [],
+    "created": "2026-03-14T07:30:00Z",
+    "due": "2026-03-14T18:00:00Z",
+    "expires": "2026-03-15T18:00:00Z",
+    "conversation_id": null
+  }
+]
