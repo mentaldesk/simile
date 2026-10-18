@@ -37,7 +37,15 @@ PLAYER_AT = 31
 def make_npc(id: str, home: str) -> Npc:
     scores = {value: 0.5 for value in CoreValue}
     return TEMPLATE.model_copy(
-        update={"id": id, "name": f"{id.title()} Test", "home": home, "values": scores}
+        update={
+            "id": id,
+            "name": f"{id.title()} Test",
+            "home": home,
+            "values": scores,
+            "workplace": None,
+            "shifts": [],
+            "pay": None,
+        }
     )
 
 

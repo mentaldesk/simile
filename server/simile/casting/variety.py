@@ -5,6 +5,7 @@ from statistics import mean, pstdev
 
 from simile.casting.choose import elder, family
 from simile.casting.model import Cast
+from simile.casting.roles import holders, village_roles
 from simile.characters.jobs import makes_or_studies
 from simile.schema import Character, Id
 
@@ -44,8 +45,7 @@ def variety(residents: Sequence[Character], year: int, roles: Collection[Id] = (
 
 def of_cast(made: Cast) -> Variety:
     residents = [r.character for r in made.residents]
-    roles = {r.character.id for r in made.residents if r.workplace is not None}
-    return variety(residents, made.game_date.year, roles)
+    return variety(residents, made.game_date.year, set(holders(residents, village_roles())))
 
 
 def average(varieties: Sequence[Variety]) -> dict[str, float]:

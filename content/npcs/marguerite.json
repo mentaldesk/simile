@@ -4,6 +4,24 @@
   "age": 52,
   "occupation": "Patent Strategy Consultant",
   "home": "house_1",
+  "workplace": "house_1",
+  "shifts": [
+    {
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday"
+      ],
+      "start": 9.0,
+      "end": 15.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 20.0
+  },
+  "money": 600.0,
   "values": {
     "freedom": 0.54,
     "independence": 0.78,

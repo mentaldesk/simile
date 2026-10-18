@@ -16,7 +16,7 @@ OLD_NEEDS = {
     Need.NEWS: 0.4,
     Need.INSPIRATION: 0.5,
 }
-NEEDS = {**OLD_NEEDS, Need.HUNGER: 0.45, Need.BLADDER: 0.1, Need.HYGIENE: 0.3}
+NEEDS = {**OLD_NEEDS, Need.HUNGER: 0.45, Need.BLADDER: 0.1, Need.HYGIENE: 0.3, Need.FINANCES: 0.0}
 
 
 class Village:

@@ -29,6 +29,9 @@ STEADY = DEFAULT_CONFIG.model_copy(update={"temperature": 0.0})
 MakePackage = Callable[[dict[str, str]], str]
 
 
+NO_WORK = {"workplace": None, "shifts": [], "pay": None}
+
+
 def make_npc(id: str, home: str, **values: float) -> Npc:
     scores = {value: values.get(value.value, 0.5) for value in CoreValue}
     return TEMPLATE.model_copy(
@@ -38,6 +41,7 @@ def make_npc(id: str, home: str, **values: float) -> Npc:
             "home": home,
             "values": scores,
             "craft": None,
+            **NO_WORK,
         }
     )
 

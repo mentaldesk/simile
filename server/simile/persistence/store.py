@@ -1,11 +1,13 @@
 import logging
 import sqlite3
 import threading
+from collections.abc import Sequence
 from types import TracebackType
 from typing import Self
 
 from pydantic import ValidationError
 
+from simile.economy import Entry
 from simile.memory import MemoryStore
 from simile.persistence.state import SavedWorld
 
@@ -16,6 +18,12 @@ CREATE TABLE IF NOT EXISTS saved_world (
     id INTEGER PRIMARY KEY CHECK (id = 0),
     data TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS saved_ledger (
+    time REAL NOT NULL,
+    data TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS saved_ledger_by_time ON saved_ledger (time);
 """
 
 
@@ -44,10 +52,20 @@ class WorldStore:
     ) -> None:
         self.close()
 
-    def save(self, world: SavedWorld) -> None:
+    def save(self, world: SavedWorld, entries: Sequence[Entry] = ()) -> None:
+        """Save the world, and add the ledger's entries made since the last save."""
         data = world.model_dump_json()
         with self._lock, self._db:
             self._db.execute("INSERT OR REPLACE INTO saved_world (id, data) VALUES (0, ?)", (data,))
+            self._db.executemany(
+                "INSERT INTO saved_ledger (time, data) VALUES (?, ?)",
+                [(entry.at.timestamp(), entry.model_dump_json()) for entry in entries],
+            )
+
+    def ledger(self) -> list[Entry]:
+        with self._lock:
+            rows = self._db.execute("SELECT data FROM saved_ledger ORDER BY time, rowid").fetchall()
+        return [Entry.model_validate_json(data) for (data,) in rows]
 
     def load(self) -> SavedWorld | None:
         """The last world saved, or None if there isn't one this version can read."""
@@ -62,7 +80,9 @@ class WorldStore:
             return None
 
     def clear(self) -> None:
-        """Forget the village: the saved world and everything R2 holds. The news stays."""
+        """Forget the village: the saved world, its ledger and everything R2 holds. The news
+        stays."""
         self.memory.clear()
         with self._lock, self._db:
             self._db.execute("DELETE FROM saved_world")
+            self._db.execute("DELETE FROM saved_ledger")

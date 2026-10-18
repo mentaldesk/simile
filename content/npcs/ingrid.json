@@ -4,6 +4,25 @@
   "age": 37,
   "occupation": "Experimental Textile Designer",
   "home": "house_10",
+  "workplace": "maker_space",
+  "shifts": [
+    {
+      "days": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "start": 10.0,
+      "end": 17.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 14.0
+  },
+  "money": 250.0,
   "values": {
     "freedom": 0.86,
     "independence": 0.66,

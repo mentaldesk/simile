@@ -6,9 +6,11 @@ from simile.casting.choose import value_distance
 from simile.casting.config import DEFAULT_CONFIG, CastingConfig
 from simile.casting.model import Bond, Cast, CastError, Pin, Resident
 from simile.casting.roles import holders, village_roles
+from simile.characters.jobs import job_of, retired
 from simile.characters.tables.load import Role
-from simile.schema import Character, HookKind, HookSide, Id, LocationKind
+from simile.schema import Character, CoreValue, HookKind, HookSide, Id, LocationKind, Pay, PayKind
 from simile.schema.character import MAX_AGE
+from simile.schema.npc import Shifts
 
 type Hook = tuple[Id, int]
 
@@ -30,9 +32,9 @@ def bind(
     roles: Sequence[Role] | None = None,
     config: CastingConfig = DEFAULT_CONFIG,
 ) -> Cast:
-    """Give each resident a home, and each of the village's `roles` to the first resident whose
-    job fits it, with its workplace, shifts and pay. Then bind the pins, then open hooks between
-    residents."""
+    """Give each resident a home and some money, each of the village's `roles` to the first
+    resident whose job fits it, with its workplace, shifts and pay, and everyone else work by
+    their job, or a pension. Then bind the pins, then open hooks between residents."""
     houses = list(village_houses() if houses is None else houses)
     if len(chosen) > len(houses):
         raise CastError(f"The village has {len(houses)} houses, too few for {len(chosen)}")
@@ -46,26 +48,48 @@ def bind(
         binder.pin(pin)
     binder.draw()
     held = holders(chosen, village_roles() if roles is None else roles)
+    work = random.Random(f"{seed}:work")
     return Cast(
         game_date=game_date,
         seed=seed,
         residents=[
-            _resident(c, home, held.get(c.id)) for c, home in zip(chosen, homes, strict=True)
+            _resident(c, home, held.get(c.id), work, config)
+            for c, home in zip(chosen, homes, strict=True)
         ],
         bonds=binder.bonds,
     )
 
 
-def _resident(character: Character, home: Id, role: Role | None) -> Resident:
-    if role is None:
-        return Resident(character=character, home=home)
-    return Resident(
-        character=character,
-        home=home,
-        workplace=role.workplace,
-        shifts=role.shifts,
-        pay=role.pay,
+def _resident(
+    character: Character,
+    home: Id,
+    role: Role | None,
+    rng: random.Random,
+    config: CastingConfig,
+) -> Resident:
+    """A role holder works at the role, someone retired has a pension, and everyone else works
+    where their job does, or from home."""
+    money = round(rng.uniform(*config.start_money) * (0.5 + character.values[CoreValue.SECURITY]))
+    resident = Resident(character=character, home=home, money=money)
+    if role is not None:
+        pay = role.pay or wage(role.shifts, config)
+        return resident.model_copy(
+            update={"workplace": role.workplace, "shifts": role.shifts, "pay": pay}
+        )
+    if retired(character.occupation):
+        return resident.model_copy(update={"pay": Pay(kind=PayKind.PENSION, amount=config.pension)})
+    job = job_of(character.occupation)
+    workplace = config.workplaces.get(job.group) if job else None
+    shifts = rng.choice(config.hours[workplace or "home"])
+    return resident.model_copy(
+        update={"workplace": workplace or home, "shifts": shifts, "pay": wage(shifts, config)}
     )
+
+
+def wage(shifts: Shifts, config: CastingConfig = DEFAULT_CONFIG) -> Pay:
+    """A wage that pays `weekly_pay` for a full week of the shifts."""
+    hours = sum(len(shift.days) * (shift.end - shift.start) for shift in shifts)
+    return Pay(kind=PayKind.WAGE, amount=max(round(config.weekly_pay / hours), 1))
 
 
 def _check_age(character: Character, game_date: date) -> None:

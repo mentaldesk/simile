@@ -96,7 +96,7 @@ def test_reports_the_works_residents_with_a_craft_make() -> None:
     walls = {wall.id for wall in load_map().murals}
     assert sum(sum(made.values()) for made in observer.works.values()) >= 3
     assert places & walls and places - walls
-    works = summary.split("**Works.**")[1]
+    works = summary.split("**Works.**")[1].split("\n\n**")[0]
     listed = {npc.id for npc in npcs if f"| {npc.id} |" in works}
     assert listed == {npc.id for npc in npcs if npc.craft}
 
@@ -119,6 +119,22 @@ def test_a_day_has_meals_at_mealtimes_and_no_need_runs_away() -> None:
     assert "| hunger |" in summary and "| hygiene |" in summary
 
 
+def test_a_day_has_shifts_and_money_that_add_up() -> None:
+    start = datetime(2026, 1, 1, 6, tzinfo=UTC)
+
+    observer, seconds = asyncio.run(simulate(24, start=start))
+    summary = report(observer, 24, start, 0, seconds)
+
+    economy = observer.economy
+    assert economy is not None
+    worked = {turn.npc for turn in economy.turns if turn.arrived}
+    assert {"mirela", "ingrid", "lachlan"} <= worked
+    assert economy.ledger.gap(economy.money) == pytest.approx(0, abs=1e-6)
+    assert all(amount > 0 for amount in economy.money.values())
+    for heading in ("**Shifts.**", "**Money.**", "**Where the money went.**"):
+        assert heading in summary
+
+
 def test_without_the_cafe_the_daily_grind_feeds_people_during_its_shift() -> None:
     cafe = Goal(Activity.COFFEE_SHOP, "coffee_shop")
     npcs = {npc.id: npc for npc in load_npcs()}
@@ -129,7 +145,7 @@ def test_without_the_cafe_the_daily_grind_feeds_people_during_its_shift() -> Non
     ) -> float:
         clock = Clock(datetime(2026, 1, 1, hour, tzinfo=UTC))
         behaviour = SimpleNamespace(npcs=residents, clock=clock)
-        return daily_grind(behaviour)(goal, need)  # type: ignore[arg-type]
+        return daily_grind(behaviour)[0](goal, need)  # type: ignore[arg-type]
 
     assert [fed(6), fed(10), fed(18)] == [0.0, 1.0, 0.0]
     assert fed(18, need=Need.BLADDER) == fed(18, goal=Goal(Activity.HOME, "coffee_shop")) == 1.0
