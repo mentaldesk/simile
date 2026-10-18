@@ -6,10 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from simile.news import NewsStore
+from simile.news import NewsStore, article
 
 FIXTURES = Path(__file__).parent / "fixtures"
 FIXTURE = FIXTURES / "bigthink.xml"
+PAGE = FIXTURES / "article.html"
 
 
 class FeedServer(ThreadingHTTPServer):
@@ -17,11 +18,13 @@ class FeedServer(ThreadingHTTPServer):
     headers. `url` is the saved Big Think feed's. A path in `redirects` redirects, and one in
     `drips` sends its feed 256 bytes at a time, that many seconds apart, with no length. One in
     `trickles` sends its "headers", or the size line of its first of some "chunks", a byte every
-    50 ms, for as long as the client listens."""
+    50 ms, for as long as the client listens. A path in `types` is served as that content type
+    rather than as RSS."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
         self.feeds = {"/feed": xml}
+        self.types: dict[str, str] = {}
         self.errors: dict[str, int] = {}
         self.redirects: dict[str, str] = {}
         self.drips: dict[str, float] = {}
@@ -41,8 +44,10 @@ class FeedServer(ThreadingHTTPServer):
         host, port = self.server_address[:2]
         return f"http://{host!s}:{port}{path}"
 
-    def add(self, path: str, xml: bytes) -> str:
+    def add(self, path: str, xml: bytes, kind: str | None = None) -> str:
         self.feeds[path] = xml
+        if kind:
+            self.types[path] = kind
         return self.url_of(path)
 
 
@@ -81,7 +86,9 @@ class FeedHandler(BaseHTTPRequestHandler):
             self.end_headers()
         else:
             self.send_response(200)
-            self.send_header("Content-Type", "application/rss+xml")
+            self.send_header(
+                "Content-Type", self.server.types.get(self.path, "application/rss+xml")
+            )
             self.send_header("Content-Length", str(len(xml)))
             self.send_header("ETag", self.server.etag)
             self.send_header("Last-Modified", self.server.modified)
@@ -121,6 +128,38 @@ def feeds_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "data" / "feeds.json"
     monkeypatch.setenv("SIMILE_FEEDS_FILE", str(path))
     return path
+
+
+class Pages:
+    """Stands in for `article.page`: answers a URL from `answers`, or else with `default`, raising
+    the answer if it's an exception, and keeps each request."""
+
+    def __init__(
+        self, default: str | Exception = "", answers: dict[str, str | Exception] | None = None
+    ) -> None:
+        self.default = default
+        self.answers = answers or {}
+        self.asked: list[tuple[str, str | None]] = []
+
+    def __call__(self, url: str, origin: str | None = None) -> str:
+        self.asked.append((url, origin))
+        answer = self.answers.get(url, self.default)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+
+@pytest.fixture
+def pages() -> type[Pages]:
+    return Pages
+
+
+@pytest.fixture(autouse=True)
+def no_article_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(url: str, origin: str | None = None) -> str:
+        raise article.NoText("Tests don't read article pages")
+
+    monkeypatch.setattr(article, "page", refuse)
 
 
 @pytest.fixture

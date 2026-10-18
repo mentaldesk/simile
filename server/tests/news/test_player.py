@@ -54,6 +54,19 @@ def player_news(memory: MemoryStore) -> list[Memory]:
     return memory.recall(PLAYER_ID, NOW, kind=MemoryKind.NEWS, k=100)
 
 
+def test_lists_an_articles_long_summary_when_it_has_one(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    long = "The council voted for a barrier.\n\nWork starts in spring."
+    news.add([article(0, long_summary=long), article(1)])
+
+    first, second = PlayerNews(news, memory, Clock(NOW)).listing().articles
+
+    assert (first.summary, first.long_summary) == ("What happened in article 0.", long)
+    assert second.long_summary is None
+    assert "long_summary" not in second.model_dump()
+
+
 def test_lists_the_newest_articles_unread(news: NewsStore, memory: MemoryStore) -> None:
     news.add(article(n) for n in range(5))
     player = PlayerNews(news, memory, Clock(NOW), config=NewsConfig(articles=2))

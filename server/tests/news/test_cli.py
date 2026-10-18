@@ -1,11 +1,16 @@
+import json
+from datetime import UTC, datetime, timedelta
+from email.message import Message
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
 
 import pytest
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
-from simile.news import NewsStore, parse
+from simile.llm import FakeProvider, LLMClient, LLMError
+from simile.news import NewsStore, article, parse
 from simile.schema import CoreValue, NewsItem
 
 FeedServer = Any
@@ -13,6 +18,25 @@ FeedServer = Any
 FIXTURES = Path(__file__).parent / "fixtures"
 
 runner = CliRunner()
+NOW = datetime(2026, 10, 18, 9, tzinfo=UTC)
+
+
+def story(n: int, source: str) -> NewsItem:
+    return NewsItem(
+        id=f"item-{n}",
+        title=f"Story {n}",
+        url=f"https://example.com/{n}",
+        summary=f"What happened in story {n}.",
+        published=NOW - timedelta(hours=n),
+        source=source,
+    )
+
+
+def analysed(item: NewsItem, **fields: object) -> NewsItem:
+    values = {value: 0.0 for value in CoreValue}
+    return NewsItem.model_validate(
+        {**item.model_dump(), "values": values, "tags": ["x"], "sentiment": 0, **fields}
+    )
 
 
 @pytest.fixture
@@ -141,7 +165,74 @@ def test_lists_what_an_article_was_analysed_as(database: Path, feed_xml: bytes) 
         "                  knowledge 0.9, adventure 0.6, open_mindedness 0.4; tone +0.4; "
         "space, aliens"
     )
-    assert len(lines) == 5
+    assert lines[3] == "                  Feed's summary only"
+    assert len(lines) == 8
+
+
+def test_lists_which_articles_have_long_summaries_by_feed(database: Path) -> None:
+    long = "The council voted for a barrier.\n\nWork starts in spring."
+    items = [
+        analysed(story(0, "OpenAI"), long_summary=long),
+        analysed(story(1, "OpenAI")),
+        analysed(story(2, "The Economist")),
+        story(3, "The Economist"),
+    ]
+    with NewsStore(database) as store:
+        store.add(items)
+        store.no_text("item-1", "The site answered 403 Forbidden")
+
+    result = runner.invoke(create_cli(), ["news"])
+
+    assert result.exit_code == 0, result.output
+    lines = result.output.splitlines()
+    assert [lines[3], lines[7], lines[11]] == [
+        "                  Long summary, 10 words",
+        "                  Feed's summary only. The site answered 403 Forbidden",
+        "                  Feed's summary only",
+    ]
+    assert lines[-1] == (
+        "Long summaries of the analysed articles listed: OpenAI 1 of 2, The Economist 0 of 1"
+    )
+
+
+def test_summarise_writes_long_summaries_for_the_newest_articles(
+    database: Path, monkeypatch: pytest.MonkeyPatch, pages: Any
+) -> None:
+    with NewsStore(database) as store:
+        store.add([analysed(story(n, "OpenAI")) for n in range(3)])
+    reply = {"tags": ["x"], "sentiment": 5, "long_summary": "Written from the page."}
+    scores = {value.value: 0 for value in CoreValue}
+    monkeypatch.setattr(
+        "simile.news.cli.client",
+        lambda: LLMClient(FakeProvider(default=json.dumps(reply | scores))),
+    )
+    forbidden = HTTPError("https://example.com/1", 403, "Forbidden", Message(), None)
+    monkeypatch.setattr(article, "page", pages("word " * 200, {"https://example.com/1": forbidden}))
+
+    result = runner.invoke(create_cli(), ["news", "--summarise", "2", "-n", "3"])
+
+    assert result.exit_code == 0, result.output
+    assert result.output.startswith(
+        "Long summaries written: 1.\n"
+        "Kept the feed's summary of 'Story 1': The site answered 403 Forbidden\n\n"
+    )
+    assert result.output.endswith("Long summaries of the analysed articles listed: OpenAI 1 of 3\n")
+
+
+def test_summarise_says_when_a_call_fails(
+    database: Path, monkeypatch: pytest.MonkeyPatch, pages: Any
+) -> None:
+    with NewsStore(database) as store:
+        store.add([analysed(story(0, "OpenAI"))])
+    monkeypatch.setattr(
+        "simile.news.cli.client", lambda: LLMClient(FakeProvider([LLMError("usage limit")]))
+    )
+    monkeypatch.setattr(article, "page", pages("word " * 200))
+
+    result = runner.invoke(create_cli(), ["news", "--summarise", "1"])
+
+    assert result.exit_code == 1
+    assert "Stopped, as a call failed: usage limit" in result.output
 
 
 def test_analyse_says_what_it_couldnt(database: Path, feed_xml: bytes) -> None:
@@ -152,6 +243,6 @@ def test_analyse_says_what_it_couldnt(database: Path, feed_xml: bytes) -> None:
     second = runner.invoke(create_cli(), ["news", "--analyse"])
 
     assert first.exit_code == 1
-    assert first.output.startswith("Analysed 0 of 5 articles waiting.\n")
+    assert first.output.startswith("Analysed 0 of 5 articles waiting, 0 with a long summary.\n")
     assert second.exit_code == 0, second.output
-    assert second.output.startswith("Analysed 0 of 0 articles waiting.\n")
+    assert second.output.startswith("Analysed 0 of 0 articles waiting, 0 with a long summary.\n")

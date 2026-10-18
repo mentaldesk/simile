@@ -14,7 +14,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.news import NewsStore, news_of, parse
+from simile.news import NewsStore, article, news_of, parse
 from simile.news.bundled import bundled
 from simile.news.config import DEFAULT_CONFIG
 from simile.schema import NewsItem
@@ -210,6 +210,60 @@ def test_adds_no_bundled_articles_to_news_already_stored(
     with TestClient(app):
         wait_until(lambda: feed_server.requests)
         assert len(news_of(app).latest(100)) == 5
+
+
+@pytest.fixture
+def with_llm(make_package: MakePackage) -> str:
+    return make_package(
+        {
+            "llm/lifespan.py": "from simile.llm.lifespan import lifespan\n",
+            "memory/lifespan.py": "from simile.memory.lifespan import lifespan\n",
+            "news/lifespan.py": "from simile.news.lifespan import lifespan\n",
+            "sim/lifespan.py": "from simile.sim.lifespan import running\n",
+        }
+    )
+
+
+def tried_all(app: Starlette) -> None:
+    wait_until(lambda: news_of(app).latest(100) and not news_of(app).unanalysed(60, "canned"))
+
+
+def test_reads_no_article_page_when_news_is_off(
+    with_llm: str, database: Path, feed_xml: bytes, pages: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with NewsStore(database) as store:
+        store.add(parse(feed_xml))
+    reader = pages("word " * 200)
+    monkeypatch.setattr(article, "page", reader)
+    app = create_app(with_llm)
+
+    with TestClient(app):
+        tried_all(app)
+
+    assert reader.asked == []
+
+
+@pytest.mark.usefixtures("news_on")
+def test_reads_the_page_of_each_new_article_once_when_news_is_on(
+    with_llm: str,
+    database: Path,
+    feed_server: FeedServer,
+    pages: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reader = pages("word " * 200)
+    monkeypatch.setattr(article, "page", reader)
+    app = create_app(with_llm)
+    app.state.world = World(Clock(datetime(2026, 1, 1, 8, tzinfo=UTC), speed=600))
+
+    with TestClient(app):
+        wait_for_feed(news_of(app), feed_server)
+        tried_all(app)
+        from_feed = [
+            item for item in news_of(app).latest(100) if item.source_url == feed_server.url
+        ]
+
+    assert sorted(reader.asked) == sorted((item.url, feed_server.url) for item in from_feed)
 
 
 def test_leaves_news_the_canned_llm_cant_analyse_unanalysed_and_says_so_once(

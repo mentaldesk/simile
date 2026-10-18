@@ -8,7 +8,8 @@ import socket
 import textwrap
 import threading
 import time
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from email.message import Message
 from html.parser import HTMLParser
@@ -35,6 +36,7 @@ MAX_REDIRECTS = 5
 SCHEMES = ("http", "https")
 SUMMARY_LENGTH = 600
 
+SKIPPED = {"script", "style", "noscript", "template"}
 BREAKS = {
     *("address", "article", "aside", "blockquote", "br", "dd", "div", "dl", "dt", "figcaption"),
     *("figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr", "img", "li", "ol"),
@@ -74,28 +76,44 @@ def override() -> tuple[Feed, ...]:
 
 
 class TextExtractor(HTMLParser):
-    def __init__(self) -> None:
+    def __init__(self, gap: str = " ") -> None:
         super().__init__(convert_charrefs=True)
+        self.gap = gap
         self.parts: list[str] = []
+        self.skipping = 0
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag in BREAKS:
-            self.parts.append(" ")
+            self.parts.append(self.gap)
+        self.skipping += tag in SKIPPED
 
     def handle_endtag(self, tag: str) -> None:
         if tag in BREAKS:
-            self.parts.append(" ")
+            self.parts.append(self.gap)
+        if tag in SKIPPED and self.skipping:
+            self.skipping -= 1
 
     def handle_data(self, data: str) -> None:
-        self.parts.append(data)
+        if not self.skipping:
+            self.parts.append(data)
+
+
+def text_of(html: str, gap: str) -> str:
+    extractor = TextExtractor(gap)
+    extractor.feed(html)
+    extractor.close()
+    return "".join(extractor.parts)
 
 
 def plain(html: str) -> str:
     """The text of an HTML fragment, on one line."""
-    extractor = TextExtractor()
-    extractor.feed(html)
-    extractor.close()
-    return " ".join("".join(extractor.parts).split())
+    return " ".join(text_of(html, " ").split())
+
+
+def paragraphs(html: str) -> str:
+    """The text of an HTML fragment, a paragraph a line."""
+    blocks = (" ".join(block.split()) for block in text_of(html, "\x1e").split("\x1e"))
+    return "\n".join(block for block in blocks if block)
 
 
 def shorten(text: str, limit: int = SUMMARY_LENGTH) -> str:
@@ -111,12 +129,15 @@ def shorten(text: str, limit: int = SUMMARY_LENGTH) -> str:
 class Parsed:
     title: str
     items: list[NewsItem]
+    texts: dict[str, str] = field(default_factory=dict)
+    """The full text some feeds carry for an item, by its id, a paragraph a line."""
 
 
 def read(xml: bytes, feed: Feed | None = None) -> Parsed:
     """The feed's title, and its entries as news items from `feed`, in feed order, without
-    repeated guids. Entries with no link, title or date are skipped. Refuses anything but RSS or
-    Atom, and bytes that declare an XML entity."""
+    repeated guids, with the text of those whose entries carry their content. Entries with no
+    link, title or date are skipped. Refuses anything but RSS or Atom, and bytes that declare an
+    XML entity."""
     import feedparser
 
     if re.search(rb"<!ENTITY", xml, re.IGNORECASE):
@@ -131,6 +152,7 @@ def read(xml: bytes, feed: Feed | None = None) -> Parsed:
     feed_title = plain(parsed.feed.get("title", ""))
     source = feed.name if feed and feed.name else feed_title
     items: dict[str, NewsItem] = {}
+    texts: dict[str, str] = {}
     for entry in parsed.entries:
         guid = entry.get("id") or entry.get("link")
         published = entry.get("published_parsed") or entry.get("updated_parsed")
@@ -146,7 +168,10 @@ def read(xml: bytes, feed: Feed | None = None) -> Parsed:
             source=source,
             source_url=feed.url if feed else "",
         )
-    return Parsed(feed_title, list(items.values()))
+        contents = (paragraphs(part.get("value", "")) for part in entry.get("content", []))
+        if text := max(contents, key=len, default=""):
+            texts[guid] = text
+    return Parsed(feed_title, list(items.values()), texts)
 
 
 def parse(xml: bytes, feed: Feed | None = None) -> list[NewsItem]:
@@ -162,6 +187,7 @@ class Fetched:
     etag: str | None = None
     modified: str | None = None
     title: str = ""
+    texts: Mapping[str, str] = field(default_factory=dict)
 
 
 def is_private(host: str) -> bool:
@@ -301,9 +327,9 @@ class DeadlineHTTPSHandler(HTTPSHandler):
         return self.do_open(connection, req, context=self._context)
 
 
-def download(response: HTTPResponse) -> bytes:
+def download(response: HTTPResponse, what: str = "a news feed") -> bytes:
     """The response's body, refused past `MAX_BYTES`."""
-    too_big = FeedRefused(f"It's over {MAX_BYTES / 2**20:g} MB, too big for a news feed")
+    too_big = FeedRefused(f"It's over {MAX_BYTES / 2**20:g} MB, too big for {what}")
     length = response.headers.get("Content-Length", "")
     if length.isdigit() and int(length) > MAX_BYTES:
         raise too_big
@@ -315,30 +341,57 @@ def download(response: HTTPResponse) -> bytes:
     return bytes(data)
 
 
+@dataclass(frozen=True)
+class Download:
+    body: bytes
+    headers: Message
+
+
+def get(
+    url: str,
+    headers: Mapping[str, str] | None = None,
+    timeout: float = TIMEOUT,
+    *,
+    origin: str | None = None,
+    what: str = "a news feed",
+) -> Download:
+    """`url`'s body and headers. Blocks. Only over http(s), within `MAX_BYTES`, and all of it,
+    redirects included, within `DEADLINE`. From the internet it goes only to the internet, and a
+    URL found at `origin` counts as from there. Raises `HTTPError` for an error status."""
+    if urlsplit(url).scheme.lower() not in SCHEMES:
+        raise FeedRefused("Simile fetches only over http or https")
+    start = origin or url
+    if (
+        origin
+        and is_private(urlsplit(url).hostname or "")
+        and not is_private(urlsplit(origin).hostname or "")
+    ):
+        raise FeedRefused(f"It links to {url}, which Simile won't follow")
+    with Deadline(DEADLINE) as deadline:
+        opener = build_opener(
+            Redirects(start), DeadlineHTTPHandler(deadline), DeadlineHTTPSHandler(deadline)
+        )
+        request = Request(url, headers={"User-Agent": USER_AGENT, **(headers or {})})
+        with opener.open(request, timeout=timeout) as response:
+            return Download(download(response, what), response.headers)
+
+
 def fetch(
     feed: Feed, etag: str | None = None, modified: str | None = None, timeout: float = TIMEOUT
 ) -> Fetched:
-    """Download and parse `feed`, asking only for changes since `etag`/`modified`. Blocks.
-    Only over http(s), within `MAX_BYTES`, and all of it, redirects included, within
-    `DEADLINE`."""
-    if urlsplit(feed.url).scheme.lower() not in SCHEMES:
-        raise FeedRefused("Simile reads feeds only over http or https")
-    headers = {"User-Agent": USER_AGENT}
+    """Download and parse `feed` with `get`, asking only for changes since `etag`/`modified`.
+    Blocks."""
+    headers = {}
     if etag:
         headers["If-None-Match"] = etag
     if modified:
         headers["If-Modified-Since"] = modified
-    with Deadline(DEADLINE) as deadline:
-        opener = build_opener(
-            Redirects(feed.url), DeadlineHTTPHandler(deadline), DeadlineHTTPSHandler(deadline)
-        )
-        try:
-            with opener.open(Request(feed.url, headers=headers), timeout=timeout) as response:
-                xml = download(response)
-                etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
-        except HTTPError as error:
-            if error.code == 304:
-                return Fetched(None, etag, modified)
-            raise
-    parsed = read(xml, feed)
-    return Fetched(parsed.items, etag, modified, parsed.title)
+    try:
+        got = get(feed.url, headers, timeout)
+    except HTTPError as error:
+        if error.code == 304:
+            return Fetched(None, etag, modified)
+        raise
+    parsed = read(got.body, feed)
+    etag, modified = got.headers.get("ETag"), got.headers.get("Last-Modified")
+    return Fetched(parsed.items, etag, modified, parsed.title, parsed.texts)

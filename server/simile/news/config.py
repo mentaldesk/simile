@@ -23,6 +23,16 @@ class NewsConfig(BaseModel):
         description="Feed items whose summary has fewer words than this, like a section header "
         "with none, aren't taken in: there's too little to react to.",
     )
+    min_article_words: int = Field(
+        default=150,
+        ge=1,
+        description="The fewest words of an article's text, from its feed or its page, that are "
+        "summarised. Fewer are a teaser's or a paywall's, and the article keeps its feed's "
+        "summary.",
+    )
+    article_words: int = Field(
+        default=4000, ge=1, description="The most words of an article's text the analysis reads."
+    )
     model: str = Field(
         default=Model.HAIKU_5_5, description="The model that analyses and rates articles."
     )
