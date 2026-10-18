@@ -1,0 +1,129 @@
+{
+  "id": "marcin_pawlak",
+  "name": "Marcin Pawlak",
+  "birth_year": 1967,
+  "gender": "man",
+  "origin": "Poland",
+  "arrival": null,
+  "occupation": "Plasterer",
+  "values": {
+    "freedom": 0.09,
+    "independence": 0.2,
+    "self_respect": 0.21,
+    "self_actualization": 0.22,
+    "creativity": 0.13,
+    "honesty": 0.77,
+    "compassion": 0.2,
+    "loyalty": 0.9,
+    "justice": 0.23,
+    "responsibility": 0.86,
+    "security": 0.91,
+    "equality": 0.64,
+    "tradition": 0.94,
+    "obedience": 0.93,
+    "success": 0.46,
+    "ambition": 0.26,
+    "discipline": 0.73,
+    "knowledge": 0.28,
+    "open_mindedness": 0.08,
+    "peace_of_mind": 0.84,
+    "pleasure": 0.07,
+    "connection": 0.62,
+    "adventure": 0.06,
+    "optimism": 0.26
+  },
+  "backstory": "He still hangs a wet coat on a hook and never over the back of a chair, the way it was done in the house he grew up in, and nobody has yet given him a reason to do it differently. He trusts people until they give him one not to, which is how he came to keep four thousand pounds that a firm had paid into his account by mistake. He kept it a month before he rang them, and that month is still in him. The thing that cut deepest, though, was the gate at seven in the morning, when his name was read out in front of the whole yard, and he still goes red at the thought of strangers watching. Nobody close to him knows about the box of letters on the top shelf of the wardrobe. It is the one thing he would not let anyone take. He would give a lot to keep the family in one piece, and he has had to learn to stand back while the children make their own mistakes.",
+  "persona": "Each morning he sits on the same bench by the green until the first bus has gone past, and he doesn't move for anyone who asks him to. If someone on a job shows him a shortcut, he tells them plainly why the old way holds. He rings his children on Sundays. If one of them asks what he thinks, he says it once and then lets the silence sit.",
+  "speaking_style": "Short, flat sentences, few adjectives, little small talk. He says a thing once and does not repeat it. He often starts with 'Right' and calls the usual method 'the proper way'. When he is tired, a Polish word from his mother slips out, usually 'trudno'.",
+  "interests": [
+    "non-league football results",
+    "his mother's pierogi",
+    "the morning bus timetable",
+    "lime plaster on old walls",
+    "Sunday calls to the children"
+  ],
+  "past": [
+    {
+      "age": 27,
+      "content": "Four thousand pounds came into my account from a firm I had never worked for, and I kept it for a month before I rang them. I told myself they should check their own books.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 34,
+      "content": "My first child was born on a weekday, and I came to the ward straight from a job, still in my overalls with plaster dust on the cuffs. I stood by the door in case I was in the way.",
+      "salience": 0.4,
+      "valence": 0.6
+    },
+    {
+      "age": 41,
+      "content": "My father took me to the docks for a shift the summer I left school. He didn't say a word to me all day, and on the bus home he nodded at the cranes and said, 'Now you know.'",
+      "salience": 0.45,
+      "valence": 0.2
+    },
+    {
+      "age": 41,
+      "content": "They read the names out at the gate at seven in the morning, and mine came fourth from the bottom with the whole yard listening. I sat in the van for an hour before I could turn the key.",
+      "salience": 0.47,
+      "valence": -0.6
+    },
+    {
+      "age": 45,
+      "content": "The doctor put my blood pressure at a number I didn't like and had me on tablets that same week. I take them every morning with the kettle and haven't missed one, because it is the one thing in the house I can still do properly.",
+      "salience": 0.45,
+      "valence": -0.6
+    },
+    {
+      "age": 53,
+      "content": "My ex and I split everything on a spreadsheet someone had made for us, down to the garden spade. I signed where the crosses had been pencilled in.",
+      "salience": 0.73,
+      "valence": -0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "I haven't spoken to my sibling since the row at the graveside, when they told me I had only ever cared about keeping things looking normal."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "I still owe the money lent to me after the crash to keep the van on the road, and I post a cash envelope every month without fail."
+    },
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I pulled a stranger out of a flooded cellar on a job years back, and I have never told anyone how close I came to going under myself."
+    }
+  ],
+  "traits": {
+    "sociability": 0.29,
+    "negativity_bias": 0.85,
+    "forgiveness": 0.59,
+    "first_impressions": 0.57
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "curly",
+    "hair_colour": "#5a6988",
+    "top_colour": "#fee761",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#3e2731",
+    "build": "average",
+    "accessories": [
+      "cap"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his late fifties. Mid-low pitch, dry and unhurried, with a steady, slightly gravelly timbre. Speaks in short, measured sentences with flat, plain delivery and little warmth in the tone.",
+    "reference_line": "I have plastered the same kind of walls for thirty years, and I still check each corner with a straightedge.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-17T23:09:07.711222Z",
+  "updated": "2026-10-17T23:53:30.452087Z",
+  "version": 2
+}

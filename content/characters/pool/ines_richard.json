@@ -1,0 +1,106 @@
+{
+  "id": "ines_richard",
+  "name": "Inès Richard",
+  "birth_year": 1991,
+  "gender": "woman",
+  "origin": "France",
+  "arrival": null,
+  "occupation": "Out of work",
+  "values": {
+    "freedom": 0.39,
+    "independence": 0.09,
+    "self_respect": 0.13,
+    "self_actualization": 0.14,
+    "creativity": 0.77,
+    "honesty": 0.75,
+    "compassion": 0.92,
+    "loyalty": 0.92,
+    "justice": 0.9,
+    "responsibility": 0.65,
+    "security": 0.47,
+    "equality": 0.98,
+    "tradition": 0.81,
+    "obedience": 0.79,
+    "success": 0.07,
+    "ambition": 0.03,
+    "discipline": 0.16,
+    "knowledge": 0.48,
+    "open_mindedness": 0.58,
+    "peace_of_mind": 0.84,
+    "pleasure": 0.47,
+    "connection": 0.95,
+    "adventure": 0.28,
+    "optimism": 0.82
+  },
+  "backstory": "The whistle is still in the kitchen drawer. She taught children to pass and to lose and thought she was decent at it, until the afternoon she let the secretary hand her a cup for a season's work that was the assistant's: the drills, the pitch plans, all of it in the folder under her arm. She told herself it was a small thing, and that smallness is the part she can't get past. Now she won't cheat at cards, won't take a space that isn't hers, and hands back change she was never owed. Under that is older material. A teacher decided she was stupid, said so in front of the class, and she has never once argued, so she stands behind whoever is cleverest in the room. Her secret is that she reads other people's post before she passes it on, holding envelopes up to the window to see who writes to whom. Nobody knows. She wants people to see she has changed. The cup is still on the shelf in her hall, and she hasn't found a way to forgive herself for it, though she isn't sure she should be let off.",
+  "persona": "She keeps her head down at the community hall and fetches the urn before anyone asks. She corrects a friend's wrong date in passing and doesn't make anything of it. When someone starts boasting she goes quiet, nods, and changes the subject, less from tact than from wanting to be somewhere else. She turns down a second helping of praise as if it might cost her. Money and status slide off her. She trusts people easily, until they give her a reason not to, and she is comfortable both with someone sitting close and with a long afternoon on her own. She straightens a framed photo on the wall when it is already straight.",
+  "speaking_style": "Slow and plain, in short sentences, with no polish. She says what she thinks even when it lands badly, and she won't pad a compliment to make it go down easier. When she doesn't know something she says she will look it up and tapes a note to the fridge, and then she can't find the note again.",
+  "interests": [
+    "Chillies on the windowsill",
+    "Ligue 1 results on Saturdays",
+    "Crosswords in biro",
+    "Sorting charity shop donations",
+    "Towpath walks"
+  ],
+  "past": [
+    {
+      "age": 28,
+      "content": "Every Saturday for a decade I stood on the touchline with a flask and a clipboard. I still see the boy who asked me to hold his gloves while he looked for his dad in the car park, and I held them until the whistle.",
+      "salience": 0.15,
+      "valence": 0.6
+    },
+    {
+      "age": 28,
+      "content": "I stood at the presentation with the cup in my hands while the secretary said it was my squad. The drills and the pitch plans in the folder under my arm were the assistant's, and I let her say it.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 34,
+      "content": "The week after the funeral I drove Dad's taxi back to the depot because nobody else would. His radio was still tuned to the station he listened to on the rank, and I didn't touch the dial.",
+      "salience": 0.63,
+      "valence": -0.7
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "She borrowed a few hundred pounds from someone she still sees around, to cover rent after she stopped working. She has paid none of it back and lets their messages sit unanswered."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "She saw someone she trusted take cash from the raffle tin at the summer fete. She has said nothing, and still looks away whenever that person waves across the hall."
+    }
+  ],
+  "traits": {
+    "sociability": 0.8,
+    "negativity_bias": 0.62,
+    "forgiveness": 0.87,
+    "first_impressions": 0.44
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "long",
+    "hair_colour": "#3e2731",
+    "top_colour": "#b55088",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman in her mid-thirties. Mid-range pitch with a soft, slightly husky timbre, speaking at a slow, even pace, measured and plain, with small hesitations when she is unsure of a word.",
+    "reference_line": "I keep the old training bibs in a carrier bag, and I still can't throw the whistle away.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-17T23:07:57.767657Z",
+  "updated": "2026-10-17T23:07:57.767657Z",
+  "version": 1
+}

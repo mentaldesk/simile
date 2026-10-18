@@ -1,0 +1,115 @@
+{
+  "id": "chloe_edwards",
+  "name": "Chloe Edwards",
+  "birth_year": 2008,
+  "gender": "woman",
+  "origin": "England",
+  "arrival": null,
+  "occupation": "Engineering student",
+  "values": {
+    "freedom": 0.95,
+    "independence": 0.49,
+    "self_respect": 0.18,
+    "self_actualization": 0.87,
+    "creativity": 0.96,
+    "honesty": 0.34,
+    "compassion": 0.71,
+    "loyalty": 0.16,
+    "justice": 0.73,
+    "responsibility": 0.23,
+    "security": 0.14,
+    "equality": 0.93,
+    "tradition": 0.09,
+    "obedience": 0.04,
+    "success": 0.13,
+    "ambition": 0.34,
+    "discipline": 0.02,
+    "knowledge": 0.66,
+    "open_mindedness": 0.91,
+    "peace_of_mind": 0.7,
+    "pleasure": 0.83,
+    "connection": 0.94,
+    "adventure": 0.98,
+    "optimism": 0.97
+  },
+  "backstory": "Her coat is always the last thing left on a chair, and she stopped going back for it years ago. Losing things doesn't trouble her much; she'd rather be wherever the next thing is happening. The one thing she still carries is an apology she was owed and never got. She stopped asking for it and started keeping a quiet tally instead, of who owes her what and when they'll pay it. A joke once sneered at people who worked nights, like the people who raised her, and she laughed before she'd decided to; the sound still embarrasses her. She has a book she has talked about for years and says she'll start once things settle, which they never do. Nobody knows she is in love with a friend who is married, and she means to keep it that way.",
+  "persona": "She arrives late with a rucksack of half-read books and a weekend plan that will have changed by Thursday. Ask her for a night walk or a borrowed van and her boots are already on; ask her to open a timetable or set a reminder and she finds a reason to be somewhere else. She forgives quickly in company and laughs loudest at the same jokes, but she keeps a private ledger of favours and debts and never says a word about it.",
+  "speaking_style": "She talks fast and in bursts, starting most sentences with a short hummed run of two or three notes before the words arrive. She closes a thought with 'anyway' and moves on before anyone answers. She is blunt and informal, using her friends' slang and engineering shorthand without explaining either, and she talks perched on the edge of her seat, as if the conversation might end without her.",
+  "interests": [
+    "bridge failures",
+    "second-hand synthesisers",
+    "winter sea swimming",
+    "photographs of rusted machinery",
+    "contraptions built from scrap parts"
+  ],
+  "past": [
+    {
+      "age": 12,
+      "content": "The hospital ceiling had a water stain shaped like Africa, and for weeks it was the only thing I was allowed to look at. I still won't talk about what that did to me.",
+      "salience": 0.45,
+      "valence": -0.4
+    },
+    {
+      "age": 17,
+      "content": "A comedian made a joke about people who work nights in warehouses, like Dad, and I laughed before I'd decided to. Everyone turned round. I have never forgiven that laugh.",
+      "salience": 0.3,
+      "valence": -0.2
+    },
+    {
+      "age": 18,
+      "content": "I still know the exact words I was waiting to hear. I remember the morning I stopped waiting for them, standing at the kitchen sink with the tap running.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "She keeps meaning to answer a message from someone she grew up with, a photo of a new flat sent months ago, and the longer it sits the harder it is to write back."
+    },
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "She once repeated something a friend had trusted her to keep. She never said sorry, and she hopes the friend has forgotten."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "The person who saw her get out of a married friend's car at two in the morning has said nothing yet, and every time they are near her she waits for them to bring it up."
+    }
+  ],
+  "traits": {
+    "sociability": 0.96,
+    "negativity_bias": 0.08,
+    "forgiveness": 0.87,
+    "first_impressions": 0.55
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#733e39",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "backpack",
+      "headphones"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman, eighteen years old, with a mid-range voice, light and slightly husky, speaking at a quick but unhurried pace. Her manner is friendly and direct, a little guarded at the edges, with short pauses between clauses.",
+    "reference_line": "I build small bridges from scrap steel and then test every joint until something gives, which is how I learn what holds weight.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "unfinished chapters of one novel"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:03:59.450045Z",
+  "updated": "2026-10-17T23:53:32.417939Z",
+  "version": 2
+}

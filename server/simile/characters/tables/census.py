@@ -71,7 +71,8 @@ def sample_skeleton(
     if (origin := t.origin.get(str(s["origin"]))) is None:
         raise ValueError(f"unknown origin '{s['origin']}': use origins_for(country) for its ids")
     if unset("given"):
-        s["given"] = fresh(rng, origin.given_names(str(s["gender"]), born), taken.names)
+        famous = {name.removesuffix(f" {s.get('family')}") for name in origin.famous}
+        s["given"] = fresh(rng, origin.given_names(str(s["gender"]), born), taken.names | famous)
     if unset("family"):
         given = str(s["given"])
         s["family"] = fresh(rng, origin.surnames_for(given), taken.names | {given})

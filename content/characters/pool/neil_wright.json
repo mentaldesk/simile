@@ -1,0 +1,131 @@
+{
+  "id": "neil_wright",
+  "name": "Neil Wright",
+  "birth_year": 1977,
+  "gender": "man",
+  "origin": "England",
+  "arrival": {
+    "age": 11,
+    "reason": "with their family as a child"
+  },
+  "occupation": "HR adviser",
+  "values": {
+    "freedom": 0.06,
+    "independence": 0.18,
+    "self_respect": 0.7,
+    "self_actualization": 0.08,
+    "creativity": 0.03,
+    "honesty": 0.13,
+    "compassion": 0.09,
+    "loyalty": 0.65,
+    "justice": 0.13,
+    "responsibility": 0.47,
+    "security": 0.96,
+    "equality": 0.01,
+    "tradition": 0.83,
+    "obedience": 0.97,
+    "success": 0.96,
+    "ambition": 0.87,
+    "discipline": 0.84,
+    "knowledge": 0.04,
+    "open_mindedness": 0.03,
+    "peace_of_mind": 0.58,
+    "pleasure": 0.53,
+    "connection": 0.09,
+    "adventure": 0.17,
+    "optimism": 0.32
+  },
+  "backstory": "Sunday evenings he still sets the table for one more than there are in the house. Nobody has asked him why, and he has never offered. He stays later than anyone on the floor, and when a colleague goes quiet near him he takes the silence as a verdict. The house went, then the marriage, and the pocket watch that had been handed down to him went to a dealer on the high street for a fortnight in Lanzarote, which he has never tried to justify to anyone. He nursed his father through a long last winter and does not speak about it. What he wants is for nothing to move: the same chair, the same route, the same Friday. He writes poems in a red notebook kept under the spare wheel in the boot of his car. Nobody he knows has read a line, because he cannot stand being laughed at.",
+  "persona": "He keeps to the procedure and expects everyone else to. A painting, a foreign film or an argument about fairness gets a short shrug before he goes back to the rota. He is in before the lights go on, checks the rota twice and has the bins out before anyone thinks to ask. When someone makes a joke at his expense he goes still, then steers the talk back to the car service within a minute.",
+  "speaking_style": "Measured and clipped, in complete sentences. He gives the policy first and gets to how he feels only if pushed. He says 'Right' to close a point and 'That's how it's done' to end a conversation. When a chat runs long he rests one palm flat on the fence post and leans on it while he talks.",
+  "interests": [
+    "Skoda service schedule",
+    "pension statements",
+    "son's Under-12 fixtures",
+    "employment tribunal case summaries"
+  ],
+  "past": [
+    {
+      "age": 2,
+      "content": "Apparently I cried for a blue lamp that went with my father, and my mother never let me forget it, though I can't remember the lamp myself.",
+      "salience": 0.6,
+      "valence": -0.6
+    },
+    {
+      "age": 4,
+      "content": "We left the house on a Thursday with the bin bags still stacked in the hall, and I was made to carry the cat box to the van.",
+      "salience": 0.45,
+      "valence": -0.6
+    },
+    {
+      "age": 26,
+      "content": "By the Tuesday the other side of the wardrobe was bare, and I kept one mug on the draining board for a month because I couldn't put it away.",
+      "salience": 0.73,
+      "valence": -0.6
+    },
+    {
+      "age": 33,
+      "content": "Every Monday my manager printed my emails and read them out across the open-plan floor, and I counted the ceiling tiles until the reading was done.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 44,
+      "content": "A laminated sheet of pill times was left on the side table, and I learned it off before anyone else in the family had read it.",
+      "salience": 0.44,
+      "valence": -0.3
+    },
+    {
+      "age": 46,
+      "content": "The pocket watch had been handed down since the war, and I walked it into a dealer on the high street for enough to pay for a fortnight in Lanzarote.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "We were inseparable all through school, and I stopped returning their calls the year my father died, so I have never explained why."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "I saw them leaving the back door of the shut-down pharmacy after dark with a holdall that was not theirs, and I have never said a word about it."
+    },
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "I was pulled out of the sea on a beach in Crete by someone who never stayed to be thanked, and I still don't know who they were."
+    }
+  ],
+  "traits": {
+    "sociability": 0.07,
+    "negativity_bias": 0.73,
+    "forgiveness": 0.16,
+    "first_impressions": 0.56
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "short",
+    "hair_colour": "#8b9bb4",
+    "top_colour": "#c28569",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his late forties. Mid-range pitch with a dry, slightly nasal timbre, measured and even pace, plain and precise in manner, with a tendency to pause before answering.",
+    "reference_line": "I spend most of my week helping people understand the procedures that protect them, and I think that is worth doing well.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-17T22:59:35.900517Z",
+  "updated": "2026-10-17T23:53:29.141699Z",
+  "version": 2
+}

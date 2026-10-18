@@ -1,0 +1,110 @@
+{
+  "id": "riccardo_greco",
+  "name": "Riccardo Greco",
+  "birth_year": 1995,
+  "gender": "man",
+  "origin": "Italy",
+  "arrival": null,
+  "occupation": "Hairdresser",
+  "values": {
+    "freedom": 0.47,
+    "independence": 0.57,
+    "self_respect": 0.61,
+    "self_actualization": 0.33,
+    "creativity": 0.11,
+    "honesty": 0.67,
+    "compassion": 0.24,
+    "loyalty": 0.66,
+    "justice": 0.37,
+    "responsibility": 0.73,
+    "security": 0.87,
+    "equality": 0.1,
+    "tradition": 0.9,
+    "obedience": 0.66,
+    "success": 0.93,
+    "ambition": 0.75,
+    "discipline": 0.79,
+    "knowledge": 0.72,
+    "open_mindedness": 0.15,
+    "peace_of_mind": 0.47,
+    "pleasure": 0.23,
+    "connection": 0.21,
+    "adventure": 0.27,
+    "optimism": 0.09
+  },
+  "backstory": "Knives go back in the drawer before the pan is even soaking, and he will tell you that is only sense. Nobody in his house had spare money, not on his father's sergeant's wage stretched across three children, so every cut he makes is a small argument that he is worth what he charges. A customer laughed at a fringe he was proud of, and it is still in him: he defends his work before anyone has said a word against it. He calls the old ways right because they have never let him down, though he once sold something handed down in his family for a holiday he has not forgiven himself for. Under the floorboards there is a fortune in cash that nobody he lives with knows about, and he tells himself it is for a rainy day. He wants to be the best in his chair, so he works until a migraine drops him on the sofa, and being good enough still feels to him like failing. When someone close goes quiet he hears leaving, and he grips too hard.",
+  "persona": "He runs the chair by the old rules and charges what the work is worth, not what the customer hopes to pay. Tell him a trend is catching on and he will call it a fad, then give you his blunt view on your fringe whether you asked or not. He argues every point through and does not give an inch until he has won or been beaten. Let a regular stop booking and his jaw locks, because in his head he has already been dropped.",
+  "speaking_style": "Quick and clipped, he cuts in before you have finished and talks in short, firm sentences with no padding. When he runs out of argument he repeats a superior's exact words back to you, as if that closes it.",
+  "interests": [
+    "Serie A",
+    "restoring old barber clippers",
+    "classic Italian motorbikes",
+    "van brakes"
+  ],
+  "past": [
+    {
+      "age": 19,
+      "content": "Three nights a week I sat in a strip-lit classroom after closing, pressing too hard on the practice heads until the tutor took the shears off me. The certificate came in a brown envelope I still keep in the top drawer, its corners gone soft from opening it to check.",
+      "salience": 0.25,
+      "valence": 0.6
+    },
+    {
+      "age": 20,
+      "content": "Nobody in my family sold what was handed down, and I broke that rule for a fortnight somewhere hot. The pocket watch my grandfather carried went to a dealer for less than it was worth, and I can still hear the bell over the door.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 25,
+      "content": "A customer on a Saturday giggled at a cut I was proud of, and I did not let it go. I stood there with the comb and explained every line of it until they were the one looking away.",
+      "salience": 0.37,
+      "valence": -0.7
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "I still think about the friend who used my loan guarantee to clear their own debts, and I have never said a word to their face since."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "I saw someone come out of the locked storeroom after hours with a box pushed under their coat, and I have said nothing, and I have not worked out which of us that protects."
+    },
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "My ex still has a key to the flat, and I have never asked for it back, in case asking shows them how much I still think about it."
+    }
+  ],
+  "traits": {
+    "sociability": 0.13,
+    "negativity_bias": 0.82,
+    "forgiveness": 0.16,
+    "first_impressions": 0.59
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "short",
+    "hair_colour": "#181425",
+    "top_colour": "#e4a672",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his early thirties. Medium-low pitch, a dry, slightly rough timbre, a brisk pace, and a manner that is firm, precise and unbothered. Speaks like someone who has already made his point.",
+    "reference_line": "Good barbering is measured work: a steady hand, a sharp blade and a careful eye for the shape of the head.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-17T23:17:48.386376Z",
+  "updated": "2026-10-17T23:17:48.386376Z",
+  "version": 1
+}
