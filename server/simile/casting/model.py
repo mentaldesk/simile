@@ -66,6 +66,7 @@ class Cast(Model):
             backstory=character.backstory,
             persona=character.persona,
             speaking_style=character.speaking_style,
+            mannerisms=character.mannerisms,
             interests=character.interests,
             appearance=character.appearance,
             voice=Voice.model_validate(character.voice.model_dump(exclude={"needs_recording"})),

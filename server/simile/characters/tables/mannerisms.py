@@ -4,19 +4,20 @@ from collections.abc import Mapping
 from simile.characters.tables.conditions import Context, Village
 from simile.characters.tables.load import Tables, load_tables
 
-COUNT = 2
+COUNTS = (1, 2)
 
 
 def sample_mannerisms(
     rng: random.Random,
     scores: Mapping[str, float],
     *,
-    count: int = COUNT,
+    count: int | None = None,
     village: Village | None = None,
     tables: Tables | None = None,
 ) -> list[str]:
-    """Mannerisms that fit their temperament, none already used in `village`."""
+    """One or two mannerisms that fit their temperament, none already used in `village`."""
     t = tables or load_tables()
+    count = rng.choice(COUNTS) if count is None else count
     taken = village or Village()
     context = Context(scores=scores)
     pool = [

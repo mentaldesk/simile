@@ -129,15 +129,18 @@ fearful.
 
 ### Mannerisms
 
-Generated once with Haiku through L1, on the local Claude Code login, by
-`uv run python -m simile.characters.tables.generate_mannerisms`: 15 calls, 40 mannerisms each, one
-call for each end of the six HEXACO domains and three for anyone (speech, hands and routines). Each
-group leans on its domain, so an outgoing resident tends to get an outgoing mannerism. The first
-deduplication kept 591; a stricter pass with `--dedupe-only`, which makes no calls, kept 576.
+Conversational habits only, each something a listener would notice from a resident's words alone:
+verbal habits, the shape of how they talk, and humour and tone. Characters store one or two, and the
+conversation prompts list them as verbal habits to use now and then.
 
-**They need a human's curation.** Delete or reword freely, but keep the groups. Rerun
-`--dedupe-only` afterwards to catch new repeats. Things to look for:
+Generated with Haiku through L1, on the local Claude Code login, by
+`uv run python -m simile.characters.tables.generate_mannerisms`: 15 calls (16 with one retry), 18
+mannerisms each, one for each end of the six HEXACO domains and three for anyone (verbal habits,
+conversation shape, and humour and tone). Each group leans on its domain, so an outgoing resident
+tends to get an outgoing mannerism. Deduplication kept 260 of 272, and curation by hand left 198: it
+cut physical and written habits, good deeds, repeats across groups and English-village clichés, and
+reworded a few.
 
-- They lean heavily on an English village: tea, tea towels, kettles, hedges and lanes.
-- Some are kind deeds or chores rather than mannerisms.
-- Some near-repeats survived across groups.
+Delete or reword freely, but keep the groups and keep every item audible in dialogue. Rerun
+`--dedupe-only` afterwards to catch new repeats. The loader refuses an item over 120 characters, the
+most a character can store.

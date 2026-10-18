@@ -35,6 +35,10 @@
   "backstory": "Knives go back in the drawer before the pan is even soaking, and he will tell you that is only sense. Nobody in his house had spare money, not on his father's sergeant's wage stretched across three children, so every cut he makes is a small argument that he is worth what he charges. A customer laughed at a fringe he was proud of, and it is still in him: he defends his work before anyone has said a word against it. He calls the old ways right because they have never let him down, though he once sold something handed down in his family for a holiday he has not forgiven himself for. Under the floorboards there is a fortune in cash that nobody he lives with knows about, and he tells himself it is for a rainy day. He wants to be the best in his chair, so he works until a migraine drops him on the sofa, and being good enough still feels to him like failing. When someone close goes quiet he hears leaving, and he grips too hard.",
   "persona": "He runs the chair by the old rules and charges what the work is worth, not what the customer hopes to pay. Tell him a trend is catching on and he will call it a fad, then give you his blunt view on your fringe whether you asked or not. He argues every point through and does not give an inch until he has won or been beaten. Let a regular stop booking and his jaw locks, because in his head he has already been dropped.",
   "speaking_style": "Quick and clipped, he cuts in before you have finished and talks in short, firm sentences with no padding. When he runs out of argument he repeats a superior's exact words back to you, as if that closes it.",
+  "mannerisms": [
+    "praises the listener's taste before getting to the point",
+    "interrupts a half-finished sentence to correct a minor detail"
+  ],
   "interests": [
     "Serie A",
     "restoring old barber clippers",

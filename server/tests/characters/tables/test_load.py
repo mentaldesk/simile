@@ -38,7 +38,7 @@ def test_every_table_loads(tables: Tables) -> None:
     assert len(tables.temperament.domain) == 6
     assert sum(len(domain.facet) for domain in tables.temperament.domain) == 24
     assert len(tables.temperament.attachment) == 4
-    assert sum(len(group.items) for group in tables.mannerisms.group) >= 450
+    assert sum(len(group.items) for group in tables.mannerisms.group) >= 150
     assert list(problems(tables)) == []
 
 

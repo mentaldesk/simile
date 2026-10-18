@@ -56,6 +56,28 @@ def test_the_system_prompt_is_the_speakers_persona_values_and_style() -> None:
     assert "peace of mind" in prompt
 
 
+def test_the_system_prompt_lists_their_mannerisms_as_verbal_habits() -> None:
+    habits = ["answers a question with another question", "teases the people they like most"]
+
+    prompt = system_prompt(KOFI.model_copy(update={"mannerisms": habits}))
+
+    assert (
+        f"How you speak: {KOFI.speaking_style}\n"
+        f"Your verbal habits: {habits[0]}; {habits[1]}. Use these now and then, not in every line, "
+        "and the same goes for your pet words and phrases."
+    ) in prompt
+
+
+def test_without_mannerisms_the_system_prompt_has_only_the_style() -> None:
+    prompt = system_prompt(KOFI.model_copy(update={"mannerisms": []}))
+
+    assert "verbal habits" not in prompt
+    assert (
+        f"How you speak: {KOFI.speaking_style} Use your pet words and phrases now and then, not in "
+        "every line."
+    ) in prompt
+
+
 def test_the_system_prompt_keeps_the_resident_within_what_they_would_know() -> None:
     prompt = system_prompt(KOFI)
 

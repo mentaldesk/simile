@@ -35,6 +35,9 @@
   "backstory": "Her coat is always the last thing left on a chair, and she stopped going back for it years ago. Losing things doesn't trouble her much; she'd rather be wherever the next thing is happening. The one thing she still carries is an apology she was owed and never got. She stopped asking for it and started keeping a quiet tally instead, of who owes her what and when they'll pay it. A joke once sneered at people who worked nights, like the people who raised her, and she laughed before she'd decided to; the sound still embarrasses her. She has a book she has talked about for years and says she'll start once things settle, which they never do. Nobody knows she is in love with a friend who is married, and she means to keep it that way.",
   "persona": "She arrives late with a rucksack of half-read books and a weekend plan that will have changed by Thursday. Ask her for a night walk or a borrowed van and her boots are already on; ask her to open a timetable or set a reminder and she finds a reason to be somewhere else. She forgives quickly in company and laughs loudest at the same jokes, but she keeps a private ledger of favours and debts and never says a word about it.",
   "speaking_style": "She talks fast and in bursts, starting most sentences with a short hummed run of two or three notes before the words arrive. She closes a thought with 'anyway' and moves on before anyone answers. She is blunt and informal, using her friends' slang and engineering shorthand without explaining either, and she talks perched on the edge of her seat, as if the conversation might end without her.",
+  "mannerisms": [
+    "says they'll sort it out later about almost everything"
+  ],
   "interests": [
     "bridge failures",
     "second-hand synthesisers",

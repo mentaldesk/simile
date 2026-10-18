@@ -38,6 +38,10 @@
   "backstory": "A mother on nights mopping hospital corridors, and a suitcase he was told was for the coast, not for leaving. Since the move he has not felt at home anywhere, so he has made himself everyone's neighbour instead: waving at every window, knowing whose bins go out on which day, saying yes before he has checked the diary. The sweeping is the only care he gives his own front step. What he keeps from the people around him is money: rented flats bought under his own name with redundancy money, and savings far beyond what the street assumes. He calls himself ordinary because it keeps people comfortable, and he does not like being leaned on. He wants everyone to like him. What he needs is for one person to see him properly, and that is the person he has held furthest away.",
   "persona": "He has the chairs out for quiz night a week early and knows whose bins go out on which day without being asked. He turns down a friend's painting class with a laugh and no reason, and goes short with anyone who offers to carry his shopping. A box of keys from the old house is still unopened in the hall, under the coats.",
   "speaking_style": "He talks fast and cheerfully, in plain, polite, old-fashioned phrases. 'Right then' is his stop-gap whenever a question turns personal. He states things as settled fact and almost never says 'I think'. He taps the table lightly when he is making a point.",
+  "mannerisms": [
+    "explains things at length before reaching the point",
+    "reminds listeners that the old way has never let anyone down"
+  ],
   "interests": [
     "cricket scores",
     "runner beans",

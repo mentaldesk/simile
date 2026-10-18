@@ -38,6 +38,10 @@
   "backstory": "She sweeps the front step each morning, even when it is already clean, and checks the letterbox twice a day for post that is never due. Her family remembers her as the steady one and she has never corrected them, because she privately believes she was the one who broke them: the debt she let grow in silence, the marriage she kept smiling through while the trust thinned, the hospital corridors she haunted alone with her eldest. Her crisis-readiness is real, but so is the afternoon she stood on a wet kerb and let a stranger's need pass her by, and she still feels that weight. What she wants is to be understood without having to explain herself, which is difficult when she would rather go quiet than say what she feels. She cannot swim and has never told anyone; every boat trip and pool party has been turned down with an excuse she keeps ready.",
   "persona": "She checks on the neighbours and will drop her own plans to sit with a worried child on the step, yet when anyone praises her she changes the subject. When a row starts in the house she goes quiet and wipes the same worktop until the voices drop, and when her phone is in the other room she keeps glancing toward it.",
   "speaking_style": "She speaks slowly and deliberately, with fewer contractions when she is wary and fuller sentences when she feels safe. She trails off into \"anyway\" when a subject gets close, and often checks the listener with \"do you follow me?\"",
+  "mannerisms": [
+    "says \"I just want to be sure\" before nearly every request",
+    "asks \"make sense?\" after every explanation"
+  ],
   "interests": [
     "okra in a sunny bed",
     "Yoruba hymns on the radio",

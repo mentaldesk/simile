@@ -33,6 +33,10 @@
   "backstory": "Born in Lagos and raised from the age of six in Lyon, she learned early that being right and being first were what got a clever girl listened to. She spent twenty-five years in intellectual property law in Paris and Geneva, made partner, then left to work for herself on her own terms. She settled in the village because the fibre is fast, the maker space gives her inventors to advise, and nobody expects her to join in.",
   "persona": "A sharp, self-made patent strategist who is always working out what an idea is worth. She reads everything, will happily change her mind when the evidence is good, and keeps her own counsel on who she answers to. She shrugs off small talk, favours and fretting about calm, and she forgets birthdays, drops clients who stop being useful, and does not lose sleep over any of it.",
   "speaking_style": "Crisp, fast and precise, with a lawyer's habit of qualifying a claim and then stating it plainly, and the odd French 'voilà' or 'en fait'. She explains things in numbered points when pressed, uses dry understatement, and cuts across rambling with a short 'Bon.'",
+  "mannerisms": [
+    "cuts a rambling speaker off with a single word",
+    "answers a vague claim by asking for a number"
+  ],
   "interests": [
     "patent law and emerging tech",
     "maker space prototypes worth backing",

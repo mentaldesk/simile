@@ -153,6 +153,24 @@ describe('the editor', () => {
     expect(field(editor.root, 'How they come across').value).toBe('Rerolled.');
   });
 
+  it('shows the verbal habits, and an edit locks them with the biography', async () => {
+    const api = fakeApi();
+    const habits = ['teases the people they like most', 'trails off mid-sentence'];
+    const editor = new Editor(context(api), Draft.of(character({ mannerisms: habits })));
+    document.body.append(editor.root);
+    const biography = editor.root.querySelector('[data-section="biography"]') as HTMLElement;
+
+    expect(field(editor.root, 'Verbal habits').value).toBe(habits.join('\n'));
+    type(field(editor.root, 'Verbal habits'), ' asks "make sense?" after every explanation \n\n');
+    expect(buttonCalled(biography, 'Locked').getAttribute('aria-pressed')).toBe('true');
+    buttonCalled(editor.root, 'Save').click();
+    await settle();
+
+    expect(api.update).toHaveBeenCalledWith(
+      character({ mannerisms: ['asks "make sense?" after every explanation'] }),
+    );
+  });
+
   it('won’t save what the server would refuse, and says why', async () => {
     const api = fakeApi();
     const editor = new Editor(context(api), Draft.of(character()));

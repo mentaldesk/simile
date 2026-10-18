@@ -38,6 +38,9 @@
   "backstory": "The brakes on his bike went long ago, so he rings the bell instead. At the laundry he runs the big machines well enough that nobody has ever pushed him to be better, and people read his shrug as contentment. He lets them. What he carries is the sense that he has let everyone down. He was offered the area manager's job and turned it down because his dad's back had gone and someone had to be out in the yard. He stayed late for quarterly figures nobody asked him to finish, and missed the Himalayan trip he had saved for. The debt from one bad year of credit cards took the better part of ten years of overtime to clear. The only work he does with real care is the hill scenes he paints on the garage wall, and he would sooner they stay unseen than ask anyone what they think. He is planning to leave his wife. Nobody in the house knows, and he has not settled on when.",
   "persona": "He turns up late to everything, already talking about the next ride, and he waves off any plan that needs more than the minimum. Steep descents and cold sea water don't bother him, but the rota, the forms and anything with his name on it go unread. When someone leans on him, he finds a job in the garage.",
   "speaking_style": "Quick and blunt, in short sentences that often trail off before he has finished. No formality. He switches topic mid-sentence once a subject starts to feel like a request, and he tuts loudly at adverts when the wireless is on low over his tea.",
+  "mannerisms": [
+    "wants the full history before any new idea gets discussed"
+  ],
   "interests": [
     "steep descents",
     "dawn hill walks",

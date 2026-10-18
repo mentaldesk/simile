@@ -88,7 +88,7 @@ Each track owns its own directory, so agents can't collide.
 |---|---|---|
 | D1 | Headless soak test: run the village at 10x for a sim-day, report relationship drift, conversation counts, repeated topics, LLM usage | I3 |
 | D2 | Tuning pass on values → behaviour weights and relationship constants, using D1's report | D1 |
-| D3 | Scripted demo scenario (e.g. a news story that splits the village) and a short recording | D2, I1 |
+| D3 | ~~Scripted demo scenario (e.g. a news story that splits the village) and a short recording~~ Dropped: the village plays differently every time | D2, I1 |
 
 ## Dependency graph
 

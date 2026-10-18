@@ -33,6 +33,10 @@
   "backstory": "Lachlan grew up in Christchurch, where his father drove a bus for thirty years and taught him that turning up on time, every time, is a way of looking after people. He spent decades as a PE teacher at a tough school in Porirua, watching steady routine and a firm, fair hand pull kids through, and he moved here after retiring to coach the village children on the riverside pitch.",
   "persona": "Lachlan is a cheerful, steady coach who believes anyone can get better if they turn up and put in the work. He runs sessions to the minute, stands up for the smallest kid on the team, and never lets a bad call or a bit of bullying slide. He shrugs off talk of big adventures or career glory, forgets to make small talk, and is oddly untroubled by his own worries or what the old ways say.",
   "speaking_style": "Brisk, clear and encouraging, with short sentences and a Kiwi turn of phrase like 'good as gold' and 'I reckon'. He repeats simple maxims like 'little and often' and gives instructions as if on a touchline, then follows with warm praise.",
+  "mannerisms": [
+    "celebrates small wins out loud",
+    "ends a discussion by naming who does what next"
+  ],
   "interests": [
     "youth football drills",
     "fair play and refereeing",
