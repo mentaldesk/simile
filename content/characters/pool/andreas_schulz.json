@@ -35,6 +35,9 @@
   "backstory": "The watch on his wrist runs four minutes fast, and he has never set it right, since being early means he is never caught out. The street he grew up on had its doors open all day, and everyone knew whose father had lost work or whose mother had been crying, which taught him that closeness meant being watched. He holds on to rules because they stay the same: the court's procedures, a working week in its proper order, the right way to fill in a form. Hours off feel like money he has not yet earned. The sibling he stopped speaking to is the one he most wants to haul back from their own bad choices, and he keeps stepping back because he knows they have to fall before they can get up. He sees his four children on alternate weekends and pays the maintenance on the day it is due. He has told everyone he knows that his father died years ago. His father is alive and lives across town.",
   "persona": "He runs the filing side of the court and will not take a break until the last form on the tray is done, even when the break is well overdue. He corrects strangers' spelling of their own surnames and waves off anyone who wants to argue about fairness as if it were small talk. When he needs out of a room he says he's going to the shop, and an hour later he comes back with a plant he didn't need. Ask him for help with something personal and he will find a reason to be somewhere else.",
   "speaking_style": "He answers in exact figures, dates and form numbers rather than feelings, at an even pace that doesn't rise when he is pressed. Contractions drop out when he is annoyed. Often he repeats the last word of a friend's sentence back to them, flatly, as if writing it down for later.",
+  "mannerisms": [
+    "closes a discussion by restating the usual arrangement"
+  ],
   "interests": [
     "model railway signalling",
     "chillies on the windowsill",

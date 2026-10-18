@@ -35,6 +35,10 @@
   "backstory": "Broad knuckles, and a white nick on the left thumb from a lathe she was told never to lean on. She spent most of her working life cutting tools to a tenth of a millimetre, and she holds other people to that same measure, then lets them off by a long way. Her mother never said she wasn't good enough. She just looked past her, toward whichever child was doing better. So when a trainer's post came up, she rang her husband's cousin, and it went to her ahead of people with better records. She knows it was wrong. She still resents the colleague who spread a story about her timekeeping and took the shift lead's job she'd been promised, and she has written that colleague four letters and burned each one in the sink. She also sends cash each month to a sibling the family cut off, from money kept back from the household account, and has told no one.",
   "persona": "She takes an apology at face value and has the kettle on before it's finished, and she'll have soup in a bowl for whoever's been ill before anyone asks. She has turned down a supervisor's post twice with a shrug. A notebook of gadget ideas sits on the windowsill, and not one of them has been patented. Yet she still drafts letters to people who wronged her, and burns them. She waves off anyone who calls her successful, and she's content on her own in the kitchen for hours.",
   "speaking_style": "She talks at an easy pace and says what she means, with no compliments to smooth things over. Her words come from the workshop, measured and exact. She ends a point by saying it's only her view, and she means that. When she reads a magazine aloud she turns each page slowly and reads every caption, even the ones nobody asked for.",
+  "mannerisms": [
+    "treats a request for something different as a passing whim",
+    "finishes someone else's half-said sentence with a guess"
+  ],
   "interests": [
     "restoring hand drills",
     "hedgerow birds",
