@@ -9,7 +9,7 @@ from pydantic_core import PydanticCustomError
 
 from simile.jobs.report import progress
 from simile.jobs.runner import CONTENT, Kind, url
-from simile.schema import Appearance, Id, Model
+from simile.schema import PLAYER_ID, Appearance, Id, Model
 
 
 class Sprite(Model):
@@ -19,6 +19,8 @@ class Sprite(Model):
     @field_validator("character")
     @classmethod
     def not_in_content(cls, character: str) -> str:
+        if character == PLAYER_ID:
+            return character
         if (CONTENT / "npcs" / f"{character}.json").exists() or (
             CONTENT / "art" / "characters" / f"{character}.png"
         ).exists():

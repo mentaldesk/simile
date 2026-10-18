@@ -58,7 +58,8 @@ A job whose kind needs something missing fails as soon as it's submitted, with t
 pixel-art sprite sheet from its `Appearance` with A1's generator, seeded by its id as `simile art`
 seeds an NPC's. The result has the sheet's `image` and its Phaser `atlas`, in the same format as
 `content/art/characters/`. Drawing a character again replaces its sprite. A character id that has a
-sprite or an NPC file in `content/` is refused.
+sprite or an NPC file in `content/` is refused, except `player`: the creator draws the player's
+chosen look as `sprite/player.png`, beside the built-in one in `content/`.
 
 ## Where jobs write
 

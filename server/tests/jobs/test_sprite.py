@@ -73,7 +73,23 @@ def test_draws_a_sprite_the_client_can_load(client: TestClient, root: Path) -> N
     assert content_files() == before
 
 
-@pytest.mark.parametrize("character", ["kofi", "player", "sample_coder"])
+def test_draws_the_players_chosen_look_beside_content(client: TestClient, root: Path) -> None:
+    before = content_files()
+    params = {"character": "player", "appearance": LOOK.model_dump(mode="json")}
+
+    job_id = client.post("/api/jobs", json={"kind": "sprite", "params": params}).json()["id"]
+    with client.websocket_connect(f"/ws/jobs/{job_id}") as ws:
+        while (job := ws.receive_json())["state"] in ("queued", "running"):
+            pass
+
+    assert job["state"] == "succeeded", job["error"]
+    assert job["result"]["image"] == "/api/jobs/files/sprite/player.png"
+    drawn = Image.open(root / "sprite" / "player.png")
+    assert drawn.tobytes() == characters.sprite_sheet(LOOK, seed="player").to_image().tobytes()
+    assert content_files() == before
+
+
+@pytest.mark.parametrize("character", ["kofi", "sample_coder"])
 def test_never_draws_a_character_from_content(client: TestClient, character: str) -> None:
     params = {"character": character, "appearance": LOOK.model_dump(mode="json")}
 
