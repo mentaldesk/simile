@@ -182,6 +182,7 @@
     },
     "Entity": {
       "additionalProperties": false,
+      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.",
       "properties": {
         "id": {
           "maxLength": 64,
@@ -196,6 +197,12 @@
         },
         "position": {
           "$ref": "#/$defs/Position"
+        },
+        "pose": {
+          "$ref": "#/$defs/Pose"
+        },
+        "facing": {
+          "$ref": "#/$defs/Facing"
         }
       },
       "required": [
@@ -217,6 +224,7 @@
     },
     "EntityMovedMessage": {
       "additionalProperties": false,
+      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.",
       "properties": {
         "type": {
           "const": "entity_moved",
@@ -230,6 +238,12 @@
         },
         "position": {
           "$ref": "#/$defs/Position"
+        },
+        "pose": {
+          "$ref": "#/$defs/Pose"
+        },
+        "facing": {
+          "$ref": "#/$defs/Facing"
         }
       },
       "required": [
@@ -247,6 +261,21 @@
         "east"
       ],
       "title": "Face",
+      "type": "string"
+    },
+    "Facing": {
+      "description": "Which way someone faces on the map, x east and y south, by angle from east through south.",
+      "enum": [
+        "east",
+        "south_east",
+        "south",
+        "south_west",
+        "west",
+        "north_west",
+        "north",
+        "north_east"
+      ],
+      "title": "Facing",
       "type": "string"
     },
     "Frame": {
@@ -639,6 +668,19 @@
       ],
       "title": "PlayerSayMessage",
       "type": "object"
+    },
+    "Pose": {
+      "description": "What someone is doing where they are.",
+      "enum": [
+        "standing",
+        "walking",
+        "sitting",
+        "reading",
+        "working",
+        "looking"
+      ],
+      "title": "Pose",
+      "type": "string"
     },
     "Position": {
       "additionalProperties": false,

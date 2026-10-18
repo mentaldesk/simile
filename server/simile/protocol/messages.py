@@ -1,21 +1,39 @@
+from collections.abc import Callable
 from enum import StrEnum
 from typing import Annotated, Any, Literal, Self
 
 from pydantic import ConfigDict, Field, JsonValue, TypeAdapter, model_validator
 
-from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line, Model, Timestamp
+from simile.schema import (
+    VILLAGE_MAP,
+    Conversation,
+    Facing,
+    Id,
+    Key,
+    Line,
+    Model,
+    Pose,
+    Timestamp,
+)
 from simile.schema.news import LongSummary
 
 
-def _map_not_required(schema: dict[str, Any]) -> None:
-    schema["required"] = [name for name in schema["required"] if name != "map"]
+def _not_required(*names: str) -> Callable[[dict[str, Any]], None]:
+    def drop(schema: dict[str, Any]) -> None:
+        schema["required"] = [name for name in schema["required"] if name not in names]
+        for name in names:
+            # Beside a $ref, a default makes json-schema-to-typescript declare a copy, like Pose1.
+            if "$ref" in (field := schema["properties"][name]):
+                del field["default"]
+
+    return drop
 
 
 class Position(Model):
     """Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step."""
 
     # The client uses Position as its plain point type, so map stays optional in TypeScript.
-    model_config = ConfigDict(json_schema_extra=_map_not_required)
+    model_config = ConfigDict(json_schema_extra=_not_required("map"))
 
     x: float
     y: float
@@ -31,11 +49,21 @@ class EntityKind(StrEnum):
     PLAYER = "player"
 
 
+# Optional in TypeScript, like Position.map, so existing client code still type-checks.
+_POSE_NOT_REQUIRED = ConfigDict(json_schema_extra=_not_required("pose", "facing"))
+
+
 class Entity(Model):
+    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east."""
+
+    model_config = _POSE_NOT_REQUIRED
+
     id: Id
     kind: EntityKind
     name: str
     position: Position
+    pose: Pose = Pose.STANDING
+    facing: Facing = Facing.SOUTH_EAST
 
 
 class SnapshotMessage(Model):
@@ -57,9 +85,15 @@ class ClockMessage(Model):
 
 
 class EntityMovedMessage(Model):
+    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east."""
+
+    model_config = _POSE_NOT_REQUIRED
+
     type: Literal["entity_moved"] = "entity_moved"
     entity_id: Id
     position: Position
+    pose: Pose = Pose.STANDING
+    facing: Facing = Facing.SOUTH_EAST
 
 
 class ConversationStartedMessage(Model):
