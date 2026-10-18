@@ -12,16 +12,19 @@ from starlette.applications import Starlette
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Need
 from simile.behaviour.events import GoalChosen
 from simile.behaviour.scoring import (
+    UNPLACED,
     Goal,
     MuralSpot,
     Other,
     Places,
     Situation,
+    Supply,
     affinity,
     asleep,
     bedtime,
     best_per_activity,
     choose,
+    plenty,
     scores,
     wake,
 )
@@ -100,6 +103,7 @@ class Hooks:
         self.conversations: LiveConversations = no_conversations
         self.create: WorkMaker = make_nothing
         self.mural_wall: WallPicker = no_wall
+        self.supply: Supply = plenty
 
     def set(
         self,
@@ -110,6 +114,7 @@ class Hooks:
         conversations: LiveConversations | None = None,
         create: WorkMaker | None = None,
         mural_wall: WallPicker | None = None,
+        supply: Supply | None = None,
     ) -> Callable[[], None]:
         """Plug in the hooks given and return a function that puts back what they replaced."""
         given = {
@@ -119,6 +124,7 @@ class Hooks:
             "conversations": conversations,
             "create": create,
             "mural_wall": mural_wall,
+            "supply": supply,
         }
         hooks = {name: hook for name, hook in given.items() if hook is not None}
         previous = {name: getattr(self, name) for name in hooks}
@@ -162,6 +168,11 @@ class Mind:
     """What they were making when a talk paused them, and how long it had left."""
     held: tuple[Target, Goal] | None = None
     """Where another module keeps them, and with what goal, until it lets go."""
+    pressed: frozenset[Need] = frozenset()
+    """The needs above their critical level that they've already acted on."""
+    eating: dict[Need, datetime] = field(default_factory=dict)
+    """Needs their place has started meeting, by the stay's `since`. One with an appetite starts
+    only once it's that high."""
 
 
 class Behaviour:
@@ -374,13 +385,46 @@ class Behaviour:
         self._needs_at = now
         self._update_needs(hours)
         for mind in self.minds.values():
-            if mind.paused or mind.held:
+            if mind.paused:
                 continue
             if asleep(hour, mind.bedtime, mind.wake):
-                if mind.goal.activity is not Activity.SLEEP:
+                if not mind.held and mind.goal.activity is not Activity.SLEEP:
                     self._sleep(mind)
+            elif self._pressing(mind):
+                self._interrupt(mind)
+            elif mind.held:
+                continue
             elif mind.walk is None and mind.until is not None and now >= mind.until:
                 self._decide(mind)
+
+    def _pressing(self, mind: Mind) -> bool:
+        """Whether a need has just gone critical that what they're doing doesn't meet."""
+        critical = self._critical(mind)
+        fresh, mind.pressed = critical - mind.pressed, critical
+        return any(not self._meets(mind, need) for need in fresh)
+
+    def _critical(self, mind: Mind) -> frozenset[Need]:
+        return frozenset(
+            need
+            for need, urgency in self.config.urgency.items()
+            if urgency.critical is not None and mind.needs[need] >= urgency.critical
+        )
+
+    def _meets(self, mind: Mind, need: Need) -> bool:
+        activity = mind.goal.activity
+        change = self.config.effects.get(activity, {}).get(need, 0.0)
+        change += self.config.finishing.get(activity, {}).get(need, 0.0)
+        return change < 0 and (not self._placed(mind) or self._supply(mind.goal, need) > 0)
+
+    def _interrupt(self, mind: Mind) -> None:
+        """Drop what they're doing, held or not, to decide again now. A stay cut short brings
+        none of its `finishing`."""
+        logger.debug("%s stops %s for %s", mind.npc.id, mind.goal, sorted(mind.pressed))
+        mind.held, mind.finishes = None, False
+        walk, mind.walk = mind.walk, None
+        if walk is not None:
+            self.movement.stop(mind.npc.id)
+        self._decide(mind)
 
     def _update_needs(self, hours: float) -> None:
         if hours <= 0:
@@ -392,22 +436,47 @@ class Behaviour:
             sleeping = activity is Activity.SLEEP and mind.walk is None
             effects = self._effects(mind)
             for need in Need:
-                rate = 0.0 if sleeping else self._rise(mind.npc, need)
-                rate += effects.get(need, 0.0)
+                rate = self._rise(mind.npc, need)
+                if sleeping:
+                    rate *= config.rise_asleep.get(need, 0.0)
+                effect = effects.get(need, 0.0)
+                if effect > 0 or (effect < 0 and self._eating(mind, need)):
+                    rate += effect
+                elif effect == 0 and mind.walk is None:
+                    mind.eating.pop(need, None)
                 mind.needs[need] = _clamp(mind.needs[need] + rate * hours)
             if not self._home_bound(mind) and self._has_company(mind.npc.id, positions):
                 mind.needs[Need.SOCIAL] = _clamp(mind.needs[Need.SOCIAL] - config.company * hours)
+
+    def _eating(self, mind: Mind, need: Need) -> bool:
+        """Whether their place meets `need` now: from when it reaches its appetite until it's
+        met or the stay ends."""
+        level = mind.needs[need]
+        if level <= 0:
+            mind.eating.pop(need, None)
+        elif level >= self.config.urgency[need].appetite:
+            mind.eating[need] = mind.since
+        return mind.eating.get(need) == mind.since
 
     def _effects(self, mind: Mind) -> Mapping[Need, float]:
         if mind.walk is not None:
             return self.config.walking
         effects = self.config.effects.get(mind.goal.activity, {})
+        if self._placed(mind):
+            return {need: rate * self._supply(mind.goal, need) for need, rate in effects.items()}
         if mind.goal.activity is Activity.TALK and Need.SOCIAL in effects:
             relief = effects[Need.SOCIAL] / self._sociable(mind.npc)
             if mind.goal.target == PLAYER_ID:
                 relief *= self.config.player_relief
             return {**effects, Need.SOCIAL: relief}
         return effects
+
+    def _placed(self, mind: Mind) -> bool:
+        return mind.goal.activity not in UNPLACED and not _painting(mind)
+
+    def _supply(self, goal: Goal, need: Need) -> float:
+        supply = self._call(self.hooks.supply, goal, need)
+        return _clamp(supply) if isinstance(supply, int | float) else 1.0
 
     def _rise(self, npc: Npc, need: Need) -> float:
         if need is Need.INSPIRATION and npc.craft is None:
@@ -440,6 +509,7 @@ class Behaviour:
         if asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
             self._sleep(mind)
             return
+        mind.pressed = self._critical(mind)
         situation = self._situation(mind)
         mind.mural = situation.mural
         options = scores(situation, self.places, self.config)
@@ -488,6 +558,7 @@ class Behaviour:
             _clamp(news) if isinstance(news, int | float) else 0.0,
             craft,
             mural if isinstance(mural, MuralSpot) else None,
+            self._supply,
         )
 
     def _finish(self, mind: Mind) -> None:

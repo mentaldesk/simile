@@ -576,7 +576,7 @@ def test_state_is_json_for_the_debug_overlay() -> None:
 
     assert json.loads(json.dumps(state)) == state
     needs = state["needs"]
-    assert isinstance(needs, dict) and set(needs) == {"social", "curiosity", "rest", "news"}
+    assert isinstance(needs, dict) and set(needs) == {need.value for need in Need} - {"inspiration"}
     assert state["goal"] == str(village.behaviour.goal("ana"))
     assert "inspiration" in village.behaviour.state("wren")["needs"]
 

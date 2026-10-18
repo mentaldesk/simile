@@ -1,7 +1,7 @@
 import heapq
 import math
 import random
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
@@ -25,6 +25,7 @@ PLACES: dict[Activity, LocationKind] = {
     Activity.NEWS: LocationKind.TERMINAL,
 }
 AMENITIES = (Activity.PARK, Activity.NOODLE_BAR, Activity.MAKER_SPACE, Activity.GALLERY)
+UNPLACED = (Activity.SEEK, Activity.TALK, Activity.WANDER, Activity.IDLE)
 
 
 @dataclass(frozen=True)
@@ -35,6 +36,13 @@ class Goal:
 
     def __str__(self) -> str:
         return self.activity if self.target is None else f"{self.activity} {self.target}"
+
+
+type Supply = Callable[[Goal, Need], float]
+
+
+def plenty(goal: Goal, need: Need) -> float:
+    return 1.0
 
 
 class Places:
@@ -139,6 +147,8 @@ class Situation:
     craft: Medium | None = None
     mural: MuralSpot | None = None
     """For a muralist, the wall they'd paint. Without one they don't create."""
+    supply: Supply = plenty
+    """How much of what a goal's place does for a need it can do now, 0 to 1."""
 
 
 AFFINITY = ("like", "trust", "respect")
@@ -224,13 +234,15 @@ def score(
     activity, values, needs = goal.activity, situation.values, situation.needs
     total = config.base.get(activity, 0.0)
     total += sum(w * (values[v] - 0.5) for v, w in config.value_weights.get(activity, {}).items())
-    total += sum(w * needs[n] for n, w in config.need_weights.get(activity, {}).items())
     on_offer = offered(goal, situation, config)
-    total += sum(
-        urgency.weight
-        * relief(needs[need], on_offer * promised(activity, need, config), urgency.power)
-        for need, urgency in config.urgency.items()
-    )
+    placed = at_a_place(goal, situation)
+    for need, urgency in config.urgency.items():
+        if needs[need] < urgency.appetite:
+            continue
+        change = on_offer * promised(activity, need, config)
+        if change and placed:
+            change *= situation.supply(goal, need)
+        total += worth(need, needs[need], change, config)
     total += curve(config.daily.get(activity, ()), situation.hour)
     if situation.last is not None and activity is situation.last.activity:
         total -= config.repeat_penalty
@@ -256,6 +268,11 @@ def score(
             total += config.writing_base.get(where, 0.0)
             total += sum(w * (values[v] - 0.5) for v, w in weights.items())
     return total
+
+
+def at_a_place(goal: Goal, situation: Situation) -> bool:
+    """Whether `goal` is at a location, rather than with someone, wandering or at a wall."""
+    return goal.activity not in UNPLACED and painting(goal, situation) is None
 
 
 def painting(goal: Goal, situation: Situation) -> MuralSpot | None:
@@ -293,6 +310,14 @@ def company(location_id: str, situation: Situation, config: BehaviourConfig) -> 
         + config.avoid_weight * disliked
         + config.crowd_weight * connection * crowd
     )
+
+
+def worth(
+    need: Need, level: float, change: float, config: BehaviourConfig = DEFAULT_CONFIG
+) -> float:
+    """What changing `need` from `level` by `change` is worth: its weight times the relief."""
+    urgency = config.urgency[need]
+    return urgency.weight * relief(level, change, urgency.power)
 
 
 def relief(need: float, change: float, power: float) -> float:

@@ -111,7 +111,16 @@ def test_shows_who_they_are_what_they_want_and_their_top_values() -> None:
     assert state["occupation"] == NPCS["kofi"].occupation
     assert state["time"] == START.isoformat()
     assert state["goal"] == str(town.behaviour.goal("kofi"))
-    assert set(state["needs"]) == {"social", "curiosity", "rest", "news", "inspiration"}
+    assert set(state["needs"]) == {
+        "social",
+        "curiosity",
+        "rest",
+        "news",
+        "inspiration",
+        "hunger",
+        "bladder",
+        "hygiene",
+    }
     assert state["values"] == {
         "open_mindedness": 0.97,
         "adventure": 0.95,

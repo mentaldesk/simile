@@ -27,6 +27,8 @@ refuses if someone already lives above the café. Her voice and sprite came from
   shop curve starts at 06:30), and 17:00 is when they stop.
 - At `closes` she takes no new customers, serves the queue, then is released to decide as anyone
   does.
+- Only while she's on shift does the Daily Grind feed anyone: `Cafe.supply` is B1's `supply` hook,
+  so off shift the coffee shop scores nothing for hunger and meets none.
 - Off shift, whenever she's home, resting or asleep, she goes to `upstairs`, the foot of the stairs
   behind the counter, rather than standing at the café's entry, which is the front of the queue.
   B1's stay carries on there.

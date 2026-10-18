@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 
 from starlette.applications import Starlette
 
-from simile.behaviour.config import Activity
+from simile.behaviour.config import Activity, Need
 from simile.behaviour.events import GoalChosen
 from simile.behaviour.mind import (
     Behaviour,
@@ -16,7 +16,7 @@ from simile.behaviour.mind import (
     no_conversations,
     skip_news,
 )
-from simile.behaviour.scoring import MuralSpot
+from simile.behaviour.scoring import Goal, MuralSpot, Supply
 from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Traits
 from simile.sim import Clock, FakeWallClock, World
 
@@ -37,6 +37,17 @@ PLACES = (
 )
 NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
+MEAL = 0.3
+"""How far hunger falls in one go for it to count as a meal."""
+
+
+@dataclass(frozen=True)
+class Meal:
+    npc: Id
+    at: datetime
+    place: str
+    hunger: float
+    """How hungry they were when they started eating."""
 
 
 @dataclass
@@ -60,6 +71,15 @@ class Observer:
     them all."""
     started: Counter[Id] = field(default_factory=Counter)
     ending: list[tuple[datetime, Id, Id]] = field(default_factory=list)
+    awake_at: Counter[str] = field(default_factory=Counter)
+    """Waking minutes in each place."""
+    needs: dict[Need, list[tuple[float, bool]]] = field(default_factory=lambda: defaultdict(list))
+    """Every resident's needs once a sim minute, and whether they were awake. Inspiration only
+    for those with a craft."""
+    meals: list[Meal] = field(default_factory=list)
+    hunger: dict[Id, float] = field(default_factory=dict)
+    eating: dict[Id, tuple[Meal, float]] = field(default_factory=dict)
+    """Meals going on, with how hungry they were at the last sample."""
 
     def __post_init__(self) -> None:
         self.next = self.behaviour.clock.now
@@ -103,8 +123,10 @@ class Observer:
             place = self.place(npc.id, npc.home)
             self.by_hour[int(hour)][place] += 1
             mind = self.behaviour.minds[npc.id]
+            self.sample_needs(npc, place)
             if mind.goal.activity is not Activity.SLEEP:
                 self.awake[npc.id] += 1
+                self.awake_at[place] += 1
             if mind.goal.activity is Activity.CREATE and mind.walk is None:
                 self.creating[npc.id] += 1
             if place == HOME:
@@ -120,6 +142,21 @@ class Observer:
                 if other != npc.id
             ):
                 self.near[npc.id] += 1
+
+    def sample_needs(self, npc: Npc, place: str) -> None:
+        mind = self.behaviour.minds[npc.id]
+        awake = mind.goal.activity is not Activity.SLEEP
+        for need, value in mind.needs.items():
+            if npc.craft or need is not Need.INSPIRATION:
+                self.needs[need].append((value, awake))
+        hunger, before = mind.needs[Need.HUNGER], self.hunger.get(npc.id, 0.0)
+        self.hunger[npc.id] = hunger
+        meal = self.eating.pop(npc.id, None)
+        if mind.eating.get(Need.HUNGER) == mind.since:
+            start = meal[0] if meal else Meal(npc.id, self.behaviour.clock.now, place, before)
+            self.eating[npc.id] = (start, hunger)
+        elif meal is not None and meal[0].hunger - meal[1] >= MEAL:
+            self.meals.append(meal[0])
 
     def place(self, npc: Id, home: Id) -> str:
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
@@ -170,10 +207,28 @@ async def simulate(
             conversations=no_conversations,
             create=observer.on_create,
             mural_wall=observer.mural_wall,
+            supply=daily_grind(app.state.behaviour),
         )
         world.loop.register(observer)
         await world.loop.run(timedelta(hours=hours))
     return observer, time.perf_counter() - started
+
+
+def daily_grind(behaviour: Behaviour) -> Supply:
+    """G1's shifts without the café: the Daily Grind serves food only while it has a barista and
+    she's at work."""
+    from simile.cafe.cafe import barista
+    from simile.cafe.config import DEFAULT_CONFIG as CAFE
+
+    shop = Goal(Activity.COFFEE_SHOP, CAFE.home)
+    staffed = barista(behaviour.npcs.values(), CAFE.home) is not None
+
+    def supply(goal: Goal, need: Need) -> float:
+        if goal != shop or need is not Need.HUNGER:
+            return 1.0
+        return float(staffed and CAFE.opens <= behaviour.clock.time_of_day < CAFE.closes)
+
+    return supply
 
 
 def ranks(values: list[float]) -> list[float]:
@@ -250,6 +305,7 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     for npc in npcs:
         goals = observer.goals[npc.id]
         lines.append(f"| {npc.id} | " + " | ".join(str(goals[a]) for a in GOALS) + " |")
+    lines += ["", *shares(observer), "", *meals(observer, hours), "", *needs(observer)]
     lines += ["", *works(observer, hours)]
     if observer.talk is not None:
         lines += ["", *conversations(observer)]
@@ -278,6 +334,62 @@ def conversations(observer: Observer) -> list[str]:
         f"Spearman rank correlation of sociability with conversations started: "
         f"{spearman(sociability, [float(n) for n in started]):.2f}.",
     ]
+
+
+def shares(observer: Observer) -> list[str]:
+    awake = sum(observer.awake_at.values()) or 1
+    return [
+        "**Time by place.** Share of waking resident-minutes in each place.",
+        "",
+        "| " + " | ".join(PLACES) + " |",
+        "|" + "--:|" * len(PLACES),
+        "| " + " | ".join(f"{observer.awake_at[place] / awake:.1%}" for place in PLACES) + " |",
+    ]
+
+
+def meals(observer: Observer, hours: float) -> list[str]:
+    if not observer.meals:
+        return ["**Meals.** None."]
+    places = sorted({meal.place for meal in observer.meals})
+    by_hour: dict[int, Counter[str]] = defaultdict(Counter)
+    for meal in observer.meals:
+        by_hour[meal.at.hour][meal.place] += 1
+    count, residents = len(observer.meals), len(observer.behaviour.npcs)
+    hunger = sum(meal.hunger for meal in observer.meals) / count
+    lines = [
+        f"**Meals.** Times hunger fell by at least {MEAL:g} in one go: {count}, or "
+        f"{count / residents / hours * 24:.1f} per resident per sim-day, starting at a hunger "
+        f"of {hunger:.2f} on average. By the hour they started eating, and where.",
+        "",
+        "| Hour | " + " | ".join(places) + " |",
+        "|--:|" + "--:|" * len(places),
+    ]
+    for hour in sorted(by_hour):
+        cells = [str(by_hour[hour][place] or "·") for place in places]
+        lines.append(f"| {hour:02d} | " + " | ".join(cells) + " |")
+    return lines
+
+
+def needs(observer: Observer) -> list[str]:
+    lines = [
+        "**Needs.** Every resident's needs once a sim minute: the mean, the most, and the share of "
+        "their waking and sleeping time at 0.9 or more.",
+        "",
+        "| Need | Mean | Most | 0.9+ awake | 0.9+ asleep |",
+        "|---|--:|--:|--:|--:|",
+    ]
+    for need, samples in observer.needs.items():
+        values = [value for value, _ in samples]
+        high = [_share([v >= 0.9 for v, awake in samples if awake is up]) for up in (True, False)]
+        lines.append(
+            f"| {need} | {sum(values) / len(values):.2f} | {max(values):.2f} | {high[0]} | "
+            f"{high[1]} |"
+        )
+    return lines
+
+
+def _share(hits: list[bool]) -> str:
+    return f"{sum(hits) / len(hits):.1%}" if hits else "-"
 
 
 def works(observer: Observer, hours: float) -> list[str]:

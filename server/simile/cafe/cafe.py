@@ -12,7 +12,7 @@ from typing import Any, Protocol
 
 from starlette.applications import Starlette
 
-from simile.behaviour import Activity, Behaviour, Goal
+from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.cafe import events
 from simile.cafe.config import DEFAULT_CONFIG, CafeConfig
 from simile.cafe.events import GaveUp, Ordered, Served, Store
@@ -195,6 +195,10 @@ class Cafe:
     def serving(self) -> bool:
         """Whether the barista is taking new customers."""
         return self.on_shift and self.open
+
+    def supply(self, goal: Goal, need: Need) -> float:
+        """B1's supply hook: the café feeds people only while the barista is on shift."""
+        return 0.0 if goal == self.working and need is Need.HUNGER and not self.on_shift else 1.0
 
     def tick(self, dt: float) -> None:
         now = self.clock.now

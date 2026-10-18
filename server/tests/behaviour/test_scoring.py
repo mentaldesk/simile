@@ -197,11 +197,11 @@ def test_the_same_relief_is_worth_far_more_to_someone_desperate() -> None:
     assert relief(0.5, 0.2, 1) == pytest.approx((0.5**2 - 0.7**2) / 2)
 
 
-def test_a_need_is_priced_by_its_curve_or_its_weights_not_both() -> None:
-    weights = {**DEFAULT_CONFIG.need_weights, A.SEEK: {Need.SOCIAL: 1.0}}
+def test_every_need_has_an_urgency_curve() -> None:
+    curves = {need: u for need, u in DEFAULT_CONFIG.urgency.items() if need is not Need.HYGIENE}
 
-    with pytest.raises(ValidationError, match="social can't be in both"):
-        BehaviourConfig(need_weights=weights)
+    with pytest.raises(ValidationError, match="hygiene need an urgency curve"):
+        BehaviourConfig(urgency=curves)
 
 
 def test_seeking_someone_out_promises_a_talk() -> None:
@@ -291,10 +291,34 @@ def test_home_pulls_harder_towards_bedtime() -> None:
     )
 
 
-def test_time_of_day_favours_lunch_at_the_noodle_bar() -> None:
-    noodles = Goal(A.NOODLE_BAR, "noodle_bar")
+def test_a_shut_daily_grind_scores_nothing_for_hunger() -> None:
+    cafe, noodles = Goal(A.COFFEE_SHOP, "coffee_shop"), Goal(A.NOODLE_BAR, "noodle_bar")
 
-    assert score_of(noodles, situation(hour=12.5)) > score_of(noodles, situation(hour=16))
+    def shut(goal: Goal, need: Need) -> float:
+        return 0.0 if goal == cafe and need is Need.HUNGER else 1.0
+
+    hungry, full = situation(needs={Need.HUNGER: 0.9}), situation(needs={Need.HUNGER: 0.0})
+
+    def hunger_term(goal: Goal, closed: bool) -> float:
+        def at(s: Situation) -> float:
+            return score_of(goal, replace(s, supply=shut) if closed else s)
+
+        return at(hungry) - at(full)
+
+    assert hunger_term(cafe, closed=False) > 0.5
+    assert hunger_term(cafe, closed=True) == 0.0
+    assert hunger_term(noodles, closed=True) == hunger_term(noodles, closed=False) > 0.5
+
+
+def test_hunger_not_the_clock_sends_them_to_eat() -> None:
+    noodles = Goal(A.NOODLE_BAR, "noodle_bar")
+    hungry = {Need.HUNGER: 0.85}
+
+    assert score_of(noodles, situation(hour=12.5)) == score_of(noodles, situation(hour=16))
+    assert score_of(noodles, situation(needs=hungry, hour=16)) > score_of(
+        noodles, situation(hour=12.5)
+    )
+    assert best(situation(needs=hungry, hour=16)).activity in (A.NOODLE_BAR, A.COFFEE_SHOP, A.HOME)
 
 
 def test_the_activity_just_finished_scores_less() -> None:
