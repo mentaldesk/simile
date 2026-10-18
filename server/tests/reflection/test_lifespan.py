@@ -9,14 +9,23 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
+from simile.behaviour import IntentionBroken
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import create_engine
 from simile.llm import FakeProvider, LLMClient, Request, Usage
 from simile.llm.fake import scene
 from simile.memory import memory_of
 from simile.npc import load_npcs
-from simile.reflection import SYSTEM, Deed, Extraction, Reflection
-from simile.schema import Conversation, Line, Memory, MemoryKind, Relationship
+from simile.reflection import SYSTEM, Deed, Extraction, Intent, Reflection
+from simile.schema import (
+    PLAYER_ID,
+    Conversation,
+    IntentionKind,
+    Line,
+    Memory,
+    MemoryKind,
+    Relationship,
+)
 from simile.sim import Clock, ConversationEnded, FakeWallClock, World, world_of
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -107,6 +116,53 @@ def test_reflects_on_every_conversation_until_shutdown(app: Starlette) -> None:
         assert [m.conversation_id for m in store.recall("henrietta", START, about="kofi")] == ["c1"]
 
     assert asyncio.run(publish()) == set()
+
+
+class Promising:
+    """Kofi says he'll paint the coffee ocean now, for the player."""
+
+    name = "promising"
+
+    def stream(self, request: Request) -> AsyncGenerator[str | Usage, None]:
+        extraction = Extraction(
+            reflections=[],
+            intentions=[
+                Intent(
+                    who="kofi",
+                    kind="create",
+                    description="an ocean of coffee",
+                    promised_to=["visitor"],
+                    when="now",
+                )
+            ],
+        )
+        return FakeProvider([extraction.model_dump_json()]).stream(request)
+
+
+def test_what_they_said_theyd_do_reaches_b1_and_a_broken_promise_is_remembered(
+    app: Starlette,
+) -> None:
+    async def reflect() -> None:
+        talk = conversation(START).model_copy(update={"participants": ["kofi", PLAYER_ID]})
+        world_of(app).bus.publish(ConversationEnded(talk))
+        await asyncio.gather(*app.state.reflection.tasks)
+
+    with TestClient(app) as client:
+        app.state.llm = LLMClient(Promising())
+        client.portal.call(reflect)
+
+        behaviour = app.state.behaviour
+        [said] = behaviour.intentions("kofi")
+        assert (said.kind, said.description, said.promised_to) == (
+            IntentionKind.CREATE,
+            "an ocean of coffee",
+            [PLAYER_ID],
+        )
+        world_of(app).bus.publish(IntentionBroken(said))
+        store = memory_of(app)
+        [his] = store.recall("kofi", START)
+        assert his.content == "I told Visitor I'd make an ocean of coffee, and didn't."
+        assert len(store.recall(PLAYER_ID, START)) == 1
 
 
 async def run_village(

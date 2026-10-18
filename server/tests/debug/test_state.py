@@ -13,8 +13,17 @@ from simile.llm.fake import scene
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.protocol import NpcStateMessage
-from simile.schema import PLAYER_ID, Flag, FlagKind, Memory, MemoryKind, Relationship
-from simile.sim import Clock, FakeWallClock, LineSpoken, World
+from simile.schema import (
+    PLAYER_ID,
+    Flag,
+    FlagKind,
+    Intention,
+    IntentionKind,
+    Memory,
+    MemoryKind,
+    Relationship,
+)
+from simile.sim import STEP, Clock, FakeWallClock, LineSpoken, World
 from simile.social import as_of, meet
 from simile.world import Movement
 from simile.world.map import load_maps
@@ -131,6 +140,40 @@ def test_shows_who_they_are_what_they_want_and_their_top_values() -> None:
     assert state["relationships"] == []
     assert state["memories"] == []
     assert state["conversation"] is None
+
+
+def test_shows_what_they_said_theyd_do_and_why_an_option_scored_higher() -> None:
+    town = Town()
+    assert (town.state("tobias")["intentions"], town.state("tobias")["reasons"]) == ([], {})
+    said = Intention(
+        id="talk/tobias/1",
+        owner="tobias",
+        kind=IntentionKind.GO,
+        target="noodle_bar",
+        description="meet Odalys at the noodle bar",
+        promised_to=[PLAYER_ID],
+        created=START,
+        due=START,
+        expires=START + timedelta(hours=2),
+    )
+    town.behaviour.intend(said)
+    town.world.loop.register(town.behaviour)
+    for _ in range(round(town.behaviour.config.think_every / STEP)):
+        town.world.loop.tick()
+
+    state = town.state("tobias")
+
+    row = {
+        "kind": "go",
+        "target": "noodle_bar",
+        "description": "meet Odalys at the noodle bar",
+        "promised_to": [PLAYER_ID],
+        "due": START.isoformat(),
+        "expires": (START + timedelta(hours=2)).isoformat(),
+    }
+    assert state["intentions"] == [{**row, "following": True}]
+    assert state["reasons"] == {"noodle_bar noodle_bar": {"bonus": 2.0, **row}}
+    NpcStateMessage(npc_id="tobias", state=state).model_dump_json()
 
 
 def test_relationships_are_as_of_now_with_open_flags_first() -> None:

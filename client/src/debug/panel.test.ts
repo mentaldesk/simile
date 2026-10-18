@@ -20,6 +20,37 @@ const state: NpcState = {
   until: null,
   needs: { social: 0.25, curiosity: 0.5, rest: 1 },
   options: { 'park park': 0.4, 'coffee_shop coffee_shop': 1.2, idle: -0.3 },
+  reasons: {
+    'coffee_shop coffee_shop': {
+      bonus: 2,
+      kind: 'go',
+      target: 'coffee_shop',
+      description: 'meet Priya for a flat white',
+      promised_to: ['priya'],
+      due: '2026-03-14T09:30:00+00:00',
+      expires: '2026-03-14T11:30:00+00:00',
+    },
+  },
+  intentions: [
+    {
+      kind: 'create',
+      target: null,
+      description: 'a mural of an ocean of coffee',
+      promised_to: ['player'],
+      due: '2026-03-14T09:42:00+00:00',
+      expires: '2026-03-14T11:42:00+00:00',
+      following: true,
+    },
+    {
+      kind: 'seek',
+      target: 'priya',
+      description: 'show Priya the sketches',
+      promised_to: [],
+      due: '2026-03-15T10:00:00+00:00',
+      expires: '2026-03-16T10:00:00+00:00',
+      following: false,
+    },
+  ],
   values: { creativity: 0.94, adventure: 0.9 },
   relationships: [
     {
@@ -82,7 +113,15 @@ it('shows every section of the state', () => {
   expect(panel).toContain('Goal talk priya paused · since 09:40');
   expect(panel).toContain('Needs social 0.25 curiosity 0.50 rest 1.00');
   expect(panel).toContain('Top values creativity 0.94 adventure 0.90');
-  expect(panel).toContain('Last decision coffee_shop coffee_shop 1.20 park park 0.40 idle -0.30');
+  expect(panel).toContain(
+    'Last decision coffee_shop coffee_shop 1.20 +2.00 promised Priya Nair: meet Priya for a flat ' +
+      'white park park 0.40 idle -0.30',
+  );
+  expect(panel).toContain(
+    'Intentions create promised Player: a mural of an ocean of coffee due 09:42 · expires 11:42 ' +
+      'seek meant to: show Priya the sketches at Priya Nair · due 03-15 10:00 · expires 03-16 ' +
+      '10:00 · letting it slide',
+  );
   expect(panel).toContain('Priya Nair 0.81 0.70 0.66 0.40 grudge: took the last <b>bun</b>');
   expect(panel).toContain('debt: lent a brush Player 0.50 0.50 0.50 0.00');
   expect(panel).toContain('08:05 conversation Priya liked my mural. salience 0.60 · feeling +0.40');
@@ -99,9 +138,9 @@ it('draws needs as bars and marks resolved flags', () => {
 });
 
 it('copes with a quiet NPC and a partial state', () => {
-  const quiet = { ...state, relationships: [], memories: [], conversation: null };
+  const quiet = { ...state, intentions: [], relationships: [], memories: [], conversation: null };
   expect(text(renderPanel({ npcId: 'kofi', state: quiet, names }))).toContain(
-    'Relationships Nobody yet. Memories Nothing yet. Conversation Not talking.',
+    'Intentions None. Relationships Nobody yet. Memories Nothing yet. Conversation Not talking.',
   );
 
   expect(text(renderPanel({ npcId: 'kofi', state: { goal: 'idle' }, names }))).toBe(

@@ -17,7 +17,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.llm import LLMClient
     from simile.memory import memory_of
     from simile.protocol import ListWorksMessage, ReadWorkMessage, hub_of
-    from simile.schema import Id
+    from simile.schema import Id, IntentionKind
     from simile.works.maker import Maker
     from simile.works.player import PlayerWorks
     from simile.works.reading import WorksReader
@@ -37,6 +37,16 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             if mind.goal.activity is Activity.CREATE and mind.goal.target
         }
 
+    def promised(npc: Id) -> Id | None:
+        return next(
+            (
+                intention.target
+                for intention in behaviour.intentions(npc)
+                if intention.kind is IntentionKind.CREATE and intention.target
+            ),
+            None,
+        )
+
     async with AsyncExitStack() as stack:
         store = stack.enter_context(works_of(app))
         walls = Walls(
@@ -47,6 +57,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             npcs,
             positions=behaviour.movement.entities,
             painting=painting,
+            promised=promised,
         )
         app.state.maker = maker = Maker(
             store,

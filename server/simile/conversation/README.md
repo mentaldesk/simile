@@ -193,6 +193,21 @@ then bursting for the loo at the same levels, tired from 0.6 and exhausted from 
 grubby from 0.75 and badly in need of a shower from 0.9. A hungry, tired resident comes across
 short, and B3 picks that up from the transcript like anything else.
 
+## Only promising what's possible
+
+B3 turns what a resident says they'll do into an intention that B1 acts on (see *Intentions* in
+both READMEs), so the prompts say what they can do. Each side of a scene, and the background of
+each reply to the player, has what they could plan to do in the village, from B1's
+`options(npc)`: go home or to the village's places by name, read the news at a terminal, look
+someone up, and where they'd make something now ("write at home, The Daily Grind or Spark Maker
+Space", "paint a mural on the banyan row wall", or for a muralist with no wall, a canvas at home
+for the gallery or nothing). They only promise what's on the list, and nothing further off than
+tomorrow. Then what they've already said they'd do, each with whom they told and when ("now",
+"today 15:00"), to keep to.
+
+Someone who has said they'll go and do something now says where they're off to as they leave: the
+script's rules say so, and so do B5's goodbye and farewell cues, so the player can follow them.
+
 ## Loans
 
 E6: a resident who's short of money asks a friend to tide them over, and pays it back once they

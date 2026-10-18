@@ -32,13 +32,14 @@ class Cue(StrEnum):
     FAREWELL = "farewell"
 
 
+SETTING_OFF = "If you've said you'll go and do something now, say where you're off to."
 CUES: dict[Cue, str] = {
     Cue.OPEN: "You've just walked up to {other}. Say hello and start the conversation.",
     Cue.REPLY: "Say your next line to {other}. Keep the conversation going: don't wrap it up or "
     "say goodbye yet.",
     Cue.GOODBYE: "You've had enough of this conversation. Wrap it up now with a brief, natural "
-    "goodbye to {other}.",
-    Cue.FAREWELL: "{other} is leaving. Say a brief goodbye back.",
+    f"goodbye to {{other}}. {SETTING_OFF}",
+    Cue.FAREWELL: f"{{other}} is leaving. Say a brief goodbye back. {SETTING_OFF}",
 }
 OFF_TO = (
     "You need to {errand}. Wrap it up now with a brief, natural goodbye to {other}, and say why "
@@ -172,8 +173,10 @@ def background(
     topics: Sequence[Memory],
     place: str | None,
     now: datetime,
+    plans: str = "",
 ) -> str:
-    """What the speaker knows going in: the other person, their history, what's on their mind."""
+    """What the speaker knows going in: the other person, their history, what they could plan
+    to do and have said they will, and what's on their mind."""
     name = first_name(other)
     where = f"at {place}" if place else "out in the street"
     who = (
@@ -195,6 +198,8 @@ def background(
     if events:
         parts.append("Between you two:\n" + "\n".join(events))
     parts += flags
+    if plans:
+        parts.append(plans)
     if memories:
         parts.append("On your mind:\n" + "\n".join(f"- {m.content}" for m in memories))
     if topics:

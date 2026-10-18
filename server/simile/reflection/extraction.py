@@ -1,10 +1,12 @@
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Protocol
 
 from pydantic import BaseModel, Field
 
+from simile.behaviour import Options
+from simile.behaviour.intentions import when
 from simile.npc.values import format_scores, ranked
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.schema import (
@@ -14,6 +16,8 @@ from simile.schema import (
     Flag,
     FlagKind,
     Id,
+    Intention,
+    Medium,
     Npc,
     Relationship,
     Signed,
@@ -95,6 +99,29 @@ class Lending(BaseModel):
     amount: float = Field(description="How much, as a number.")
 
 
+class Intent(BaseModel):
+    who: str = Field(description="The id of the resident who said they'd do it.")
+    kind: str = Field(
+        description="Which of the things they can do it is: create (make something in their "
+        "craft, including going to a wall or place to make it), go (go to a place), seek (look "
+        "someone up for a chat) or news (read the news at a terminal)."
+    )
+    target: str | None = Field(
+        default=None,
+        description="For go, the place's id. For seek, the id of whom they'll look up. For create, "
+        "the id of where they'll make it, or null. For news, the terminal's id, or null.",
+    )
+    description: str = Field(
+        description="What they said they'd do, in a few words. For create, the idea itself as "
+        "they described it, e.g. 'a mural of an ocean of coffee with cups half-sunk in it'."
+    )
+    promised_to: list[str] = Field(default=[], description="The ids of whoever they said it to.")
+    when: str = Field(
+        description="'now' if they'll do it straight after the conversation, or else when they "
+        "said, as 'today HH:MM' or 'tomorrow HH:MM'."
+    )
+
+
 class Reflection(BaseModel):
     npc: str = Field(description="The id of the person this reflection is for.")
     summary: str = Field(
@@ -139,6 +166,13 @@ class Extraction(BaseModel):
         "then. Leave out a loan that was only talked about or turned down. A loan is kept as a "
         "debt, so don't open a debt flag for it as well.",
     )
+    intentions: list[Intent] = Field(
+        default=[],
+        description="What each resident said they'd do, within a day, as one of the things "
+        "they can do: 'I'll go and paint it now' is create, now. Leave out plans that are vague "
+        "('one day', 'some time'), only maybe, already planned or for after tomorrow, anything "
+        "they can't do here, and what the visitor said they'd do.",
+    )
 
 
 SYSTEM = (
@@ -167,6 +201,12 @@ class Context:
     """How each NPC felt about each other participant going in."""
     flags: dict[str, Flag]
     """Their open flags about each other, by the ref the prompt gives them."""
+    options: dict[Id, Options] = field(default_factory=dict)
+    """What each NPC could say they'll do."""
+    planned: dict[Id, list[Intention]] = field(default_factory=dict)
+    """What each NPC has already said they'd do."""
+    residents: dict[Id, Npc] = field(default_factory=dict)
+    """Everyone in the village, whom a resident could say they'll look up."""
 
     @property
     def now(self) -> datetime:
@@ -203,7 +243,11 @@ def gather(
     npcs: Mapping[Id, Npc],
     store: Relationships,
     config: ReflectionConfig = DEFAULT_CONFIG,
+    *,
+    options: Mapping[Id, Options] | None = None,
+    planned: Mapping[Id, Sequence[Intention]] | None = None,
 ) -> Context:
+    """With `options`, what each NPC could say they'll do, and `planned`, what they have."""
     now = ended_at(conversation)
     reflecting = {p: npcs[p] for p in conversation.participants if p in npcs}
     names = {
@@ -218,17 +262,31 @@ def gather(
     }
     open_flags = [flag for rel in feelings.values() for flag in rel.flags if flag.resolved is None]
     flags = {f"F{n}": flag for n, flag in enumerate(open_flags, start=1)}
-    return Context(conversation, reflecting, names, feelings, flags)
+    options, planned = options or {}, planned or {}
+    return Context(
+        conversation,
+        reflecting,
+        names,
+        feelings,
+        flags,
+        {npc: options[npc] for npc in reflecting if npc in options},
+        {npc: list(planned[npc]) for npc in reflecting if planned.get(npc)},
+        dict(npcs),
+    )
 
 
 def prompt(context: Context, config: ReflectionConfig = DEFAULT_CONFIG) -> str:
     conversation = context.conversation
     people = [_person(context, npc, config) for npc in context.npcs.values()]
     parts = [
-        "Reflect for each of these people. Feelings going in are scored from 0 to 1, where 0.5 "
-        "is neutral and a familiarity of 0 means strangers.",
+        f"It's {context.now:%A %H:%M}. Reflect for each of these people. Feelings going in are "
+        "scored from 0 to 1, where 0.5 is neutral and a familiarity of 0 means strangers.",
         *people,
     ]
+    if context.options:
+        others = [npc for npc in context.residents if npc not in conversation.participants]
+        listed = ", ".join(f"{npc} ({context.residents[npc].name})" for npc in others)
+        parts.append(f"Others in the village they could look up: {listed or 'nobody'}.")
     outsiders = [p for p in conversation.participants if p not in context.npcs]
     if outsiders:
         listed = "\n".join(f"- {p} ({context.names[p]})" for p in outsiders)
@@ -265,7 +323,38 @@ def _person(context: Context, npc: Npc, config: ReflectionConfig) -> str:
             f"Going in, about {context.names[other]}: like {rel.like:.2f}, trust {rel.trust:.2f}, "
             f"respect {rel.respect:.2f}, familiarity {rel.familiarity:.2f}."
         )
+    if npc.id in context.options:
+        lines.append(f"Can do: {can_do(context.options[npc.id])}.")
+    if planned := context.planned.get(npc.id):
+        listed = "; ".join(
+            f"{i.kind.value}{f' {i.target}' if i.target else ''} ({when(i.due, context.now)}): "
+            f"{i.description}"
+            for i in planned
+        )
+        lines.append(f"Already planned: {listed}.")
     return "\n".join(lines)
+
+
+CRAFTS = {
+    Medium.WRITING: "write",
+    Medium.PAINTING: "paint a canvas for the gallery",
+    Medium.MURAL: "paint",
+}
+
+
+def can_do(options: Options) -> str:
+    """The ids of what an NPC could say they'll do, for the prompt."""
+    places = ", ".join(f"{id} ({name})" for id, name in options.places.items())
+    parts = [
+        f"go to {places}",
+        f"news at {', '.join(options.terminals)}",
+        "seek anyone here or in the village, or the visitor (player)",
+    ]
+    if options.medium is not None:
+        where = ", ".join(f"{id} ({name})" for id, name in options.making.items())
+        craft = CRAFTS[options.medium]
+        parts.append(f"create ({craft}) at {where}" if where else f"create ({craft}), not now")
+    return "; ".join(parts)
 
 
 def _outsider(participant: Id, config: ReflectionConfig) -> str:

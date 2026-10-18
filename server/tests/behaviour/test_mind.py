@@ -24,6 +24,7 @@ from simile.schema import (
     Baseline,
     CoreValue,
     Craft,
+    Intention,
     MapTile,
     Medium,
     Npc,
@@ -721,7 +722,7 @@ class Made:
         self.village = village
         self.works: list[tuple[datetime, str, str | None]] = []
 
-    def __call__(self, npc: Npc, wall: str | None) -> None:
+    def __call__(self, npc: Npc, wall: str | None, intention: Intention | None = None) -> None:
         self.works.append((self.village.clock.now, npc.id, wall))
 
 
@@ -863,5 +864,5 @@ def test_a_restored_stay_making_something_still_finishes() -> None:
 def test_the_new_stubs_make_nothing_and_pick_no_wall() -> None:
     hooks = Village([ANA]).behaviour.hooks
 
-    assert hooks.create(WRITER, None) is None
+    assert hooks.create(WRITER, None, None) is None
     assert hooks.mural_wall(PAINTER) is None

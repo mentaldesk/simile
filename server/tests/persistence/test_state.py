@@ -19,7 +19,7 @@ from simile.persistence import (
     restore,
 )
 from simile.reflection import Reflector
-from simile.schema import VILLAGE_MAP, MapTile
+from simile.schema import PLAYER_ID, VILLAGE_MAP, Intention, IntentionKind, MapTile
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -187,6 +187,43 @@ def test_a_save_from_before_interiors_loads_onto_the_village() -> None:
     old = SavedWorld.model_validate(saved)
 
     assert {state.map for state in old.npcs.values()} == {VILLAGE_MAP}
+
+
+def intention(owner: str, target: str, hours: float) -> Intention:
+    return Intention(
+        id=f"talk/{owner}/1",
+        owner=owner,
+        kind=IntentionKind.GO,
+        target=target,
+        description=f"go to the {target}",
+        promised_to=[PLAYER_ID],
+        created=MORNING,
+        due=MORNING + timedelta(hours=hours),
+        expires=MORNING + timedelta(hours=hours + 24),
+        conversation_id="talk",
+    )
+
+
+def test_what_they_said_theyd_do_is_saved_with_the_world(tmp_path: Path) -> None:
+    before = Village()
+    said = [intention("kofi", "park", 2), intention("tobias", "gallery", 1)]
+    assert all(before.behaviour.intend(one) for one in said)
+    with MemoryStore(tmp_path / "simile.db") as memory, WorldStore(memory) as store:
+        store.save(capture(before.behaviour))
+        loaded = store.load()
+    assert loaded is not None and loaded.intentions == sorted(said, key=lambda i: i.due)
+
+    after = Village(start=MORNING + timedelta(days=3), seed=1)
+    restore(loaded, after.behaviour)
+
+    assert after.behaviour.intentions() == loaded.intentions
+
+
+def test_a_save_from_before_intentions_has_none() -> None:
+    saved = capture(Village().behaviour).model_dump(mode="json")
+    del saved["intentions"]
+
+    assert SavedWorld.model_validate(saved).intentions == []
 
 
 def test_cooldowns_that_have_run_out_are_not_saved() -> None:

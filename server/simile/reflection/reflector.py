@@ -1,18 +1,21 @@
 import asyncio
 import logging
 from collections.abc import Callable, Mapping
+from datetime import datetime
 from typing import TYPE_CHECKING
 
+from simile.behaviour import IntentionBroken, IntentionKept, Options
 from simile.conversation.loans import Loan
 from simile.economy.loans import transfer
 from simile.llm import LLMClient, LLMError, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.reflection.extraction import SYSTEM, Context, Extraction, gather, prompt
+from simile.reflection.intentions import broken, intentions, kept
 from simile.reflection.loans import Payment, payment
 from simile.reflection.outcome import Outcome, outcome
-from simile.schema import Conversation, Id, Npc, Relationship
-from simile.sim import ConversationEnded
+from simile.schema import Conversation, Id, Intention, Npc, Relationship
+from simile.sim import Clock, ConversationEnded
 
 if TYPE_CHECKING:
     from simile.economy.economy import Economy
@@ -20,11 +23,26 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def no_options(npc: Id) -> Options | None:
+    return None
+
+
+def no_plans(npc: Id) -> list[Intention]:
+    return []
+
+
+def ignore(intention: Intention) -> bool:
+    return False
+
+
 class Reflector:
     """Hears every `ConversationEnded` and, in a task, asks the LLM what it meant to each NPC in
     it, then stores their memories, the events, the flags and how they now feel. Moves the
     money of a loan the conversation was set up to settle through the `economy`. `settle` hands
-    over that loan, by conversation id, and is called once for every conversation that ends."""
+    over that loan, by conversation id, and is called once for every conversation that ends.
+    What each resident said they'd do goes to `intend`, checked against B1's `options`, and B1's
+    `planned` says what they've said already. `on_broken` and `on_kept` record what became of a
+    promise."""
 
     def __init__(
         self,
@@ -35,6 +53,10 @@ class Reflector:
         config: ReflectionConfig = DEFAULT_CONFIG,
         settle: Callable[[str], Loan | None] = lambda _: None,
         economy: "Callable[[], Economy | None]" = lambda: None,
+        options: Callable[[Id], Options | None] = no_options,
+        planned: Callable[[Id], list[Intention]] = no_plans,
+        intend: Callable[[Intention], bool] = ignore,
+        clock: Clock | None = None,
     ) -> None:
         self.memory = memory
         self.npcs = npcs
@@ -42,6 +64,10 @@ class Reflector:
         self.config = config
         self.settle = settle
         self.economy = economy
+        self.options = options
+        self.planned = planned
+        self.intend = intend
+        self.clock = clock
         self.tasks: set[asyncio.Task[Outcome | None]] = set()
 
     def on_ended(self, event: ConversationEnded) -> None:
@@ -64,6 +90,20 @@ class Reflector:
         finally:
             self.settle(conversation.id)
 
+    def on_broken(self, event: IntentionBroken) -> None:
+        intention = event.intention
+        if records := broken(intention, self.npcs(), self.memory, self._now(intention)):
+            self.memory.add(*records)
+            logger.info("%s broke a promise: %s", intention.owner, intention.description)
+
+    def on_kept(self, event: IntentionKept) -> None:
+        intention = event.intention
+        if records := kept(intention, self.npcs(), self.memory, self._now(intention)):
+            self.memory.add(*records)
+
+    def _now(self, intention: Intention) -> datetime:
+        return self.clock.now if self.clock else intention.expires
+
     async def stop(self) -> None:
         tasks = list(self.tasks)
         for task in tasks:
@@ -71,7 +111,16 @@ class Reflector:
         await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _reflect(self, llm: LLMClient, conversation: Conversation) -> Outcome | None:
-        context = gather(conversation, self.npcs(), self.memory, self.config)
+        npcs = self.npcs()
+        options = {
+            npc: found
+            for npc in conversation.participants
+            if npc in npcs and (found := self.options(npc)) is not None
+        }
+        planned = {npc: self.planned(npc) for npc in options}
+        context = gather(
+            conversation, npcs, self.memory, self.config, options=options, planned=planned
+        )
         if not context.npcs:
             return None
         try:
@@ -94,6 +143,18 @@ class Reflector:
         self.memory.add(*result.records)
         for key, after in result.after.items():
             logger.info("%s: %s", conversation.id, change(result.before[key], after))
+        for intention in intentions(context, extraction, self.config):
+            if self.intend(intention):
+                result.intentions.append(intention)
+                logger.info(
+                    "%s: %s means to %s%s (%s): %s",
+                    conversation.id,
+                    intention.owner,
+                    intention.kind.value,
+                    f" {intention.target}" if intention.target else "",
+                    intention.due.isoformat(),
+                    intention.description,
+                )
         return result
 
     def _pay(self, context: Context, extraction: Extraction) -> Payment | None:

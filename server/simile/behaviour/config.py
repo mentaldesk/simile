@@ -516,6 +516,43 @@ class BehaviourConfig(BaseModel):
         "`dwell` at a time.",
     )
 
+    promise_weight: float = Field(
+        default=2.0,
+        ge=0,
+        description="Bonus for an option a resident said they'd take, from when it's due until "
+        "it's done or expires, as for a shift. None while a need is past its critical level, so "
+        "an urgent need still wins.",
+    )
+    reliability_values: dict[CoreValue, float] = Field(
+        default={V.RESPONSIBILITY: 0.6, V.DISCIPLINE: 0.4},
+        description="How reliable a resident is, 0 to 1: the mean of these values, so weighted.",
+    )
+    lapse: float = Field(
+        default=0.3,
+        ge=0,
+        le=1,
+        description="Chance a resident lets an intention slide when it falls due, at a "
+        "reliability of 0, falling to nothing at `reliable_from`.",
+    )
+    reliable_from: float = Field(
+        default=0.5, gt=0, le=1, description="Reliability from which nobody lets one slide."
+    )
+    inspiration_start: float = Field(
+        default=0.65,
+        ge=0,
+        le=1,
+        description="The inspiration an intention to make something lifts them to once it's due, "
+        "about where a crafter sets off to make something.",
+    )
+    keep_early: float = Field(
+        default=60,
+        ge=0,
+        description="Minutes before it's due that doing what they said still keeps an intention.",
+    )
+    intentions: int = Field(
+        default=3, ge=0, description="The most open intentions a resident takes on at once."
+    )
+
     bedtime: float = Field(default=22.5, description="Hour an average NPC goes home to sleep.")
     bedtime_values: dict[CoreValue, float] = Field(
         default=BEDTIME_VALUES, description="Hours later per unit of `value - 0.5`."

@@ -16,7 +16,8 @@ What a finished conversation meant to each NPC in it. The lifespan subscribes a 
 - **The reply.** An `Extraction` with a `Reflection` per NPC: a first-person summary with valence
   and salience, topics, and `events` (what the others did to them, with the aspects it moves,
   valence and magnitude). Then, for the conversation as a whole, `flags_opened` (see *Flags*
-  below), `flags_resolved` (by ref) and `loans` (see *Loans* below). People can be named by id,
+  below), `flags_resolved` (by ref), `loans` (see *Loans* below) and `intentions` (see
+  *Intentions* below). People can be named by id,
   transcript name or full name; anything naming someone outside the conversation is dropped.
 - **Applying it.** After the reply, each NPC's relationships are read again from R2 (another
   reflection may have changed them meanwhile) and decayed with `as_of` to when the conversation
@@ -91,6 +92,39 @@ fails.
 
 All of this happens in one step after the reply, before anything is stored, so nothing else can
 move the money in between. Each payment is logged at INFO, e.g. `talk_1: ben paid ana 100 (loan)`.
+
+## Intentions
+
+What each resident said they'd do, mapped onto B1's options, so that they do it (see *Intentions*
+in B1's README). The lifespan gives the `Reflector` B1's `options`, `intentions` and `intend`.
+
+- **The prompt.** It starts with the time, and each NPC's lines add what they can do, by id (B1's
+  `options(npc)`: the places they can go, the terminals, where they'd make something now), and
+  what they've already planned. Then the other residents they could look up.
+- **The reply.** `intentions` lists, for each, who said it, which of `create`, `go`, `seek` and
+  `news` it is, the target's id, a few words on what they'll do (for `create` the idea itself, as
+  they described it), whom they said it to, and when: `now`, or `today HH:MM` or `tomorrow HH:MM`.
+  It's asked to leave out what's vague, only maybe, already planned, after tomorrow, can't be done
+  here, or the visitor's.
+- **Checking it.** Each must be by an NPC in the conversation, of a kind B1 knows, with a time
+  that parses and is within `horizon` (36 sim hours). A `go` target must be one of the places
+  they can go, by id or name, and a `seek` target someone else in the village, or the visitor, or
+  it's dropped. A `create` needs a craft, and a target that isn't where they'd make it now is
+  dropped to null, wherever B1 picks. A `news` target that isn't a terminal is null. Whom it was
+  said to must be in the conversation. At most `intentions` (2) per resident per conversation.
+- **Expiry.** Due now, it expires `expire_now` (2 sim hours) later; due later, `expire_later` (a
+  day) after it's due.
+- **Taking it on.** After everything else is stored, each goes to B1's `intend`, which takes it on
+  if it can act on it, and is logged at INFO, e.g. `talk_1: kofi means to create banyan_row
+  (2026-01-01T09:02:00+00:00): a mural of an ocean of coffee`.
+- **Kept or broken.** B3 hears B1's `IntentionKept` and `IntentionBroken`. A kept one resolves the
+  promise flag each NPC promised holds from that conversation, if they hold just one. A broken one
+  promised to someone leaves both remembering it, as `observation` memories with
+  `broken_salience` (0.5) and `broken_promise_valence`: "I told Ana I'd make a mural of ..., and
+  didn't." and "Kofi told me they'd make a mural of ..., and didn't." The player remembers too.
+  An NPC promised also has the promise flag from that conversation resolved, a `broken_promise`
+  opened, and an event that lowers their trust (`broken_promise_magnitude`), without counting as
+  an encounter for familiarity. One promised to nobody expires with nothing to remember.
 
 ## The player
 

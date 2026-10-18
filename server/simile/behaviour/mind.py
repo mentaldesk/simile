@@ -2,7 +2,7 @@ import logging
 import math
 import random
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 from typing import Protocol
 
@@ -10,8 +10,18 @@ from pydantic import JsonValue
 from starlette.applications import Starlette
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Need
-from simile.behaviour.events import GoalChosen
+from simile.behaviour.events import GoalChosen, IntentionBroken, IntentionKept
 from simile.behaviour.inspiration import inspiration
+from simile.behaviour.intentions import (
+    PLACES,
+    Options,
+    Promise,
+    boosted,
+    lapse_chance,
+    matches,
+    possible,
+    same,
+)
 from simile.behaviour.scoring import (
     UNPLACED,
     Goal,
@@ -38,6 +48,8 @@ from simile.schema import (
     PLAYER_ID,
     Conversation,
     Id,
+    Intention,
+    IntentionKind,
     LocationKind,
     MapTile,
     Medium,
@@ -59,7 +71,7 @@ type ConversationRequest = Callable[[Id, Id], bool]
 type NewsReader = Callable[[Npc], None]
 type NewsInterest = Callable[[Npc], float]
 type LiveConversations = Callable[[], list[Conversation]]
-type WorkMaker = Callable[[Npc, Id | None], None]
+type WorkMaker = Callable[[Npc, Id | None, Intention | None], None]
 type WallPicker = Callable[[Npc], MuralSpot | None]
 type Purse = Callable[[Npc], float | None]
 type Pricing = Callable[[Npc, Goal], float]
@@ -100,7 +112,7 @@ def no_conversations() -> list[Conversation]:
     return []
 
 
-def make_nothing(npc: Npc, wall: Id | None) -> None:
+def make_nothing(npc: Npc, wall: Id | None, intention: Intention | None = None) -> None:
     return None
 
 
@@ -226,6 +238,14 @@ class Mind:
     """The last working day they decided whether to skip, and what they decided."""
     inspired: list[tuple[datetime, float]] = field(default_factory=list)
     """What new memories added to their inspiration in the last sim hour, and when."""
+    promises: list[Promise] = field(default_factory=list)
+    """Their open intentions."""
+    keeping: Intention | None = None
+    """The intention their goal will keep once they get there."""
+    making: Intention | None = None
+    """The intention to make something whose work they're making in this stay."""
+    reasons: dict[str, Intention] = field(default_factory=dict)
+    """The options an intention raised at the last decision, and which."""
 
 
 class Behaviour:
@@ -344,6 +364,73 @@ class Behaviour:
         mind.inspired.append((now, bump))
         return bump
 
+    def intend(self, intention: Intention) -> bool:
+        """Take on something a resident said they'd do, kept at once if they're doing it already.
+        False, changing nothing, if B1 couldn't act on it, it has expired, they've said the same
+        already or have `intentions` open."""
+        mind = self.minds.get(intention.owner)
+        if mind is None or intention.expires <= self.clock.now:
+            return False
+        if not possible(intention, self._options(mind.npc), self.npcs):
+            return False
+        if len(mind.promises) >= self.config.intentions:
+            return False
+        if any(same(promise.intention, intention) for promise in mind.promises):
+            return False
+        mind.promises.append(Promise(intention))
+        if self._matching(mind, mind.goal) is intention:
+            self._under_way(mind, intention)
+        return True
+
+    def intentions(self, npc: Id | None = None) -> list[Intention]:
+        """A resident's open intentions, or everyone's, soonest due first."""
+        minds = self.minds.values() if npc is None else [self.minds[npc]]
+        found = [promise.intention for mind in minds for promise in mind.promises]
+        return sorted(found, key=lambda intention: intention.due)
+
+    def restore_intentions(self, intentions: Iterable[Intention]) -> None:
+        """Put back saved intentions, after the clock is set, for residents who are still here."""
+        for mind in self.minds.values():
+            mind.promises, mind.keeping = [], None
+        for intention in intentions:
+            mind = self.minds.get(intention.owner)
+            if mind is not None and intention.expires > self.clock.now:
+                mind.promises.append(Promise(intention))
+
+    def options(self, npc: Id) -> Options:
+        """What they could say they'll do now, for prompts and to check what's said against."""
+        resident = self.npcs[npc]
+        options = self._options(resident)
+        if resident.craft is None:
+            return options
+        if resident.craft.medium is not Medium.MURAL:
+            making = {
+                location: options.places[location]
+                for activity in self.config.writing_places
+                for location in (
+                    [resident.home] if activity is Activity.HOME else self.places.ids(activity)
+                )
+                if location in options.places
+            }
+            return replace(options, making=making)
+        spot = self._call(self.hooks.mural_wall, resident)
+        if not isinstance(spot, MuralSpot):
+            return options
+        name = options.places.get(spot.wall) or f"the {spot.wall.replace('_', ' ')} wall"
+        return replace(options, making={spot.wall: name})
+
+    def _options(self, npc: Npc) -> Options:
+        """Where they can go and read, without the hooks."""
+        places = {npc.home: "home"}
+        for activity in PLACES:
+            for location in self.places.by_activity.get(activity, []):
+                places[location.id] = location.name
+        if npc.workplace is not None and npc.workplace not in places:
+            places[npc.workplace] = self.places.location(npc.workplace).name
+        terminals = {loc.id: loc.name for loc in self.places.by_activity.get(Activity.NEWS, [])}
+        medium = npc.craft.medium if npc.craft else None
+        return Options(npc.home, places, terminals, medium, {})
+
     def tick(self, dt: float) -> None:
         self._elapsed += dt
         if self._elapsed >= self.config.think_every - 1e-9:
@@ -368,6 +455,10 @@ class Behaviour:
         if mind.goal != Goal(Activity.TALK, talking_to):
             mind.goal, mind.since = Goal(Activity.TALK, talking_to), self.clock.now
             self._publish(mind)
+        if talking_to is not None and (
+            sought := self._matching(mind, Goal(Activity.SEEK, talking_to))
+        ):
+            self._kept(mind, sought)
 
     def resume(self, npc: Id) -> None:
         """Let the NPC decide again, on the next tick. Does nothing for the player."""
@@ -413,6 +504,7 @@ class Behaviour:
         mind.finishes = until is not None and until > self.clock.now
         mind.interrupted, mind.held = None, None
         mind.shift, mind.staying_on = None, None
+        mind.keeping, mind.making, mind.reasons = None, None, {}
         self._plan(mind)
         if mind.shift is not None and mind.shift.set_off <= self.clock.now:
             mind.shift.called = True
@@ -514,6 +606,15 @@ class Behaviour:
             if due
             else None,
             "options": dict(mind.options),
+            "reasons": {
+                option: {"bonus": self.config.promise_weight, **_row(intention)}
+                for option, intention in mind.reasons.items()
+                if option in mind.options
+            },
+            "intentions": [
+                {**_row(promise.intention), "following": promise.following}
+                for promise in sorted(mind.promises, key=lambda promise: promise.intention.due)
+            ],
             "bedtime": round(mind.bedtime, 2),
             "wake": round(mind.wake, 2),
         }
@@ -525,6 +626,7 @@ class Behaviour:
         self._update_needs(hours)
         for mind in self.minds.values():
             self._plan(mind)
+            self._expire(mind)
             if mind.paused:
                 continue
             if self._asleep(mind):
@@ -534,10 +636,105 @@ class Behaviour:
                 self._interrupt(mind)
             elif mind.held:
                 continue
-            elif self._setting_off(mind):
+            elif self._setting_off(mind) or self._falls_due(mind):
                 self._interrupt(mind)
             elif mind.walk is None and mind.until is not None and now >= mind.until:
                 self._decide(mind)
+
+    def _expire(self, mind: Mind) -> None:
+        now = self.clock.now
+        for promise in [p for p in mind.promises if p.intention.expires <= now]:
+            mind.promises.remove(promise)
+            if mind.keeping is promise.intention:
+                mind.keeping = None
+            logger.debug("%s broke %s", mind.npc.id, promise.intention.id)
+            self.bus.publish(IntentionBroken(promise.intention))
+
+    def _due_promises(self, mind: Mind) -> list[Promise]:
+        """The intentions they're following through now: due, and not let slide when they fell
+        due. One to make something lifts their inspiration to `inspiration_start` then."""
+        now, due = self.clock.now, []
+        for promise in mind.promises:
+            if promise.intention.due > now:
+                continue
+            if promise.following is None:
+                promise.following = self.rng.random() >= lapse_chance(mind.npc.values, self.config)
+                logger.debug(
+                    "%s %s %s",
+                    mind.npc.id,
+                    "follows" if promise.following else "lets slide",
+                    promise.intention.id,
+                )
+                if promise.following and promise.intention.kind is IntentionKind.CREATE:
+                    start = self.config.inspiration_start
+                    mind.needs[Need.INSPIRATION] = max(mind.needs[Need.INSPIRATION], start)
+            if promise.following:
+                due.append(promise)
+        return due
+
+    def _falls_due(self, mind: Mind) -> bool:
+        """Whether an intention has just fallen due that they aren't already doing, once each.
+        Not during a shift or while a need is critical: they go once it's over or met."""
+        if self._due(mind) is not None and mind.goal.activity is Activity.WORK:
+            return False
+        if self._critical(mind):
+            return False
+        fresh = False
+        for promise in self._due_promises(mind):
+            if promise.called:
+                continue
+            promise.called = True
+            if matches(promise.intention, mind.goal):
+                self._under_way(mind, promise.intention)
+            else:
+                fresh = True
+        return fresh
+
+    def _promised(self, mind: Mind, options: dict[Goal, float]) -> dict[str, Intention]:
+        """Add `promise_weight` to each option an intention they're following makes, once,
+        unless a need is past its critical level. Returns which raised which."""
+        if mind.pressed:
+            return {}
+        reasons: dict[str, Intention] = {}
+        for promise in self._due_promises(mind):
+            for goal in boosted(promise.intention, options):
+                if str(goal) not in reasons:
+                    options[goal] += self.config.promise_weight
+                    reasons[str(goal)] = promise.intention
+        return reasons
+
+    def _matching(self, mind: Mind, goal: Goal) -> Intention | None:
+        """The soonest due open intention that `goal` would keep, from `keep_early` before it's
+        due, or for one to make something, whenever: the next work they make is that one."""
+        early = self.clock.now + timedelta(minutes=self.config.keep_early)
+        found = [
+            intention
+            for promise in mind.promises
+            if matches(intention := promise.intention, goal)
+            and (intention.due <= early or intention.kind is IntentionKind.CREATE)
+        ]
+        return min(found, key=lambda intention: intention.due, default=None)
+
+    def _under_way(self, mind: Mind, intention: Intention) -> None:
+        """They're doing it already: kept if they're there, or once they get there. Seeking
+        someone out is kept once they talk."""
+        if intention.kind is IntentionKind.SEEK:
+            return
+        if mind.walk is None:
+            self._kept(mind, intention)
+        elif mind.keeping is None:
+            mind.keeping = intention
+
+    def _kept(self, mind: Mind, intention: Intention) -> None:
+        """They've started on what they said: it's done, and a work they make in this stay is
+        the one they described."""
+        if mind.keeping is intention:
+            mind.keeping = None
+        mind.promises = [p for p in mind.promises if p.intention is not intention]
+        if intention.kind is IntentionKind.CREATE:
+            mind.making = intention
+        logger.debug("%s kept %s", mind.npc.id, intention.id)
+        self.bus.publish(IntentionKept(intention))
 
     def _plan(self, mind: Mind) -> None:
         """Keep their next shift in view, and once one ends, how long a wage earner still at work
@@ -747,6 +944,7 @@ class Behaviour:
         situation = self._situation(mind)
         mind.mural = situation.mural
         options = scores(situation, self.places, self.config)
+        mind.reasons = self._promised(mind, options)
         if mind.nudge is not None:
             (goal, bonus), mind.nudge = mind.nudge, None
             if goal in options:
@@ -806,7 +1004,8 @@ class Behaviour:
             mind.needs[need] = _clamp(mind.needs[need] + change)
         if activity is Activity.CREATE:
             wall = mind.goal.target if _paints(mind.npc) else None
-            self._call(self.hooks.create, mind.npc, wall)
+            intention, mind.making = mind.making, None
+            self._call(self.hooks.create, mind.npc, wall, intention)
 
     def _place_of(self, entity: Id, position: Point) -> str | None:
         mind = self.minds.get(entity)
@@ -834,6 +1033,8 @@ class Behaviour:
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
         mind.nudge, mind.finishes, mind.interrupted = None, False, None
+        mind.making = None
+        mind.keeping = None if goal.activity is Activity.SEEK else self._matching(mind, goal)
         self._publish(mind)
         match goal.activity:
             case Activity.IDLE:
@@ -889,6 +1090,8 @@ class Behaviour:
         goal = mind.goal
         if goal.activity is Activity.SEEK and self._approach(mind):
             return
+        if mind.keeping is not None:
+            self._kept(mind, mind.keeping)
         if goal.activity is Activity.NEWS:
             self._call(self.hooks.read_news, mind.npc)
         if goal.activity is Activity.SLEEP:
@@ -976,6 +1179,17 @@ class Behaviour:
 
 def _clamp(value: float) -> float:
     return min(max(value, 0.0), 1.0)
+
+
+def _row(intention: Intention) -> dict[str, JsonValue]:
+    return {
+        "kind": intention.kind.value,
+        "target": intention.target,
+        "description": intention.description,
+        "promised_to": list(intention.promised_to),
+        "due": intention.due.isoformat(),
+        "expires": intention.expires.isoformat(),
+    }
 
 
 def _wage(npc: Npc) -> bool:

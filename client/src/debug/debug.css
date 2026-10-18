@@ -96,6 +96,7 @@
 }
 
 .debug-memories li,
+.debug-intentions li,
 .debug-transcript li {
   margin-bottom: 2px;
 }

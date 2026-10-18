@@ -72,6 +72,35 @@ def test_cli_with_talk_accepts_requests_and_reports_conversations() -> None:
     assert "| desmond | 0.50 |" in conversations
 
 
+def test_seeded_intentions_are_mostly_kept_and_none_outlives_its_expiry() -> None:
+    start = datetime(2026, 1, 1, 9, tzinfo=UTC)
+
+    observer, seconds = asyncio.run(simulate(4, start=start, intentions=1))
+    summary = report(observer, 4, start, 0, seconds)
+
+    taken = sum(observer.intended.values())
+    kept, broken = sum(observer.kept.values()), sum(observer.broken.values())
+    assert taken >= len(load_npcs())
+    assert kept > 2 * broken
+    assert kept + broken + len(observer.behaviour.intentions()) == taken
+    assert observer.overdue <= timedelta(seconds=observer.behaviour.config.think_every)
+    section = summary.split("**Intentions.**")[1].split("**Shifts.**")[0]
+    assert "Every 1 sim hours each resident awake said they'd do something" in section
+    assert f"{kept} kept and {broken} broken" in section
+
+
+def test_cli_with_intentions_reports_them() -> None:
+    plain = runner.invoke(create_cli(), ["behaviour", "simulate", "--hours", "1", "--start", "11"])
+    seeded = runner.invoke(
+        create_cli(),
+        ["behaviour", "simulate", "--hours", "1", "--start", "11", "--intentions", "1"],
+    )
+
+    assert seeded.exit_code == 0, seeded.output
+    assert "**Intentions.**" not in plain.output
+    assert "| odalys | 0.06 | 0.03 | 0.05 |" in seeded.output
+
+
 def test_spearman_ranks_ties_together() -> None:
     assert ranks([3.0, 1.0, 3.0, 2.0]) == [2.5, 0, 2.5, 1]
     assert spearman([1, 2, 3], [10, 20, 30]) == pytest.approx(1)

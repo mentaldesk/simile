@@ -20,6 +20,7 @@ from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.loans import Ask, Loan, Purse, arrange, told
 from simile.conversation.needs import Pressing, critical, pressing
 from simile.conversation.plan import PRESSING, Plan, plan, stance
+from simile.conversation.plans import already, can_do
 from simile.conversation.prompt import (
     Player,
     WorkTopic,
@@ -294,6 +295,7 @@ class ConversationEngine:
                 topics[npc],
                 self._secrets(npc, other),
                 works[npc],
+                self._plans(npc, names[npc]),
             )
             for npc, other in ((a, b), (b, a))
         }
@@ -645,10 +647,19 @@ class ConversationEngine:
                 topics,
                 location.name if location else None,
                 now,
+                self._plans(npc),
             ),
             works=works,
             topics=topics,
         )
+
+    def _plans(self, npc: Id, name: str | None = None) -> str:
+        """What `npc` could plan to do and has said they will, told to them or, with `name`,
+        about them."""
+        parts = [can_do(self.behaviour.options(npc), name)]
+        if intentions := self.behaviour.intentions(npc):
+            parts.append(already(intentions, self.clock.now, self._name, name))
+        return "\n\n".join(parts)
 
     def _critical(self) -> dict[Need, float]:
         return critical(self.behaviour.config.urgency)
