@@ -262,6 +262,14 @@ class BehaviourConfig(BaseModel):
         description="Extra rise per unit of each value. Inspiration rises only for NPCs with a "
         "craft.",
     )
+    sociability_spread: float = Field(
+        default=2.0,
+        ge=1,
+        description="How far the sociability trait moves social: at 1 it rises this many times "
+        "faster and talking meets it this many times more slowly, and the other way round at 0. "
+        "A sociable resident gets lonely sooner and takes longer to have had enough, so they "
+        "look for company more often and come to a conversation keener.",
+    )
     effects: dict[Activity, dict[Need, float]] = Field(
         default=EFFECTS,
         description="How each activity changes needs once there. Negative satisfies.",

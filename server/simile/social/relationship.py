@@ -2,8 +2,9 @@ import math
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from simile.schema import Aspect, Baseline, Flag, InteractionEvent, Npc, Relationship
+from simile.schema import Aspect, Baseline, Flag, InteractionEvent, Npc, Relationship, Traits
 from simile.social.config import DEFAULT_CONFIG, RelationshipConfig
+from simile.social.traits import trait_factor, traits_of
 
 NEUTRAL = 0.5
 
@@ -19,13 +20,17 @@ def meet(owner: Npc, about: str, *, config: RelationshipConfig = DEFAULT_CONFIG)
 
 
 def as_of(
-    rel: Relationship, now: datetime, *, config: RelationshipConfig = DEFAULT_CONFIG
+    rel: Relationship,
+    now: datetime,
+    *,
+    config: RelationshipConfig = DEFAULT_CONFIG,
+    traits: Traits | None = None,
 ) -> Relationship:
     """`rel` decayed from its last interaction to `now`. Read through this but don't store it:
     store `apply_event(as_of(rel, now), event, now)`, so each stretch of time decays once."""
     if rel.last_interaction is None:
         return rel
-    return decay(rel, max(now - rel.last_interaction, timedelta(0)), config=config)
+    return decay(rel, max(now - rel.last_interaction, timedelta(0)), config=config, traits=traits)
 
 
 def apply_event(
@@ -34,9 +39,10 @@ def apply_event(
     now: datetime,
     *,
     config: RelationshipConfig = DEFAULT_CONFIG,
+    traits: Traits | None = None,
 ) -> Relationship:
     """How `rel.owner` feels about `rel.about` after `event`, something `rel.about` did to them."""
-    return apply_events(rel, [event], now, config=config)
+    return apply_events(rel, [event], now, config=config, traits=traits)
 
 
 def apply_events(
@@ -45,10 +51,23 @@ def apply_events(
     now: datetime,
     *,
     config: RelationshipConfig = DEFAULT_CONFIG,
+    traits: Traits | None = None,
 ) -> Relationship:
     """How `rel.owner` feels about `rel.about` after one encounter, such as a conversation, in
     which `rel.about` did `events` to them. The events add up per aspect and move it once, so
-    splitting one in two changes nothing. Familiarity grows once, events or not."""
+    splitting one in two changes nothing. Familiarity grows once, events or not. The owner's
+    traits, from the cast unless given, weigh bad events and swing a first encounter."""
+    traits = traits_of(rel.owner) if traits is None else traits
+    negative = max(
+        config.negativity_bias
+        * trait_factor(traits.negativity_bias, config.negativity_bias_spread),
+        1.0,
+    )
+    first = (
+        trait_factor(traits.first_impressions, config.first_impressions_spread)
+        if rel.familiarity == 0
+        else 1.0
+    )
     shifts: dict[Aspect, float] = {}
     for event in events:
         if (event.actor, event.target) != (rel.about, rel.owner):
@@ -56,13 +75,13 @@ def apply_events(
                 f"{event.actor}'s event for {event.target} doesn't change how {rel.owner} "
                 f"feels about {rel.about}"
             )
-        bias = config.negativity_bias if event.valence < 0 else 1.0
+        bias = negative if event.valence < 0 else 1.0
         for aspect in set(event.aspects):
             shifts[aspect] = shifts.get(aspect, 0.0) + (
                 event.valence * event.magnitude * config.max_shift * bias
             )
     scores = {
-        aspect.value: _moved(getattr(rel, aspect.value), shift, config.resistance_step)
+        aspect.value: _moved(getattr(rel, aspect.value), shift * first, config.resistance_step)
         for aspect, shift in shifts.items()
     }
     familiarity = rel.familiarity + config.familiarity_gain * (1 - rel.familiarity)
@@ -71,13 +90,23 @@ def apply_events(
 
 
 def decay(
-    rel: Relationship, elapsed: timedelta, *, config: RelationshipConfig = DEFAULT_CONFIG
+    rel: Relationship,
+    elapsed: timedelta,
+    *,
+    config: RelationshipConfig = DEFAULT_CONFIG,
+    traits: Traits | None = None,
 ) -> Relationship:
-    """Drift toward the baseline after `elapsed` without contact. Flags are untouched."""
+    """Drift toward the baseline after `elapsed` without contact. Flags are untouched. A score
+    below its baseline, a grudge, fades as fast as the owner's forgiveness, from the cast unless
+    given."""
     if elapsed < timedelta(0):
         raise ValueError(f"elapsed must not be negative, not {elapsed}")
+    traits = traits_of(rel.owner) if traits is None else traits
+    forgiving = trait_factor(traits.forgiveness, config.forgiveness_spread)
 
     def toward(score: float, target: float, half_life: timedelta) -> float:
+        if score < target:
+            half_life = half_life / forgiving
         kept = 0.5 ** (elapsed / half_life)
         return _clamp(score * kept + target * (1 - kept), score, target)
 

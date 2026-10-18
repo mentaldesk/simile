@@ -1,7 +1,7 @@
 import math
 import time
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -13,12 +13,11 @@ from simile.behaviour.events import GoalChosen
 from simile.behaviour.mind import (
     Behaviour,
     create_behaviour,
-    decline,
     no_conversations,
     skip_news,
 )
 from simile.behaviour.scoring import MuralSpot
-from simile.schema import CoreValue, Id, LocationKind, Medium, Npc
+from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Traits
 from simile.sim import Clock, FakeWallClock, World
 
 HOME = "home"
@@ -56,9 +55,21 @@ class Observer:
     creating: Counter[Id] = field(default_factory=Counter)
     works: dict[Id, Counter[str]] = field(default_factory=lambda: defaultdict(Counter))
     """Where each NPC made their works: home, a place, or for a mural its wall."""
+    talk: float | None = None
+    """Minutes each conversation lasts when every request to talk is accepted, or None to decline
+    them all."""
+    started: Counter[Id] = field(default_factory=Counter)
+    ending: list[tuple[datetime, Id, Id]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.next = self.behaviour.clock.now
+
+    def request_conversation(self, a: Id, b: Id) -> bool:
+        if self.talk is None:
+            return False
+        self.started[a] += 1
+        self.ending.append((self.behaviour.clock.now + timedelta(minutes=self.talk), a, b))
+        return True
 
     def on_goal(self, event: GoalChosen) -> None:
         self.goals[event.npc][event.activity] += 1
@@ -78,6 +89,10 @@ class Observer:
 
     def tick(self, dt: float) -> None:
         clock = self.behaviour.clock
+        for over in [talk for talk in self.ending if talk[0] <= clock.now]:
+            self.ending.remove(over)
+            for npc in over[1:]:
+                self.behaviour.resume(npc)
         if clock.now < self.next:
             return
         self.next += self.every
@@ -120,12 +135,19 @@ class Observer:
 
 
 async def simulate(
-    hours: float, *, start: datetime, seed: int = 0, npcs: Iterable[Npc] | None = None
+    hours: float,
+    *,
+    start: datetime,
+    seed: int = 0,
+    npcs: Iterable[Npc] | None = None,
+    traits: Mapping[Id, Traits] | None = None,
+    talk: float | None = None,
 ) -> tuple[Observer, float]:
     """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows, with
-    N1's NPCs unless given others. Conversations, news and works stay stubbed, so nothing calls
-    Claude: there's always an article of `NEWS_INTEREST` to read, muralists paint the map's walls
-    in turn, and reading or making something does nothing."""
+    N1's NPCs and the cast's traits unless given others. Conversations, news and works stay
+    stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
+    and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
+    muralists paint the map's walls in turn, and reading or making something does nothing."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
@@ -134,15 +156,15 @@ async def simulate(
     world = World(Clock(start), FakeWallClock())
     app.state.world = world
     app.state.headless = True
-    app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs)
-    observer = Observer(app.state.behaviour)
+    app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs, traits=traits)
+    observer = Observer(app.state.behaviour, talk=talk)
     world.bus.subscribe(GoalChosen, observer.on_goal)
     started = time.perf_counter()
     async with AsyncExitStack() as stack:
         for hook in (behaviour, memory, world_lifespan):
             await stack.enter_async_context(hook(app))
         app.state.behaviour.hooks.set(
-            request_conversation=decline,
+            request_conversation=observer.request_conversation,
             read_news=skip_news,
             news_interest=lambda npc: NEWS_INTEREST,
             conversations=no_conversations,
@@ -229,7 +251,33 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
         goals = observer.goals[npc.id]
         lines.append(f"| {npc.id} | " + " | ".join(str(goals[a]) for a in GOALS) + " |")
     lines += ["", *works(observer, hours)]
+    if observer.talk is not None:
+        lines += ["", *conversations(observer)]
     return "\n".join(lines) + "\n"
+
+
+def conversations(observer: Observer) -> list[str]:
+    behaviour = observer.behaviour
+    npcs = sorted(behaviour.npcs.values(), key=lambda npc: behaviour.traits_of(npc.id).sociability)
+    sociability = [behaviour.traits_of(npc.id).sociability for npc in npcs]
+    started = [observer.started[npc.id] for npc in npcs]
+    lines = [
+        f"**Conversations.** Every request to talk was accepted and lasted {observer.talk:g} "
+        "minutes. How many each resident started, by sociability.",
+        "",
+        "| NPC | Sociability | Connection | Started |",
+        "|---|--:|--:|--:|",
+    ]
+    for npc, trait, count in zip(npcs, sociability, started, strict=True):
+        lines.append(
+            f"| {npc.id} | {trait:.2f} | {npc.values[CoreValue.CONNECTION]:.2f} | {count} |"
+        )
+    return [
+        *lines,
+        "",
+        f"Spearman rank correlation of sociability with conversations started: "
+        f"{spearman(sociability, [float(n) for n in started]):.2f}.",
+    ]
 
 
 def works(observer: Observer, hours: float) -> list[str]:

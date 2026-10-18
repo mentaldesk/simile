@@ -13,6 +13,14 @@ def register(app: typer.Typer) -> None:
             float, typer.Option(min=0, max=24, help="Sim hour of day to start at.")
         ] = 8.0,
         seed: Annotated[int, typer.Option(help="Seed for the NPCs' choices.")] = 0,
+        talk: Annotated[
+            float | None,
+            typer.Option(
+                min=0,
+                help="Accept every request to talk and end each conversation after this many sim "
+                "minutes. Without it, every request is declined.",
+            ),
+        ] = None,
     ) -> None:
         """Fast-forward the village's NPCs and summarise where they spent their time.
 
@@ -25,7 +33,7 @@ def register(app: typer.Typer) -> None:
         from simile.behaviour.simulate import report, simulate
 
         begin = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(hours=start)
-        observer, seconds = asyncio.run(simulate(hours, start=begin, seed=seed))
+        observer, seconds = asyncio.run(simulate(hours, start=begin, seed=seed, talk=talk))
         typer.echo(report(observer, hours, begin, seed, seconds), nl=False)
 
     app.add_typer(behaviour, name="behaviour")
