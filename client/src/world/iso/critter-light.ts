@@ -1,7 +1,7 @@
 import type { Point } from '../view';
 import type { LightMap, LitLayer } from './lighting';
 
-/** `tintColour(residentLight(lit, at).tint)` without allocating, from each light map's tint at the tiles' middles. */
+/** Tints from each light map at the tiles' middles, blended in between, read once so nothing is allocated. */
 export class CritterLight {
   private readonly width: number;
   private readonly height: number;

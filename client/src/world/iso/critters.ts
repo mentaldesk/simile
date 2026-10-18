@@ -21,17 +21,13 @@ type Span = readonly [number, number];
 
 /** Counts, real seconds, tiles and sim hours for the critters on the water. */
 export type CritterTuning = {
-  /** The most there are at once, rings on the water included. */
   cap: number;
-  /** On each lake, which is water inside a location, and on each river, which is water outside one. */
   ducks: { lake: number; river: number };
   heron: boolean;
-  /** Fish rising and ducks surfacing, at once. */
   rings: number;
   paddleSpeed: Span;
   apart: number;
   riseEvery: { day: Span; night: Span };
-  /** Sim hours between which each duck tucks its head in, and wakes. */
   settle: Span;
   wake: Span;
   heronHours: Span;
@@ -74,7 +70,6 @@ const FLIGHT_METRES = 5;
 const FLIGHT_TILES = 6;
 const WING_SECONDS = 0.22;
 const TRIES = 12;
-/** Headings a twelfth of a circle apart, from half a turn one way to half the other, as cos and sin. */
 const TURNS = 6;
 const TURN_COS = Float64Array.from({ length: 2 * TURNS + 1 }, (_, i) => Math.cos(((i - TURNS) * Math.PI) / TURNS));
 const TURN_SIN = Float64Array.from({ length: 2 * TURNS + 1 }, (_, i) => Math.sin(((i - TURNS) * Math.PI) / TURNS));
@@ -91,10 +86,9 @@ const near = (dx: number, dy: number, apart: number) => dx * dx + dy * dy < apar
 
 export type WaterKind = 'lake' | 'river';
 
-/** `tiles` are indices into the map; `perches`, x and y pairs, where a heron can stand. */
 export type WaterBody = { kind: WaterKind; tiles: number[]; perches: number[] };
 
-/** The map's `water` ground tiles, in connected bodies. Points are on the ground plane, in tiles. */
+/** Points are on the ground plane, in tiles. */
 export class Water {
   readonly width: number;
   readonly height: number;
@@ -143,7 +137,6 @@ export class Water {
     return this.roomyAt(this.scratch, far);
   }
 
-  /** Room for a critter: water all round it, and clear of the shores. */
   roomyAt(point: Point, far = FAR_SHORE): boolean {
     const left = point.x - far;
     const right = point.x + NEAR_SHORE;
@@ -184,7 +177,7 @@ export class Water {
     return tiles;
   }
 
-  /** In the water off the far shores, north and west, which the camera sees past the heron. */
+  /** Off the north and west shores, so the camera sees the heron in front of the kerb. */
   private perchesOf(tiles: readonly number[]): number[] {
     const perches: number[] = [];
     for (const i of tiles) {
@@ -205,7 +198,7 @@ type Area = { x: number; y: number; width: number; height: number };
 const inArea = (area: Area, x: number, y: number) =>
   x + 0.5 >= area.x && x + 0.5 <= area.x + area.width && y + 0.5 >= area.y && y + 0.5 <= area.y + area.height;
 
-/** What's drawn: `z` is metres above the water. */
+/** `z` is metres above the water. */
 export type Critter = {
   readonly kind: CritterKind;
   x: number;
@@ -230,13 +223,11 @@ const DUCK_FRAMES = Object.fromEntries(
   PLUMAGES.map((plumage) => [plumage, facings(DUCK_POSES, (pose, side) => duckFrame(plumage, pose, side))]),
 ) as Record<Plumage, Facings<DuckPose>>;
 const HERON_FRAMES = facings(HERON_POSES, heronFrame);
-/** A ring's frames, a step at a time: the rise, then the rings spreading. */
 const RING_STEPS: Record<'koi' | 'fish', readonly string[]> = {
   koi: ['koi', 'ring1', 'ring2', 'ring3'].map((ripple) => rippleFrame(ripple as Ripple)),
   fish: ['fish', 'ring1', 'ring2', 'ring3'].map((ripple) => rippleFrame(ripple as Ripple)),
 };
 
-/** The two frames each state bobs between and how long each shows, its pace, and how long it lasts. */
 const DUCK_STATES: Record<DuckState, { frames: [DuckPose, DuckPose]; bob: number; pace: number; seconds: Span }> = {
   paddle: { frames: ['paddle0', 'paddle1'], bob: 0.55, pace: 1, seconds: [6, 20] },
   rest: { frames: ['paddle0', 'paddle1'], bob: 0.9, pace: 0, seconds: [3, 9] },
@@ -271,13 +262,12 @@ class DuckCritter implements Critter {
   clock = 0;
   turn = 0;
   turnIn = 0;
-  /** Which way it's heading, as a unit vector. */
+  /** A unit vector, not an angle, so steering needs no `Math.atan2`, which Maglev boxes. */
   hx = 1;
   hy = 0;
   side: Side;
   readonly facings: Facings<DuckPose>;
   readonly speed: number;
-  /** When it tucks its head in and when it wakes. */
   readonly night: Span;
 
   constructor(x: number, y: number, plumage: Plumage, tuning: CritterTuning, random: () => number) {
@@ -311,7 +301,6 @@ class HeronCritter implements Critter {
   clock = 0;
   side: Side = 'left';
   facing = HERON_FRAMES.left;
-  /** A flight runs from `start` to `end`, and from `rise` metres up to `fall`; standing, both are the perch. */
   readonly start = new Place();
   readonly end = new Place();
   rise = 0;
@@ -339,7 +328,7 @@ class RingCritter implements Critter {
   frame = RING_STEPS.fish[1];
   age = 0;
   steps = RING_STEPS.fish;
-  /** 0 to show the fish rising first, or 1 to start at the first ring. */
+  /** The step to start on: 0 shows the fish rising, 1 starts at the first ring. */
   first = 0;
 }
 
@@ -385,7 +374,6 @@ export class Critters {
     this.all = [...this.ducks, ...(this.heron ? [this.heron] : []), ...this.rings];
   }
 
-  /** `dt` in real seconds. */
   update(dt: number): void {
     for (let i = 0; i < this.ducks.length; i++) this.updateDuck(this.ducks[i], dt);
     if (this.heron) this.updateHeron(this.heron, dt);
@@ -396,7 +384,6 @@ export class Critters {
     }
   }
 
-  /** Whether the hour is in `[start, end)`, which may run past midnight. */
   private within(span: Span): boolean {
     const { hour } = this;
     return span[0] < span[1] ? hour >= span[0] && hour < span[1] : hour >= span[0] || hour < span[1];
@@ -485,7 +472,7 @@ export class Critters {
     if (side !== duck.side) this.turnDuck(duck, side);
   }
 
-  /** Which way to turn off the shore ahead, 1 or -1: towards the nearer heading with room. */
+  /** 1 or -1, not a turn rate: a fractional return would keep the steering boxed in Maglev. */
   private shoreTurn(duck: DuckCritter): number {
     for (let k = 1; k <= TURNS; k++) {
       if (this.ahead(duck, TURNS + k)) return 1;
@@ -499,7 +486,6 @@ export class Critters {
     this.dress(duck);
   }
 
-  /** Whether there's room ahead, turned by `TURN_COS[turn]`: `TURNS` is straight on. */
   private ahead(duck: DuckCritter, turn: number): boolean {
     const cos = TURN_COS[turn];
     const sin = TURN_SIN[turn];
@@ -514,7 +500,6 @@ export class Critters {
     return heron && (heron.state === 'arriving' || heron.state === 'standing') ? heron.perch : undefined;
   }
 
-  /** Whether moving to `probe` takes it too close to anyone. */
   private crowds(self: Critter): boolean {
     const { probe } = this;
     for (let i = 0; i <= this.ducks.length; i++) {
@@ -541,7 +526,6 @@ export class Critters {
     this.ring(this.spot.x, this.spot.y, body.kind === 'lake' && this.random() < 0.5 ? 'koi' : 'fish', 0);
   }
 
-  /** Into `spot`: somewhere roomy on `body`, apart from everyone. */
   private findSpot(body: WaterBody, apart = this.tuning.apart): boolean {
     for (let attempt = 0; attempt < TRIES; attempt++) {
       const tile = body.tiles[Math.floor(this.random() * body.tiles.length)];
@@ -631,7 +615,6 @@ export class Critters {
     heron.left = between(this.tuning.heronAway, this.random) / 4;
   }
 
-  /** Off the perch or onto it, from or to `FLIGHT_TILES` away to one side or the other, `way`. */
   private fly(heron: HeronCritter, state: 'arriving' | 'leaving', way = heron.side === 'left' ? 1 : -1): void {
     const arriving = state === 'arriving';
     const { perch } = heron;

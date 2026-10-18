@@ -44,7 +44,6 @@ export class IsoCritters {
     });
   }
 
-  /** `lit` is the village's light while it's drawn, or undefined to hide them. */
   draw(dt: number, lit: readonly LitLayer[] | undefined): void {
     if (!lit) {
       if (this.shown) for (const sprite of this.sprites) sprite.setVisible(false);

@@ -190,8 +190,8 @@ state. `IsoCritters` in `scenes/iso-critters.ts` draws the `Critters` in `critte
 - **Art** (`critter-art.ts`): ASCII frames in A1's palette, outlined in ink like its characters,
   drawn at `PIXEL_SCALE` into one small canvas texture that's made once and shared.
 - **Drawing**: on the village only, sorted by the ground under them, with rings flat on the water.
-  Each is tinted as a resident there would be (`CritterLight`, which reads each light map at the
-  tiles' middles once and blends between them).
+  Each is tinted from the light map at the tiles' middles, blended in between (`CritterLight`). At a
+  tile's middle that's a resident's tint there; between middles it's smoother than the light map.
 - **Cost**: once V8 has optimised it, the per-frame path allocates nothing. It does the same work
   whatever a critter is doing, passes calls whole numbers or objects but never a fraction, and keeps
   its scratch points in a class of their own, since a plain `{ x, y }` shares its shape with every
