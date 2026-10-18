@@ -11,6 +11,7 @@ describe('terminals', () => {
     expect(terminals[0]).toEqual({
       id: 'terminal_1',
       label: 'News terminal on the square',
+      map: 'village',
       x: 36,
       y: 13,
       width: 1,
@@ -31,5 +32,10 @@ describe('terminals', () => {
     expect(terminalAt(terminals, { x: 36, y: 17.5 })).toBeUndefined();
     expect(terminalAt(terminals, entryOf(village, 'square'))).toBeUndefined();
     expect(terminalAt(terminals, undefined)).toBeUndefined();
+  });
+
+  it('are only in reach on their own map', () => {
+    expect(terminalAt(terminals, { x: 36, y: 15, map: 'village' })?.id).toBe('terminal_1');
+    expect(terminalAt(terminals, { x: 36, y: 15, map: 'coffee_shop' })).toBeUndefined();
   });
 });

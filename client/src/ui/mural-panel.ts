@@ -1,5 +1,6 @@
 import type { Position, Wall } from '../net';
 import { muralView, wallNear, type MuralView, type MuralWalls } from '../world/iso/murals';
+import { mapOf } from '../world/map';
 import type { Point } from '../world/view';
 import { pressedNewsKey } from './keys';
 import './mural-panel.css';
@@ -108,7 +109,8 @@ export class MuralPanel {
   private stays({ wall, from }: { wall: string; from?: Position }, position: Position | undefined) {
     if (!this.view() || !position) return false;
     if (this.near(position)?.id === wall) return true;
-    return from !== undefined && Math.hypot(position.x - from.x, position.y - from.y) <= STAY_TILES;
+    if (from === undefined || mapOf(from) !== mapOf(position)) return false;
+    return Math.hypot(position.x - from.x, position.y - from.y) <= STAY_TILES;
   }
 
   private render(wallId: string): boolean {

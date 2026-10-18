@@ -1,5 +1,5 @@
 import type { Position } from '../net';
-import type { CollisionMap } from './map';
+import { mapOf, type CollisionMap, type MapPosition } from './map';
 import type { Body } from './motion';
 import { PLAYER_SPEED } from './tuning';
 
@@ -18,7 +18,7 @@ function anyBlocked(map: CollisionMap, columns: Span, rows: Span): boolean {
 }
 
 /** Moves by less than a tile, one axis at a time, stopping flush against blocked tiles. */
-export function walk(map: CollisionMap, from: Position, dx: number, dy: number): Position {
+export function walk<P extends Position>(map: CollisionMap, from: P, dx: number, dy: number): P {
   let { x, y } = from;
   const rows = tilesUnder(y + FOOTPRINT.top, y + FOOTPRINT.bottom);
   if (dx > 0) {
@@ -36,21 +36,25 @@ export function walk(map: CollisionMap, from: Position, dx: number, dy: number):
     const row = Math.floor(y + dy + FOOTPRINT.top);
     y = anyBlocked(map, columns, [row, row]) ? Math.min(y, row + 1 - FOOTPRINT.top) : y + dy;
   }
-  return { x, y };
+  return { ...from, x, y };
 }
 
 export type Direction = { x: number; y: number };
 
 export class Player implements Body {
-  position: Position;
+  position: MapPosition;
   walking = false;
 
   constructor(position: Position) {
-    this.position = { ...position };
+    this.position = { ...position, map: mapOf(position) };
+  }
+
+  get map(): string {
+    return this.position.map;
   }
 
   place(position: Position): void {
-    this.position = { ...position };
+    this.position = { ...position, map: mapOf(position) };
   }
 
   move(direction: Direction, dt: number, map: CollisionMap, speed = PLAYER_SPEED): void {

@@ -99,13 +99,15 @@ this.events.once(Phaser.Scenes.Events.SHUTDOWN, unregister);
 | Method | Returns |
 |---|---|
 | `positionOf(id)` | Where an entity is now, in tiles as in the protocol, or `undefined`. Include the player as `"player"`, at the position the client sends in `player_move`. |
-| `npcIds()` | The id of every NPC in the world. |
+| `npcIds()` | The id of every NPC on the player's map. |
 | `bubbleAnchor(id)` | Where to pin the entity's bubble: the top centre of its sprite, in game-canvas pixels after the camera's scroll and zoom, or `undefined`. Off-screen points are fine; bubbles stay on screen. |
 | `spriteOf(id)` | The sprite's box in game-canvas pixels, its draw depth, and optionally whether it's opaque at a point. Clicks pick NPCs by it (`world/hit.ts`), the ring sits at its bottom edge and the debug overlay outlines it. |
 
 The UI calls these every frame, after the world scene's `update`. Until a view is registered it uses
 `TrackedWorld`, which follows `snapshot` and `entity_moved`, centres a camera of 48 overlay px tiles
-on the player and gives each sprite a 48 × 72 box.
+on the player and gives each sprite a 48 × 72 box. Either way, an NPC on another map than the
+player's has no position, and `distanceFromPlayer` measures nothing between maps, so it's neither
+heard, bubbled nor picked. Terminals and murals are only in reach on their own map, the village.
 
 The overlay is laid out in at least 640 × 360 px and scaled to cover the canvas (`fitOverlay` in
 [`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. The canvas is in device

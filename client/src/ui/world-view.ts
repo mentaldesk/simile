@@ -1,4 +1,5 @@
 import { server, type Entity, type Position } from '../net';
+import { mapOf } from '../world/map';
 
 export const PLAYER_ID = 'player';
 
@@ -37,12 +38,21 @@ export class TrackedWorld implements WorldView {
     return [...this.entities.values()];
   }
 
+  /** Undefined for an NPC on another map than the player's. */
   positionOf(entityId: string): Position | undefined {
-    return this.entities.get(entityId)?.position;
+    const position = this.entities.get(entityId)?.position;
+    return position && this.onPlayersMap(position) ? position : undefined;
   }
 
   *npcIds(): Iterable<string> {
-    for (const { id, kind } of this.entities.values()) if (kind === 'npc') yield id;
+    for (const { id, kind, position } of this.entities.values()) {
+      if (kind === 'npc' && this.onPlayersMap(position)) yield id;
+    }
+  }
+
+  private onPlayersMap(position: Position): boolean {
+    const player = this.entities.get(PLAYER_ID)?.position;
+    return !player || mapOf(position) === mapOf(player);
   }
 
   get tilePx(): number {
@@ -101,6 +111,6 @@ export function worldView(): WorldView {
 export function distanceFromPlayer(view: WorldView, entityId: string): number | undefined {
   const player = view.positionOf(PLAYER_ID);
   const other = view.positionOf(entityId);
-  if (!player || !other) return undefined;
+  if (!player || !other || mapOf(player) !== mapOf(other)) return undefined;
   return Math.hypot(other.x - player.x, other.y - player.y);
 }

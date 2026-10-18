@@ -46,5 +46,5 @@ export function figureBox(figure: Figure, camera: IsoCamera, frame: SpriteFrame)
 export function screenAligned(position: Position | undefined): Position | undefined {
   if (!position) return undefined;
   const { x, y } = position;
-  return { x: (x - y) / Math.SQRT2, y: (x + y) / Math.SQRT2 };
+  return { ...position, x: (x - y) / Math.SQRT2, y: (x + y) / Math.SQRT2 };
 }
