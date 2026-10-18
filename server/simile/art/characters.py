@@ -1119,8 +1119,7 @@ def draw_frame(
 def draw_pose(
     appearance: Appearance, direction: str, pose: str, shift: bool = False, seed: str | None = None
 ) -> Canvas:
-    """Standing still, or one of `POSES` in a three-quarter view. Shifted, the body above the
-    legs settles a pixel, for shifting weight."""
+    """Shifted, the body above the legs settles a pixel."""
     if direction in MIRRORED:
         return draw_pose(appearance, MIRRORED[direction], pose, shift, seed).flipped()
     if pose == STANDING:
@@ -1239,8 +1238,7 @@ SHIFT = "shift"
 
 
 def pose_frames() -> list[tuple[str, str, bool]]:
-    """Every still frame after the walk, as (direction, pose, shifted), column by column: weight
-    shifted standing in every direction, then each pose and its shift in the three-quarter views."""
+    """Every still frame after the walk, as (direction, pose, shifted), column by column."""
     standing = [(direction, STANDING, True) for direction in DIRECTIONS]
     posed = [(d, pose, shift) for pose in POSES for shift in (False, True) for d in THREE_QUARTER]
     return standing + posed

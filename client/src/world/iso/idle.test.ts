@@ -11,6 +11,9 @@ const TUNING: IdleTuning = {
 };
 const nobody = () => false;
 
+const bodies = (at: Record<string, [number, number]>) =>
+  new Map(Object.entries(at).map(([id, [x, y]]) => [id, { position: { x, y } }]));
+
 function run(idle: Idle, seconds: number, step = 0.1): boolean[] {
   const shifted: boolean[] = [];
   for (let t = 0; t < seconds - 1e-9; t += step) {
@@ -41,13 +44,7 @@ describe('Idle', () => {
 
   it('turns to whoever near is talking, the nearest of them', () => {
     const idle = new Idle(TUNING, () => 0.5);
-    const everyone = new Map([
-      ['mei', { x: 5, y: 5 }],
-      ['ada', { x: 6, y: 5 }],
-      ['kofi', { x: 5, y: 7 }],
-      ['tobias', { x: 5, y: 2.5 }],
-      ['far', { x: 9, y: 5 }],
-    ]);
+    const everyone = bodies({ mei: [5, 5], ada: [6, 5], kofi: [5, 7], tobias: [5, 2.5], far: [9, 5] });
     const talking = (id: string) => id !== 'ada';
     expect(idle.towards('mei', { x: 5, y: 5 }, everyone, talking)).toEqual({ x: 0, y: 2 });
     expect(idle.towards('mei', { x: 5, y: 5 }, everyone, (id) => id === 'far')).toBeUndefined();
@@ -55,10 +52,7 @@ describe('Idle', () => {
 
   it('glances at whoever is nearest now and then, then faces its own way again', () => {
     const idle = new Idle(TUNING, () => 0.5);
-    const everyone = new Map([
-      ['mei', { x: 5, y: 5 }],
-      ['ada', { x: 4, y: 5 }],
-    ]);
+    const everyone = bodies({ mei: [5, 5], ada: [4, 5] });
     const look = () => idle.towards('mei', { x: 5, y: 5 }, everyone, nobody);
     expect(look()).toBeUndefined();
     run(idle, 10.05);
@@ -69,13 +63,10 @@ describe('Idle', () => {
 
   it('keeps glancing at the same person while they stay near', () => {
     const idle = new Idle(TUNING, () => 0.5);
-    const everyone = new Map([
-      ['mei', { x: 5, y: 5 }],
-      ['ada', { x: 4, y: 5 }],
-    ]);
+    const everyone = bodies({ mei: [5, 5], ada: [4, 5] });
     run(idle, 10.05);
     expect(idle.towards('mei', { x: 5, y: 5 }, everyone, nobody)).toEqual({ x: -1, y: 0 });
-    everyone.set('kofi', { x: 5, y: 4.5 });
+    everyone.set('kofi', { position: { x: 5, y: 4.5 } });
     expect(idle.towards('mei', { x: 5, y: 5 }, everyone, nobody)).toEqual({ x: -1, y: 0 });
   });
 });

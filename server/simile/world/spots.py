@@ -33,7 +33,7 @@ BY_ACTIVITY = {
     "square": Purpose.LINGER,
 }
 SERVING = (Purpose.EAT, Purpose.DRINK)
-"""Places whose staff work behind the counter rather than on a spot."""
+"""Places whose staff serve rather than take a spot."""
 
 
 def indifferent(a: Id, b: Id) -> float:
@@ -66,8 +66,7 @@ DEFAULT_SPOTS = SpotConfig()
 
 
 def purpose_of(activity: str, target: str | None) -> Purpose | None:
-    """What a goal is there for, from B1's activity. At work, it's what the place is for, as
-    the amenities' activities are their location ids, unless they serve there."""
+    """At work, what the place is for, since an amenity's activity is its id."""
     if activity == "work":
         purpose = BY_ACTIVITY.get(target or "")
         return None if purpose in SERVING else purpose
@@ -94,9 +93,7 @@ def choose(
     affinity: Affinity,
     config: SpotConfig = DEFAULT_SPOTS,
 ) -> Spot | None:
-    """The best free spot of a suitable kind: near friends and away from people they dislike,
-    one they like, and not far to walk. `others` are where everyone else on the map is or is
-    heading to."""
+    """Near friends and away from foes, then to taste, then the shortest walk."""
 
     liking: dict[Id, float] = {}
 

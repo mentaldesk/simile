@@ -351,8 +351,7 @@ class Movement:
 
     def _resolve(self, entity: Id, target: Target, start: Spot | None) -> Spot | None:
         """The free tile nearest the target, in its location if there's room, nearest the start.
-        At a location, a free spot that suits what they're there for, or else a tile that isn't a
-        spot. A plain `Tile` is on the village."""
+        A plain `Tile` is on the village."""
         claimed = self._claims(entity)
         location = None
         if isinstance(target, MapTile):

@@ -531,7 +531,7 @@ export class IsoScene extends Phaser.Scene {
     const geometry = this.geometries.get(world.map);
     const characters = this.characters;
     if (!geometry || !characters || !position) return undefined;
-    const figure = this.figureAt(position, geometry);
+    const figure = characters.figureOf(id) ?? this.figureAt(position, geometry);
     const box = figureBox(figure, this.cameras.main, characters.frame);
     return { box, depth: figure.depth, opaqueAt: (point) => characters.opaqueAt(id, box, point) };
   }

@@ -14,6 +14,8 @@ import {
   isoWalkFrames,
   PIXEL_SCALE,
   pixelFrame,
+  placed,
+  posed,
   SHADOW_DEPTH,
   standingFrame,
   stillFor,
@@ -61,6 +63,7 @@ type Character = {
   shadows: Map<SceneSet, Phaser.GameObjects.Image>;
   last: Position;
   idle: Idle;
+  drawn?: Figure;
 };
 
 const CONTACT_KEY = 'iso-shadow/contact';
@@ -109,24 +112,21 @@ export class IsoCharacters {
     lightAt: (feet: Position) => ResidentLight,
     surroundings: Surroundings,
   ): void {
-    const positions = new Map([...bodies].map(([id, { position }]) => [id, position]));
     for (const [id, body] of bodies) {
       const character = this.characters.get(id) ?? this.add(id, body.position);
       const { x, y } = body.position;
       const step = { x: x - character.last.x, y: y - character.last.y };
       character.last = { x, y };
-      const still = this.keepStill(id, body, character, dt, positions, surroundings);
+      const still = this.keepStill(id, body, character, dt, bodies, surroundings);
       if (!still) character.puppet.pose(step, true, Math.hypot(step.x, step.y) / dt);
 
-      const at = still ? { x: x + still.seat.x, y: y + still.seat.y } : body.position;
-      const figure = figureAt(at);
-      const depth = still?.nearer ? figureAt({ x: at.x + still.nearer, y: at.y + still.nearer }).depth : figure.depth;
+      const { at, floor, drawn } = placed(body.position, still, figureAt, this.tile.px_per_metre_up);
+      character.drawn = drawn;
       const light = lightAt(feetOf(at));
-      const lift = (still?.seat.z ?? 0) * this.tile.px_per_metre_up;
       const { sprite } = character.puppet;
-      sprite.setPosition(figure.x, figure.bottom - lift).setDepth(depth).setTint(tintColour(light.tint));
-      character.contact.setPosition(figure.x, figure.bottom);
-      this.shade(character, figure, layers, light.shadows);
+      sprite.setPosition(drawn.x, drawn.bottom).setDepth(drawn.depth).setTint(tintColour(light.tint));
+      character.contact.setPosition(floor.x, floor.bottom);
+      this.shade(character, floor, layers, light.shadows);
     }
     for (const [id, character] of this.characters) {
       if (bodies.has(id)) continue;
@@ -135,6 +135,11 @@ export class IsoCharacters {
       for (const shadow of character.shadows.values()) shadow.destroy();
       this.characters.delete(id);
     }
+  }
+
+  /** Where their sprite was last drawn, or undefined if it wasn't. */
+  figureOf(id: string): Figure | undefined {
+    return this.characters.get(id)?.drawn;
   }
 
   arrive(id: string, position: Position, facing: Point): void {
@@ -150,7 +155,7 @@ export class IsoCharacters {
     body: Body,
     { puppet, idle }: Character,
     dt: number,
-    positions: ReadonlyMap<string, Position>,
+    everyone: ReadonlyMap<string, Body>,
     surroundings: Surroundings,
   ): Still | undefined {
     if (body.walking) {
@@ -159,7 +164,8 @@ export class IsoCharacters {
     }
     idle.update(dt);
     const server = body.pose !== undefined;
-    const toward = server ? idle.towards(id, body.position, positions, surroundings.talking) : undefined;
+    const turns = server && !posed(body.pose);
+    const toward = turns ? idle.towards(id, body.position, everyone, surroundings.talking) : undefined;
     const seat = server ? surroundings.seatAt(body.position) : undefined;
     const still = stillFor(body, puppet.facing, idle.shifted, seat, toward);
     puppet.hold(still.frame, still.facing);

@@ -7,10 +7,7 @@ const between = ([low, high]: readonly [number, number], random: Random) => low 
 
 const less = (left: number, dt: number) => (left - dt > 1e-9 ? left - dt : 0);
 
-/**
- * Someone standing or sitting still: now and then they shift their weight, and they turn to whoever
- * near them is talking or, now and then, to whoever is nearest. Tick it while they're still.
- */
+/** Tick it while they're still. */
 export class Idle {
   private shiftIn: number;
   private shiftLeft = 0;
@@ -57,19 +54,36 @@ export class Idle {
   towards(
     self: string,
     here: Point,
-    everyone: ReadonlyMap<string, Point>,
+    everyone: ReadonlyMap<string, { readonly position: Point }>,
     talking: (id: string) => boolean,
   ): Point | undefined {
-    const near = [...everyone]
-      .filter(([id]) => id !== self)
-      .map(([id, there]) => ({ id, there, gap: Math.hypot(there.x - here.x, there.y - here.y) }))
-      .filter(({ gap }) => gap <= this.tuning.turnTiles)
-      .sort((a, b) => a.gap - b.gap);
-    const target =
-      near.find(({ id }) => talking(id)) ??
-      (this.glanceLeft > 0 ? (near.find(({ id }) => id === this.glancing) ?? near[0]) : undefined);
-    if (this.glanceLeft > 0 && target) this.glancing ??= target.id;
-    return target && { x: target.there.x - here.x, y: target.there.y - here.y };
+    const glancing = this.glanceLeft > 0;
+    let talker: Point | undefined;
+    let nearest: Point | undefined;
+    let nearestId: string | undefined;
+    let glanced: Point | undefined;
+    let talkerGap = Infinity;
+    let nearestGap = Infinity;
+    for (const id of everyone.keys()) {
+      if (id === self) continue;
+      const there = everyone.get(id)!.position;
+      const gap = Math.hypot(there.x - here.x, there.y - here.y);
+      if (gap > this.tuning.turnTiles) continue;
+      if (gap < talkerGap && talking(id)) {
+        talker = there;
+        talkerGap = gap;
+      }
+      if (!glancing) continue;
+      if (gap < nearestGap) {
+        nearest = there;
+        nearestId = id;
+        nearestGap = gap;
+      }
+      if (id === this.glancing) glanced = there;
+    }
+    if (glancing && !talker && !glanced) this.glancing = nearestId;
+    const target = talker ?? (glancing ? (glanced ?? nearest) : undefined);
+    return target && { x: target.x - here.x, y: target.y - here.y };
   }
 }
 

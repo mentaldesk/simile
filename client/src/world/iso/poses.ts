@@ -1,6 +1,7 @@
-import type { Facing, Pose } from '../../net';
+import type { Facing, Pose, Position } from '../../net';
 import { objectsOf, propertyOf, type Tile, type TiledMap } from '../map';
 import type { Point } from '../view';
+import type { Figure } from './cutaway';
 import { facingFor, standingFrame, type IsoFacing } from './sheets';
 import { SITTING_NEARER } from './tuning';
 
@@ -21,7 +22,7 @@ export const POSES: readonly Pose[] = ['sitting', 'reading', 'working', 'looking
 
 const THREE_QUARTER: ReadonlySet<IsoFacing> = new Set(['down_left', 'down_right', 'up_left', 'up_right']);
 
-const posed = (pose: Pose | undefined): pose is Pose => pose !== undefined && POSES.includes(pose);
+export const posed = (pose: Pose | undefined): pose is Pose => pose !== undefined && POSES.includes(pose);
 
 /** A1's frame for someone still: in a pose, or standing, with their weight shifted or not. */
 export function stillFrame(facing: IsoFacing, pose: Pose = 'standing', shifted = false): string {
@@ -57,11 +58,6 @@ export type Posed = { readonly pose?: Pose; readonly facing?: Facing };
 /** `nearer` is how many tiles nearer the camera they sort, in x and y. */
 export type Still = { frame: string; facing: IsoFacing; seat: Seat; nearer: number };
 
-/**
- * How someone who has stopped is drawn. In a pose, they face the server's way on their spot's
- * seat. Standing, they turn to `toward` if it's given, else face the server's way, else keep facing
- * as they were.
- */
 export function stillFor(
   body: Posed,
   facing: IsoFacing,
@@ -77,4 +73,21 @@ export function stillFor(
   }
   const way = toward ? facingFor(toward, facing) : (server ?? facing);
   return { frame: stillFrame(way, 'standing', shifted), facing: way, seat: seat ?? NO_SEAT, nearer: 0 };
+}
+
+/** `drawn` is where the sprite goes, and `floor` and `at` where its shadows and light are. */
+export type Placed = { at: Position; floor: Figure; drawn: Figure };
+
+export function placed(
+  position: Position,
+  still: Still | undefined,
+  figureAt: (position: Position) => Figure,
+  pxPerMetreUp: number,
+): Placed {
+  const at = still ? { x: position.x + still.seat.x, y: position.y + still.seat.y } : position;
+  const floor = figureAt(at);
+  if (!still) return { at, floor, drawn: floor };
+  const lift = still.seat.z * pxPerMetreUp;
+  const depth = still.nearer ? figureAt({ x: at.x + still.nearer, y: at.y + still.nearer }).depth : floor.depth;
+  return { at, floor, drawn: { x: floor.x, top: floor.top - lift, bottom: floor.bottom - lift, depth } };
 }

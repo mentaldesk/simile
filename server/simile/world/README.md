@@ -91,7 +91,7 @@ face, in the maps' `spots` layer ([`content/map/README.md`](../../../content/map
 publishes before it starts the walk (`purpose_of`): the coffee shop is for a drink, the noodle bar
 for eating, a terminal for reading, the maker space and making something for making, the gallery for
 looking, the park for relaxing and the square for lingering. At work it's what the place is for,
-except at the café and the noodle bar, whose staff work behind the counter. A walk to a location
+except at the café and the noodle bar, whose staff serve rather than take a spot. A walk to a location
 then ends on a free spot that suits the purpose (`SpotConfig.fits`):
 
 | Purpose | Spots |

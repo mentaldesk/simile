@@ -3,8 +3,9 @@ import type { Facing, Pose } from '../../net';
 import { characters } from '../assets';
 import { tileOf } from '../map';
 import { loadEveryMap } from '../maps.fixture';
-import { ISO_FACING, POSES, seatAt, seatsOf, stillFor, stillFrame } from './poses';
-import { facingFor, ISO_FACINGS, PIXEL_TEXTURE, type IsoFacing } from './sheets';
+import { ISO_FACING, placed, POSES, seatAt, seatsOf, stillFor, stillFrame } from './poses';
+import { figureAt, figureBox } from './screen';
+import { facingFor, ISO_FACINGS, PIXEL_TEXTURE, pixelFrame, type IsoFacing } from './sheets';
 import { SITTING_NEARER } from './tuning';
 
 type Atlas = { frames: Record<string, { frame: { w: number; h: number } }> };
@@ -119,5 +120,40 @@ describe('seatsOf', () => {
     expect(east?.x).toBeLessThan(-0.5);
     expect(west?.y).toBe(0);
     expect(seatAt(seats, { x: 5, y: 9 })).toBeUndefined();
+  });
+});
+
+describe('placed', () => {
+  const TILE = { width: 96, height: 48, px_per_metre_up: 53.443 };
+  const frame = pixelFrame();
+  const at = (position: { x: number; y: number }) => figureAt(position, TILE, () => 0, frame);
+  const camera = { width: 1600, height: 1000, zoom: 1, scrollX: 0, scrollY: 0 };
+  const seated = (seat: { x: number; y: number; z: number }) =>
+    stillFor({ pose: 'sitting', facing: 'west' }, 'down', false, seat);
+
+  it('draws a sitter on their chair, nearer the camera, and so boxes them there for picking', () => {
+    const { drawn, floor } = placed({ x: 13, y: 7 }, seated({ x: -0.6, y: 0, z: 0 }), at, TILE.px_per_metre_up);
+
+    expect(floor).toEqual(at({ x: 12.4, y: 7 }));
+    expect(drawn).toMatchObject({ x: floor.x, top: floor.top, bottom: floor.bottom });
+    expect(drawn.depth).toBe(at({ x: 12.4 + SITTING_NEARER, y: 7 + SITTING_NEARER }).depth);
+    const tile = figureBox(at({ x: 13, y: 7 }), camera, frame);
+    const box = figureBox(drawn, camera, frame);
+    expect(tile.x - box.x).toBeCloseTo(0.6 * (TILE.width / 2), 5);
+  });
+
+  it('lifts someone on a stool, with their shadow on the floor', () => {
+    const { drawn, floor } = placed({ x: 7, y: 5 }, seated({ x: 0, y: 0, z: 0.25 }), at, TILE.px_per_metre_up);
+
+    expect(floor.bottom - drawn.bottom).toBeCloseTo(0.25 * TILE.px_per_metre_up);
+    expect(floor.top - drawn.top).toBeCloseTo(0.25 * TILE.px_per_metre_up);
+    expect(drawn.x).toBe(floor.x);
+  });
+
+  it('draws anyone walking, or standing off a spot, where they are', () => {
+    const standing = stillFor({ pose: 'standing', facing: 'north' }, 'down', false, undefined);
+
+    expect(placed({ x: 3.4, y: 2 }, undefined, at, TILE.px_per_metre_up).drawn).toEqual(at({ x: 3.4, y: 2 }));
+    expect(placed({ x: 3, y: 2 }, standing, at, TILE.px_per_metre_up).drawn).toEqual(at({ x: 3, y: 2 }));
   });
 });

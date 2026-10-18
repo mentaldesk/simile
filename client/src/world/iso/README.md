@@ -116,8 +116,9 @@ inside, so coming out is instant.
   weight for `shiftFor` seconds every `shiftEvery`, on A1's `-shift` frames. A resident standing
   turns to whoever within `turnTiles` is talking, the nearest of them, from each `line` until it
   should have been said (`Talkers`), and otherwise now and then glances at whoever is nearest for a
-  few seconds. Posed residents keep facing their table, screen or painting. It's a few timers and a
-  scan of the residents on the map, every frame.
+  few seconds. Posed residents keep facing their table, screen or painting, and aren't scanned for.
+  It's a few timers, and for each standing resident a loop over the residents on the map that
+  allocates nothing unless they turn.
 
 ## Murals
 
@@ -199,7 +200,8 @@ and steady memory. Its header says how to run it.
 `IsoScene` registers as the dialogue UI's `WorldView` and as audio's position provider.
 
 - **Picking**: `spriteOf(id)` is a resident's sprite box on the canvas (`figureBox` in `screen.ts`,
-  after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point.
+  after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point,
+  all where the sprite was last drawn (`placed`): on a seat, lifted onto a stool and sorted nearer.
   `npcAt` in `world/hit.ts` goes front to back by depth and picks the first opaque one there, else
   the first whose box holds the point, so click-to-talk and the debug overlay pick the resident in
   front where sprites overlap. The box is the sprite's frame down to the feet, so the dialogue UI's

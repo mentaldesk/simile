@@ -70,8 +70,7 @@ POSES = {
 
 @dataclass(frozen=True)
 class Spot:
-    """Somewhere to spend a stay: a walkable tile, which way to face on it, and how far from the
-    tile's centre the figure is drawn, as on the chair beside a table."""
+    """Somewhere to spend a stay. `dx`, `dy` and `dz` are where its figure is drawn."""
 
     id: str
     kind: SpotKind
@@ -128,8 +127,8 @@ class TownMap:
 
 
 def load_map(path: Path = MAP_PATH) -> TownMap:
-    """Read a Tiled map: walls from its collision layer, and places, mural walls, doors,
-    interactables and spots from its objects. Its id is the file's name."""
+    """Read a Tiled map: walls from its collision layer, and places, mural walls, doors and
+    interactables from its objects. Its id is the file's name."""
     data = json.loads(path.read_text())
     map_id, width, height, size = path.stem, data["width"], data["height"], data["tilewidth"]
     layers = {layer["name"]: layer for layer in data["layers"]}
