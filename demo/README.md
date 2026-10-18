@@ -115,8 +115,9 @@ articles until the live feeds' are in.
   15 October 2026, picked from the live feeds. Its summary is our own paraphrase of the feed's.
   It's pre-analysed: X1's analysis call rated it knowledge 0.6, optimism 0.6, adventure 0.5,
   creativity 0.3 and ambition 0.3, tone +0.4.
-- **Who has read it.** Nine of the ten, each with the take B4's reaction prompt gave them in one
-  real run, read between 08:20 and 10:10. They bring it up through B2's "news you might bring up".
+- **Who has read it.** Ten of the eleven, each with the take B4's reaction prompt gave them in one
+  real run, read between 08:20 and 10:10, and Mirela, the barista, before her shift. They bring it
+  up through B2's "news you might bring up".
   Raymond hasn't read it; his need for news is high, so he goes and reads it at the start. Of
   everything on the terminals it interests him most, and `prepare.py` checks that it still does.
 
@@ -131,6 +132,7 @@ articles until the live feeds' are in.
   | henrietta | −0.2 | 0.15 | No residents' association, no planning permission, no view |
   | desmond | −0.2 | 0.3 | Put that energy into housing first |
   | tobias | −0.6 | 0.4 | Look after the one world we've got |
+  | mirela | −0.2 | 0.4 | Look after the first home before building a second |
 
 - **The rest of the news** is twelve more real articles from the six feeds, published between 8
   and 16 October, so the player has a list to choose from. They were captured from a local news
@@ -161,7 +163,7 @@ articles until the live feeds' are in.
 - **Where everyone is.** Tobias by the west lamp of the square and Kofi near him; Desmond and
   Marguerite on the coffee shop terrace; Raymond in the square's south-east corner; Henrietta in
   the park by the gate; Ingrid and Priya at the maker space; Lachlan in the park; Odalys at the
-  noodle bar. Tobias and Desmond are as lonely as can be (social need 1.0) and decide on the first
+  noodle bar; Mirela at the till in the Daily Grind, on shift and out of reach until 17:00. Tobias and Desmond are as lonely as can be (social need 1.0) and decide on the first
   think, so each seeks out the nearest person. Everyone else is mid-stay, between 3 and 40 minutes
   from their next decision.
 - **Everyone has met.** Each resident's relationship with every other is R1's first impression

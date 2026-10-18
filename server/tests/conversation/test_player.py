@@ -27,7 +27,7 @@ from simile.conversation.player import (
     says_goodbye,
     split,
 )
-from simile.conversation.prompt import WorkTopic
+from simile.conversation.prompt import Cue, WorkTopic
 from simile.llm import CallRecord, FakeProvider, LLMClient, LLMError, Request
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -1280,3 +1280,88 @@ def test_when_a_work_has_come_up(
     topic = WorkTopic(remembers(owner, work, "I know it.", START), work)
 
     assert came_up(topic, work.artist.title(), [said(speaker, text)]) is expected
+
+
+class Writer:
+    """Writes `reply` for each cue, recording what it was given."""
+
+    def __init__(self, reply: str | None) -> None:
+        self.reply = reply
+        self.calls: list[tuple[Cue, list[str]]] = []
+
+    async def __call__(self, cue: Cue, lines: Sequence[Line]) -> str | None:
+        self.calls.append((cue, [line.text for line in lines]))
+        return self.reply
+
+
+async def test_a_writer_writes_the_npcs_reply_instead_of_the_llm() -> None:
+    village = Village()
+    village.players.writers["ana"] = writer = Writer("One flat white, coming up. Oat milk?")
+
+    village.players.say("A flat white, please.", "ana")
+    await village.run()
+
+    assert writer.calls == [(Cue.REPLY, ["A flat white, please."])]
+    assert village.said("ana") == ["One flat white, coming up.", "Oat milk?"]
+    assert village.script.requests == []
+
+
+async def test_a_writer_that_returns_none_leaves_the_reply_to_the_llm() -> None:
+    village = Village()
+    village.players.writers["ana"] = writer = Writer(None)
+
+    village.players.say("Hi, I'm new here.", "ana")
+    await village.run()
+
+    assert len(writer.calls) == 1
+    assert village.said("ana") == ["Lovely to meet you.", "Settling in?"]
+    assert len(village.script.requests) == 1
+
+
+async def test_another_npcs_writer_leaves_the_reply_to_the_llm() -> None:
+    village = Village()
+    village.players.writers["ben"] = writer = Writer("Not me.")
+
+    village.players.say("Hi, I'm new here.", "ana")
+    await village.run()
+
+    assert writer.calls == []
+    assert village.said("ana") == ["Lovely to meet you.", "Settling in?"]
+
+
+async def test_an_interjection_opens_a_conversation_the_player_can_answer() -> None:
+    village = Village()
+
+    assert village.players.interject("ana", "Flat white for you!")
+    await village.run(1)
+
+    [started] = village.of(ConversationStarted)
+    assert started.conversation.participants == ["ana", PLAYER_ID]
+    assert village.said("ana") == ["Flat white for you!"]
+    assert village.script.requests == []
+    village.players.say("Thanks!", "ana")
+    await village.run()
+    assert village.said("ana") == ["Flat white for you!", "Lovely to meet you.", "Settling in?"]
+    assert len(village.of(ConversationStarted)) == 1
+
+
+async def test_an_interjection_joins_the_conversation_going_on() -> None:
+    village = Village()
+    village.players.say("Hi, I'm new here.", "ana")
+    await village.run()
+
+    assert village.players.interject("ana", "Your tea's ready.")
+    await village.run(3)
+
+    assert village.said("ana")[-1] == "Your tea's ready."
+    assert len(village.of(ConversationStarted)) == 1
+
+
+async def test_nobody_interjects_while_the_player_talks_to_someone_else() -> None:
+    village = Village()
+    village.walk_to("ben", 1)
+    village.players.say("Hello Ben.", "ben")
+    await village.run()
+
+    assert not village.players.interject("ana", "Flat white for you!")
+    assert "Flat white for you!" not in village.said("ana")

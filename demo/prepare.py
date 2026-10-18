@@ -21,7 +21,7 @@ from simile.persistence.state import SavedWorld
 from simile.persistence.store import WorldStore
 from simile.schema import Memory, NewsItem, Npc, Relationship
 from simile.social import meet
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 HERE = Path(__file__).resolve().parent
 ARTICLE = (
@@ -66,15 +66,15 @@ def news_memory(npc: Npc, article: NewsItem, read: dict) -> Memory:
 
 
 def validate(world: SavedWorld, npcs: Iterable[str], readers: Iterable[str]) -> None:
-    town = load_map()
+    maps = load_maps()
     if missing := sorted(set(npcs) - set(world.npcs)):
         raise SystemExit(f"scenario.json has no place for {', '.join(missing)}")
     if unknown := sorted((set(world.npcs) | set(readers)) - set(npcs)):
         raise SystemExit(f"scenario.json names residents not in content/npcs: {unknown}")
     tiles = {}
     for npc, saved in world.npcs.items():
-        tile = (saved.position.x, saved.position.y)
-        if not town.walkable(*tile):
+        tile = (saved.map, saved.position.x, saved.position.y)
+        if saved.map not in maps or not maps[saved.map].walkable(*tile[1:]):
             raise SystemExit(f"{npc} starts on {tile}, which isn't walkable")
         if tile in tiles:
             raise SystemExit(f"{npc} and {tiles[tile]} both start on {tile}")

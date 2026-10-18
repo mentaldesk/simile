@@ -1,10 +1,12 @@
 import Phaser from 'phaser';
 import { server, type Position } from '../net';
 import { village } from '../world/assets';
+import { interactables } from '../world/interactables';
 import { muralWalls } from '../world/iso/murals';
 import { terminalAt, terminalsOf, type Terminal } from '../world/terminals';
 import { BubbleLayer } from './bubble-layer';
 import { ChatBox } from './chat-box';
+import { counterOf, CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
 import { onGameKey } from './keys';
@@ -26,6 +28,8 @@ export class DialogueScene extends Phaser.Scene {
   private news!: NewsPanel;
   private newsHint!: HTMLElement;
   private murals!: MuralPanel;
+  private counter!: CounterPrompt;
+  private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
   private fromGame = 1;
@@ -41,7 +45,7 @@ export class DialogueScene extends Phaser.Scene {
     this.marker = new TargetMarker(this.root);
     this.bubbles = new BubbleLayer(this.root);
     const log = new LogPanel(this.root, dialogue.log);
-    const chat = new ChatBox(this.root, dialogue, this.targets);
+    const chat = (this.chat = new ChatBox(this.root, dialogue, this.targets));
     const stopInvitations = dialogue.onInvitation((npcId) => chat.invite(npcId));
 
     this.news = new NewsPanel(this.root, server);
@@ -49,9 +53,11 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.className = 'news-hint';
     this.newsHint.textContent = `Press ${NEWS_KEY.toUpperCase()} to read the news.`;
     this.murals = new MuralPanel(this.root, muralWalls);
+    this.counter = new CounterPrompt(this.root);
     const onKeyDown = onGameKey({
       chat,
       news: () => {
+        if (this.order()) return;
         const terminal = this.terminal();
         if (!terminal) {
           this.murals.look(this.player());
@@ -93,6 +99,21 @@ export class DialogueScene extends Phaser.Scene {
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(this.player(), !atTerminal && !this.news.isOpen);
+    this.counter.update(counterOf(interactables.current), !this.chat.isOpen);
+  }
+
+  /** At a counter, E opens the chat to whoever is serving behind it. */
+  private order(): boolean {
+    const counter = counterOf(interactables.current);
+    if (!counter) return false;
+    const serving = servingAt(counter, worldView()) ?? dialogue.partner();
+    if (!serving) {
+      this.counter.flash("Nobody's behind the counter.");
+      return true;
+    }
+    this.chat.choose(serving);
+    this.chat.open();
+    return true;
   }
 
   private player(): Position | undefined {

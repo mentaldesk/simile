@@ -3,7 +3,7 @@ import logging
 import random
 import re
 from collections import deque
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Awaitable, Callable, Iterator, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -161,6 +161,9 @@ class PlayerConfig(BaseModel):
 
 DEFAULT_PLAYER_CONFIG = PlayerConfig()
 
+type Writer = Callable[[Cue, Sequence[Line]], Awaitable[str | None]]
+"""Writes an NPC's reply to the player from the cue and the lines so far, or None for B5's own."""
+
 
 @dataclass(kw_only=True)
 class PlayerTalk(Talk):
@@ -205,6 +208,7 @@ class PlayerConversations:
         self.article = article
         self.config = config
         self.rng = random.Random(seed)
+        self.writers: dict[Id, Writer] = {}
         self._considered: dict[Id, datetime] = {}
         self._elapsed = 0.0
 
@@ -248,7 +252,23 @@ class PlayerConversations:
         return self._hear(joined, text)
 
     def start(self, npc: Id, *, opener: Id) -> Conversation:
-        return self._start(npc, opener=opener).conversation
+        talk = self._start(npc, opener=opener)
+        if opener == npc:
+            self._write(talk, Cue.OPEN)
+        return talk.conversation
+
+    def interject(self, npc: Id, text: str) -> bool:
+        """`npc` says `text` to the player now, in their conversation or opening one. False if
+        either is busy elsewhere."""
+        talk = self.talk()
+        if talk is None or talk.npc != npc:
+            if not self._player_free() or not self._free(npc):
+                return False
+            talk = self._start(npc, opener=npc)
+        self._sentence(talk, text)
+        if talk.writing is None:
+            talk.speaker = PLAYER_ID
+        return True
 
     def tick(self, dt: float) -> None:
         if talk := self.talk():
@@ -279,8 +299,6 @@ class PlayerConversations:
         engine.bus.publish(Facing(npc, PLAYER_ID, direction))
         engine.bus.publish(ConversationStarted(conversation.model_copy(deep=True)))
         engine._log("%s started %s", opener, conversation.id)
-        if opener == npc:
-            self._write(talk, Cue.OPEN)
         return talk
 
     def _hear(self, talk: PlayerTalk, text: str) -> Line:
@@ -332,6 +350,14 @@ class PlayerConversations:
     async def _reply(self, talk: PlayerTalk, cue: Cue, lines: Sequence[Line]) -> Draft:
         engine, npc = self.engine, talk.npc
         party = talk.parties[npc]
+        sentences = Sentences([talk.names[npc], party.npc.name], [engine.player.name])
+        if writer := self.writers.get(npc):
+            async with asyncio.timeout(engine.config.line_timeout):
+                written = await writer(cue, lines)
+            if written is not None:
+                for sentence in [*sentences.feed(written), *sentences.end()]:
+                    self._sentence(talk, sentence)
+                return sentences.draft
         prompt = turn_prompt(
             party.background,
             lines,
@@ -350,7 +376,6 @@ class PlayerConversations:
             purpose="player-reply",
             priority=1,
         )
-        sentences = Sentences([talk.names[npc], party.npc.name], [engine.player.name])
         async with asyncio.timeout(engine.config.line_timeout), aclosing(stream) as chunks:
             async for chunk in chunks:
                 for sentence in sentences.feed(chunk):

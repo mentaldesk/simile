@@ -8,6 +8,7 @@ from starlette.testclient import TestClient, WebSocketTestSession
 
 from simile.app import create_app
 from simile.conversation import conversations_of
+from simile.conversation.player import PlayerConversations
 from simile.llm import FakeProvider, LLMClient
 from simile.llm.lifespan import CANNED
 from simile.memory import memory_of
@@ -43,6 +44,15 @@ def receive(ws: WebSocketTestSession, kind: str) -> dict[str, Any]:
     while (message := ws.receive_json())["type"] != kind:
         pass
     return message
+
+
+def test_the_player_conversations_are_on_the_app_while_it_runs(app: Starlette) -> None:
+    with TestClient(app):
+        players = app.state.players
+        assert isinstance(players, PlayerConversations)
+        assert conversations_of(app).player_request == players.request
+
+    assert not hasattr(app.state, "players")
 
 
 def test_walk_up_to_an_npc_type_and_see_the_reply(app: Starlette) -> None:

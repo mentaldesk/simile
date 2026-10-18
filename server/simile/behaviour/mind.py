@@ -38,7 +38,7 @@ from simile.schema import (
 )
 from simile.sim import Clock, EventBus
 from simile.social import as_of, meet
-from simile.world.movement import Movement, Outcome, Point, Walk
+from simile.world.movement import Movement, Outcome, Point, Target, Walk
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +158,8 @@ class Mind:
     """The wall a muralist would paint at the last decision."""
     interrupted: tuple[Goal, timedelta] | None = None
     """What they were making when a talk paused them, and how long it had left."""
+    held: tuple[Target, Goal] | None = None
+    """Where another module keeps them, and with what goal, until it lets go."""
 
 
 class Behaviour:
@@ -257,7 +259,9 @@ class Behaviour:
             return
         mind.paused = False
         mind.until = self.clock.now
-        if mind.interrupted is not None:
+        if mind.held is not None:
+            self._take_up(mind)
+        elif mind.interrupted is not None:
             (goal, left), mind.interrupted = mind.interrupted, None
             mind.goal, mind.since, mind.finishes = goal, self.clock.now, True
             mind.until += left
@@ -285,14 +289,38 @@ class Behaviour:
         mind.cooldowns = dict(cooldowns)
         mind.paused, mind.chases, mind.options, mind.nudge = False, 0, {}, None
         mind.finishes = until is not None and until > self.clock.now
-        mind.interrupted = None
+        mind.interrupted, mind.held = None, None
         self._needs_at = self.clock.now
         self._publish(mind)
 
-    def nudge(self, npc: Id, goal: Goal, bonus: float) -> bool:
-        """Add `bonus` to `goal` when they decide, on the next think. False if paused or asleep."""
+    def hold(self, npc: Id, target: Target, goal: Goal) -> None:
+        """Walk them to `target` and keep them there with `goal`, making no decisions and out of
+        seekers' reach, until `release`. A talk pauses the hold, and they go back after it."""
         mind = self.minds[npc]
-        if mind.paused or asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
+        mind.held = (target, goal)
+        if not mind.paused:
+            self._take_up(mind)
+
+    def release(self, npc: Id, stay: timedelta | None = None) -> None:
+        """Let go of them. With `stay` they stay put with the held goal for that long, as if just
+        arrived; otherwise they decide on the next think."""
+        mind = self.minds[npc]
+        if mind.held is None:
+            return
+        mind.held = None
+        if mind.paused:
+            return
+        walk, mind.walk = mind.walk, None
+        if walk is not None:
+            self.movement.stop(npc)
+        mind.until = self.clock.now + (stay or timedelta())
+        mind.finishes = stay is not None
+
+    def nudge(self, npc: Id, goal: Goal, bonus: float) -> bool:
+        """Add `bonus` to `goal` when they decide, on the next think. False if paused, held or
+        asleep."""
+        mind = self.minds[npc]
+        if mind.paused or mind.held or asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
             return False
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -342,7 +370,7 @@ class Behaviour:
         self._needs_at = now
         self._update_needs(hours)
         for mind in self.minds.values():
-            if mind.paused:
+            if mind.paused or mind.held:
                 continue
             if asleep(hour, mind.bedtime, mind.wake):
                 if mind.goal.activity is not Activity.SLEEP:
@@ -468,7 +496,10 @@ class Behaviour:
             return False
         mind = self.minds.get(other)
         return mind is None or not (
-            mind.paused or self._home_bound(mind) or asleep(hour, mind.bedtime, mind.wake)
+            mind.paused
+            or mind.held
+            or self._home_bound(mind)
+            or asleep(hour, mind.bedtime, mind.wake)
         )
 
     def _home_bound(self, mind: Mind) -> bool:
@@ -497,6 +528,15 @@ class Behaviour:
     def _sleep(self, mind: Mind) -> None:
         self._begin(mind, Goal(Activity.SLEEP, mind.npc.home))
 
+    def _take_up(self, mind: Mind) -> None:
+        assert mind.held is not None
+        target, goal = mind.held
+        mind.until, mind.nudge, mind.finishes, mind.interrupted = None, None, False, None
+        if mind.goal != goal:
+            mind.goal, mind.since = goal, self.clock.now
+            self._publish(mind)
+        self._walk(mind, target)
+
     def _walk(self, mind: Mind, target: Tile | MapTile | str | None) -> None:
         mind.walk = None
         if target is None:
@@ -511,6 +551,8 @@ class Behaviour:
         if mind.walk is not walk or mind.paused:
             return
         mind.walk = None
+        if mind.held:
+            return
         if walk.outcome is Outcome.ARRIVED:
             self._arrive(mind)
         else:

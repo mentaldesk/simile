@@ -81,6 +81,15 @@
       "needs": {"social": 0.45, "curiosity": 0.2, "rest": 0.05, "news": 0.0},
       "since": "2026-10-16T10:10:00Z",
       "until": "2026-10-16T10:34:00Z"
+    },
+    "mirela": {
+      "position": {"x": 5, "y": 4},
+      "map": "coffee_shop",
+      "activity": "coffee_shop",
+      "target": "coffee_shop",
+      "needs": {"social": 0.2, "curiosity": 0.2, "rest": 0.1, "news": 0.1, "inspiration": 0.1},
+      "since": "2026-10-16T07:00:00Z",
+      "until": null
     }
   },
   "read": {
@@ -146,6 +155,13 @@
       "valence": 0.7,
       "intensity": 0.8,
       "topics": ["space exploration", "terraforming", "biotech"]
+    },
+    "mirela": {
+      "at": "2026-10-16T06:45:00Z",
+      "take": "I'll be honest, it sounds like a lot of effort to build a second home while we still haven't looked after the first one properly.",
+      "valence": -0.2,
+      "intensity": 0.4,
+      "topics": ["space colonisation", "terraforming", "engineered microbes"]
     }
   }
 }

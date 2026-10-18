@@ -1,8 +1,9 @@
+import json
 import re
 from collections.abc import Sequence
 from pathlib import Path
 
-from simile.npc.generate import Brief, craft_label, first_sentence
+from simile.npc.generate import HOMES, Brief, craft_label, first_sentence
 from simile.npc.values import format_scores, ranked
 from simile.schema import Npc
 
@@ -12,11 +13,13 @@ NPCS_DIR = Path(__file__).resolve().parents[3] / "content" / "npcs"
 def write_npcs(
     npcs: Sequence[Npc], directory: Path, seed: int, briefs: Sequence[Brief] = ()
 ) -> list[Path]:
-    """Write each NPC as `<id>.json` plus a README, replacing any NPCs already there."""
+    """Write each NPC as `<id>.json` plus a README, replacing any NPCs already there except
+    those living somewhere other than a house, like the café's barista, which it didn't make."""
     directory.mkdir(parents=True, exist_ok=True)
     ids = {npc.id for npc in npcs}
     for stale in directory.glob("*.json"):
-        if stale.stem not in ids:
+        home = json.loads(stale.read_text(encoding="utf-8")).get("home")
+        if stale.stem not in ids and (home is None or home in HOMES):
             stale.unlink()
     written = []
     for npc in npcs:

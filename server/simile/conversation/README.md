@@ -199,6 +199,12 @@ published.
   their goodbye, or None if they weren't in one.
 - **The ambient director.** `engine.accept_score(a, b)` says how keen `b` would be if `a` walked up
   now, so [`simile.ambient`](../ambient/README.md) only nudges pairs who would accept each other.
+- **Writing an NPC's replies to the player.** `app.state.players` is the server's
+  `PlayerConversations`. `players.writers[npc]` is an async function of the cue and the lines so
+  far that returns the NPC's reply, which is paced and voiced like any other, or None for B5's own.
+  `players.interject(npc, text)` has the NPC say `text` to the player now, in their conversation or
+  opening one, and is False if either is talking to someone else. The café
+  ([`simile.cafe`](../cafe/README.md)) takes orders this way.
 
 ## Without Claude
 
