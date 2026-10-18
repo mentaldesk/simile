@@ -80,3 +80,17 @@ describe('partnerMix', () => {
     expect(Math.abs(partner(3).pan)).toBeLessThan(Math.abs(overheard(3).pan));
   });
 });
+
+describe('another map', () => {
+  const inside = { x: 10, y: 10, map: 'coffee_shop' };
+
+  it('silences an overheard voice, however close its tiles', () => {
+    expect(overheardMix({ ...listener, map: 'village' }, inside)).toEqual({ gain: 0, pan: 0 });
+    expect(overheardMix(listener, { x: 11, y: 10 }).gain).toBe(OVERHEARD_GAIN);
+    expect(overheardMix(inside, { ...inside, x: 11 }).gain).toBe(OVERHEARD_GAIN);
+  });
+
+  it('plays the partner at full volume, centred', () => {
+    expect(partnerMix(listener, { ...inside, x: 14 })).toEqual({ gain: 1, pan: 0 });
+  });
+});

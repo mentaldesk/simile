@@ -22,6 +22,24 @@ export type TiledMap = {
 export const COLLISION_LAYER = 'collision';
 export const LOCATIONS_LAYER = 'locations';
 
+export const VILLAGE = 'village';
+
+/** A position with no map is on the village, as the protocol has it. */
+export const mapOf = (position: Position): string => position.map ?? VILLAGE;
+
+export type MapPosition = Position & { map: string };
+
+export type Tile = { x: number; y: number };
+
+/** The tile the server reads a position as: W2's `floor(p + 0.5)`. */
+export const tileOf = ({ x, y }: Position): Tile => ({ x: Math.floor(x + 0.5), y: Math.floor(y + 0.5) });
+
+export const objectsOf = (map: TiledMap, layer: string): TiledObject[] =>
+  map.layers.find(({ name }) => name === layer)?.objects ?? [];
+
+export const propertyOf = (object: TiledObject, name: string): unknown =>
+  object.properties?.find((property) => property.name === name)?.value;
+
 export class CollisionMap {
   readonly width: number;
   readonly height: number;
@@ -45,11 +63,8 @@ export class CollisionMap {
   }
 }
 
-export function entryOf(map: TiledMap, locationId: string): Position | undefined {
-  const location = map.layers
-    .find(({ name }) => name === LOCATIONS_LAYER)
-    ?.objects?.find(({ name }) => name === locationId);
-  const property = (name: string) => location?.properties?.find((p) => p.name === name)?.value;
-  const [x, y] = [property('entry_x'), property('entry_y')];
+export function entryOf(map: TiledMap, locationId: string): Tile | undefined {
+  const location = objectsOf(map, LOCATIONS_LAYER).find(({ name }) => name === locationId);
+  const [x, y] = location ? [propertyOf(location, 'entry_x'), propertyOf(location, 'entry_y')] : [];
   return typeof x === 'number' && typeof y === 'number' ? { x, y } : undefined;
 }

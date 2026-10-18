@@ -1,11 +1,10 @@
 import { server, type Entity, type Position } from '../net';
 import { PLAYER_ID } from '../ui/world-view';
+import { mapOf, VILLAGE, type MapPosition } from './map';
 import { Mover } from './motion';
 import { Player } from './player';
 
 export type Npc = { id: string; name: string; map: string; mover: Mover };
-
-const mapOf = (position: Position) => position.map ?? 'village';
 
 /** The client owns the player: only the first snapshot places it, so reconnecting doesn't. */
 export class WorldModel {
@@ -35,13 +34,14 @@ export class WorldModel {
     npc.mover.place(position);
   }
 
+  /** The map the player is on, the only one drawn. */
+  get map(): string {
+    return this.player?.map ?? VILLAGE;
+  }
+
   /** The NPCs on the player's map, the only ones drawn, heard or picked. */
   *here(): Iterable<Npc> {
     for (const npc of this.npcs.values()) if (npc.map === this.map) yield npc;
-  }
-
-  private get map(): string {
-    return this.player ? mapOf(this.player.position) : 'village';
   }
 
   spawnPlayer(position: Position): Player {
@@ -52,10 +52,17 @@ export class WorldModel {
     for (const { mover } of this.npcs.values()) mover.update(dt);
   }
 
-  positionOf(entityId: string): Position | undefined {
+  /** Undefined for an NPC on another map. */
+  positionOf(entityId: string): MapPosition | undefined {
+    const position = this.whereIs(entityId);
+    return position?.map === this.map ? position : undefined;
+  }
+
+  /** Wherever the entity is, on whichever map. */
+  whereIs(entityId: string): MapPosition | undefined {
     if (entityId === PLAYER_ID) return this.player?.position;
     const npc = this.npcs.get(entityId);
-    return npc?.map === this.map ? npc.mover.position : undefined;
+    return npc && { ...npc.mover.position, map: npc.map };
   }
 
   private placePlayer(position: Position): void {

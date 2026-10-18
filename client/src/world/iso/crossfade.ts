@@ -15,7 +15,7 @@ export const UPLOAD_MS_PER_FRAME = 4;
 const OUTGOING_FADE = 20;
 
 /** Outgoing under incoming at its weight, faded together to `alpha` as one image would be. */
-export function layerAlphas(layers: readonly Layer[], alpha = 1): number[] {
+export function layerAlphas<L extends { weight: number }>(layers: readonly L[], alpha = 1): number[] {
   if (layers.length < 2) return layers.map(() => alpha);
   const weight = layers[1].weight;
   const incoming = alpha * weight;

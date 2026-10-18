@@ -1,4 +1,6 @@
 export * from './assets';
+export * from './doors';
+export * from './interactables';
 export * from './map';
 export * from './model';
 export * from './motion';

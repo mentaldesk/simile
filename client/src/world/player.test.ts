@@ -111,6 +111,14 @@ describe('Player', () => {
     expect(player.walking).toBe(true);
   });
 
+  it('is on the village unless placed on another map, and walks on the map it is on', () => {
+    const player = new Player({ x: 2, y: 2 });
+    expect(player.map).toBe('village');
+    player.place({ x: 2, y: 2, map: 'coffee_shop' });
+    player.move({ x: 1, y: 0 }, 0.1, ROOM);
+    expect(player.position.map).toBe('coffee_shop');
+  });
+
   it('stops walking when no key is down', () => {
     const player = new Player({ x: 2, y: 2 });
     player.move({ x: -1, y: 0 }, 0.1, ROOM);
