@@ -8,7 +8,7 @@ from datetime import datetime
 from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.news.reactions import system_prompt
-from simile.schema import PLAYER_ID, Id, Memory, MemoryKind, Npc, Work
+from simile.schema import PLAYER_ID, VILLAGE_MAP, Id, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.social import as_of, describe, meet
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 def distance_in_front(wall: MuralWall, position: Point) -> float | None:
-    """How far someone standing at `position` is from the wall's face, or None behind it. As the
-    client's `distanceInFront`, from the middle of their tile."""
+    """How far someone standing at `position` is from the wall's face, or None behind it or off the
+    village. As the client's `distanceInFront`, from the middle of their tile."""
+    if position.map != VILLAGE_MAP:
+        return None
     x, y = position.x + 0.5, position.y + 0.5
     out, along, start = (
         (y - (wall.y + 1), x, wall.x) if wall.face == "south" else (x - (wall.x + 1), y, wall.y)

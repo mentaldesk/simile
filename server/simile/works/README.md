@@ -28,13 +28,13 @@ tone and relatedness to every core value, scored as for news.
 
 ## Murals
 
-- **Choosing a wall.** B1's `mural_wall` hook is `Walls.pick`. A blank wall comes first, the
-  nearest of them. Otherwise each painted wall gets a readiness to paint over it: its age up to
-  `mural_age` (2 days), plus `own_mural` (0.3) for the painter's own, or for someone else's their
-  boldness above 0.5 (the mean of 1 - Tradition, 1 - Obedience and Freedom) minus half their B1
-  affinity for the artist. The readiest wall at or above 0.5 is picked, and None while there's none.
-  A painter less bold than 0.75 never paints over a friend's (affinity 0.4 or more), and nobody
-  picks a wall someone else is off to paint.
+- **Choosing a wall.** B1's `mural_wall` hook is `Walls.pick`. A blank wall comes first, the nearest
+  of them to a muralist on the village, or the first for one indoors. Otherwise each painted wall
+  gets a readiness to paint over it: its age up to `mural_age` (2 days), plus `own_mural` (0.3) for
+  the painter's own, or for someone else's their boldness above 0.5 (the mean of 1 - Tradition, 1 -
+  Obedience and Freedom) minus half their B1 affinity for the artist. The readiest wall at or above
+  0.5 is picked, and None while there's none. A painter less bold than 0.75 never paints over a
+  friend's (affinity 0.4 or more), and nobody picks a wall someone else is off to paint.
 - **Painting.** The prompt also has the wall's size and what's on it now, and asks for an SVG with
   the wall's `viewBox`, beside a plain description of what it shows (the work's `text`).
 - **Checking the SVG** (`svg.checked`). It must be under 60,000 characters and 2,000 elements,
@@ -53,8 +53,8 @@ tone and relatedness to every core value, scored as for news.
 - **Telling the client.** Each new client gets `murals`, with every wall, painted or not, and
   everyone gets it again when one is painted. `GET /api/works/<id>.png` serves a mural's picture,
   and 404s for anything else.
-- **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen says
-  how it lands in one Haiku call, as at the terminals. The memory is about the artist, with
+- **Being seen.** A resident who comes within 3 tiles in front of a mural they haven't seen, on the
+  village rather than inside a building, says how it lands in one Haiku call, as at the terminals. The memory is about the artist, with
   `work_id`. If the call fails, they try again on their first look after `look_again` (a sim
   hour). An artist who finds their mural painted over is told so in the same call, and remembers it
   with a salience of at least 0.7. The player remembers seeing it, with no call.
