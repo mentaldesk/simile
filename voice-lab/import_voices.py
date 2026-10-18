@@ -167,7 +167,7 @@ def gather(
     return clips, notes
 
 
-def check(clips: list[Clip], tools: Tools, out: Path) -> None:
+def check(clips: list[Clip], tools: Tools, out: Path, longest: float | None = None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     for clip in clips:
         count = len(clip.transcript.split())
@@ -187,7 +187,9 @@ def check(clips: list[Clip], tools: Tools, out: Path) -> None:
         clip.wav.with_suffix(".txt").write_text(clip.transcript + "\n", encoding="utf-8")
         with wave.open(str(clip.wav)) as reader:
             clip.seconds = reader.getnframes() / reader.getframerate()
-        if not MIN_SECONDS <= clip.seconds <= MAX_SECONDS:
+        if longest is not None and clip.seconds > longest:
+            clip.errors.append(f"{clip.seconds:.1f} s long, but a recording can be at most {longest:.0f} s")
+        elif not MIN_SECONDS <= clip.seconds <= MAX_SECONDS:
             clip.problems.append(f"{clip.seconds:.1f} s long, not {MIN_SECONDS:.0f}-{MAX_SECONDS:.0f} s")
 
     todo = [clip for clip in clips if not clip.errors]

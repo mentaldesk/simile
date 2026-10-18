@@ -76,9 +76,16 @@ Since VoiceDesign can't do a strong accent, a resident's voice can come from a r
 - `content/voices/imported.json` lists the imported voices. `design_npcs.py` doesn't redesign them, even with `--force`, as long as the resident still has that voice. If they lose it, for example when `simile generate-npcs` clears `reference_clip`, it designs a new one. Remove a resident from the list to redesign their voice.
 - Restart the server to hear a new voice. The saved village doesn't keep voices, so there's no need for `simile reset`.
 
+## The creator's voice jobs
+
+The server's `voice_design` and `voice_check` jobs ([`simile.voicelib`](../server/simile/voicelib/README.md)) run `voice_job.py` for one player character. It never prompts and never touches `content/`: it reads `params.json` from the job's work directory and writes its clips and `result.json` there.
+
+- `design` (in `.venv`) has VoiceDesign say the reference line in a few voices, as `design_npcs.py` does, and checks them the same way. `listen` (in `.venv-mlx`, which `design` runs) transcribes each one and clones it saying the line.
+- `check` (in `.venv-mlx`) runs `import_voices.py`'s checks on an uploaded recording. A recording over 60 s is refused once it's converted, before Whisper, cloning or the accent classifier.
+
 ## Tests
 
-`tests/` covers `import_voices.py` and the `npcs.py` helpers it shares with `design_npcs.py`, with fakes instead of models. `make test` doesn't run them. CI runs them (`.github/workflows/voice-lab.yml`) on changes to `voice-lab/` or `content/npcs/`:
+`tests/` covers `import_voices.py`, `voice_job.py check` and the `npcs.py` helpers they share with `design_npcs.py`, with fakes instead of models. `make test` doesn't run them. CI runs them (`.github/workflows/voice-lab.yml`) on changes to `voice-lab/` or `content/npcs/`:
 
 ```bash
 uvx --python 3.12 pytest
