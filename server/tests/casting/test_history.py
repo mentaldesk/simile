@@ -47,6 +47,15 @@ def test_an_npc_has_a_plain_voice_and_round_trips(pool: list[Character]) -> None
     assert Cast.model_validate_json(made.model_dump_json()) == made
 
 
+def test_an_npc_keeps_their_mannerisms(make: Make) -> None:
+    habits = ["answers a question with another question"]
+    talker, quiet = make("mei_lin", mannerisms=habits), make("tom_hale", mannerisms=[])
+
+    made = bind([talker, quiet], houses=HOUSES)
+
+    assert {npc.id: npc.mannerisms for npc in made.npcs()} == {"mei_lin": habits, "tom_hale": []}
+
+
 def test_a_hook_binds_on_both_sides(make: Make) -> None:
     lender = make("mei_lin", hooks=(("debt", "target", "They never paid me back."),))
     borrower = make("tom_hale", hooks=(("debt", "actor", "I still owe them."),))

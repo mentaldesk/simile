@@ -179,7 +179,7 @@ def describe(facts: Mapping[str, Any], sheet: Sheet, t: Tables) -> str:
     if s.health != "none":
         lines.append(f"- Health: {_text(census.health.condition, s.health)}.")
     if sheet.mannerisms:
-        lines.append(f"- Mannerisms: {'; '.join(sheet.mannerisms)}.")
+        lines.append(f"- Verbal habits: {'; '.join(sheet.mannerisms)}.")
     tension = sheet.tension
     if tension.wound:
         lines.append(f"- Wound: {tension.wound.text}.")
@@ -320,7 +320,8 @@ INSTRUCTIONS = {
     ),
     "speaking_style": lambda sheet: (
         "one or two sentences on pace, formality, vocabulary and verbal habits, shaped by their "
-        "temperament, values and age. Use a mannerism if it fits."
+        "temperament, values and age. It can build on a verbal habit from the brief, but don't "
+        "just repeat it."
     ),
     "interests": lambda sheet: (
         "three to six short topics they bring up, two to five words each and specific, such as "
