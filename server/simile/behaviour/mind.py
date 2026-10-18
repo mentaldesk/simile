@@ -35,9 +35,10 @@ from simile.schema import (
     Npc,
     Relationship,
     Tile,
+    Traits,
 )
 from simile.sim import Clock, EventBus
-from simile.social import as_of, meet
+from simile.social import as_of, cast_traits, meet, trait_factor
 from simile.world.movement import Movement, Outcome, Point, Target, Walk
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ type LiveConversations = Callable[[], list[Conversation]]
 type WorkMaker = Callable[[Npc, Id | None], None]
 type WallPicker = Callable[[Npc], MuralSpot | None]
 
+NEUTRAL = Traits()
 AT_HOME = (Activity.HOME, Activity.SLEEP)
 GOING_TO_A_PLACE = (
     Activity.HOME,
@@ -175,12 +177,14 @@ class Behaviour:
         *,
         config: BehaviourConfig = DEFAULT_CONFIG,
         seed: int | None = None,
+        traits: Mapping[Id, Traits] | None = None,
     ) -> None:
         self.clock = clock
         self.bus = bus
         self.movement = movement
         self.npcs = {npc.id: npc for npc in npcs}
         self.relationships = relationships
+        self.traits = dict(traits or {})
         self.config = config
         self.rng = random.Random(seed)
         self.hooks = Hooks()
@@ -398,15 +402,29 @@ class Behaviour:
         if mind.walk is not None:
             return self.config.walking
         effects = self.config.effects.get(mind.goal.activity, {})
-        if mind.goal == Goal(Activity.TALK, PLAYER_ID) and Need.SOCIAL in effects:
-            return {**effects, Need.SOCIAL: effects[Need.SOCIAL] * self.config.player_relief}
+        if mind.goal.activity is Activity.TALK and Need.SOCIAL in effects:
+            relief = effects[Need.SOCIAL] / self._sociable(mind.npc)
+            if mind.goal.target == PLAYER_ID:
+                relief *= self.config.player_relief
+            return {**effects, Need.SOCIAL: relief}
         return effects
 
     def _rise(self, npc: Npc, need: Need) -> float:
         if need is Need.INSPIRATION and npc.craft is None:
             return 0.0
         weights = self.config.rise_values.get(need, {})
-        return self.config.rise.get(need, 0.0) + sum(w * npc.values[v] for v, w in weights.items())
+        rise = self.config.rise.get(need, 0.0) + sum(w * npc.values[v] for v, w in weights.items())
+        if need is not Need.SOCIAL:
+            return rise
+        sociable = self._sociable(npc)
+        return rise * sociable if rise > 0 else rise / sociable
+
+    def _sociable(self, npc: Npc) -> float:
+        return trait_factor(self.traits_of(npc.id).sociability, self.config.sociability_spread)
+
+    def traits_of(self, npc: Id) -> Traits:
+        """Their traits from the cast, or neutral ones."""
+        return self.traits.get(npc, NEUTRAL)
 
     def _has_company(self, npc: Id, positions: dict[Id, Point]) -> bool:
         here = positions[npc]
@@ -445,7 +463,7 @@ class Behaviour:
         for other, position in self.movement.entities().items():
             if other == npc.id or (other not in self.minds and other != PLAYER_ID):
                 continue
-            rel = as_of(known.get(other) or meet(npc, other), now)
+            rel = as_of(known.get(other) or meet(npc, other), now, traits=self.traits_of(npc.id))
             others.append(
                 Other(
                     other,
@@ -670,6 +688,7 @@ def create_behaviour(
     config: BehaviourConfig = DEFAULT_CONFIG,
     seed: int | None = None,
     npcs: Iterable[Npc] | None = None,
+    traits: Mapping[Id, Traits] | None = None,
 ) -> Behaviour:
     from simile.memory import memory_of
     from simile.npc import load_npcs
@@ -685,4 +704,5 @@ def create_behaviour(
         memory_of(app),
         config=config,
         seed=seed,
+        traits=cast_traits() if traits is None else traits,
     )

@@ -42,6 +42,22 @@ hour like peaks at about 0.82, every six hours at 0.73 and every day at 0.68.
 A stored relationship is as of its `last_interaction`. Read it through `as_of(rel, now)`, and store
 `apply_events(as_of(rel, now), events, now)`, so each stretch of time decays once.
 
+## Traits
+
+Each owner's P1 `Traits` (0-1, 0.5 neutral) bend the numbers above. They come from the world's
+cast through P4's `load_cast()`, read once per cast. Anyone outside a cast, including everyone in
+today's village, is neutral, and their numbers are exactly as above. Pass `traits=` to
+`apply_events`, `decay` or `as_of` to use others. Each trait multiplies something by
+`spread ** (2 * trait - 1)` (`trait_factor`), which is 1 at neutral, with each spread in
+`RelationshipConfig`:
+
+- **negativity_bias** multiplies `negativity_bias` (`negativity_bias_spread`, 2), but a bad event
+  never weighs less than a good one.
+- **first_impressions** multiplies the shifts of the owner's first encounter with someone, while
+  familiarity is still 0 (`first_impressions_spread`, 2).
+- **forgiveness** divides the half-lives of a grudge, a score below its baseline
+  (`forgiveness_spread`, 3). Warmer-than-usual feelings fade as before.
+
 ## Flags
 
 Facts that outlast the scores (`FlagKind`, from the owner's side): `about` owes the owner, the

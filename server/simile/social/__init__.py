@@ -9,6 +9,7 @@ from simile.social.relationship import (
     open_flag,
     resolve_flag,
 )
+from simile.social.traits import cast_traits, trait_factor, traits_of
 
 __all__ = [
     "DEFAULT_CONFIG",
@@ -16,9 +17,12 @@ __all__ = [
     "apply_event",
     "apply_events",
     "as_of",
+    "cast_traits",
     "decay",
     "describe",
     "meet",
     "open_flag",
     "resolve_flag",
+    "trait_factor",
+    "traits_of",
 ]
