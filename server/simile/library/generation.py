@@ -69,13 +69,11 @@ async def events(library: Library, llm: LLMClient, work: Work) -> AsyncIterator[
         finally:
             queue.put_nowait(None)
 
-    library.generating += 1
     task = asyncio.create_task(run())
     try:
         while (event := await queue.get()) is not None:
             yield json.dumps(event) + "\n"
     finally:
-        library.generating -= 1
         task.cancel()
 
 

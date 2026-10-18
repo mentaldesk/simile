@@ -93,8 +93,9 @@ An export is a zip of `character.json`, with `voice.reference_clip` set to `voic
 
 An import is refused, with the reason, when:
 
-- it's over 12 MB, or isn't a zip
-- it holds anything but `character.json` and `voice.wav`, has a name twice, or is encrypted
+- it's over 12 MB, or isn't a zip, or is damaged
+- it holds anything but `character.json` and `voice.wav`, or has a name twice
+- a file in it is encrypted, or compressed any way but deflate
 - `character.json` is over 256 KB or isn't a valid `Character`
 - `voice.wav` is over 10 MB or 60 seconds, or doesn't decode in full as a WAV file
 

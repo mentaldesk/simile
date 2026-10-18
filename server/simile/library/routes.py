@@ -1,5 +1,5 @@
 import functools
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import aclosing
 from typing import TYPE_CHECKING, Any
 
@@ -9,10 +9,10 @@ from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import BaseRoute, Route
-from starlette.types import Send
+from starlette.types import Receive, Scope, Send
 
 from simile.library.archive import MAX_FILE, Refused, reasons
-from simile.library.store import NotFound, PlayerLook, ReadOnly, library_of
+from simile.library.store import Library, NotFound, PlayerLook, ReadOnly, library_of
 from simile.schema import Character, CharacterSource
 
 if TYPE_CHECKING:
@@ -28,7 +28,20 @@ class TooLarge(Exception):
 
 
 class EventStream(StreamingResponse):
+    """Generation events, holding one of the library's slots until the response ends."""
+
     media_type = "application/x-ndjson"
+
+    def __init__(self, events: AsyncIterator[str], library: Library) -> None:
+        super().__init__(events)
+        library.generating += 1
+        self.library = library
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            self.library.generating -= 1
 
     async def stream_response(self, send: Send) -> None:
         async with aclosing(self.body_iterator):
@@ -157,7 +170,7 @@ def stream(request: Request, work: "Work") -> Response:
     library = library_of(request.app)
     if library.generating >= MAX_GENERATING:
         return problem(429, f"{library.generating} characters are already being written")
-    return EventStream(events(library, request.app.state.llm, work))
+    return EventStream(events(library, request.app.state.llm, work), library)
 
 
 @guarded

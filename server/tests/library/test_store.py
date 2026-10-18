@@ -8,7 +8,7 @@ import pytest
 
 from simile.characters import generate as engine
 from simile.characters.brief import Brief
-from simile.library import Library
+from simile.library import Library, Refused
 from simile.library.generation import events
 from simile.library.store import CONTENT, DEFAULT_ROOT, REPO, default_root
 from simile.llm import CallRecord, FakeProvider, LLMClient
@@ -48,6 +48,18 @@ def test_finds_each_reference_clip(library: Library, root: Path) -> None:
     assert library.clip(voiced) == root / "clips" / "wren_abernethy.wav"
     assert library.clip(premade) == CONTENT / "voices" / "x.wav"
     assert library.clip(library.get("tobiah_rennick")) is None
+
+
+def test_a_clip_that_wont_decode_is_refused(library: Library, root: Path) -> None:
+    library.create(character())
+    bad = clip()
+    bad = bad.replace(b"fmt \x10\x00\x00\x00", b"fmt \xff\xff\xff\x00")
+
+    with pytest.raises(Refused, match="The voice clip isn't a WAV file that decodes"):
+        library.save_clip("wren_abernethy", bad)
+
+    assert library.get("wren_abernethy").voice.reference_clip is None
+    assert not (root / "clips").exists()
 
 
 def test_moving_the_library_keeps_its_clips(library: Library, root: Path, tmp_path: Path) -> None:
@@ -110,4 +122,3 @@ async def test_leaving_the_stream_stops_the_claude_call(library: Library) -> Non
         {"type": "text", "text": "{"},
     ]
     assert [record.error for record in records] == ["cancelled"]
-    assert library.generating == 0

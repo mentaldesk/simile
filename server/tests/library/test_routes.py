@@ -1,18 +1,23 @@
+import asyncio
 import io
 import json
 import zipfile
+from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
 import pytest
+from starlette.applications import Starlette
 from starlette.testclient import TestClient
+from starlette.types import Message
 
 from simile.art.characters import PLAYER
 from simile.library import Library
 from simile.library.generation import MAX_GENERATING
-from simile.llm import FakeProvider, LLMError
+from simile.library.routes import EventStream
+from simile.llm import FakeProvider, LLMError, Request
 
-from .conftest import LOOK, PREMADE, archive, character, clip, requested
+from .conftest import LOOK, PREMADE, answer, archive, character, clip, requested
 
 BIOGRAPHY = {"backstory", "persona", "speaking_style", "interests", "craft"}
 
@@ -234,12 +239,71 @@ def test_a_failed_call_ends_the_stream_with_its_reason(
     ]
 
 
-def test_only_a_few_characters_are_written_at_once(client: TestClient, library: Library) -> None:
-    library.generating = MAX_GENERATING
+@pytest.mark.anyio
+async def test_requests_together_get_only_two_slots(
+    app: Starlette, fake: FakeProvider, library: Library
+) -> None:
+    hold, written = asyncio.Event(), asyncio.Event()
+    statuses: list[int] = []
 
-    response = client.post("/api/characters/generate", json={})
+    async def slow(request: Request) -> str:
+        await hold.wait()
+        return answer(request)
 
-    assert response.status_code == 429
+    async def post() -> None:
+        async def receive() -> Message:
+            return {"type": "http.request", "body": b"{}", "more_body": False}
+
+        async def send(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                statuses.append(message["status"])
+                await written.wait()
+
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": "2.4"},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": "/api/characters/generate",
+            "raw_path": b"/api/characters/generate",
+            "query_string": b"",
+            "root_path": "",
+            "headers": [(b"content-type", b"application/json")],
+        }
+        await app(scope, receive, send)
+
+    fake.default = slow
+    posts = [asyncio.create_task(post()) for _ in range(6)]
+    for _ in range(500):
+        if len(statuses) == len(posts):
+            break
+        await asyncio.sleep(0.01)
+    held = library.generating
+    hold.set()
+    written.set()
+    await asyncio.gather(*posts)
+
+    assert sorted(statuses) == [200, 200, 429, 429, 429, 429]
+    assert (held, library.generating) == (MAX_GENERATING, 0)
+
+
+@pytest.mark.anyio
+async def test_a_stream_that_never_starts_gives_its_slot_back(library: Library) -> None:
+    async def lines() -> AsyncIterator[str]:
+        yield "never sent\n"
+
+    async def receive() -> Message:
+        return {"type": "http.disconnect"}
+
+    async def send(message: Message) -> None:
+        await asyncio.sleep(10)
+
+    response = EventStream(lines(), library)
+    held = library.generating
+    await response({"type": "http", "asgi": {"spec_version": "2.0"}}, receive, send)
+
+    assert (held, library.generating) == (1, 0)
 
 
 def test_export_then_import_round_trips(client: TestClient, library: Library, root: Path) -> None:
@@ -311,9 +375,42 @@ def twice() -> bytes:
     return buffer.getvalue()
 
 
+def patched(data: bytes, at: bytes, offset: int, value: bytes) -> bytes:
+    start = data.index(at) + offset
+    return data[:start] + value + data[start + len(value) :]
+
+
 GOOD = json.dumps(character())
+DAMAGED = "That isn't a character file, or it's damaged: "
+UNDECODABLE = "The voice clip isn't a WAV file that decodes"
+BAD_CHUNK = patched(clip(), b"fmt ", 4, b"\xff\xff\xff\x00")
 BAD_FILES = {
-    "not a zip": (b"just some text", "That isn't a character file: File is not a zip file"),
+    "not a zip": (b"just some text", f"{DAMAGED}File is not a zip file"),
+    "a bad directory offset": (
+        patched(archive({"character.json": GOOD}), b"PK\x05\x06", 16, b"\x00\x00\x10\x00"),
+        f"{DAMAGED}negative seek value",
+    ),
+    "a name that isn't utf-8": (
+        patched(
+            patched(archive({"character.json": GOOD}), b"PK\x01\x02", 9, b"\x08"),
+            b"PK\x01\x02",
+            46,
+            b"\xff",
+        ),
+        f"{DAMAGED}'utf-8' codec can't decode",
+    ),
+    "bzip2": (
+        archive({"character.json": GOOD}, zipfile.ZIP_BZIP2),
+        "character.json has to be stored or deflated, not compressed another way",
+    ),
+    "lzma": (
+        archive({"character.json": GOOD, "voice.wav": clip()}, zipfile.ZIP_LZMA),
+        "character.json has to be stored or deflated, not compressed another way",
+    ),
+    "a clip with a bad chunk size": (
+        archive({"character.json": GOOD, "voice.wav": BAD_CHUNK}),
+        UNDECODABLE,
+    ),
     "no character": (archive({"voice.wav": clip()}), "The character file has no character.json"),
     "another file": (
         archive({"character.json": GOOD, "../../escape.json": "{}"}),
@@ -337,7 +434,7 @@ BAD_FILES = {
     ),
     "a clip that won't decode": (
         archive({"character.json": GOOD, "voice.wav": b"RIFF....WAVEnope"}),
-        "The voice clip isn't a WAV file that decodes",
+        UNDECODABLE,
     ),
     "a clip cut short": (
         archive({"character.json": GOOD, "voice.wav": clip()[:-1000]}),

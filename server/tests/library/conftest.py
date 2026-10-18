@@ -90,9 +90,9 @@ def clip(seconds: float = 0.5, rate: int = 24000) -> bytes:
     return buffer.getvalue()
 
 
-def archive(files: dict[str, bytes | str]) -> bytes:
+def archive(files: dict[str, bytes | str], compression: int = zipfile.ZIP_DEFLATED) -> bytes:
     buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zipped:
+    with zipfile.ZipFile(buffer, "w", compression) as zipped:
         for name, content in files.items():
             zipped.writestr(name, content)
     return buffer.getvalue()

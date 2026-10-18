@@ -16,6 +16,7 @@ MAX_CLIP = 10 * 1024 * 1024
 MAX_SECONDS = 60
 ENCRYPTED = 0x1
 LIMITS = {CHARACTER: MAX_CHARACTER, CLIP: MAX_CLIP}
+COMPRESSIONS = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
 
 
 class Refused(ValueError):
@@ -59,8 +60,17 @@ def unpack(data: bytes) -> tuple[Character, bytes | None]:
             if CHARACTER not in names:
                 raise Refused(f"The character file has no {CHARACTER}")
             files = {member.filename: _read(archive, member) for member in members}
-    except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError) as error:
-        raise Refused(f"That isn't a character file: {error}") from None
+    except Refused:
+        raise
+    except (
+        zipfile.BadZipFile,
+        zlib.error,
+        EOFError,
+        NotImplementedError,
+        ValueError,
+        OSError,
+    ) as error:
+        raise Refused(f"That isn't a character file, or it's damaged: {error}") from None
     try:
         character = Character.model_validate_json(files[CHARACTER])
     except ValidationError as error:
@@ -78,7 +88,7 @@ def check_clip(clip: bytes) -> None:
             frames, rate = audio.getnframes(), audio.getframerate()
             size = frames * audio.getnchannels() * audio.getsampwidth()
             decoded = len(audio.readframes(frames))
-    except (wave.Error, EOFError, struct.error, ValueError) as error:
+    except (wave.Error, EOFError, struct.error, ValueError, RuntimeError) as error:
         raise Refused(f"The voice clip isn't a WAV file that decodes: {error}") from None
     if frames == 0 or rate == 0:
         raise Refused("The voice clip is empty")
@@ -92,6 +102,8 @@ def _read(archive: zipfile.ZipFile, member: zipfile.ZipInfo) -> bytes:
     limit = LIMITS[member.filename]
     if member.flag_bits & ENCRYPTED:
         raise Refused(f"{member.filename} is encrypted")
+    if member.compress_type not in COMPRESSIONS:
+        raise Refused(f"{member.filename} has to be stored or deflated, not compressed another way")
     if member.file_size > limit:
         raise Refused(f"{member.filename} can be at most {limit // 1024} KB")
     with archive.open(member) as file:
