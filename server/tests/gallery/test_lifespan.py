@@ -48,7 +48,8 @@ def test_paintings_made_in_the_server_hang_and_everyone_hears() -> None:
 
     assert [message["type"] for message in greeted] == ["snapshot", "clock", "paintings", "murals"]
     assert len(greeted[2]["frames"]) == 13
-    assert all(frame["painting"] is None for frame in greeted[2]["frames"])
+    starters = [frame["painting"] is not None for frame in greeted[2]["frames"]]
+    assert starters == [True] * 5 + [False] * 8
     assert made is not None and by_kofi is not None
     assert (made.medium, made.form) == (Medium.PAINTING, "small oil studies of the harbour")
     assert (by_kofi.medium, by_kofi.form, by_kofi.wall) == (
@@ -56,9 +57,9 @@ def test_paintings_made_in_the_server_hang_and_everyone_hears() -> None:
         KOFI.craft.form if KOFI.craft else "",
         None,
     )
-    first = hung["frames"][0]
-    assert (first["id"], first["painting"]["work_id"]) == (gallery.frames[0].id, made.id)
-    assert hung_again["frames"][1]["painting"]["title"] == "Two"
+    first = hung["frames"][5]
+    assert (first["id"], first["painting"]["work_id"]) == (gallery.frames[5].id, made.id)
+    assert hung_again["frames"][6]["painting"]["title"] == "Two"
     assert picture.status_code == 200
     assert Image.open(io.BytesIO(picture.content)).size == painting_canvas()
     assert maker.hang is None

@@ -11,6 +11,7 @@ from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.memory.store import recency
 from simile.news.config import DEFAULT_CONFIG, NewsConfig
+from simile.news.feed import shorten
 from simile.news.interest import interest, shared, words
 from simile.news.store import NewsStore
 from simile.npc.values import format_scores, ranked
@@ -20,6 +21,8 @@ from simile.sim import Clock
 logger = logging.getLogger(__name__)
 
 TITLE = re.compile(r'^I read "(.+?)"')
+MAX_POINTS = 3
+POINT_LENGTH = 240
 NAMING = re.compile(r"\b(?:news|articles?|pieces?|story|stories|headlines?|read|papers?)\b", re.I)
 
 
@@ -37,6 +40,14 @@ class Reaction(BaseModel):
     )
     topics: list[str] = Field(
         description="One to three short lowercase topics it's about, e.g. 'privacy'."
+    )
+
+
+class DetailedReaction(Reaction):
+    points: list[str] = Field(
+        description="Two or three specific things from it that stick with you and that you might "
+        "mention to a neighbour: a fact, a figure, who's involved or what happens next. One short "
+        "sentence each."
     )
 
 
@@ -61,7 +72,7 @@ def read_in(item: NewsItem) -> str:
 def article_prompt(item: NewsItem) -> str:
     return (
         f"You've just read this{read_in(item)} on the village news terminal.\n\n"
-        f"{item.title}\n{item.summary}\n\n"
+        f"{item.title}\n{item.long_summary or item.summary}\n\n"
         "How does it land with you? Something that chimes with what you care about most is "
         "strongly positive, something that goes against it strongly negative, and something "
         "you don't care about is mild either way."
@@ -72,11 +83,14 @@ def remember(
     npc: Npc, item: NewsItem, reaction: Reaction, now: datetime, config: NewsConfig
 ) -> Memory:
     topics = [topic.strip().lower() for topic in reaction.topics if topic.strip()]
+    points = reaction.points if isinstance(reaction, DetailedReaction) else []
+    points = [shorten(" ".join(point.split()), POINT_LENGTH) for point in points if point.strip()]
     return Memory(
         owner=npc.id,
         kind=MemoryKind.NEWS,
         content=f'I read "{item.title}"{read_in(item)} on the news terminal. '
         f"{reaction.take.strip()}",
+        points=points[:MAX_POINTS],
         salience=reaction.intensity,
         valence=reaction.valence,
         timestamp=now,
@@ -155,7 +169,7 @@ class NewsReader:
         try:
             reaction = await llm.structured(
                 article_prompt(item),
-                Reaction,
+                DetailedReaction if item.long_summary else Reaction,
                 system=system_prompt(npc, self.config),
                 model=self.config.model,
                 purpose="news-reaction",

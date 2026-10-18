@@ -19,6 +19,7 @@ from simile.conversation.prompt import (
     Cue,
     Draft,
     WorkTopic,
+    detailed,
     duration,
     first_name,
     parse_reply,
@@ -360,6 +361,7 @@ class PlayerConversations:
                     self._sentence(talk, sentence)
                 return sentences.draft
         pressed = engine.pressing(npc)
+        recalled = self._recalled(npc, lines)
         prompt = turn_prompt(
             party.background,
             lines,
@@ -368,10 +370,11 @@ class PlayerConversations:
             engine.player.name,
             engine.config,
             speaker=npc,
-            recalled=self._recalled(npc, lines),
+            recalled=recalled,
             works=self._works(talk, lines),
             mood=pressed.mood,
             errand=pressed.errand,
+            detail=detailed(recalled, party.topics),
         )
         stream = engine.llm().stream(
             prompt,

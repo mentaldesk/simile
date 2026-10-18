@@ -222,3 +222,34 @@ def test_add_is_all_or_nothing(store: MemoryStore) -> None:
         store.add(memory("kept?"), "not a record")  # type: ignore[arg-type]
 
     assert store.recall("mei", NOW) == []
+
+
+def test_listeners_hear_each_memory_once_its_stored_and_nothing_else(store: MemoryStore) -> None:
+    heard: list[Memory] = []
+    stop = store.listen(heard.append)
+    first, second = memory("one"), memory("two", owner="viktor")
+
+    store.add(first, event("mei", "viktor", "waved"), second)
+    assert heard == [first, second]
+    assert store.recall("viktor", NOW) == [second]
+
+    stop()
+    store.add(memory("three"))
+    assert heard == [first, second]
+
+
+def test_a_failing_listener_is_logged_and_the_rest_still_hear(
+    store: MemoryStore, caplog: pytest.LogCaptureFixture
+) -> None:
+    def broken(memory: Memory) -> None:
+        raise RuntimeError("boom")
+
+    heard: list[Memory] = []
+    store.listen(broken)
+    store.listen(heard.append)
+
+    store.add(memory("one"))
+
+    assert [m.content for m in heard] == ["one"]
+    assert [m.content for m in store.recall("mei", NOW)] == ["one"]
+    assert "failed for mei's memory" in caplog.text

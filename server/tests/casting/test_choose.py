@@ -5,13 +5,15 @@ from statistics import mean
 import pytest
 
 from simile.casting import CastError, CastingConfig, Pin, affinities, cast, conflicts, spread
-from simile.schema import Character, HookKind
+from simile.casting.roles import holders, village_roles
+from simile.schema import Character, HookKind, Medium
 
 type Make = Callable[..., Character]
 
 SEEDS = range(50)
-DRAWS_ONLY = CastingConfig(elders=0)
-"""With no roles to fill and no elders to find, every resident of a small cast is a draw."""
+DRAWS_ONLY = CastingConfig(elders=0, crafts=())
+"""With no roles to fill, crafts to cover or elders to find, every resident of a small cast is a
+draw."""
 
 
 @pytest.mark.parametrize("count", [4, 10])
@@ -42,10 +44,37 @@ def test_a_random_cast_clashes_and_agrees_on_purpose(pool: list[Character]) -> N
 
 def test_a_seed_gives_the_same_cast_and_seeds_differ(pool: list[Character]) -> None:
     def ids(seed: int) -> list[str]:
-        return [c.id for c in cast(pool, 6, seed=seed, houses=10)]
+        return [c.id for c in cast(pool, 8, seed=seed, houses=10)]
 
     assert ids(3) == ids(3)
     assert len({tuple(sorted(ids(seed))) for seed in range(10)}) == 10
+
+
+@pytest.mark.parametrize("count", [7, 10])
+def test_a_cast_with_room_after_the_roles_has_a_writer_a_muralist_and_a_painter(
+    pool: list[Character], count: int
+) -> None:
+    for seed in range(20):
+        chosen = cast(pool, count, seed=seed, houses=10)
+
+        assert {c.craft.medium for c in chosen if c.craft} == set(Medium)
+
+
+def test_a_craft_nobody_in_the_library_has_is_left_out(pool: list[Character]) -> None:
+    library = [c for c in pool if not c.craft or c.craft.medium is not Medium.MURAL]
+
+    for seed in range(10):
+        chosen = cast(library, 8, seed=seed, houses=10)
+
+        assert {c.craft.medium for c in chosen if c.craft} == {Medium.WRITING, Medium.PAINTING}
+
+
+def test_the_roles_come_before_the_crafts(pool: list[Character]) -> None:
+    roles = village_roles()
+
+    chosen = cast(pool, len(roles), seed=0, houses=10)
+
+    assert len(holders(chosen, roles)) == len(roles)
 
 
 def test_a_hand_picked_cast_is_taken_as_given(pool: list[Character]) -> None:

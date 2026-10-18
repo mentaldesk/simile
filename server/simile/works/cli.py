@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING, Annotated
 import typer
 
 if TYPE_CHECKING:
+    from simile.llm.client import CallRecord
+    from simile.llm.provider import Request
     from simile.schema import Memory, Npc, Work
+    from simile.works.starters import Starter
 
 
 class NoWall(Exception):
@@ -65,7 +68,93 @@ def register(app: typer.Typer) -> None:
             png.write_bytes(picture)
         typer.echo(describe(resident, work))
 
+    @works.command()
+    def starter(
+        out: Annotated[
+            Path | None, typer.Option(help="Where to put them. By default, content/works/.")
+        ] = None,
+    ) -> None:
+        """Make the works today's village starts with, with Claude: about 15 Sonnet calls.
+
+        Makes those OUT doesn't have yet, one at a time, saving each as it's made, and stops at
+        the first that fails, so running it again carries on. With SIMILE_LLM=fake, stand-ins.
+        """
+        import asyncio
+        from collections import Counter
+
+        from simile.works.starters import Stopped
+
+        calls: list[CallRecord] = []
+        failed = None
+        try:
+            made = asyncio.run(starters(out, calls))
+        except Stopped as stopped:
+            made, failed = stopped.made, stopped
+        for each in made:
+            typer.echo(f"{each.work.id}  {each.work.medium.value:8}  {each.work.title}")
+        purposes = Counter(call.purpose for call in calls)
+        errors = sum(call.error is not None for call in calls)
+        typer.echo(
+            f"{len(made)} starter works. {len(calls)} LLM calls this run "
+            f"({', '.join(f'{n} {purpose}' for purpose, n in purposes.items()) or 'none'}), "
+            f"{errors} failed."
+        )
+        if failed is not None:
+            typer.echo(f"Stopped: {failed}.", err=True)
+            raise typer.Exit(1)
+
     app.add_typer(works, name="works")
+
+
+async def starters(out: Path | None, calls: list["CallRecord"]) -> list["Starter"]:
+    import os
+    from datetime import UTC, datetime
+
+    from simile.llm import FakeProvider, LLMClient
+    from simile.llm.lifespan import FAKE_ENV
+    from simile.npc import NPCS_DIR, load_npcs
+    from simile.works.starters import STARTERS, make
+    from simile.world.map import load_map
+
+    fake = os.environ.get(FAKE_ENV) == "fake"
+    provider = FakeProvider([stand_in] * 64) if fake else None
+    llm = LLMClient(provider, listeners=[calls.append])
+    npcs = {npc.id: npc for npc in load_npcs(NPCS_DIR)}
+    start = datetime(2026, 1, 1, 8, tzinfo=UTC)
+    try:
+        return await make(llm, npcs, load_map().murals, out or STARTERS, start=start)
+    finally:
+        await llm.aclose()
+
+
+def stand_in(request: "Request") -> str:
+    """With `SIMILE_LLM=fake`, a plain piece, mural or painting, so the checks and the renderer
+    run without Claude."""
+    import re
+
+    from simile.schema import CoreValue
+    from simile.works.maker import MuralReply, Reply
+
+    asked = request.messages[-1].content
+    common = {
+        "title": "Stand-in",
+        "statement": "A stand-in, made without Claude.",
+        "inspired_by": [],
+        "tags": ["stand-in"],
+        "sentiment": 5.0,
+        **{value.value: 0.0 for value in CoreValue},
+    }
+    if not (size := re.search(r'viewBox="0 0 (\d+) (\d+)"', asked)):
+        return Reply.model_validate({**common, "text": "A stand-in piece."}).model_dump_json()
+    width, height = int(size[1]), int(size[2])
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}">'
+        f'<rect width="{width}" height="{height}" fill="#2a4d69"/>'
+        f'<rect y="{height // 2}" width="{width}" height="{height - height // 2}" fill="#e8a33d"/>'
+        "</svg>"
+    )
+    mural = {**common, "description": "Two bands of colour, blue over amber.", "svg": svg}
+    return MuralReply.model_validate(mural).model_dump_json()
 
 
 async def create(

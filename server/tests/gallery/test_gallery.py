@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from simile.behaviour import MuralSpot, Places
 from simile.gallery import Gallery, GalleryStore, frames_of, taking_turns
 from simile.protocol import Artist, Frame, Painting, PaintingsMessage
@@ -64,6 +66,21 @@ def test_a_new_painting_replaces_the_one_hung_longest_ago(
 
     showing = {frame: work.id for frame, work in gallery.showing().items()}
     assert showing == {("gallery", FRAMES[0].id): "p2", ("gallery", FRAMES[1].id): "p1"}
+
+
+def test_a_painting_hung_earlier_is_the_first_replaced(
+    store: GalleryStore, works: WorksStore
+) -> None:
+    gallery = Gallery(FRAMES[:2], store, works, Clock(NOW), RESIDENTS)
+    for n, hours_ago in enumerate((1, 30)):
+        works.add(painting(f"p{n}"))
+        gallery.hang(painting(f"p{n}"), "<svg/>", b"", NOW - timedelta(hours=hours_ago))
+    works.add(painting("p2"))
+
+    gallery.hang(painting("p2"), "<svg/>", b"")
+
+    showing = {frame: work.id for frame, work in gallery.showing().items()}
+    assert showing == {("gallery", FRAMES[0].id): "p0", ("gallery", FRAMES[1].id): "p2"}
 
 
 PLACES = Places(with_every_location(MAPS))

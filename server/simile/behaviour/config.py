@@ -3,7 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from simile.schema import CoreValue
+from simile.schema import CoreValue, Medium, MemoryKind
 
 V = CoreValue
 
@@ -96,7 +96,7 @@ RISE: dict[Need, float] = {
     Need.CURIOSITY: 0.03,
     Need.REST: 0.04,
     Need.NEWS: -0.1,
-    Need.INSPIRATION: 0.015,
+    Need.INSPIRATION: 0.01,
     Need.HUNGER: 0.16,
     Need.BLADDER: 0.28,
     Need.HYGIENE: 0.035,
@@ -107,7 +107,7 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
     Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
-    Need.INSPIRATION: {V.CREATIVITY: 0.035, V.SELF_ACTUALIZATION: 0.015},
+    Need.INSPIRATION: {V.CREATIVITY: 0.022, V.SELF_ACTUALIZATION: 0.01},
     Need.HUNGER: {V.PLEASURE: 0.06},
     Need.HYGIENE: {V.DISCIPLINE: 0.02},
 }
@@ -154,6 +154,40 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.IDLE: (2, 8),
     A.CREATE: (45, 75),
     A.WORK: (30, 75),
+}
+
+
+CRAFT_WORDS: dict[Medium, tuple[str, ...]] = {
+    Medium.WRITING: ("writ", "poem", "poet", "verse", "story", "stories", "book", "essay", "words"),
+    Medium.MURAL: ("mural", "wall", "paint", "street art", "graffiti", "art"),
+    Medium.PAINTING: ("paint", "canvas", "gallery", "portrait", "landscape", "art"),
+}
+
+VALUE_WORDS: dict[CoreValue, tuple[str, ...]] = {
+    V.FREEDOM: ("freedom", "liberty", "rights", "privacy", "surveillance", "choice"),
+    V.INDEPENDENCE: ("independen", "self-reliance", "self-sufficien", "diy", "own business"),
+    V.SELF_RESPECT: ("pride", "dignity", "respect"),
+    V.SELF_ACTUALIZATION: ("growth", "potential", "dream", "purpose", "calling"),
+    V.CREATIVITY: ("art", "creativ", "idea", "invent", "design", "music", "craft", "making"),
+    V.HONESTY: ("honest", "truth", "lie", "lies", "transparen", "corruption", "scandal"),
+    V.COMPASSION: ("kindness", "care", "caring", "charity", "lonel", "wellbeing", "struggling"),
+    V.LOYALTY: ("loyal", "friendship", "family", "promise", "commitment"),
+    V.JUSTICE: ("justice", "fair", "unfair", "rights", "court", "tenant", "rent"),
+    V.RESPONSIBILITY: ("responsib", "duty", "accountab", "obligation"),
+    V.SECURITY: ("security", "safety", "safe", "crime", "savings", "pension", "insurance"),
+    V.EQUALITY: ("equal", "inequality", "discriminat", "inclusion", "fair pay", "pay gap"),
+    V.TRADITION: ("tradition", "heritage", "history", "custom", "festival", "folk", "parish"),
+    V.OBEDIENCE: ("rules", "regulation", "law", "authority", "council", "order", "rota"),
+    V.SUCCESS: ("success", "business", "profit", "achievement", "award", "winning", "results"),
+    V.AMBITION: ("ambition", "career", "start-up", "startup", "promotion", "expansion", "growth"),
+    V.DISCIPLINE: ("discipline", "routine", "training", "habit", "practice"),
+    V.KNOWLEDGE: ("knowledge", "science", "research", "study", "learning", "education", "book"),
+    V.OPEN_MINDEDNESS: ("culture", "perspective", "debate", "different", "diversity", "travel"),
+    V.PEACE_OF_MIND: ("calm", "quiet", "peace", "rest", "nature", "garden", "stress", "anxiety"),
+    V.PLEASURE: ("food", "drink", "cocktail", "party", "fun", "holiday", "coffee", "dancing"),
+    V.CONNECTION: ("community", "neighbour", "together", "lonel", "belonging", "friends"),
+    V.ADVENTURE: ("adventure", "travel", "explor", "trek", "journey", "trip"),
+    V.OPTIMISM: ("hope", "future", "optimis", "progress", "bright"),
 }
 
 
@@ -351,13 +385,73 @@ class BehaviourConfig(BaseModel):
     start_dwell: tuple[float, float] = Field(
         default=(0.5, 5), description="Minutes awake at home before the first decision."
     )
+    head_starts: int = Field(
+        default=2,
+        ge=0,
+        description="On a fresh start, how many of the residents keenest to make something are "
+        "already partway through, at home, so the first new work comes soon. Muralists need a "
+        "wall, so they're left out.",
+    )
+    head_start: tuple[float, float] = Field(
+        default=(4, 12), description="Minutes left of a head start's stay, sampled uniformly."
+    )
+    inspiring: tuple[MemoryKind, ...] = Field(
+        default=(MemoryKind.CONVERSATION, MemoryKind.NEWS, MemoryKind.WORK),
+        description="Kinds of new memory that raise a crafter's inspiration: a conversation, an "
+        "article read, someone else's work read or seen. Making their own doesn't.",
+    )
+    inspiration_weight: float = Field(
+        default=0.15,
+        ge=0,
+        description="Inspiration from a new memory of salience 1 felt as strongly as can be, "
+        "before `inspiration_craft` and `inspiration_values`.",
+    )
+    calm: float = Field(
+        default=0.3,
+        ge=0,
+        le=1,
+        description="How much a memory felt neither way counts, as a share of one felt as "
+        "strongly as can be. A memory's intensity is calm + (1 - calm) * |valence|.",
+    )
+    inspiration_craft: float = Field(
+        default=1.5,
+        ge=0,
+        description="Extra inspiration, as a share, from a memory whose topics touch their craft: "
+        "its medium (`craft_words`) or the words of its form.",
+    )
+    inspiration_values: float = Field(
+        default=0.5,
+        ge=0,
+        description="Extra inspiration, as a share, from a memory whose topics touch one of their "
+        "`strongest` values (`value_words`).",
+    )
+    strongest: int = Field(
+        default=3, ge=0, description="How many of their strongest values a memory can touch."
+    )
+    craft_words: dict[Medium, tuple[str, ...]] = Field(
+        default=CRAFT_WORDS,
+        description="Words a topic touching each medium has, or begins with.",
+    )
+    value_words: dict[CoreValue, tuple[str, ...]] = Field(
+        default=VALUE_WORDS,
+        description="Words a topic touching each value has, or begins with.",
+    )
+    inspiration_cap: float = Field(
+        default=0.35, ge=0, description="The most inspiration one memory adds."
+    )
+    inspiration_hourly: float = Field(
+        default=0.4,
+        ge=0,
+        description="The most inspiration new memories add in any sim hour, so a busy day "
+        "doesn't flood the village with works.",
+    )
     start_needs: dict[Need, tuple[float, float]] = Field(
         default={
             Need.SOCIAL: (0.3, 0.8),
             Need.CURIOSITY: (0.2, 0.5),
             Need.REST: (0.0, 0.15),
             Need.NEWS: (0.1, 0.6),
-            Need.INSPIRATION: (0.0, 0.6),
+            Need.INSPIRATION: (0.0, 0.8),
             Need.HUNGER: (0.2, 0.6),
             Need.BLADDER: (0.0, 0.5),
             Need.HYGIENE: (0.0, 0.4),

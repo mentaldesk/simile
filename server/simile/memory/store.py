@@ -1,7 +1,9 @@
 import json
+import logging
 import os
 import sqlite3
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,6 +13,8 @@ from typing import Any, Self
 from starlette.applications import Starlette
 
 from simile.schema import Flag, InteractionEvent, Memory, MemoryKind, Relationship
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PATH = Path(__file__).resolve().parents[2] / "data" / "simile.db"
 HALF_LIFE = timedelta(hours=12)
@@ -97,10 +101,16 @@ class MemoryStore:
         self._db = sqlite3.connect(path, check_same_thread=False)
         self._db.create_function("recency", 2, recency, deterministic=True)
         self._db.executescript(SCHEMA)
+        self._listeners: list[Callable[[Memory], None]] = []
 
     def close(self) -> None:
         with self._lock:
             self._db.close()
+
+    def listen(self, listener: Callable[[Memory], None]) -> Callable[[], None]:
+        """Call `listener` with each memory once it's stored, and return a function that stops."""
+        self._listeners.append(listener)
+        return lambda: self._listeners.remove(listener)
 
     def clear(self) -> None:
         """Forget every event, flag, memory and relationship. Other tables in the file stay."""
@@ -121,7 +131,8 @@ class MemoryStore:
 
     def add(self, *records: Record) -> None:
         """Store everything in one transaction. Events and memories are appended; a flag replaces
-        any with its id, and a relationship replaces its pair's and stores its flags."""
+        any with its id, and a relationship replaces its pair's and stores its flags. Then each
+        listener hears of each memory."""
         with self._lock, self._db:
             for record in records:
                 match record:
@@ -156,6 +167,12 @@ class MemoryStore:
                             self._insert_flag(flag)
                     case _:
                         raise TypeError(f"can't store {type(record).__name__}")
+        for memory in (record for record in records if isinstance(record, Memory)):
+            for listener in list(self._listeners):
+                try:
+                    listener(memory)
+                except Exception:
+                    logger.exception("%r failed for %s's memory", listener, memory.owner)
 
     def _insert_flag(self, flag: Flag) -> None:
         self._insert(
