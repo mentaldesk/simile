@@ -1,4 +1,5 @@
 import math
+import random
 import time
 from collections import Counter, defaultdict
 from collections.abc import Callable, Iterable, Mapping
@@ -11,14 +12,10 @@ from starlette.applications import Starlette
 
 from simile.behaviour.config import Activity, Need
 from simile.behaviour.events import GoalChosen
-from simile.behaviour.mind import (
-    Behaviour,
-    create_behaviour,
-    no_conversations,
-    skip_news,
-)
+from simile.behaviour.mind import Behaviour, create_behaviour, no_conversations
 from simile.behaviour.scoring import Goal, MuralSpot, Supply
-from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Traits
+from simile.memory import MemoryStore
+from simile.schema import CoreValue, Id, LocationKind, Medium, Memory, MemoryKind, Npc, Traits
 from simile.sim import Clock, FakeWallClock, World
 
 if TYPE_CHECKING:
@@ -46,6 +43,25 @@ MEAL = 0.3
 AGAIN = timedelta(minutes=90)
 """As G1's `again`: someone served at the café this recently just sits down."""
 MONEY_EVERY = timedelta(hours=12)
+TOPICS = (
+    "rent",
+    "fair pay",
+    "the river",
+    "drone deliveries",
+    "the council",
+    "coffee",
+    "street art",
+    "poetry",
+    "painting",
+    "tradition",
+    "football",
+    "night markets",
+    "new ideas",
+    "safety",
+    "freedom",
+    "community",
+)
+"""The stand-in memories' topics, some touching a craft or a value."""
 
 
 @dataclass(frozen=True)
@@ -95,9 +111,14 @@ class Observer:
     money: dict[Id, list[float]] = field(default_factory=lambda: defaultdict(list))
     """Each resident's money every `MONEY_EVERY`, from the start."""
     least: dict[Id, float] = field(default_factory=dict)
+    memory: MemoryStore | None = None
+    """Where reading and talking leave stand-in memories, which raise crafters' inspiration."""
+    rng: random.Random = field(default_factory=random.Random)
+    made: list[tuple[datetime, Id]] = field(default_factory=list)
+    """When each work was made, and by whom."""
 
     def __post_init__(self) -> None:
-        self.next = self.behaviour.clock.now
+        self.start = self.next = self.behaviour.clock.now
         self.next_money = self.next
 
     def request_conversation(self, a: Id, b: Id) -> bool:
@@ -113,6 +134,28 @@ class Observer:
     def on_create(self, npc: Npc, wall: Id | None) -> None:
         target = self.behaviour.goal(npc.id).target
         self.works[npc.id][wall or (HOME if target == npc.home else str(target))] += 1
+        self.made.append((self.behaviour.clock.now, npc.id))
+
+    def read_news(self, npc: Npc) -> None:
+        self.remember(npc.id, MemoryKind.NEWS)
+
+    def remember(self, npc: Id, kind: MemoryKind, about: Id | None = None) -> None:
+        """A stand-in for the memory a talk or an article leaves, of middling strength."""
+        if self.memory is None:
+            return
+        rng = self.rng
+        self.memory.add(
+            Memory(
+                owner=npc,
+                kind=kind,
+                content=f"A stand-in {kind.value} memory.",
+                salience=rng.uniform(0.2, 0.8),
+                valence=rng.uniform(-0.7, 0.7),
+                timestamp=self.behaviour.clock.now,
+                about=[about] if about else [],
+                topics=rng.sample(TOPICS, 2),
+            )
+        )
 
     def mural_wall(self, npc: Npc) -> MuralSpot | None:
         """The map's walls in turn, moving on to the next after each mural."""
@@ -127,8 +170,10 @@ class Observer:
         clock = self.behaviour.clock
         for over in [talk for talk in self.ending if talk[0] <= clock.now]:
             self.ending.remove(over)
-            for npc in over[1:]:
+            _, a, b = over
+            for npc, other in ((a, b), (b, a)):
                 self.behaviour.resume(npc)
+                self.remember(npc, MemoryKind.CONVERSATION, other)
         if clock.now < self.next:
             return
         self.next += self.every
@@ -229,11 +274,12 @@ async def simulate(
     talk: float | None = None,
 ) -> tuple[Observer, float]:
     """Run memory, world, behaviour and E3's economy for `hours` of sim time as fast as the CPU
-    allows, with N1's NPCs and the cast's traits unless given others. The Daily Grind serves
-    whoever arrives while it's open, as G1 would. Conversations, news and works stay
-    stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
-    and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
-    muralists paint the map's walls in turn, and reading or making something does nothing."""
+    allows, with N1's NPCs and the cast's traits unless given others, on an in-memory store. The
+    Daily Grind serves whoever arrives while it's open, as G1 would. Conversations, news and works
+    stay stubbed, so nothing calls Claude: every request to talk is declined, or with `talk`
+    accepted and over after that many minutes, there's always an article of `NEWS_INTEREST` to
+    read, muralists paint the map's walls in turn, and making something does nothing. Each
+    article read and each talk leaves a stand-in memory, which raises a crafter's inspiration."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.economy.economy import economy_of
     from simile.economy.lifespan import lifespan as economy
@@ -244,9 +290,17 @@ async def simulate(
     world = World(Clock(start), FakeWallClock())
     app.state.world = world
     app.state.headless = True
+    app.state.memory = MemoryStore(":memory:")
     app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs, traits=traits)
     supply, opened = daily_grind(app.state.behaviour)
-    observer = Observer(app.state.behaviour, talk=talk, economy=economy_of(app), open=opened)
+    observer = Observer(
+        app.state.behaviour,
+        talk=talk,
+        economy=economy_of(app),
+        open=opened,
+        memory=app.state.memory,
+        rng=random.Random(seed),
+    )
     world.bus.subscribe(GoalChosen, observer.on_goal)
     started = time.perf_counter()
     async with AsyncExitStack() as stack:
@@ -254,7 +308,7 @@ async def simulate(
             await stack.enter_async_context(hook(app))
         app.state.behaviour.hooks.set(
             request_conversation=observer.request_conversation,
-            read_news=skip_news,
+            read_news=observer.read_news,
             news_interest=lambda npc: NEWS_INTEREST,
             conversations=no_conversations,
             create=observer.on_create,
@@ -589,7 +643,21 @@ def works(observer: Observer, hours: float) -> list[str]:
             f"{npc.values[CoreValue.SELF_ACTUALIZATION]:.2f} | {count} | "
             f"{count / hours * 24:.1f} | {where} | {making} |"
         )
-    return lines
+    return [*lines, "", pace(observer, hours)]
+
+
+def pace(observer: Observer, hours: float) -> str:
+    """When the first work came, and how many came a sim hour after it."""
+    times = sorted(at for at, _ in observer.made)
+    if not times:
+        return "No works."
+    first = (times[0] - observer.start) / timedelta(hours=1)
+    rest = hours - first
+    rate = f"{(len(times) - 1) / rest:.2f} a sim hour" if rest > 0 else "-"
+    return (
+        f"{len(times)} works. The first after {first * 60:.0f} sim minutes, then {rate} "
+        f"({len(times) - 1} in {rest:.1f} sim hours)."
+    )
 
 
 GOALS = tuple(a for a in Activity if a is not Activity.TALK)

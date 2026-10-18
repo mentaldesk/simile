@@ -12,7 +12,7 @@ from simile.casting.roles import fits, holders, village_roles
 from simile.characters import jobs
 from simile.characters.tables.load import Role
 from simile.npc.values import distance as profile_distance
-from simile.schema import Character, CoreValue, Id
+from simile.schema import Character, CoreValue, Id, Medium
 
 type Source = Literal["maker", "elder", "other"]
 
@@ -69,10 +69,10 @@ def cast(
     config: CastingConfig = DEFAULT_CONFIG,
 ) -> list[Character]:
     """The picks and everyone pinned, as given, then a resident for each of the village's
-    `roles` that's still open, then drawn residents up to `count`. Draws spread the cast out,
-    some of them clash with or share a resident's values on purpose, `maker_share` of those
-    outside a role have a job from makers.toml, and the cast has its `elders`. Ages are as of
-    `year`, this one by default."""
+    `roles` that's still open, then one for each of `crafts` nobody has yet, then drawn residents
+    up to `count`. Draws spread the cast out, some of them clash with or share a resident's values
+    on purpose, `maker_share` of those outside a role have a job from makers.toml, and the cast
+    has its `elders`. Ages are as of `year`, this one by default."""
     library = {character.id: character for character in characters}
     wanted = list(dict.fromkeys([*picks, *(id for pin in pins for id in (pin.actor, pin.target))]))
     if unknown := [id for id in wanted if id not in library]:
@@ -122,6 +122,16 @@ def cast(
             take(pick)
             held[pick.id] = role
 
+    for medium in config.crafts:
+        if len(chosen) >= count or any(_medium(c) is medium for c in chosen):
+            continue
+        if crafted := [c for c in free() if _medium(c) is medium]:
+            crafted = _narrow(crafted, "maker", chosen, held, year, config)
+            pick = (
+                rng.choice(crafted) if not chosen else _best(crafted, chosen, "spread", rng, config)
+            )
+            take(pick)
+
     kinds = _draws(count, len(chosen), rng, config)
     sources = _sources(count, len(kinds), chosen, held, year, rng, config)
     for kind, source in zip(kinds, sources, strict=True):
@@ -130,6 +140,10 @@ def cast(
         options = _narrow(options, source, chosen, held, year, config)
         take(rng.choice(options) if not chosen else _best(options, chosen, kind, rng, config))
     return chosen
+
+
+def _medium(character: Character) -> Medium | None:
+    return character.craft.medium if character.craft else None
 
 
 def elder(character: Character, year: int, config: CastingConfig = DEFAULT_CONFIG) -> bool:

@@ -11,6 +11,7 @@ from starlette.applications import Starlette
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Need
 from simile.behaviour.events import GoalChosen
+from simile.behaviour.inspiration import inspiration
 from simile.behaviour.scoring import (
     UNPLACED,
     Goal,
@@ -40,6 +41,7 @@ from simile.schema import (
     LocationKind,
     MapTile,
     Medium,
+    Memory,
     Npc,
     PayKind,
     Relationship,
@@ -222,6 +224,8 @@ class Mind:
     """Until when they can stay on at work after their last shift."""
     skipping: tuple[date, bool] | None = None
     """The last working day they decided whether to skip, and what they decided."""
+    inspired: list[tuple[datetime, float]] = field(default_factory=list)
+    """What new memories added to their inspiration in the last sim hour, and when."""
 
 
 class Behaviour:
@@ -284,13 +288,61 @@ class Behaviour:
             self.minds[npc.id] = mind
         for mind in self.minds.values():
             self._plan(mind)
+        keen = self._keenest()
+        for mind in self.minds.values():
             if self._asleep(mind):
                 self._sleep(mind)
+            elif mind.npc.id in keen:
+                self._head_start(mind, keen[mind.npc.id])
             elif mind.goal.activity is Activity.HOME:
                 self._publish(mind)
                 mind.until = now + self._minutes(self.config.start_dwell)
             else:
                 self._decide(mind)
+
+    def _keenest(self) -> dict[Id, timedelta]:
+        """The `head_starts` residents keenest to make something who could be making it at home
+        now, with how long their stay has left: awake, at home and not off to work before it ends.
+        Muralists need a wall, so they're left out."""
+        now, keen = self.clock.now, {}
+        ready = [
+            mind
+            for mind in self.minds.values()
+            if mind.npc.craft is not None
+            and not _paints(mind.npc)
+            and mind.goal.activity is Activity.HOME
+            and not self._asleep(mind)
+        ]
+        ready.sort(key=lambda mind: -mind.needs[Need.INSPIRATION])
+        for mind in ready:
+            if len(keen) >= self.config.head_starts:
+                break
+            left = self._minutes(self.config.head_start)
+            if mind.shift is None or mind.shift.set_off > now + left:
+                keen[mind.npc.id] = left
+        return keen
+
+    def _head_start(self, mind: Mind, left: timedelta) -> None:
+        now = self.clock.now
+        mind.goal, mind.since, mind.until = Goal(Activity.CREATE, mind.npc.home), now, now + left
+        mind.finishes = True
+        self._publish(mind)
+
+    def inspire(self, memory: Memory) -> float:
+        """Raise a crafter's inspiration for a new memory, up to `inspiration_hourly` a sim hour,
+        and return by how much. The memory store's listener."""
+        mind = self.minds.get(memory.owner)
+        if mind is None:
+            return 0.0
+        now = self.clock.now
+        mind.inspired = [(at, n) for at, n in mind.inspired if now - at < HOUR]
+        room = self.config.inspiration_hourly - sum(n for _, n in mind.inspired)
+        bump = min(inspiration(memory, mind.npc, self.config), room)
+        if bump <= 0:
+            return 0.0
+        mind.needs[Need.INSPIRATION] = _clamp(mind.needs[Need.INSPIRATION] + bump)
+        mind.inspired.append((now, bump))
+        return bump
 
     def tick(self, dt: float) -> None:
         self._elapsed += dt

@@ -143,5 +143,17 @@ class WorksConfig(BaseModel):
         description="The least salience of an artist's memory of finding their mural painted over.",
     )
 
+    starters: int = Field(
+        default=8,
+        ge=0,
+        description="The most starter works a new world makes in the background, one each for "
+        "its most creative residents with a craft.",
+    )
+    starters_newest: timedelta = Field(
+        default=timedelta(hours=3),
+        description="How long before a fresh save starts the newest of today's village's starter "
+        "works was made. The rest keep their spacing before it.",
+    )
+
 
 DEFAULT_CONFIG = WorksConfig()

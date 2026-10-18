@@ -72,6 +72,38 @@ gallery has given the maker its `hang` (`gallery/README.md`). Without one, nobod
 - **Hanging.** The `Work` (`medium` painting, the artist's `form`, no `wall`) is stored, `hang` gets
   it with its SVG and PNG, and the artist remembers painting it for the gallery.
 
+## Starter works
+
+So that the village never starts bare, works are there from the first frame. Its `running` hook
+does this once per save, and never into an in-memory store:
+
+- **Today's village** ships with 15 works in `content/works/`: a mural on four of the five walls
+  (Kofi's on the tower and the corner shop, Ingrid's on the garden flats, Odalys's on the Daily
+  Grind), a piece from each of the six writers for the terminals, and five paintings for the
+  gallery (Priya's and Tobias's, two each, and a canvas of Ingrid's). `works.json` has the `Work`s,
+  oldest first, beside each mural's and painting's SVG and PNG. A save with no works that has never
+  had them gets them all, as if made before it starts, the newest `starters_newest` (3 sim hours)
+  earlier and the rest with their spacing before it. The murals go on their walls, the paintings
+  hang in the gallery's first frames, and each artist remembers making theirs. The `seeded` table
+  records that it's been done, so it's never done twice, even once the starters are painted over.
+- **A new world** (a cast in the data directory, `worlds/README.md`) makes its own in the
+  background instead, once its save first runs: up to `starters` (8) of its residents with a
+  craft, the most creative first, start one work each through the usual `Maker`, muralists on the
+  walls in turn and then for the gallery. Each appears when it's finished, as any other does.
+
+The starters were made once by a command, with the usual Maker prompts, in the order of `PLAN` in
+`starters.py`, so an artist's second work sees their first. Their residents had nothing on their
+mind yet, so they come from their values, persona and craft:
+
+```bash
+cd server
+uv run simile works starter   # about 15 Sonnet calls, into content/works/
+```
+
+It makes only the works `content/works/` doesn't have yet, saving each as it's made, and stops at the
+first that fails, so running it again carries on. `--out` puts them elsewhere, and with
+`SIMILE_LLM=fake` it makes stand-ins through the same checks and renderer.
+
 ## Reading at the terminals
 
 The lifespan wraps B1's `news_interest` and `read_news` hooks around the news's (`news` starts

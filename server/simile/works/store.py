@@ -1,5 +1,6 @@
 import sqlite3
 import threading
+from datetime import datetime
 from pathlib import Path
 from types import TracebackType
 from typing import Self
@@ -27,6 +28,10 @@ CREATE TABLE IF NOT EXISTS murals (
     svg TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS murals_by_wall ON murals (wall);
+CREATE TABLE IF NOT EXISTS seeded (
+    what TEXT PRIMARY KEY,
+    at REAL NOT NULL
+);
 """
 SHOWING = """
 SELECT w.data FROM murals m JOIN works w ON w.id = m.work_id
@@ -102,6 +107,24 @@ class WorksStore:
         """A mural's PNG."""
         with self._lock:
             row = self._db.execute("SELECT png FROM murals WHERE work_id = ?", (id,)).fetchone()
+        return row[0] if row else None
+
+    def empty(self) -> bool:
+        with self._lock:
+            return self._db.execute("SELECT 1 FROM works LIMIT 1").fetchone() is None
+
+    def first_time(self, what: str, when: datetime) -> bool:
+        """True the first time it's asked about `what`, which it records, and False after."""
+        with self._lock, self._db:
+            added = self._db.execute(
+                "INSERT OR IGNORE INTO seeded (what, at) VALUES (?, ?)", (what, when.timestamp())
+            )
+        return added.rowcount == 1
+
+    def svg(self, id: str) -> str | None:
+        """A mural's SVG."""
+        with self._lock:
+            row = self._db.execute("SELECT svg FROM murals WHERE work_id = ?", (id,)).fetchone()
         return row[0] if row else None
 
     def get(self, id: str) -> Work | None:
