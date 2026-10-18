@@ -1137,9 +1137,11 @@ def draw_frame(
     return c.outlined("ink")
 
 
-def sprite_sheet(appearance: Appearance, seed: str | None = None) -> Canvas:
-    sheet = Canvas(FRAME_WIDTH * FRAMES, FRAME_HEIGHT * len(DIRECTIONS))
-    for row, direction in enumerate(DIRECTIONS):
+def sprite_sheet(
+    appearance: Appearance, seed: str | None = None, directions: tuple[str, ...] = DIRECTIONS
+) -> Canvas:
+    sheet = Canvas(FRAME_WIDTH * FRAMES, FRAME_HEIGHT * len(directions))
+    for row, direction in enumerate(directions):
         for col in range(FRAMES):
             sheet.paste(
                 draw_frame(appearance, direction, col, seed), col * FRAME_WIDTH, row * FRAME_HEIGHT

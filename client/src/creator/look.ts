@@ -1,4 +1,6 @@
-import type { Atlas, CreatorApi } from './api';
+import { PIXEL_SCALE } from '../world/iso/sheets';
+import { WALK_FPS } from '../world/tuning';
+import type { CreatorApi } from './api';
 import type { Accessory, Appearance } from './character';
 import { button, capitalise, h, message } from './dom';
 import { type Job, JobWatch, describe } from './jobs';
@@ -136,46 +138,73 @@ export function lookEditor(
   return root;
 }
 
-const DIRECTIONS = [
-  'down',
-  'down_right',
-  'right',
-  'up_right',
-  'up',
-  'up_left',
-  'left',
-  'down_left',
-];
-const SCALE = 4;
+export const PREVIEW_DELAY_MS = 150;
+
+export type PreviewRequest = { character?: string; appearance: Appearance };
+export type DrawPreview = (request: PreviewRequest) => Promise<Blob>;
+
+export async function drawPreview(request: PreviewRequest): Promise<Blob> {
+  const response = await fetch('/api/art/preview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error ?? `the server answered ${response.status}`);
+  }
+  return response.blob();
+}
+
+const FRAME = { width: 16, height: 24 };
+const WALK = [0, 1, 2, 1];
+const GAP = 4;
 
 export class SpritePreview {
   readonly root = h('div', { className: 'creator-sprite' });
-  private readonly canvas = h('canvas', { width: 1, height: 1 });
+  private readonly canvas = h('canvas', { width: 1, height: 1, hidden: true });
+  private readonly note = h('p', { className: 'creator-hint' });
   private readonly status = h('p', { className: 'creator-hint' });
   private readonly bar = h('progress', { max: 1, value: 0, hidden: true });
   private watch: JobWatch | null = null;
   private readonly api: CreatorApi;
+  private readonly draw: DrawPreview;
+  private readonly delay: number;
+  private latest: PreviewRequest | null = null;
+  private due: PreviewRequest | null = null;
+  private drawn = '';
+  private drawing = false;
+  private disposed = false;
+  private timer: ReturnType<typeof setTimeout> | undefined;
+  private walk: ReturnType<typeof setInterval> | undefined;
+  private frames: ImageBitmap | null = null;
+  private step = 0;
 
-  constructor(api: CreatorApi) {
+  constructor(api: CreatorApi, draw: DrawPreview = drawPreview, delay = PREVIEW_DELAY_MS) {
     this.api = api;
-    this.root.append(this.canvas, this.bar, this.status);
-    this.canvas.hidden = true;
+    this.draw = draw;
+    this.delay = delay;
+    this.root.append(this.canvas, this.note, this.bar, this.status);
+  }
+
+  preview(appearance: Appearance, character?: string): void {
+    this.latest = { character, appearance };
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => {
+      this.due = this.latest;
+      if (!this.drawing) void this.redraw();
+    }, this.delay);
   }
 
   async show(id: string): Promise<boolean> {
-    const base = `/api/jobs/files/sprite/${id}`;
-    const atlas = await this.api.atlas(`${base}.json`).catch(() => null);
-    if (!atlas) {
-      this.say('Not drawn yet: saving draws it.');
-      return false;
-    }
-    await this.draw(`${base}.png?v=${Date.now()}`, atlas);
-    this.say('');
-    return true;
+    const atlas = await this.api.atlas(`/api/jobs/files/sprite/${id}.json`).catch(() => null);
+    if (!atlas) this.say('The sprite isn’t saved yet: saving draws it.');
+    return atlas !== null;
   }
 
   async render(id: string, appearance: Appearance): Promise<Job | null> {
     this.watch?.stop();
+    this.preview(appearance, id);
     try {
       const job = await this.api.submit('sprite', { character: id, appearance });
       return await this.follow(job);
@@ -186,7 +215,54 @@ export class SpritePreview {
   }
 
   dispose(): void {
+    this.disposed = true;
     this.watch?.stop();
+    clearTimeout(this.timer);
+    clearInterval(this.walk);
+  }
+
+  private async redraw(): Promise<void> {
+    this.drawing = true;
+    while (this.due && !this.disposed) {
+      const request = this.due;
+      this.due = null;
+      const key = JSON.stringify(request);
+      if (key === this.drawn) continue;
+      try {
+        const frames = await createImageBitmap(await this.draw(request));
+        if (this.disposed) break;
+        this.frames = frames;
+        this.drawn = key;
+        this.note.textContent = '';
+        this.paint();
+        this.walk ??= setInterval(() => {
+          this.step = (this.step + 1) % WALK.length;
+          this.paint();
+        }, 1000 / WALK_FPS);
+      } catch (error) {
+        this.note.textContent = `Couldn’t draw the preview: ${message(error)}`;
+      }
+    }
+    this.drawing = false;
+  }
+
+  private paint(): void {
+    const frames = this.frames;
+    if (!frames) return;
+    const { width, height } = FRAME;
+    const directions = Math.floor(frames.height / height);
+    this.canvas.width = (directions * (width + GAP) - GAP) * PIXEL_SCALE;
+    this.canvas.height = height * PIXEL_SCALE;
+    const context = this.canvas.getContext('2d');
+    if (!context) return;
+    context.imageSmoothingEnabled = false;
+    context.scale(PIXEL_SCALE, PIXEL_SCALE);
+    const x = WALK[this.step] * width;
+    for (let row = 0; row < directions; row++) {
+      const [y, left] = [row * height, row * (width + GAP)];
+      context.drawImage(frames, x, y, width, height, left, 0, width, height);
+    }
+    this.canvas.hidden = false;
   }
 
   private async follow(job: Job): Promise<Job> {
@@ -204,48 +280,8 @@ export class SpritePreview {
     watch.onChange = update;
     const done = await watch.done;
     this.bar.hidden = true;
-    const result = done.result as { image?: string; atlas?: string } | null;
-    if (done.state === 'succeeded' && result?.image && result.atlas) {
-      const atlas = await this.api.atlas(result.atlas);
-      if (atlas) await this.draw(`${result.image}?v=${done.id}`, atlas);
-      this.say('Sprite drawn.');
-    }
+    if (done.state === 'succeeded') this.say('Sprite saved.');
     return done;
-  }
-
-  private async draw(src: string, atlas: Atlas): Promise<void> {
-    const image = new Image();
-    image.src = src;
-    try {
-      await image.decode();
-    } catch {
-      this.say('Couldn’t load the sprite.');
-      return;
-    }
-    const frames = DIRECTIONS.map((d) => atlas.frames[`${d}-0`]?.frame).filter(
-      (f) => f !== undefined,
-    );
-    if (!frames.length) return;
-    const { w, h: height } = frames[0];
-    this.canvas.width = frames.length * (w + 2) * SCALE;
-    this.canvas.height = height * SCALE;
-    const context = this.canvas.getContext('2d');
-    if (!context) return;
-    context.imageSmoothingEnabled = false;
-    frames.forEach((f, i) =>
-      context.drawImage(
-        image,
-        f.x,
-        f.y,
-        f.w,
-        f.h,
-        i * (w + 2) * SCALE,
-        0,
-        f.w * SCALE,
-        f.h * SCALE,
-      ),
-    );
-    this.canvas.hidden = false;
   }
 
   private say(text: string): void {
