@@ -4,6 +4,25 @@
   "age": 64,
   "occupation": "Franchise Development Broker",
   "home": "house_7",
+  "workplace": "house_7",
+  "shifts": [
+    {
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "start": 9.0,
+      "end": 13.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 24.0
+  },
+  "money": 900.0,
   "values": {
     "freedom": 0.25,
     "independence": 0.15,

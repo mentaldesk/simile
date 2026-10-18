@@ -10,9 +10,9 @@ sets F3's snapshot to the NPCs' real positions.
 ## Deciding
 
 - **Activities.** Go home, the coffee shop, the square, a news terminal, the park, the noodle bar,
-  the maker space, the gallery, wander, seek someone out (an NPC or the player), idle, or make
-  something (`create`). `sleep` and `talk` are set by the loop rather than chosen.
-- **Score** = base + values + relief + time of day + people − walking time. Values enter as
+  the maker space, the gallery, wander, seek someone out (an NPC or the player), idle, make
+  something (`create`), or go to work. `sleep` and `talk` are set by the loop rather than chosen.
+- **Score** = base + values + relief − price + work + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
   away from seeking company), Adventure to wander, Creativity to the maker space, and
   Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. The coffee shop peaks in
@@ -57,6 +57,26 @@ sets F3's snapshot to the NPCs' real positions.
 - **What's there.** A place meets a need only as far as the `supply` hook says it can now, 0 to 1,
   in what it scores and what it does. The café plugs it in so the Daily Grind feeds nobody while
   its barista is off shift.
+- **Money.** `finances` is how far their money (E3's `money` hook) is below their savings target,
+  as a share of it, so it doesn't rise on its own. The target is `savings` (300), raised by
+  Security. A price is valued on finances' own curve, a straight line (`power` 1, weight 100)
+  that has no ceiling, so it barely registers for someone at or above their target, bites
+  harder the shorter they are, and still counts once they have nothing. Pleasure makes a price
+  feel smaller (`thrift_values`). The `price` hook says what a goal would cost: groceries for a
+  meal at home, a drink and a meal at the shops.
+- **Work.** A resident with a `workplace` and `shifts` sets off for each shift `punctuality` (15)
+  minutes early at Discipline 1 and as late at 0, give or take `set_off_jitter`, after the walk
+  from home. From then until the shift ends work scores `shift_weight` (2) more: less than an
+  urgent meal is worth, so an urgent need still wins, and they decide then and there, dropping
+  what they're doing. A shift gets them up `ready` (45) minutes before they set off, in time for
+  breakfast. Once there they stay until it ends: a talk only pauses it, as it does making
+  something, and urgent needs take them off for a while. Each shift, they skip it with a chance of
+  up to `skip` (0.3) at Responsibility 0, falling to nothing at `skip_below` (0.5), and less the
+  shorter of money they are. After a shift, a wage earner still at work can stay on for up to
+  `overtime` (2) hours, a stay of `dwell` at a time, scored by Ambition and Success
+  (`overtime_values`) and what it pays (the `earnings` hook) on the finances curve, so the
+  ambitious and the short of money stay on. Working at home is being at home, so nobody seeks
+  them out; working at a shop they live above isn't.
 - **The news.** `news`, wanting to catch up, is on the same kind of curve (`need ** 2`), and only a
   terminal meets it. It rises with Knowledge and Open Mindedness and falls for NPCs low in both,
   so some read every couple of hours and some never do. The `news_interest` hook says how
@@ -129,6 +149,9 @@ restore()
 | `create(npc, wall)` | With the `Npc` when they finish a stay making something, and the wall's id for a mural (`None` for writing) | Does nothing |
 | `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, or `None` | `None`, so muralists don't paint |
 | `supply(goal, need)` | For a goal at a place, when scoring it and while someone's there: how much of what it does for `need` it can do now, 0 to 1 | 1 everywhere |
+| `money(npc)` | With the `Npc` every think: what they hold, or `None` | `None`, so finances stay at 0 |
+| `price(npc, goal)` | With the `Npc` for each option: what it would cost them | 0 |
+| `earnings(npc, goal)` | With the `Npc` for staying on at work: what an hour pays | 0 |
 
 Hooks run inside a tick, so they mustn't block. One that raises is logged and counts as a decline.
 
@@ -146,11 +169,13 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `release(npc, stay=None)` | Ends a hold. With a `stay` they keep the held goal where they are for that long, as if they'd just arrived, and can be sought out; otherwise they decide on the next think. |
 | `available(seeker, other)` | Whether `seeker` could seek `other` out: B1's rules for who is sought, and `seeker`'s cooldowns. |
 | `at_home(npc)` | Whether they're at or heading home, to rest, sleep or make something there. |
+| `working(npc)` | Whether they're at their workplace working: there for work, or held there with a goal at it. |
+| `savings(npc)` | Their savings target, in money. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
 | `traits_of(npc)` | Their `Traits` from the cast, or neutral ones. |
-| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft), last decision's scores, bedtime. |
+| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft, finances only with money), money, their next shift, last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
@@ -162,12 +187,14 @@ Every new goal is published on the bus as `GoalChosen(npc, activity, target)`.
 cd server && uv run simile behaviour simulate --hours 24 --seed 0
 ```
 
-Runs memory, world and behaviour on a `FakeWallClock` as fast as the CPU allows (a sim-day in
-about 15 s) and prints where everyone spent their time: minutes near others by Connection, places
-by hour, who was out at night, the share of waking time in each place, every meal by the hour it
-started and where, each need's mean, most and time at 0.9 or more, and what each resident with a
-craft made per sim-day. The café doesn't run, so the Daily Grind feeds people from 07:00 to 17:00,
-G1's shift, if someone lives there. Conversations,
+Runs memory, world, behaviour and E3's economy on a `FakeWallClock` as fast as the CPU allows (a
+sim-day in about 15 s) and prints where everyone spent their time: minutes near others by
+Connection, places by hour, who was out at night, the share of waking time in each place, every
+meal by the hour it started and where, each need's mean, most and time at 0.9 or more, and what each
+resident with a craft made per sim-day. Then every shift (on time, late, skipped, hours and
+overtime), each resident's money every 12 sim hours, and where the money went. The café doesn't run, so the Daily Grind feeds
+people from 07:00 to 17:00, G1's shift, if someone lives or works there, and serves a drink to
+whoever arrives then and hasn't had one in the last 90 minutes, as the café does. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
 interest unread, and reading it does nothing. Muralists paint M7's walls in turn, moving on to
 the next after each mural, and making something does nothing. `simulate(..., npcs=..., traits=...)`
@@ -175,4 +202,4 @@ runs another cast.
 
 Every request to talk is declined unless you pass `--talk MINUTES`: then each is accepted, the
 conversation lasts that long, and the summary adds how many conversations each resident started,
-by sociability.
+by sociability, and how many there were a sim hour.

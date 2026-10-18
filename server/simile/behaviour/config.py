@@ -17,6 +17,7 @@ class Need(StrEnum):
     HUNGER = "hunger"
     BLADDER = "bladder"
     HYGIENE = "hygiene"
+    FINANCES = "finances"
 
 
 class Activity(StrEnum):
@@ -34,6 +35,7 @@ class Activity(StrEnum):
     SEEK = "seek"
     IDLE = "idle"
     CREATE = "create"
+    WORK = "work"
     SLEEP = "sleep"
     TALK = "talk"
 
@@ -74,6 +76,7 @@ BASE: dict[Activity, float] = {
     A.GALLERY: -0.1,
     A.IDLE: -0.1,
     A.CREATE: -1.0,
+    A.WORK: -0.1,
 }
 
 WRITING_PLACES: dict[Activity, dict[CoreValue, float]] = {
@@ -131,6 +134,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
     A.CREATE: {Need.CURIOSITY: -0.6},
+    A.WORK: {Need.BLADDER: -4.0},
     A.TALK: {Need.SOCIAL: -6.0},
 }
 
@@ -149,6 +153,7 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.SEEK: (3, 10),
     A.IDLE: (2, 8),
     A.CREATE: (45, 75),
+    A.WORK: (30, 75),
 }
 
 
@@ -186,6 +191,7 @@ URGENCY: dict[Need, Urgency] = {
     Need.HUNGER: Urgency(weight=16.0, appetite=0.75),
     Need.BLADDER: Urgency(weight=12.0),
     Need.HYGIENE: Urgency(weight=8.0, critical=None),
+    Need.FINANCES: Urgency(power=1.0, weight=100.0, critical=None),
 }
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
@@ -243,7 +249,10 @@ class BehaviourConfig(BaseModel):
         default=2.0, gt=0, description="How long before bedtime the pull home starts."
     )
     repeat_penalty: float = Field(
-        default=0.2, ge=0, description="Taken off the activity the NPC has just finished."
+        default=0.2,
+        ge=0,
+        description="Taken off the activity the NPC has just finished, except work, where staying "
+        "on carries on.",
     )
     travel_weight: float = Field(default=0.05, ge=0, description="Taken off per minute of walk.")
 
@@ -353,7 +362,64 @@ class BehaviourConfig(BaseModel):
             Need.BLADDER: (0.0, 0.5),
             Need.HYGIENE: (0.0, 0.4),
         },
-        description="Needs on start, sampled uniformly. Inspiration starts at 0 without a craft.",
+        description="Needs on start, sampled uniformly. Inspiration starts at 0 without a craft, "
+        "and finances follow from their money.",
+    )
+
+    savings: float = Field(
+        default=300.0,
+        gt=0,
+        description="An average resident's savings target, in money. `finances` is how far "
+        "below it they are, as a share of it.",
+    )
+    savings_values: dict[CoreValue, float] = Field(
+        default={V.SECURITY: 1.0},
+        description="The target grows by this share per unit of `value - 0.5`.",
+    )
+    thrift_values: dict[CoreValue, float] = Field(
+        default={V.PLEASURE: -1.0},
+        description="A price feels this much bigger per unit of `value - 0.5`, so Pleasure "
+        "spends more freely.",
+    )
+    shift_weight: float = Field(
+        default=2.0,
+        ge=0,
+        description="Bonus for work from when they set off for a shift until it ends. Less than "
+        "an urgent meal is worth, so an urgent need still wins.",
+    )
+    overtime_values: dict[CoreValue, float] = Field(
+        default={V.AMBITION: 1.5, V.SUCCESS: 1.0},
+        description="Score for staying on at work after a shift, per unit of `value - 0.5`.",
+    )
+    punctuality: float = Field(
+        default=15.0,
+        ge=0,
+        description="Minutes early they set off for a shift at Discipline 1, and late at 0.",
+    )
+    set_off_jitter: float = Field(
+        default=5.0, ge=0, description="Minutes either way they set off, at random."
+    )
+    ready: float = Field(
+        default=45.0,
+        ge=0,
+        description="Minutes before they set off for a shift that it gets them up, so there's "
+        "time for breakfast.",
+    )
+    skip: float = Field(
+        default=0.3,
+        ge=0,
+        le=1,
+        description="Chance of skipping a shift at Responsibility 0, falling to nothing at "
+        "`skip_below`, and less the shorter of money they are.",
+    )
+    skip_below: float = Field(
+        default=0.5, gt=0, le=1, description="Responsibility from which nobody skips."
+    )
+    overtime: float = Field(
+        default=2.0,
+        ge=0,
+        description="Hours after a shift a wage earner still at work can stay on, a stay of "
+        "`dwell` at a time.",
     )
 
     bedtime: float = Field(default=22.5, description="Hour an average NPC goes home to sleep.")

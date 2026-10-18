@@ -14,10 +14,20 @@ SPOT = MapTile(map="coffee_shop", x=5, y=4)
 WORK = Goal(Activity.COFFEE_SHOP, "coffee_shop")
 
 
+NO_WORK = {"workplace": None, "shifts": [], "pay": None}
+
+
 def make_npc(id: str, home: str) -> Npc:
     scores = dict.fromkeys(CoreValue, 0.5)
     return TEMPLATE.model_copy(
-        update={"id": id, "name": id.title(), "home": home, "values": scores, "craft": None}
+        update={
+            "id": id,
+            "name": id.title(),
+            "home": home,
+            "values": scores,
+            "craft": None,
+            **NO_WORK,
+        }
     )
 
 

@@ -39,10 +39,26 @@ class Goal:
 
 
 type Supply = Callable[[Goal, Need], float]
+type Price = Callable[[Goal], float]
 
 
 def plenty(goal: Goal, need: Need) -> float:
     return 1.0
+
+
+def free(goal: Goal) -> float:
+    return 0.0
+
+
+@dataclass(frozen=True)
+class Work:
+    """Where they'd work now, and how."""
+
+    workplace: Id
+    on_shift: bool
+    """From when they set off for a shift until it ends. Otherwise they're staying on after one."""
+    hours: float
+    """How long a stay at work would last."""
 
 
 class Places:
@@ -149,6 +165,12 @@ class Situation:
     """For a muralist, the wall they'd paint. Without one they don't create."""
     supply: Supply = plenty
     """How much of what a goal's place does for a need it can do now, 0 to 1."""
+    work: Work | None = None
+    """Where they could work now, if anywhere."""
+    price: Price = free
+    """What a goal would cost them."""
+    earnings: Price = free
+    """What an hour at a goal pays them."""
 
 
 AFFINITY = ("like", "trust", "respect")
@@ -194,6 +216,23 @@ def asleep(hour: float, bed: float, up: float) -> bool:
     return hour >= bed or hour < up
 
 
+def punctuality(
+    values: Mapping[CoreValue, float], config: BehaviourConfig = DEFAULT_CONFIG
+) -> float:
+    """How many minutes early they set off for a shift, late if negative. Discipline sets it."""
+    return config.punctuality * 2 * (values[CoreValue.DISCIPLINE] - 0.5)
+
+
+def skip_chance(
+    values: Mapping[CoreValue, float], finances: float, config: BehaviourConfig = DEFAULT_CONFIG
+) -> float:
+    """The chance they skip a shift: now and then for low Responsibility, less so when short of
+    money."""
+    responsibility = values[CoreValue.RESPONSIBILITY]
+    lax = max(config.skip_below - responsibility, 0.0) / config.skip_below
+    return config.skip * lax * (1 - finances)
+
+
 def sociability(values: Mapping[CoreValue, float], config: BehaviourConfig) -> float:
     return max(0.0, 1 + config.sociability * (values[CoreValue.CONNECTION] - 0.5))
 
@@ -207,6 +246,8 @@ def candidates(
             continue
         goals.extend(Goal(activity, location.id) for location in locations)
     goals += [Goal(Activity.WANDER), Goal(Activity.IDLE)]
+    if situation.work is not None:
+        goals.append(Goal(Activity.WORK, situation.work.workplace))
     goals.extend(Goal(Activity.SEEK, o.id) for o in situation.others if o.available)
     return goals + creating(situation, places, config)
 
@@ -243,8 +284,9 @@ def score(
         if change and placed:
             change *= situation.supply(goal, need)
         total += worth(need, needs[need], change, config)
+    total += money(goal, situation, config)
     total += curve(config.daily.get(activity, ()), situation.hour)
-    if situation.last is not None and activity is situation.last.activity:
+    if situation.last is not None and activity is situation.last.activity is not Activity.WORK:
         total -= config.repeat_penalty
     if activity is Activity.HOME:
         until_bed = situation.bedtime - situation.hour
@@ -268,6 +310,51 @@ def score(
             total += config.writing_base.get(where, 0.0)
             total += sum(w * (values[v] - 0.5) for v, w in weights.items())
     return total
+
+
+def money(goal: Goal, situation: Situation, config: BehaviourConfig = DEFAULT_CONFIG) -> float:
+    """What `goal` costs, priced on the finances curve, and the pull of work: a shift's, or
+    after one, Ambition's and Success's and what staying on pays. A price hurts someone short of
+    money and barely registers for someone comfortable."""
+    values, work = situation.values, situation.work
+    total, cost = 0.0, situation.price(goal) * thrift(values, config)
+    if goal.activity is Activity.WORK and work is not None:
+        if work.on_shift:
+            total += config.shift_weight
+        else:
+            total += sum(w * (values[v] - 0.5) for v, w in config.overtime_values.items())
+            cost -= situation.earnings(goal) * work.hours
+    if cost:
+        level = situation.needs[Need.FINANCES]
+        total -= spending(level, cost / savings(values, config), config)
+    return total
+
+
+def spending(level: float, change: float, config: BehaviourConfig = DEFAULT_CONFIG) -> float:
+    """What changing finances by `change` costs, as `worth` prices any need, but with no
+    ceiling: someone with nothing left still feels every price."""
+    urgency = config.urgency[Need.FINANCES]
+    after, power = max(level + change, 0.0), urgency.power
+    return urgency.weight * (after ** (power + 1) - level ** (power + 1)) / (power + 1)
+
+
+def savings(values: Mapping[CoreValue, float], config: BehaviourConfig = DEFAULT_CONFIG) -> float:
+    """Their savings target. Security raises it."""
+    return config.savings * _factor(values, config.savings_values)
+
+
+def thrift(values: Mapping[CoreValue, float], config: BehaviourConfig = DEFAULT_CONFIG) -> float:
+    """How big a price feels to them. Pleasure spends more freely."""
+    return _factor(values, config.thrift_values)
+
+
+def finances(money: float, target: float) -> float:
+    """How far below their savings target they are, as a share of it."""
+    return min(max(1 - money / target, 0.0), 1.0)
+
+
+def _factor(values: Mapping[CoreValue, float], weights: Mapping[CoreValue, float]) -> float:
+    return max(1 + sum(w * (values[v] - 0.5) for v, w in weights.items()), 0.1)
 
 
 def at_a_place(goal: Goal, situation: Situation) -> bool:

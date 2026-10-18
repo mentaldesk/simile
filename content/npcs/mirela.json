@@ -4,6 +4,27 @@
   "age": 28,
   "occupation": "Barista at the Daily Grind",
   "home": "coffee_shop",
+  "workplace": "coffee_shop",
+  "shifts": [
+    {
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start": 7.0,
+      "end": 17.0
+    }
+  ],
+  "pay": {
+    "kind": "takings",
+    "amount": null
+  },
+  "money": 250.0,
   "values": {
     "freedom": 0.44,
     "independence": 0.2,

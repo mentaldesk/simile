@@ -3,7 +3,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.schema import FlagKind, HookKind, HookSide, Signed, Unit
+from simile.schema import FlagKind, HookKind, HookSide, Id, Shift, Signed, Unit, Weekday
+from simile.schema.npc import Shifts
+
+D = Weekday
 
 
 class Weights(BaseModel):
@@ -162,6 +165,27 @@ BONDS: dict[HookKind, BondConfig] = {
 }
 
 
+WORKPLACES: dict[str, Id] = {
+    "robotics": "maker_space",
+    "bionics": "maker_space",
+    "building": "maker_space",
+}
+
+
+def _hours(days: list[Weekday], start: float, end: float) -> Shifts:
+    return [Shift(days=days, start=start, end=end)]
+
+
+HOURS: dict[str, list[Shifts]] = {
+    "home": [
+        _hours([D.MONDAY, D.TUESDAY, D.WEDNESDAY, D.THURSDAY, D.FRIDAY], 9, 13),
+        _hours([D.MONDAY, D.TUESDAY, D.WEDNESDAY, D.THURSDAY], 9, 15),
+        _hours([D.TUESDAY, D.WEDNESDAY, D.THURSDAY, D.FRIDAY], 10, 16),
+    ],
+    "maker_space": [_hours([D.TUESDAY, D.WEDNESDAY, D.THURSDAY, D.FRIDAY, D.SATURDAY], 10, 16)],
+}
+
+
 class CastingConfig(BaseModel):
     """Every tunable constant of casting."""
 
@@ -204,6 +228,27 @@ class CastingConfig(BaseModel):
         default=timedelta(minutes=1),
         ge=timedelta(0),
         description="How long before the start a past memory is stamped, per year ago.",
+    )
+    workplaces: dict[str, Id] = Field(
+        default=WORKPLACES,
+        description="Where each job family works, by makers.toml family or ISCO-08 sub-major "
+        "group. Everyone else works from home.",
+    )
+    hours: dict[str, list[Shifts]] = Field(
+        default=HOURS,
+        description="The weekly hours at each workplace, `home` for working from home, one "
+        "drawn for each resident who doesn't hold a role.",
+    )
+    weekly_pay: float = Field(
+        default=480.0,
+        gt=0,
+        description="What a full week of someone's shifts pays, as a wage per hour, so a usual "
+        "week covers rent and food.",
+    )
+    pension: float = Field(default=320.0, gt=0, description="A retired resident's, a week.")
+    start_money: tuple[float, float] = Field(
+        default=(150.0, 350.0),
+        description="What a resident starts with, drawn uniformly, times 0.5 plus their Security.",
     )
 
 

@@ -42,10 +42,13 @@ class Resident(Model):
     workplace: Id | None = Field(
         default=None,
         exclude_if=lambda workplace: workplace is None,
-        description="Where they work, for whoever holds one of the village's roles.",
+        description="Where they work: a role's interior, a workplace by job, or their home.",
     )
     shifts: Shifts = Field(default=[], exclude_if=lambda shifts: not shifts)
     pay: Pay | None = Field(default=None, exclude_if=lambda pay: pay is None)
+    money: float = Field(
+        default=0.0, ge=0, allow_inf_nan=False, exclude_if=lambda money: money == 0
+    )
 
 
 class Cast(Model):
@@ -73,6 +76,7 @@ class Cast(Model):
             workplace=resident.workplace,
             shifts=resident.shifts,
             pay=resident.pay,
+            money=resident.money,
             values=character.values,
             backstory=character.backstory,
             persona=character.persona,

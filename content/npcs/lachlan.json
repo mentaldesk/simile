@@ -4,6 +4,32 @@
   "age": 60,
   "occupation": "Youth Football Coach",
   "home": "house_8",
+  "workplace": "park",
+  "shifts": [
+    {
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "start": 15.5,
+      "end": 18.5
+    },
+    {
+      "days": [
+        "saturday"
+      ],
+      "start": 9.0,
+      "end": 12.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 28.0
+  },
+  "money": 400.0,
   "values": {
     "freedom": 0.58,
     "independence": 0.42,
