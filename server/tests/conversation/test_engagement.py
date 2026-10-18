@@ -78,12 +78,19 @@ def test_the_goodbyes_fit_in_max_lines() -> None:
     assert leaving(1.0, 7, config.model_copy(update={"farewell": False}))
 
 
-def lines_until_leaving(like: float) -> int:
+def lines_until_leaving(like: float, drain: float = 1.0) -> int:
     engagement, lines = initial_engagement(values(), like), 0
     while not leaving(engagement, lines):
-        engagement = engage(engagement, values(), like, [])
+        engagement = engage(engagement, values(), like, [], drain=drain)
         lines += 1
     return lines
+
+
+def test_a_pressing_need_drains_engagement_faster() -> None:
+    mine = values()
+
+    assert engage(0.5, mine, 0.5, [], drain=3) == pytest.approx(0.5 - 3 * DEFAULT_CONFIG.fatigue)
+    assert lines_until_leaving(0.85, drain=3) < lines_until_leaving(0.85)
 
 
 def test_low_like_pairs_have_short_conversations() -> None:
@@ -112,6 +119,18 @@ def test_values_needs_and_goals_move_acceptance() -> None:
     assert acceptance(npc().values, rel, Goal(Activity.NEWS, "terminal_1"), 0.5) < score
     assert acceptance(npc().values, rel, Goal(Activity.SEEK, "ben"), 0.5) > score
     assert acceptance(npc().values, rel, Goal(Activity.SEEK, "cal"), 0.5) < score
+
+
+def test_an_urgent_need_declines_even_a_friend_they_were_looking_for() -> None:
+    target = npc(connection=1.0)
+    friend = meet(target, "ben").model_copy(update={"like": 1.0, "trust": 1.0, "familiarity": 1})
+    seeking = Goal(Activity.SEEK, "ben")
+
+    assert acceptance(target.values, friend, seeking, 1.0) > 0
+    assert acceptance(target.values, friend, seeking, 1.0, urgent=True) < 0
+    assert not accepts(
+        acceptance(target.values, friend, seeking, 1.0, urgent=True), random.Random(0)
+    )
 
 
 def test_the_lonely_accept_a_stranger_and_the_content_mostly_dont() -> None:

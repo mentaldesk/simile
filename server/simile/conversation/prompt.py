@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
+from simile.conversation.needs import feels
 from simile.memory import SharedHistory
 from simile.schema import (
     PLAYER_ID,
@@ -38,6 +39,10 @@ CUES: dict[Cue, str] = {
     "goodbye to {other}.",
     Cue.FAREWELL: "{other} is leaving. Say a brief goodbye back.",
 }
+OFF_TO = (
+    "You need to {errand}. Wrap it up now with a brief, natural goodbye to {other}, and say why "
+    "you're going."
+)
 
 THEIR_FLAGS: dict[FlagKind, str] = {
     FlagKind.DEBT: "You still owe {name} for {description}.",
@@ -207,7 +212,10 @@ def turn_prompt(
     speaker: Id | None = None,
     recalled: Sequence[Memory] = (),
     works: Sequence[WorkTopic] = (),
+    mood: Sequence[str] = (),
+    errand: str | None = None,
 ) -> str:
+    """The speaker's next line, feeling `mood`. A goodbye says they're off to do `errand`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)
@@ -216,7 +224,8 @@ def turn_prompt(
         so_far = f"The conversation so far:\n{transcript}"
     else:
         so_far = "The conversation hasn't started yet."
-    parts = [background, *your_works(works, speaker), so_far]
+    parts = [background, feels("you", mood)] if mood else [background]
+    parts += [*your_works(works, speaker), so_far]
     if recalled:
         parts.append(
             f"You read about what {other} just mentioned:\n"
@@ -230,7 +239,9 @@ def turn_prompt(
             f"{other} again."
         )
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
-    return "\n\n".join([*parts, CUES[cue].format(other=other)])
+    off_to = cue is Cue.GOODBYE and errand
+    asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
+    return "\n\n".join([*parts, asked])
 
 
 def your_works(works: Sequence[WorkTopic], speaker: Id | None) -> list[str]:

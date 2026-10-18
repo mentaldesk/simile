@@ -300,6 +300,27 @@ def test_each_side_has_their_works_with_the_artist_marked() -> None:
     assert cast(Request((Message("user", prompt),), "", "haiku")) == ("Kofi", "Henrietta", 5)
 
 
+def test_each_side_says_how_their_needs_feel_and_the_leaver_why_they_go() -> None:
+    kofi = Character(KOFI, meet(KOFI, "henrietta"))
+    henrietta = Character(HENRIETTA, meet(HENRIETTA, "kofi"))
+    hungry = Stance(0.8, 6, mood=("starving", "tired"), errand="get something to eat", drain=4)
+    planned = Plan(
+        dict(PLAN.names), {"kofi": Stance(0.8, 20), "henrietta": hungry}, "kofi", "henrietta", 8
+    )
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, planned)
+
+    _, kofis, henriettas, direction = prompt.split("\n\n## ")
+    feelings = third_person(describe(meet(HENRIETTA, "kofi"), "Kofi"), "Henrietta")
+    assert f"{feelings}\n\nRight now Henrietta is starving and tired." in henriettas
+    assert "Right now" not in kofis
+    assert direction.endswith(
+        "About 8 lines in all, ending when Henrietta takes their leave to get something to eat "
+        "and Kofi answers."
+    )
+    assert cast(Request((Message("user", prompt),), "", "haiku")) == ("Kofi", "Henrietta", 8)
+
+
 def test_each_side_lists_their_own_mannerisms_as_verbal_habits() -> None:
     habits = ["answers a question with another question", "teases the people they like most"]
     kofi = Character(KOFI.model_copy(update={"mannerisms": habits}), meet(KOFI, "henrietta"))

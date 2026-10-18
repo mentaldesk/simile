@@ -317,8 +317,9 @@ class PlayerConversations:
             self._end(talk)
             return line
         party = talk.parties[talk.npc]
+        drain = engine.pressing(talk.npc).drain(engine.config)
         party.engagement = engage(
-            party.engagement, party.npc.values, party.like, talk.topics, engine.config
+            party.engagement, party.npc.values, party.like, talk.topics, engine.config, drain=drain
         )
         talk.turns += 1
         if says_goodbye(text):
@@ -358,6 +359,7 @@ class PlayerConversations:
                 for sentence in [*sentences.feed(written), *sentences.end()]:
                     self._sentence(talk, sentence)
                 return sentences.draft
+        pressed = engine.pressing(npc)
         prompt = turn_prompt(
             party.background,
             lines,
@@ -368,6 +370,8 @@ class PlayerConversations:
             speaker=npc,
             recalled=self._recalled(npc, lines),
             works=self._works(talk, lines),
+            mood=pressed.mood,
+            errand=pressed.errand,
         )
         stream = engine.llm().stream(
             prompt,
@@ -487,8 +491,9 @@ class PlayerConversations:
         party = talk.parties[talk.npc]
         if not task.cancelled() and not error:
             talk.topics = task.result().values
+        drain = engine.pressing(talk.npc).drain(engine.config)
         party.engagement = engage(
-            party.engagement, party.npc.values, party.like, talk.topics, engine.config
+            party.engagement, party.npc.values, party.like, talk.topics, engine.config, drain=drain
         )
         talk.turns += 1
         if talk.cue in (Cue.GOODBYE, Cue.FAREWELL):
@@ -565,6 +570,7 @@ class PlayerConversations:
             mind.goal,
             mind.needs[Need.SOCIAL],
             engine.config,
+            urgent=engine.pressing(npc).urgent,
         )
         greets = accepts(score - self.config.greet_bar, self.rng, engine.config)
         engine._log("%s %s the player (score %.2f)", npc, "greets" if greets else "ignores", score)

@@ -17,6 +17,7 @@ from simile.behaviour import Behaviour, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.engagement import acceptance, accepts, engage, initial_engagement
 from simile.conversation.events import Direction, Facing, LineDrafted
+from simile.conversation.needs import Pressing, critical, pressing
 from simile.conversation.plan import PRESSING, Plan, plan, stance
 from simile.conversation.prompt import (
     Player,
@@ -72,6 +73,14 @@ GOODBYES: dict[str, tuple[str, ...]] = {
     Need.REST: ("Sorry, {name}, I'm flagging. I'll head off. See you.",),
     Need.NEWS: ("I must catch up on the news, {name}. See you later.",),
     Need.CURIOSITY: ("Sorry, {name}, I must get on. Catch you later.",),
+    Need.HUNGER: (
+        "Sorry, {name}, I'm starving. I'd better get something to eat. See you.",
+        "I need some food, {name}, I'm running on empty. Catch you later.",
+    ),
+    Need.BLADDER: (
+        "Excuse me, {name}, I really need the loo. See you later.",
+        "Sorry, {name}, nature calls. Catch you later.",
+    ),
 }
 FAREWELLS = ("Bye, {name}.", "See you, {name}.")
 
@@ -233,7 +242,12 @@ class ConversationEngine:
             self.behaviour.goal(b),
             self.behaviour.needs(b)[Need.SOCIAL],
             self.config,
+            urgent=self.pressing(b).urgent,
         )
+
+    def pressing(self, npc: Id) -> Pressing:
+        """What `npc`'s needs bring to a conversation now."""
+        return pressing(self.behaviour.needs(npc), self._critical(), self.config)
 
     def start(self, a: Id, b: Id) -> Conversation:
         """Start a conversation that `a` opens, whatever `b` thinks of it. Its script is asked
@@ -260,6 +274,7 @@ class ConversationEngine:
                 on_table,
                 names[other],
                 config,
+                critical=self._critical(),
             )
             for npc, other in ((a, b), (b, a))
         }
@@ -306,7 +321,7 @@ class ConversationEngine:
             conversation.id,
             scene_plan.length,
             scene_plan.leaver,
-            ", ".join(f"{npc} {stances[npc].keen:.2f}" for npc in names),
+            ", ".join(f"{npc} {stances[npc].keen:.2f}{felt(stances[npc].mood)}" for npc in names),
         )
         return conversation
 
@@ -490,10 +505,11 @@ class ConversationEngine:
     def _check_needs(self, scene: Scene) -> None:
         if scene.leaver is not None:
             return
+        urgent = {**dict.fromkeys(PRESSING, self.config.urgent_need), **self._critical()}
         for npc in scene.conversation.participants:
             needs = self.behaviour.needs(npc)
-            for need in PRESSING:
-                if needs[need] >= self.config.urgent_need > scene.needs[npc][need]:
+            for need, level in urgent.items():
+                if needs[need] >= level > scene.needs[npc][need]:
                     self.cut(npc, need)
                     return
 
@@ -527,9 +543,10 @@ class ConversationEngine:
         self.bus.publish(LineSpoken(line))
         new = [value for value in values if value not in scene.touched]
         scene.touched.update(values)
-        for party in scene.parties.values():
+        for npc, party in scene.parties.items():
+            drain = scene.plan.stances[npc].drain
             party.engagement = engage(
-                party.engagement, party.npc.values, party.like, new, self.config
+                party.engagement, party.npc.values, party.like, new, self.config, drain=drain
             )
         ends = line.timestamp + timedelta(seconds=line.duration)
         scene.free_at = ends + timedelta(seconds=self.config.turn_gap)
@@ -544,7 +561,7 @@ class ConversationEngine:
         last, name = scene.conversation.lines[-1], scene.names[scene.other(npc)]
         if takes_leave(last.text):
             return None if last.speaker == npc else self.rng.choice(FAREWELLS).format(name=name)
-        return self.rng.choice(GOODBYES[why]).format(name=name)
+        return self.rng.choice(GOODBYES.get(why, GOODBYES[Need.CURIOSITY])).format(name=name)
 
     def as_voiced(self, line: Line) -> Line:
         """The line lasting as long as its audio, if that's all made."""
@@ -612,6 +629,9 @@ class ConversationEngine:
             ),
             works=works,
         )
+
+    def _critical(self) -> dict[Need, float]:
+        return critical(self.behaviour.config.urgency)
 
     def _person(self, id: Id) -> Npc | Player:
         return self.player if id == PLAYER_ID else self.behaviour.npcs[id]
@@ -736,6 +756,10 @@ def pull(memory: Memory, now: datetime, half_life: timedelta) -> float:
     """Salience × recency."""
     age = (now - memory.timestamp).total_seconds()
     return memory.salience * recency(age, half_life.total_seconds())
+
+
+def felt(mood: tuple[str, ...]) -> str:
+    return f" ({', '.join(mood)})" if mood else ""
 
 
 def noted(works: list[WorkTopic]) -> list[Memory]:
