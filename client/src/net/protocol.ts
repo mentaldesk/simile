@@ -15,6 +15,15 @@ export type ServerMessage =
   | MuralsMessage
   | PaintingsMessage;
 export type EntityKind = 'npc' | 'player';
+/**
+ * What someone is doing where they are.
+ */
+export type Pose = 'standing' | 'walking' | 'sitting' | 'reading' | 'working' | 'looking';
+/**
+ * Which way someone faces on the map, x east and y south, by angle from east through south.
+ */
+export type Facing =
+  'east' | 'south_east' | 'south' | 'south_west' | 'west' | 'north_west' | 'north' | 'north_east';
 export type JsonValue = unknown;
 /**
  * The way a wall faces. The iso camera sees only south and east faces.
@@ -45,11 +54,16 @@ export interface SnapshotMessage {
    */
   conversations: Conversation[];
 }
+/**
+ * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+ */
 export interface Entity {
   id: string;
   kind: EntityKind;
   name: string;
   position: Position;
+  pose?: Pose;
+  facing?: Facing;
 }
 /**
  * Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step.
@@ -106,10 +120,15 @@ export interface ClockMessage {
    */
   speed: number;
 }
+/**
+ * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+ */
 export interface EntityMovedMessage {
   type: 'entity_moved';
   entity_id: string;
   position: Position;
+  pose?: Pose;
+  facing?: Facing;
 }
 export interface ConversationStartedMessage {
   type: 'conversation_started';

@@ -13,6 +13,7 @@ from simile.schema import (
     CoreValue,
     Craft,
     Door,
+    Facing,
     Flag,
     Interactable,
     InteractableKind,
@@ -26,6 +27,7 @@ from simile.schema import (
     Model,
     NewsItem,
     Npc,
+    Pose,
     Relationship,
     Tile,
     TileArea,
@@ -396,6 +398,30 @@ def test_a_door_links_two_maps() -> None:
 )
 def test_door_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
     rejects(Door, DOOR | update, match)
+
+
+def test_facings_go_round_from_east_through_south() -> None:
+    assert [facing.value for facing in Facing] == [
+        "east",
+        "south_east",
+        "south",
+        "south_west",
+        "west",
+        "north_west",
+        "north",
+        "north_east",
+    ]
+
+
+def test_poses_are_a_closed_set() -> None:
+    assert [pose.value for pose in Pose] == [
+        "standing",
+        "walking",
+        "sitting",
+        "reading",
+        "working",
+        "looking",
+    ]
 
 
 def test_an_interactable_round_trips() -> None:

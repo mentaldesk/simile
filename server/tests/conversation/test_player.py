@@ -464,6 +464,22 @@ async def test_the_resident_raises_their_own_news_and_never_sees_the_players() -
     assert RECALLED in second
 
 
+async def test_what_stuck_comes_from_the_story_the_player_names_or_else_her_own() -> None:
+    mars = MARS.model_copy(update={"points": ["The domes are glass."]})
+    barrier = read("ana", "barrier", BARRIER).model_copy(
+        update={"points": ["It cost forty million."], "salience": 0.3}
+    )
+
+    first, second = (request.messages[-1].content for request in await requests_with(mars, barrier))
+
+    assert 'What stuck with you from "Colonising Mars by 2050":\n- The domes are glass.' in first
+    assert 'What stuck with you from "Tidal barrier for the river":\n- It cost forty million.' in (
+        second
+    )
+    assert [first.count("What stuck with"), second.count("What stuck with")] == [1, 1]
+    assert "forty million" not in first and "domes are glass" not in second
+
+
 async def test_a_story_the_player_names_brings_the_residents_take_to_mind() -> None:
     village = Village()
     village.store.add(MARS, read("ana", "barrier", BARRIER, "flooding"))

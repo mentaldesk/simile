@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import re
 from collections.abc import Iterator
@@ -157,6 +158,60 @@ async def test_an_article_from_an_unnamed_feed_is_read_on_the_terminal(
         .messages[-1]
         .content.startswith("You've just read this on the village news terminal.")
     )
+
+
+LONG = "The council voted for a tidal barrier.\n\nFishers fear for the oyster beds."
+
+
+@pytest.mark.anyio
+async def test_reacts_to_the_long_summary_and_remembers_what_stuck(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    news.add([RULES.model_copy(update={"long_summary": LONG})])
+    points = [
+        " The vote was  seven to four. ",
+        "",
+        "Fishers fear for the oyster beds. " * 10,
+        "Work starts in spring.",
+        "A legal challenge may follow.",
+    ]
+    reaction = {"take": "Good.", "valence": 0.5, "intensity": 0.6, "topics": ["rivers"]}
+    fake = FakeProvider([json.dumps({**reaction, "points": points})])
+    reader = reader_for(news, memory, fake)
+
+    reader.read(npc("mei", freedom=0.9))
+    await settle(reader)
+
+    [remembered] = news_memories(memory, "mei")
+    assert (
+        remembered.content == f'I read "{RULES.title}" in The Atlantic on the news terminal. Good.'
+    )
+    assert remembered.points[0] == "The vote was seven to four."
+    assert remembered.points[1].startswith("Fishers fear for the oyster beds.")
+    assert len(remembered.points[1]) <= 240
+    assert remembered.points[2] == "Work starts in spring."
+    assert len(remembered.points) == 3
+    [request] = fake.requests
+    assert f"{RULES.title}\n{LONG}\n\nHow does it land" in request.messages[-1].content
+    assert RULES.summary not in request.messages[-1].content
+    assert '"points"' in request.system
+
+
+@pytest.mark.anyio
+async def test_keeps_no_points_from_the_feeds_short_summary(
+    news: NewsStore, memory: MemoryStore
+) -> None:
+    news.add([RULES])
+    fake = FakeProvider(default=SHRUG)
+    reader = reader_for(news, memory, fake)
+
+    reader.read(npc("mei", freedom=0.9))
+    await settle(reader)
+
+    [remembered] = news_memories(memory, "mei")
+    assert remembered.points == []
+    assert f"{RULES.title}\n{RULES.summary}\n\n" in fake.requests[0].messages[-1].content
+    assert '"points"' not in fake.requests[0].system
 
 
 @pytest.mark.anyio

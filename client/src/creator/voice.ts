@@ -1,8 +1,8 @@
-import { ApiError, type Capabilities, type CreatorApi, type LibraryVoice } from './api';
+import { ApiError, type Capabilities, type CreatorApi, type Kind, type LibraryVoice } from './api';
 import type { Character, CharacterVoice } from './character';
 import { button, h, labelled, message, select, textArea } from './dom';
 import type { Draft } from './draft';
-import { type Job, JobWatch, describe } from './jobs';
+import { type Job, JobWatch, describe, finished } from './jobs';
 import { MicRecorder, UPLOAD_TYPES, uploadProblem } from './wav';
 
 export type VoiceContext = {
@@ -15,7 +15,7 @@ export type VoiceContext = {
   picked: (character: Character, description?: string) => Promise<void>;
 };
 
-type Way = 'design' | 'record' | 'library';
+type Way = 'design' | 'upload' | 'record' | 'library';
 
 type Candidate = {
   n: number;
@@ -35,13 +35,52 @@ type Checked = {
   errors: string[];
   problems: string[];
   warnings: string[];
+  reference_line: string;
   clip: string | null;
+  samples: string[];
   usable: boolean;
 };
 
 const MIN_WORDS = 12;
 const MAX_WORDS = 25;
 const TRY_LENGTH = 300;
+const SET_UP = 'with voice-lab set up as voice-lab/README.md says';
+
+const wordCount = (line: string) => line.split(/\s+/).filter(Boolean).length;
+
+/** `import_voices.py`'s limits on a clip's transcript, which becomes the reference line. */
+export function transcriptProblem(line: string): string | null {
+  const words = wordCount(line);
+  if (!words) return 'Write exactly what the clip says first.';
+  if (words < MIN_WORDS || words > MAX_WORDS)
+    return `What the clip says becomes their line, so it has to be ${MIN_WORDS} to ${MAX_WORDS} words, not ${words}.`;
+  if (line.includes('!'))
+    return 'What the clip says becomes their line, which stays calm, so it can’t have a “!”.';
+  return null;
+}
+
+class Take {
+  clip: { blob: Blob; url: string; name: string } | null = null;
+  check: { job: Job; watch: JobWatch } | null = null;
+  checked: Checked | null = null;
+
+  keep(blob: Blob, name: string): void {
+    this.dispose();
+    this.clip = { blob, url: URL.createObjectURL(blob), name };
+  }
+
+  get checking(): boolean {
+    return !!this.check && !finished(this.check.job);
+  }
+
+  dispose(): void {
+    this.check?.watch.stop();
+    if (this.clip) URL.revokeObjectURL(this.clip.url);
+    this.clip = null;
+    this.check = null;
+    this.checked = null;
+  }
+}
 
 export class VoiceStep {
   readonly root = h('div', { className: 'creator-voice' });
@@ -53,9 +92,9 @@ export class VoiceStep {
   private design: { job: Job; watch: JobWatch } | null = null;
   private designed: Designed | null = null;
   private recorder: MicRecorder | null = null;
-  private recording: { blob: Blob; url: string; name: string } | null = null;
-  private check: { job: Job; watch: JobWatch } | null = null;
-  private checked: Checked | null = null;
+  private readonly recorded = new Take();
+  private readonly uploaded = new Take();
+  private transcript: string | null = null;
   private voices: LibraryVoice[] | null = null;
   private gender = '';
   private tryUnavailable: string | null = null;
@@ -66,6 +105,7 @@ export class VoiceStep {
   constructor(ctx: VoiceContext) {
     this.ctx = ctx;
     this.gender = ctx.draft.work.gender ?? '';
+    if (ctx.draft.work.voice?.needs_recording) this.way = 'upload';
     const saved = ctx.draft.saved?.voice;
     this.clipLine = saved?.reference_clip ? saved.reference_line : null;
   }
@@ -96,15 +136,15 @@ export class VoiceStep {
 
   dispose(): void {
     this.design?.watch.stop();
-    this.check?.watch.stop();
     this.recorder?.stop();
-    if (this.recording) URL.revokeObjectURL(this.recording.url);
+    this.recorded.dispose();
+    this.uploaded.dispose();
   }
 
   private fields(voice: CharacterVoice, disabled: boolean): HTMLElement {
     const count = h('small', {});
     const counted = (line: string) => {
-      const words = line.split(/\s+/).filter(Boolean).length;
+      const words = wordCount(line);
       const problem = line.includes('!') ? ', and no “!”' : '';
       const needs = `${MIN_WORDS} to ${MAX_WORDS} words${problem}, said calmly`;
       count.textContent = words
@@ -142,7 +182,7 @@ export class VoiceStep {
         ? h(
             'p',
             { className: 'creator-hint creator-wide' },
-            'The voice designer can’t do this accent, so record the line or pick a voice from the library.',
+            'The voice designer can’t do this accent, so upload or record a clip of it, or pick a voice from the library.',
           )
         : null,
     );
@@ -173,45 +213,36 @@ export class VoiceStep {
         },
         { 'aria-pressed': String(this.way === way) },
       );
-    const panel =
-      this.way === 'design'
-        ? this.designPanel(kinds.voice_design)
-        : this.way === 'record'
-          ? this.recordPanel(kinds.voice_check)
-          : this.libraryPanel();
+    const panels: Record<Way, () => HTMLElement> = {
+      design: () => this.designPanel(kinds.voice_design),
+      upload: () => this.uploadPanel(kinds.voice_check),
+      record: () => this.recordPanel(kinds.voice_check),
+      library: () => this.libraryPanel(),
+    };
     this.ways.replaceChildren(
       h(
         'div',
         { className: 'creator-tabs', role: 'group' },
         tab('design', 'Design'),
-        tab('record', 'Record or upload'),
+        tab('upload', 'Upload a clip'),
+        tab('record', 'Record'),
         tab('library', 'Library'),
       ),
-      panel,
+      panels[this.way](),
       this.note ? h('p', { className: 'creator-note' }, this.note) : '',
     );
   }
 
-  private unavailable(
-    kind: { available: boolean; reason: string | null } | undefined,
-    what: string,
-  ): HTMLElement | null {
+  private unavailable(kind: Kind | undefined, what: string): HTMLElement | null {
     if (kind?.available) return null;
-    const reason =
-      kind?.reason ??
-      (this.ctx.capabilities
-        ? 'this server doesn’t have it'
-        : 'the server didn’t say what it can run');
     return h(
       'p',
       { className: 'creator-hint' },
-      `${what} isn’t available here: ${reason}. The library works anywhere.`,
+      `${unavailableNote(what, kind, this.ctx.capabilities)} The library works anywhere.`,
     );
   }
 
-  private designPanel(
-    kind: { available: boolean; reason: string | null } | undefined,
-  ): HTMLElement {
+  private designPanel(kind: Kind | undefined): HTMLElement {
     const missing = this.unavailable(kind, 'Designing a voice');
     if (missing) return missing;
     const running =
@@ -303,11 +334,77 @@ export class VoiceStep {
     this.drawWays();
   }
 
-  private recordPanel(
-    kind: { available: boolean; reason: string | null } | undefined,
-  ): HTMLElement {
+  private uploadPanel(kind: Kind | undefined): HTMLElement {
+    const missing = this.unavailable(kind, 'Checking a clip');
+    if (missing) return missing;
+    const take = this.uploaded;
+    const said = () => this.transcript ?? this.ctx.draft.work.voice?.reference_line ?? '';
+    const chooser = h('input', {
+      type: 'file',
+      accept: UPLOAD_TYPES.join(','),
+      hidden: true,
+      onchange: (event) => this.chooseFile(event.target as HTMLInputElement),
+    });
+    const count = h('small', {});
+    const counted = (line: string) => {
+      const problem = transcriptProblem(line);
+      count.textContent = problem ?? `${wordCount(line)} words.`;
+      count.classList.toggle('creator-warn', !!problem);
+    };
+    counted(said());
+    const transcript = labelled(
+      'What the clip says',
+      textArea(
+        said(),
+        (line) => {
+          this.transcript = line;
+          counted(line);
+          this.say('');
+          this.ways.querySelector('.creator-note')?.remove();
+        },
+        { rows: 2 },
+      ),
+      count,
+    );
+    transcript.classList.add('creator-transcript');
+    const parts: (HTMLElement | string)[] = [
+      h(
+        'p',
+        { className: 'creator-hint' },
+        'A clip of the voice you want, made anywhere: a WAV, MP3 or M4A file with 5 to 25 seconds of calm speech. Write exactly what it says below. It’s checked against the clip before you can use it, and becomes their line when you do.',
+      ),
+      h(
+        'div',
+        { className: 'creator-actions' },
+        button(take.clip ? 'Choose another clip…' : 'Choose a clip…', () => chooser.click(), {
+          disabled: this.busy || take.checking,
+        }),
+        chooser,
+        take.clip ? h('small', {}, take.clip.name) : '',
+      ),
+      transcript,
+    ];
+    if (take.clip) {
+      parts.push(
+        h(
+          'div',
+          { className: 'creator-actions' },
+          h('audio', { controls: true, src: take.clip.url }),
+          button('Check it', () => void this.startCheck(take, said()), {
+            disabled: this.busy || take.checking,
+            className: 'creator-primary',
+          }),
+        ),
+      );
+    }
+    parts.push(...this.checkParts(take));
+    return h('div', {}, parts);
+  }
+
+  private recordPanel(kind: Kind | undefined): HTMLElement {
     const missing = this.unavailable(kind, 'Checking a recording');
     if (missing) return missing;
+    const take = this.recorded;
     const line = this.ctx.draft.work.voice?.reference_line ?? '';
     const parts: (HTMLElement | string)[] = [
       h(
@@ -335,49 +432,43 @@ export class VoiceStep {
         ),
       );
     } else {
-      const upload = h('input', {
-        type: 'file',
-        accept: UPLOAD_TYPES.join(','),
-        hidden: true,
-        onchange: (event) => this.chooseFile(event.target as HTMLInputElement),
-      });
       parts.push(
         h(
           'div',
           { className: 'creator-actions' },
           button('Record', () => void this.startRecording(), {
-            disabled: this.busy,
+            disabled: this.busy || take.checking,
           }),
-          button('Upload a clip…', () => upload.click(), { disabled: this.busy }),
-          upload,
         ),
       );
     }
-    if (this.recording && !this.recorder) {
+    if (take.clip && !this.recorder) {
       parts.push(
         h(
           'div',
           { className: 'creator-actions' },
-          h('audio', { controls: true, src: this.recording.url }),
-          button('Check it', () => void this.startCheck(), {
-            disabled: this.busy || this.checking(),
+          h('audio', { controls: true, src: take.clip.url }),
+          button('Check it', () => void this.startCheck(take, line), {
+            disabled: this.busy || take.checking,
             className: 'creator-primary',
           }),
         ),
-        h('small', {}, this.recording.name),
+        h('small', {}, take.clip.name),
       );
     }
-    if (this.check) parts.push(jobLine(this.check.job));
-    if (this.checked) parts.push(this.checkResult(this.checked));
+    parts.push(...this.checkParts(take));
     return h('div', {}, parts);
   }
 
-  private checking(): boolean {
-    return !!this.check && ['queued', 'running'].includes(this.check.job.state);
+  private checkParts(take: Take): HTMLElement[] {
+    if (!take.check) return [];
+    const job = take.check.job;
+    return [jobLine(job), ...(take.checked ? [this.checkResult(job.id, take.checked)] : [])];
   }
 
-  private checkResult(result: Checked): HTMLElement {
+  private checkResult(job: string, result: Checked): HTMLElement {
     const issues = [...result.errors, ...result.problems];
+    const line = this.ctx.draft.work.voice?.reference_line;
     return h(
       'div',
       { className: 'creator-check' },
@@ -387,8 +478,19 @@ export class VoiceStep {
         : '',
       issues.length ? h('small', { className: 'creator-warn' }, issues.join('; ')) : '',
       result.warnings.length ? h('small', {}, result.warnings.join('; ')) : '',
+      result.samples.length
+        ? h(
+            'div',
+            { className: 'creator-clips' },
+            h('small', {}, 'The game’s clone of it, saying other lines:'),
+            result.samples.map((src) => clip('', src)),
+          )
+        : '',
+      result.usable && result.reference_line !== line
+        ? h('small', {}, `Using it makes “${result.reference_line}” their line.`)
+        : '',
       result.usable
-        ? button('Use this recording', () => void this.pick({ recording: this.check!.job.id }), {
+        ? button('Use this voice', () => void this.pick({ recording: job }), {
             disabled: this.busy,
             className: 'creator-primary',
           })
@@ -411,10 +513,12 @@ export class VoiceStep {
     if (!recorder) return;
     this.recorder = null;
     const wav = recorder.stop();
-    this.keep(
+    this.recorded.keep(
       new Blob([wav], { type: 'audio/wav' }),
       `Recording, ${recorder.seconds.toFixed(1)} s`,
     );
+    this.say('');
+    this.drawWays();
   }
 
   private chooseFile(input: HTMLInputElement): void {
@@ -424,39 +528,39 @@ export class VoiceStep {
     const problem = uploadProblem(file);
     if (problem) {
       this.say(problem);
+    } else {
+      this.uploaded.keep(file, file.name);
+      this.say('');
+    }
+    this.drawWays();
+  }
+
+  private async startCheck(take: Take, transcript: string): Promise<void> {
+    if (!take.clip) return;
+    const problem = transcriptProblem(transcript);
+    if (problem) {
+      this.say(problem);
       this.drawWays();
       return;
     }
-    this.keep(file, file.name);
-  }
-
-  private keep(blob: Blob, name: string): void {
-    if (this.recording) URL.revokeObjectURL(this.recording.url);
-    this.recording = { blob, url: URL.createObjectURL(blob), name };
-    this.check = null;
-    this.checked = null;
-    this.say('');
-    this.drawWays();
-  }
-
-  private async startCheck(): Promise<void> {
-    if (!this.recording) return;
     this.busy = true;
+    this.say('');
     this.drawWays();
     try {
       if (!(await this.ctx.ensureSaved())) return;
-      const job = await this.ctx.api.record(this.ctx.draft.work.id!, this.recording.blob);
+      const job = await this.ctx.api.record(this.ctx.draft.work.id!, take.clip.blob, transcript);
       const watch = this.follow(job, (current) => {
-        if (this.check) this.check.job = current;
+        if (take.check?.watch === watch) take.check.job = current;
       });
-      this.check = { job, watch };
-      this.checked = null;
+      take.check = { job, watch };
+      take.checked = null;
       this.busy = false;
       this.drawWays();
       const done = await watch.done;
-      if (done.state === 'succeeded') this.checked = done.result as Checked;
+      if (take.check?.watch === watch && done.state === 'succeeded')
+        take.checked = done.result as Checked;
     } catch (error) {
-      this.say(`Couldn’t check the recording: ${message(error)}`);
+      this.say(`Couldn’t check the clip: ${message(error)}`);
     } finally {
       this.busy = false;
       this.drawWays();
@@ -535,6 +639,7 @@ export class VoiceStep {
       }
       const character = await this.ctx.api.pick(this.ctx.draft.work.id!, choice);
       this.clipLine = character.voice.reference_line;
+      this.transcript = null;
       await this.ctx.picked(character, description);
       this.tryUnavailable = null;
       this.say('Voice saved.');
@@ -612,6 +717,21 @@ export class VoiceStep {
   private say(note: string): void {
     this.note = note;
   }
+}
+
+function unavailableNote(
+  what: string,
+  kind: Kind | undefined,
+  capabilities: Capabilities | null,
+): string {
+  const machine = capabilities?.machine;
+  if (!machine)
+    return `${what} isn’t available: the server didn’t say what it can run. Start the game with ./run.sh on a Mac with Apple Silicon, ${SET_UP}.`;
+  if (!machine.apple_silicon)
+    return `${what} needs a Mac with Apple Silicon. Start the game with ./run.sh on one, ${SET_UP}.`;
+  if (!machine.voice_lab || !machine.voice_lab_mlx)
+    return `${what} needs voice-lab’s two virtualenvs. Set them up as voice-lab/README.md says, then start the game again with ./run.sh.`;
+  return `${what} isn’t available here: ${kind?.reason ?? 'this server doesn’t have it'}.`;
 }
 
 function blankVoice(): CharacterVoice {

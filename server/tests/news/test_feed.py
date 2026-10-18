@@ -7,7 +7,15 @@ from urllib.error import HTTPError
 import pytest
 
 from simile.news import FEEDS, Feed, FeedRefused, feeds, fetch, parse
-from simile.news.feed import SUMMARY_LENGTH, USER_AGENT, is_private, plain, read, shorten
+from simile.news.feed import (
+    SUMMARY_LENGTH,
+    USER_AGENT,
+    is_private,
+    paragraphs,
+    plain,
+    read,
+    shorten,
+)
 
 FeedServer = Any
 
@@ -134,6 +142,45 @@ def test_plain_text_keeps_words_whole_and_blocks_apart() -> None:
     html = "<ul><li>Fish &amp; chips</li><li>are <em>un</em>beatable.</li></ul><p>\n Yes</p>"
 
     assert plain(html) == "Fish & chips are unbeatable. Yes"
+
+
+def test_plain_text_leaves_out_scripts_and_styles() -> None:
+    html = "<p>Before</p><script>track('<p>');</script><style>p { x: 1 }</style><p>after</p>"
+
+    assert plain(html) == "Before after"
+
+
+def test_paragraphs_keep_blocks_on_lines_of_their_own() -> None:
+    html = (
+        "<h2>Heading</h2><p>One  <em>two</em>\nthree.</p><script>no()</script>"
+        "<p></p><blockquote>Four<br>five</blockquote>"
+    )
+
+    assert paragraphs(html) == "Heading\nOne two three.\nFour\nfive"
+
+
+FULL = (
+    b'<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/'
+    b'content/"><channel><title>Courier</title>'
+    b"<item><title>Barrier</title><link>https://example.com/barrier</link><guid>barrier</guid>"
+    b"<pubDate>Mon, 13 Sep 2021 17:00:01 +0000</pubDate><description>Teaser.</description>"
+    b"<content:encoded><![CDATA[<p>The council voted.</p><p>Work starts <b>soon</b>.</p>]]>"
+    b"</content:encoded></item>"
+    b"<item><title>Bees</title><link>https://example.com/bees</link><guid>bees</guid>"
+    b"<pubDate>Mon, 13 Sep 2021 16:00:01 +0000</pubDate><description>Teaser.</description></item>"
+    b"</channel></rss>"
+)
+
+
+def test_keeps_the_full_text_a_feed_carries_for_an_item() -> None:
+    parsed = read(FULL)
+
+    assert [item.summary for item in parsed.items] == ["Teaser.", "Teaser."]
+    assert parsed.texts == {"barrier": "The council voted.\nWork starts soon."}
+
+
+def test_fetch_keeps_the_full_text_a_feed_carries(feed_server: FeedServer) -> None:
+    assert fetch(Feed(feed_server.add("/full", FULL))).texts == read(FULL).texts
 
 
 def test_shortens_at_a_sentence_end_past_halfway() -> None:

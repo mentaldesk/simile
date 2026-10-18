@@ -210,6 +210,27 @@ describe('ServerConnection', () => {
     expect(received.mock.calls).toEqual([[inside], [through], [moved]]);
   });
 
+  it('delivers poses and facings, and entities without them from older servers', () => {
+    const seated: SnapshotMessage = {
+      ...snapshot,
+      entities: [{ ...snapshot.entities[0], pose: 'sitting', facing: 'west' }],
+    };
+    const looking: EntityMovedMessage = {
+      type: 'entity_moved',
+      entity_id: 'mei',
+      position: { x: 6, y: 3, map: 'gallery' },
+      pose: 'looking',
+      facing: 'north',
+    };
+    const received = vi.fn();
+    connection.on('snapshot', received);
+    connection.on('entity_moved', received);
+
+    for (const message of [seated, looking, snapshot, moved]) connection.dispatch(JSON.stringify(message));
+
+    expect(received.mock.calls).toEqual([[seated], [looking], [snapshot], [moved]]);
+  });
+
   it('delivers the clock to its handlers', () => {
     const received = vi.fn();
     connection.on('clock', received);

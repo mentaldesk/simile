@@ -2,8 +2,8 @@
 
 The village's news: articles from the feeds chosen in the title menu, stored in the `news` table of
 the memory store's file and analysed once each for how closely they relate to every core value,
-with tags and a tone. NPCs read them at the terminals and bring them up later, and the player reads
-them there too.
+with tags, a tone and, from the article itself, a summary of three or four paragraphs. NPCs read
+them at the terminals and bring them up later, and the player reads them there too.
 
 ## Live news, on by default
 
@@ -12,12 +12,38 @@ them there too.
   run. Each fetch stores the 10 newest items per feed that aren't stored yet. Each feed refreshes
   on its own, so a slow or failing one holds up no other.
 - **Analysis.** Every sim minute, the articles among the 60 newest that aren't analysed yet get one
-  Haiku call each through L1, below conversations' priority. A first start analyses up to 10 items
-  per feed, about 60 calls, and logs how many as it starts.
-- **Turning it off.** `SIMILE_NEWS=0` leaves the news table alone: nothing is fetched, and no
-  bundled articles are added. Articles already stored but not analysed, say from
-  `simile news --refresh`, are still analysed. Every test runs this way, and so does
-  `simile ambient playthrough`.
+  Haiku call each through L1, below conversations' priority, which also writes the long summary.
+  A first start analyses up to 10 items per feed, about 60 calls, and logs how many as it starts.
+- **Turning it off.** `SIMILE_NEWS=0` leaves the news table alone: nothing is fetched, article
+  pages included, and no bundled articles are added. Articles already stored but not analysed, say
+  from `simile news --refresh`, are still analysed, and summarised only from text their feed
+  carried. Every test runs this way, and so does `simile ambient playthrough`.
+
+## Long summaries
+
+The analysis call reads up to 4,000 words of the article and writes three or four short paragraphs
+in its own words: what happened, who's involved and why it matters. The terminal shows them when
+the player opens the article, and residents react to them.
+
+- **The article's text** is the feed's own (`content:encoded`, or Atom's `content`) when it carries
+  150 words or more. Otherwise the page is read once, through the same fetch as the feeds, so the
+  limits below hold for it too, and trafilatura finds the article on it. A feed on the internet
+  can't send it to a private address, and nor can an article whose feed isn't recorded.
+- **Never from the headline.** With fewer than 150 words (a teaser, a live blog's stub, a hard
+  paywall's first paragraph), an error status, a refusal or a timeout, the article keeps its feed's
+  summary. Why is kept in `news_no_text`, logged, and listed by `simile news`, and that page isn't
+  read again.
+- **Paid content isn't summarised.** A page whose structured data says it isn't free to read
+  (`isAccessibleForFree: false`) keeps the feed's summary too, even when it serves the whole
+  article, as Scientific American's do. Text a feed carries itself is the publisher's to share, so
+  it's summarised.
+- **Nothing is kept.** The page is dropped once its text is found, and the text, in `news_text`,
+  once the summary is written or the article won't be analysed. Read text is kept until then so a
+  failed call doesn't read the page again.
+- **Residents** react to the long summary, and their memory of it keeps up to three points that
+  stuck with them (`Memory.points`). A conversation's prompt gives one article's points at most:
+  in a reply to the player, the article the player just mentioned or else the resident's first
+  news topic, and in a scene, the first topic with points, the opener's before the other's.
 
 ## Choosing the feeds
 
@@ -67,6 +93,10 @@ cd server
 uv run simile news              # the latest stored, newest first
 uv run simile news --refresh    # fetch the feeds first
 uv run simile news --analyse    # analyse what's waiting, with Claude
+uv run simile news --summarise 30   # long summaries for those of the 30 newest without one
 ```
+
+`--summarise` reads each page once, as analysis does, and keeps how an article was analysed. The
+listing says which articles have a long summary, or why not, and counts them by feed.
 
 Every constant of reading and analysing is in `NewsConfig`.

@@ -136,6 +136,23 @@ async def test_refresh_stores_new_items_and_then_asks_only_for_changes(
 
 
 @pytest.mark.anyio
+async def test_refresh_holds_the_text_a_feed_carries_for_each_new_item(store: NewsStore) -> None:
+    old, new, short = (
+        story("old", 1, FEED),
+        story("new", 2, FEED),
+        story("short", 3, FEED, summary=""),
+    )
+    store.add([old])
+    texts = {"old": "Old text.", "new": " ".join(["word"] * 5000), "short": "Short text."}
+
+    await refresh(store, FEED, fetch=lambda *_: Fetched([old, new, short], texts=texts))
+
+    assert store.text("old") is None
+    assert store.text("short") is None
+    assert store.text("new") == " ".join(["word"] * 4000)
+
+
+@pytest.mark.anyio
 async def test_refresh_records_a_failed_check(store: NewsStore, feed: FakeFeeds) -> None:
     feed.errors[FEED] = TimeoutError("timed out")
 
