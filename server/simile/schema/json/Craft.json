@@ -3,7 +3,8 @@
     "Medium": {
       "enum": [
         "writing",
-        "mural"
+        "mural",
+        "painting"
       ],
       "title": "Medium",
       "type": "string"

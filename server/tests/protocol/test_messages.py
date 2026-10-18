@@ -14,6 +14,7 @@ from simile.protocol import (
     ConversationStartedMessage,
     EntityMovedMessage,
     Face,
+    Frame,
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
@@ -23,6 +24,8 @@ from simile.protocol import (
     NewsArticle,
     NewsMessage,
     NpcStateMessage,
+    Painting,
+    PaintingsMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     Position,
@@ -76,6 +79,17 @@ MURALS = MuralsMessage(
         Wall(id="park_east", x=30, y=14, width=3, face=Face.EAST, bottom=0.2, top=2, mural=None),
     ]
 )
+PAINTING = Painting(
+    work_id="work_4",
+    title="Low Tide, Six O'Clock",
+    artist=Artist(id="mei", name="Mei Lin"),
+    statement="The mud flats are the only time the river slows down enough to look at.",
+    image="/api/gallery/work_4.png",
+)
+FIRST_FRAME = Frame(id="painting_1", map="gallery", painting=PAINTING)
+PAINTINGS = PaintingsMessage(
+    frames=[FIRST_FRAME, Frame(id="painting_2", map="gallery", painting=None)]
+)
 
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
@@ -92,6 +106,7 @@ SERVER = [
     CLOCK,
     WORKS,
     MURALS,
+    PAINTINGS,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -272,6 +287,48 @@ def test_murals_lists_every_wall_with_its_mural_or_null() -> None:
 def test_rejects_invalid_walls(update: dict[str, Any], match: str) -> None:
     with pytest.raises(ValidationError, match=match):
         Wall.model_validate(SQUARE_WALL.model_dump() | update)
+
+
+def test_paintings_lists_every_frame_with_its_painting_or_null() -> None:
+    assert json.loads(PAINTINGS.model_dump_json()) == {
+        "type": "paintings",
+        "frames": [
+            {
+                "id": "painting_1",
+                "map": "gallery",
+                "painting": {
+                    "work_id": "work_4",
+                    "title": "Low Tide, Six O'Clock",
+                    "artist": {"id": "mei", "name": "Mei Lin"},
+                    "statement": "The mud flats are the only time the river slows down enough "
+                    "to look at.",
+                    "image": "/api/gallery/work_4.png",
+                },
+            },
+            {"id": "painting_2", "map": "gallery", "painting": None},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"id": "Painting 1"}, "String should match pattern"),
+        ({"map": ""}, "at least 1 character"),
+        ({"painting": {"work_id": "work_4"}}, "Field required"),
+    ],
+)
+def test_rejects_invalid_frames(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Frame.model_validate(FIRST_FRAME.model_dump() | update)
+
+
+def test_an_empty_frame_says_so_with_null() -> None:
+    frame = FIRST_FRAME.model_dump()
+    del frame["painting"]
+
+    with pytest.raises(ValidationError, match="painting\n  Field required"):
+        Frame.model_validate(frame)
 
 
 def test_timestamps_are_utc() -> None:

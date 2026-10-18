@@ -6,6 +6,7 @@ import type {
   ClockMessage,
   EntityMovedMessage,
   MuralsMessage,
+  PaintingsMessage,
   PlayerMoveMessage,
   SnapshotMessage,
   WatchNpcMessage,
@@ -96,6 +97,23 @@ const murals: MuralsMessage = {
       },
     },
     { id: 'park_east', x: 30, y: 14, width: 3, face: 'east', bottom: 0.2, top: 2, mural: null },
+  ],
+};
+const paintings: PaintingsMessage = {
+  type: 'paintings',
+  frames: [
+    {
+      id: 'painting_1',
+      map: 'gallery',
+      painting: {
+        work_id: 'work_4',
+        title: "Low Tide, Six O'Clock",
+        artist: { id: 'mei', name: 'Mei Lin' },
+        statement: 'The mud flats are the only time the river slows down enough to look at.',
+        image: '/api/gallery/work_4.png',
+      },
+    },
+    { id: 'painting_2', map: 'gallery', painting: null },
   ],
 };
 
@@ -201,15 +219,24 @@ describe('ServerConnection', () => {
     expect(received).toHaveBeenCalledWith(clock);
   });
 
-  it('delivers works and murals to their handlers', () => {
+  it('delivers works, murals and paintings to their handlers', () => {
     const received = vi.fn();
     connection.on('works', received);
     connection.on('murals', received);
+    connection.on('paintings', received);
 
-    connection.dispatch(JSON.stringify(works));
-    connection.dispatch(JSON.stringify(murals));
+    for (const message of [works, murals, paintings]) connection.dispatch(JSON.stringify(message));
 
-    expect(received.mock.calls).toEqual([[works], [murals]]);
+    expect(received.mock.calls).toEqual([[works], [murals], [paintings]]);
+  });
+
+  it('passes over paintings when nothing handles them, as clients before the gallery do', () => {
+    const received = vi.fn();
+    connection.on('murals', received);
+
+    for (const message of [paintings, murals]) connection.dispatch(JSON.stringify(message));
+
+    expect(received.mock.calls).toEqual([[murals]]);
   });
 
   it('decodes binary frames as audio chunks', () => {

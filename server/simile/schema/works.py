@@ -8,7 +8,7 @@ from simile.schema.npc import EveryValue, Medium
 
 
 class Work(Model):
-    """Something a resident made: a piece of writing, or a mural on a wall."""
+    """Something a resident made: a piece of writing, a mural on a wall, or a painting."""
 
     id: Key
     artist: Id = Field(description="The NPC who made it.")
@@ -17,8 +17,8 @@ class Work(Model):
     title: str = Field(min_length=1)
     created: Timestamp
     text: str = Field(
-        description="The piece itself for writing, or for a mural a plain description of what "
-        "it shows."
+        description="The piece itself for writing, or for a mural or painting a plain "
+        "description of what it shows."
     )
     statement: str = Field(
         description="A sentence or two in the artist's voice on what it's saying."
@@ -33,7 +33,7 @@ class Work(Model):
     tags: list[Tag] = Field(max_length=10, description='Up to 10 short topic tags, e.g. "mars".')
     sentiment: Signed = Field(description="Its overall tone, from -1 to 1.")
     wall: Id | None = Field(
-        default=None, description="The wall a mural is painted on. Null for writing."
+        default=None, description="The wall a mural is painted on. Null for anything else."
     )
 
     @model_validator(mode="after")
