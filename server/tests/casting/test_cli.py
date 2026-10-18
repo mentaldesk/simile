@@ -1,7 +1,8 @@
+import re
 from pathlib import Path
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from simile.casting import load_cast
 from simile.cli import create_cli
@@ -11,6 +12,12 @@ from simile.schema import Character, HookKind
 
 runner = CliRunner()
 CONTENT = NPCS_DIR.parent
+COLOUR = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def said(result: Result) -> str:
+    """The CLI's output without colours, the error box's borders or line wrapping."""
+    return " ".join(COLOUR.sub("", result.output).replace("│", " ").split())
 
 
 def snapshot() -> dict[Path, bytes]:
@@ -66,7 +73,7 @@ def test_cast_refuses_what_it_cant_make(tmp_path: Path, args: list[str], error: 
     result = runner.invoke(create_cli(), ["cast", *args, "--data", str(tmp_path)])
 
     assert result.exit_code == 2
-    assert error in " ".join(result.output.split())
+    assert error in said(result)
     assert not (tmp_path / "cast").exists()
 
 
@@ -78,7 +85,7 @@ def test_cast_needs_a_data_directory_of_its_own(monkeypatch: pytest.MonkeyPatch)
     default = runner.invoke(create_cli(), ["cast", "--random", "3"])
 
     assert in_memory.exit_code == 2
-    assert "data directory" in in_memory.output
+    assert "data directory" in said(in_memory)
     assert default.exit_code == 2
-    assert "holds today's village" in " ".join(default.output.split())
+    assert "holds today's village" in said(default)
     assert (DEFAULT_PATH.parent / "cast").exists() == before
