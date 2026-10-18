@@ -22,7 +22,7 @@ export function layerAlphas<L extends { weight: number }>(layers: readonly L[], 
 
 type State = 'loading' | 'ready' | 'failed';
 
-/** Loads the sets the clock draws, and the next one before its fade: never more than two at once. */
+/** Loads the sets the clock draws, and the next one before its fade if that keeps it to two. */
 export class SetLoader {
   layers: Layer[] = [];
   private readonly states = new Map<LightingSet, State>();

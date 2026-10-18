@@ -1,5 +1,6 @@
 // Renderer and GPU process memory over lighting changes and gallery visits at a fast clock: macOS only.
-// Start the sim server and `npm run dev` first, then:
+// Run `npx playwright install chromium` once. Start `SIMILE_LLM=fake SIMILE_DB=$(mktemp -d)/sim.db
+// uv run simile serve` in server/ and `npm run dev` here, then:
 //   node scripts/measure-memory.ts [--url http://localhost:5173/?play] [--width 2560 --height 1440 --dpr 2] [--samples out.jsonl]
 import { execFileSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
@@ -45,6 +46,7 @@ const page = await context.newPage();
 const cdp = await browser.newBrowserCDPSession();
 const errors: string[] = [];
 page.on('console', (message) => {
+  if (message.location().url.endsWith('/favicon.ico')) return;
   if (message.type() === 'error' || message.type() === 'warning') errors.push(message.text());
 });
 

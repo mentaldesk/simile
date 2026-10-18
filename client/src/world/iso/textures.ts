@@ -1,7 +1,7 @@
 import type { Uploads } from './crossfade';
 
 /** How many images are fetched and decoded at once. Each is held only until its texture is added. */
-export const DECODES_AT_ONCE = 4;
+export const DECODES_AT_ONCE = 6;
 
 /** Runs at most `size` tasks at a time, and the rest in the order they came. */
 export class Limit {
