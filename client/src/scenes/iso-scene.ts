@@ -27,6 +27,7 @@ import {
   DEFAULT_HOUR,
   figureAt,
   figureBox,
+  framesOn,
   gridDirection,
   GROUND_DEPTH,
   groundHeights,
@@ -91,7 +92,8 @@ type Drawn = { scenery: Scenery; set: SceneSet; weight: number };
 type Geometry = {
   manifest: SceneryManifest;
   heightAt: (position: Position) => number;
-  buildings: { object: SceneryObject; cutaway: Cutaway }[];
+  /** `ids` are the object's and those of the frames on it, which fade with it. */
+  buildings: { object: SceneryObject; ids: string[]; cutaway: Cutaway }[];
 };
 
 const collisions = new Map<string, CollisionMap>();
@@ -109,7 +111,11 @@ function geometryOf(manifest: SceneryManifest, map: TiledMap): Geometry {
   return {
     manifest,
     heightAt: groundHeights(map as TiledMapWithTiles, manifest.ground.heights),
-    buildings: cutawaysOf(manifest.objects).map((object) => ({ object, cutaway: new Cutaway() })),
+    buildings: cutawaysOf(manifest.objects).map((object) => ({
+      object,
+      ids: [object, ...framesOn(object, manifest.objects)].map(({ id }) => id),
+      cutaway: new Cutaway(),
+    })),
   };
 }
 
@@ -417,10 +423,10 @@ export class IsoScene extends Phaser.Scene {
       }
       if (rank < 0) continue;
       for (const { image } of scenery.placed) image.setAlpha(open[rank]);
-      for (const { object, cutaway } of geometry.buildings) {
+      for (const { ids, cutaway } of geometry.buildings) {
         if (cutaway.alpha === 1) continue;
         const faded = layerAlphas(drawn, cutaway.alpha)[rank];
-        for (const { image } of scenery.objects.get(object.id) ?? []) image.setAlpha(faded);
+        for (const id of ids) for (const { image } of scenery.objects.get(id) ?? []) image.setAlpha(faded);
       }
     }
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cutawaysOf, INSIDE, INSIDE_SUN, insideLight, sunShadow } from './inside';
+import { cutawaysOf, framesOn, INSIDE, INSIDE_SUN, insideLight, sunShadow } from './inside';
 import type { CharacterLights } from './lighting';
 import type { SceneryManifest } from './manifest';
 
@@ -68,5 +68,13 @@ describe('cutawaysOf', () => {
     expect(ids('gallery').length).toBeGreaterThan(0);
     for (const id of ids('gallery')) expect(id).toMatch(/^partition-/);
     expect(ids('coffee_shop')).toEqual([]);
+  });
+
+  it('fades the frames on a partition with it', () => {
+    const { objects } = interiors.find((manifest) => manifest.map.id === 'gallery')!;
+    const frames = (wall: string) =>
+      framesOn(objects.find(({ id }) => id === wall)!, objects).map(({ id }) => id);
+    expect(frames('partition-4-9')).toEqual(['painting_8', 'painting_9', 'painting_10']);
+    expect(frames('partition-18-9')).toEqual(['painting_11', 'painting_12', 'painting_13']);
   });
 });

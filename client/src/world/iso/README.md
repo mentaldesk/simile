@@ -62,7 +62,7 @@ and follow the clock while the player is inside, so coming out is instant.
   across most floors, gives residents its colour and about the afternoon's brightness, a little more
   under a ceiling light.
 - **Cutaway**: the gallery's free-standing walls (`partition-*`) fade like buildings when they hide
-  the player. The walls around a room don't: the tall ones are behind everyone, and the low ones
+  the player, and the frames on them with them (`framesOn`). The walls around a room don't: the tall ones are behind everyone, and the low ones
   would cut away for a few pixels of feet.
 
 ## Drawing

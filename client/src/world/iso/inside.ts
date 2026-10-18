@@ -1,5 +1,7 @@
 import type { Rgb, SetLight } from './lighting';
 import type { IsoTile, SceneryObject } from './manifest';
+
+type Footprint = SceneryObject['footprint'];
 import { project } from './projection';
 import type { LightingSet } from './time-of-day';
 
@@ -43,3 +45,10 @@ export function insideLight(sun: Sun, figureTiles: number, tile: IsoTile): SetLi
 /** What can hide the player and fades out when it does: buildings, and the gallery's partitions. */
 export const cutawaysOf = (objects: readonly SceneryObject[]): SceneryObject[] =>
   objects.filter(({ id, kind }) => kind === 'building' || (kind === 'wall' && id.startsWith('partition-')));
+
+const touching = ([ax0, ay0, ax1, ay1]: Footprint, [bx0, by0, bx1, by1]: Footprint) =>
+  ax0 < bx1 && ax1 > bx0 && ay0 <= by1 && ay1 >= by0;
+
+/** The frames hanging on a wall, which fade with it. */
+export const framesOn = (wall: SceneryObject, objects: readonly SceneryObject[]): SceneryObject[] =>
+  objects.filter(({ kind, footprint }) => kind === 'frame' && touching(footprint, wall.footprint));
