@@ -73,6 +73,30 @@ describe('the server API', () => {
     const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('/api/characters/wren_abernethy/voice/recording');
     expect(init.body).toBe(audio);
+    expect(init.headers).toEqual({ 'Content-Type': 'audio/wav' });
+  });
+
+  it.each([
+    ['clip.m4a', 'audio/x-m4a', 'audio/mp4'],
+    ['CLIP.MP3', '', 'audio/mpeg'],
+    ['clip.wav', 'audio/x-wav', 'audio/wav'],
+  ])('sends %s as the type the server takes, not %j', async (name, given, sent) => {
+    const fetcher = vi.fn(async () => Response.json({ id: 'job' }, { status: 202 }));
+    const file = new File([new Uint8Array([1, 2, 3])], name, { type: given });
+    await new ServerApi(fetcher).record('wren_abernethy', file);
+    const [, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.body).toBe(file);
+    expect(init.headers).toEqual({ 'Content-Type': sent });
+  });
+
+  it('sends a character file as a zip, whatever the OS called it', async () => {
+    const fetcher = vi.fn(async () => Response.json(character(), { status: 201 }));
+    const file = new File(['PK'], 'wren.zip', { type: 'application/x-zip-compressed' });
+    await new ServerApi(fetcher).importFile(file);
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('/api/characters/import');
+    expect(init.body).toBe(file);
+    expect(init.headers).toEqual({ 'Content-Type': 'application/zip' });
   });
 
   it('sends what a clip says beside it', async () => {

@@ -16,14 +16,13 @@ from .conftest import LINE, FakeVoiceLab, clip, eventually, finished
 
 RECORD = "/api/characters/wren_abernethy/voice/recording"
 PICK = "/api/characters/wren_abernethy/voice/pick"
+WAV = {"Content-Type": "audio/wav"}
 TRANSCRIPT = "Come in out of the rain, the kettle's on and there's a seat by the stove for you."
 
 
 def record(client: TestClient, data: bytes, transcript: str | None = None) -> dict:
     params = {} if transcript is None else {"transcript": transcript}
-    submitted = client.post(
-        RECORD, content=data, params=params, headers={"Content-Type": "audio/wav"}
-    )
+    submitted = client.post(RECORD, content=data, params=params, headers=WAV)
     assert submitted.status_code == 202, submitted.text
     return finished(client, submitted.json()["id"])
 
@@ -100,7 +99,9 @@ def test_an_upload_that_fails_leaves_the_voice_as_it_was(
 def test_a_transcript_that_cant_be_their_line_is_refused_before_uploading(
     client: TestClient, jobs: Jobs, transcript: str, error: str
 ) -> None:
-    response = client.post(RECORD, content=clip(8.0), params={"transcript": transcript})
+    response = client.post(
+        RECORD, headers=WAV, content=clip(8.0), params={"transcript": transcript}
+    )
 
     assert response.status_code == 422
     assert response.json()["error"].endswith(error)
@@ -150,7 +151,7 @@ def test_without_a_transcript_the_line_has_to_be_one_a_clip_can_say(
     data["voice"]["reference_line"] = "Mind the step."
     library.update("wren_abernethy", data)
 
-    response = client.post(RECORD, content=clip(8.0))
+    response = client.post(RECORD, headers=WAV, content=clip(8.0))
 
     assert response.status_code == 422
     assert response.json()["error"].endswith("has to be 12-25 words, not 3")
@@ -176,7 +177,7 @@ def webm() -> bytes:
 def test_a_bad_upload_is_refused_with_a_reason(
     client: TestClient, jobs: Jobs, data: bytes, status: int, error: str
 ) -> None:
-    response = client.post(RECORD, content=data)
+    response = client.post(RECORD, headers=WAV, content=data)
 
     assert response.status_code == status
     assert response.json()["error"].startswith(error)
@@ -184,8 +185,28 @@ def test_a_bad_upload_is_refused_with_a_reason(
     assert not uploads_dir(jobs.root).exists() or not list(uploads_dir(jobs.root).iterdir())
 
 
+@pytest.mark.parametrize(
+    ("content_type", "data"),
+    [
+        ("audio/wav", clip(8.0)),
+        ("audio/mpeg", b"ID3" + bytes(100)),
+        ("audio/mp4", bytes(4) + b"ftyp" + bytes(100)),
+    ],
+)
+def test_the_client_can_upload_a_wav_mp3_or_m4a_from_its_own_origin(
+    client: TestClient, content_type: str, data: bytes
+) -> None:
+    headers = {"Content-Type": content_type, "Origin": "http://localhost:5173"}
+
+    response = client.post(RECORD, headers=headers, content=data)
+
+    assert response.status_code == 202
+
+
 def test_a_premade_character_cant_record(client: TestClient) -> None:
-    response = client.post("/api/characters/tobiah_rennick/voice/recording", content=clip())
+    response = client.post(
+        "/api/characters/tobiah_rennick/voice/recording", headers=WAV, content=clip()
+    )
 
     assert response.status_code == 403
 
@@ -196,7 +217,7 @@ def test_without_the_voice_lab_recordings_are_refused(
     monkeypatch.setattr(kinds, "CHECK_KIND", CHECK_KIND)
     app.state.jobs = Jobs(tmp_path / "jobs", {"apple_silicon": True, "voice_lab": False})
     with TestClient(app) as client:
-        response = client.post(RECORD, content=clip())
+        response = client.post(RECORD, headers=WAV, content=clip())
 
     assert response.status_code == 503
     assert response.json()["error"].startswith("voice_check jobs need voice-lab/.venv (see")
@@ -229,8 +250,8 @@ def test_a_cancelled_check_deletes_its_upload(
     client: TestClient, jobs: Jobs, voice_lab: FakeVoiceLab, tmp_path: Path
 ) -> None:
     voice_lab.hold = str(tmp_path / "hold")
-    running = client.post(RECORD, content=clip()).json()
-    queued = client.post(RECORD, content=clip()).json()
+    running = client.post(RECORD, headers=WAV, content=clip()).json()
+    queued = client.post(RECORD, headers=WAV, content=clip()).json()
     uploads = uploads_dir(jobs.root)
     assert len(list(uploads.iterdir())) == 2
 
@@ -246,8 +267,8 @@ def test_stopping_the_server_deletes_waiting_uploads(
 ) -> None:
     voice_lab.hold = str(tmp_path / "hold")
     with TestClient(app) as client:
-        client.post(RECORD, content=clip())
-        client.post(RECORD, content=clip())
+        client.post(RECORD, headers=WAV, content=clip())
+        client.post(RECORD, headers=WAV, content=clip())
         assert len(list(uploads_dir(jobs.root).iterdir())) == 2
 
     assert list(uploads_dir(jobs.root).iterdir()) == []

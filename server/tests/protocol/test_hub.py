@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient, WebSocketTestSession
+from starlette.websockets import WebSocketDisconnect
 
 from simile.app import create_app
 from simile.protocol import (
@@ -67,6 +68,18 @@ def test_sends_the_fixture_snapshot_at_sim_time_on_connect(
 
     assert START <= snapshot.time <= world_of(app).clock.now
     assert snapshot.model_copy(update={"time": START}) == fixture_snapshot(START)
+
+
+def test_only_the_clients_own_origin_can_connect(client: TestClient) -> None:
+    with client.websocket_connect("/ws", headers={"Origin": "http://localhost:5173"}) as ws:
+        assert SnapshotMessage.model_validate(ws.receive_json())
+    with (
+        pytest.raises(WebSocketDisconnect) as refused,
+        client.websocket_connect("/ws", headers={"Origin": "https://example.com"}),
+    ):
+        pass
+
+    assert refused.value.code == 1008
 
 
 def test_sends_the_snapshot_from_the_current_source(client: TestClient, hub: Hub) -> None:

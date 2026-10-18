@@ -34,6 +34,7 @@ SAID = (
     "Mind the step on your way out, the frost has been at it again and the gate sticks in the cold."
 )
 CHECKED_WITHIN = 300.0
+M4A = {"Content-Type": "audio/mp4"}
 
 
 @pytest.fixture
@@ -55,7 +56,7 @@ def clip(tmp_path: Path) -> bytes:
 
 
 def checked(client: TestClient, data: bytes, transcript: str) -> dict[str, Any]:
-    submitted = client.post(RECORD, content=data, params={"transcript": transcript})
+    submitted = client.post(RECORD, content=data, params={"transcript": transcript}, headers=M4A)
     assert submitted.status_code == 202, submitted.text
     deadline = time.monotonic() + CHECKED_WITHIN
     while (job := client.get(f"/api/jobs/{submitted.json()['id']}").json())["state"] in (

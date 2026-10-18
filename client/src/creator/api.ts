@@ -1,6 +1,7 @@
 import type { Appearance, Character, CharacterVoice, Gender, Values } from './character';
 import type { Job, SocketLike } from './jobs';
 import type { Latent } from './values';
+import { mediaType } from './wav';
 
 export type Suggestion = { field: string; current: string; suggested: string };
 
@@ -129,7 +130,8 @@ export class ServerApi implements CreatorApi {
   }
 
   async importFile(file: Blob): Promise<Character> {
-    const response = await this.request('/api/characters/import', { method: 'POST', body: file });
+    const init = { method: 'POST', headers: { 'Content-Type': 'application/zip' }, body: file };
+    const response = await this.request('/api/characters/import', init);
     return response.json();
   }
 
@@ -187,7 +189,8 @@ export class ServerApi implements CreatorApi {
   async record(id: string, audio: Blob, transcript?: string): Promise<Job> {
     const query = transcript === undefined ? '' : `?${new URLSearchParams({ transcript })}`;
     const url = `/api/characters/${id}/voice/recording${query}`;
-    return (await this.request(url, { method: 'POST', body: audio })).json();
+    const init = { method: 'POST', headers: { 'Content-Type': mediaType(audio) }, body: audio };
+    return (await this.request(url, init)).json();
   }
 
   pick(id: string, choice: Pick): Promise<Character> {

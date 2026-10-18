@@ -1,7 +1,12 @@
 /** P11 takes at most 10 MB and 60 s, and its checks want 5 to 25 s. */
 export const MAX_RECORDING_SECONDS = 30;
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-export const UPLOAD_TYPES = ['.wav', '.mp3', '.m4a'];
+const MEDIA_TYPES: Record<string, string> = {
+  '.wav': 'audio/wav',
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+};
+export const UPLOAD_TYPES = Object.keys(MEDIA_TYPES);
 
 export function encodeWav(
   chunks: readonly Float32Array[],
@@ -42,6 +47,13 @@ export function uploadProblem(file: { name: string; size: number }): string | nu
   if (file.size > MAX_UPLOAD_BYTES) return 'That file is over 10 MB.';
   if (file.size === 0) return 'That file is empty.';
   return null;
+}
+
+/** A file's type by its extension, since each OS names audio types its own way. */
+export function mediaType(clip: Blob): string {
+  const name = clip instanceof File ? clip.name.toLowerCase() : '';
+  const suffix = UPLOAD_TYPES.find((type) => name.endsWith(type));
+  return suffix ? MEDIA_TYPES[suffix] : clip.type;
 }
 
 /** Records the microphone as raw samples, since `MediaRecorder` only makes WebM or MP4. */
