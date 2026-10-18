@@ -75,6 +75,17 @@ describe('the server API', () => {
     expect(init.body).toBe(audio);
   });
 
+  it('sends what a clip says beside it', async () => {
+    const fetcher = vi.fn(async () => Response.json({ id: 'job' }, { status: 202 }));
+    const audio = new Blob([new Uint8Array([1, 2, 3])], { type: 'audio/mpeg' });
+    await new ServerApi(fetcher).record('wren_abernethy', audio, 'Mind the step, it’s icy & wet.');
+    const [url, init] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    const sent = new URL(url, 'http://localhost');
+    expect(sent.pathname).toBe('/api/characters/wren_abernethy/voice/recording');
+    expect(sent.searchParams.get('transcript')).toBe('Mind the step, it’s icy & wet.');
+    expect(init.body).toBe(audio);
+  });
+
   it('reads the player’s look', async () => {
     const appearance = character().appearance;
     const api = new ServerApi(vi.fn(async () => Response.json({ appearance })));

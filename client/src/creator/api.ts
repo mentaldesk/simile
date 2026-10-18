@@ -89,7 +89,7 @@ export interface CreatorApi {
   watch(id: string): SocketLike;
   atlas(url: string): Promise<Atlas | null>;
   voices(): Promise<LibraryVoice[]>;
-  record(id: string, audio: Blob): Promise<Job>;
+  record(id: string, audio: Blob, transcript?: string): Promise<Job>;
   pick(id: string, choice: Pick): Promise<Character>;
   say(id: string, line: string): Promise<Blob>;
 }
@@ -184,8 +184,9 @@ export class ServerApi implements CreatorApi {
     return this.json('/api/voices');
   }
 
-  async record(id: string, audio: Blob): Promise<Job> {
-    const url = `/api/characters/${id}/voice/recording`;
+  async record(id: string, audio: Blob, transcript?: string): Promise<Job> {
+    const query = transcript === undefined ? '' : `?${new URLSearchParams({ transcript })}`;
+    const url = `/api/characters/${id}/voice/recording${query}`;
     return (await this.request(url, { method: 'POST', body: audio })).json();
   }
 

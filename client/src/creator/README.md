@@ -24,10 +24,12 @@ or *Characters* on the title menu. It's a DOM overlay over the game, built on th
   - **Biography**: life events, the prose, the verbal habits (mannerisms, drawn from P3's table)
     and the ties, rerolled together for the same reason. Generation streams the reply as it's
     written, and the critic's suggestions can be accepted or ignored one by one.
-  - **Voice** (`voice.ts`): design from the description, record or upload the line, or pick a
-    resident's voice from the library, then *Try it*. The microphone is recorded as raw samples and
-    sent as 16-bit PCM WAV (`wav.ts`), since the server refuses the WebM that browsers record.
-    Picking a designed voice saves the description that made it.
+  - **Voice** (`voice.ts`): design from the description, upload a clip made anywhere with what it
+    says, record the line, or pick a resident's voice from the library, then *Try it*. An upload's
+    transcript starts as their line and is checked against `import_voices.py`'s limits before it
+    goes up. Using a checked clip makes its transcript their line. The microphone is recorded as raw
+    samples and sent as 16-bit PCM WAV (`wav.ts`), since the server refuses the WebM that browsers
+    record. Picking a designed voice saves the description that made it.
 - **Your look** (`player-look.ts`): the same appearance controls and preview, saved through
   `/api/player` and drawn as the `player` sprite job.
 
