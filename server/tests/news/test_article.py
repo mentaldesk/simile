@@ -56,6 +56,50 @@ def test_finds_nothing_on_a_page_without_an_article() -> None:
         )
 
 
+def flagged(marking: bytes) -> bytes:
+    return PAGE.replace(b"</head>", marking + b"</head>")
+
+
+@pytest.mark.parametrize(
+    "marking",
+    [
+        b'<script type="application/ld+json">{"@type":"NewsArticle","isAccessibleForFree":false}'
+        b"</script>",
+        b'<script type="application/ld+json">{"isAccessibleForFree": "False"}</script>',
+        b'<meta itemprop="isAccessibleForFree" content="false">',
+    ],
+    ids=["json-ld", "json-ld-string", "microdata"],
+)
+def test_wont_summarise_a_page_that_says_it_isnt_free_to_read(marking: bytes) -> None:
+    with pytest.raises(NoText, match="Paywalled: the page says it isn't free to read"):
+        main_text(flagged(marking), URL)
+
+
+def test_summarises_a_page_that_says_it_is_free_to_read() -> None:
+    marking = b'<script type="application/ld+json">{"isAccessibleForFree": true}</script>'
+
+    assert main_text(flagged(marking), URL) == main_text(PAGE, URL)
+
+
+@pytest.mark.anyio
+async def test_keeps_the_feeds_summary_of_paid_content_but_summarises_what_a_feed_carries(
+    store: NewsStore, feed_server: FeedServer
+) -> None:
+    marking = b'<script type="application/ld+json">{"isAccessibleForFree":false}</script>'
+    paid = barrier().model_copy(
+        update={"url": feed_server.add("/paid", flagged(marking), "text/html"), "source_url": ""}
+    )
+    carried = paid.model_copy(update={"id": "carried", "url": feed_server.url_of("/carried")})
+    store.add([paid, carried])
+    store.keep_text("carried", words(300))
+
+    assert await article_text(store, paid, page) is None
+    assert await article_text(store, carried, page) == words(300)
+
+    assert store.why_no_text("barrier") == "Paywalled: the page says it isn't free to read"
+    assert feed_server.paths == ["/paid"]
+
+
 def test_reads_a_page_with_one_request_saying_who_it_is(feed_server: FeedServer) -> None:
     url = feed_server.add("/barrier", PAGE, "text/html; charset=utf-8")
 

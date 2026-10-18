@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from collections.abc import Callable
 from urllib.error import HTTPError, URLError
 
@@ -12,6 +13,9 @@ logger = logging.getLogger(__name__)
 
 GIVE_UP = DEADLINE + 5
 PAGE_TYPES = ("text/html", "application/xhtml+xml")
+PAYWALLED = re.compile(
+    rb"isAccessibleForFree[\"']?\s*(?::\s*|[^>]*?content\s*=\s*)[\"']?false\b", re.IGNORECASE
+)
 
 type Page = Callable[[str, str | None], str]
 
@@ -51,7 +55,10 @@ def page(url: str, origin: str | None = None) -> str:
 
 
 def main_text(html: bytes, url: str | None = None) -> str:
-    """The article's text on a page, a paragraph a line."""
+    """The article's text on a page, a paragraph a line. Refuses a page that says it isn't free to
+    read, though it serves the whole article."""
+    if PAYWALLED.search(html):
+        raise NoText("Paywalled: the page says it isn't free to read")
     import trafilatura
 
     text = trafilatura.extract(html, url=url, include_comments=False, include_tables=False)

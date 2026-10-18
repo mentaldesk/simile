@@ -32,8 +32,11 @@ the player opens the article, and residents react to them.
 - **Never from the headline.** With fewer than 150 words (a teaser, a live blog's stub, a hard
   paywall's first paragraph), an error status, a refusal or a timeout, the article keeps its feed's
   summary. Why is kept in `news_no_text`, logged, and listed by `simile news`, and that page isn't
-  read again. A metered paywall that serves the whole article, as Scientific American's does, is
-  summarised.
+  read again.
+- **Paid content isn't summarised.** A page whose structured data says it isn't free to read
+  (`isAccessibleForFree: false`) keeps the feed's summary too, even when it serves the whole
+  article, as Scientific American's do. Text a feed carries itself is the publisher's to share, so
+  it's summarised.
 - **Nothing is kept.** The page is dropped once its text is found, and the text, in `news_text`,
   once the summary is written or the article won't be analysed. Read text is kept until then so a
   failed call doesn't read the page again.
