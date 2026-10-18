@@ -17,6 +17,7 @@ from simile.behaviour import Behaviour, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.engagement import acceptance, accepts, engage, initial_engagement
 from simile.conversation.events import Direction, Facing, LineDrafted
+from simile.conversation.loans import Ask, Loan, Purse, arrange, told
 from simile.conversation.needs import Pressing, critical, pressing
 from simile.conversation.plan import PRESSING, Plan, plan, stance
 from simile.conversation.prompt import (
@@ -216,6 +217,9 @@ class ConversationEngine:
         self.work: Callable[[str], Work | None] = lambda _: None
         """A work by id, for the works residents might bring up."""
         self._talks: dict[str, Talk] = {}
+        self._loans: dict[str, Loan] = {}
+        self._declined: dict[tuple[Id, Id], datetime] = {}
+        """When each lender last turned each borrower down."""
 
     def request(self, a: Id, b: Id) -> bool:
         """B1's `request_conversation`: `b` accepts or declines `a`, who has walked up to them."""
@@ -280,7 +284,8 @@ class ConversationEngine:
             )
             for npc, other in ((a, b), (b, a))
         }
-        scene_plan = plan(names, stances, a, config)
+        loan = self._loan(a, b, rels)
+        scene_plan = plan(names, stances, a, config, loan=loan)
         sides = {
             npc: Character(
                 npcs[npc],
@@ -325,7 +330,17 @@ class ConversationEngine:
             scene_plan.leaver,
             ", ".join(f"{npc} {stances[npc].keen:.2f}{felt(stances[npc].mood)}" for npc in names),
         )
+        if loan is not None:
+            self._loans[conversation.id] = loan
+            if isinstance(loan, Ask) and not loan.lends:
+                self._declined[(loan.borrower, loan.lender)] = now
+            self._log("%s: %s", conversation.id, told(loan, names))
         return conversation
+
+    def settle(self, conversation_id: str) -> Loan | None:
+        """For B3, once: the loan a live or recently finished scene was set up to settle. Until
+        then it's pending, and no other scene between the two settles anything."""
+        return self._loans.pop(conversation_id, None)
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
@@ -590,6 +605,8 @@ class ConversationEngine:
         conversation.ended = now
         del self._talks[conversation.id]
         self.finished.append(conversation)
+        kept = {*self._talks, *(finished.id for finished in self.finished)}
+        self._loans = {id: loan for id, loan in self._loans.items() if id in kept}
         self._log(
             "%s ended after %d lines (engagement %s)",
             conversation.id,
@@ -635,6 +652,18 @@ class ConversationEngine:
 
     def _critical(self) -> dict[Need, float]:
         return critical(self.behaviour.config.urgency)
+
+    def _loan(self, a: Id, b: Id, rels: dict[Id, Relationship]) -> Loan | None:
+        purses = {}
+        for npc in (a, b):
+            money = self.behaviour.hooks.money(self.behaviour.npcs[npc])
+            if not isinstance(money, int | float):
+                return None
+            purses[npc] = Purse(money, self.behaviour.savings(npc))
+        since = self.clock.now - self.config.ask_again
+        declined = [pair for pair, when in self._declined.items() if when > since]
+        pending = list(self._loans.values())
+        return arrange(purses, rels, self.config, declined=declined, pending=pending)
 
     def _person(self, id: Id) -> Npc | Player:
         return self.player if id == PLAYER_ID else self.behaviour.npcs[id]

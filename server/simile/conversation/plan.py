@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from simile.behaviour import Activity, Goal, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.engagement import initial_engagement
+from simile.conversation.loans import Loan, told
 from simile.conversation.needs import CRITICAL, pressing
 from simile.schema import CoreValue, Id, Relationship
 
@@ -52,6 +53,8 @@ class Plan:
     leaver: Id
     length: int
     """Lines in all, goodbyes included."""
+    loan: Loan | None = None
+    """A loan one of them asks for or pays back."""
 
     def other(self, npc: Id) -> Id:
         return next(other for other in self.names if other != npc)
@@ -141,12 +144,14 @@ def plan(
     stances: Mapping[Id, Stance],
     opener: Id,
     config: ConversationConfig = DEFAULT_CONFIG,
+    *,
+    loan: Loan | None = None,
 ) -> Plan:
     """Whoever wants to wrap up first leaves, the one who was approached if it's a tie."""
     approached = next(npc for npc in names if npc != opener)
     leaver = min((approached, opener), key=lambda npc: stances[npc].leaves_after)
     length = min(stances[leaver].leaves_after + goodbyes(config), config.max_lines)
-    return Plan(dict(names), dict(stances), opener, leaver, length)
+    return Plan(dict(names), dict(stances), opener, leaver, length, loan)
 
 
 def direction(plan: Plan) -> str:
@@ -170,6 +175,8 @@ def direction(plan: Plan) -> str:
         )
     else:
         lines.append(f"- Both will want to wrap up after about {leaving.leaves_after} lines.")
+    if plan.loan is not None:
+        lines.append(f"- {told(plan.loan, names)}")
     answer = f" and {names[stayer]} answers" if plan.length > leaving.leaves_after + 1 else ""
     errand = f" to {leaving.errand}" if leaving.errand else ""
     lines.append(

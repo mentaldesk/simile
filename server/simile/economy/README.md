@@ -17,6 +17,7 @@ Money moves between residents and `OUTSIDE`, the world beyond the village:
 | Out | Groceries | `groceries` (2.5) a meal, to fill the fridge when it runs low |
 | Out | Supplies | A shop's `supplies` share of whatever it takes, paid by its keeper |
 | Between residents | Paying at a shop | A meal at the noodle bar or the Daily Grind when they start eating. A drink whenever the café serves them (its `Served` event), and at the noodle bar when they come in while it's staffed, at most once every 90 minutes there |
+| Between residents | Loans and repaying them | When B3 finds one in a conversation B2 set up for it (E6) |
 
 A shop is run by whoever works there on `takings`: Mirela at the Daily Grind and Odalys at the noodle
 bar. They take what customers pay and pay the supplies out of it, so they earn their takings less
@@ -26,6 +27,11 @@ on supplies, and the café's drink is 3 and its meal 5, with 60% on supplies.
 
 Rent is paid even by someone who can't cover it, so money can go below nothing: see *Keeping it
 bounded*.
+
+`loans.transfer(economy, payer, payee, amount, kind)` hands money from one resident to another,
+for loans (`loan`) and repaying them (`repayment`). Unlike rent, it only moves money the payer
+holds: anything more, nothing or less, or a payer or payee who isn't a resident, and it moves
+nothing and returns False. B3 decides when and how much: see *Loans* in its README.
 
 The `Ledger` keeps every `Entry` (when, kind, amount, payer, payee and the shop) from the opening
 balances on, so money in less money out is always the change in what residents hold (`gap` is 0).

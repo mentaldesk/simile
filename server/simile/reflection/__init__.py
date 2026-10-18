@@ -4,11 +4,13 @@ from simile.reflection.extraction import (
     Context,
     Deed,
     Extraction,
+    Lending,
     NewFlag,
     Reflection,
     gather,
     prompt,
 )
+from simile.reflection.loans import Payment, payment
 from simile.reflection.outcome import Outcome, outcome
 from simile.reflection.reflector import Reflector, change
 
@@ -18,13 +20,16 @@ __all__ = [
     "Context",
     "Deed",
     "Extraction",
+    "Lending",
     "NewFlag",
     "Outcome",
+    "Payment",
     "Reflection",
     "ReflectionConfig",
     "Reflector",
     "change",
     "gather",
     "outcome",
+    "payment",
     "prompt",
 ]
