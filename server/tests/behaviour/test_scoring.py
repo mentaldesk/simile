@@ -363,7 +363,9 @@ def test_each_activity_is_offered_once_with_its_best_place() -> None:
         A.GALLERY,
         A.WANDER,
         A.IDLE,
+        A.EXERCISE,
     }
+    assert sum(goal.activity is A.EXERCISE for goal in options) == len(DEFAULT_CONFIG.loops)
 
 
 def test_choice_is_random_but_seeded() -> None:
@@ -577,3 +579,19 @@ def test_a_map_without_a_door_is_out_of_reach() -> None:
 
     assert shut.walk_minutes(SQUARE, Point(5, 6, "coffee_shop")) == math.inf
     assert shut.walk_minutes(SQUARE, Point(47, 24)) == PLACES.walk_minutes(SQUARE, Point(47, 24))
+
+
+def test_nobody_starts_making_something_with_an_urgent_need() -> None:
+    inspired = {Need.INSPIRATION: 0.9}
+    calm = situation(needs=inspired, craft=Medium.WRITING)
+    starving = situation(needs=inspired | {Need.HUNGER: 0.95}, craft=Medium.WRITING)
+
+    assert any(goal.activity is A.CREATE for goal in scores(calm, PLACES))
+    assert not any(goal.activity is A.CREATE for goal in scores(starving, PLACES))
+
+
+def test_staying_on_where_nothing_is_relieved_is_worth_less_than_coming_fresh() -> None:
+    park = Goal(A.PARK, "park")
+    s = situation(position=Point(55, 20))
+
+    assert score(park, s, PLACES, staying=True) < score(park, s, PLACES)

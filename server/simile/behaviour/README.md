@@ -10,15 +10,16 @@ sets F3's snapshot to the NPCs' real positions.
 ## Deciding
 
 - **Activities.** Go home, the coffee shop, the square, a news terminal, the park, the noodle bar,
-  the maker space, the gallery, wander, seek someone out (an NPC or the player), idle, make
-  something (`create`), or go to work. `sleep` and `talk` are set by the loop rather than chosen.
+  the maker space, the gallery, wander, go for a walk (`exercise`), seek someone out (an NPC or the
+  player), idle, make something (`create`), or go to work. `sleep` and `talk` are set by the loop
+  rather than chosen.
 - **Score** = base + values + relief − price + work + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
   away from seeking company), Adventure to wander, Creativity to the maker space, and
   Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. The coffee shop peaks in
   the morning and home in the two hours before bed. The activity just finished scores less.
 - **Relief.** Needs (`social`, `curiosity`, `rest`, `news`, `inspiration`, `hunger`, `bladder`,
-  `hygiene`, 0 to 1) rise over time, and being somewhere changes them by its `effects` each hour.
+  `hygiene`, `boredom`, `relaxation`, `exercise`, 0 to 1) rise over time, and being somewhere changes them by its `effects` each hour.
   Each need has an urgency curve, `need ** power` (`urgency`, 3 unless it says otherwise), and one
   function prices any change to it (`worth`): its weight times the area under the curve between
   the level before and after. An option scores the relief it would bring over a typical stay
@@ -92,7 +93,8 @@ sets F3's snapshot to the NPCs' real positions.
   craft. `create` meets it: a stay of about an hour, and the need is met all at once as they leave
   (`finishing`), when B1 calls the `create` hook. A stay cut short by a nudge or bedtime makes
   nothing, but a talk only pauses it, and afterwards they go back for the rest of the stay. Nobody
-  starts one with less than a typical stay left before bed.
+  starts one with less than a typical stay left before bed, or with a need past its critical
+  level.
 - **What stirs them.** Each new memory a crafter forms raises their inspiration too: a
   conversation, with a resident or the player, an article read, or someone else's piece read or
   mural or painting seen (`inspiring`), but not making their own, nor anything from before the game.
@@ -125,7 +127,7 @@ sets F3's snapshot to the NPCs' real positions.
   with `as_of`, or `meet` for strangers. Seeking someone scores their affinity, scaled up by
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
   people they dislike repel, and a crowd draws high-Connection NPCs and puts off low ones. Nobody
-  seeks someone asleep, at home, talking or who refused them in the last 45 minutes.
+  seeks someone asleep, at home, talking, out strolling or who refused them in the last 45 minutes.
 - **Intentions.** What a resident said they'd do (an `Intention`, which B3 extracts from
   conversations) is one of these options: make something (`create`), go to a place (`go`), look
   someone up (`seek`) or read the news (`news`). From when it's due until it's done or expires,
@@ -164,8 +166,37 @@ sets F3's snapshot to the NPCs' real positions.
   seeing things another way, Knowledge, Creativity for others' art, and Peace of Mind for a quiet
   room. Creativity counts for less than at the maker space, so the makers keep making. A stay of
   15 to 40 minutes meets curiosity, more slowly than the maker space.
-- **When.** An NPC decides when their stay somewhere runs out (a few minutes for a wander, up to an
-  hour at home or the maker space, an hour and a quarter making something), not every tick. Needs
+- **Stays.** A stay lasts from the shortest to the longest of its `dwell` (15 to 60 minutes at
+  home or the park, 15 to 45 at the coffee shop). From the shortest on they look again every
+  `reconsider` (2) minutes, and leave once the best other option, less `switch` (0.15), is worth
+  more than staying on for another typical stay. Staying is scored like any option but with no
+  walk, nothing new and no repeat penalty, a meal they've started counts whatever their appetite,
+  and a stay that relieves nothing adds to their boredom. So a stay ends once it has done what it
+  can for them. Making something (`seen_through`) lasts a draw between the two, since its worth
+  comes at the end, and a shift lasts until it ends.
+- **Boredom** rises only while a stay relieves little: at its full rate where nothing is relieved,
+  and not at all once what's relieved an hour is worth `relieved` (0.5) on the needs' curves. It
+  rises faster with Adventure, Freedom and Open-mindedness, and more slowly with Peace of Mind and
+  Tradition. Anything new meets it: arriving somewhere other than their last stay (`novelty`, 0.3,
+  but not home, work or idling), talking, reading an article, making something, a walk, and a
+  night's sleep. It's on a straight line (`power` 1), so a little registers.
+- **Variety.** Before leaving, a bored resident may move to another free spot in the same place
+  that suits what they're there for: another painting, the bar, or a bench with a friend on it,
+  chosen as W2 chooses spots. It eases boredom by `new_spot` (0.15), and they move once that's
+  worth more than `spot_switch` (0.04). A place without spots has nowhere to move to.
+- **Relaxation**, separate from `rest`, which is sleepiness. It rises slowly awake, faster with
+  Peace of Mind and Pleasure, at work, making something and at the maker space, and in busy places:
+  `busy` (0.03) an hour for each other person near them out of home, up to `crowd_cap`, divided by
+  the sociability trait's factor, so a crowd wears out a loner faster. It's met sitting in the park
+  (on a bench over Lotus Lake), at the gallery, reading at a terminal, at the coffee shop and at
+  home, fastest in the park. So residents aren't always busy, and their lingering looks chosen.
+- **Exercise** rises through the day, faster with Discipline and Adventure, and a walk meets
+  it. A walk goes round one of the `loops` on the village map, around Lotus Lake or through the
+  village, lap after lap from the tile nearest them, for 15 to 40 minutes or until it stops paying.
+  A wander meets a little.
+- **Wandering** is a stroll from one tile to another near it, for 3 to 10 minutes.
+- **Idle** is a fallback: 1 to 3 minutes standing where they are, scored below everything else.
+- **When.** An NPC decides when their stay somewhere stops paying or runs out, not every tick. Needs
   update every 5 sim seconds.
 
 Every weight and constant is in `BehaviourConfig`.
@@ -242,8 +273,9 @@ as the CPU allows (a sim-day in about 15 s) and prints where everyone spent thei
 near others by Connection, places by hour, who was out at night, the share of waking time in each
 place, every meal by the hour it started and where, each need's mean, most and time at 0.9 or more,
 the longest anyone was awake and urgently hungry, what each resident with a craft made per
-sim-day, when the first work came and how many came a sim hour after it, and each place's share of
-stay time spent on a spot. Then every shift (on time, late, skipped, hours and overtime), the hours
+sim-day, when the first work came and how many came a sim hour after it, each place's share of
+stay time spent on a spot, and the share of waking time walking, talking and still in each place,
+and of that, off a spot. Then every shift (on time, late, skipped, hours and overtime), the hours
 each shop was due on shift, staffed and sold out, every batch, the grocery orders, each resident's
 money every 12 sim hours, and where the money went. The economy decides when the shops serve. The
 café doesn't run, so whoever arrives at the Daily Grind while its barista is at work and hasn't had

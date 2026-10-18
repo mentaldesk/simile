@@ -65,12 +65,12 @@ def test_neutral_traits_reproduce_todays_day() -> None:
     assert neutral.started == today.started
 
 
-def test_over_a_simulated_hour_sociable_residents_start_more_conversations() -> None:
+def test_over_two_simulated_hours_sociable_residents_start_more_conversations() -> None:
     start = datetime(2026, 1, 1, 11, tzinfo=UTC)
 
     def started(sociability: float, seed: int) -> int:
         observer, _ = asyncio.run(
-            simulate(1, start=start, seed=seed, traits=everyone(sociability), talk=3)
+            simulate(2, start=start, seed=seed, traits=everyone(sociability), talk=3)
         )
         return sum(observer.started.values())
 

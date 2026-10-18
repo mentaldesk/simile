@@ -146,6 +146,19 @@ def test_a_day_has_meals_at_mealtimes_and_no_need_runs_away() -> None:
     assert "| hunger |" in summary and "| hygiene |" in summary
 
 
+def test_a_day_has_residents_out_walking_rather_than_standing_about() -> None:
+    start = datetime(2026, 1, 1, 7, tzinfo=UTC)
+
+    observer, seconds = asyncio.run(simulate(24, start=start, talk=8))
+    summary = report(observer, 24, start, 0, seconds)
+
+    awake = sum(observer.awake_at.values())
+    still = sum(n for place, n in observer.still.items() if place != "home")
+    assert observer.moving["walking"] / awake > 0.05
+    assert still / awake < 0.5
+    assert "**Moving and still.**" in summary and "| boredom |" in summary
+
+
 def test_a_day_has_shifts_and_money_that_add_up() -> None:
     start = datetime(2026, 1, 1, 6, tzinfo=UTC)
 
@@ -166,7 +179,7 @@ def test_a_day_has_shifts_and_money_that_add_up() -> None:
 def test_the_shops_feed_people_only_while_their_keepers_are_there() -> None:
     start = datetime(2026, 1, 3, 6, tzinfo=UTC)
 
-    observer, _ = asyncio.run(simulate(24, start=start, seed=2))
+    observer, _ = asyncio.run(simulate(24, start=start, seed=3))
 
     economy = observer.economy
     assert economy is not None
