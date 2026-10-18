@@ -48,6 +48,8 @@ PLACES = (
     "maker_space",
     "gallery",
 )
+WALKING = "walking"
+TALKING = "talking"
 NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
 MEAL = 0.3
@@ -147,6 +149,12 @@ class Observer:
     """Minutes staying in each place out of home: there, awake and not walking."""
     on_spot: Counter[str] = field(default_factory=Counter)
     """Of those, minutes on a spot."""
+    still: Counter[str] = field(default_factory=Counter)
+    """Waking minutes in each place, home and the street included, neither walking nor talking."""
+    standing: Counter[str] = field(default_factory=Counter)
+    """Of those, minutes off a spot."""
+    moving: Counter[str] = field(default_factory=Counter)
+    """Waking minutes walking, and talking."""
     intentions: float | None = None
     """Sim hours between each round of seeded intentions, or None for none."""
     intended: Counter[Id] = field(default_factory=Counter)
@@ -279,6 +287,7 @@ class Observer:
             if mind.goal.activity is not Activity.SLEEP:
                 self.awake[npc.id] += 1
                 self.awake_at[place] += 1
+                self.sample_stillness(npc.id, place)
             if mind.goal.activity is Activity.CREATE and mind.walk is None:
                 self.creating[npc.id] += 1
             if (
@@ -301,6 +310,16 @@ class Observer:
                 if other != npc.id
             ):
                 self.near[npc.id] += 1
+
+    def sample_stillness(self, npc: Id, place: str) -> None:
+        mind = self.behaviour.minds[npc]
+        if mind.walk is not None:
+            self.moving[WALKING] += 1
+        elif mind.goal.activity is Activity.TALK:
+            self.moving[TALKING] += 1
+        else:
+            self.still[place] += 1
+            self.standing[place] += self.behaviour.movement.on_spot(npc) is None
 
     def serve(self, now: datetime) -> None:
         """G1's orders without the café: whoever arrives at the Daily Grind while it's serving,
@@ -519,6 +538,7 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     lines += ["", *hunger(observer)]
     lines += ["", *works(observer, hours)]
     lines += ["", *spots(observer)]
+    lines += ["", *stillness(observer)]
     if observer.talk is not None:
         lines += ["", *conversations(observer, hours)]
     if observer.intentions is not None:
@@ -793,6 +813,26 @@ def spots(observer: Observer) -> list[str]:
         "| " + " | ".join(places) + " |",
         "|" + "--:|" * len(places),
         "| " + " | ".join(f"{observer.on_spot[p] / observer.stays[p]:.0%}" for p in places) + " |",
+    ]
+
+
+def stillness(observer: Observer) -> list[str]:
+    awake = sum(observer.awake_at.values()) or 1
+    moving = [f"{observer.moving[kind] / awake:.1%}" for kind in (WALKING, TALKING)]
+    return [
+        "**Moving and still.** Share of waking resident-minutes walking, talking, and still in "
+        "each place, and of that, standing off a spot.",
+        "",
+        f"| | {WALKING} | {TALKING} | " + " | ".join(PLACES) + " |",
+        "|---|" + "--:|" * (len(PLACES) + 2),
+        "| still | "
+        + " | ".join(moving)
+        + " | "
+        + " | ".join(f"{observer.still[place] / awake:.1%}" for place in PLACES)
+        + " |",
+        "| standing | | | "
+        + " | ".join(f"{observer.standing[place] / awake:.1%}" for place in PLACES)
+        + " |",
     ]
 
 
