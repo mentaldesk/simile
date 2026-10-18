@@ -41,6 +41,7 @@ the run: memories, interaction events and flags.
 | Repeated topics and phrases | Topics of conversation memories, lines said more than once, and 4-word phrases by how many conversations they come up in. |
 | News | Articles read, lines mentioning the news, and lines that bring up an article the speaker read (one of its topics, or two of its title's longer words). |
 | Time per location | Sim minutes per NPC per place, as B1's fast-forward counts places, plus time asleep and talking. |
+| Where the money went | E3's ledger during the run, as I3 saved it: money in from outside the village, out of it and between residents, by kind and shop, and what came in and went out for each resident. |
 | LLM usage | Calls, tokens (thinking included), API-equivalent cost and latency by purpose and model, errors, and for every usage-limit window Claude Code reported, the fraction used at the first and last report and the most. |
 
 Under `SIMILE_LLM=fake` the report says so: every line is canned, so it flags repeated dialogue, and

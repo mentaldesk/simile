@@ -25,14 +25,15 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         yield
         return
     behaviour = behaviour_of(app)
+    economy = getattr(app.state, "economy", None)
     with WorldStore(memory) as store:
         if os.environ.get(FRESH_ENV) == "1":
             store.clear()
             logger.info("%s  Starting a fresh village in %s", behaviour.clock, store.path)
         elif (world := store.load()) is not None:
-            restore(world, behaviour)
+            restore(world, behaviour, economy)
             logger.info("%s  Resumed the village from %s", behaviour.clock, store.path)
-        app.state.persistence = Saver(store, behaviour)
+        app.state.persistence = Saver(store, behaviour, economy=economy)
         yield
 
 

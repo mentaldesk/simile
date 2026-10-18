@@ -1,10 +1,11 @@
 import math
 import time
 from collections import Counter, defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import TYPE_CHECKING
 
 from starlette.applications import Starlette
 
@@ -19,6 +20,9 @@ from simile.behaviour.mind import (
 from simile.behaviour.scoring import Goal, MuralSpot, Supply
 from simile.schema import CoreValue, Id, LocationKind, Medium, Npc, Traits
 from simile.sim import Clock, FakeWallClock, World
+
+if TYPE_CHECKING:
+    from simile.economy.economy import Economy
 
 HOME = "home"
 STREET = "street"
@@ -39,6 +43,9 @@ NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
 MEAL = 0.3
 """How far hunger falls in one go for it to count as a meal."""
+AGAIN = timedelta(minutes=90)
+"""As G1's `again`: someone served at the café this recently just sits down."""
+MONEY_EVERY = timedelta(hours=12)
 
 
 @dataclass(frozen=True)
@@ -80,9 +87,18 @@ class Observer:
     hunger: dict[Id, float] = field(default_factory=dict)
     eating: dict[Id, tuple[Meal, float]] = field(default_factory=dict)
     """Meals going on, with how hungry they were at the last sample."""
+    economy: "Economy | None" = None
+    open: Callable[[], bool] = lambda: False
+    """Whether the Daily Grind is serving."""
+    served: dict[Id, datetime] = field(default_factory=dict)
+    visits: dict[Id, datetime] = field(default_factory=dict)
+    money: dict[Id, list[float]] = field(default_factory=lambda: defaultdict(list))
+    """Each resident's money every `MONEY_EVERY`, from the start."""
+    least: dict[Id, float] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.next = self.behaviour.clock.now
+        self.next_money = self.next
 
     def request_conversation(self, a: Id, b: Id) -> bool:
         if self.talk is None:
@@ -116,6 +132,8 @@ class Observer:
         if clock.now < self.next:
             return
         self.next += self.every
+        self.serve(clock.now)
+        self.sample_money(clock.now)
         hour = clock.time_of_day
         positions = self.behaviour.movement.entities()
         self.samples[int(hour)] += 1
@@ -142,6 +160,36 @@ class Observer:
                 if other != npc.id
             ):
                 self.near[npc.id] += 1
+
+    def serve(self, now: datetime) -> None:
+        """G1's orders without the café: whoever arrives at the Daily Grind while it's serving,
+        unless they were served there lately, is served a drink."""
+        from simile.cafe.cafe import barista
+        from simile.cafe.config import DEFAULT_CONFIG as CAFE
+        from simile.cafe.events import Served
+
+        behaviour = self.behaviour
+        server = barista(behaviour.npcs.values(), CAFE.home)
+        if server is None or not self.open():
+            return
+        for npc, mind in behaviour.minds.items():
+            arrived = mind.goal == Goal(Activity.COFFEE_SHOP, CAFE.home) and mind.walk is None
+            if npc == server or not arrived or self.visits.get(npc) == mind.since:
+                continue
+            self.visits[npc] = mind.since
+            if (last := self.served.get(npc)) is None or now - last >= AGAIN:
+                self.served[npc] = now
+                behaviour.bus.publish(Served(npc, server, "coffee", 0.0, False))
+
+    def sample_money(self, now: datetime) -> None:
+        if self.economy is None:
+            return
+        for npc, amount in self.economy.money.items():
+            self.least[npc] = min(self.least.get(npc, amount), amount)
+        if now >= self.next_money:
+            self.next_money += MONEY_EVERY
+            for npc, amount in self.economy.money.items():
+                self.money[npc].append(amount)
 
     def sample_needs(self, npc: Npc, place: str) -> None:
         mind = self.behaviour.minds[npc.id]
@@ -180,12 +228,15 @@ async def simulate(
     traits: Mapping[Id, Traits] | None = None,
     talk: float | None = None,
 ) -> tuple[Observer, float]:
-    """Run memory, world and behaviour for `hours` of sim time as fast as the CPU allows, with
-    N1's NPCs and the cast's traits unless given others. Conversations, news and works stay
+    """Run memory, world, behaviour and E3's economy for `hours` of sim time as fast as the CPU
+    allows, with N1's NPCs and the cast's traits unless given others. The Daily Grind serves
+    whoever arrives while it's open, as G1 would. Conversations, news and works stay
     stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
     and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
     muralists paint the map's walls in turn, and reading or making something does nothing."""
     from simile.behaviour.lifespan import lifespan as behaviour
+    from simile.economy.economy import economy_of
+    from simile.economy.lifespan import lifespan as economy
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
 
@@ -194,11 +245,12 @@ async def simulate(
     app.state.world = world
     app.state.headless = True
     app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs, traits=traits)
-    observer = Observer(app.state.behaviour, talk=talk)
+    supply, opened = daily_grind(app.state.behaviour)
+    observer = Observer(app.state.behaviour, talk=talk, economy=economy_of(app), open=opened)
     world.bus.subscribe(GoalChosen, observer.on_goal)
     started = time.perf_counter()
     async with AsyncExitStack() as stack:
-        for hook in (behaviour, memory, world_lifespan):
+        for hook in (behaviour, economy, memory, world_lifespan):
             await stack.enter_async_context(hook(app))
         app.state.behaviour.hooks.set(
             request_conversation=observer.request_conversation,
@@ -207,28 +259,31 @@ async def simulate(
             conversations=no_conversations,
             create=observer.on_create,
             mural_wall=observer.mural_wall,
-            supply=daily_grind(app.state.behaviour),
+            supply=supply,
         )
         world.loop.register(observer)
         await world.loop.run(timedelta(hours=hours))
     return observer, time.perf_counter() - started
 
 
-def daily_grind(behaviour: Behaviour) -> Supply:
-    """G1's shifts without the café: the Daily Grind serves food only while it has a barista and
-    she's at work."""
+def daily_grind(behaviour: Behaviour) -> tuple[Supply, Callable[[], bool]]:
+    """G1's shifts without the café: the Daily Grind serves only while it has a barista and
+    she's at work. Its supply hook, and whether it's serving."""
     from simile.cafe.cafe import barista
     from simile.cafe.config import DEFAULT_CONFIG as CAFE
 
     shop = Goal(Activity.COFFEE_SHOP, CAFE.home)
     staffed = barista(behaviour.npcs.values(), CAFE.home) is not None
 
+    def serving() -> bool:
+        return staffed and CAFE.opens <= behaviour.clock.time_of_day < CAFE.closes
+
     def supply(goal: Goal, need: Need) -> float:
         if goal != shop or need is not Need.HUNGER:
             return 1.0
-        return float(staffed and CAFE.opens <= behaviour.clock.time_of_day < CAFE.closes)
+        return float(serving())
 
-    return supply
+    return supply, serving
 
 
 def ranks(values: list[float]) -> list[float]:
@@ -308,11 +363,13 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     lines += ["", *shares(observer), "", *meals(observer, hours), "", *needs(observer)]
     lines += ["", *works(observer, hours)]
     if observer.talk is not None:
-        lines += ["", *conversations(observer)]
+        lines += ["", *conversations(observer, hours)]
+    if observer.economy is not None:
+        lines += ["", *shifts(observer), "", *money(observer), "", *ledger(observer)]
     return "\n".join(lines) + "\n"
 
 
-def conversations(observer: Observer) -> list[str]:
+def conversations(observer: Observer, hours: float) -> list[str]:
     behaviour = observer.behaviour
     npcs = sorted(behaviour.npcs.values(), key=lambda npc: behaviour.traits_of(npc.id).sociability)
     sociability = [behaviour.traits_of(npc.id).sociability for npc in npcs]
@@ -331,8 +388,123 @@ def conversations(observer: Observer) -> list[str]:
     return [
         *lines,
         "",
-        f"Spearman rank correlation of sociability with conversations started: "
+        f"{sum(started)} conversations, {sum(started) / hours:.2f} per sim hour. Spearman rank "
+        f"correlation of sociability with conversations started: "
         f"{spearman(sociability, [float(n) for n in started]):.2f}.",
+    ]
+
+
+def shifts(observer: Observer) -> list[str]:
+    economy = observer.economy
+    assert economy is not None
+    now, grace = observer.behaviour.clock.now, timedelta(minutes=economy.config.late)
+    workers = sorted(
+        (npc for npc in observer.behaviour.npcs.values() if npc.shifts),
+        key=lambda npc: npc.values[CoreValue.RESPONSIBILITY],
+    )
+    lines = [
+        f"**Shifts.** Every shift that ended, by Responsibility: on time, late (more than "
+        f"{economy.config.late:g} minutes, and by how long on average), skipped, and hours at "
+        "work during them and straight after.",
+        "",
+        "| NPC | Workplace | Responsibility | Discipline | Shifts | On time | Late | Minutes late "
+        "| Skipped | Hours | Overtime |",
+        "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|",
+    ]
+    totals = Counter[str]()
+    for npc in workers:
+        done = [turn for turn in economy.turns if turn.npc == npc.id and turn.end <= now]
+        late = [turn for turn in done if turn.late(grace)]
+        skipped = sum(turn.arrived is None for turn in done)
+        minutes = [
+            (turn.arrived - turn.start) / timedelta(minutes=1) for turn in late if turn.arrived
+        ]
+        row = {
+            "shifts": len(done),
+            "on time": len(done) - len(late) - skipped,
+            "late": len(late),
+            "skipped": skipped,
+        }
+        totals.update(row)
+        lines.append(
+            f"| {npc.id} | {npc.workplace} | {npc.values[CoreValue.RESPONSIBILITY]:.2f} | "
+            f"{npc.values[CoreValue.DISCIPLINE]:.2f} | {row['shifts']} | {row['on time']} | "
+            f"{row['late']} | {sum(minutes) / len(minutes) if minutes else 0:.0f} | {skipped} | "
+            f"{sum(turn.worked for turn in done):.1f} | {sum(turn.overtime for turn in done):.1f} |"
+        )
+    lines.append(
+        f"| **All** | | | | {totals['shifts']} | {totals['on time']} | {totals['late']} | | "
+        f"{totals['skipped']} | | |"
+    )
+    return lines
+
+
+def money(observer: Observer) -> list[str]:
+    economy = observer.economy
+    assert economy is not None
+    behaviour = observer.behaviour
+    earned: Counter[Id] = Counter()
+    spent: Counter[Id] = Counter()
+    for entry in economy.ledger.entries:
+        earned[entry.payee] += entry.amount
+        spent[entry.payer] += entry.amount
+    samples = max((len(v) for v in observer.money.values()), default=0)
+    times = [f"{n * MONEY_EVERY / timedelta(hours=1):g} h" for n in range(samples)]
+    lines = [
+        f"**Money.** Each resident's money every {MONEY_EVERY / timedelta(hours=1):g} sim hours "
+        "from the start, at the end and the least they had, what came in and went out, and their "
+        "savings target.",
+        "",
+        "| NPC | Pay | Target | " + " | ".join(times) + " | End | Least | In | Out |",
+        "|---|---|--:|" + "--:|" * (samples + 4),
+    ]
+    for npc in sorted(behaviour.npcs.values(), key=lambda npc: npc.id):
+        pay = "-" if npc.pay is None else npc.pay.kind.value
+        if npc.pay and npc.pay.amount:
+            pay += f" {npc.pay.amount:g}"
+        cells = [f"{amount:.0f}" for amount in observer.money[npc.id]]
+        lines.append(
+            f"| {npc.id} | {pay} | {behaviour.savings(npc.id):.0f} | "
+            + " | ".join(cells)
+            + f" | {economy.money[npc.id]:.0f} | {observer.least.get(npc.id, 0.0):.0f} | "
+            f"{earned[npc.id]:.0f} | {spent[npc.id]:.0f} |"
+        )
+    return lines
+
+
+def ledger(observer: Observer) -> list[str]:
+    from simile.economy import OUTSIDE, Kind
+
+    economy = observer.economy
+    assert economy is not None
+    book = economy.ledger
+    kinds = book.by_kind()
+    between: Counter[str] = Counter()
+    for entry in book.entries:
+        if entry.kind is Kind.PURCHASE:
+            between[entry.place or "-" if entry.payee != OUTSIDE else OUTSIDE] += entry.amount
+    unrun = between.pop(OUTSIDE, 0.0)
+    rows = [
+        ("in", "wages", kinds[Kind.WAGE]),
+        ("in", "pensions", kinds[Kind.PENSION]),
+        ("out", "rent", kinds[Kind.RENT]),
+        ("out", "groceries", kinds[Kind.GROCERIES]),
+        ("out", "supplies", kinds[Kind.SUPPLIES]),
+        ("out", "shops nobody runs", unrun),
+        *(("between", f"at {place}", amount) for place, amount in sorted(between.items())),
+    ]
+    came_in, went_out = book.came_in(), book.went_out()
+    change = sum(economy.money.values()) - sum(book.opening.values())
+    return [
+        "**Where the money went.** Every movement in the ledger: in from outside the village, out "
+        "of it, and between residents.",
+        "",
+        "| | | Amount |",
+        "|---|---|--:|",
+        *(f"| {flow} | {what} | {amount:.0f} |" for flow, what, amount in rows),
+        "",
+        f"In minus out: {came_in - went_out:.2f}. The change in what residents hold: "
+        f"{change:.2f}. Gap: {book.gap(economy.money):.2f}.",
     ]
 
 

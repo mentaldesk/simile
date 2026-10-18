@@ -4,6 +4,11 @@
   "age": 75,
   "occupation": "Retired Ferry Lockkeeper",
   "home": "house_2",
+  "pay": {
+    "kind": "pension",
+    "amount": 300.0
+  },
+  "money": 500.0,
   "values": {
     "freedom": 0.05,
     "independence": 0.03,

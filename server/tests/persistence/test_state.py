@@ -1,12 +1,13 @@
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from simile.behaviour import Behaviour, GoalChosen, Need
+from simile.economy import Entry
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.persistence import (
@@ -208,7 +209,7 @@ class Recorder(WorldStore):
         super().__init__(MemoryStore(":memory:"))
         self.saved: list[SavedWorld] = []
 
-    def save(self, world: SavedWorld) -> None:
+    def save(self, world: SavedWorld, entries: Sequence[Entry] = ()) -> None:
         self.saved.append(world)
 
 

@@ -3,6 +3,7 @@ import itertools
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from simile.economy import OUTSIDE, Entry, Kind
 from simile.schema import (
     Aspect,
     Baseline,
@@ -24,6 +25,7 @@ from simile.tools.report import (
     conversation_section,
     drift_section,
     llm_section,
+    money_section,
     news_section,
     percentile,
     place_section,
@@ -437,6 +439,30 @@ def test_counts_minutes_per_place_and_talking() -> None:
     )
     assert "| ada | · | 60 | · | · | · | 2.0 | 2 |" in section
     assert "| **Most at once** |  | 1 | 1 | 1 | | | |" in section
+
+
+def test_shows_where_the_money_went() -> None:
+    def paid(kind: Kind, amount: float, payer: str, payee: str, place: str | None = None) -> Entry:
+        return Entry(at=at(5), kind=kind, amount=amount, payer=payer, payee=payee, place=place)
+
+    run = change(
+        healthy(),
+        ledger=[
+            paid(Kind.WAGE, 80, OUTSIDE, "ada"),
+            paid(Kind.RENT, 30, "bo", OUTSIDE),
+            paid(Kind.PURCHASE, 8, "ada", "bo", "noodle_bar"),
+            paid(Kind.SUPPLIES, 3, "bo", OUTSIDE, "noodle_bar"),
+        ],
+    )
+
+    section = "\n".join(money_section(run))
+
+    assert "| in | wage | 80 |" in section
+    assert "| out | rent | 30 |" in section and "| out | supplies | 3 |" in section
+    assert "| between | at noodle_bar | 8 |" in section
+    assert "| ada | 80 | 8 | +72 |" in section and "| bo | 8 | 33 | -25 |" in section
+    assert "Nothing moved" in "\n".join(money_section(healthy()))
+    assert "## Where the money went" in report(run)
 
 
 def test_leaves_out_conversations_nobody_spoke_in() -> None:
