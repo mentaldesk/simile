@@ -68,7 +68,9 @@ on Saturday's match`.
 
 E6. B2 sets a scene up to settle a loan (see *Loans* in its README), and B3 moves the money through
 E3's ledger once the conversation shows it happened. The lifespan gives the `Reflector` B2's
-`engine.loan` and the economy.
+`engine.settle` and the economy. Every conversation that ends is settled once, so B2 knows its
+loan is no longer pending: as the reply is applied, or as soon as there's no reflection or it
+fails.
 
 - **A loan.** The reply's `loans` lists money one side lent the other there and then: lender,
   borrower and amount. If the scene was set up for that lender to lend to that borrower, the money

@@ -337,9 +337,10 @@ class ConversationEngine:
             self._log("%s: %s", conversation.id, told(loan, names))
         return conversation
 
-    def loan(self, conversation_id: str) -> Loan | None:
-        """The loan a live or recently finished scene was set up to settle."""
-        return self._loans.get(conversation_id)
+    def settle(self, conversation_id: str) -> Loan | None:
+        """For B3, once: the loan a live or recently finished scene was set up to settle. Until
+        then it's pending, and no other scene between the two settles anything."""
+        return self._loans.pop(conversation_id, None)
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
@@ -661,7 +662,8 @@ class ConversationEngine:
             purses[npc] = Purse(money, self.behaviour.savings(npc))
         since = self.clock.now - self.config.ask_again
         declined = [pair for pair, when in self._declined.items() if when > since]
-        return arrange(purses, rels, self.config, declined=declined)
+        pending = list(self._loans.values())
+        return arrange(purses, rels, self.config, declined=declined, pending=pending)
 
     def _person(self, id: Id) -> Npc | Player:
         return self.player if id == PLAYER_ID else self.behaviour.npcs[id]

@@ -12,15 +12,15 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.reflection.reflector import Reflector
     from simile.sim import ConversationEnded, world_of
 
-    def loan(conversation_id: str) -> Loan | None:
+    def settle(conversation_id: str) -> Loan | None:
         engine = getattr(app.state, "conversation", None)
-        return engine.loan(conversation_id) if engine is not None else None
+        return engine.settle(conversation_id) if engine is not None else None
 
     reflector = Reflector(
         memory_of(app),
         lambda: behaviour_of(app).npcs,
         lambda: getattr(app.state, "llm", None),
-        loans=loan,
+        settle=settle,
         economy=lambda: getattr(app.state, "economy", None),
     )
     app.state.reflection = reflector

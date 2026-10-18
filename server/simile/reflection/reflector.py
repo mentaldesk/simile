@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 class Reflector:
     """Hears every `ConversationEnded` and, in a task, asks the LLM what it meant to each NPC in
     it, then stores their memories, the events, the flags and how they now feel. Moves the
-    money of a loan the conversation was set up to settle (`loans`, by conversation id) through
-    the `economy`."""
+    money of a loan the conversation was set up to settle through the `economy`. `settle` hands
+    over that loan, by conversation id, and is called once for every conversation that ends."""
 
     def __init__(
         self,
@@ -33,24 +33,23 @@ class Reflector:
         llm: Callable[[], LLMClient | None],
         *,
         config: ReflectionConfig = DEFAULT_CONFIG,
-        loans: Callable[[str], Loan | None] = lambda _: None,
+        settle: Callable[[str], Loan | None] = lambda _: None,
         economy: "Callable[[], Economy | None]" = lambda: None,
     ) -> None:
         self.memory = memory
         self.npcs = npcs
         self.llm = llm
         self.config = config
-        self.loans = loans
+        self.settle = settle
         self.economy = economy
         self.tasks: set[asyncio.Task[Outcome | None]] = set()
 
     def on_ended(self, event: ConversationEnded) -> None:
         """Start reflecting on the conversation. Doesn't block."""
         conversation = event.conversation
-        if not conversation.lines:
-            return
         llm = self.llm()
-        if llm is None:
+        if not conversation.lines or llm is None:
+            self.settle(conversation.id)
             return
         task = asyncio.get_running_loop().create_task(self.reflect(llm, conversation))
         self.tasks.add(task)
@@ -62,6 +61,8 @@ class Reflector:
         except Exception:
             logger.exception("Couldn't reflect on %s", conversation.id)
             return None
+        finally:
+            self.settle(conversation.id)
 
     async def stop(self) -> None:
         tasks = list(self.tasks)
@@ -96,7 +97,7 @@ class Reflector:
         return result
 
     def _pay(self, context: Context, extraction: Extraction) -> Payment | None:
-        loan, economy = self.loans(context.conversation.id), self.economy()
+        loan, economy = self.settle(context.conversation.id), self.economy()
         if loan is None or economy is None:
             return None
         paid = payment(context, extraction, loan, economy, self.memory)

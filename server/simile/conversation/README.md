@@ -212,8 +212,13 @@ happens. Without the economy nobody asks.
   can only spare 40, and lends that", "Ben can't spare it, and says no", or "Ben doesn't trust Ana
   enough to lend money, and says no".
 
-`engine.loan(conversation_id)` is the loan a live or recently finished scene was set up to settle,
-for B3, which moves the money: see its README. Nothing changes for the player, who has no money.
+- **One at a time.** Until B3 has reflected on a scene set up for a loan, the loan is pending: no
+  other scene between the two settles anything, and the borrower of a pending ask asks nobody
+  else. So two scenes in quick succession never lend twice.
+
+`engine.settle(conversation_id)` hands B3 the loan a live or recently finished scene was set up to
+settle, once, which ends it pending. B3 moves the money: see its README. Nothing changes for the
+player, who has no money.
 
 ## Events
 

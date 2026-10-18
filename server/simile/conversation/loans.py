@@ -62,11 +62,16 @@ def arrange(
     config: ConversationConfig = DEFAULT_CONFIG,
     *,
     declined: Collection[tuple[Id, Id]] = (),
+    pending: Collection[Loan] = (),
 ) -> Loan | None:
     """What a scene between the two in `purses` settles about money: a loan paid back by whoever
     can, or else one asked for by whoever is short, of someone they like who hasn't turned them
     down lately (`declined`, as borrower and lender). `feelings[npc]` is how `npc` feels about
-    the other. Trust decides whether the lender lends."""
+    the other. Trust decides whether the lender lends. Nothing is settled between two with a
+    loan still `pending` B3, and nobody asks while an ask of theirs is."""
+    if any({loan.borrower, loan.lender} == set(purses) for loan in pending):
+        return None
+    asking = {loan.borrower for loan in pending if isinstance(loan, Ask)}
     pairs = list(permutations(purses))
     for borrower, lender in pairs:
         flag = owed(feelings[lender])
@@ -79,6 +84,7 @@ def arrange(
             or feelings[borrower].like < config.ask_like
             or owed(feelings[lender]) is not None
             or (borrower, lender) in declined
+            or borrower in asking
         ):
             continue
         amount = min(config.max_loan, tens(purse.target - purse.money, up=True))

@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -101,7 +102,7 @@ class Village:
             self.store,
             lambda: behaviour.npcs,
             lambda: self.llm,
-            loans=self.engine.loan,
+            settle=self.engine.settle,
             economy=lambda: self.economy,
         )
         bus.subscribe(ConversationEnded, self.reflector.on_ended)
@@ -136,8 +137,9 @@ class Village:
     def kinds(self) -> list[Kind]:
         return [entry.kind for entry in self.economy.ledger.entries]
 
-    async def paid_back(self) -> None:
-        while Kind.REPAYMENT not in self.kinds():
+    async def reflecting(self, count: int) -> None:
+        """Until only `count` reflections are still under way."""
+        while len(self.reflector.tasks) > count:
             await asyncio.sleep(0.01)
 
     def balanced(self) -> bool:
@@ -260,21 +262,49 @@ async def test_a_repayment_the_borrower_can_no_longer_cover_leaves_the_loan_open
     assert flag.resolved is None
 
 
+def held_back(release: asyncio.Event, reply: Extraction) -> Callable[[Request], Awaitable[str]]:
+    """B3's `reply`, once `release` is set."""
+
+    async def reflect(request: Request) -> str:
+        await release.wait()
+        return reply.model_dump_json()
+
+    return reflect
+
+
+async def test_a_second_scene_before_b3_has_reflected_on_an_ask_doesnt_lend_again() -> None:
+    village = Village()
+    release = asyncio.Event()
+
+    await village.start(ASKS, held_back(release, lends(100)))
+    await village.start(ASKS, lends(100))
+    await asyncio.wait_for(village.reflecting(1), 1)
+
+    second = village.provider.requests[2].messages[-1].content
+    assert "short of money" not in second
+    assert village.money == {"ana": 20, "ben": 900}
+    release.set()
+    await asyncio.gather(*village.reflector.tasks)
+    assert village.money == {"ana": 120, "ben": 800}
+    assert village.kinds() == [Kind.LOAN]
+    [flag] = village.flags
+    assert lent(flag) == 100
+
+
 async def test_a_loan_is_paid_back_once() -> None:
     village = Village()
     await village.talk(ASKS, lends(100))
     village.economy.pay(OUTSIDE, "ana", 300, Kind.WAGE)
     release = asyncio.Event()
 
-    async def slow(request: Request) -> str:
-        await release.wait()
-        return resolves("F1").model_dump_json()
-
-    await village.start(PAYS_BACK, slow)
+    await village.start(PAYS_BACK, held_back(release, resolves("F1")))
     await village.start(PAYS_BACK, resolves("F1"))
-    await asyncio.wait_for(village.paid_back(), 1)
+    await asyncio.wait_for(village.reflecting(1), 1)
+
+    second = village.provider.requests[-2].messages[-1].content
+    assert "pays back" not in second
+    assert village.money == {"ana": 420, "ben": 800}
     release.set()
     await asyncio.gather(*village.reflector.tasks)
-
     assert village.money == {"ana": 320, "ben": 900}
     assert village.kinds() == [Kind.LOAN, Kind.WAGE, Kind.REPAYMENT]

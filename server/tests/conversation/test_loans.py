@@ -6,7 +6,7 @@ import pytest
 
 from simile.behaviour import Behaviour
 from simile.conversation import DEFAULT_CONFIG, ConversationConfig, ConversationEngine
-from simile.conversation.loans import Ask, Purse, Repayment, arrange, told
+from simile.conversation.loans import Ask, Loan, Purse, Repayment, arrange, told
 from simile.conversation.plan import Stance, direction, plan
 from simile.llm import FakeProvider, LLMClient
 from simile.memory import MemoryStore
@@ -114,6 +114,26 @@ def test_a_borrower_still_short_neither_pays_back_nor_asks_again() -> None:
     assert arrange(purses(150, 900), owing()) is None
 
 
+def test_nothing_is_settled_between_two_with_a_loan_pending() -> None:
+    rels = owing()
+    asked = Ask("ana", "ben", 100, 100, True)
+    paying = Repayment("ana", "ben", rels["ben"].flags[0])
+
+    assert arrange(purses(40, 900), feelings(), pending=[asked]) is None
+    assert arrange(purses(40, 900), feelings(), pending=[Ask("ben", "ana", 100, 0, False)]) is None
+    assert arrange(purses(300, 900), rels, pending=[paying]) is None
+
+
+def test_nobody_asks_while_an_ask_of_theirs_is_pending() -> None:
+    elsewhere = Ask("ana", "cal", 100, 100, True)
+    someone_else = Ask("cal", "ben", 100, 100, True)
+
+    assert arrange(purses(40, 900), feelings(), pending=[elsewhere]) is None
+    assert arrange(purses(40, 900), feelings(), pending=[someone_else]) == Ask(
+        "ana", "ben", 100, 100, True
+    )
+
+
 def test_the_direction_tells_the_scene_what_happens() -> None:
     asks = "Ana is short of money and asks Ben to lend them 100 to tide them over."
 
@@ -175,14 +195,20 @@ class Village:
         )
         self.world.loop.register(movement)
         self.world.loop.register(self.engine)
+        self.scenes: list[str] = []
 
     async def scene(self) -> str:
         """The prompt of a scene Ana starts with Ben, once it's over."""
         conversation = self.engine.start("ana", "ben")
+        self.scenes.append(conversation.id)
         await self.world.loop.run(timedelta(minutes=1))
         ended = self.engine.conversation(conversation.id)
         assert ended is not None and ended.ended is not None
         return self.provider.requests[-1].messages[-1].content
+
+    def settle(self, scene: int = -1) -> Loan | None:
+        """What B3 gets for a scene, the latest unless told."""
+        return self.engine.settle(self.scenes[scene])
 
 
 async def test_a_scene_between_a_short_resident_and_a_friend_has_the_ask() -> None:
@@ -191,19 +217,35 @@ async def test_a_scene_between_a_short_resident_and_a_friend_has_the_ask() -> No
     prompt = await village.scene()
 
     assert "- Ana is short of money and asks Ben to lend them 100" in prompt
-    [ended] = village.engine.finished
-    assert village.engine.loan(ended.id) == Ask("ana", "ben", 100, 100, True)
+    assert village.settle() == Ask("ana", "ben", 100, 100, True)
+    assert village.settle() is None
 
 
 async def test_someone_turned_down_doesnt_ask_again_for_a_while() -> None:
     config = ConversationConfig(ask_again=timedelta(minutes=1.5))
     village = Village({"ana": 40, "ben": 900}, feelings(ben_trusts=0.3), config)
 
-    first, second, third = [await village.scene() for _ in range(3)]
+    prompts = []
+    for _ in range(3):
+        prompts.append(await village.scene())
+        village.settle()
+    first, second, third = prompts
 
     assert "says no" in first
     assert "short of money" not in second
     assert "says no" in third
+
+
+async def test_an_ask_b3_hasnt_settled_yet_isnt_asked_again() -> None:
+    village = Village({"ana": 40, "ben": 900}, feelings())
+
+    first, second = await village.scene(), await village.scene()
+
+    assert "asks Ben to lend them 100" in first
+    assert "short of money" not in second
+    assert village.settle(1) is None
+    assert village.settle(0) == Ask("ana", "ben", 100, 100, True)
+    assert "asks Ben to lend them 100" in await village.scene()
 
 
 async def test_without_an_economy_nobody_asks() -> None:
@@ -212,4 +254,4 @@ async def test_without_an_economy_nobody_asks() -> None:
     prompt = await village.scene()
 
     assert "short of money" not in prompt
-    assert village.engine.loan(village.engine.finished[0].id) is None
+    assert village.settle() is None
