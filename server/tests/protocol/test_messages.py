@@ -39,6 +39,7 @@ from simile.protocol import (
 from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
 from simile.protocol.messages import client_messages, server_messages
+from simile.schema import Facing, Pose
 
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
@@ -98,11 +99,28 @@ PAINTINGS = PaintingsMessage(
     frames=[FIRST_FRAME, Frame(id="painting_2", map="gallery", painting=None)]
 )
 
+SEATED = SNAPSHOT.model_copy(
+    update={
+        "entities": [
+            SNAPSHOT.entities[0].model_copy(update={"pose": Pose.SITTING, "facing": Facing.WEST}),
+            *SNAPSHOT.entities[1:],
+        ]
+    }
+)
+LOOKING = EntityMovedMessage(
+    entity_id="viktor",
+    position=Position(x=6, y=3, map="gallery"),
+    pose=Pose.LOOKING,
+    facing=Facing.NORTH,
+)
+
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
     EntityMovedMessage(entity_id="suki", position=Position(x=10, y=12, map="coffee_shop")),
+    SEATED,
+    LOOKING,
     ConversationStartedMessage(conversation=CONVERSATION.model_copy(update={"lines": []})),
     ConversationEndedMessage(
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
@@ -158,6 +176,8 @@ def test_messages_carry_their_type() -> None:
         "type": "entity_moved",
         "entity_id": "mei",
         "position": {"x": 4.5, "y": 6.0, "map": "village"},
+        "pose": "standing",
+        "facing": "south_east",
     }
 
 
@@ -195,6 +215,63 @@ def test_snapshot_entities_carry_their_map() -> None:
     entities = json.loads(SNAPSHOT.model_dump_json())["entities"]
 
     assert {entity["position"]["map"] for entity in entities} == {"village"}
+
+
+def test_snapshot_entities_carry_their_pose_and_facing() -> None:
+    entities = json.loads(SEATED.model_dump_json())["entities"]
+
+    assert [(e["id"], e["pose"], e["facing"]) for e in entities] == [
+        ("mei", "sitting", "west"),
+        ("suki", "standing", "south_east"),
+        ("viktor", "standing", "south_east"),
+        ("player", "standing", "south_east"),
+    ]
+
+
+def test_moves_carry_a_pose_and_facing() -> None:
+    message = json.loads(LOOKING.model_dump_json())
+
+    assert (message["pose"], message["facing"]) == ("looking", "north")
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"type": "entity_moved", "entity_id": "mei", "position": {"x": 4, "y": 6}},
+        {
+            "type": "snapshot",
+            "time": "2026-03-14T09:10:03Z",
+            "map_id": "village",
+            "entities": [{"id": "mei", "kind": "npc", "name": "Mei", "position": {"x": 4, "y": 6}}],
+            "conversations": [],
+        },
+    ],
+    ids=["entity_moved", "snapshot"],
+)
+def test_without_a_pose_or_facing_they_stand_facing_south_east(data: dict[str, Any]) -> None:
+    validator().validate(data)
+    message = server_messages.validate_python(data)
+    entity = message.entities[0] if message.type == "snapshot" else message
+
+    assert (entity.pose, entity.facing) == (Pose.STANDING, Facing.SOUTH_EAST)
+
+
+@pytest.mark.parametrize("model", ["Entity", "EntityMovedMessage"])
+def test_the_exported_pose_and_facing_are_not_required(model: str) -> None:
+    schema = json.loads(SCHEMA_FILE.read_text())["$defs"][model]
+
+    assert schema["properties"]["pose"] == {"$ref": "#/$defs/Pose"}
+    assert schema["properties"]["facing"] == {"$ref": "#/$defs/Facing"}
+    assert not {"pose", "facing"} & set(schema["required"])
+
+
+@pytest.mark.parametrize(
+    "update",
+    [{"pose": "dancing"}, {"pose": None}, {"facing": "down_right"}, {"facing": "up"}],
+)
+def test_rejects_poses_and_facings_outside_the_set(update: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        server_messages.validate_python(LOOKING.model_dump() | update)
 
 
 def test_the_clock_carries_sim_time_and_speed() -> None:
