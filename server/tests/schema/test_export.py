@@ -88,6 +88,19 @@ def test_exported_schema_accepts_doors_and_interactables(name: str, item: dict[s
     assert not schema(name).is_valid(item | {"extra": 1})
 
 
+def test_exported_schema_accepts_paintings() -> None:
+    painting = json.loads((FIXTURES / "works.json").read_text())[1] | {
+        "medium": "painting",
+        "wall": None,
+    }
+    npc = json.loads((FIXTURES / "npcs" / "viktor.json").read_text())
+    npc["craft"] = {"medium": "painting", "form": "small oils of the river at low tide"}
+
+    assert schema("Work").is_valid(painting)
+    assert schema("Npc").is_valid(npc)
+    assert not schema("Npc").is_valid(npc | {"craft": {"medium": "music", "form": "songs"}})
+
+
 def test_exported_schema_rejects_unknown_fields() -> None:
     item = json.loads((FIXTURES / "news_items.json").read_text())[0]
     assert schema("NewsItem").is_valid(item)

@@ -12,7 +12,8 @@ export type ServerMessage =
   | NpcStateMessage
   | NewsMessage
   | WorksMessage
-  | MuralsMessage;
+  | MuralsMessage
+  | PaintingsMessage;
 export type EntityKind = 'npc' | 'player';
 export type JsonValue = unknown;
 /**
@@ -245,6 +246,40 @@ export interface Mural {
   statement: string;
   /**
    * The URL of the mural's image, /api/works/<work_id>.png.
+   */
+  image: string;
+}
+/**
+ * Every frame and the painting in it. Sent on connect and whenever a painting changes.
+ */
+export interface PaintingsMessage {
+  type: 'paintings';
+  frames: Frame[];
+}
+export interface Frame {
+  /**
+   * The painting interactable's id, which is also its frame's id in the interior's iso manifest.
+   */
+  id: string;
+  /**
+   * The map the interactable is on.
+   */
+  map: string;
+  /**
+   * Null while the frame is empty.
+   */
+  painting: Painting | null;
+}
+export interface Painting {
+  work_id: string;
+  title: string;
+  artist: Artist;
+  /**
+   * The artist on what it's saying.
+   */
+  statement: string;
+  /**
+   * The URL of the painting's image. Each work has its own.
    */
   image: string;
 }

@@ -98,6 +98,7 @@ class Voice(Model):
 class Medium(StrEnum):
     WRITING = "writing"
     MURAL = "mural"
+    PAINTING = "painting"
 
 
 class Craft(Model):

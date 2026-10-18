@@ -155,5 +155,5 @@ def test_most_of_the_committed_cast_has_a_craft_in_either_medium() -> None:
     crafts = [npc.craft for npc in housed() if npc.craft]
 
     assert len(crafts) > len(HOMES) / 2
-    assert {craft.medium for craft in crafts} == set(Medium)
+    assert {craft.medium for craft in crafts} == {Medium.WRITING, Medium.MURAL}
     assert len({craft.form for craft in crafts}) == len(crafts)

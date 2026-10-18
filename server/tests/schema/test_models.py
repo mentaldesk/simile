@@ -49,6 +49,13 @@ def rejects(model: type[Model], data: dict[str, Any], match: str) -> None:
         model.model_validate(data)
 
 
+PAINTING = fixture("works.json", 1) | {
+    "id": "work_4",
+    "medium": "painting",
+    "form": "small oils of the river at low tide",
+    "wall": None,
+}
+
 TIMESTAMPS = [
     (Conversation, fixture("conversations.json", 0), "started"),
     (Conversation, fixture("conversations.json", 0), "ended"),
@@ -144,6 +151,15 @@ def test_npc_craft_round_trips() -> None:
 
     assert npc.craft == Craft(medium=Medium.WRITING, form="plain verse about old bridges")
     assert Npc.model_validate_json(npc.model_dump_json()) == npc
+
+
+@pytest.mark.parametrize("medium", ["writing", "mural", "painting"])
+def test_a_craft_can_be_writing_murals_or_paintings(medium: str) -> None:
+    craft = {"medium": medium, "form": "small oils of the river at low tide"}
+
+    npc = Npc.model_validate(fixture("npcs/viktor.json") | {"craft": craft})
+
+    assert npc.craft == Craft.model_validate(craft)
 
 
 @pytest.mark.parametrize(
@@ -279,6 +295,18 @@ def test_a_mural_is_on_a_wall() -> None:
 
 def test_writing_is_not_on_a_wall() -> None:
     rejects(Work, fixture("works.json", 0) | {"wall": "square_north"}, "only a mural has one")
+
+
+def test_a_painting_hangs_without_a_wall() -> None:
+    painting = Work.model_validate(PAINTING)
+
+    assert painting.medium is Medium.PAINTING
+    assert painting.wall is None
+    assert Work.model_validate_json(painting.model_dump_json()) == painting
+
+
+def test_a_painting_is_not_on_a_wall() -> None:
+    rejects(Work, PAINTING | {"wall": "square_north"}, "only a mural has one")
 
 
 def test_a_work_relates_to_every_core_value() -> None:

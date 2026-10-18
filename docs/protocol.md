@@ -28,7 +28,8 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
 - Entity ids are F2 `Id`s. The player is always `"player"`.
 - The maps aren't sent: the client bundles the village and its interiors as Tiled maps. F2's
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
-  you can use inside, and a `Location` says which map it's on.
+  you can use inside, and a `Location` says which map it's on. Interactable ids go over the wire
+  only in [`paintings`](#paintings).
 - A message the server can't parse is logged and ignored. The connection stays open.
 
 ## Server → client
@@ -121,6 +122,23 @@ what it had.
 A `Mural` has its `work_id`, `title`, `artist` (`id` and `name`), `statement`, and `image`, the URL
 of its picture, `/api/works/<work_id>.png`. A new mural is a new work with its own id, so the URL
 changes when the wall is painted over. A mural's F2 `Work.wall` is the wall's `id`.
+
+### `paintings`
+
+`frames`: every `painting` interactable, hung or empty. As with `murals`, the server sends it after
+the `snapshot` and `clock` on connect, and again to everyone whenever a painting changes, and the
+client replaces what it had. Clients that predate the gallery ignore it.
+
+| Field | Type | |
+|---|---|---|
+| `id` | string | The F2 `Interactable`'s id, e.g. `"painting_1"`. It's also the id of its frame in the interior's iso manifest, whose `canvas` is where the picture goes. |
+| `map` | string | The map the interactable is on, e.g. `"gallery"`. |
+| `painting` | `Painting` or `null` | What hangs there now, or `null` while the frame is empty. |
+
+A `Painting` has its `work_id` (an F2 `Work` with the `painting` medium), `title`, `artist` (`id`
+and `name`), `statement`, and `image`, the URL of its picture on the sim server. The client uses
+`image` as given. Each work has its own URL, so it changes when a new painting replaces one. A
+painting's F2 `Work` has no `wall` and doesn't say where it hangs.
 
 ### `audio_chunk`
 
@@ -224,10 +242,10 @@ hub.snapshot = world_snapshot  # returns a SnapshotMessage; the fixtures at sim 
   broadcast, after its snapshot.
 - The protocol lifespan sets `hub.clock`, which sends the `clock` after each snapshot. Without the
   lifespan, a new client gets only the snapshot.
-- `greet(greeter)` adds a message for each new client, such as `murals`. The hub calls every greeter
-  after the snapshot and clock, in the order they were added, and sends what each returns unless
-  it's `None`, before any broadcast. One that raises is logged and skipped. Call the returned
-  `stop()` when your lifespan exits.
+- `greet(greeter)` adds a message for each new client, such as `murals` or `paintings`. The hub
+  calls every greeter after the snapshot and clock, in the order they were added, and sends what
+  each returns unless it's `None`, before any broadcast. One that raises is logged and skipped. Call
+  the returned `stop()` when your lifespan exits.
 - Subscribers to client messages are called on the event loop, in the order they subscribed, and
   mustn't block. One that raises is logged and doesn't affect the others.
 - Call the hub from the event loop. From a worker thread, such as a TTS model running in one, use

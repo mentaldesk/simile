@@ -23,10 +23,11 @@ demo/run.sh
 
 It rebuilds the demo database (`server/data/demo.db`) from this folder, then starts the sim server
 with `SIMILE_VOICE=1` on port 8000 and the client on 5173. When it prints the address, open
-<http://localhost:5173> and take the walk-through's first step: hold the left arrow for about a
-second. Until that first step the village holds still, with the clock stopped at 10:30, so take your
-time setting up the recording. The key press is also what lets the browser play sound, which it
-keeps muted until the page gets a key press or click. Ctrl-C stops both.
+<http://localhost:5173/?play>, where `?play` skips the title menu, and take the walk-through's first
+step: hold the left arrow for about a second. Until that first step the village holds still, with
+the clock stopped at 10:30, so take your time setting up the recording. The key press is also what
+lets the browser play sound, which it keeps muted until the page gets a key press or click. Ctrl-C
+stops both.
 
 [`serve.py`](serve.py) does the holding. It's `simile serve` with the tick loop's wall clock
 standing still until the first `player_move` that moves the player. It also keeps the opening to

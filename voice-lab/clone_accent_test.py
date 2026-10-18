@@ -17,13 +17,15 @@ HERE = Path(__file__).parent
 OUT = HERE / "out" / "clone-accent"
 
 
-def clone(model, clip: Path, transcript: str | None, out: Path, seeds: int = 1, **settings) -> list[Path]:
-    """Speak SAMPLE_LINES in the clip's voice the way speak_npcs.py does. No transcript clones from the voice alone."""
+def clone(
+    model, clip: Path, transcript: str | None, out: Path, seeds: int = 1, lines: list[str] = SAMPLE_LINES, **settings
+) -> list[Path]:
+    """Speak the lines in the clip's voice the way speak_npcs.py does. No transcript clones from the voice alone."""
     reference = load_audio(str(clip), sample_rate=model.sample_rate)
     out.mkdir(parents=True, exist_ok=True)
     paths = []
     for seed in range(seeds):
-        for n, line in enumerate(SAMPLE_LINES, 1):
+        for n, line in enumerate(lines, 1):
             stem = f"{clip.stem}_{n}"
             mx.random.seed(zlib.crc32(f"{seed}/{stem}".encode()))
             results = model.generate(

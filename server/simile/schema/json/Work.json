@@ -33,14 +33,15 @@
     "Medium": {
       "enum": [
         "writing",
-        "mural"
+        "mural",
+        "painting"
       ],
       "title": "Medium",
       "type": "string"
     }
   },
   "additionalProperties": false,
-  "description": "Something a resident made: a piece of writing, or a mural on a wall.",
+  "description": "Something a resident made: a piece of writing, a mural on a wall, or a painting.",
   "properties": {
     "id": {
       "minLength": 1,
@@ -74,7 +75,7 @@
       "type": "string"
     },
     "text": {
-      "description": "The piece itself for writing, or for a mural a plain description of what it shows.",
+      "description": "The piece itself for writing, or for a mural or painting a plain description of what it shows.",
       "title": "Text",
       "type": "string"
     },
@@ -135,7 +136,7 @@
         }
       ],
       "default": null,
-      "description": "The wall a mural is painted on. Null for writing.",
+      "description": "The wall a mural is painted on. Null for anything else.",
       "title": "Wall"
     }
   },

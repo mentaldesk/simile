@@ -1,0 +1,12 @@
+{
+  "desmond": {"accent": "Cook Islands", "age": "middle-aged", "gender": "man"},
+  "henrietta": {"accent": "Scottish", "age": "older", "gender": "woman"},
+  "ingrid": {"accent": "Danish", "age": "middle-aged", "gender": "woman"},
+  "kofi": {"accent": "Ghanaian", "age": "young", "gender": "man"},
+  "lachlan": {"accent": "New Zealand", "age": "older", "gender": "man"},
+  "marguerite": {"accent": "French", "age": "middle-aged", "gender": "woman"},
+  "odalys": {"accent": "Portuguese", "age": "young", "gender": "woman"},
+  "priya": {"accent": "Indian", "age": "middle-aged", "gender": "woman"},
+  "raymond": {"accent": "Singaporean", "age": "older", "gender": "man"},
+  "tobias": {"accent": "Irish", "age": "older", "gender": "man"}
+}
