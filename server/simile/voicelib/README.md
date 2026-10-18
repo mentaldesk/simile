@@ -75,13 +75,13 @@ accent. Neither stops the player picking a candidate.
 reason, when it's empty or over 10 MB, or isn't a WAV, MP3 or M4A file by its first bytes. A WAV has
 to decode in full with Python's `wave`, at most 60 s, so a browser recording should be sent as
 16-bit PCM WAV. WebM, which is what most browsers record, isn't taken. MP3 and M4A are decoded by
-the job, which reports a file that won't.
+the job, which reports a file that won't, and refuses one over 60 s before any of the slow checks.
 
 The job runs `voice-lab/voice_job.py check`, which runs `import_voices.py`'s checks on the
 character's `reference_line`: it converts the clip to 24 kHz mono, Whisper must hear the line, the
 clip must be 5-25 s, and the line must be 12-25 words without a `!`. The accent classifier listens
 to the clip and to three lines cloned from it, and warns about a North American accent. The result
-says whether the recording is `usable`:
+says whether the recording is `usable`. One with `errors` isn't kept, so it has no `clip`:
 
 ```json
 {
@@ -126,6 +126,8 @@ transcripts and `imported.json` stay as they are, and picking one copies the cli
 ## Where it writes
 
 Nothing here writes to `content/`. Uploads wait in `<jobs>/voice_check/uploads/` until their job
-moves them into its work directory, and the server deletes any a day old when it starts. Each kind
-keeps the files of its latest 20 jobs in `<jobs>/<kind>/`, so picking from an older round says it's
-gone. `<jobs>` is `$SIMILE_JOBS`, or `server/data/jobs/`.
+moves them into its work directory. One whose job is cancelled or fails first is deleted when the
+job ends, and the server cancels its waiting check jobs when it stops. It also deletes any upload a
+day old when it starts, which only a killed server leaves. Each kind keeps the files of its latest
+20 jobs in `<jobs>/<kind>/`, so picking from an older round says it's gone. `<jobs>` is
+`$SIMILE_JOBS`, or `server/data/jobs/`.

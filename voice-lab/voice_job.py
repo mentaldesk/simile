@@ -11,6 +11,7 @@ HERE = Path(__file__).parent
 TORCH_PYTHON = HERE / ".venv" / "bin" / "python"
 MLX_PYTHON = HERE / ".venv-mlx" / "bin" / "python"
 RECORDING = "recording"
+LONGEST = 60.0
 
 
 def progress(fraction: float, message: str) -> None:
@@ -108,7 +109,7 @@ def check_recording(work: Path, upload: Path, tools=None) -> None:
     line = " ".join(read_params(work)["reference_line"].split())
     clip = Clip(RECORDING, source, line, digest="", reference_line_changes=False)
     progress(0.05, "Checking the recording")
-    check([clip], tools or Models(TORCH_PYTHON), work)
+    check([clip], tools or Models(TORCH_PYTHON), work, longest=LONGEST)
     write_result(
         work,
         {

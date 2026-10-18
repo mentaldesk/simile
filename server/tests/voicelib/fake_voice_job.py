@@ -1,8 +1,9 @@
-"""Stands in for `voice-lab/voice_job.py`: `design <work>`, or `check <work> <upload> <heard>`."""
+"""Stands in for `voice-lab/voice_job.py`, without its models."""
 
 import json
 import shutil
 import sys
+import time
 import wave
 from pathlib import Path
 
@@ -42,7 +43,9 @@ def design(work: Path) -> None:
     (work / "result.json").write_text(json.dumps({"candidates": candidates}))
 
 
-def check(work: Path, upload: Path, heard: str) -> None:
+def check(work: Path, upload: Path, heard: str, hold: str) -> None:
+    while hold and not Path(hold).exists():
+        time.sleep(0.01)
     sys.path.insert(0, str(VOICE_LAB))
     from import_voices import ConversionError
     from voice_job import check_recording
@@ -73,4 +76,4 @@ if __name__ == "__main__":
     if sys.argv[1] == "design":
         design(Path(sys.argv[2]))
     else:
-        check(Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4])
+        check(Path(sys.argv[2]), Path(sys.argv[3]), sys.argv[4], sys.argv[5])

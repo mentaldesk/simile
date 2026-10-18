@@ -8,10 +8,11 @@ from starlette.testclient import TestClient
 
 from simile.jobs import Jobs
 from simile.library import Library
+from simile.voicelib import kinds
 from simile.voicelib.kinds import CHECK_KIND, uploads_dir
 from simile.voicelib.uploads import MAX_UPLOAD, remove_stale
 
-from .conftest import LINE, FakeVoiceLab, clip, finished
+from .conftest import LINE, FakeVoiceLab, clip, eventually, finished
 
 RECORD = "/api/characters/wren_abernethy/voice/recording"
 PICK = "/api/characters/wren_abernethy/voice/pick"
@@ -81,6 +82,18 @@ def test_a_recording_that_wont_convert_is_refused(client: TestClient) -> None:
     assert picked.json()["error"].startswith("The recording didn't pass its checks: couldn't")
 
 
+def test_a_recording_that_cant_be_used_isnt_kept(client: TestClient, library: Library) -> None:
+    data = library.get("wren_abernethy").model_dump(mode="json")
+    data["voice"]["reference_line"] = "Mind the step."
+    library.update("wren_abernethy", data)
+
+    job = record(client, clip(8.0))
+
+    assert job["result"]["errors"][0].startswith("the transcript is 3 words, but a reference line")
+    assert job["result"]["clip"] is None
+    assert job["result"]["usable"] is False
+
+
 def webm() -> bytes:
     return b"\x1aE\xdf\xa3" + bytes(100)
 
@@ -114,9 +127,11 @@ def test_a_premade_character_cant_record(client: TestClient) -> None:
     assert response.status_code == 403
 
 
-def test_without_the_voice_lab_recordings_are_refused(app: Starlette, tmp_path: Path) -> None:
+def test_without_the_voice_lab_recordings_are_refused(
+    app: Starlette, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(kinds, "CHECK_KIND", CHECK_KIND)
     app.state.jobs = Jobs(tmp_path / "jobs", {"apple_silicon": True, "voice_lab": False})
-    app.state.jobs.register(CHECK_KIND)
     with TestClient(app) as client:
         response = client.post(RECORD, content=clip())
 
@@ -145,3 +160,31 @@ def test_clears_uploads_a_day_old(tmp_path: Path) -> None:
     remove_stale(folder)
 
     assert [path.name for path in folder.iterdir()] == ["new.wav"]
+
+
+def test_a_cancelled_check_deletes_its_upload(
+    client: TestClient, jobs: Jobs, voice_lab: FakeVoiceLab, tmp_path: Path
+) -> None:
+    voice_lab.hold = str(tmp_path / "hold")
+    running = client.post(RECORD, content=clip()).json()
+    queued = client.post(RECORD, content=clip()).json()
+    uploads = uploads_dir(jobs.root)
+    assert len(list(uploads.iterdir())) == 2
+
+    assert client.post(f"/api/jobs/{queued['id']}/cancel").json()["state"] == "cancelled"
+    eventually(lambda: len(list(uploads.iterdir())) == 1)
+    client.post(f"/api/jobs/{running['id']}/cancel")
+
+    eventually(lambda: list(uploads.iterdir()) == [])
+
+
+def test_stopping_the_server_deletes_waiting_uploads(
+    app: Starlette, jobs: Jobs, voice_lab: FakeVoiceLab, tmp_path: Path
+) -> None:
+    voice_lab.hold = str(tmp_path / "hold")
+    with TestClient(app) as client:
+        client.post(RECORD, content=clip())
+        client.post(RECORD, content=clip())
+        assert len(list(uploads_dir(jobs.root).iterdir())) == 2
+
+    assert list(uploads_dir(jobs.root).iterdir()) == []

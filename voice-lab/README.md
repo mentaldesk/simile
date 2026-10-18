@@ -81,7 +81,7 @@ Since VoiceDesign can't do a strong accent, a resident's voice can come from a r
 The server's `voice_design` and `voice_check` jobs ([`simile.voicelib`](../server/simile/voicelib/README.md)) run `voice_job.py` for one player character. It never prompts and never touches `content/`: it reads `params.json` from the job's work directory and writes its clips and `result.json` there.
 
 - `design` (in `.venv`) has VoiceDesign say the reference line in a few voices, as `design_npcs.py` does, and checks them the same way. `listen` (in `.venv-mlx`, which `design` runs) transcribes each one and clones it saying the line.
-- `check` (in `.venv-mlx`) runs `import_voices.py`'s checks on an uploaded recording.
+- `check` (in `.venv-mlx`) runs `import_voices.py`'s checks on an uploaded recording. A recording over 60 s is refused once it's converted, before Whisper, cloning or the accent classifier.
 
 ## Tests
 

@@ -145,6 +145,7 @@ async def record(request: Request) -> Response:
     except BaseException:
         path.unlink(missing_ok=True)
         raise
+    uploads.waiting_of(request.app).add(jobs, job.id, path)
     return JSONResponse(job.model_dump(mode="json"), status_code=202)
 
 

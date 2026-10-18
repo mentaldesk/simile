@@ -133,10 +133,10 @@ def test_a_bad_design_is_refused(client: TestClient, params: dict, error: str) -
 
 
 def test_without_apple_silicon_a_design_fails_with_the_reason(
-    app: Starlette, tmp_path: Path
+    app: Starlette, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setattr(kinds, "DESIGN_KIND", DESIGN_KIND)
     app.state.jobs = Jobs(tmp_path / "jobs", {"apple_silicon": False, "voice_lab": True})
-    app.state.jobs.register(DESIGN_KIND)
     with TestClient(app) as client:
         submitted = client.post(
             "/api/jobs",

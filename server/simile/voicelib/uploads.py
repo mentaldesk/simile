@@ -1,10 +1,14 @@
 """Recordings sent to the server, which are checked before a voice check job reads them."""
 
+import asyncio
 import secrets
 import time
 from contextlib import suppress
 from pathlib import Path
 
+from starlette.applications import Starlette
+
+from simile.jobs import Finished, Jobs
 from simile.library import Refused
 from simile.library.archive import MAX_CLIP, check_clip
 
@@ -53,3 +57,33 @@ def remove_stale(folder: Path) -> None:
         with suppress(FileNotFoundError):
             if path.is_file() and time.time() - path.stat().st_mtime > STALE:
                 path.unlink()
+
+
+class Waiting:
+    """Uploads waiting for their check jobs, each deleted once its job has finished."""
+
+    def __init__(self) -> None:
+        self._watchers: dict[str, asyncio.Task[None]] = {}
+
+    def add(self, jobs: Jobs, job_id: str, path: Path) -> None:
+        watcher = asyncio.create_task(self._remove_when_done(jobs, job_id, path))
+        self._watchers[job_id] = watcher
+        watcher.add_done_callback(lambda _: self._watchers.pop(job_id, None))
+
+    async def close(self, jobs: Jobs) -> None:
+        for job_id in list(self._watchers):
+            with suppress(KeyError, Finished):
+                await jobs.cancel(job_id)
+        await asyncio.gather(*self._watchers.values(), return_exceptions=True)
+
+    @staticmethod
+    async def _remove_when_done(jobs: Jobs, job_id: str, path: Path) -> None:
+        async for _ in jobs.watch(job_id):
+            pass
+        path.unlink(missing_ok=True)
+
+
+def waiting_of(app: Starlette) -> Waiting:
+    if not hasattr(app.state, "voice_uploads"):
+        app.state.voice_uploads = Waiting()
+    return app.state.voice_uploads

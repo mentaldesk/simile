@@ -130,7 +130,7 @@ def publish_check(params: VoiceCheck, work: Path, out: Path) -> dict[str, Any]:
     job = work.name
     checks = Checks.model_validate_json((work / "result.json").read_bytes())
     clip = None
-    if (work / "recording.wav").is_file():
+    if not checks.errors and (work / "recording.wav").is_file():
         os.replace(work / "recording.wav", out / f"{job}.wav")
         clip = url(CHECK, f"{job}.wav")
     samples = []

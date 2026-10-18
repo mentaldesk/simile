@@ -22,6 +22,7 @@ def write_wav(path: Path, seconds: float) -> None:
 class FakeTools:
     def __init__(self, heard: str = LINE, accent: str = "scotland 90%") -> None:
         self.heard, self.accent = heard, accent
+        self.slow: list[str] = []
 
     def convert(self, source: Path, wav: Path) -> None:
         if source.read_bytes()[:4] != b"RIFF":
@@ -29,9 +30,11 @@ class FakeTools:
         shutil.copyfile(source, wav)
 
     def transcribe(self, wav: Path) -> str:
+        self.slow.append("transcribe")
         return self.heard
 
     def clone(self, wav: Path, transcript: str, out: Path) -> list[Path]:
+        self.slow.append("clone")
         out.mkdir(parents=True, exist_ok=True)
         paths = [out / f"{wav.stem}_{n}.wav" for n in (1, 2, 3)]
         for path in paths:
@@ -39,6 +42,7 @@ class FakeTools:
         return paths
 
     def accents(self, wavs: list[Path]) -> dict[str, str]:
+        self.slow.append("accents")
         return {str(wav): self.accent for wav in wavs}
 
 
@@ -105,3 +109,25 @@ def test_warns_about_a_north_american_accent(work: Path, tmp_path: Path) -> None
     check_recording(work, upload, FakeTools(accent="us 80%, canada 10%"))
 
     assert result(work)["warnings"][0] == "the clip sounds North American (us 80%, canada 10%)"
+
+
+@pytest.mark.parametrize(("seconds", "refused"), [(60.0, False), (60.1, True), (1500.0, True)])
+def test_refuses_a_recording_over_a_minute_before_the_slow_checks(
+    work: Path, tmp_path: Path, seconds: float, refused: bool
+) -> None:
+    upload = tmp_path / "abc.wav"
+    write_wav(upload, seconds)
+    tools = FakeTools()
+
+    check_recording(work, upload, tools)
+
+    checked = result(work)
+    if refused:
+        assert checked["errors"] == [f"{seconds:.1f} s long, but a recording can be at most 60 s"]
+        assert checked["problems"] == []
+        assert checked["heard"] is None
+        assert tools.slow == []
+    else:
+        assert checked["errors"] == []
+        assert checked["problems"] == ["60.0 s long, not 5-25 s"]
+        assert tools.slow == ["transcribe", "clone", "accents"]
