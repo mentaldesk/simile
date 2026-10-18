@@ -10,6 +10,7 @@ import {
   interactables,
   loadMap,
   mapIds,
+  mapOf,
   maps,
   MAX_FRAME_SECONDS,
   MoveThrottle,
@@ -25,6 +26,7 @@ import {
   CLOCK_WAIT_MS,
   Cutaway,
   cutawaysOf,
+  DECODES_AT_ONCE,
   DEFAULT_HOUR,
   figureAt,
   figureBox,
@@ -36,9 +38,12 @@ import {
   INSIDE,
   INSIDE_SUN,
   insideLight,
+  InteriorLoader,
+  interiorsWanted,
   isoScroll,
   isoZoom,
   layerAlphas,
+  Limit,
   LightMap,
   PAIR_DEPTH,
   residentLight,
@@ -48,6 +53,7 @@ import {
   simClock,
   sliceDraws,
   UPLOAD_MS_PER_FRAME,
+  uploadImages,
   Uploads,
   type Figure,
   type Layer,
@@ -57,6 +63,7 @@ import {
   type SceneryObject,
   type SceneSet,
   type SetLight,
+  type TextureStage,
   type TiledMapWithTiles,
 } from '../world/iso';
 import {
@@ -84,13 +91,11 @@ type Placed = { image: Phaser.GameObjects.Image; depth: number };
 type Scenery = {
   manifest: SceneryManifest;
   lightMap: LightMap;
-  bitmaps: ImageBitmap[];
   textures: string;
   placed: Placed[];
   objects: Map<string, Placed[]>;
   rank: number;
 };
-type Interior = Scenery | 'loading';
 type Drawn = { scenery: Scenery; set: SceneSet; weight: number };
 type Geometry = {
   manifest: SceneryManifest;
@@ -131,9 +136,13 @@ export class IsoScene extends Phaser.Scene {
     (set) => this.unloadSet(set),
   );
   private readonly loaded = new Map<LightingSet, Scenery>();
-  private readonly interiors = new Map<string, Interior>();
+  private readonly interiors = new InteriorLoader(
+    (map) => this.loadInterior(map),
+    (map, scenery) => this.unloadInterior(map, scenery),
+  );
   private readonly geometries = new Map<string, Geometry>();
   private readonly uploads = new Uploads();
+  private readonly decodes = new Limit(DECODES_AT_ONCE);
   private keys!: Keys;
   private fade!: Phaser.GameObjects.Rectangle;
   private assets?: Assets;
@@ -177,6 +186,10 @@ export class IsoScene extends Phaser.Scene {
       () => this.murals?.destroy(),
       () => this.paintings.forEach((paintings) => paintings.destroy()),
       () => interactables.update(undefined),
+      this.onContextRestored(() => {
+        this.sets.reset();
+        this.interiors.reset();
+      }),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
     void this.start();
@@ -188,6 +201,7 @@ export class IsoScene extends Phaser.Scene {
     const villageLayers = this.sets.update(simClock.hour() ?? DEFAULT_HOUR, simClock.speed);
     const player = world.player!;
     if (!mapIds.includes(player.map)) player.place(square);
+    this.interiors.update(this.interiorsWanted(player.position), time / 1000);
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
     const direction = gridDirection(this.direction());
     const arrival = this.doorways.update(player.position, direction, dt, (map) => this.ready(map));
@@ -202,10 +216,7 @@ export class IsoScene extends Phaser.Scene {
     const geometry = this.geometries.get(map);
     const collision = collisionOf(map);
     const { characters, residentLights } = this;
-    if (drawn.length === 0 || !characters || !residentLights || !geometry || !collision) {
-      if (map !== VILLAGE) this.requestInterior(map);
-      return;
-    }
+    if (drawn.length === 0 || !characters || !residentLights || !geometry || !collision) return;
     if (this.doorways.holding) player.walking = false;
     else player.move(direction, dt, collision);
     world.update(dt);
@@ -238,19 +249,35 @@ export class IsoScene extends Phaser.Scene {
     this.assets = await import('../world/iso/assets');
   }
 
+  /** Restored textures whose bitmaps are closed are empty, so `reload` loads the scenery again. */
+  private onContextRestored(reload: () => void): () => void {
+    const { renderer } = this.game;
+    renderer.on(Phaser.Renderer.Events.RESTORE_WEBGL, reload);
+    return () => renderer.off(Phaser.Renderer.Events.RESTORE_WEBGL, reload);
+  }
+
   /** Whether the map can be drawn, starting its scenery loading if it hasn't. */
   private ready(map: string): boolean {
     if (map === VILLAGE) return this.geometries.has(VILLAGE) && this.sets.layers.length > 0;
-    this.requestInterior(map);
-    return typeof this.interiors.get(map) === 'object';
+    return this.interior(map) !== undefined;
+  }
+
+  private interior(map: string): Scenery | undefined {
+    return this.assets?.interiorManifestUrl(map) ? this.interiors.get(map) : undefined;
+  }
+
+  private interiorsWanted(position: Position): string[] {
+    return interiorsWanted(position, doorsOn(mapOf(position))).filter((map) =>
+      this.assets?.interiorManifestUrl(map),
+    );
   }
 
   private drawnOn(map: string, villageLayers: readonly Layer[]): Drawn[] {
     if (map === VILLAGE) {
       return villageLayers.map(({ set, weight }) => ({ scenery: this.loaded.get(set)!, set, weight }));
     }
-    const interior = this.interiors.get(map);
-    return typeof interior === 'object' ? [{ scenery: interior, set: INSIDE, weight: 1 }] : [];
+    const interior = this.interior(map);
+    return interior ? [{ scenery: interior, set: INSIDE, weight: 1 }] : [];
   }
 
   private coverFade(): void {
@@ -266,19 +293,6 @@ export class IsoScene extends Phaser.Scene {
     const camera = this.cameras.main;
     if (map === VILLAGE) camera.setBackgroundColor();
     else camera.setBackgroundColor(INTERIOR_BACKGROUND);
-    for (const { to } of doorsOn(map)) if (to.map !== VILLAGE) this.requestInterior(to.map);
-  }
-
-  private requestInterior(map: string): void {
-    if (this.interiors.has(map) || !this.assets?.interiorManifestUrl(map)) return;
-    this.interiors.set(map, 'loading');
-    this.loadInterior(map).then(
-      (scenery) => this.interiors.set(map, scenery),
-      (error: unknown) => {
-        console.error(`Couldn't load the ${map} interior`, error);
-        this.interiors.delete(map);
-      },
-    );
   }
 
   private async loadInterior(map: string): Promise<Scenery> {
@@ -292,9 +306,16 @@ export class IsoScene extends Phaser.Scene {
     return scenery;
   }
 
+  private unloadInterior(map: string, scenery: Scenery): void {
+    this.unloadScenery(scenery);
+    this.paintings.get(map)?.destroy();
+    this.paintings.delete(map);
+    this.geometries.delete(map);
+  }
+
   private paintingStage(): PaintingStage<ImageBitmap> {
     return {
-      load: (url) => this.assets!.loadBitmap(url),
+      load: (url) => this.decode(url),
       paint: (key, bitmap, box, transform) => {
         this.textures.addCanvas(key, skewed(bitmap, box, transform));
       },
@@ -310,8 +331,8 @@ export class IsoScene extends Phaser.Scene {
     this.loaded.set(set, scenery);
     if (!this.geometries.has(VILLAGE)) this.geometries.set(VILLAGE, geometryOf(manifest, village));
     this.murals ??= new IsoMurals(muralWalls, manifest, assets.characterLights, {
-      load: (url) => assets.loadBitmap(url),
-      sample: (set, image, crop, read) => this.sampleScenery(set, image, crop, read),
+      load: (url) => this.decode(url),
+      sample: (_set, image, crop, read) => this.sampleScenery(image, crop, read),
       paint: (key, bitmap, box, transform) => {
         this.textures.addCanvas(key, skewed(bitmap, box, transform));
       },
@@ -328,29 +349,37 @@ export class IsoScene extends Phaser.Scene {
   ): Promise<Scenery> {
     const assets = this.assets!;
     this.charactersLoad ??= this.loadCharacters(manifest, assets);
-    const images = sceneryImages(manifest);
-    const [pixels, bitmaps, characters] = await Promise.all([
+    const [pixels, characters] = await Promise.all([
       assets.imagePixels(url(manifest.light_map.image)!),
-      Promise.all(images.map((image) => assets.loadBitmap(url(image)!))),
       this.charactersLoad,
     ]);
+    const images = sceneryImages(manifest).map((image) => ({ key: textures + image, url: url(image)! }));
+    await uploadImages(images, this.textureStage(), this.uploads, this.decodes);
     const scenery: Scenery = {
       manifest,
       lightMap: new LightMap(manifest.light_map, pixels),
-      bitmaps,
       textures,
       placed: [],
       objects: new Map(),
       rank: -1,
     };
-    await this.uploads.add([
-      ...images.map((image, i) => () => {
-        this.textures.addImage(textures + image, bitmaps[i] as unknown as HTMLImageElement);
-      }),
-      ...this.placing(scenery),
-      () => characters.prepare(set),
-    ]);
+    await this.uploads.add([...this.placing(scenery), () => characters.prepare(set)]);
     return scenery;
+  }
+
+  private textureStage(): TextureStage<ImageBitmap> {
+    return {
+      decode: (url) => this.assets!.loadBitmap(url),
+      add: (key, bitmap) => {
+        this.textures.addImage(key, bitmap as unknown as HTMLImageElement);
+      },
+      remove: (key) => this.textures.remove(key),
+      keepsBitmaps: this.renderer.type === Phaser.CANVAS,
+    };
+  }
+
+  private decode(url: string): Promise<ImageBitmap> {
+    return this.decodes.run(() => this.assets!.loadBitmap(url));
   }
 
   private async loadCharacters(manifest: SceneryManifest, assets: Assets): Promise<IsoCharacters> {
@@ -362,34 +391,28 @@ export class IsoScene extends Phaser.Scene {
     return this.characters;
   }
 
-  /** From the set's loaded image if it has one, else fetched for this and closed. */
-  private async sampleScenery<T>(
-    set: LightingSet,
-    image: string,
-    crop: Box,
-    read: (pixels: Pixels) => T,
-  ): Promise<T> {
-    const held = this.loaded.get(set);
-    const index = held ? sceneryImages(held.manifest).indexOf(image) : -1;
+  /** Fetched for this, read within the upload budget and closed. */
+  private async sampleScenery<T>(image: string, crop: Box, read: (pixels: Pixels) => T): Promise<T> {
     const url = this.assets!.imageUrl(image);
-    if (index < 0 && !url) throw new Error(`No image ${image}`);
-    const bitmap = index >= 0 ? held!.bitmaps[index] : await this.assets!.loadBitmap(url!);
-    const sampled = new Promise<T>((resolve, reject) => {
-      void this.uploads.add([
-        () => {
-          try {
-            resolve(read(cropPixels(bitmap, crop)));
-          } catch (error) {
-            reject(error);
-          }
-        },
-      ]);
+    if (!url) throw new Error(`No image ${image}`);
+    return this.decodes.run(async () => {
+      const bitmap = await this.assets!.loadBitmap(url);
+      try {
+        return await new Promise<T>((resolve, reject) => {
+          void this.uploads.add([
+            () => {
+              try {
+                resolve(read(cropPixels(bitmap, crop)));
+              } catch (error) {
+                reject(error);
+              }
+            },
+          ]);
+        });
+      } finally {
+        bitmap.close();
+      }
     });
-    try {
-      return await sampled;
-    } finally {
-      if (index < 0) bitmap.close();
-    }
   }
 
   private placing(scenery: Scenery): (() => void)[] {
@@ -421,14 +444,17 @@ export class IsoScene extends Phaser.Scene {
     const scenery = this.loaded.get(set);
     if (!scenery) return;
     this.loaded.delete(set);
-    for (const { image } of scenery.placed) image.destroy();
-    for (const image of sceneryImages(scenery.manifest)) this.textures.remove(scenery.textures + image);
-    for (const bitmap of scenery.bitmaps) bitmap.close();
+    this.unloadScenery(scenery);
+  }
+
+  private unloadScenery({ placed, manifest, textures }: Scenery): void {
+    for (const { image } of placed) image.destroy();
+    for (const image of sceneryImages(manifest)) this.textures.remove(textures + image);
   }
 
   private *sceneries(): Iterable<Scenery> {
     yield* this.loaded.values();
-    for (const interior of this.interiors.values()) if (typeof interior === 'object') yield interior;
+    yield* this.interiors.loaded();
   }
 
   private drawLayers(drawn: readonly Drawn[], geometry: Geometry): void {

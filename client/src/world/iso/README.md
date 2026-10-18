@@ -26,14 +26,20 @@ draws `DEFAULT_HOUR`, the afternoon.
 - **Which sets:** `blend(hour)` mirrors `lighting.blend`: one set, or two with smoothstep weights in
   the 60 sim minutes around each boundary, outgoing first. A test checks it against values from
   `lighting.py`, and the spans against every manifest.
-- **Loading** (`SetLoader` in `crossfade.ts`): a set is about 4.5 MB of images. Only the sets the
-  clock needs now are in memory, plus any whose fade starts within `PRELOAD_SECONDS` of real time,
-  up to `MAX_LOOKAHEAD_HOURS` of sim time. A set that's no longer needed is destroyed with its
-  textures. Until every set the hour needs has loaded, the scene keeps drawing what it drew, so a
-  jump in the clock switches once.
-- **Uploads** (`Uploads`): images are decoded off the main thread with `createImageBitmap`, then
-  added as textures and placed in the scene `UPLOAD_MS_PER_FRAME` at a time, about 8 frames for a
-  set. The set's drop-shadow mask is built then too, rather than on the first frame of its fade.
+- **Loading** (`SetLoader` in `crossfade.ts`): a set is about 4.5 MB of images, 22 MP and so about
+  88 MB as a texture. Only the sets the clock needs now are in memory, plus the next one once its
+  fade starts within `PRELOAD_SECONDS` of real time, so the scene holds two sets at most however fast
+  the clock runs. The next one waits while the outgoing set is still drawn. A set that's no longer
+  needed is destroyed with its textures. Until every set the hour needs has loaded, the scene keeps
+  drawing what it drew, so a jump in the clock switches once. That's the one time three sets can be
+  in memory: a jump into a fade, or a clock so fast that a set's hours pass while it loads.
+- **Uploads** (`uploadImages` in `textures.ts`, `Uploads`): images are fetched and decoded off the
+  main thread with `createImageBitmap`, `DECODES_AT_ONCE` (4) at a time. Each is added as a texture
+  within `UPLOAD_MS_PER_FRAME` and closed straight away, since the GPU has its copy. Then the set is
+  placed in the scene, and its drop-shadow mask built, rather than on the first frame of its fade.
+  If an image fails, the rest aren't decoded and the textures already added are removed.
+- **A lost WebGL context:** Phaser restores textures from their images, which are closed, so when
+  the context comes back the scene unloads every set and interior and loads them again.
 - **Crossfade:** every set has the same objects and slices, so each slice is drawn once per set, the
   incoming image `PAIR_DEPTH` above the outgoing one, at alpha = weight (`layerAlphas`). The outgoing
   image stays opaque until the last 5% of the weight, so at most 1.25% of the background shows
@@ -47,10 +53,13 @@ draws `DEFAULT_HOUR`, the afternoon.
 ## Interiors
 
 Each interior has one manifest, `interiors/<id>.json`, drawn like a set's but with nothing to
-crossfade: its one set is `inside`. The scene loads an interior's manifest, images and map the first
-time it needs them, and keeps them: when the player goes through a door, and in the background for
-every interior a door on the drawn map leads to, once that map is up. The village's sets stay loaded
-and follow the clock while the player is inside, so coming out is instant.
+crossfade: its one set is `inside`. `InteriorLoader` (`interiors.ts`) loads an interior's manifest,
+images and map while the player is in it or within `INTERIOR_NEAR_TILES` (6) of its door, so walking
+in is usually instant, and unloads it `INTERIOR_KEEP_SECONDS` (30) after neither is true. A door the
+player walks through before it has loaded holds the fade at black until it has. An interior that
+fails to load is tried again after `INTERIOR_RETRY_SECONDS`, doubling each time up to
+`INTERIOR_RETRY_MAX_SECONDS`. The village's sets stay loaded and follow the clock while the player is
+inside, so coming out is instant.
 
 - **Only the player's map is drawn.** The other maps' images are hidden, and the murals with them.
   The camera clears to near-black around an interior, whose ground is transparent outside its walls.
@@ -112,10 +121,10 @@ Phaser-free.
   front. So it hides and sorts with its building, and takes the building's cutaway alpha.
 - **Light** comes from the building's own render, which knows which way the face points, its
   shadows and the lamps on it. Once a wall is known, `IsoMurals` samples its building's image in all
-  four sets around each slice edge (`facadeColours`, every other pixel of the face's rows). It uses
-  a set's image while the scene holds it, and otherwise fetches it, reads and averages it within the
-  upload budget and closes it. That's about 4 MB
-  once, after the first set loads, of images the scene fetches later anyway. `facadeLight` then
+  four sets around each slice edge (`facadeColours`, every other pixel of the face's rows). The scene
+  fetches each image for this, since it doesn't keep them, then reads and averages it within the
+  upload budget and closes it. That's about 4 MB once, after the first set loads, of images the
+  browser has cached or fetches later anyway. `facadeLight` then
   makes each edge as bright, against the facade's brightest edge in any set, as the facade is there,
   with that edge at its set's tint, and colours it as the facade's light changes from there. The
   sets blend by the crossfade's weights, and each crop is tinted at its left and right edges, so the
@@ -160,6 +169,16 @@ rounded, or the canvas width over `MAX_TILES_ACROSS` (20) tiles rounded, whichev
 past 1920 px the view stays 15 to 30 tiles across. A tile's distance is 96 / √2 ≈ 68 art px across
 the screen and 34 up it, so a window of about 950 × 540 art px shows the whole of earshot (see
 [`voicing/README.md`](../../../../server/simile/voicing/README.md#earshot)).
+
+A canvas in device pixels is big, so `main.ts` turns off Phaser's pre and post FX, which nothing
+uses. Phaser makes their render targets when the game boots: three squares for each 32 px up to the
+canvas's height, which comes to about 4.5 GB of GPU memory for a 5120 × 2880 canvas.
+
+## Measuring memory
+
+`client/scripts/measure-memory.ts` (macOS) drives the game in Playwright's Chromium at a 300× clock,
+through lighting changes and five gallery visits, and prints the renderer's and GPU process's peak
+and steady memory. Its header says how to run it.
 
 ## What it provides
 
