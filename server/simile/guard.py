@@ -5,6 +5,7 @@ SIMILE_HOSTS and SIMILE_ORIGINS add comma-separated host names and origins to th
 
 import logging
 import os
+import re
 from collections.abc import Callable
 from typing import Any, NamedTuple
 
@@ -22,6 +23,8 @@ ORIGINS = frozenset(
     f"http://{host}:{port}" for host in ("localhost", "127.0.0.1", "[::1]") for port in (5173, 8000)
 )
 SAFE_METHODS = frozenset({"GET", "HEAD"})
+HOST = re.compile(r"(?:\[(?P<ipv6>[^\]]+)\]|(?P<name>[^:\[\]]+))(?::\d+)?")
+MAX_LOGGED = 256
 JSON = "application/json"
 
 type MediaTypes = frozenset[str | None]
@@ -44,11 +47,9 @@ def accepts[E: Callable[..., Any]](*media_types: str | None) -> Callable[[E], E]
 
 
 def host_name(host: str) -> str:
-    """`host` without its port: "[::1]:8000" is "::1"."""
-    host = host.strip().lower()
-    if host.startswith("["):
-        return host[1:].partition("]")[0]
-    return host.partition(":")[0] if host.count(":") == 1 else host
+    """`host` without its port: "[::1]:8000" is "::1", and "" if it isn't a host."""
+    found = HOST.fullmatch(host.strip().lower())
+    return (found["ipv6"] or found["name"]) if found else ""
 
 
 def media_type(content_type: str | None) -> str | None:
@@ -77,7 +78,7 @@ def wanted(media_types: MediaTypes, given: str | None) -> str:
 class Guard:
     def __init__(self, app: ASGIApp) -> None:
         self.app = app
-        self.hosts = HOSTS | {host_name(host) for host in listed("SIMILE_HOSTS")}
+        self.hosts = HOSTS | {host_name(host) or host for host in listed("SIMILE_HOSTS")}
         self.origins = ORIGINS | {origin.rstrip("/") for origin in listed("SIMILE_ORIGINS")}
         self.logged: set[tuple[str, str]] = set()
 
@@ -91,7 +92,7 @@ class Guard:
             await self.app(scope, receive, send)
             return
         source = headers.get("origin") or headers.get("host") or "a request with no Host"
-        if (refusal.check, source) not in self.logged:
+        if (refusal.check, source) not in self.logged and len(self.logged) < MAX_LOGGED:
             self.logged.add((refusal.check, source))
             method = scope.get("method", "WebSocket")
             logger.warning(f"Refused {method} {scope['path']} from {source}: {refusal.reason}")

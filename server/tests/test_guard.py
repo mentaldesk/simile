@@ -84,7 +84,17 @@ def test_refuses_a_change_from_another_site(client: TestClient, method: str) -> 
     assert (response.status_code, response.json()) == (403, REFUSED_ORIGIN)
 
 
-@pytest.mark.parametrize("origin", ["null", "http://localhost:3000", "https://localhost:5173"])
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "null",
+        "http://localhost:3000",
+        "https://localhost:5173",
+        "http://localhost:5173.evil.com",
+        "http://127.0.0.1:8000.evil.com",
+        "http://localhost:51730",
+    ],
+)
 def test_refuses_a_change_from_any_origin_but_the_clients(client: TestClient, origin: str) -> None:
     response = client.post("/api/echo", content="{}", headers=JSON | {"Origin": origin})
 
@@ -115,6 +125,12 @@ def test_leaves_reads_from_other_sites_to_the_browser(client: TestClient) -> Non
         "localhost.example.com",
         "127.0.0.1.example.com:8000",
         "evil@localhost",
+        "[::1]evil.com",
+        "[::1].evil.com",
+        "[::1]:8000.evil.com",
+        "localhost:evil",
+        "localhost:",
+        "::1",
         "0.0.0.0:8000",
         "[::2]:8000",
         "testserver.example.com",
@@ -180,7 +196,7 @@ def test_the_test_client_host_is_allowed_only_in_tests(
 def test_takes_the_hosts_and_origins_its_told_to(
     make_package: MakePackage, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("SIMILE_HOSTS", " testserver, Simile.lan:9000 ,[fd00::1]")
+    monkeypatch.setenv("SIMILE_HOSTS", " testserver, Simile.lan:9000 ,[fd00::1], fd00::2")
     monkeypatch.setenv("SIMILE_ORIGINS", "http://Simile.lan:5173/")
     client = TestClient(create_app(make_package({"echo/routes.py": ROUTES})))
 
@@ -190,6 +206,7 @@ def test_takes_the_hosts_and_origins_its_told_to(
 
     assert post("simile.lan:5173", "http://simile.lan:5173") == 200
     assert post("[fd00::1]:8000", CLIENT) == 200
+    assert post("[fd00::2]", CLIENT) == 200
     assert post("localhost:5173", CLIENT) == 200
     assert post("simile.lan:5173", "http://simile.lan:8000") == 403
     assert post("other.lan", "http://simile.lan:5173") == 403
@@ -360,3 +377,20 @@ def test_every_websocket_the_server_takes_is_guarded(server: TestClient, path: s
     assert refused_socket(server, path, {"Origin": FOREIGN}) == 1008
     assert refused_socket(server, path, {"Origin": "null"}) == 1008
     assert refused_socket(server, path, {"Host": "example.com:8000"}) == 1008
+
+
+def test_stops_logging_when_too_many_sites_have_been_refused(
+    client: TestClient, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(guard, "MAX_LOGGED", 3)
+
+    with caplog.at_level(logging.WARNING, logger="simile.guard"):
+        statuses = [
+            client.get("/api/echo", headers={"Host": f"r{n}.attacker.example:8000"}).status_code
+            for n in range(5)
+        ]
+
+    assert statuses == [403] * 5
+    assert [message.split(":")[0] for message in caplog.messages] == [
+        f"Refused GET /api/echo from r{n}.attacker.example" for n in range(3)
+    ]
