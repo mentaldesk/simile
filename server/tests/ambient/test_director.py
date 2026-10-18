@@ -11,7 +11,7 @@ from simile.llm import FakeProvider, LLMClient
 from simile.llm.fake import scene
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, Conversation, CoreValue, Npc, Relationship, Tile
+from simile.schema import PLAYER_ID, Conversation, CoreValue, MapTile, Npc, Relationship, Tile
 from simile.sim import (
     Clock,
     ConversationEnded,
@@ -22,10 +22,11 @@ from simile.sim import (
 )
 from simile.social import meet
 from simile.voicing import VoicingConfig
-from simile.world import Movement
-from simile.world.map import load_map
+from simile.world import Movement, Point
+from simile.world.map import load_maps
 
-TOWN = load_map()
+MAPS = load_maps()
+TOWN = MAPS["village"]
 START = datetime(2026, 1, 1, 11, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 ROW = 23
@@ -72,7 +73,7 @@ class Village:
         self.world = World(Clock(START), FakeWallClock())
         self.store = MemoryStore(":memory:")
         self.store.add(*relationships)
-        self.movement = Movement(TOWN, self.world.bus)
+        self.movement = Movement(MAPS, self.world.bus)
         for npc, column in columns.items():
             self.movement.place(npc, Tile(x=column, y=ROW))
         self.movement.place(PLAYER_ID, Tile(x=PLAYER_AT, y=ROW))
@@ -187,6 +188,30 @@ def test_nobody_in_a_house_is_nudged_or_sought_out() -> None:
 
     village.movement.place("ana", Tile(x=16, y=21))
     assert set(village.director.choose() or ()) == {"ana", "ben"}
+
+
+def test_only_residents_on_the_players_map_are_nudged() -> None:
+    village = Village({"ana": 27, "ben": 35}, relationships=friends(ANA, BEN))
+    village.movement.track(PLAYER_ID, Point(11, 9, "coffee_shop"))
+
+    assert village.director.choose() is None
+
+    for npc, x in (("ana", 8), ("ben", 14)):
+        village.movement.place(npc, MapTile(map="coffee_shop", x=x, y=9))
+    assert set(village.director.choose() or ()) == {"ana", "ben"}
+
+
+def test_the_player_inside_the_coffee_shop_doesnt_hear_a_conversation_on_the_square() -> None:
+    village = Village({"ana": 20, "ben": 21}, relationships=friends(ANA, BEN))
+    village.movement.place("ana", Tile(x=20, y=13))
+    village.movement.place("ben", Tile(x=21, y=13))
+    village.engine.start("ana", "ben")
+    village.movement.track(PLAYER_ID, Point(17, 12, "coffee_shop"))
+
+    assert village.director.earshot.update() == set()
+
+    village.movement.track(PLAYER_ID, Point(17, 12))
+    assert len(village.director.earshot.update()) == 1
 
 
 def test_a_pair_cooling_off_from_each_other_is_left_alone() -> None:
