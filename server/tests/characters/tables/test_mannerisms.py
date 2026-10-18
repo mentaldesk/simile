@@ -15,7 +15,7 @@ from simile.characters.tables.generate_mannerisms import (
     read_toml,
     to_toml,
 )
-from simile.characters.tables.load import Mannerisms
+from simile.characters.tables.load import TABLES_DIR, Mannerisms
 from simile.llm import FakeProvider, LLMClient, Model
 
 
@@ -34,6 +34,12 @@ def test_mannerisms_fit_their_temperament(tables: Tables) -> None:
     assert share(0.95) > 3 * share(0.05)
 
 
+def test_each_resident_gets_one_or_two() -> None:
+    counts = {len(sample_mannerisms(random.Random(seed), {})) for seed in range(50)}
+
+    assert counts == {1, 2}
+
+
 def test_no_two_residents_share_a_mannerism() -> None:
     rng, village = random.Random(0), Village()
     picks = [m for _ in range(40) for m in sample_mannerisms(rng, {}, count=3, village=village)]
@@ -46,41 +52,57 @@ def test_no_two_residents_share_a_mannerism() -> None:
 def test_dedupe_drops_repeats_and_rule_breakers() -> None:
     one, two = Prompt("one", {}, ""), Prompt("two", {}, "")
     batches = [
-        (one, ["Taps the table twice before answering.", "hums while she cooks", "smokes outside"]),
-        (two, ["taps the table twice before giving an answer", "whistles at birds on the fence"]),
+        (
+            one,
+            [
+                "Answers a question with another question.",
+                "talks over her friends",
+                "shrugs before answering",
+                "brings up the weather first",
+            ],
+        ),
+        (two, ["answers every question with another question", "ends stories with a deadpan line"]),
     ]
 
     assert dedupe(batches) == [
-        (one, ["taps the table twice before answering"]),
-        (two, ["whistles at birds on the fence"]),
+        (one, ["answers a question with another question"]),
+        (two, ["ends stories with a deadpan line"]),
     ]
+
+
+def test_dedupe_drops_what_a_character_couldnt_store() -> None:
+    long = "explains " + "extraordinarily " * 14 + "everything"
+    assert len(long.split()) <= 16 and len(long) > 120
+
+    assert dedupe([(Prompt("one", {}, ""), [long])]) == [(Prompt("one", {}, ""), [])]
 
 
 @pytest.mark.anyio
 async def test_generate_makes_one_haiku_call_per_prompt() -> None:
-    fake = FakeProvider([Batch(mannerisms=[f"hums song number {i} on the bus"]) for i in range(3)])
+    fake = FakeProvider([Batch(mannerisms=[f"tells story number {i} twice"]) for i in range(3)])
 
     batches = await generate(LLMClient(fake), PROMPTS[:3], count=12)
 
     assert [prompt for prompt, _ in batches] == list(PROMPTS[:3])
     assert len(fake.requests) == 3
     assert {request.model for request in fake.requests} == {Model.HAIKU.value}
-    assert "Write 12 distinct mannerisms" in fake.requests[0].messages[-1].content
+    assert "Write 12 distinct conversational mannerisms" in fake.requests[0].messages[-1].content
+    assert "from their words alone" in fake.requests[0].messages[-1].content
 
 
 def test_the_toml_written_loads_back(tmp_path: Path) -> None:
-    batches = [(PROMPTS[0], ["waves with both hands"]), (PROMPTS[-1], ["eats the crusts first"])]
+    batches = [(PROMPTS[0], ["admits a gap first"]), (PROMPTS[-1], ["teases the people they like"])]
     path = tmp_path / "mannerisms.toml"
     path.write_text(to_toml(batches))
 
     groups = Mannerisms.model_validate(tomllib.loads(path.read_text())).group
     assert [(g.id, g.lean, g.items) for g in groups] == [
-        ("honesty_humility_high", {"honesty_humility": 1}, ["waves with both hands"]),
-        ("routines", {}, ["eats the crusts first"]),
+        ("honesty_humility_high", {"honesty_humility": 1}, ["admits a gap first"]),
+        ("humour", {}, ["teases the people they like"]),
     ]
     assert [(p.id, items) for p, items in read_toml(path)] == [
-        ("honesty_humility_high", ["waves with both hands"]),
-        ("routines", ["eats the crusts first"]),
+        ("honesty_humility_high", ["admits a gap first"]),
+        ("humour", ["teases the people they like"]),
     ]
 
 
@@ -88,3 +110,10 @@ def test_the_committed_list_has_no_repeats(tables: Tables) -> None:
     items = Counter(item for group in tables.mannerisms.group for item in group.items)
 
     assert max(items.values()) == 1
+
+
+def test_the_committed_list_keeps_the_groups_and_the_rules() -> None:
+    committed = read_toml(TABLES_DIR / "mannerisms.toml")
+
+    assert [(p.id, dict(p.lean)) for p, _ in committed] == [(p.id, dict(p.lean)) for p in PROMPTS]
+    assert dedupe(committed) == committed

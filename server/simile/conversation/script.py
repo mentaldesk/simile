@@ -11,6 +11,7 @@ from simile.conversation.prompt import (
     WorkTopic,
     ago,
     first_name,
+    habits,
     parse_reply,
     value_name,
 )
@@ -84,8 +85,8 @@ def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "themselves.\n"
             "- Follow the direction: who's keen, who wants to leave and when, and the length. The "
             "scene ends when they part, with a goodbye and its answer.\n"
-            "- Use each character's pet words and phrases now and then, not in every line, and "
-            "vary how their lines begin.",
+            "- Use each character's pet words, phrases and verbal habits now and then, not in "
+            "every line, and vary how their lines begin.",
             "Write only the spoken lines, one a line, each starting with the speaker's first "
             "name and a colon and ending with the one to three core values the line touches, "
             "like this:\nMara: Morning! Lovely out, isn't it? [values: connection]\n"
@@ -149,11 +150,16 @@ def character(side: Character, them: Npc, grudges: Sequence[str] = ()) -> str:
     most = ", ".join(value_name(value) for value, _ in ranked[:5])
     least = ", ".join(value_name(value) for value, _ in reversed(ranked[-3:]))
     feelings = third_person(describe(side.feelings.model_copy(update={"flags": []}), other), name)
+    speech = f"How {name} speaks: {npc.speaking_style}"
+    if npc.mannerisms:
+        speech += (
+            f"\n{name}'s verbal habits: {habits(npc)}. Use these now and then, not in every line."
+        )
     parts = [
         f"## {name}\n{npc.name}, aged {npc.age}. Occupation: {npc.occupation}.",
         npc.persona,
         npc.backstory,
-        f"How {name} speaks: {npc.speaking_style}",
+        speech,
         f"Cares most about: {most}. Cares least about: {least}.\n"
         f"Interests: {', '.join(npc.interests)}.",
         feelings,

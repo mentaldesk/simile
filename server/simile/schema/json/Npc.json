@@ -154,6 +154,78 @@
       "title": "Medium",
       "type": "string"
     },
+    "Pay": {
+      "additionalProperties": false,
+      "description": "How a resident is paid, in the same units as their `money`.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/PayKind"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Per hour worked for a `wage`, per week for a `pension`, null for `takings`.",
+          "title": "Amount"
+        }
+      },
+      "required": [
+        "kind",
+        "amount"
+      ],
+      "title": "Pay",
+      "type": "object"
+    },
+    "PayKind": {
+      "description": "`wage`: `amount` per hour worked, for work done for people outside the village. `takings`:\nwhat their shop takes minus its supplies, so no `amount`. `pension`: `amount` per week.",
+      "enum": [
+        "wage",
+        "takings",
+        "pension"
+      ],
+      "title": "PayKind",
+      "type": "string"
+    },
+    "Shift": {
+      "additionalProperties": false,
+      "description": "When a resident works on some days of the week. Times are hours on the sim clock, so 7.5\nis 07:30. A shift that runs past midnight is two shifts: one ending at 24 and one starting at\n0 the next day.",
+      "properties": {
+        "days": {
+          "items": {
+            "$ref": "#/$defs/Weekday"
+          },
+          "minItems": 1,
+          "title": "Days",
+          "type": "array"
+        },
+        "start": {
+          "description": "When it starts, 0-24.",
+          "minimum": 0,
+          "title": "Start",
+          "type": "number"
+        },
+        "end": {
+          "description": "When it ends, after it starts and at most 24.",
+          "maximum": 24,
+          "title": "End",
+          "type": "number"
+        }
+      },
+      "required": [
+        "days",
+        "start",
+        "end"
+      ],
+      "title": "Shift",
+      "type": "object"
+    },
     "Voice": {
       "additionalProperties": false,
       "properties": {
@@ -188,6 +260,19 @@
       ],
       "title": "Voice",
       "type": "object"
+    },
+    "Weekday": {
+      "enum": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "title": "Weekday",
+      "type": "string"
     }
   },
   "additionalProperties": false,
@@ -218,6 +303,49 @@
       "pattern": "^[a-z][a-z0-9_]*$",
       "title": "Home",
       "type": "string"
+    },
+    "workplace": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Location id of where they work, their `home` for remote work. Null if they don't work, and left out.",
+      "title": "Workplace"
+    },
+    "shifts": {
+      "default": [],
+      "description": "When they work, at their workplace. Empty if they don't work, and left out.",
+      "items": {
+        "$ref": "#/$defs/Shift"
+      },
+      "title": "Shifts",
+      "type": "array"
+    },
+    "pay": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Pay"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "How they're paid. Null with no income, and left out."
+    },
+    "money": {
+      "default": 0.0,
+      "description": "What they start with. Left out when 0.",
+      "minimum": 0,
+      "title": "Money",
+      "type": "number"
     },
     "values": {
       "additionalProperties": {

@@ -11,6 +11,7 @@ from simile.characters.brief import LOCKABLE, SECTIONS, Brief
 from simile.characters.generate import TooSimilar, character_id, generate, reroll
 from simile.characters.novelty import Embedder, Novelty
 from simile.characters.sheet import draw
+from simile.characters.tables import load_tables
 from simile.characters.voice import accent_sentence
 from simile.llm import FakeProvider, LLMClient, Request
 from simile.schema import (
@@ -58,6 +59,7 @@ FULL = {
     "backstory": "Runs the early route and has never once been late.",
     "persona": "Dry, exacting and impossible to hurry.",
     "speaking_style": "Short sentences, times and numbers.",
+    "mannerisms": ["answers a question with another question"],
     "interests": ["timetables", "Polish crime novels", "tomatoes"],
     "past": [
         PastMemory(age=22, content="Passed the bus test first time.", salience=0.6, valence=0.6)
@@ -110,6 +112,43 @@ async def test_locked_fields_survive_every_stage(fake_llm: Fakes, fields: tuple[
     }
     for request in fake.requests:
         assert not requested_fields(request) & set(fields)
+
+
+async def test_one_or_two_mannerisms_are_drawn_in_code_and_stored(fake_llm: Fakes) -> None:
+    listed = {item for group in load_tables().mannerisms.group for item in group.items}
+    drawn = []
+    for seed in range(6):
+        mannerisms = draw(random.Random(seed), Brief()).mannerisms
+        result, fake = await make(fake_llm, seed=seed)
+
+        assert result.character.mannerisms == mannerisms
+        assert 1 <= len(mannerisms) <= 2 and set(mannerisms) <= listed
+        assert f"- Verbal habits: {'; '.join(mannerisms)}." in fake.requests[0].messages[-1].content
+        for request in fake.requests:
+            assert "mannerisms" not in requested_fields(request)
+        drawn.append(len(mannerisms))
+    assert set(drawn) == {1, 2}
+
+
+async def test_locked_mannerisms_hint_at_the_speaking_style(fake_llm: Fakes) -> None:
+    habits = ["trails off mid-sentence", "teases the people they like most"]
+
+    result, fake = await make(fake_llm, Brief(mannerisms=habits))
+
+    assert result.character.mannerisms == habits
+    prompt = fake.requests[0].messages[-1].content
+    assert f"- Verbal habits: {'; '.join(habits)}." in prompt
+    assert "build on a verbal habit" in prompt
+
+
+async def test_a_character_without_mannerisms_keeps_none(fake_llm: Fakes) -> None:
+    original = (await make(fake_llm, seed=1))[0].character.model_copy(update={"mannerisms": []})
+    llm, _ = fake_llm()
+
+    character = (await reroll(llm, original, "voice", rng=random.Random(2), now=NOW)).character
+
+    assert character.mannerisms == []
+    assert "mannerisms" not in character.model_dump()
 
 
 async def test_build_hair_and_top_are_drawn_in_code(fake_llm: Fakes) -> None:

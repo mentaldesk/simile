@@ -38,6 +38,10 @@
   "backstory": "Nobody sees her cut the stems. She does it alone at the back bench before the shop opens, and the buckets stay out of anyone's reach. What she keeps from people is older than the shop: she was adopted and only learned it once she was grown, and she has never told the people who love her. At school a teacher made her feel stupid in front of the class, and she has checked every sum twice ever since, while being the loudest voice in any room where she is certain. She left after a break-up with two suitcases and a rule that she would never again need anyone to pull her through anything. The rule has held less well than the promises she has made since: a partner, a child, a shop she built from nothing. She tells herself she answers to nobody, and she is least sure of it when someone is watching her decide.",
   "persona": "She runs the shop her way and ignores wholesale rules nobody has ever explained to her. She will try a flower nobody has sold in years just to see what happens. Within a minute of meeting a customer she talks to them like an old acquaintance. When someone asks how she is really doing, she finds a reason to go to the back. People close to her learn to hand her things instead of offering help, and to stop asking before she is ready.",
   "speaking_style": "Blunt and quick, in short plain sentences. She corrects herself mid-sentence when a fact turns out wrong, and she gets louder, not softer, when she is sure. Strangers get the same brisk warmth she gives regulars. When a conversation is finished she reaches for the string by the kitchen drawer.",
+  "mannerisms": [
+    "asks for the deadline before asking what happened",
+    "sums up a long debate with one surprising metaphor"
+  ],
   "interests": [
     "ranunculus",
     "Hafez",

@@ -49,6 +49,18 @@ class RelationshipConfig(BaseModel):
     negativity_bias: float = Field(
         default=2.5, ge=1, description="How many times more a negative event weighs."
     )
+    negativity_bias_spread: float = Field(
+        default=2.0,
+        ge=1,
+        description="How far the owner's negativity_bias trait moves negativity_bias: times "
+        "this at 1, divided by it at 0, and never below 1.",
+    )
+    first_impressions_spread: float = Field(
+        default=2.0,
+        ge=1,
+        description="How far the owner's first_impressions trait swings their first encounter "
+        "with someone: its shifts times this at 1, divided by it at 0.",
+    )
     resistance_step: float = Field(
         default=0.15,
         ge=0.05,
@@ -77,6 +89,12 @@ class RelationshipConfig(BaseModel):
         default=timedelta(days=8),
         gt=timedelta(0),
         description="Longer than like_half_life: trust decays more slowly.",
+    )
+    forgiveness_spread: float = Field(
+        default=3.0,
+        ge=1,
+        description="How far the owner's forgiveness trait speeds up a grudge, a score below its "
+        "baseline, fading: its half-lives divided by this at 1, times it at 0.",
     )
     familiarity_half_life: timedelta = Field(
         default=timedelta(days=90),

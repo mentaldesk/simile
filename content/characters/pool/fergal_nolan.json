@@ -35,6 +35,10 @@
   "backstory": "The good biscuit tin still sits on top of the fridge, empty, because he has never let anything go back into it. He grew up knowing exactly what things cost and who had to pay for them, and he has not forgotten a single price. He refuses himself the things he wants, a decent coat, the holiday his partner keeps raising, a car that doesn't rattle, because spending on himself feels like taking from people who had nothing. Being looked down on bothers him more than going without. He wants the school gates to open at the same time every morning, the mantel clock wound, the same faces at the same table, and he takes it personally when his children grow or his partner wants something new. The secret is a list in biro, at the back of an old school diary, of everyone who has cheated, belittled or let him down. He adds to it and reads it when he is alone. No one has seen it, and no one is meant to.",
   "persona": "He runs the school site the way he always has, and waves off any new ideas as fancy notions nobody asked for. His car is spotless and his shoes are polished, and visitors will be shown what he has bought before they leave. He is loyal to the few people he trusts and keeps a long memory for anyone who has crossed him. He will argue until someone gives in, and he has no interest in paintings or views.",
   "speaking_style": "Slow and measured, in plain short sentences with no slang. He repeats a point rather than raising his voice, and when he is cornered he falls back on how things have always been done. Under his breath he hums three bars of a hymn.",
+  "mannerisms": [
+    "makes up backstories out loud for strangers passing by",
+    "pretends to be outraged over trivial matters"
+  ],
   "interests": [
     "boiler servicing",
     "Sunday dinner",

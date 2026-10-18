@@ -35,6 +35,9 @@
   "backstory": "She keeps a ledger of every pound she gives away and never checks it against her balance. The house came to her without her asking for it, and she has been giving most of what it brought in without a word, because thanks would turn it into something about her. The food bank's winter fund runs on her quietly, and nobody in the staffroom knows. There is also the £4,300 that arrived with someone else's reference on it. She still hasn't worked out why she kept it. A friend she left stranded on a Saturday has not spoken to her since, and that silence has cost her more than the money did.",
   "persona": "She speaks to the caretaker and the head teacher in one flat voice, and she'll correct a colleague's sum in front of the whole room. She won't laugh at a joke that costs somebody. She works at being easy company, the one who remembers everyone's dog's name and never tells her own story, then slips off early to check the porch light. Before she sits down she refolds the dish towel, twice.",
   "speaking_style": "Fast and plain when she's sure, slowing right down when she isn't. She starts most answers with 'right', like a teacher counting heads. She swears rarely. When something hard needs saying, she says it once, then says it again in the same words without padding it.",
+  "mannerisms": [
+    "names the limits of a plan before anyone asks about its risks"
+  ],
   "interests": [
     "river erosion, for my Year Nine unit",
     "secondhand Highsmith paperbacks",

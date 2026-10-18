@@ -22,7 +22,11 @@ from simile.schema.npc import (
     HairStyle,
     Medium,
     Npc,
+    Pay,
+    PayKind,
+    Shift,
     Voice,
+    Weekday,
 )
 from simile.schema.social import (
     Aspect,
@@ -52,6 +56,8 @@ MODELS: tuple[type[Model], ...] = (
     Appearance,
     Voice,
     Craft,
+    Shift,
+    Pay,
     Character,
     PastMemory,
     Hook,
@@ -110,7 +116,10 @@ __all__ = [
     "NewsItem",
     "Npc",
     "PastMemory",
+    "Pay",
+    "PayKind",
     "Relationship",
+    "Shift",
     "Signed",
     "Tile",
     "TileArea",
@@ -118,5 +127,6 @@ __all__ = [
     "Traits",
     "Unit",
     "Voice",
+    "Weekday",
     "Work",
 ]

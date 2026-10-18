@@ -30,6 +30,7 @@ export type Brief = {
   backstory?: string;
   persona?: string;
   speaking_style?: string;
+  mannerisms?: string[];
   interests?: string[];
   past?: Character['past'];
   hooks?: Character['hooks'];

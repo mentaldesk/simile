@@ -1,3 +1,20 @@
+# Running it
+
+You need [uv](https://docs.astral.sh/uv/), [Node](https://nodejs.org) 22.12 or later, make, and
+[Claude Code](https://claude.com/claude-code) installed and logged in. The NPCs think through that
+login, so there's no API key.
+
+```bash
+./run.sh
+```
+
+It installs what the village needs, starts it and opens the title menu at http://localhost:5173
+(http://localhost:5173/?play goes straight into the village). Ctrl-C stops it.
+
+On a Mac with Apple Silicon the NPCs speak out loud. The first voiced run downloads the voice model,
+about 3 GB, and the model needs about 3 GB of memory. `SIMILE_VOICE=0 ./run.sh` turns voices off,
+and everywhere else the village runs with speech bubbles only.
+
 # Concept
 
 Simile is a simulation that takes the form of an isometric video game set in a small village: pixel art characters walking through pre-rendered 3D scenery. 

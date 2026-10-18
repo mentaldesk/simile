@@ -300,6 +300,23 @@ def test_each_side_has_their_works_with_the_artist_marked() -> None:
     assert cast(Request((Message("user", prompt),), "", "haiku")) == ("Kofi", "Henrietta", 5)
 
 
+def test_each_side_lists_their_own_mannerisms_as_verbal_habits() -> None:
+    habits = ["answers a question with another question", "teases the people they like most"]
+    kofi = Character(KOFI.model_copy(update={"mannerisms": habits}), meet(KOFI, "henrietta"))
+    henrietta = Character(HENRIETTA.model_copy(update={"mannerisms": []}), meet(HENRIETTA, "kofi"))
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
+
+    _, kofis, henriettas, _ = prompt.split("\n\n## ")
+    assert (
+        f"How Kofi speaks: {KOFI.speaking_style}\n"
+        f"Kofi's verbal habits: {habits[0]}; {habits[1]}. "
+        "Use these now and then, not in every line."
+    ) in kofis
+    assert f"How Henrietta speaks: {HENRIETTA.speaking_style}\n\n" in henriettas
+    assert "verbal habits" not in henriettas
+
+
 def test_the_system_prompt_sets_the_rules_and_the_format() -> None:
     system = script_system(ConversationConfig(max_words=30))
 
@@ -309,6 +326,7 @@ def test_the_system_prompt_sets_the_rules_and_the_format() -> None:
     assert "rather than expert advice" in system
     assert "not a consultation" in system
     assert "they let it go" in system
+    assert "pet words, phrases and verbal habits now and then, not in every line" in system
     assert "Mara: Morning! Lovely out, isn't it? [values: connection]" in system
     assert "peace of mind" in system
     assert "at most 30 words" in system

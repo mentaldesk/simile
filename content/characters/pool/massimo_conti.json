@@ -38,6 +38,9 @@
   "backstory": "Every chair he sits in gets checked for a straight back first, because his spine has been going for years and he'd sooner be taken for vain than seen wincing. He grew up at a crowded table in a lower-middle-class house, where his father ran a supermarket and his mother kept a school office running. He came over after a break-up with one bag and a plan to be useful before anyone could ask what he was for. Being useful is how he buys a place: the treatment couch, the rota, the cheap round at the bar, the lift to the hospital. He has never tested whether people would stay if he stopped paying. Under the jokes and the notebook of other people's sentences he is still waiting, without admitting it, for someone to be glad he's in the room with no reason attached. The money is the part nobody sees. Rent is behind, the car is on finance he can't clear, and every round he buys goes on a card with nothing left on it.",
   "persona": "He is already moving when the room wakes, with a new idea for the rota and a verdict on someone's posture before the kettle has boiled. He waves away talk of fairness and old loyalties as sentiment, and at a goodbye he shakes hands, cracks a joke and is gone before the sad bit. He volunteers for anything with a title on it and turns down help that would leave him owing someone.",
   "speaking_style": "Clipped and bright. Short bursts, the verdict first and the reasons after, if at all. Flatly blunt about what he thinks is wrong, and when he's excited a 'dai' or a 'madonna' slips out. He reads overheard lines from his notebook back word for word, deadpan, so the other person has to hear how they sound.",
+  "mannerisms": [
+    "thanks people for raising things that bothered them"
+  ],
   "interests": [
     "Vespa engines, never finished",
     "Caravaggio's shadows, up close",

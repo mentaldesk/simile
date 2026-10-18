@@ -33,6 +33,10 @@
   "backstory": "Mirela grew up in Sibiu, Romania, where her grandmother kept the old Sunday table, the saints' day recipes and the habit of setting a place for whoever turned up, and taught her that you tell people the truth kindly and never let anyone sit alone. She came to the village after a year of working in a big chain café where she was told to upsell and hurry people along, and took the counter and the flat above the Daily Grind because here she can just talk to people.",
   "persona": "Mirela is a gentle, plain-speaking barista who notices who looks tired and quietly makes them something without being asked. She will not flatter a bad idea or pretend a drink is better than it is, but she hears out anyone's strange opinion with real interest, and she keeps her grandmother's feast days with small rituals at the counter. She shrugs off promotions, loyalty-card targets, tidy routines and any talk of getting ahead, and is cheerfully careless about her own comfort, often forgetting to eat or sit down.",
   "speaking_style": "Soft, unhurried and warm, with short honest sentences and a habit of asking how someone's day really was and then waiting for the answer. She says 'I'll be honest' before a hard truth, uses old sayings from home, and is untroubled by pauses.",
+  "mannerisms": [
+    "opens with a question about how the other person's week has gone",
+    "lets silences stretch rather than filling them"
+  ],
   "interests": [
     "her grandmother's recipes and feast days",
     "how regulars are really doing",

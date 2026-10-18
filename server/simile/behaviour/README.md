@@ -31,6 +31,12 @@ sets F3's snapshot to the NPCs' real positions.
   the player meets `player_relief` (0.5) of that, and seeking them out promises only as much, so a
   chatty player doesn't become the village's social life. `curiosity` and `rest` still enter
   linearly through `need_weights`; the needs in #74 can move to the same curve.
+- **Sociability.** A resident's P1 `sociability` trait, from the world's cast, multiplies how fast
+  `social` rises and divides how fast talking meets it, by up to `sociability_spread` (2) at 1, and
+  the other way round at 0. So a sociable resident gets lonely sooner and takes longer to have had
+  enough: they look for company more often, and come to a conversation lonelier, which the
+  conversation engine reads as keener to talk. Neutral (0.5), as for everyone in today's village,
+  changes nothing.
 - **The news.** `news`, wanting to catch up, is on the same kind of curve (`need ** 2`), and only a
   terminal meets it. It rises with Knowledge and Open Mindedness and falls for NPCs low in both,
   so some read every couple of hours and some never do. The `news_interest` hook says how
@@ -122,6 +128,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |
+| `traits_of(npc)` | Their `Traits` from the cast, or neutral ones. |
 | `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft), last decision's scores, bedtime. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
@@ -139,5 +146,9 @@ about 15 s) and prints where everyone spent their time: minutes near others by C
 by hour, who was out at night, and what each resident with a craft made per sim-day. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
 interest unread, and reading it does nothing. Muralists paint M7's walls in turn, moving on to
-the next after each mural, and making something does nothing. `simulate(..., npcs=...)` runs
-another cast.
+the next after each mural, and making something does nothing. `simulate(..., npcs=..., traits=...)`
+runs another cast.
+
+Every request to talk is declined unless you pass `--talk MINUTES`: then each is accepted, the
+conversation lasts that long, and the summary adds how many conversations each resident started,
+by sociability.

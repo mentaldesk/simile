@@ -26,7 +26,7 @@ export type SpeakingStyle = string;
  *
  * @maxItems 3
  */
-export type Mannerisms = [] | [string] | [string, string] | [string, string, string];
+export type Mannerisms = string[];
 export type Interests = string[];
 /**
  * How old they were when it happened.

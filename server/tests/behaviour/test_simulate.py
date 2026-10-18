@@ -55,6 +55,21 @@ def test_cli_prints_the_summary() -> None:
     assert "Out of home at 03:00: 0." in result.output
 
 
+def test_cli_with_talk_accepts_requests_and_reports_conversations() -> None:
+    declined = runner.invoke(
+        create_cli(), ["behaviour", "simulate", "--hours", "1", "--start", "11"]
+    )
+    accepted = runner.invoke(
+        create_cli(), ["behaviour", "simulate", "--hours", "1", "--start", "11", "--talk", "3"]
+    )
+
+    assert accepted.exit_code == 0, accepted.output
+    assert "**Conversations.**" not in declined.output
+    conversations = accepted.output.split("**Conversations.**")[1]
+    assert "lasted 3 minutes" in conversations
+    assert "| desmond | 0.50 |" in conversations
+
+
 def test_spearman_ranks_ties_together() -> None:
     assert ranks([3.0, 1.0, 3.0, 2.0]) == [2.5, 0, 2.5, 1]
     assert spearman([1, 2, 3], [10, 20, 30]) == pytest.approx(1)

@@ -33,6 +33,10 @@
   "backstory": "Priya grew up in Mumbai, with long summers in Antwerp, the daughter of a diamond dealer who treated every good deal as a reason to celebrate with the best bottle in the house. She learned that life rewards people who say yes, stay cheerful and chase the next thrilling thing, and she came to the village because its drone-lit evenings suit a bar that opens wherever the crowd is.",
   "persona": "Priya is a glossy, sunny hustler who turns every evening into an occasion and every setback into a story for later. She works hard at being successful and bold, and plans her next venture before the last one has paid off. She skips rules and routines, brushes off other people's causes and complaints, and tells a flattering version of the truth if it keeps the mood up.",
   "speaking_style": "Quick, bright and breezy, with a salesperson's patter, Bombay slang like 'yaar' and lots of 'darling', 'gorgeous' and 'trust me'. She talks over objections with a laugh, rarely explains herself and drifts off topic whenever something more fun turns up.",
+  "mannerisms": [
+    "praises the listener's taste before getting to the point",
+    "blows a minor incident up into a comic tale"
+  ],
   "interests": [
     "cocktail recipes",
     "night markets",

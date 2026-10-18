@@ -1,0 +1,41 @@
+{
+  "$defs": {
+    "PayKind": {
+      "description": "`wage`: `amount` per hour worked, for work done for people outside the village. `takings`:\nwhat their shop takes minus its supplies, so no `amount`. `pension`: `amount` per week.",
+      "enum": [
+        "wage",
+        "takings",
+        "pension"
+      ],
+      "title": "PayKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "How a resident is paid, in the same units as their `money`.",
+  "properties": {
+    "kind": {
+      "$ref": "#/$defs/PayKind"
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Per hour worked for a `wage`, per week for a `pension`, null for `takings`.",
+      "title": "Amount"
+    }
+  },
+  "required": [
+    "kind",
+    "amount"
+  ],
+  "title": "Pay",
+  "type": "object"
+}
