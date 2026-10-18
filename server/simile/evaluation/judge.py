@@ -12,8 +12,8 @@ PURPOSE = "evaluation-stance"
 SYSTEM = (
     "You label replies from a life simulation. In each situation someone says one line to a "
     "character, and the character replies. For each reply, choose the one label that best fits "
-    "what the reply does. Judge the words alone, and pick the label for its main move when it "
-    "does more than one thing."
+    "what the reply does, going by the label's meaning rather than its name. Judge the words "
+    "alone, and pick the label for its main move when it does more than one thing."
 )
 
 

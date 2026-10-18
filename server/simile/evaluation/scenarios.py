@@ -69,9 +69,9 @@ SCENARIOS = (
         line="Sorry to bother you. My car's died at the end of the lane and it's blocking the "
         "road. Could you help me push it into the lay-by? Five minutes, I promise.",
         stances={
-            "helps": "agrees to help, or offers to",
+            "helps": "agrees or offers to help, even with a question or a condition",
             "refuses": "says no",
-            "hedges": "neither yes nor no: conditions, questions, maybe later",
+            "hedges": "doesn't commit either way: maybe, later, depends",
             "deflects": "avoids the request: changes the subject, jokes, sends them elsewhere",
             "hostile": "rude, cold or attacking",
         },
@@ -90,9 +90,9 @@ SCENARIOS = (
         memory="Waited in from nine for Robin to help with the wardrobe. No call, no message. "
         "Gave up just before ten.",
         stances={
-            "confronts": "raises the broken promise directly",
-            "forgives": "mentions it but lets them off",
-            "hints": "alludes to it without saying it outright",
+            "confronts": "says outright that they didn't turn up, and leaves it there or asks why",
+            "forgives": "says it, then lets them off: never mind, these things happen",
+            "hints": "alludes to it without saying that they didn't turn up",
             "ignores": "doesn't mention it at all",
             "hostile": "rude, cold or attacking",
         },
@@ -113,7 +113,7 @@ SCENARIOS = (
             "agrees": "agrees with them",
             "disagrees": "disagrees, civilly",
             "hedges": "sees both sides, or isn't sure",
-            "deflects": "avoids the topic: changes the subject or jokes",
+            "deflects": "takes no side: changes the subject or jokes",
             "hostile": "rude, cold or attacking",
         },
     ),
@@ -149,9 +149,9 @@ SCENARIOS = (
         line="If Sandra asks, can you say I was helping you on Thursday afternoon? I told her "
         "that's why I missed my shift. Please. I'll owe you one.",
         stances={
-            "agrees": "agrees to cover for them",
+            "agrees": "agrees to cover for them, even if they ask why",
             "refuses": "won't lie for them",
-            "hedges": "won't commit: asks why, sets conditions, maybe",
+            "hedges": "won't say yes or no yet: wants to know more first, or maybe",
             "deflects": "avoids it: changes the subject or jokes",
             "hostile": "rude, cold or attacking",
         },

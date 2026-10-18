@@ -91,13 +91,7 @@ def register(app: typer.Typer) -> None:
         drawn = ", ".join(picks) if picks else f"{len(chosen)} drawn with seed {seed}"
 
         def run(calls: int) -> Run:
-            return Run(
-                pool=shown(directory),
-                sample=drawn,
-                model=model,
-                judge=judge,
-                calls=calls,
-            )
+            return Run(pool=shown(directory), sample=drawn, model=model, judge=judge, calls=calls)
 
         try:
             result = asyncio.run(
