@@ -1,0 +1,129 @@
+{
+  "id": "massimo_conti",
+  "name": "Massimo Conti",
+  "birth_year": 1979,
+  "gender": "man",
+  "origin": "Italy",
+  "arrival": {
+    "age": 38,
+    "reason": "for a fresh start after a break-up"
+  },
+  "occupation": "Sports massage therapist",
+  "values": {
+    "freedom": 0.47,
+    "independence": 0.85,
+    "self_respect": 0.87,
+    "self_actualization": 0.88,
+    "creativity": 0.81,
+    "honesty": 0.42,
+    "compassion": 0.43,
+    "loyalty": 0.16,
+    "justice": 0.17,
+    "responsibility": 0.66,
+    "security": 0.47,
+    "equality": 0.14,
+    "tradition": 0.34,
+    "obedience": 0.47,
+    "success": 0.9,
+    "ambition": 0.87,
+    "discipline": 0.51,
+    "knowledge": 0.47,
+    "open_mindedness": 0.49,
+    "peace_of_mind": 0.22,
+    "pleasure": 0.52,
+    "connection": 0.21,
+    "adventure": 0.83,
+    "optimism": 0.36
+  },
+  "backstory": "Every chair he sits in gets checked for a straight back first, because his spine has been going for years and he'd sooner be taken for vain than seen wincing. He grew up at a crowded table in a lower-middle-class house, where his father ran a supermarket and his mother kept a school office running. He came over after a break-up with one bag and a plan to be useful before anyone could ask what he was for. Being useful is how he buys a place: the treatment couch, the rota, the cheap round at the bar, the lift to the hospital. He has never tested whether people would stay if he stopped paying. Under the jokes and the notebook of other people's sentences he is still waiting, without admitting it, for someone to be glad he's in the room with no reason attached. The money is the part nobody sees. Rent is behind, the car is on finance he can't clear, and every round he buys goes on a card with nothing left on it.",
+  "persona": "He is already moving when the room wakes, with a new idea for the rota and a verdict on someone's posture before the kettle has boiled. He waves away talk of fairness and old loyalties as sentiment, and at a goodbye he shakes hands, cracks a joke and is gone before the sad bit. He volunteers for anything with a title on it and turns down help that would leave him owing someone.",
+  "speaking_style": "Clipped and bright. Short bursts, the verdict first and the reasons after, if at all. Flatly blunt about what he thinks is wrong, and when he's excited a 'dai' or a 'madonna' slips out. He reads overheard lines from his notebook back word for word, deadpan, so the other person has to hear how they sound.",
+  "interests": [
+    "Vespa engines, never finished",
+    "Caravaggio's shadows, up close",
+    "herons at first light",
+    "back gadgets, the more absurd the better",
+    "touchline tactics"
+  ],
+  "past": [
+    {
+      "age": 35,
+      "content": "They gave me the keys to the whole treatment wing and a desk with a decent chair. Inside a month the rota was redrawn and every shift had my name on it somewhere.",
+      "salience": 0.29,
+      "valence": 0.6
+    },
+    {
+      "age": 36,
+      "content": "At my mother's table, over pasta, my brother said something about the money I'd sent home. I got up before the plates were cleared and haven't answered his calls since.",
+      "salience": 0.35,
+      "valence": -0.6
+    },
+    {
+      "age": 38,
+      "content": "A two-line letter said the contract wouldn't be renewed. I stood in the car park holding it while the younger lads I'd trained carried their bags out to the van.",
+      "salience": 0.45,
+      "valence": -0.6
+    },
+    {
+      "age": 43,
+      "content": "I stayed with my partner much longer than I should have. Going back to a flat with nothing in it but my own breathing frightened me more than being unhappy did.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 45,
+      "content": "The narrowboat was a joke to everyone back home. I cooked on a two-ring stove and woke to herons on the water for years, and told the family on every call that I was doing fine.",
+      "salience": 0.2,
+      "valence": 0.4
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "He once repeated a private worry someone had confided on the treatment couch, so he'd look like the more trustworthy one in a meeting, then let them carry the blame when it came out."
+    },
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "He dragged someone out of the canal in a flood and held their head clear of the towpath water until the ambulance came. He has never told anyone what he did."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "Someone saw him at the till of a discount shop, two pounds short, putting back the wine he always claims he bought. He has dreaded hearing about it from them ever since."
+    }
+  ],
+  "traits": {
+    "sociability": 0.52,
+    "negativity_bias": 0.52,
+    "forgiveness": 0.33,
+    "first_impressions": 0.49
+  },
+  "appearance": {
+    "skin": "#e4a672",
+    "hair_style": "buzz",
+    "hair_colour": "#3e2731",
+    "top_colour": "#5a6988",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#b86f50",
+    "build": "slim",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "An Italian accent. A man in his late forties. Mid-range baritone, warm but dry, delivered at a brisk, clipped pace with a blunt, matter-of-fact manner.",
+    "reference_line": "Good massage is mostly patience and pressure, applied slowly to the parts of a body that have stopped listening.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "overheard lines pinned on the board"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:22:27.358041Z",
+  "updated": "2026-10-17T23:53:31.102246Z",
+  "version": 2
+}

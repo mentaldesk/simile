@@ -1,4 +1,5 @@
 import { server, type Position, type Wall } from '../../net';
+import { mapOf, VILLAGE } from '../map';
 import type { Point } from '../view';
 import { PAIR_DEPTH } from './crossfade';
 import { imageOrigin } from './depth';
@@ -153,7 +154,7 @@ function distanceInFront(wall: Wall, feet: Point): number | undefined {
 
 /** The painted wall nearest the player, if they stand in front of it within reach. */
 export function wallNear(walls: readonly Wall[], position: Position | undefined): Wall | undefined {
-  if (!position) return undefined;
+  if (!position || mapOf(position) !== VILLAGE) return undefined;
   const feet = feetOf(position);
   let nearest: { wall: Wall; distance: number } | undefined;
   for (const wall of walls) {

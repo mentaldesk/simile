@@ -1,16 +1,17 @@
 # Iso world
 
-The village drawn isometric from A2a's pre-rendered scenery (#116): `BootScene` starts `IsoScene`
-(`scenes/iso-scene.ts`). The map, collisions, the server and `player_move` are in tiles; only the
-drawing is isometric. Everything in this folder is Phaser-free and tested under vitest.
+The village and its interiors drawn isometric from the pre-rendered scenery (#116, #170):
+`BootScene` starts `IsoScene` (`scenes/iso-scene.ts`), which draws the map the player is on. The
+maps, collisions, the server and `player_move` are in tiles; only the drawing is isometric.
+Everything in this folder is Phaser-free and tested under vitest.
 
 [`server/simile/art/iso/README.md`](../../../../server/simile/art/iso/README.md) is the contract for
 the manifests, the projection, the depth slices and the ground heights.
 
 ## Assets
 
-`assets.ts` globs `content/art/iso/scenery/` and the characters' light constants,
-`content/art/iso/characters/lights.json`. Manifests are imported `?url`, images `?no-inline` and
+`assets.ts` globs `content/art/iso/scenery/`, `content/art/iso/interiors/` and the characters'
+light constants, `content/art/iso/characters/lights.json`. Manifests are imported `?url`, images `?no-inline` and
 `lights.json` as data, so the build emits each image under `dist/assets/` with a hash and inlines
 none of them. The scene imports `assets.ts` itself, once it starts, so the map of their URLs is a
 lazy chunk that the dev harnesses never load. In dev, Vite serves them straight from `content/`. The
@@ -42,6 +43,27 @@ draws `DEFAULT_HOUR`, the afternoon.
   down to keep its hue, then blended by weight. Each set has its own drop shadow (`shadow.ts`), away
   from its sun at its strength times the light map's sun at the feet times its weight, so both show
   mid-fade, each pointing its own way. The contact shadow under the feet doesn't change.
+
+## Interiors
+
+Each interior has one manifest, `interiors/<id>.json`, drawn like a set's but with nothing to
+crossfade: its one set is `inside`. The scene loads an interior's manifest, images and map the first
+time it needs them, and keeps them: when the player goes through a door, and in the background for
+every interior a door on the drawn map leads to, once that map is up. The village's sets stay loaded
+and follow the clock while the player is inside, so coming out is instant.
+
+- **Only the player's map is drawn.** The other maps' images are hidden, and the murals with them.
+  The camera clears to near-black around an interior, whose ground is transparent outside its walls.
+- **Residents' light inside** (`inside.ts`): `lights.json` has no `inside` set, so the client makes
+  one. Its drop shadow is worked out from the interiors' key light (`INSIDE_SUN`, `INSIDE` in
+  `lighting.py`) as `lights.json`'s are from theirs, which a test checks against every set: short
+  and to the north. Its strength, `INSIDE_SHADOW_STRENGTH` (0.45), is softer than any outside, for
+  a broad, high light. Its tint, `INSIDE_TINT`, is a neutral 0.6: the room's light map, 1.3 to 1.8
+  across most floors, gives residents its colour and about the afternoon's brightness, a little more
+  under a ceiling light.
+- **Cutaway**: the gallery's free-standing walls (`partition-*`) fade like buildings when they hide
+  the player, and the frames on them with them (`framesOn`). The walls around a room don't: the tall ones are behind everyone, and the low ones
+  would cut away for a few pixels of feet.
 
 ## Drawing
 

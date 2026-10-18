@@ -14,3 +14,6 @@ export const MAX_FRAME_SECONDS = 0.1;
 
 /** How far from a terminal's area the player can still use it. */
 export const TERMINAL_REACH_TILES = 1;
+
+export const DOOR_FADE_OUT_SECONDS = 0.2;
+export const DOOR_FADE_IN_SECONDS = 0.3;

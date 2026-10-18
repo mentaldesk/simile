@@ -55,7 +55,7 @@ describe('the player under iso controls', () => {
   };
 
   it('walks screen-up to the north-west corner, colliding in tiles', () => {
-    const corner = { x: 1 - FOOTPRINT.left, y: 1 - FOOTPRINT.top };
+    const corner = { x: 1 - FOOTPRINT.left, y: 1 - FOOTPRINT.top, map: 'village' };
     expect(walk({ x: 3, y: 3 }, { x: 0, y: -1 })).toEqual(corner);
   });
 
@@ -66,7 +66,7 @@ describe('the player under iso controls', () => {
   });
 
   it('walks screen-right to the north-east corner, then stays put', () => {
-    const corner = { x: 6 - FOOTPRINT.right, y: 1 - FOOTPRINT.top };
+    const corner = { x: 6 - FOOTPRINT.right, y: 1 - FOOTPRINT.top, map: 'village' };
     expect(walk({ x: 3, y: 3 }, { x: 1, y: 0 })).toEqual(corner);
   });
 

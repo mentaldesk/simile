@@ -1,0 +1,128 @@
+{
+  "id": "grzegorz_wozniak",
+  "name": "Grzegorz Woźniak",
+  "birth_year": 1989,
+  "gender": "man",
+  "origin": "Poland",
+  "arrival": {
+    "age": 25,
+    "reason": "because the rent was cheap"
+  },
+  "occupation": "Payroll officer",
+  "values": {
+    "freedom": 0.48,
+    "independence": 0.73,
+    "self_respect": 0.77,
+    "self_actualization": 0.68,
+    "creativity": 0.47,
+    "honesty": 0.64,
+    "compassion": 0.43,
+    "loyalty": 0.52,
+    "justice": 0.21,
+    "responsibility": 0.67,
+    "security": 0.59,
+    "equality": 0.3,
+    "tradition": 0.62,
+    "obedience": 0.89,
+    "success": 0.96,
+    "ambition": 0.83,
+    "discipline": 0.89,
+    "knowledge": 0.44,
+    "open_mindedness": 0.35,
+    "peace_of_mind": 0.75,
+    "pleasure": 0.71,
+    "connection": 0.89,
+    "adventure": 0.7,
+    "optimism": 0.97
+  },
+  "backstory": "He wipes the counter again once the kettle has boiled, because the room needs one more pass before anyone sits down. Colleagues call it fussiness, and it is, but it goes back to a morning he was corrected in front of the whole floor over a figure that turned out to be right. He has checked every sum twice since. He came over for cheap rent and kept the job because it asks for the one thing he is good at: being trusted with other people's wages. He wants to be known for something that is his alone, and he suspects the people he most wants to matter to, his partner and their child, are the ones who would pay for it. The secret is that a firm has offered him work far away, and he has told no one, not his partner, not his friends, not the family back home. He has not decided.",
+  "persona": "He learns the names of new starters before lunch and will chat to anyone at the bus stop as if they were already a friend. He runs payroll with a precision that makes colleagues uneasy, and he quietly redoes other people's work when he thinks no one is looking. Ask him about his own plans and he turns the talk back to whoever is in front of him, and he is very good at it.",
+  "speaking_style": "Quick and warm, he talks in full sentences and speeds up when he is taking charge, dropping in 'right then' and 'let's get it sorted'. He keeps to plain office words and rarely swears. He says 'to be honest' before a point he has already checked twice, and he repeats himself when he feels doubted.",
+  "interests": [
+    "pierogi",
+    "five-a-side",
+    "swimming lessons",
+    "towpath litter",
+    "glovebox"
+  ],
+  "past": [
+    {
+      "age": 22,
+      "content": "Every other Friday for three years I took the night coach to see them, and I still know which seat wobbled.",
+      "salience": 0.25,
+      "valence": 0.1
+    },
+    {
+      "age": 29,
+      "content": "There was a biscuit tin on the top shelf where I kept every bill I had paid, because I wanted proof I had managed.",
+      "salience": 0.25,
+      "valence": -0.3
+    },
+    {
+      "age": 33,
+      "content": "The ring stayed in my coat pocket for a year, because I could not bring myself to tell my parents.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 37,
+      "content": "I sent the transfer on a Thursday, four thousand pounds, and the message I wrote with it still sits unanswered in my sent folder.",
+      "salience": 0.3,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "Someone caught me in the car park at two in the morning doing something I would be humiliated to explain, and I have spent months hoping they forget it."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "Somebody at work has been quietly going after the payroll lead role I was promised, and I have started checking their figures for mistakes."
+    },
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "The money I lent for a fresh start has never come back, and every time I see that sum in my budget app I feel the same flush of anger."
+    },
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I pulled them out of cold water at the canal lock years ago, and they have never once mentioned it since, and I keep waiting for them to, which I would almost prefer to being thanked."
+    }
+  ],
+  "traits": {
+    "sociability": 1.0,
+    "negativity_bias": 0.39,
+    "forgiveness": 0.4,
+    "first_impressions": 0.45
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#3e2731",
+    "top_colour": "#68386c",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Polish accent. A man in his late thirties. Medium-low pitch, warm and clear timbre, a measured, even pace, and a confident manner that stays steady when he is teased.",
+    "reference_line": "Every payroll run I sign off has been checked twice, because one wrong figure can unsettle a family's whole month.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "monthly bulletin of local finds"
+  },
+  "source": "premade",
+  "created": "2026-10-17T23:07:05.419832Z",
+  "updated": "2026-10-17T23:07:05.419832Z",
+  "version": 1
+}
