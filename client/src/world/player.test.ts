@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { village } from './assets';
+import { doorsOf } from './doors';
 import { CollisionMap, entryOf } from './map';
 import { FOOTPRINT, Player, walk } from './player';
 import { PLAYER_SPEED } from './tuning';
@@ -73,17 +74,16 @@ describe('walk', () => {
 
 describe('the village', () => {
   const map = CollisionMap.of(village);
+  const cafe = doorsOf('village', village).find((door) => door.id === 'coffee_shop')!;
 
-  it('has the square entry walkable and the coffee shop door blocked', () => {
+  it('has the square entry and the coffee shop doorstep walkable and its door blocked', () => {
     const square = entryOf(village, 'square')!;
-    const cafe = entryOf(village, 'coffee_shop')!;
     expect(map.blocks(square.x, square.y)).toBe(false);
     expect(map.blocks(cafe.x, cafe.y)).toBe(false);
     expect(map.blocks(cafe.x, cafe.y - 1)).toBe(true);
   });
 
-  it('stops the player at the coffee shop door, still on the tile in front of it', () => {
-    const cafe = entryOf(village, 'coffee_shop')!;
+  it('stops the player at the coffee shop door, still on its doorstep', () => {
     const stopped = push(map, cafe, 0, -0.2);
     expect(stopped.y).toBe(cafe.y - FOOTPRINT.top);
     expect([Math.floor(stopped.x + 0.5), Math.floor(stopped.y + 0.5)]).toEqual([cafe.x, cafe.y]);

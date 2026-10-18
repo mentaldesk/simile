@@ -22,7 +22,7 @@ from simile.llm import CallRecord, LLMClient, Request, Usage
 from simile.llm.fake import cast
 from simile.protocol import PlayerMoveMessage, PlayerSayMessage, Position
 from simile.reflection.extraction import SYSTEM as REFLECTING
-from simile.schema import PLAYER_ID, CoreValue, Id, Npc
+from simile.schema import PLAYER_ID, VILLAGE_MAP, CoreValue, Id, Npc
 from simile.sim import (
     Clock,
     ConversationEnded,
@@ -31,10 +31,11 @@ from simile.sim import (
     LineSpoken,
     World,
 )
-from simile.world.paths import Cell, find_path
+from simile.world.movement import Point, inside
+from simile.world.paths import DOOR, Spot, find_route
 
 START = datetime(2026, 10, 16, 9, 30, tzinfo=UTC)
-ROUTE = ("square", "coffee_shop", "maker_space", "park", "square", "noodle_bar")
+ROUTE = ("square", "coffee_shop", "maker_space", "park", "square", "noodle_bar", "gallery")
 PLAYER_SPEED = 2.6
 """Tiles per second, the client's `PLAYER_SPEED`."""
 SAY_RANGE = 3.0
@@ -43,6 +44,8 @@ LOOK = 12.0
 """How far the player looks for someone to walk up to."""
 AGAIN = timedelta(minutes=10)
 """How long before the player walks up to someone they've talked to again."""
+FOLLOW = 3
+"""How many times the player follows someone who walks off, through doors too, before giving up."""
 
 WORDS = 33
 """Words in a line from Claude, on average, in D2's soak."""
@@ -183,9 +186,10 @@ class Padded:
 
 
 class ScriptedPlayer:
-    """A connected client whose player walks `route` round and round, lingering at each stop.
-    Now and then they walk up to someone and chat, and they answer whoever greets them, a few
-    lines each, then say goodbye. Tick it on the sim loop."""
+    """A connected client whose player walks `route` round and round, going indoors through the
+    doors, and lingering at each stop. Now and then they walk up to someone and chat, following
+    them if they walk off, and they answer whoever greets them, a few lines each, then say
+    goodbye. Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -208,13 +212,15 @@ class ScriptedPlayer:
         self.behaviour, self.movement = behaviour_of(app), movement_of(app)
         self.clock, bus = world_of(app).clock, world_of(app).bus
         self.rng, self.chat, self.linger, self.turns, self.typing = rng, chat, linger, turns, typing
-        self.stops = itertools.cycle([*route[1:], route[0]])
-        entry = self.movement.town.location(route[0]).entry
-        self.position: tuple[float, float] = (entry.x, entry.y)
-        self.path: deque[Cell] = deque()
+        self.route, self.current = route, 0
+        start = self.movement.town.location(route[0])
+        self.position = Point(start.entry.x, start.entry.y, start.map)
+        self.path: deque[Spot] = deque()
+        self.through = 0.0
         self.lingering: datetime | None = None
         self.chat_at: datetime | None = None
         self.going_to: Id | None = None
+        self.follows = 0
         self.talk: str | None = None
         self.partner: Id | None = None
         self.lines: deque[str] = deque()
@@ -254,7 +260,7 @@ class ScriptedPlayer:
             self.chat_at = None
             self._approach()
         elif self.lingering is None or now >= self.lingering:
-            self._head_for(next(self.stops))
+            self._head_for(self._next_stop())
 
     def _converse(self, now: datetime) -> None:
         if self.bye_at is not None and now >= self.bye_at + timedelta(seconds=30):
@@ -281,7 +287,7 @@ class ScriptedPlayer:
         if distance <= SAY_RANGE:
             self._greet(npc)
         else:
-            self.going_to = npc
+            self.going_to, self.follows = npc, 0
             self._set_path(self._beside(npc))
 
     def _greet(self, npc: Id) -> None:
@@ -293,11 +299,15 @@ class ScriptedPlayer:
 
     def _arrive(self) -> None:
         npc, self.going_to = self.going_to, None
-        if npc is not None:
-            if self._distance(npc) <= SAY_RANGE + 1 and not self.engine.talking(npc):
-                self._greet(npc)
+        if npc is None:
+            self._linger()
+        elif self.engine.talking(npc):
             return
-        self._linger()
+        elif self._distance(npc) <= SAY_RANGE + 1:
+            self._greet(npc)
+        elif self.follows < FOLLOW:
+            self.going_to, self.follows = npc, self.follows + 1
+            self._set_path(self._beside(npc))
 
     def _linger(self) -> None:
         now = self.clock.now
@@ -305,43 +315,70 @@ class ScriptedPlayer:
         wants = self.rng.random() < self.chat
         self.chat_at = now + timedelta(seconds=self.rng.uniform(3, 15)) if wants else None
 
+    def _next_stop(self) -> str:
+        """The next stop on the route with someone there, or the next if nobody is out."""
+        ahead = [(self.current + step) % len(self.route) for step in range(1, len(self.route) + 1)]
+        self.current = next((stop for stop in ahead if self._at(self.route[stop])), ahead[0])
+        return self.route[self.current]
+
+    def _at(self, location: str) -> list[Id]:
+        place = self.movement.town.location(location)
+        return [
+            npc
+            for npc in self.behaviour.npcs
+            if inside(place, self.movement.position(npc))
+            and self.behaviour.goal(npc).activity is not Activity.SLEEP
+        ]
+
     def _head_for(self, location: str) -> None:
-        area = self.movement.town.location(location).area
+        place = self.movement.town.location(location)
+        if there := self._at(location):
+            self._set_path(self._beside(self.rng.choice(there)))
+            return
+        town, area = self.movement.maps[place.map], place.area
         cells = [
-            (x, y)
+            Spot(place.map, x, y)
             for x in range(area.x, area.x + area.width)
             for y in range(area.y, area.y + area.height)
-            if self.movement.town.walkable(x, y)
+            if town.walkable(x, y)
         ]
         self._set_path(self.rng.choice(cells))
 
-    def _beside(self, npc: Id) -> Cell:
+    def _beside(self, npc: Id) -> Spot:
         there = self.movement.position(npc)
+        town, x, y = self.movement.maps[there.map], round(there.x), round(there.y)
         cells = [
-            cell
+            Spot(there.map, x + dx, y + dy)
             for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1))
-            if self.movement.town.walkable(*(cell := (round(there.x) + dx, round(there.y) + dy)))
+            if town.walkable(x + dx, y + dy)
         ]
-        return cells[0] if cells else (round(there.x), round(there.y))
+        return cells[0] if cells else Spot(there.map, x, y)
 
-    def _set_path(self, goal: Cell) -> None:
-        here = (round(self.position[0]), round(self.position[1]))
-        self.path = deque((find_path(self.movement.town, here, goal) or [])[1:])
+    def _set_path(self, goal: Spot) -> None:
+        here = Spot(self.position.map, round(self.position.x), round(self.position.y))
+        route = find_route(self.movement.maps, here, goal, self.movement.doors)
+        self.path, self.through = deque((route or [])[1:]), 0.0
         if not self.path:
             self._arrive()
 
     def _walk(self, budget: float) -> None:
         moved = False
         while self.path and budget > 0:
-            gap = math.dist(self.position, self.path[0])
+            spot, here = self.path[0], self.position
+            door = spot.map != here.map
+            gap = DOOR - self.through if door else math.dist(here, (spot.x, spot.y))
             step = min(budget, gap)
             budget -= step
             moved = True
             if step == gap:
-                self.position = self.path.popleft()
+                self.position, self.through = Point(spot.x, spot.y, spot.map), 0.0
+                self.path.popleft()
+            elif door:
+                self.through += step
             else:
-                (x0, y0), (x1, y1) = self.position, self.path[0]
-                self.position = (x0 + (x1 - x0) * step / gap, y0 + (y1 - y0) * step / gap)
+                share = step / gap
+                x, y = here.x + (spot.x - here.x) * share, here.y + (spot.y - here.y) * share
+                self.position = Point(x, y, here.map)
         if moved:
             self._send_position()
 
@@ -350,15 +387,15 @@ class ScriptedPlayer:
         self.hub.receive(PlayerSayMessage(text=text, target=self.partner).model_dump_json())
 
     def _send_position(self) -> None:
-        x, y = self.position
-        self.hub.receive(PlayerMoveMessage(position=Position(x=x, y=y)).model_dump_json())
+        here = Position(x=self.position.x, y=self.position.y, map=self.position.map)
+        self.hub.receive(PlayerMoveMessage(position=here).model_dump_json())
 
     def _script(self) -> deque[str]:
         return deque([*self.rng.sample(SAY, k=self.rng.randint(*self.turns)), BYE])
 
     def _distance(self, npc: Id) -> float:
         there = self.movement.position(npc)
-        return math.dist(self.position, there)
+        return math.dist(self.position, there) if there.map == self.position.map else math.inf
 
     def _on_started(self, event: ConversationStarted) -> None:
         participants = event.conversation.participants
@@ -410,6 +447,10 @@ class Result:
     nudges: int = 0
     calls: Counter[str] = field(default_factory=Counter)
     """LLM calls by purpose."""
+    inside: int = 0
+    """Sim seconds the player spent inside a building."""
+    seen_inside: set[Id] = field(default_factory=set)
+    """Residents on the player's map while they were inside, so on their screen."""
 
 
 class Listener:
@@ -440,6 +481,7 @@ class Listener:
         if self._elapsed < 1 - 1e-9:
             return
         self._elapsed = 0.0
+        self._look_around()
         if self.earshot.update():
             self.result.heard += 1
             self.quiet = 0
@@ -458,6 +500,16 @@ class Listener:
             return self.movement.distance(npc, PLAYER_ID)
         except KeyError:
             return None
+
+    def _look_around(self) -> None:
+        spots = self.movement.entities()
+        here = spots.get(PLAYER_ID)
+        if here is None or here.map == VILLAGE_MAP:
+            return
+        self.result.inside += 1
+        self.result.seen_inside |= {
+            id for id, spot in spots.items() if id != PLAYER_ID and spot.map == here.map
+        }
 
     def _on_started(self, event: ConversationStarted) -> None:
         conversation = event.conversation
@@ -535,6 +587,8 @@ def report(results: Sequence[Result]) -> str:
         ),
         ("Player conversations", [len(r.player_conversations) for r in results], "{:.1f}"),
         ("Nudges", [r.nudges for r in results], "{:.1f}"),
+        ("Player inside a building, share of the time", [_inside(r) for r in results], "{:.0%}"),
+        ("Residents seen inside", [len(r.seen_inside) for r in results], "{:.1f}"),
     ]
     purposes = sorted({purpose for r in results for purpose in r.calls})
     for purpose in [*purposes, None]:
@@ -553,6 +607,10 @@ def report(results: Sequence[Result]) -> str:
 
 def _share(result: Result) -> float:
     return result.heard / (result.minutes * 60)
+
+
+def _inside(result: Result) -> float:
+    return result.inside / (result.minutes * 60)
 
 
 def _per(result: Result, minutes: float) -> float:

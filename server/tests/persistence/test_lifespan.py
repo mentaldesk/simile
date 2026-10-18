@@ -18,8 +18,17 @@ from simile.news import news_of
 from simile.persistence import SavedWorld, WorldStore, capture
 from simile.persistence.lifespan import FRESH_ENV
 from simile.reflection import SYSTEM, Deed, Extraction, Reflection
-from simile.schema import PLAYER_ID, Conversation, Line, Memory, NewsItem, Relationship
+from simile.schema import (
+    PLAYER_ID,
+    Conversation,
+    Line,
+    MapTile,
+    Memory,
+    NewsItem,
+    Relationship,
+)
 from simile.sim import Clock, ConversationEnded, FakeWallClock, World, world_of
+from simile.world import Point, movement_of
 
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
 
@@ -57,7 +66,7 @@ def saved(database: Path) -> SavedWorld:
 
 def whereabouts(world: SavedWorld) -> dict[str, tuple[object, ...]]:
     return {
-        npc: (state.position, state.activity, state.target, state.needs, state.since)
+        npc: (state.position, state.map, state.activity, state.target, state.needs, state.since)
         for npc, state in world.npcs.items()
     }
 
@@ -91,6 +100,20 @@ async def test_restarting_keeps_the_clock_positions_goals_relationships_and_memo
 
     await run_village(timedelta(minutes=30), before=resumed)
     assert saved(database).now == stopped.now + timedelta(minutes=30)
+
+
+@pytest.mark.anyio
+async def test_a_resident_inside_at_shutdown_is_inside_after_restarting(database: Path) -> None:
+    async def go_in(app: Starlette) -> None:
+        movement_of(app).place("kofi", MapTile(map="coffee_shop", x=12, y=9))
+
+    await run_village(timedelta(minutes=10), after=go_in)
+    assert saved(database).npcs["kofi"].map == "coffee_shop"
+
+    async def still_inside(app: Starlette) -> None:
+        assert movement_of(app).position("kofi") == Point(12, 9, "coffee_shop")
+
+    await run_village(timedelta(minutes=1), before=still_inside)
 
 
 def reflection() -> str:
