@@ -1,13 +1,13 @@
 # simile.works
 
 What the residents make from what's on their mind, in their `craft`: writing, which goes up on the
-news terminals, and murals, painted on M7's walls. Works are stored in the `works` table of the
-memory store's file, and a mural's picture beside it in `murals`.
+news terminals, murals, painted on M7's walls, and paintings for the gallery. Works are stored in the
+`works` table of the memory store's file, and a mural's picture beside it in `murals`.
 
 ## Making a work
 
-`Maker.make(npc, wall=None)` starts a resident writing, or painting a mural on `wall`, and returns
-at once, so a tick can call it. The task it returns stores the `Work`, gives the artist a `work`
+`Maker.make(npc, wall=None)` starts a resident writing, painting a mural on `wall`, or painting for
+the gallery, and returns at once, so a tick can call it. The task it returns stores the `Work`, gives the artist a `work`
 memory of making it (with `work_id`), and returns the work, or None if it failed. It does nothing
 for residents without a craft, muralists without a known wall, or anyone with a work already under
 way. `simile serve` and `simile headless` keep one on `app.state.maker`, and B1's `create` hook
@@ -59,6 +59,18 @@ tone and relatedness to every core value, scored as for news.
   look after `look_again` (a sim hour). An artist who finds their mural painted over is told so in
   the same call, and remembers it with a salience of at least 0.7. The player remembers seeing it,
   with no call.
+
+## Paintings
+
+A painter, or a muralist given anything but a wall, paints a canvas for the gallery, once the
+gallery has given the maker its `hang` (`gallery/README.md`). Without one, nobody does.
+
+- **Painting.** The prompt asks for something new in their craft, or for a muralist in its spirit
+  on canvas, as an SVG at the frame's opening: 1.34 × 0.84 m (`PAINTING_M`, from the iso frames),
+  960 × 602 px. It's checked as a mural's is, asked for once more if it won't do, and drawn in the
+  same child process under the same limits, onto a primed canvas with no weathering.
+- **Hanging.** The `Work` (`medium` painting, the artist's `form`, no `wall`) is stored, `hang` gets
+  it with its SVG and PNG, and the artist remembers painting it for the gallery.
 
 ## Reading at the terminals
 

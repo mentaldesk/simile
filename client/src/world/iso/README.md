@@ -127,6 +127,28 @@ Phaser-free.
 - **Picking**: the scene registers `setMuralView`, whose `wallAt(point)` is the wall whose quad is
   under a point on the canvas, for the mural panel (see `ui/README.md`).
 
+## Paintings
+
+`paintings.ts` hangs G2's `paintings` ([`docs/protocol.md`](../../../../docs/protocol.md#paintings))
+in the interiors' frames. `galleryFrames` keeps the latest message from startup, and the scene makes
+an `IsoPaintings` for each interior with frames once its scenery loads, handing it a stage to load,
+paint and place images.
+
+- **Opening** (`canvasQuad`): K6 gives each frame a `canvas`, its opening's corners in the frame's
+  image. The PNG is drawn onto that parallelogram (`skewed`), whatever its size.
+- **Depth** (`canvasSlices`): the painting is cropped where the frame's slices are, each crop
+  `UNDER_FRAME` below its slice, so the frame's moulding covers its edges and it sorts with the frame.
+- **Light and cutaway**: each painting is tinted as a resident standing half a tile in front of it
+  would be, and takes the alpha of the partition it hangs on, so it fades with the partition and its
+  frame. It's hidden off its own map.
+- **Changes**: a new painting fades in over the old one in `MURAL_FADE_SECONDS`, and a frame
+  emptied fades out. The paintings there when the interior loads appear at once.
+- **The panel** (`ui/gallery-panel.ts`, in an overlay of its own, `ui/gallery-scene.ts`): on a
+  frame's stand tile a hint says "Press E to look at “<title>” by <artist>", or that the frame is
+  empty, and E opens the painting large with its title, artist and statement. Esc or E closes it,
+  and so does stepping off the stand tile. It follows `paintings`, as the mural panel follows
+  `murals`, and sends nothing: the server notices the player at a painting itself.
+
 ## Resolution
 
 The renders are drawn at one art pixel per CSS pixel, so a bigger window shows more of the village.
