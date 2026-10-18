@@ -20,9 +20,9 @@ residents.
 
 Casting writes only `<data>/cast/`. It refuses:
 
-- the default data directory and anywhere in `content/`
-- a data directory with a saved village in any of its `*.db` files (a saved world, or anything R2
-  keeps; news alone doesn't count)
+- `server/data/` and anything in it, and anywhere in `content/`
+- a data directory with a saved village (a saved world, or anything R2 keeps; news alone doesn't
+  count) in `$SIMILE_DB` or in any SQLite file there, whatever its name
 - a `cast/` folder that isn't a cast
 
 A cast that never ran is replaced. To recast a world that did run, `simile reset` it first.
@@ -36,7 +36,7 @@ SIMILE_DB=/tmp/world/simile.db uv run simile headless --speed 10   # or make dev
 `--pick a,b,c` casts those characters, alone or with `--random N` to fill up to N.
 `--pin actor:kind:target` (repeatable) binds a bond between two characters and casts both.
 `--data` names the directory instead of `$SIMILE_DB`, `--seed` repeats a cast, and `--date` sets
-the day the village starts.
+the day the village starts, which has to fit every resident's age and past.
 
 ## Choosing
 

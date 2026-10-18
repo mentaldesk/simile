@@ -12,6 +12,7 @@ MANIFEST = "cast.json"
 NPCS_DIR = "npcs"
 CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
 SAVED_TABLES = ("saved_world", "memories", "relationships", "events", "flags")
+SQLITE_HEADER = b"SQLite format 3\x00"
 
 
 class CastRefused(ValueError):
@@ -55,13 +56,16 @@ def write_cast(cast: Cast, data: Path) -> Path:
 
 
 def check_writable(data: Path) -> None:
-    """Refuse the default data directory, anywhere in content/, a data directory holding a save,
-    and a `cast` folder that isn't a cast."""
-    if _same(data, DEFAULT_PATH.parent):
-        raise CastRefused(f"{data} holds today's village. Cast into a data directory of its own")
+    """Refuse the default data directory and anything in it, anywhere in content/, a data
+    directory holding a save, and a `cast` folder that isn't a cast."""
+    if _within(data, DEFAULT_PATH.parent):
+        raise CastRefused(
+            f"{data} is in {DEFAULT_PATH.parent}, which holds today's village. Cast into a data "
+            "directory of its own"
+        )
     if _within(data, CONTENT_DIR):
         raise CastRefused(f"{data} is in content/. Cast into a data directory of its own")
-    if saved := [db.name for db in sorted(data.glob("*.db")) if holds_save(db)]:
+    if saved := [db.name for db in databases(data) if holds_save(db)]:
         raise CastRefused(
             f"{data} already holds a saved village in {', '.join(saved)}. Cast into a new data "
             "directory, or forget that village first with `simile reset`"
@@ -69,6 +73,15 @@ def check_writable(data: Path) -> None:
     folder = data / CAST_DIR
     if folder.exists() and not (folder / MANIFEST).is_file():
         raise CastRefused(f"{folder} is there and isn't a cast")
+
+
+def databases(data: Path) -> list[Path]:
+    """Every SQLite file in `data`, whatever its name, and `$SIMILE_DB` if it's there."""
+    found = {path.resolve() for path in data.iterdir() if _sqlite(path)} if data.is_dir() else set()
+    current = default_path()
+    if str(current) != ":memory:" and current.exists() and _same(current.parent, data):
+        found.add(current.resolve())
+    return sorted(found)
 
 
 def holds_save(db: Path) -> bool:
@@ -90,6 +103,14 @@ def holds_save(db: Path) -> bool:
             )
     except sqlite3.DatabaseError:
         return True
+
+
+def _sqlite(path: Path) -> bool:
+    try:
+        with path.open("rb") as file:
+            return file.read(len(SQLITE_HEADER)) == SQLITE_HEADER
+    except OSError:
+        return False
 
 
 def _same(path: Path, other: Path) -> bool:

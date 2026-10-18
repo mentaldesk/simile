@@ -6,6 +6,7 @@ from simile.casting.choose import value_distance
 from simile.casting.config import DEFAULT_CONFIG, CastingConfig
 from simile.casting.model import Bond, Cast, CastError, Pin, Resident
 from simile.schema import Character, HookKind, HookSide, Id, LocationKind
+from simile.schema.character import MAX_AGE
 
 type Hook = tuple[Id, int]
 
@@ -30,6 +31,9 @@ def bind(
     houses = list(village_houses() if houses is None else houses)
     if len(chosen) > len(houses):
         raise CastError(f"The village has {len(houses)} houses, too few for {len(chosen)}")
+    game_date = game_date or datetime.now(UTC).date()
+    for character in chosen:
+        _check_age(character, game_date)
     rng = random.Random(f"{seed}:bind")
     homes = rng.sample(houses, len(chosen))
     binder = _Binder(chosen, rng, config)
@@ -37,11 +41,24 @@ def bind(
         binder.pin(pin)
     binder.draw()
     return Cast(
-        game_date=game_date or datetime.now(UTC).date(),
+        game_date=game_date,
         seed=seed,
         residents=[Resident(character=c, home=home) for c, home in zip(chosen, homes, strict=True)],
         bonds=binder.bonds,
     )
+
+
+def _check_age(character: Character, game_date: date) -> None:
+    born = character.birth_year
+    events = [memory.age for memory in character.past]
+    oldest = max([*events, character.arrival.age if character.arrival else 0])
+    if game_date.year - born < oldest:
+        raise CastError(
+            f"{game_date} is too early for {character.name}: born in {born}, with a past up to "
+            f"age {oldest}"
+        )
+    if game_date.year - born > MAX_AGE:
+        raise CastError(f"{game_date} is too late for {character.name}: born in {born}")
 
 
 class _Binder:

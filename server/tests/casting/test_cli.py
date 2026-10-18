@@ -1,4 +1,5 @@
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -6,8 +7,10 @@ from typer.testing import CliRunner, Result
 
 from simile.casting import load_cast
 from simile.cli import create_cli
+from simile.memory import MemoryStore
 from simile.memory.store import DEFAULT_PATH
 from simile.npc import NPCS_DIR, load_npcs
+from simile.persistence import SavedWorld, WorldStore
 from simile.schema import Character, HookKind
 
 runner = CliRunner()
@@ -75,6 +78,32 @@ def test_cast_refuses_what_it_cant_make(tmp_path: Path, args: list[str], error: 
     assert result.exit_code == 2
     assert error in said(result)
     assert not (tmp_path / "cast").exists()
+
+
+def test_cast_refuses_a_date_before_a_residents_birth(tmp_path: Path) -> None:
+    result = runner.invoke(
+        create_cli(), ["cast", "--random", "3", "--date", "1900-01-01", "--data", str(tmp_path)]
+    )
+
+    assert result.exit_code == 2
+    assert "1900-01-01 is too early for" in said(result)
+    assert not (tmp_path / "cast").exists()
+
+
+def test_cast_refuses_where_simile_db_holds_todays_village(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    save = tmp_path / "today" / "village.sqlite"
+    monkeypatch.setenv("SIMILE_DB", str(save))
+    with MemoryStore(save) as memory, WorldStore(memory) as store:
+        store.save(SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={}))
+
+    result = runner.invoke(create_cli(), ["cast", "--random", "10"])
+
+    assert result.exit_code == 2
+    assert "already holds a saved village in village.sqlite" in said(result)
+    assert sorted(path.name for path in save.parent.iterdir()) == ["village.sqlite"]
+    assert {npc.id for npc in load_npcs()} == {npc.id for npc in load_npcs(NPCS_DIR)}
 
 
 def test_cast_needs_a_data_directory_of_its_own(monkeypatch: pytest.MonkeyPatch) -> None:

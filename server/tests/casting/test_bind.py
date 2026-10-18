@@ -4,7 +4,7 @@ from datetime import date
 import pytest
 
 from simile.casting import Bond, CastError, Pin, bind, cast, village_houses
-from simile.schema import Character, HookKind, HookSide
+from simile.schema import Character, HookKind, HookSide, PastMemory
 
 type Make = Callable[..., Character]
 
@@ -139,3 +139,16 @@ def test_the_cast_records_its_date_seed_and_each_characters_version(make: Make) 
     assert made.game_date == date(2030, 5, 1)
     assert made.seed == 9
     assert (made.residents[0].character.id, made.residents[0].character.version) == ("a", 3)
+
+
+def test_a_game_date_their_ages_cant_fit_is_refused(make: Make) -> None:
+    past = [PastMemory(age=40, content="A move.", salience=0.5, valence=0.0)]
+    a = make("a", birth_year=1980, past=past)
+
+    with pytest.raises(CastError, match="1979-06-01 is too early for A: born in 1980"):
+        bind([a], game_date=date(1979, 6, 1), houses=HOUSES)
+    with pytest.raises(CastError, match="past up to age 40"):
+        bind([a], game_date=date(2010, 1, 1), houses=HOUSES)
+    with pytest.raises(CastError, match="2101-01-01 is too late for A"):
+        bind([a], game_date=date(2101, 1, 1), houses=HOUSES)
+    assert bind([a], game_date=date(2020, 1, 1), houses=HOUSES).npcs()[0].age == 40

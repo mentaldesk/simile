@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
@@ -65,6 +66,7 @@ def test_a_cast_that_never_ran_is_replaced(world: Path, made: Cast, pool: list[C
         DEFAULT_PATH.parent,
         Path(str(DEFAULT_PATH.parent).upper()),
         DEFAULT_PATH.parent / ".." / "data",
+        DEFAULT_PATH.parent / "worlds" / "new",
         NPCS_DIR.parent,
         NPCS_DIR.parent / "characters" / "worlds",
     ],
@@ -84,6 +86,27 @@ def test_a_data_directory_with_a_saved_village_is_refused(tmp_path: Path) -> Non
         store.save(SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={}))
 
     with pytest.raises(CastRefused, match="already holds a saved village in simile.db"):
+        check_writable(tmp_path)
+
+
+@pytest.mark.parametrize("name", ["village.sqlite", "save", "simile.db.bak"])
+def test_a_save_is_found_whatever_its_name(tmp_path: Path, name: str) -> None:
+    with MemoryStore(tmp_path / name) as memory, WorldStore(memory) as store:
+        store.save(SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={}))
+    (tmp_path / "notes.txt").write_text("not a database")
+
+    with pytest.raises(CastRefused, match=rf"saved village in {re.escape(name)}\. "):
+        check_writable(tmp_path)
+
+
+def test_the_save_simile_db_points_at_is_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SIMILE_DB", str(tmp_path / "village"))
+    (tmp_path / "village").write_text("not a database")
+    (tmp_path / "unrelated").write_text("not a database either")
+
+    with pytest.raises(CastRefused, match=r"saved village in village\. "):
         check_writable(tmp_path)
 
 
