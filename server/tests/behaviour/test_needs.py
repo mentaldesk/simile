@@ -188,6 +188,18 @@ def test_a_shut_place_feeds_nobody() -> None:
     assert needs[Need.BLADDER] < 0.6
 
 
+def test_a_meal_under_way_is_finished_when_the_place_stops_serving() -> None:
+    village = Village([ANA], placed={"ana": "noodle_bar"})
+    village.stay("ana", NOODLES, hunger=0.85)
+    village.run(minutes=2)
+    assert village.behaviour.needs("ana")[Need.HUNGER] < 0.85
+
+    village.behaviour.hooks.set(supply=lambda goal, need: 0.0 if need is Need.HUNGER else 1.0)
+    village.run(minutes=10)
+
+    assert village.behaviour.needs("ana")[Need.HUNGER] < 0.4
+
+
 def test_they_wake_hungry_but_not_lonely() -> None:
     village = Village([ANA], hour=3)
     before = village.behaviour.needs("ana")
@@ -278,14 +290,16 @@ def make_app(make_package: MakePackage, hour: float) -> Starlette:
 
 
 def test_the_server_plugs_the_cafes_shift_into_behaviour(make_package: MakePackage) -> None:
-    app = make_app(make_package, hour=6)
+    app = make_app(make_package, hour=10)
 
     with TestClient(app) as client:
         behaviour = app.state.behaviour
         client.portal.call(world_of(app).loop.tick)
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 0.0
-        world_of(app).clock.now = DAY + timedelta(hours=10)
-        client.portal.call(world_of(app).loop.tick)
+        for _ in range(3000):
+            if app.state.cafe.on_shift:
+                break
+            client.portal.call(world_of(app).loop.tick)
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0
 
     assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0

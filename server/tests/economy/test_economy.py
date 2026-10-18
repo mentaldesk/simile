@@ -75,7 +75,10 @@ class Town:
         )
         self.economy = Economy(self.world.clock, self.behaviour)
         self.behaviour.hooks.set(
-            money=self.economy.money_of, price=self.economy.price, earnings=self.economy.earnings
+            money=self.economy.money_of,
+            price=self.economy.price,
+            earnings=self.economy.earnings,
+            supply=self.economy.supply,
         )
         self.world.bus.subscribe(Served, self.economy.on_served)
         for system in (self.behaviour, self.movement, self.economy):
@@ -141,46 +144,49 @@ def test_rent_and_a_days_pension_come_at_midnight() -> None:
     assert len(town.economy.ledger.entries) == 3
 
 
-def test_a_meal_at_home_costs_groceries() -> None:
-    town = Town([resident("ana")], hour=11)
-    town.movement.place("ana", "house_1")
-    town.stay("ana", Goal(A.HOME, "house_1"), hunger=0.85)
-
-    town.run(minutes=10)
-
-    [groceries] = town.economy.ledger.entries
-    assert (groceries.kind, groceries.payer, groceries.payee) == (Kind.GROCERIES, "ana", OUTSIDE)
-    assert groceries.amount == town.economy.config.groceries
-
-
 def test_paying_at_a_shop_pays_whoever_runs_it_less_their_supplies() -> None:
     cook = resident("cook", "house_2", workplace="noodle_bar", hours=(11, 21), pay=TAKINGS)
     town = Town([resident("ana"), cook], hour=12)
+    town.movement.place("cook", "noodle_bar")
+    town.stay("cook", Goal(A.WORK, "noodle_bar"), minutes=600)
+    town.run(minutes=0.2)
     town.movement.place("ana", "noodle_bar")
     town.stay("ana", NOODLES, hunger=0.85)
 
     town.run(minutes=10)
 
     shop = town.economy.config.shops["noodle_bar"]
-    paid = [(e.kind, e.payer, e.payee, e.place) for e in town.economy.ledger.entries]
-    assert paid == [
-        (Kind.PURCHASE, "ana", "cook", "noodle_bar"),
-        (Kind.SUPPLIES, "cook", OUTSIDE, "noodle_bar"),
-    ]
+    paid = {(e.kind, e.payer, e.payee, round(e.amount, 6)) for e in town.economy.ledger.entries}
+    assert paid == {
+        (Kind.PURCHASE, "ana", "cook", shop.drink),
+        (Kind.SUPPLIES, "cook", OUTSIDE, round(shop.drink * shop.supplies, 6)),
+        (Kind.PURCHASE, "ana", "cook", shop.meal),
+        (Kind.SUPPLIES, "cook", OUTSIDE, round(shop.meal * shop.supplies, 6)),
+    }
+    spent = shop.drink + shop.meal
     assert town.economy.money == pytest.approx(
-        {"ana": 200 - shop.meal, "cook": 200 + shop.meal * (1 - shop.supplies)}
+        {"ana": 200 - spent, "cook": 200 + spent * (1 - shop.supplies)}
     )
 
 
-def test_a_meal_at_a_shop_nobody_runs_is_paid_outside_the_village() -> None:
+def test_a_shop_nobody_runs_feeds_nobody() -> None:
     town = Town([resident("ana")], hour=12)
     town.movement.place("ana", "noodle_bar")
     town.stay("ana", NOODLES, hunger=0.85)
 
     town.run(minutes=10)
 
-    [meal] = town.economy.ledger.entries
-    assert (meal.kind, meal.payee) == (Kind.PURCHASE, OUTSIDE)
+    assert town.economy.ledger.entries == []
+    assert town.behaviour.needs("ana")[Need.HUNGER] > 0.85
+
+
+def test_a_drink_at_a_cafe_nobody_runs_for_takings_is_paid_outside_the_village() -> None:
+    town = Town([resident("ana"), resident("mia", "coffee_shop")])
+
+    town.world.bus.publish(Served("ana", "mia", "flat white", 30.0, False))
+
+    [drink] = town.economy.ledger.entries
+    assert (drink.kind, drink.payer, drink.payee) == (Kind.PURCHASE, "ana", OUTSIDE)
 
 
 def test_a_drink_the_cafe_serves_is_paid_for() -> None:
@@ -214,7 +220,12 @@ def test_the_ledger_balances_after_a_day() -> None:
 
 
 def test_prices_follow_what_they_would_buy() -> None:
-    town = Town([resident("ana")], hour=12)
+    mia = resident("mia", "coffee_shop", workplace="coffee_shop", hours=(7, 17), pay=TAKINGS)
+    town = Town([resident("ana"), mia], hour=12)
+    town.movement.place("mia", "coffee_shop")
+    town.stay("mia", Goal(A.WORK, "coffee_shop"), minutes=600)
+    town.run(minutes=0.2)
+    town.behaviour.hooks.set(supply=lambda goal, need: 1.0)
     economy, ana = town.economy, town.behaviour.npcs["ana"]
     shops = economy.config.shops
     home = Goal(A.HOME, "house_1")
@@ -226,8 +237,11 @@ def test_prices_follow_what_they_would_buy() -> None:
     town.behaviour.minds["ana"].needs[Need.HUNGER] = 0.8
     assert economy.price(ana, home) == economy.config.groceries
     assert economy.price(ana, NOODLES) == shops["noodle_bar"].meal
+    assert economy.price(ana, CAFE) == shops["coffee_shop"].drink + shops["coffee_shop"].meal
 
     town.behaviour.hooks.set(supply=lambda goal, need: 0.0 if goal == CAFE else 1.0)
+    assert economy.price(ana, CAFE) == shops["coffee_shop"].drink
+    town.world.bus.publish(Served("ana", "mia", "flat white", 30.0, False))
     assert economy.price(ana, CAFE) == 0
 
 

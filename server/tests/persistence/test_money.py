@@ -5,8 +5,9 @@ from pathlib import Path
 import pytest
 
 from simile.behaviour import Behaviour
-from simile.economy import OUTSIDE, Kind
+from simile.economy import OUTSIDE, Batch, Kind
 from simile.economy.economy import Economy
+from simile.economy.stock import stocked
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.persistence import SavedWorld, Saver, WorldStore, capture, restore
@@ -66,6 +67,36 @@ def test_a_save_from_before_money_starts_everyone_with_their_own() -> None:
     after.run(timedelta(hours=16.1))
     rent = [e for e in after.economy.ledger.entries if e.kind is Kind.RENT]
     assert len(rent) == len(NPCS)
+
+
+def test_fridges_and_the_noodle_bars_batch_come_back_as_they_were_saved() -> None:
+    before = Village(MORNING + timedelta(hours=4))
+    before.economy.fridges["house_3"] = 0
+    batch = Batch(shop="noodle_bar", shift=MORNING + timedelta(hours=3), cooked=6, left=2)
+    before.economy.batches["noodle_bar"] = batch
+    saved = capture(before.behaviour, before.economy).model_dump_json()
+
+    after = Village(MORNING + timedelta(days=3))
+    restore(SavedWorld.model_validate_json(saved), after.behaviour, after.economy)
+
+    assert after.economy.fridges == before.economy.fridges
+    assert after.economy.batches == {"noodle_bar": batch}
+    assert after.economy.batches["noodle_bar"] is not batch
+
+
+def test_a_save_from_before_fridges_and_batches_stocks_the_fridges_as_at_the_start() -> None:
+    before = Village()
+    before.economy.fridges = dict.fromkeys(before.economy.fridges, 0)
+    old = capture(before.behaviour, before.economy).model_dump(mode="json")
+    del old["economy"]["fridges"], old["economy"]["batches"]
+
+    after = Village(MORNING + timedelta(days=1))
+    restore(SavedWorld.model_validate(old), after.behaviour, after.economy)
+
+    config = after.economy.config
+    assert after.economy.fridges == {npc.home: stocked(npc.home, config) for npc in NPCS}
+    assert after.economy.batches == {}
+    assert after.economy.money == before.economy.money
 
 
 def test_the_ledger_is_saved_as_it_grows_and_cleared_with_the_village(tmp_path: Path) -> None:

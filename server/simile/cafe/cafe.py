@@ -30,7 +30,17 @@ from simile.conversation import Cue, LineDrafted, duration
 from simile.conversation.player import DEFAULT_PLAYER_CONFIG
 from simile.conversation.prompt import first_name
 from simile.llm import LLMClient, LLMError, StructuredOutputError
-from simile.schema import PLAYER_ID, Conversation, Id, Line, MapTile, Npc, Relationship, Tile
+from simile.schema import (
+    PLAYER_ID,
+    Conversation,
+    Id,
+    Line,
+    MapTile,
+    Npc,
+    Relationship,
+    Shift,
+    Tile,
+)
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
 from simile.voice import speaking_rate
@@ -173,6 +183,8 @@ class Cafe:
         self.till = self._tile(town.location(config.staff).entry)
         self.spots = self._queue(town.location(config.queue).entry)
         self.on_shift = False
+        self.closing: datetime | None = None
+        """When the barista's shift ends, while they're on it."""
         self.visits: dict[Id, Visit] = {}
         self.queue: list[Id] = []
         self.seen: dict[Id, datetime] = {}
@@ -189,6 +201,9 @@ class Cafe:
 
     @property
     def open(self) -> bool:
+        """During the barista's shift if they work here, otherwise the café's own hours."""
+        if shifts := self._shifts():
+            return any(shift.covers(self.clock.now) for shift in shifts)
         return self.config.opens <= self.clock.time_of_day < self.config.closes
 
     @property
@@ -242,19 +257,60 @@ class Cafe:
         return order.says
 
     def _shift(self) -> None:
+        """A barista who works here comes to the till when B1 sends them to work, late or not
+        at all as their shifts go, otherwise at opening time. They stay until their shift ends
+        and the queue is served."""
         barista = self.barista
         if barista is None:
             return
-        if self.open and not self.on_shift:
-            self.on_shift, self.going_home = True, None
+        mind = self.behaviour.minds[barista]
+        if not self.on_shift and (closing := self._called(barista)) is not None:
+            self.on_shift, self.going_home, self.closing = True, None, closing
             self._quiet(barista)
             self.behaviour.hold(barista, self.till, self.working)
             self._log("%s starts their shift", barista)
-        elif not self.open and self.on_shift and not (self.job or self.player_job or self.queue):
-            self.on_shift = False
+        elif self.on_shift and not mind.held and not mind.paused:
+            self._log("%s is called away from the till", barista)
+            self._shut()
+        elif (
+            self.on_shift
+            and self.closing is not None
+            and self.clock.now >= self.closing
+            and not (self.job or self.player_job or self.queue)
+        ):
+            self.on_shift, self.closing = False, None
             self._unquiet(barista)
             self.behaviour.release(barista)
             self._log("%s finishes their shift", barista)
+
+    def _called(self, barista: Id) -> datetime | None:
+        """When the shift they're due at ends, if it's time they were at the till."""
+        if not self._shifts():
+            if not self.open:
+                return None
+            midnight = self.clock.now.replace(hour=0, minute=0, second=0, microsecond=0)
+            return midnight + timedelta(hours=self.config.closes)
+        mind = self.behaviour.minds[barista]
+        if mind.goal != Goal(Activity.WORK, self.config.home) or mind.shift is None:
+            return None
+        return mind.shift.end
+
+    def _shifts(self) -> list[Shift]:
+        """The barista's shifts, if they work here."""
+        npc = self.behaviour.npcs[self.barista] if self.barista is not None else None
+        return npc.shifts if npc is not None and npc.workplace == self.config.home else []
+
+    def _shut(self) -> None:
+        """The barista has gone mid-shift: everyone waiting is let go and their orders dropped."""
+        assert self.barista is not None
+        self.on_shift, self.closing = False, None
+        self._unquiet(self.barista)
+        if self.job is not None:
+            self._cancel()
+        self.player_job = None
+        for npc, visit in list(self.visits.items()):
+            if visit.phase is not Phase.SITTING:
+                self._leave(npc)
 
     def _home(self) -> None:
         """Off shift, the barista rests and sleeps upstairs, not in front of the counter."""
@@ -600,11 +656,30 @@ class Cafe:
         self.behaviour.release(npc)
 
     def _drop(self, npc: Id) -> None:
-        """Someone else let go of them, as restoring a save does."""
+        """Someone else let go of them, as restoring a save or an urgent need does. Their order
+        goes with them."""
         self.visits.pop(npc, None)
         self._unquiet(npc)
         if npc in self.queue:
             self.queue.remove(npc)
+        if self.job is not None and self.job.customer == npc:
+            self._cancel()
+
+    def _cancel(self) -> None:
+        """Drop the order in hand, mid-word or mid-drink, and go back to the till."""
+        job, self.job = self.job, None
+        assert job is not None
+        if job.writing is not None:
+            job.writing.cancel()
+        script = self.script
+        if script is not None and job.customer in script.speakers:
+            self.script = None
+            if script.conversation is not None:
+                script.conversation.ended = self.clock.now
+                self.bus.publish(ConversationEnded(script.conversation.model_copy(deep=True)))
+        self._log("%s's order is dropped", job.customer)
+        if self.on_shift and self.barista is not None:
+            self.behaviour.hold(self.barista, self.till, self.working)
 
     def _quiet(self, npc: Id) -> None:
         if npc not in self.behaviour.leave_player_alone:
