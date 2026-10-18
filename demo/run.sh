@@ -47,9 +47,9 @@ until curl -sf "http://127.0.0.1:$SIMILE_PORT/api/health" >/dev/null; do
 done
 cat <<EOF
 
-Open http://localhost:$CLIENT_PORT now and hold the left arrow for about a second, the first step
-of the walk-through in demo/README.md. The village holds still until you take a step, and that key
-press is also what lets the browser play sound. To start over, press Ctrl-C here and run
+Open http://localhost:$CLIENT_PORT/?play now and hold the left arrow for about a second, the first
+step of the walk-through in demo/README.md. The village holds still until you take a step, and that
+key press is also what lets the browser play sound. To start over, press Ctrl-C here and run
 demo/run.sh again.
 
 EOF
