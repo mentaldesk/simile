@@ -15,8 +15,8 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
 ## Conventions
 
 - Field names are `snake_case` on both sides.
-- Every field is always present. Optional values are `null`, never missing. The one exception is a
-  position's `map`, below.
+- Every field is always present. Optional values are `null`, never missing. The exceptions are a
+  position's `map` and an entity's `pose` and `facing`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -25,6 +25,22 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
     village, so clients that predate interiors keep working.
   - So the generated TypeScript has `map?: string`, and the client can keep using `Position` as a
     plain point. Read it as `position.map ?? 'village'`. K5 (#171) may tighten the type.
+- An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
+  `"working"` or `"looking"`. Its **facing** is the way it faces on the map, x east and y south:
+  `"east"`, `"south_east"`, `"south"`, `"south_west"`, `"west"`, `"north_west"`, `"north"` or
+  `"north_east"`, in order of angle from east round through south. Both are F2 types, `Pose` and
+  `Facing` in `server/simile/schema/world.py`, so the world and the sim's events can use them too.
+  - The server always sends both. Without them an entity is standing, facing south-east, towards the
+    iso camera. As with `map`, the generated TypeScript has them optional: read
+    `entity.pose ?? 'standing'` and `entity.facing ?? 'south_east'`.
+  - Grid east runs down and to the right on screen, so the facings are the client's `ISO_FACINGS`
+    in the same order, which name A1's frames: `east` is `down_right`, `south_east` is `down`,
+    `south` is `down_left`, `south_west` is `left`, `west` is `up_left`, `north_west` is `up`,
+    `north` is `up_right` and `north_east` is `right`.
+  - Sitting, reading, working and looking come with #264's spots, which face along the grid:
+    `north`, `east`, `south` or `west`, A1's three-quarter views.
+  - Until the world keeps track of them (#264), everyone is `standing`, facing `south_east`. The
+    server doesn't track the player's, so the player's entity always has those.
 - Entity ids are F2 `Id`s. The player is always `"player"`.
 - The maps aren't sent: the client bundles the village and its interiors as Tiled maps. F2's
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
@@ -43,7 +59,7 @@ client replaces whatever it had.
 |---|---|---|
 | `time` | timestamp | Sim time now. |
 | `map_id` | string | The map the player starts on, e.g. `"village"`. |
-| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`. Each position has its own `map`. |
+| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
@@ -59,7 +75,11 @@ it arrived.
 
 ### `entity_moved`
 
-`entity_id`, `position`. There's no facing: the client works it out from the direction of travel.
+`entity_id`, `position`, `pose` and `facing`. On its way somewhere an entity is `walking`, facing
+the way it's going, so the client can still work the facing out from the direction of travel. When
+it settles, say at a seat, an `entity_moved` gives the pose and facing it stays in. That can be at
+the position it's already at, so the pose or facing can change on its own.
+
 An entity going through a door arrives as an `entity_moved` onto the other map, and the client
 snaps it there rather than walking it. The `entity_moved` before that is the door's tile on the map
 it's leaving, a step's time earlier.
