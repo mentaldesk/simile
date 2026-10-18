@@ -58,6 +58,47 @@ THEIR_FLAGS: dict[FlagKind, str] = {
 VALUE_NAMES = ", ".join(value.value.replace("_", " ") for value in CoreValue)
 VALUES = {value.value for value in CoreValue}
 
+LOW = (0.4, 0.25, 0.15)
+"""A core value below each of these is low, lower and lowest."""
+HIGH = 0.6
+EDGES: dict[CoreValue, tuple[str, str, str]] = {
+    CoreValue.HONESTY: (
+        "{who} will shade the truth when it suits {them}, and won't always say everything "
+        "{they} know.",
+        "{who} will lie when it suits {them}: white lies, convenient excuses, keeping back what "
+        "{they}'d rather not say.",
+        "{who} will lie easily, without guilt, whenever it suits {them}: white lies, convenient "
+        "excuses, keeping back whatever {they}'d rather not say.",
+    ),
+    CoreValue.COMPASSION: (
+        "{who} won't go out of {their} way to soften bad news.",
+        "{who} won't soften bad news, will be short with complaints, and will put {their} own "
+        "interests first.",
+        "{who} won't soften anything, will have no patience for complaints, and will put {their} "
+        "own interests first every time.",
+    ),
+    CoreValue.PEACE_OF_MIND: (
+        "{who} will say so when {they} disagree.",
+        "{who} will disagree openly and won't give ground just to keep the peace.",
+        "{who} will disagree bluntly, won't concede anything to keep the peace, and can be curt "
+        "or change the subject.",
+    ),
+}
+SAYS_NO = (
+    "{who} can turn down a favour without feeling bad about it.",
+    "{who} will turn down favours and say no without apologising.",
+    "{who} will turn down most favours and say no without apologising.",
+)
+COUNTERWEIGHT = (
+    "Don't agree just to be pleasant. Saying no, being brief, or disagreeing is fine when it's in "
+    "character."
+)
+BOUNDS = (
+    "Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
+    "insults. Any lie stays small and in character: about {own} life, plans or what {they}'ve "
+    "seen, never about anything someone could be harmed by acting on."
+)
+
 TAG = re.compile(
     r"\[\s*values?\s*:([^\]\n]*)\]?|^\s*values?\s*:(.*)$|\[([^\]\n]*)\]",
     re.IGNORECASE | re.MULTILINE,
@@ -134,6 +175,7 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             how_you_speak(npc),
             f"What you care about most: {most}. What you care about least: {least}.\n"
             f"Your interests: {', '.join(npc.interests)}.",
+            " ".join([*rough_edges(npc), COUNTERWEIGHT, BOUNDS.format(own="your own", they="you")]),
             "You're in a face-to-face conversation. Reply with only your next spoken line: at "
             f"most {config.max_words} words, usually one or two sentences. Plain speech: no "
             "stage directions, quotation marks or name label. React to what was just said and "
@@ -148,6 +190,22 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             f"Choose from: {VALUE_NAMES}.",
         ]
     )
+
+
+def rough_edges(npc: Npc, name: str | None = None) -> list[str]:
+    """How their low scores show in what they say, more the lower they are, told to them or, with
+    `name`, about them. Empty when none is low."""
+    words = (
+        {"who": name, "they": "they", "them": "them", "their": "their"}
+        if name
+        else {"who": "You", "they": "you", "them": "you", "their": "your"}
+    )
+    levels = {value: sum(npc.values[value] < bar for bar in LOW) for value in EDGES}
+    found = [EDGES[value][level - 1] for value, level in levels.items() if level]
+    unkind = levels[CoreValue.COMPASSION]
+    if unkind and npc.values[CoreValue.SELF_RESPECT] >= HIGH:
+        found.append(SAYS_NO[unkind - 1])
+    return [line.format(**words) for line in found]
 
 
 def how_you_speak(npc: Npc) -> str:

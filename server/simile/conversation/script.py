@@ -7,6 +7,7 @@ from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.needs import feels
 from simile.conversation.plan import Plan, direction
 from simile.conversation.prompt import (
+    BOUNDS,
     VALUE_NAMES,
     Draft,
     WorkTopic,
@@ -15,6 +16,7 @@ from simile.conversation.prompt import (
     first_name,
     habits,
     parse_reply,
+    rough_edges,
     stuck,
     value_name,
 )
@@ -71,6 +73,7 @@ class ScriptLine:
 
 def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
     """How to write a scene. The same for every conversation."""
+    bounds = BOUNDS.format(own="the speaker's own", they="they")
     return "\n\n".join(
         [
             "You write the dialogue for a life simulation set in a small, modern village. Each "
@@ -94,7 +97,10 @@ def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "do. Someone who has said they'll go and do something now says where they're off to "
             "as they leave.\n"
             "- Use each character's pet words, phrases and verbal habits now and then, not in "
-            "every line, and vary how their lines begin.",
+            "every line, and vary how their lines begin.\n"
+            "- Nobody agrees just to be pleasant. Saying no, being brief, or disagreeing is fine "
+            "when it's in character.\n"
+            f"- {bounds}",
             "Write only the spoken lines, one a line, each starting with the speaker's first "
             "name and a colon and ending with the one to three core values the line touches, "
             "like this:\nMara: Morning! Lovely out, isn't it? [values: connection]\n"
@@ -178,8 +184,10 @@ def character(
         speech,
         f"Cares most about: {most}. Cares least about: {least}.\n"
         f"Interests: {', '.join(npc.interests)}.",
-        feelings,
     ]
+    if edges := rough_edges(npc, name):
+        parts.append(" ".join(edges))
+    parts.append(feelings)
     if mood:
         parts.append(feels(name, mood))
     parts += [

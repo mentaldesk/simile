@@ -193,6 +193,27 @@ then bursting for the loo at the same levels, tired from 0.6 and exhausted from 
 grubby from 0.75 and badly in need of a shower from 0.9. A hungry, tired resident comes across
 short, and B3 picks that up from the transcript like anything else.
 
+## Rough edges
+
+Left alone, the model makes everyone kind, candid and agreeable, so low scores become direction.
+`rough_edges(npc)` gives a sentence for each low value, stronger below each of 0.4, 0.25 and 0.15
+(`LOW`):
+
+- **Honesty:** they shade the truth when it suits them, then lie when it suits them, then lie
+  easily and without guilt.
+- **Compassion:** they won't soften bad news, then are short with complaints and put themselves
+  first, then have no patience for complaints at all.
+- **Peace of Mind**, the value that pulls Agreeableness most: they say when they disagree, then
+  don't give ground to keep the peace, then can be curt or change the subject.
+- **Self-respect** of `HIGH` (0.6) or more with low Compassion: they turn down favours and say no
+  without apologising.
+
+B5's system prompt has them after the values, and each side of a scene in the third person
+("Henrietta will lie when it suits them"). Every resident's prompt, and the script's rules, also
+say not to agree just to be pleasant, and keep to the game's tone: no slurs, abuse or cruelty,
+rudeness is curtness and never insults, and a lie stays small and in character, about their own
+life, plans or what they've seen, never about anything someone could be harmed by acting on.
+
 ## Only promising what's possible
 
 B3 turns what a resident says they'll do into an intention that B1 acts on (see *Intentions* in

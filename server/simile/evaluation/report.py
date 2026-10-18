@@ -6,7 +6,10 @@ from simile.evaluation.fake import STOCK
 from simile.evaluation.metric import Spread
 from simile.evaluation.play import Reply
 from simile.evaluation.scenarios import NOW
-from simile.schema import Character
+from simile.schema import Character, CoreValue
+
+LOW_HONESTY = 0.4
+HIGH_HONESTY = 0.7
 
 
 @dataclass(frozen=True)
@@ -60,6 +63,8 @@ def report(spread: Spread, replies: Sequence[Reply], run: Run) -> str:
         "characters, against their mean reply distance: "
         f"{r(spread.follows_values)} for core values, {r(spread.follows_persona)} for persona "
         "and backstory.",
+        "",
+        *honesty(characters, by, [result.scenario.id for result in spread.scenarios]),
     ]
     for result in spread.scenarios:
         scenario = result.scenario
@@ -78,7 +83,7 @@ def report(spread: Spread, replies: Sequence[Reply], run: Run) -> str:
         for character in characters:
             reply = by[character.id, scenario.id]
             lines.append(
-                f"| {who(character)} | {reply.stance or ''} | {cell(reply.text or reply.raw)} |"
+                f"| {who(character)} | {stance(reply)} | {cell(reply.text or reply.raw)} |"
             )
     lines += [
         "",
@@ -87,6 +92,43 @@ def report(spread: Spread, replies: Sequence[Reply], run: Run) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def honesty(
+    characters: Sequence[Character], by: dict[tuple[str, str], Reply], scenarios: Sequence[str]
+) -> list[str]:
+    """Who lies, by how much they value honesty: low below `LOW_HONESTY`, high from
+    `HIGH_HONESTY`."""
+    ranked = sorted(characters, key=lambda c: c.values[CoreValue.HONESTY])
+    lies = {c.id: [s for s in scenarios if by[c.id, s].lies] for c in ranked}
+    lines = [
+        "## Honesty",
+        "",
+        "Do the less honest lie when it suits them? Characters by how much they value honesty, "
+        "with the replies the judge found lying: untrue by the situation, agreeing to say "
+        "something untrue, or an excuse that sounds made up.",
+        "",
+    ]
+    for band, within in (
+        ("Low honesty", lambda score: score < LOW_HONESTY),
+        ("High honesty", lambda score: score >= HIGH_HONESTY),
+    ):
+        group = [c for c in ranked if within(c.values[CoreValue.HONESTY])]
+        lied = [lies[c.id] for c in group]
+        lines.append(
+            f"- **{band}:** {sum(map(bool, lied))} of {len(group)} lie at least once, in "
+            f"{sum(map(len, lied))} of {len(group) * len(scenarios)} replies."
+        )
+    lines += ["", "| Character | Honesty | Lies in |", "|---|--:|---|"]
+    for c in ranked:
+        lines.append(
+            f"| {who(c)} | {c.values[CoreValue.HONESTY]:.2f} | {', '.join(lies[c.id]) or 'none'} |"
+        )
+    return lines
+
+
+def stance(reply: Reply) -> str:
+    return f"{reply.stance or ''}{', lies' if reply.lies else ''}"
 
 
 def made(run: Run) -> str:

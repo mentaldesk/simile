@@ -39,6 +39,7 @@ class Reply(BaseModel):
     text: str
     values: list[str] = []
     stance: str | None = None
+    lies: bool | None = None
 
 
 @dataclass(frozen=True)
