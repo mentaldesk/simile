@@ -35,6 +35,24 @@ def test_rewriting_replaces_npcs_from_an_earlier_run(npcs: list[Npc], tmp_path: 
     assert sorted(path.stem for path in tmp_path.glob("*.json")) == sorted(n.id for n in npcs[:2])
 
 
+def test_rewriting_leaves_residents_who_dont_live_in_a_house(
+    npcs: list[Npc], tmp_path: Path
+) -> None:
+    barista = npcs[2].model_copy(update={"id": "barista", "home": "coffee_shop"})
+    (tmp_path / "barista.json").write_text(barista.model_dump_json())
+
+    write_npcs(npcs[:2], tmp_path, seed=5)
+
+    assert sorted(path.stem for path in tmp_path.glob("*.json")) == sorted(
+        ["barista", *(n.id for n in npcs[:2])]
+    )
+
+
+def housed() -> list[Npc]:
+    """The residents `generate-npcs` made: everyone living in a house."""
+    return [npc for npc in load_npcs(NPCS_DIR) if npc.home in HOMES]
+
+
 def test_the_readme_tables_top_values_against_persona(npcs: list[Npc]) -> None:
     text = readme(npcs, seed=5)
 
@@ -102,7 +120,7 @@ def test_first_sentence(text: str, expected: str) -> None:
 def test_the_committed_village_has_a_resident_in_every_home() -> None:
     village = load_npcs(NPCS_DIR)
 
-    assert sorted(npc.home for npc in village) == sorted(HOMES)
+    assert sorted(npc.home for npc in housed()) == sorted(HOMES)
     assert len({npc.id for npc in village}) == len(village)
     assert len({npc.name.split()[0] for npc in village}) == len(village)
 
@@ -120,7 +138,7 @@ def test_readme_seed_reads_the_seed_from_the_readme(npcs: list[Npc], tmp_path: P
 
 
 def test_the_committed_readme_matches_the_npcs() -> None:
-    expected = readme(load_npcs(NPCS_DIR), readme_seed())
+    expected = readme(housed(), readme_seed())
 
     assert (NPCS_DIR / "README.md").read_text() == expected
 
@@ -128,13 +146,13 @@ def test_the_committed_readme_matches_the_npcs() -> None:
 def test_the_committed_values_and_ages_come_from_the_seed() -> None:
     briefs = {brief.home: brief for brief in plan(len(HOMES), readme_seed())}
 
-    for npc in load_npcs(NPCS_DIR):
+    for npc in housed():
         assert npc.values == briefs[npc.home].values, npc.id
         assert npc.age == briefs[npc.home].age, npc.id
 
 
 def test_most_of_the_committed_cast_has_a_craft_in_either_medium() -> None:
-    crafts = [npc.craft for npc in load_npcs(NPCS_DIR) if npc.craft]
+    crafts = [npc.craft for npc in housed() if npc.craft]
 
     assert len(crafts) > len(HOMES) / 2
     assert {craft.medium for craft in crafts} == {Medium.WRITING, Medium.MURAL}

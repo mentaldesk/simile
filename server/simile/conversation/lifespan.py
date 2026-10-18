@@ -25,6 +25,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     players = PlayerConversations(engine, connected=lambda: bool(hub.connections), article=article)
     engine.player_request, engine.article, engine.work = players.request, article, work
+    app.state.players = players
     stops = [
         behaviour_of(app).hooks.set(request_conversation=engine.request, conversations=engine.live),
         hub.subscribe(PlayerSayMessage, lambda message: players.say(message.text, message.target)),
@@ -37,4 +38,5 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         for stop in reversed(stops):
             stop()
         engine.player_request = None
+        del app.state.players
         await engine.close()

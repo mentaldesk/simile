@@ -146,14 +146,36 @@ def test_npcs_missing_from_the_save_start_afresh_and_strangers_are_ignored() -> 
 
 def test_a_resident_inside_saves_and_reloads_inside() -> None:
     before = Village()
-    before.movement.place("kofi", MapTile(map="coffee_shop", x=5, y=6))
+    before.movement.place("kofi", MapTile(map="coffee_shop", x=13, y=9))
     saved = capture(before.behaviour)
     assert (saved.npcs["kofi"].map, saved.npcs["henrietta"].map) == ("coffee_shop", VILLAGE_MAP)
 
     after = Village(seed=1)
     restore(saved, after.behaviour)
 
-    assert after.movement.position("kofi") == Point(5, 6, "coffee_shop")
+    assert after.movement.position("kofi") == Point(13, 9, "coffee_shop")
+
+
+def test_residents_saved_where_someone_starts_get_their_tiles_back() -> None:
+    before = Village()
+    barista = next(npc.id for npc in NPCS if npc.home == "coffee_shop")
+    saved_at = {
+        barista: MapTile(map="coffee_shop", x=13, y=9),
+        "ingrid": MapTile(map="coffee_shop", x=5, y=6),
+        "kofi": MapTile(map="coffee_shop", x=7, y=6),
+        "lachlan": MapTile(map="coffee_shop", x=6, y=7),
+        "raymond": MapTile(map="coffee_shop", x=6, y=6),
+    }
+    for npc, tile in saved_at.items():
+        before.movement.place(npc, tile)
+    saved = capture(before.behaviour)
+
+    after = Village(seed=1)
+    assert after.movement.position(barista) == Point(5, 6, "coffee_shop")
+    restore(saved, after.behaviour)
+
+    for npc, tile in saved_at.items():
+        assert after.movement.position(npc) == Point(tile.x, tile.y, tile.map), npc
 
 
 def test_a_save_from_before_interiors_loads_onto_the_village() -> None:

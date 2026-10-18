@@ -1,6 +1,6 @@
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.schema import VILLAGE_MAP, Id, Key, MapTile, Model, Tile, Timestamp
-from simile.world.movement import Point, cell_of
+from simile.world.movement import Movement, Point, cell_of
 
 
 class SavedNpc(Model):
@@ -56,11 +56,14 @@ def restore(world: SavedWorld, behaviour: Behaviour) -> None:
     for npc in saved:
         movement.stop(npc)
     behaviour.clock.now = world.now
+    pending = dict(saved)
+    while free := {npc: state for npc, state in pending.items() if _free(movement, npc, state)}:
+        for npc, state in free.items():
+            _put(movement, npc, state)
+            del pending[npc]
     for _ in range(2):  # the second pass gets tiles that someone was still standing on
-        for npc, state in saved.items():
-            x, y = state.position.x, state.position.y
-            if movement.position(npc) != Point(x, y, state.map):
-                movement.place(npc, MapTile(map=state.map, x=x, y=y))
+        for npc, state in pending.items():
+            _put(movement, npc, state)
     for npc, state in saved.items():
         behaviour.restore(
             npc,
@@ -70,3 +73,18 @@ def restore(world: SavedWorld, behaviour: Behaviour) -> None:
             state.until,
             state.cooldowns,
         )
+
+
+def _free(movement: Movement, npc: Id, state: SavedNpc) -> bool:
+    """Whether nobody else is standing on the tile `npc` was saved on."""
+    tile = (state.position.x, state.position.y)
+    return all(
+        other == npc or point.map != state.map or cell_of(point) != tile
+        for other, point in movement.entities().items()
+    )
+
+
+def _put(movement: Movement, npc: Id, state: SavedNpc) -> None:
+    x, y = state.position.x, state.position.y
+    if movement.position(npc) != Point(x, y, state.map):
+        movement.place(npc, MapTile(map=state.map, x=x, y=y))

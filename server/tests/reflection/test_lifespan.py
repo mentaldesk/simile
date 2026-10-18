@@ -14,6 +14,7 @@ from simile.conversation import create_engine
 from simile.llm import FakeProvider, LLMClient, Request, Usage
 from simile.llm.fake import scene
 from simile.memory import memory_of
+from simile.npc import load_npcs
 from simile.reflection import SYSTEM, Deed, Extraction, Reflection
 from simile.schema import Conversation, Line, Memory, MemoryKind, Relationship
 from simile.sim import Clock, ConversationEnded, FakeWallClock, World, world_of
@@ -21,6 +22,8 @@ from simile.sim import Clock, ConversationEnded, FakeWallClock, World, world_of
 MakePackage = Callable[[dict[str, str]], str]
 
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
+WITHOUT_ORDERS = [npc for npc in load_npcs() if npc.home != "coffee_shop"]
+"""Everyone but the barista, whose orders change relationships without B3."""
 
 
 def reflect_on(request: Request) -> str:
@@ -113,7 +116,7 @@ async def run_village(
     world = World(Clock(START), FakeWallClock())
     app.state.world = world
     app.state.headless = True
-    app.state.behaviour = create_behaviour(app, seed=0)
+    app.state.behaviour = create_behaviour(app, seed=0, npcs=WITHOUT_ORDERS)
     app.state.conversation = create_engine(app, seed=0)
     ended: list[Conversation] = []
     world.bus.subscribe(ConversationEnded, lambda event: ended.append(event.conversation))

@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
@@ -8,6 +9,7 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
+from simile.cafe.lines import Lines
 from simile.conversation import DEFAULT_CONFIG, conversations_of, create_engine
 from simile.llm.fake import GOODBYES
 from simile.llm.lifespan import CANNED, FAKE_ENV
@@ -110,8 +112,21 @@ async def test_the_village_talks_with_the_fake_provider(monkeypatch: pytest.Monk
     assert ended
     assert all(conversation.ended for conversation in ended)
     lines = [event.line for event in events if isinstance(event, LineSpoken)]
+    started = [event.conversation for event in events if isinstance(event, ConversationStarted)]
+    over = {conversation.id for conversation in ended}
+    going = {conversation.id for conversation in started} - over
     assert all(len(c.lines) >= DEFAULT_CONFIG.min_lines + 2 for c in ended)
     assert all(c.lines[-1].text == GOODBYES[-1] for c in ended)
-    assert {line.text for line in lines} <= {*CANNED, *GOODBYES}
+    assert {line.text for line in lines if line.conversation_id in over} <= {*CANNED, *GOODBYES}
+    assert {line.text for line in lines if line.conversation_id in going} <= {*CANNED, *GOODBYES}
+    stock = [
+        re.compile(re.sub(r"\\\{\w+\\\}", ".+", re.escape(text)))
+        for options in Lines().options.values()
+        for text in options
+    ]
+    outside = [line for line in lines if line.conversation_id not in over | going]
+    assert outside
+    for line in outside:
+        assert any(template.fullmatch(line.text) for template in stock), line.text
     assert len(lines) == len({line.id for line in lines})
     assert calls.count("conversation") == len(ended)

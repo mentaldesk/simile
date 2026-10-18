@@ -5,7 +5,7 @@ from simile.behaviour import Activity, Behaviour, Goal, GoalChosen, Need
 from simile.npc import load_npcs
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 MORNING = datetime(2026, 1, 1, 10, tzinfo=UTC)
 LATER = MORNING + timedelta(days=2, hours=3)
@@ -21,7 +21,7 @@ NEEDS = {
 class Village:
     def __init__(self) -> None:
         self.world = World(Clock(MORNING), FakeWallClock())
-        self.movement = Movement(load_map(), self.world.bus)
+        self.movement = Movement(load_maps(), self.world.bus)
         self.behaviour = Behaviour(
             self.world.clock, self.world.bus, self.movement, load_npcs(), seed=0
         )

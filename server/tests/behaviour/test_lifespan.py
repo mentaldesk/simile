@@ -71,10 +71,10 @@ def test_clients_get_the_village_in_their_snapshot(app: Starlette) -> None:
 
 def test_the_snapshot_puts_a_resident_inside_on_the_interiors_map(app: Starlette) -> None:
     with TestClient(app):
-        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=5, y=6))
+        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=13, y=9))
         entity = next(e for e in hub_of(app).snapshot().entities if e.id == NPCS[0].id)
 
-    assert entity.position == Position(x=5, y=6, map="coffee_shop")
+    assert entity.position == Position(x=13, y=9, map="coffee_shop")
 
 
 def test_the_player_starts_in_the_square_then_is_where_they_moved(app: Starlette) -> None:

@@ -223,8 +223,10 @@ class Recorder:
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
         if location is None:
             return STREET, None
+        if location.id == home:
+            return HOME, location.id
         if location.kind is LocationKind.HOUSE:
-            return (HOME if location.id == home else STREET), location.id
+            return STREET, location.id
         if location.kind is LocationKind.TERMINAL:
             return TERMINAL, location.id
         return location.id, location.id

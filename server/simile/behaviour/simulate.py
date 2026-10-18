@@ -110,8 +110,10 @@ class Observer:
         location = self.behaviour.places.at(self.behaviour.movement.position(npc))
         if location is None:
             return STREET
+        if location.id == home:
+            return HOME
         if location.kind is LocationKind.HOUSE:
-            return HOME if location.id == home else STREET
+            return STREET
         if location.kind is LocationKind.TERMINAL:
             return TERMINAL
         return location.id

@@ -1,0 +1,35 @@
+{
+  "drinks": [
+    {
+      "id": "espresso",
+      "name": "espresso",
+      "seconds": 30,
+      "values": {"ambition": 1.0, "discipline": 1.0, "success": 0.5}
+    },
+    {
+      "id": "flat_white",
+      "name": "flat white",
+      "seconds": 60,
+      "values": {"connection": 1.0, "creativity": 0.5, "open_mindedness": 0.5}
+    },
+    {
+      "id": "long_black",
+      "name": "long black",
+      "seconds": 45,
+      "values": {"independence": 1.0, "knowledge": 0.5, "security": 0.5}
+    },
+    {
+      "id": "chai",
+      "name": "chai",
+      "seconds": 75,
+      "values": {"peace_of_mind": 1.0, "tradition": 0.5, "compassion": 0.5}
+    },
+    {
+      "id": "hot_chocolate",
+      "name": "hot chocolate",
+      "seconds": 60,
+      "values": {"pleasure": 1.0, "optimism": 0.5, "adventure": 0.5}
+    }
+  ],
+  "improvised_seconds": 90
+}

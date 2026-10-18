@@ -120,6 +120,17 @@ def test_places_residents_on_the_map_they_are_on(
         assert recorder.place("kofi", "house_1") == place
 
 
+def test_a_resident_who_lives_above_a_shop_is_home_there(tmp_path: Path) -> None:
+    world = World(Clock(START), FakeWallClock())
+    movement = Movement(load_maps(), world.bus)
+    behaviour = Behaviour(world.clock, world.bus, movement, load_npcs())
+    with MemoryStore(":memory:") as memory, RecordStore(tmp_path / "record.db") as store:
+        recorder = Recorder(store, world, behaviour, memory, None)
+        movement.place("kofi", MapTile(map="coffee_shop", x=5, y=4))
+
+        assert recorder.place("kofi", "coffee_shop") == ("home", "coffee_shop")
+
+
 @pytest.mark.anyio
 @pytest.mark.usefixtures("recording")
 async def test_each_run_is_recorded_separately(database: Path) -> None:

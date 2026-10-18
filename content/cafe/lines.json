@@ -1,0 +1,63 @@
+{
+  "greet": [
+    "Hi {customer}, what can I get you?",
+    "Hello {customer}. What are you having?",
+    "What'll it be, {customer}?"
+  ],
+  "greet_regular": [
+    "{customer}! The usual {drink}?",
+    "Hello again, {customer}. {Drink}?"
+  ],
+  "order": [
+    "{A_drink}, please.",
+    "Just {a_drink}, thanks.",
+    "Could I get {a_drink}?"
+  ],
+  "usual": [
+    "Yes please.",
+    "You know me too well.",
+    "The usual, thanks."
+  ],
+  "confirm": [
+    "One {drink}, coming up.",
+    "Lovely. Won't be long.",
+    "Sure, one {drink}."
+  ],
+  "ready": [
+    "{customer}, your {drink}.",
+    "One {drink} for {customer}.",
+    "Here's your {drink}, {customer}."
+  ],
+  "thanks": [
+    "Thanks, {barista}.",
+    "Lovely, thank you.",
+    "Cheers, {barista}."
+  ],
+  "slow": [
+    "Thanks. Busy day?",
+    "At last. Thanks, {barista}."
+  ],
+  "wrong": [
+    "Sorry, I asked for {a_drink}.",
+    "Ah, that's not {a_drink}."
+  ],
+  "sorry": [
+    "Oh, my mistake. One {drink}, properly this time.",
+    "Sorry, {customer}. I'll make it again."
+  ],
+  "give_up": [
+    "Sorry, I can't wait any longer.",
+    "I'll come back another time."
+  ],
+  "player_greet": [
+    "Hello! What can I get you?",
+    "Hi there. What would you like?"
+  ],
+  "player_ready": [
+    "Here you go, one {drink}.",
+    "One {drink}, as promised."
+  ],
+  "player_gone": [
+    "{Drink} for the Visitor!"
+  ]
+}

@@ -20,7 +20,7 @@ def test_nobody_is_out_in_the_small_hours() -> None:
 
     assert sum(observer.out.values()) == 0
     assert sum(observer.samples.values()) == 61
-    assert observer.by_hour[3]["home"] == 10 * observer.samples[3]
+    assert observer.by_hour[3]["home"] == len(load_npcs()) * observer.samples[3]
 
 
 def test_a_morning_gets_people_out_and_about() -> None:

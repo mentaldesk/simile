@@ -72,6 +72,16 @@ nothing: the server notices a player near a mural itself.
 a click through `muralView()`, both in [`world/iso/murals.ts`](../world/iso/murals.ts). With no
 such scene, as in the dialogue harness, it never hints or opens.
 
+## Ordering at a counter
+
+On a counter's stand tile (`interactables` in [`world/interactables.ts`](../world/interactables.ts)),
+a hint says "Press E to order at the counter.", and E opens the chat box to whoever is serving: the
+NPC behind the counter nearest the stand (`servingAt` in [`counter.ts`](counter.ts)), or else the
+player's partner. With nobody there it says so. The rest is the server's: the barista greets the
+player as they step up and takes the order over `player_say` like any conversation
+([`simile.cafe`](../../../server/simile/cafe/README.md)). Other kinds of interactable get their own
+prompts from their own tasks.
+
 ## Keys
 
 The game's keys (Enter, Tab, Esc, E) are handled on `window` only when nothing on the page has

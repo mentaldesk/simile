@@ -29,6 +29,11 @@
     "seconds_per_word": 0.2754,
     "digest": "ce73781d4fa4a6d813e352d63f8e7607459d17aeb5ccdc88dfaba222ba433a3f"
   },
+  "mirela": {
+    "base_seconds": 0.498,
+    "seconds_per_word": 0.2861,
+    "digest": "5907856c685bfb636447e98440a6d3f047260149a2f96d28451dcecd599412ee"
+  },
   "odalys": {
     "base_seconds": 0.324,
     "seconds_per_word": 0.2595,

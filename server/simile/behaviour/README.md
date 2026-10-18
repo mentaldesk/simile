@@ -112,7 +112,9 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 |---|---|
 | `pause(npc, talking_to=None)` | Stops their walk and their decisions. Does nothing for the player. |
 | `resume(npc)` | They decide again on the next think, or go back to what they were making. |
-| `nudge(npc, goal, bonus)` | Adds `bonus` to `goal`'s score at their next decision, which they make on the next think, stopping where they are if walking. False, changing nothing, if they're paused or asleep. The ambient director nudges through it. |
+| `nudge(npc, goal, bonus)` | Adds `bonus` to `goal`'s score at their next decision, which they make on the next think, stopping where they are if walking. False, changing nothing, if they're paused, held or asleep. The ambient director nudges through it. |
+| `hold(npc, target, goal)` | Walks them to `target` (a location id or tile) and keeps them there with `goal` until `release`: no decisions, no sleep, and nobody seeks them out. A talk pauses the hold, and afterwards they walk back. The café keeps its barista at the till and its customers in the queue this way. |
+| `release(npc, stay=None)` | Ends a hold. With a `stay` they keep the held goal where they are for that long, as if they'd just arrived, and can be sought out; otherwise they decide on the next think. |
 | `available(seeker, other)` | Whether `seeker` could seek `other` out: B1's rules for who is sought, and `seeker`'s cooldowns. |
 | `at_home(npc)` | Whether they're at or heading home, to rest, sleep or make something there. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |

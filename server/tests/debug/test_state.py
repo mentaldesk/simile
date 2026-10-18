@@ -17,7 +17,7 @@ from simile.schema import PLAYER_ID, Flag, FlagKind, Memory, MemoryKind, Relatio
 from simile.sim import Clock, FakeWallClock, LineSpoken, World
 from simile.social import as_of, meet
 from simile.world import Movement
-from simile.world.map import load_map
+from simile.world.map import load_maps
 
 pytestmark = pytest.mark.anyio
 
@@ -36,7 +36,7 @@ class Town:
         self.world = World(Clock(START), FakeWallClock())
         self.memory = MemoryStore(":memory:")
         self.memory.add(*records)
-        movement = Movement(load_map(), self.world.bus)
+        movement = Movement(load_maps(), self.world.bus)
         movement.place(PLAYER_ID, "square")
         self.behaviour = Behaviour(
             self.world.clock, self.world.bus, movement, NPCS.values(), self.memory, seed=0
