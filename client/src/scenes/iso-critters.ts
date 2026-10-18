@@ -3,43 +3,37 @@ import { village } from '../world';
 import {
   DEFAULT_HOUR,
   PIXEL_SCALE,
-  residentLight,
   SHADOW_DEPTH,
   simClock,
-  tintColour,
   type IsoTile,
   type LitLayer,
   type SceneryManifest,
 } from '../world/iso';
 import { CRITTER_BOXES, critterSheet } from '../world/iso/critter-art';
+import { CritterLight } from '../world/iso/critter-light';
 import { CRITTERS, Critters, Water, type CritterTuning } from '../world/iso/critters';
 
 const TEXTURE = 'iso-critters';
 /** Flat on the water: over the ground and shadows, under everything standing. */
 const RING_DEPTH = SHADOW_DEPTH + 0.5;
-const DEPTH_TIE = 1e-3;
-/** How far a critter moves, in tiles, or the sets' weights change, before its light is sampled again. */
-const LIGHT_STEP = 0.125;
-const WEIGHT_STEP = 0.01;
-
-type Lit = { x: number; y: number; tint: number };
+/** Reading the sim clock allocates, so in between it's run on here. */
+const CLOCK_SECONDS = 1;
 
 export class IsoCritters {
   private readonly critters: Critters;
   private readonly sprites: Phaser.GameObjects.Image[];
-  private readonly sampled: Lit[];
   private readonly tile: IsoTile;
   private readonly waterMetres: number;
-  private readonly feet = { x: 0, y: 0 };
-  private readonly lights: LitLayer['light'][] = [];
-  private readonly weights: number[] = [];
+  private readonly light: CritterLight;
   private shown = false;
+  private sinceClock = Infinity;
 
   constructor(scene: Phaser.Scene, manifest: SceneryManifest, tuning: CritterTuning = CRITTERS) {
     addTexture(scene);
     this.tile = manifest.tile;
     this.waterMetres = manifest.ground.heights.water ?? 0;
     this.critters = new Critters(Water.of(village), tuning);
+    this.light = new CritterLight(village.width, village.height);
     this.sprites = this.critters.all.map(({ kind, frame }) => {
       const { width, height, anchor } = CRITTER_BOXES[kind];
       return scene.add
@@ -48,7 +42,6 @@ export class IsoCritters {
         .setScale(PIXEL_SCALE)
         .setVisible(false);
     });
-    this.sampled = this.critters.all.map(() => ({ x: NaN, y: NaN, tint: -1 }));
   }
 
   /** `lit` is the village's light while it's drawn, or undefined to hide them. */
@@ -59,9 +52,16 @@ export class IsoCritters {
       return;
     }
     this.shown = true;
-    this.critters.update(dt, simClock.hour() ?? DEFAULT_HOUR);
-    const relight = this.relit(lit);
-    const { all } = this.critters;
+    const { critters } = this;
+    if ((this.sinceClock += dt) >= CLOCK_SECONDS) {
+      this.sinceClock = 0;
+      critters.hour = simClock.hour() ?? DEFAULT_HOUR;
+    } else {
+      const hour = critters.hour + (dt * simClock.speed) / 3600;
+      critters.hour = hour < 24 ? hour : hour - 24;
+    }
+    critters.update(dt);
+    const { all } = critters;
     const { width, height, px_per_metre_up } = this.tile;
     for (let i = 0; i < all.length; i++) {
       const critter = all[i];
@@ -69,33 +69,24 @@ export class IsoCritters {
       if (sprite.visible !== critter.visible) sprite.setVisible(critter.visible);
       if (!critter.visible) continue;
       const { x, y } = critter;
-      if (sprite.frame.name !== critter.frame) sprite.setFrame(critter.frame);
+      if (sprite.frame.name !== critter.frame) sprite.setFrame(critter.frame, false, false);
       if (sprite.alpha !== critter.alpha) sprite.setAlpha(critter.alpha);
-      const ground = ((x + y) * height) / 2;
-      sprite.setPosition(((x - y) * width) / 2, ground - (this.waterMetres + critter.z) * px_per_metre_up);
-      const depth = critter.kind === 'ripple' ? RING_DEPTH : ground + DEPTH_TIE;
+      const ground = whole(((x + y) * height) / 2);
+      const left = whole(((x - y) * width) / 2);
+      const top = whole(ground - (this.waterMetres + critter.z) * px_per_metre_up);
+      if (sprite.x !== left || sprite.y !== top) sprite.setPosition(left, top);
+      const depth = critter.kind === 'ripple' ? RING_DEPTH : ground;
       if (sprite.depth !== depth) sprite.setDepth(depth);
-      const last = this.sampled[i];
-      if (relight || Math.abs(x - last.x) > LIGHT_STEP || Math.abs(y - last.y) > LIGHT_STEP) {
-        this.feet.x = last.x = x;
-        this.feet.y = last.y = y;
-        const tint = tintColour(residentLight(lit, this.feet).tint);
-        if (tint !== last.tint) sprite.setTint((last.tint = tint));
-      }
+      const tint = this.light.colourAt(lit, critter);
+      if (sprite.tintTopLeft !== tint) sprite.setTint(tint);
     }
   }
+}
 
-  private relit(lit: readonly LitLayer[]): boolean {
-    let changed = lit.length !== this.lights.length;
-    for (let i = 0; i < lit.length; i++) {
-      if (this.lights[i] === lit[i].light && Math.abs(this.weights[i] - lit[i].weight) < WEIGHT_STEP) continue;
-      this.lights[i] = lit[i].light;
-      this.weights[i] = lit[i].weight;
-      changed = true;
-    }
-    this.lights.length = lit.length;
-    return changed;
-  }
+/** Rounded, as an integer, which V8 keeps unboxed. */
+function whole(value: number): number {
+  const half = value + 0.5;
+  return (half | 0) > half ? (half | 0) - 1 : half | 0;
 }
 
 function addTexture(scene: Phaser.Scene): void {

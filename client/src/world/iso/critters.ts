@@ -1,4 +1,5 @@
 import { LOCATIONS_LAYER, objectsOf, type TiledMap } from '../map';
+import type { Point } from '../view';
 import {
   DUCK_POSES,
   duckFrame,
@@ -6,7 +7,6 @@ import {
   heronFrame,
   PLUMAGES,
   rippleFrame,
-  RIPPLES,
   type CritterKind,
   type DuckPose,
   type HeronPose,
@@ -15,7 +15,7 @@ import {
   type Side,
 } from './critter-art';
 import { groundHeights, type TiledMapWithTiles } from './ground';
-import { LIGHTING_SETS } from './time-of-day';
+import { DEFAULT_HOUR, LIGHTING_SETS } from './time-of-day';
 
 type Span = readonly [number, number];
 
@@ -57,20 +57,16 @@ export const CRITTERS: CritterTuning = {
 /** Clear of the shores, in tiles: further from the near ones, whose kerbs hide the water by them. */
 const FAR_SHORE = 0.45;
 const NEAR_SHORE = 0.55;
-/** The heron stands this far out from the north or west shore. */
 const PERCH_OUT = 0.35;
 const LOOK_AHEAD = 0.7;
 const TURN_RATE = 1.6;
 const WANDER_RATE = 0.5;
 const WANDER_EVERY: Span = [1.5, 4];
 const SIDE_DEADBAND = 0.2;
-/** Nobody moves closer to anyone than this. */
 const MIN_GAP = 0.8;
 /** The heron stands taller, so ducks keep further from it. */
 const HERON_GAP = 1.4;
 const HERON_ROOM = 1.8;
-const BOB_SECONDS = 0.55;
-const PREEN_SECONDS = 0.45;
 const RING_SECONDS = 0.35;
 const RING_ALPHAS = [1, 1, 0.8, 0.5];
 const FLIGHT_SECONDS = 5;
@@ -78,16 +74,20 @@ const FLIGHT_METRES = 5;
 const FLIGHT_TILES = 6;
 const WING_SECONDS = 0.22;
 const TRIES = 12;
+/** Headings a twelfth of a circle apart, from half a turn one way to half the other, as cos and sin. */
+const TURNS = 6;
+const TURN_COS = Float64Array.from({ length: 2 * TURNS + 1 }, (_, i) => Math.cos(((i - TURNS) * Math.PI) / TURNS));
+const TURN_SIN = Float64Array.from({ length: 2 * TURNS + 1 }, (_, i) => Math.sin(((i - TURNS) * Math.PI) / TURNS));
 
 const between = (span: Span, random: () => number) => span[0] + (span[1] - span[0]) * random();
 
-/** Not `Math.hypot`, which boxes its arguments on every call. */
-const distance = (dx: number, dy: number) => Math.sqrt(dx * dx + dy * dy);
+/** A point of its own class: a plain `{ x, y }` shares its shape with every other, which can box its numbers. */
+class Place implements Point {
+  x = 0;
+  y = 0;
+}
 
-export const inHours = (hour: number, start: number, end: number): boolean =>
-  start < end ? hour >= start && hour < end : hour >= start || hour < end;
-
-const night = (hour: number) => inHours(hour, LIGHTING_SETS.night[0], LIGHTING_SETS.night[1]);
+const near = (dx: number, dy: number, apart: number) => dx * dx + dy * dy < apart * apart;
 
 export type WaterKind = 'lake' | 'river';
 
@@ -100,6 +100,7 @@ export class Water {
   readonly height: number;
   readonly bodies: WaterBody[] = [];
   private readonly wet: Uint8Array;
+  private readonly scratch = new Place();
 
   constructor(width: number, height: number, wet: Uint8Array, areas: readonly Area[] = []) {
     this.width = width;
@@ -133,20 +134,33 @@ export class Water {
   }
 
   isWater(x: number, y: number): boolean {
-    const column = Math.floor(x);
-    const row = Math.floor(y);
-    return (
-      column >= 0 && row >= 0 && column < this.width && row < this.height && this.wet[row * this.width + column] === 1
-    );
+    return this.wetTile(Math.floor(x), Math.floor(y));
+  }
+
+  roomy(x: number, y: number, far = FAR_SHORE): boolean {
+    this.scratch.x = x;
+    this.scratch.y = y;
+    return this.roomyAt(this.scratch, far);
   }
 
   /** Room for a critter: water all round it, and clear of the shores. */
-  roomy(x: number, y: number, far = FAR_SHORE): boolean {
+  roomyAt(point: Point, far = FAR_SHORE): boolean {
+    const left = point.x - far;
+    const right = point.x + NEAR_SHORE;
+    const top = point.y - far;
+    const bottom = point.y + NEAR_SHORE;
+    const west = (left | 0) > left ? (left | 0) - 1 : left | 0;
+    const east = (right | 0) > right ? (right | 0) - 1 : right | 0;
+    const north = (top | 0) > top ? (top | 0) - 1 : top | 0;
+    const south = (bottom | 0) > bottom ? (bottom | 0) - 1 : bottom | 0;
     return (
-      this.isWater(x - far, y - far) &&
-      this.isWater(x + NEAR_SHORE, y - far) &&
-      this.isWater(x - far, y + NEAR_SHORE) &&
-      this.isWater(x + NEAR_SHORE, y + NEAR_SHORE)
+      this.wetTile(west, north) && this.wetTile(east, north) && this.wetTile(west, south) && this.wetTile(east, south)
+    );
+  }
+
+  private wetTile(column: number, row: number): boolean {
+    return (
+      column >= 0 && row >= 0 && column < this.width && row < this.height && this.wet[row * this.width + column] === 1
     );
   }
 
@@ -204,19 +218,41 @@ export type Critter = {
 
 type DuckState = 'paddle' | 'rest' | 'dabble' | 'under' | 'preen' | 'tucked';
 
-type Sided<T extends string> = Record<T, Record<Side, string>>;
+type Facing<T extends string> = Record<T, string>;
+type Facings<T extends string> = Record<Side, Facing<T>>;
 
-const sidedFrames = <T extends string>(poses: readonly T[], name: (pose: T, side: Side) => string): Sided<T> =>
-  Object.fromEntries(poses.map((pose) => [pose, { left: name(pose, 'left'), right: name(pose, 'right') }])) as Sided<T>;
+const facings = <T extends string>(poses: readonly T[], name: (pose: T, side: Side) => string): Facings<T> => {
+  const side = (side: Side) => Object.fromEntries(poses.map((pose) => [pose, name(pose, side)])) as Facing<T>;
+  return { left: side('left'), right: side('right') };
+};
 
 const DUCK_FRAMES = Object.fromEntries(
-  PLUMAGES.map((plumage) => [plumage, sidedFrames(DUCK_POSES, (pose, side) => duckFrame(plumage, pose, side))]),
-) as Record<Plumage, Sided<DuckPose>>;
-const HERON_FRAMES = sidedFrames(HERON_POSES, heronFrame);
-const RING_FRAMES = Object.fromEntries(RIPPLES.map((ripple) => [ripple, rippleFrame(ripple)])) as Record<
-  Ripple,
-  string
->;
+  PLUMAGES.map((plumage) => [plumage, facings(DUCK_POSES, (pose, side) => duckFrame(plumage, pose, side))]),
+) as Record<Plumage, Facings<DuckPose>>;
+const HERON_FRAMES = facings(HERON_POSES, heronFrame);
+/** A ring's frames, a step at a time: the rise, then the rings spreading. */
+const RING_STEPS: Record<'koi' | 'fish', readonly string[]> = {
+  koi: ['koi', 'ring1', 'ring2', 'ring3'].map((ripple) => rippleFrame(ripple as Ripple)),
+  fish: ['fish', 'ring1', 'ring2', 'ring3'].map((ripple) => rippleFrame(ripple as Ripple)),
+};
+
+/** The two frames each state bobs between and how long each shows, its pace, and how long it lasts. */
+const DUCK_STATES: Record<DuckState, { frames: [DuckPose, DuckPose]; bob: number; pace: number; seconds: Span }> = {
+  paddle: { frames: ['paddle0', 'paddle1'], bob: 0.55, pace: 1, seconds: [6, 20] },
+  rest: { frames: ['paddle0', 'paddle1'], bob: 0.9, pace: 0, seconds: [3, 9] },
+  preen: { frames: ['preen0', 'preen1'], bob: 0.45, pace: 0, seconds: [2, 5] },
+  dabble: { frames: ['dabble', 'dabble'], bob: 1, pace: 0, seconds: [1.5, 3] },
+  under: { frames: ['dabble', 'dabble'], bob: 1, pace: 1.5, seconds: [1.5, 3] },
+  tucked: { frames: ['tucked', 'tucked'], bob: 1, pace: 0, seconds: [0, 0] },
+};
+
+const HERON_SECONDS: Record<HeronPose, Span> = {
+  stand: [3, 9],
+  hunch: [5, 15],
+  strike: [0.4, 0.6],
+  fly0: [0, 0],
+  fly1: [0, 0],
+};
 
 class DuckCritter implements Critter {
   readonly kind = 'duck';
@@ -225,30 +261,35 @@ class DuckCritter implements Critter {
   z = 0;
   visible = true;
   alpha = 1;
-  frame: string;
+  frame = '';
+  frameA = '';
+  frameB = '';
   state: DuckState = 'paddle';
+  pace = 0;
+  bob = 1;
   left = 0;
   clock = 0;
   turn = 0;
   turnIn = 0;
+  /** Which way it's heading, as a unit vector. */
+  hx = 1;
+  hy = 0;
   side: Side;
-  heading = 0;
-  readonly frames: Sided<DuckPose>;
+  readonly facings: Facings<DuckPose>;
   readonly speed: number;
-  readonly settle: number;
-  readonly wake: number;
+  /** When it tucks its head in and when it wakes. */
+  readonly night: Span;
 
   constructor(x: number, y: number, plumage: Plumage, tuning: CritterTuning, random: () => number) {
     this.x = x;
     this.y = y;
-    this.frames = DUCK_FRAMES[plumage];
-    this.heading = random() * 2 * Math.PI;
+    this.facings = DUCK_FRAMES[plumage];
+    const heading = random() * 2 * Math.PI;
+    this.hx = Math.cos(heading);
+    this.hy = Math.sin(heading);
     this.side = random() < 0.5 ? 'left' : 'right';
-    this.frame = this.frames.paddle0[this.side];
     this.speed = between(tuning.paddleSpeed, random);
-    this.settle = between(tuning.settle, random);
-    this.wake = between(tuning.wake, random);
-    this.left = between([2, 12], random);
+    this.night = [between(tuning.settle, random), between(tuning.wake, random)];
     this.clock = random() * 10;
   }
 }
@@ -262,20 +303,29 @@ class HeronCritter implements Critter {
   z = 0;
   alpha = 1;
   visible = false;
-  frame = HERON_FRAMES.stand.left;
+  frame = HERON_FRAMES.left.stand;
   state: HeronState = 'away';
   pose: HeronPose = 'stand';
   left = 0;
   poseLeft = 0;
   clock = 0;
   side: Side = 'left';
-  readonly from = { x: 0, y: 0 };
-  readonly perch = { x: 0, y: 0 };
+  facing = HERON_FRAMES.left;
+  /** A flight runs from `start` to `end`, and from `rise` metres up to `fall`; standing, both are the perch. */
+  readonly start = new Place();
+  readonly end = new Place();
+  rise = 0;
+  fall = 0;
+  readonly perch = new Place();
   readonly lake: WaterBody;
 
   constructor(lake: WaterBody, tuning: CritterTuning, random: () => number) {
     this.lake = lake;
     this.left = between(tuning.heronAway, random) / 2;
+  }
+
+  get flying(): boolean {
+    return this.state === 'arriving' || this.state === 'leaving';
   }
 }
 
@@ -286,15 +336,18 @@ class RingCritter implements Critter {
   z = 0;
   alpha = 1;
   visible = false;
-  frame = RING_FRAMES.ring1;
+  frame = RING_STEPS.fish[1];
   age = 0;
-  rise: Ripple = 'fish';
+  steps = RING_STEPS.fish;
   /** 0 to show the fish rising first, or 1 to start at the first ring. */
   first = 0;
 }
 
+/** Each frame does the same work whatever a critter is doing, and boxes no numbers: optimised, it allocates nothing. */
 export class Critters {
   readonly all: readonly Critter[];
+  /** The sim hour, which `update` reads rather than takes, so it isn't boxed every frame. */
+  hour: number = DEFAULT_HOUR;
   private readonly water: Water;
   private readonly tuning: CritterTuning;
   private readonly random: () => number;
@@ -302,7 +355,8 @@ export class Critters {
   private readonly heron?: HeronCritter;
   private readonly rings: RingCritter[] = [];
   private readonly risesIn: number[];
-  private readonly spot = { x: 0, y: 0 };
+  private readonly spot = new Place();
+  private readonly probe = new Place();
 
   constructor(water: Water, tuning: CritterTuning = CRITTERS, random: () => number = Math.random) {
     this.water = water;
@@ -314,7 +368,9 @@ export class Critters {
         const count = Math.min(tuning.ducks[kind], room);
         for (let i = 0; i < count && this.findSpot(body); i++) {
           const plumage = PLUMAGES[this.ducks.length % PLUMAGES.length];
-          this.ducks.push(new DuckCritter(this.spot.x, this.spot.y, plumage, tuning, random));
+          const duck = new DuckCritter(this.spot.x, this.spot.y, plumage, tuning, random);
+          this.ducks.push(duck);
+          this.startDuck(duck, 'paddle');
         }
         room -= count;
       }
@@ -329,98 +385,68 @@ export class Critters {
     this.all = [...this.ducks, ...(this.heron ? [this.heron] : []), ...this.rings];
   }
 
-  /** `dt` in real seconds, at a sim `hour`. */
-  update(dt: number, hour: number): void {
-    for (let i = 0; i < this.ducks.length; i++) this.updateDuck(this.ducks[i], dt, hour);
-    if (this.heron) this.updateHeron(this.heron, dt, hour);
+  /** `dt` in real seconds. */
+  update(dt: number): void {
+    for (let i = 0; i < this.ducks.length; i++) this.updateDuck(this.ducks[i], dt);
+    if (this.heron) this.updateHeron(this.heron, dt);
     for (let i = 0; i < this.rings.length; i++) this.updateRing(this.rings[i], dt);
     if (this.rings.length === 0) return;
-    const rising = night(hour) ? this.tuning.riseEvery.night : this.tuning.riseEvery.day;
     for (let i = 0; i < this.risesIn.length; i++) {
-      this.risesIn[i] -= dt;
-      if (this.risesIn[i] > 0) continue;
-      this.risesIn[i] = between(rising, this.random);
-      const body = this.water.bodies[i];
-      if (this.findSpot(body)) {
-        const koi = body.kind === 'lake' && this.random() < 0.5;
-        this.ring(this.spot.x, this.spot.y, koi ? 'koi' : 'fish', 0);
-      }
+      if ((this.risesIn[i] -= dt) <= 0) this.rise(i);
     }
   }
 
-  private updateDuck(duck: DuckCritter, dt: number, hour: number): void {
-    if (inHours(hour, duck.settle, duck.wake)) {
-      duck.state = 'tucked';
-      duck.visible = true;
-      duck.frame = duck.frames.tucked[duck.side];
-      return;
-    }
-    if (duck.state === 'tucked') this.startDuck(duck, 'paddle');
+  /** Whether the hour is in `[start, end)`, which may run past midnight. */
+  private within(span: Span): boolean {
+    const { hour } = this;
+    return span[0] < span[1] ? hour >= span[0] && hour < span[1] : hour >= span[0] || hour < span[1];
+  }
+
+  private updateDuck(duck: DuckCritter, dt: number): void {
+    const tucked = duck.state === 'tucked';
+    if (this.within(duck.night) !== tucked) this.startDuck(duck, tucked ? 'paddle' : 'tucked');
     duck.clock += dt;
     duck.left -= dt;
-    const { frames, side } = duck;
-    switch (duck.state) {
-      case 'paddle':
-        this.paddle(duck, dt, 1);
-        duck.frame = this.bob(duck, BOB_SECONDS) ? frames.paddle0[duck.side] : frames.paddle1[duck.side];
-        if (duck.left <= 0) this.nextDuck(duck);
-        break;
-      case 'rest':
-        duck.frame = this.bob(duck, BOB_SECONDS * 1.6) ? frames.paddle0[side] : frames.paddle1[side];
-        if (duck.left <= 0) this.startDuck(duck, 'paddle');
-        break;
-      case 'preen':
-        duck.frame = this.bob(duck, PREEN_SECONDS) ? frames.preen0[side] : frames.preen1[side];
-        if (duck.left <= 0) this.startDuck(duck, 'paddle');
-        break;
-      case 'dabble':
-        duck.frame = frames.dabble[side];
-        if (duck.left <= 0) this.startDuck(duck, this.random() < 0.5 ? 'under' : 'paddle');
-        break;
-      case 'under':
-        duck.visible = false;
-        this.paddle(duck, dt, 1.5);
-        if (duck.left <= 0) {
-          duck.visible = true;
-          this.ring(duck.x, duck.y, 'fish', 1);
-          this.startDuck(duck, 'paddle');
-        }
-        break;
-    }
-  }
-
-  private bob(duck: DuckCritter, seconds: number): boolean {
-    return duck.clock % (2 * seconds) < seconds;
+    if (duck.pace > 0) this.paddle(duck, dt);
+    duck.frame = ((duck.clock / duck.bob) | 0) & 1 ? duck.frameB : duck.frameA;
+    if (duck.left <= 0) this.nextDuck(duck);
   }
 
   private nextDuck(duck: DuckCritter): void {
+    const { state } = duck;
+    if (state === 'under') this.ring(duck.x, duck.y, 'fish', 1);
     const roll = this.random();
-    this.startDuck(duck, roll < 0.3 ? 'rest' : roll < 0.5 ? 'dabble' : roll < 0.7 ? 'preen' : 'paddle');
+    if (state === 'dabble') this.startDuck(duck, roll < 0.5 ? 'under' : 'paddle');
+    else if (state !== 'paddle') this.startDuck(duck, 'paddle');
+    else this.startDuck(duck, roll < 0.3 ? 'rest' : roll < 0.5 ? 'dabble' : roll < 0.7 ? 'preen' : 'paddle');
   }
 
   private startDuck(duck: DuckCritter, state: DuckState): void {
+    const { pace, bob, seconds } = DUCK_STATES[state];
     duck.state = state;
-    duck.visible = true;
-    duck.left = between(DUCK_SECONDS[state], this.random);
+    duck.pace = pace;
+    duck.bob = bob;
+    duck.visible = state !== 'under';
+    duck.left = state === 'tucked' ? Infinity : between(seconds, this.random);
+    this.dress(duck);
   }
 
-  private paddle(duck: DuckCritter, dt: number, pace: number): void {
-    const { random, water } = this;
+  private dress(duck: DuckCritter): void {
+    const { frames } = DUCK_STATES[duck.state];
+    const facing = duck.facings[duck.side];
+    duck.frameA = facing[frames[0]];
+    duck.frameB = facing[frames[1]];
+    duck.frame = ((duck.clock / duck.bob) | 0) & 1 ? duck.frameB : duck.frameA;
+  }
+
+  private paddle(duck: DuckCritter, dt: number): void {
+    const { probe } = this;
     if ((duck.turnIn -= dt) <= 0) {
-      duck.turn = (random() * 2 - 1) * WANDER_RATE;
-      duck.turnIn = between(WANDER_EVERY, random);
+      duck.turn = (this.random() * 2 - 1) * WANDER_RATE;
+      duck.turnIn = WANDER_EVERY[0] + (WANDER_EVERY[1] - WANDER_EVERY[0]) * this.random();
     }
     let steer = duck.turn;
-    if (!this.ahead(duck, duck.heading)) {
-      steer = TURN_RATE;
-      for (let k = 1; k <= 6; k++) {
-        if (this.ahead(duck, duck.heading + (k * Math.PI) / 6)) break;
-        if (this.ahead(duck, duck.heading - (k * Math.PI) / 6)) {
-          steer = -TURN_RATE;
-          break;
-        }
-      }
-    } else {
+    if (this.ahead(duck, TURNS)) {
       let awayX = 0;
       let awayY = 0;
       for (let i = 0; i <= this.ducks.length; i++) {
@@ -428,50 +454,91 @@ export class Critters {
         if (!other || other === duck) continue;
         const dx = duck.x - other.x;
         const dy = duck.y - other.y;
-        const gap = distance(dx, dy);
+        const gap = Math.sqrt(dx * dx + dy * dy) + 1e-9;
         const reach = i < this.ducks.length ? this.tuning.apart : HERON_ROOM;
-        if (gap === 0 || gap >= reach) continue;
-        awayX += (dx / gap) * (reach - gap);
-        awayY += (dy / gap) * (reach - gap);
+        const push = gap < reach ? (reach - gap) / gap : 0;
+        awayX += dx * push;
+        awayY += dy * push;
       }
-      if (awayX !== 0 || awayY !== 0) {
-        const off = wrap(Math.atan2(awayY, awayX) - duck.heading);
-        steer = Math.abs(off) < 0.1 ? 0 : Math.sign(off) * TURN_RATE;
-      }
+      const cross = duck.hx * awayY - duck.hy * awayX;
+      const dot = duck.hx * awayX + duck.hy * awayY;
+      const onCourse = dot > 0 && cross < 0.1 * dot && cross > -0.1 * dot;
+      if (awayX !== 0 || awayY !== 0) steer = onCourse ? 0 : cross > 0 ? TURN_RATE : -TURN_RATE;
+    } else steer = TURN_RATE * this.shoreTurn(duck);
+    const turn = steer * dt;
+    const cos = 1 - (turn * turn) / 2;
+    const sin = turn - (turn * turn * turn) / 6;
+    const hx = duck.hx * cos - duck.hy * sin;
+    const hy = duck.hx * sin + duck.hy * cos;
+    const length = Math.sqrt(hx * hx + hy * hy);
+    duck.hx = hx / length;
+    duck.hy = hy / length;
+    const step = duck.speed * duck.pace * dt;
+    probe.x = duck.x + duck.hx * step;
+    probe.y = duck.y + duck.hy * step;
+    if (this.water.roomyAt(probe) && !this.crowds(duck)) {
+      duck.x = probe.x;
+      duck.y = probe.y;
     }
-    duck.heading = wrap(duck.heading + steer * dt);
-    const step = duck.speed * pace * dt;
-    const x = duck.x + Math.cos(duck.heading) * step;
-    const y = duck.y + Math.sin(duck.heading) * step;
-    if (water.roomy(x, y) && !this.crowds(duck, x, y)) {
-      duck.x = x;
-      duck.y = y;
-    }
-    const across = Math.cos(duck.heading) - Math.sin(duck.heading);
-    if (across < -SIDE_DEADBAND) duck.side = 'left';
-    else if (across > SIDE_DEADBAND) duck.side = 'right';
+    const across = duck.hx - duck.hy;
+    const side = across < -SIDE_DEADBAND ? 'left' : across > SIDE_DEADBAND ? 'right' : duck.side;
+    if (side !== duck.side) this.turnDuck(duck, side);
   }
 
-  private ahead(duck: DuckCritter, heading: number): boolean {
-    return this.water.roomy(duck.x + Math.cos(heading) * LOOK_AHEAD, duck.y + Math.sin(heading) * LOOK_AHEAD);
+  /** Which way to turn off the shore ahead, 1 or -1: towards the nearer heading with room. */
+  private shoreTurn(duck: DuckCritter): number {
+    for (let k = 1; k <= TURNS; k++) {
+      if (this.ahead(duck, TURNS + k)) return 1;
+      if (this.ahead(duck, TURNS - k)) return -1;
+    }
+    return 1;
   }
 
-  /** Each duck, then the heron where it's landing or standing. */
-  private presence(i: number): { x: number; y: number } | undefined {
+  private turnDuck(duck: DuckCritter, side: Side): void {
+    duck.side = side;
+    this.dress(duck);
+  }
+
+  /** Whether there's room ahead, turned by `TURN_COS[turn]`: `TURNS` is straight on. */
+  private ahead(duck: DuckCritter, turn: number): boolean {
+    const cos = TURN_COS[turn];
+    const sin = TURN_SIN[turn];
+    this.probe.x = duck.x + (duck.hx * cos - duck.hy * sin) * LOOK_AHEAD;
+    this.probe.y = duck.y + (duck.hx * sin + duck.hy * cos) * LOOK_AHEAD;
+    return this.water.roomyAt(this.probe);
+  }
+
+  private presence(i: number): Point | undefined {
     if (i < this.ducks.length) return this.ducks[i];
     const heron = this.heron;
     return heron && (heron.state === 'arriving' || heron.state === 'standing') ? heron.perch : undefined;
   }
 
-  private crowds(self: Critter, x: number, y: number): boolean {
+  /** Whether moving to `probe` takes it too close to anyone. */
+  private crowds(self: Critter): boolean {
+    const { probe } = this;
     for (let i = 0; i <= this.ducks.length; i++) {
       const other = this.presence(i);
       if (!other || other === self) continue;
-      const gap = distance(x - other.x, y - other.y);
+      const nx = probe.x - other.x;
+      const ny = probe.y - other.y;
+      const sx = self.x - other.x;
+      const sy = self.y - other.y;
+      const gap = Math.sqrt(nx * nx + ny * ny);
       const least = i < this.ducks.length ? MIN_GAP : HERON_GAP;
-      if (gap < least && gap < distance(self.x - other.x, self.y - other.y)) return true;
+      if (gap < least && gap < Math.sqrt(sx * sx + sy * sy)) return true;
     }
     return false;
+  }
+
+  private rise(i: number): void {
+    this.risesIn[i] = between(
+      this.within(LIGHTING_SETS.night) ? this.tuning.riseEvery.night : this.tuning.riseEvery.day,
+      this.random,
+    );
+    const body = this.water.bodies[i];
+    if (!this.findSpot(body)) return;
+    this.ring(this.spot.x, this.spot.y, body.kind === 'lake' && this.random() < 0.5 ? 'koi' : 'fish', 0);
   }
 
   /** Into `spot`: somewhere roomy on `body`, apart from everyone. */
@@ -492,55 +559,56 @@ export class Critters {
   private clear(x: number, y: number, apart: number): boolean {
     for (let i = 0; i <= this.ducks.length; i++) {
       const other = this.presence(i);
-      if (other && distance(x - other.x, y - other.y) < apart) return false;
+      if (other && near(x - other.x, y - other.y, apart)) return false;
     }
-    for (const ring of this.rings) {
-      if (ring.visible && distance(x - ring.x, y - ring.y) < apart) return false;
+    for (let i = 0; i < this.rings.length; i++) {
+      const ring = this.rings[i];
+      if (ring.visible && near(x - ring.x, y - ring.y, apart)) return false;
     }
     return true;
   }
 
-  private updateHeron(heron: HeronCritter, dt: number, hour: number): void {
-    const { tuning, random } = this;
-    const day = inHours(hour, tuning.heronHours[0], tuning.heronHours[1]);
+  private updateHeron(heron: HeronCritter, dt: number): void {
     heron.clock += dt;
     heron.left -= dt;
+    heron.poseLeft -= dt;
+    const flown = heron.clock / FLIGHT_SECONDS;
+    const t = flown < 1 ? flown : 1;
+    const easeIn = t * t;
+    const easeOut = 1 - (1 - t) * (1 - t);
+    const near = heron.state === 'leaving' ? easeIn : easeOut;
+    const { start, end } = heron;
+    heron.x = start.x + (end.x - start.x) * near;
+    heron.y = start.y + (end.y - start.y) * near;
+    heron.z = heron.rise + (heron.fall - heron.rise) * near;
+    const wings = (((heron.clock / WING_SECONDS) | 0) & 1) === 0;
+    const flying = heron.flying;
+    if (flying) heron.frame = wings ? heron.facing.fly0 : heron.facing.fly1;
+    const day = this.within(this.tuning.heronHours);
+    if (flying ? t >= 1 : heron.left <= 0 || (!day && heron.state === 'standing')) this.nextHeron(heron, day);
+    else if (heron.state === 'standing' && heron.poseLeft <= 0) this.nextHeronPose(heron);
+  }
+
+  private nextHeron(heron: HeronCritter, day: boolean): void {
+    const { tuning, random } = this;
     switch (heron.state) {
-      case 'away':
-        heron.visible = false;
-        if (heron.left <= 0 && day) this.land(heron);
-        break;
       case 'arriving':
-      case 'leaving': {
-        const t = Math.min(1, heron.clock / FLIGHT_SECONDS);
-        const going = heron.state === 'leaving';
-        const near = going ? t * t : 1 - (1 - t) * (1 - t);
-        const from = going ? heron.perch : heron.from;
-        const to = going ? heron.from : heron.perch;
-        heron.x = from.x + (to.x - from.x) * near;
-        heron.y = from.y + (to.y - from.y) * near;
-        heron.z = FLIGHT_METRES * (going ? near : 1 - near);
-        const wings = heron.clock % (2 * WING_SECONDS) < WING_SECONDS;
-        heron.frame = HERON_FRAMES[wings ? 'fly0' : 'fly1'][heron.side];
-        if (t < 1) break;
-        if (going) {
-          heron.state = 'away';
-          heron.visible = false;
-          heron.left = between(tuning.heronAway, random);
-        } else {
-          heron.state = 'standing';
-          heron.left = between(tuning.heronStays, random);
-          this.poseHeron(heron, 'stand');
-        }
+        heron.state = 'standing';
+        this.hold(heron);
+        heron.left = between(tuning.heronStays, random);
+        this.poseHeron(heron, 'stand');
         break;
-      }
+      case 'leaving':
+        heron.state = 'away';
+        heron.visible = false;
+        heron.left = between(tuning.heronAway, random);
+        break;
       case 'standing':
-        if (!day || heron.left <= 0) {
-          this.fly(heron, 'leaving');
-          break;
-        }
-        if ((heron.poseLeft -= dt) <= 0) this.nextHeronPose(heron);
-        heron.frame = HERON_FRAMES[heron.pose][heron.side];
+        this.fly(heron, 'leaving');
+        break;
+      case 'away':
+        if (day) this.land(heron);
+        else heron.left = between(tuning.heronAway, random) / 4;
         break;
     }
   }
@@ -552,26 +620,47 @@ export class Critters {
     for (let k = 0; k < count; k++) {
       const i = ((first + k) % count) * 2;
       if (!this.clear(perches[i], perches[i + 1], HERON_ROOM)) continue;
-      [heron.perch.x, heron.perch.y] = [perches[i], perches[i + 1]];
+      heron.perch.x = perches[i];
+      heron.perch.y = perches[i + 1];
       const way = this.random() < 0.5 ? 1 : -1;
-      [heron.from.x, heron.from.y] = [heron.perch.x + way * FLIGHT_TILES, heron.perch.y - way * FLIGHT_TILES];
       heron.side = way > 0 ? 'left' : 'right';
-      this.fly(heron, 'arriving');
+      heron.facing = HERON_FRAMES[heron.side];
+      this.fly(heron, 'arriving', way);
       return;
     }
     heron.left = between(this.tuning.heronAway, this.random) / 4;
   }
 
-  private fly(heron: HeronCritter, state: 'arriving' | 'leaving'): void {
+  /** Off the perch or onto it, from or to `FLIGHT_TILES` away to one side or the other, `way`. */
+  private fly(heron: HeronCritter, state: 'arriving' | 'leaving', way = heron.side === 'left' ? 1 : -1): void {
+    const arriving = state === 'arriving';
+    const { perch } = heron;
+    const away = arriving ? heron.start : heron.end;
+    const onPerch = arriving ? heron.end : heron.start;
+    away.x = perch.x + way * FLIGHT_TILES;
+    away.y = perch.y - way * FLIGHT_TILES;
+    onPerch.x = perch.x;
+    onPerch.y = perch.y;
+    heron.rise = arriving ? FLIGHT_METRES : 0;
+    heron.fall = arriving ? 0 : FLIGHT_METRES;
+    if (!arriving) {
+      heron.side = way > 0 ? 'right' : 'left';
+      heron.facing = HERON_FRAMES[heron.side];
+    }
     heron.state = state;
     heron.visible = true;
     heron.clock = 0;
-    const start = state === 'arriving' ? heron.from : heron.perch;
-    heron.x = start.x;
-    heron.y = start.y;
-    heron.z = state === 'arriving' ? FLIGHT_METRES : 0;
-    if (state === 'leaving')
-      heron.side = heron.from.x - heron.from.y > heron.perch.x - heron.perch.y ? 'right' : 'left';
+    heron.x = heron.start.x;
+    heron.y = heron.start.y;
+    heron.z = heron.rise;
+    heron.frame = heron.facing.fly0;
+  }
+
+  private hold(heron: HeronCritter): void {
+    heron.start.x = heron.end.x = heron.perch.x;
+    heron.start.y = heron.end.y = heron.perch.y;
+    heron.rise = 0;
+    heron.fall = 0;
   }
 
   private nextHeronPose(heron: HeronCritter): void {
@@ -586,15 +675,16 @@ export class Critters {
   private poseHeron(heron: HeronCritter, pose: HeronPose): void {
     heron.pose = pose;
     heron.poseLeft = between(HERON_SECONDS[pose], this.random);
-    heron.frame = HERON_FRAMES[pose][heron.side];
+    heron.frame = heron.facing[pose];
   }
 
-  private ring(x: number, y: number, rise: Ripple, first: number): void {
-    for (const ring of this.rings) {
+  private ring(x: number, y: number, rise: keyof typeof RING_STEPS, first: number): void {
+    for (let i = 0; i < this.rings.length; i++) {
+      const ring = this.rings[i];
       if (ring.visible) continue;
       ring.x = x;
       ring.y = y;
-      ring.rise = rise;
+      ring.steps = RING_STEPS[rise];
       ring.first = first;
       ring.age = 0;
       ring.visible = true;
@@ -606,31 +696,12 @@ export class Critters {
   private updateRing(ring: RingCritter, dt: number): void {
     if (!ring.visible) return;
     ring.age += dt;
-    const step = ring.first + Math.floor(ring.age / RING_SECONDS);
+    const step = ring.first + ((ring.age / RING_SECONDS) | 0);
     if (step >= RING_ALPHAS.length) {
       ring.visible = false;
       return;
     }
-    ring.frame = RING_FRAMES[step === 0 ? ring.rise : RIPPLES[step + 1]];
+    ring.frame = ring.steps[step];
     ring.alpha = RING_ALPHAS[step];
   }
 }
-
-const DUCK_SECONDS: Record<DuckState, Span> = {
-  paddle: [6, 20],
-  rest: [3, 9],
-  dabble: [1.5, 3],
-  under: [1.5, 3],
-  preen: [2, 5],
-  tucked: [0, 0],
-};
-
-const HERON_SECONDS: Record<HeronPose, Span> = {
-  stand: [3, 9],
-  hunch: [5, 15],
-  strike: [0.4, 0.6],
-  fly0: [0, 0],
-  fly1: [0, 0],
-};
-
-const wrap = (angle: number) => Math.atan2(Math.sin(angle), Math.cos(angle));

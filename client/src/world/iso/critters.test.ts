@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { village } from '../assets';
-import { CRITTERS, Critters, inHours, Water, type Critter, type CritterTuning } from './critters';
+import { CRITTERS, Critters, Water, type Critter, type CritterTuning } from './critters';
 
 const water = Water.of(village);
 const FRAME = 1 / 30;
@@ -19,8 +19,9 @@ const critters = (tuning: Partial<CritterTuning> = {}, seed = 1) =>
   new Critters(water, { ...CRITTERS, ...tuning }, seeded(seed));
 
 function run(subject: Critters, seconds: number, hour: number, each: (all: readonly Critter[]) => void = () => {}) {
+  subject.hour = hour;
   for (let t = 0; t < seconds; t += FRAME) {
-    subject.update(FRAME, hour);
+    subject.update(FRAME);
     each(subject.all);
   }
 }
@@ -125,7 +126,8 @@ describe('Critters', () => {
     const subject = critters({}, 4);
     const ducks = subject.all.filter(({ kind }) => kind === 'duck');
     const tucked = (hour: number) => {
-      subject.update(FRAME, hour);
+      subject.hour = hour;
+      subject.update(FRAME);
       return ducks.filter(({ frame }) => frame.includes('-tucked-')).length;
     };
     expect(tucked(20)).toBe(0);
@@ -158,15 +160,5 @@ describe('Critters', () => {
     expect(heron.visible).toBe(false);
     run(subject, 600, 3);
     expect(heron.visible).toBe(false);
-  });
-});
-
-describe('inHours', () => {
-  it('runs past midnight', () => {
-    expect(inHours(23, 21, 5)).toBe(true);
-    expect(inHours(4.9, 21, 5)).toBe(true);
-    expect(inHours(5, 21, 5)).toBe(false);
-    expect(inHours(12, 6, 18)).toBe(true);
-    expect(inHours(18, 6, 18)).toBe(false);
   });
 });
