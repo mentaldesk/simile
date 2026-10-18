@@ -50,6 +50,13 @@ ARTICLE = NewsArticle(
     url="https://bigthink.com/drones",
     read=False,
 )
+LONG_SUMMARY = (
+    "The council meets in May to vote on where delivery drones may fly.\n\n"
+    "Residents near the depot want quiet hours. The couriers say the routes save time."
+)
+SUMMARISED = NewsArticle.model_validate(
+    ARTICLE.model_dump() | {"news_id": "n3", "long_summary": LONG_SUMMARY}
+)
 
 VIKTOR = Artist(id="viktor", name="Viktor Petrov")
 POEM = WrittenWork(
@@ -102,7 +109,13 @@ SERVER = [
     ),
     LineMessage(line=CONVERSATION.lines[-1], voiced=True),
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
-    NewsMessage(articles=[ARTICLE, ARTICLE.model_copy(update={"news_id": "n2", "read": True})]),
+    NewsMessage(
+        articles=[
+            ARTICLE,
+            ARTICLE.model_copy(update={"news_id": "n2", "read": True}),
+            SUMMARISED,
+        ]
+    ),
     CLOCK,
     WORKS,
     MURALS,
@@ -219,6 +232,30 @@ def test_news_lists_every_field_of_each_article() -> None:
             }
         ],
     }
+
+
+def test_a_long_summary_follows_the_short_one() -> None:
+    article = json.loads(SUMMARISED.model_dump_json())
+    keys = list(article)
+
+    assert article["long_summary"] == LONG_SUMMARY
+    assert keys[keys.index("summary") + 1] == "long_summary"
+
+
+def test_the_exported_article_allows_but_does_not_require_a_long_summary() -> None:
+    article = json.loads(SCHEMA_FILE.read_text())["$defs"]["NewsArticle"]
+
+    assert "long_summary" in article["properties"]
+    assert "long_summary" not in article["required"]
+
+
+@pytest.mark.parametrize(
+    ("long_summary", "match"),
+    [("", "at least 1 character"), ("x" * 4001, "at most 4000 characters")],
+)
+def test_long_summaries_are_not_empty_or_too_long(long_summary: str, match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        NewsArticle.model_validate(ARTICLE.model_dump() | {"long_summary": long_summary})
 
 
 def test_works_lists_every_field_of_each_work() -> None:

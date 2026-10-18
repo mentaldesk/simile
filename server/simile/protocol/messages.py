@@ -4,6 +4,7 @@ from typing import Annotated, Any, Literal, Self
 from pydantic import ConfigDict, Field, JsonValue, TypeAdapter, model_validator
 
 from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line, Model, Timestamp
+from simile.schema.news import LongSummary
 
 
 def _map_not_required(schema: dict[str, Any]) -> None:
@@ -91,6 +92,12 @@ class NewsArticle(Model):
     title: str
     source: str = Field(description='The feed it came from, e.g. "The Atlantic". May be empty.')
     summary: str = Field(description="Plain text.")
+    long_summary: LongSummary | None = Field(
+        default=None,
+        exclude_if=lambda long_summary: long_summary is None,
+        description="Three or four short paragraphs of plain text, separated by blank lines. Left "
+        "out when there isn't one, so the client shows `summary`.",
+    )
     url: str = Field(description="The original article.")
     read: bool = Field(description="Whether the player has read it.")
 

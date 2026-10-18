@@ -29,6 +29,18 @@
       "title": "Content",
       "type": "string"
     },
+    "points": {
+      "default": [],
+      "description": "Up to 3 specific things the owner took from what they read, e.g. \"the council votes on the drone rules in May\". Kept out of `content` so a prompt can include them for one article at a time. Left out when empty.",
+      "items": {
+        "maxLength": 240,
+        "minLength": 1,
+        "type": "string"
+      },
+      "maxItems": 3,
+      "title": "Points",
+      "type": "array"
+    },
     "salience": {
       "description": "How much it matters to the owner, 0-1.",
       "maximum": 1,

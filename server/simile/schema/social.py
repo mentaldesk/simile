@@ -1,9 +1,11 @@
 from enum import StrEnum
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import Field, model_validator
 
 from simile.schema.common import Id, Key, Model, Signed, Timestamp, Unit
+
+Point = Annotated[str, Field(min_length=1, max_length=240)]
 
 
 class Aspect(StrEnum):
@@ -106,6 +108,14 @@ class Memory(Model):
     owner: Id
     kind: MemoryKind
     content: str = Field(description="The memory in the owner's own words, ready for a prompt.")
+    points: list[Point] = Field(
+        default=[],
+        max_length=3,
+        exclude_if=lambda points: not points,
+        description='Up to 3 specific things the owner took from what they read, e.g. "the '
+        'council votes on the drone rules in May". Kept out of `content` so a prompt can '
+        "include them for one article at a time. Left out when empty.",
+    )
     salience: Unit = Field(description="How much it matters to the owner, 0-1.")
     valence: Signed = Field(description="How the owner felt about it, from -1 to 1.")
     timestamp: Timestamp
