@@ -1,19 +1,29 @@
+import contextlib
+import functools
 import io
 import ipaddress
 import os
 import re
 import socket
 import textwrap
+import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import Message
 from html.parser import HTMLParser
-from http.client import HTTPResponse
-from typing import IO
+from http.client import HTTPConnection, HTTPResponse, HTTPSConnection
+from types import TracebackType
+from typing import IO, Any, Self
 from urllib.error import HTTPError
 from urllib.parse import urljoin, urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import (
+    HTTPHandler,
+    HTTPRedirectHandler,
+    HTTPSHandler,
+    Request,
+    build_opener,
+)
 
 from simile.schema import NewsItem
 
@@ -106,7 +116,7 @@ class Parsed:
 def read(xml: bytes, feed: Feed | None = None) -> Parsed:
     """The feed's title, and its entries as news items from `feed`, in feed order, without
     repeated guids. Entries with no link, title or date are skipped. Refuses anything but RSS or
-    Atom, and XML that declares entities."""
+    Atom, and bytes that declare an XML entity."""
     import feedparser
 
     if re.search(rb"<!ENTITY", xml, re.IGNORECASE):
@@ -191,8 +201,108 @@ class Redirects(HTTPRedirectHandler):
     http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
 
 
-def download(response: HTTPResponse, deadline: float) -> bytes:
-    """The response's body, refused past `MAX_BYTES` or `deadline`."""
+class Deadline:
+    """Shuts every socket a fetch opens once `seconds` have passed, so nothing it waits for, from
+    connecting to the last byte, outlasts them. Leaving it raises `TimeoutError` if they did."""
+
+    def __init__(self, seconds: float) -> None:
+        self.seconds = seconds
+        self.end = time.monotonic() + seconds
+        self.passed = False
+        self._sockets: list[socket.socket] = []
+        self._lock = threading.Lock()
+        self._timer = threading.Timer(seconds, self._expire)
+        self._timer.daemon = True
+
+    def __enter__(self) -> Self:
+        self._timer.start()
+        return self
+
+    def __exit__(
+        self,
+        kind: type[BaseException] | None,
+        error: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self._timer.cancel()
+        if self.passed:
+            raise TimeoutError(f"It took over {self.seconds:g} seconds") from error
+
+    def left(self) -> float:
+        left = self.end - time.monotonic()
+        if left <= 0:
+            raise TimeoutError(f"It took over {self.seconds:g} seconds")
+        return left
+
+    def track(self, sock: socket.socket) -> None:
+        with self._lock:
+            self._sockets.append(sock)
+            if self.passed:
+                _shut(sock)
+
+    def connect(
+        self, address: tuple[str, int], timeout: float, source_address: Any = None
+    ) -> socket.socket:
+        sock = socket.create_connection(address, timeout, source_address)
+        self.track(sock)
+        return sock
+
+    def _expire(self) -> None:
+        with self._lock:
+            self.passed = True
+            for sock in self._sockets:
+                _shut(sock)
+
+
+def _shut(sock: socket.socket) -> None:
+    with contextlib.suppress(OSError):
+        socket.socket.shutdown(sock, socket.SHUT_RDWR)
+
+
+class CutOff:
+    """A connection its deadline can cut off. It connects within what's left of it, and its
+    sockets are shut when it passes: the plain one at once, and a TLS one once it's set up."""
+
+    def __init__(self, *args: Any, deadline: Deadline, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.deadline = deadline
+        self._create_connection = deadline.connect
+
+    def connect(self) -> None:
+        self.timeout = min(self.timeout, self.deadline.left())
+        super().connect()
+        self.deadline.track(self.sock)
+
+
+class CutOffHTTPConnection(CutOff, HTTPConnection):
+    pass
+
+
+class CutOffHTTPSConnection(CutOff, HTTPSConnection):
+    pass
+
+
+class DeadlineHTTPHandler(HTTPHandler):
+    def __init__(self, deadline: Deadline) -> None:
+        super().__init__()
+        self.deadline = deadline
+
+    def http_open(self, req: Request) -> HTTPResponse:
+        return self.do_open(functools.partial(CutOffHTTPConnection, deadline=self.deadline), req)
+
+
+class DeadlineHTTPSHandler(HTTPSHandler):
+    def __init__(self, deadline: Deadline) -> None:
+        super().__init__()
+        self.deadline = deadline
+
+    def https_open(self, req: Request) -> HTTPResponse:
+        connection = functools.partial(CutOffHTTPSConnection, deadline=self.deadline)
+        return self.do_open(connection, req, context=self._context)
+
+
+def download(response: HTTPResponse) -> bytes:
+    """The response's body, refused past `MAX_BYTES`."""
     too_big = FeedRefused(f"It's over {MAX_BYTES / 2**20:g} MB, too big for a news feed")
     length = response.headers.get("Content-Length", "")
     if length.isdigit() and int(length) > MAX_BYTES:
@@ -202,8 +312,6 @@ def download(response: HTTPResponse, deadline: float) -> bytes:
         data += chunk
         if len(data) > MAX_BYTES:
             raise too_big
-        if time.monotonic() > deadline:
-            raise TimeoutError(f"It took over {DEADLINE:g} seconds to download")
     return bytes(data)
 
 
@@ -211,7 +319,8 @@ def fetch(
     feed: Feed, etag: str | None = None, modified: str | None = None, timeout: float = TIMEOUT
 ) -> Fetched:
     """Download and parse `feed`, asking only for changes since `etag`/`modified`. Blocks.
-    Only over http(s), and within `MAX_BYTES` and `DEADLINE`."""
+    Only over http(s), within `MAX_BYTES`, and all of it, redirects included, within
+    `DEADLINE`."""
     if urlsplit(feed.url).scheme.lower() not in SCHEMES:
         raise FeedRefused("Simile reads feeds only over http or https")
     headers = {"User-Agent": USER_AGENT}
@@ -219,19 +328,17 @@ def fetch(
         headers["If-None-Match"] = etag
     if modified:
         headers["If-Modified-Since"] = modified
-    deadline = time.monotonic() + DEADLINE
-    opener = build_opener(Redirects(feed.url))
-    try:
-        with opener.open(Request(feed.url, headers=headers), timeout=timeout) as response:
-            xml = download(response, deadline)
-            parsed = read(xml, feed)
-            return Fetched(
-                parsed.items,
-                response.headers.get("ETag"),
-                response.headers.get("Last-Modified"),
-                parsed.title,
-            )
-    except HTTPError as error:
-        if error.code == 304:
-            return Fetched(None, etag, modified)
-        raise
+    with Deadline(DEADLINE) as deadline:
+        opener = build_opener(
+            Redirects(feed.url), DeadlineHTTPHandler(deadline), DeadlineHTTPSHandler(deadline)
+        )
+        try:
+            with opener.open(Request(feed.url, headers=headers), timeout=timeout) as response:
+                xml = download(response)
+                etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
+        except HTTPError as error:
+            if error.code == 304:
+                return Fetched(None, etag, modified)
+            raise
+    parsed = read(xml, feed)
+    return Fetched(parsed.items, etag, modified, parsed.title)

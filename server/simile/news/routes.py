@@ -9,14 +9,13 @@ from urllib.parse import urlsplit
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from pydantic_core import PydanticCustomError
 from starlette.applications import Starlette
-from starlette.concurrency import run_in_threadpool
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
-from simile.news.feed import SCHEMES, Feed, FeedRefused, Fetched, fetch, override
+from simile.news.feed import SCHEMES, Feed, FeedRefused, Fetched, override
 from simile.news.feed_list import Refused, SavedFeed, feed_list_of
-from simile.news.refresh import MAX_PER_FEED
+from simile.news.refresh import MAX_PER_FEED, fetch_in_thread
 from simile.news.store import news_of
 
 MAX_BODY = 4 * 1024
@@ -104,7 +103,7 @@ def listing(app: Starlette) -> dict[str, Any]:
 async def fetched(url: str) -> Fetched:
     """`url` fetched once, or refused with the reason in words for the player."""
     try:
-        return await run_in_threadpool(fetch, Feed(url))
+        return await fetch_in_thread(Feed(url))
     except FeedRefused as error:
         raise Refused(422, str(error)) from None
     except HTTPError as error:

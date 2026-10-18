@@ -15,7 +15,9 @@ FIXTURE = FIXTURES / "bigthink.xml"
 class FeedServer(ThreadingHTTPServer):
     """Serves saved feeds on localhost, with an ETag, and records each request's path and
     headers. `url` is the saved Big Think feed's. A path in `redirects` redirects, and one in
-    `drips` sends its feed 256 bytes at a time, that many seconds apart, with no length."""
+    `drips` sends its feed 256 bytes at a time, that many seconds apart, with no length. One in
+    `trickles` sends its "headers", or the size line of its first of some "chunks", a byte every
+    50 ms, for as long as the client listens."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
@@ -23,6 +25,7 @@ class FeedServer(ThreadingHTTPServer):
         self.errors: dict[str, int] = {}
         self.redirects: dict[str, str] = {}
         self.drips: dict[str, float] = {}
+        self.trickles: dict[str, str] = {}
         self.etag = '"v1"'
         self.modified = "Wed, 15 Sep 2021 20:05:26 GMT"
         self.requests: list[dict[str, str]] = []
@@ -58,13 +61,17 @@ class FeedHandler(BaseHTTPRequestHandler):
         elif self.path in self.server.drips and xml is not None:
             self.send_response(200)
             self.end_headers()
-            for start in range(0, len(xml), 256):
-                try:
-                    self.wfile.write(xml[start : start + 256])
-                    self.wfile.flush()
-                except OSError:
-                    return
-                time.sleep(self.server.drips[self.path])
+            pieces = [xml[start : start + 256] for start in range(0, len(xml), 256)]
+            self.send_slowly(pieces, self.server.drips[self.path])
+        elif self.path in self.server.trickles:
+            head = b"HTTP/1.1 200 OK\r\nContent-Type: application/rss+xml\r\n"
+            if self.server.trickles[self.path] == "headers":
+                self.wfile.write(head)
+                slow = b"X-Slow: " + b"." * 2000
+            else:
+                self.wfile.write(head + b"Transfer-Encoding: chunked\r\n\r\n")
+                slow = b"f" * 2000
+            self.send_slowly([bytes([byte]) for byte in slow], 0.05)
         elif xml is None:
             self.send_error(404)
         elif self.path in self.server.errors:
@@ -80,6 +87,15 @@ class FeedHandler(BaseHTTPRequestHandler):
             self.send_header("Last-Modified", self.server.modified)
             self.end_headers()
             self.wfile.write(xml)
+
+    def send_slowly(self, pieces: list[bytes], pause: float) -> None:
+        for piece in pieces:
+            try:
+                self.wfile.write(piece)
+                self.wfile.flush()
+            except OSError:
+                return
+            time.sleep(pause)
 
     def log_message(self, format: str, *args: object) -> None:
         pass

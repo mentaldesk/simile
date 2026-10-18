@@ -146,6 +146,20 @@ def test_says_why_a_feed_cant_be_fetched(client: TestClient, feed_server: FeedSe
     assert unreachable.startswith("Couldn't reach it: ")
 
 
+def test_gives_up_on_a_feed_that_trickles_in(
+    client: TestClient, feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    feed_server.trickles["/slow"] = "headers"
+    monkeypatch.setattr("simile.news.feed.DEADLINE", 0.3)
+    started = time.monotonic()
+
+    reply = post(client, "/check", {"url": feed_server.url_of("/slow")})
+
+    assert reply.status_code == 422
+    assert reply.json() == {"error": "It took too long to answer"}
+    assert time.monotonic() - started < 2
+
+
 def test_refuses_a_feed_listed_already(client: TestClient) -> None:
     for path in ("/check", ""):
         reply = post(client, path, {"url": FEEDS[0].url})

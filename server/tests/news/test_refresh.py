@@ -43,10 +43,13 @@ class FakeFeeds:
         self.errors: dict[Feed, Exception] = {}
         self.release = threading.Event()
         self.release.set()
+        self.held: dict[Feed, threading.Event] = {}
 
     def __call__(self, feed: Feed, etag: str | None, modified: str | None) -> Fetched:
         self.calls.append((feed.url, etag, modified))
         self.release.wait(5)
+        if feed in self.held:
+            self.held[feed].wait(5)
         if feed in self.errors:
             raise self.errors[feed]
         if etag == ETAG:
@@ -109,8 +112,13 @@ async def run(world: World, refresher: NewsRefresher, duration: timedelta) -> No
     for _ in range(round(duration.total_seconds() / STEP)):
         world.loop.wall.advance(STEP / world.clock.speed)
         world.loop.tick()
-        if refresher.task is not None:
-            await refresher.task
+        await asyncio.gather(*refresher.tasks.values())
+
+
+async def wait_until(condition: Callable[[], object]) -> None:
+    async with asyncio.timeout(5):
+        while not condition():
+            await asyncio.sleep(0.005)
 
 
 @pytest.mark.anyio
@@ -393,11 +401,11 @@ async def test_runs_one_refresh_at_a_time(store: NewsStore, feed: FakeFeeds) -> 
         refresher.tick(STEP)
         await asyncio.sleep(0.001)
     feed.release.set()
-    assert refresher.task is not None
-    await refresher.task
+    assert list(refresher.tasks) == [FEED.url]
+    await asyncio.gather(*refresher.tasks.values())
 
     assert len(feed.calls) == 1
-    assert refresher.task is None
+    assert refresher.tasks == {}
 
 
 @pytest.mark.anyio
@@ -411,8 +419,52 @@ async def test_stop_abandons_a_refresh_in_flight(store: NewsStore, feed: FakeFee
     await refresher.stop()
     feed.release.set()
 
-    assert refresher.task is None
+    assert refresher.tasks == {}
     assert store.latest() == []
+
+
+@pytest.mark.anyio
+async def test_a_slow_feed_holds_up_no_other(store: NewsStore, two_feeds: FakeFeeds) -> None:
+    two_feeds.items[ECONOMIST] = saved("economist.xml", ECONOMIST)
+    two_feeds.held[OPENAI] = threading.Event()
+    listed = [OPENAI, RNZ]
+    world, refresher = village(store, two_feeds, speed=1, feeds=lambda: tuple(listed))
+
+    world.loop.tick()
+    await wait_until(lambda: RNZ.url not in refresher.tasks)
+    assert {item.source for item in store.latest(100)} == {"RNZ Sport"}
+
+    listed.append(ECONOMIST)
+    world.loop.tick()
+    await wait_until(lambda: ECONOMIST.url not in refresher.tasks)
+    assert {item.source for item in store.latest(100)} == {"RNZ Sport", "The Economist"}
+    assert list(refresher.tasks) == [OPENAI.url]
+
+    two_feeds.held[OPENAI].set()
+    await asyncio.gather(*refresher.tasks.values())
+    assert {item.source for item in store.latest(100)} == {"OpenAI", "RNZ Sport", "The Economist"}
+
+
+@pytest.mark.anyio
+async def test_gives_up_on_a_feed_whose_fetch_never_returns(
+    store: NewsStore, feed: FakeFeeds
+) -> None:
+    feed.release.clear()
+
+    with pytest.raises(TimeoutError, match="took over 0.05 seconds"):
+        await refresh(store, FEED, fetch=feed, at=100.0, give_up=0.05)
+
+    feed.release.set()
+    assert store.feed(FEED.url) == FeedState(checked=100.0)
+    assert store.latest() == []
+
+
+@pytest.mark.anyio
+async def test_keeps_a_fetchs_own_timeout(store: NewsStore, feed: FakeFeeds) -> None:
+    feed.errors[FEED] = TimeoutError("It took over 30 seconds")
+
+    with pytest.raises(TimeoutError, match="took over 30 seconds"):
+        await refresh(store, FEED, fetch=feed, give_up=5)
 
 
 def test_refreshes_the_configured_feeds_by_default(

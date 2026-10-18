@@ -9,7 +9,8 @@ them there too.
 
 - **Fetching.** `simile serve` and `simile headless` fetch every feed when they start, then every
   sim hour, but no sooner than 30 real minutes after the feed was last checked, even by an earlier
-  run. Each fetch stores the 10 newest items per feed that aren't stored yet.
+  run. Each fetch stores the 10 newest items per feed that aren't stored yet. Each feed refreshes
+  on its own, so a slow or failing one holds up no other.
 - **Analysis.** Every sim minute, the articles among the 60 newest that aren't analysed yet get one
   Haiku call each through L1, below conversations' priority. A first start analyses up to 10 items
   per feed, about 60 calls, and logs how many as it starts.
@@ -41,11 +42,15 @@ for a run with a comma-separated list of URLs, and the menu says so.
 A pasted URL is untrusted, so every fetch, not only the first:
 
 - goes over http or https only
-- gives up after 10 seconds of silence or 30 in all, and past 4 MB
+- gives up 30 seconds after it starts, whatever it's waiting for: connecting, a redirect, the
+  headers, chunked framing or the body. A timer shuts its sockets then. It also gives up after 10
+  seconds of silence, and past 4 MB. The refresher and the routes stop waiting 5 seconds later
+  still, should the thread be stuck resolving the host's name.
 - follows at most 5 redirects, only over http(s), and never from the internet to a private
   address. A feed on your own network may redirect within it.
-- refuses XML that declares entities, and anything feedparser doesn't read as RSS or Atom, with the
-  reason
+- refuses anything feedparser doesn't read as RSS or Atom, with the reason
+- refuses a feed whose bytes declare an XML entity. That catches UTF-8 and other ASCII-compatible
+  encodings, but not UTF-16 or UTF-32, where feedparser leaves entities unexpanded instead.
 
 ## Bundled articles
 

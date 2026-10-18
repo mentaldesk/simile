@@ -1,3 +1,4 @@
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -246,6 +247,22 @@ def test_fetch_gives_up_on_a_feed_that_trickles_in(
 
     with pytest.raises(TimeoutError, match="took over 0.2 seconds"):
         fetch(Feed(feed_server.url))
+
+
+@pytest.mark.parametrize("part", ["headers", "chunks"])
+@pytest.mark.parametrize("redirected", [False, True], ids=["direct", "redirected"])
+def test_fetch_gives_up_on_headers_or_chunk_sizes_that_trickle_in(
+    feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch, part: str, redirected: bool
+) -> None:
+    feed_server.trickles["/slow"] = part
+    feed_server.redirects["/moved"] = "/slow"
+    monkeypatch.setattr("simile.news.feed.DEADLINE", 0.3)
+    started = time.monotonic()
+
+    with pytest.raises(TimeoutError, match="took over 0.3 seconds"):
+        fetch(Feed(feed_server.url_of("/moved" if redirected else "/slow")), timeout=1)
+
+    assert time.monotonic() - started < 1
 
 
 def test_fetch_follows_a_redirect_on_the_same_machine(feed_server: FeedServer) -> None:
