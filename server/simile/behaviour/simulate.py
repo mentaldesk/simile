@@ -13,7 +13,7 @@ from starlette.applications import Starlette
 from simile.behaviour.config import Activity, Need
 from simile.behaviour.events import GoalChosen
 from simile.behaviour.mind import Behaviour, create_behaviour, no_conversations
-from simile.behaviour.scoring import Goal, MuralSpot, Supply
+from simile.behaviour.scoring import Goal, MuralSpot
 from simile.memory import MemoryStore
 from simile.schema import CoreValue, Id, LocationKind, Medium, Memory, MemoryKind, Npc, Traits
 from simile.sim import Clock, FakeWallClock, World
@@ -43,6 +43,7 @@ MEAL = 0.3
 AGAIN = timedelta(minutes=90)
 """As G1's `again`: someone served at the café this recently just sits down."""
 MONEY_EVERY = timedelta(hours=12)
+STARVING = 0.9
 TOPICS = (
     "rent",
     "fair pay",
@@ -111,6 +112,15 @@ class Observer:
     money: dict[Id, list[float]] = field(default_factory=lambda: defaultdict(list))
     """Each resident's money every `MONEY_EVERY`, from the start."""
     least: dict[Id, float] = field(default_factory=dict)
+    shops: dict[str, Counter[str]] = field(default_factory=lambda: defaultdict(Counter))
+    """Minutes each shop's keeper was due on shift, it was staffed, sold out while staffed, and
+    staffed outside their shifts."""
+    fridges: dict[Id, list[int]] = field(default_factory=lambda: defaultdict(list))
+    """Each home's fridge once a sim minute."""
+    starving: dict[Id, int] = field(default_factory=dict)
+    """How many minutes in a row each resident has been awake at a hunger of `STARVING` or more."""
+    longest: dict[Id, int] = field(default_factory=dict)
+    """Each resident's longest such stretch."""
     memory: MemoryStore | None = None
     """Where reading and talking leave stand-in memories, which raise crafters' inspiration."""
     rng: random.Random = field(default_factory=random.Random)
@@ -179,6 +189,7 @@ class Observer:
         self.next += self.every
         self.serve(clock.now)
         self.sample_money(clock.now)
+        self.sample_stock(clock.now)
         hour = clock.time_of_day
         positions = self.behaviour.movement.entities()
         self.samples[int(hour)] += 1
@@ -236,12 +247,30 @@ class Observer:
             for npc, amount in self.economy.money.items():
                 self.money[npc].append(amount)
 
+    def sample_stock(self, now: datetime) -> None:
+        economy = self.economy
+        if economy is None:
+            return
+        for place, keeper in economy.keepers.items():
+            counts = self.shops[place]
+            shift = any(shift.covers(now) for shift in self.behaviour.npcs[keeper].shifts)
+            staffed = economy.staffed(place)
+            counts["shift"] += shift
+            counts["staffed"] += staffed
+            counts["sold out"] += staffed and not economy.serving(place)
+            counts["outside"] += staffed and not shift
+        for home, left in economy.fridges.items():
+            self.fridges[home].append(left)
+
     def sample_needs(self, npc: Npc, place: str) -> None:
         mind = self.behaviour.minds[npc.id]
         awake = mind.goal.activity is not Activity.SLEEP
         for need, value in mind.needs.items():
             if npc.craft or need is not Need.INSPIRATION:
                 self.needs[need].append((value, awake))
+        starving = awake and mind.needs[Need.HUNGER] >= STARVING
+        self.starving[npc.id] = self.starving.get(npc.id, 0) + 1 if starving else 0
+        self.longest[npc.id] = max(self.longest.get(npc.id, 0), self.starving[npc.id])
         hunger, before = mind.needs[Need.HUNGER], self.hunger.get(npc.id, 0.0)
         self.hunger[npc.id] = hunger
         meal = self.eating.pop(npc.id, None)
@@ -275,12 +304,14 @@ async def simulate(
 ) -> tuple[Observer, float]:
     """Run memory, world, behaviour and E3's economy for `hours` of sim time as fast as the CPU
     allows, with N1's NPCs and the cast's traits unless given others, on an in-memory store. The
-    Daily Grind serves whoever arrives while it's open, as G1 would. Conversations, news and works
-    stay stubbed, so nothing calls Claude: every request to talk is declined, or with `talk`
-    accepted and over after that many minutes, there's always an article of `NEWS_INTEREST` to
-    read, muralists paint the map's walls in turn, and making something does nothing. Each
-    article read and each talk leaves a stand-in memory, which raises a crafter's inspiration."""
+    economy says which shops are staffed and what's left to eat, and the Daily Grind serves
+    whoever arrives while its barista is at work, as G1 would. Conversations, news and works stay
+    stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
+    and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
+    muralists paint the map's walls in turn, and making something does nothing. Each article read
+    and each talk leaves a stand-in memory, which raises a crafter's inspiration."""
     from simile.behaviour.lifespan import lifespan as behaviour
+    from simile.cafe.config import DEFAULT_CONFIG as CAFE
     from simile.economy.economy import economy_of
     from simile.economy.lifespan import lifespan as economy
     from simile.memory.lifespan import lifespan as memory
@@ -292,12 +323,12 @@ async def simulate(
     app.state.headless = True
     app.state.memory = MemoryStore(":memory:")
     app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs, traits=traits)
-    supply, opened = daily_grind(app.state.behaviour)
+    shops = economy_of(app)
     observer = Observer(
         app.state.behaviour,
         talk=talk,
-        economy=economy_of(app),
-        open=opened,
+        economy=shops,
+        open=lambda: shops.staffed(CAFE.home),
         memory=app.state.memory,
         rng=random.Random(seed),
     )
@@ -313,31 +344,10 @@ async def simulate(
             conversations=no_conversations,
             create=observer.on_create,
             mural_wall=observer.mural_wall,
-            supply=supply,
         )
         world.loop.register(observer)
         await world.loop.run(timedelta(hours=hours))
     return observer, time.perf_counter() - started
-
-
-def daily_grind(behaviour: Behaviour) -> tuple[Supply, Callable[[], bool]]:
-    """G1's shifts without the café: the Daily Grind serves only while it has a barista and
-    she's at work. Its supply hook, and whether it's serving."""
-    from simile.cafe.cafe import barista
-    from simile.cafe.config import DEFAULT_CONFIG as CAFE
-
-    shop = Goal(Activity.COFFEE_SHOP, CAFE.home)
-    staffed = barista(behaviour.npcs.values(), CAFE.home) is not None
-
-    def serving() -> bool:
-        return staffed and CAFE.opens <= behaviour.clock.time_of_day < CAFE.closes
-
-    def supply(goal: Goal, need: Need) -> float:
-        if goal != shop or need is not Need.HUNGER:
-            return 1.0
-        return float(serving())
-
-    return supply, serving
 
 
 def ranks(values: list[float]) -> list[float]:
@@ -415,11 +425,13 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
         goals = observer.goals[npc.id]
         lines.append(f"| {npc.id} | " + " | ".join(str(goals[a]) for a in GOALS) + " |")
     lines += ["", *shares(observer), "", *meals(observer, hours), "", *needs(observer)]
+    lines += ["", *hunger(observer)]
     lines += ["", *works(observer, hours)]
     if observer.talk is not None:
         lines += ["", *conversations(observer, hours)]
     if observer.economy is not None:
-        lines += ["", *shifts(observer), "", *money(observer), "", *ledger(observer)]
+        lines += ["", *shifts(observer), "", *shops(observer), "", *fridges(observer)]
+        lines += ["", *money(observer), "", *ledger(observer)]
     return "\n".join(lines) + "\n"
 
 
@@ -491,6 +503,71 @@ def shifts(observer: Observer) -> list[str]:
         f"{totals['skipped']} | | |"
     )
     return lines
+
+
+def shops(observer: Observer) -> list[str]:
+    economy = observer.economy
+    assert economy is not None
+    now = observer.behaviour.clock.now
+    lines = [
+        "**Shops.** Hours each shop's keeper was due on shift, the shop was staffed (from when "
+        "they arrived until the shift ended), sold out while staffed, and staffed outside their "
+        "shifts. The shifts they skipped, and every batch cooked.",
+        "",
+        "| Shop | Keeper | On shift | Staffed | Sold out | Outside shifts | Shifts | Skipped |",
+        "|---|---|--:|--:|--:|--:|--:|--:|",
+    ]
+    for place, keeper in sorted(economy.keepers.items()):
+        counts = observer.shops[place]
+        done = [turn for turn in economy.turns if turn.npc == keeper and turn.end <= now]
+        skipped = sum(turn.arrived is None for turn in done)
+        hours = [counts[key] * observer.every / timedelta(hours=1) for key in SHOP_TIMES]
+        cells = " | ".join(f"{h:.1f}" for h in hours)
+        lines.append(f"| {place} | {keeper} | {cells} | {len(done)} | {skipped} |")
+    batches = economy.cooked
+    sold_out = sum(batch.sold_out is not None for batch in batches)
+    lines += [
+        "",
+        "| Shop | Shift | Cooked | Sold | Sold out at | Gone off |",
+        "|---|---|--:|--:|--:|--:|",
+        *(
+            f"| {b.shop} | {b.shift:%a %H:%M} | {b.cooked} | {b.cooked - b.left - b.gone_off} | "
+            f"{f'{b.sold_out:%H:%M}' if b.sold_out else '-'} | {b.gone_off} |"
+            for b in batches
+        ),
+        "",
+        f"{sold_out} of {len(batches)} batches sold out.",
+    ]
+    return lines
+
+
+SHOP_TIMES = ("shift", "staffed", "sold out", "outside")
+
+
+def fridges(observer: Observer) -> list[str]:
+    from simile.economy import Kind
+
+    economy = observer.economy
+    assert economy is not None
+    orders = [entry for entry in economy.ledger.entries if entry.kind is Kind.GROCERIES]
+    spent = sum(entry.amount for entry in orders)
+    empty = sum(left == 0 for levels in observer.fridges.values() for left in levels)
+    least = min((min(levels) for levels in observer.fridges.values() if levels), default=0)
+    return [
+        f"**Fridges.** {len(orders)} grocery orders from {len(economy.fridges)} homes, "
+        f"{spent / economy.config.groceries:.0f} meals' worth for {spent:.0f}. The lowest any "
+        f"fridge got: {least} meals. Hours fridges were empty: "
+        f"{empty * observer.every / timedelta(hours=1):.1f}.",
+    ]
+
+
+def hunger(observer: Observer) -> list[str]:
+    longest = sorted(observer.longest.items(), key=lambda item: (-item[1], item[0]))
+    worst = ", ".join(f"{npc} {minutes}" for npc, minutes in longest[:3] if minutes) or "nobody"
+    return [
+        f"**Hunger.** The longest anyone spent awake in one go at a hunger of {STARVING:g} or "
+        f"more, in minutes, worst first: {worst}.",
+    ]
 
 
 def money(observer: Observer) -> list[str]:

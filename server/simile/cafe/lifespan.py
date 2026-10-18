@@ -12,7 +12,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     cafe = cafe_of(app)
     players = getattr(app.state, "players", None)
     unregister = world_of(app).loop.register(cafe)
-    unplug = cafe.behaviour.hooks.set(supply=cafe.supply)
+    others = cafe.behaviour.hooks.supply
+    unplug = cafe.behaviour.hooks.set(
+        supply=lambda goal, need: min(cafe.supply(goal, need), others(goal, need))
+    )
     if players is not None and cafe.barista is not None:
         players.writers[cafe.barista] = cafe.write
     try:

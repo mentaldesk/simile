@@ -2,6 +2,7 @@ from datetime import date
 from typing import TYPE_CHECKING
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
+from simile.economy import Batch
 from simile.schema import VILLAGE_MAP, Id, Key, MapTile, Model, Tile, Timestamp
 from simile.world.movement import Movement, Point, cell_of
 
@@ -24,6 +25,10 @@ class SavedEconomy(Model):
     money: dict[Id, float]
     settled: date
     """The last day rent and pensions were settled for."""
+    fridges: dict[Id, int] | None = None
+    """Meals left in each home's fridge. A save from before fridges has none."""
+    batches: dict[Id, Batch] | None = None
+    """Each shop's latest batch."""
 
 
 class SavedWorld(Model):
@@ -44,7 +49,12 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
     now, movement = behaviour.clock.now, behaviour.movement
     return SavedWorld(
         now=now,
-        economy=SavedEconomy(money=dict(economy.money), settled=economy.settled)
+        economy=SavedEconomy(
+            money=dict(economy.money),
+            settled=economy.settled,
+            fridges=dict(economy.fridges),
+            batches={shop: batch.model_copy() for shop, batch in economy.batches.items()},
+        )
         if economy
         else None,
         npcs={
@@ -65,9 +75,10 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
 
 def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
-    money they had. Anyone who was walking or talking decides again on the next think. NPCs who
-    weren't saved carry on from their first start, and a save from before money opens the ledger
-    on everyone's starting money."""
+    money they had and what was in their fridges. Anyone who was walking or talking decides again
+    on the next think. NPCs who weren't saved carry on from their first start, a save from before
+    money opens the ledger on everyone's starting money, and one from before fridges stocks them
+    as at the start."""
     movement = behaviour.movement
     saved = {npc: world.npcs[npc] for npc in behaviour.minds if npc in world.npcs}
     for npc in saved:
@@ -92,7 +103,10 @@ def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" =
         )
     if economy is not None:
         saved = world.economy
-        economy.restore(saved.money if saved else {}, saved.settled if saved else world.now.date())
+        if saved is None:
+            economy.restore({}, world.now.date())
+        else:
+            economy.restore(saved.money, saved.settled, saved.fridges, saved.batches)
 
 
 def _free(movement: Movement, npc: Id, state: SavedNpc) -> bool:

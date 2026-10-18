@@ -55,8 +55,10 @@ sets F3's snapshot to the NPCs' real positions.
   Asleep or talking, nobody's interrupted. Wants (social, curiosity, rest, the news, inspiration)
   and hygiene never interrupt.
 - **What's there.** A place meets a need only as far as the `supply` hook says it can now, 0 to 1,
-  in what it scores and what it does. The café plugs it in so the Daily Grind feeds nobody while
-  its barista is off shift.
+  in what it scores and what it does. E4's economy plugs it in: a shop feeds people only while
+  it's staffed and its batch lasts, and home only while there's food in the fridge. The café wraps
+  it, so the Daily Grind also feeds nobody while its barista is off shift. A meal once started
+  is finished, even if it was the last or the place shuts.
 - **Money.** `finances` is how far their money (E3's `money` hook) is below their savings target,
   as a share of it, so it doesn't rise on its own. The target is `savings` (300), raised by
   Security. A price is valued on finances' own curve, a straight line (`power` 1, weight 100)
@@ -209,11 +211,13 @@ Runs memory, on an in-memory store, world, behaviour and E3's economy on a `Fake
 as the CPU allows (a sim-day in about 15 s) and prints where everyone spent their time: minutes
 near others by Connection, places by hour, who was out at night, the share of waking time in each
 place, every meal by the hour it started and where, each need's mean, most and time at 0.9 or more,
-what each resident with a craft made per sim-day, and when the first work came and how many came a
-sim hour after it. Then every shift (on time, late, skipped, hours and
-overtime), each resident's money every 12 sim hours, and where the money went. The café doesn't run, so the Daily Grind feeds
-people from 07:00 to 17:00, G1's shift, if someone lives or works there, and serves a drink to
-whoever arrives then and hasn't had one in the last 90 minutes, as the café does. Conversations,
+the longest anyone was awake and urgently hungry, what each resident with a craft made per
+sim-day, and when the first work came and how many came a sim hour after it. Then every shift (on
+time, late, skipped, hours and overtime), the hours each shop was due on shift, staffed and sold
+out, every batch, the grocery orders, each resident's money every 12 sim hours, and where the money
+went. The economy decides when the shops serve. The café doesn't run, so whoever arrives at the
+Daily Grind while its barista is at work and hasn't had a drink in the last 90 minutes is served
+one, as the café does. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
 interest unread. Reading it, and each conversation, leaves a stand-in memory of middling strength
 on two topics from a short list, so new memories raise crafters' inspiration. Muralists paint M7's walls in turn, moving on to
