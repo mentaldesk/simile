@@ -173,6 +173,30 @@ paint and place images.
   and so does stepping off the stand tile. It follows `paintings`, as the mural panel follows
   `murals`, and sends nothing: the server notices the player at a painting itself.
 
+## Critters
+
+Ducks, a heron and fish rising on the village's water, as decoration: client only, with no server
+state. `IsoCritters` in `scenes/iso-critters.ts` draws the `Critters` in `critters.ts`.
+
+- **Where**: `Water` reads the map's `water` ground tiles and splits them into connected bodies. A
+  lake is water inside a location's area (Lotus Lake Park), and a river is water outside one.
+  Critters stay `NEAR_SHORE` (0.55) tiles off the south and east shores, whose kerbs hide the water
+  next to them, and `FAR_SHORE` (0.45) off the others. They keep `apart`, and further from the heron,
+  which stands `PERCH_OUT` (0.35) tiles off a north or west shore of the lake.
+- **What they do**: ducks paddle, rest, dabble, dive and preen, and each tucks its head in between
+  `settle` and `wake`. Fish rise as rings, less often at night. By day the heron now and then flies
+  in, stands a while, strikes at the water and flies off. `CRITTERS` tunes it all, and its `cap`
+  bounds how many sprites there are, rings included.
+- **Art** (`critter-art.ts`): ASCII frames in A1's palette, outlined in ink like its characters,
+  drawn at `PIXEL_SCALE` into one small canvas texture that's made once and shared.
+- **Drawing**: on the village only, sorted by the ground under them, with rings flat on the water.
+  Each is tinted from the light map at the tiles' middles, blended in between (`CritterLight`). At a
+  tile's middle that's a resident's tint there; between middles it's smoother than the light map.
+- **Cost**: once V8 has optimised it, the per-frame path allocates nothing. It does the same work
+  whatever a critter is doing, passes calls whole numbers or objects but never a fraction, and keeps
+  its scratch points in a class of their own, since a plain `{ x, y }` shares its shape with every
+  other. A change of state, a fish rising or the heron landing allocates a little.
+
 ## Resolution
 
 The renders are drawn at one art pixel per CSS pixel, so a bigger window shows more of the village.
