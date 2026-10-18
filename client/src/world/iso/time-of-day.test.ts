@@ -5,7 +5,7 @@ import {
   CROSSFADE_MINUTES,
   hourOf,
   LIGHTING_SETS,
-  setsWithin,
+  nextSet,
   SimClock,
   type Layer,
 } from './time-of-day';
@@ -76,20 +76,18 @@ describe('blend', () => {
   });
 });
 
-describe('setsWithin', () => {
-  const sorted = (sets: Set<string>) => [...sets].sort();
-
-  it('is the set in use, and any whose fade starts within the hours ahead', () => {
-    expect(sorted(setsWithin(14, 0))).toEqual(['afternoon']);
-    expect(sorted(setsWithin(14, 2.4))).toEqual(['afternoon']);
-    expect(sorted(setsWithin(14, 2.5))).toEqual(['afternoon', 'evening']);
-    expect(sorted(setsWithin(14, 7))).toEqual(['afternoon', 'evening', 'night']);
+describe('nextSet', () => {
+  it('is the set the next fade brings in, once it starts within the hours ahead', () => {
+    expect(nextSet(14, 0)).toBeUndefined();
+    expect(nextSet(14, 2.4)).toBeUndefined();
+    expect(nextSet(14, 2.5)).toBe('evening');
+    expect(nextSet(14, 24)).toBe('evening');
   });
 
-  it('has both sets of a fade under way, and wraps past midnight', () => {
-    expect(sorted(setsWithin(17, 0))).toEqual(['afternoon', 'evening']);
-    expect(sorted(setsWithin(23, 6))).toEqual(['morning', 'night']);
-    expect(setsWithin(14, 24).size).toBe(4);
+  it('is nothing while a fade is under way, and wraps past midnight', () => {
+    expect(nextSet(17, 24)).toBeUndefined();
+    expect(nextSet(23, 6)).toBe('morning');
+    expect(nextSet(23, 5)).toBeUndefined();
   });
 });
 

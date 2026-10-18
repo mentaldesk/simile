@@ -1,0 +1,118 @@
+{
+  "id": "sadia_majumder",
+  "name": "Sadia Majumder",
+  "birth_year": 2000,
+  "gender": "woman",
+  "origin": "Bangladesh",
+  "arrival": {
+    "age": 25,
+    "reason": "for a partner's job"
+  },
+  "occupation": "Epidemiologist tracking viruses through wastewater",
+  "values": {
+    "freedom": 0.8,
+    "independence": 0.64,
+    "self_respect": 0.87,
+    "self_actualization": 0.88,
+    "creativity": 0.67,
+    "honesty": 0.9,
+    "compassion": 0.74,
+    "loyalty": 0.74,
+    "justice": 0.95,
+    "responsibility": 0.85,
+    "security": 0.2,
+    "equality": 0.44,
+    "tradition": 0.19,
+    "obedience": 0.59,
+    "success": 0.48,
+    "ambition": 0.66,
+    "discipline": 0.84,
+    "knowledge": 0.96,
+    "open_mindedness": 0.65,
+    "peace_of_mind": 0.33,
+    "pleasure": 0.09,
+    "connection": 0.35,
+    "adventure": 0.46,
+    "optimism": 0.23
+  },
+  "backstory": "Her mother pressed other people's sheets in a laundry for years, and Sadia still won't hand anything over unchecked. The sample lids sit in racks by the lab door, each labelled in her hand, and she rechecks the batch numbers before anyone else arrives. She trusts no figure until she has taken it apart and found the flaw herself. At funerals and goodbyes her face does nothing, which people read as coldness; she has stopped explaining. Her husband and small daughter get the same careful distance, and when someone leans on her she goes quiet and busies her hands. Privately she believes her best years went somewhere she can't get back to, and she has never looked closely at how often she walked out before anyone could see her fail. Now a senior post in a far larger city has come to her, a clean start, and she has told no one, not even her husband. She wants it badly. What frightens her is that she may be running again, and she has not yet decided what, if anything, she'd be running towards.",
+  "persona": "She is first into the lab and last to sign off a result, and she will correct a colleague's figure in front of the room without softening it. She won't go to parties, casseroles or anything called tradition, and she has quietly stopped expecting things to turn out well. Her laptop lid snaps shut whenever someone walks past the desk.",
+  "speaking_style": "Her sentences are short and level, and she'll say one honest thing where most people would say three. Asked how a result looks, she says \"Bad. The signal's noise.\" rather than \"it's a bit mixed, maybe.\" When an idea excites her she speeds into a run of clipped fragments, and when she's embarrassed her voice drops to a murmur.",
+  "mannerisms": [
+    "offers one honest sentence where others would offer three",
+    "talks in rapid bursts of short sentences when excited"
+  ],
+  "interests": [
+    "sampling protocols",
+    "Jibanananda Das in translation",
+    "bus route maps",
+    "whether maths is discovered or invented"
+  ],
+  "past": [
+    {
+      "age": 13,
+      "content": "A brown water stain on the ceiling above my bed was the only window I had for four months, and I counted its drips every morning until the cast came off.",
+      "salience": 0.45,
+      "valence": -0.4
+    },
+    {
+      "age": 19,
+      "content": "They found the envelope in my coat pocket, not in the till, and the manager held it up in front of the whole shift as if it were evidence.",
+      "salience": 0.4,
+      "valence": -0.6
+    },
+    {
+      "age": 24,
+      "content": "I left the rota with my name on every shift and walked out before the Friday rush, and four people covered for me without a word.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 26,
+      "content": "Night after night I read pathology on the stockroom floor between pallets of tinned fish, and the pages curled from the cold concrete.",
+      "salience": 0.25,
+      "valence": 0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "I saw what you did with the sample logs the night before the audit. I've said nothing, and I still can't tell whether that makes me part of it."
+    },
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "Whoever told the manager about the missing envelope knew which shift I had been covering that week, and nobody has ever owned it."
+    }
+  ],
+  "traits": {
+    "sociability": 0.19,
+    "negativity_bias": 0.45,
+    "forgiveness": 0.53,
+    "first_impressions": 0.28
+  },
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "ponytail",
+    "hair_colour": "#181425",
+    "top_colour": "#e4a672",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Bangladeshi accent, a Bengali and Sylheti speaker. A woman in her mid-twenties with a medium-low pitch and a dry, precise timbre, speaking at a clipped, measured pace in a matter-of-fact manner that quickens only when excited.",
+    "reference_line": "Each sample we pull from the sewers tells us which viruses are circulating, and I check every figure twice before I trust it.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:28:43.390227Z",
+  "updated": "2026-10-18T06:28:43.390227Z",
+  "version": 1
+}

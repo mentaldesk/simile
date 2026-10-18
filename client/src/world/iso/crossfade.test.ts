@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   layerAlphas,
-  MAX_LOOKAHEAD_HOURS,
   PAIR_DEPTH,
   PRELOAD_SECONDS,
   SetLoader,
@@ -184,14 +183,6 @@ describe('SetLoader', () => {
     expect(loads(load)).toEqual(['afternoon', 'evening']);
   });
 
-  it(`looks no more than ${MAX_LOOKAHEAD_HOURS} sim hours ahead, however fast the clock`, () => {
-    const { sets, load } = loader();
-    sets.update(16.5 - MAX_LOOKAHEAD_HOURS - 0.01, 600);
-    expect(loads(load)).toEqual(['afternoon']);
-    sets.update(16.5 - MAX_LOOKAHEAD_HOURS + 0.01, 600);
-    expect(loads(load)).toEqual(['afternoon', 'evening']);
-  });
-
   it.each([60, 200, 600, 3600])(
     'loads each set once at %i×, so the fades never jump while one loads',
     async (speed) => {
@@ -213,9 +204,61 @@ describe('SetLoader', () => {
         const layers = sets.update(hour, speed);
         if (real > 2) expect(layers, `${hour} h`).toEqual(blend(hour));
       }
-      expect(loaded).toEqual(['afternoon', 'evening', 'night']);
+      expect(loaded.slice(0, 3)).toEqual(['afternoon', 'evening', 'night']);
+      expect(new Set(loaded).size).toBe(loaded.length);
     },
   );
+
+  it.each([1, 60, 600, 3600, 10_000])('holds the drawn set and the next, never more, at %i×', async (speed) => {
+    const loadSeconds = Math.min(PRELOAD_SECONDS, (5 * 3600) / speed);
+    const seconds = Math.max(0.25, loadSeconds / 20);
+    let real = 0;
+    let held = 0;
+    let most = 0;
+    const loading: [number, () => void][] = [];
+    const sets = new SetLoader(
+      () => {
+        held++;
+        return new Promise<void>((resolve) => loading.push([real + loadSeconds, resolve]));
+      },
+      () => held--,
+    );
+    for (let hour = 0; hour < 50; hour += (speed * seconds) / 3600, real += seconds) {
+      while (loading.length > 0 && loading[0][0] <= real) loading.shift()![1]();
+      await Promise.resolve();
+      await Promise.resolve();
+      sets.update(hour % 24, speed);
+      most = Math.max(most, held);
+    }
+    expect(most).toBe(2);
+  });
+
+  it('keeps the next set out while the outgoing one is still drawn', async () => {
+    const { sets, load, finish } = loader();
+    sets.update(16.49, 3600);
+    await finish('afternoon');
+    await finish('evening');
+    sets.update(17, 3600);
+    sets.update(17.51, 3600);
+    expect(loads(load)).toEqual(['afternoon', 'evening']);
+    sets.update(17.52, 3600);
+    expect(loads(load)).toEqual(['afternoon', 'evening', 'night']);
+  });
+
+  it('unloads every set on a reset, and loads them again', async () => {
+    const { sets, load, unload, finish } = loader();
+    sets.update(16.49, 3600);
+    await finish('afternoon');
+    sets.update(16.49, 3600);
+    sets.reset();
+    expect(unload).toHaveBeenCalledExactlyOnceWith('afternoon');
+    expect(sets.layers).toEqual([]);
+
+    await finish('evening');
+    expect(unload).toHaveBeenLastCalledWith('evening');
+    sets.update(16.49, 3600);
+    expect(loads(load)).toEqual(['afternoon', 'evening', 'afternoon', 'evening']);
+  });
 });
 
 describe('Uploads', () => {

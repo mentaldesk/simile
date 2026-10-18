@@ -1,0 +1,135 @@
+{
+  "id": "abena_asamoah",
+  "name": "Abena Asamoah",
+  "birth_year": 1957,
+  "gender": "woman",
+  "origin": "Ghana",
+  "arrival": {
+    "age": 19,
+    "reason": "to study and stayed"
+  },
+  "occupation": "Retired factory machine operator",
+  "values": {
+    "freedom": 0.54,
+    "independence": 0.78,
+    "self_respect": 0.86,
+    "self_actualization": 0.6,
+    "creativity": 0.71,
+    "honesty": 0.4,
+    "compassion": 0.06,
+    "loyalty": 0.19,
+    "justice": 0.15,
+    "responsibility": 0.75,
+    "security": 0.39,
+    "equality": 0.15,
+    "tradition": 0.18,
+    "obedience": 0.44,
+    "success": 0.95,
+    "ambition": 0.92,
+    "discipline": 0.81,
+    "knowledge": 0.57,
+    "open_mindedness": 0.53,
+    "peace_of_mind": 0.25,
+    "pleasure": 0.52,
+    "connection": 0.12,
+    "adventure": 0.57,
+    "optimism": 0.22
+  },
+  "backstory": "The steel-toed boots from the press line are still in the hall cupboard, though the stroke slowed her left side and she hasn't laced them in years. She doesn't talk about the move. The house she grew up in stopped being home when the family left it, and since then she has been paying for that feeling back in good coats, a clean car and a watch people are meant to look at. Once, at the wages office, she took a single envelope of cash. Nobody worked it out. She has never told her husband, and she has settled on the idea that it doesn't count because the firm could afford it. She says she wants to see the world before she dies, but she keeps moving the trip back, as if the real life is happening to someone else, somewhere else.",
+  "persona": "She keeps a ledger for the vegetables she sells from her back gate and quotes the takings to the penny. Help gets the same flat no that sympathy does. A neighbour's bereavement earns a nod over the fence and no visit, and when fairness comes up on the television she says the people complaining never had to graft. She keeps the car gleaming and watches who notices.",
+  "speaking_style": "Unhurried and clipped. She states a firm view in short, flat sentences, then takes it back with a dry shrug: 'but what do I know'. Her words are plain and practical, full of prices and figures, and when anything emotional starts to linger she changes the subject.",
+  "mannerisms": [
+    "states a strong opinion, then adds \"but what do I know\""
+  ],
+  "interests": [
+    "chillies on the back windowsill",
+    "soil acidity and tomato blight",
+    "old highlife records on vinyl",
+    "resale prices of second-hand cars",
+    "guidebooks for places she won't book"
+  ],
+  "past": [
+    {
+      "age": 13,
+      "content": "I still see the blue biro writing my name in the notebook, after I'd slipped a lipstick into my coat at the chemist's. The caution was nothing. I walked home sure the shame was the punishment.",
+      "salience": 0.2,
+      "valence": -0.3
+    },
+    {
+      "age": 17,
+      "content": "We played a pub in a city I'd never been to, four of us, and someone from a record label stayed for the whole set, writing on a beer mat. The phone never rang again after our drummer took a job on the oil rigs.",
+      "salience": 0.25,
+      "valence": 0.3
+    },
+    {
+      "age": 21,
+      "content": "Her heart stopped in the post office queue while I was holding her bag of oranges. Help came through the doors too late. I still can't peel an orange without seeing them roll under the counter.",
+      "salience": 0.37,
+      "valence": -0.8
+    },
+    {
+      "age": 31,
+      "content": "I got the answers wrong on purpose at the panel, a sum I could have done asleep. The promotion went to someone from the next line, and for about twenty minutes on the drive home I was very pleased with myself.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 35,
+      "content": "My evening class teacher gave me a children's book with a red bus on the cover. I hid it inside the trade paper so nobody on the line would see.",
+      "salience": 0.3,
+      "valence": 0.7
+    },
+    {
+      "age": 37,
+      "content": "For six years the one beside me on the line sold my overtime figures upstairs to keep her own shifts. I learned it from the rota on the noticeboard, my name crossed out in green pen.",
+      "salience": 0.37,
+      "valence": -0.7
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "Someone walked in while the wages envelope was open on the desk, and I said I was checking a figure. I'm still waiting for them to bring it up."
+    },
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "An old friend from before the move still sends a Christmas card about our summers cycling to the sea, and I have never written back to the last one."
+    },
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "An ex I walked out on in a hurry still owes me forty pounds from the car deposit, and I'd rather lose it than ring and ask."
+    }
+  ],
+  "traits": {
+    "sociability": 0.54,
+    "negativity_bias": 0.32,
+    "forgiveness": 0.07,
+    "first_impressions": 0.51
+  },
+  "appearance": {
+    "skin": "#b86f50",
+    "hair_style": "ponytail",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#2ce8f5",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#5a6988",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Ghanaian accent, a Twi speaker. A woman in her late sixties. Mid-low pitch with a dry, gravelly timbre, unhurried and measured, flat and matter-of-fact in manner, with clipped stresses and little rise at the end of phrases.",
+    "reference_line": "I worked the press line for many years, and I can still hear a bad batch of brackets falling into the tray.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:07:41.847699Z",
+  "updated": "2026-10-18T06:07:41.847699Z",
+  "version": 1
+}

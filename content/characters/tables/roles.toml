@@ -1,0 +1,45 @@
+# The village's own roles: the people its interiors need. Casting fills these first, in this
+# order, each with a character whose job fits, then draws everyone else. A job fits when it's
+# one of `jobs` (titles from occupations.toml or makers.toml) or in one of `families` (from
+# makers.toml). The role holder's workplace is `workplace`, a location on the village map, and
+# they work `shifts`, in hours on the sim clock, so 7.5 is 07:30. `pay` is how they're paid:
+# `takings` for running a shop, or a `wage` with an `amount` per hour.
+
+[[role]]
+id = "barista"
+name = "barista at the Daily Grind"
+workplace = "coffee_shop"
+jobs = ["barista"]
+pay = { kind = "takings" }
+shifts = [
+  { days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], start = 7, end = 17 },
+]
+
+[[role]]
+id = "cook"
+name = "cook at Golden Bowl Noodles"
+workplace = "noodle_bar"
+jobs = ["cook", "chef"]
+pay = { kind = "takings" }
+shifts = [
+  { days = ["tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], start = 11, end = 14.5 },
+  { days = ["tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"], start = 17, end = 21.5 },
+]
+
+[[role]]
+id = "maker_space_host"
+name = "host of Spark Maker Space"
+workplace = "maker_space"
+families = ["robotics", "bionics", "building"]
+shifts = [
+  { days = ["tuesday", "wednesday", "thursday", "friday", "saturday"], start = 10, end = 18 },
+]
+
+[[role]]
+id = "gallery_host"
+name = "host of the gallery"
+workplace = "gallery"
+families = ["art"]
+shifts = [
+  { days = ["wednesday", "thursday", "friday", "saturday", "sunday"], start = 10, end = 17 },
+]

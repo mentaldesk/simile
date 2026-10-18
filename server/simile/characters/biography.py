@@ -324,8 +324,9 @@ INSTRUCTIONS = {
         "just repeat it."
     ),
     "interests": lambda sheet: (
-        "three to six short topics they bring up, two to five words each and specific, such as "
-        '"chillies on the windowsill" rather than "gardening".'
+        "three to six short topics they bring up, two to five words each, each one particular to "
+        'them: something they do, follow or make, not a broad hobby like "gardening".'
+        + (f" One is about {sheet.interest}, alongside everyday ones." if sheet.interest else "")
     ),
     "craft": lambda sheet: (
         'what they make in their own time, or null if nothing. Its medium is "writing", put up '

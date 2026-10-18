@@ -3,7 +3,8 @@ from typing import Self
 
 from pydantic import Field, model_validator
 
-from simile.schema import Character, HookKind, Id, Model, Npc, Voice
+from simile.schema import Character, HookKind, Id, Model, Npc, Pay, Voice
+from simile.schema.npc import Shifts
 
 
 class CastError(ValueError):
@@ -38,6 +39,13 @@ class Bond(Model):
 class Resident(Model):
     character: Character = Field(description="As it was when cast, with its id and version.")
     home: Id
+    workplace: Id | None = Field(
+        default=None,
+        exclude_if=lambda workplace: workplace is None,
+        description="Where they work, for whoever holds one of the village's roles.",
+    )
+    shifts: Shifts = Field(default=[], exclude_if=lambda shifts: not shifts)
+    pay: Pay | None = Field(default=None, exclude_if=lambda pay: pay is None)
 
 
 class Cast(Model):
@@ -62,6 +70,9 @@ class Cast(Model):
             age=self.age(character),
             occupation=character.occupation,
             home=resident.home,
+            workplace=resident.workplace,
+            shifts=resident.shifts,
+            pay=resident.pay,
             values=character.values,
             backstory=character.backstory,
             persona=character.persona,

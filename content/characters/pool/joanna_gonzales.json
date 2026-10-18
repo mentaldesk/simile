@@ -1,0 +1,123 @@
+{
+  "id": "joanna_gonzales",
+  "name": "Joanna Gonzales",
+  "birth_year": 2008,
+  "gender": "woman",
+  "origin": "Philippines",
+  "arrival": null,
+  "occupation": "Barista",
+  "values": {
+    "freedom": 0.86,
+    "independence": 0.88,
+    "self_respect": 0.72,
+    "self_actualization": 0.42,
+    "creativity": 0.78,
+    "honesty": 0.15,
+    "compassion": 0.08,
+    "loyalty": 0.29,
+    "justice": 0.38,
+    "responsibility": 0.1,
+    "security": 0.27,
+    "equality": 0.44,
+    "tradition": 0.17,
+    "obedience": 0.17,
+    "success": 0.59,
+    "ambition": 0.53,
+    "discipline": 0.04,
+    "knowledge": 0.47,
+    "open_mindedness": 0.78,
+    "peace_of_mind": 0.22,
+    "pleasure": 0.97,
+    "connection": 0.48,
+    "adventure": 0.93,
+    "optimism": 0.59
+  },
+  "backstory": "She keeps a spare phone charger in the back cupboard at work so she never has to ask anyone for one. When illness kept her out of school for a year, the adults around her called it attention-seeking, and once the doctors proved otherwise nobody said sorry; her dad just went back to the garage and her mum went back to the school kitchen. She stopped waiting for that apology. Now she brushes off rotas and plans and says she doesn't care what anyone thinks, yet she rewrites every text three times and catches her reflection in shop windows and pretends she hasn't. Nobody knows the overdraft is maxed, that the loan repayments leave on a Friday, or that she skips lunch on shifts so no one sees her counting coins.",
+  "persona": "She swaps shifts on a whim and books a Tuesday ferry to somewhere she's never been, then waves off any warning about her hours or her till. She fudges a count, skips a closing check and laughs about it, and drops a half-finished project the moment it stops being fun. Ask about her family and she turns back to the espresso machine and says she's fine, then keeps the milk steaming for twice as long as it needs.",
+  "speaking_style": "Her sentences run into each other, and she drops the ends when she loses interest, so a thought can just stop mid-clause. She opens most fixes with 'right, so' and reaches for light slang like 'buzzing' or 'mad'. She turns any chore into a small puzzle to crack: 'right, how do we get this cleared with one hand'. She goes stiff and says 'noted' only when a manager is standing close enough to hear.",
+  "mannerisms": [
+    "recasts a practical chore as a small puzzle worth solving"
+  ],
+  "interests": [
+    "moped engines",
+    "night bus routes",
+    "budget coach fares to Europe",
+    "broken radios from charity shops",
+    "pandesal baking"
+  ],
+  "past": [
+    {
+      "age": 14,
+      "content": "The window in my room looked straight at the wheelie bins, the same ones every morning for months, while the school kept posting work I couldn't lift my head to read.",
+      "salience": 0.5,
+      "valence": -0.4
+    },
+    {
+      "age": 18,
+      "content": "I loved that top-floor flat, slanted kitchen ceiling and all, and the eviction letter came through the door while I was still in my work shirt.",
+      "salience": 0.3,
+      "valence": -0.6
+    },
+    {
+      "age": 18,
+      "content": "Two nights on a bus station bench in Lisbon, passport in my sock, is the one thing I'd never tell my mum.",
+      "salience": 0.25,
+      "valence": 0.7
+    },
+    {
+      "age": 18,
+      "content": "My sister had her heart set on a pop-up bakery, so I sat her down with a spreadsheet and said it would fold by Christmas, and I'm still not sure whether I was being honest or just scared of it working.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "The one I trusted with my spare key and my bank details went round telling my old crowd about the eviction before I'd told my own mum."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "Someone at a checkout watched my card get declined and my face pretend I'd changed my mind about the bread, and I've never been sure they bought it."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "I still owe a few hundred pounds I borrowed to get home from Lisbon, and I pay it back in fifty-quid chunks I never mention."
+    }
+  ],
+  "traits": {
+    "sociability": 0.77,
+    "negativity_bias": 0.11,
+    "forgiveness": 0.15,
+    "first_impressions": 0.72
+  },
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "short",
+    "hair_colour": "#181425",
+    "top_colour": "#733e39",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "slim",
+    "accessories": [
+      "headphones"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman of eighteen with a bright, mid-high voice and a light breathy edge. Pace is relaxed and unhurried, with a calm, matter-of-fact manner and an easy, slightly amused tone.",
+    "reference_line": "I rebuild old mopeds in a rented lock-up, and most of the time the engines actually start.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "rough verse about strangers on buses"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:27:27.438235Z",
+  "updated": "2026-10-18T06:27:27.438235Z",
+  "version": 1
+}

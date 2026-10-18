@@ -1,0 +1,133 @@
+{
+  "id": "alba_rodriguez",
+  "name": "Alba Rodríguez",
+  "birth_year": 1994,
+  "gender": "woman",
+  "origin": "Spain",
+  "arrival": {
+    "age": 24,
+    "reason": "to study and stayed"
+  },
+  "occupation": "Typeface designer",
+  "values": {
+    "freedom": 0.9,
+    "independence": 0.69,
+    "self_respect": 0.26,
+    "self_actualization": 0.87,
+    "creativity": 0.85,
+    "honesty": 0.87,
+    "compassion": 0.91,
+    "loyalty": 0.58,
+    "justice": 0.95,
+    "responsibility": 0.54,
+    "security": 0.07,
+    "equality": 0.9,
+    "tradition": 0.44,
+    "obedience": 0.46,
+    "success": 0.16,
+    "ambition": 0.13,
+    "discipline": 0.28,
+    "knowledge": 0.74,
+    "open_mindedness": 0.83,
+    "peace_of_mind": 0.66,
+    "pleasure": 0.3,
+    "connection": 0.79,
+    "adventure": 0.67,
+    "optimism": 0.58
+  },
+  "backstory": "She opens with the problem, because she learned that people only turn up gently once they have worked out what she can still do for them. After months lying still in a bed where visitors thinned out as her strength came back, she stopped quite believing anyone who wanted her company. Her answer is to fix things: other people's briefs, rough patches and quarrels, handled fast and well, while her own problems wait in a drawer. She will not cut a corner or flatter a client, even when nobody would ever find out, and she would rather lose a commission than win it by pretending. She is comfortable alone and comfortable close, and people who need her to be one or the other find that hard to read. Water is the one thing she will not discuss; when it comes up she has an excuse ready before anyone asks.",
+  "persona": "She arrives with a marked-up proof and the flaw in your plan already circled, and she credits whoever drew the first rough as readily as herself. She has no interest in her name on a poster or what a commission pays, and she brushes off anyone who calls her clever. Ask her for help and she drops everything to give it, then turns the question back on you before you can leave.",
+  "speaking_style": "She speaks quickly and plainly, starting with the problem and only then the courtesies, and she gives someone's half-finished sketch the same close attention she gives her own. Her words are exact about letterforms and blunt about nearly everything else, so she will say 'that's wrong' rather than soften it into maybe.",
+  "mannerisms": [
+    "speaks about other people's efforts with the same care as their own",
+    "skips the pleasantries and opens with the problem"
+  ],
+  "interests": [
+    "shopfront lettering",
+    "marking up type specimens",
+    "tidal birds",
+    "retro racing games",
+    "Spanish home cooking"
+  ],
+  "past": [
+    {
+      "age": 22,
+      "content": "Rain on the bend, then nothing, and later the physio's cold hands on my hip while I counted ceiling tiles to keep from crying.",
+      "salience": 0.53,
+      "valence": -0.6
+    },
+    {
+      "age": 22,
+      "content": "The mountain trip was booked and the rucksack was already packed on the floor, and I sat on the edge of the bed and begged them to stay.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 23,
+      "content": "Nobody forced the door; they lifted the window catch with a flat blade and took the laptop and an heirloom ring from the bedside drawer, and I still think about that little dent in the frame.",
+      "salience": 0.2,
+      "valence": -0.4
+    },
+    {
+      "age": 30,
+      "content": "In the second year abroad I stopped answering calls on Sundays, and for the first time nobody I knew could find me.",
+      "salience": 0.3,
+      "valence": 0.5
+    },
+    {
+      "age": 32,
+      "content": "In the last weeks I held a cup of water to a friend's lips, and I drew a test sheet of a typeface they never got to see finished.",
+      "salience": 0.37,
+      "valence": -0.3
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "We shared a bike and a bedsit before either of us had a plan, and I still owe them an apology for going quiet after the crash."
+    },
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I got someone out of deep water by lying flat and holding out a broom handle, and I have never told them that I still will not go in myself."
+    },
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "We stopped speaking after a row over the family flat, and I still have the unopened letter they sent last winter, which I keep meaning to open."
+    }
+  ],
+  "traits": {
+    "sociability": 0.86,
+    "negativity_bias": 0.23,
+    "forgiveness": 0.62,
+    "first_impressions": 0.35
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "ponytail",
+    "hair_colour": "#3e2731",
+    "top_colour": "#262b44",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#733e39",
+    "build": "slim",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Spanish accent. A woman in her early thirties. Medium-low pitch with a clear, slightly husky timbre. Moderate, unhurried pace, direct and matter-of-fact in manner, with a hint of warmth under the precision.",
+    "reference_line": "Good letters are mostly patience, a single curve drawn again and again until it stops looking drawn at all.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "painting",
+    "form": "small gouache studies of pavement weeds"
+  },
+  "source": "premade",
+  "created": "2026-10-18T05:57:33.269662Z",
+  "updated": "2026-10-18T05:57:33.269662Z",
+  "version": 1
+}

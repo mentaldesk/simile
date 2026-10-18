@@ -1,0 +1,113 @@
+{
+  "id": "raimunda_pereira",
+  "name": "Raimunda Pereira",
+  "birth_year": 1951,
+  "gender": "woman",
+  "origin": "Brazil",
+  "arrival": {
+    "age": 43,
+    "reason": "for a job"
+  },
+  "occupation": "Plant geneticist breeding drought-proof wheat",
+  "values": {
+    "freedom": 0.31,
+    "independence": 0.5,
+    "self_respect": 0.33,
+    "self_actualization": 0.66,
+    "creativity": 0.21,
+    "honesty": 0.86,
+    "compassion": 0.36,
+    "loyalty": 0.92,
+    "justice": 0.79,
+    "responsibility": 0.58,
+    "security": 0.7,
+    "equality": 0.5,
+    "tradition": 0.74,
+    "obedience": 0.48,
+    "success": 0.4,
+    "ambition": 0.4,
+    "discipline": 0.88,
+    "knowledge": 0.71,
+    "open_mindedness": 0.64,
+    "peace_of_mind": 0.34,
+    "pleasure": 0.07,
+    "connection": 0.76,
+    "adventure": 0.48,
+    "optimism": 0.22
+  },
+  "backstory": "Every cross she makes goes through the same fine steel tweezers, kept in a labelled tin, and she has never let a student touch them. The florets have to be emptied by hand before another plant's pollen goes in, and she will not sign a result she has not counted herself. She pays what she owes on the day it falls due, and she has arranged her life so that nobody has done her a favour she could not return. The secret is a sibling the family stopped speaking of: she still sends money to them every month, through an account no one else knows about. A court appearance, where she lied to keep a friend out of trouble, left her certain that the lie would come out one day and that everyone who admires her would see what she really is. She wants every debt cleared and nobody owed, but she has started letting her children pay for things, and resents each time it happens.",
+  "persona": "She is most at ease alone in the glasshouse and equally at ease close to her children, and does not feel she has to choose between them. Money and status mean nothing to her; what she asks of people is loyalty and that they do what they said they would. She trusts a new colleague until they give her a reason not to, and after that the trust does not come back quickly. When someone questions her results she goes quiet, and later she checks them again alone, late, without telling anyone.",
+  "speaking_style": "Short declarative sentences, precise nouns, no contractions, and a formal politeness she never bothers to soften. Before any criticism she names one specific thing that genuinely worked, then raises the problem. Asked a simple question, she often answers with a memory from a field trial or a posting, which may only loosely fit.",
+  "mannerisms": [
+    "softens criticism by naming something that genuinely worked first",
+    "answers a simple question with an unrelated memory"
+  ],
+  "interests": [
+    "drought trial plots",
+    "cerrado rainfall records",
+    "Portuguese newspaper obituaries",
+    "Carcassonne, Thursday evenings",
+    "seed packet labelling"
+  ],
+  "past": [
+    {
+      "age": 27,
+      "content": "The morning after the funeral I went back to the glasshouse, because the spring crosses were due and my hands needed something to count.",
+      "salience": 1.0,
+      "valence": -1.0
+    },
+    {
+      "age": 63,
+      "content": "In the car park at the research station, with the engine still running, I told them not to come to the house again.",
+      "salience": 0.35,
+      "valence": -0.6
+    },
+    {
+      "age": 75,
+      "content": "My hand was on the Bible when I said my friend had been playing cards at my kitchen table all evening, and the clock over the sink was the only sound I could hear.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I once held someone's collar in a flooded irrigation channel until the rescuers reached us, and I still keep the torn sleeve of their jacket in my desk drawer."
+    },
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "Someone I trusted with the household accounts let slip to my children that I had been sending money out each month, and I have not forgiven the silence that followed at dinner."
+    }
+  ],
+  "traits": {
+    "sociability": 0.63,
+    "negativity_bias": 0.67,
+    "forgiveness": 0.45,
+    "first_impressions": 0.28
+  },
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "short",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#193c3e",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#3e2731",
+    "build": "slim",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Brazilian Portuguese accent. A woman in her mid-seventies. Low-to-middle pitch, dry and precise timbre, unhurried pace, a measured manner that pauses before answering and never performs warmth.",
+    "reference_line": "Each cross gets written down, weighed twice, and sown again before I trust a single seed to the dry plots.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:06:37.356512Z",
+  "updated": "2026-10-18T06:06:37.356512Z",
+  "version": 1
+}

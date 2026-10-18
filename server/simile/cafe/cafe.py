@@ -4,7 +4,7 @@ import logging
 import math
 import random
 from collections import deque
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
@@ -43,6 +43,13 @@ VISITS = (Activity.COFFEE_SHOP, Activity.CREATE)
 SCENE_TIMEOUT = 20.0
 FRESH = timedelta(minutes=1)
 """A goal chosen this recently is a new visit. An older one, as from a save, is a stay."""
+
+
+def barista(npcs: Iterable[Npc], cafe: Id) -> Id | None:
+    """Whoever works at the café, as a cast's barista does, else whoever lives there."""
+    there = [npc for npc in npcs if cafe in (npc.workplace, npc.home)]
+    there.sort(key=lambda npc: npc.workplace != cafe)
+    return there[0].id if there else None
 
 
 class Engine(Protocol):
@@ -124,7 +131,8 @@ class Script:
 class Cafe:
     """The Daily Grind: its barista's shifts, the queue and every order. Tick it on the sim loop.
 
-    The barista is whoever lives at the café. Without one it's just a room with tables."""
+    The barista is whoever works at the café, else whoever lives there. Without one it's just a
+    room with tables."""
 
     def __init__(
         self,
@@ -159,9 +167,7 @@ class Cafe:
         self.lines = lines or Lines()
         self.config = config
         self.rng = random.Random(seed)
-        self.barista: Id | None = next(
-            (npc.id for npc in behaviour.npcs.values() if npc.home == config.home), None
-        )
+        self.barista = barista(behaviour.npcs.values(), config.home)
         town = self.movement.town
         self.map = town.location(config.home).map
         self.till = self._tile(town.location(config.staff).entry)

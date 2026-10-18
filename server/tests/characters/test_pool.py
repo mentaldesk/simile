@@ -103,7 +103,7 @@ async def test_the_readme_reports_the_spread(
     await run(fake_llm, embedder, tmp_path, 4)
     readme = (tmp_path / "README.md").read_text()
 
-    for heading in ("Name structure", "Occupation category", "Origin", "Voice"):
+    for heading in ("Name structure", "Fits the role", "Job family", "Origin", "Voice"):
         assert f"| {heading} | Characters |" in readme
     for character in load_pool(tmp_path):
         assert f"`{character.id}` {character.name}" in readme
