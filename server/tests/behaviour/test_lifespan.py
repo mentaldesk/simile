@@ -10,7 +10,7 @@ from simile.behaviour import Activity, behaviour_of
 from simile.npc import load_npcs
 from simile.protocol import EntityKind, Position, SnapshotMessage, hub_of
 from simile.protocol.fixtures import fixture_world
-from simile.schema import PLAYER_ID, MapTile
+from simile.schema import PLAYER_ID, Facing, MapTile, Pose
 from simile.sim import STEP, Clock, World, world_of
 from simile.world import movement_of
 from simile.world.movement import inside
@@ -75,6 +75,16 @@ def test_the_snapshot_puts_a_resident_inside_on_the_interiors_map(app: Starlette
         entity = next(e for e in hub_of(app).snapshot().entities if e.id == NPCS[0].id)
 
     assert entity.position == Position(x=13, y=9, map="coffee_shop")
+
+
+def test_the_snapshot_carries_each_residents_pose_and_facing(app: Starlette) -> None:
+    with TestClient(app):
+        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=11, y=3))
+        entities = {e.id: e for e in hub_of(app).snapshot().entities}
+
+    assert (entities[NPCS[0].id].pose, entities[NPCS[0].id].facing) == (Pose.SITTING, Facing.EAST)
+    player = entities[PLAYER_ID]
+    assert (player.pose, player.facing) == (Pose.STANDING, Facing.SOUTH_EAST)
 
 
 def test_the_player_starts_in_the_square_then_is_where_they_moved(app: Starlette) -> None:

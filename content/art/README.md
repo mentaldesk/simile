@@ -71,15 +71,22 @@ go inside roads; `tactile_h/v` and `plaza*` sit on pavement.
 
 ## Characters: `characters/<id>.png`, `characters/<id>.json`
 
-- 16×24 px frames in a 3 × 8 grid (48×192 px). Rows: `down`, `left`, `right`, `up`, then the
+- 16×24 px frames in a 12 × 8 grid (192×192 px). Rows: `down`, `left`, `right`, `up`, then the
   three-quarter views `down_left`, `down_right`, `up_left`, `up_right`, each facing that way on
-  screen. Columns: 0 and 2 are steps, 1 is standing. Frame index = row × 3 + column.
+  screen. Columns 0 to 2 are the walk: 0 and 2 are steps, 1 is standing.
+- Columns 3 to 11 are still frames. Column 3 is standing with the weight shifted, in every row:
+  the body above the legs settles a pixel. Then, in the three-quarter rows only, each pose and the
+  same with the weight shifted: `sitting` (4, 5), `reading` (6, 7: eyes down, hands up at the chest),
+  `working` (8, 9: arms forward) and `looking` (10, 11: still, hands behind the back). A sitter's feet
+  are on the bottom row like everyone's, with the body dropped onto bent legs, so the client lifts
+  them onto a bar stool. The frames of the walk are exactly as they were before the poses.
 - Every right-facing frame is its left-facing frame mirrored. `down_left` is the face turned to the
   left and `up_left` the back of the head with the left cheek showing. Every view keeps the feet on
   the frame's bottom row, so one origin works for all of them.
-- `<id>.json` is a Phaser JSON hash atlas naming each frame `<direction>-<column>`, e.g. `left-1`.
-  Because the grid is uniform, `load.spritesheet(key, url, { frameWidth: 16, frameHeight: 24 })`
-  works too.
+- `<id>.json` is a Phaser JSON hash atlas naming each walk frame `<direction>-<column>`, e.g.
+  `left-1`, and each still frame `<direction>-<pose>`, or `<direction>-<pose>-shift` with the weight
+  shifted, e.g. `up_left-sitting` and `left-standing-shift`. Because the grid is uniform,
+  `load.spritesheet(key, url, { frameWidth: 16, frameHeight: 24 })` works too.
 - Walk with columns 0, 1, 2, 1; idle on column 1. The feet are at the bottom of the frame, so set
   the origin to `(0.5, 1)` and place the sprite where the feet go.
 - `player` is the player. `sample_*` are placeholders until the generated NPCs exist. Each NPC in
@@ -87,7 +94,8 @@ go inside roads; `tactile_h/v` and `plaza*` sit on pavement.
   `preview/npcs.png`.
 
 The client loads every atlas in `BootScene` and draws them with `pixelArt` in
-`client/src/scenes/iso-characters.ts`, which picks one of the eight rows from each step
+`client/src/scenes/iso-characters.ts`, which picks one of the eight rows from each step, and a
+still frame for each resident who has stopped
 ([`client/src/world/iso/README.md`](../../client/src/world/iso/README.md)).
 
 Every `Appearance` option is drawn: hair `bald`, `buzz`, `short`, `curly`, `bob`, `long`,

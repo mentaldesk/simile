@@ -63,8 +63,8 @@ def test_draws_a_sprite_the_client_can_load(client: TestClient, root: Path) -> N
     assert image.headers["content-type"] == "image/png"
     assert atlas.json() == characters.atlas("new_face.png")
     drawn = Image.open(io.BytesIO(image.content))
-    expected = characters.sprite_sheet(LOOK, seed="new_face").to_image()
-    assert drawn.mode == "RGBA" and drawn.size == (48, 192)
+    expected = characters.full_sheet(LOOK, seed="new_face").to_image()
+    assert drawn.mode == "RGBA" and drawn.size == (192, 192)
     assert drawn.tobytes() == expected.tobytes()
     assert sorted(path.name for path in (root / "sprite").iterdir()) == [
         "new_face.json",
@@ -85,7 +85,7 @@ def test_draws_the_players_chosen_look_beside_content(client: TestClient, root: 
     assert job["state"] == "succeeded", job["error"]
     assert job["result"]["image"] == "/api/jobs/files/sprite/player.png"
     drawn = Image.open(root / "sprite" / "player.png")
-    assert drawn.tobytes() == characters.sprite_sheet(LOOK, seed="player").to_image().tobytes()
+    assert drawn.tobytes() == characters.full_sheet(LOOK, seed="player").to_image().tobytes()
     assert content_files() == before
 
 
@@ -110,7 +110,7 @@ def test_drawing_again_replaces_the_sprite(client: TestClient, root: Path) -> No
                 pass
 
     drawn = Image.open(root / "sprite" / "new_face.png")
-    bald = characters.sprite_sheet(look, seed="new_face").to_image()
+    bald = characters.full_sheet(look, seed="new_face").to_image()
     assert drawn.tobytes() == bald.tobytes()
     assert json.loads((root / "sprite" / "new_face.json").read_text())["meta"]["image"] == (
         "new_face.png"

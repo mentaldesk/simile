@@ -14,6 +14,7 @@ import {
   maps,
   MAX_FRAME_SECONDS,
   MoveThrottle,
+  tileOf,
   village,
   VILLAGE,
   world,
@@ -49,9 +50,12 @@ import {
   residentLight,
   sceneryImages,
   screenAligned,
+  seatAt,
+  seatsOf,
   SetLoader,
   simClock,
   sliceDraws,
+  Talkers,
   UPLOAD_MS_PER_FRAME,
   uploadImages,
   Uploads,
@@ -62,6 +66,7 @@ import {
   type SceneryManifest,
   type SceneryObject,
   type SceneSet,
+  type Seat,
   type SetLight,
   type TextureStage,
   type TiledMapWithTiles,
@@ -151,6 +156,8 @@ export class IsoScene extends Phaser.Scene {
   private characters?: IsoCharacters;
   private murals?: IsoMurals<ImageBitmap>;
   private readonly paintings = new Map<string, IsoPaintings<ImageBitmap>>();
+  private readonly seats = new Map<string, Map<string, Seat>>();
+  private readonly talkers = new Talkers();
   private shown?: string;
 
   constructor() {
@@ -179,6 +186,7 @@ export class IsoScene extends Phaser.Scene {
         listenerPosition: () => screenAligned(world.player?.position),
       }),
       server.on('snapshot', () => this.throttle.forget()),
+      server.on('line', ({ line }) => this.talkers.heard(line.speaker, line.duration)),
       setMuralView({
         wallAt: ({ x, y }) =>
           world.map === VILLAGE ? this.murals?.wallAt(this.cameras.main.getWorldPoint(x, y)) : undefined,
@@ -230,7 +238,12 @@ export class IsoScene extends Phaser.Scene {
     this.drawLayers(drawn, geometry);
     this.show(map);
 
-    const bodies = new Map<string, Body>([...world.here()].map(({ id, mover }) => [id, mover]));
+    const bodies = new Map<string, Body>(
+      [...world.here()].map(({ id, mover, pose, facing }) => [
+        id,
+        { position: mover.position, walking: mover.walking, pose, facing },
+      ]),
+    );
     bodies.set(PLAYER_ID, player);
     const lit = drawn.map(({ scenery, set, weight }) => ({
       weight,
@@ -238,7 +251,10 @@ export class IsoScene extends Phaser.Scene {
       lightMap: scenery.lightMap,
     }));
     const at = (position: Position) => this.figureAt(position, geometry);
-    characters.draw(bodies, dt, at, drawn, (feet) => residentLight(lit, feet));
+    characters.draw(bodies, dt, at, drawn, (feet) => residentLight(lit, feet), {
+      seatAt: (position) => this.seatAt(map, position),
+      talking: (id) => this.talkers.talking(id),
+    });
     this.drawMurals(dt, villageLayers, map === VILLAGE ? geometry : undefined);
     this.drawPaintings(dt, map, (feet) => residentLight(lit, feet).tint, geometry);
     this.follow(figure, geometry);
@@ -498,6 +514,14 @@ export class IsoScene extends Phaser.Scene {
     for (const [on, paintings] of this.paintings) paintings.draw(dt, on === map, light, alphaOf);
   }
 
+  private seatAt(map: string, position: Position): Seat | undefined {
+    const tiled = maps[map];
+    if (!tiled) return undefined;
+    let seats = this.seats.get(map);
+    if (!seats) this.seats.set(map, (seats = seatsOf(tiled)));
+    return seatAt(seats, tileOf(position));
+  }
+
   private figureAt(position: Position, { manifest, heightAt }: Geometry): Figure {
     return figureAt(position, manifest.tile, heightAt, this.characters!.frame);
   }
@@ -507,7 +531,7 @@ export class IsoScene extends Phaser.Scene {
     const geometry = this.geometries.get(world.map);
     const characters = this.characters;
     if (!geometry || !characters || !position) return undefined;
-    const figure = this.figureAt(position, geometry);
+    const figure = characters.figureOf(id) ?? this.figureAt(position, geometry);
     const box = figureBox(figure, this.cameras.main, characters.frame);
     return { box, depth: figure.depth, opaqueAt: (point) => characters.opaqueAt(id, box, point) };
   }

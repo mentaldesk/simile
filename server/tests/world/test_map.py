@@ -154,7 +154,7 @@ def test_the_map_is_a_tiled_map_with_the_tileset_embedded(path: Path) -> None:
         k: v for k, v in standalone.items() if k not in ("type", "version", "tiledversion", "image")
     }
     names = ["ground", "buildings", "decor", "above", "collision", "locations", "murals"]
-    names += ["doors", "interactables"]
+    names += ["doors", "interactables", "spots"]
     assert [layer["name"] for layer in data["layers"]] == names
 
 

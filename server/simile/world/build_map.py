@@ -14,6 +14,7 @@ from simile.art.preview import label
 from simile.art.tiles import edge_variant
 from simile.schema import (
     Door,
+    Facing,
     Interactable,
     InteractableKind,
     Location,
@@ -30,8 +31,11 @@ from simile.world.map import (
     LOCATIONS_LAYER,
     MAP_ID,
     MURALS_LAYER,
+    SPOTS_LAYER,
     Face,
     MuralWall,
+    Spot,
+    SpotKind,
 )
 
 TILE_SIZE = 16
@@ -40,6 +44,15 @@ TERRAIN = {"P": "pavement", "G": "grass", "R": "road", "W": "water", "Z": "plaza
 TERRAIN |= {"B": "floor_wood", "T": "floor_tiles", "C": "floor_concrete", "L": "floor_gallery"}
 PATCHES = {"G", "R", "W"}
 TILE_LAYERS = ("ground", "buildings", "decor", "above")
+CHAIR_REACH = 0.6
+"""From a seat's tile to its chair, which stands on the table's tile."""
+BENCH_REACH = 0.7
+"""From a seat's tile to where the sitter's feet are, in front of the bench."""
+LEAN = 0.2
+"""How far towards what they're using people stand at a counter, desk or screen."""
+STOOL_M = 0.25
+"""How much higher a bar stool's seat is than a chair's."""
+STEPS = {Facing.EAST: (1, 0), Facing.SOUTH: (0, 1), Facing.WEST: (-1, 0), Facing.NORTH: (0, -1)}
 GROUND_ON = {
     "grass_tufts": "G",
     "grass_flowers": "G",
@@ -125,6 +138,7 @@ class Town:
         self.murals: list[MuralWall] = []
         self.doors: list[Door] = []
         self.interactables: list[Interactable] = []
+        self.spots: list[Spot] = []
         self.mat: Tile | None = None
         self.doorsteps: dict[str, Tile] = {}
 
@@ -149,8 +163,35 @@ class Town:
         self.put(x, y - 1, "tree_tl", "tree_tr")
         self.put(x, y, "tree_bl", "tree_br")
 
-    def bench(self, x: int, y: int) -> None:
+    def bench(self, x: int, y: int, facing: Facing | None = None) -> None:
+        """A bench, with a seat for two facing north or south off it."""
         self.put(x, y, "bench_l", "bench_r")
+        if facing is not None:
+            dy = STEPS[facing][1]
+            for i in (0, 1):
+                self.spot(SpotKind.SEAT, x + i, y + dy, facing, dy=-dy * BENCH_REACH)
+
+    def spot(
+        self,
+        kind: SpotKind,
+        x: int,
+        y: int,
+        facing: Facing,
+        lean: float = 0.0,
+        dy: float = 0.0,
+        dz: float = 0.0,
+    ) -> None:
+        """A spot on (x, y), with the figure `lean` tiles towards what it faces, then `dy` south."""
+        step_x, step_y = STEPS[facing]
+        spot_id = f"{kind}-{x}-{y}"
+        dx, dy = step_x * lean, step_y * lean + dy
+        self.spots.append(Spot(spot_id, kind, self.map_id, x, y, facing, dx, dy, dz))
+
+    def table(self, x: int, y: int, name: str) -> None:
+        """A table with a chair either side, east and west."""
+        self.put(x, y, name)
+        self.spot(SpotKind.SEAT, x - 1, y, Facing.EAST, CHAIR_REACH)
+        self.spot(SpotKind.SEAT, x + 1, y, Facing.WEST, CHAIR_REACH)
 
     def fountain(self, x: int, y: int) -> None:
         self.put(x, y, "fountain_tl", "fountain_tr")
@@ -253,11 +294,14 @@ class Town:
         else:
             stand = Tile(x=x + 1, y=y + width // 2)
         self.murals.append(MuralWall(wall_id, x, y, width, face, bottom, top, stand))
+        facing = Facing.NORTH if face == "south" else Facing.WEST
+        self.spot(SpotKind.VIEWING, stand.x, stand.y, facing)
 
     def terminal(self, number: int, name: str, x: int, y: int) -> None:
         self.tall(x, y, "terminal")
         area = TileArea(x=x, y=y - 1, width=1, height=3)
         self.place(f"terminal_{number}", name, LocationKind.TERMINAL, area, (x, y + 1))
+        self.spot(SpotKind.TERMINAL, x, y + 1, Facing.NORTH, LEAN)
 
     def walls(self, material: str, door: int) -> None:
         """A room's walls: the back wall face on, the others' tops, and a mat in the doorway."""
@@ -311,6 +355,15 @@ class Town:
         area = TileArea(x=x, y=y, width=len(names), height=1)
         stand = [(x + i, y + 1) for i in range(len(names))]
         self.interactable(item_id, label, InteractableKind.MACHINE, area, stand)
+        for sx, sy in stand:
+            self.spot(SpotKind.DESK, sx, sy, Facing.NORTH, LEAN)
+
+    def workbench(self, x: int, y: int) -> None:
+        """A workbench, worked at from both long sides."""
+        self.put(x, y, "workbench_l", "workbench_r")
+        for i in (0, 1):
+            self.spot(SpotKind.DESK, x + i, y - 1, Facing.SOUTH, LEAN)
+            self.spot(SpotKind.DESK, x + i, y + 1, Facing.NORTH, LEAN)
 
     def painting(self, number: int, x: int, y: int) -> None:
         """A frame on the upper row of a wall, looked at from in front of the wall's base."""
@@ -318,6 +371,8 @@ class Town:
         area = TileArea(x=x, y=y, width=2, height=1)
         stand = [(x, y + 2), (x + 1, y + 2)]
         self.interactable(f"painting_{number}", "Painting", InteractableKind.PAINTING, area, stand)
+        for sx, sy in stand:
+            self.spot(SpotKind.VIEWING, sx, sy, Facing.NORTH)
 
     def ground(self, x: int, y: int) -> str:
         if (x, y) in self.overrides:
@@ -537,8 +592,17 @@ def square(town: Town) -> None:
     )
     town.terminal(1, "News terminal on the square", 36, 14)
     for x in (27, 34):
-        town.bench(x, 18)
-        town.bench(x, 22)
+        town.bench(x, 18, Facing.SOUTH)
+        town.bench(x, 22, Facing.NORTH)
+    for x, y, facing in (
+        (31, 18, Facing.SOUTH),
+        (32, 21, Facing.NORTH),
+        (30, 20, Facing.EAST),
+        (33, 19, Facing.WEST),
+        (26, 20, Facing.EAST),
+        (37, 20, Facing.WEST),
+    ):
+        town.spot(SpotKind.STANDING, x, y, facing)
     for x, y in ((30, 18), (33, 18), (30, 21), (33, 21)):
         town.put(x, y, "planter_flowers")
     for x, y in ((25, 20), (38, 20)):
@@ -576,8 +640,8 @@ def park(town: Town) -> None:
         (61, 32),
     ):
         town.tree(x, y)
-    town.bench(49, 26)
-    town.bench(59, 17)
+    town.bench(49, 26, Facing.SOUTH)
+    town.bench(59, 17, Facing.SOUTH)
     town.put(53, 14, "bush")
     town.put(48, 31, "bush")
     town.put(60, 31, "bush")
@@ -649,7 +713,11 @@ def coffee_shop(tileset: Tileset) -> Town:
     room.put(2, 5, "counter_l", "counter", "counter", "counter_till", "counter_case")
     room.put(7, 5, "counter_case", "counter", "counter_corner")
     for x, y in ((12, 3), (15, 3), (12, 7), (15, 7), (12, 10), (15, 10), (2, 8), (2, 11)):
-        room.put(x, y, "cafe_table")
+        room.table(x, y, "cafe_table")
+    for x in (2, 3):
+        room.spot(SpotKind.BAR, x, 6, Facing.NORTH, LEAN)
+    for y in (3, 4, 5):
+        room.spot(SpotKind.BAR, 10, y, Facing.WEST, LEAN)
     room.put(18, 2, "planter_flowers")
     room.put(18, 12, "planter")
     front = (5, 6)
@@ -676,7 +744,7 @@ def gallery(tileset: Tileset) -> Town:
     for number, (x, y) in enumerate(spots, 1):
         room.painting(number, x, y)
     for x, y in ((8, 5), (22, 5), (8, 14), (22, 14)):
-        room.bench(x, y)
+        room.bench(x, y, Facing.NORTH)
     for x, y in ((15, 5), (16, 15)):
         room.put(x, y, "plinth")
     for x, y in ((1, 2), (30, 2), (1, 18), (30, 18)):
@@ -697,7 +765,7 @@ def maker_space(tileset: Tileset) -> Town:
     room.machine("sewing_machine", "Sewing machine", 15, 2, "sewing_machine")
     for x in (3, 8, 13):
         for y in (6, 9):
-            room.put(x, y, "workbench_l", "workbench_r")
+            room.workbench(x, y)
     room.put(1, 12, "planter")
     room.place("maker_space", "Spark Maker Space", LocationKind.MAKER_SPACE, room.floor(), (8, 7))
     return room
@@ -717,10 +785,11 @@ def noodle_bar(tileset: Tileset) -> Town:
     room.put(2, 4, "counter_l", *["counter"] * 10, "counter_corner")
     for x in range(3, 13, 2):
         room.put(x, 5, "stool")
+        room.spot(SpotKind.SEAT, x, 5, Facing.NORTH, dz=STOOL_M)
     for x in (4, 8, 12, 16):
         for y in (8, 11):
-            room.put(x, y, "noodle_table")
-    room.put(16, 3, "noodle_table")
+            room.table(x, y, "noodle_table")
+    room.table(16, 3, "noodle_table")
     room.place("noodle_bar", "Golden Bowl Noodles", LocationKind.NOODLE_BAR, room.floor(), (7, 5))
     return room
 
@@ -769,6 +838,7 @@ def tmj(town: Town, image: str) -> dict[str, Any]:
         MURALS_LAYER: [_wall(next(object_ids), wall) for wall in town.murals],
         DOORS_LAYER: [_door(next(object_ids), door, town.map_id) for door in town.doors],
         INTERACTABLES_LAYER: [_interactable(next(object_ids), i) for i in town.interactables],
+        SPOTS_LAYER: [_spot(next(object_ids), spot) for spot in town.spots],
     }
     for name, group in objects.items():
         layers.append(_object_layer(len(layers) + 1, name, group))
@@ -877,6 +947,15 @@ def _interactable(object_id: int, item: Interactable) -> dict[str, Any]:
     return _rectangle(object_id, item.id, item.kind.value, item.area, properties)
 
 
+def _spot(object_id: int, spot: Spot) -> dict[str, Any]:
+    properties = [{"name": "facing", "type": "string", "value": spot.facing.value}]
+    for name in ("dx", "dy", "dz"):
+        if value := round(getattr(spot, name), 3):
+            properties.append({"name": name, "type": "float", "value": value})
+    tile = TileArea(x=spot.x, y=spot.y, width=1, height=1)
+    return _rectangle(object_id, spot.id, spot.kind.value, tile, properties)
+
+
 def _wall(object_id: int, wall: MuralWall) -> dict[str, Any]:
     along, across = wall.width * TILE_SIZE, TILE_SIZE
     width, height = (along, across) if wall.face == "south" else (across, along)
@@ -976,6 +1055,12 @@ def annotate(town: Town, image: Image.Image, scale: int = 2) -> Image.Image:
     for door in town.doors:
         here = door.outside if door.outside.map == town.map_id else door.inside
         outline(TileArea(x=here.x, y=here.y, width=1, height=1), "lime")
+    for spot in town.spots:
+        x, y = ((c + 0.5) * cell for c in spot.seat)
+        step_x, step_y = STEPS[spot.facing]
+        reach, r = cell * 0.4, cell // 8
+        draw.line((x, y, x + step_x * reach, y + step_y * reach), fill=rgba("violet"), width=2)
+        draw.ellipse((x - r, y - r, x + r, y + r), fill=rgba("violet"))
     for text, x, y in labels:
         draw.rectangle((x - 3, y - 3, x + text.width + 2, y + text.height + 2), fill=rgba("ink"))
         out.alpha_composite(text, (x, y))

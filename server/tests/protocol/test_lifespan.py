@@ -19,6 +19,7 @@ from simile.protocol import (
 )
 from simile.protocol.fixtures import fixture_world
 from simile.protocol.lifespan import lifespan
+from simile.schema import Facing, Pose
 from simile.sim import (
     STEP,
     Clock,
@@ -46,6 +47,16 @@ CASES = [
         EntityMoved("mei", 10, 13, "coffee_shop"),
         EntityMovedMessage(entity_id="mei", position=Position(x=10, y=13, map="coffee_shop")),
         id="entity_moved_inside",
+    ),
+    pytest.param(
+        EntityMoved("mei", 11, 3, "coffee_shop", Pose.SITTING, Facing.EAST),
+        EntityMovedMessage(
+            entity_id="mei",
+            position=Position(x=11, y=3, map="coffee_shop"),
+            pose=Pose.SITTING,
+            facing=Facing.EAST,
+        ),
+        id="entity_moved_seated",
     ),
     pytest.param(
         ConversationStarted(CONVERSATION),

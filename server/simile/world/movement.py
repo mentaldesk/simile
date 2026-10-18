@@ -9,16 +9,27 @@ from typing import Any, Self
 
 from starlette.applications import Starlette
 
-from simile.schema import VILLAGE_MAP, Id, Location, MapTile, Tile
+from simile.schema import VILLAGE_MAP, Facing, Id, Location, MapTile, Pose, Tile
 from simile.sim import EntityMoved, EventBus, world_of
 from simile.world.map import WALKING_SPEED, TownMap, load_maps, with_every_location
+from simile.world.map import Spot as MapSpot
 from simile.world.paths import DOOR, Cell, Spot, door_ends, find_route, nearby, route_length
+from simile.world.spots import (
+    DEFAULT_SPOTS,
+    Affinity,
+    Purpose,
+    SpotConfig,
+    choose,
+    indifferent,
+    pose_on,
+)
 
 logger = logging.getLogger(__name__)
 
 type Target = Tile | MapTile | str
 
 EPSILON = 1e-9
+FACINGS = tuple(Facing)
 
 
 class Point(tuple[float, float]):
@@ -123,6 +134,11 @@ def map_tile(spot: Spot) -> MapTile:
     return MapTile(map=spot.map, x=spot.x, y=spot.y)
 
 
+def facing_of(dx: float, dy: float) -> Facing:
+    """The way a step goes, to the nearest of the eight."""
+    return FACINGS[round(math.atan2(dy, dx) / (math.pi / 4)) % 8]
+
+
 @dataclass
 class Body:
     tile: Spot
@@ -131,6 +147,8 @@ class Body:
     walk: Walk | None = None
     through: float = 0.0
     """How far through a door it's got, in tiles."""
+    pose: Pose = Pose.STANDING
+    facing: Facing = Facing.SOUTH_EAST
 
     @property
     def stepping(self) -> bool:
@@ -179,17 +197,45 @@ class Movement:
         self.town = with_every_location(self.maps, self.home)
         self.doors = door_ends(self.maps)
         self.bus = bus
+        self.affinity: Affinity = indifferent
+        """How much one entity likes being near another, for choosing a spot."""
+        self.spot_config: SpotConfig = DEFAULT_SPOTS
         self._bodies: dict[Id, Body] = {}
+        self._purposes: dict[Id, Purpose] = {}
+        self._spots: dict[Spot, MapSpot] = {
+            Spot(spot.map, spot.x, spot.y): spot
+            for town in self.maps.values()
+            for spot in town.spots
+        }
+        self._spots_in: dict[str, list[MapSpot]] = {}
 
     def place(self, entity: Id, target: Target) -> MapTile:
         """Put an entity on the target, or the nearest free tile to it, ending any walk."""
-        body = self._bodies.get(entity)
-        spot = self._resolve(entity, target, body.heading if body else None)
+        old = self._bodies.get(entity)
+        spot = self._resolve(entity, target, old.heading if old else None)
         if spot is None:
             raise ValueError(f"{entity} can't stand on {target!r}")
-        self._replace(entity, Body(spot, point_of(spot)))
-        self._publish(entity, spot)
+        body = Body(spot, point_of(spot), facing=old.facing if old else Facing.SOUTH_EAST)
+        self._rest(entity, body)
+        self._replace(entity, body)
+        self._publish(entity, body)
         return map_tile(spot)
+
+    def intend(self, entity: Id, purpose: Purpose | None) -> None:
+        """What they'll be at their next place for, which says which spots there suit them."""
+        if purpose is None:
+            self._purposes.pop(entity, None)
+        else:
+            self._purposes[entity] = purpose
+
+    def posture(self, entity: Id) -> tuple[Pose, Facing]:
+        body = self._bodies[entity]
+        return body.pose, body.facing
+
+    def on_spot(self, entity: Id) -> MapSpot | None:
+        """The spot they're staying on, if they've stopped on one."""
+        body = self._bodies[entity]
+        return None if body.path else self._spots.get(body.tile)
 
     def track(self, entity: Id, position: Point) -> None:
         """Record where something the client moves, like the player, is. Publishes nothing."""
@@ -223,13 +269,18 @@ class Movement:
             walk.distance = route_length([body.position, *body.path]) - body.through
             if not body.path:
                 self._end(body, Outcome.ARRIVED)
+        if not body.path:
+            self._settle(entity, body)
         if previous:
             previous.finish(Outcome.SUPERSEDED)
         return walk
 
     def stop(self, entity: Id) -> None:
         """Cancel the entity's walk. It stops on the next tile."""
-        self._end(self._bodies[entity], Outcome.CANCELLED)
+        body = self._bodies[entity]
+        self._end(body, Outcome.CANCELLED)
+        if not body.path:
+            self._settle(entity, body)
 
     def tick(self, dt: float) -> None:
         for entity, body in tuple(self._bodies.items()):
@@ -256,11 +307,17 @@ class Movement:
                     )
                     return
             budget -= gap
+            if spot.map == body.tile.map:
+                body.facing = facing_of(spot.x - body.tile.x, spot.y - body.tile.y)
             body.tile, body.position = spot, point_of(spot)
             body.path.popleft()
             if body.claim in self._claims(entity):
                 self._reroute(entity, body)
-            self._publish(entity, body.tile)
+            if body.path:
+                body.pose = Pose.WALKING
+            else:
+                self._rest(entity, body)
+            self._publish(entity, body)
             if not body.path:
                 self._end(body, Outcome.ARRIVED)
                 return
@@ -303,24 +360,79 @@ class Movement:
             origin = Spot(self.home, target.x, target.y)
         else:
             location = self.town.location(target)
-            if start is not None and inside(location, start) and start not in claimed:
+            if (taken := self._take_spot(entity, location, start, claimed)) is not None:
+                return taken
+            if (
+                start is not None
+                and inside(location, start)
+                and start not in claimed
+                and start not in self._spots
+            ):
                 return start
             origin = Spot(location.map, location.entry.x, location.entry.y)
         near = start if start is not None and start.map == origin.map else origin
-        best: tuple[tuple[bool, int, float], Spot] | None = None
+        best: tuple[tuple[bool, bool, int, float], Spot] | None = None
         for cell, depth in nearby(self.maps[origin.map], (origin.x, origin.y)):
-            if best and not best[0][0] and depth > best[0][1]:
+            if best and not best[0][0] and not best[0][1] and depth > best[0][2]:
                 break
             spot = Spot(origin.map, *cell)
             if spot not in claimed:
                 outside = location is not None and not inside(location, spot)
-                rank = (outside, depth, math.dist(cell, (near.x, near.y)))
+                on_spot = location is not None and spot in self._spots
+                rank = (outside, on_spot, depth, math.dist(cell, (near.x, near.y)))
                 if best is None or rank < best[0]:
                     best = (rank, spot)
         return best[1] if best else None
 
-    def _publish(self, entity: Id, spot: Spot) -> None:
-        self.bus.publish(EntityMoved(entity, float(spot.x), float(spot.y), spot.map))
+    def _take_spot(
+        self, entity: Id, location: Location, start: Spot | None, claimed: set[Spot]
+    ) -> Spot | None:
+        """A free spot in the location that suits what they're there for, or the one they're on."""
+        purpose = self._purposes.get(entity)
+        kinds = self.spot_config.fits.get(purpose) if purpose else None
+        if not kinds:
+            return None
+        here = self._spots.get(start) if start is not None else None
+        if here and here.kind in kinds and inside(location, start) and start not in claimed:
+            return start
+        if location.id not in self._spots_in:
+            spots = self.maps[location.map].spots
+            self._spots_in[location.id] = [
+                spot for spot in spots if inside(location, Spot(spot.map, spot.x, spot.y))
+            ]
+        free = [s for s in self._spots_in[location.id] if Spot(s.map, s.x, s.y) not in claimed]
+        others = {
+            other: self._seat(body.claim)
+            for other, body in self._bodies.items()
+            if other != entity and body.claim.map == location.map
+        }
+        entry = (location.entry.x, location.entry.y)
+        near = (start.x, start.y) if start is not None and start.map == location.map else entry
+        spot = choose(entity, free, kinds, others, near, self.affinity, self.spot_config)
+        return None if spot is None else Spot(spot.map, spot.x, spot.y)
+
+    def _seat(self, tile: Spot) -> tuple[float, float]:
+        spot = self._spots.get(tile)
+        return spot.seat if spot else (tile.x, tile.y)
+
+    def _rest(self, entity: Id, body: Body) -> None:
+        """Stopped: the pose and facing of the spot they're on, or standing as they were."""
+        spot = self._spots.get(body.tile)
+        if spot is None:
+            body.pose = Pose.STANDING
+        else:
+            body.pose, body.facing = pose_on(spot, self._purposes.get(entity)), spot.facing
+
+    def _settle(self, entity: Id, body: Body) -> None:
+        before = body.pose, body.facing
+        self._rest(entity, body)
+        if (body.pose, body.facing) != before:
+            self._publish(entity, body)
+
+    def _publish(self, entity: Id, body: Body) -> None:
+        tile = body.tile
+        moved = EntityMoved(entity, float(tile.x), float(tile.y), tile.map, body.pose, body.facing)
+        self.bus.publish(moved)
 
 
 def movement_of(app: Starlette) -> Movement:
