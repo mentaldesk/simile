@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -8,7 +9,7 @@ from starlette.testclient import TestClient
 
 from simile.app import create_app
 from simile.behaviour import behaviour_of
-from simile.casting import cast_npcs, load_cast
+from simile.casting import Cast, cast_npcs, load_cast
 from simile.library import Library
 from simile.memory import MemoryStore
 from simile.memory.store import DEFAULT_PATH
@@ -25,11 +26,9 @@ A, B, C, D, E, F = POOL[:6]
 CONTENT = NPCS_DIR.parent
 
 
-def today() -> dict[Path, bytes]:
-    found: dict[Path, bytes] = {}
-    for folder in ("npcs", "voices", "art/characters", "characters/pool"):
-        found |= files(CONTENT / folder)
-    return found
+def content() -> dict[Path, str]:
+    found = (p for p in CONTENT.rglob("*") if p.is_file())
+    return {p: hashlib.sha256(p.read_bytes()).hexdigest() for p in found}
 
 
 def made(client: TestClient, **asked: Any) -> dict[str, Any]:
@@ -116,13 +115,13 @@ def test_leaves_todays_village_and_its_save_alone(
     with MemoryStore(village) as memory, WorldStore(memory) as store:
         store.save(SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={}))
     monkeypatch.setenv("SIMILE_DB", str(village))
-    before, content = files(village.parent), today()
+    before, hashes = files(village.parent), content()
 
     made(client, count=10)
     made(client, count=6, picks=[A, B, C, D, E, F])
 
     assert files(village.parent) == before
-    assert today() == content
+    assert content() == hashes
     assert client.get("/api/worlds").json()["current"]["name"] == "Today's village"
     assert load_npcs() == load_npcs(NPCS_DIR)
 
@@ -246,6 +245,30 @@ def test_a_player_character_whose_clip_is_gone_is_cast_unvoiced(
     assert npc.voice.reference_clip is None
     assert not (root / world["name"] / "clips").exists()
     assert world["missing"][0]["needs"] == ["voice", "sprite"]
+
+
+def test_a_failed_write_removes_only_the_folder_it_made(
+    root: Path, library: Library, pool: list[Character], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from simile.casting import write_cast
+    from simile.worlds import NewWorld, store
+
+    worlds = Worlds(root)
+    kept = worlds.create(NewWorld(count=2, seed=1), library)
+    before = files(root / kept.name)
+    data = pool[0].model_dump(mode="json") | {"id": "wren_abernethy", "name": "Wren Abernethy"}
+    player = library.save_clip(library.create(data).id, clip())
+
+    def fail(made: Cast, folder: Path) -> Path:
+        write_cast(made, folder)
+        raise OSError("No space left on device")
+
+    monkeypatch.setattr(store, "write_cast", fail)
+    with pytest.raises(OSError, match="No space"):
+        worlds.create(NewWorld(count=2, picks=[player.id], seed=1), library)
+
+    assert folders(root) == [kept.name]
+    assert files(root / kept.name) == before
 
 
 @pytest.mark.parametrize("where", [DEFAULT_PATH.parent / "worlds", CONTENT / "worlds"])

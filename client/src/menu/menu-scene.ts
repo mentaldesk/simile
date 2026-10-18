@@ -13,7 +13,12 @@ export class MenuScene extends Phaser.Scene {
   }
 
   create(): void {
-    if (new URLSearchParams(location.search).has('creator')) return;
+    const params = new URLSearchParams(location.search);
+    if (params.has('play')) {
+      this.scene.start(ISO_SCENE);
+      return;
+    }
+    if (params.has('creator')) return;
     const menu = new Menu(document.body, new ServerApi(), {
       play: () => this.scene.start(ISO_SCENE),
       creator: hasCreator ? () => (location.search = '?creator') : undefined,

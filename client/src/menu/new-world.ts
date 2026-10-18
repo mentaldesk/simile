@@ -43,7 +43,6 @@ export class NewWorldState {
     return this.bonds;
   }
 
-  /** How many the server will draw when the world starts. */
   get open(): number {
     return this.count - this.residents.length;
   }

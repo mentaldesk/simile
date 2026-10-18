@@ -37,7 +37,6 @@ export type MadeWorld = {
   restart: { env: Record<string, string>; command: string };
 };
 
-/** The fields of the library's `Character` that the menu shows. */
 export type LibraryCharacter = {
   id: string;
   name: string;
