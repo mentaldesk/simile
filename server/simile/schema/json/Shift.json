@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "Weekday": {
+      "enum": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "title": "Weekday",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "When a resident works on some days of the week. Times are hours on the sim clock, so 7.5\nis 07:30. A shift that runs past midnight is two shifts: one ending at 24 and one starting at\n0 the next day.",
+  "properties": {
+    "days": {
+      "items": {
+        "$ref": "#/$defs/Weekday"
+      },
+      "minItems": 1,
+      "title": "Days",
+      "type": "array"
+    },
+    "start": {
+      "description": "When it starts, 0-24.",
+      "minimum": 0,
+      "title": "Start",
+      "type": "number"
+    },
+    "end": {
+      "description": "When it ends, after it starts and at most 24.",
+      "maximum": 24,
+      "title": "End",
+      "type": "number"
+    }
+  },
+  "required": [
+    "days",
+    "start",
+    "end"
+  ],
+  "title": "Shift",
+  "type": "object"
+}
