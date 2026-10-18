@@ -58,7 +58,8 @@ const NEWS: Kind<NewsArticle> = {
     if (article.source) {
       item.appendChild(document.createElement('small')).textContent = article.source;
     }
-    item.appendChild(document.createElement('p')).textContent = article.summary;
+    const summary = (open && article.long_summary) || article.summary;
+    appendLines(item.appendChild(document.createElement('p')), summary);
     const url = webLink(article.url);
     if (open && url) {
       const link = item.appendChild(document.createElement('a'));

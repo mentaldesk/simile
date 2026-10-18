@@ -266,6 +266,39 @@ def test_a_scene_leaves_out_what_there_isnt() -> None:
         assert missing not in prompt
 
 
+def read(owner: str, title: str, *points: str) -> Memory:
+    content = f'I read "{title}" on the news terminal. Huh.'
+    found = memory(owner, content, MemoryKind.NEWS, title.lower())
+    return found.model_copy(update={"points": list(points)})
+
+
+@pytest.mark.parametrize("opener_has_points", [True, False], ids=["opener", "other"])
+def test_a_scene_gives_what_stuck_from_one_article_only(opener_has_points: bool) -> None:
+    points = ["Blue paint.", "Six bridges."] if opener_has_points else []
+    bridges = read("kofi", "Painted bridges", *points)
+    kofi = Character(KOFI, meet(KOFI, "henrietta"), topics=[read("kofi", "Murals"), bridges])
+    bins = read("henrietta", "New bins", "Collected on Tuesdays.")
+    henrietta = Character(
+        HENRIETTA, meet(HENRIETTA, "kofi"), topics=[bins, read("henrietta", "Fete", "Rained off.")]
+    )
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
+
+    _, kofis, henriettas, _ = prompt.split("\n\n## ")
+    assert prompt.count("What stuck with") == 1
+    assert "Rained off." not in prompt
+    if opener_has_points:
+        assert kofis.endswith(
+            '- I read "Painted bridges" on the news terminal. Huh.\n\n'
+            'What stuck with Kofi from "Painted bridges":\n- Blue paint.\n- Six bridges.'
+        )
+        assert "Collected on Tuesdays." not in prompt
+    else:
+        assert henriettas.endswith(
+            'What stuck with Henrietta from "New bins":\n- Collected on Tuesdays.'
+        )
+
+
 def test_each_side_has_their_works_with_the_artist_marked() -> None:
     mural = work("kofi-1", "kofi", "First Coat", NOW, tags=["mars"])
     poem = work("tobias-1", "tobias", "The Tables", NOW, medium=Medium.WRITING)

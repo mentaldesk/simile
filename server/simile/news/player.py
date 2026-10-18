@@ -35,6 +35,7 @@ class PlayerNews:
                     title=item.title,
                     source=item.source,
                     summary=item.summary,
+                    long_summary=item.long_summary,
                     url=item.url,
                     read=item.id in read,
                 )

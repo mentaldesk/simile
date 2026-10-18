@@ -127,6 +127,8 @@ class Party:
     background: str = ""
     works: list[WorkTopic] = field(default_factory=list)
     """Works they might bring up, in a conversation written a line at a time."""
+    topics: list[Memory] = field(default_factory=list)
+    """News they might bring up, in a conversation written a line at a time."""
 
 
 @dataclass
@@ -628,6 +630,7 @@ class ConversationEngine:
                 now,
             ),
             works=works,
+            topics=topics,
         )
 
     def _critical(self) -> dict[Need, float]:

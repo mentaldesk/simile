@@ -11,9 +11,11 @@ from simile.conversation.prompt import (
     Draft,
     WorkTopic,
     ago,
+    detailed,
     first_name,
     habits,
     parse_reply,
+    stuck,
     value_name,
 )
 from simile.memory import SharedHistory
@@ -106,13 +108,15 @@ def scene_prompt(
     now: datetime,
     plan: Plan,
 ) -> str:
-    """Both sides of the conversation `a` starts with `b`, what's between them and the direction."""
+    """Both sides of the conversation `a` starts with `b`, what's between them and the direction,
+    with what stuck with one of them from one article they read, `a`'s if they can."""
     names = {a.npc.id: first_name(a.npc), b.npc.id: first_name(b.npc)}
     where = f"at {place}" if place else "out in the street"
+    detail = detailed(a.topics, b.topics)
     parts = [
         f"It's {now:%H:%M}, {where}. {names[a.npc.id]} has just walked up to {names[b.npc.id]}.",
-        character(a, b.npc, grudges(history, a.npc.id), plan.stances[a.npc.id].mood),
-        character(b, a.npc, grudges(history, b.npc.id), plan.stances[b.npc.id].mood),
+        character(a, b.npc, grudges(history, a.npc.id), plan.stances[a.npc.id].mood, detail),
+        character(b, a.npc, grudges(history, b.npc.id), plan.stances[b.npc.id].mood, detail),
     ]
     between = [
         f"- {ago(event.timestamp, now)}, {names.get(event.actor, event.actor)}: {event.action}"
@@ -146,7 +150,11 @@ def grudges(history: SharedHistory, owner: Id) -> list[str]:
 
 
 def character(
-    side: Character, them: Npc, grudges: Sequence[str] = (), mood: Sequence[str] = ()
+    side: Character,
+    them: Npc,
+    grudges: Sequence[str] = (),
+    mood: Sequence[str] = (),
+    detail: Memory | None = None,
 ) -> str:
     npc, name, other = side.npc, first_name(side.npc), first_name(them)
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
@@ -200,6 +208,8 @@ def character(
             f"News {name} read and might bring up:\n"
             + "\n".join(f"- {m.content}" for m in side.topics)
         )
+    if detail is not None and detail in side.topics:
+        parts.append(stuck(detail, name))
     return "\n\n".join(parts)
 
 

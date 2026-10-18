@@ -5,8 +5,9 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from datetime import timedelta
 
+from simile.news.article import GIVE_UP, capped
 from simile.news.config import DEFAULT_CONFIG, NewsConfig
-from simile.news.feed import DEADLINE, Feed, FeedRefused, Fetched, fetch
+from simile.news.feed import Feed, FeedRefused, Fetched, fetch
 from simile.news.feed_list import FeedList
 from simile.news.store import NewsStore
 from simile.schema import NewsItem
@@ -16,7 +17,6 @@ logger = logging.getLogger(__name__)
 INTERVAL = timedelta(hours=1)
 MIN_GAP = timedelta(minutes=30)
 MAX_PER_FEED = 10
-GIVE_UP = DEADLINE + 5
 
 type Fetch = Callable[[Feed, str | None, str | None], Fetched]
 
@@ -64,7 +64,8 @@ async def refresh(
     give_up: float = GIVE_UP,
 ) -> Refreshed:
     """Fetch `feed` once, in a thread, and store the new ones among its `limit` newest items
-    that aren't too short to react to."""
+    that aren't too short to react to, with any text the feed carries for them until they're
+    analysed."""
     state = replace(store.feed(feed.url), checked=time.time() if at is None else at)
     store.set_feed(feed.url, state)
     fetched = await fetch_in_thread(feed, state.etag, state.modified, fetch=fetch, give_up=give_up)
@@ -76,7 +77,11 @@ async def refresh(
         logger.debug(f"Skipped as too short to react to from {feed.url}: {titles}")
     kept = [item for item in items if not too_short(item, config)]
     newest = sorted(kept, key=lambda item: item.published, reverse=True)
-    return Refreshed(store.add(newest[:limit]), skipped)
+    added = store.add(newest[:limit])
+    for item in added:
+        if text := fetched.texts.get(item.id):
+            store.keep_text(item.id, capped(text, config.article_words))
+    return Refreshed(added, skipped)
 
 
 async def refresh_all(

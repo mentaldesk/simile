@@ -19,6 +19,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import behaviour_of
     from simile.llm import LLMClient
     from simile.memory import memory_of
+    from simile.news import article
     from simile.news.analysis import NewsAnalyser
     from simile.news.player import PlayerNews
     from simile.news.reactions import NewsReader
@@ -42,10 +43,11 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
                 ReadNewsMessage, lambda message: hub.broadcast(player.read(message.news_id))
             )
         )
-        analyser = NewsAnalyser(store, llm)
+        news_on = os.environ.get("SIMILE_NEWS") != "0"
+        analyser = NewsAnalyser(store, llm, page=article.page if news_on else None)
         stack.push_async_callback(analyser.stop)
         stack.callback(world.loop.register(analyser))
-        if os.environ.get("SIMILE_NEWS") != "0":
+        if news_on:
             if fallback := fall_back(store):
                 logger.info(
                     f"No news stored yet, so the terminals list {len(fallback)} bundled articles "
