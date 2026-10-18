@@ -169,8 +169,9 @@ Server: `simile.world.map.load_map()` returns the village as a `TownMap` with `w
 it. [`server/simile/world/README.md`](../../server/simile/world/README.md) covers walking between
 maps.
 
-Client: `village` in `client/src/world/assets.ts` is the village's JSON. The client doesn't load the
-interiors yet: K5 (#171) does. The player collides with the village's `collision` layer, starts at
-the square's entry and finds the news terminals in `locations`, and the iso scene reads the ground
-tiles for how high feet stand. The village itself is drawn from the iso renders
-([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)), not from these tiles.
+Client: `village` in `client/src/world/assets.ts` is the village's JSON, and `loadMap(id)` fetches
+an interior the first time the scene needs it. The player collides with the `collision` layer of the
+map they're on, goes through its doors, starts at the square's entry and finds the news terminals in
+`locations`, and the iso scene reads the ground tiles for how high feet stand. The village itself is
+drawn from the iso renders ([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)),
+not from these tiles.
