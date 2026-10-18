@@ -224,7 +224,7 @@ async def test_a_renamed_character_keeps_its_slot_in_the_plan(
     assert (character.id, character.name, character.version) == ("ana_folau", "Ana Folau", 2)
     assert character.persona == "Ana keeps to himself."
     assert not path.exists()
-    assert json.loads((tmp_path / RENAMES).read_text()) == {old.id: "ana_folau"}
+    assert json.loads((tmp_path / RENAMES).read_text()) == {"3:0": "ana_folau"}
     assert not fake.requests
     assert second.skipped == ["ana_folau", kept.id]
     readme = (tmp_path / "README.md").read_text()
@@ -241,7 +241,7 @@ async def test_renaming_again_points_the_slot_at_the_latest_name(
 
     rename(tmp_path, planned.id, "Ana Folau", now=NOW)
     rename(tmp_path, "ana_folau", "Bram de Wit", now=NOW)
-    assert json.loads((tmp_path / RENAMES).read_text()) == {planned.id: "bram_de_wit"}
+    assert json.loads((tmp_path / RENAMES).read_text()) == {"3:0": "bram_de_wit"}
 
     rename(tmp_path, "bram_de_wit", planned.name, now=NOW)
     assert json.loads((tmp_path / RENAMES).read_text()) == {}

@@ -25,7 +25,8 @@ from simile.schema import Character
 POOL_DIR = Path(__file__).resolve().parents[3] / "content" / "characters" / "pool"
 CONTENT_DIR = POOL_DIR.parents[1]
 RENAMES = "renames.json"
-"""Maps the id of a name the plan drew to the id it was renamed to, so a rerun skips it."""
+"""Maps a renamed character's place in the plan, as `<seed>:<slot>`, to its id now, so a rerun
+skips it."""
 CALLS_EACH = 2
 """Claude calls a character takes when nothing has to be retried."""
 HEADING = "# Character pool\n"
@@ -67,11 +68,12 @@ async def generate_pool(
     renames = load_renames(directory)
     run = Run()
     try:
-        for sheet in plan(count, seed, tables=t):
+        for slot, sheet in enumerate(plan(count, seed, tables=t)):
             brief = Brief(values=sheet.values)
             id = character_id(settle(brief, sheet, t)["name"])
-            if (directory / f"{renames.get(id, id)}.json").exists():
-                run.skipped.append(renames.get(id, id))
+            now = renames.get(slot_key(seed, slot), id)
+            if (directory / f"{now}.json").exists():
+                run.skipped.append(now)
                 continue
             if max_calls is not None and len(calls) + CALLS_EACH > max_calls:
                 run.unstarted += 1
@@ -123,6 +125,19 @@ def load_renames(directory: Path = POOL_DIR) -> dict[str, str]:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
+def slot_key(seed: int, slot: int) -> str:
+    return f"{seed}:{slot}"
+
+
+def planned_ids(count: int, seed: int, *, tables: Tables | None = None) -> list[str]:
+    """The id of the name the plan draws in each slot."""
+    t = tables or load_tables()
+    return [
+        character_id(settle(Brief(values=sheet.values), sheet, t)["name"])
+        for sheet in plan(count, seed, tables=t)
+    ]
+
+
 def rename(directory: Path, id: str, name: str, *, now: datetime | None = None) -> Character:
     """Give a pool character a new name and id everywhere, keeping its slot in the plan."""
     check_writable(directory)
@@ -135,16 +150,23 @@ def rename(directory: Path, id: str, name: str, *, now: datetime | None = None) 
     save(character, directory)
     if new_id != id:
         (directory / f"{id}.json").unlink()
+    if (directory / "README.md").exists():
+        count, seed = readme_command(directory)
+        _record(directory, seed, planned_ids(count, seed), id, new_id)
+        write_readme(directory, count, seed)
+    return character
+
+
+def _record(directory: Path, seed: int, planned: Sequence[str], old: str, new: str) -> None:
     renames = load_renames(directory)
-    planned = next((key for key, value in renames.items() if value == id), id)
-    renames = {key: value for key, value in renames.items() if key != planned}
-    if planned != new_id:
-        renames[planned] = new_id
+    for slot, drawn in enumerate(planned):
+        key = slot_key(seed, slot)
+        if renames.get(key, drawn) == old:
+            renames.pop(key, None)
+            if new != drawn:
+                renames[key] = new
     text = json.dumps(renames, indent=2, sort_keys=True) + "\n"
     (directory / RENAMES).write_text(text, encoding="utf-8")
-    if (directory / "README.md").exists():
-        write_readme(directory, *readme_command(directory))
-    return character
 
 
 def within(path: Path, folder: Path) -> bool:
@@ -227,8 +249,9 @@ def readme(
         "A rerun skips the characters already here, and the first characters of a seed's plan",
         "are the same for any count, so a larger `--count` adds to the pool. Don't edit them by",
         "hand: delete one and rerun to write it again, or rename one with",
-        '`uv run simile characters rename <id> "<new name>"`. `renames.json` records each',
-        "rename, so a rerun doesn't write the name the plan drew again.",
+        '`uv run simile characters rename <id> "<new name>"`. `renames.json` records the',
+        "seed and slot of each renamed character, so a rerun doesn't write the name the plan",
+        "drew there again.",
         "",
         f"This first pool has {len(characters)} characters, not the 30 #183 asks for: the user",
         "asked for a small first pool. A larger one waits for #89's question on pool size.",

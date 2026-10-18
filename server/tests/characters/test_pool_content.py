@@ -1,15 +1,14 @@
-from simile.characters.brief import Brief
-from simile.characters.generate import character_id, settle
+from simile.characters.generate import character_id
 from simile.characters.pool import (
     POOL_DIR,
     character_files,
     load_pool,
     load_renames,
+    planned_ids,
     readme,
     readme_command,
+    slot_key,
 )
-from simile.characters.sheet import plan
-from simile.characters.tables import load_tables
 from simile.schema import CharacterSource
 
 
@@ -34,10 +33,9 @@ def test_the_pool_readme_is_up_to_date() -> None:
 
 def test_rerunning_the_readme_command_would_write_nothing() -> None:
     count, seed = readme_command()
-    t = load_tables()
     renames = load_renames()
-    sheets = plan(count, seed)
-    planned = [character_id(settle(Brief(values=s.values), s, t)["name"]) for s in sheets]
+    keys = [slot_key(seed, slot) for slot in range(count)]
 
-    assert set(renames) <= set(planned)
-    assert sorted(renames.get(id, id) for id in planned) == [c.id for c in load_pool()]
+    assert set(renames) <= set(keys)
+    now = [renames.get(key, id) for key, id in zip(keys, planned_ids(count, seed), strict=True)]
+    assert sorted(now) == [c.id for c in load_pool()]

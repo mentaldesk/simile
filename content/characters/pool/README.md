@@ -10,8 +10,9 @@ uv run simile characters generate --count 20 --seed 4
 A rerun skips the characters already here, and the first characters of a seed's plan
 are the same for any count, so a larger `--count` adds to the pool. Don't edit them by
 hand: delete one and rerun to write it again, or rename one with
-`uv run simile characters rename <id> "<new name>"`. `renames.json` records each
-rename, so a rerun doesn't write the name the plan drew again.
+`uv run simile characters rename <id> "<new name>"`. `renames.json` records the
+seed and slot of each renamed character, so a rerun doesn't write the name the plan
+drew there again.
 
 This first pool has 20 characters, not the 30 #183 asks for: the user
 asked for a small first pool. A larger one waits for #89's question on pool size.
