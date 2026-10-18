@@ -134,6 +134,14 @@ it('closes when the player walks away from the wall', () => {
   expect(panel.isOpen).toBe(false);
 });
 
+it('closes when the player goes inside, and hints at nothing there', () => {
+  panel.click({ x: 1, y: 1 }, ACROSS_THE_SQUARE);
+  panel.update({ ...ACROSS_THE_SQUARE, map: 'coffee_shop' });
+  expect(panel.isOpen).toBe(false);
+  panel.update({ ...IN_FRONT, map: 'coffee_shop' });
+  expect(hint().hidden).toBe(true);
+});
+
 it('opens a mural clicked from across the square, until the player walks off', () => {
   expect(panel.click({ x: 2, y: 2 }, ACROSS_THE_SQUARE)).toBe(false);
   expect(panel.click({ x: 1, y: 1 }, ACROSS_THE_SQUARE)).toBe(true);

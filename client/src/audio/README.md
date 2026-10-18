@@ -38,7 +38,8 @@ const removeProvider = setPositionProvider({
 ```
 
 Audio asks every animation frame while a voice is playing, so return where things are right now,
-mid-step included. Until a provider is set, or while it returns `undefined` for the speaker or the
+mid-step included. Positions carry their `map`, as in the protocol: an overheard voice from another
+map than the listener's is silent, and the player's partner plays there at full volume, centred. Until a provider is set, or while it returns `undefined` for the speaker or the
 listener, voices play unpositioned: full volume, centred.
 
 ## Dev harness

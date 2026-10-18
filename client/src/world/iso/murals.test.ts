@@ -240,6 +240,11 @@ describe('wallNear', () => {
     expect(wallNear([DAILY_GRIND], { x: 29, y: 11 })).toBeUndefined();
   });
 
+  it('finds none inside, where the same tiles are another map', () => {
+    expect(wallNear([grind], { x: 29, y: 11, map: 'village' })).toBe(grind);
+    expect(wallNear([grind], { x: 29, y: 11, map: 'coffee_shop' })).toBeUndefined();
+  });
+
   it('finds the nearest of two', () => {
     const next = painted({ ...DAILY_GRIND, id: 'next', x: 32 }, 'next');
     expect(wallNear([grind, next], { x: 31.4, y: 11 })).toBe(next);

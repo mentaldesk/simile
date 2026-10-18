@@ -1,12 +1,13 @@
-import type { LightMapInfo } from './lighting';
+import type { LightMapInfo, SetLight } from './lighting';
 
-/** A scenery manifest, `content/art/iso/scenery/<set>.json`: `server/simile/art/iso/README.md`. */
+/** `content/art/iso/scenery/<set>.json` or `interiors/<id>.json`: `server/simile/art/iso/README.md`. */
 export type SceneryManifest = {
   format: number;
   set: string;
   hours: [start: number, end: number];
-  tile: IsoTile;
-  map: { width: number; height: number };
+  sun: SetLight['sun'];
+  tile: IsoTile & { metres: number };
+  map: { id?: string; width: number; height: number };
   ground: {
     x: number;
     y: number;

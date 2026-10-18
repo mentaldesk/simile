@@ -20,9 +20,8 @@ import {
   type Figure,
   type IsoFacing,
   type IsoTile,
-  type Layer,
-  type LightingSet,
   type ResidentLight,
+  type SceneSet,
   type SetLight,
   type ShadowMask,
   type SpriteFrame,
@@ -46,12 +45,14 @@ export type Puppet = {
 type Character = {
   puppet: Puppet;
   contact: Phaser.GameObjects.Image;
-  shadows: Map<LightingSet, Phaser.GameObjects.Image>;
+  shadows: Map<SceneSet, Phaser.GameObjects.Image>;
   last: Position;
 };
 
 const CONTACT_KEY = 'iso-shadow/contact';
-const shadowKey = (set: LightingSet) => `iso-shadow/${set}`;
+const shadowKey = (set: SceneSet) => `iso-shadow/${set}`;
+
+type Lit = { set: SceneSet };
 
 /** Draws characters from any `CharacterArt`, lit and shadowed by the sets they stand in. */
 export class IsoCharacters {
@@ -59,14 +60,14 @@ export class IsoCharacters {
   private readonly scene: Phaser.Scene;
   private readonly tile: IsoTile;
   private readonly art: CharacterArt;
-  private readonly lights: Record<LightingSet, SetLight>;
+  private readonly lights: Record<SceneSet, SetLight>;
   private readonly characters = new Map<string, Character>();
 
   private constructor(
     scene: Phaser.Scene,
     tile: IsoTile,
     art: CharacterArt,
-    lights: Record<LightingSet, SetLight>,
+    lights: Record<SceneSet, SetLight>,
   ) {
     this.scene = scene;
     this.tile = tile;
@@ -80,7 +81,7 @@ export class IsoCharacters {
     scene: Phaser.Scene,
     tile: IsoTile,
     art: CharacterArt,
-    lights: Record<LightingSet, SetLight>,
+    lights: Record<SceneSet, SetLight>,
   ): Promise<IsoCharacters> {
     await art.load(scene);
     return new IsoCharacters(scene, tile, art, lights);
@@ -90,7 +91,7 @@ export class IsoCharacters {
     bodies: ReadonlyMap<string, Body>,
     dt: number,
     figureAt: (position: Position) => Figure,
-    layers: readonly Layer[],
+    layers: readonly Lit[],
     lightAt: (feet: Position) => ResidentLight,
   ): void {
     for (const [id, body] of bodies) {
@@ -116,6 +117,13 @@ export class IsoCharacters {
     }
   }
 
+  arrive(id: string, position: Position, facing: Point): void {
+    const character = this.characters.get(id);
+    if (!character) return;
+    character.last = { ...position };
+    character.puppet.pose(facing, false, 0);
+  }
+
   /** `box` is `figureBox`: the frame down to the feet. */
   opaqueAt(id: string, box: ScreenBox, point: ScreenPoint): boolean {
     const sprite = this.characters.get(id)?.puppet.sprite;
@@ -127,13 +135,13 @@ export class IsoCharacters {
   }
 
   /** Builds a set's drop shadow while it loads, rather than in the first frame of its fade. */
-  prepare(set: LightingSet): void {
+  prepare(set: SceneSet): void {
     const key = shadowKey(set);
     if (this.scene.textures.exists(key)) return;
     addMask(this.scene, key, dropShadow(this.lights[set].shadow, this.tile));
   }
 
-  private shade(character: Character, figure: Figure, layers: readonly Layer[], alphas: number[]): void {
+  private shade(character: Character, figure: Figure, layers: readonly Lit[], alphas: number[]): void {
     for (const shadow of character.shadows.values()) shadow.setVisible(false);
     layers.forEach(({ set }, i) => {
       const shadow = character.shadows.get(set) ?? this.addShadow(character, set);
@@ -152,7 +160,7 @@ export class IsoCharacters {
     return character;
   }
 
-  private addShadow(character: Character, set: LightingSet): Phaser.GameObjects.Image {
+  private addShadow(character: Character, set: SceneSet): Phaser.GameObjects.Image {
     this.prepare(set);
     const shadow = this.shadowImage(shadowKey(set));
     character.shadows.set(set, shadow);

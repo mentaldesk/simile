@@ -33,6 +33,36 @@ describe('the stand-in world view', () => {
     expect(distanceFromPlayer(trackedWorld, 'mei')).toBe(3);
   });
 
+  it('leaves out NPCs on another map than the player’s', () => {
+    server.dispatch(
+      JSON.stringify({
+        ...snapshot,
+        entities: [
+          ...snapshot.entities,
+          { id: 'suki', kind: 'npc', name: 'Suki Tan', position: { x: 14, y: 14, map: 'coffee_shop' } },
+        ],
+      }),
+    );
+    expect([...trackedWorld.npcIds()]).toEqual(['mei', 'viktor']);
+    expect(trackedWorld.positionOf('suki')).toBeUndefined();
+    expect(distanceFromPlayer(trackedWorld, 'suki')).toBeUndefined();
+
+    server.dispatch(
+      JSON.stringify({ type: 'entity_moved', entity_id: 'suki', position: { x: 14, y: 14, map: 'village' } }),
+    );
+    expect(distanceFromPlayer(trackedWorld, 'suki')).toBe(1);
+  });
+
+  it('measures no distance between maps, whatever the view', () => {
+    const view: WorldView = {
+      positionOf: (id) => (id === 'player' ? { x: 5, y: 6, map: 'coffee_shop' } : { x: 5, y: 7 }),
+      npcIds: () => ['mei'],
+      bubbleAnchor: () => undefined,
+      spriteOf: () => undefined,
+    };
+    expect(distanceFromPlayer(view, 'mei')).toBeUndefined();
+  });
+
   it('centres the player on screen and pins bubbles above heads', () => {
     server.dispatch(JSON.stringify(snapshot));
     const { width, height } = trackedWorld.viewport;

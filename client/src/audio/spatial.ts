@@ -1,4 +1,5 @@
 import type { Position } from '../net';
+import { mapOf } from '../world/map';
 
 /** A voice's volume (0 to 1) and stereo pan (-1 left to 1 right). */
 export type Mix = { gain: number; pan: number };
@@ -18,11 +19,17 @@ function panning(listener: Position, source: Position, maxPan: number) {
   return { distance, pan: (maxPan * dx) / Math.max(distance, FULL_VOLUME_WITHIN) };
 }
 
+const SILENT: Mix = { gain: 0, pan: 0 };
+
+const apart = (listener: Position, source: Position) => mapOf(listener) !== mapOf(source);
+
 export function partnerMix(listener: Position, source: Position): Mix {
+  if (apart(listener, source)) return UNPOSITIONED;
   return { gain: 1, pan: panning(listener, source, PARTNER_MAX_PAN).pan };
 }
 
 export function overheardMix(listener: Position, source: Position): Mix {
+  if (apart(listener, source)) return SILENT;
   const { distance, pan } = panning(listener, source, MAX_PAN);
   const fade = (SILENT_BEYOND - distance) / (SILENT_BEYOND - FULL_VOLUME_WITHIN);
   return { gain: OVERHEARD_GAIN * Math.min(1, Math.max(0, fade)) ** 2, pan };

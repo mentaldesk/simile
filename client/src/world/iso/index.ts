@@ -5,6 +5,7 @@ export * from './crossfade';
 export * from './cutaway';
 export * from './depth';
 export * from './ground';
+export * from './inside';
 export * from './lighting';
 export * from './manifest';
 export * from './projection';
