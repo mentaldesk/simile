@@ -279,6 +279,9 @@ class Cafe:
                     self._drop(npc)
                 elif visit.phase is Phase.COMING and self._inside(npc):
                     self._arrive(visit, now)
+                elif visit.phase is Phase.COMING and mind.walk is None:
+                    self._log("%s didn't make it to the café", npc)
+                    self._leave(npc)
                 continue
             goal = mind.goal
             if mind.held or goal.target != self.config.home or goal.activity not in VISITS:

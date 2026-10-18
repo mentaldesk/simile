@@ -41,7 +41,8 @@ refuses if someone already lives above the café. Her voice and sprite came from
   on their spot, they talk, then the customer moves to `pickup` at the end of the counter and the
   next one steps up. She makes the drink at `machine` for its `seconds` from the menu, then hands it
   over at `hand_over`.
-- Someone who has queued for `patience` (10 minutes) without being served gives up and leaves.
+- Someone who has queued for `patience` (10 minutes) without being served gives up and leaves, and
+  someone whose walk in ends short of the café is let go to decide again.
 - Served, a customer sits down at a free seat beside a table for `stay` (10 to 30 minutes), or leaves
   and decides again. The chance of sitting is `sit` plus Connection, Pleasure and Peace of Mind, less
   Ambition.

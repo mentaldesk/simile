@@ -1,6 +1,7 @@
 import pytest
 
 from simile.behaviour import Activity, Goal
+from simile.cafe.cafe import Phase
 from simile.cafe.config import DEFAULT_CONFIG as CAFE_CONFIG
 from simile.cafe.events import GaveUp, Ordered, Served
 from simile.cafe.orders import Exchange, Said
@@ -150,6 +151,19 @@ async def test_someone_who_waits_too_long_gives_up() -> None:
     assert gave_up.customer not in village.cafe.queue
     history = village.store.shared_history(gave_up.customer, "bea", village.now)
     assert [event.action for event in history.events] == ["kept me waiting so long I gave up"]
+
+
+async def test_someone_whose_walk_in_ends_short_of_the_cafe_is_let_go() -> None:
+    village = Village((BEA, ANA), behaviour=COFFEE)
+    await village.run_until(lambda: "ana" in village.cafe.visits)
+    assert village.cafe.visits["ana"].phase is Phase.COMING
+
+    village.movement.stop("ana")
+    await village.run(seconds=0.3)
+
+    assert "ana" not in village.cafe.visits
+    assert not village.behaviour.minds["ana"].held
+    assert village.at("ana").map == "village"
 
 
 async def test_stock_orders_call_no_llm_and_start_no_conversation() -> None:
