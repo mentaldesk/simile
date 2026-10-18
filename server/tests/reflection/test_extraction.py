@@ -127,7 +127,7 @@ def test_names_resolve_to_participants(
 def test_the_schema_asks_for_each_part_of_a_reflection() -> None:
     schema = Extraction.model_json_schema()
 
-    assert list(schema["properties"]) == ["reflections", "flags_opened", "flags_resolved"]
+    assert list(schema["properties"]) == ["reflections", "flags_opened", "flags_resolved", "loans"]
     assert list(schema["$defs"]["Reflection"]["properties"]) == [
         "npc",
         "summary",
@@ -137,6 +137,7 @@ def test_the_schema_asks_for_each_part_of_a_reflection() -> None:
         "events",
     ]
     assert list(schema["$defs"]["NewFlag"]["properties"]) == ["kind", "who", "whom", "description"]
+    assert list(schema["$defs"]["Lending"]["properties"]) == ["lender", "borrower", "amount"]
 
 
 def test_the_schema_says_who_did_what_to_whom_for_every_kind_of_flag() -> None:

@@ -1,5 +1,6 @@
 from simile.social.config import DEFAULT_CONFIG, RelationshipConfig
 from simile.social.describe import describe
+from simile.social.loans import lent, loan, owed
 from simile.social.relationship import (
     apply_event,
     apply_events,
@@ -20,8 +21,11 @@ __all__ = [
     "cast_traits",
     "decay",
     "describe",
+    "lent",
+    "loan",
     "meet",
     "open_flag",
+    "owed",
     "resolve_flag",
     "trait_factor",
     "traits_of",

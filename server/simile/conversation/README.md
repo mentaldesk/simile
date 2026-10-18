@@ -193,6 +193,28 @@ then bursting for the loo at the same levels, tired from 0.6 and exhausted from 
 grubby from 0.75 and badly in need of a shower from 0.9. A hungry, tired resident comes across
 short, and B3 picks that up from the transcript like anything else.
 
+## Loans
+
+E6: a resident who's short of money asks a friend to tide them over, and pays it back once they
+can. `loans.py` decides at the start of each scene, from what each side holds (B1's `money` hook,
+which E3 plugs in) and their savings target (`behaviour.savings`), and the direction says what
+happens. Without the economy nobody asks.
+
+- **Paying back.** Someone who owes the other a loan (R1's `owed`) pays it back once that leaves
+  their finances below `borrow_from` (0.6): "Ana has the money now, and pays back the 100 Ben lent
+  them."
+- **Asking.** Otherwise someone whose finances are at least `borrow_from` asks the other if they
+  like them at least `ask_like` (0.6), don't owe them already, and weren't turned down by them in
+  the last `ask_again` (24 sim hours). They ask for what takes them back to their savings target,
+  in tens, at most `max_loan` (100).
+- **Trust decides.** The lender lends if they trust the borrower at least `lend_trust` (0.6), as
+  much as they have above their own savings target, in tens: "Ben trusts Ana and lends it", "Ben
+  can only spare 40, and lends that", "Ben can't spare it, and says no", or "Ben doesn't trust Ana
+  enough to lend money, and says no".
+
+`engine.loan(conversation_id)` is the loan a live or recently finished scene was set up to settle,
+for B3, which moves the money: see its README. Nothing changes for the player, who has no money.
+
 ## Events
 
 | Event | When |

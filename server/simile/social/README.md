@@ -65,6 +65,12 @@ owner holds a grudge, `about` made a promise, broke one, saved the owner's life 
 secret. `open_flag` adds one and `resolve_flag(rel, id, when)` closes it, e.g. a debt repaid.
 Flags never move the scores or decay, and B3 opens and resolves them from what the LLM extracts.
 
+A loan between residents (E6) leaves a `debt` flag the lender holds about the borrower:
+`loan(lender, borrower, amount, conversation, when)` makes it, reading "a loan of 100". Its id
+ends `/loan/100`, so `lent(flag)` reads the amount back from the flag, and a `debt` flag B3 opens,
+whose id is `<conversation>/<n>`, never reads as a loan. `owed(rel)` is the oldest loan
+`rel.about` hasn't paid `rel.owner` back.
+
 ## describe
 
 `describe(rel, name)` puts the relationship in the second person for a prompt:

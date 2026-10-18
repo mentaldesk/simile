@@ -18,6 +18,10 @@ class Kind(StrEnum):
     SUPPLIES = "supplies"
     PURCHASE = "purchase"
     """Paying at a shop, to whoever runs it, or outside the village if nobody does."""
+    LOAN = "loan"
+    """One resident lending another money."""
+    REPAYMENT = "repayment"
+    """Paying a loan back."""
 
 
 class Entry(Model):

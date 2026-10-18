@@ -89,6 +89,12 @@ class NewFlag(BaseModel):
     )
 
 
+class Lending(BaseModel):
+    lender: str = Field(description="The id of who lent the money.")
+    borrower: str = Field(description="The id of who borrowed it.")
+    amount: float = Field(description="How much, as a number.")
+
+
 class Reflection(BaseModel):
     npc: str = Field(description="The id of the person this reflection is for.")
     summary: str = Field(
@@ -126,6 +132,12 @@ class Extraction(BaseModel):
         description="Refs (like F1) of open flags that the conversation settled: a promise "
         "kept, a debt repaid, a grudge let go. A promise that was broken is resolved and opened "
         "again as a broken_promise.",
+    )
+    loans: list[Lending] = Field(
+        default=[],
+        description="Money one person in the conversation agreed to lend the other, there and "
+        "then. Leave out a loan that was only talked about or turned down. A loan is kept as a "
+        "debt, so don't open a debt flag for it as well.",
     )
 
 

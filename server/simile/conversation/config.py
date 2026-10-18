@@ -152,6 +152,37 @@ class ConversationConfig(BaseModel):
         "need_drain times as fast, in a straight line up from `drain_from`.",
     )
 
+    borrow_from: float = Field(
+        default=0.6,
+        gt=0,
+        le=1,
+        description="Finances (how far below their savings target someone's money is, as a share "
+        "of it) from which a resident asks a friend for a loan. They pay one back once doing so "
+        "leaves them below it.",
+    )
+    ask_like: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="How much a resident must like someone to ask them for a loan.",
+    )
+    lend_trust: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="How much a resident must trust someone to lend them money.",
+    )
+    max_loan: int = Field(
+        default=100,
+        ge=10,
+        description="Most a resident asks to borrow. They ask for what takes them back to their "
+        "savings target, in tens, and a lender lends what they have above their own, in tens.",
+    )
+    ask_again: timedelta = Field(
+        default=timedelta(hours=24),
+        description="Sim time before a resident asks someone who turned them down again.",
+    )
+
     words_per_minute: float = Field(
         default=200,
         gt=0,

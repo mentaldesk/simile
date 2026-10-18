@@ -11,6 +11,7 @@ from simile.reflection.extraction import (
     owner_and_about,
     relationship,
 )
+from simile.reflection.loans import Payment
 from simile.schema import (
     Aspect,
     Flag,
@@ -21,7 +22,7 @@ from simile.schema import (
     MemoryKind,
     Relationship,
 )
-from simile.social import apply_events, open_flag, resolve_flag
+from simile.social import apply_events, lent, open_flag, resolve_flag
 
 
 @dataclass
@@ -44,9 +45,12 @@ def outcome(
     extraction: Extraction,
     store: Relationships,
     config: ReflectionConfig = DEFAULT_CONFIG,
+    *,
+    payment: Payment | None = None,
 ) -> Outcome:
-    """Apply what each NPC made of the conversation to how they feel about the others. Reads
-    the relationships afresh, since others may have changed while the LLM was busy."""
+    """Apply what each NPC made of the conversation to how they feel about the others, with the
+    debt flag of a `payment` already made. Reads the relationships afresh, since others may have
+    changed while the LLM was busy. A loan's flag closes only when it's paid back."""
     now = context.now
     result = Outcome()
     for npc in context.npcs.values():
@@ -76,7 +80,7 @@ def outcome(
     settled: set[tuple[Id, Id]] = set()
     for ref in extraction.flags_resolved:
         flag = context.flags.get(ref.strip().upper())
-        if flag is None:
+        if flag is None or lent(flag) is not None:
             continue
         key = (flag.owner, flag.about)
         if _still_open(result.after[key], flag):
@@ -96,6 +100,16 @@ def outcome(
         if len(listed) == 1 and _still_open(result.after[key], listed[0]):
             result.after[key] = resolve_flag(result.after[key], listed[0].id, now)
             settled.add(key)
+
+    if payment is not None and payment.settles is not None:
+        flag = payment.settles
+        key = (flag.owner, flag.about)
+        if _still_open(result.after[key], flag):
+            result.after[key] = resolve_flag(result.after[key], flag.id, now)
+    if payment is not None and payment.opens is not None:
+        key = (payment.opens.owner, payment.opens.about)
+        opened = [f for f in opened if f.kind != FlagKind.DEBT or (f.owner, f.about) != key]
+        opened.append(payment.opens)
 
     for flag in opened:
         key = (flag.owner, flag.about)
