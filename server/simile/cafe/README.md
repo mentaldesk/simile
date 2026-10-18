@@ -20,15 +20,22 @@ refuses if someone already lives above the café. Her voice and sprite came from
 
 ## Shifts
 
-- From `opens` (07:00) to `closes` (17:00) she stands at the till, the entry of `coffee_shop_staff`
-  behind the counter, held there by B1's `hold`. She makes no decisions and nobody seeks her out,
-  and she's up whatever her wake time says. A talk with the player pauses the hold, and she goes back
-  to the till afterwards. 07:00 is half an hour after residents start wanting coffee (B1's coffee
-  shop curve starts at 06:30), and 17:00 is when they stop.
-- At `closes` she takes no new customers, serves the queue, then is released to decide as anyone
-  does.
-- Only while she's on shift does the Daily Grind feed anyone: `Cafe.supply` is B1's `supply` hook,
-  so off shift the coffee shop scores nothing for hunger and meets none.
+- A barista who works at the café follows their E3 `shifts`. When B1 sends them to work, late,
+  early or on time as their Discipline has it, the café takes them to the till, the entry of
+  `coffee_shop_staff` behind the counter, and holds them there with B1's `hold`. They take orders
+  once the shift has started. If they skip a day the café stays shut, and anyone who comes in sits
+  down instead of queuing. Mirela works every day from 07:00 to 17:00.
+- A barista who only lives there keeps the café's own hours, `opens` (07:00) to `closes` (17:00).
+- At the till she makes no decisions and nobody seeks her out, and she's up whatever her wake time
+  says. A talk with the player pauses the hold, and she goes back to the till afterwards.
+- When her shift ends she takes no new customers, serves the queue, then is released to decide as
+  anyone does.
+- If something else lets go of her mid-shift, the café shuts until B1 sends her back: everyone
+  coming, queuing or waiting is let go, and the order in hand is dropped. A customer someone else
+  lets go of takes their order with them, so a drink is never made or charged for someone who's left.
+- Only while she's on shift does the Daily Grind feed anyone: `Cafe.supply` wraps B1's `supply`
+  hook, so off shift the coffee shop scores nothing for hunger and meets none, while E4's economy
+  still says what the other shops and the fridges have.
 - Off shift, whenever she's home, resting or asleep, she goes to `upstairs`, the foot of the stairs
   behind the counter, rather than standing at the café's entry, which is the front of the queue.
   B1's stay carries on there.

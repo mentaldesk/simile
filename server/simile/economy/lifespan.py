@@ -12,7 +12,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     world, economy = world_of(app), economy_of(app)
     unplug = economy.behaviour.hooks.set(
-        money=economy.money_of, price=economy.price, earnings=economy.earnings
+        money=economy.money_of,
+        price=economy.price,
+        earnings=economy.earnings,
+        supply=economy.supply,
     )
     unsubscribe = world.bus.subscribe(Served, economy.on_served)
     unregister = world.loop.register(economy)
