@@ -16,10 +16,14 @@ from .conftest import LINE, FakeVoiceLab, clip, eventually, finished
 
 RECORD = "/api/characters/wren_abernethy/voice/recording"
 PICK = "/api/characters/wren_abernethy/voice/pick"
+TRANSCRIPT = "Come in out of the rain, the kettle's on and there's a seat by the stove for you."
 
 
-def record(client: TestClient, data: bytes) -> dict:
-    submitted = client.post(RECORD, content=data, headers={"Content-Type": "audio/wav"})
+def record(client: TestClient, data: bytes, transcript: str | None = None) -> dict:
+    params = {} if transcript is None else {"transcript": transcript}
+    submitted = client.post(
+        RECORD, content=data, params=params, headers={"Content-Type": "audio/wav"}
+    )
     assert submitted.status_code == 202, submitted.text
     return finished(client, submitted.json()["id"])
 
@@ -45,6 +49,63 @@ def test_a_recording_that_passes_its_checks_becomes_the_voice(
     character = library.get("wren_abernethy")
     assert library.clip(character).read_bytes() == clip(8.0, sample=9)
     assert character.voice.reference_line == LINE
+
+
+def test_an_upload_that_passes_with_its_own_transcript_makes_that_their_line(
+    client: TestClient, library: Library, voice_lab: FakeVoiceLab
+) -> None:
+    voice_lab.heard = TRANSCRIPT
+    job = record(client, clip(9.0, sample=4), f"  {TRANSCRIPT}\n")
+
+    assert job["result"]["usable"] is True
+    assert job["result"]["reference_line"] == TRANSCRIPT
+    assert library.get("wren_abernethy").voice.reference_line == LINE
+
+    picked = client.post(PICK, json={"recording": job["id"]})
+
+    assert picked.status_code == 200, picked.text
+    assert picked.json()["voice"]["reference_line"] == TRANSCRIPT
+    character = library.get("wren_abernethy")
+    assert character.voice.reference_line == TRANSCRIPT
+    assert library.clip(character).read_bytes() == clip(9.0, sample=4)
+
+
+def test_an_upload_that_fails_leaves_the_voice_as_it_was(
+    client: TestClient, library: Library, voice_lab: FakeVoiceLab
+) -> None:
+    before = library.save_clip("wren_abernethy", clip(7.0, sample=2))
+    voice_lab.heard = "Come in, the kettle's on."
+    job = record(client, clip(9.0, sample=4), TRANSCRIPT)
+
+    assert job["result"]["usable"] is False
+    assert job["result"]["problems"] == ["word error rate 72%", "ending missing"]
+
+    picked = client.post(PICK, json={"recording": job["id"]})
+
+    assert picked.status_code == 422
+    character = library.get("wren_abernethy")
+    assert character.voice == before.voice
+    assert library.clip(character).read_bytes() == clip(7.0, sample=2)
+
+
+@pytest.mark.parametrize(
+    ("transcript", "error"),
+    [
+        ("Come in out of the rain.", "has to be 12-25 words, not 6"),
+        (" ".join([TRANSCRIPT] * 2), "has to be 12-25 words, not 36"),
+        (TRANSCRIPT.replace(".", "!"), "so it can't have a '!'"),
+        ("   ", "can't be blank"),
+    ],
+)
+def test_a_transcript_that_cant_be_their_line_is_refused_before_uploading(
+    client: TestClient, jobs: Jobs, transcript: str, error: str
+) -> None:
+    response = client.post(RECORD, content=clip(8.0), params={"transcript": transcript})
+
+    assert response.status_code == 422
+    assert response.json()["error"].endswith(error)
+    assert client.get("/api/jobs").json() == []
+    assert not uploads_dir(jobs.root).exists()
 
 
 def test_a_recording_whose_transcript_doesnt_match_is_refused(
@@ -82,16 +143,18 @@ def test_a_recording_that_wont_convert_is_refused(client: TestClient) -> None:
     assert picked.json()["error"].startswith("The recording didn't pass its checks: couldn't")
 
 
-def test_a_recording_that_cant_be_used_isnt_kept(client: TestClient, library: Library) -> None:
+def test_without_a_transcript_the_line_has_to_be_one_a_clip_can_say(
+    client: TestClient, library: Library
+) -> None:
     data = library.get("wren_abernethy").model_dump(mode="json")
     data["voice"]["reference_line"] = "Mind the step."
     library.update("wren_abernethy", data)
 
-    job = record(client, clip(8.0))
+    response = client.post(RECORD, content=clip(8.0))
 
-    assert job["result"]["errors"][0].startswith("the transcript is 3 words, but a reference line")
-    assert job["result"]["clip"] is None
-    assert job["result"]["usable"] is False
+    assert response.status_code == 422
+    assert response.json()["error"].endswith("has to be 12-25 words, not 3")
+    assert client.get("/api/jobs").json() == []
 
 
 def webm() -> bytes:
