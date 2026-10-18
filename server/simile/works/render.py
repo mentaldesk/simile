@@ -2,6 +2,7 @@ from multiprocessing.connection import Connection
 from typing import TYPE_CHECKING
 
 from simile.art.iso.camera import TILE_M, TILE_W
+from simile.art.iso.interior import FRAME_W_M, FRAME_Z, MOULDING_M
 from simile.art.iso.town import STOREY_M
 from simile.works.svg import BadSvg
 from simile.world.map import MuralWall
@@ -11,6 +12,9 @@ if TYPE_CHECKING:
 
 PX_PER_M = TILE_W / TILE_M
 PLASTER = (0.84, 0.8, 0.72)
+PRIMED = (0.93, 0.91, 0.86)
+PAINTING_M = (FRAME_W_M - 2 * MOULDING_M, FRAME_Z[1] - FRAME_Z[0] - 2 * MOULDING_M)
+PAINTING_W = 960
 STARTING = 60.0
 WATCH_EVERY = 0.05
 
@@ -25,7 +29,22 @@ def canvas(wall: MuralWall) -> tuple[int, int]:
     return round(width * PX_PER_M), round(height * PX_PER_M)
 
 
-def draw(svg: str, width: int, height: int, *, seed: int, timeout: float, memory: int) -> bytes:
+def painting_canvas() -> tuple[int, int]:
+    """A gallery painting's size in px: the frame's opening, `PAINTING_W` px across."""
+    width, height = PAINTING_M
+    return PAINTING_W, round(PAINTING_W * height / width)
+
+
+def draw(
+    svg: str,
+    width: int,
+    height: int,
+    *,
+    seed: int,
+    timeout: float,
+    memory: int,
+    on_canvas: bool = False,
+) -> bytes:
     """`render` in a child process, so an SVG that crashes resvg, keeps it busy or eats memory
     can't take the sim with it. Blocks until the child has started, and then for up to `timeout`
     seconds. `BadSvg` if it fails, crashes, runs out of time or uses more than `memory` bytes."""
@@ -34,7 +53,9 @@ def draw(svg: str, width: int, height: int, *, seed: int, timeout: float, memory
 
     context = multiprocessing.get_context("spawn")
     receive, send = context.Pipe(duplex=False)
-    child = context.Process(target=_draw, args=(send, svg, width, height, seed), daemon=True)
+    child = context.Process(
+        target=_draw, args=(send, svg, width, height, seed, on_canvas), daemon=True
+    )
     child.start()
     send.close()
     try:
@@ -78,21 +99,21 @@ def resident(pid: int) -> int:
         return 0
 
 
-def _draw(send: Connection, svg: str, width: int, height: int, seed: int) -> None:
+def _draw(send: Connection, svg: str, width: int, height: int, seed: int, on_canvas: bool) -> None:
     import importlib
 
     for module in ("numpy", "PIL.Image", "resvg_py"):
         importlib.import_module(module)
     send.send(None)
     try:
-        send.send((True, render(svg, width, height, seed=seed)))
+        send.send((True, render(svg, width, height, seed=seed, on_canvas=on_canvas)))
     except BaseException as error:  # resvg's panics are BaseExceptions
         send.send((False, str(error)))
 
 
-def render(svg: str, width: int, height: int, *, seed: int) -> bytes:
-    """The SVG drawn at `width` × `height` and painted onto lightly weathered plaster, as a PNG.
-    Call it through `draw`."""
+def render(svg: str, width: int, height: int, *, seed: int, on_canvas: bool = False) -> bytes:
+    """The SVG drawn at `width` × `height` and painted onto lightly weathered plaster, or onto a
+    primed canvas, as a PNG. Call it through `draw`."""
     import io
 
     import numpy as np
@@ -101,6 +122,8 @@ def render(svg: str, width: int, height: int, *, seed: int) -> bytes:
 
     drawn = bytes(resvg_py.svg_to_bytes(svg_string=svg, width=width, height=height))
     paint = np.asarray(Image.open(io.BytesIO(drawn)).convert("RGBA"), dtype=np.float32) / 255
+    if on_canvas:
+        return _png(_primed(paint, width, height))
     rng = np.random.default_rng(seed)
     wall, relief = _plaster(rng, width, height)
     rows = np.linspace(0, 1, height, dtype=np.float32)[:, None]
@@ -115,7 +138,27 @@ def render(svg: str, width: int, height: int, *, seed: int) -> bytes:
     out = wall * (1 - cover[..., None]) + colour * cover[..., None]
     streaks = _noise(rng, width, 1, 6).repeat(height, axis=0) * (1 - rows) ** 2
     grime = 1 - 0.08 * streaks - 0.12 * rows**4 * _noise(rng, width, height, 20)
-    image = Image.fromarray((np.clip(out * grime[..., None], 0, 1) * 255).astype(np.uint8), "RGB")
+    return _png(out * grime[..., None])
+
+
+def _primed(paint: "np.ndarray", width: int, height: int) -> "np.ndarray":
+    """The paint on a primed canvas, with its weave showing faintly through."""
+    import numpy as np
+
+    x, y = np.arange(width, dtype=np.float32), np.arange(height, dtype=np.float32)
+    weave = (np.cos(x * np.pi / 1.5)[None, :] + np.cos(y * np.pi / 1.5)[:, None]) / 4 + 0.5
+    relief = (0.97 + 0.03 * weave)[..., None]
+    cover = paint[..., 3:]
+    return (np.array(PRIMED, dtype=np.float32) * (1 - cover) + paint[..., :3] * cover) * relief
+
+
+def _png(rgb: "np.ndarray") -> bytes:
+    import io
+
+    import numpy as np
+    from PIL import Image
+
+    image = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8), "RGB")
     buffer = io.BytesIO()
     image.save(buffer, "PNG", optimize=True)
     return buffer.getvalue()

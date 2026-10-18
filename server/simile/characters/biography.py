@@ -328,8 +328,9 @@ INSTRUCTIONS = {
     ),
     "craft": lambda sheet: (
         'what they make in their own time, or null if nothing. Its medium is "writing", put up '
-        'for the neighbours to read, or "mural", painted on a wall. Its form names the work in '
-        'two to six words, such as "plain verse about the river". Many people make nothing.'
+        'for the neighbours to read, "mural", painted on a wall, or "painting", hung in the '
+        'village gallery. Its form names the work in two to six words, such as "plain verse '
+        'about the river". Many people make nothing.'
     ),
     "past": _past,
     "hooks": _hooks,

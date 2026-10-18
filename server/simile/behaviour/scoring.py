@@ -203,13 +203,13 @@ def candidates(
 
 def creating(situation: Situation, places: Places, config: BehaviourConfig) -> list[Goal]:
     """Where they could make something, if they have a craft and time for a typical stay before
-    bed. Writers have their `writing_places`, and muralists their wall."""
+    bed. Writers and painters have their `writing_places`, and muralists their wall."""
     low, high = config.dwell.get(Activity.CREATE, (0.0, 0.0))
     if situation.bedtime - situation.hour < (low + high) / 2 / 60:
         return []
-    if situation.craft is Medium.MURAL and situation.mural is not None:
-        return [Goal(Activity.CREATE, situation.mural.wall)]
-    if situation.craft is not Medium.WRITING:
+    if situation.craft is Medium.MURAL:
+        return [Goal(Activity.CREATE, situation.mural.wall)] if situation.mural else []
+    if situation.craft is None:
         return []
     return [
         Goal(Activity.CREATE, location)

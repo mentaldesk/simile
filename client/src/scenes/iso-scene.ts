@@ -18,6 +18,7 @@ import {
   world,
   type Body,
   type Direction,
+  type Point,
   type TiledMap,
 } from '../world';
 import {
@@ -51,6 +52,7 @@ import {
   type Figure,
   type Layer,
   type LightingSet,
+  type Rgb,
   type SceneryManifest,
   type SceneryObject,
   type SceneSet,
@@ -66,6 +68,7 @@ import {
   type Box,
   type Pixels,
 } from '../world/iso/murals';
+import { galleryFrames, IsoPaintings, isFrame, type PaintingStage } from '../world/iso/paintings';
 import { IsoCharacters, pixelArt } from './iso-characters';
 
 export const ISO_SCENE = 'iso-world';
@@ -138,6 +141,7 @@ export class IsoScene extends Phaser.Scene {
   private charactersLoad?: Promise<IsoCharacters>;
   private characters?: IsoCharacters;
   private murals?: IsoMurals<ImageBitmap>;
+  private readonly paintings = new Map<string, IsoPaintings<ImageBitmap>>();
   private shown?: string;
 
   constructor() {
@@ -171,6 +175,7 @@ export class IsoScene extends Phaser.Scene {
           world.map === VILLAGE ? this.murals?.wallAt(this.cameras.main.getWorldPoint(x, y)) : undefined,
       }),
       () => this.murals?.destroy(),
+      () => this.paintings.forEach((paintings) => paintings.destroy()),
       () => interactables.update(undefined),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
@@ -224,6 +229,7 @@ export class IsoScene extends Phaser.Scene {
     const at = (position: Position) => this.figureAt(position, geometry);
     characters.draw(bodies, dt, at, drawn, (feet) => residentLight(lit, feet));
     this.drawMurals(dt, villageLayers, map === VILLAGE ? geometry : undefined);
+    this.drawPaintings(dt, map, (feet) => residentLight(lit, feet).tint, geometry);
     this.follow(figure, geometry);
   }
 
@@ -280,7 +286,21 @@ export class IsoScene extends Phaser.Scene {
     const [manifest, tiled] = await Promise.all([fetchManifest(assets.interiorManifestUrl(map)!), loadMap(map)]);
     const scenery = await this.loadScenery(manifest, INSIDE, 'iso/interiors/', assets.interiorImageUrl);
     this.geometries.set(map, geometryOf(manifest, tiled));
+    if (manifest.objects.some(isFrame)) {
+      this.paintings.set(map, new IsoPaintings(galleryFrames, manifest, this.paintingStage()));
+    }
     return scenery;
+  }
+
+  private paintingStage(): PaintingStage<ImageBitmap> {
+    return {
+      load: (url) => this.assets!.loadBitmap(url),
+      paint: (key, bitmap, box, transform) => {
+        this.textures.addCanvas(key, skewed(bitmap, box, transform));
+      },
+      unpaint: (key) => this.textures.remove(key),
+      image: (key, x, y) => this.add.image(x, y, key).setOrigin(0),
+    };
   }
 
   private async loadSet(set: LightingSet): Promise<void> {
@@ -444,6 +464,12 @@ export class IsoScene extends Phaser.Scene {
       (feet) => residentLight(lit, feet).tint,
       (id) => (village ? (village.buildings.find(({ object }) => object.id === id)?.cutaway.alpha ?? 1) : 0),
     );
+  }
+
+  /** Only the player's map's, each fading with the wall it hangs on. */
+  private drawPaintings(dt: number, map: string, light: (feet: Point) => Rgb, { buildings }: Geometry): void {
+    const alphaOf = (frame: string) => buildings.find(({ ids }) => ids.includes(frame))?.cutaway.alpha ?? 1;
+    for (const [on, paintings] of this.paintings) paintings.draw(dt, on === map, light, alphaOf);
   }
 
   private figureAt(position: Position, { manifest, heightAt }: Geometry): Figure {
