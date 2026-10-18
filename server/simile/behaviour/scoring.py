@@ -66,8 +66,7 @@ class Places:
         return next((loc for loc in self._by_size if inside(loc, point)), None)
 
     def walk_minutes(self, a: Point, b: Point) -> float:
-        """Roughly how long the walk from a to b takes: straight lines on each map, and a step
-        through each door between. Infinite if no door leads there."""
+        """In straight lines on each map and a step through each door, infinite with no door."""
         return self.tiles(a, b) / WALKING_SPEED / 60
 
     def tiles(self, a: Point, b: Point) -> float:
