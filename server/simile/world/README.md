@@ -85,14 +85,3 @@ To animate a walker, tween its sprite from where it's drawn to each new position
 next position arrives as the tween ends, so the sprite moves continuously, one tile behind the
 server. A jump of more than a tile and a half, or onto another map, is a `place`: snap to it. Face
 the direction of travel.
-
-## Demo
-
-```bash
-cd server && SIMILE_DEMO_WALK=1 uv run simile headless --speed 10
-```
-
-Mei, F2's fixture NPC from `house_1`, walks into the Daily Grind to the front of the counter's
-queue and back, resting 30 sim seconds at each end. The log shows every tile she reaches, the
-jump through the door, and, for each trip, its length, time and speed. `simile serve` runs the
-demo too when the variable is set.

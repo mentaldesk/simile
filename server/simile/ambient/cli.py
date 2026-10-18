@@ -2,7 +2,7 @@ from typing import Annotated
 
 import typer
 
-QUIET_ENV = ("SIMILE_VOICE", "SIMILE_RECORD", "SIMILE_FRESH", "SIMILE_DEMO")
+QUIET_ENV = ("SIMILE_VOICE", "SIMILE_RECORD", "SIMILE_FRESH")
 
 
 def register(app: typer.Typer) -> None:

@@ -1,8 +1,4 @@
-import asyncio
-import logging
-import re
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
 
 import pytest
 from starlette.testclient import TestClient
@@ -10,10 +6,8 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.protocol import hub_of
 from simile.schema import PLAYER_ID, VILLAGE_MAP, Tile
-from simile.sim import Clock, FakeWallClock, World, world_of
-from simile.sim.headless import run_headless
+from simile.sim import world_of
 from simile.world import Point, movement_of
-from simile.world.demo import DEMO_ENV
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -70,35 +64,3 @@ def test_stops_on_shutdown(make_package: MakePackage) -> None:
 
     assert movement.position("mei") == (3, 11)
     assert not walk.done
-
-
-def walk_demo(package: str) -> None:
-    world = World(Clock(datetime(2026, 1, 1, 8, tzinfo=UTC), speed=10), FakeWallClock())
-    asyncio.run(run_headless(world, timedelta(minutes=1), package))
-
-
-def test_demo_walks_mei_from_home_into_the_coffee_shop(
-    make_package: MakePackage, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    monkeypatch.setenv(DEMO_ENV, "1")
-    caplog.set_level(logging.INFO, logger="simile")
-
-    walk_demo(make_package(WORLD_LIFESPAN))
-
-    assert "EntityMoved(entity='mei', x=3.0, y=11.0, map='village')" in caplog.messages[0]
-    assert "EntityMoved(entity='mei', x=31.0, y=11.0, map='village')" in caplog.text
-    assert "EntityMoved(entity='mei', x=10.0, y=13.0, map='coffee_shop')" in caplog.text
-    arrival = next(m for m in caplog.messages if "walked from house_1 to coffee_shop_queue" in m)
-    speed = re.search(r"arrived\): [\d.]+ tiles in [\d.]+ s, ([\d.]+) tiles/s", arrival)
-    assert speed and float(speed[1]) == pytest.approx(1.3, abs=0.01)
-
-
-def test_no_demo_without_the_environment_variable(
-    make_package: MakePackage, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
-) -> None:
-    monkeypatch.delenv(DEMO_ENV, raising=False)
-    caplog.set_level(logging.INFO, logger="simile")
-
-    walk_demo(make_package(WORLD_LIFESPAN))
-
-    assert "mei" not in caplog.text

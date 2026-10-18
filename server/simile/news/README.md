@@ -16,8 +16,8 @@ too.
   per feed, about 60 calls, and logs how many as it starts.
 - **Turning it off.** `SIMILE_NEWS=0` leaves the news table alone: nothing is fetched, and no
   bundled articles are added. Articles already stored but not analysed, say from
-  `simile news --refresh`, are still analysed. Every test runs this way, and so do `demo/run.sh`,
-  `demo/check.py` and `simile ambient playthrough`.
+  `simile news --refresh`, are still analysed. Every test runs this way, and so does
+  `simile ambient playthrough`.
 
 ## Bundled articles
 
@@ -25,8 +25,7 @@ When fetching is on and no news is stored at all, the server first stores the 13
 [`content/news/articles.json`](../../../content/news/articles.json), analysed already, so the
 terminals have something to list before the first fetch is in, and when the feeds can't be
 reached. After that they're articles like any other: one a feed carries too isn't stored twice,
-they're never analysed again, and newer live articles push them down the terminals' list. The
-demo starts from the same file.
+they're never analysed again, and newer live articles push them down the terminals' list.
 
 ## By hand
 
