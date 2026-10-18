@@ -113,6 +113,7 @@ class Director:
     def choose(self) -> tuple[Id, Id] | None:
         """The two keenest residents who would accept each other near the player, seeker first."""
         behaviour, engine, config = self.behaviour, self.engine, self.config
+        position = behaviour.movement.position
         best: tuple[tuple[float, float], tuple[Id, Id]] | None = None
         for target in behaviour.npcs:
             heard = self.from_player(target)
@@ -121,7 +122,7 @@ class Director:
             for seeker in behaviour.npcs:
                 if seeker == target or not self._free(seeker, target):
                     continue
-                if behaviour.movement.distance(seeker, target) > config.reach:
+                if behaviour.places.tiles(position(seeker), position(target)) > config.reach:
                     continue
                 keen = min(engine.accept_score(seeker, target), engine.accept_score(target, seeker))
                 if keen <= config.accept_bar:

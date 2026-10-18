@@ -97,6 +97,20 @@ def test_a_passer_by_reacts_to_a_mural_once(works: WorksStore, memory: MemorySto
     assert work_memories(memory, "mei") == work_memories(memory, "suki") == []
 
 
+def test_a_resident_inside_the_cafe_doesnt_see_a_mural_whose_front_they_share(
+    works: WorksStore, memory: MemoryStore
+) -> None:
+    works.paint(mural("m1", "suki"), "<svg/>", b"")
+    fake = FakeProvider([REACTION])
+    inside = Point(IN_FRONT.x, IN_FRONT.y, "coffee_shop")
+
+    asyncio.run(walk_by(passers(works, memory, {"viktor": inside}, LLMClient(fake))))
+
+    assert distance_in_front(WALL, inside) is None
+    assert fake.requests == []
+    assert work_memories(memory, "viktor") == []
+
+
 def test_the_player_remembers_a_mural_without_a_call(
     works: WorksStore, memory: MemoryStore
 ) -> None:

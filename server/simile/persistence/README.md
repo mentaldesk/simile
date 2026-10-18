@@ -3,8 +3,8 @@
 The village carries on where it left off. R2's database already keeps relationships, flags,
 memories and events as they happen, and which news each NPC has read is their `news` memories.
 This module keeps the rest in its own `saved_world` table of the same file (`$SIMILE_DB`, or
-`server/data/simile.db`): the sim time and, for each NPC, their tile, goal, needs, when they chose
-the goal and will next decide, and whom they're avoiding.
+`server/data/simile.db`): the sim time and, for each NPC, their tile and the map it's on, goal,
+needs, when they chose the goal and will next decide, and whom they're avoiding.
 
 ## Saving
 
@@ -21,7 +21,8 @@ the goal and will next decide, and whom they're avoiding.
 ## Restoring
 
 When the server starts, after B1 has put everyone at home, the clock goes back to the saved time and
-each NPC back to their tile, and B1's `restore` gives them back their goal, needs and cooldowns.
+each NPC back to their tile, inside or out, and B1's `restore` gives them back their goal, needs and
+cooldowns. A save from before the interiors has no maps, and puts everyone on the village.
 Anyone who was walking or talking decides again on their first think, within 5 sim seconds. NPCs who
 weren't saved carry on from B1's first start, and saved ones who are no longer in `content/` are
 ignored. A save this version can't read is logged and ignored. `simile headless --duration` counts

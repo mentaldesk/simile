@@ -113,7 +113,7 @@ with the player as `player_relief` (half) of one with a resident towards their s
   every `look_every` (5 s), each nearby NPC is considered once per `greet_cooldown` (10 min), so
   high Connection NPCs greet strangers and those who dislike the player don't. Nobody greets a
   player who's already talking or not connected, and nobody in B1's `leave_player_alone` greets
-  them.
+  them. Every range here is on the player's own map, so nobody talks through a door.
 - **Replies.** Each player line is answered straight away, with no line ahead: one L1 `stream()`
   with `priority=1` and `purpose="player-reply"`. Each sentence becomes its own `Line` as soon as it
   has streamed, with `LineDrafted` at once and `LineSpoken` when the previous sentence has been

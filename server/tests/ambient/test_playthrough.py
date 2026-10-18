@@ -86,6 +86,7 @@ async def test_short_playthroughs_chat_and_overhear() -> None:
     assert sum(len(r.overheard) for r in results) >= 2
     assert sum(r.heard for r in results) > 0
     assert all(r.heard < 600 for r in results)
+    assert all(r.inside and r.seen_inside for r in results)
 
 
 async def test_the_village_is_kept_in_memory_whatever_simile_db_says(
@@ -111,3 +112,4 @@ def test_cli_prints_the_table() -> None:
     assert result.exit_code == 0, result.output
     assert "1 runs of 3 sim minutes after 1 minutes' warm-up." in result.output
     assert "| NPC conversation in earshot, share of the time |" in result.output
+    assert "| Residents seen inside |" in result.output

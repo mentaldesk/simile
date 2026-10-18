@@ -340,14 +340,14 @@
           "y": 96
         },
         {
-          "height": 96,
+          "height": 32,
           "id": 3,
-          "name": "noodle_bar",
+          "name": "cafe_terrace",
           "properties": [
             {
               "name": "entry_x",
               "type": "int",
-              "value": 16
+              "value": 34
             },
             {
               "name": "entry_y",
@@ -357,75 +357,19 @@
             {
               "name": "label",
               "type": "string",
-              "value": "Golden Bowl Noodles"
+              "value": "The Daily Grind's terrace"
             }
           ],
           "rotation": 0,
-          "type": "noodle_bar",
-          "visible": true,
-          "width": 80,
-          "x": 208,
-          "y": 96
-        },
-        {
-          "height": 112,
-          "id": 4,
-          "name": "coffee_shop",
-          "properties": [
-            {
-              "name": "entry_x",
-              "type": "int",
-              "value": 31
-            },
-            {
-              "name": "entry_y",
-              "type": "int",
-              "value": 11
-            },
-            {
-              "name": "label",
-              "type": "string",
-              "value": "The Daily Grind"
-            }
-          ],
-          "rotation": 0,
-          "type": "coffee_shop",
+          "type": "amenity",
           "visible": true,
           "width": 128,
           "x": 448,
-          "y": 96
-        },
-        {
-          "height": 112,
-          "id": 5,
-          "name": "maker_space",
-          "properties": [
-            {
-              "name": "entry_x",
-              "type": "int",
-              "value": 41
-            },
-            {
-              "name": "entry_y",
-              "type": "int",
-              "value": 11
-            },
-            {
-              "name": "label",
-              "type": "string",
-              "value": "Spark Maker Space"
-            }
-          ],
-          "rotation": 0,
-          "type": "maker_space",
-          "visible": true,
-          "width": 96,
-          "x": 592,
-          "y": 80
+          "y": 176
         },
         {
           "height": 96,
-          "id": 6,
+          "id": 4,
           "name": "house_3",
           "properties": [
             {
@@ -453,7 +397,7 @@
         },
         {
           "height": 96,
-          "id": 7,
+          "id": 5,
           "name": "house_4",
           "properties": [
             {
@@ -481,7 +425,7 @@
         },
         {
           "height": 96,
-          "id": 8,
+          "id": 6,
           "name": "house_5",
           "properties": [
             {
@@ -509,7 +453,7 @@
         },
         {
           "height": 96,
-          "id": 9,
+          "id": 7,
           "name": "house_6",
           "properties": [
             {
@@ -537,7 +481,7 @@
         },
         {
           "height": 96,
-          "id": 10,
+          "id": 8,
           "name": "house_7",
           "properties": [
             {
@@ -565,7 +509,7 @@
         },
         {
           "height": 224,
-          "id": 11,
+          "id": 9,
           "name": "square",
           "properties": [
             {
@@ -593,7 +537,7 @@
         },
         {
           "height": 48,
-          "id": 12,
+          "id": 10,
           "name": "terminal_1",
           "properties": [
             {
@@ -621,7 +565,7 @@
         },
         {
           "height": 352,
-          "id": 13,
+          "id": 11,
           "name": "park",
           "properties": [
             {
@@ -649,7 +593,7 @@
         },
         {
           "height": 48,
-          "id": 14,
+          "id": 12,
           "name": "terminal_2",
           "properties": [
             {
@@ -677,7 +621,7 @@
         },
         {
           "height": 96,
-          "id": 15,
+          "id": 13,
           "name": "house_8",
           "properties": [
             {
@@ -705,7 +649,7 @@
         },
         {
           "height": 96,
-          "id": 16,
+          "id": 14,
           "name": "house_9",
           "properties": [
             {
@@ -733,7 +677,7 @@
         },
         {
           "height": 96,
-          "id": 17,
+          "id": 15,
           "name": "house_10",
           "properties": [
             {
@@ -761,7 +705,7 @@
         },
         {
           "height": 48,
-          "id": 18,
+          "id": 16,
           "name": "terminal_3",
           "properties": [
             {
@@ -801,7 +745,7 @@
       "objects": [
         {
           "height": 64,
-          "id": 19,
+          "id": 17,
           "name": "corner_shop",
           "properties": [
             {
@@ -839,7 +783,7 @@
         },
         {
           "height": 16,
-          "id": 20,
+          "id": 18,
           "name": "daily_grind",
           "properties": [
             {
@@ -877,7 +821,7 @@
         },
         {
           "height": 80,
-          "id": 21,
+          "id": 19,
           "name": "tower",
           "properties": [
             {
@@ -915,7 +859,7 @@
         },
         {
           "height": 64,
-          "id": 22,
+          "id": 20,
           "name": "garden_flats",
           "properties": [
             {
@@ -953,7 +897,7 @@
         },
         {
           "height": 48,
-          "id": 23,
+          "id": 21,
           "name": "banyan_row",
           "properties": [
             {
@@ -1003,7 +947,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 24,
+          "id": 22,
           "name": "coffee_shop",
           "properties": [
             {
@@ -1036,7 +980,7 @@
         },
         {
           "height": 16,
-          "id": 25,
+          "id": 23,
           "name": "gallery",
           "properties": [
             {
@@ -1069,7 +1013,7 @@
         },
         {
           "height": 16,
-          "id": 26,
+          "id": 24,
           "name": "maker_space",
           "properties": [
             {
@@ -1102,7 +1046,7 @@
         },
         {
           "height": 16,
-          "id": 27,
+          "id": 25,
           "name": "noodle_bar",
           "properties": [
             {
@@ -1153,7 +1097,7 @@
     }
   ],
   "nextlayerid": 10,
-  "nextobjectid": 28,
+  "nextobjectid": 26,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",

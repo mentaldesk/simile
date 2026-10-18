@@ -30,6 +30,7 @@ from simile.schema import (
     FlagKind,
     InteractionEvent,
     Line,
+    MapTile,
     Memory,
     MemoryKind,
     Npc,
@@ -54,6 +55,7 @@ from .conftest import remembers, work
 pytestmark = pytest.mark.anyio
 
 MAPS = load_maps()
+CAFE = MapTile(map="coffee_shop", x=13, y=8)
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 
@@ -129,7 +131,7 @@ class Village:
         self.store.add(*relationships)
         self.movement = Movement(MAPS, self.world.bus)
         for npc in npcs:
-            self.movement.place(npc.id, "coffee_shop")
+            self.movement.place(npc.id, CAFE)
         self.behaviour = Behaviour(
             self.world.clock, self.world.bus, self.movement, npcs, self.store, seed=0
         )

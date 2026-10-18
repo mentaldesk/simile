@@ -60,10 +60,10 @@ def door(outside: tuple[int, int], inside: tuple[int, int]) -> Door:
 
 
 @pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
-def test_finds_the_shortest_path_from_every_house_to_the_coffee_shop(house) -> None:
+def test_finds_the_shortest_path_from_every_house_to_the_terrace(house) -> None:
     start = (house.entry.x, house.entry.y)
-    coffee_shop = TOWN.location("coffee_shop").entry
-    goal = (coffee_shop.x, coffee_shop.y)
+    terrace = TOWN.location("cafe_terrace").entry
+    goal = (terrace.x, terrace.y)
 
     path = find_path(TOWN, start, goal)
 

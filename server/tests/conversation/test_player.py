@@ -34,6 +34,7 @@ from simile.npc import load_npcs
 from simile.reflection import Deed, Extraction, Reflection, Reflector
 from simile.schema import (
     PLAYER_ID,
+    VILLAGE_MAP,
     Aspect,
     CoreValue,
     InteractionEvent,
@@ -161,7 +162,7 @@ class Village:
     def walk_to(self, npc: str, tiles: float) -> None:
         """Put the player `tiles` to the right of `npc`."""
         here = self.movement.position(npc)
-        self.movement.track(PLAYER_ID, Point(here.x + tiles, here.y))
+        self.movement.track(PLAYER_ID, Point(here.x + tiles, here.y, here.map))
 
     async def run(self, seconds: float = 5) -> None:
         await self.world.loop.run(timedelta(seconds=seconds))
@@ -626,6 +627,21 @@ async def test_walking_away_ends_it_at_once() -> None:
     assert not village.behaviour.minds["ana"].paused
 
 
+async def test_a_player_on_another_map_has_walked_away() -> None:
+    hang = asyncio.Event()
+    village = Village(provider=FakeProvider([["Well", hang]]))
+
+    village.players.say("Hello!", "ana")
+    await village.run(1)
+    here = village.movement.position(PLAYER_ID)
+    village.movement.track(PLAYER_ID, Point(here.x, here.y, VILLAGE_MAP))
+    await village.run(0.2)
+
+    [ended] = village.ended
+    assert [line.speaker for line in ended.conversation.lines] == [PLAYER_ID]
+    assert not village.behaviour.minds["ana"].paused
+
+
 async def test_a_disconnected_player_leaves_the_conversation() -> None:
     village = Village()
     village.players.say("Hello!", "ana")
@@ -956,6 +972,22 @@ async def test_a_sociable_npc_nearby_greets_the_player_and_an_unsociable_one_doe
     [started] = village.of(ConversationStarted)
     assert started.conversation.participants == ["ana", PLAYER_ID]
     assert village.said("ana")[0] == "Hello!"
+
+
+async def test_the_player_and_residents_talk_only_on_the_same_map() -> None:
+    village = Village(["Hello! New in town? [values: connection]"], npcs=(ANA,))
+    here = village.movement.position("ana")
+    assert here.map == "coffee_shop"
+    village.movement.track(PLAYER_ID, Point(here.x + 1, here.y, VILLAGE_MAP))
+
+    assert village.players.say("Hello?", "ana") is None
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
+    assert village.of(ConversationStarted) == []
+
+    village.walk_to("ana", 1)
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    [started] = village.of(ConversationStarted)
+    assert started.conversation.participants == ["ana", PLAYER_ID]
 
 
 async def test_an_npc_who_dislikes_the_player_doesnt_greet_them() -> None:
