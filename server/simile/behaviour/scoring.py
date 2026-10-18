@@ -226,8 +226,8 @@ def punctuality(
 def skip_chance(
     values: Mapping[CoreValue, float], finances: float, config: BehaviourConfig = DEFAULT_CONFIG
 ) -> float:
-    """The chance they skip a shift: now and then for low Responsibility, less so when short of
-    money."""
+    """The chance they skip a working day's shifts: now and then for low Responsibility, less so
+    when short of money."""
     responsibility = values[CoreValue.RESPONSIBILITY]
     lax = max(config.skip_below - responsibility, 0.0) / config.skip_below
     return config.skip * lax * (1 - finances)

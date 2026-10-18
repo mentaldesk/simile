@@ -3,7 +3,7 @@ import math
 import random
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Protocol
 
 from pydantic import JsonValue
@@ -220,6 +220,8 @@ class Mind:
     """Their current or next shift."""
     staying_on: datetime | None = None
     """Until when they can stay on at work after their last shift."""
+    skipping: tuple[date, bool] | None = None
+    """The last working day they decided whether to skip, and what they decided."""
 
 
 class Behaviour:
@@ -509,8 +511,10 @@ class Behaviour:
         early = punctuality(npc.values, config)
         early += self.rng.uniform(-config.set_off_jitter, config.set_off_jitter)
         set_off = start - timedelta(minutes=walk + early)
-        chance = skip_chance(npc.values, mind.needs[Need.FINANCES], config)
-        return Due(start, end, set_off, self.rng.random() < chance)
+        if mind.skipping is None or mind.skipping[0] != start.date():
+            chance = skip_chance(npc.values, mind.needs[Need.FINANCES], config)
+            mind.skipping = (start.date(), self.rng.random() < chance)
+        return Due(start, end, set_off, mind.skipping[1])
 
     def _due(self, mind: Mind) -> Due | None:
         """Their shift, from when they set off for it until it ends, unless they're skipping it."""

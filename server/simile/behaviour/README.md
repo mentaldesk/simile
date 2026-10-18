@@ -70,9 +70,9 @@ sets F3's snapshot to the NPCs' real positions.
   urgent meal is worth, so an urgent need still wins, and they decide then and there, dropping
   what they're doing. A shift gets them up `ready` (45) minutes before they set off, in time for
   breakfast. Once there they stay until it ends: a talk only pauses it, as it does making
-  something, and urgent needs take them off for a while. Each shift, they skip it with a chance of
-  up to `skip` (0.3) at Responsibility 0, falling to nothing at `skip_below` (0.5), and less the
-  shorter of money they are. After a shift, a wage earner still at work can stay on for up to
+  something, and urgent needs take them off for a while. Each working day, they skip its shifts with a
+  chance of up to `skip` (0.3) at Responsibility 0, falling to nothing at `skip_below` (0.5), and
+  less the shorter of money they are, so a split shift doesn't double the chance of missing work. After a shift, a wage earner still at work can stay on for up to
   `overtime` (2) hours, a stay of `dwell` at a time, scored by Ambition and Success
   (`overtime_values`) and what it pays (the `earnings` hook) on the finances curve, so the
   ambitious and the short of money stay on. Working at home is being at home, so nobody seeks

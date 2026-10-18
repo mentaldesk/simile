@@ -409,8 +409,8 @@ class BehaviourConfig(BaseModel):
         default=0.3,
         ge=0,
         le=1,
-        description="Chance of skipping a shift at Responsibility 0, falling to nothing at "
-        "`skip_below`, and less the shorter of money they are.",
+        description="Chance of skipping a working day's shifts at Responsibility 0, falling to "
+        "nothing at `skip_below`, and less the shorter of money they are.",
     )
     skip_below: float = Field(
         default=0.5, gt=0, le=1, description="Responsibility from which nobody skips."

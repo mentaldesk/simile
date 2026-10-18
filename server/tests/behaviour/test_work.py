@@ -216,14 +216,17 @@ def test_the_disciplined_arrive_on_time_and_the_undisciplined_late() -> None:
 
 
 def test_an_urgent_need_wins_over_a_shift() -> None:
-    village = Village([worker("ana", hours=(10, 14))], hour=9.9)
-    village.movement.place("ana", "house_1")
+    village = Village([worker("ana", hours=(10, 14))], hour=10.02)
+    assert village.behaviour.minds["ana"].shift.set_off < village.now
+    village.movement.place("ana", "park")
     village.stay("ana", Goal(A.PARK, "park"), minutes=600, hunger=0.97)
 
     village.run(minutes=0.2)
 
-    goal = village.behaviour.goal("ana")
-    assert goal.activity in (A.HOME, A.NOODLE_BAR, A.COFFEE_SHOP)
+    mind = village.behaviour.minds["ana"]
+    assert str(PARK_WORK) in mind.options
+    assert mind.goal.activity in (A.HOME, A.NOODLE_BAR, A.COFFEE_SHOP)
+    assert max(mind.options.values()) > mind.options[str(PARK_WORK)]
 
 
 def test_someone_who_skips_a_shift_isnt_pulled_to_it() -> None:
@@ -234,6 +237,28 @@ def test_someone_who_skips_a_shift_isnt_pulled_to_it() -> None:
 
     assert village.behaviour.minds["ana"].shift.skipping
     assert not village.behaviour.working("ana")
+
+
+def test_they_decide_once_a_day_whether_to_skip_both_halves_of_a_split_shift() -> None:
+    split = [
+        Shift(days=list(Weekday), start=11, end=14.5),
+        Shift(days=list(Weekday), start=17, end=21.5),
+    ]
+    cook = worker("ana", workplace="noodle_bar", responsibility=0.25).model_copy(
+        update={"shifts": split}
+    )
+    village = Village([cook], hour=10, config=STEADY.model_copy(update={"skip": 1.0}))
+    days: dict[object, set[bool]] = {}
+
+    for day in range(12):
+        for hour in (10, 15):
+            village.world.clock.now = THURSDAY + timedelta(days=day, hours=hour)
+            village.run(minutes=0.1)
+            due = village.behaviour.minds["ana"].shift
+            days.setdefault(due.start.date(), set()).add(due.skipping)
+
+    assert all(len(skipped) == 1 for skipped in days.values())
+    assert {next(iter(skipped)) for skipped in days.values()} == {True, False}
 
 
 def test_a_talk_at_work_pauses_it_and_they_go_back_to_it() -> None:

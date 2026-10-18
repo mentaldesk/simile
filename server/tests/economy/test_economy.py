@@ -5,8 +5,9 @@ import pytest
 
 from simile.behaviour import DEFAULT_CONFIG, Activity, Behaviour, BehaviourConfig, Goal, Need
 from simile.cafe.events import Served
+from simile.economy import DEFAULT_CONFIG as ECONOMY
 from simile.economy import OUTSIDE, Kind
-from simile.economy.economy import Economy
+from simile.economy.economy import Economy, Turn
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.schema import CoreValue, Npc, Pay, PayKind, Shift, Weekday
@@ -258,16 +259,31 @@ def test_shifts_are_on_time_late_or_skipped() -> None:
         town.movement.place(npc, "park")
         town.stay(npc, Goal(A.PARK, "park"), minutes=600)
 
-    town.run(minutes=29.95)
+    town.run(minutes=33)
     town.stay("ana", Goal(A.WORK, "park"), minutes=600)
-    town.run(minutes=20)
+    town.run(minutes=17)
     town.stay("bea", Goal(A.WORK, "park"), minutes=600)
     town.run(minutes=50)
 
     turns = {turn.npc: turn for turn in town.economy.turns}
-    assert turns["ana"].arrived is not None and not turns["ana"].late(grace)
-    assert turns["bea"].late(grace)
+    ana, bea = turns["ana"], turns["bea"]
+    assert ana.arrived is not None and ana.arrived - ana.start > timedelta(minutes=2)
+    assert not ana.late(grace)
+    assert bea.late(grace)
     assert "cy" not in turns or turns["cy"].arrived is None
+
+
+def test_arriving_within_the_grace_is_on_time() -> None:
+    start = THURSDAY + timedelta(hours=9)
+    grace = timedelta(minutes=ECONOMY.late)
+
+    def turn(minutes: float) -> Turn:
+        return Turn("ana", start, start + timedelta(hours=4), start + timedelta(minutes=minutes))
+
+    assert grace == timedelta(minutes=5)
+    assert not turn(0).late(grace) and not turn(5).late(grace)
+    assert turn(5.1).late(grace)
+    assert not Turn("ana", start, start + timedelta(hours=4)).late(grace)
 
 
 def test_a_shift_under_way_when_the_economy_starts_is_not_timed() -> None:
