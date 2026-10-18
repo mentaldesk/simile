@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
@@ -31,7 +31,9 @@ def test_the_cafe_runs_on_the_loop_and_takes_the_players_orders(make_package: Ma
         cafe, players = app.state.cafe, app.state.players
         assert cafe.barista is not None
         assert players.writers[cafe.barista] == cafe.write
-        until(client, app, lambda: cafe.on_shift)
+        send_to_work(app)
+        client.portal.call(world_of(app).loop.tick)
+        assert cafe.on_shift
         assert app.state.behaviour.goal(cafe.barista) == CAFE
 
     assert cafe.barista not in players.writers
@@ -43,6 +45,10 @@ def test_the_cafes_supply_hook_wraps_the_economys(make_package: MakePackage) -> 
     with TestClient(app) as client:
         behaviour, economy = app.state.behaviour, app.state.economy
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 0.0
+        send_to_work(app)
+        assert economy.staffed("coffee_shop") and not app.state.cafe.on_shift
+        assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 0.0
+        client.portal.call(world_of(app).loop.tick)
         until(client, app, lambda: economy.staffed("coffee_shop"))
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0
         economy.fridges["house_3"] = 0
@@ -50,6 +56,14 @@ def test_the_cafes_supply_hook_wraps_the_economys(make_package: MakePackage) -> 
         assert behaviour.hooks.supply(NOODLES, Need.HUNGER) == 0.0
 
     assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0
+
+
+def send_to_work(app: Starlette) -> None:
+    """Send the barista to work now, as their shift would, rather than wait on unseeded B1."""
+    behaviour, barista = app.state.behaviour, app.state.cafe.barista
+    now, needs = behaviour.clock.now, behaviour.needs(barista)
+    work = Goal(Activity.WORK, "coffee_shop")
+    behaviour.restore(barista, work, needs, now, now + timedelta(hours=1), {})
 
 
 def until(client: TestClient, app: Starlette, done: Callable[[], bool], ticks: int = 3000) -> None:

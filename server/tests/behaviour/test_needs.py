@@ -296,10 +296,15 @@ def test_the_server_plugs_the_cafes_shift_into_behaviour(make_package: MakePacka
         behaviour = app.state.behaviour
         client.portal.call(world_of(app).loop.tick)
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 0.0
-        for _ in range(3000):
-            if app.state.cafe.on_shift:
-                break
-            client.portal.call(world_of(app).loop.tick)
+        send_to_work(behaviour, app.state.cafe.barista)
+        client.portal.call(world_of(app).loop.tick)
+        assert app.state.cafe.on_shift
         assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0
 
     assert behaviour.hooks.supply(CAFE, Need.HUNGER) == 1.0
+
+
+def send_to_work(behaviour: Behaviour, npc: str) -> None:
+    """Send them to work now, as their shift would, rather than wait on unseeded B1."""
+    now, needs = behaviour.clock.now, behaviour.needs(npc)
+    behaviour.restore(npc, Goal(A.WORK, "coffee_shop"), needs, now, now + timedelta(hours=1), {})
