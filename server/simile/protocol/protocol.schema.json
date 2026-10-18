@@ -249,6 +249,40 @@
       "title": "Face",
       "type": "string"
     },
+    "Frame": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The painting interactable's id, which is also its frame's id in the interior's iso manifest.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "map": {
+          "description": "The map the interactable is on.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "painting": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Painting"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Null while the frame is empty."
+        }
+      },
+      "required": [
+        "id",
+        "map",
+        "painting"
+      ],
+      "title": "Frame",
+      "type": "object"
+    },
     "JsonValue": {},
     "Line": {
       "additionalProperties": false,
@@ -491,6 +525,61 @@
       "title": "NpcStateMessage",
       "type": "object"
     },
+    "Painting": {
+      "additionalProperties": false,
+      "properties": {
+        "work_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "artist": {
+          "$ref": "#/$defs/Artist"
+        },
+        "statement": {
+          "description": "The artist on what it's saying.",
+          "type": "string"
+        },
+        "image": {
+          "description": "The URL of the painting's image. Each work has its own.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "work_id",
+        "title",
+        "artist",
+        "statement",
+        "image"
+      ],
+      "title": "Painting",
+      "type": "object"
+    },
+    "PaintingsMessage": {
+      "additionalProperties": false,
+      "description": "Every frame and the painting in it. Sent on connect and whenever a painting changes.",
+      "properties": {
+        "type": {
+          "const": "paintings",
+          "default": "paintings",
+          "type": "string"
+        },
+        "frames": {
+          "items": {
+            "$ref": "#/$defs/Frame"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "frames"
+      ],
+      "title": "PaintingsMessage",
+      "type": "object"
+    },
     "PlayerMoveMessage": {
       "additionalProperties": false,
       "properties": {
@@ -614,6 +703,7 @@
           "murals": "#/$defs/MuralsMessage",
           "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
+          "paintings": "#/$defs/PaintingsMessage",
           "snapshot": "#/$defs/SnapshotMessage",
           "works": "#/$defs/WorksMessage"
         },
@@ -649,6 +739,9 @@
         },
         {
           "$ref": "#/$defs/MuralsMessage"
+        },
+        {
+          "$ref": "#/$defs/PaintingsMessage"
         }
       ]
     },

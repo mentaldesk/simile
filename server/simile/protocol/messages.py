@@ -173,6 +173,30 @@ class MuralsMessage(Model):
     walls: list[Wall]
 
 
+class Painting(Model):
+    work_id: Key
+    title: str
+    artist: Artist
+    statement: str = Field(description="The artist on what it's saying.")
+    image: str = Field(description="The URL of the painting's image. Each work has its own.")
+
+
+class Frame(Model):
+    id: Id = Field(
+        description="The painting interactable's id, which is also its frame's id in the "
+        "interior's iso manifest."
+    )
+    map: Key = Field(description="The map the interactable is on.")
+    painting: Painting | None = Field(description="Null while the frame is empty.")
+
+
+class PaintingsMessage(Model):
+    """Every frame and the painting in it. Sent on connect and whenever a painting changes."""
+
+    type: Literal["paintings"] = "paintings"
+    frames: list[Frame]
+
+
 class PlayerMoveMessage(Model):
     type: Literal["player_move"] = "player_move"
     position: Position
@@ -217,7 +241,8 @@ type ServerMessage = Annotated[
     | NpcStateMessage
     | NewsMessage
     | WorksMessage
-    | MuralsMessage,
+    | MuralsMessage
+    | PaintingsMessage,
     Field(discriminator="type"),
 ]
 
