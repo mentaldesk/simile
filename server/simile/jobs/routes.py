@@ -7,6 +7,7 @@ from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import BaseRoute, Route, WebSocketRoute
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from simile.guard import accepts
 from simile.jobs.runner import Busy, Finished, Job, UnknownKind, jobs_of
 from simile.schema import Model
 
@@ -65,6 +66,7 @@ def status(request: Request) -> JSONResponse:
     return problem(404, "No such job") if job is None else job_json(job)
 
 
+@accepts(None)
 async def cancel(request: Request) -> JSONResponse:
     try:
         return job_json(await jobs_of(request.app).cancel(request.path_params["job_id"]))

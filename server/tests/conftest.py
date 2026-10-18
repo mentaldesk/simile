@@ -34,6 +34,7 @@ def in_memory_database(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SIMILE_DB", ":memory:")
     monkeypatch.setenv("SIMILE_LLM", "fake")
     monkeypatch.setenv("SIMILE_NEWS", "0")
+    monkeypatch.setenv("SIMILE_HOSTS", "testserver")
 
 
 @pytest.fixture

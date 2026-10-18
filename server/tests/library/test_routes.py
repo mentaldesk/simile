@@ -19,6 +19,8 @@ from simile.llm import FakeProvider, LLMError, Request
 
 from .conftest import LOOK, PREMADE, answer, archive, character, clip, requested
 
+JSON = {"Content-Type": "application/json"}
+ZIP = {"Content-Type": "application/zip"}
 BIOGRAPHY = {"backstory", "persona", "speaking_style", "interests", "craft"}
 
 
@@ -60,7 +62,8 @@ def test_lists_premade_then_player_characters(client: TestClient) -> None:
 @pytest.mark.parametrize("id", ["nobody", "Not-An-Id", "player"])
 def test_an_unknown_character_is_not_found(client: TestClient, id: str) -> None:
     for method in ("GET", "PUT", "DELETE"):
-        response = client.request(method, f"/api/characters/{id}", json=character())
+        body = character() if method == "PUT" else None
+        response = client.request(method, f"/api/characters/{id}", json=body)
         assert (response.status_code, response.json()) == (404, {"error": "No such character"})
     assert client.get(f"/api/characters/{id}/export").status_code == 404
 
@@ -144,7 +147,7 @@ def test_an_edit_cant_change_the_id(client: TestClient) -> None:
 def test_a_bad_character_is_refused(
     client: TestClient, root: Path, body: bytes, status: int, error: str
 ) -> None:
-    response = client.post("/api/characters", content=body)
+    response = client.post("/api/characters", content=body, headers=JSON)
 
     assert response.status_code == status
     assert error in response.json()["error"]
@@ -269,7 +272,7 @@ async def test_requests_together_get_only_two_slots(
             "raw_path": b"/api/characters/generate",
             "query_string": b"",
             "root_path": "",
-            "headers": [(b"content-type", b"application/json")],
+            "headers": [(b"host", b"localhost"), (b"content-type", b"application/json")],
         }
         await app(scope, receive, send)
 
@@ -311,7 +314,7 @@ def test_export_then_import_round_trips(client: TestClient, library: Library, ro
     voiced = library.save_clip("wren_abernethy", clip()).model_dump(mode="json")
 
     exported = client.get("/api/characters/wren_abernethy/export")
-    imported = client.post("/api/characters/import", content=exported.content)
+    imported = client.post("/api/characters/import", headers=ZIP, content=exported.content)
 
     assert exported.headers["content-type"] == "application/zip"
     assert exported.headers["content-disposition"] == 'attachment; filename="wren_abernethy.zip"'
@@ -327,10 +330,24 @@ def test_export_then_import_round_trips(client: TestClient, library: Library, ro
     assert (root / "clips" / "wren_abernethy_2.wav").read_bytes() == clip()
 
     client.delete("/api/characters/wren_abernethy")
-    again = client.post("/api/characters/import", content=exported.content).json()
+    again = client.post("/api/characters/import", headers=ZIP, content=exported.content).json()
 
     assert again | {"id": voiced["id"], "voice": voiced["voice"]} == voiced
     assert again["voice"]["reference_clip"] == "clips/wren_abernethy.wav"
+
+
+def test_the_client_can_change_the_library_from_its_own_origin(client: TestClient) -> None:
+    origin = {"Origin": "http://localhost:5173"}
+
+    created = client.post("/api/characters", json=character(), headers=origin)
+    edited = client.put("/api/characters/wren_abernethy", json=character(), headers=origin)
+    exported = client.get("/api/characters/wren_abernethy/export", headers=origin)
+    deleted = client.delete("/api/characters/wren_abernethy", headers=origin)
+    imported = client.post("/api/characters/import", content=exported.content, headers=origin | ZIP)
+    player = client.put("/api/player", json={"appearance": LOOK}, headers=origin)
+
+    statuses = [r.status_code for r in (created, edited, exported, deleted, imported, player)]
+    assert statuses == [201, 200, 200, 204, 201, 200]
 
 
 def test_an_import_takes_nothing_but_the_character_and_its_clip(
@@ -344,10 +361,13 @@ def test_an_import_takes_nothing_but_the_character_and_its_clip(
 
     with_clip = client.post(
         "/api/characters/import",
+        headers=ZIP,
         content=archive({"character.json": json.dumps(hostile), "voice.wav": clip()}),
     ).json()
     without = client.post(
-        "/api/characters/import", content=archive({"character.json": json.dumps(hostile)})
+        "/api/characters/import",
+        headers=ZIP,
+        content=archive({"character.json": json.dumps(hostile)}),
     ).json()
 
     assert (with_clip["id"], with_clip["source"]) == ("tobiah_rennick_2", "player")
@@ -463,7 +483,7 @@ BAD_FILES = {
 def test_a_bad_file_is_refused_with_a_clear_reason(
     client: TestClient, root: Path, data: bytes, error: str
 ) -> None:
-    response = client.post("/api/characters/import", content=data)
+    response = client.post("/api/characters/import", headers=ZIP, content=data)
 
     assert response.status_code == 422
     assert response.json()["error"].startswith(error)
@@ -479,14 +499,14 @@ def test_a_bad_file_is_refused_with_a_clear_reason(
     ids=["encrypted", "a name twice"],
 )
 def test_a_crafted_file_is_refused(client: TestClient, root: Path, data: bytes, error: str) -> None:
-    response = client.post("/api/characters/import", content=data)
+    response = client.post("/api/characters/import", headers=ZIP, content=data)
 
     assert (response.status_code, response.json()) == (422, {"error": error})
     assert files(root) == []
 
 
 def test_an_oversized_file_is_refused_before_its_read(client: TestClient) -> None:
-    response = client.post("/api/characters/import", content=bytes(13 * 2**20))
+    response = client.post("/api/characters/import", headers=ZIP, content=bytes(13 * 2**20))
 
     assert (response.status_code, response.json()) == (
         413,

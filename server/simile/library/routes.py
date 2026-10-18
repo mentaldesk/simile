@@ -11,6 +11,7 @@ from starlette.responses import JSONResponse, Response, StreamingResponse
 from starlette.routing import BaseRoute, Route
 from starlette.types import Receive, Scope, Send
 
+from simile.guard import accepts
 from simile.library.archive import MAX_FILE, Refused, reasons
 from simile.library.store import Library, NotFound, PlayerLook, ReadOnly, library_of
 from simile.schema import Character, CharacterSource
@@ -119,6 +120,7 @@ async def update(request: Request) -> Response:
     return character_json(await run_in_threadpool(library_of(request.app).update, id, data))
 
 
+@accepts(None)
 @guarded
 async def delete(request: Request) -> Response:
     await run_in_threadpool(library_of(request.app).delete, request.path_params["id"])
@@ -133,6 +135,7 @@ async def export(request: Request) -> Response:
     return Response(data, media_type="application/zip", headers=headers)
 
 
+@accepts("application/zip")
 @guarded
 async def import_file(request: Request) -> Response:
     data = await body(request, MAX_FILE)

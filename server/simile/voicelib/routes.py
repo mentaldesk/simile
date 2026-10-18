@@ -9,6 +9,7 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, JSONResponse, Response
 from starlette.routing import BaseRoute, Route
 
+from simile.guard import accepts
 from simile.jobs import Busy, Jobs, jobs_of
 from simile.library import Library, NotFound, ReadOnly, Refused, library_of
 from simile.library.archive import reasons
@@ -127,6 +128,7 @@ async def library_clip(request: Request) -> Response:
     return FileResponse(path, media_type="audio/wav")
 
 
+@accepts("audio/wav", "audio/mpeg", "audio/mp4")
 @guarded
 async def record(request: Request) -> Response:
     library, jobs = library_of(request.app), jobs_of(request.app)

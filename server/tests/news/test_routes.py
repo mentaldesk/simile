@@ -216,7 +216,7 @@ def test_takes_only_json(client: TestClient, path: str) -> None:
     )
 
     assert reply.status_code == 415
-    assert reply.json() == {"error": "Send the request as JSON"}
+    assert reply.json() == {"error": "Send the request as application/json, not text/plain"}
     assert client.get("/api/news/feeds").json()["defaults"] is True
 
 

@@ -14,6 +14,8 @@ from simile.jobs import Jobs, jobs_of
 
 from .conftest import eventually, fake_kind
 
+JSON = {"Content-Type": "application/json"}
+
 
 @pytest.fixture
 def app(make_package: Callable[[dict[str, str]], str], root: Path) -> Starlette:
@@ -126,6 +128,23 @@ def test_cancels_a_job(client: TestClient, tmp_path: Path) -> None:
     assert client.post("/api/jobs/nope/cancel").status_code == 404
 
 
+def test_the_client_can_submit_watch_and_cancel_a_job_from_its_own_origin(
+    client: TestClient, tmp_path: Path
+) -> None:
+    origin = {"Origin": "http://localhost:5173"}
+    params = {"hold": str(tmp_path / "never")}
+
+    submitted = client.post("/api/jobs", json={"kind": "fake", "params": params}, headers=origin)
+    job_id = submitted.json()["id"]
+    with client.websocket_connect(f"/ws/jobs/{job_id}", headers=dict(origin)) as ws:
+        watched = ws.receive_json()
+    cancelled = client.post(f"/api/jobs/{job_id}/cancel", headers=origin)
+
+    assert submitted.status_code == 202
+    assert watched["id"] == job_id
+    assert (cancelled.status_code, cancelled.json()["state"]) == (200, "cancelled")
+
+
 def test_refuses_more_waiting_jobs_than_it_holds(client: TestClient, tmp_path: Path) -> None:
     hold = {"kind": "fake", "params": {"hold": str(tmp_path / "hold")}}
     statuses = [client.post("/api/jobs", json=hold).status_code for _ in range(6)]
@@ -147,7 +166,7 @@ def test_refuses_more_waiting_jobs_than_it_holds(client: TestClient, tmp_path: P
     ],
 )
 def test_refuses_a_bad_job(client: TestClient, body: bytes, error: str) -> None:
-    response = client.post("/api/jobs", content=body)
+    response = client.post("/api/jobs", content=body, headers=JSON)
 
     assert response.status_code == 422
     assert error in response.json()["error"]
@@ -155,7 +174,7 @@ def test_refuses_a_bad_job(client: TestClient, body: bytes, error: str) -> None:
 
 
 def test_refuses_a_huge_request(client: TestClient) -> None:
-    response = client.post("/api/jobs", content=b"x" * (65 * 1024))
+    response = client.post("/api/jobs", content=b"x" * (65 * 1024), headers=JSON)
 
     assert response.status_code == 413
 

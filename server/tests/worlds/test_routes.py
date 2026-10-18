@@ -23,6 +23,8 @@ from simile.worlds.store import REPO, SERVER, shown
 from .conftest import POOL, clip, files, folders
 
 A, B, C, D, E, F = POOL[:6]
+JSON = {"Content-Type": "application/json"}
+FORM = {"Content-Type": "application/x-www-form-urlencoded"}
 CONTENT = NPCS_DIR.parent
 
 
@@ -177,10 +179,12 @@ def test_a_bad_request_is_refused_with_a_reason(
 
 
 def test_a_request_that_isnt_json_is_refused(client: TestClient, root: Path) -> None:
-    response = client.post("/api/worlds", content=b"count=6")
+    as_form = client.post("/api/worlds", content=b"count=6", headers=FORM)
+    as_json = client.post("/api/worlds", content=b"count=6", headers=JSON)
 
-    assert response.status_code == 422
-    assert "JSON" in response.json()["error"]
+    assert as_form.status_code == 415
+    assert as_json.status_code == 422
+    assert "JSON" in as_json.json()["error"]
     assert folders(root) == []
 
 
