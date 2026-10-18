@@ -12,31 +12,51 @@ sets F3's snapshot to the NPCs' real positions.
 - **Activities.** Go home, the coffee shop, the square, a news terminal, the park, the noodle bar,
   the maker space, the gallery, wander, seek someone out (an NPC or the player), idle, or make
   something (`create`). `sleep` and `talk` are set by the loop rather than chosen.
-- **Score** = base + values + needs + time of day + people − walking time. Values enter as
+- **Score** = base + values + relief + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
   away from seeking company), Adventure to wander, Creativity to the maker space, and
-  Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. Needs (`social`,
-  `curiosity`, `rest`, `news`, `inspiration`, 0 to 1) pull towards whatever meets them. The coffee
-  shop peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before
-  bed. The activity just finished scores less. Curiosity is met fastest at the maker space, but
-  also at the square, the coffee shop and the park, by wandering and by reading, so it sends people
-  all over town rather than into one room.
-- **Loneliness.** `social` feels urgent on a convex curve, `need ** 3` (`urgency`), so a little
-  barely registers and a lot crowds out everything else. An option scores the relief it brings:
-  the area under that curve between the need now and after a typical stay (`effects` over the
-  middle of its `dwell`; seeking someone out promises `talk_minutes` of talking). The same chat is
-  worth far more to someone desperate than to someone who's just had one. Connection sets how fast
-  `social` rises (Peace of Mind slows it), so high-Connection NPCs get lonely and go looking for
-  company, and low-Connection ones mostly keep to themselves. Talking meets it fast. Talking with
-  the player meets `player_relief` (0.5) of that, and seeking them out promises only as much, so a
-  chatty player doesn't become the village's social life. `curiosity` and `rest` still enter
-  linearly through `need_weights`; the needs in #74 can move to the same curve.
+  Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. The coffee shop peaks in
+  the morning and home in the two hours before bed. The activity just finished scores less.
+- **Relief.** Needs (`social`, `curiosity`, `rest`, `news`, `inspiration`, `hunger`, `bladder`,
+  `hygiene`, 0 to 1) rise over time, and being somewhere changes them by its `effects` each hour.
+  Each need has an urgency curve, `need ** power` (`urgency`, 3 unless it says otherwise), and one
+  function prices any change to it (`worth`): its weight times the area under the curve between
+  the level before and after. An option scores the relief it would bring over a typical stay
+  (`effects` over the middle of its `dwell`, plus its `finishing`; seeking someone out promises
+  `talk_minutes` of talking), so adding a need to a place's `effects` is enough to send people
+  there for it. The same relief is worth far more to someone desperate than to someone who's just
+  had it: on `need ** 3`, a meal from hunger 0.9 to 0.3 is worth 80 times the same meal straight
+  afterwards.
+  Curiosity and rest are on straight lines (`power` 1), as they always pulled. Curiosity is met
+  fastest at the maker space, but also at the square, the coffee shop, the park, the gallery, by
+  wandering and by reading, so it sends people all over town rather than into one room.
+- **Loneliness.** `social` is on `need ** 3`, so a little barely registers and a lot crowds out
+  everything else. Connection sets how fast it rises (Peace of Mind slows it), so high-Connection
+  NPCs get lonely and go looking for company, and low-Connection ones mostly keep to themselves.
+  Talking meets it fast. Talking with the player meets `player_relief` (0.5) of that, and seeking
+  them out promises only as much, so a chatty player doesn't become the village's social life.
 - **Sociability.** A resident's P1 `sociability` trait, from the world's cast, multiplies how fast
   `social` rises and divides how fast talking meets it, by up to `sociability_spread` (2) at 1, and
   the other way round at 0. So a sociable resident gets lonely sooner and takes longer to have had
   enough: they look for company more often, and come to a conversation lonelier, which the
   conversation engine reads as keener to talk. Neutral (0.5), as for everyone in today's village,
   changes nothing.
+- **Hunger, bladder and hygiene.** Hunger goes from full to urgent in 4 to 5.5 hours (faster with
+  Pleasure), the bladder in about 3 and hygiene in about a day (faster with Discipline). Asleep,
+  hunger rises at `rise_asleep` 0.3 of that, the bladder 0.2 and hygiene 0.5, so they wake hungry
+  and breakfast puts the next meal around midday. Home meets hunger slowly and the bladder and
+  hygiene; the noodle bar and the coffee shop meet hunger quickly and the bladder. They only eat
+  once hunger reaches its `appetite` (0.75), and then until they're full or leave, so a coffee
+  isn't a meal. Nothing on the clock says when to eat. P1's traits don't touch these needs.
+- **Urgent needs.** Above its `critical` level (0.9), hunger or the bladder makes them drop what
+  they're doing and decide again straight away, walking off mid-stay or mid-walk, unless what
+  they're doing meets it. A stay cut short brings none of its `finishing`. Being held lets go too,
+  but only then: the café's customers and barista are held at the coffee shop, which meets both.
+  Asleep or talking, nobody's interrupted. Wants (social, curiosity, rest, the news, inspiration)
+  and hygiene never interrupt.
+- **What's there.** A place meets a need only as far as the `supply` hook says it can now, 0 to 1,
+  in what it scores and what it does. The café plugs it in so the Daily Grind feeds nobody while
+  its barista is off shift.
 - **The news.** `news`, wanting to catch up, is on the same kind of curve (`need ** 2`), and only a
   terminal meets it. It rises with Knowledge and Open Mindedness and falls for NPCs low in both,
   so some read every couple of hours and some never do. The `news_interest` hook says how
@@ -108,6 +128,7 @@ restore()
 | `conversations()` | For each snapshot | `[]` |
 | `create(npc, wall)` | With the `Npc` when they finish a stay making something, and the wall's id for a mural (`None` for writing) | Does nothing |
 | `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, or `None` | `None`, so muralists don't paint |
+| `supply(goal, need)` | For a goal at a place, when scoring it and while someone's there: how much of what it does for `need` it can do now, 0 to 1 | 1 everywhere |
 
 Hooks run inside a tick, so they mustn't block. One that raises is logged and counts as a decline.
 
@@ -143,7 +164,10 @@ cd server && uv run simile behaviour simulate --hours 24 --seed 0
 
 Runs memory, world and behaviour on a `FakeWallClock` as fast as the CPU allows (a sim-day in
 about 15 s) and prints where everyone spent their time: minutes near others by Connection, places
-by hour, who was out at night, and what each resident with a craft made per sim-day. Conversations,
+by hour, who was out at night, the share of waking time in each place, every meal by the hour it
+started and where, each need's mean, most and time at 0.9 or more, and what each resident with a
+craft made per sim-day. The café doesn't run, so the Daily Grind feeds people from 07:00 to 17:00,
+G1's shift, if someone lives there. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
 interest unread, and reading it does nothing. Muralists paint M7's walls in turn, moving on to
 the next after each mural, and making something does nothing. `simulate(..., npcs=..., traits=...)`

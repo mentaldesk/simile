@@ -1,13 +1,17 @@
 import asyncio
+from collections import Counter
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
 
-from simile.behaviour.simulate import ranks, report, simulate, spearman
+from simile.behaviour import Activity, Goal, Need
+from simile.behaviour.simulate import daily_grind, ranks, report, simulate, spearman
 from simile.cli import create_cli
 from simile.npc import load_npcs
 from simile.schema import Craft, Medium
+from simile.sim import Clock
 from simile.world.map import load_map
 
 runner = CliRunner()
@@ -95,3 +99,38 @@ def test_reports_the_works_residents_with_a_craft_make() -> None:
     works = summary.split("**Works.**")[1]
     listed = {npc.id for npc in npcs if f"| {npc.id} |" in works}
     assert listed == {npc.id for npc in npcs if npc.craft}
+
+
+def test_a_day_has_meals_at_mealtimes_and_no_need_runs_away() -> None:
+    start = datetime(2026, 1, 1, 8, tzinfo=UTC)
+
+    observer, seconds = asyncio.run(simulate(24, start=start, talk=3))
+    summary = report(observer, 24, start, 0, seconds)
+
+    hours = Counter(meal.at.hour for meal in observer.meals)
+    assert len(observer.meals) >= 2 * len(observer.behaviour.npcs)
+    assert not any(hours[hour] for hour in range(0, 5))
+    for meal in ((5, 10), (11, 15), (17, 22)):
+        assert sum(hours[hour] for hour in range(*meal)) > 0, meal
+    for need in (Need.HUNGER, Need.BLADDER, Need.HYGIENE):
+        awake = [level for level, up in observer.needs[need] if up]
+        assert sum(level >= 0.9 for level in awake) / len(awake) < 0.02, need
+    assert "**Time by place.**" in summary and "**Meals.**" in summary
+    assert "| hunger |" in summary and "| hygiene |" in summary
+
+
+def test_without_the_cafe_the_daily_grind_feeds_people_during_its_shift() -> None:
+    cafe = Goal(Activity.COFFEE_SHOP, "coffee_shop")
+    npcs = {npc.id: npc for npc in load_npcs()}
+    nobody = {id: npc for id, npc in npcs.items() if npc.home != "coffee_shop"}
+
+    def fed(
+        hour: int, residents: object = npcs, goal: Goal = cafe, need: Need = Need.HUNGER
+    ) -> float:
+        clock = Clock(datetime(2026, 1, 1, hour, tzinfo=UTC))
+        behaviour = SimpleNamespace(npcs=residents, clock=clock)
+        return daily_grind(behaviour)(goal, need)  # type: ignore[arg-type]
+
+    assert [fed(6), fed(10), fed(18)] == [0.0, 1.0, 0.0]
+    assert fed(18, need=Need.BLADDER) == fed(18, goal=Goal(Activity.HOME, "coffee_shop")) == 1.0
+    assert fed(10, nobody) == 0.0

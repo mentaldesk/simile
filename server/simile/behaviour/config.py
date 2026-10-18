@@ -14,6 +14,9 @@ class Need(StrEnum):
     REST = "rest"
     NEWS = "news"
     INSPIRATION = "inspiration"
+    HUNGER = "hunger"
+    BLADDER = "bladder"
+    HYGIENE = "hygiene"
 
 
 class Activity(StrEnum):
@@ -62,20 +65,10 @@ VALUE_WEIGHTS: dict[Activity, dict[CoreValue, float]] = {
     A.IDLE: {V.PEACE_OF_MIND: 0.1},
 }
 
-NEED_WEIGHTS: dict[Activity, dict[Need, float]] = {
-    A.HOME: {Need.REST: 0.8},
-    A.COFFEE_SHOP: {Need.REST: 0.2, Need.CURIOSITY: 0.2},
-    A.SQUARE: {Need.CURIOSITY: 0.3},
-    A.PARK: {Need.REST: 0.4, Need.CURIOSITY: 0.2},
-    A.NOODLE_BAR: {Need.REST: 0.2},
-    A.MAKER_SPACE: {Need.CURIOSITY: 0.4},
-    A.GALLERY: {Need.CURIOSITY: 0.2},
-    A.WANDER: {Need.CURIOSITY: 0.4},
-    A.IDLE: {Need.REST: 0.2},
-}
-
 BASE: dict[Activity, float] = {
-    A.COFFEE_SHOP: 0.1,
+    A.HOME: -0.05,
+    A.COFFEE_SHOP: 0.075,
+    A.NOODLE_BAR: 0.025,
     A.SQUARE: 0.05,
     A.NEWS: -0.3,
     A.GALLERY: -0.1,
@@ -91,7 +84,6 @@ WRITING_PLACES: dict[Activity, dict[CoreValue, float]] = {
 
 DAILY: dict[Activity, Curve] = {
     A.COFFEE_SHOP: ((6.5, 0.0), (8.0, 0.3), (10.0, 0.1), (13.0, 0.0), (15.0, 0.15), (17.0, 0.0)),
-    A.NOODLE_BAR: ((11.0, 0.0), (12.5, 0.35), (14.0, 0.0), (17.5, 0.0), (19.0, 0.35), (21.0, 0.0)),
     A.SQUARE: ((9.0, 0.0), (12.0, 0.1), (17.0, 0.15), (20.0, 0.0)),
     A.PARK: ((9.0, 0.0), (15.0, 0.15), (19.0, 0.0)),
 }
@@ -102,6 +94,9 @@ RISE: dict[Need, float] = {
     Need.REST: 0.04,
     Need.NEWS: -0.1,
     Need.INSPIRATION: 0.015,
+    Need.HUNGER: 0.16,
+    Need.BLADDER: 0.28,
+    Need.HYGIENE: 0.035,
 }
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
@@ -110,19 +105,29 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.REST: {V.PEACE_OF_MIND: 0.03},
     Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
     Need.INSPIRATION: {V.CREATIVITY: 0.035, V.SELF_ACTUALIZATION: 0.015},
+    Need.HUNGER: {V.PLEASURE: 0.06},
+    Need.HYGIENE: {V.DISCIPLINE: 0.02},
 }
 
+RISE_ASLEEP: dict[Need, float] = {Need.HUNGER: 0.3, Need.BLADDER: 0.2, Need.HYGIENE: 0.5}
+
 EFFECTS: dict[Activity, dict[Need, float]] = {
-    A.HOME: {Need.REST: -0.3},
+    A.HOME: {Need.REST: -0.3, Need.HUNGER: -1.2, Need.BLADDER: -4.0, Need.HYGIENE: -2.0},
     A.SLEEP: {Need.REST: -0.25},
-    A.COFFEE_SHOP: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.CURIOSITY: -0.3},
+    A.COFFEE_SHOP: {
+        Need.SOCIAL: -0.15,
+        Need.REST: -0.1,
+        Need.CURIOSITY: -0.3,
+        Need.HUNGER: -2.0,
+        Need.BLADDER: -4.0,
+    },
     A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.4},
     A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6},
     A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2},
-    A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1},
+    A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.HUNGER: -3.0, Need.BLADDER: -4.0},
     A.MAKER_SPACE: {Need.CURIOSITY: -0.9},
     A.GALLERY: {Need.CURIOSITY: -0.5, Need.REST: -0.1},
-    A.WANDER: {Need.CURIOSITY: -0.3},
+    A.WANDER: {Need.CURIOSITY: -4.0},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
     A.CREATE: {Need.CURIOSITY: -0.6},
@@ -148,19 +153,39 @@ DWELL: dict[Activity, tuple[float, float]] = {
 
 
 class Urgency(BaseModel):
-    """How pressing a need feels: `need ** power`, so a little barely registers and a lot
-    crowds out everything else."""
+    """How pressing a need feels: `need ** power`, so with a power above 1 a little barely
+    registers and a lot crowds out everything else."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    power: float = Field(gt=0, description="The urgency curve's exponent.")
+    power: float = Field(default=3.0, gt=0, description="The urgency curve's exponent.")
     weight: float = Field(ge=0, description="Score per unit of relief.")
+    critical: float | None = Field(
+        default=0.9,
+        gt=0,
+        le=1,
+        description="Above this they stop what they're doing and decide again, unless what "
+        "they're doing meets the need. None never interrupts.",
+    )
+    appetite: float = Field(
+        default=0.0,
+        ge=0,
+        le=1,
+        description="A place starts meeting the need only once it's this high, and then carries "
+        "on until it's met or they leave: they eat when they're hungry, not every time they "
+        "pass the fridge.",
+    )
 
 
 URGENCY: dict[Need, Urgency] = {
-    Need.SOCIAL: Urgency(power=3.0, weight=6.0),
-    Need.NEWS: Urgency(power=2.0, weight=10.0),
-    Need.INSPIRATION: Urgency(power=2.0, weight=20.0),
+    Need.SOCIAL: Urgency(weight=6.0, critical=None),
+    Need.CURIOSITY: Urgency(power=1.0, weight=1.6, critical=None),
+    Need.REST: Urgency(power=1.0, weight=4.0, critical=None),
+    Need.NEWS: Urgency(power=2.0, weight=10.0, critical=None),
+    Need.INSPIRATION: Urgency(power=2.0, weight=20.0, critical=None),
+    Need.HUNGER: Urgency(weight=16.0, appetite=0.75),
+    Need.BLADDER: Urgency(weight=12.0),
+    Need.HYGIENE: Urgency(weight=8.0, critical=None),
 }
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
@@ -189,16 +214,13 @@ class BehaviourConfig(BaseModel):
     value_weights: dict[Activity, dict[CoreValue, float]] = Field(
         default=VALUE_WEIGHTS, description="Score per unit of `value - 0.5`, by activity."
     )
-    need_weights: dict[Activity, dict[Need, float]] = Field(
-        default=NEED_WEIGHTS,
-        description="Score per unit of need, by activity, for needs without an urgency curve.",
-    )
     urgency: dict[Need, Urgency] = Field(
         default=URGENCY,
-        description="Needs that score by the relief an activity brings rather than through "
-        "need_weights: weight times the area under need ** power between the need now and after "
-        "a typical stay, so the same relief is worth much more to someone desperate. A "
-        "terminal's relief is scaled by how interesting the best unread article is.",
+        description="Each need's urgency curve. An option scores the relief it brings over a "
+        "typical stay: for each need, weight times the area under need ** power between the "
+        "need now and after the stay's `effects`, so the same relief is worth much more to "
+        "someone desperate. A terminal's relief is scaled by how interesting the best unread "
+        "article is, and a place's by how much of it the `supply` hook says is there.",
     )
     talk_minutes: float = Field(
         default=3.0, gt=0, description="How long seeking someone out promises to talk for."
@@ -262,6 +284,11 @@ class BehaviourConfig(BaseModel):
         description="Extra rise per unit of each value. Inspiration rises only for NPCs with a "
         "craft.",
     )
+    rise_asleep: dict[Need, float] = Field(
+        default=RISE_ASLEEP,
+        description="How fast each need rises asleep, as a share of how fast it rises awake. "
+        "Needs left out don't rise, so they wake hungry but not lonely.",
+    )
     sociability_spread: float = Field(
         default=2.0,
         ge=1,
@@ -272,7 +299,8 @@ class BehaviourConfig(BaseModel):
     )
     effects: dict[Activity, dict[Need, float]] = Field(
         default=EFFECTS,
-        description="How each activity changes needs once there. Negative satisfies.",
+        description="How each activity changes needs each hour once there, and so the relief it "
+        "offers. Negative satisfies.",
     )
     finishing: dict[Activity, dict[Need, float]] = Field(
         default=FINISHING,
@@ -321,6 +349,9 @@ class BehaviourConfig(BaseModel):
             Need.REST: (0.0, 0.15),
             Need.NEWS: (0.1, 0.6),
             Need.INSPIRATION: (0.0, 0.6),
+            Need.HUNGER: (0.2, 0.6),
+            Need.BLADDER: (0.0, 0.5),
+            Need.HYGIENE: (0.0, 0.4),
         },
         description="Needs on start, sampled uniformly. Inspiration starts at 0 without a craft.",
     )
@@ -358,10 +389,9 @@ class BehaviourConfig(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def _priced_once(self) -> Self:
-        weighted = {need for weights in self.need_weights.values() for need in weights}
-        if twice := sorted(weighted & set(self.urgency)):
-            raise ValueError(f"{', '.join(twice)} can't be in both urgency and need_weights")
+    def _every_need_curved(self) -> Self:
+        if missing := sorted(set(Need) - set(self.urgency)):
+            raise ValueError(f"{', '.join(missing)} need an urgency curve")
         return self
 
 

@@ -77,8 +77,16 @@ async def test_the_queue_is_served_in_the_order_people_join_it() -> None:
     assert [event.customer for event in village.of(Served)] == joined
 
 
+def all_at_once(village: Village) -> None:
+    """Send the three customers in together from the terrace."""
+    for npc in ("ana", "ben", "cal"):
+        village.movement.place(npc, "cafe_terrace")
+        village.behaviour.nudge(npc, Goal(Activity.COFFEE_SHOP, "coffee_shop"), 0.0)
+
+
 async def test_the_queue_runs_down_the_lane_from_the_counter() -> None:
     village = Village((BEA, ANA, BEN, CAL), behaviour=COFFEE, config=CAREFUL)
+    all_at_once(village)
     cafe = village.cafe
     longest = 0
 
@@ -144,6 +152,7 @@ async def test_a_slow_wait_counts_against_the_barista() -> None:
 async def test_someone_who_waits_too_long_gives_up() -> None:
     hasty = CAREFUL.model_copy(update={"patience": 20.0})
     village = Village((BEA, ANA, BEN, CAL), behaviour=COFFEE, config=hasty)
+    all_at_once(village)
 
     await village.run_until(lambda: bool(village.of(GaveUp)))
 

@@ -9,13 +9,14 @@ from simile.world.map import load_maps
 
 MORNING = datetime(2026, 1, 1, 10, tzinfo=UTC)
 LATER = MORNING + timedelta(days=2, hours=3)
-NEEDS = {
+OLD_NEEDS = {
     Need.SOCIAL: 0.3,
     Need.CURIOSITY: 0.6,
     Need.REST: 0.2,
     Need.NEWS: 0.4,
     Need.INSPIRATION: 0.5,
 }
+NEEDS = {**OLD_NEEDS, Need.HUNGER: 0.45, Need.BLADDER: 0.1, Need.HYGIENE: 0.3}
 
 
 class Village:
@@ -87,3 +88,18 @@ def test_someone_restored_without_an_until_decides_on_the_next_think() -> None:
 
     assert "kofi" in {goal.npc for goal in village.goals}
     assert behaviour.goal("kofi").activity is not Activity.TALK
+
+
+def test_a_save_from_before_hunger_bladder_and_hygiene_keeps_their_start_values() -> None:
+    village = Village()
+    behaviour = village.behaviour
+    started = behaviour.needs("kofi")
+    village.world.clock.now = LATER
+
+    behaviour.restore("kofi", Goal(Activity.PARK, "park"), OLD_NEEDS, LATER, None, {})
+
+    needs = behaviour.needs("kofi")
+    assert {need: needs[need] for need in OLD_NEEDS} == OLD_NEEDS
+    for need in (Need.HUNGER, Need.BLADDER, Need.HYGIENE):
+        low, high = behaviour.config.start_needs[need]
+        assert needs[need] == started[need] and low <= needs[need] <= high
