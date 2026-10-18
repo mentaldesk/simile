@@ -1,4 +1,5 @@
 import importlib.util
+import os
 import platform
 import sys
 import uuid
@@ -6,6 +7,9 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+# Module-level load_npcs() calls run at collection, so an exported cast world mustn't reach them.
+os.environ["SIMILE_DB"] = ":memory:"
 
 
 def apple_silicon_with_mlx() -> bool:
