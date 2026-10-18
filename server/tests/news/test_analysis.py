@@ -363,7 +363,7 @@ async def test_reads_a_page_once_though_the_call_fails(store: NewsStore, pages: 
     [analysed] = await analyser.analyse_pending()
 
     assert analysed.long_summary == SUMMARY
-    assert reader.asked == [("https://example.com/0", None)]
+    assert reader.asked == [("https://example.com/0", "")]
     assert all(words(300) in request.messages[-1].content for request in fake.requests)
     assert store.text("item-0") is None
 

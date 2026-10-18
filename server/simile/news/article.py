@@ -14,10 +14,12 @@ logger = logging.getLogger(__name__)
 GIVE_UP = DEADLINE + 5
 PAGE_TYPES = ("text/html", "application/xhtml+xml")
 PAYWALLED = re.compile(
-    rb"isAccessibleForFree[\"']?\s*(?::\s*|[^>]*?content\s*=\s*)[\"']?false\b", re.IGNORECASE
+    rb"isAccessibleForFree[\"']?\s*(?::\s*|[^>]*?content\s*=\s*)[\"']?false\b"
+    rb"|content\s*=\s*[\"']?false\b[^>]*?isAccessibleForFree",
+    re.IGNORECASE,
 )
 
-type Page = Callable[[str, str | None], str]
+type Page = Callable[[str, str], str]
 
 
 class NoText(Exception):
@@ -44,9 +46,9 @@ def capped(text: str, limit: int) -> str:
     return "\n".join(line for line in kept if line)
 
 
-def page(url: str, origin: str | None = None) -> str:
+def page(url: str, origin: str) -> str:
     """The main text of the article at `url`, a paragraph a line, from one request with `get`.
-    `origin` is the feed that links to it. Blocks."""
+    `origin` is the feed that links to it, or empty if that's unknown. Blocks."""
     got = get(url, {"Accept": "text/html,application/xhtml+xml"}, origin=origin, what="an article")
     kind = got.headers.get_content_type()
     if kind not in PAGE_TYPES:
@@ -75,9 +77,7 @@ def why(error: Exception) -> str:
     return str(error) or type(error).__name__
 
 
-async def read_page(
-    url: str, origin: str | None = None, *, page: Page = page, give_up: float = GIVE_UP
-) -> str:
+async def read_page(url: str, origin: str, *, page: Page = page, give_up: float = GIVE_UP) -> str:
     """`page` in a thread, given up on after `give_up` seconds even if the thread carries on."""
     try:
         async with asyncio.timeout(give_up):
@@ -106,7 +106,7 @@ async def article_text(
     if page is None:
         return None
     try:
-        text = await read_page(item.url, item.source_url or None, page=page, give_up=give_up)
+        text = await read_page(item.url, item.source_url, page=page, give_up=give_up)
     except (NoText, FeedRefused, OSError) as error:
         return no_text(store, item, why(error))
     except Exception as error:

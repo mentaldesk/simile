@@ -356,15 +356,16 @@ def get(
     what: str = "a news feed",
 ) -> Download:
     """`url`'s body and headers. Blocks. Only over http(s), within `MAX_BYTES`, and all of it,
-    redirects included, within `DEADLINE`. From the internet it goes only to the internet, and a
-    URL found at `origin` counts as from there. Raises `HTTPError` for an error status."""
+    redirects included, within `DEADLINE`. From the internet it goes only to the internet. A URL
+    found at `origin` counts as from there, and one found somewhere unknown (`origin=""`) as from
+    the internet. Raises `HTTPError` for an error status."""
     if urlsplit(url).scheme.lower() not in SCHEMES:
         raise FeedRefused("Simile fetches only over http or https")
     start = origin or url
     if (
-        origin
+        origin is not None
         and is_private(urlsplit(url).hostname or "")
-        and not is_private(urlsplit(origin).hostname or "")
+        and not (origin and is_private(urlsplit(origin).hostname or ""))
     ):
         raise FeedRefused(f"It links to {url}, which Simile won't follow")
     with Deadline(DEADLINE) as deadline:

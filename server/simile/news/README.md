@@ -28,7 +28,7 @@ the player opens the article, and residents react to them.
 - **The article's text** is the feed's own (`content:encoded`, or Atom's `content`) when it carries
   150 words or more. Otherwise the page is read once, through the same fetch as the feeds, so the
   limits below hold for it too, and trafilatura finds the article on it. A feed on the internet
-  can't send it to a private address.
+  can't send it to a private address, and nor can an article whose feed isn't recorded.
 - **Never from the headline.** With fewer than 150 words (a teaser, a live blog's stub, a hard
   paywall's first paragraph), an error status, a refusal or a timeout, the article keeps its feed's
   summary. Why is kept in `news_no_text`, logged, and listed by `simile news`, and that page isn't

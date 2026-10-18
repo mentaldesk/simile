@@ -67,8 +67,9 @@ def flagged(marking: bytes) -> bytes:
         b"</script>",
         b'<script type="application/ld+json">{"isAccessibleForFree": "False"}</script>',
         b'<meta itemprop="isAccessibleForFree" content="false">',
+        b'<meta content="False" itemprop="isAccessibleForFree">',
     ],
-    ids=["json-ld", "json-ld-string", "microdata"],
+    ids=["json-ld", "json-ld-string", "microdata", "microdata-content-first"],
 )
 def test_wont_summarise_a_page_that_says_it_isnt_free_to_read(marking: bytes) -> None:
     with pytest.raises(NoText, match="Paywalled: the page says it isn't free to read"):
@@ -87,7 +88,10 @@ async def test_keeps_the_feeds_summary_of_paid_content_but_summarises_what_a_fee
 ) -> None:
     marking = b'<script type="application/ld+json">{"isAccessibleForFree":false}</script>'
     paid = barrier().model_copy(
-        update={"url": feed_server.add("/paid", flagged(marking), "text/html"), "source_url": ""}
+        update={
+            "url": feed_server.add("/paid", flagged(marking), "text/html"),
+            "source_url": feed_server.url,
+        }
     )
     carried = paid.model_copy(update={"id": "carried", "url": feed_server.url_of("/carried")})
     store.add([paid, carried])
@@ -103,7 +107,7 @@ async def test_keeps_the_feeds_summary_of_paid_content_but_summarises_what_a_fee
 def test_reads_a_page_with_one_request_saying_who_it_is(feed_server: FeedServer) -> None:
     url = feed_server.add("/barrier", PAGE, "text/html; charset=utf-8")
 
-    assert page(url) == main_text(PAGE, url)
+    assert page(url, feed_server.url) == main_text(PAGE, url)
     [request] = feed_server.requests
     assert request["User-Agent"] == USER_AGENT
     assert feed_server.paths == ["/barrier"]
@@ -113,7 +117,7 @@ def test_reads_only_web_pages(feed_server: FeedServer) -> None:
     url = feed_server.add("/barrier.pdf", b"%PDF-1.7", "application/pdf")
 
     with pytest.raises(NoText, match="The page is application/pdf, not HTML"):
-        page(url)
+        page(url, feed_server.url)
 
 
 def test_raises_on_an_error_status(feed_server: FeedServer) -> None:
@@ -121,13 +125,29 @@ def test_raises_on_an_error_status(feed_server: FeedServer) -> None:
     feed_server.errors["/barrier"] = 403
 
     with pytest.raises(HTTPError, match="Forbidden"):
-        page(url)
+        page(url, feed_server.url)
 
 
 def test_follows_a_feeds_link_on_the_same_machine(feed_server: FeedServer) -> None:
     url = feed_server.add("/barrier", PAGE, "text/html")
 
     assert "tidal barrier" in page(url, feed_server.url)
+
+
+@pytest.mark.anyio
+async def test_wont_follow_a_link_from_an_unknown_feed_to_a_private_address(
+    store: NewsStore, feed_server: FeedServer
+) -> None:
+    url = feed_server.add("/barrier", PAGE, "text/html")
+    unknown = barrier().model_copy(update={"url": url, "source_url": ""})
+    store.add([unknown])
+
+    with pytest.raises(FeedRefused, match=f"It links to {url}"):
+        page(url, "")
+    assert await article_text(store, unknown, page) is None
+
+    assert store.why_no_text("barrier") == f"It links to {url}, which Simile won't follow"
+    assert feed_server.paths == []
 
 
 def test_wont_follow_a_feeds_link_from_the_internet_to_a_private_address(
@@ -148,26 +168,26 @@ def test_holds_a_page_to_the_feeds_deadline_and_size(
     monkeypatch.setattr("simile.news.feed.MAX_BYTES", len(PAGE) - 1)
 
     with pytest.raises(FeedRefused, match="too big for an article"):
-        page(url)
+        page(url, feed_server.url)
 
     monkeypatch.setattr("simile.news.feed.MAX_BYTES", 4 * 2**20)
     monkeypatch.setattr("simile.news.feed.DEADLINE", 0.2)
     feed_server.drips["/barrier"] = 0.05
     with pytest.raises(TimeoutError, match="took over 0.2 seconds"):
-        page(url)
+        page(url, feed_server.url)
 
 
 @pytest.mark.anyio
 async def test_gives_up_on_a_page_whose_read_never_returns() -> None:
     release = threading.Event()
 
-    def stuck(url: str, origin: str | None) -> str:
+    def stuck(url: str, origin: str) -> str:
         release.wait(5)
         return ""
 
     try:
         with pytest.raises(TimeoutError, match="It took over 0.05 seconds"):
-            await read_page(URL, page=stuck, give_up=0.05)
+            await read_page(URL, FEED_URL, page=stuck, give_up=0.05)
     finally:
         release.set()
 

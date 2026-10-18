@@ -139,9 +139,9 @@ class Pages:
     ) -> None:
         self.default = default
         self.answers = answers or {}
-        self.asked: list[tuple[str, str | None]] = []
+        self.asked: list[tuple[str, str]] = []
 
-    def __call__(self, url: str, origin: str | None = None) -> str:
+    def __call__(self, url: str, origin: str) -> str:
         self.asked.append((url, origin))
         answer = self.answers.get(url, self.default)
         if isinstance(answer, Exception):
@@ -156,7 +156,7 @@ def pages() -> type[Pages]:
 
 @pytest.fixture(autouse=True)
 def no_article_pages(monkeypatch: pytest.MonkeyPatch) -> None:
-    def refuse(url: str, origin: str | None = None) -> str:
+    def refuse(url: str, origin: str) -> str:
         raise article.NoText("Tests don't read article pages")
 
     monkeypatch.setattr(article, "page", refuse)
