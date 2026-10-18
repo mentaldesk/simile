@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from simile.schema import VILLAGE_MAP, Conversation, Id, Key, Line
+from simile.schema import VILLAGE_MAP, Conversation, Facing, Id, Key, Line, Pose
 
 
 @dataclass(frozen=True)
@@ -14,6 +14,8 @@ class EntityMoved(Event):
     x: float
     y: float
     map: Key = VILLAGE_MAP
+    pose: Pose = Pose.STANDING
+    facing: Facing = Facing.SOUTH_EAST
 
 
 @dataclass(frozen=True)

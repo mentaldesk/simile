@@ -212,12 +212,12 @@ as the CPU allows (a sim-day in about 15 s) and prints where everyone spent thei
 near others by Connection, places by hour, who was out at night, the share of waking time in each
 place, every meal by the hour it started and where, each need's mean, most and time at 0.9 or more,
 the longest anyone was awake and urgently hungry, what each resident with a craft made per
-sim-day, and when the first work came and how many came a sim hour after it. Then every shift (on
-time, late, skipped, hours and overtime), the hours each shop was due on shift, staffed and sold
-out, every batch, the grocery orders, each resident's money every 12 sim hours, and where the money
-went. The economy decides when the shops serve. The café doesn't run, so whoever arrives at the
-Daily Grind while its barista is at work and hasn't had a drink in the last 90 minutes is served
-one, as the café does. Conversations,
+sim-day, when the first work came and how many came a sim hour after it, and each place's share of
+stay time spent on a spot. Then every shift (on time, late, skipped, hours and overtime), the hours
+each shop was due on shift, staffed and sold out, every batch, the grocery orders, each resident's
+money every 12 sim hours, and where the money went. The economy decides when the shops serve. The
+café doesn't run, so whoever arrives at the Daily Grind while its barista is at work and hasn't had
+a drink in the last 90 minutes is served one, as the café does. Conversations,
 news and works stay stubbed, so nothing calls Claude: there's always an article of middling
 interest unread. Reading it, and each conversation, leaves a stand-in memory of middling strength
 on two topics from a short list, so new memories raise crafters' inspiration. Muralists paint M7's walls in turn, moving on to

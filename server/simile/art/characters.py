@@ -1109,6 +1109,42 @@ def draw_frame(
 ) -> Canvas:
     if direction in MIRRORED:
         return draw_frame(appearance, MIRRORED[direction], frame, seed).flipped()
+    upper, key = _figure(appearance, direction, seed, frame)
+    c = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
+    c.stamp(_legs(direction, frame), key, 0, 17)
+    c.paste(upper, 0, 0 if frame == 1 else 1)
+    return c.outlined("ink")
+
+
+def draw_pose(
+    appearance: Appearance, direction: str, pose: str, shift: bool = False, seed: str | None = None
+) -> Canvas:
+    """Shifted, the body above the legs settles a pixel."""
+    if direction in MIRRORED:
+        return draw_pose(appearance, MIRRORED[direction], pose, shift, seed).flipped()
+    if pose == STANDING:
+        legs, drop, arms = _legs(direction, 1), 0, None
+    else:
+        legs, drop, arms = _posed(direction, appearance.build, pose)
+    reading = pose == "reading" and direction == "down_left"
+    upper, key = _figure(appearance, direction, seed, 1, arms, eyes_down=reading)
+    c = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
+    c.stamp(legs, key, 0, 17)
+    c.paste(upper, 0, drop + shift)
+    if pose == "sitting":
+        c.stamp(SITTING_LAP.get(direction, []), key, 0, 19)
+    return c.outlined("ink")
+
+
+def _figure(
+    appearance: Appearance,
+    direction: str,
+    seed: str | None,
+    frame: int,
+    arms: Canvas | None = None,
+    eyes_down: bool = False,
+) -> tuple[Canvas, dict[str, str]]:
+    """Everything above the legs, and the colour key. `arms` replace the body's own."""
     key = Colours.of(appearance, seed).key()
     accessories = set(appearance.accessories)
     behind, front = HAIR[appearance.hair_style][direction]
@@ -1121,20 +1157,67 @@ def draw_frame(
     upper.stamp(behind, key)
     body = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
     _body(body, direction, appearance.build, frame)
+    if arms is not None:
+        left, right = QUARTER_TORSO[appearance.build]
+        for x in (left, right):
+            body.vline(x, 12, 5, None)
+    if eyes_down:
+        body.recolour({"e": "s"})
+        body.px(4, 8, "e")
+        body.px(8, 8, "e")
     body.recolour(key)
     upper.paste(body)
     for name in ("apron", "scarf", "backpack"):
         if name in accessories:
             upper.stamp(ACCESSORY_ART[name][direction], key)
+    if arms is not None:
+        arms.recolour(key)
+        upper.paste(arms)
     upper.stamp(front, key)
     for name in ("cap", "beanie", "headphones", "glasses", "sunglasses"):
         if name in accessories:
             upper.stamp(ACCESSORY_ART[name][direction], key)
+    return upper, key
 
-    c = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
-    c.stamp(_legs(direction, frame), key, 0, 17)
-    c.paste(upper, 0, 0 if frame == 1 else 1)
-    return c.outlined("ink")
+
+SIT_DROP = 4
+SITTING_LAP = {"down_left": [".bbbbbbb........", ".bbbbbbB........"]}
+SITTING_LEGS = {
+    "down_left": ["", "", "", "", ".bB.bB..........", ".ff.ff.........."],
+    "up_left": ["", "", "", "", ".....bbbbbbB....", ".....BBBBBBB...."],
+}
+
+
+def _posed(direction: str, build: str, pose: str) -> tuple[list[str], int, Canvas | None]:
+    """A pose's legs, how far the body drops onto them, and its arms."""
+    left, right = QUARTER_TORSO[build]
+    back = direction == "up_left"
+    if pose == "sitting":
+        return SITTING_LEGS[direction], SIT_DROP, None
+    arms = Canvas(FRAME_WIDTH, FRAME_HEIGHT)
+    if pose == "looking":
+        for x in (left, right):
+            arms.vline(x, 12, 3, "T")
+        if back:
+            mid = (left + right) // 2
+            arms.hline(left + 1, 15, right - left - 1, "T")
+            arms.hline(mid - 1, 15, 2, "s")
+    elif pose == "reading":
+        for x in (left, right):
+            arms.vline(x, 12, 2, "T")
+        if not back:
+            arms.hline(left + 1, 14, right - left - 2, "T")
+            arms.hline(left + 1, 13, 2, "s")
+    elif pose == "working":
+        arms.vline(left, 12, 2, "T")
+        arms.vline(right, 12, 2, "T")
+        if back:
+            arms.px(left - 1, 13, "T")
+        else:
+            reach = max(left - 2, 1)
+            arms.hline(reach, 14, right - reach, "T")
+            arms.hline(reach - 1 if reach > 1 else reach, 13, 2, "s")
+    return _legs(direction, 1), 0, arms
 
 
 def sprite_sheet(
@@ -1149,33 +1232,82 @@ def sprite_sheet(
     return sheet
 
 
+STANDING = "standing"
+POSES = ("sitting", "reading", "working", "looking")
+SHIFT = "shift"
+
+
+def pose_frames() -> list[tuple[str, str, bool]]:
+    """Every still frame after the walk, as (direction, pose, shifted), column by column."""
+    standing = [(direction, STANDING, True) for direction in DIRECTIONS]
+    posed = [(d, pose, shift) for pose in POSES for shift in (False, True) for d in THREE_QUARTER]
+    return standing + posed
+
+
+def _pose_cells() -> dict[tuple[str, str, bool], tuple[int, int]]:
+    """Each still frame's column and row on the full sheet."""
+    columns = [(STANDING, True)] + [(pose, shift) for pose in POSES for shift in (False, True)]
+    return {
+        (direction, pose, shift): (FRAMES + col, DIRECTIONS.index(direction))
+        for direction, pose, shift in pose_frames()
+        for col, (p, s) in enumerate(columns)
+        if (p, s) == (pose, shift)
+    }
+
+
+POSE_COLUMNS = 1 + 2 * len(POSES)
+
+
+def full_sheet(appearance: Appearance, seed: str | None = None) -> Canvas:
+    """The walk, then every still frame: `atlas` names them."""
+    walk = sprite_sheet(appearance, seed)
+    sheet = Canvas(FRAME_WIDTH * (FRAMES + POSE_COLUMNS), walk.height)
+    sheet.paste(walk)
+    for (direction, pose, shift), (col, row) in _pose_cells().items():
+        frame = draw_pose(appearance, direction, pose, shift, seed)
+        sheet.paste(frame, col * FRAME_WIDTH, row * FRAME_HEIGHT)
+    return sheet
+
+
 def frame_name(direction: str, frame: int) -> str:
     return f"{direction}-{frame}"
 
 
+def pose_name(direction: str, pose: str, shift: bool = False) -> str:
+    return f"{direction}-{pose}" + (f"-{SHIFT}" if shift else "")
+
+
 def atlas(image: str) -> dict[str, Any]:
+    cells = {
+        frame_name(direction, col): (col, row)
+        for row, direction in enumerate(DIRECTIONS)
+        for col in range(FRAMES)
+    }
+    cells |= {pose_name(*frame): cell for frame, cell in _pose_cells().items()}
     frames = {}
-    for row, direction in enumerate(DIRECTIONS):
-        for col in range(FRAMES):
-            rect = {
-                "x": col * FRAME_WIDTH,
-                "y": row * FRAME_HEIGHT,
-                "w": FRAME_WIDTH,
-                "h": FRAME_HEIGHT,
-            }
-            frames[frame_name(direction, col)] = {
-                "frame": rect,
-                "rotated": False,
-                "trimmed": False,
-                "spriteSourceSize": {"x": 0, "y": 0, "w": FRAME_WIDTH, "h": FRAME_HEIGHT},
-                "sourceSize": {"w": FRAME_WIDTH, "h": FRAME_HEIGHT},
-            }
+    for name, (col, row) in cells.items():
+        rect = {
+            "x": col * FRAME_WIDTH,
+            "y": row * FRAME_HEIGHT,
+            "w": FRAME_WIDTH,
+            "h": FRAME_HEIGHT,
+        }
+        frames[name] = {
+            "frame": rect,
+            "rotated": False,
+            "trimmed": False,
+            "spriteSourceSize": {"x": 0, "y": 0, "w": FRAME_WIDTH, "h": FRAME_HEIGHT},
+            "sourceSize": {"w": FRAME_WIDTH, "h": FRAME_HEIGHT},
+        }
     return {
         "frames": frames,
         "meta": {
             "image": image,
             "format": "RGBA8888",
-            "size": {"w": FRAME_WIDTH * FRAMES, "h": FRAME_HEIGHT * len(DIRECTIONS)},
+            "size": {
+                "w": FRAME_WIDTH * (FRAMES + POSE_COLUMNS),
+                "h": FRAME_HEIGHT * len(DIRECTIONS),
+            },
             "scale": "1",
         },
     }

@@ -1,4 +1,4 @@
-import type { Position } from '../net';
+import type { Facing, Pose, Position } from '../net';
 import {
   CATCH_UP_TILES,
   IDLE_AFTER_SECONDS,
@@ -10,6 +10,9 @@ import {
 export interface Body {
   readonly position: Position;
   readonly walking: boolean;
+  /** From the server, for the residents it moves. */
+  readonly pose?: Pose;
+  readonly facing?: Facing;
 }
 
 const distance = (a: Position, b: Position) => Math.hypot(b.x - a.x, b.y - a.y);

@@ -39,8 +39,8 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
     `north` is `up_right` and `north_east` is `right`.
   - Sitting, reading, working and looking come with #264's spots, which face along the grid:
     `north`, `east`, `south` or `west`, A1's three-quarter views.
-  - Until the world keeps track of them (#264), everyone is `standing`, facing `south_east`. The
-    server doesn't track the player's, so the player's entity always has those.
+  - The server doesn't track the player's, so the player's entity is always `standing`, facing
+    `south_east`.
 - Entity ids are F2 `Id`s. The player is always `"player"`.
 - The maps aren't sent: the client bundles the village and its interiors as Tiled maps. F2's
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things

@@ -1,17 +1,20 @@
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
 from simile.schema import (
     VILLAGE_MAP,
     Door,
+    Facing,
     Interactable,
     InteractableKind,
     Location,
     LocationKind,
     MapTile,
+    Pose,
     Tile,
     TileArea,
 )
@@ -26,6 +29,7 @@ LOCATIONS_LAYER = "locations"
 MURALS_LAYER = "murals"
 DOORS_LAYER = "doors"
 INTERACTABLES_LAYER = "interactables"
+SPOTS_LAYER = "spots"
 WALKING_SPEED = 1.3  # tiles per sim second: a 1.4 m/s walk, with a tile about 1.1 m
 
 type Face = Literal["south", "east"]
@@ -45,6 +49,50 @@ class MuralWall:
     stand: Tile
 
 
+class SpotKind(StrEnum):
+    SEAT = "seat"
+    BAR = "bar"
+    DESK = "desk"
+    TERMINAL = "terminal"
+    VIEWING = "viewing"
+    STANDING = "standing"
+
+
+POSES = {
+    SpotKind.SEAT: Pose.SITTING,
+    SpotKind.BAR: Pose.STANDING,
+    SpotKind.DESK: Pose.WORKING,
+    SpotKind.TERMINAL: Pose.READING,
+    SpotKind.VIEWING: Pose.LOOKING,
+    SpotKind.STANDING: Pose.STANDING,
+}
+
+
+@dataclass(frozen=True)
+class Spot:
+    """Somewhere to spend a stay. `dx`, `dy` and `dz` are where its figure is drawn."""
+
+    id: str
+    kind: SpotKind
+    map: str
+    x: int
+    y: int
+    facing: Facing
+    dx: float = 0.0
+    dy: float = 0.0
+    dz: float = 0.0
+    """Metres up, for a bar stool."""
+
+    @property
+    def pose(self) -> Pose:
+        return POSES[self.kind]
+
+    @property
+    def seat(self) -> tuple[float, float]:
+        """Where the figure is, in tiles."""
+        return self.x + self.dx, self.y + self.dy
+
+
 @dataclass(frozen=True)
 class TownMap:
     id: str
@@ -57,6 +105,7 @@ class TownMap:
     doors: tuple[Door, ...] = ()
     """Every door with an end on this map."""
     interactables: tuple[Interactable, ...] = ()
+    spots: tuple[Spot, ...] = ()
 
     def walkable(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and not self.blocked[y][x]
@@ -72,6 +121,9 @@ class TownMap:
             if wall.id == wall_id:
                 return wall
         raise KeyError(wall_id)
+
+    def spot_at(self, x: int, y: int) -> Spot | None:
+        return next((spot for spot in self.spots if (spot.x, spot.y) == (x, y)), None)
 
 
 def load_map(path: Path = MAP_PATH) -> TownMap:
@@ -97,6 +149,7 @@ def load_map(path: Path = MAP_PATH) -> TownMap:
         murals=tuple(_mural(o, size) for o in objects(MURALS_LAYER)),
         doors=tuple(_door(o, size, map_id) for o in objects(DOORS_LAYER)),
         interactables=tuple(_interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)),
+        spots=tuple(_spot(o, size, map_id) for o in objects(SPOTS_LAYER)),
     )
 
 
@@ -160,6 +213,21 @@ def _interactable(obj: dict[str, Any], size: int, map_id: str) -> Interactable:
         map=map_id,
         area=_area(obj, size),
         stand=[Tile(x=int(x), y=int(y)) for x, y in stand],
+    )
+
+
+def _spot(obj: dict[str, Any], size: int, map_id: str) -> Spot:
+    props, area = _props(obj), _area(obj, size)
+    return Spot(
+        id=obj["name"],
+        kind=SpotKind(obj["type"]),
+        map=map_id,
+        x=area.x,
+        y=area.y,
+        facing=Facing(props["facing"]),
+        dx=props.get("dx", 0.0),
+        dy=props.get("dy", 0.0),
+        dz=props.get("dz", 0.0),
     )
 
 

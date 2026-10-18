@@ -16,6 +16,8 @@ def snapshot(behaviour: Behaviour) -> SnapshotMessage:
         for npc in behaviour.npcs.values()
         if (point := positions.get(npc.id)) is not None
     ]
+    for entity in entities:
+        entity.pose, entity.facing = movement.posture(entity.id)
     if PLAYER_ID in positions:
         player = _position(positions[PLAYER_ID])
     else:

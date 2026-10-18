@@ -126,6 +126,10 @@ class Observer:
     rng: random.Random = field(default_factory=random.Random)
     made: list[tuple[datetime, Id]] = field(default_factory=list)
     """When each work was made, and by whom."""
+    stays: Counter[str] = field(default_factory=Counter)
+    """Minutes staying in each place out of home: there, awake and not walking."""
+    on_spot: Counter[str] = field(default_factory=Counter)
+    """Of those, minutes on a spot."""
 
     def __post_init__(self) -> None:
         self.start = self.next = self.behaviour.clock.now
@@ -203,6 +207,13 @@ class Observer:
                 self.awake_at[place] += 1
             if mind.goal.activity is Activity.CREATE and mind.walk is None:
                 self.creating[npc.id] += 1
+            if (
+                place not in (HOME, STREET)
+                and mind.walk is None
+                and mind.goal.activity is not Activity.SLEEP
+            ):
+                self.stays[place] += 1
+                self.on_spot[place] += self.behaviour.movement.on_spot(npc.id) is not None
             if place == HOME:
                 continue
             self.out[npc.id] += 1
@@ -427,6 +438,7 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     lines += ["", *shares(observer), "", *meals(observer, hours), "", *needs(observer)]
     lines += ["", *hunger(observer)]
     lines += ["", *works(observer, hours)]
+    lines += ["", *spots(observer)]
     if observer.talk is not None:
         lines += ["", *conversations(observer, hours)]
     if observer.economy is not None:
@@ -647,6 +659,17 @@ def shares(observer: Observer) -> list[str]:
         "| " + " | ".join(PLACES) + " |",
         "|" + "--:|" * len(PLACES),
         "| " + " | ".join(f"{observer.awake_at[place] / awake:.1%}" for place in PLACES) + " |",
+    ]
+
+
+def spots(observer: Observer) -> list[str]:
+    places = [place for place in PLACES if observer.stays[place]]
+    return [
+        "**Spots.** Share of each place's stay time, awake and not walking, spent on a spot.",
+        "",
+        "| " + " | ".join(places) + " |",
+        "|" + "--:|" * len(places),
+        "| " + " | ".join(f"{observer.on_spot[p] / observer.stays[p]:.0%}" for p in places) + " |",
     ]
 
 

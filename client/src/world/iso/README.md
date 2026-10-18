@@ -103,7 +103,22 @@ inside, so coming out is instant.
   picks one of eight facings (`facingFor`): grid east, south, west and north run along the screen's
   diagonals and use A1's three-quarter views, and the grid diagonals use its front, side and back
   views. The walk is A1's step, stand, step, stand at `WALK_FPS` for `WALKING_SPEED`, faster or
-  slower with how fast they move, and they stand on the middle frame when they stop.
+  slower with how fast they move.
+- **Keeping still** (`poses.ts`, `idle.ts`): a resident who has stopped is drawn in the pose the
+  server gives (`stillFor`), facing its way. `ISO_FACING` turns the protocol's `Facing` into A1's
+  views, and `tsc` checks it names all eight. Sitting, reading, working and looking come from W1's
+  spots, which face along the grid, so they're drawn in A1's three-quarter views, and anything else
+  is standing. On a spot, the figure is drawn at the spot's `dx`, `dy` from the tile's middle and
+  `dz` metres up, from the map's `spots` layer (`seatsOf`): on a table's chair, a bench or a bar
+  stool, or leaning in at a counter. A table or bench and its chairs are one image, so a sitter sorts
+  `SITTING_NEARER` tiles nearer the camera, in front of it.
+- **Idling** (`Idle`, tuned by `IDLE` in `tuning.ts`): anyone still, the player too, shifts their
+  weight for `shiftFor` seconds every `shiftEvery`, on A1's `-shift` frames. A resident standing
+  turns to whoever within `turnTiles` is talking, the nearest of them, from each `line` until it
+  should have been said (`Talkers`), and otherwise now and then glances at whoever is nearest for a
+  few seconds. Posed residents keep facing their table, screen or painting, and aren't scanned for.
+  It's a few timers, and for each standing resident a loop over the residents on the map that
+  allocates nothing unless they turn.
 
 ## Murals
 
@@ -185,7 +200,8 @@ and steady memory. Its header says how to run it.
 `IsoScene` registers as the dialogue UI's `WorldView` and as audio's position provider.
 
 - **Picking**: `spriteOf(id)` is a resident's sprite box on the canvas (`figureBox` in `screen.ts`,
-  after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point.
+  after the camera's scroll and zoom), their depth, and whether their frame is opaque at a point,
+  all where the sprite was last drawn (`placed`): on a seat, lifted onto a stool and sorted nearer.
   `npcAt` in `world/hit.ts` goes front to back by depth and picks the first opaque one there, else
   the first whose box holds the point, so click-to-talk and the debug overlay pick the resident in
   front where sprites overlap. The box is the sprite's frame down to the feet, so the dialogue UI's

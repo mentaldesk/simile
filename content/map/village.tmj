@@ -1094,10 +1094,565 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 26,
+          "name": "terminal-36-15",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "terminal",
+          "visible": true,
+          "width": 16,
+          "x": 576,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 27,
+          "name": "seat-27-19",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 432,
+          "y": 304
+        },
+        {
+          "height": 16,
+          "id": 28,
+          "name": "seat-28-19",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 448,
+          "y": 304
+        },
+        {
+          "height": 16,
+          "id": 29,
+          "name": "seat-27-21",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 432,
+          "y": 336
+        },
+        {
+          "height": 16,
+          "id": 30,
+          "name": "seat-28-21",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 448,
+          "y": 336
+        },
+        {
+          "height": 16,
+          "id": 31,
+          "name": "seat-34-19",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 544,
+          "y": 304
+        },
+        {
+          "height": 16,
+          "id": 32,
+          "name": "seat-35-19",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 560,
+          "y": 304
+        },
+        {
+          "height": 16,
+          "id": 33,
+          "name": "seat-34-21",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 544,
+          "y": 336
+        },
+        {
+          "height": 16,
+          "id": 34,
+          "name": "seat-35-21",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 560,
+          "y": 336
+        },
+        {
+          "height": 16,
+          "id": 35,
+          "name": "standing-31-18",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 496,
+          "y": 288
+        },
+        {
+          "height": 16,
+          "id": 36,
+          "name": "standing-32-21",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 512,
+          "y": 336
+        },
+        {
+          "height": 16,
+          "id": 37,
+          "name": "standing-30-20",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 480,
+          "y": 320
+        },
+        {
+          "height": 16,
+          "id": 38,
+          "name": "standing-33-19",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 528,
+          "y": 304
+        },
+        {
+          "height": 16,
+          "id": 39,
+          "name": "standing-26-20",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 416,
+          "y": 320
+        },
+        {
+          "height": 16,
+          "id": 40,
+          "name": "standing-37-20",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "standing",
+          "visible": true,
+          "width": 16,
+          "x": 592,
+          "y": 320
+        },
+        {
+          "height": 16,
+          "id": 41,
+          "name": "terminal-44-23",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "terminal",
+          "visible": true,
+          "width": 16,
+          "x": 704,
+          "y": 368
+        },
+        {
+          "height": 16,
+          "id": 42,
+          "name": "seat-49-27",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 784,
+          "y": 432
+        },
+        {
+          "height": 16,
+          "id": 43,
+          "name": "seat-50-27",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 800,
+          "y": 432
+        },
+        {
+          "height": 16,
+          "id": 44,
+          "name": "seat-59-18",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 944,
+          "y": 288
+        },
+        {
+          "height": 16,
+          "id": 45,
+          "name": "seat-60-18",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.7
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 960,
+          "y": 288
+        },
+        {
+          "height": 16,
+          "id": 46,
+          "name": "terminal-46-37",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "terminal",
+          "visible": true,
+          "width": 16,
+          "x": 736,
+          "y": 592
+        },
+        {
+          "height": 16,
+          "id": 47,
+          "name": "viewing-22-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 352,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 48,
+          "name": "viewing-29-11",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 464,
+          "y": 176
+        },
+        {
+          "height": 16,
+          "id": 49,
+          "name": "viewing-63-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 1008,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 50,
+          "name": "viewing-34-31",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 544,
+          "y": 496
+        },
+        {
+          "height": 16,
+          "id": 51,
+          "name": "viewing-18-32",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 288,
+          "y": 512
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 10,
-  "nextobjectid": 26,
+  "nextlayerid": 11,
+  "nextobjectid": 52,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",

@@ -125,4 +125,35 @@ describe('WorldModel', () => {
     world.update(1 / WALKING_SPEED);
     expect(world.positionOf('viktor')).toEqual({ x: 11, y: 11, map: 'village' });
   });
+
+  it("keeps each NPC's pose and facing, standing facing south-east when the server leaves them out", () => {
+    const model = new WorldModel();
+    const posture = (id: string) => {
+      const npc = model.npcs.get(id)!;
+      return [npc.pose, npc.facing];
+    };
+    model.reset([{ ...ENTITIES[0], pose: 'sitting', facing: 'west' }, ...ENTITIES.slice(1)]);
+    expect(posture('mei')).toEqual(['sitting', 'west']);
+    expect(posture('viktor')).toEqual(['standing', 'south_east']);
+
+    model.move('mei', { x: 4, y: 11 }, 'walking', 'east');
+    expect(posture('mei')).toEqual(['walking', 'east']);
+    model.move('mei', { x: 5, y: 11 });
+    expect(posture('mei')).toEqual(['standing', 'south_east']);
+  });
+
+  it('takes poses and facings from the server', () => {
+    const snapshot = { type: 'snapshot', time: '2026-03-14T09:10:03Z', map_id: 'village', entities: ENTITIES };
+    server.dispatch(JSON.stringify({ ...snapshot, conversations: [] }));
+    server.dispatch(
+      JSON.stringify({
+        type: 'entity_moved',
+        entity_id: 'mei',
+        position: { x: 3, y: 11 },
+        pose: 'reading',
+        facing: 'north',
+      }),
+    );
+    expect(world.npcs.get('mei')).toMatchObject({ pose: 'reading', facing: 'north' });
+  });
 });

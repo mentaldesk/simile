@@ -1,10 +1,10 @@
-import { server, type Entity, type Position } from '../net';
+import { server, type Entity, type Facing, type Pose, type Position } from '../net';
 import { PLAYER_ID } from '../ui/world-view';
 import { mapOf, VILLAGE, type MapPosition } from './map';
 import { Mover } from './motion';
 import { Player } from './player';
 
-export type Npc = { id: string; name: string; map: string; mover: Mover };
+export type Npc = { id: string; name: string; map: string; mover: Mover; pose: Pose; facing: Facing };
 
 /** The client owns the player: only the first snapshot places it, so reconnecting doesn't. */
 export class WorldModel {
@@ -14,21 +14,24 @@ export class WorldModel {
 
   reset(entities: readonly Entity[]): void {
     const ids = new Set<string>();
-    for (const { id, kind, name, position } of entities) {
+    for (const { id, kind, name, position, pose = 'standing', facing = 'south_east' } of entities) {
       if (kind === 'player') {
         this.placePlayer(position);
         continue;
       }
       ids.add(id);
-      if (this.npcs.has(id)) this.move(id, position);
-      else this.npcs.set(id, { id, name, map: mapOf(position), mover: new Mover(position) });
+      if (this.npcs.has(id)) this.move(id, position, pose, facing);
+      else this.npcs.set(id, { id, name, map: mapOf(position), mover: new Mover(position), pose, facing });
     }
     for (const id of this.npcs.keys()) if (!ids.has(id)) this.npcs.delete(id);
   }
 
-  move(entityId: string, position: Position): void {
+  /** Missing, as from an older server, they're standing, facing south-east. */
+  move(entityId: string, position: Position, pose: Pose = 'standing', facing: Facing = 'south_east'): void {
     const npc = this.npcs.get(entityId);
     if (!npc) return;
+    npc.pose = pose;
+    npc.facing = facing;
     if (mapOf(position) === npc.map) return npc.mover.moveTo(position);
     npc.map = mapOf(position);
     npc.mover.place(position);
@@ -75,4 +78,4 @@ export class WorldModel {
 
 export const world = new WorldModel();
 server.on('snapshot', ({ entities }) => world.reset(entities));
-server.on('entity_moved', ({ entity_id, position }) => world.move(entity_id, position));
+server.on('entity_moved', ({ entity_id, position, pose, facing }) => world.move(entity_id, position, pose, facing));
