@@ -761,10 +761,11 @@ def cafe_of(app: Starlette) -> Cafe:
         from simile.sim import world_of
 
         world, hub = world_of(app), hub_of(app)
+        behaviour = behaviour_of(app)
         app.state.cafe = Cafe(
             world.clock,
             world.bus,
-            behaviour_of(app),
+            behaviour,
             memory_of(app),
             lambda: getattr(app.state, "llm", None),
             engine=lambda: getattr(app.state, "conversation", None),
@@ -773,4 +774,6 @@ def cafe_of(app: Starlette) -> Cafe:
             connected=lambda: bool(hub.connections),
             line_ids=line_ids(app),
         )
+        # As random as behaviour is, so a seeded village plays out the same every time.
+        app.state.cafe.rng.setstate(behaviour.rng.getstate())
     return app.state.cafe
