@@ -126,6 +126,31 @@ sets F3's snapshot to the NPCs' real positions.
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
   people they dislike repel, and a crowd draws high-Connection NPCs and puts off low ones. Nobody
   seeks someone asleep, at home, talking or who refused them in the last 45 minutes.
+- **Intentions.** What a resident said they'd do (an `Intention`, which B3 extracts from
+  conversations) is one of these options: make something (`create`), go to a place (`go`), look
+  someone up (`seek`) or read the news (`news`). From when it's due until it's done or expires,
+  each option that does it scores `promise_weight` (2) more, as a shift does: any `create` unless
+  it names a wall or place that's on offer, any terminal unless it names one, the place for `go`,
+  and the person for `seek`. It isn't forced: nothing is added while a need is past its critical
+  level, so they eat first and then go. When one falls due they drop what they're doing, once, to
+  decide again, unless they're doing it already, on a shift or have an urgent need.
+  - **Reliability.** When it falls due they decide once whether to follow it through. Reliability
+    is the weighted mean of Responsibility (0.6) and Discipline (0.4), and they let it slide with a
+    chance of up to `lapse` (0.3) at 0, falling to nothing at `reliable_from` (0.5). Then it gets
+    no bonus and usually expires. None of P1's traits bears on follow-through.
+  - **Making something.** One to make something they follow lifts their inspiration to
+    `inspiration_start` (0.65) when it falls due. A muralist still paints the wall `mural_wall`
+    names (`Walls.pick` prefers one they said they'd paint), or with the gallery's turns a canvas
+    at home, and without either can't keep it.
+  - **Done.** It's kept as soon as they start on it: when they arrive at the place, terminal,
+    wall or writing place, or start talking with whom they meant to look up, even if they didn't
+    choose it for the bonus, from `keep_early` (60) minutes before it's due. One to make
+    something is kept by the next stay making something, whenever it is, and the work they make in
+    that stay is that one: B1 hands it to the `create` hook. A stay cut short makes nothing, as
+    always.
+  - **Expiry.** One that's still open at its `expires` is dropped as broken. B3 sets it when it
+    extracts one, from its config.
+  - At most `intentions` (3) are open at once, and the same kind and target only once.
 - **Choice.** The best place for each activity goes into a softmax over activities, so three
   terminals don't make the news three times as likely. `Behaviour(seed=...)` makes it repeatable.
 - **Night.** Each NPC has a bedtime (21:00 to 23:45) and a wake time (05:30 to 09:00) from their
@@ -165,7 +190,7 @@ restore()
 | `read_news(npc)` | With the `Npc` when they reach a terminal | Does nothing |
 | `news_interest(npc)` | With the `Npc` at each decision: how interesting the best unread article is, 0 to 1 | 0, so nobody goes to the terminals |
 | `conversations()` | For each snapshot | `[]` |
-| `create(npc, wall)` | With the `Npc` when they finish a stay making something, and the wall's id for a mural (`None` for writing) | Does nothing |
+| `create(npc, wall, intention)` | With the `Npc` when they finish a stay making something, the wall's id for a mural (`None` for writing), and the `Intention` the stay kept, or `None` | Does nothing |
 | `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, or `None` | `None`, so muralists don't paint |
 | `supply(goal, need)` | For a goal at a place, when scoring it and while someone's there: how much of what it does for `need` it can do now, 0 to 1 | 1 everywhere |
 | `money(npc)` | With the `Npc` every think: what they hold, or `None` | `None`, so finances stay at 0 |
@@ -195,11 +220,16 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `needs(npc)` | `{Need: 0-1}`. |
 | `inspire(memory)` | Raises the owner's inspiration for a new memory, within the caps, and returns by how much. The lifespan hands it every memory stored. |
 | `traits_of(npc)` | Their `Traits` from the cast, or neutral ones. |
-| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft, finances only with money), money, their next shift, last decision's scores, bedtime. |
+| `state(npc)` | JSON for F3's `npc_state`: goal, needs (inspiration only with a craft, finances only with money), money, their next shift, last decision's scores, which of those an intention raised and by how much (`reasons`), their open `intentions` (with `following`, null until due), bedtime. |
+| `intend(intention)` | Takes on what a resident said they'd do. False, changing nothing, if B1 couldn't act on it (a place that isn't one of B1's, someone who isn't here, `create` without a craft, an unknown terminal), it has expired, or they already have it or `intentions` open. |
+| `intentions(npc=None)` | A resident's open intentions, or everyone's, soonest due first. |
+| `restore_intentions(intentions)` | Puts back saved ones (I3), after the clock is set, for residents still here. |
+| `options(npc)` | What they could say they'll do now, by B1's ids: the places they can go (home included), the terminals, and where they'd make something (their writing places, or for a muralist what `mural_wall` names). B2's and B3's prompts list it. |
 | `minds` | Each NPC's `Mind`, with mutable `needs`. |
 | `leave_player_alone` | A set of NPC ids, empty to start. While they're in it they don't seek out the player, and B5 doesn't have them greet the player. |
 
-Every new goal is published on the bus as `GoalChosen(npc, activity, target)`.
+Every new goal is published on the bus as `GoalChosen(npc, activity, target)`, every intention
+kept as `IntentionKept(intention)`, and every one that expired as `IntentionBroken(intention)`.
 
 ## Fast-forward
 
@@ -227,3 +257,9 @@ runs another cast.
 Every request to talk is declined unless you pass `--talk MINUTES`: then each is accepted, the
 conversation lasts that long, and the summary adds how many conversations each resident started,
 by sociability, and how many there were a sim hour.
+
+With `--intentions HOURS`, every that many sim hours each resident who's awake says they'll do
+something at random, to someone at random: half due now, to expire 2 sim hours later, and half due
+in 1 to 6 hours, to expire a day after that. The summary adds how many each took on, kept, broke
+and still had open, by reliability, how long after falling due they were kept, and the longest any
+was seen open past its expiry.

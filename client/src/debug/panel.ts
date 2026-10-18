@@ -1,5 +1,12 @@
 import { html, type Html } from './html';
-import type { ConversationState, MemoryRow, NpcState, RelationshipRow } from './state';
+import type {
+  ConversationState,
+  IntentionRow,
+  MemoryRow,
+  NpcState,
+  Reason,
+  RelationshipRow,
+} from './state';
 
 export type PanelData = {
   npcId?: string;
@@ -28,7 +35,8 @@ export function renderPanel({ npcId, state, names }: PanelData): string {
     ${section('Goal', goal(state))}
     ${state.needs && section('Needs', bars(state.needs))}
     ${state.values && section('Top values', bars(state.values))}
-    ${state.options && section('Last decision', options(state.options))}
+    ${state.options && section('Last decision', options(state.options, state.reasons, nameOf))}
+    ${state.intentions && section('Intentions', intentions(state.intentions, nameOf, state.time))}
     ${state.relationships && section('Relationships', table(state.relationships, nameOf))}
     ${state.memories && section('Memories', memories(state.memories, state.time))}
     ${'conversation' in state && section('Conversation', talk(state.conversation, firstName))}
@@ -61,14 +69,48 @@ function bars(scores: Record<string, number>): Html {
   </table>`;
 }
 
-function options(scores: Record<string, number>): Html {
+function options(
+  scores: Record<string, number>,
+  reasons: Record<string, Reason> | undefined,
+  nameOf: (id: string) => string,
+): Html {
   const best = Object.entries(scores)
     .sort(([, a], [, b]) => b - a)
     .slice(0, TOP_OPTIONS);
   if (best.length === 0) return html`<p class="debug-hint">None yet.</p>`;
   return html`<ol class="debug-options">
-    ${best.map(([option, score]) => html`<li>${option} <small>${score.toFixed(2)}</small></li>`)}
+    ${best.map(([option, score]) => {
+      const reason = reasons?.[option];
+      const why = reason && `${signed(reason.bonus)} ${said(reason, nameOf)}`;
+      return html`<li>${option} <small>${score.toFixed(2)}</small>${why && html` <em>${why}</em>`}</li>`;
+    })}
   </ol>`;
+}
+
+function intentions(
+  rows: IntentionRow[],
+  nameOf: (id: string) => string,
+  now: string | undefined,
+): Html {
+  if (rows.length === 0) return html`<p class="debug-hint">None.</p>`;
+  return html`<ul class="debug-intentions">
+    ${rows.map((row) => {
+      const notes = [
+        row.target && `at ${nameOf(row.target)}`,
+        `due ${when(row.due, now)}`,
+        `expires ${when(row.expires, now)}`,
+        row.following === false && 'letting it slide',
+      ].filter(Boolean);
+      return html`<li>
+        <em>${row.kind}</em> ${said(row, nameOf)} <small>${notes.join(' · ')}</small>
+      </li>`;
+    })}
+  </ul>`;
+}
+
+function said(row: IntentionRow, nameOf: (id: string) => string): string {
+  const told = row.promised_to.map(nameOf).join(', ');
+  return told ? `promised ${told}: ${row.description}` : `meant to: ${row.description}`;
 }
 
 function table(rows: RelationshipRow[], nameOf: (id: string) => string): Html {

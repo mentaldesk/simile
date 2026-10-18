@@ -6,7 +6,7 @@ news terminals, murals, painted on M7's walls, and paintings for the gallery. Wo
 
 ## Making a work
 
-`Maker.make(npc, wall=None)` starts a resident writing, painting a mural on `wall`, or painting for
+`Maker.make(npc, wall=None, intention=None)` starts a resident writing, painting a mural on `wall`, or painting for
 the gallery, and returns at once, so a tick can call it. The task it returns stores the `Work`, gives the artist a `work`
 memory of making it (with `work_id`), and returns the work, or None if it failed. It does nothing
 for residents without a craft, muralists without a known wall, or anyone with a work already under
@@ -22,13 +22,21 @@ prompt has:
 - the titles and statements of their last 3 works, so they don't repeat themselves.
 
 It asks for a work in their voice that says something in line with their values, taking a side
-where they care strongly. The reply has the title, the work and its statement, which of the
+where they care strongly.
+
+B1's `create` hook hands over the intention a stay kept, if it kept one (see *Intentions* in B1's
+README), and `make(npc, wall, intention)` leads the prompt with its idea: "You told Visitor you'd
+make this, and you're making it now: a mural of an ocean of coffee with cups half-sunk in it". It
+asks them to make that idea, in their own way, drawing on what's on their mind, and the
+conversation it came from is the first of the work's `inspired_by`. The reply has the title, the work and its statement, which of the
 memories it came from (stored as `inspired_by`: their news, conversation or work ids), and its tags,
 tone and relatedness to every core value, scored as for news.
 
 ## Murals
 
-- **Choosing a wall.** B1's `mural_wall` hook is `Walls.pick`. A blank wall comes first, the nearest
+- **Choosing a wall.** B1's `mural_wall` hook is `Walls.pick`. A wall they've said they'll paint
+  (an open `create` intention naming it, see B1's README) comes first, while it's blank or ready
+  enough as below, so they go where they told the player. Then a blank wall, the nearest
   of them to a muralist on the village, or the first for one indoors. Otherwise each painted wall
   gets a readiness to paint over it: its age up to `mural_age` (2 days), plus `own_mural` (0.3) for
   the painter's own, or for someone else's their boldness above 0.5 (the mean of 1 - Tradition, 1 -

@@ -11,11 +11,23 @@ from typing import TYPE_CHECKING
 from starlette.applications import Starlette
 
 from simile.behaviour.config import Activity, Need
-from simile.behaviour.events import GoalChosen
+from simile.behaviour.events import GoalChosen, IntentionBroken, IntentionKept
+from simile.behaviour.intentions import reliability
 from simile.behaviour.mind import Behaviour, create_behaviour, no_conversations
 from simile.behaviour.scoring import Goal, MuralSpot
 from simile.memory import MemoryStore
-from simile.schema import CoreValue, Id, LocationKind, Medium, Memory, MemoryKind, Npc, Traits
+from simile.schema import (
+    CoreValue,
+    Id,
+    Intention,
+    IntentionKind,
+    LocationKind,
+    Medium,
+    Memory,
+    MemoryKind,
+    Npc,
+    Traits,
+)
 from simile.sim import Clock, FakeWallClock, World
 
 if TYPE_CHECKING:
@@ -63,6 +75,11 @@ TOPICS = (
     "community",
 )
 """The stand-in memories' topics, some touching a craft or a value."""
+LATER = (1.0, 6.0)
+"""How many sim hours ahead a seeded intention for later falls due."""
+EXPIRE_NOW = timedelta(hours=2)
+EXPIRE_LATER = timedelta(days=1)
+"""As B3's `expire_now` and `expire_later`."""
 
 
 @dataclass(frozen=True)
@@ -130,10 +147,19 @@ class Observer:
     """Minutes staying in each place out of home: there, awake and not walking."""
     on_spot: Counter[str] = field(default_factory=Counter)
     """Of those, minutes on a spot."""
+    intentions: float | None = None
+    """Sim hours between each round of seeded intentions, or None for none."""
+    intended: Counter[Id] = field(default_factory=Counter)
+    kept: Counter[Id] = field(default_factory=Counter)
+    broken: Counter[Id] = field(default_factory=Counter)
+    late: list[float] = field(default_factory=list)
+    """Minutes from each kept intention falling due to its being kept."""
+    overdue: timedelta = timedelta()
+    """The longest any intention was seen open past its expiry."""
 
     def __post_init__(self) -> None:
         self.start = self.next = self.behaviour.clock.now
-        self.next_money = self.next
+        self.next_money = self.next_intentions = self.next
 
     def request_conversation(self, a: Id, b: Id) -> bool:
         if self.talk is None:
@@ -145,7 +171,50 @@ class Observer:
     def on_goal(self, event: GoalChosen) -> None:
         self.goals[event.npc][event.activity] += 1
 
-    def on_create(self, npc: Npc, wall: Id | None) -> None:
+    def on_kept(self, event: IntentionKept) -> None:
+        intention = event.intention
+        self.kept[intention.owner] += 1
+        late = (self.behaviour.clock.now - intention.due) / timedelta(minutes=1)
+        self.late.append(max(late, 0.0))
+
+    def on_broken(self, event: IntentionBroken) -> None:
+        self.broken[event.intention.owner] += 1
+
+    def intend(self, now: datetime) -> None:
+        """Each resident who's awake says they'll do something to someone, at random: make
+        something, go somewhere, look someone up or read the news, now or later."""
+        behaviour, rng = self.behaviour, self.rng
+        residents = sorted(behaviour.npcs)
+        for npc in residents:
+            if behaviour.minds[npc].goal.activity is Activity.SLEEP:
+                continue
+            options = behaviour.options(npc)
+            others = [other for other in residents if other != npc]
+            kinds = [IntentionKind.GO, IntentionKind.SEEK, IntentionKind.NEWS]
+            if options.medium is not None:
+                kinds.append(IntentionKind.CREATE)
+            kind = rng.choice(kinds)
+            target = {
+                IntentionKind.GO: rng.choice(sorted(options.places)),
+                IntentionKind.SEEK: rng.choice(others),
+            }.get(kind)
+            later = rng.random() < 0.5
+            due = now + timedelta(hours=rng.uniform(*LATER)) if later else now
+            self.intended[npc] += behaviour.intend(
+                Intention(
+                    id=f"seeded/{npc}/{sum(self.intended.values())}",
+                    owner=npc,
+                    kind=kind,
+                    target=target,
+                    description=f"a seeded {kind.value}",
+                    promised_to=[rng.choice(others)],
+                    created=now,
+                    due=due,
+                    expires=due + (EXPIRE_LATER if later else EXPIRE_NOW),
+                )
+            )
+
+    def on_create(self, npc: Npc, wall: Id | None, intention: Intention | None = None) -> None:
         target = self.behaviour.goal(npc.id).target
         self.works[npc.id][wall or (HOME if target == npc.home else str(target))] += 1
         self.made.append((self.behaviour.clock.now, npc.id))
@@ -188,9 +257,14 @@ class Observer:
             for npc, other in ((a, b), (b, a)):
                 self.behaviour.resume(npc)
                 self.remember(npc, MemoryKind.CONVERSATION, other)
+        if self.intentions is not None and clock.now >= self.next_intentions:
+            self.next_intentions += timedelta(hours=self.intentions)
+            self.intend(clock.now)
         if clock.now < self.next:
             return
         self.next += self.every
+        for intention in self.behaviour.intentions():
+            self.overdue = max(self.overdue, clock.now - intention.expires)
         self.serve(clock.now)
         self.sample_money(clock.now)
         self.sample_stock(clock.now)
@@ -312,6 +386,7 @@ async def simulate(
     npcs: Iterable[Npc] | None = None,
     traits: Mapping[Id, Traits] | None = None,
     talk: float | None = None,
+    intentions: float | None = None,
 ) -> tuple[Observer, float]:
     """Run memory, world, behaviour and E3's economy for `hours` of sim time as fast as the CPU
     allows, with N1's NPCs and the cast's traits unless given others, on an in-memory store. The
@@ -320,7 +395,9 @@ async def simulate(
     stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
     and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
     muralists paint the map's walls in turn, and making something does nothing. Each article read
-    and each talk leaves a stand-in memory, which raises a crafter's inspiration."""
+    and each talk leaves a stand-in memory, which raises a crafter's inspiration. With
+    `intentions`, every that many sim hours each resident awake says they'll do something at
+    random."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.cafe.config import DEFAULT_CONFIG as CAFE
     from simile.economy.economy import economy_of
@@ -342,8 +419,11 @@ async def simulate(
         open=lambda: shops.staffed(CAFE.home),
         memory=app.state.memory,
         rng=random.Random(seed),
+        intentions=intentions,
     )
     world.bus.subscribe(GoalChosen, observer.on_goal)
+    world.bus.subscribe(IntentionKept, observer.on_kept)
+    world.bus.subscribe(IntentionBroken, observer.on_broken)
     started = time.perf_counter()
     async with AsyncExitStack() as stack:
         for hook in (behaviour, economy, memory, world_lifespan):
@@ -441,6 +521,8 @@ def report(observer: Observer, hours: float, start: datetime, seed: int, seconds
     lines += ["", *spots(observer)]
     if observer.talk is not None:
         lines += ["", *conversations(observer, hours)]
+    if observer.intentions is not None:
+        lines += ["", *intentions(observer)]
     if observer.economy is not None:
         lines += ["", *shifts(observer), "", *shops(observer), "", *fridges(observer)]
         lines += ["", *money(observer), "", *ledger(observer)]
@@ -469,6 +551,47 @@ def conversations(observer: Observer, hours: float) -> list[str]:
         f"{sum(started)} conversations, {sum(started) / hours:.2f} per sim hour. Spearman rank "
         f"correlation of sociability with conversations started: "
         f"{spearman(sociability, [float(n) for n in started]):.2f}.",
+    ]
+
+
+def intentions(observer: Observer) -> list[str]:
+    behaviour = observer.behaviour
+    npcs = sorted(behaviour.npcs.values(), key=lambda npc: reliability(npc.values))
+    scores = [reliability(npc.values) for npc in npcs]
+    lines = [
+        f"**Intentions.** Every {observer.intentions:g} sim hours each resident awake said they'd "
+        "do something at random, half of them now and half within "
+        f"{LATER[0]:g} to {LATER[1]:g} hours, to expire {EXPIRE_NOW / timedelta(hours=1):g} hours "
+        f"after it's due for now and {EXPIRE_LATER / timedelta(hours=1):g} for later. By "
+        "reliability (Responsibility and Discipline): how many each took on, kept, broke by "
+        "letting them expire, and still had open at the end.",
+        "",
+        "| NPC | Responsibility | Discipline | Reliability | Taken on | Kept | Broken | Open | "
+        "Kept share |",
+        "|---|--:|--:|--:|--:|--:|--:|--:|--:|",
+    ]
+    shares = []
+    for npc, score in zip(npcs, scores, strict=True):
+        kept, broken = observer.kept[npc.id], observer.broken[npc.id]
+        done = kept + broken
+        share = kept / done if done else 0.0
+        shares.append(share)
+        lines.append(
+            f"| {npc.id} | {npc.values[CoreValue.RESPONSIBILITY]:.2f} | "
+            f"{npc.values[CoreValue.DISCIPLINE]:.2f} | {score:.2f} | {observer.intended[npc.id]} | "
+            f"{kept} | {broken} | {len(behaviour.intentions(npc.id))} | "
+            + (f"{share:.0%} |" if done else "- |")
+        )
+    kept, broken = sum(observer.kept.values()), sum(observer.broken.values())
+    late = sorted(observer.late)
+    median = late[len(late) // 2] if late else 0.0
+    return [
+        *lines,
+        "",
+        f"{kept} kept and {broken} broken, {kept / (kept + broken or 1):.0%} kept. Spearman rank "
+        f"correlation of reliability with the share kept: {spearman(scores, shares):.2f}. Kept a "
+        f"median of {median:.0f} sim minutes after falling due. The longest any intention was "
+        f"seen open past its expiry: {observer.overdue.total_seconds():.0f} sim seconds.",
     ]
 
 

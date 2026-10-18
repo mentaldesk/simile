@@ -46,6 +46,10 @@ def nobody_painting() -> dict[Id, Id]:
     return {}
 
 
+def unpromised(npc: Id) -> Id | None:
+    return None
+
+
 class Walls:
     """The walls that take murals: B1's `mural_wall` hook, and the `murals` message."""
 
@@ -59,9 +63,11 @@ class Walls:
         *,
         positions: Callable[[], Mapping[Id, Point]] = dict,
         painting: Callable[[], Mapping[Id, Id]] = nobody_painting,
+        promised: Callable[[Id], Id | None] = unpromised,
         config: WorksConfig = DEFAULT_CONFIG,
     ) -> None:
-        """`painting()` is the wall each muralist is off to paint or painting now, by their id."""
+        """`painting()` is the wall each muralist is off to paint or painting now, by their id,
+        and `promised(npc)` the wall they've said they'll paint, if any."""
         self.walls = walls
         self.works = works
         self.memory = memory
@@ -69,14 +75,19 @@ class Walls:
         self.npcs = npcs
         self.positions = positions
         self.painting = painting
+        self.promised = promised
         self.config = config
 
     def pick(self, npc: Npc) -> MuralSpot | None:
-        """The nearest blank wall, or else the one `npc` is readiest to paint over, if any is
-        ready enough. Nobody picks a wall someone else is painting."""
+        """The wall they said they'd paint, if it's blank or ready enough, or else the nearest
+        blank wall, or else the one `npc` is readiest to paint over, if any is ready enough.
+        Nobody picks a wall someone else is painting."""
         busy = {wall for who, wall in self.painting().items() if who != npc.id}
         free = [wall for wall in self.walls if wall.id not in busy]
         showing = self.works.showing()
+        said = next((wall for wall in free if wall.id == self.promised(npc.id)), None)
+        if said is not None and self._ready(npc, showing.get(said.id)):
+            return MuralSpot(said.id, said.stand)
         if blank := [wall for wall in free if wall.id not in showing]:
             if (here := self.positions().get(npc.id)) is not None and here.map == VILLAGE_MAP:
                 blank.sort(key=lambda wall: math.dist(here, (wall.stand.x, wall.stand.y)))
@@ -97,6 +108,13 @@ class Walls:
             rel = self.memory.relationship(painter.id, mural.artist) or meet(painter, mural.artist)
             fondness = affinity(as_of(rel, self.clock.now))
         return readiness(painter, mural, fondness, self.clock.now, self.config)
+
+    def _ready(self, painter: Npc, mural: Work | None) -> bool:
+        """Whether a wall showing `mural`, or blank, is ready enough for `painter` to paint."""
+        if mural is None:
+            return True
+        score = self.readiness(painter, mural)
+        return score is not None and score >= self.config.min_readiness
 
     def message(self) -> MuralsMessage:
         showing = self.works.showing()

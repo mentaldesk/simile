@@ -8,7 +8,17 @@ from PIL import Image
 
 from simile.llm import FakeProvider, LLMClient, LLMError, Model
 from simile.memory import MemoryStore
-from simile.schema import CoreValue, Craft, Medium, Memory, MemoryKind, Npc, Work
+from simile.schema import (
+    CoreValue,
+    Craft,
+    Intention,
+    IntentionKind,
+    Medium,
+    Memory,
+    MemoryKind,
+    Npc,
+    Work,
+)
 from simile.sim import Clock
 from simile.works import DEFAULT_CONFIG, Maker, WorksConfig, WorksStore
 from simile.works.maker import PaintingReply
@@ -544,3 +554,65 @@ def test_nobody_paints_for_the_gallery_without_one(memory: MemoryStore, works: W
 
     assert asyncio.run(scenario()) == [None, None]
     assert fake.requests == []
+
+
+def promised(owner: str, description: str, *promised_to: str) -> Intention:
+    return Intention(
+        id=f"chat-1/{owner}/1",
+        owner=owner,
+        kind=IntentionKind.CREATE,
+        description=description,
+        promised_to=list(promised_to),
+        created=NOW,
+        due=NOW,
+        expires=NOW + timedelta(hours=2),
+        conversation_id="chat-1",
+    )
+
+
+def test_a_mural_they_promised_leads_with_the_idea(memory: MemoryStore, works: WorksStore) -> None:
+    memory.add(SKY)
+    fake = FakeProvider([mural_reply()])
+    idea = promised("suki", "an ocean of coffee with cups half-sunk in it", "player", "mei")
+
+    async def scenario() -> Work | None:
+        task = muralist(works, memory, fake).make(SUKI, "wall_1", idea)
+        assert task is not None
+        return await task
+
+    made = asyncio.run(scenario())
+
+    assert made is not None
+    assert made.inspired_by == ["chat-1", "news-9"]
+    asked = fake.requests[0].messages[-1].content
+    assert asked.startswith(
+        f"You told Visitor, {MEI.name} you'd make this, and you're making it now: an ocean of "
+        "coffee with cups half-sunk in it\n\nWhat's been on your mind lately"
+    )
+    assert "Make that idea, in your own way, drawing on what's on your mind, and say" in asked
+
+
+@pytest.mark.usefixtures("remembered")
+def test_a_piece_or_a_painting_they_meant_to_make_leads_with_the_idea(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    writing, painting = FakeProvider([reply()]), FakeProvider([painting_reply()])
+    llm = LLMClient(writing)
+
+    async def scenario() -> None:
+        maker = Maker(works, memory, Clock(NOW), lambda: llm, config=CONFIG)
+        task = maker.make(VIKTOR, None, promised("viktor", "lines on the footbridge"))
+        assert task is not None and await task is not None
+        painter = gallery_painter(works, memory, painting, [])
+        task = painter.make(PAINTER, None, promised("viktor", "the harbour at night", "mei"))
+        assert task is not None and await task is not None
+
+    asyncio.run(scenario())
+
+    wrote, painted = (fake.requests[0].messages[-1].content for fake in (writing, painting))
+    assert wrote.startswith(
+        "You meant to make this, and you're making it now: lines on the footbridge\n\n"
+    )
+    assert painted.startswith(
+        f"You told {MEI.name} you'd make this, and you're making it now: the harbour at night"
+    )

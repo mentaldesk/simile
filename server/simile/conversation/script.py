@@ -59,6 +59,8 @@ class Character:
     secrets: Sequence[tuple[str, str]] = ()
     """Who told them what in confidence, among people other than the other."""
     works: Sequence[WorkTopic] = ()
+    plans: str = ""
+    """What they could plan to do in the village, and what they've already said they'll do."""
 
 
 @dataclass(frozen=True)
@@ -88,6 +90,9 @@ def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "themselves.\n"
             "- Follow the direction: who's keen, who wants to leave and when, and the length. The "
             "scene ends when they part, with a goodbye and its answer.\n"
+            "- Nobody promises to do what isn't in their notes' list of what they could plan to "
+            "do. Someone who has said they'll go and do something now says where they're off to "
+            "as they leave.\n"
             "- Use each character's pet words, phrases and verbal habits now and then, not in "
             "every line, and vary how their lines begin.",
             "Write only the spoken lines, one a line, each starting with the speaker's first "
@@ -181,6 +186,8 @@ def character(
         f"{name} holds a grudge against {other} over {grudge}, which only {name} knows."
         for grudge in grudges
     ]
+    if side.plans:
+        parts.append(side.plans)
     if side.memories:
         parts.append(
             f"On {name}'s mind, which only {name} knows:\n"

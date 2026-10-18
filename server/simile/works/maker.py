@@ -11,7 +11,18 @@ from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.news.analysis import MEANINGS, SCALE, clean_tags
 from simile.npc.values import format_scores, ranked
-from simile.schema import CoreValue, Craft, Id, Medium, Memory, MemoryKind, Npc, Work
+from simile.schema import (
+    PLAYER_ID,
+    CoreValue,
+    Craft,
+    Id,
+    Intention,
+    Medium,
+    Memory,
+    MemoryKind,
+    Npc,
+    Work,
+)
 from simile.sim import Clock
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
 from simile.works.reading import name_of
@@ -22,6 +33,9 @@ from simile.works.walls import wall_name
 from simile.world.map import MuralWall
 
 logger = logging.getLogger(__name__)
+
+VISITOR = "Visitor"
+"""What the player is called in prompts, as in B2 and B3."""
 
 FEELINGS = (
     (-0.5, "It upset you"),
@@ -129,8 +143,11 @@ def feeling(memory: Memory) -> str:
     return f"({felt}{strength}.)"
 
 
-def on_your_mind(memories: Sequence[Memory], past: Sequence[Work], works: str) -> tuple[str, str]:
-    """What's on their mind and their last few works for a prompt, and how to start the ask."""
+def on_your_mind(
+    memories: Sequence[Memory], past: Sequence[Work], works: str, idea: str | None = None
+) -> tuple[str, str]:
+    """What's on their mind and their last few works for a prompt, and how to start the ask.
+    An `idea` they said they'd make leads it."""
     if memories:
         mind = "What's been on your mind lately, strongest first:\n" + "\n".join(
             f"{n}. {m.content} {feeling(m)}" for n, m in enumerate(memories, 1)
@@ -139,6 +156,9 @@ def on_your_mind(memories: Sequence[Memory], past: Sequence[Work], works: str) -
     else:
         mind = "Nothing in particular has been on your mind lately."
         start = "Say"
+    if idea:
+        mind = f"{idea}\n\n{mind}"
+        start = "Make that idea, in your own way, drawing on what's on your mind, and say"
     if past:
         mind += f"\n\nYour last few {works}, newest first. Don't repeat yourself:\n" + "\n".join(
             f'- "{work.title}": {work.statement}' for work in past
@@ -171,13 +191,23 @@ TAKE_A_SIDE = (
 )
 
 
+def idea(intention: Intention | None, npcs: Mapping[Id, Npc]) -> str | None:
+    """The idea they said they'd make, to lead the prompt."""
+    if intention is None:
+        return None
+    told = [VISITOR if id == PLAYER_ID else name_of(npcs, id) for id in intention.promised_to]
+    said = f"You told {', '.join(told)} you'd make this" if told else "You meant to make this"
+    return f"{said}, and you're making it now: {intention.description}"
+
+
 def prompt(
     craft: Craft,
     memories: Sequence[Memory],
     past: Sequence[Work],
     config: WorksConfig = DEFAULT_CONFIG,
+    idea: str | None = None,
 ) -> str:
-    mind, start = on_your_mind(memories, past, "pieces")
+    mind, start = on_your_mind(memories, past, "pieces", idea)
     return (
         f"{mind}\n\n"
         f"Write something new in your craft, {craft.form}. {start} something in line with what you "
@@ -193,9 +223,10 @@ def mural_prompt(
     wall: MuralWall,
     on_it: str = "It's blank.",
     config: WorksConfig = DEFAULT_CONFIG,
+    idea: str | None = None,
 ) -> str:
     """`on_it` says what's on the wall now."""
-    mind, start = on_your_mind(memories, past, "murals")
+    mind, start = on_your_mind(memories, past, "murals", idea)
     width, height = canvas(wall)
     across, up = metres(wall)
     return (
@@ -219,9 +250,10 @@ def painting_prompt(
     memories: Sequence[Memory],
     past: Sequence[Work],
     config: WorksConfig = DEFAULT_CONFIG,
+    idea: str | None = None,
 ) -> str:
     """For a painter, or a muralist painting a canvas for once."""
-    mind, start = on_your_mind(memories, past, "works")
+    mind, start = on_your_mind(memories, past, "works", idea)
     width, height = painting_canvas()
     across, up = PAINTING_M
     what = (
@@ -303,21 +335,25 @@ class Maker:
         self.making: set[Id] = set()
         self.tasks: set[asyncio.Task[Work | None]] = set()
 
-    def make(self, npc: Npc, wall: Id | None = None) -> asyncio.Task[Work | None] | None:
+    def make(
+        self, npc: Npc, wall: Id | None = None, intention: Intention | None = None
+    ) -> asyncio.Task[Work | None] | None:
         """Start `npc` writing a piece, painting a mural on `wall`, or painting for the gallery:
         a painter, or a muralist given anything but a wall. Not if they don't make that, are
         making something already, or there's no LLM. Doesn't block. The task stores the work
-        and the artist's memory of making it and returns the work, or None if it fails."""
+        and the artist's memory of making it and returns the work, or None if it fails. With
+        the `intention` they're keeping, its idea leads the prompt."""
         llm, craft = self.llm(), npc.craft
         if llm is None or craft is None or npc.id in self.making:
             return None
+        now = self.clock.now
         making: Coroutine[Any, Any, Work | None]
         if craft.medium is Medium.WRITING:
-            making = self._write(llm, npc, craft, self.clock.now)
+            making = self._write(llm, npc, craft, now, intention)
         elif craft.medium is Medium.MURAL and wall in self.walls:
-            making = self._paint(llm, npc, craft, self.walls[wall], self.clock.now)
+            making = self._paint(llm, npc, craft, self.walls[wall], now, intention)
         elif self.hang is not None:
-            making = self._canvas(llm, npc, craft, self.hang, self.clock.now)
+            making = self._canvas(llm, npc, craft, self.hang, now, intention)
         else:
             return None
         self.making.add(npc.id)
@@ -351,21 +387,31 @@ class Maker:
         memories = [m for m in recalled if m.work_id not in own][: self.config.memories]
         return memories, theirs[: self.config.past_works]
 
-    async def _write(self, llm: LLMClient, npc: Npc, craft: Craft, now: datetime) -> Work | None:
+    async def _write(
+        self, llm: LLMClient, npc: Npc, craft: Craft, now: datetime, intention: Intention | None
+    ) -> Work | None:
         memories, past = self.on_mind(npc, now)
-        ask = prompt(craft, memories, past, self.config)
+        ask = prompt(craft, memories, past, self.config, idea(intention, self.npcs))
         reply = await self._ask(llm, npc, craft, ask, Reply, "work")
         if reply is None:
             return None
         key = uuid.uuid4().hex[:8]
-        work = self._work(npc, craft, reply, reply.text, memories, now, key, Medium.WRITING)
+        work = self._work(
+            npc, craft, reply, reply.text, memories, now, key, Medium.WRITING, intention=intention
+        )
         self.works.add(work)
         self.memory.add(remember(npc, work, self.config))
         logger.info("%s wrote %r: %s", npc.id, work.title, work.statement)
         return work
 
     async def _paint(
-        self, llm: LLMClient, npc: Npc, craft: Craft, wall: MuralWall, now: datetime
+        self,
+        llm: LLMClient,
+        npc: Npc,
+        craft: Craft,
+        wall: MuralWall,
+        now: datetime,
+        intention: Intention | None,
     ) -> Work | None:
         memories, past = self.on_mind(npc, now)
         showing = self.works.showing().get(wall.id)
@@ -376,7 +422,8 @@ class Maker:
                 f'You\'re painting over {self._whose(npc, showing)} "{showing.title}", of which '
                 f'{who} said: "{showing.statement}"'
             )
-        ask = first = mural_prompt(craft, memories, past, wall, on_it, self.config)
+        told = idea(intention, self.npcs)
+        ask = first = mural_prompt(craft, memories, past, wall, on_it, self.config, told)
         key = uuid.uuid4().hex[:8]
         for _ in range(2):
             reply = await self._ask(llm, npc, craft, ask, MuralReply, "mural")
@@ -392,7 +439,16 @@ class Maker:
             logger.warning("%s couldn't paint a mural that would go up, so made nothing", npc.id)
             return None
         work = self._work(
-            npc, craft, reply, reply.description, memories, now, key, Medium.MURAL, wall.id
+            npc,
+            craft,
+            reply,
+            reply.description,
+            memories,
+            now,
+            key,
+            Medium.MURAL,
+            wall.id,
+            intention=intention,
         )
         covered = self.works.paint(work, svg, png)
         over = f' over {self._whose(npc, covered, "my")} "{covered.title}"' if covered else ""
@@ -402,10 +458,17 @@ class Maker:
         return work
 
     async def _canvas(
-        self, llm: LLMClient, npc: Npc, craft: Craft, hang: Hang, now: datetime
+        self,
+        llm: LLMClient,
+        npc: Npc,
+        craft: Craft,
+        hang: Hang,
+        now: datetime,
+        intention: Intention | None,
     ) -> Work | None:
         memories, past = self.on_mind(npc, now)
-        ask = first = painting_prompt(craft, memories, past, self.config)
+        told = idea(intention, self.npcs)
+        ask = first = painting_prompt(craft, memories, past, self.config, told)
         key = uuid.uuid4().hex[:8]
         for _ in range(2):
             reply = await self._ask(llm, npc, craft, ask, PaintingReply, "painting")
@@ -422,7 +485,17 @@ class Maker:
         else:
             logger.warning("%s couldn't paint anything that would hang, so made nothing", npc.id)
             return None
-        work = self._work(npc, craft, reply, reply.description, memories, now, key, Medium.PAINTING)
+        work = self._work(
+            npc,
+            craft,
+            reply,
+            reply.description,
+            memories,
+            now,
+            key,
+            Medium.PAINTING,
+            intention=intention,
+        )
         self.works.add(work)
         hang(work, svg, png)
         self.memory.add(remember(npc, work, self.config))
@@ -482,8 +555,14 @@ class Maker:
         key: str,
         medium: Medium,
         wall: Id | None = None,
+        *,
+        intention: Intention | None = None,
     ) -> Work:
-        sources = (source(memories[n - 1]) for n in reply.inspired_by if 1 <= n <= len(memories))
+        """Inspired by the conversation the `intention` came from, first, and the memories it
+        says."""
+        sources = [source(memories[n - 1]) for n in reply.inspired_by if 1 <= n <= len(memories)]
+        if intention is not None:
+            sources.insert(0, intention.conversation_id)
         return Work(
             id=f"{npc.id}-{key}",
             artist=npc.id,

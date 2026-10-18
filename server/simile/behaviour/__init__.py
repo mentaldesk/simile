@@ -1,5 +1,6 @@
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Need
-from simile.behaviour.events import GoalChosen
+from simile.behaviour.events import GoalChosen, IntentionBroken, IntentionKept
+from simile.behaviour.intentions import Options, Promise, lapse_chance, reliability
 from simile.behaviour.mind import (
     Behaviour,
     ConversationRequest,
@@ -32,19 +33,25 @@ __all__ = [
     "Goal",
     "GoalChosen",
     "Hooks",
+    "IntentionBroken",
+    "IntentionKept",
     "LiveConversations",
     "Mind",
     "MuralSpot",
     "Need",
     "NewsInterest",
     "NewsReader",
+    "Options",
     "Other",
     "Places",
+    "Promise",
     "Situation",
     "WallPicker",
     "WorkMaker",
     "behaviour_of",
     "choose",
+    "lapse_chance",
+    "reliability",
     "score",
     "scores",
 ]

@@ -14,7 +14,7 @@ server, not per client: the hub doesn't say which client a message came from.
 | Key | |
 |---|---|
 | `name`, `occupation`, `time` | Who they are, and the sim time the state is from. |
-| `goal`, `activity`, `target`, `walking`, `paused`, `since`, `until`, `needs`, `options`, `bedtime`, `wake` | B1's `state(npc)`. |
+| `goal`, `activity`, `target`, `walking`, `paused`, `since`, `until`, `needs`, `options`, `reasons`, `intentions`, `bedtime`, `wake` | B1's `state(npc)`. `intentions` are their open ones (`kind`, `target`, `description`, `promised_to`, `due`, `expires`, and `following`, null until due), and `reasons` says which of the `options` an intention raised: the same fields and the `bonus`. |
 | `values` | Their top 5 core values, highest first. |
 | `relationships` | Up to 12 they know, most familiar first: `about`, `like`, `trust`, `respect`, `familiarity` (R1 `as_of` now) and up to 4 `flags` (`kind`, `description`, `open`), open ones first. |
 | `memories` | What R2's `recall` gives them now, up to 6: `kind`, `content`, `timestamp`, `salience`, `valence`. |

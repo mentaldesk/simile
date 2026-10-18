@@ -17,6 +17,7 @@ from simile.schema import (
     Flag,
     FlagKind,
     Id,
+    Intention,
     InteractionEvent,
     Memory,
     MemoryKind,
@@ -34,6 +35,8 @@ class Outcome:
     before: dict[tuple[Id, Id], Relationship] = field(default_factory=dict)
     """Each relationship as it stood at the end of the conversation, before it counted."""
     after: dict[tuple[Id, Id], Relationship] = field(default_factory=dict)
+    intentions: list[Intention] = field(default_factory=list)
+    """What the residents said they'd do that B1 took on."""
 
     @property
     def records(self) -> list[Record]:

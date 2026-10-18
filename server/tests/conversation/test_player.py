@@ -580,7 +580,10 @@ async def test_a_bored_npc_says_goodbye_and_the_conversation_ends() -> None:
 
     prompts = village.script.prompts
     assert len(prompts) == 2
-    assert prompts[1].endswith("Wrap it up now with a brief, natural goodbye to Visitor.")
+    assert prompts[1].endswith(
+        "Wrap it up now with a brief, natural goodbye to Visitor. If you've said you'll go and do "
+        "something now, say where you're off to."
+    )
     [ended] = village.ended
     conversation = ended.conversation
     assert conversation.lines == village.spoken
@@ -639,7 +642,10 @@ async def test_saying_goodbye_gets_one_back() -> None:
     village.players.say("I have to go. Bye!", "ana")
     await village.run(5)
 
-    assert village.script.prompts[1].endswith("Visitor is leaving. Say a brief goodbye back.")
+    assert village.script.prompts[1].endswith(
+        "Visitor is leaving. Say a brief goodbye back. If you've said you'll go and do something "
+        "now, say where you're off to."
+    )
     [ended] = village.ended
     assert [line.text for line in ended.conversation.lines][-2:] == [
         "I have to go. Bye!",

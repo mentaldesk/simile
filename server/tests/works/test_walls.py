@@ -105,6 +105,24 @@ def test_nobody_picks_a_wall_someone_else_is_painting(
     assert walls(works, memory, painting=theirs).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
 
 
+def test_the_wall_they_said_theyd_paint_comes_first_while_its_free_and_ready(
+    works: WorksStore, memory: MemoryStore
+) -> None:
+    def said(painting: dict[str, str] | None = None) -> Walls:
+        picker = walls(works, memory, painting=painting)
+        picker.promised = {"suki": "wall_2"}.get
+        return picker
+
+    assert said().pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert said().pick(MEI) == MuralSpot("wall_1", WALL.stand)
+    assert said({"mei": "wall_2"}).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+
+    works.paint(mural("fresh", "mei", "wall_2", hours_ago=1), "<svg/>", b"")
+    assert said().pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    works.paint(mural("faded", "viktor", "wall_2", hours_ago=40), "<svg/>", b"")
+    assert said().pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
+
+
 def test_picks_the_wall_they_are_readiest_to_paint_over(
     works: WorksStore, memory: MemoryStore
 ) -> None:

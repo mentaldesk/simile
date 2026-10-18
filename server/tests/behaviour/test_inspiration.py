@@ -189,7 +189,7 @@ def test_on_a_fresh_start_the_keenest_two_are_already_making_something_at_home()
     muralist = resident("mo", "house_5", medium=Medium.MURAL)
     village = Village([*writers, muralist, resident("nan", "house_6", medium=None)])
     made: list[str] = []
-    village.behaviour.hooks.set(create=lambda npc, wall: made.append(npc.id))
+    village.behaviour.hooks.set(create=lambda npc, wall, intention: made.append(npc.id))
     minds = village.behaviour.minds
     keenest = sorted((w.id for w in writers), key=lambda id: -minds[id].needs[Need.INSPIRATION])[:2]
 
