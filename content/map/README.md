@@ -74,7 +74,7 @@ wall and the iso camera, so the whole mural shows, and no two walls share a buil
 | `corner_shop` | The 24-hour shop next to the noodle bar, facing the crossing | east | 4 | 0.7–2.85 |
 | `daily_grind` | The Daily Grind, above its awnings on the square | south | 3 | 1.05–1.9 |
 | `tower` | The tower at the east end of Lychee Lane, by the park | east | 5 | 0.15–3 |
-| `garden_flats` | The flats on Banyan Row, facing the garden south of the square | east | 4 | 0.15–2.5 |
+| `garden_flats` | The flats on Banyan Row, facing the gallery | east | 4 | 0.15–2.5 |
 | `banyan_row` | 3 Banyan Row, a street up from the river | east | 3 | 0.15–1.85 |
 
 **Scale.** The map is sized for `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second. The
@@ -124,18 +124,10 @@ residents there. #169 removes the village copies and adds the terrace as `cafe_t
 player can go inside. `tests/world/test_interiors.py` checks that these three are the only ids on
 two maps.
 
-**The gallery isn't on the village yet.** A new building changes the iso scenery, which is rendered
-from the village (`server/simile/art/iso/`), so the building lands in its own task with the
-re-render. Until then `gallery.tmj` has its mat but no door, and nothing can reach it. This spot
-keeps every mural wall in view of the iso camera, keeps the village connected, and leaves its
-farthest places about 55 s apart:
-
-- **Footprint.** 6 × 5 tiles from `(38, 28)`, in place of the garden between Garden Flats and the
-  park: `town.building(38, 28, "cream", (".wwww.", ".sDss."), roof="roof_green")`, or the same with
-  two roof rows and three storeys. One tile further west hides the `garden_flats` mural.
-- **Door.** The shop door at `x = 40`, so the doorstep, the door's outside end, is `(40, 33)`. Its
-  inside end is the mat at `(16, 19)`.
-- **Location.** `gallery` stays on its interior, with its entry at `(16, 12)`.
+**The gallery** is 6 × 5 tiles from `(38, 28)`, on Banyan Row between Garden Flats and the park,
+with a strip of the old garden on its west side. Its `gallery` location is only on its interior,
+with its entry at `(16, 12)`, so the village has its door but no location for it. One tile further
+west would hide the `garden_flats` mural from the iso camera.
 
 ## Doors
 
@@ -154,6 +146,7 @@ where it goes:
 | `coffee_shop` | `(31, 11)` | `(10, 13)` |
 | `noodle_bar` | `(16, 11)` | `(15, 13)` |
 | `maker_space` | `(41, 11)` | `(14, 13)` |
+| `gallery` | `(40, 33)` | `(16, 19)` |
 
 ## Interactables
 

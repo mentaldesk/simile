@@ -178,12 +178,11 @@ def test_a_door_is_an_edge_between_its_two_tiles() -> None:
 
 
 def test_finds_no_route_to_a_map_without_a_door() -> None:
-    gallery = MAPS["gallery"].location("gallery").entry
-    square = TOWN.location("square").entry
-    start = Spot(VILLAGE_MAP, square.x, square.y)
+    maps = {"street": replace(grid("..."), id="street"), "shop": replace(grid(".."), id="shop")}
+    start = Spot("street", 0, 0)
 
-    assert find_route(MAPS, start, Spot("gallery", gallery.x, gallery.y), DOORS) is None
-    assert find_route(MAPS, start, Spot("moon", 0, 0), DOORS) is None
+    assert find_route(maps, start, Spot("shop", 1, 0), door_ends(maps)) is None
+    assert find_route(maps, start, Spot("moon", 0, 0), door_ends(maps)) is None
 
 
 def test_every_door_end_leads_to_the_other() -> None:

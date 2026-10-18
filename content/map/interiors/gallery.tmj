@@ -223,7 +223,41 @@
       "draworder": "topdown",
       "id": 8,
       "name": "doors",
-      "objects": [],
+      "objects": [
+        {
+          "height": 16,
+          "id": 2,
+          "name": "gallery",
+          "properties": [
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "village"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 40
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 33
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 256,
+          "y": 304
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -237,7 +271,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 2,
+          "id": 3,
           "name": "painting_1",
           "properties": [
             {
@@ -260,7 +294,7 @@
         },
         {
           "height": 16,
-          "id": 3,
+          "id": 4,
           "name": "painting_2",
           "properties": [
             {
@@ -283,7 +317,7 @@
         },
         {
           "height": 16,
-          "id": 4,
+          "id": 5,
           "name": "painting_3",
           "properties": [
             {
@@ -306,7 +340,7 @@
         },
         {
           "height": 16,
-          "id": 5,
+          "id": 6,
           "name": "painting_4",
           "properties": [
             {
@@ -329,7 +363,7 @@
         },
         {
           "height": 16,
-          "id": 6,
+          "id": 7,
           "name": "painting_5",
           "properties": [
             {
@@ -352,7 +386,7 @@
         },
         {
           "height": 16,
-          "id": 7,
+          "id": 8,
           "name": "painting_6",
           "properties": [
             {
@@ -375,7 +409,7 @@
         },
         {
           "height": 16,
-          "id": 8,
+          "id": 9,
           "name": "painting_7",
           "properties": [
             {
@@ -398,7 +432,7 @@
         },
         {
           "height": 16,
-          "id": 9,
+          "id": 10,
           "name": "painting_8",
           "properties": [
             {
@@ -421,7 +455,7 @@
         },
         {
           "height": 16,
-          "id": 10,
+          "id": 11,
           "name": "painting_9",
           "properties": [
             {
@@ -444,7 +478,7 @@
         },
         {
           "height": 16,
-          "id": 11,
+          "id": 12,
           "name": "painting_10",
           "properties": [
             {
@@ -467,7 +501,7 @@
         },
         {
           "height": 16,
-          "id": 12,
+          "id": 13,
           "name": "painting_11",
           "properties": [
             {
@@ -490,7 +524,7 @@
         },
         {
           "height": 16,
-          "id": 13,
+          "id": 14,
           "name": "painting_12",
           "properties": [
             {
@@ -513,7 +547,7 @@
         },
         {
           "height": 16,
-          "id": 14,
+          "id": 15,
           "name": "painting_13",
           "properties": [
             {
@@ -543,7 +577,7 @@
     }
   ],
   "nextlayerid": 10,
-  "nextobjectid": 15,
+  "nextobjectid": 16,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",

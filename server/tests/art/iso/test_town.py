@@ -14,8 +14,8 @@ def town() -> Town:
 
 
 def test_the_village_has_its_buildings_and_props(town: Town) -> None:
-    assert len(town.buildings) == 16
-    assert len(town.props) == 93
+    assert len(town.buildings) == 17
+    assert len(town.props) == 90
     ids = [o.id for o in town.objects]
     assert len(ids) == len(set(ids))
 
@@ -53,7 +53,12 @@ def test_a_building_has_a_facade_row_per_storey(town: Town) -> None:
 
 def test_buildings_with_an_interior_have_an_entrance_at_its_door(town: Town) -> None:
     entrances = {b.id: b.entrances for b in town.buildings if b.entrances}
-    assert entrances == {"building-28-6": (3,), "building-13-6": (3,), "building-37-5": (4,)}
+    assert entrances == {
+        "building-28-6": (3,),
+        "building-13-6": (3,),
+        "building-37-5": (4,),
+        "building-38-28": (2,),
+    }
     for b in town.buildings:
         for col in b.entrances:
             assert (b.x0 + col, b.y1) in town.doorsteps
@@ -61,7 +66,7 @@ def test_buildings_with_an_interior_have_an_entrance_at_its_door(town: Town) -> 
 
 
 def test_only_buildings_with_an_entrance_say_so_in_their_spec(town: Town) -> None:
-    assert sum("entrances" in b.spec() for b in town.buildings) == 3
+    assert sum("entrances" in b.spec() for b in town.buildings) == 4
 
 
 def block(x0: int, y0: int, storeys: int = 3) -> Building:

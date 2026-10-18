@@ -543,11 +543,23 @@ def test_locations_on_two_maps_are_the_villages() -> None:
     assert village.movement.position("mei").map == VILLAGE_MAP
 
 
-def test_nobody_reaches_a_map_without_a_door() -> None:
+def test_walks_into_the_gallery_through_its_door() -> None:
     village = Village()
     village.movement.place("mei", "square")
 
-    assert village.movement.walk_to("mei", "gallery").outcome is Outcome.UNREACHABLE
+    village.finish(walk := village.movement.walk_to("mei", "gallery"))
+
+    assert walk.outcome is Outcome.ARRIVED
+    assert walk.destination == entry_of(MAPS["gallery"].location("gallery"))
+    assert village.movement.position("mei").map == "gallery"
+
+
+def test_nobody_reaches_a_map_without_a_door() -> None:
+    village = Village({**MAPS, "field": open_field(3)})
+    village.movement.place("mei", "square")
+
+    field = MapTile(map="field", x=1, y=1)
+    assert village.movement.walk_to("mei", field).outcome is Outcome.UNREACHABLE
     with pytest.raises(KeyError):
         village.movement.walk_to("mei", MapTile(map="moon", x=0, y=0))
 
