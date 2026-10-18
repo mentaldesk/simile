@@ -161,7 +161,11 @@ def draw(
     )
     attachment = sample_attachment(rng, skeleton, scores, events, tables=t)
     tension = sample_tension(rng, skeleton, scores, events, attachment, village=village, tables=t)
-    mannerisms = sample_mannerisms(rng, temperament, village=village, tables=t)
+    mannerisms = (
+        list(brief.mannerisms or [])
+        if brief.locked("mannerisms")
+        else sample_mannerisms(rng, temperament, village=village, tables=t)
+    )
     hooks = [] if brief.locked("hooks") else sample_hooks(rng, skeleton, values, village=village)
     look = None if brief.locked("appearance") else sample_look(rng, skeleton, village=village)
     return Sheet(

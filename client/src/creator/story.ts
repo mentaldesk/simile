@@ -1,7 +1,7 @@
 import type { Suggestion } from './api';
 import type { Character, Craft, Gender, HookKind, HookSide, Medium } from './character';
 import { button, h, humanise, labelled, select, textArea, textInput } from './dom';
-import type { Draft, Work } from './draft';
+import { type Draft, MAX_MANNERISMS, type Work } from './draft';
 
 type Edit = (patch: Work) => void;
 
@@ -247,16 +247,23 @@ export function biographyView(
       prose('persona', 'How they come across', 4),
       prose('speaking_style', 'How they speak', 4),
       labelled(
+        'Verbal habits',
+        textArea(
+          (w.mannerisms ?? []).join('\n'),
+          (text) => {
+            const mannerisms = lines(text);
+            edit({ mannerisms: mannerisms.length ? mannerisms : undefined });
+          },
+          { rows: 3, disabled },
+        ),
+        `Up to ${MAX_MANNERISMS}, one a line, such as “answers a question with another question”. ` +
+          'They show now and then in conversation. A biography reroll draws new ones.',
+      ),
+      labelled(
         'Interests',
         textArea(
           (w.interests ?? []).join('\n'),
-          (text) =>
-            edit({
-              interests: text
-                .split('\n')
-                .map((s) => s.trim())
-                .filter(Boolean),
-            }),
+          (text) => edit({ interests: lines(text) }),
           { rows: 4, disabled },
         ),
         'One a line, specific.',
@@ -317,6 +324,13 @@ export function biographyView(
     );
   }
   return root;
+}
+
+function lines(text: string): string[] {
+  return text
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 function suggestionsView(

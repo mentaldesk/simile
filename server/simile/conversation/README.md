@@ -41,9 +41,10 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   each character knows only their own notes, what's between them and what's been said; they know
   what someone with their life and job would know, and otherwise ask, admit they don't know or give
   their own angle; it's a chat between neighbours, not a consultation; a topic the other doesn't
-  take up is let go and nobody goes back over a point; pet words now and then. The prompt has, for
-  each side, their persona, backstory, speaking style, values and interests, R1's `describe()` of
-  how they feel about the other told in the third person, and, each marked as only theirs, any
+  take up is let go and nobody goes back over a point; pet words and verbal habits now and then. The
+  prompt has, for each side, their persona, backstory, speaking style and mannerisms (as verbal
+  habits, to use now and then), values and interests, R1's `describe()` of how they feel about
+  the other told in the third person, and, each marked as only theirs, any
   grudge they hold against the other, R2's `recall` (memories of the other, then recent or salient
   ones) and the secrets others told them (open `secret` flags about anyone else), the works they
   might bring up (see *Works*), and B4's `topics_to_raise`. Then what's between them, which both

@@ -33,6 +33,10 @@
   "backstory": "Henrietta grew up in Leith and spent thirty-four years as a records clerk in the council housing office in Edinburgh, where a correctly filed form and a followed instruction were the difference between a family housed and a family waiting. She learned that safety came from doing as one was told and expecting the same of others. Widowed, she moved to the village for its tidy solar-roofed flats and its predictable days.",
   "persona": "Henrietta is a stern, orderly woman who believes most trouble comes from people not following the rules they were given. She checks the bin rota, reports a drone parked on the wrong pad, and expects the noodle bar queue to form in the proper order. New ideas, big dreams and anyone's feelings about finding themselves leave her unmoved, and she has little patience for chat that goes nowhere.",
   "speaking_style": "Brisk, formal and clipped, with short declarative sentences, precise Edinburgh diction and a habit of quoting the notice or the regulation. She says 'as instructed' and 'that is the procedure', and rarely asks questions about the other person.",
+  "mannerisms": [
+    "skips the pleasantries and opens with the problem",
+    "closes a discussion by restating the usual arrangement"
+  ],
   "interests": [
     "bin and recycling rota",
     "residents' association minutes",

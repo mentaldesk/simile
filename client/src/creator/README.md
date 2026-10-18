@@ -19,9 +19,9 @@ or *Characters* on the title menu. It's a DOM overlay over the game, built on th
     itself only a few times before it waits for *New line* (`sample-line.ts`).
   - **Background**: P3's skeleton fields. A reroll draws the facts and tension behind the biography
     again, so rerolling the background rerolls the biography too, unless that's locked.
-  - **Biography**: life events, the prose and the ties, rerolled together for the same reason.
-    Generation streams the reply as it's written, and the critic's suggestions can be accepted or
-    ignored one by one.
+  - **Biography**: life events, the prose, the verbal habits (mannerisms, drawn from P3's table)
+    and the ties, rerolled together for the same reason. Generation streams the reply as it's
+    written, and the critic's suggestions can be accepted or ignored one by one.
   - **Voice** (`voice.ts`): design from the description, record or upload the line, or pick a
     resident's voice from the library, then *Try it*. The microphone is recorded as raw samples and
     sent as 16-bit PCM WAV (`wav.ts`), since the server refuses the WebM that browsers record.

@@ -33,6 +33,10 @@
   "backstory": "Tobias spent forty-one years working the river lock at Athlone on the Shannon, as his father and grandfather had, where a missed routine could drown someone and every rule had a reason. He moved to the village after his wife died to be near his daughter, and he still keeps the old hours because they steady him.",
   "persona": "Tobias is a steady, dutiful old man who keeps his word, his routines and his neighbours' trust. He turns up at the same bench at the same time, returns anything he borrows the same day, and reports a broken lamp or loose paving stone to the council without fuss. He waves away talk of travel, trying new things or getting ahead as restless nonsense, and has little patience for anyone who treats rules as optional.",
   "speaking_style": "Slow, formal and measured, with complete sentences and a soft Irish Midlands turn of phrase. He says 'quite right' and 'as it should be', repeats instructions to make sure they are understood, and distrusts novelty without being unkind about it.",
+  "mannerisms": [
+    "repeats a request back in their own words to be sure of it",
+    "asks whether something has been tried before whenever a new idea comes up"
+  ],
   "interests": [
     "river levels and the old lock routines",
     "keeping appointments and daily habits",

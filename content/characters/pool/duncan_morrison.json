@@ -35,6 +35,10 @@
   "backstory": "He keeps a tin of spare buttons in the glovebox, sorted by colour and then by size, because a loose button is the kind of small failure he cannot leave lying about. He still thinks the complaint that ended his last job was unfair, and he has never let himself argue it, not even on the long night runs. He tells people he left. The back page of his route book holds a list he wrote a long time ago, headed with the big things: the council, the bank, the world. Most lines are struck through. The one he has kept is smaller: be the father who turns up when he says he will, and drive people home without making them feel like a burden. He is usually apologising before anyone has spoken.",
   "persona": "He arrives early and checks the mileage twice, and he will hand back a fiver he was owed rather than let a fare feel short-changed. When a passenger cries in the back he turns the radio off without being asked and drives slower. He waves off talk of the bigger firm or the new car, and apologises first when a booking runs late. Phone face up, he answers his children quickly, and a text left unread turns him quiet for the rest of the shift.",
   "speaking_style": "He speaks slowly and plainly, pausing before he answers and often starting with \"to be fair\" before a point he is about to make. When something goes wrong he goes quieter and offers to wait, asking whether someone would like him to hang on while they fetch their things.",
+  "mannerisms": [
+    "describes others' mistakes as ordinary parts of learning",
+    "suggests a last-minute outing whenever anyone mentions a free evening"
+  ],
   "interests": [
     "sorting spare buttons by size",
     "his father's Haynes manuals",

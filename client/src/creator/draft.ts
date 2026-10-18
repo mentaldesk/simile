@@ -20,7 +20,16 @@ export const FIELDS: Record<Section, readonly Field[]> = {
   look: ['appearance'],
   values: ['values', 'traits'],
   background: ['name', 'birth_year', 'gender', 'origin', 'arrival', 'occupation'],
-  biography: ['past', 'backstory', 'persona', 'speaking_style', 'interests', 'craft', 'hooks'],
+  biography: [
+    'past',
+    'backstory',
+    'persona',
+    'speaking_style',
+    'mannerisms',
+    'interests',
+    'craft',
+    'hooks',
+  ],
   voice: ['voice'],
 };
 
@@ -35,6 +44,8 @@ const REROLLS: Record<Section, readonly string[]> = {
 const ORDER = ['name', 'identity', 'values', 'past', 'biography', 'hooks', 'voice', 'appearance'];
 const CRITIQUED = new Set(['past', 'biography', 'hooks']);
 const SERVER_SET: readonly Field[] = ['source', 'created', 'updated', 'version'];
+export const MAX_MANNERISMS = 3;
+const MANNERISM_LENGTH = 120;
 
 export type Work = Partial<Character>;
 
@@ -198,6 +209,13 @@ export class Draft {
     if (blank(w.backstory)) problems.push('The backstory is empty.');
     if (blank(w.persona)) problems.push('The persona is empty.');
     if (blank(w.speaking_style)) problems.push('The speaking style is empty.');
+    const mannerisms = w.mannerisms ?? [];
+    if (mannerisms.length > MAX_MANNERISMS)
+      problems.push(`Keep to ${MAX_MANNERISMS} verbal habits at most.`);
+    mannerisms.forEach((mannerism, i) => {
+      if (mannerism.length > MANNERISM_LENGTH)
+        problems.push(`Verbal habit ${i + 1} is over ${MANNERISM_LENGTH} characters.`);
+    });
     (w.past ?? []).forEach((memory, i) => {
       if (blank(memory.content)) problems.push(`Life event ${i + 1} is empty.`);
       if (memory.age > age) {

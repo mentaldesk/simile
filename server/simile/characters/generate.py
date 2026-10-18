@@ -223,6 +223,7 @@ def assemble(
     for name in ("backstory", "persona", "speaking_style", "craft"):
         if name in written:
             made[name] = written[name]
+    made["mannerisms"] = sheet.mannerisms
     if "interests" in written:
         made["interests"] = written["interests"][:MAX_INTERESTS]
     if appearance := written.get("appearance"):

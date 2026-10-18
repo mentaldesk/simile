@@ -9,6 +9,7 @@ it('character.ts matches the server JSON Schema', async () => {
   const generated = await compile(JSON.parse(schema), 'Character', {
     bannerComment: banner,
     additionalProperties: false,
+    maxItems: -1,
     style: { singleQuote: true, printWidth: 100 },
   });
 

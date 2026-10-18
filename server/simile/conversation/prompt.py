@@ -124,8 +124,7 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "small, modern village. Stay in character.",
             npc.persona,
             npc.backstory,
-            f"How you speak: {npc.speaking_style} Use your pet words and phrases now and then, "
-            "not in every line.",
+            how_you_speak(npc),
             f"What you care about most: {most}. What you care about least: {least}.\n"
             f"Your interests: {', '.join(npc.interests)}.",
             "You're in a face-to-face conversation. Reply with only your next spoken line: at "
@@ -142,6 +141,20 @@ def system_prompt(npc: Npc, config: ConversationConfig = DEFAULT_CONFIG) -> str:
             f"Choose from: {VALUE_NAMES}.",
         ]
     )
+
+
+def how_you_speak(npc: Npc) -> str:
+    style = f"How you speak: {npc.speaking_style}"
+    if not npc.mannerisms:
+        return f"{style} Use your pet words and phrases now and then, not in every line."
+    return (
+        f"{style}\nYour verbal habits: {habits(npc)}. Use these now and then, not in every line, "
+        "and the same goes for your pet words and phrases."
+    )
+
+
+def habits(npc: Npc) -> str:
+    return "; ".join(mannerism.rstrip(".") for mannerism in npc.mannerisms)
 
 
 def background(
