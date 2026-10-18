@@ -1,0 +1,119 @@
+{
+  "id": "darragh_conroy",
+  "name": "Darragh Conroy",
+  "birth_year": 1987,
+  "gender": "man",
+  "origin": "Ireland",
+  "arrival": null,
+  "occupation": "Glaciologist reading ice cores",
+  "values": {
+    "freedom": 0.4,
+    "independence": 0.09,
+    "self_respect": 0.11,
+    "self_actualization": 0.31,
+    "creativity": 0.39,
+    "honesty": 0.53,
+    "compassion": 0.87,
+    "loyalty": 0.7,
+    "justice": 0.89,
+    "responsibility": 0.39,
+    "security": 0.78,
+    "equality": 0.84,
+    "tradition": 0.47,
+    "obedience": 0.38,
+    "success": 0.25,
+    "ambition": 0.04,
+    "discipline": 0.2,
+    "knowledge": 0.4,
+    "open_mindedness": 0.79,
+    "peace_of_mind": 0.86,
+    "pleasure": 0.31,
+    "connection": 0.47,
+    "adventure": 0.36,
+    "optimism": 0.48
+  },
+  "backstory": "He can tell a bad core from the sound it makes under the saw. He checks every figure against the logs twice before his name goes anywhere near it, and he owns a mistake before anyone has named it. That habit started in a house where a spilled bottle of peroxide or a late gas bill always seemed to end up on his side of the table. His mother ran a salon on her own and never once said he was the reason things were hard, but he heard it anyway. He wants a quiet life where the bus turns up on time and the chair by the window stays put. The last post ended with him being let go, and he tells people he left; nobody has asked him to explain. Under the calm sits a grief he keeps moving on to the next project, because the injection timetables and the child that never came are a room he would rather not open. He loves his partner and is afraid of being left, so he makes himself easy to live with, and every evening that runs late he reads as a verdict. In the hard months nobody asks him how he is.",
+  "persona": "He stays late to recheck a junior's figures without being asked, and he takes the blame for a shared error before anyone else can point at it. He doesn't care whose name goes on a paper, and when a promotion comes up he barely reads the email. Then, in a meeting, he tells a senior their method is wrong, to their face, and he won't soften it for anyone's comfort.",
+  "speaking_style": "He talks slowly and exactly, choosing each word as if it will be read back to him later. When a change comes up, the first thing out of his mouth is who signed it off, not what it does. Before he disagrees, he says he may have got it wrong himself, and then he makes his case anyway. When he's tired, he drops into short, plain sentences and stops using qualifiers.",
+  "mannerisms": [
+    "asks who signed off on a change before asking what it does",
+    "flags their own possible error before disagreeing, then makes the case anyway"
+  ],
+  "interests": [
+    "rewiring old hairdryers",
+    "bird counts",
+    "crosswords",
+    "fiddle tunes",
+    "bike chains"
+  ],
+  "past": [
+    {
+      "age": 28,
+      "content": "Eight years of injection timetables stuck to the fridge; the paper calendar with every cycle ringed in biro is still in my desk drawer.",
+      "salience": 0.5,
+      "valence": -0.7
+    },
+    {
+      "age": 28,
+      "content": "I moved the family savings into a share scheme a mate swore was a sure thing, and I said nothing, not even when the statements started arriving at the house.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 30,
+      "content": "I carried the last of my boxes up my mother's stairs and stood in the box room with the blue wallpaper I'd picked out, listening to her hairdryer through the wall.",
+      "salience": 0.25,
+      "valence": -0.3
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "He still thinks about the night someone found him at the lab's back door with a box of core samples that weren't his to take, and he has never said what he meant to do with them."
+    },
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "Every spring he drafts a birthday message to an ex-partner, deletes it, and feels sick at the thought that his current partner might one day scroll back through the old thread."
+    },
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "He won't talk about the day he went under in the flooded quarry as a boy, or the stranger who hauled him out by the collar, and he has never once tried to find out who it was."
+    }
+  ],
+  "traits": {
+    "sociability": 0.31,
+    "negativity_bias": 0.68,
+    "forgiveness": 1.0,
+    "first_impressions": 0.23
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "long",
+    "hair_colour": "#3e2731",
+    "top_colour": "#8b9bb4",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "glasses",
+      "scarf"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his late thirties. Mid-low pitch, warm and unhurried, with a dry, soft timbre, speaking slowly and precisely and pausing before each point as if weighing it.",
+    "reference_line": "The cores hold layers of snow, each one a winter, pressed thin by the weight of everything that fell after it.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "plain verse about frozen years"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:12:57.267129Z",
+  "updated": "2026-10-18T06:16:26.560806Z",
+  "version": 2
+}

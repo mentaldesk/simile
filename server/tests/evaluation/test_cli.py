@@ -48,12 +48,12 @@ def test_without_claude_stock_replies_stand_in_and_the_report_goes_to_stdout() -
 
 
 def test_out_gets_the_report_and_the_replies(tmp_path: Path) -> None:
-    result = evaluate("--pick", "duncan_morrison,azadeh_rahimi", "--out", str(tmp_path))
+    result = evaluate("--pick", "chloe_clarke,kamran_malik", "--out", str(tmp_path))
 
     assert result.exit_code == 0, result.output
     report = (tmp_path / REPORT).read_text(encoding="utf-8")
-    assert "Duncan Morrison, 53, Taxi driver" in report
-    assert "duncan_morrison, azadeh_rahimi" in report
+    assert "Chloe Clarke, 32, Quantum physicist building gravity sensors" in report
+    assert "chloe_clarke, kamran_malik" in report
     assert (tmp_path / REPLIES).exists()
     assert not result.stdout
 

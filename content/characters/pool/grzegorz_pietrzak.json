@@ -1,0 +1,121 @@
+{
+  "id": "grzegorz_pietrzak",
+  "name": "Grzegorz Pietrzak",
+  "birth_year": 1975,
+  "gender": "man",
+  "origin": "Poland",
+  "arrival": {
+    "age": 46,
+    "reason": "when they were offered social housing"
+  },
+  "occupation": "Stop-motion animator",
+  "values": {
+    "freedom": 0.3,
+    "independence": 0.66,
+    "self_respect": 0.72,
+    "self_actualization": 0.23,
+    "creativity": 0.43,
+    "honesty": 0.13,
+    "compassion": 0.12,
+    "loyalty": 0.31,
+    "justice": 0.12,
+    "responsibility": 0.67,
+    "security": 0.61,
+    "equality": 0.11,
+    "tradition": 0.75,
+    "obedience": 0.8,
+    "success": 0.74,
+    "ambition": 0.6,
+    "discipline": 0.78,
+    "knowledge": 0.44,
+    "open_mindedness": 0.16,
+    "peace_of_mind": 0.58,
+    "pleasure": 0.68,
+    "connection": 0.56,
+    "adventure": 0.63,
+    "optimism": 0.77
+  },
+  "backstory": "He moves a clay figure a few millimetres between frames and checks each step against the last, since a judder anyone can see is a failure he won't forgive. The one time he broke off from that was at school, when he stood up against a teacher and kept standing until two men walked him out. He hasn't sat down against an order since. Now the flat is spotless, the bills go out on the day they fall due, and the routine doesn't bend. Under the bread bin he keeps a notebook of poems he writes late at night, and no one has read a line of it. The divorce papers he signed at the kitchen table without a second look, and he tells himself that was the easy part. What stays with him is the sense that he should have gone further, and he keeps reaching for money, a better car and people turning round to notice him, as though that would settle it.",
+  "persona": "He is in the building before the call time, dressed for a room where nobody has invited him to sit down. He knows the name of every producer's assistant and uses it, and he corrects a sloppy frame count without raising his voice. Talk of fairness gets a shrug, and he moves on before anyone has finished the point. His compliments are polished and land a little too neatly, and he has a way of standing where the director will notice him.",
+  "speaking_style": "He speaks in full sentences and pauses before he commits to anything. Told that something is huge, or that it always or never happens, he asks: how many? how often? Then he waits until he gets a figure before he will say anything more.",
+  "mannerisms": [
+    "answers a vague claim by asking for a number"
+  ],
+  "interests": [
+    "Carcassonne on Sunday evenings",
+    "clay armatures and wire joints",
+    "Formula One qualifying times",
+    "tinned sprats from the Polish shop"
+  ],
+  "past": [
+    {
+      "age": 18,
+      "content": "The only time I ever refused an order was at school. I stood at my desk, the chair scraped behind me, and I stayed on my feet until two men from the office walked me out.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 27,
+      "content": "At the twenty-second mile of the marathon my legs had gone and I was walking. Nobody I knew had bet on me finishing, but I crossed the line with my own name on the timing chip.",
+      "salience": 0.15,
+      "valence": 0.7
+    },
+    {
+      "age": 30,
+      "content": "My ex-wife kept the good wooden spoons and the car. I signed the papers at the kitchen table and didn't read them through a second time.",
+      "salience": 0.73,
+      "valence": -0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "Years ago I pulled someone out of the canal in January. I have never told them I had been drinking when I did it."
+    },
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "I passed a private complaint, one that was made to me in confidence, back to the people who decide my future, and I smiled while I did it."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "They came into the studio after hours and caught me changing the timing on a set I had been told to leave alone. I lied about why I was there."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "For years I have beaten one rival to the better commissions, and last spring I quietly had them dropped from a short they had already been promised."
+    }
+  ],
+  "traits": {
+    "sociability": 0.66,
+    "negativity_bias": 0.29,
+    "forgiveness": 0.2,
+    "first_impressions": 0.49
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#8b9bb4",
+    "top_colour": "#5a6988",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Polish accent. A man in his early fifties. Medium-low pitch, dry and unhurried, with a flat, even timbre and a precise, economical manner, like someone reading numbers aloud carefully.",
+    "reference_line": "Most of my working day goes on moving clay figures a few millimetres at a time, checking each shot against the one before.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:01:50.994842Z",
+  "updated": "2026-10-18T06:16:27.303992Z",
+  "version": 2
+}

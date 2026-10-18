@@ -1,0 +1,113 @@
+{
+  "id": "chloe_clarke",
+  "name": "Chloe Clarke",
+  "birth_year": 1994,
+  "gender": "woman",
+  "origin": "England",
+  "arrival": null,
+  "occupation": "Quantum physicist building gravity sensors",
+  "values": {
+    "freedom": 0.65,
+    "independence": 0.4,
+    "self_respect": 0.78,
+    "self_actualization": 0.72,
+    "creativity": 0.64,
+    "honesty": 0.24,
+    "compassion": 0.52,
+    "loyalty": 0.39,
+    "justice": 0.7,
+    "responsibility": 0.62,
+    "security": 0.13,
+    "equality": 0.54,
+    "tradition": 0.79,
+    "obedience": 0.17,
+    "success": 0.71,
+    "ambition": 0.5,
+    "discipline": 0.41,
+    "knowledge": 0.51,
+    "open_mindedness": 0.75,
+    "peace_of_mind": 0.32,
+    "pleasure": 0.61,
+    "connection": 0.77,
+    "adventure": 0.8,
+    "optimism": 0.62
+  },
+  "backstory": "Chloe still carries a hospital wristband, folded flat, in the back pocket of the rucksack that has been to three continents. She learned what silence costs in a meeting where a manager took her work apart in front of the whole team, and she kept her pen capped and said nothing. Now she argues in every room she enters. Her lab is where she feels most certain: a bench of gravity sensors, each result checked against her own numbers, and a standing irritation with anyone who calls a reading good without checking it. She notices every kindness offered to her and turns it over, looking for the reason behind it. The friend she is in love with is married. Chloe has not said so to anyone, and on bad evenings she manages not to say it to herself either.",
+  "persona": "Chloe takes the fieldwork nobody else wants and talks to strangers on trains as though they owe her a straight answer. She lets a flattering reading of her own results stand for a day before she corrects it, and she waves off any protocol she considers slow. When a colleague is warm to her, she gives a quick, pleasant nod and then takes a second look at what they want.",
+  "speaking_style": "Quick and clipped, she drops qualifications into asides and corrects a wrong figure before the sentence is finished, with the exactness of someone who grew up around official paperwork. When challenged she brings up who else has admired her work, and her sentences speed up. When someone is kind to her she slows right down, as if checking for a hook.",
+  "mannerisms": [
+    "mentions who else has been impressed by them"
+  ],
+  "interests": [
+    "restoring a 1970s racing bicycle",
+    "swimming in cold water before dawn",
+    "Victorian natural philosophy",
+    "hill walking with paper maps",
+    "postal chess"
+  ],
+  "past": [
+    {
+      "age": 19,
+      "content": "The meeting room smelled of cold coffee the day a manager took my work apart in front of everyone. I kept my pen capped and said nothing, and I have been arguing ever since to make up for it.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 20,
+      "content": "On a night bus over a mountain pass, with my rucksack for a pillow and hostel rice for dinner, I decided I would rather be broke and moving than safe and still.",
+      "salience": 0.25,
+      "valence": 0.7
+    },
+    {
+      "age": 25,
+      "content": "The ambulance crew gave me ten seconds with the baby before the doors shut. I still count them, slowly, whenever a monitor beeps in a corridor.",
+      "salience": 0.5,
+      "valence": -0.3
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "Someone hauled me out of the water on a winter swim when I went under, and I never properly thanked them, because I hate owing anyone."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "After my child's surgery I borrowed money I couldn't cover, and I still send it back in small, irregular transfers. I have never told them how far behind I am."
+    }
+  ],
+  "traits": {
+    "sociability": 0.86,
+    "negativity_bias": 0.21,
+    "forgiveness": 0.18,
+    "first_impressions": 0.46
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "curly",
+    "hair_colour": "#733e39",
+    "top_colour": "#ead4aa",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "glasses",
+      "backpack"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman in her early thirties. Medium-high pitch, clear and somewhat crisp timbre, brisk but precise pace, direct and slightly impatient manner with a dry edge.",
+    "reference_line": "We measure gravity by timing how a cold atom falls, then we check that timing against something that cannot move at all.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "sharp letters to the editor"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:05:36.676231Z",
+  "updated": "2026-10-18T06:05:36.676231Z",
+  "version": 1
+}

@@ -6,9 +6,11 @@ makes the café B5's writer for the barista (see *The player orders*).
 
 ## The barista
 
-The barista is whoever lives at the café: the resident whose `home` is `coffee_shop`. In the
-default village that's Mirela Dragomir (`content/npcs/mirela.json`). A cast world with nobody
-living there has no barista, so nobody takes orders, but residents still sit down at the tables.
+The barista is whoever works at the café, the resident whose `workplace` is `coffee_shop`, else
+whoever lives there. In a cast world that's the cast's barista: casting fills the barista role
+first, and the role's shift is the café's hours (#235). In the default village it's Mirela Dragomir
+(`content/npcs/mirela.json`), who lives above the shop. A world with nobody working or living there
+has no barista, so nobody takes orders, but residents still sit down at the tables.
 
 `uv run simile cafe barista` made her with N1's resident prompt and one Sonnet call. Her values are
 the profile in N1's sampling pool farthest from everyone else's, and the prompt adds her job and

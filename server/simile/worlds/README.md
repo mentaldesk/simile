@@ -14,7 +14,7 @@ world, in a data directory of its own. Today's village, its save and `content/` 
 Both POSTs take:
 
 ```json
-{"count": 6, "picks": ["berk_koc"], "pins": [{"kind": "rival", "actor": "berk_koc", "target": "chloe_edwards"}]}
+{"count": 6, "picks": ["kamran_malik"], "pins": [{"kind": "rival", "actor": "kamran_malik", "target": "chloe_clarke"}]}
 ```
 
 `count` is how many residents, at most one per house. `picks` are cast as given, and so is everyone

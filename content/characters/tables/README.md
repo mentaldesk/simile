@@ -12,7 +12,9 @@ what the player has fixed and samples only the rest:
 1. **Census skeleton** (`sample_skeleton`): birth year, gender, origin, name, where they came from,
    class background, upbringing, the household they grew up in (one that fits the upbringing),
    siblings, education, partnership, children, health, work and occupation, in that order.
-   `origins_for(country)` gives the origin ids for a locked country.
+   `origins_for(country)` gives the origin ids for a locked country. Given `jobs`, as the pool's
+   plan gives for a role or a maker, the job is drawn before education, so a job that needs a
+   degree comes with one they've finished.
 2. **Values**: `simile.npc.values`, unchanged.
 3. **Temperament** (`sample_temperament`): HEXACO domains pulled by the values, facets around them.
 4. **Life events** (`sample_events`): 2 to 6, conditioned on all of the above and on each other.
@@ -38,8 +40,8 @@ event or hardship. The loader enforces it.
 
 A `Village` passed to the samplers records what one cast has drawn: no name part or job is used
 twice, a rare event, secret or mannerism goes to one resident at most, and anything else gets less
-likely each time a neighbour already has it. That is what stops three fraud whistleblowers turning
-up in one village.
+likely each time a neighbour already has it, job families included. That is what stops three fraud
+whistleblowers turning up in one village.
 
 Outputs are plain dataclasses for P3 to map onto `Character`: a `Happening` has the age, the text
 (which never states the age), an `impact` of 1 to 100 for a past memory's salience and a `valence`
@@ -55,6 +57,8 @@ here and owes nothing to a third party.
 | `names.toml` | Written for this project. See *Names* below. Origin weights are judgement, loosely following the largest countries of birth in England and Wales's 2021 Census ([ONS](https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/internationalmigration/bulletins/internationalmigrationenglandandwales/census2021)) plus the home nations | Names are facts; ONS figures under the Open Government Licence v3.0 |
 | `census.toml` | Eurostat statistics for employment, education and health by age, the rest judgement. See *Census* below | Eurostat data: CC BY 4.0, reused with acknowledgement |
 | `occupations.toml` | ISCO-08 groups (ILO) weighted by Eurostat's [lfsa_egai2d](https://ec.europa.eu/eurostat/databrowser/view/lfsa_egai2d/default/table) employment. See *Occupations* below | Eurostat data: CC BY 4.0; ISCO-08 codes and group names used as labels only |
+| `makers.toml` | Written for this project. See *People who make or think* below | |
+| `roles.toml` | Written for this project. See *The village's roles* below | |
 | `events.toml` | Written for this project, with Holmes and Rahe (1967) as a starting point. See *Life events* below | A handful of published scores used as anchors, with citation |
 | `tension.toml` | Written for this project | |
 | `temperament.toml` | HEXACO domain and facet names (Lee and Ashton) and the four attachment styles (Bartholomew and Horowitz, 1991), with descriptions written for this project | Model names only; no inventory items are reproduced |
@@ -107,6 +111,38 @@ gives each group a skill level, and `[skill]` says how likely each education lev
 at each skill level, by judgement following ISCO-08's mapping of skill levels to ISCED. The age
 limits on each job are judgement, so a 75-year-old can still keep a market stall but not drive a
 train. Retired residents get a former job drawn as of age 55.
+
+A group or a title marked `makes` is a job whose holder makes or studies something: science,
+engineering and ICT professionals, the craft trades, and a few titles such as journalist and
+musician. Casting's variety report (`simile cast-variety`) counts them with makers.toml's jobs and
+students.
+
+### People who make or think
+
+`makers.toml` is the user's list of jobs for people who make or think (#235): researchers,
+writers, artists, roboticists, builders, musicians, architects, planners, philosophers, founders
+and game designers. Each job is one line, a title and its family, with `ages` and `degree` if they
+differ from the family's. Titles are specific and a little near-future, like "prosthetics engineer
+designing hands that can feel", and the loader refuses a line with an unknown family or key, or a
+title that's already here or in `occupations.toml`. Each family's titles share a weight of 1, so
+families are equally likely whatever their size.
+
+A family's `major` is the ISCO-08 major group that `events.toml` conditions see, and `skill` its
+ISCO-08 skill level. Jobs that wouldn't have existed a generation ago have upper age limits, so an
+older maker gets a job that would have, like a philosopher or a choir director.
+
+Adding or changing a line changes what the pool's plan draws, as any table does, so the pool test
+(`test_rerunning_the_readme_command_would_write_nothing`) fails until the pool is regenerated.
+
+### The village's roles
+
+`roles.toml` names the people the village's interiors need: a barista for the Daily Grind, a cook
+for Golden Bowl Noodles, and hosts for Spark Maker Space and the gallery. Each role lists the jobs
+that fit it, as titles or makers.toml families, and the workplace, shifts and pay casting gives
+whoever fills it. Casting fills the roles first, in this order, and the pool's plan starts with two
+characters for each. The café's shift matches its opening hours in `simile.cafe`'s config. The
+barista and the cook take their shop's takings. The hosts' pay is left for E3 (#243), which sets
+what wages are worth.
 
 ### Life events
 

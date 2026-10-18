@@ -1,7 +1,9 @@
+import itertools
 import math
 import random
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 from simile.characters.brief import Brief
 from simile.characters.tables import (
@@ -21,6 +23,7 @@ from simile.characters.tables import (
     sample_tension,
 )
 from simile.characters.tables.conditions import LEAN, choose
+from simile.characters.tables.load import Job
 from simile.npc import values as npc_values
 from simile.schema import Build, CoreValue, HairStyle, HookKind, HookSide
 
@@ -36,6 +39,23 @@ LOCAL_ACCENT_BEFORE = 12
 """Someone who arrived younger than this speaks with the local accent."""
 PARTICLES = frozenset({"de", "del", "della", "dela", "di", "da", "dos", "du", "van", "von", "le"})
 CONTRADICTION_SALIENCE, CONTRADICTION_VALENCE = 0.7, -0.5
+
+PER_ROLE = 2
+"""Characters a pool plans for each of the village's roles, so casts don't all share them."""
+MAKER_SHARE = 0.7
+"""Of the pool's other characters, the share with a job from makers.toml, as in casting."""
+ELDER_FROM, ELDER_OLDEST = 60, 88
+"""A pool's other characters are over `ELDER_FROM`, with a trade from occupations.toml."""
+YOUNGER = 10
+"""Years younger than their values alone make them for a role or maker, as elders are planned."""
+INTERESTS = (
+    "computer games",
+    "board games",
+    "a science",
+    "ideas: philosophy, maths or where the world is heading",
+    "making, fixing or tinkering with things",
+)
+"""One of these goes into each character's interests, alongside everyday ones."""
 
 HOOK_COUNTS, HOOK_COUNT_WEIGHTS = (2, 3, 4), (2, 2, 1)
 HOOK_LEANS: dict[tuple[HookKind, HookSide], tuple[CoreValue, float] | None] = {
@@ -103,6 +123,8 @@ class Sheet:
     mannerisms: list[str]
     hooks: list[tuple[HookKind, HookSide]]
     look: "Look | None" = None
+    interest: str | None = None
+    """What one of their interests is about."""
 
     def seeds(self) -> list["Seed"]:
         """What happened to them in age order, each to become one past memory."""
@@ -122,6 +144,15 @@ class Seed:
 
 
 @dataclass(frozen=True)
+class Slot:
+    """What a slot in a pool's plan is for: one of the village's roles, a job from makers.toml,
+    or someone over 60 with a trade from occupations.toml."""
+
+    kind: Literal["role", "maker", "elder"]
+    role: str | None = None
+
+
+@dataclass(frozen=True)
 class Look:
     """The parts of their appearance drawn in code, so the pool doesn't all look alike."""
 
@@ -137,14 +168,23 @@ def draw(
     *,
     village: Village | None = None,
     tables: Tables | None = None,
+    slot: Slot | None = None,
 ) -> Sheet:
-    """The code stages in order, each sampling only what `brief` doesn't lock."""
+    """The code stages in order, each sampling only what `brief` doesn't lock. A `slot` says
+    which jobs they can have."""
     brief = brief or Brief()
     t = tables or load_tables()
     values = sample_values(rng, brief.values, brief.latent)
     age = YEAR - brief.birth_year if brief.birth_year is not None else sample_age(rng, values)
     fixed, country = _fixed(rng, brief, t)
-    skeleton = sample_skeleton(rng, age, village=village, tables=t, **fixed)
+    jobs = None if slot is None or "occupation" in fixed else _slot_jobs(slot, t)
+    if jobs and brief.birth_year is None:
+        youngest, oldest = min(j.ages[0] for j in jobs), max(j.ages[1] for j in jobs)
+        age = min(max(age - YOUNGER, youngest, YOUNGEST), oldest)
+    elder = slot is not None and slot.kind == "elder"
+    if elder and brief.birth_year is None and age <= ELDER_FROM:
+        age = rng.randint(ELDER_FROM + 1, ELDER_OLDEST)
+    skeleton = sample_skeleton(rng, age, village=village, tables=t, jobs=jobs, trade=elder, **fixed)
     origin = t.origin[skeleton.origin]
     country = country or origin.country.removeprefix("the ")
     accent = origin.accent if country == origin.country.removeprefix("the ") else f"from {country}"
@@ -168,6 +208,7 @@ def draw(
     )
     hooks = [] if brief.locked("hooks") else sample_hooks(rng, skeleton, values, village=village)
     look = None if brief.locked("appearance") else sample_look(rng, skeleton, village=village)
+    interest = None if brief.locked("interests") else sample_interest(rng, village=village)
     return Sheet(
         skeleton,
         country,
@@ -180,18 +221,40 @@ def draw(
         mannerisms,
         hooks,
         look,
+        interest,
     )
 
 
 def plan(count: int, seed: int, *, tables: Tables | None = None) -> list[Sheet]:
-    """A pool's sheets: values spread across the pool, and nothing rare drawn twice. The first
-    `n` sheets are the same for any count of `n` or more, so a pool can grow."""
+    """A pool's sheets: values spread across the pool, nothing rare drawn twice, and jobs as
+    `slots` gives them. The first `n` sheets are the same for any count of `n` or more, so a pool
+    can grow."""
+    t = tables or load_tables()
     profiles = npc_values.sample_values(count, random.Random(seed))
     village = Village()
     return [
-        draw(random.Random(f"{seed}:{slot}"), Brief(values=profile), village=village, tables=tables)
-        for slot, profile in enumerate(profiles)
+        draw(
+            random.Random(f"{seed}:{n}"),
+            Brief(values=profile),
+            village=village,
+            tables=t,
+            slot=slot,
+        )
+        for n, (profile, slot) in enumerate(zip(profiles, slots(t), strict=False))
     ]
+
+
+def slots(tables: Tables | None = None) -> Iterator[Slot]:
+    """`PER_ROLE` slots for each of the village's roles, then slots for jobs from makers.toml
+    and for elders, `MAKER_SHARE` of them makers, spread evenly."""
+    t = tables or load_tables()
+    for _ in range(PER_ROLE):
+        for role in t.roles:
+            yield Slot("role", role.id)
+    others = 1 - MAKER_SHARE
+    for n in itertools.count():
+        elder = math.floor((n + 1) * others + 0.5) > math.floor(n * others + 0.5)
+        yield Slot("elder") if elder else Slot("maker")
 
 
 def sample_values(
@@ -240,6 +303,15 @@ def sample_hooks(
     if village is not None:
         village.drawn.update(_hook_key(kind, side) for kind, side in hooks)
     return hooks
+
+
+def sample_interest(rng: random.Random, *, village: Village | None = None) -> str:
+    """One of `INTERESTS`, the ones neighbours already have less likely."""
+    taken = village or Village()
+    interest = rng.choices(INTERESTS, [taken.damping(f"interest:{i}") for i in INTERESTS])[0]
+    if village is not None:
+        village.drawn[f"interest:{interest}"] += 1
+    return interest
 
 
 def sample_look(rng: random.Random, skeleton: Skeleton, *, village: Village | None = None) -> Look:
@@ -307,6 +379,14 @@ def _fixed(rng: random.Random, brief: Brief, t: Tables) -> tuple[dict[str, objec
     if brief.occupation is not None:
         fixed["occupation"] = brief.occupation[0].lower() + brief.occupation[1:]
     return fixed, country
+
+
+def _slot_jobs(slot: Slot, t: Tables) -> list[Job] | None:
+    if slot.kind == "maker":
+        return t.maker_jobs
+    if slot.kind == "role":
+        return t.role_jobs(next(role for role in t.roles if role.id == slot.role))
+    return None
 
 
 def _named(t: Tables, given: str, family: str) -> list[str]:

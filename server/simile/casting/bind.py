@@ -5,6 +5,8 @@ from datetime import UTC, date, datetime
 from simile.casting.choose import value_distance
 from simile.casting.config import DEFAULT_CONFIG, CastingConfig
 from simile.casting.model import Bond, Cast, CastError, Pin, Resident
+from simile.casting.roles import holders, village_roles
+from simile.characters.tables.load import Role
 from simile.schema import Character, HookKind, HookSide, Id, LocationKind
 from simile.schema.character import MAX_AGE
 
@@ -25,9 +27,12 @@ def bind(
     game_date: date | None = None,
     *,
     houses: Sequence[Id] | None = None,
+    roles: Sequence[Role] | None = None,
     config: CastingConfig = DEFAULT_CONFIG,
 ) -> Cast:
-    """Give each resident a home, bind the pins, then bind open hooks between residents."""
+    """Give each resident a home, and each of the village's `roles` to the first resident whose
+    job fits it, with its workplace, shifts and pay. Then bind the pins, then open hooks between
+    residents."""
     houses = list(village_houses() if houses is None else houses)
     if len(chosen) > len(houses):
         raise CastError(f"The village has {len(houses)} houses, too few for {len(chosen)}")
@@ -40,11 +45,26 @@ def bind(
     for pin in pins:
         binder.pin(pin)
     binder.draw()
+    held = holders(chosen, village_roles() if roles is None else roles)
     return Cast(
         game_date=game_date,
         seed=seed,
-        residents=[Resident(character=c, home=home) for c, home in zip(chosen, homes, strict=True)],
+        residents=[
+            _resident(c, home, held.get(c.id)) for c, home in zip(chosen, homes, strict=True)
+        ],
         bonds=binder.bonds,
+    )
+
+
+def _resident(character: Character, home: Id, role: Role | None) -> Resident:
+    if role is None:
+        return Resident(character=character, home=home)
+    return Resident(
+        character=character,
+        home=home,
+        workplace=role.workplace,
+        shifts=role.shifts,
+        pay=role.pay,
     )
 
 

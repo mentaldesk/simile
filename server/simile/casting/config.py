@@ -14,7 +14,7 @@ class Weights(BaseModel):
     values: float = Field(default=2.0, ge=0, description="Times their values' RMS difference.")
     origin: float = Field(default=0.5, ge=0, description="When they come from different places.")
     age: float = Field(default=0.5, ge=0, description="Times their age gap over `age_scale`.")
-    occupation: float = Field(default=0.5, ge=0, description="When their job's group differs.")
+    occupation: float = Field(default=0.5, ge=0, description="When their job's family differs.")
     gender: float = Field(default=0.5, ge=0, description="When their genders differ.")
 
 
@@ -186,6 +186,18 @@ class CastingConfig(BaseModel):
     choices: int = Field(
         default=3, ge=1, description="Each draw picks at random among this many best candidates."
     )
+    maker_share: Unit = Field(
+        default=0.7,
+        description="Of the residents not filling one of the village's roles, the share with a "
+        "job from makers.toml.",
+    )
+    elders: int = Field(
+        default=2,
+        ge=0,
+        description="Residents over `elder_age` with a trade from occupations.toml in a cast of "
+        "10, scaled to the cast's size.",
+    )
+    elder_age: int = Field(default=60, ge=0, description="Elders are older than this.")
     bonds: dict[HookKind, BondConfig] = BONDS
     bond_salience: Unit = Field(default=0.8, description="Of the memory each side keeps of a bond.")
     past_spacing: timedelta = Field(

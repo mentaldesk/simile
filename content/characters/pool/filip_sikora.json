@@ -1,0 +1,124 @@
+{
+  "id": "filip_sikora",
+  "name": "Filip Sikora",
+  "birth_year": 1993,
+  "gender": "man",
+  "origin": "Poland",
+  "arrival": {
+    "age": 11,
+    "reason": "with their family as a child"
+  },
+  "occupation": "Transport planner mapping cycle networks",
+  "values": {
+    "freedom": 0.33,
+    "independence": 0.62,
+    "self_respect": 0.15,
+    "self_actualization": 0.66,
+    "creativity": 0.22,
+    "honesty": 0.71,
+    "compassion": 0.58,
+    "loyalty": 0.64,
+    "justice": 0.48,
+    "responsibility": 0.5,
+    "security": 0.77,
+    "equality": 0.48,
+    "tradition": 0.34,
+    "obedience": 0.54,
+    "success": 0.1,
+    "ambition": 0.2,
+    "discipline": 0.44,
+    "knowledge": 0.32,
+    "open_mindedness": 0.38,
+    "peace_of_mind": 0.83,
+    "pleasure": 0.73,
+    "connection": 0.79,
+    "adventure": 0.58,
+    "optimism": 0.51
+  },
+  "backstory": "He knows the tick of his bike chain before he knows what he wants for dinner. Most days he works out what will keep someone from being cross with him before he works out what he thinks. He gives way at junctions. He apologises first, even when the bump was someone else's. When a friend forgot his birthday he said it was nothing, and then spent a week giving short replies. His dad fixed things without talking, and the nearest he came to praise was 'it'll do', so he still checks decisions against what Dad would say, though he stopped asking Dad years ago. He turned down a promotion that would have taken him away from the people he loves, and he calls that peace of mind. What he wants, and would never say, is to be the one who stands in a room and refuses to let something unsafe go through. Under the dressing on his upper arm is a name he had done on a bad night. He tells people it's an old burn.",
+  "persona": "He answers messages within the hour and remembers which neighbour's child has the exam on Thursday. He doesn't chase promotion or talk up his own cleverness. When a meeting turns to who deserves credit, he goes quiet and changes the subject. He lets people off easily to their faces, but a forgotten birthday will sit with him for a week.",
+  "speaking_style": "Measured and unhurried. He answers questions about his work with exact figures and street names and lets the numbers do the praising. When a conversation turns against him he says 'that's fine, honestly' before anyone has pushed, and his sentences drift toward agreement before they finish.",
+  "mannerisms": [
+    "avoids superlatives about their own work and lets the details carry the point"
+  ],
+  "interests": [
+    "road gradients",
+    "Saturday football",
+    "soil under tarmac",
+    "buses that never line up",
+    "gran's pierogi dough"
+  ],
+  "past": [
+    {
+      "age": 9,
+      "content": "Dad's job at the cable works went in the spring, and for what felt like years Mum did the sums on the back of the gas bill at the kitchen table while I pretended not to watch.",
+      "salience": 0.4,
+      "valence": -0.5
+    },
+    {
+      "age": 20,
+      "content": "The first person I really liked gave me their number at a bus stop, and I cancelled our second date with a text about a shift I didn't have, because I was already sure it would end badly.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 21,
+      "content": "I left on a coach one grey Tuesday with a holdall, a secondhand bike I hadn't yet ridden in the city, and a list of bus routes copied out by hand.",
+      "salience": 0.2,
+      "valence": 0.4
+    },
+    {
+      "age": 29,
+      "content": "When the promotion came through I wrote 'no thanks, I'd rather stay near home' in the margin of the offer, then went round to Dad's on the Sunday to fix his gutter.",
+      "salience": 0.25,
+      "valence": 0.2
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "I went into the river below the weir after a dare, and the person who hauled me out onto the bank is someone I still owe a proper thank you, which I have never given."
+    },
+    {
+      "kind": "secret",
+      "side": "actor",
+      "description": "I went into the tattoo parlour on the high street after a bad night, and someone I know walked past the window and saw me come out with a dressing on my arm, and they have been asking me about it ever since."
+    },
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "My sibling stopped speaking to me after I sided with Mum over the sale of the house, and every few weeks I still open their name in my messages and close it again without sending anything."
+    }
+  ],
+  "traits": {
+    "sociability": 0.57,
+    "negativity_bias": 0.47,
+    "forgiveness": 0.93,
+    "first_impressions": 0.36
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#733e39",
+    "top_colour": "#3e2731",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses",
+      "backpack"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his early thirties. Mid-range pitch with a soft, slightly dry timbre, unhurried pace and a patient, even manner that never rushes a sentence.",
+    "reference_line": "I map the cycle routes that people actually ride, so every new junction gets counted before we paint a single white line.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:10:52.512715Z",
+  "updated": "2026-10-18T06:10:52.512715Z",
+  "version": 1
+}

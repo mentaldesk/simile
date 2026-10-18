@@ -1,0 +1,120 @@
+{
+  "id": "joaquim_sousa",
+  "name": "Joaquim Sousa",
+  "birth_year": 1955,
+  "gender": "man",
+  "origin": "Portugal",
+  "arrival": {
+    "age": 65,
+    "reason": "to live with a partner"
+  },
+  "occupation": "Retired nursery teacher",
+  "values": {
+    "freedom": 0.62,
+    "independence": 0.55,
+    "self_respect": 0.6,
+    "self_actualization": 0.16,
+    "creativity": 0.41,
+    "honesty": 0.12,
+    "compassion": 0.14,
+    "loyalty": 0.29,
+    "justice": 0.22,
+    "responsibility": 0.23,
+    "security": 0.46,
+    "equality": 0.53,
+    "tradition": 0.19,
+    "obedience": 0.47,
+    "success": 0.84,
+    "ambition": 0.85,
+    "discipline": 0.29,
+    "knowledge": 0.46,
+    "open_mindedness": 0.36,
+    "peace_of_mind": 0.69,
+    "pleasure": 0.63,
+    "connection": 0.37,
+    "adventure": 0.47,
+    "optimism": 0.56
+  },
+  "backstory": "Before he is properly awake each morning, he opens the same three flat listings on his phone and works out what each would bring in rent. He calls it a hobby. The night a younger brother took a shortcut he had suggested and a lorry crossed the line, he had been the one to send him that way. Nothing he could have done would change it, and he has not stopped going over it since. What he wants now is money quick enough that nobody can make him feel small again, and things people can see: the car, the watch, the name on the letterhead. He is easy company for anyone who can open a door. He asks after their children by name and remembers what they said last time. Rules, he feels, were drawn up for people who did not know him. His first proper post came on the third sitting of a qualifying exam. He had failed twice, and on the third he copied from the person beside him. The parents who trust him have no idea. He has never settled whether he would do it differently.",
+  "persona": "He is first to a handshake at any gathering and last out of a meeting that has gone his way. Asked how he paid for the new car, he says 'Yes, it's new, isn't it lovely?' and moves on. Talk of road safety, or of who was driving that night, he steers somewhere else. He asks for the better chair and the earlier slot, and mentions a figure before anyone has asked for one.",
+  "speaking_style": "Crisp and assured, with the careful phrasing of someone used to speaking to parents. Asked anything, he answers yes or no first, then qualifies. When he wants something he drops his voice and uses the listener's first name.",
+  "mannerisms": [
+    "gives a yes or no before any caveat"
+  ],
+  "interests": [
+    "toddler speech development",
+    "buy-to-let yields",
+    "classic Mercedes restoration",
+    "azulejo tiles",
+    "Primeira Liga"
+  ],
+  "past": [
+    {
+      "age": 30,
+      "content": "They tell me the questions were unfair, and for a while I believed them. Both times I walked out of that hall with the paper folded in my jacket pocket so nobody could see the mark.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 32,
+      "content": "Ten years went by with the same worksheet photocopied on the same machine, while I let other staff run the training days and told everyone I had chosen the children over the paperwork.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 55,
+      "content": "A shop share I bought on a cousin's word, two credit cards and a loan against the house ate nearly ten years of my pension before I could breathe again.",
+      "salience": 0.35,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "He has let an old friend from training college ring out for a month since they asked for the £1,200 back, and he rehearses a new excuse each time the phone lights up."
+    },
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "He let a colleague carry the blame for the missing petty cash, said nothing when the complaint went in, and has kept his distance since."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "He still reads the rival's posts about their new kitchen extension and has been quietly costing a bigger one for his own house."
+    }
+  ],
+  "traits": {
+    "sociability": 0.53,
+    "negativity_bias": 0.45,
+    "forgiveness": 0.33,
+    "first_impressions": 0.71
+  },
+  "appearance": {
+    "skin": "#e4a672",
+    "hair_style": "curly",
+    "hair_colour": "#8b9bb4",
+    "top_colour": "#c0cbdc",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#3e2731",
+    "build": "broad",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "An European Portuguese accent. A man in his early seventies. Mid pitch with a warm, polished timbre, measured pace and a confident, slightly theatrical manner, as if he expects to be listened to.",
+    "reference_line": "I taught small children to speak for many years, and I still think the quiet ones are the ones worth watching.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "painting",
+    "form": "azulejo-style tile designs on card"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:29:51.141474Z",
+  "updated": "2026-10-18T06:29:51.141474Z",
+  "version": 1
+}

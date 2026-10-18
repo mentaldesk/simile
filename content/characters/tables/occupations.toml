@@ -1,8 +1,9 @@
 # Jobs by ISCO-08 sub-major group. `employed` is the group's EU-27 employment in 2023, in
 # thousands, from Eurostat's lfsa_egai2d; its titles share it equally. `skill` is ISCO-08's skill
 # level for the group, and [skill] says how likely each education level is to hold a job at
-# each skill level, 1 to 4. `ages` is who can hold the job, and a title can override it or
-# `degree` (whether it needs a university degree). How it was made is in README.md.
+# each skill level, 1 to 4. `ages` is who can hold the job, and a title can override it,
+# `degree` (whether it needs a university degree) or `makes` (whether whoever does it makes or
+# studies something, which casting's variety report counts). How it was made is in README.md.
 
 [skill]
 early_leaver = [3.0, 1.0, 0.25, 0.03]
@@ -62,6 +63,7 @@ titles = ["hotel manager", "restaurant owner", "shop manager", "pub landlord", "
 
 [[group]]
 id = "science_professionals"
+makes = true
 isco = "21"
 major = "professionals"
 skill = 4
@@ -105,7 +107,7 @@ titles = [
   "PE teacher",
   "nursery teacher",
   "special needs teacher",
-  { name = "university lecturer", ages = [26, 75] },
+  { name = "university lecturer", ages = [26, 75], makes = true },
   { name = "music teacher", ages = [22, 80], degree = false },
 ]
 
@@ -120,6 +122,7 @@ titles = ["accountant", "financial adviser", "management consultant", "marketing
 
 [[group]]
 id = "ict_professionals"
+makes = true
 isco = "25"
 major = "professionals"
 skill = 4
@@ -139,10 +142,10 @@ titles = [
   { name = "social worker", degree = true },
   { name = "psychologist", degree = true },
   "librarian",
-  "journalist",
-  "graphic designer",
+  { name = "journalist", makes = true },
+  { name = "graphic designer", makes = true },
   "church minister",
-  { name = "musician", ages = [18, 85] },
+  { name = "musician", ages = [18, 85], makes = true },
   "translator",
 ]
 
@@ -204,7 +207,7 @@ titles = [
   "chef",
   { name = "fitness instructor", ages = [18, 60] },
   "youth worker",
-  "photographer",
+  { name = "photographer", makes = true },
   "community support worker",
   "museum technician",
   { name = "football coach", ages = [20, 70] },
@@ -217,7 +220,7 @@ major = "technicians"
 skill = 3
 employed = 2055.9
 ages = [18, 70]
-titles = ["IT support technician", "network technician", "broadcast engineer", "sound engineer"]
+titles = ["IT support technician", "network technician", "broadcast engineer", { name = "sound engineer", makes = true }]
 
 [[group]]
 id = "general_clerks"
@@ -327,6 +330,7 @@ titles = ["forester", "fishing boat skipper", "gamekeeper"]
 
 [[group]]
 id = "building_trades"
+makes = true
 isco = "71"
 major = "craft"
 skill = 2
@@ -336,6 +340,7 @@ titles = ["bricklayer", "carpenter", "plumber", "roofer", "plasterer", "painter 
 
 [[group]]
 id = "metal_trades"
+makes = true
 isco = "72"
 major = "craft"
 skill = 2
@@ -345,6 +350,7 @@ titles = ["car mechanic", "welder", "toolmaker", "farm machinery mechanic", "air
 
 [[group]]
 id = "handicraft_printing"
+makes = true
 isco = "73"
 major = "craft"
 skill = 2
@@ -354,6 +360,7 @@ titles = ["printer", "jeweller", "potter", "sign maker", "piano tuner"]
 
 [[group]]
 id = "electrical_trades"
+makes = true
 isco = "74"
 major = "craft"
 skill = 2
@@ -363,6 +370,7 @@ titles = ["electrician", "aerial installer", "solar panel installer", "lift engi
 
 [[group]]
 id = "food_wood_garment_trades"
+makes = true
 isco = "75"
 major = "craft"
 skill = 2

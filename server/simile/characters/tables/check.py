@@ -23,6 +23,8 @@ def problems(tables: "Tables") -> Iterator[str]:
     yield from _names(tables)
     yield from _census(tables)
     yield from _occupations(tables)
+    yield from _makers(tables)
+    yield from _roles(tables)
     yield from _conditions(tables)
 
 
@@ -143,6 +145,42 @@ def _occupations(tables: "Tables") -> Iterator[str]:
     degrees = {row.id for row in tables.census.education if row.degree}
     if not degrees and any(job.degree for job in tables.jobs):
         yield "occupations.toml: titles need a degree but no education level is one"
+
+
+def _makers(tables: "Tables") -> Iterator[str]:
+    makers = tables.makers
+    families = _ids(makers.families)
+    yield from _unique("makers.toml family", (family.id for family in makers.families))
+    groups = _ids(tables.occupations.group)
+    majors = {group.major for group in tables.occupations.group}
+    for family in makers.families:
+        where = f"makers.toml family '{family.id}'"
+        if family.id in groups:
+            yield f"{where}: occupations.toml has a group with that id"
+        if family.major not in majors:
+            yield f"{where}: major '{family.major}' isn't an occupations.toml major"
+        if not any(job.family == family.id for job in makers.jobs):
+            yield f"{where}: has no jobs"
+    for job in makers.jobs:
+        if job.family not in families:
+            yield f"makers.toml job '{job.title}': unknown family '{job.family}'"
+    titles = [job.name.casefold() for job in tables.jobs]
+    titles += [job.title.casefold() for job in makers.jobs]
+    yield from _unique("occupations.toml and makers.toml title", titles)
+
+
+def _roles(tables: "Tables") -> Iterator[str]:
+    yield from _unique("roles.toml role", (role.id for role in tables.roles))
+    yield from _unique("roles.toml workplace", (role.workplace for role in tables.roles))
+    families = _ids(tables.makers.families)
+    for role in tables.roles:
+        where = f"roles.toml role '{role.id}'"
+        for title in role.jobs:
+            if tables.job(title) is None:
+                yield f"{where}: no job '{title}' in occupations.toml or makers.toml"
+        yield from _known(f"{where} families", role.families, families)
+        if not tables.role_jobs(role):
+            yield f"{where}: no job fits it"
 
 
 def _conditions(tables: "Tables") -> Iterator[str]:

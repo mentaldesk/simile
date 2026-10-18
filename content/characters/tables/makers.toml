@@ -1,0 +1,139 @@
+# People who make or think. About 7 in 10 of the residents who don't fill one of the village's
+# roles have a job from here (`maker_share` in casting's config); the rest come from
+# occupations.toml. Add a job as one line: its title and family, and optionally `ages` (who can
+# hold it) and `degree` (whether it needs a university degree), which default to the family's.
+# Titles are specific and a little near-future, and no title is in occupations.toml too. A
+# family's `major` is the ISCO-08 major group events.toml's conditions see, and `skill` is its
+# skill level, which [skill] in occupations.toml matches to education.
+
+families = [
+  { id = "science", name = "research and science", major = "professionals", skill = 4, ages = [23, 80], degree = true },
+  { id = "biology", name = "biology and genetics", major = "professionals", skill = 4, ages = [23, 75], degree = true },
+  { id = "medicine", name = "medicine", major = "professionals", skill = 4, ages = [26, 72], degree = true },
+  { id = "bionics", name = "bionics: prosthetics and implants", major = "professionals", skill = 4, ages = [23, 70], degree = true },
+  { id = "earth", name = "earth sciences", major = "professionals", skill = 4, ages = [23, 75], degree = true },
+  { id = "ecology", name = "animals and ecology", major = "professionals", skill = 4, ages = [22, 78], degree = true },
+  { id = "robotics", name = "robotics", major = "professionals", skill = 4, ages = [22, 70], degree = true },
+  { id = "writing", name = "writing and journalism", major = "professionals", skill = 3, ages = [18, 90] },
+  { id = "art", name = "art and design", major = "professionals", skill = 3, ages = [18, 90] },
+  { id = "music", name = "music", major = "professionals", skill = 3, ages = [16, 90] },
+  { id = "building", name = "building and architecture", major = "craft", skill = 3, ages = [18, 72] },
+  { id = "planning", name = "town planning", major = "professionals", skill = 4, ages = [23, 72], degree = true },
+  { id = "philosophy", name = "philosophy", major = "professionals", skill = 4, ages = [24, 90], degree = true },
+  { id = "founders", name = "tech founders", major = "managers", skill = 3, ages = [19, 70] },
+  { id = "games", name = "game design, computer and board games", major = "professionals", skill = 3, ages = [18, 75] },
+]
+
+jobs = [
+  { title = "quantum physicist building gravity sensors", family = "science", ages = [23, 65] },
+  { title = "mathematician proving theorems with a computer assistant", family = "science", ages = [23, 65] },
+  { title = "battery chemist testing sodium cells", family = "science", ages = [23, 65] },
+  { title = "materials scientist growing self-healing concrete", family = "science", ages = [23, 65] },
+  { title = "theoretical physicist working on dark matter", family = "science" },
+  { title = "physicist designing magnets for fusion reactors", family = "science" },
+  { title = "astronomer hunting asteroids with a robotic telescope", family = "science" },
+
+  { title = "synthetic biologist engineering yeast to make spider silk", family = "biology", ages = [23, 60] },
+  { title = "geneticist reading ancient DNA from lake mud", family = "biology" },
+  { title = "researcher storing computer data in DNA", family = "biology", ages = [23, 60] },
+  { title = "plant geneticist breeding drought-proof wheat", family = "biology" },
+  { title = "cell biologist growing meat in a lab", family = "biology", ages = [23, 60] },
+  { title = "microbiologist hunting new antibiotics in soil", family = "biology" },
+
+  { title = "surgeon who operates through a remote robot", family = "medicine", ages = [30, 65] },
+  { title = "medical researcher growing mini-organs to test drugs", family = "medicine", ages = [26, 65] },
+  { title = "neurologist studying sleep with wearable scanners", family = "medicine" },
+  { title = "researcher designing personal cancer vaccines", family = "medicine", ages = [26, 65] },
+  { title = "paediatric heart surgeon", family = "medicine", ages = [32, 68] },
+  { title = "epidemiologist tracking viruses through wastewater", family = "medicine" },
+
+  { title = "prosthetics engineer designing hands that can feel", family = "bionics" },
+  { title = "audiologist tuning cochlear implants over an app", family = "bionics" },
+  { title = "engineer building brain implants that move a cursor", family = "bionics", ages = [23, 60] },
+  { title = "bionic limb fitter", family = "bionics", degree = false },
+  { title = "exoskeleton designer for care workers", family = "bionics", ages = [23, 60] },
+  { title = "researcher developing retinal implants", family = "bionics" },
+
+  { title = "climate scientist modelling floods for river towns", family = "earth" },
+  { title = "volcanologist flying drones into ash clouds", family = "earth", ages = [23, 60] },
+  { title = "oceanographer tracking currents with robot floats", family = "earth" },
+  { title = "glaciologist reading ice cores", family = "earth" },
+  { title = "geologist surveying rock for underground heat", family = "earth" },
+  { title = "seismologist listening to earthquakes through fibre-optic cables", family = "earth" },
+
+  { title = "marine biologist replanting seagrass meadows", family = "ecology" },
+  { title = "zoologist tracking urban foxes with GPS collars", family = "ecology" },
+  { title = "ecologist rewilding old farmland with beavers", family = "ecology" },
+  { title = "entomologist counting wild bees with microphones", family = "ecology" },
+  { title = "ornithologist studying how birds navigate", family = "ecology" },
+  { title = "conservation biologist breeding rare frogs", family = "ecology" },
+
+  { title = "robotics engineer teaching robots to fold laundry", family = "robotics", ages = [22, 60] },
+  { title = "programmer of drone swarms", family = "robotics", ages = [22, 55] },
+  { title = "soft-robotics researcher making grippers out of silicone", family = "robotics" },
+  { title = "technician repairing farm robots", family = "robotics", degree = false },
+  { title = "robot choreographer for stage shows", family = "robotics", degree = false, ages = [21, 60] },
+  { title = "engineer building robots for nuclear clean-up", family = "robotics" },
+
+  { title = "investigative journalist covering data leaks", family = "writing", ages = [21, 75] },
+  { title = "science fiction novelist", family = "writing" },
+  { title = "maker of documentary podcasts", family = "writing", ages = [18, 70] },
+  { title = "reporter running a one-person local newsroom", family = "writing", ages = [21, 75] },
+  { title = "ghostwriter of other people's memoirs", family = "writing" },
+  { title = "comic book writer", family = "writing" },
+  { title = "writer of interactive films", family = "writing", ages = [18, 65] },
+
+  { title = "sculptor casting in recycled glass", family = "art" },
+  { title = "stop-motion animator", family = "art" },
+  { title = "ceramicist firing a wood kiln", family = "art" },
+  { title = "light installation artist", family = "art" },
+  { title = "typeface designer", family = "art" },
+  { title = "illustrator of field guides", family = "art" },
+  { title = "set designer for virtual reality films", family = "art", ages = [18, 60] },
+  { title = "fashion designer working with mushroom leather", family = "art", ages = [18, 65] },
+
+  { title = "film composer", family = "music" },
+  { title = "session drummer", family = "music", ages = [18, 75] },
+  { title = "builder of modular synthesisers", family = "music" },
+  { title = "folk fiddler who tours small halls", family = "music" },
+  { title = "sound artist recording city noise", family = "music" },
+  { title = "choir director", family = "music", ages = [22, 90] },
+  { title = "electronic music producer", family = "music", ages = [16, 70] },
+  { title = "violin maker", family = "music" },
+
+  { title = "architect designing timber high-rises", family = "building", degree = true, ages = [25, 75] },
+  { title = "straw-bale house builder", family = "building" },
+  { title = "stonemason restoring old bridges", family = "building" },
+  { title = "site engineer for 3D-printed houses", family = "building", degree = true, ages = [22, 60] },
+  { title = "retrofit builder insulating old terraces", family = "building" },
+  { title = "structural engineer for earthquake-proof schools", family = "building", degree = true, ages = [23, 72] },
+  { title = "timber-frame carpenter", family = "building" },
+
+  { title = "town planner designing car-free streets", family = "planning" },
+  { title = "transport planner mapping cycle networks", family = "planning" },
+  { title = "urban planner cooling streets with trees", family = "planning" },
+  { title = "planner protecting towns from floods", family = "planning" },
+  { title = "planner for a housing co-operative", family = "planning" },
+
+  { title = "moral philosopher advising on AI ethics", family = "philosophy", ages = [24, 75] },
+  { title = "philosopher of mind", family = "philosophy" },
+  { title = "logician", family = "philosophy" },
+  { title = "bioethicist on a hospital ethics board", family = "philosophy", ages = [28, 75] },
+  { title = "philosophy lecturer who runs debates in pubs", family = "philosophy", ages = [26, 75] },
+  { title = "philosopher of science", family = "philosophy" },
+
+  { title = "founder of a start-up making home batteries", family = "founders" },
+  { title = "founder of an app for lending tools to neighbours", family = "founders", ages = [19, 60] },
+  { title = "co-founder of a satellite-imaging start-up", family = "founders" },
+  { title = "start-up founder building translation earbuds", family = "founders", ages = [19, 60] },
+  { title = "founder of a company recycling solar panels", family = "founders" },
+  { title = "founder of an indoor vertical farm", family = "founders" },
+
+  { title = "indie video game designer", family = "games" },
+  { title = "board game designer", family = "games" },
+  { title = "level designer for an open-world game", family = "games", ages = [18, 60] },
+  { title = "esports coach", family = "games", ages = [18, 50] },
+  { title = "writer of tabletop role-playing games", family = "games" },
+  { title = "escape room puzzle designer", family = "games" },
+  { title = "designer of games for museums", family = "games" },
+]

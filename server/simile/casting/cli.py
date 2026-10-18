@@ -73,7 +73,8 @@ def register(app: typer.Typer) -> None:
         except ValueError as e:
             raise typer.BadParameter(str(e), param_hint="--date") from e
         try:
-            chosen = cast(load_pool(pool or POOL_DIR), count, picks, pins, seed)
+            year = start.year if start else None
+            chosen = cast(load_pool(pool or POOL_DIR), count, picks, pins, seed, year=year)
             made = bind(chosen, pins, seed, start)
         except CastError as e:
             raise typer.BadParameter(str(e)) from e
@@ -82,7 +83,10 @@ def register(app: typer.Typer) -> None:
         typer.echo(f"Cast {len(made.residents)} residents into {written} (seed {seed}):")
         for resident in made.residents:
             c = resident.character
-            typer.echo(f"  {resident.home:9} {c.name}, {made.age(c)}, {c.occupation} ({c.id})")
+            work = f", works at {resident.workplace}" if resident.workplace else ""
+            typer.echo(
+                f"  {resident.home:9} {c.name}, {made.age(c)}, {c.occupation}{work} ({c.id})"
+            )
         if made.bonds:
             typer.echo("Bonds:")
             for bond in made.bonds:
@@ -96,6 +100,37 @@ def register(app: typer.Typer) -> None:
             )
         db = folder / "simile.db" if data else default_path().resolve()
         typer.echo(f"Run it with:\n  SIMILE_DB={db} uv run simile headless --speed 10")
+
+    @app.command("cast-variety")
+    def cast_variety(
+        count: Annotated[int, typer.Option(help="Residents in each cast.")] = 10,
+        seeds: Annotated[int, typer.Option(help="Casts, seeded 0 up.")] = 5,
+        pool: Annotated[
+            Path | None, typer.Option(help="Defaults to the repo's content/characters/pool/.")
+        ] = None,
+    ) -> None:
+        """How varied random casts' jobs and ages are, one cast a line, then on average."""
+        from simile.casting import bind, cast
+        from simile.casting.variety import average, of_cast
+        from simile.characters.pool import POOL_DIR, load_pool
+
+        library = load_pool(pool or POOL_DIR)
+        found = []
+        typer.echo("seed  families  making  repeats  elders  ages     age SD")
+        for seed in range(seeds):
+            made = bind(cast(library, count, seed=seed), seed=seed)
+            v = of_cast(made)
+            found.append(v)
+            typer.echo(
+                f"{seed:4}  {v.families:8}  {v.making:6}  {v.repeats:7}  {v.elders:6}  "
+                f"{v.youngest:2}-{v.oldest:<3}  {v.age_spread:6.1f}"
+            )
+        mean = average(found)
+        typer.echo(
+            f"mean  {mean['families']:8.1f}  {mean['making']:6.1f}  {mean['repeats']:7.1f}  "
+            f"{mean['elders']:6.1f}  {mean['youngest']:.0f}-{mean['oldest']:.0f}   "
+            f"{mean['age_spread']:6.1f}"
+        )
 
 
 def _pin(text: str) -> "Pin":

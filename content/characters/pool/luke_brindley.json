@@ -1,0 +1,126 @@
+{
+  "id": "luke_brindley",
+  "name": "Luke Brindley",
+  "birth_year": 1992,
+  "gender": "man",
+  "origin": "England",
+  "arrival": {
+    "age": 26,
+    "reason": "to live with a partner"
+  },
+  "occupation": "Audiologist tuning cochlear implants over an app",
+  "values": {
+    "freedom": 0.93,
+    "independence": 0.83,
+    "self_respect": 0.62,
+    "self_actualization": 0.66,
+    "creativity": 0.72,
+    "honesty": 0.58,
+    "compassion": 0.83,
+    "loyalty": 0.32,
+    "justice": 0.77,
+    "responsibility": 0.08,
+    "security": 0.17,
+    "equality": 0.87,
+    "tradition": 0.06,
+    "obedience": 0.07,
+    "success": 0.49,
+    "ambition": 0.77,
+    "discipline": 0.18,
+    "knowledge": 0.69,
+    "open_mindedness": 0.82,
+    "peace_of_mind": 0.34,
+    "pleasure": 0.78,
+    "connection": 0.74,
+    "adventure": 0.93,
+    "optimism": 0.9
+  },
+  "backstory": "He answers work messages from the bath, phone balanced on the tiles, because a child's implant map can't wait and he never learned to make it. The app he tunes processors through shows how many days each patient has gone without logging in, and he checks that count before his own messages; it sits in him like a loose tooth. He grew up where university was simply assumed, and he left home with a suitcase to live with a partner, chasing a kind of freedom nobody in his family seemed to want. People who know him well say he's the one who keeps a table talking and the hardest to get off the phone. He laughs that off, but privately his sense of his own worth is pinned to the last payslip. Bad nights he handles by himself, door shut, and nobody has seen him shake in a long time. He has an anxiety disorder diagnosis his family have never heard about. He wants the good work to be seen, but what pulls at him hardest is making something rough and useless with his hands, and he can't tell whether he's after praise or just the making.",
+  "persona": "He strikes up conversation with whoever is standing near him in a queue and has their life story inside five minutes, then quietly fixes the fault before anyone else has noticed it. Thanks make him wave a hand; rules that slow him down get ignored; a meeting with no decision at the end makes him restless within minutes. Ask him about something hard at home and he goes quiet and spends the whole of Sunday in the shed, where the motorbike engine is always half in pieces.",
+  "speaking_style": "Fast and loud, talking over himself, starting sentences he never finishes and leaping to the next idea before the last one has landed. He won't touch anything difficult until he's been apologised to. He says so bluntly, 'Sorry first,' and grins as if it's a joke even when it isn't entirely.",
+  "mannerisms": [
+    "demands an apology before agreeing to discuss anything at all"
+  ],
+  "interests": [
+    "1990s motorbike engines",
+    "fermented chilli sauce in jars",
+    "late-night strategy games",
+    "expired film in cheap cameras",
+    "walks with no phone signal"
+  ],
+  "past": [
+    {
+      "age": 6,
+      "content": "Dad came home one afternoon with his lanyard still clipped on, and for years after that I couldn't open a tin of tomatoes without hearing his keys hit the hall table.",
+      "salience": 0.4,
+      "valence": -0.5
+    },
+    {
+      "age": 31,
+      "content": "Three dinners in, I'd already rehearsed the breakup, so I got it over with on the pavement outside the flat with the blue door, sure it would fail anyway.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 32,
+      "content": "The brochure still has a coffee ring on it from the morning I signed the transfer. I can see my own handwriting shaking on the form.",
+      "salience": 0.38,
+      "valence": -0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "I hauled a stranger out of a flooded slipway once, when the water was over both our heads, and I've never told my spouse how close it came."
+    },
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "I haven't answered my sibling since the row at our parents' kitchen table over who would pay for Dad's care, and I keep drafting the apology I'd want first."
+    },
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "The friend I shared a damp flat with before I left home sent me a photo of our old van last month, and I still haven't replied."
+    },
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "Someone I lent a few thousand to during the lean years still owes it, and I pretend I've forgotten the amount so I don't have to chase it."
+    }
+  ],
+  "traits": {
+    "sociability": 0.78,
+    "negativity_bias": 0.13,
+    "forgiveness": 0.75,
+    "first_impressions": 0.58
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#733e39",
+    "top_colour": "#ff4fa8",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "glasses",
+      "headphones"
+    ]
+  },
+  "voice": {
+    "description": "An English accent. A man in his mid-thirties. Medium pitch with a warm, slightly rough timbre, a quick but measured pace and an easy, direct manner.",
+    "reference_line": "I spend most mornings adjusting tiny devices so children can hear the birds, the ball and the shouting at break time.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "mural",
+    "form": "loud abstract shed-wall murals"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:09:48.632802Z",
+  "updated": "2026-10-18T06:16:23.538364Z",
+  "version": 2
+}

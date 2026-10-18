@@ -1,0 +1,120 @@
+{
+  "id": "ross_paterson",
+  "name": "Ross Paterson",
+  "birth_year": 1994,
+  "gender": "man",
+  "origin": "Scotland",
+  "arrival": null,
+  "occupation": "Ghostwriter of other people's memoirs",
+  "values": {
+    "freedom": 0.11,
+    "independence": 0.17,
+    "self_respect": 0.31,
+    "self_actualization": 0.3,
+    "creativity": 0.14,
+    "honesty": 0.41,
+    "compassion": 0.3,
+    "loyalty": 0.79,
+    "justice": 0.32,
+    "responsibility": 0.86,
+    "security": 0.79,
+    "equality": 0.39,
+    "tradition": 0.9,
+    "obedience": 0.98,
+    "success": 0.78,
+    "ambition": 0.28,
+    "discipline": 0.93,
+    "knowledge": 0.46,
+    "open_mindedness": 0.22,
+    "peace_of_mind": 0.42,
+    "pleasure": 0.15,
+    "connection": 0.51,
+    "adventure": 0.09,
+    "optimism": 0.53
+  },
+  "backstory": "He wrote the eleven memoirs so the people in them would recognise themselves, and none carries his name. He can tidy a stranger's sentences until the remembered version sounds true, and he has never let his own voice near a page. Once he billed a client for a rewrite he had only half done, and he still thinks of it as fair. He wore a ring for his partner in his good coat through every Sunday lunch for a year, because the partner was outside his family's faith. When it came out, the family closed ranks around the ones who stayed. He believes he broke them. So he pays his share, never asks for a favour and keeps people at arm's length, and he is uneasy whenever someone needs him. Most of his spare money goes each month to the relatives who took his side and were frozen out for it, and the partner he lives with has no idea of the scale. He wants a house with his name on the deeds, and suspects it won't feel any more like home than the rented semi, where the children's boots pile up in the hall.",
+  "persona": "He arrives ten minutes early with the chapter plan printed and the notes typed. He praises a client's dull paragraph before anyone asks his view, and he watches for the flicker that tells him it landed. Anything that can't go in a diary gets waved off, the kids' fridge drawings and the Thursday quiz included. At a round he is always first to reach for his card, and then he steers the talk back onto other people's lives, where he feels safest.",
+  "speaking_style": "Measured and courteous, with few contractions when he is being formal. Before he agrees to anything he works through who it suits, one name at a time, and says the names aloud. He speeds up when he is selling an idea and goes quiet when asked about himself.",
+  "mannerisms": [
+    "checks whether a plan works for everyone before committing to it"
+  ],
+  "interests": [
+    "Football Manager squads",
+    "Elden Ring after bedtime",
+    "Scotland rugby fixtures",
+    "leather-strap watches",
+    "fountain pens he never uses"
+  ],
+  "past": [
+    {
+      "age": 20,
+      "content": "The printworks manager made me sign a clipboard by the loading door every morning and drew a line through any minute I was late, so I learned to sign for the early shift and walk in at ten past.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 22,
+      "content": "On my first morning the sergeant showed me how to fold a jumper so the sleeves lay flat and square, and I still fold every shirt that way.",
+      "salience": 0.4,
+      "valence": 0.1
+    },
+    {
+      "age": 24,
+      "content": "I kept the ring in the inside pocket of my good coat for a year, and every Sunday I felt it knock against my ribs on the walk to the kirk.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 32,
+      "content": "One Monday I sat in the car park for forty minutes with both hands on the wheel, unable to make them turn the key.",
+      "salience": 0.45,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "I was pinned in the footwell on the A9 in the ice, petrol in the air, and a stranger got me out. I never went back to thank them."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "Last winter I saw someone slip cash from a church bake sale tin into their own coat, and a few months later I was writing a chapter about their honesty."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "I lost the bid for a well-known public figure's memoir to someone I was at school with, and I've since read their last three books twice to work out what they did better."
+    }
+  ],
+  "traits": {
+    "sociability": 0.6,
+    "negativity_bias": 0.55,
+    "forgiveness": 0.63,
+    "first_impressions": 0.47
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "curly",
+    "hair_colour": "#3e2731",
+    "top_colour": "#a8e6f0",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his early thirties. Medium-low pitch, warm but controlled timbre, measured pace with small pauses before the key word, a courteous and slightly formal manner.",
+    "reference_line": "Most of my working life goes into other people's voices, so I've learned to listen carefully before I write a single sentence down.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:02:39.472870Z",
+  "updated": "2026-10-18T06:02:39.472870Z",
+  "version": 1
+}

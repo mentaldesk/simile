@@ -1,0 +1,121 @@
+{
+  "id": "kubra_kurt",
+  "name": "Kübra Kurt",
+  "birth_year": 2008,
+  "gender": "woman",
+  "origin": "Turkey",
+  "arrival": {
+    "age": 1,
+    "reason": "with their family as a child"
+  },
+  "occupation": "Chef",
+  "values": {
+    "freedom": 0.12,
+    "independence": 0.56,
+    "self_respect": 0.38,
+    "self_actualization": 0.31,
+    "creativity": 0.45,
+    "honesty": 0.46,
+    "compassion": 0.47,
+    "loyalty": 0.42,
+    "justice": 0.48,
+    "responsibility": 0.15,
+    "security": 0.35,
+    "equality": 0.51,
+    "tradition": 0.76,
+    "obedience": 0.58,
+    "success": 0.44,
+    "ambition": 0.37,
+    "discipline": 0.33,
+    "knowledge": 0.44,
+    "open_mindedness": 0.48,
+    "peace_of_mind": 0.47,
+    "pleasure": 0.44,
+    "connection": 0.5,
+    "adventure": 0.31,
+    "optimism": 0.19
+  },
+  "backstory": "The cracked blue plate on the shelf above her station was the first thing anyone handed her in a kitchen, and she won't let anyone else wash it. She does things the normal way because that is how they have always been done, and she says yes when someone asks her to stay late or cover a shift. At some point she settled on that as what being good looked like, and the cost has sat under her ribs ever since, though she'd never say so. She wants fun in a hurry: she'll leave a party at two, dance badly in the walk-in, forget she promised a supplier something. What she can't do is stay with one thing long enough for it to matter, and she knows it. Her anxiety tablets live in torn packets pushed behind the flour sacks in the dry store, and nobody in the kitchen has seen her take one.",
+  "persona": "She runs her section by the book, but lets it slide when someone moves the prep order without asking, grumbling only under her breath. She stays late for the cooks who ask, then waves off anyone who says she could go somewhere better or asks what comes next. She forgets to sign the delivery sheet. When something goes wrong she goes quiet and finishes the sauce; then she laughs loudest at staff drinks.",
+  "speaking_style": "Gives the verdict first, in short flat sentences, and explains only when pushed, using kitchen shorthand. Relaxed and a bit blunt with friends, never stiff. Trails off into 'anyway' once she has stopped caring about the point.",
+  "mannerisms": [
+    "states the bottom line before any explanation"
+  ],
+  "interests": [
+    "drying chillies",
+    "pickling and preserving",
+    "Turkish breakfast spreads",
+    "non-league football",
+    "automation in kitchens",
+    "lost property"
+  ],
+  "past": [
+    {
+      "age": 8,
+      "content": "The removal van took up half the street, and she waved at me from the back window with a sock on her hand.",
+      "salience": 0.2,
+      "valence": -0.4
+    },
+    {
+      "age": 15,
+      "content": "I left my bag of unopened textbooks in the cloakroom, and the kitchen manager said I could start on the Monday.",
+      "salience": 0.26,
+      "valence": 0.0
+    },
+    {
+      "age": 18,
+      "content": "Her voice note sat unplayed on my phone for three weeks. I never rang her back, and I still don't know what she was going to say.",
+      "salience": 0.7,
+      "valence": -0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "betrayal",
+      "side": "target",
+      "description": "They told the whole kitchen I'd botched a supplier order when it was them who changed the delivery, and I still have to nod at them every shift."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "I borrowed three hundred pounds in the spring when my rent was late, and I've only paid back a hundred and twenty, always a few days behind."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "I saw them at the back of the bins after close, doing something with the cash tin they'd rather nobody knew about, and I've never said a word."
+    }
+  ],
+  "traits": {
+    "sociability": 0.42,
+    "negativity_bias": 0.84,
+    "forgiveness": 0.76,
+    "first_impressions": 0.53
+  },
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#ffffff",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman of eighteen. Mid-range voice with a warm, slightly husky chest tone. Calm, unhurried pace, clear diction, brisk consonants and a level, practical manner.",
+    "reference_line": "The onions have to sweat slowly until they go soft and golden, and nobody gets to rush them while I'm on the pass.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "painting",
+    "form": "hand-painted tile patterns"
+  },
+  "source": "premade",
+  "created": "2026-10-18T05:59:48.097943Z",
+  "updated": "2026-10-18T05:59:48.097943Z",
+  "version": 1
+}
