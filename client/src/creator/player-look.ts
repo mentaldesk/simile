@@ -56,9 +56,11 @@ export class PlayerLookView {
         this.look = changed;
         this.save.disabled = false;
         this.note.textContent = '';
+        this.sprite?.preview(changed, PLAYER_ID);
       }),
       this.sprite?.root ?? '',
     );
+    this.sprite?.preview(look, PLAYER_ID);
   }
 
   private async store(): Promise<void> {

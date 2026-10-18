@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
+from simile.conversation.needs import feels
 from simile.conversation.plan import Plan, direction
 from simile.conversation.prompt import (
     VALUE_NAMES,
@@ -110,8 +111,8 @@ def scene_prompt(
     where = f"at {place}" if place else "out in the street"
     parts = [
         f"It's {now:%H:%M}, {where}. {names[a.npc.id]} has just walked up to {names[b.npc.id]}.",
-        character(a, b.npc, grudges(history, a.npc.id)),
-        character(b, a.npc, grudges(history, b.npc.id)),
+        character(a, b.npc, grudges(history, a.npc.id), plan.stances[a.npc.id].mood),
+        character(b, a.npc, grudges(history, b.npc.id), plan.stances[b.npc.id].mood),
     ]
     between = [
         f"- {ago(event.timestamp, now)}, {names.get(event.actor, event.actor)}: {event.action}"
@@ -144,7 +145,9 @@ def grudges(history: SharedHistory, owner: Id) -> list[str]:
     ]
 
 
-def character(side: Character, them: Npc, grudges: Sequence[str] = ()) -> str:
+def character(
+    side: Character, them: Npc, grudges: Sequence[str] = (), mood: Sequence[str] = ()
+) -> str:
     npc, name, other = side.npc, first_name(side.npc), first_name(them)
     ranked = sorted(npc.values.items(), key=lambda item: -item[1])
     most = ", ".join(value_name(value) for value, _ in ranked[:5])
@@ -164,6 +167,8 @@ def character(side: Character, them: Npc, grudges: Sequence[str] = ()) -> str:
         f"Interests: {', '.join(npc.interests)}.",
         feelings,
     ]
+    if mood:
+        parts.append(feels(name, mood))
     parts += [
         f"{name} holds a grudge against {other} over {grudge}, which only {name} knows."
         for grudge in grudges

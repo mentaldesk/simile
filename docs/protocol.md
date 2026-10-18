@@ -89,7 +89,9 @@ without changing the protocol. The server sends it only for the NPC the client i
 
 `articles`: the articles at the news terminals, newest first. Each has its `news_id` (the F2
 `NewsItem` id), `title`, `source` (the feed's display name, e.g. `"The Atlantic"`, or empty),
-`summary` (plain text), `url` (the original article) and `read`, whether the player has read it.
+`summary` (plain text), `long_summary`, `url` (the original article) and `read`, whether the player
+has read it. `long_summary` is three or four short paragraphs separated by blank lines, at most 4,000
+characters. It's left out when there isn't one, and the client shows `summary` instead.
 The server sends it in reply to [`list_news`](#list_news) and [`read_news`](#read_news), and the
 client shows the latest one. Hub subscribers don't know which connection a message came from, so the
 reply goes to every client, which is fine with one player. A client ignores `news` while its news

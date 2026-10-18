@@ -59,6 +59,12 @@ class ConversationConfig(BaseModel):
     seeking_them: float = Field(
         default=1.0, description="Accept score when the target was out looking for the requester."
     )
+    accept_urgent: float = Field(
+        default=5.0,
+        ge=0,
+        description="Taken off the accept score while one of the target's needs is at or past "
+        "B1's critical level for it: enough to decline even a friend they were looking for.",
+    )
     accept_temperature: float = Field(
         default=0.1,
         ge=0,
@@ -130,7 +136,20 @@ class ConversationConfig(BaseModel):
         ge=0,
         le=1,
         description="Rest, curiosity or news rising past this during a scripted conversation "
-        "pulls them away from it.",
+        "pulls them away from it, as does a need rising past B1's critical level for it.",
+    )
+    drain_from: float = Field(
+        default=0.75,
+        ge=0,
+        le=1,
+        description="A need with a critical level in B1 (hunger, the bladder) drains engagement "
+        "faster from here, and the goodbye says what it sends them off to do.",
+    )
+    need_drain: float = Field(
+        default=3.0,
+        ge=0,
+        description="How much faster engagement drains at a need's critical level: 1 + "
+        "need_drain times as fast, in a straight line up from `drain_from`.",
     )
 
     words_per_minute: float = Field(

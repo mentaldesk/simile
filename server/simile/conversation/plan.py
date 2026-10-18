@@ -4,10 +4,13 @@ from dataclasses import dataclass
 from simile.behaviour import Activity, Goal, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.engagement import initial_engagement
+from simile.conversation.needs import CRITICAL, pressing
 from simile.schema import CoreValue, Id, Relationship
 
-PRESSING: dict[Need, str] = {
-    Need.REST: "tired",
+PRESSING = (Need.REST, Need.NEWS, Need.CURIOSITY)
+"""Wants that make someone less keen, and pull them away once past `urgent_need`."""
+
+ITCHING: dict[Need, str] = {
     Need.NEWS: "itching to catch up on the news",
     Need.CURIOSITY: "restless to get on with something",
 }
@@ -26,12 +29,17 @@ LONELY, SOCIABLE = 0.7, 0.3
 @dataclass(frozen=True)
 class Stance:
     """How someone comes into a conversation: how keen they are, from 0 to 1, after how many
-    lines they'd want to wrap it up, and what draws them in or holds them back."""
+    lines they'd want to wrap it up, what draws them in or holds them back, how their needs
+    feel and what the most pressing sends them off to do."""
 
     keen: float
     leaves_after: int
     drawn: tuple[str, ...] = ()
     held: tuple[str, ...] = ()
+    mood: tuple[str, ...] = ()
+    errand: str | None = None
+    drain: float = 1.0
+    """How many times faster than usual their engagement drains."""
 
 
 @dataclass(frozen=True)
@@ -70,13 +78,17 @@ def stance(
     topics: Iterable[Mapping[CoreValue, float]],
     other: str,
     config: ConversationConfig = DEFAULT_CONFIG,
+    *,
+    critical: Mapping[Need, float] = CRITICAL,
 ) -> Stance:
     """How `rel.owner` comes into a conversation with `rel.about`, called `other`, while doing
-    `goal`, when what's likely to come up relates to `topics`."""
+    `goal`, when what's likely to come up relates to `topics`. Needs past `drain_from` on their
+    way to B1's `critical` level make them want to wrap up sooner."""
     seeking = goal == Goal(Activity.SEEK, rel.about)
     pull = config.seeking_them if seeking else config.accept_goals.get(goal.activity, 0.0)
     social = needs[Need.SOCIAL]
-    need, level = max(((n, needs[n]) for n in PRESSING), key=lambda item: item[1])
+    level = max(needs[need] for need in PRESSING)
+    itch = max(ITCHING, key=lambda need: needs[need])
     keen = initial_engagement(values, rel.like, config)
     keen += config.keen_social * (social - 0.5)
     keen += config.keen_topics * topic_interest(values, topics)
@@ -95,16 +107,28 @@ def stance(
         drawn.append("could do with company")
     elif social <= SOCIABLE:
         held.append("has had plenty of company today")
-    if level > config.pressing:
-        held.append(PRESSING[need])
-    return Stance(round(keen, 3), leaves_after(keen, config), tuple(drawn), tuple(held))
+    if needs[itch] > config.pressing:
+        held.append(ITCHING[itch])
+    pressed = pressing(needs, critical, config)
+    drain = pressed.drain(config)
+    return Stance(
+        round(keen, 3),
+        leaves_after(keen, config, drain=drain),
+        tuple(drawn),
+        tuple(held),
+        pressed.mood,
+        pressed.errand,
+        drain,
+    )
 
 
-def leaves_after(keen: float, config: ConversationConfig = DEFAULT_CONFIG) -> int:
+def leaves_after(
+    keen: float, config: ConversationConfig = DEFAULT_CONFIG, *, drain: float = 1.0
+) -> int:
     """Lines into a conversation someone this keen wants to wrap it up: `min_lines` at
-    `leave_below` or less, `long_talk` at 1."""
+    `leave_below` or less, `long_talk` at 1, and `drain` times sooner past `min_lines`."""
     share = max(keen - config.leave_below, 0.0) / (1 - config.leave_below)
-    lines = round(config.min_lines + share * (config.long_talk - config.min_lines))
+    lines = round(config.min_lines + share * (config.long_talk - config.min_lines) / drain)
     return min(max(lines, config.min_lines), config.max_lines - goodbyes(config))
 
 
@@ -147,9 +171,10 @@ def direction(plan: Plan) -> str:
     else:
         lines.append(f"- Both will want to wrap up after about {leaving.leaves_after} lines.")
     answer = f" and {names[stayer]} answers" if plan.length > leaving.leaves_after + 1 else ""
+    errand = f" to {leaving.errand}" if leaving.errand else ""
     lines.append(
         f"- {names[plan.opener]} speaks first. About {plan.length} lines in all, ending when "
-        f"{names[leaver]} takes their leave{answer}."
+        f"{names[leaver]} takes their leave{errand}{answer}."
     )
     return "\n".join(lines)
 

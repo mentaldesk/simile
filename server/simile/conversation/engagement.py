@@ -15,10 +15,13 @@ def acceptance(
     goal: Goal,
     social: float,
     config: ConversationConfig = DEFAULT_CONFIG,
+    *,
+    urgent: bool = False,
 ) -> float:
-    """How keen `rel.owner` is to talk when `rel.about` walks up: positive to accept."""
+    """How keen `rel.owner` is to talk when `rel.about` walks up: positive to accept. Someone
+    with an `urgent` need declines."""
     weights = config.accept_weights
-    score = config.accept_base
+    score = config.accept_base - (config.accept_urgent if urgent else 0.0)
     score += sum(weights.get(aspect, 0.0) * (getattr(rel, aspect) - 0.5) for aspect in ASPECTS)
     score += weights.get("familiarity", 0.0) * rel.familiarity
     score += sum(w * (values[value] - 0.5) for value, w in config.accept_values.items())
@@ -56,9 +59,12 @@ def engage(
     like: float,
     topics: Iterable[CoreValue],
     config: ConversationConfig = DEFAULT_CONFIG,
+    *,
+    drain: float = 1.0,
 ) -> float:
-    """Engagement after a line that touched `topics`, for someone who likes the other `like`."""
-    change = -config.fatigue + config.topic_weight * topic_match(values, topics)
+    """Engagement after a line that touched `topics`, for someone who likes the other `like`,
+    tiring `drain` times as fast as usual."""
+    change = -config.fatigue * drain + config.topic_weight * topic_match(values, topics)
     return _clamp(engagement + change + config.like_weight * (like - 0.5))
 
 

@@ -157,6 +157,10 @@ export interface NewsArticle {
    */
   summary: string;
   /**
+   * Three or four short paragraphs of plain text, separated by blank lines. Left out when there isn't one, so the client shows `summary`.
+   */
+  long_summary?: string | null;
+  /**
    * The original article.
    */
   url: string;

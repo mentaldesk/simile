@@ -16,7 +16,7 @@ from simile.social import meet
 
 TEMPLATE = load_npcs()[0]
 NEUTRAL = dict.fromkeys(CoreValue, 0.5)
-CALM = {Need.SOCIAL: 0.5, Need.REST: 0.2, Need.NEWS: 0.2, Need.CURIOSITY: 0.2}
+CALM = {**dict.fromkeys(Need, 0.2), Need.SOCIAL: 0.5}
 IDLE = Goal(Activity.PARK, "park")
 
 
@@ -66,16 +66,35 @@ def test_what_makes_someone_keen(warmer: Stance, cooler: Stance) -> None:
 
 
 def test_what_draws_them_in_and_what_holds_them_back() -> None:
-    seeking = keen(goal=Goal(Activity.SEEK, "ben"), social=0.8, rest=0.9)
+    seeking = keen(goal=Goal(Activity.SEEK, "ben"), social=0.8, curiosity=0.9)
     assert seeking.drawn == ("came looking for Ben", "could do with company")
-    assert seeking.held == ("tired",)
+    assert seeking.held == ("restless to get on with something",)
     elsewhere = keen(goal=Goal(Activity.SEEK, "cal"), social=0.2)
     assert elsewhere.drawn == ()
     assert elsewhere.held == ("was looking for someone else", "has had plenty of company today")
-    assert keen(goal=Goal(Activity.NEWS, "t"), news=0.9, rest=0.7).held == (
+    assert keen(goal=Goal(Activity.NEWS, "t"), news=0.9, rest=0.95).held == (
         "was off to read the news",
         "itching to catch up on the news",
     )
+
+
+def test_how_their_needs_feel_comes_in_words() -> None:
+    tired = keen(rest=0.7, hunger=0.8)
+
+    assert tired.mood == ("hungry", "tired")
+    assert "tired" not in tired.held
+    assert keen().mood == ()
+
+
+def test_a_pressing_need_has_them_wrap_up_sooner_and_says_why() -> None:
+    fed, hungry, starving = keen(like=0.9), keen(like=0.9, hunger=0.85), keen(like=0.9, hunger=1)
+
+    assert fed.keen == hungry.keen == starving.keen
+    assert fed.leaves_after > hungry.leaves_after > starving.leaves_after
+    assert (fed.errand, fed.drain) == (None, 1)
+    assert hungry.errand == "get something to eat"
+    assert starving.drain == 1 + DEFAULT_CONFIG.need_drain
+    assert keen(like=0.9, bladder=0.95).errand == "find a loo"
 
 
 def test_topic_interest_weighs_each_value_by_how_much_the_topic_relates_to_it() -> None:
@@ -94,6 +113,8 @@ def test_how_keen_sets_how_long_they_want_to_talk() -> None:
     assert leaves_after(1.0) == config.long_talk
     assert leaves_after(0.65) == round(config.min_lines + 0.5 * (config.long_talk - 2))
     assert leaves_after(1.0, ConversationConfig(long_talk=50, max_lines=20)) == 18
+    assert leaves_after(1.0, drain=4) == round(config.min_lines + (config.long_talk - 2) / 4)
+    assert leaves_after(0.0, drain=4) == config.min_lines
 
 
 def test_whoever_wants_to_leave_first_leaves_and_the_other_answers() -> None:
@@ -110,14 +131,15 @@ def test_whoever_wants_to_leave_first_leaves_and_the_other_answers() -> None:
 
 def test_the_direction_says_whos_keen_who_leaves_when_and_how_long_it_runs() -> None:
     names = {"ana": "Ana", "ben": "Ben"}
+    news = "itching to catch up on the news"
     stances = {
-        "ana": Stance(0.8, 22, ("came looking for Ben", "could do with company"), ("tired",)),
-        "ben": Stance(0.42, 5, ("could do with company",), ("was off to read the news", "tired")),
+        "ana": Stance(0.8, 22, ("came looking for Ben", "could do with company"), (news,)),
+        "ben": Stance(0.42, 5, ("could do with company",), ("was off to read the news", news)),
     }
 
     assert direction(plan(names, stances, "ana")) == (
-        "- Ana is keen to talk (came looking for Ben, could do with company), though tired.\n"
-        "- Ben is lukewarm (was off to read the news, tired), though could do with company.\n"
+        f"- Ana is keen to talk (came looking for Ben, could do with company), though {news}.\n"
+        f"- Ben is lukewarm (was off to read the news, {news}), though could do with company.\n"
         "- Ben will want to wrap up after about 5 lines; Ana would happily go on for 22.\n"
         "- Ana speaks first. About 7 lines in all, ending when Ben takes their leave and Ana "
         "answers."
@@ -132,3 +154,16 @@ def test_a_pair_who_both_want_out_soon_are_told_so() -> None:
 
     assert "- Ana is happy to chat.\n- Ben would rather not talk.\n" in text
     assert "- Both will want to wrap up after about 4 lines." in text
+
+
+def test_the_direction_says_what_the_leaver_is_off_to_do() -> None:
+    names = {"ana": "Ana", "ben": "Ben"}
+    stances = {
+        "ana": Stance(0.8, 22, errand="find a loo"),
+        "ben": Stance(0.8, 6, mood=("hungry",), errand="get something to eat", drain=2.5),
+    }
+
+    assert direction(plan(names, stances, "ana")).endswith(
+        "- Ana speaks first. About 8 lines in all, ending when Ben takes their leave to get "
+        "something to eat and Ana answers."
+    )

@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import re
 import sys
 import types
 from collections.abc import Callable, Sequence
@@ -602,6 +603,73 @@ async def test_a_need_that_was_already_urgent_doesnt_cut_it_short() -> None:
     await village.run()
 
     assert len(village.ended[0].conversation.lines) == 4
+
+
+@pytest.mark.parametrize(("need", "why"), [(Need.HUNGER, "eat|food"), (Need.BLADDER, "loo|nature")])
+async def test_an_urgent_need_ends_it_with_a_goodbye_that_gives_the_reason(
+    need: Need, why: str
+) -> None:
+    village = Village([LONG_CHAT], relationships=friends(ANA, BEN))
+    village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 2)
+
+    village.behaviour.minds["ben"].needs[need] = 0.91
+    await village.run()
+
+    [ended] = village.ended
+    *said, goodbye = ended.conversation.lines
+    assert len(said) == 2
+    assert goodbye.speaker == "ben"
+    assert goodbye.text in [text.format(name="Ana") for text in GOODBYES[need]]
+    assert re.search(why, goodbye.text)
+
+
+async def test_a_need_short_of_its_critical_level_doesnt_cut_it_short() -> None:
+    village = Village([LONG_CHAT])
+    village.engine.start("ana", "ben")
+    await village.run_until(lambda: len(village.spoken) == 2)
+
+    village.behaviour.minds["ben"].needs[Need.HUNGER] = 0.89
+    await village.run()
+
+    lines = village.ended[0].conversation.lines
+    assert len(lines) >= 8
+    assert all(line.text.startswith("Line number") for line in lines)
+
+
+async def test_an_urgent_need_declines_even_a_friend() -> None:
+    village = Village(
+        relationships=friends(ANA, BEN), config=ConversationConfig(accept_temperature=0)
+    )
+    village.behaviour.minds["ben"].needs[Need.BLADDER] = 0.95
+
+    assert village.engine.accept_score("ana", "ben") < 0
+    assert not village.engine.request("ana", "ben")
+    assert village.events == []
+
+    village.behaviour.minds["ben"].needs[Need.BLADDER] = 0.1
+    assert village.engine.request("ana", "ben")
+
+
+async def test_a_hungry_resident_wraps_up_sooner_and_the_script_is_told_why() -> None:
+    lengths, prompts = [], []
+    for hunger in (0.3, 0.85):
+        village = Village(relationships=friends(ANA, BEN))
+        village.behaviour.minds["ben"].needs[Need.HUNGER] = hunger
+        village.engine.start("ana", "ben")
+        await village.run(minutes=0.1)
+        lengths.append(village.scene().plan.length)
+        prompts.append(village.script.prompts[0])
+
+    assert lengths[1] < lengths[0]
+    fed, hungry = prompts
+    assert "Right now" not in fed and "to get something to eat" not in fed
+    ana, ben, direction = hungry.split("\n\n## ")[1:]
+    assert [part for part in ben.split("\n\n") if "Right now" in part] == [
+        "Right now Ben is hungry."
+    ]
+    assert "Right now" not in ana
+    assert "ending when Ben takes their leave to get something to eat" in direction
 
 
 async def test_someone_pulled_away_mid_line_lets_it_finish_then_says_goodbye() -> None:
