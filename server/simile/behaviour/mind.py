@@ -171,7 +171,8 @@ class Mind:
     pressed: frozenset[Need] = frozenset()
     """The needs above their critical level that they've already acted on."""
     eating: dict[Need, datetime] = field(default_factory=dict)
-    """Needs with an appetite that their place has started meeting, by the stay's `since`."""
+    """Needs their place has started meeting, by the stay's `since`. One with an appetite starts
+    only once it's that high."""
 
 
 class Behaviour:
