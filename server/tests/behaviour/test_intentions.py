@@ -228,7 +228,9 @@ def test_looking_someone_up_is_kept_once_they_talk() -> None:
 
 def test_someone_who_lets_it_slide_gets_no_bonus() -> None:
     config = STEADY.model_copy(update={"lapse": 1.0, "reliable_from": 1.0})
-    village = Village([ANA], start=at(10), config=config)
+    lax = {CoreValue.RESPONSIBILITY: 0.0, CoreValue.DISCIPLINE: 0.0}
+    ana = ANA.model_copy(update={"values": ANA.values | lax})
+    village = Village([ana], start=at(10), config=config)
     said = promise("ana", K.GO, "noodle_bar", now=village.clock.now)
 
     village.behaviour.intend(said)

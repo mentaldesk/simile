@@ -2,7 +2,7 @@ import heapq
 import math
 import random
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
 from simile.schema import (
@@ -25,7 +25,7 @@ PLACES: dict[Activity, LocationKind] = {
     Activity.NEWS: LocationKind.TERMINAL,
 }
 AMENITIES = (Activity.PARK, Activity.NOODLE_BAR, Activity.MAKER_SPACE, Activity.GALLERY)
-UNPLACED = (Activity.SEEK, Activity.TALK, Activity.WANDER, Activity.IDLE)
+UNPLACED = (Activity.SEEK, Activity.TALK, Activity.WANDER, Activity.IDLE, Activity.EXERCISE)
 
 
 @dataclass(frozen=True)
@@ -171,6 +171,11 @@ class Situation:
     """What a goal would cost them."""
     earnings: Price = free
     """What an hour at a goal pays them."""
+    stayed: Goal | None = None
+    """Their last stay, so that going anywhere else is something new."""
+    eating: frozenset[Need] = frozenset()
+    """The needs their stay has started meeting, which staying goes on meeting whatever their
+    appetite."""
 
 
 AFFINITY = ("like", "trust", "respect")
@@ -246,6 +251,7 @@ def candidates(
             continue
         goals.extend(Goal(activity, location.id) for location in locations)
     goals += [Goal(Activity.WANDER), Goal(Activity.IDLE)]
+    goals += [Goal(Activity.EXERCISE, loop) for loop in config.loops]
     if situation.work is not None:
         goals.append(Goal(Activity.WORK, situation.work.workplace))
     goals.extend(Goal(Activity.SEEK, o.id) for o in situation.others if o.available)
@@ -253,10 +259,16 @@ def candidates(
 
 
 def creating(situation: Situation, places: Places, config: BehaviourConfig) -> list[Goal]:
-    """Where they could make something, if they have a craft and time for a typical stay before
-    bed. Writers and painters have their `writing_places`, and muralists their wall."""
+    """Where they could make something, if they have a craft, time for a typical stay before
+    bed and no urgent need. Writers and painters have their `writing_places`, and muralists
+    their wall."""
     low, high = config.dwell.get(Activity.CREATE, (0.0, 0.0))
     if situation.bedtime - situation.hour < (low + high) / 2 / 60:
+        return []
+    if any(
+        urgency.critical is not None and situation.needs[need] >= urgency.critical
+        for need, urgency in config.urgency.items()
+    ):
         return []
     if situation.craft is Medium.MURAL:
         return [Goal(Activity.CREATE, situation.mural.wall)] if situation.mural else []
@@ -270,31 +282,34 @@ def creating(situation: Situation, places: Places, config: BehaviourConfig) -> l
 
 
 def score(
-    goal: Goal, situation: Situation, places: Places, config: BehaviourConfig = DEFAULT_CONFIG
+    goal: Goal,
+    situation: Situation,
+    places: Places,
+    config: BehaviourConfig = DEFAULT_CONFIG,
+    *,
+    staying: bool = False,
 ) -> float:
+    """What choosing `goal` is worth, or with `staying`, staying on at it for another typical
+    stay: with no walk, nothing new, and the boredom it brings if it relieves nothing."""
     activity, values, needs = goal.activity, situation.values, situation.needs
     total = config.base.get(activity, 0.0)
     total += sum(w * (values[v] - 0.5) for v, w in config.value_weights.get(activity, {}).items())
-    on_offer = offered(goal, situation, config)
-    placed = at_a_place(goal, situation)
-    for need, urgency in config.urgency.items():
-        if needs[need] < urgency.appetite:
-            continue
-        change = on_offer * promised(activity, need, config)
-        if change and placed:
-            change *= situation.supply(goal, need)
-        total += worth(need, needs[need], change, config)
-    total += money(goal, situation, config)
+    total += sum(
+        worth(need, needs[need], change, config)
+        for need, change in changes(goal, situation, config, staying=staying).items()
+    )
+    total += money(goal, replace(situation, price=free) if staying else situation, config)
     total += curve(config.daily.get(activity, ()), situation.hour)
+    if staying:
+        return total + pull(goal, situation, places, config)
     if situation.last is not None and activity is situation.last.activity is not Activity.WORK:
         total -= config.repeat_penalty
-    if activity is Activity.HOME:
-        until_bed = situation.bedtime - situation.hour
-        total += config.evening_weight * min(max(1 - until_bed / config.evening_hours, 0.0), 1.0)
     if activity is Activity.SEEK:
         other = next(o for o in situation.others if o.id == goal.target)
-        total += config.seek_weight * sociability(values, config) * other.affinity
         total -= config.travel_weight * places.walk_minutes(situation.position, other.position)
+    elif activity is Activity.EXERCISE:
+        start = min(places.walk_minutes(situation.position, p) for p in loop(goal, places, config))
+        total -= config.travel_weight * start
     elif (spot := painting(goal, situation)) is not None:
         wall = Point(spot.tile.x, spot.tile.y)
         total -= config.travel_weight * places.walk_minutes(situation.position, wall)
@@ -302,6 +317,22 @@ def score(
         location = places.location(goal.target)
         entry = Point(location.entry.x, location.entry.y, location.map)
         total -= config.travel_weight * places.walk_minutes(situation.position, entry)
+    return total + pull(goal, situation, places, config)
+
+
+def pull(goal: Goal, situation: Situation, places: Places, config: BehaviourConfig) -> float:
+    """What a goal is worth wherever they start from: who they'd seek or who's at the place,
+    where they'd make something, and home's pull towards bedtime."""
+    activity, values, total = goal.activity, situation.values, 0.0
+    if activity is Activity.HOME:
+        until_bed = situation.bedtime - situation.hour
+        total += config.evening_weight * min(max(1 - until_bed / config.evening_hours, 0.0), 1.0)
+    if activity is Activity.SEEK:
+        other = next(o for o in situation.others if o.id == goal.target)
+        total += config.seek_weight * sociability(values, config) * other.affinity
+    elif at_a_place(goal, situation):
+        assert goal.target is not None
+        location = places.location(goal.target)
         if location.id != situation.home:
             total += company(location.id, situation, config)
         if activity is Activity.CREATE:
@@ -310,6 +341,69 @@ def score(
             total += config.writing_base.get(where, 0.0)
             total += sum(w * (values[v] - 0.5) for v, w in weights.items())
     return total
+
+
+def changes(
+    goal: Goal, situation: Situation, config: BehaviourConfig, *, staying: bool = False
+) -> dict[Need, float]:
+    """How a typical stay at `goal` would change each need: what it offers once their appetite's
+    reached, and as far as the place can supply it. Arriving somewhere new eases boredom, and
+    staying on where nothing's relieved adds to it."""
+    activity, needs = goal.activity, situation.needs
+    on_offer = offered(goal, situation, config)
+    placed = at_a_place(goal, situation)
+    found: dict[Need, float] = {}
+    for need, urgency in config.urgency.items():
+        if needs[need] < urgency.appetite and not (staying and need in situation.eating):
+            continue
+        change = on_offer * promised(activity, need, config)
+        if change and placed:
+            change *= situation.supply(goal, need)
+        found[need] = change
+    low, high = config.dwell.get(activity, (0.0, 0.0))
+    hours = (low + high) / 120
+    if staying and hours > 0:
+        hourly = {need: change / hours for need, change in found.items()}
+        dull = boring(needs, hourly, config)
+        found[Need.BOREDOM] += rising(Need.BOREDOM, situation.values, config) * dull * hours
+    elif not staying and new(goal, situation.stayed, config):
+        found[Need.BOREDOM] -= config.novelty
+    return found
+
+
+def boring(
+    needs: Mapping[Need, float], rates: Mapping[Need, float], config: BehaviourConfig
+) -> float:
+    """How dull a stay that changes needs at `rates` an hour is, 0 to 1: 1 where it relieves
+    nothing, falling to 0 once what it relieves an hour is worth `relieved`."""
+    relief = sum(
+        config.urgency[need].weight * needs[need] ** config.urgency[need].power * -rate
+        for need, rate in rates.items()
+        if rate < 0 and need is not Need.BOREDOM
+    )
+    if config.relieved <= 0:
+        return 0.0 if relief > 0 else 1.0
+    return max(1 - relief / config.relieved, 0.0)
+
+
+def new(goal: Goal, stayed: Goal | None, config: BehaviourConfig = DEFAULT_CONFIG) -> bool:
+    """Whether going to `goal` is going somewhere new: not their last stay, nor anywhere
+    familiar."""
+    return goal.activity not in config.familiar and goal != stayed
+
+
+def rising(
+    need: Need, values: Mapping[CoreValue, float], config: BehaviourConfig = DEFAULT_CONFIG
+) -> float:
+    """How fast `need` rises an hour awake, by their values."""
+    weights = config.rise_values.get(need, {})
+    return config.rise.get(need, 0.0) + sum(w * values[v] for v, w in weights.items())
+
+
+def loop(goal: Goal, places: Places, config: BehaviourConfig = DEFAULT_CONFIG) -> list[Point]:
+    """The tiles an exercise walk passes, in order."""
+    assert goal.target is not None
+    return [Point(x, y, places.town.id) for x, y in config.loops[goal.target]]
 
 
 def money(goal: Goal, situation: Situation, config: BehaviourConfig = DEFAULT_CONFIG) -> float:

@@ -129,6 +129,9 @@ def test_shows_who_they_are_what_they_want_and_their_top_values() -> None:
         "hunger",
         "bladder",
         "hygiene",
+        "boredom",
+        "relaxation",
+        "exercise",
     }
     assert state["values"] == {
         "open_mindedness": 0.97,

@@ -35,14 +35,20 @@ from simile.behaviour.scoring import (
     asleep,
     bedtime,
     best_per_activity,
+    boring,
     choose,
     finances,
+    loop,
+    new,
     plenty,
     punctuality,
+    rising,
     savings,
+    score,
     scores,
     skip_chance,
     wake,
+    worth,
 )
 from simile.schema import (
     PLAYER_ID,
@@ -63,7 +69,9 @@ from simile.schema import (
 )
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
-from simile.world.movement import Movement, Outcome, Point, Target, Walk
+from simile.world.movement import Movement, Outcome, Point, Target, Walk, inside
+from simile.world.spots import choose as choose_spot
+from simile.world.spots import purpose_of
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +100,8 @@ GOING_TO_A_PLACE = (
     Activity.WORK,
 )
 HOUR = timedelta(hours=1)
+STROLLS = (Activity.WANDER, Activity.EXERCISE)
+"""Walks for their own sake, which carry on from stop to stop until they end."""
 RESUMED = (Activity.CREATE, Activity.WORK)
 """What they go back to after a talk."""
 
@@ -246,6 +256,17 @@ class Mind:
     """The intention to make something whose work they're making in this stay."""
     reasons: dict[str, Intention] = field(default_factory=dict)
     """The options an intention raised at the last decision, and which."""
+    look: datetime | None = None
+    """When they'll next look at whether their stay still pays. None for a stay they see
+    through."""
+    stayed: Goal | None = None
+    """Their last stay, so that going anywhere else is something new."""
+    resettling: bool = False
+    """Whether they're moving to another spot in the place they're staying."""
+    route: list[MapTile] = field(default_factory=list)
+    """The tiles an exercise walk passes, from where they joined it."""
+    ends: datetime | None = None
+    """When a stroll that has started will end at the latest."""
 
 
 class Behaviour:
@@ -505,9 +526,11 @@ class Behaviour:
         mind.interrupted, mind.held = None, None
         mind.shift, mind.staying_on = None, None
         mind.keeping, mind.making, mind.reasons = None, None, {}
+        mind.stayed, mind.resettling, mind.route, mind.ends = goal, False, [], None
         self._plan(mind)
         if mind.shift is not None and mind.shift.set_off <= self.clock.now:
             mind.shift.called = True
+        mind.look = self._first_look(mind) if mind.finishes else None
         self._needs_at = self.clock.now
         self._publish(mind)
 
@@ -533,6 +556,7 @@ class Behaviour:
             self.movement.stop(npc)
         mind.until = self.clock.now + (stay or timedelta())
         mind.finishes = stay is not None
+        mind.look = self._first_look(mind, self.clock.now) if mind.finishes else None
 
     def nudge(self, npc: Id, goal: Goal, bonus: float) -> bool:
         """Add `bonus` to `goal` when they decide, on the next think. False if paused, held or
@@ -640,6 +664,8 @@ class Behaviour:
                 self._interrupt(mind)
             elif mind.walk is None and mind.until is not None and now >= mind.until:
                 self._decide(mind)
+            elif mind.walk is None and self._looking(mind):
+                self._reconsider(mind)
 
     def _expire(self, mind: Mind) -> None:
         now = self.clock.now
@@ -859,19 +885,31 @@ class Behaviour:
             activity = mind.goal.activity
             sleeping = activity is Activity.SLEEP and mind.walk is None
             effects = self._effects(mind)
+            rates, applied = {}, {}
             for need in Need:
-                rate = self._rise(mind.npc, need)
+                rate = 0.0 if need is Need.BOREDOM else self._rise(mind.npc, need)
                 if sleeping:
                     rate *= config.rise_asleep.get(need, 0.0)
                 effect = effects.get(need, 0.0)
                 if effect > 0 or (effect < 0 and self._eating(mind, need)):
                     rate += effect
+                    applied[need] = effect
                 elif effect == 0 and mind.walk is None:
                     mind.eating.pop(need, None)
+                rates[need] = rate
+            staying = mind.walk is None and not mind.paused and activity is not Activity.SLEEP
+            if staying:
+                dull = boring(mind.needs, applied, config)
+                rates[Need.BOREDOM] += self._rise(mind.npc, Need.BOREDOM) * dull
+            company = 0 if self._home_bound(mind) else self._company(mind.npc.id, positions)
+            if company:
+                rates[Need.SOCIAL] -= config.company
+            if company and staying:
+                crowd = min(company, config.crowd_cap)
+                rates[Need.RELAXATION] += config.busy * crowd / self._sociable(mind.npc)
+            for need, rate in rates.items():
                 mind.needs[need] = _clamp(mind.needs[need] + rate * hours)
             mind.needs[Need.FINANCES] = self._finances(mind.npc)
-            if not self._home_bound(mind) and self._has_company(mind.npc.id, positions):
-                mind.needs[Need.SOCIAL] = _clamp(mind.needs[Need.SOCIAL] - config.company * hours)
 
     def _eating(self, mind: Mind, need: Need) -> bool:
         """Whether their place meets `need` now: from when it reaches its appetite until it's
@@ -884,9 +922,12 @@ class Behaviour:
         return mind.eating.get(need) == mind.since
 
     def _effects(self, mind: Mind) -> Mapping[Need, float]:
+        effects = self.config.effects.get(mind.goal.activity, {})
+        if mind.walk is not None and mind.goal.activity in STROLLS:
+            walking = self.config.walking
+            return {need: walking.get(need, 0) + effects.get(need, 0) for need in Need}
         if mind.walk is not None:
             return self.config.walking
-        effects = self.config.effects.get(mind.goal.activity, {})
         if self._placed(mind):
             return {need: rate * self._supplied(mind, need) for need, rate in effects.items()}
         if mind.goal.activity is Activity.TALK and Need.SOCIAL in effects:
@@ -912,8 +953,7 @@ class Behaviour:
     def _rise(self, npc: Npc, need: Need) -> float:
         if need is Need.INSPIRATION and npc.craft is None:
             return 0.0
-        weights = self.config.rise_values.get(need, {})
-        rise = self.config.rise.get(need, 0.0) + sum(w * npc.values[v] for v, w in weights.items())
+        rise = rising(need, npc.values, self.config)
         if need is not Need.SOCIAL:
             return rise
         sociable = self._sociable(npc)
@@ -926,15 +966,18 @@ class Behaviour:
         """Their traits from the cast, or neutral ones."""
         return self.traits.get(npc, NEUTRAL)
 
-    def _has_company(self, npc: Id, positions: dict[Id, Point]) -> bool:
+    def _company(self, npc: Id, positions: dict[Id, Point]) -> int:
+        """How many others are near them."""
         here = positions[npc]
-        return any(
+        return sum(
             there.map == here.map and math.dist(here, there) <= self.config.near
             for other, there in positions.items()
             if other != npc
         )
 
-    def _decide(self, mind: Mind) -> None:
+    def _decide(self, mind: Mind, *, leaving: bool = False) -> None:
+        """Choose what to do next, and with `leaving`, somewhere other than where they are."""
+        here = mind.goal
         if mind.finishes:
             self._finish(mind)
         if self._asleep(mind):
@@ -944,6 +987,8 @@ class Behaviour:
         situation = self._situation(mind)
         mind.mural = situation.mural
         options = scores(situation, self.places, self.config)
+        if leaving:
+            options.pop(here, None)
         mind.reasons = self._promised(mind, options)
         if mind.nudge is not None:
             (goal, bonus), mind.nudge = mind.nudge, None
@@ -994,6 +1039,8 @@ class Behaviour:
             self._work(mind),
             lambda goal: self._price(self.hooks.price, npc, goal),
             lambda goal: self._price(self.hooks.earnings, npc, goal),
+            mind.stayed,
+            frozenset(need for need, since in mind.eating.items() if since == mind.since),
         )
 
     def _finish(self, mind: Mind) -> None:
@@ -1021,7 +1068,11 @@ class Behaviour:
             return False
         mind = self.minds.get(other)
         return mind is None or not (
-            mind.paused or mind.held or self._home_bound(mind) or self._asleep(mind)
+            mind.paused
+            or mind.held
+            or self._home_bound(mind)
+            or self._asleep(mind)
+            or mind.goal.activity in STROLLS
         )
 
     def _home_bound(self, mind: Mind) -> bool:
@@ -1033,7 +1084,8 @@ class Behaviour:
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
         mind.nudge, mind.finishes, mind.interrupted = None, False, None
-        mind.making = None
+        mind.making, mind.look, mind.resettling = None, None, False
+        mind.route, mind.ends = [], None
         mind.keeping = None if goal.activity is Activity.SEEK else self._matching(mind, goal)
         self._publish(mind)
         match goal.activity:
@@ -1047,6 +1099,9 @@ class Behaviour:
                     self._walk(mind, tile)
             case Activity.SEEK:
                 self._walk(mind, self._tile_of(goal.target))
+            case Activity.EXERCISE:
+                mind.route = self._route(mind, goal)
+                self._walk(mind, mind.route[0])
             case Activity.CREATE if mind.mural is not None and _paints(mind.npc):
                 self._walk(mind, mind.mural.tile)
             case _:
@@ -1087,23 +1142,147 @@ class Behaviour:
             self._begin(mind, Goal(Activity.IDLE))
 
     def _arrive(self, mind: Mind) -> None:
-        goal = mind.goal
+        goal, now = mind.goal, self.clock.now
+        if mind.resettling:
+            mind.resettling = False
+            return
+        if mind.ends is not None:
+            self._walk_on(mind)
+            return
         if goal.activity is Activity.SEEK and self._approach(mind):
             return
         if mind.keeping is not None:
             self._kept(mind, mind.keeping)
         if goal.activity is Activity.NEWS:
             self._call(self.hooks.read_news, mind.npc)
-        if goal.activity is Activity.SLEEP:
+        if new(goal, mind.stayed, self.config):
+            mind.needs[Need.BOREDOM] = _clamp(mind.needs[Need.BOREDOM] - self.config.novelty)
+        mind.stayed = goal
+        if goal.activity in STROLLS:
+            low, high = self.config.dwell.get(goal.activity, (5, 15))
+            mind.ends = now + timedelta(minutes=high)
+            mind.look = self._first_look(mind, now)
+            self._walk_on(mind)
+        elif goal.activity is Activity.SLEEP:
             mind.until = self._next(mind.wake) + self._minutes((0, self.config.lie_in))
         elif goal.activity is Activity.WORK and (due := self._due(mind)) is not None:
             mind.until, mind.finishes = due.end, True
         else:
-            now = self.clock.now
-            dwell = self.config.dwell.get(goal.activity, (5, 15))
-            mind.until, mind.finishes = now + self._minutes(dwell), True
+            low, high = self.config.dwell.get(goal.activity, (5, 15))
+            seen_through = goal.activity in self.config.seen_through
+            stay = self._minutes((low, high)) if seen_through else timedelta(minutes=high)
+            mind.until, mind.finishes = now + stay, True
+            mind.look = self._first_look(mind, now)
             if goal.activity is Activity.WORK:
                 mind.until = min(mind.until, max(mind.staying_on or now, now))
+
+    def _first_look(self, mind: Mind, arrived: datetime | None = None) -> datetime | None:
+        """When they first look at whether their stay still pays: once its shortest is up, and
+        never for one they see through or a shift."""
+        activity = mind.goal.activity
+        if activity in self.config.seen_through or activity in (Activity.SLEEP, Activity.TALK):
+            return None
+        if activity is Activity.WORK and self._due(mind) is not None:
+            return None
+        low, _ = self.config.dwell.get(activity, (5, 15))
+        again = self.clock.now + timedelta(minutes=self.config.reconsider)
+        return max((arrived or mind.since) + timedelta(minutes=low), again)
+
+    def _looking(self, mind: Mind) -> bool:
+        """Whether it's time they looked again at whether their stay still pays."""
+        return (
+            mind.look is not None
+            and mind.until is not None
+            and mind.finishes
+            and self.clock.now >= mind.look
+        )
+
+    def _reconsider(self, mind: Mind) -> bool:
+        """Leave once the best other option, less `switch`, beats staying on; or else move to
+        another spot in the same place if that beats staying put. True if they left."""
+        config = self.config
+        mind.look = self.clock.now + timedelta(minutes=config.reconsider)
+        here = mind.goal
+        situation = self._situation(mind)
+        options = scores(situation, self.places, config)
+        self._promised(mind, options)
+        stay = score(here, situation, self.places, config, staying=True)
+        others = [value for goal, value in options.items() if goal != here]
+        if max(others, default=-math.inf) - config.switch > stay:
+            logger.debug("%s leaves %s early", mind.npc.id, here)
+            self._decide(mind, leaving=True)
+            return True
+        if here.activity in STROLLS:
+            return False
+        bored = mind.needs[Need.BOREDOM]
+        if worth(Need.BOREDOM, bored, -config.new_spot, config) > config.spot_switch:
+            spot = self._another_spot(mind)
+            if spot is not None:
+                mind.resettling = True
+                self._walk(mind, spot)
+                mind.needs[Need.BOREDOM] = _clamp(bored - config.new_spot)
+        return False
+
+    def _another_spot(self, mind: Mind) -> MapTile | None:
+        """A free spot in the place they're staying that suits what they're there for, other
+        than where they are: near friends, then to their taste."""
+        goal, npc = mind.goal, mind.npc.id
+        purpose = purpose_of(goal.activity.value, goal.target)
+        kinds = self.movement.spot_config.fits.get(purpose) if purpose else None
+        if not kinds or not self._placed(mind) or goal.target is None:
+            return None
+        location = self.places.location(goal.target)
+        positions = self.movement.entities()
+        here = positions[npc]
+        taken = {(round(p.x), round(p.y)) for other, p in positions.items() if p.map == here.map}
+        free = [
+            spot
+            for spot in self.movement.maps[location.map].spots
+            if spot.kind in kinds
+            and (spot.x, spot.y) not in taken
+            and inside(location, Point(spot.x, spot.y, spot.map))
+        ]
+        others = {
+            other: (p.x, p.y)
+            for other, p in positions.items()
+            if other != npc and p.map == here.map
+        }
+        spot = choose_spot(
+            npc,
+            free,
+            kinds,
+            others,
+            (here.x, here.y),
+            self.movement.affinity,
+            self.movement.spot_config,
+        )
+        return None if spot is None else MapTile(map=spot.map, x=spot.x, y=spot.y)
+
+    def _route(self, mind: Mind, goal: Goal) -> list[MapTile]:
+        """The loop's tiles, from the one nearest them."""
+        here = self.movement.position(mind.npc.id)
+        points = loop(goal, self.places, self.config)
+        start = min(range(len(points)), key=lambda n: self.places.walk_minutes(here, points[n]))
+        points = points[start:] + points[:start]
+        return [MapTile(map=p.map, x=round(p.x), y=round(p.y)) for p in points]
+
+    def _walk_on(self, mind: Mind) -> None:
+        """At each stop of a stroll: stop once it has lasted its longest or stopped paying, or
+        else walk on, to the loop's next tile or somewhere else near."""
+        now = self.clock.now
+        assert mind.ends is not None
+        if now >= mind.ends:
+            self._decide(mind)
+            return
+        if mind.look is not None and now >= mind.look and self._reconsider(mind):
+            return
+        if mind.goal.activity is Activity.EXERCISE:
+            mind.route = mind.route[1:] + mind.route[:1]
+            self._walk(mind, mind.route[0])
+        elif (tile := self._wander_tile(mind)) is not None:
+            self._walk(mind, tile)
+        else:
+            mind.until = mind.ends
 
     def _approach(self, mind: Mind) -> bool:
         """At the end of a walk to someone: talk, hang around, or follow them. True if the NPC

@@ -16,7 +16,14 @@ OLD_NEEDS = {
     Need.NEWS: 0.4,
     Need.INSPIRATION: 0.5,
 }
-NEEDS = {**OLD_NEEDS, Need.HUNGER: 0.45, Need.BLADDER: 0.1, Need.HYGIENE: 0.3, Need.FINANCES: 0.0}
+BEFORE_STAYS = {
+    **OLD_NEEDS,
+    Need.HUNGER: 0.45,
+    Need.BLADDER: 0.1,
+    Need.HYGIENE: 0.3,
+    Need.FINANCES: 0.0,
+}
+NEEDS = {**BEFORE_STAYS, Need.BOREDOM: 0.2, Need.RELAXATION: 0.4, Need.EXERCISE: 0.6}
 
 
 class Village:
@@ -101,5 +108,20 @@ def test_a_save_from_before_hunger_bladder_and_hygiene_keeps_their_start_values(
     needs = behaviour.needs("kofi")
     assert {need: needs[need] for need in OLD_NEEDS} == OLD_NEEDS
     for need in (Need.HUNGER, Need.BLADDER, Need.HYGIENE):
+        low, high = behaviour.config.start_needs[need]
+        assert needs[need] == started[need] and low <= needs[need] <= high
+
+
+def test_a_save_from_before_boredom_relaxation_and_exercise_keeps_their_start_values() -> None:
+    village = Village()
+    behaviour = village.behaviour
+    started = behaviour.needs("kofi")
+    village.world.clock.now = LATER
+
+    behaviour.restore("kofi", Goal(Activity.PARK, "park"), BEFORE_STAYS, LATER, None, {})
+
+    needs = behaviour.needs("kofi")
+    assert {need: needs[need] for need in BEFORE_STAYS} == BEFORE_STAYS
+    for need in (Need.BOREDOM, Need.RELAXATION, Need.EXERCISE):
         low, high = behaviour.config.start_needs[need]
         assert needs[need] == started[need] and low <= needs[need] <= high

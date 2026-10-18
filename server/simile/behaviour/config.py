@@ -18,6 +18,9 @@ class Need(StrEnum):
     BLADDER = "bladder"
     HYGIENE = "hygiene"
     FINANCES = "finances"
+    BOREDOM = "boredom"
+    RELAXATION = "relaxation"
+    EXERCISE = "exercise"
 
 
 class Activity(StrEnum):
@@ -36,6 +39,7 @@ class Activity(StrEnum):
     IDLE = "idle"
     CREATE = "create"
     WORK = "work"
+    EXERCISE = "exercise"
     SLEEP = "sleep"
     TALK = "talk"
 
@@ -74,7 +78,7 @@ BASE: dict[Activity, float] = {
     A.SQUARE: 0.05,
     A.NEWS: -0.3,
     A.GALLERY: -0.1,
-    A.IDLE: -0.1,
+    A.IDLE: -0.4,
     A.CREATE: -1.0,
     A.WORK: -0.1,
 }
@@ -100,6 +104,9 @@ RISE: dict[Need, float] = {
     Need.HUNGER: 0.16,
     Need.BLADDER: 0.28,
     Need.HYGIENE: 0.035,
+    Need.BOREDOM: 0.4,
+    Need.RELAXATION: 0.02,
+    Need.EXERCISE: 0.03,
 }
 
 RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
@@ -110,32 +117,53 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.INSPIRATION: {V.CREATIVITY: 0.022, V.SELF_ACTUALIZATION: 0.01},
     Need.HUNGER: {V.PLEASURE: 0.06},
     Need.HYGIENE: {V.DISCIPLINE: 0.02},
+    Need.BOREDOM: {
+        V.ADVENTURE: 0.3,
+        V.FREEDOM: 0.15,
+        V.OPEN_MINDEDNESS: 0.15,
+        V.PEACE_OF_MIND: -0.2,
+        V.TRADITION: -0.15,
+    },
+    Need.RELAXATION: {V.PEACE_OF_MIND: 0.04, V.PLEASURE: 0.03},
+    Need.EXERCISE: {V.DISCIPLINE: 0.05, V.ADVENTURE: 0.03},
 }
 
 RISE_ASLEEP: dict[Need, float] = {Need.HUNGER: 0.3, Need.BLADDER: 0.2, Need.HYGIENE: 0.5}
 
 EFFECTS: dict[Activity, dict[Need, float]] = {
-    A.HOME: {Need.REST: -0.3, Need.HUNGER: -1.2, Need.BLADDER: -4.0, Need.HYGIENE: -2.0},
-    A.SLEEP: {Need.REST: -0.25},
+    A.HOME: {
+        Need.REST: -0.3,
+        Need.HUNGER: -1.2,
+        Need.BLADDER: -4.0,
+        Need.HYGIENE: -2.0,
+        Need.RELAXATION: -0.4,
+    },
+    A.SLEEP: {Need.REST: -0.25, Need.BOREDOM: -1.0, Need.RELAXATION: -0.2},
     A.COFFEE_SHOP: {
         Need.SOCIAL: -0.15,
         Need.REST: -0.1,
         Need.CURIOSITY: -0.3,
         Need.HUNGER: -2.0,
         Need.BLADDER: -4.0,
+        Need.RELAXATION: -0.6,
     },
     A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.4},
-    A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6},
-    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2},
+    A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6, Need.BOREDOM: -3.0, Need.RELAXATION: -0.8},
+    A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2, Need.RELAXATION: -1.5},
     A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.HUNGER: -3.0, Need.BLADDER: -4.0},
-    A.MAKER_SPACE: {Need.CURIOSITY: -0.9},
-    A.GALLERY: {Need.CURIOSITY: -0.5, Need.REST: -0.1},
-    A.WANDER: {Need.CURIOSITY: -4.0},
+    A.MAKER_SPACE: {Need.CURIOSITY: -0.9, Need.RELAXATION: 0.05},
+    A.GALLERY: {
+        Need.CURIOSITY: -0.5,
+        Need.REST: -0.1,
+        Need.RELAXATION: -0.8,
+    },
+    A.WANDER: {Need.CURIOSITY: -4.0, Need.BOREDOM: -2.0, Need.EXERCISE: -0.8},
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
-    A.CREATE: {Need.CURIOSITY: -0.6},
-    A.WORK: {Need.BLADDER: -4.0},
-    A.TALK: {Need.SOCIAL: -6.0},
+    A.CREATE: {Need.CURIOSITY: -0.6, Need.BOREDOM: -1.0, Need.RELAXATION: 0.1},
+    A.WORK: {Need.BLADDER: -4.0, Need.BOREDOM: -0.5, Need.RELAXATION: 0.1},
+    A.TALK: {Need.SOCIAL: -6.0, Need.BOREDOM: -3.0},
+    A.EXERCISE: {Need.EXERCISE: -2.5, Need.BOREDOM: -1.0},
 }
 
 FINISHING: dict[Activity, dict[Need, float]] = {A.CREATE: {Need.INSPIRATION: -1.0}}
@@ -149,11 +177,17 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.NOODLE_BAR: (20, 45),
     A.MAKER_SPACE: (20, 60),
     A.GALLERY: (15, 40),
-    A.WANDER: (1, 5),
+    A.WANDER: (3, 10),
     A.SEEK: (3, 10),
-    A.IDLE: (2, 8),
+    A.IDLE: (1, 3),
     A.CREATE: (45, 75),
     A.WORK: (30, 75),
+    A.EXERCISE: (15, 40),
+}
+
+LOOPS: dict[str, tuple[tuple[int, int], ...]] = {
+    "lotus_lake": ((47, 14), (62, 14), (62, 17), (52, 18), (51, 29), (62, 30), (62, 33), (47, 33)),
+    "village": ((1, 12), (44, 12), (45, 35), (1, 35)),
 }
 
 
@@ -226,6 +260,9 @@ URGENCY: dict[Need, Urgency] = {
     Need.BLADDER: Urgency(weight=12.0),
     Need.HYGIENE: Urgency(weight=8.0, critical=None),
     Need.FINANCES: Urgency(power=1.0, weight=100.0, critical=None),
+    Need.BOREDOM: Urgency(power=1.0, weight=4.0, critical=None),
+    Need.RELAXATION: Urgency(power=2.0, weight=6.0, critical=None),
+    Need.EXERCISE: Urgency(power=2.0, weight=6.0, critical=None),
 }
 
 BEDTIME_VALUES: dict[CoreValue, float] = {
@@ -380,7 +417,64 @@ class BehaviourConfig(BaseModel):
     )
     wander_radius: int = Field(default=12, ge=1, description="How far a wander goes, in tiles.")
     dwell: dict[Activity, tuple[float, float]] = Field(
-        default=DWELL, description="Minutes spent at an activity once there, sampled uniformly."
+        default=DWELL,
+        description="The shortest and longest stay at an activity once there, in minutes. From "
+        "the shortest on they look again every `reconsider` minutes, and leave once something "
+        "else is worth more. A stay in `seen_through` lasts a draw between them.",
+    )
+    seen_through: tuple[Activity, ...] = Field(
+        default=(A.CREATE,),
+        description="Stays that last their drawn dwell, as their worth comes at the end.",
+    )
+    reconsider: float = Field(
+        default=2.0, gt=0, description="Minutes between looks at whether a stay still pays."
+    )
+    switch: float = Field(
+        default=0.15,
+        ge=0,
+        description="What leaving a stay early costs: the best other option must beat staying "
+        "by this much.",
+    )
+    novelty: float = Field(
+        default=0.3,
+        ge=0,
+        le=1,
+        description="How far boredom falls on arriving somewhere other than their last stay, "
+        "unless it's `familiar`.",
+    )
+    familiar: tuple[Activity, ...] = Field(
+        default=(A.HOME, A.SLEEP, A.IDLE, A.WORK),
+        description="Where arriving is nothing new.",
+    )
+    new_spot: float = Field(
+        default=0.15,
+        ge=0,
+        le=1,
+        description="How far boredom falls on moving to another spot in the same place, such as "
+        "another painting or a bench with a friend on it.",
+    )
+    spot_switch: float = Field(
+        default=0.04,
+        ge=0,
+        description="What moving to another spot costs: it must beat staying put by this much.",
+    )
+    relieved: float = Field(
+        default=0.5,
+        ge=0,
+        description="What a stay must relieve an hour, as score, to keep boredom from rising. "
+        "Boredom rises at its full rate where nothing is relieved, and more slowly the more is.",
+    )
+    busy: float = Field(
+        default=0.03,
+        ge=0,
+        description="How much faster relaxation rises an hour for each other person near them "
+        "out of home, up to `crowd_cap`. Sociability divides it, by up to "
+        "`sociability_spread`.",
+    )
+    loops: dict[str, tuple[tuple[int, int], ...]] = Field(
+        default=LOOPS,
+        description="Walks round the village map for exercise, as the tiles they pass in order, "
+        "back to the first.",
     )
     start_dwell: tuple[float, float] = Field(
         default=(0.5, 5), description="Minutes awake at home before the first decision."
@@ -455,6 +549,9 @@ class BehaviourConfig(BaseModel):
             Need.HUNGER: (0.2, 0.6),
             Need.BLADDER: (0.0, 0.5),
             Need.HYGIENE: (0.0, 0.4),
+            Need.BOREDOM: (0.0, 0.2),
+            Need.RELAXATION: (0.1, 0.5),
+            Need.EXERCISE: (0.1, 0.5),
         },
         description="Needs on start, sampled uniformly. Inspiration starts at 0 without a craft, "
         "and finances follow from their money.",
