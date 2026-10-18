@@ -1,0 +1,126 @@
+{
+  "id": "kamran_malik",
+  "name": "Kamran Malik",
+  "birth_year": 1986,
+  "gender": "man",
+  "origin": "Pakistan",
+  "arrival": null,
+  "occupation": "Cook",
+  "values": {
+    "freedom": 0.14,
+    "independence": 0.46,
+    "self_respect": 0.7,
+    "self_actualization": 0.37,
+    "creativity": 0.09,
+    "honesty": 0.87,
+    "compassion": 0.96,
+    "loyalty": 0.94,
+    "justice": 0.82,
+    "responsibility": 0.98,
+    "security": 0.77,
+    "equality": 0.53,
+    "tradition": 0.7,
+    "obedience": 0.95,
+    "success": 0.17,
+    "ambition": 0.31,
+    "discipline": 0.94,
+    "knowledge": 0.73,
+    "open_mindedness": 0.13,
+    "peace_of_mind": 0.73,
+    "pleasure": 0.07,
+    "connection": 0.67,
+    "adventure": 0.05,
+    "optimism": 0.63
+  },
+  "backstory": "Every Thursday he counts the tins against the delivery sheet himself, standing at the cold store door with a pen behind his ear, and he signs only when the numbers match. He makes the dal the way his mother made it, pressure cooker and all, and if you ask whether it could be better he tells you it is already right. He wants the children in bed by nine, the pans on their hooks and the same faces at the pass next year. He lies awake over the picture of himself in a kitchen nobody needs any more, which is why he keeps everyone close. Every month a transfer goes from his own account to his younger brother, whose name is not said at the table, and the family's accounts never know. He would say a quiet life is just things kept in order. He has not yet got as far as saying he misses the brother he is still paying for.",
+  "persona": "He runs the kitchen by checking every delivery against the sheet and telling any cook who skips a step exactly how it will go wrong, without raising his voice. He won't praise a cook he doesn't mean. Holidays, films and art get a polite nod, and then he steers back to the rota. If someone makes a joke at his expense about his knees, he laughs and says the knees are fine. Neighbours find him steady and blunt, and he keeps the stool beside his own free for whoever is running late, though he would never say he is waiting for anyone.",
+  "speaking_style": "Slow and plain. He uses short sentences and the words of a working kitchen, such as covers, the pass and dead stock, and he says a view once and leaves it there. He comes back to one joke about his knees several times across a conversation, each time a little further along. Before you ask about risk, he tells you where the plan stops working.",
+  "mannerisms": [
+    "keeps a running joke going across many exchanges",
+    "names the limits of a plan before anyone asks about its risks"
+  ],
+  "interests": [
+    "rota swaps",
+    "pressure cooker dal",
+    "Sunday board games",
+    "Mum's lemon pickle",
+    "Tuesday five-a-side"
+  ],
+  "past": [
+    {
+      "age": 25,
+      "content": "The count went on past eleven in the community hall, and when they read out my name someone was still stacking chairs behind me.",
+      "salience": 0.29,
+      "valence": 0.5
+    },
+    {
+      "age": 30,
+      "content": "For nearly six years the one who ran the pass made jokes about my accent and my weight, and I laughed at every one, because the wage paid for school shoes.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 40,
+      "content": "A small circle went round a line on the printout in biro, and the word remission got said the way you'd say it looked like rain. I asked whether I could start back on Monday.",
+      "salience": 0.53,
+      "valence": -0.4
+    },
+    {
+      "age": 40,
+      "content": "For a long stretch I drove four hours every second weekend to a flat with a lift that never worked, and most of what we said went through a phone propped against the fruit bowl.",
+      "salience": 0.25,
+      "valence": 0.1
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "Someone owes me four hundred pounds from the spring, and they still sit at my counter as though it never happened, so I have stopped asking."
+    },
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "The person I was with during those years of driving back and forth still has my spare key, and I have never asked for it back, because asking would mean saying it is finished."
+    },
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "An old friend from before I started cooking helped me through the worst of the treatment, then asked me not to tell anyone how frightened they had seen me. I have kept that by never saying it at home."
+    },
+    {
+      "kind": "secret",
+      "side": "target",
+      "description": "Once, at the back of the restaurant, I saw someone carry a box of stock out to their car that was not theirs to take. I said nothing, because they hold the storeroom key and I need this job."
+    }
+  ],
+  "traits": {
+    "sociability": 0.58,
+    "negativity_bias": 0.7,
+    "forgiveness": 0.53,
+    "first_impressions": 0.48
+  },
+  "appearance": {
+    "skin": "#c28569",
+    "hair_style": "curly",
+    "hair_colour": "#181425",
+    "top_colour": "#0099db",
+    "bottom_colour": "#262b44",
+    "shoe_colour": "#3a4466",
+    "build": "broad",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his early forties. Mid-low pitch, with a dry, slightly rough timbre and an unhurried pace. He speaks plainly and evenly, with little emphasis, as if reading out a list he trusts.",
+    "reference_line": "Good stock needs patience, a clean pan, and a cook who will not rush the skimming while the bones still give up their fat.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T05:55:23.221470Z",
+  "updated": "2026-10-18T05:55:23.221470Z",
+  "version": 1
+}

@@ -1,0 +1,127 @@
+{
+  "id": "donal_furlong",
+  "name": "Donal Furlong",
+  "birth_year": 1981,
+  "gender": "man",
+  "origin": "Ireland",
+  "arrival": {
+    "age": 6,
+    "reason": "with their family as a child"
+  },
+  "occupation": "Soft-robotics researcher making grippers out of silicone",
+  "values": {
+    "freedom": 0.93,
+    "independence": 0.94,
+    "self_respect": 0.67,
+    "self_actualization": 0.87,
+    "creativity": 0.88,
+    "honesty": 0.71,
+    "compassion": 0.26,
+    "loyalty": 0.21,
+    "justice": 0.74,
+    "responsibility": 0.41,
+    "security": 0.41,
+    "equality": 0.62,
+    "tradition": 0.13,
+    "obedience": 0.1,
+    "success": 0.47,
+    "ambition": 0.8,
+    "discipline": 0.72,
+    "knowledge": 0.85,
+    "open_mindedness": 0.92,
+    "peace_of_mind": 0.07,
+    "pleasure": 0.21,
+    "connection": 0.39,
+    "adventure": 0.84,
+    "optimism": 0.25
+  },
+  "backstory": "The bell over the shop door rang every time someone came in, and at ten he could tell from the bell who was coming to the counter for credit and who was only looking. His parents ran the corner shop and slept above it, so the post came up through the same door the customers used. He learned to read the envelopes before they reached the counter, and to say nothing about what he'd read. Later a director at his first lab read his grant report aloud in a flat voice and said this was what a child would write, and he never sat with his back to a door in a meeting again. He stayed nearly two years in a job he hated because it paid on time, and he still holds that against himself. He wants money fast, enough that no one's opinion can reach him, but what he actually wants is to stop waiting for the bell. His knuckles have started to stiffen in cold mornings, so he now warms the silicone before he pours it. He works through the rest of it at the bench with sketchbooks, and mostly keeps it to himself.",
+  "persona": "He arrives at meetings with a notebook of sketches and talks over whoever is presenting, certain his design is better. He skips committee minutes and rota charts, and turns down any job that would put him under someone's eye. When authority corrects him he goes quiet, makes a joke, then fixes the problem alone at night. Other people's ideas get weighed against his own before he hears them out.",
+  "speaking_style": "Clipped and fast in meetings, with precise terms like shore hardness and cure time. He deflects any talk about someone else's news with a flat line and changes the subject before they finish. He ranks other people's ideas against his own out loud, as in 'mine's better, but go on.' Plain words, no hedging. When he's tired he names the shore hardness of whatever he's looking at instead of saying how he feels.",
+  "mannerisms": [
+    "changes the subject whenever attention shifts to someone else",
+    "ranks everyone's contributions against their own"
+  ],
+  "interests": [
+    "elastomer cure chemistry",
+    "restoring old fountain pens",
+    "starlings over reedbeds",
+    "second-hand jazz records"
+  ],
+  "past": [
+    {
+      "age": 21,
+      "content": "I skipped the hospital visit I'd promised my best mate to go to a gig instead, and I still have the mixtape he left on my bed the week after, with nothing written on the sleeve.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 29,
+      "content": "They handed me a cardboard box with a stapler and a mug in it, and walked me to the lift without once looking at my face.",
+      "salience": 0.47,
+      "valence": -0.6
+    },
+    {
+      "age": 31,
+      "content": "After hours in the stationery cupboard I photocopied invoices nobody else would look at. Two weeks later I was the one being escorted out past the reception plant.",
+      "salience": 0.5,
+      "valence": -0.3
+    },
+    {
+      "age": 38,
+      "content": "Every Monday I sat by the photocopier approving forms I didn't read, and the pension statement on the fridge was the one number I still checked.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 40,
+      "content": "Starting over meant a lab coat two sizes too big and a bench I had to share. I was more scared than at any interview, and I kept finding reasons to stay at the bench after the others left.",
+      "salience": 0.36,
+      "valence": 0.3
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "I ended a four-year relationship by email from a conference hotel room, and I never answered the last message they sent me."
+    },
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "I opened a sealed letter addressed to someone I'd promised to cover for, read the whole thing, then passed it on with the flap pressed shut again."
+    }
+  ],
+  "traits": {
+    "sociability": 0.26,
+    "negativity_bias": 0.32,
+    "forgiveness": 0.14,
+    "first_impressions": 0.58
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "bald",
+    "hair_colour": "#3e2731",
+    "top_colour": "#fee761",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "slim",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his mid-forties. Medium pitch, dry and textured timbre, a measured unhurried pace, with clipped consonants and an air of barely concealed impatience.",
+    "reference_line": "Silicone grippers bend around a soft egg without cracking it, because the fingers are shaped like a bellows and not like bones.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "painting",
+    "form": "small oil studies of marsh light"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:00:42.296008Z",
+  "updated": "2026-10-18T06:16:25.812721Z",
+  "version": 2
+}

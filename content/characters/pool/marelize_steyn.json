@@ -1,0 +1,118 @@
+{
+  "id": "marelize_steyn",
+  "name": "Marelize Steyn",
+  "birth_year": 1978,
+  "gender": "woman",
+  "origin": "South Africa",
+  "arrival": {
+    "age": 20,
+    "reason": "to live with a partner"
+  },
+  "occupation": "Folk fiddler who tours small halls",
+  "values": {
+    "freedom": 0.6,
+    "independence": 0.37,
+    "self_respect": 0.62,
+    "self_actualization": 0.83,
+    "creativity": 0.27,
+    "honesty": 0.44,
+    "compassion": 0.41,
+    "loyalty": 0.46,
+    "justice": 0.37,
+    "responsibility": 0.6,
+    "security": 0.38,
+    "equality": 0.37,
+    "tradition": 0.6,
+    "obedience": 0.65,
+    "success": 0.86,
+    "ambition": 0.46,
+    "discipline": 0.69,
+    "knowledge": 0.62,
+    "open_mindedness": 0.19,
+    "peace_of_mind": 0.57,
+    "pleasure": 0.14,
+    "connection": 0.46,
+    "adventure": 0.23,
+    "optimism": 0.08
+  },
+  "backstory": "I count the chairs and check the tuning before anyone arrives, because a crooked row is the one thing in a hall I can actually fix. Most of how I operate traces back to a house where nothing was said out loud and everything ran to a timetable. You kept the timetable going and put the rest somewhere shut. The fiddle was the one room I was allowed to be good in, and I was, until a falling-out I won't describe made being good feel like the thing I'd been punished for. I stopped for a long while. Now I play small halls, and I still don't trust a stretch of good weather. When things settle, I start listening for what's about to break. The people closest to me think I'm hard, and I haven't corrected them. What I want is to be known for the playing. What I need is for the people at home to be the ones who ring me first, and I don't believe they will.",
+  "persona": "She reaches every hall early, squares the chairs, and moves the sound engineer's microphone before anyone can apologise, then plays the set without once looking up at the crowd. When someone offers to show her the view from the car park, she declines without breaking stride. She turns down any spontaneous evening with a flat no. On tour she texts her partner every hour and keeps a private tally of who rang and who didn't.",
+  "speaking_style": "She speaks at a brisk, even pace in precise, slightly formal vocabulary, and she cuts into vague talk with a correction rather than a pleasantry. In a long conversation she keeps a running tally of what's been decided, reading it back under her breath, and she holds her opinion until someone has asked her twice.",
+  "mannerisms": [
+    "keeps a running summary of what's been decided during a long talk",
+    "waits to be asked twice before giving an opinion"
+  ],
+  "interests": [
+    "tuning fiddles by ear",
+    "strategy games on the laptop",
+    "household accounts in pencil",
+    "children's football timetables"
+  ],
+  "past": [
+    {
+      "age": 10,
+      "content": "I packed my things into a tin trunk with my name painted on the lid, and my parents checked the labels twice before the car pulled away.",
+      "salience": 0.35,
+      "valence": -0.2
+    },
+    {
+      "age": 39,
+      "content": "At the end of a rehearsal I threw an envelope into the bin without opening it, then walked out with the fiddle case in one hand.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 42,
+      "content": "The first time I filled a hall, I counted the chairs afterwards to be sure none had been left empty.",
+      "salience": 0.3,
+      "valence": 0.1
+    },
+    {
+      "age": 42,
+      "content": "On the night one of my children first slept through, I sat in the car on the drive for an hour, not wanting to go in and be seen to be happy.",
+      "salience": 0.45,
+      "valence": -0.6
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "ex_partner",
+      "side": "mutual",
+      "description": "I walked out on the person I moved here to be with and never told them why; their last letter is still in my fiddle case."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "I owe money from the year I stopped playing, and I could clear it from an account nobody in my life knows exists."
+    }
+  ],
+  "traits": {
+    "sociability": 0.24,
+    "negativity_bias": 0.64,
+    "forgiveness": 0.3,
+    "first_impressions": 0.53
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "curly",
+    "hair_colour": "#3e2731",
+    "top_colour": "#8a5cf6",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A South African accent, a first-language Afrikaans speaker. A woman in her late forties. Mid-range pitch with a dry, slightly husky timbre, a brisk but even pace, and a crisp, unhurried manner that gives little away.",
+    "reference_line": "I play the fiddle in halls that smell of damp coats and floor polish, and I tune every string before the doors open.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T06:13:59.092530Z",
+  "updated": "2026-10-18T06:13:59.092530Z",
+  "version": 1
+}

@@ -1,4 +1,5 @@
 import tomllib
+from collections import Counter
 from collections.abc import Mapping
 from functools import cache, cached_property
 from pathlib import Path
@@ -6,8 +7,8 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
-from simile.schema import CoreValue
-from simile.schema.npc import Mannerism
+from simile.schema import CoreValue, Pay
+from simile.schema.npc import Mannerism, Shifts
 
 TABLES_DIR = Path(__file__).resolve().parents[4] / "content" / "characters" / "tables"
 
@@ -163,16 +164,22 @@ class Title(Table):
     name: Text
     ages: Span | None = None
     degree: bool | None = None
+    makes: bool | None = None
 
 
 class Job(Table):
     name: str
     group: str
+    """The ISCO-08 sub-major group's id, or the makers.toml family's."""
     major: str
     skill: int
     weight: float
     ages: tuple[int, int]
     degree: bool
+    makes: bool
+    """Whether whoever does it makes or studies something."""
+    maker: bool = False
+    """Whether it's from makers.toml."""
 
 
 class Group(Table):
@@ -183,6 +190,7 @@ class Group(Table):
     employed: Weight
     ages: Span
     degree: bool = False
+    makes: bool = False
     titles: list[Text | Title] = Field(min_length=1)
 
     def jobs(self) -> list[Job]:
@@ -196,6 +204,7 @@ class Group(Table):
                 weight=self.employed / len(titles),
                 ages=title.ages or self.ages,
                 degree=self.degree if title.degree is None else title.degree,
+                makes=self.makes if title.makes is None else title.makes,
             )
             for title in titles
         ]
@@ -210,6 +219,63 @@ class Occupations(Table):
     skill: dict[str, tuple[Factor, Factor, Factor, Factor]]
     group: list[Group]
     study: list[Study]
+
+
+class Family(Table):
+    id: Id
+    name: Text
+    major: Id
+    skill: Annotated[int, Field(ge=1, le=4)]
+    ages: Span
+    degree: bool = False
+
+
+class MakerJob(Table):
+    title: Text
+    family: Id
+    ages: Span | None = None
+    degree: bool | None = None
+
+
+class Makers(Table):
+    families: list[Family] = Field(min_length=1)
+    jobs: list[MakerJob] = Field(min_length=1)
+
+    def all(self) -> list[Job]:
+        """Every job, each family's titles sharing a weight of 1."""
+        families = {family.id: family for family in self.families}
+        sizes = Counter(job.family for job in self.jobs)
+        return [
+            Job(
+                name=job.title,
+                group=family.id,
+                major=family.major,
+                skill=family.skill,
+                weight=1 / sizes[family.id],
+                ages=job.ages or family.ages,
+                degree=family.degree if job.degree is None else job.degree,
+                makes=True,
+                maker=True,
+            )
+            for job in self.jobs
+            if (family := families.get(job.family)) is not None
+        ]
+
+
+class Role(Table):
+    """One of the village's own roles, as content/characters/tables/roles.toml describes it."""
+
+    id: Id
+    name: Text
+    workplace: Id
+    jobs: list[Text] = []
+    families: list[Id] = []
+    shifts: Shifts = Field(min_length=1)
+    pay: Pay | None = None
+
+    def fits(self, job: Job) -> bool:
+        named = {title.casefold() for title in self.jobs}
+        return job.name.casefold() in named or (job.maker and job.group in self.families)
 
 
 class Event(Conditional):
@@ -302,6 +368,8 @@ class Tables(Table):
     origins: list[Origin]
     census: Census
     occupations: Occupations
+    makers: Makers
+    roles: list[Role]
     events: list[Event]
     tension: Tension
     temperament: Temperament
@@ -329,13 +397,32 @@ class Tables(Table):
 
     @cached_property
     def jobs(self) -> list[Job]:
+        """The jobs in occupations.toml."""
         return [job for group in self.occupations.group for job in group.jobs()]
+
+    @cached_property
+    def maker_jobs(self) -> list[Job]:
+        return self.makers.all()
+
+    @cached_property
+    def titles(self) -> Mapping[str, Job]:
+        """Every job in either table, by its title in lower case."""
+        return {job.name.casefold(): job for job in [*self.jobs, *self.maker_jobs]}
+
+    def job(self, title: str) -> Job | None:
+        return self.titles.get(title.casefold())
+
+    def role_jobs(self, role: Role) -> list[Job]:
+        """The jobs that fit a role."""
+        return [job for job in [*self.jobs, *self.maker_jobs] if role.fits(job)]
 
 
 FILES = {
     "origins": ("names.toml", "origin"),
     "census": ("census.toml", None),
     "occupations": ("occupations.toml", None),
+    "makers": ("makers.toml", None),
+    "roles": ("roles.toml", "role"),
     "events": ("events.toml", "event"),
     "tension": ("tension.toml", None),
     "temperament": ("temperament.toml", None),

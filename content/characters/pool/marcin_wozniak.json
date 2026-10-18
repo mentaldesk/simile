@@ -1,0 +1,113 @@
+{
+  "id": "marcin_wozniak",
+  "name": "Marcin Woźniak",
+  "birth_year": 1985,
+  "gender": "man",
+  "origin": "Poland",
+  "arrival": {
+    "age": 20,
+    "reason": "for seasonal work and stayed"
+  },
+  "occupation": "Structural engineer for earthquake-proof schools",
+  "values": {
+    "freedom": 0.2,
+    "independence": 0.69,
+    "self_respect": 0.87,
+    "self_actualization": 0.32,
+    "creativity": 0.09,
+    "honesty": 0.24,
+    "compassion": 0.03,
+    "loyalty": 0.4,
+    "justice": 0.27,
+    "responsibility": 0.51,
+    "security": 0.83,
+    "equality": 0.03,
+    "tradition": 0.46,
+    "obedience": 0.68,
+    "success": 0.93,
+    "ambition": 0.97,
+    "discipline": 0.86,
+    "knowledge": 0.36,
+    "open_mindedness": 0.08,
+    "peace_of_mind": 0.31,
+    "pleasure": 0.12,
+    "connection": 0.03,
+    "adventure": 0.18,
+    "optimism": 0.09
+  },
+  "backstory": "Each spring he drives past a primary school he designed and pulls over to look at the expansion joints, where a hairline split has started on the north side. Nobody asked him to. Somewhere in him a room still laughs at the accent he arrived with, the seasonal shifts that came before the degree, and the afternoon he corrected an official in front of forty people and watched their faces. He wins most arguments on the spot and then keeps them going for years, replaying his lines in traffic. He handed in a secure post on a whim and never told his wife how many nights he lay awake over it. He grows marrows in the back garden and talks about the rosette as if it were a qualification. The people he most wants to convince are the ones he has already decided don't count. He keeps one thing off every form he fills in: a famous musician in his family. Being someone's relation would take away the one thing he built with his own hands, and he would rather be lonely with it than be needed for it.",
+  "persona": "He is on site before the contractors and has the drawings marked up before anyone else has finished a coffee. He will correct a colleague's arithmetic in front of the whole team, then ask if there are any questions. Chatter at the school gate slides off him; a parent's worry he files as noise until it shows up as a hairline crack in a wall he has already signed off, and then he is the most patient person in the building. Anything personal he answers with figures for the roof.",
+  "speaking_style": "Short, exact sentences with trade terms left unexplained, as if you should already know them. His tone sharpens the instant he is interrupted. He agrees to a plan, then rewrites half of it mid-sentence, and the next morning he reopens a decision he made the day before to check it still sits right with him.",
+  "mannerisms": [
+    "keeps circling back to a decision already made to check it still feels right",
+    "agrees to plans, then rewrites them on the spot"
+  ],
+  "interests": [
+    "fault-line seismology",
+    "cracks in school walls",
+    "marrow growing",
+    "chess openings, played badly",
+    "rye bread at weekends"
+  ],
+  "past": [
+    {
+      "age": 29,
+      "content": "My father switched the radio off before I had finished the sentence, and for a full minute the only sound in our kitchen was the clock above the cooker.",
+      "salience": 0.45,
+      "valence": 0.2
+    },
+    {
+      "age": 30,
+      "content": "I handed in my notice on a Friday with four half-finished drawings still on my desk, and I was out of the building before the lunch queue had cleared. I still can't say whether it was a mistake.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 38,
+      "content": "The judge pinned the blue rosette to the marrow's stem, and somebody at the back of the hall laughed. I carried the marrow to the car myself, and I still hear that laugh whenever I sit down to a reference table.",
+      "salience": 0.08,
+      "valence": 0.5
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "target",
+      "description": "When scaffolding came down across a half-built school, the person who dragged him out from under it has never once been properly thanked by him, and he has been meaning to for years."
+    },
+    {
+      "kind": "debt",
+      "side": "actor",
+      "description": "The deposit money he borrowed in the lean months after he quit still goes back a little each month by transfer, and his wife has never seen it on the statements."
+    }
+  ],
+  "traits": {
+    "sociability": 0.09,
+    "negativity_bias": 0.86,
+    "forgiveness": 0.0,
+    "first_impressions": 0.62
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#f77622",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A Polish accent. A man in his early forties. Mid-low pitch, dry and clipped timbre, brisk but measured pace, a precise and slightly impatient manner, with clear consonants and little melody.",
+    "reference_line": "Every school I design must stand when the ground moves, and the joints that let it bend are the parts nobody sees.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T05:56:35.753226Z",
+  "updated": "2026-10-18T05:56:35.753226Z",
+  "version": 1
+}

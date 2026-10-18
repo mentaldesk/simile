@@ -1,4 +1,5 @@
 import random
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, fields
 
 from simile.characters.tables.conditions import Context, Village, choose, fresh
@@ -49,10 +50,14 @@ def sample_skeleton(
     *,
     village: Village | None = None,
     tables: Tables | None = None,
+    jobs: Sequence[Job] | None = None,
+    trade: bool = False,
     **fixed: object,
 ) -> Skeleton:
     """Draw every field not in `fixed`, each conditioned on those before it. A student's
-    `education` is what they're studying for, and a fixed occupation means they work."""
+    `education` is what they're studying for, and a fixed occupation means they work. Given
+    `jobs`, they work at one of them, drawn before their education so it fits the job. With
+    `trade` they work at or are retired from a job in occupations.toml."""
     if unknown := set(fixed) - FIELDS:
         raise TypeError(f"not skeleton fields: {', '.join(sorted(unknown))}")
     t = tables or load_tables()
@@ -101,9 +106,18 @@ def sample_skeleton(
     if unset("siblings"):
         weights = banded(census.siblings, born)
         s["siblings"] = choose(rng, range(len(weights)), weights)
+    picked = _pick(rng, jobs, age, taken) if jobs and unset("occupation") else None
+    if picked is not None:
+        s["occupation"] = picked.name
     if unset("education"):
         rows = census.education
         weights = [banded(r.weight, age) * r.background.get(str(s["background"]), 1) for r in rows]
+        if picked is not None:
+            weights = [
+                w * (r.degree or not picked.degree) for r, w in zip(rows, weights, strict=True)
+            ]
+            done = [w * (r.done_by <= age) for r, w in zip(rows, weights, strict=True)]
+            weights = done if sum(done) else weights
         s["education"] = choose(rng, [r.id for r in rows], weights)
     if unset("partnership"):
         rows = census.partnership
@@ -116,18 +130,26 @@ def sample_skeleton(
         s["health"] = _health(rng, t, age)
     if unset("work"):
         s["work"] = _work(rng, t, s)
+        if trade and s["work"] not in ("working", "retired"):
+            s["work"] = "retired"
     if unset("occupation"):
-        s["occupation"], s["occupation_group"] = _occupation(rng, t, s, taken.jobs)
+        s["occupation"] = _occupation(rng, t, s, taken)
+    job = t.job(str(s["occupation"]).removeprefix("retired "))
     if unset("occupation_group"):
-        title = str(s["occupation"]).removeprefix("retired ")
-        s["occupation_group"] = next((j.major for j in t.jobs if j.name == title), None)
+        s["occupation_group"] = job.major if job else None
     skeleton = Skeleton(**s)
     if village is not None:
         village.names.update((skeleton.given, skeleton.family))
         if skeleton.work in ("working", "retired", "student"):
             village.jobs.add(skeleton.occupation.removeprefix("retired "))
+        if job is not None:
+            village.drawn[family_key(job)] += 1
         village.drawn[skeleton.household] += 1
     return skeleton
+
+
+def family_key(job: Job) -> str:
+    return f"family:{job.group}"
 
 
 def origins_for(country: str, *, tables: Tables | None = None) -> list[str]:
@@ -145,7 +167,8 @@ def _country(name: str) -> str:
 
 
 def jobs_for(t: Tables, age: int, education: str) -> list[tuple[Job, float]]:
-    """Every job someone of this age and education could hold, with its weight."""
+    """Every job in occupations.toml someone of this age and education could hold, with its
+    weight."""
     level = t.education[education]
     match = t.occupations.skill[education]
     return [
@@ -178,19 +201,24 @@ def _work(rng: random.Random, t: Tables, s: dict[str, object]) -> str:
     return choose(rng, [r.id for r in rows], weights) or "working"
 
 
-def _occupation(
-    rng: random.Random, t: Tables, s: dict[str, object], taken: set[str]
-) -> tuple[str, str | None]:
+def _pick(rng: random.Random, jobs: Sequence[Job], age: int, taken: Village) -> Job | None:
+    """One of `jobs` open to their age, one nobody has and in a family few have if it can be."""
+    options = [job for job in jobs if job.ages[0] <= age <= job.ages[1]] or list(jobs)
+    unused = [job for job in options if job.name not in taken.jobs] or options
+    return choose(rng, unused, [job.weight * taken.damping(family_key(job)) for job in unused])
+
+
+def _occupation(rng: random.Random, t: Tables, s: dict[str, object], taken: Village) -> str:
     age, work, education = int(s["age"]), str(s["work"]), str(s["education"])
     if work in ("working", "retired"):
         options = jobs_for(t, min(age, RETIRED_FROM) if work == "retired" else age, education)
-        unused = [(job, weight) for job, weight in options if job.name not in taken] or options
-        job = choose(rng, [job for job, _ in unused], [weight for _, weight in unused])
+        unused = [(job, w) for job, w in options if job.name not in taken.jobs] or options
+        weights = [w * taken.damping(family_key(job)) for job, w in unused]
+        job = choose(rng, [job for job, _ in unused], weights)
         if job is not None:
-            title = f"retired {job.name}" if work == "retired" else job.name
-            return title, job.major
+            return f"retired {job.name}" if work == "retired" else job.name
     if work == "student":
         [study] = [study for study in t.occupations.study if study.education == education]
-        return fresh(rng, study.titles, taken), None
+        return fresh(rng, study.titles, taken.jobs)
     [status] = [row for row in t.census.work.status if row.id == work] or [None]
-    return (status.text if status else work), None
+    return status.text if status else work

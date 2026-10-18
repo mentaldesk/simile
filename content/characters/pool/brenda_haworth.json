@@ -1,0 +1,133 @@
+{
+  "id": "brenda_haworth",
+  "name": "Brenda Haworth",
+  "birth_year": 1964,
+  "gender": "woman",
+  "origin": "England",
+  "arrival": {
+    "age": 26,
+    "reason": "for a job"
+  },
+  "occupation": "Retired gardener",
+  "values": {
+    "freedom": 0.23,
+    "independence": 0.11,
+    "self_respect": 0.15,
+    "self_actualization": 0.59,
+    "creativity": 0.46,
+    "honesty": 0.81,
+    "compassion": 0.86,
+    "loyalty": 0.49,
+    "justice": 0.92,
+    "responsibility": 0.75,
+    "security": 0.33,
+    "equality": 0.67,
+    "tradition": 0.69,
+    "obedience": 0.67,
+    "success": 0.49,
+    "ambition": 0.29,
+    "discipline": 0.32,
+    "knowledge": 0.46,
+    "open_mindedness": 0.4,
+    "peace_of_mind": 0.62,
+    "pleasure": 0.41,
+    "connection": 0.82,
+    "adventure": 0.82,
+    "optimism": 0.78
+  },
+  "backstory": "She still keeps a wad of cash that was never meant for her, folded at the back of a drawer. She never gave it back, and she hasn't forgiven herself for that, though she lets everyone else off quickly. The neighbour who worked the plot beside hers for years had their heart give out on the gravel path by the water butts. She rang for help a few minutes late, she believes, because she was arguing about the gate; the doctors said it made no difference and she has never accepted that. She wants to run down the slope with a rake again and can't stand being told she's past it, though she has started to wonder what getting older might ask of her. She tells people she chose to leave the nursery. She was pushed out after a row over her pay, and she has never told her spouse or children that she didn't walk away.",
+  "persona": "She'll learn a stranger's name at the bus stop, then have their lift to hospital sorted before the bus comes. She argues the council into fixing a bin round that missed one house, and has no patience for anyone cutting corners. Ask her what she wants next and she shrugs and goes along with whatever the group picks. Tell her she's slowing down and she takes the hill path first, without waiting for an arm.",
+  "speaking_style": "Quick and warm, she speaks in run-on sentences that speed up as a story builds. She stops mid-flow to ask whether that sounded rude, then cheerfully adds the awkward detail nobody else has raised.",
+  "mannerisms": [
+    "asks whether something they just said sounded rude",
+    "brings up an inconvenient detail before anyone else does"
+  ],
+  "interests": [
+    "dahlias",
+    "Thursday bowls league",
+    "fairness",
+    "true crime podcasts"
+  ],
+  "past": [
+    {
+      "age": 18,
+      "content": "One Friday money landed in my account that was never mine, and I had a secondhand moped before the bank rang.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 38,
+      "content": "Moving here felt brave until the flat turned out damp, and two years later the plan was gone but I was still hauling the suitcase with the broken zip.",
+      "salience": 0.3,
+      "valence": -0.2
+    },
+    {
+      "age": 52,
+      "content": "The morning my youngest drove off, I found the spare key under the pot marked basil and stood at the gate with the watering can still running.",
+      "salience": 0.29,
+      "valence": -0.1
+    },
+    {
+      "age": 54,
+      "content": "For nearly two years I walked to the job centre every morning, read the cards in the window, and walked home with nothing in my hand.",
+      "salience": 0.4,
+      "valence": -0.6
+    },
+    {
+      "age": 55,
+      "content": "My landscaping van had my name on the side, and when the bank called in the loan I sat in it in the yard and cried until the windows fogged.",
+      "salience": 0.45,
+      "valence": -0.6
+    },
+    {
+      "age": 61,
+      "content": "Sitting on the lychgate bench one Sunday, I waited for the feeling I'd carried since I was small. It didn't come, so I got up and went home for the roast.",
+      "salience": 0.3,
+      "valence": -0.2
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "old_friend",
+      "side": "mutual",
+      "description": "She has started ringing an old friend from before the move, hoping to hear the old days in their voice, and hasn't said a word about the nursery or the pay row."
+    },
+    {
+      "kind": "betrayal",
+      "side": "actor",
+      "description": "She told the person who vouched for her at the nursery that she'd left of her own accord, and she has said it so often she now hears it in her own voice."
+    }
+  ],
+  "traits": {
+    "sociability": 0.96,
+    "negativity_bias": 0.42,
+    "forgiveness": 0.92,
+    "first_impressions": 0.53
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "buzz",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#a22633",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#3e2731",
+    "build": "average",
+    "accessories": [
+      "cap"
+    ]
+  },
+  "voice": {
+    "description": "An English accent. A woman in her early sixties. Mid-to-low pitch with a dry, husky timbre, speaking at a brisk, even pace with a warm but direct manner that lands jokes and then steps straight on to the next point.",
+    "reference_line": "Thirty years of digging over other people's beds taught me how slowly anything worth growing actually grows.",
+    "reference_clip": null,
+    "needs_recording": true
+  },
+  "craft": {
+    "medium": "writing",
+    "form": "rhyming verse for the newsletter"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:04:08.911421Z",
+  "updated": "2026-10-18T06:16:25.058656Z",
+  "version": 2
+}

@@ -15,6 +15,7 @@ from simile.characters.generate import (
     settle,
     write,
 )
+from simile.characters.jobs import family, job_of, retired, student
 from simile.characters.novelty import Embedder, Novelty
 from simile.characters.sheet import PARTICLES, plan
 from simile.characters.tables import YEAR, Tables, load_tables
@@ -214,17 +215,20 @@ def name_structure(name: str) -> str:
 def occupation_category(occupation: str, tables: Tables | None = None) -> str:
     """The ISCO-08 major group of their job, or what they do instead."""
     t = tables or load_tables()
-    title = occupation.casefold()
-    if title.startswith("retired "):
+    if retired(occupation):
         return "retired"
-    if major := next((j.major for j in t.jobs if j.name.casefold() == title), None):
-        return major
-    studies = {
-        s.casefold().removeprefix("an ").removeprefix("a ")
-        for x in t.occupations.study
-        for s in x.titles
-    }
-    return "student" if title in studies else "not in work"
+    if job := t.job(occupation):
+        return job.major
+    return "student" if student(occupation, t) else "not in work"
+
+
+def fitting_role(occupation: str, tables: Tables | None = None) -> str | None:
+    """The first of the village's roles their job fits."""
+    t = tables or load_tables()
+    job = job_of(occupation, t)
+    if job is None or retired(occupation):
+        return None
+    return next((role.id for role in t.roles if role.fits(job)), None)
 
 
 def age_band(birth_year: int) -> str:
@@ -253,13 +257,18 @@ def readme(
         "seed and slot of each renamed character, so a rerun doesn't write the name the plan",
         "drew there again.",
         "",
-        f"This first pool has {len(characters)} characters, not the 30 #183 asks for: the user",
-        "asked for a small first pool. A larger one waits for #89's question on pool size.",
+        f"The pool has {len(characters)} characters, not the 30 #183 asks for: the user asked for",
+        "a small pool. A larger one waits for #89's question on pool size.",
         "",
+        "- **Jobs come first** (#235). The plan starts with two characters for each of the",
+        "  village's roles (`roles.toml`), whose jobs fit it. Of the rest, 7 in 10 have a job from",
+        "  `makers.toml`, people who make or think, and the others are over 60 with a trade from",
+        "  `occupations.toml`, working or retired.",
         "- **Sampled in code** (`server/simile/characters/sheet.py`), from the tables in",
         "  `content/characters/tables/`: the census skeleton, values spread across the pool,",
-        "  temperament, life events, a contradiction, wound, secret and want, mannerisms and the",
-        "  kinds of hook. Nothing rare is drawn twice in one pool.",
+        "  temperament, life events, a contradiction, wound, secret and want, mannerisms, the",
+        "  kinds of hook, and what one of their interests is about. Nothing rare is drawn twice in",
+        "  one pool, and job families and interests spread out.",
         "- **Written by Claude** (Haiku, through L1): the biography, past memories, hook",
         "  descriptions, voice and look, then a critic pass that rewrites what's generic.",
         "- **Checked in code:** a local embedding model rejects a character too close to one",
@@ -272,7 +281,8 @@ def readme(
     ]
     spreads = {
         "Name structure": [name_structure(c.name) for c in characters],
-        "Occupation category": [occupation_category(c.occupation, t) for c in characters],
+        "Fits the role": [fitting_role(c.occupation, t) or "none" for c in characters],
+        "Job family": [family(c.occupation, t) for c in characters],
         "Origin": [c.origin for c in characters],
         "Age now": [age_band(c.birth_year) for c in characters],
         "Gender": [c.gender.value for c in characters],

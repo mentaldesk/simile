@@ -1,0 +1,115 @@
+{
+  "id": "liam_ashworth",
+  "name": "Liam Ashworth",
+  "birth_year": 1998,
+  "gender": "man",
+  "origin": "England",
+  "arrival": null,
+  "occupation": "Barista",
+  "values": {
+    "freedom": 0.37,
+    "independence": 0.66,
+    "self_respect": 0.91,
+    "self_actualization": 0.79,
+    "creativity": 0.44,
+    "honesty": 0.83,
+    "compassion": 0.56,
+    "loyalty": 0.36,
+    "justice": 0.65,
+    "responsibility": 0.89,
+    "security": 0.64,
+    "equality": 0.4,
+    "tradition": 0.34,
+    "obedience": 0.63,
+    "success": 0.81,
+    "ambition": 0.9,
+    "discipline": 0.88,
+    "knowledge": 0.5,
+    "open_mindedness": 0.56,
+    "peace_of_mind": 0.65,
+    "pleasure": 0.22,
+    "connection": 0.77,
+    "adventure": 0.73,
+    "optimism": 0.87
+  },
+  "backstory": "He keeps every bank letter in a shoebox under the stairs and has never opened a payslip without adding it up twice. He grew up near poverty and it still runs his habits: extra shifts, nights out turned down, every price checked before he pays. It makes him generous in small odd ways and tight in others. He would rather be loud and wrong than quiet and proven right. When the coffee cart went, he went back behind a counter, and at home he keeps the bills in order for his partner and the kid. He has a file hidden under a folder labelled rotas, and nobody knows what's in it.",
+  "persona": "He works the morning queue and talks to whoever is nearest, and he knows how everyone takes their milk. Ask him whether the family can stretch to something and he'll tell you flatly that they can, then change the subject before you can argue. He turns down the old mates' Sunday lunch and the friend who wants him at the match, calling both a shift he can't spare. He'll keep going on a point long after he has won it, because he needs the last word.",
+  "speaking_style": "He opens most arguments with 'right, so' and sticks to short sentences in plain words. Ask him something heavy and he'll be onto the cup final or what the boiler is costing before you finish the question. Give him advice and he answers with a numbered list of every reason it won't work, one, two, three, down to six or seven, and he isn't finished when you think he is.",
+  "mannerisms": [
+    "changes the subject abruptly when a conversation gets too serious",
+    "rejects advice by listing every reason it wouldn't work"
+  ],
+  "interests": [
+    "Settlers of Catan",
+    "Budget spreadsheets",
+    "Five-a-side",
+    "Fantasy football",
+    "Kid's swimming lessons"
+  ],
+  "past": [
+    {
+      "age": 19,
+      "content": "I sold my cousin an Astra with a dodgy gearbox, and I still won't be the one to ring first. I honestly can't remember now what we fell out over.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 24,
+      "content": "The officer held the breathalyser up to the streetlight, and I was still telling him four pints was nothing.",
+      "salience": 0.3,
+      "valence": -0.5
+    },
+    {
+      "age": 27,
+      "content": "The finance firm's flatbed came for the coffee cart while I stood there. I held the gate open for the driver so he didn't have to ask twice.",
+      "salience": 0.45,
+      "valence": -0.7
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "saved_life",
+      "side": "actor",
+      "description": "He pulled a stranger out of the canal one night and still waits for a proper thank you, the kind with a name and a face to it."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "He has wanted a rematch since a pub quiz last winter, when a rival team beat his by one point on a picture round he still says was wrong."
+    },
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "He lent a few hundred pounds to someone he trusted and keeps a note of the sum still owed folded in his wallet, while telling everyone else it was a gift."
+    }
+  ],
+  "traits": {
+    "sociability": 0.92,
+    "negativity_bias": 0.21,
+    "forgiveness": 0.31,
+    "first_impressions": 0.39
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#68386c",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#181425",
+    "build": "broad",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A man in his late twenties. Medium-low pitch, warm and direct timbre, a fairly quick and even pace, with a confident manner when making a point.",
+    "reference_line": "I pull the first shots for the commuters every morning, and I still take real pride in a clean, sweet espresso.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": null,
+  "source": "premade",
+  "created": "2026-10-18T05:58:35.489216Z",
+  "updated": "2026-10-18T06:16:22.790969Z",
+  "version": 2
+}

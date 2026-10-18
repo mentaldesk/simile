@@ -1,10 +1,12 @@
+import itertools
 import random
+from collections import Counter
 
 import pytest
 
 from simile.characters.brief import Brief
 from simile.characters.generate import settle
-from simile.characters.sheet import draw, plan, split_name
+from simile.characters.sheet import ELDER_FROM, INTERESTS, Slot, draw, plan, slots, split_name
 from simile.characters.tables import YEAR, load_tables
 from simile.characters.traits import RECIPES, derive_traits
 from simile.characters.voice import accent_sentence, needs_recording
@@ -84,6 +86,47 @@ def test_a_plan_starts_the_same_for_any_larger_count() -> None:
 
     assert small == large[:3]
     assert len({sheet.skeleton.name for sheet in large}) == 6
+
+
+@pytest.mark.parametrize("seed", range(5))
+def test_a_plan_has_the_village_roles_first_then_mostly_makers_and_elders(seed: int) -> None:
+    tables = load_tables()
+    roles = {role.id: role for role in tables.roles}
+    kinds = list(itertools.islice(slots(tables), 20))
+
+    for sheet, slot in zip(plan(20, seed), kinds, strict=True):
+        s = sheet.skeleton
+        job = tables.job(s.occupation.removeprefix("retired "))
+        assert job is not None
+        if slot.kind == "role":
+            assert slot.role is not None and roles[slot.role].fits(job)
+            assert s.work == "working"
+        elif slot.kind == "maker":
+            assert job.maker and s.work == "working"
+        else:
+            assert s.age > ELDER_FROM and not job.maker and s.work in ("working", "retired")
+    assert [slot.kind for slot in kinds[:8]] == ["role"] * 8
+    assert [slot.role for slot in kinds[:4]] == list(roles)
+    assert Counter(slot.kind for slot in kinds[8:]) == {"maker": 8, "elder": 4}
+
+
+def test_a_job_that_needs_a_degree_comes_with_one_they_have_finished() -> None:
+    tables = load_tables()
+    for seed in range(100):
+        sheet = draw(random.Random(seed), slot=Slot("maker"))
+        s = sheet.skeleton
+        job = tables.job(s.occupation)
+        education = tables.education[s.education]
+        assert job is not None and job.maker and s.work == "working"
+        assert education.degree or not job.degree
+        assert education.done_by <= s.age
+
+
+def test_each_character_has_an_interest_worth_talking_about() -> None:
+    interests = [sheet.interest for sheet in plan(20, seed=2)]
+
+    assert set(interests) == set(INTERESTS)
+    assert max(Counter(interests).values()) <= 6
 
 
 def test_no_estranged_sibling_without_siblings() -> None:

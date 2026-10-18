@@ -31,6 +31,7 @@ def make(pool: list[Character]) -> Callable[..., Character]:
                 "name": name,
                 "hooks": [_hook(*spec) for spec in hooks],
                 "past": [],
+                "arrival": None,
                 "voice": template.voice.model_copy(update={"reference_clip": clip}),
                 **changes,
             }

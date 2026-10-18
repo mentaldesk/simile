@@ -41,9 +41,28 @@ the day the village starts, which has to fit every resident's age and past.
 ## Choosing
 
 `cast(characters, count, picks, pins, seed)` takes the picks and everyone pinned as given, then
-draws the rest. `distance` compares two characters across values (their RMS difference), origin,
-age, occupation group and gender, with the weights in `CastingConfig`. `spread` is the mean
-distance between residents. Each draw picks at random among the best three candidates for one of:
+fills the village's roles, then draws the rest.
+
+**The village's roles come first** (#235). `content/characters/tables/roles.toml` names them, in
+order: the Daily Grind's barista, the noodle bar's cook, and hosts for the maker space and the
+gallery. A pick whose job fits a role holds it. For each role still open, casting draws a character
+whose job fits, the one farthest from the cast so far among the best three. A role nobody in the
+library fits stays open, and a cast smaller than the roles fills the first ones.
+
+**Then everyone else**, so that the cast has:
+
+- **elders:** `elders` (2) residents over `elder_age` (60) in a cast of 10, scaled to its size,
+  with a trade from `occupations.toml`, working or retired. A role holder can be one.
+- **makers:** `maker_share` (7 in 10) of the residents outside a role with a job from
+  `makers.toml`. The rest have a job from `occupations.toml`, or none.
+- **no repeated job families:** each draw prefers a job family nobody in the cast has, and nobody
+  else gets a job a filled role names, like a second barista.
+
+Each of these gives way when the library can't meet it. `distance` compares two characters across
+values (their RMS difference), origin, age, job family and gender, with the weights in
+`CastingConfig`. A job family is the job's `makers.toml` family or its ISCO-08 sub-major group in
+`occupations.toml`. `spread` is the mean distance between residents. Each draw picks at random
+among the best three candidates for one of:
 
 - **spread**: farthest from everyone cast so far
 - **conflict** (a fifth of the cast): values at least `conflict` (0.45 RMS) from someone's
@@ -55,7 +74,10 @@ It refuses more residents than the village map has houses, and two residents wit
 ## Binding
 
 `bind(chosen, pins, seed, game_date)` gives each resident a house from the village map at random,
-binds the pins, then binds open hooks between residents. A one-way hook binds to the same kind on
+and each role to the first resident whose job fits it, in the order `cast` filled them. A role
+holder's `workplace` is the role's interior, with its `shifts` and `pay`, and their `Npc` has the
+same. Everyone else's are left for E3 (#243). Then it binds the pins, then open hooks between
+residents. A one-way hook binds to the same kind on
 the opposite side, a mutual one to the same kind. Each pair bonds once and each hook once. A pin
 uses the matching hooks when the residents have them. Drawn bonds:
 
@@ -89,3 +111,10 @@ and again after `simile reset` or with `SIMILE_FRESH=1`, at that run's start tim
 Pool characters have no reference clip yet, so V1 never loads a voice for them: their lines go out
 with `voiced: false` and show as text, paced at the 200 words a minute B2 uses for a voice with no
 measured rate. `Cast.unvoiced()` lists them.
+
+## Variety
+
+`uv run simile cast-variety --count 10 --seeds 5` casts from the pool with seeds 0 up and reports,
+for each cast and on average: distinct job families, residents who make or study something (a job
+from `makers.toml`, one in `occupations.toml` marked `makes`, or a student), residents outside the
+roles whose job family another of them has, elders, and the spread of ages.

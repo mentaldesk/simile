@@ -1,0 +1,130 @@
+{
+  "id": "pauline_ormerod",
+  "name": "Pauline Ormerod",
+  "birth_year": 1953,
+  "gender": "woman",
+  "origin": "England",
+  "arrival": null,
+  "occupation": "Retired primary school teacher",
+  "values": {
+    "freedom": 0.7,
+    "independence": 0.38,
+    "self_respect": 0.28,
+    "self_actualization": 0.68,
+    "creativity": 0.9,
+    "honesty": 0.27,
+    "compassion": 0.6,
+    "loyalty": 0.33,
+    "justice": 0.33,
+    "responsibility": 0.26,
+    "security": 0.43,
+    "equality": 0.83,
+    "tradition": 0.44,
+    "obedience": 0.14,
+    "success": 0.22,
+    "ambition": 0.24,
+    "discipline": 0.24,
+    "knowledge": 0.58,
+    "open_mindedness": 0.76,
+    "peace_of_mind": 0.5,
+    "pleasure": 0.88,
+    "connection": 0.37,
+    "adventure": 0.81,
+    "optimism": 0.44
+  },
+  "backstory": "Her muddy wellingtons sit by the back door, never once worn to a gallery opening. She tells people the truth about herself, just arranged so the rough edges stay behind the coats. She stayed when she'd sworn she would go. The reasons were real, but staying also meant she never had to find out what she wanted instead. She is sure her youngest sibling's life came apart while she was being sensible at a distance, and she keeps running that sum and it never balances. The poems come late, in an exercise book tucked inside a box of old school reports, and no one has read a line. She would like to give back the years she spent being careful, and she catches herself spending good days as if she has to earn them first.",
+  "persona": "She arrives at meetings with half a plan for the noticeboard and is gone before anyone reads the minutes. Forms and sign-up sheets get left for someone else. She rarely talks about her own work. She asks someone at the next table about their pigeon-racing, or the person in the queue about an odd hobby, and she really wants to know. She'll sit alone in the garden for a whole afternoon without minding, and she'll take a near stranger's word for nearly anything until they give her a reason not to. When someone lets her down, she goes quiet for days, then greets them as if nothing happened.",
+  "speaking_style": "She talks slowly and circles back, explaining a thing a second time in case the first went wrong. She makes large offers on the spot, a full exhibition or a day on the mudflats, then trims them with 'if the weather holds, and I'll have to see.' When she says she's finished, she usually has one more thing to add.",
+  "mannerisms": [
+    "adds one more thing just after saying they're done",
+    "makes big promises in the moment and qualifies them later"
+  ],
+  "interests": [
+    "tide tables",
+    "biro crosswords",
+    "sourdough",
+    "Animal Crossing",
+    "birdsong recordings"
+  ],
+  "past": [
+    {
+      "age": 29,
+      "content": "Eleven watercolours went up on a gallery wall once, and I kept the card that came back with a red dot beside one of them.",
+      "salience": 0.25,
+      "valence": 0.7
+    },
+    {
+      "age": 31,
+      "content": "Two brown envelopes came in the same post: the papers and the children's school photos. I opened the photos first and couldn't look at either for a day.",
+      "salience": 0.73,
+      "valence": -0.6
+    },
+    {
+      "age": 36,
+      "content": "For years an atlas lay open on the kitchen table, ferry routes circled in biro, and I told anyone who asked I'd be gone by spring.",
+      "salience": 0.7,
+      "valence": -0.5
+    },
+    {
+      "age": 38,
+      "content": "Someone in the post office queue mentioned that the friend I'd confided in since school had been telling people about my marriage before I'd said a word to my own children.",
+      "salience": 0.37,
+      "valence": -0.7
+    },
+    {
+      "age": 39,
+      "content": "We'd remarried by then, at a registry office with a Victoria sponge. Six months on I was sitting in the parked car outside the ironmonger's with a message open on the dashboard.",
+      "salience": 0.45,
+      "valence": -0.4
+    }
+  ],
+  "hooks": [
+    {
+      "kind": "debt",
+      "side": "target",
+      "description": "I lent money I couldn't spare to someone I trusted. It's still out there, and I've stopped bringing it up, but the bank statement stays in the kitchen drawer."
+    },
+    {
+      "kind": "rival",
+      "side": "mutual",
+      "description": "Another name went up on the gallery wall I'd been promised, and I've been civil to them at every opening since, which has cost me more than I let on."
+    },
+    {
+      "kind": "estranged_sibling",
+      "side": "mutual",
+      "description": "I haven't spoken to my sibling since the row over our mother's bungalow, and I keep adding up the years since their life fell apart as if I was meant to be there for it."
+    }
+  ],
+  "traits": {
+    "sociability": 0.51,
+    "negativity_bias": 0.42,
+    "forgiveness": 0.78,
+    "first_impressions": 0.53
+  },
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "long",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#b86f50",
+    "bottom_colour": "#124e89",
+    "shoe_colour": "#3e2731",
+    "build": "average",
+    "accessories": [
+      "glasses"
+    ]
+  },
+  "voice": {
+    "description": "A local accent, with nothing of anywhere else in it. A woman in her early seventies. Mid-range pitch with a dry, warm timbre, a measured and unhurried pace, and a patient teacher's manner that loosens into easy humour.",
+    "reference_line": "I paint the mudflats at low tide, when the light is flat and the birds are busy, and I never finish in one go.",
+    "reference_clip": null,
+    "needs_recording": false
+  },
+  "craft": {
+    "medium": "painting",
+    "form": "watercolours of estuary mudflats"
+  },
+  "source": "premade",
+  "created": "2026-10-18T06:11:48.251344Z",
+  "updated": "2026-10-18T06:16:24.297309Z",
+  "version": 2
+}
