@@ -44,12 +44,14 @@ buildings, and every walkable tile can reach every other. A location's `map` is 
 | Ids | |
 |---|---|
 | `house_1` … `house_10` | Homes on Lychee Lane, Kapok Walk and Banyan Row |
-| `coffee_shop` | The Daily Grind, on the north side of the square. Its area takes in the terrace. |
-| `noodle_bar` | Golden Bowl Noodles, on Lychee Lane |
-| `maker_space` | Spark Maker Space, on Lychee Lane |
+| `cafe_terrace` | The Daily Grind's terrace, in front of the café on the north side of the square. An `amenity`. |
 | `square` | The town square |
 | `terminal_1` … `terminal_3` | News terminals on the square, at the park gate and by the river |
-| `park` | Lotus Lake Park, the one `amenity` |
+| `park` | Lotus Lake Park, an `amenity` |
+
+The Daily Grind (`coffee_shop`), Golden Bowl Noodles (`noodle_bar`), Spark Maker Space
+(`maker_space`) and the gallery (`gallery`) are inside their buildings, on their interiors. Each has
+a door from its doorstep on the village.
 
 ## Mural walls
 
@@ -117,13 +119,6 @@ The `coffee_shop_counter` interactable's `stand` is the front of the queue, and 
 `coffee_shop`. Walking to `coffee_shop_queue` takes the front if it's free, and otherwise the next
 free tile down the lane.
 
-**The buildings' locations are on two maps for now.** `coffee_shop`, `noodle_bar` and
-`maker_space` are on the village, as before, and on their interiors. Movement plans through the
-doors, but `movement.town` resolves these three ids to the village, so the game still sends
-residents there. #169 removes the village copies and adds the terrace as `cafe_terrace` once the
-player can go inside. `tests/world/test_interiors.py` checks that these three are the only ids on
-two maps.
-
 **The gallery** is 6 × 5 tiles from `(38, 28)`, on Banyan Row between Garden Flats and the park,
 with a strip of the old garden on its west side. Its `gallery` location is only on its interior,
 with its entry at `(16, 12)`, so the village has its door but no location for it. One tile further
@@ -174,8 +169,9 @@ Server: `simile.world.map.load_map()` returns the village as a `TownMap` with `w
 it. [`server/simile/world/README.md`](../../server/simile/world/README.md) covers walking between
 maps.
 
-Client: `village` in `client/src/world/assets.ts` is the village's JSON. The client doesn't load the
-interiors yet: K5 (#171) does. The player collides with the village's `collision` layer, starts at
-the square's entry and finds the news terminals in `locations`, and the iso scene reads the ground
-tiles for how high feet stand. The village itself is drawn from the iso renders
+Client: `village` in `client/src/world/assets.ts` is the village's JSON, and `loadMap(id)` fetches
+an interior the first time the scene needs it. The player collides with the `collision` layer of the
+map they're on, goes through its doors, starts at the square's entry and finds the news terminals in
+`locations`, and the iso scene reads the ground tiles for how high feet stand. The village itself is
+drawn from the iso renders
 ([`server/simile/art/iso/README.md`](../../server/simile/art/iso/README.md)), not from these tiles.

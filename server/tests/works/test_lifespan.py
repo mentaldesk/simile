@@ -5,6 +5,7 @@ import sqlite3
 from collections import Counter
 from collections.abc import Callable
 from contextlib import AsyncExitStack
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -12,7 +13,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.behaviour import DEFAULT_CONFIG, Activity, GoalChosen, Need, behaviour_of
+from simile.behaviour import DEFAULT_CONFIG, Activity, Hooks, Need, behaviour_of
 from simile.behaviour.lifespan import lifespan as behaviour
 from simile.behaviour.mind import create_behaviour, make_nothing, no_news, no_wall, skip_news
 from simile.llm import FakeProvider, LLMClient
@@ -23,7 +24,7 @@ from simile.news import news_of
 from simile.news.bundled import bundled
 from simile.news.lifespan import lifespan as news
 from simile.news.reactions import NewsReader
-from simile.schema import Medium, Memory, MemoryKind, Work
+from simile.schema import Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock, FakeWallClock, World, world_of
 from simile.works import Maker, works_of
 from simile.works.lifespan import lifespan as works
@@ -102,10 +103,39 @@ def test_wraps_the_news_at_the_terminals_and_puts_it_back(make_package: MakePack
     assert behaviour_of(app).hooks.mural_wall is no_wall
 
 
+@dataclass
+class Terminals:
+    visits: Counter[str] = field(default_factory=Counter)
+    news: Counter[str] = field(default_factory=Counter)
+    """Visits the works reader handed on to the news reader."""
+    pulls: list[tuple[float, float]] = field(default_factory=list)
+    """Each pull of the terminals with works, and the news's alone."""
+
+    def watch(self, hooks: Hooks, reader: WorksReader) -> None:
+        visit, pull = hooks.read_news, hooks.news_interest
+        read_news, news_interest = reader.read_news, reader.news_interest
+
+        def arrive(npc: Npc) -> None:
+            self.visits[npc.id] += 1
+            visit(npc)
+
+        def hand_on(npc: Npc) -> None:
+            self.news[npc.id] += 1
+            read_news(npc)
+
+        def weigh(npc: Npc) -> float:
+            interest = pull(npc)
+            self.pulls.append((interest, news_interest(npc)))
+            return interest
+
+        reader.read_news = hand_on
+        hooks.set(read_news=arrive, news_interest=weigh)
+
+
 async def fast_forward(
-    hours: float, *, with_works: bool = True
-) -> tuple[dict[str, Work], list[Memory], list[Memory], Counter[str]]:
-    """Works made, residents' work and news memories, and their visits to the terminals."""
+    hours: float,
+) -> tuple[dict[str, Work], list[Memory], list[Memory], Terminals]:
+    """Works made, residents' work and news memories, and what happened at the terminals."""
     app = Starlette()
     world = World(Clock(START), FakeWallClock())
     app.state.world = world
@@ -113,20 +143,17 @@ async def fast_forward(
     app.state.llm = LLMClient(FakeProvider(default=answer))
     app.state.behaviour = create_behaviour(app, config=EAGER, seed=0)
     news_of(app).add(bundled())
-    visits: Counter[str] = Counter()
-    world.bus.subscribe(
-        GoalChosen, lambda e: visits.update([e.npc] if e.activity == Activity.NEWS else [])
-    )
-    lifespans = (behaviour, memory, news, *([works] if with_works else []), world_lifespan)
+    terminals = Terminals()
     async with AsyncExitStack() as stack:
-        for lifespan in lifespans:
+        for lifespan in (behaviour, memory, news, works, world_lifespan):
             await stack.enter_async_context(lifespan(app))
+        hooks = behaviour_of(app).hooks
+        reader = hooks.read_news.__self__
+        readers = [reader, reader.read_news.__self__]
+        terminals.watch(hooks, reader)
         await world.loop.run(timedelta(hours=hours))
-        terminal = behaviour_of(app).hooks.read_news.__self__
-        readers = [terminal, terminal.read_news.__self__] if with_works else [terminal]
         await asyncio.gather(
-            *(app.state.maker.tasks if with_works else ()),
-            *(task for reader in readers for task in reader.tasks),
+            *app.state.maker.tasks, *(task for each in readers for task in each.tasks)
         )
         store, now = memory_of(app), world.clock.now
 
@@ -134,12 +161,8 @@ async def fast_forward(
             npcs = behaviour_of(app).npcs
             return [m for npc in npcs for m in store.recall(npc, now, kind=kind, k=100)]
 
-        made = (
-            {w.id: w for medium in Medium for w in works_of(app).latest(medium, 100)}
-            if with_works
-            else {}
-        )
-        return made, recalled(MemoryKind.WORK), recalled(MemoryKind.NEWS), visits
+        made = {w.id: w for medium in Medium for w in works_of(app).latest(medium, 100)}
+        return made, recalled(MemoryKind.WORK), recalled(MemoryKind.NEWS), terminals
 
 
 def by_others(made: dict[str, Work], memories: list[Memory], medium: Medium) -> list[Memory]:
@@ -152,8 +175,7 @@ def by_others(made: dict[str, Work], memories: list[Memory], medium: Medium) -> 
 
 
 def test_residents_write_and_read_each_others_work_and_lose_no_news() -> None:
-    made, work_memories, news_memories, visits = asyncio.run(fast_forward(3))
-    _, _, without_works, _ = asyncio.run(fast_forward(3, with_works=False))
+    made, work_memories, news_memories, terminals = asyncio.run(fast_forward(3))
 
     writing = {id: work.artist for id, work in made.items() if work.medium is Medium.WRITING}
     read = by_others(made, work_memories, Medium.WRITING)
@@ -161,9 +183,11 @@ def test_residents_write_and_read_each_others_work_and_lose_no_news() -> None:
     assert len({m.owner for m in read}) >= 2
     assert all(m.about == [writing[m.work_id or ""]] for m in read)
     assert len({(m.owner, m.work_id) for m in read}) == len(read)
-    assert len(news_memories) >= len(without_works) > 0
+    assert news_memories
+    assert terminals.visits and terminals.news == terminals.visits
+    assert all(pull >= news for pull, news in terminals.pulls)
     for reads in (Counter(m.owner for m in read), Counter(m.owner for m in news_memories)):
-        assert all(reads[npc] <= visits[npc] for npc in reads)
+        assert all(reads[npc] <= terminals.visits[npc] for npc in reads)
 
 
 def test_muralists_paint_the_walls_and_passers_by_see_each_mural_once() -> None:

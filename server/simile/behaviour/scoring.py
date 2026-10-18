@@ -1,3 +1,4 @@
+import heapq
 import math
 import random
 from collections.abc import Mapping, Sequence
@@ -16,13 +17,14 @@ from simile.schema import (
 )
 from simile.world.map import WALKING_SPEED, TownMap
 from simile.world.movement import Point, inside
+from simile.world.paths import DOOR
 
 PLACES: dict[Activity, LocationKind] = {
     Activity.COFFEE_SHOP: LocationKind.COFFEE_SHOP,
     Activity.SQUARE: LocationKind.SQUARE,
     Activity.NEWS: LocationKind.TERMINAL,
 }
-AMENITIES = (Activity.PARK, Activity.NOODLE_BAR, Activity.MAKER_SPACE)
+AMENITIES = (Activity.PARK, Activity.NOODLE_BAR, Activity.MAKER_SPACE, Activity.GALLERY)
 
 
 @dataclass(frozen=True)
@@ -47,6 +49,10 @@ class Places:
             self.by_activity[activity] = [ids[activity]] if activity in ids else []
         whole = [loc for loc in town.locations if not _part_of_another(loc, town.locations)]
         self._by_size = sorted(whole, key=lambda loc: loc.area.width * loc.area.height)
+        self._doors: dict[Point, Point] = {}
+        for door in town.doors:
+            out, into = (Point(end.x, end.y, end.map) for end in (door.outside, door.inside))
+            self._doors[out], self._doors[into] = into, out
 
     def location(self, location_id: str) -> Location:
         return self.town.location(location_id)
@@ -58,6 +64,29 @@ class Places:
         """The smallest location the point is in, so a terminal wins over the square around it.
         An amenity inside another location, like the café's queue, counts as that location."""
         return next((loc for loc in self._by_size if inside(loc, point)), None)
+
+    def walk_minutes(self, a: Point, b: Point) -> float:
+        """In straight lines on each map and a step through each door, infinite with no door."""
+        return self.tiles(a, b) / WALKING_SPEED / 60
+
+    def tiles(self, a: Point, b: Point) -> float:
+        if a.map == b.map:
+            return math.dist(a, b)
+        best, reached = math.inf, {a: 0.0}
+        frontier = [(0.0, a)]
+        while frontier:
+            so_far, here = heapq.heappop(frontier)
+            if so_far >= best or so_far > reached[here]:
+                continue
+            if here.map == b.map:
+                best = min(best, so_far + math.dist(here, b))
+                continue
+            for end, other in self._doors.items():
+                cost = so_far + math.dist(here, end) + DOOR
+                if end.map == here.map and cost < reached.get(other, math.inf):
+                    reached[other] = cost
+                    heapq.heappush(frontier, (cost, other))
+        return best
 
 
 def _part_of_another(location: Location, locations: Sequence[Location]) -> bool:
@@ -159,10 +188,6 @@ def sociability(values: Mapping[CoreValue, float], config: BehaviourConfig) -> f
     return max(0.0, 1 + config.sociability * (values[CoreValue.CONNECTION] - 0.5))
 
 
-def walk_minutes(a: Point, b: Point) -> float:
-    return math.dist(a, b) / WALKING_SPEED / 60
-
-
 def candidates(
     situation: Situation, places: Places, config: BehaviourConfig = DEFAULT_CONFIG
 ) -> list[Goal]:
@@ -215,15 +240,14 @@ def score(
     if activity is Activity.SEEK:
         other = next(o for o in situation.others if o.id == goal.target)
         total += config.seek_weight * sociability(values, config) * other.affinity
-        total -= config.travel_weight * walk_minutes(situation.position, other.position)
+        total -= config.travel_weight * places.walk_minutes(situation.position, other.position)
     elif (spot := painting(goal, situation)) is not None:
-        total -= config.travel_weight * walk_minutes(
-            situation.position, Point(spot.tile.x, spot.tile.y)
-        )
+        wall = Point(spot.tile.x, spot.tile.y)
+        total -= config.travel_weight * places.walk_minutes(situation.position, wall)
     elif goal.target is not None:
         location = places.location(goal.target)
-        entry = Point(location.entry.x, location.entry.y)
-        total -= config.travel_weight * walk_minutes(situation.position, entry)
+        entry = Point(location.entry.x, location.entry.y, location.map)
+        total -= config.travel_weight * places.walk_minutes(situation.position, entry)
         if location.id != situation.home:
             total += company(location.id, situation, config)
         if activity is Activity.CREATE:

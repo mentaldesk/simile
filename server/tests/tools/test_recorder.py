@@ -8,14 +8,18 @@ import pytest
 from starlette.applications import Starlette
 
 from simile.app import create_app
+from simile.behaviour import Behaviour
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import create_engine
-from simile.memory import memory_of
-from simile.schema import Relationship
+from simile.memory import MemoryStore, memory_of
+from simile.npc import load_npcs
+from simile.schema import VILLAGE_MAP, MapTile, Relationship
 from simile.sim import Clock, FakeWallClock, World
 from simile.social import meet
-from simile.tools import RecordStore, load_run, report
+from simile.tools import Recorder, RecordStore, load_run, report
 from simile.tools.lifespan import RECORD_ENV
+from simile.world import Movement
+from simile.world.map import load_maps
 
 START = datetime(2026, 1, 1, 9, tzinfo=UTC)
 
@@ -91,6 +95,29 @@ async def test_takes_every_relationship_at_the_start_and_the_end(database: Path)
     assert run.start["kofi", "tobias"].like == 0.9
     assert run.end["kofi", "tobias"].like == 0.2
     assert run.start["tobias", "kofi"] == meet(behaviour.npcs["tobias"], "kofi")
+
+
+@pytest.mark.parametrize(
+    ("tile", "place"),
+    [
+        (MapTile(map="coffee_shop", x=13, y=4), ("coffee_shop", "coffee_shop")),
+        (MapTile(map="coffee_shop", x=5, y=6), ("coffee_shop", "coffee_shop")),
+        (MapTile(map=VILLAGE_MAP, x=13, y=4), ("street", None)),
+        (MapTile(map="gallery", x=16, y=12), ("gallery", "gallery")),
+        (MapTile(map=VILLAGE_MAP, x=31, y=22), ("square", "square")),
+    ],
+)
+def test_places_residents_on_the_map_they_are_on(
+    tmp_path: Path, tile: MapTile, place: tuple[str, str | None]
+) -> None:
+    world = World(Clock(START), FakeWallClock())
+    movement = Movement(load_maps(), world.bus)
+    behaviour = Behaviour(world.clock, world.bus, movement, load_npcs())
+    with MemoryStore(":memory:") as memory, RecordStore(tmp_path / "record.db") as store:
+        recorder = Recorder(store, world, behaviour, memory, None)
+        movement.place("kofi", tile)
+
+        assert recorder.place("kofi", "house_1") == place
 
 
 @pytest.mark.anyio

@@ -127,14 +127,14 @@ def test_walks_from_every_house_to_the_coffee_shop(house) -> None:
     walk = village.movement.walk_to("mei", "coffee_shop")
     village.finish(walk)
 
-    entry = TOWN.location("coffee_shop").entry
+    cafe = MAPS["coffee_shop"].location("coffee_shop")
     assert walk.outcome is Outcome.ARRIVED
-    assert walk.destination == entry_of(TOWN.location("coffee_shop"))
-    assert village.movement.position("mei") == (entry.x, entry.y)
+    assert walk.destination == entry_of(cafe)
+    assert village.movement.position("mei") == Point(cafe.entry.x, cafe.entry.y, cafe.map)
     assert_on_time(village.now, walk.distance)
-    steps = [(house.entry.x, house.entry.y), *village.tiles("mei")]
-    for (x, y), (nx, ny) in zip(steps, steps[1:], strict=False):
-        assert max(abs(nx - x), abs(ny - y)) == 1
+    spots = [(VILLAGE_MAP, house.entry.x, house.entry.y), *village.spots("mei")]
+    [crossing] = assert_steps_between_neighbours(spots)
+    assert (spots[crossing - 1], spots[crossing]) == door_ends(VILLAGE_MAP)
 
 
 def test_npcs_going_to_the_same_place_end_on_different_tiles() -> None:
@@ -529,18 +529,6 @@ def test_a_tracked_player_inside_reports_the_interiors_map() -> None:
     mat = MapTile(map="coffee_shop", x=10, y=13)
     assert village.movement.place("mei", mat) != mat
     assert village.movement.place("suki", Tile(x=10, y=13)) == MapTile(map=VILLAGE_MAP, x=10, y=13)
-
-
-def test_locations_on_two_maps_are_the_villages() -> None:
-    village = Village()
-    village.movement.place("mei", "house_1")
-
-    for location_id in ("coffee_shop", "noodle_bar", "maker_space"):
-        assert village.movement.town.location(location_id).map == VILLAGE_MAP
-    assert village.movement.town.location("coffee_shop_queue").map == "coffee_shop"
-    village.finish(walk := village.movement.walk_to("mei", "coffee_shop"))
-    assert walk.outcome is Outcome.ARRIVED
-    assert village.movement.position("mei").map == VILLAGE_MAP
 
 
 def test_walks_into_the_gallery_through_its_door() -> None:

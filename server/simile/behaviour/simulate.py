@@ -24,7 +24,18 @@ from simile.sim import Clock, FakeWallClock, World
 HOME = "home"
 STREET = "street"
 TERMINAL = "terminal"
-PLACES = (HOME, STREET, "coffee_shop", "square", TERMINAL, "park", "noodle_bar", "maker_space")
+PLACES = (
+    HOME,
+    STREET,
+    "coffee_shop",
+    "cafe_terrace",
+    "square",
+    TERMINAL,
+    "park",
+    "noodle_bar",
+    "maker_space",
+    "gallery",
+)
 NIGHT = (1.0, 5.0)
 NEWS_INTEREST = 0.6
 
@@ -88,7 +99,8 @@ class Observer:
                 self.out_at_night[clock.now] += 1
             here = positions[npc.id]
             if any(
-                math.dist(here, positions[other]) <= self.behaviour.config.near
+                (there := positions[other]).map == here.map
+                and math.dist(here, there) <= self.behaviour.config.near
                 for other in self.behaviour.npcs
                 if other != npc.id
             ):

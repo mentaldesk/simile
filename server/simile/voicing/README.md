@@ -14,7 +14,8 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 
 - A conversation is in earshot once the player is within `earshot` (5 tiles) of one of its NPCs,
   and stays in it until they're further than `out_of_earshot` (6.5) from all of them. Nothing is in
-  earshot while no client is connected. In the iso view a tile's distance is about 68 art px across
+  earshot while no client is connected, and nothing on another map, so the player inside a building
+  hears nobody outside it. In the iso view a tile's distance is about 68 art px across
   the screen and 34 up it, so 6.5 tiles reaches 440 px to either side and 220 above and below. With
   a resident's sprite on top, a window of about 950 × 540 art px (CSS px at the default zoom on a 1×
   or 2× screen) has every voiced speaker on screen.

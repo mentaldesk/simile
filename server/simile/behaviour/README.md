@@ -10,11 +10,12 @@ sets F3's snapshot to the NPCs' real positions.
 ## Deciding
 
 - **Activities.** Go home, the coffee shop, the square, a news terminal, the park, the noodle bar,
-  the maker space, wander, seek someone out (an NPC or the player), idle, or make something
-  (`create`). `sleep` and `talk` are set by the loop rather than chosen.
+  the maker space, the gallery, wander, seek someone out (an NPC or the player), idle, or make
+  something (`create`). `sleep` and `talk` are set by the loop rather than chosen.
 - **Score** = base + values + needs + time of day + people − walking time. Values enter as
   `weight * (value - 0.5)`: Connection pulls towards people, PeaceOfMind home and to the park (and
-  away from seeking company), Adventure to wander, Creativity to the maker space. Needs (`social`,
+  away from seeking company), Adventure to wander, Creativity to the maker space, and
+  Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. Needs (`social`,
   `curiosity`, `rest`, `news`, `inspiration`, 0 to 1) pull towards whatever meets them. The coffee
   shop peaks in the morning, the noodle bar at lunch and dinner, and home in the two hours before
   bed. The activity just finished scores less. Curiosity is met fastest at the maker space, but
@@ -62,6 +63,15 @@ sets F3's snapshot to the NPCs' real positions.
   terminals don't make the news three times as likely. `Behaviour(seed=...)` makes it repeatable.
 - **Night.** Each NPC has a bedtime (21:00 to 23:45) and a wake time (05:30 to 09:00) from their
   values. Outside them they go home and sleep, whatever the scores say.
+- **Indoors.** The coffee shop, noodle bar, maker space and gallery are inside their buildings.
+  Walking time to them counts the walk to the door, a step through it and the walk inside, each in
+  a straight line (`Places.walk_minutes`), and a walk to them goes through the door. Only someone
+  within `near` on the same map is company. A wander from indoors heads out, to somewhere near the
+  door.
+- **The gallery** is an occasional outing (base -0.1) for the open-minded: Open-mindedness for
+  seeing things another way, Knowledge, Creativity for others' art, and Peace of Mind for a quiet
+  room. Creativity counts for less than at the maker space, so the makers keep making. A stay of
+  15 to 40 minutes meets curiosity, more slowly than the maker space.
 - **When.** An NPC decides when their stay somewhere runs out (a few minutes for a wander, up to an
   hour at home or the maker space, an hour and a quarter making something), not every tick. Needs
   update every 5 sim seconds.

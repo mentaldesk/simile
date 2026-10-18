@@ -87,6 +87,14 @@ def test_a_blank_wall_comes_first_and_the_nearest_of_them(
     assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
 
 
+def test_only_where_they_stand_on_the_village_picks_the_nearest_wall(
+    works: WorksStore, memory: MemoryStore
+) -> None:
+    inside = {"suki": Point(23, 6, "coffee_shop")}
+
+    assert walls(works, memory, inside).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+
+
 def test_nobody_picks_a_wall_someone_else_is_painting(
     works: WorksStore, memory: MemoryStore
 ) -> None:
