@@ -1,12 +1,9 @@
-import { blend, setsWithin, type Layer, type LightingSet } from './time-of-day';
+import { blend, nextSet, type Layer, type LightingSet } from './time-of-day';
 
 /** Lifts the incoming image of a pair above the outgoing, and stays below `RESIDENT_TIE`. */
 export const PAIR_DEPTH = 1e-4;
 
 export const PRELOAD_SECONDS = 120;
-
-/** Bounds how many sets a fast clock keeps in memory. */
-export const MAX_LOOKAHEAD_HOURS = 3;
 
 /** How long a frame spends adding a loaded set to the scene, after its first task. */
 export const UPLOAD_MS_PER_FRAME = 4;
@@ -25,9 +22,12 @@ export function layerAlphas<L extends { weight: number }>(layers: readonly L[], 
 
 type State = 'loading' | 'ready' | 'failed';
 
+/** Loads the sets the clock draws, and the next one before its fade: never more than two at once. */
 export class SetLoader {
   layers: Layer[] = [];
   private readonly states = new Map<LightingSet, State>();
+  /** Loading when `reset` was called, so unloaded once they finish. */
+  private readonly stale = new Set<LightingSet>();
   private readonly load: (set: LightingSet) => Promise<void>;
   private readonly unload: (set: LightingSet) => void;
 
@@ -37,10 +37,13 @@ export class SetLoader {
   }
 
   update(hour: number, speed: number): Layer[] {
-    const ahead = Math.min((speed * PRELOAD_SECONDS) / 3600, MAX_LOOKAHEAD_HOURS);
-    const wanted = setsWithin(hour, ahead);
+    const now = blend(hour);
+    const wanted = new Set(now.map(({ set }) => set));
+    const next = nextSet(hour, (speed * PRELOAD_SECONDS) / 3600);
+    const held = new Set([...wanted, ...this.layers.map(({ set }) => set)]);
+    if (next && held.size < 2) wanted.add(next);
     for (const set of wanted) if (!this.states.has(set)) this.start(set);
-    this.layers = this.drawable(blend(hour));
+    this.layers = this.drawable(now);
     const drawn = new Set(this.layers.map(({ set }) => set));
     for (const [set, state] of this.states) {
       if (state !== 'ready' || wanted.has(set) || drawn.has(set)) continue;
@@ -48,6 +51,19 @@ export class SetLoader {
       this.unload(set);
     }
     return this.layers;
+  }
+
+  /** Unloads every set to load again, as a restored WebGL context needs. */
+  reset(): void {
+    this.layers = [];
+    for (const [set, state] of this.states) {
+      if (state === 'loading') {
+        this.stale.add(set);
+        continue;
+      }
+      this.states.delete(set);
+      if (state === 'ready') this.unload(set);
+    }
   }
 
   private drawable(layers: Layer[]): Layer[] {
@@ -61,8 +77,16 @@ export class SetLoader {
   private start(set: LightingSet): void {
     this.states.set(set, 'loading');
     this.load(set).then(
-      () => this.states.set(set, 'ready'),
+      () => {
+        if (!this.stale.delete(set)) {
+          this.states.set(set, 'ready');
+          return;
+        }
+        this.states.delete(set);
+        this.unload(set);
+      },
       (error: unknown) => {
+        this.stale.delete(set);
         console.error(`Couldn't load the ${set} lighting set`, error);
         this.states.set(set, 'failed');
       },

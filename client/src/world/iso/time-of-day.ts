@@ -40,14 +40,13 @@ export function blend(hour: number): Layer[] {
   return [{ set: SETS.find((set) => within(modulo(hour, 24), LIGHTING_SETS[set]))!, weight: 1 }];
 }
 
-/** Every set `blend` draws from `hour` until `hours` later. */
-export function setsWithin(hour: number, hours: number): Set<LightingSet> {
-  const sets = new Set(blend(hour).map(({ set }) => set));
+/** The set `blend` fades to next, if its fade starts within `hours` and none is under way. */
+export function nextSet(hour: number, hours: number): LightingSet | undefined {
+  const now = blend(hour);
+  if (now.length > 1) return undefined;
+  const next = SETS[(SETS.indexOf(now[0].set) + 1) % SETS.length];
   const half = CROSSFADE_MINUTES / 120;
-  for (const set of SETS) {
-    if (modulo(LIGHTING_SETS[set][0] - half - hour, 24) <= hours) sets.add(set);
-  }
-  return sets;
+  return modulo(LIGHTING_SETS[next][0] - half - hour, 24) <= hours ? next : undefined;
 }
 
 /** The hour of a sim time, `YYYY-MM-DDTHH:MM[:SS]…`, with minutes and seconds as a fraction. */

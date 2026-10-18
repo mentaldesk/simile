@@ -11,6 +11,9 @@ const game = new Phaser.Game({
   width: native.width,
   height: native.height,
   pixelArt: true,
+  // Phaser's FX render targets grow with the cube of the canvas height: 4.5 GB of GPU memory at 5K.
+  disablePreFX: true,
+  disablePostFX: true,
   backgroundColor: '#1d2b26',
   scale: { mode: Phaser.Scale.NONE, autoCenter: Phaser.Scale.NO_CENTER, zoom: native.zoom },
   scene: collectScenes(import.meta.glob<Area>('./*/index.ts', { eager: true })),
