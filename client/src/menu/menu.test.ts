@@ -1,6 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { LibraryCharacter, MadeWorld, MenuApi, NewWorld, Worlds } from './api';
+import type {
+  CheckedFeed,
+  LibraryCharacter,
+  MadeWorld,
+  MenuApi,
+  NewsFeeds,
+  NewWorld,
+  Worlds,
+} from './api';
 import { Menu } from './menu';
 
 const character = (id: string, name: string): LibraryCharacter => ({
@@ -45,12 +53,27 @@ const MADE: MadeWorld = {
   },
 };
 
+const FEEDS: NewsFeeds = {
+  feeds: [{ url: 'https://example.com/feed', name: 'Example', on: true, checked: null }],
+  defaults: true,
+  override: null,
+  fetching: true,
+  max: 12,
+  calls_per_feed: 10,
+};
+
 function fakeApi(changes: Partial<MenuApi> = {}) {
   return {
     worlds: vi.fn(async () => TODAY),
     characters: vi.fn(async () => LIBRARY),
     draw: vi.fn(async (asked: NewWorld) => [...asked.picks, 'cai_lewis']),
     create: vi.fn(async () => MADE),
+    feeds: vi.fn(async () => FEEDS),
+    checkFeed: vi.fn(async (): Promise<CheckedFeed> => Promise.reject(new Error('offline'))),
+    addFeed: vi.fn(async () => FEEDS),
+    switchFeed: vi.fn(async () => FEEDS),
+    removeFeed: vi.fn(async () => FEEDS),
+    resetFeeds: vi.fn(async () => FEEDS),
     ...changes,
   };
 }
@@ -120,6 +143,33 @@ describe('the title menu', () => {
     const withIt = new Menu(document.body, fakeApi(), { play: vi.fn(), creator });
     button(withIt.root, 'Characters').click();
     expect(creator).toHaveBeenCalledOnce();
+  });
+
+  it('opens the news feeds and comes back', async () => {
+    const play = vi.fn();
+    const menu = new Menu(document.body, fakeApi(), { play });
+
+    button(menu.root, 'News feeds').click();
+    await settle();
+    expect(menu.root.querySelector('h2')?.textContent).toBe('News feeds');
+
+    button(menu.root, 'Back').click();
+    expect(button(menu.root, 'Continue')).toBeTruthy();
+    expect(play).not.toHaveBeenCalled();
+  });
+
+  it('says when it can’t list the feeds', async () => {
+    const feeds = async (): Promise<NewsFeeds> => Promise.reject(new Error('offline'));
+    const menu = new Menu(document.body, fakeApi({ feeds }), { play: vi.fn() });
+
+    button(menu.root, 'News feeds').click();
+    await settle();
+
+    expect(menu.root.querySelector('.menu-error')?.textContent).toBe(
+      "Couldn't list the feeds: offline",
+    );
+    button(menu.root, 'Back').click();
+    expect(button(menu.root, 'Continue')).toBeTruthy();
   });
 });
 

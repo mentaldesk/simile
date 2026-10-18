@@ -52,6 +52,21 @@
       "title": "Summary",
       "type": "string"
     },
+    "long_summary": {
+      "anyOf": [
+        {
+          "maxLength": 4000,
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Three or four short paragraphs of plain text, separated by blank lines, written from the article itself. Null when there isn't one, and left out.",
+      "title": "Long Summary"
+    },
     "published": {
       "format": "date-time",
       "title": "Published",

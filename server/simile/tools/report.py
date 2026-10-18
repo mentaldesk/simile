@@ -4,7 +4,7 @@ import re
 import sqlite3
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import median
@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from simile.behaviour.simulate import PLACES
 from simile.conversation.config import DEFAULT_CONFIG as CONVERSATION
+from simile.economy import OUTSIDE, Entry, Kind
 from simile.schema import (
     PLAYER_ID,
     Conversation,
@@ -167,6 +168,8 @@ class RecordedRun:
     """The articles read during the run, by id."""
     news_items: int
     """Articles in the news table, read or not."""
+    ledger: list[Entry] = field(default_factory=list)
+    """Every movement of money during the run, as I3 saved it."""
 
 
 class NoRun(LookupError):
@@ -285,6 +288,14 @@ def _load(db: sqlite3.Connection, path: Path, run: int | None) -> RecordedRun:
         )
     }
     news_items = rows("news", "SELECT COUNT(*) FROM news")
+    ledger = [
+        Entry.model_validate_json(data)
+        for (data,) in rows(
+            "saved_ledger",
+            "SELECT data FROM saved_ledger WHERE time BETWEEN ? AND ? ORDER BY time, rowid",
+            *window,
+        )
+    ]
     return RecordedRun(
         id=run,
         started=_time(started),
@@ -303,6 +314,7 @@ def _load(db: sqlite3.Connection, path: Path, run: int | None) -> RecordedRun:
         events=events,
         news=news,
         news_items=news_items[0][0] if news_items else 0,
+        ledger=ledger,
     )
 
 
@@ -317,6 +329,7 @@ def report(run: RecordedRun, config: ReportConfig = DEFAULT_CONFIG) -> str:
         repetition_section(run, config),
         news_section(run),
         place_section(run),
+        money_section(run),
         llm_section(run),
     ]
     return "\n\n".join("\n".join(section) for section in sections) + "\n"
@@ -694,6 +707,51 @@ def place_section(run: RecordedRun) -> list[str]:
         + " | ".join("" if p in (HOME, STREET) else _count(peaks.get(p, 0)) for p in places)
         + " | | | |"
     )
+    return lines
+
+
+FLOWS = ("in", "out", "between")
+
+
+def money_section(run: RecordedRun) -> list[str]:
+    """Where the money went: in from outside the village, out of it, and between residents."""
+    lines = ["## Where the money went", ""]
+    if not run.ledger:
+        return [*lines, "Nothing moved through E3's ledger."]
+    flows: Counter[tuple[str, str]] = Counter()
+    came: Counter[str] = Counter()
+    went: Counter[str] = Counter()
+    for entry in run.ledger:
+        if entry.payer == OUTSIDE:
+            flows["in", entry.kind] += entry.amount
+        elif entry.payee == OUTSIDE:
+            flows[
+                "out", entry.kind if entry.kind is not Kind.PURCHASE else "shops nobody runs"
+            ] += entry.amount
+        else:
+            flows["between", f"at {entry.place}" if entry.place else entry.kind] += entry.amount
+        came[entry.payee] += entry.amount
+        went[entry.payer] += entry.amount
+    lines += [
+        "Every movement through E3's ledger during the run, and what came in and went out for "
+        "each resident.",
+        "",
+        "| | | Amount |",
+        "|---|---|--:|",
+        *(
+            f"| {flow} | {what} | {amount:.0f} |"
+            for (flow, what), amount in sorted(
+                flows.items(), key=lambda f: (FLOWS.index(f[0][0]), f[0][1])
+            )
+        ),
+        "",
+        "| NPC | In | Out | Change |",
+        "|---|--:|--:|--:|",
+    ]
+    for npc in run.npcs:
+        lines.append(
+            f"| {npc} | {came[npc]:.0f} | {went[npc]:.0f} | {came[npc] - went[npc]:+.0f} |"
+        )
     return lines
 
 

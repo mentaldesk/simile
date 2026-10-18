@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 from simile.behaviour import Behaviour
 from simile.conversation import ConversationEngine
@@ -7,6 +8,9 @@ from simile.persistence.config import DEFAULT_CONFIG, PersistenceConfig
 from simile.persistence.state import SavedWorld, capture
 from simile.persistence.store import WorldStore
 from simile.reflection import Reflector
+
+if TYPE_CHECKING:
+    from simile.economy.economy import Economy
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +20,26 @@ class Saver:
     snapshot is taken between ticks and written on a thread, so the tick never waits."""
 
     def __init__(
-        self, store: WorldStore, behaviour: Behaviour, config: PersistenceConfig = DEFAULT_CONFIG
+        self,
+        store: WorldStore,
+        behaviour: Behaviour,
+        config: PersistenceConfig = DEFAULT_CONFIG,
+        *,
+        economy: "Economy | None" = None,
     ) -> None:
         self.store = store
         self.behaviour = behaviour
         self.config = config
+        self.economy = economy
         self._stopping = asyncio.Event()
+        self._ledgered = 0
+        """How many of the ledger's entries are saved."""
 
     async def save(self) -> SavedWorld:
-        world = capture(self.behaviour)
-        await asyncio.to_thread(self.store.save, world)
+        world = capture(self.behaviour, self.economy)
+        entries = self.economy.ledger.entries[self._ledgered :] if self.economy else []
+        await asyncio.to_thread(self.store.save, world, entries)
+        self._ledgered += len(entries)
         return world
 
     async def autosave(self) -> None:

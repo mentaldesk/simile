@@ -1,6 +1,12 @@
+from datetime import date
+from typing import TYPE_CHECKING
+
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.schema import VILLAGE_MAP, Id, Key, MapTile, Model, Tile, Timestamp
 from simile.world.movement import Movement, Point, cell_of
+
+if TYPE_CHECKING:
+    from simile.economy.economy import Economy
 
 
 class SavedNpc(Model):
@@ -14,12 +20,19 @@ class SavedNpc(Model):
     cooldowns: dict[Id, Timestamp] = {}
 
 
+class SavedEconomy(Model):
+    money: dict[Id, float]
+    settled: date
+    """The last day rent and pensions were settled for."""
+
+
 class SavedWorld(Model):
-    """What R2's database doesn't already keep: the time, and where each NPC is and what
-    they're up to."""
+    """What R2's database doesn't already keep: the time, where each NPC is and what they're up
+    to, and their money. The ledger's entries are saved as they're made, in their own table."""
 
     now: Timestamp
     npcs: dict[Id, SavedNpc]
+    economy: SavedEconomy | None = None
 
 
 def tile_of(point: Point) -> Tile:
@@ -27,10 +40,13 @@ def tile_of(point: Point) -> Tile:
     return Tile(x=x, y=y)
 
 
-def capture(behaviour: Behaviour) -> SavedWorld:
+def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorld:
     now, movement = behaviour.clock.now, behaviour.movement
     return SavedWorld(
         now=now,
+        economy=SavedEconomy(money=dict(economy.money), settled=economy.settled)
+        if economy
+        else None,
         npcs={
             npc: SavedNpc(
                 position=tile_of(movement.position(npc)),
@@ -47,10 +63,11 @@ def capture(behaviour: Behaviour) -> SavedWorld:
     )
 
 
-def restore(world: SavedWorld, behaviour: Behaviour) -> None:
-    """Set the clock and put each NPC back where they were, doing what they were doing. Anyone
-    who was walking or talking decides again on the next think. NPCs who weren't saved carry
-    on from their first start."""
+def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
+    """Set the clock and put each NPC back where they were, doing what they were doing, with the
+    money they had. Anyone who was walking or talking decides again on the next think. NPCs who
+    weren't saved carry on from their first start, and a save from before money opens the ledger
+    on everyone's starting money."""
     movement = behaviour.movement
     saved = {npc: world.npcs[npc] for npc in behaviour.minds if npc in world.npcs}
     for npc in saved:
@@ -73,6 +90,9 @@ def restore(world: SavedWorld, behaviour: Behaviour) -> None:
             state.until,
             state.cooldowns,
         )
+    if economy is not None:
+        saved = world.economy
+        economy.restore(saved.money if saved else {}, saved.settled if saved else world.now.date())
 
 
 def _free(movement: Movement, npc: Id, state: SavedNpc) -> bool:

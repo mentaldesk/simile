@@ -4,7 +4,9 @@ The village carries on where it left off. R2's database already keeps relationsh
 memories and events as they happen, and which news each NPC has read is their `news` memories.
 This module keeps the rest in its own `saved_world` table of the same file (`$SIMILE_DB`, or
 `server/data/simile.db`): the sim time and, for each NPC, their tile and the map it's on, goal,
-needs, when they chose the goal and will next decide, and whom they're avoiding.
+needs, when they chose the goal and will next decide, and whom they're avoiding. E3's money goes
+there too: what each resident holds and the last day rent was paid for. Each entry in E3's ledger
+is added to a `saved_ledger` table at the first save after it's made.
 
 ## Saving
 
@@ -22,7 +24,9 @@ needs, when they chose the goal and will next decide, and whom they're avoiding.
 
 When the server starts, after B1 has put everyone at home, the clock goes back to the saved time and
 each NPC back to their tile, inside or out, and B1's `restore` gives them back their goal, needs and
-cooldowns. A save from before the interiors has no maps, and puts everyone on the village.
+cooldowns. Their money comes back, and the ledger opens on it. A save from before the interiors
+has no maps, and puts everyone on the village. A save from before money starts everyone with their
+own `money` from `content/npcs/`, and the next midnight's rent is their first.
 Anyone who was walking or talking decides again on their first think, within 5 sim seconds. NPCs who
 weren't saved carry on from B1's first start, and saved ones who are no longer in `content/` are
 ignored. A save this version can't read is logged and ignored. `simile headless --duration` counts
@@ -35,7 +39,8 @@ cd server && uv run simile reset            # asks first; --yes doesn't
 SIMILE_FRESH=1 uv run simile headless       # or SIMILE_FRESH=1 make dev
 ```
 
-Both forget the saved world and everything R2 holds (`MemoryStore.clear`), but keep the news.
+Both forget the saved world, its ledger and everything R2 holds (`MemoryStore.clear`), but keep
+the news.
 `SIMILE_FRESH=1` does it on every start while it's set.
 
 With `SIMILE_DB=:memory:`, as in every test, nothing outlives the process, so this module does

@@ -34,6 +34,9 @@ def make_npc(id: str, home: str, **values: float) -> Npc:
             "home": home,
             "values": scores,
             "craft": None,
+            "workplace": None,
+            "shifts": [],
+            "pay": None,
         }
     )
 

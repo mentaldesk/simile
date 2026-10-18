@@ -6,6 +6,7 @@ from simile.schema.common import Key, Model, Signed, Timestamp, Unit
 from simile.schema.npc import CoreValue
 
 Tag = Annotated[str, Field(min_length=1, max_length=40)]
+LongSummary = Annotated[str, Field(min_length=1, max_length=4000)]
 
 
 class NewsItem(Model):
@@ -13,6 +14,12 @@ class NewsItem(Model):
     title: str
     url: str
     summary: str = Field(description="Plain text, HTML stripped.")
+    long_summary: LongSummary | None = Field(
+        default=None,
+        exclude_if=lambda long_summary: long_summary is None,
+        description="Three or four short paragraphs of plain text, separated by blank lines, "
+        "written from the article itself. Null when there isn't one, and left out.",
+    )
     published: Timestamp
     source: str = Field(
         default="",

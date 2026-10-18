@@ -4,6 +4,25 @@
   "age": 21,
   "occupation": "Street Mural Artist",
   "home": "house_6",
+  "workplace": "gallery",
+  "shifts": [
+    {
+      "days": [
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start": 13.0,
+      "end": 18.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 32.0
+  },
+  "money": 180.0,
   "values": {
     "freedom": 0.92,
     "independence": 0.91,

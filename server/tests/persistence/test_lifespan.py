@@ -11,6 +11,7 @@ from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
 from simile.conversation import conversations_of, create_engine
 from simile.conversation.player import PlayerConversations
+from simile.economy.economy import economy_of
 from simile.llm import FakeProvider, LLMClient, Request, Usage
 from simile.llm.fake import scene
 from simile.memory import MemoryStore, memory_of
@@ -85,7 +86,7 @@ async def test_restarting_keeps_the_clock_positions_goals_relationships_and_memo
     first = await run_village(timedelta(hours=1, minutes=10), after=remember)
     stopped = saved(database)
     assert stopped.now == START + timedelta(hours=1, minutes=10)
-    assert stopped == capture(behaviour_of(first))
+    assert stopped == capture(behaviour_of(first), economy_of(first))
 
     async def resumed(app: Starlette) -> None:
         assert world_of(app).clock.now == stopped.now

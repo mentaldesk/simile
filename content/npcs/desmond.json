@@ -4,6 +4,25 @@
   "age": 41,
   "occupation": "Tenants' Rights Caseworker",
   "home": "house_5",
+  "workplace": "square",
+  "shifts": [
+    {
+      "days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "start": 9.0,
+      "end": 13.0
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 26.0
+  },
+  "money": 300.0,
   "values": {
     "freedom": 0.7,
     "independence": 0.76,

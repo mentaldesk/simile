@@ -4,6 +4,23 @@
   "age": 46,
   "occupation": "Pop-up Cocktail Bar Owner",
   "home": "house_9",
+  "workplace": "square",
+  "shifts": [
+    {
+      "days": [
+        "thursday",
+        "friday",
+        "saturday"
+      ],
+      "start": 18.0,
+      "end": 22.5
+    }
+  ],
+  "pay": {
+    "kind": "wage",
+    "amount": 46.0
+  },
+  "money": 400.0,
   "values": {
     "freedom": 0.56,
     "independence": 0.39,

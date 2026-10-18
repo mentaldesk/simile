@@ -4,6 +4,38 @@
   "age": 27,
   "occupation": "Community Pop-up Kitchen Host",
   "home": "house_3",
+  "workplace": "noodle_bar",
+  "shifts": [
+    {
+      "days": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start": 11.0,
+      "end": 14.5
+    },
+    {
+      "days": [
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday",
+        "saturday",
+        "sunday"
+      ],
+      "start": 17.0,
+      "end": 21.5
+    }
+  ],
+  "pay": {
+    "kind": "takings",
+    "amount": null
+  },
+  "money": 260.0,
   "values": {
     "freedom": 0.73,
     "independence": 0.13,

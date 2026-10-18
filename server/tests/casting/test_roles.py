@@ -5,6 +5,7 @@ from statistics import mean
 import pytest
 
 from simile.casting import bind, cast
+from simile.casting.bind import wage
 from simile.casting.choose import elder, family
 from simile.casting.roles import holders, village_roles
 from simile.characters.jobs import maker
@@ -103,17 +104,13 @@ def test_without_roles_a_cast_is_drawn_as_before(library: list[Character]) -> No
 def test_role_holders_work_at_the_role_with_its_shifts_and_pay(library: list[Character]) -> None:
     made = bind(cast(library, 10, seed=5, houses=10, year=YEAR), seed=5, houses=HOUSES)
     npcs = {npc.id: npc for npc in made.npcs()}
-    workplaces = {r.character.id: r.workplace for r in made.residents}
+    held = holders([r.character for r in made.residents], village_roles())
 
-    roles = {role.workplace: role for role in village_roles()}
-    assert sorted(w for w in workplaces.values() if w) == sorted(roles)
-    for id, workplace in workplaces.items():
+    assert sorted(role.id for role in held.values()) == sorted(r.id for r in village_roles())
+    for id, role in held.items():
         npc = npcs[id]
-        if workplace is None:
-            assert (npc.workplace, npc.shifts, npc.pay) == (None, [], None)
-            continue
-        role = roles[workplace]
-        assert (npc.workplace, npc.shifts, npc.pay) == (workplace, role.shifts, role.pay)
+        assert (npc.workplace, npc.shifts) == (role.workplace, role.shifts)
+        assert npc.pay == (role.pay or wage(role.shifts))
         assert Npc.model_validate_json(npc.model_dump_json()) == npc
 
 

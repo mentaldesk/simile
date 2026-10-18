@@ -3,7 +3,7 @@ import math
 import random
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Protocol
 
 from pydantic import JsonValue
@@ -19,13 +19,18 @@ from simile.behaviour.scoring import (
     Places,
     Situation,
     Supply,
+    Work,
     affinity,
     asleep,
     bedtime,
     best_per_activity,
     choose,
+    finances,
     plenty,
+    punctuality,
+    savings,
     scores,
+    skip_chance,
     wake,
 )
 from simile.schema import (
@@ -36,9 +41,11 @@ from simile.schema import (
     MapTile,
     Medium,
     Npc,
+    PayKind,
     Relationship,
     Tile,
     Traits,
+    Weekday,
 )
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
@@ -52,6 +59,8 @@ type NewsInterest = Callable[[Npc], float]
 type LiveConversations = Callable[[], list[Conversation]]
 type WorkMaker = Callable[[Npc, Id | None], None]
 type WallPicker = Callable[[Npc], MuralSpot | None]
+type Purse = Callable[[Npc], float | None]
+type Pricing = Callable[[Npc, Goal], float]
 
 NEUTRAL = Traits()
 AT_HOME = (Activity.HOME, Activity.SLEEP)
@@ -66,7 +75,11 @@ GOING_TO_A_PLACE = (
     Activity.MAKER_SPACE,
     Activity.GALLERY,
     Activity.CREATE,
+    Activity.WORK,
 )
+HOUR = timedelta(hours=1)
+RESUMED = (Activity.CREATE, Activity.WORK)
+"""What they go back to after a talk."""
 
 
 def decline(a: Id, b: Id) -> bool:
@@ -93,6 +106,14 @@ def no_wall(npc: Npc) -> MuralSpot | None:
     return None
 
 
+def no_money(npc: Npc) -> float | None:
+    return None
+
+
+def nothing(npc: Npc, goal: Goal) -> float:
+    return 0.0
+
+
 class Hooks:
     """The interfaces other modules implement, stubbed until they do. See the README."""
 
@@ -104,6 +125,9 @@ class Hooks:
         self.create: WorkMaker = make_nothing
         self.mural_wall: WallPicker = no_wall
         self.supply: Supply = plenty
+        self.money: Purse = no_money
+        self.price: Pricing = nothing
+        self.earnings: Pricing = nothing
 
     def set(
         self,
@@ -115,6 +139,9 @@ class Hooks:
         create: WorkMaker | None = None,
         mural_wall: WallPicker | None = None,
         supply: Supply | None = None,
+        money: Purse | None = None,
+        price: Pricing | None = None,
+        earnings: Pricing | None = None,
     ) -> Callable[[], None]:
         """Plug in the hooks given and return a function that puts back what they replaced."""
         given = {
@@ -125,6 +152,9 @@ class Hooks:
             "create": create,
             "mural_wall": mural_wall,
             "supply": supply,
+            "money": money,
+            "price": price,
+            "earnings": earnings,
         }
         hooks = {name: hook for name, hook in given.items() if hook is not None}
         previous = {name: getattr(self, name) for name in hooks}
@@ -140,6 +170,19 @@ class Hooks:
 
 class Relationships(Protocol):
     def relationships(self, owner: str) -> list[Relationship]: ...
+
+
+@dataclass
+class Due:
+    """A shift they're due at: when it runs, when they'll set off for it and whether they'll
+    skip it."""
+
+    start: datetime
+    end: datetime
+    set_off: datetime
+    skipping: bool
+    called: bool = False
+    """Whether they've been sent off to it."""
 
 
 @dataclass
@@ -173,6 +216,12 @@ class Mind:
     eating: dict[Need, datetime] = field(default_factory=dict)
     """Needs their place has started meeting, by the stay's `since`. One with an appetite starts
     only once it's that high."""
+    shift: Due | None = None
+    """Their current or next shift."""
+    staying_on: datetime | None = None
+    """Until when they can stay on at work after their last shift."""
+    skipping: tuple[date, bool] | None = None
+    """The last working day they decided whether to skip, and what they decided."""
 
 
 class Behaviour:
@@ -208,7 +257,7 @@ class Behaviour:
 
     def start(self) -> None:
         """Put every NPC who isn't on the map yet at home, and give them their first goal."""
-        now, hour = self.clock.now, self.clock.time_of_day
+        now = self.clock.now
         placed = self.movement.entities()
         self._needs_at = now
         for npc in self.npcs.values():
@@ -219,7 +268,9 @@ class Behaviour:
                 if npc.craft or need is not Need.INSPIRATION
                 else 0.0
                 for need in Need
+                if need is not Need.FINANCES
             }
+            needs[Need.FINANCES] = self._finances(npc)
             mind = Mind(
                 npc,
                 needs,
@@ -232,7 +283,8 @@ class Behaviour:
                 mind.goal = Goal(Activity.HOME, npc.home)
             self.minds[npc.id] = mind
         for mind in self.minds.values():
-            if asleep(hour, mind.bedtime, mind.wake):
+            self._plan(mind)
+            if self._asleep(mind):
                 self._sleep(mind)
             elif mind.goal.activity is Activity.HOME:
                 self._publish(mind)
@@ -254,7 +306,7 @@ class Behaviour:
         if npc == PLAYER_ID:
             return
         mind = self.minds[npc]
-        if mind.finishes and mind.goal.activity is Activity.CREATE and mind.until is not None:
+        if mind.finishes and mind.goal.activity in RESUMED and mind.until is not None:
             mind.interrupted = (mind.goal, mind.until - self.clock.now)
         mind.paused, mind.finishes = True, False
         mind.until, mind.nudge = None, None
@@ -280,6 +332,9 @@ class Behaviour:
             (goal, left), mind.interrupted = mind.interrupted, None
             mind.goal, mind.since, mind.finishes = goal, self.clock.now, True
             mind.until += left
+            if goal.activity is Activity.WORK:
+                due = self._due(mind)
+                mind.until = min(mind.until, due.end) if due else self.clock.now
             self._publish(mind)
 
     def restore(
@@ -293,8 +348,8 @@ class Behaviour:
     ) -> None:
         """Put the NPC back to what they were doing when saved, after the clock has been set:
         their walk stops, and with no `until` (they were walking or talking) they decide again
-        on the next think. A stay that's already over is dropped rather than finished. Everyone's
-        needs rise from now."""
+        on the next think. A stay that's already over is dropped rather than finished, and a shift
+        already under way waits until the stay is over. Everyone's needs rise from now."""
         mind = self.minds[npc]
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -305,6 +360,10 @@ class Behaviour:
         mind.paused, mind.chases, mind.options, mind.nudge = False, 0, {}, None
         mind.finishes = until is not None and until > self.clock.now
         mind.interrupted, mind.held = None, None
+        mind.shift, mind.staying_on = None, None
+        self._plan(mind)
+        if mind.shift is not None and mind.shift.set_off <= self.clock.now:
+            mind.shift.called = True
         self._needs_at = self.clock.now
         self._publish(mind)
 
@@ -335,7 +394,7 @@ class Behaviour:
         """Add `bonus` to `goal` when they decide, on the next think. False if paused, held or
         asleep."""
         mind = self.minds[npc]
-        if mind.paused or mind.held or asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
+        if mind.paused or mind.held or self._asleep(mind):
             return False
         walk, mind.walk = mind.walk, None
         if walk is not None:
@@ -346,11 +405,26 @@ class Behaviour:
     def available(self, seeker: Id, other: Id) -> bool:
         """Whether `seeker` could seek `other` out: not asleep, at home, talking, recently refused
         or, for the player, left alone."""
-        return self._available(self.minds[seeker], other, self.clock.time_of_day)
+        return self._available(self.minds[seeker], other)
 
     def at_home(self, npc: Id) -> bool:
         """Whether they're at or heading home, to rest, sleep or make something there."""
         return self._home_bound(self.minds[npc])
+
+    def working(self, npc: Id) -> bool:
+        """Whether they're at their workplace working: there for work, or kept there by it."""
+        mind = self.minds[npc]
+        workplace = mind.npc.workplace
+        if workplace is None or mind.paused or mind.walk is not None:
+            return False
+        if mind.held is not None:
+            goal = mind.held[1]
+            return goal.target == workplace and goal.activity not in AT_HOME
+        return mind.goal == Goal(Activity.WORK, workplace)
+
+    def savings(self, npc: Id) -> float:
+        """Their savings target, in money."""
+        return savings(self.npcs[npc].values, self.config)
 
     def goal(self, npc: Id) -> Goal:
         return self.minds[npc].goal
@@ -361,6 +435,9 @@ class Behaviour:
     def state(self, npc: Id) -> dict[str, JsonValue]:
         """The NPC's goal, needs and last decision, for the debug overlay."""
         mind = self.minds[npc]
+        money = self._call(self.hooks.money, mind.npc)
+        shown = (Need.INSPIRATION, Need.FINANCES)
+        due = mind.shift
         return {
             "goal": str(mind.goal),
             "activity": mind.goal.activity.value,
@@ -372,30 +449,128 @@ class Behaviour:
             "needs": {
                 need.value: round(value, 3)
                 for need, value in mind.needs.items()
-                if mind.npc.craft or need is not Need.INSPIRATION
+                if need not in shown
+                or (need is Need.INSPIRATION and mind.npc.craft)
+                or (need is Need.FINANCES and isinstance(money, int | float))
             },
+            "money": round(money, 2) if isinstance(money, int | float) else None,
+            "shift": {
+                "start": due.start.isoformat(),
+                "end": due.end.isoformat(),
+                "skipping": due.skipping,
+            }
+            if due
+            else None,
             "options": dict(mind.options),
             "bedtime": round(mind.bedtime, 2),
             "wake": round(mind.wake, 2),
         }
 
     def _think(self) -> None:
-        now, hour = self.clock.now, self.clock.time_of_day
+        now = self.clock.now
         hours = (now - self._needs_at) / timedelta(hours=1)
         self._needs_at = now
         self._update_needs(hours)
         for mind in self.minds.values():
+            self._plan(mind)
             if mind.paused:
                 continue
-            if asleep(hour, mind.bedtime, mind.wake):
+            if self._asleep(mind):
                 if not mind.held and mind.goal.activity is not Activity.SLEEP:
                     self._sleep(mind)
-            elif self._pressing(mind):
+            elif self._pressing(mind) or self._woken(mind):
                 self._interrupt(mind)
             elif mind.held:
                 continue
+            elif self._setting_off(mind):
+                self._interrupt(mind)
             elif mind.walk is None and mind.until is not None and now >= mind.until:
                 self._decide(mind)
+
+    def _plan(self, mind: Mind) -> None:
+        """Keep their next shift in view, and once one ends, how long a wage earner still at work
+        can stay on."""
+        npc, now, due = mind.npc, self.clock.now, mind.shift
+        if npc.workplace is None or not npc.shifts or (due is not None and now < due.end):
+            return
+        if due is not None and _wage(npc) and mind.goal == Goal(Activity.WORK, npc.workplace):
+            mind.staying_on = due.end + timedelta(hours=self.config.overtime)
+        mind.shift = self._next_shift(mind)
+
+    def _next_shift(self, mind: Mind) -> Due:
+        npc, now, config = mind.npc, self.clock.now, self.config
+        assert npc.workplace is not None
+        midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        start, end = min(
+            (day + timedelta(hours=shift.start), day + timedelta(hours=shift.end))
+            for day in (midnight + timedelta(days=n) for n in range(8))
+            for shift in npc.shifts
+            if Weekday.of(day) in shift.days and day + timedelta(hours=shift.end) > now
+        )
+        walk = self.places.walk_minutes(self._entry(npc.home), self._entry(npc.workplace))
+        early = punctuality(npc.values, config)
+        early += self.rng.uniform(-config.set_off_jitter, config.set_off_jitter)
+        set_off = start - timedelta(minutes=walk + early)
+        if mind.skipping is None or mind.skipping[0] != start.date():
+            chance = skip_chance(npc.values, mind.needs[Need.FINANCES], config)
+            mind.skipping = (start.date(), self.rng.random() < chance)
+        return Due(start, end, set_off, mind.skipping[1])
+
+    def _due(self, mind: Mind) -> Due | None:
+        """Their shift, from when they set off for it until it ends, unless they're skipping it."""
+        due, now = mind.shift, self.clock.now
+        if due is None or due.skipping or not due.set_off <= now < due.end:
+            return None
+        return due
+
+    def _setting_off(self, mind: Mind) -> bool:
+        """Whether it's time they dropped what they're doing for a shift, once a shift."""
+        due = self._due(mind)
+        if due is None or due.called:
+            return False
+        due.called = True
+        return mind.goal != Goal(Activity.WORK, mind.npc.workplace)
+
+    def _work(self, mind: Mind) -> Work | None:
+        npc, now = mind.npc, self.clock.now
+        if npc.workplace is None:
+            return None
+        if (due := self._due(mind)) is not None:
+            return Work(npc.workplace, True, (due.end - max(now, due.start)) / HOUR)
+        here = mind.goal == Goal(Activity.WORK, npc.workplace)
+        if here and mind.staying_on is not None and now < mind.staying_on:
+            low, high = self.config.dwell.get(Activity.WORK, (0.0, 0.0))
+            left = (mind.staying_on - now) / HOUR
+            return Work(npc.workplace, False, min((low + high) / 2 / 60, left))
+        return None
+
+    def _woken(self, mind: Mind) -> bool:
+        """Whether a shift has just got them up before they'd wake."""
+        sleeping = mind.goal.activity is Activity.SLEEP and mind.walk is None and not mind.held
+        return sleeping and asleep(self.clock.time_of_day, mind.bedtime, mind.wake)
+
+    def _asleep(self, mind: Mind) -> bool:
+        """Asleep at this hour, unless a shift has them up: `ready` before they set off, until
+        it ends."""
+        due, now = mind.shift, self.clock.now
+        up = timedelta(minutes=self.config.ready)
+        if due is not None and not due.skipping and due.set_off - up <= now < due.end:
+            return False
+        return asleep(self.clock.time_of_day, mind.bedtime, mind.wake)
+
+    def _entry(self, location: Id) -> Point:
+        place = self.places.location(location)
+        return Point(place.entry.x, place.entry.y, place.map)
+
+    def _finances(self, npc: Npc) -> float:
+        money = self._call(self.hooks.money, npc)
+        if not isinstance(money, int | float):
+            return 0.0
+        return finances(money, savings(npc.values, self.config))
+
+    def _price(self, hook: Pricing, npc: Npc, goal: Goal) -> float:
+        price = self._call(hook, npc, goal)
+        return float(price) if isinstance(price, int | float) else 0.0
 
     def _pressing(self, mind: Mind) -> bool:
         """Whether a need has just gone critical that what they're doing doesn't meet."""
@@ -445,6 +620,7 @@ class Behaviour:
                 elif effect == 0 and mind.walk is None:
                     mind.eating.pop(need, None)
                 mind.needs[need] = _clamp(mind.needs[need] + rate * hours)
+            mind.needs[Need.FINANCES] = self._finances(mind.npc)
             if not self._home_bound(mind) and self._has_company(mind.npc.id, positions):
                 mind.needs[Need.SOCIAL] = _clamp(mind.needs[Need.SOCIAL] - config.company * hours)
 
@@ -506,7 +682,7 @@ class Behaviour:
     def _decide(self, mind: Mind) -> None:
         if mind.finishes:
             self._finish(mind)
-        if asleep(self.clock.time_of_day, mind.bedtime, mind.wake):
+        if self._asleep(mind):
             self._sleep(mind)
             return
         mind.pressed = self._critical(mind)
@@ -523,7 +699,7 @@ class Behaviour:
         self._begin(mind, choose(options, self.rng, self.config.temperature))
 
     def _situation(self, mind: Mind) -> Situation:
-        npc, now, hour = mind.npc, self.clock.now, self.clock.time_of_day
+        npc, now = mind.npc, self.clock.now
         known = (
             {rel.about: rel for rel in self.relationships.relationships(npc.id)}
             if self.relationships
@@ -540,7 +716,7 @@ class Behaviour:
                     position,
                     affinity(rel, self.config),
                     self._place_of(other, position),
-                    self._available(mind, other, hour),
+                    self._available(mind, other),
                 )
             )
         news = self._call(self.hooks.news_interest, npc)
@@ -549,7 +725,7 @@ class Behaviour:
         return Situation(
             npc.values,
             mind.needs,
-            hour,
+            self.clock.time_of_day,
             self.movement.position(npc.id),
             npc.home,
             mind.bedtime,
@@ -559,6 +735,9 @@ class Behaviour:
             craft,
             mural if isinstance(mural, MuralSpot) else None,
             self._supply,
+            self._work(mind),
+            lambda goal: self._price(self.hooks.price, npc, goal),
+            lambda goal: self._price(self.hooks.earnings, npc, goal),
         )
 
     def _finish(self, mind: Mind) -> None:
@@ -578,21 +757,21 @@ class Behaviour:
         location = self.places.at(position)
         return location.id if location else None
 
-    def _available(self, seeker: Mind, other: Id, hour: float) -> bool:
+    def _available(self, seeker: Mind, other: Id) -> bool:
         if other == PLAYER_ID and seeker.npc.id in self.leave_player_alone:
             return False
         if seeker.cooldowns.get(other, self.clock.now) > self.clock.now:
             return False
         mind = self.minds.get(other)
         return mind is None or not (
-            mind.paused
-            or mind.held
-            or self._home_bound(mind)
-            or asleep(hour, mind.bedtime, mind.wake)
+            mind.paused or mind.held or self._home_bound(mind) or self._asleep(mind)
         )
 
     def _home_bound(self, mind: Mind) -> bool:
-        return mind.goal.activity in AT_HOME or mind.goal == Goal(Activity.CREATE, mind.npc.home)
+        home, goal = mind.npc.home, mind.goal
+        if goal == Goal(Activity.WORK, home):
+            return self.places.location(home).kind is LocationKind.HOUSE
+        return goal.activity in AT_HOME or goal == Goal(Activity.CREATE, home)
 
     def _begin(self, mind: Mind, goal: Goal) -> None:
         mind.goal, mind.since, mind.until, mind.chases = goal, self.clock.now, None, 0
@@ -656,18 +835,21 @@ class Behaviour:
             self._call(self.hooks.read_news, mind.npc)
         if goal.activity is Activity.SLEEP:
             mind.until = self._next(mind.wake) + self._minutes((0, self.config.lie_in))
+        elif goal.activity is Activity.WORK and (due := self._due(mind)) is not None:
+            mind.until, mind.finishes = due.end, True
         else:
+            now = self.clock.now
             dwell = self.config.dwell.get(goal.activity, (5, 15))
-            mind.until = self.clock.now + self._minutes(dwell)
-            mind.finishes = True
+            mind.until, mind.finishes = now + self._minutes(dwell), True
+            if goal.activity is Activity.WORK:
+                mind.until = min(mind.until, max(mind.staying_on or now, now))
 
     def _approach(self, mind: Mind) -> bool:
         """At the end of a walk to someone: talk, hang around, or follow them. True if the NPC
         has moved on to something other than hanging around."""
         npc, other = mind.npc.id, mind.goal.target
         assert other is not None
-        hour = self.clock.time_of_day
-        if other not in self.movement.entities() or not self._available(mind, other, hour):
+        if other not in self.movement.entities() or not self._available(mind, other):
             self._give_up(mind, other)
             return True
         if self.movement.distance(npc, other) <= self.config.talk_range:
@@ -736,6 +918,10 @@ class Behaviour:
 
 def _clamp(value: float) -> float:
     return min(max(value, 0.0), 1.0)
+
+
+def _wage(npc: Npc) -> bool:
+    return npc.pay is not None and npc.pay.kind is PayKind.WAGE
 
 
 def _paints(npc: Npc) -> bool:

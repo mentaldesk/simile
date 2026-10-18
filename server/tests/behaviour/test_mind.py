@@ -42,11 +42,21 @@ TEMPLATE = load_npcs()[0]
 A = Activity
 
 
+NO_WORK = {"workplace": None, "shifts": [], "pay": None}
+
+
 def make_npc(id: str, home: str, **values: float) -> Npc:
     """An NPC who cares about everything at 0.5, except the values given."""
     scores = {value: values.get(value.value, 0.5) for value in CoreValue}
     return TEMPLATE.model_copy(
-        update={"id": id, "name": id.title(), "home": home, "values": scores, "craft": None}
+        update={
+            "id": id,
+            "name": id.title(),
+            "home": home,
+            "values": scores,
+            "craft": None,
+            **NO_WORK,
+        }
     )
 
 
@@ -576,7 +586,10 @@ def test_state_is_json_for_the_debug_overlay() -> None:
 
     assert json.loads(json.dumps(state)) == state
     needs = state["needs"]
-    assert isinstance(needs, dict) and set(needs) == {need.value for need in Need} - {"inspiration"}
+    assert isinstance(needs, dict) and set(needs) == {need.value for need in Need} - {
+        "inspiration",
+        "finances",
+    }
     assert state["goal"] == str(village.behaviour.goal("ana"))
     assert "inspiration" in village.behaviour.state("wren")["needs"]
 

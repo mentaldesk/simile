@@ -19,9 +19,14 @@ NPCS = load_npcs()
 STAY_HOME = DEFAULT_CONFIG.model_copy(update={"start_dwell": (120, 120)})
 
 
+NO_WORK = {"workplace": None, "shifts": [], "pay": None}
+
+
 def resident(id: str, home: str) -> Npc:
     values = {value: 0.5 for value in CoreValue}
-    return NPCS[0].model_copy(update={"id": id, "home": home, "values": values, "craft": None})
+    return NPCS[0].model_copy(
+        update={"id": id, "home": home, "values": values, "craft": None, **NO_WORK}
+    )
 
 
 SOCIABLE, ALOOF = resident("sociable", "house_1"), resident("aloof", "house_2")

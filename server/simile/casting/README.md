@@ -76,8 +76,15 @@ It refuses more residents than the village map has houses, and two residents wit
 `bind(chosen, pins, seed, game_date)` gives each resident a house from the village map at random,
 and each role to the first resident whose job fits it, in the order `cast` filled them. A role
 holder's `workplace` is the role's interior, with its `shifts` and `pay`, and their `Npc` has the
-same. Everyone else's are left for E3 (#243). Then it binds the pins, then open hooks between
-residents. A one-way hook binds to the same kind on
+same. A role without pay, like the hosts', pays a wage. Everyone else gets work by E3's rules:
+
+- **retired:** a `pension` of `pension` (320) a week, and no workplace.
+- **working:** where their job does by family (`workplaces`: robotics, bionics and building at the
+  maker space), else from home, with weekly hours drawn from `hours` for that workplace, and a wage
+  that pays `weekly_pay` (480) for a full week of them, so a usual week covers rent and food.
+- **money:** everyone starts with `start_money` (150 to 350) times 0.5 plus their Security.
+
+Then it binds the pins, then open hooks between residents. A one-way hook binds to the same kind on
 the opposite side, a mutual one to the same kind. Each pair bonds once and each hook once. A pin
 uses the matching hooks when the residents have them. Drawn bonds:
 
