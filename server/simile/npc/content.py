@@ -28,7 +28,12 @@ def write_npcs(
     return [*written, readme_path]
 
 
-def load_npcs(directory: Path = NPCS_DIR) -> list[Npc]:
+def load_npcs(directory: Path | None = None) -> list[Npc]:
+    """The NPCs in `directory`: by default the cast in the data directory, else content/npcs/."""
+    if directory is None:
+        from simile.casting.store import cast_npcs
+
+        directory = cast_npcs() or NPCS_DIR
     return [
         Npc.model_validate_json(path.read_text(encoding="utf-8"))
         for path in sorted(directory.glob("*.json"))
