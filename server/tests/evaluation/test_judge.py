@@ -3,7 +3,7 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from simile.evaluation.judge import judge_prompt, label, stance_schema
+from simile.evaluation.judge import SYSTEM, judge_prompt, label, stance_schema
 from simile.evaluation.play import Reply
 from simile.evaluation.scenarios import SCENARIOS
 from simile.llm import FakeProvider, LLMClient
@@ -48,23 +48,43 @@ def test_the_prompt_groups_replies_by_scenario_without_names() -> None:
 def test_each_reply_takes_only_its_scenarios_labels() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
 
-    assert schema(r1="helps", r2="confronts", r3="hostile", r4="ignores")
+    assert schema(r1="helps", r2="confronts", r3="hostile", r4="ignores", lies=[])
     with pytest.raises(ValidationError):
-        schema(r1="confronts", r2="confronts", r3="hostile", r4="ignores")
+        schema(r1="confronts", r2="confronts", r3="hostile", r4="ignores", lies=[])
 
 
-async def test_label_asks_once_and_sets_each_stance() -> None:
+def test_lies_name_only_replies_that_were_asked_about() -> None:
+    schema = stance_schema(SCENARIOS, REPLIES)
+    labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores"}
+
+    assert schema(**labels, lies=["r2", "r4"])
+    with pytest.raises(ValidationError):
+        schema(**labels, lies=["r5"])
+    with pytest.raises(ValidationError):
+        schema(**labels)
+
+
+def test_the_judge_is_told_what_counts_as_a_lie() -> None:
+    assert "list under lies every reply that lies" in SYSTEM
+    assert "an excuse that sounds made up" in SYSTEM
+
+
+async def test_label_asks_once_and_sets_each_stance_and_lie() -> None:
     fake = FakeProvider(
-        [json.dumps({"r1": "helps", "r2": "hostile", "r3": "confronts", "r4": "ignores"})]
+        [
+            json.dumps(
+                {"r1": "helps", "r2": "hostile", "r3": "confronts", "r4": "ignores", "lies": ["r2"]}
+            )
+        ]
     )
 
     labelled = await label(LLMClient(fake), SCENARIOS, REPLIES, model="judge")
 
-    assert [(r.key, r.stance) for r in labelled] == [
-        ("ann/favour", "helps"),
-        ("bob/favour", "hostile"),
-        ("ann/promise", "confronts"),
-        ("bob/promise", "ignores"),
+    assert [(r.key, r.stance, r.lies) for r in labelled] == [
+        ("ann/favour", "helps", False),
+        ("bob/favour", "hostile", True),
+        ("ann/promise", "confronts", False),
+        ("bob/promise", "ignores", False),
     ]
     [request] = fake.requests
     assert request.model == "judge"
@@ -74,8 +94,10 @@ async def test_label_asks_once_and_sets_each_stance() -> None:
 async def test_a_label_from_another_scenario_is_asked_again() -> None:
     fake = FakeProvider(
         [
-            json.dumps({"r1": "confronts", "r2": "helps", "r3": "hints", "r4": "ignores"}),
-            json.dumps({"r1": "helps", "r2": "helps", "r3": "hints", "r4": "ignores"}),
+            json.dumps(
+                {"r1": "confronts", "r2": "helps", "r3": "hints", "r4": "ignores", "lies": []}
+            ),
+            json.dumps({"r1": "helps", "r2": "helps", "r3": "hints", "r4": "ignores", "lies": []}),
         ]
     )
 

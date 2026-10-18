@@ -16,7 +16,7 @@ LINES = (
 
 class Stock:
     """Answers without Claude: replies from `LINES` in turn, and stances for the judge's call,
-    each reply's labels in turn."""
+    each reply's labels in turn, with no lies."""
 
     def __init__(self) -> None:
         self._turn = count()
@@ -27,7 +27,7 @@ class Stock:
         schema = json.loads(request.system.split("no code fence:\n", 1)[1])
         return json.dumps(
             {
-                name: field["enum"][n % len(field["enum"])]
+                name: field["enum"][n % len(field["enum"])] if "enum" in field else []
                 for n, (name, field) in enumerate(schema["properties"].items())
             }
         )
