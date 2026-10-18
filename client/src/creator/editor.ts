@@ -136,9 +136,17 @@ export class Editor {
     const look = h(
       'div',
       {},
-      lookEditor(w.appearance!, (appearance) => this.edit('look', { appearance }), disabled),
+      lookEditor(
+        w.appearance!,
+        (appearance) => {
+          this.edit('look', { appearance });
+          this.sprite?.preview(appearance, this.draft.work.id);
+        },
+        disabled,
+      ),
     );
     if (this.sprite) look.append(this.sprite.root);
+    this.sprite?.preview(w.appearance!, w.id);
     this.bodies.look.replaceChildren(look);
     this.sample?.setValues({ ...w.values });
     this.bodies.values.replaceChildren(
