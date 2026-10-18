@@ -13,6 +13,9 @@ from pydantic import BaseModel
 from simile.characters.tables.load import TABLES_DIR
 from simile.llm import CallRecord, LLMClient, Model
 
+MAX_LENGTH = 120
+"""The longest mannerism a character can store."""
+
 
 @dataclass(frozen=True)
 class Prompt:
@@ -48,35 +51,54 @@ PROMPTS = (
         {"openness": -1},
         "conventional people who like things as they've always been",
     ),
-    Prompt("speech", {}, "anyone at all, about the way they talk"),
-    Prompt("hands", {}, "anyone at all, about what they do with their hands, face and body"),
     Prompt(
-        "routines", {}, "anyone at all, about small daily habits with food, objects and routines"
+        "speech",
+        {},
+        "anyone at all, about their verbal habits: pet phrases, hedging, over-explaining, "
+        "clipped answers, answering with a question, trailing off",
+    ),
+    Prompt(
+        "conversation",
+        {},
+        "anyone at all, about the shape of their conversations: small talk first or straight to "
+        "the point, follow-up questions or steering back to their own topic, changing the subject, "
+        "ending abruptly, long stories, interrupting",
+    ),
+    Prompt(
+        "humour",
+        {},
+        "anyone at all, about their humour and tone: dry, self-deprecating, teasing, earnest, "
+        "deflecting with jokes",
     ),
 )
-PER_PROMPT = 40
+PER_PROMPT = 18
 
-SYSTEM = """You write character notes for a slice-of-life game set in a small village today. \
-Residents are ordinary adults of every age from 18 to 90, every gender, background and job."""
+SYSTEM = """You write character notes for a slice-of-life game set in a small, modern, \
+fast-growing town with a Shenzhen flavour. Residents are ordinary adults of every age from 18 to \
+90, every gender, background and job, from many countries."""
 
-RULES = """Write {count} distinct mannerisms for {who}.
+RULES = """Write {count} distinct conversational mannerisms for {who}.
 
-Each one is a small, specific habit a neighbour would notice: a verbal habit (described, not \
-quoted), a gesture, a way of sitting or standing, how they handle objects, food or drink, or a \
-little routine.
-- A verb phrase in the present tense with no subject, 4 to 14 words, e.g. "taps the table twice \
-before giving an opinion".
+Each one is a habit you would notice from their words alone, in any conversation: a verbal \
+habit, the shape of how they talk with people, or their humour and tone.
+- A verb phrase in the present tense with no subject, 4 to 14 words, e.g. "answers a question \
+with another question" or "steers every topic back to their own work".
 - Hint at the kind of person without naming the trait.
-- Anyone of any age, gender, culture or job could have it: say "their", never he or she, and \
-nothing tied to a job, a religion or gendered clothing.
-- Plain and kind: nothing about illness, disability, medication, smoking, alcohol, sex or bodily \
-functions, and no brands or real people.
-- Avoid the stock ones (twirling hair, biting nails, cracking knuckles) and don't repeat \
-yourself."""
+- Only what they say and how: no gestures, faces, posture, voice quality, objects, food or drink, \
+and no good deeds or favours.
+- Describe the habit rather than quoting it. Quote a word or two only for a pet phrase anyone \
+might say in plain English.
+- Anyone of any age, gender, origin or job could have it: say "their", never he or she, and \
+nothing tied to a language, a place, a job or a religion.
+- No English-village clichés: nothing about tea, the weather, the lane, the pub or the till.
+- Plain and kind: nothing about illness, disability, medication, smoking, alcohol, sex, bodily \
+functions or swearing, and no brands or real people.
+- Don't repeat yourself."""
 
 BANNED = re.compile(
     r"\b(he|she|his|her|him|hers|smok\w*|cigar\w*|vap\w*|beer|wine|whisky|alcohol|pills?|"
-    r"medic\w*|church\w*|mosque|temple|pray\w*)\b",
+    r"medic\w*|church\w*|mosque|temple|pray\w*|tea|kettle|lane|pub|weather|nods?|shrugs?|winks?|"
+    r"smil\w*|frown\w*|grins?|gestur\w*|fingers?|fidget\w*|eyebrows?|glanc\w*)\b",
     re.IGNORECASE,
 )
 STOP = frozenset(
@@ -129,7 +151,8 @@ def to_toml(batches: Sequence[tuple[Prompt, Sequence[str]]]) -> str:
     lines = [
         "# Generated once through L1 with Haiku by `uv run python -m "
         "simile.characters.tables.generate_mannerisms`.",
-        "# Curated by hand afterwards: delete or reword freely, but keep the groups.",
+        "# Curated by hand afterwards: delete or reword freely, but keep the groups, and keep",
+        "# every item something a listener would notice from their words alone.",
     ]
     for prompt, items in filter(lambda batch: batch[1], batches):
         lean = ", ".join(f"{key} = {value:g}" for key, value in prompt.lean.items())
@@ -152,7 +175,9 @@ def _tidy(item: str) -> str | None:
     text = " ".join(item.strip().strip(".").split())
     text = text[:1].lower() + text[1:]
     words = text.split()
-    if not 3 <= len(words) <= 16 or BANNED.search(text) or words[0] in ("they", "i", "you"):
+    if not 3 <= len(words) <= 16 or len(text) > MAX_LENGTH or BANNED.search(text):
+        return None
+    if words[0] in ("they", "i", "you"):
         return None
     return text
 

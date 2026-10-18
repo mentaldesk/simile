@@ -7,6 +7,7 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
 
 from simile.schema import CoreValue
+from simile.schema.npc import Mannerism
 
 TABLES_DIR = Path(__file__).resolve().parents[4] / "content" / "characters" / "tables"
 
@@ -290,7 +291,7 @@ class Temperament(Table):
 
 class MannerismGroup(Conditional):
     id: Id
-    items: list[Text] = Field(min_length=1)
+    items: list[Mannerism] = Field(min_length=1)
 
 
 class Mannerisms(Table):
