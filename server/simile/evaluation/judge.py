@@ -13,7 +13,9 @@ SYSTEM = (
     "You label replies from a life simulation. In each situation someone says one line to a "
     "character, and the character replies. For each reply, choose the one label that best fits "
     "what the reply does, going by the label's meaning rather than its name. Judge the words "
-    "alone, and pick the label for its main move when it does more than one thing."
+    "alone, and pick the label for its main move when it does more than one thing. Then list "
+    "under lies every reply that lies: says something the situation shows is untrue, agrees to "
+    "say something untrue, or gives an excuse that sounds made up to get out of something."
 )
 
 
@@ -37,18 +39,23 @@ def judge_prompt(scenarios: Sequence[Scenario], replies: Sequence[Reply]) -> str
 
 
 def stance_schema(scenarios: Sequence[Scenario], replies: Sequence[Reply]) -> type[BaseModel]:
-    """One field per reply, r1, r2, ..., that takes only its scenario's labels."""
+    """One field per reply, r1, r2, ..., that takes only its scenario's labels, and `lies`, the
+    replies that lie."""
     labels = {scenario.id: tuple(scenario.stances) for scenario in scenarios}
+    numbers = tuple(f"r{n}" for n in range(1, len(replies) + 1))
     fields: dict[str, Any] = {
-        f"r{n}": (Literal[labels[reply.scenario]], ...) for n, reply in enumerate(replies, 1)
+        number: (Literal[labels[reply.scenario]], ...)
+        for number, reply in zip(numbers, replies, strict=True)
     }
+    fields["lies"] = (list[Literal[numbers]], ...)
     return create_model("Stances", **fields)
 
 
 async def label(
     llm: LLMClient, scenarios: Sequence[Scenario], replies: Sequence[Reply], *, model: str
 ) -> list[Reply]:
-    """`replies` with their stances, labelled in one structured call, grouped by scenario."""
+    """`replies` with their stances and whether they lie, labelled in one structured call,
+    grouped by scenario."""
     if not replies:
         return []
     order = [scenario.id for scenario in scenarios]
@@ -61,6 +68,8 @@ async def label(
         purpose=PURPOSE,
     )
     stances = found.model_dump()
+    lying = set(stances["lies"])
     return [
-        reply.model_copy(update={"stance": stances[f"r{n}"]}) for n, reply in enumerate(replies, 1)
+        reply.model_copy(update={"stance": stances[f"r{n}"], "lies": f"r{n}" in lying})
+        for n, reply in enumerate(replies, 1)
     ]

@@ -112,7 +112,9 @@ async def evaluate(
             llm, characters, scenarios, model=model, done=done, max_calls=max_calls, on_reply=kept
         )
         missing = len(characters) * len(scenarios) - len(replies)
-        if not missing and (unlabelled := [r for r in replies if r.stance is None]):
+        if not missing and (
+            unlabelled := [r for r in replies if r.stance is None or r.lies is None]
+        ):
             labelled = {r.key: r for r in await label(llm, scenarios, unlabelled, model=judge)}
             replies = [labelled.get(r.key, r) for r in replies]
     finally:

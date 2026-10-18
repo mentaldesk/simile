@@ -131,5 +131,6 @@ async def test_the_report_shows_every_reply_beside_the_paper_spread(
     for scenario in SCENARIOS:
         assert f"## {scenario.title}" in report
         assert f'"{scenario.line}"' in report
+    assert "## Honesty" in report
     for character in pool[:2]:
-        assert report.count(f"| {character.name}, ") == len(SCENARIOS)
+        assert report.count(f"| {character.name}, ") == len(SCENARIOS) + 1

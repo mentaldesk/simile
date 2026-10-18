@@ -371,6 +371,36 @@ def test_each_side_lists_their_own_mannerisms_as_verbal_habits() -> None:
     assert "verbal habits" not in henriettas
 
 
+def test_only_a_side_with_low_scores_gets_direction_told_about_them() -> None:
+    assert (HENRIETTA.values[H], HENRIETTA.values[CoreValue.COMPASSION]) == (0.13, 0.16)
+    kofi = Character(KOFI, meet(KOFI, "henrietta"))
+    henrietta = Character(HENRIETTA, meet(HENRIETTA, "kofi"))
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
+
+    _, kofis, henriettas, _ = prompt.split("\n\n## ")
+    assert (
+        f"Interests: {', '.join(HENRIETTA.interests)}.\n\n"
+        "Henrietta will lie easily, without guilt, whenever it suits them: white lies, convenient "
+        "excuses, keeping back whatever they'd rather not say. Henrietta won't soften bad news, "
+        "will be short with complaints, and will put their own interests first.\n\n"
+    ) in henriettas
+    assert f"Interests: {', '.join(KOFI.interests)}.\n\nKofi likes Henrietta" in kofis
+
+
+def test_the_system_prompt_lets_them_say_no_within_the_games_tone() -> None:
+    system = script_system()
+
+    assert (
+        "- Nobody agrees just to be pleasant. Saying no, being brief, or disagreeing is fine when "
+        "it's in character.\n"
+        "- Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
+        "insults. Any lie stays small and in character: about the speaker, their reasons, plans "
+        "or what they did or saw. Never make up facts about the village, its places, times or "
+        "people.\n\n"
+    ) in system
+
+
 def test_the_system_prompt_sets_the_rules_and_the_format() -> None:
     system = script_system(ConversationConfig(max_words=30))
 

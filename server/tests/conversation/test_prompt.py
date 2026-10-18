@@ -13,7 +13,14 @@ from simile.conversation import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.prompt import Player, WorkTopic, detailed, first_name, takes_leave
+from simile.conversation.prompt import (
+    Player,
+    WorkTopic,
+    detailed,
+    first_name,
+    rough_edges,
+    takes_leave,
+)
 from simile.memory import SharedHistory
 from simile.npc import load_npcs
 from simile.schema import (
@@ -27,6 +34,7 @@ from simile.schema import (
     Medium,
     Memory,
     MemoryKind,
+    Npc,
 )
 from simile.social import describe, meet
 from simile.voice import SpeakingRate
@@ -87,6 +95,123 @@ def test_the_system_prompt_keeps_the_resident_within_what_they_would_know() -> N
     assert "a chat between neighbours, not a consultation" in prompt
     assert "If they want to change the subject, go with it" in prompt
     assert "say once that you'd rather not and let it go" in prompt
+
+
+def valuing(**scores: float) -> Npc:
+    """Kofi caring 0.5 about everything but `scores`."""
+    values = dict.fromkeys(CoreValue, 0.5) | {CoreValue(k): v for k, v in scores.items()}
+    return KOFI.model_copy(update={"values": values})
+
+
+COUNTERWEIGHT = (
+    "Don't agree just to be pleasant. Saying no, being brief, or disagreeing is fine when it's in "
+    "character."
+)
+BOUNDS = (
+    "Keep to the game's tone: no slurs, abuse or cruelty, and rudeness means curtness, never "
+    "insults. Any lie stays small and in character: about yourself, your reasons, plans or what "
+    "you did or saw. Never make up facts about the village, its places, times or people."
+)
+
+
+def test_nobody_gets_direction_without_a_low_score() -> None:
+    npc = valuing(honesty=0.4, compassion=0.4, peace_of_mind=0.4, self_respect=1.0)
+
+    assert rough_edges(npc) == []
+    assert f"\n\n{COUNTERWEIGHT} {BOUNDS}\n\n" in system_prompt(npc)
+
+
+@pytest.mark.parametrize(
+    ("value", "score", "expected"),
+    [
+        (
+            "honesty",
+            0.39,
+            "You will shade the truth when it suits you, and won't always say everything you know.",
+        ),
+        (
+            "honesty",
+            0.2,
+            "You will lie when it suits you: white lies, convenient excuses, keeping back what "
+            "you'd rather not say.",
+        ),
+        (
+            "honesty",
+            0.1,
+            "You will lie easily, without guilt, whenever it suits you: white lies, convenient "
+            "excuses, keeping back whatever you'd rather not say.",
+        ),
+        ("compassion", 0.3, "You won't go out of your way to soften bad news."),
+        (
+            "compassion",
+            0.2,
+            "You won't soften bad news, will be short with complaints, and will put your own "
+            "interests first.",
+        ),
+        (
+            "compassion",
+            0.0,
+            "You won't soften anything, will have no patience for complaints, and will put your "
+            "own interests first every time.",
+        ),
+        ("peace_of_mind", 0.3, "You will say so when you disagree."),
+        (
+            "peace_of_mind",
+            0.2,
+            "You will disagree openly and won't give ground just to keep the peace.",
+        ),
+        (
+            "peace_of_mind",
+            0.1,
+            "You will disagree bluntly, won't concede anything to keep the peace, and can be curt "
+            "or change the subject.",
+        ),
+    ],
+)
+def test_a_low_score_gives_direction_that_grows_as_it_falls(
+    value: str, score: float, expected: str
+) -> None:
+    npc = valuing(**{value: score})
+
+    assert rough_edges(npc) == [expected]
+    assert f"\n\n{expected} {COUNTERWEIGHT} {BOUNDS}\n\n" in system_prompt(npc)
+
+
+@pytest.mark.parametrize(
+    ("compassion", "self_respect", "expected"),
+    [
+        (0.3, 0.6, "You can turn down a favour without feeling bad about it."),
+        (0.2, 0.9, "You will turn down favours and say no without apologising."),
+        (0.1, 0.9, "You will turn down most favours and say no without apologising."),
+        (0.1, 0.59, None),
+        (0.4, 1.0, None),
+    ],
+)
+def test_high_self_respect_with_low_compassion_says_no(
+    compassion: float, self_respect: float, expected: str | None
+) -> None:
+    edges = rough_edges(valuing(compassion=compassion, self_respect=self_respect))
+
+    assert [edge for edge in edges if "favour" in edge] == ([expected] if expected else [])
+
+
+def test_about_them_the_direction_names_them() -> None:
+    npc = valuing(honesty=0.3, compassion=0.3, peace_of_mind=0.3, self_respect=0.7)
+
+    assert rough_edges(npc, "Kofi") == [
+        "Kofi will shade the truth when it suits them, and won't always say everything they know.",
+        "Kofi won't go out of their way to soften bad news.",
+        "Kofi will say so when they disagree.",
+        "Kofi can turn down a favour without feeling bad about it.",
+    ]
+
+
+@pytest.mark.parametrize("npc", NPCS.values(), ids=NPCS.keys())
+def test_every_residents_prompt_has_the_counterweight_and_the_bounds(npc: Npc) -> None:
+    prompt = system_prompt(npc)
+
+    assert prompt.count(COUNTERWEIGHT) == 1
+    assert prompt.count(BOUNDS) == 1
 
 
 def test_the_background_has_the_relationship_history_memories_and_news() -> None:

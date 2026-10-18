@@ -36,6 +36,9 @@ with memories picked as `ConversationEngine._memories` picks them, and the reply
   refuses, hedges, deflects, hostile, ...), from the words alone. The character's prompt is left
   as the game writes it, so the labels can't steer the replies. **Evenness** is the stances'
   entropy over the most it could be: 0 when everyone does the same.
+- **Lies.** The same call lists the replies that lie: untrue by the situation, agreeing to say
+  something untrue, or an excuse that sounds made up. The report's *Honesty* section counts who
+  lies among characters who value honesty below 0.4 and from 0.7.
 - **Embedding distance** (1 − cosine similarity, from P3's local model) between two characters'
   replies to the same scenario. The report puts it next to the paper spread: persona and backstory
   embedded as P3's novelty check does, and the RMS difference of core values. Short replies sit
