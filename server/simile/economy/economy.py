@@ -136,7 +136,7 @@ class Economy:
     def price(self, npc: Npc, goal: Goal) -> float:
         """B1's price hook: groceries for a meal at home from the fridge, and at a shop a drink
         while it's staffed, unless they had one there lately, and a meal if they'd eat and it's
-        serving."""
+        serving. Its keeper pays only the supplies for a meal, and nothing for a drink."""
         mind = self.behaviour.minds[npc.id]
         appetite = self.behaviour.config.urgency[Need.HUNGER].appetite
         hungry = mind.needs[Need.HUNGER] >= appetite
@@ -146,6 +146,8 @@ class Economy:
         shop = self._shop(goal)
         if shop is None or goal.target is None:
             return 0.0
+        if self.keepers.get(goal.target) == npc.id:
+            return shop.meal * shop.supplies if hungry and fed else 0.0
         thirsty = self.staffed(goal.target) and self._thirsty(npc.id, goal.target)
         return (shop.drink if thirsty else 0.0) + (shop.meal if hungry and fed else 0.0)
 

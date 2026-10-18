@@ -232,3 +232,14 @@ def test_a_batch_restored_mid_shift_is_not_cooked_again() -> None:
     assert town.economy.cooked == []
     assert town.economy.batches["noodle_bar"].left == 2
     assert town.economy.fridges["house_2"] == stocked("house_2", ECONOMY)
+
+
+def test_a_keeper_eating_at_their_own_shop_pays_only_for_the_supplies() -> None:
+    town = Town([cook()], hour=12)
+    at_work(town)
+    shop = ECONOMY.shops["noodle_bar"]
+    town.behaviour.minds["cook"].needs[Need.HUNGER] = 0.8
+
+    assert town.economy.price(town.behaviour.npcs["cook"], NOODLES) == pytest.approx(
+        shop.meal * shop.supplies
+    )

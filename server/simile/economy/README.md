@@ -45,7 +45,7 @@ got to work, how long they worked during it and straight after, and so whether t
   through their talks and breaks, and for as long as they're still working after it. It serves
   only then, so if the cook skips a shift the noodle bar is shut, and a late cook opens late. The
   café's barista is at work while the café holds them at the till (see `simile.cafe`).
-- **Batches.** The noodle bar's keeper cooks a `batch` (4 meals) on arriving for each shift. Each
+- **Batches.** The noodle bar's keeper cooks a `batch` (6 meals) on arriving for each shift. Each
   meal started there takes one. Once it sells out, the bar feeds nobody for the rest of the
   shift, and what's left when it shuts goes off. Batches cost nothing extra: supplies are still a
   share of what it takes. The Daily Grind has no batches.
@@ -66,7 +66,7 @@ got to work, how long they worked during it and straight after, and so whether t
 | Hook | |
 |---|---|
 | `money(npc)` | What they hold now |
-| `price(npc, goal)` | Groceries for a meal at home while the fridge has one. At a shop that's staffed its drink, unless they had one there lately, plus its meal if they're hungry enough to eat and it's serving (B1's `supply` for hunger) |
+| `price(npc, goal)` | Groceries for a meal at home while the fridge has one. At a shop that's staffed its drink, unless they had one there lately, plus its meal if they're hungry enough to eat and it's serving (B1's `supply` for hunger). A keeper at their own shop pays only the supplies for a meal |
 | `earnings(npc, goal)` | What an hour at work pays: their wage, or for a shopkeeper `takings` (10), what an hour running the shop is reckoned to bring in |
 | `supply(goal, need)` | For hunger: 1 at a shop that's staffed and hasn't sold out, and at home while the fridge has a meal, otherwise 0. 1 for every other need and place |
 
@@ -81,9 +81,9 @@ and is more likely to stay on after one. So money drifts towards where spending 
 rather than running away. `simile behaviour simulate` reports each resident's money every 12 sim
 hours, every shift, and the ledger.
 
-A shopkeeper earns only while their shop is staffed. The noodle bar sells about two meals and four
-drinks a shift, which leaves Odalys short of her rent and spending, so she runs down, faster in
-weeks she skips, and levels off as being short makes her skip less and spend less. Over a
+A shopkeeper earns only while their shop is staffed. The noodle bar sells two or three meals and
+four or five drinks a shift, which leaves Odalys short of her rent and spending, so she runs down,
+faster in weeks she skips, and levels off as being short makes her skip less and spend less. Over a
 fortnight Kofi, who skips and spends freely, can dip below nothing, as he could before E4.
 
 Every constant is in `EconomyConfig`.

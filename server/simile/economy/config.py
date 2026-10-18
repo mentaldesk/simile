@@ -33,7 +33,7 @@ class Shop(BaseModel):
 
 SHOPS: dict[Id, Shop] = {
     "coffee_shop": Shop(drink=3.0, meal=5.0, supplies=0.6),
-    "noodle_bar": Shop(drink=3.0, meal=10.0, supplies=0.3, batch=4),
+    "noodle_bar": Shop(drink=3.0, meal=10.0, supplies=0.3, batch=6),
 }
 
 
