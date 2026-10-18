@@ -18,7 +18,7 @@ from .conftest import NOW, mural, mural_reply, reply, svg
 runner = CliRunner()
 
 RIVER = Memory(
-    owner="tobias",
+    owner="desmond",
     kind=MemoryKind.NEWS,
     content='I read "Dredging the river to start in spring" on the news terminal. About time.',
     salience=0.8,
@@ -45,31 +45,34 @@ def test_writes_a_piece_at_the_saved_time_and_stores_it(
         "simile.llm.lifespan.CannedProvider", lambda: FakeProvider([reply(inspired_by=[1])])
     )
 
-    result = runner.invoke(create_cli(), ["works", "make", "tobias"])
+    result = runner.invoke(create_cli(), ["works", "make", "desmond"])
 
     assert result.exit_code == 0, result.output
     with WorksStore(database) as works:
-        [made] = works.by("tobias")
+        [made] = works.by("desmond")
     assert made.created == NOW
     assert made.inspired_by == ["news-1"]
     assert result.output.startswith(
         f"On their mind (* inspired it; valence, salience):\n* +0.6 0.8  {RIVER.content}\n\n"
     )
-    assert '"The Footbridge", plain verse about the river, by Tobias Fallon\n\n' in result.output
+    assert (
+        '"The Footbridge", plain tenants\' rights guides and stories, by Desmond Puna\n\n'
+        in result.output
+    )
     assert "Statement: Things last when people look after them.\n" in result.output
     assert "Values: tradition 0.8, responsibility 0.8, " in result.output
     assert result.output.endswith(f"Stored as {made.id}.\n")
     with MemoryStore(database) as memory:
-        assert [m.work_id for m in memory.recall("tobias", NOW, kind=MemoryKind.WORK)] == [made.id]
+        assert [m.work_id for m in memory.recall("desmond", NOW, kind=MemoryKind.WORK)] == [made.id]
 
 
 def test_says_when_the_model_couldnt_write_a_piece(database: Path) -> None:
-    result = runner.invoke(create_cli(), ["works", "make", "tobias"])
+    result = runner.invoke(create_cli(), ["works", "make", "desmond"])
 
     assert result.exit_code == 1
-    assert "Tobias Fallon couldn't write a piece." in result.output
+    assert "Desmond Puna couldn't write a piece." in result.output
     with WorksStore(database) as works:
-        assert works.by("tobias") == []
+        assert works.by("desmond") == []
 
 
 def test_paints_a_mural_on_the_wall_they_pick_and_saves_its_picture(

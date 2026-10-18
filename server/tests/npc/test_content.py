@@ -151,9 +151,9 @@ def test_the_committed_values_and_ages_come_from_the_seed() -> None:
         assert npc.age == briefs[npc.home].age, npc.id
 
 
-def test_most_of_the_committed_cast_has_a_craft_in_either_medium() -> None:
+def test_most_of_the_committed_cast_has_a_craft_and_every_medium_is_made() -> None:
     crafts = [npc.craft for npc in housed() if npc.craft]
 
     assert len(crafts) > len(HOMES) / 2
-    assert {craft.medium for craft in crafts} == {Medium.WRITING, Medium.MURAL}
+    assert {craft.medium for craft in crafts} == set(Medium)
     assert len({craft.form for craft in crafts}) == len(crafts)

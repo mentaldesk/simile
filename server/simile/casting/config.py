@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.schema import FlagKind, HookKind, HookSide, Id, Shift, Signed, Unit, Weekday
+from simile.schema import FlagKind, HookKind, HookSide, Id, Medium, Shift, Signed, Unit, Weekday
 from simile.schema.npc import Shifts
 
 D = Weekday
@@ -222,6 +222,11 @@ class CastingConfig(BaseModel):
         "10, scaled to the cast's size.",
     )
     elder_age: int = Field(default=60, ge=0, description="Elders are older than this.")
+    crafts: tuple[Medium, ...] = Field(
+        default=(Medium.WRITING, Medium.MURAL, Medium.PAINTING),
+        description="Crafts a cast has at least one resident in, after the roles, whenever the "
+        "library has someone with it.",
+    )
     bonds: dict[HookKind, BondConfig] = BONDS
     bond_salience: Unit = Field(default=0.8, description="Of the memory each side keeps of a bond.")
     past_spacing: timedelta = Field(
