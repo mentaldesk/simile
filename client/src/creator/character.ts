@@ -21,6 +21,12 @@ export type Occupation = string;
 export type Backstory = string;
 export type Persona = string;
 export type SpeakingStyle = string;
+/**
+ * Up to 3 habits that show in how they talk, e.g. "answers a question with another question". Left out when empty.
+ *
+ * @maxItems 3
+ */
+export type Mannerisms = [] | [string] | [string, string] | [string, string, string];
 export type Interests = string[];
 /**
  * How old they were when it happened.
@@ -139,6 +145,7 @@ export interface Character {
   backstory: Backstory;
   persona: Persona;
   speaking_style: SpeakingStyle;
+  mannerisms?: Mannerisms;
   interests: Interests;
   past: Past;
   hooks: Hooks;
