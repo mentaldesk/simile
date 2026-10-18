@@ -55,8 +55,8 @@ async def create(
 
     from simile.gallery.gallery import Gallery, frames_of
     from simile.gallery.store import GalleryStore
-    from simile.llm import LLMClient
-    from simile.llm.lifespan import FAKE_ENV, CannedProvider
+    from simile.llm import FakeProvider, LLMClient
+    from simile.llm.lifespan import FAKE_ENV
     from simile.memory import MemoryStore, default_path
     from simile.persistence import WorldStore
     from simile.sim import Clock
@@ -74,7 +74,8 @@ async def create(
         clock = Clock(saved.now if saved else datetime.now(UTC))
         gallery = Gallery(frames_of(load_maps()), store, works, clock, npcs)
         hung: list[FrameKey] = []
-        llm = LLMClient(CannedProvider() if os.environ.get(FAKE_ENV) == "fake" else None)
+        fake = os.environ.get(FAKE_ENV) == "fake"
+        llm = LLMClient(FakeProvider(default=stand_in(npc)) if fake else None)
 
         def hang(work: "Work", svg: str, png: bytes) -> None:
             hung.append(gallery.hang(work, svg, png))
@@ -88,3 +89,36 @@ async def create(
             return memories, work, hung[0] if hung else None, picture
         finally:
             await llm.aclose()
+
+
+def stand_in(npc: "Npc") -> str:
+    """With `SIMILE_LLM=fake`, a plain painting in the artist's own colour, so the checks, the
+    renderer and the hanging all run without Claude."""
+    import zlib
+
+    from simile.schema import CoreValue
+    from simile.works.maker import PaintingReply
+    from simile.works.render import painting_canvas
+
+    width, height = painting_canvas()
+    hue = zlib.crc32(npc.id.encode()) % 360
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}">'
+        f'<rect width="{width}" height="{height}" fill="hsl({hue}, 35%, 28%)"/>'
+        f'<rect x="60" y="50" width="{width - 120}" height="{height * 0.45:.0f}" '
+        f'fill="hsl({(hue + 30) % 360}, 55%, 55%)"/>'
+        f'<rect x="60" y="{height * 0.55:.0f}" width="{width - 120}" height="{height * 0.35:.0f}" '
+        f'fill="hsl({(hue + 180) % 360}, 40%, 45%)"/></svg>'
+    )
+    return PaintingReply.model_validate(
+        {
+            "title": "Stand-in",
+            "description": "Two bands of colour on a dark ground.",
+            "statement": "A stand-in, painted without Claude.",
+            "svg": svg,
+            "inspired_by": [],
+            "tags": ["stand-in"],
+            "sentiment": 5.0,
+            **{value.value: 0.0 for value in CoreValue},
+        }
+    ).model_dump_json()

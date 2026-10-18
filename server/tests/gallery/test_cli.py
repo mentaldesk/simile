@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,6 @@ from typer.testing import CliRunner
 
 from simile.cli import create_cli
 from simile.gallery import GalleryStore
-from simile.llm import FakeProvider
 from simile.memory import MemoryStore
 from simile.persistence import SavedWorld, WorldStore
 from simile.schema import Medium
@@ -23,9 +23,7 @@ def test_paints_a_canvas_and_hangs_it(
 ) -> None:
     with MemoryStore(database) as memory, WorldStore(memory) as world:
         world.save(SavedWorld(now=NOW, npcs={}))
-    monkeypatch.setattr(
-        "simile.llm.lifespan.CannedProvider", lambda: FakeProvider([painting_reply()])
-    )
+    monkeypatch.setattr("simile.gallery.cli.stand_in", lambda npc: painting_reply())
     out = tmp_path / "harbour.png"
 
     result = runner.invoke(create_cli(), ["gallery", "paint", "kofi", "--png", str(out)])
@@ -41,6 +39,17 @@ def test_paints_a_canvas_and_hangs_it(
     )
     assert result.output.endswith(f"Hung in {next(iter(hanging))[1]} on gallery.\n")
     assert Image.open(out).size == painting_canvas()
+
+
+def test_without_claude_it_hangs_a_stand_in_drawn_by_the_real_renderer(database: Path) -> None:
+    result = runner.invoke(create_cli(), ["gallery", "paint", "odalys"])
+
+    assert result.exit_code == 0, result.output
+    with WorksStore(database) as works, GalleryStore(database) as store:
+        [made] = works.by("odalys")
+        picture = Image.open(io.BytesIO(store.picture(made.id) or b""))
+    assert (made.title, made.statement) == ("Stand-in", "A stand-in, painted without Claude.")
+    assert picture.size == painting_canvas()
 
 
 @pytest.mark.usefixtures("database")

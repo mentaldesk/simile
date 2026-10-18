@@ -52,3 +52,6 @@ cd server
 uv run simile gallery paint kofi   # a canvas from what's on his mind, hung in $SIMILE_DB
 uv run simile gallery paint kofi --png kofi.png   # and the picture saved too
 ```
+
+With `SIMILE_LLM=fake` it hangs a plain "Stand-in" in the artist's colour instead, through the same
+checks, renderer and hanging, so you can try the gallery without Claude.
