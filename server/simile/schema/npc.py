@@ -41,6 +41,17 @@ def _every_value(values: dict[CoreValue, float]) -> dict[CoreValue, float]:
 
 EveryValue = Annotated[dict[CoreValue, Unit], AfterValidator(_every_value)]
 
+Mannerism = Annotated[str, Field(min_length=1, max_length=120)]
+Mannerisms = Annotated[
+    list[Mannerism],
+    Field(
+        max_length=3,
+        exclude_if=lambda mannerisms: not mannerisms,
+        description='Up to 3 habits that show in how they talk, e.g. "answers a question with '
+        'another question". Left out when empty.',
+    ),
+]
+
 
 class HairStyle(StrEnum):
     BALD = "bald"
@@ -123,6 +134,7 @@ class Npc(Model):
     backstory: str
     persona: str
     speaking_style: str
+    mannerisms: Mannerisms = []
     interests: list[str]
     appearance: Appearance
     voice: Voice

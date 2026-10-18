@@ -38,6 +38,10 @@
   "backstory": "Cathal grew up above his uncle's pub in a small town in the west of Ireland and left school at sixteen to plaster ceilings with him. He came to the village at twenty-nine to move in with a partner, and stayed for the work and the sea swimming after it ended two years later. He sings in the pub most Fridays and owes a friend more money than he likes to think about.",
   "persona": "Cathal is a warm, loud, generous man who makes friends in a queue and forgets their birthdays. He takes nothing seriously for long except a level wall. He bristles at being told what to do and drifts away from anything that feels like a duty.",
   "speaking_style": "Fast and musical, with long stories that wander off and come back. He calls everyone 'boss', swears fondly, and ends a serious point with a joke so nobody has to sit with it.",
+  "mannerisms": [
+    "tells long stories that wander off and come back",
+    "ends a serious point with a joke"
+  ],
   "interests": [
     "sea swimming",
     "old ballads",
