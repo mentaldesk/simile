@@ -82,6 +82,7 @@ import {
 } from '../world/iso/murals';
 import { galleryFrames, IsoPaintings, isFrame, type PaintingStage } from '../world/iso/paintings';
 import { IsoCharacters, pixelArt } from './iso-characters';
+import { IsoCritters } from './iso-critters';
 
 export const ISO_SCENE = 'iso-world';
 
@@ -154,6 +155,7 @@ export class IsoScene extends Phaser.Scene {
   private residentLights?: Record<SceneSet, SetLight>;
   private charactersLoad?: Promise<IsoCharacters>;
   private characters?: IsoCharacters;
+  private critters?: IsoCritters;
   private murals?: IsoMurals<ImageBitmap>;
   private readonly paintings = new Map<string, IsoPaintings<ImageBitmap>>();
   private readonly seats = new Map<string, Map<string, Seat>>();
@@ -255,6 +257,7 @@ export class IsoScene extends Phaser.Scene {
       seatAt: (position) => this.seatAt(map, position),
       talking: (id) => this.talkers.talking(id),
     });
+    this.critters?.draw(dt, map === VILLAGE ? lit : undefined);
     this.drawMurals(dt, villageLayers, map === VILLAGE ? geometry : undefined);
     this.drawPaintings(dt, map, (feet) => residentLight(lit, feet).tint, geometry);
     this.follow(figure, geometry);
@@ -346,6 +349,7 @@ export class IsoScene extends Phaser.Scene {
     const scenery = await this.loadScenery(manifest, set, 'iso/', assets.imageUrl);
     this.loaded.set(set, scenery);
     if (!this.geometries.has(VILLAGE)) this.geometries.set(VILLAGE, geometryOf(manifest, village));
+    this.critters ??= new IsoCritters(this, manifest);
     this.murals ??= new IsoMurals(muralWalls, manifest, assets.characterLights, {
       load: (url) => this.decode(url),
       sample: (_set, image, crop, read) => this.sampleScenery(image, crop, read),
