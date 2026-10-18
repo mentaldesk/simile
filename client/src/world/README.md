@@ -24,7 +24,8 @@ time (`characterFor`). The scenery's renders are `iso/assets.ts`'s.
 - **NPCs** follow `entity_moved`. Each position is queued and walked to at `WALKING_SPEED`, so a
   sprite moves continuously one tile behind the server when the server sends each tile as the NPC
   reaches it (W2's contract). A jump of more than 1.5 tiles snaps, and an NPC more than a few tiles
-  behind hurries, then snaps.
+  behind hurries, then snaps. Each NPC keeps the `pose` and `facing` of its latest snapshot or
+  `entity_moved`, standing facing south-east without them, for the scene to draw once it stops.
 - **The player** is the client's: it moves at `PLAYER_SPEED` and collides locally with the map's
   `collision` layer around its feet (`FOOTPRINT`), and the scene sends `player_move` at most five
   times a second. The footprint always covers the tile W2 reads the position as, `floor(p + 0.5)`,

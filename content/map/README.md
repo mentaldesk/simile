@@ -35,6 +35,7 @@ The village is 64 × 42 tiles of 16 px, orthogonal, with the `simile` tileset em
 | `murals` | Objects, one rectangle per mural wall. Empty in interiors. |
 | `doors` | Objects, one tile per door with an end on this map. |
 | `interactables` | Objects, one rectangle per thing you can use. Empty on the village. |
+| `spots` | Objects, one tile per spot, somewhere to spend a stay. |
 
 Each location object's `name` is its id, its `type` is its F2 `LocationKind`, and its rectangle is
 its `area` in pixels. Its properties are `label` (the location's `name`) and `entry_x`, `entry_y`
@@ -157,13 +158,41 @@ counter, the tiles in front of a machine, and the two floor tiles in front of a 
 | `maker_space` | `laser_cutter`, `printer_3d`, `loom`, `sewing_machine` (`machine`) |
 | `gallery` | `painting_1` … `painting_13` (`painting`), all labelled "Painting". Each frame is two tiles wide, on the upper row of a wall. |
 
+## Spots
+
+Each spot is an object on the tile someone stands or sits on to spend a stay there: its `name` is
+`<kind>-<x>-<y>`, its `type` is its kind and its rectangle is the tile. Every spot is a walkable
+tile and faces along the grid, at the thing it's for. W2 sends residents to them
+([`server/simile/world/README.md`](../../server/simile/world/README.md#spots)), and the client draws
+the figure in the spot's pose. Its properties are:
+
+| Property | |
+|---|---|
+| `facing` | `north`, `east`, `south` or `west`. |
+| `dx`, `dy` | Where the figure is drawn, in tiles from the tile's middle, if not there: on a table's chair, which stands on the table's tile, on a bench, or leaning in at a counter, desk or screen. Missing is 0. |
+| `dz` | How many metres higher the figure sits than on a chair: a bar stool's 0.25. Missing is 0. |
+
+| Kind | Where |
+|---|---|
+| `seat` | Either side of every table in the café and the noodle bar, facing it, on the noodle bar's stools, facing the counter, and off every bench in a place: towards the fountain on the square, south in the park (the bench on the north shore looks over Lotus Lake), and north towards the paintings in the gallery |
+| `bar` | The Daily Grind's counter: the two tiles at its west end, facing north, and three along the east side of the run that turns north, facing west |
+| `desk` | Both long sides of each workbench in the maker space, and the stand tiles of its machines, facing north |
+| `terminal` | The tile in front of each news terminal's screen, facing north |
+| `viewing` | Each painting's two stand tiles, facing its wall, and each mural wall's standing tile, facing the wall |
+| `standing` | Four tiles around the square's fountain and one by each of its lamps, facing the fountain |
+
+Every spot but the murals' is in a location's area. The location previews mark each spot with a
+violet dot where the figure goes and a line the way it faces.
+
 ## Loading it
 
 Server: `simile.world.map.load_map()` returns the village as a `TownMap` with `width`, `height`,
 `walkable(x, y)` (false off the map), `blocked[y][x]`, `locations` (F2 `Location`s),
-`location(id)`, `murals`, `mural(id)`, `doors` (F2 `Door`s with an end on this map) and
-`interactables` (F2 `Interactable`s). A `MuralWall` has the `id`, `x`, `y`, `width`, `face`,
-`bottom` and `top` of M1's `Wall`, and `stand`, the F2 `Tile` its painter stands on.
+`location(id)`, `murals`, `mural(id)`, `doors` (F2 `Door`s with an end on this map),
+`interactables` (F2 `Interactable`s), `spots` and `spot_at(x, y)`. A `MuralWall` has the `id`, `x`,
+`y`, `width`, `face`, `bottom` and `top` of M1's `Wall`, and `stand`, the F2 `Tile` its painter
+stands on. A `Spot` has its `id`, `kind`, `map`, `x`, `y`, `facing` (an F2 `Facing`), `dx`, `dy`
+and `dz`, its `pose`, and `seat`, where its figure is.
 `load_map(path)` reads any of the maps, and `load_maps()` returns them all by id, the village first.
 `with_every_location(maps)` is the village carrying every map's locations, as `Movement.town` has
 it. [`server/simile/world/README.md`](../../server/simile/world/README.md) covers walking between

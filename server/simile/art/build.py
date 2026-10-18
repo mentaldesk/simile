@@ -55,7 +55,7 @@ def write_character(
 ) -> list[Path]:
     image = f"{character_id}.png"
     return [
-        _save(characters.sprite_sheet(appearance, seed).to_image(), directory / image),
+        _save(characters.full_sheet(appearance, seed).to_image(), directory / image),
         _write_json(directory / f"{character_id}.json", characters.atlas(image)),
     ]
 

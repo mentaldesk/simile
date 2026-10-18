@@ -103,7 +103,21 @@ inside, so coming out is instant.
   picks one of eight facings (`facingFor`): grid east, south, west and north run along the screen's
   diagonals and use A1's three-quarter views, and the grid diagonals use its front, side and back
   views. The walk is A1's step, stand, step, stand at `WALK_FPS` for `WALKING_SPEED`, faster or
-  slower with how fast they move, and they stand on the middle frame when they stop.
+  slower with how fast they move.
+- **Keeping still** (`poses.ts`, `idle.ts`): a resident who has stopped is drawn in the pose the
+  server gives (`stillFor`), facing its way. `ISO_FACING` turns the protocol's `Facing` into A1's
+  views, and `tsc` checks it names all eight. Sitting, reading, working and looking come from W1's
+  spots, which face along the grid, so they're drawn in A1's three-quarter views, and anything else
+  is standing. On a spot, the figure is drawn at the spot's `dx`, `dy` from the tile's middle and
+  `dz` metres up, from the map's `spots` layer (`seatsOf`): on a table's chair, a bench or a bar
+  stool, or leaning in at a counter. A table or bench and its chairs are one image, so a sitter sorts
+  `SITTING_NEARER` tiles nearer the camera, in front of it.
+- **Idling** (`Idle`, tuned by `IDLE` in `tuning.ts`): anyone still, the player too, shifts their
+  weight for `shiftFor` seconds every `shiftEvery`, on A1's `-shift` frames. A resident standing
+  turns to whoever within `turnTiles` is talking, the nearest of them, from each `line` until it
+  should have been said (`Talkers`), and otherwise now and then glances at whoever is nearest for a
+  few seconds. Posed residents keep facing their table, screen or painting. It's a few timers and a
+  scan of the residents on the map, every frame.
 
 ## Murals
 

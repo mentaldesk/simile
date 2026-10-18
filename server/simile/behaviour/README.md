@@ -191,7 +191,7 @@ Runs memory, world, behaviour and E3's economy on a `FakeWallClock` as fast as t
 sim-day in about 15 s) and prints where everyone spent their time: minutes near others by
 Connection, places by hour, who was out at night, the share of waking time in each place, every
 meal by the hour it started and where, each need's mean, most and time at 0.9 or more, and what each
-resident with a craft made per sim-day. Then every shift (on time, late, skipped, hours and
+resident with a craft made per sim-day, and each place's share of stay time spent on a spot. Then every shift (on time, late, skipped, hours and
 overtime), each resident's money every 12 sim hours, and where the money went. The café doesn't run, so the Daily Grind feeds
 people from 07:00 to 17:00, G1's shift, if someone lives or works there, and serves a drink to
 whoever arrives then and hasn't had one in the last 90 minutes, as the café does. Conversations,

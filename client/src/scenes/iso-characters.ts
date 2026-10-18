@@ -9,18 +9,22 @@ import {
   dropShadow,
   facingFor,
   feetOf,
+  Idle,
   ISO_FACINGS,
   isoWalkFrames,
   PIXEL_SCALE,
   pixelFrame,
   SHADOW_DEPTH,
   standingFrame,
+  stillFor,
   tintColour,
   walkTimeScale,
   type Figure,
   type IsoFacing,
   type IsoTile,
   type ResidentLight,
+  type Seat,
+  type Still,
   type SceneSet,
   type SetLight,
   type ShadowMask,
@@ -40,6 +44,15 @@ export type Puppet = {
   sprite: Phaser.GameObjects.Sprite;
   /** After a step on the map, at `speed` tiles a second. */
   pose(step: Point, walking: boolean, speed: number): void;
+  /** Still, on one of A1's frames, facing that way. */
+  hold(frame: string, facing: IsoFacing): void;
+  readonly facing: IsoFacing;
+};
+
+/** What keeping still depends on: where seats are and who's talking. */
+export type Surroundings = {
+  seatAt(position: Position): Seat | undefined;
+  talking(id: string): boolean;
 };
 
 type Character = {
@@ -47,6 +60,7 @@ type Character = {
   contact: Phaser.GameObjects.Image;
   shadows: Map<SceneSet, Phaser.GameObjects.Image>;
   last: Position;
+  idle: Idle;
 };
 
 const CONTACT_KEY = 'iso-shadow/contact';
@@ -93,18 +107,24 @@ export class IsoCharacters {
     figureAt: (position: Position) => Figure,
     layers: readonly Lit[],
     lightAt: (feet: Position) => ResidentLight,
+    surroundings: Surroundings,
   ): void {
+    const positions = new Map([...bodies].map(([id, { position }]) => [id, position]));
     for (const [id, body] of bodies) {
       const character = this.characters.get(id) ?? this.add(id, body.position);
       const { x, y } = body.position;
       const step = { x: x - character.last.x, y: y - character.last.y };
       character.last = { x, y };
-      character.puppet.pose(step, body.walking, Math.hypot(step.x, step.y) / dt);
+      const still = this.keepStill(id, body, character, dt, positions, surroundings);
+      if (!still) character.puppet.pose(step, true, Math.hypot(step.x, step.y) / dt);
 
-      const figure = figureAt(body.position);
-      const light = lightAt(feetOf(body.position));
+      const at = still ? { x: x + still.seat.x, y: y + still.seat.y } : body.position;
+      const figure = figureAt(at);
+      const depth = still?.nearer ? figureAt({ x: at.x + still.nearer, y: at.y + still.nearer }).depth : figure.depth;
+      const light = lightAt(feetOf(at));
+      const lift = (still?.seat.z ?? 0) * this.tile.px_per_metre_up;
       const { sprite } = character.puppet;
-      sprite.setPosition(figure.x, figure.bottom).setDepth(figure.depth).setTint(tintColour(light.tint));
+      sprite.setPosition(figure.x, figure.bottom - lift).setDepth(depth).setTint(tintColour(light.tint));
       character.contact.setPosition(figure.x, figure.bottom);
       this.shade(character, figure, layers, light.shadows);
     }
@@ -122,6 +142,28 @@ export class IsoCharacters {
     if (!character) return;
     character.last = { ...position };
     character.puppet.pose(facing, false, 0);
+  }
+
+  /** Still: their pose or idling, and where they're drawn. Undefined while they walk. */
+  private keepStill(
+    id: string,
+    body: Body,
+    { puppet, idle }: Character,
+    dt: number,
+    positions: ReadonlyMap<string, Position>,
+    surroundings: Surroundings,
+  ): Still | undefined {
+    if (body.walking) {
+      idle.reset();
+      return undefined;
+    }
+    idle.update(dt);
+    const server = body.pose !== undefined;
+    const toward = server ? idle.towards(id, body.position, positions, surroundings.talking) : undefined;
+    const seat = server ? surroundings.seatAt(body.position) : undefined;
+    const still = stillFor(body, puppet.facing, idle.shifted, seat, toward);
+    puppet.hold(still.frame, still.facing);
+    return still;
   }
 
   /** `box` is `figureBox`: the frame down to the feet. */
@@ -155,6 +197,7 @@ export class IsoCharacters {
       contact: this.shadowImage(CONTACT_KEY).setAlpha(CONTACT_ALPHA),
       shadows: new Map(),
       last: { ...position },
+      idle: new Idle(),
     };
     this.characters.set(id, character);
     return character;
@@ -229,7 +272,19 @@ export function pixelArt(scale = PIXEL_SCALE): CharacterArt {
       }
       if (speed > 0) anims.timeScale = Phaser.Math.Clamp(walkTimeScale(speed), MIN_TIME_SCALE, MAX_TIME_SCALE);
     };
-    return { sprite, pose };
+    const hold = (frame: string, next: IsoFacing) => {
+      facing = next;
+      if (sprite.anims.isPlaying) sprite.stop();
+      if (sprite.frame.name !== frame) sprite.setFrame(frame);
+    };
+    return {
+      sprite,
+      pose,
+      hold,
+      get facing() {
+        return facing;
+      },
+    };
   };
 
   return { frame, load, add };

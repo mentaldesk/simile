@@ -337,10 +337,712 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 7,
+          "name": "desk-2-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 8,
+          "name": "desk-3-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 9,
+          "name": "desk-6-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 96,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 10,
+          "name": "desk-10-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 11,
+          "name": "desk-11-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 12,
+          "name": "desk-15-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 240,
+          "y": 48
+        },
+        {
+          "height": 16,
+          "id": 13,
+          "name": "desk-3-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 14,
+          "name": "desk-3-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 15,
+          "name": "desk-4-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 16,
+          "name": "desk-4-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 17,
+          "name": "desk-3-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 18,
+          "name": "desk-3-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 19,
+          "name": "desk-4-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 20,
+          "name": "desk-4-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 21,
+          "name": "desk-8-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 22,
+          "name": "desk-8-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 23,
+          "name": "desk-9-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 24,
+          "name": "desk-9-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 25,
+          "name": "desk-8-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 26,
+          "name": "desk-8-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 27,
+          "name": "desk-9-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 28,
+          "name": "desk-9-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 29,
+          "name": "desk-13-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 30,
+          "name": "desk-13-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 31,
+          "name": "desk-14-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 32,
+          "name": "desk-14-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 112
+        },
+        {
+          "height": 16,
+          "id": 33,
+          "name": "desk-13-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 34,
+          "name": "desk-13-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 35,
+          "name": "desk-14-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "south"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": 0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 128
+        },
+        {
+          "height": 16,
+          "id": 36,
+          "name": "desk-14-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            },
+            {
+              "name": "dy",
+              "type": "float",
+              "value": -0.2
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 160
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 10,
-  "nextobjectid": 7,
+  "nextlayerid": 11,
+  "nextobjectid": 37,
   "orientation": "orthogonal",
   "renderorder": "right-down",
   "tiledversion": "1.11.2",
