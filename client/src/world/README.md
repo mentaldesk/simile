@@ -16,9 +16,8 @@ Arrow keys or WASD move the player in screen directions, so up is north-west on 
 bundled into the build and new NPC sprites show up without code changes. Each interior map embeds
 the tileset, about 120 KB, so it's bundled as a file of its own and fetched by `loadMap(id)` when
 the scene first needs it. `maps` has the village and every interior loaded so far, and `mapIds`
-every map's id. An NPC without its own
-atlas gets one of the `sample_*` sprites, the same one every time (`characterFor`). The scenery's
-renders are `iso/assets.ts`'s.
+every map's id. An NPC without its own atlas gets one of the `sample_*` sprites, the same one every
+time (`characterFor`). The scenery's renders are `iso/assets.ts`'s.
 
 ## Movement
 
