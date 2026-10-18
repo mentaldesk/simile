@@ -118,7 +118,7 @@ def test_the_whole_server_fetches_nothing_with_the_tests_settings(
     feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     opened: list[object] = []
-    monkeypatch.setattr("simile.news.feed.urlopen", lambda *args, **_: opened.append(args))
+    monkeypatch.setattr("simile.news.feed.build_opener", lambda *args: opened.append(args))
     app = create_app()
 
     with TestClient(app):

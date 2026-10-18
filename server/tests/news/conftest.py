@@ -1,4 +1,5 @@
 import threading
+import time
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -13,12 +14,15 @@ FIXTURE = FIXTURES / "bigthink.xml"
 
 class FeedServer(ThreadingHTTPServer):
     """Serves saved feeds on localhost, with an ETag, and records each request's path and
-    headers. `url` is the saved Big Think feed's."""
+    headers. `url` is the saved Big Think feed's. A path in `redirects` redirects, and one in
+    `drips` sends its feed 256 bytes at a time, that many seconds apart, with no length."""
 
     def __init__(self, xml: bytes) -> None:
         super().__init__(("127.0.0.1", 0), FeedHandler)
         self.feeds = {"/feed": xml}
         self.errors: dict[str, int] = {}
+        self.redirects: dict[str, str] = {}
+        self.drips: dict[str, float] = {}
         self.etag = '"v1"'
         self.modified = "Wed, 15 Sep 2021 20:05:26 GMT"
         self.requests: list[dict[str, str]] = []
@@ -47,7 +51,21 @@ class FeedHandler(BaseHTTPRequestHandler):
         self.server.paths.append(self.path)
         self.server.gate.wait(5)
         xml = self.server.feeds.get(self.path)
-        if xml is None:
+        if self.path in self.server.redirects:
+            self.send_response(302)
+            self.send_header("Location", self.server.redirects[self.path])
+            self.end_headers()
+        elif self.path in self.server.drips and xml is not None:
+            self.send_response(200)
+            self.end_headers()
+            for start in range(0, len(xml), 256):
+                try:
+                    self.wfile.write(xml[start : start + 256])
+                    self.wfile.flush()
+                except OSError:
+                    return
+                time.sleep(self.server.drips[self.path])
+        elif xml is None:
             self.send_error(404)
         elif self.path in self.server.errors:
             self.send_error(self.server.errors[self.path])
@@ -80,6 +98,13 @@ def feed_server(feed_xml: bytes) -> Iterator[FeedServer]:
     yield server
     server.shutdown()
     server.server_close()
+
+
+@pytest.fixture(autouse=True)
+def feeds_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    path = tmp_path / "data" / "feeds.json"
+    monkeypatch.setenv("SIMILE_FEEDS_FILE", str(path))
+    return path
 
 
 @pytest.fixture

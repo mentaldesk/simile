@@ -6,8 +6,8 @@ from dataclasses import dataclass, replace
 from datetime import timedelta
 
 from simile.news.config import DEFAULT_CONFIG, NewsConfig
-from simile.news.feed import Feed, Fetched, fetch
-from simile.news.feed import feeds as configured_feeds
+from simile.news.feed import Feed, FeedRefused, Fetched, fetch
+from simile.news.feed_list import FeedList
 from simile.news.store import NewsStore
 from simile.schema import NewsItem
 
@@ -76,12 +76,14 @@ async def refresh_all(
 
 class NewsRefresher:
     """Refreshes each feed every `interval` of sim time, but no sooner than `min_gap` of real time
-    after it was last checked, even by an earlier run."""
+    after it was last checked, even by an earlier run. `feeds` can be a function, asked every
+    tick, so a feed added or switched on is refreshed without a restart. By default it's the
+    saved list's."""
 
     def __init__(
         self,
         store: NewsStore,
-        feeds: Sequence[Feed] | None = None,
+        feeds: Sequence[Feed] | Callable[[], Sequence[Feed]] | None = None,
         *,
         interval: timedelta = INTERVAL,
         min_gap: timedelta = MIN_GAP,
@@ -91,24 +93,43 @@ class NewsRefresher:
         config: NewsConfig = DEFAULT_CONFIG,
     ) -> None:
         self.store = store
-        self.feeds = tuple(feeds) if feeds is not None else configured_feeds()
+        if feeds is None:
+            feeds = FeedList().current
+        if callable(feeds):
+            self.source = feeds
+        else:
+            chosen = tuple(feeds)
+            self.source = lambda: chosen
         self.interval = interval.total_seconds()
         self.min_gap = min_gap.total_seconds()
         self.limit = limit
         self.fetch = fetch
         self.config = config
         self.now = now
-        self.since = {feed.url: self.interval for feed in self.feeds}
-        self.checked = {feed.url: store.feed(feed.url).checked for feed in self.feeds}
+        self.since: dict[str, float] = {}
+        self.checked: dict[str, float | None] = {}
         self.task: asyncio.Task[None] | None = None
+        self._track(self.feeds)
+
+    @property
+    def feeds(self) -> tuple[Feed, ...]:
+        return tuple(self.source())
+
+    def _track(self, feeds: Sequence[Feed]) -> None:
+        for feed in feeds:
+            if feed.url not in self.since:
+                self.since[feed.url] = self.interval
+                self.checked[feed.url] = self.store.feed(feed.url).checked
 
     def tick(self, dt: float) -> None:
+        feeds = self.feeds
+        self._track(feeds)
         for url in self.since:
             self.since[url] += dt
         if self.task is not None:
             return
         now = self.now()
-        due = [feed for feed in self.feeds if self._due(feed.url, now)]
+        due = [feed for feed in feeds if self._due(feed.url, now)]
         if not due:
             return
         for feed in due:
@@ -128,7 +149,7 @@ class NewsRefresher:
                 self.store, feeds, fetch=self.fetch, at=at, limit=self.limit, config=self.config
             )
             for feed, result in zip(feeds, results, strict=True):
-                if isinstance(result, OSError):
+                if isinstance(result, OSError | FeedRefused):
                     logger.warning(f"Couldn't refresh the news from {feed.url}: {result}")
                 elif isinstance(result, BaseException):
                     logger.warning(f"Couldn't refresh the news from {feed.url}", exc_info=result)

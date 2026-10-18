@@ -47,11 +47,34 @@ export type LibraryCharacter = {
   source: 'premade' | 'player';
 };
 
+export type NewsFeed = { url: string; name: string; on: boolean; checked: number | null };
+
+export type NewsFeeds = {
+  feeds: NewsFeed[];
+  defaults: boolean;
+  override: string[] | null;
+  fetching: boolean;
+  max: number;
+  calls_per_feed: number;
+};
+
+export type CheckedFeed = {
+  url: string;
+  title: string;
+  latest: { title: string; published: string } | null;
+};
+
 export interface MenuApi {
   worlds(): Promise<Worlds>;
   characters(): Promise<LibraryCharacter[]>;
   draw(asked: NewWorld): Promise<string[]>;
   create(asked: NewWorld): Promise<MadeWorld>;
+  feeds(): Promise<NewsFeeds>;
+  checkFeed(url: string): Promise<CheckedFeed>;
+  addFeed(url: string): Promise<NewsFeeds>;
+  switchFeed(url: string, on: boolean): Promise<NewsFeeds>;
+  removeFeed(url: string): Promise<NewsFeeds>;
+  resetFeeds(): Promise<NewsFeeds>;
 }
 
 export class ServerApi implements MenuApi {
@@ -75,6 +98,30 @@ export class ServerApi implements MenuApi {
 
   create(asked: NewWorld): Promise<MadeWorld> {
     return this.json('/api/worlds', asked);
+  }
+
+  feeds(): Promise<NewsFeeds> {
+    return this.json('/api/news/feeds');
+  }
+
+  checkFeed(url: string): Promise<CheckedFeed> {
+    return this.json('/api/news/feeds/check', { url });
+  }
+
+  addFeed(url: string): Promise<NewsFeeds> {
+    return this.json('/api/news/feeds', { url });
+  }
+
+  switchFeed(url: string, on: boolean): Promise<NewsFeeds> {
+    return this.json('/api/news/feeds/switch', { url, on });
+  }
+
+  removeFeed(url: string): Promise<NewsFeeds> {
+    return this.json('/api/news/feeds/remove', { url });
+  }
+
+  resetFeeds(): Promise<NewsFeeds> {
+    return this.json('/api/news/feeds/reset', {});
   }
 
   private async json<T>(url: string, body?: unknown): Promise<T> {

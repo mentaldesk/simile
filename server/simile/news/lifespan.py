@@ -6,6 +6,7 @@ from contextlib import AsyncExitStack, asynccontextmanager
 from starlette.applications import Starlette
 
 from simile.news.bundled import fall_back
+from simile.news.feed_list import feed_list_of
 from simile.news.refresh import NewsRefresher
 from simile.news.store import news_of
 from simile.sim import world_of
@@ -50,7 +51,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
                     f"No news stored yet, so the terminals list {len(fallback)} bundled articles "
                     "until the feeds' are in"
                 )
-            refresher = NewsRefresher(store)
+            refresher = NewsRefresher(store, feed_list_of(app).current)
             stack.push_async_callback(refresher.stop)
             stack.callback(world.loop.register(refresher))
         yield

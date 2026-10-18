@@ -5,8 +5,8 @@ from urllib.error import HTTPError
 
 import pytest
 
-from simile.news import FEEDS, Feed, feeds, fetch, parse
-from simile.news.feed import SUMMARY_LENGTH, USER_AGENT, plain, shorten
+from simile.news import FEEDS, Feed, FeedRefused, feeds, fetch, parse
+from simile.news.feed import SUMMARY_LENGTH, USER_AGENT, is_private, plain, read, shorten
 
 FeedServer = Any
 
@@ -106,8 +106,27 @@ def test_reads_atom_feeds_by_their_updated_date() -> None:
 
 
 def test_rejects_something_that_isnt_a_feed() -> None:
-    with pytest.raises(ValueError, match="not a feed"):
+    with pytest.raises(FeedRefused, match="That's a web page, not a feed"):
         parse(b"<html><body>Just a moment...")
+    with pytest.raises(FeedRefused, match="That isn't an RSS or Atom feed"):
+        parse(b'<?xml version="1.0"?><svg/>')
+    with pytest.raises(FeedRefused, match="That isn't an RSS or Atom feed"):
+        parse(b"")
+
+
+def test_reads_the_feeds_title(feed_xml: bytes) -> None:
+    assert read(feed_xml).title == "Big Think"
+    assert read(rss()).items == []
+
+
+def test_refuses_xml_that_declares_entities() -> None:
+    laughs = (
+        b'<?xml version="1.0"?><!DOCTYPE rss [<!ENTITY a "ha"><!ENTITY b "&a;&a;&a;&a;">]>'
+        b'<rss version="2.0"><channel><title>&b;</title></channel></rss>'
+    )
+
+    with pytest.raises(FeedRefused, match="declares XML entities"):
+        parse(laughs)
 
 
 def test_plain_text_keeps_words_whole_and_blocks_apart() -> None:
@@ -130,10 +149,11 @@ def test_shortens_at_a_word_without_a_late_sentence_end() -> None:
     assert shorten("Short.", 30) == "Short."
 
 
-def test_reads_the_six_feeds_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reads_the_six_feeds_by_default(monkeypatch: pytest.MonkeyPatch, feeds_file: Path) -> None:
     monkeypatch.delenv("SIMILE_NEWS_FEED", raising=False)
 
     assert feeds() == FEEDS
+    assert not feeds_file.exists()
     assert [feed.name for feed in FEEDS] == [
         "The Atlantic",
         "OpenAI",
@@ -180,3 +200,94 @@ def test_fetch_raises_on_a_server_error(feed_server: FeedServer) -> None:
 
     with pytest.raises(HTTPError):
         fetch(Feed(feed_server.url))
+
+
+def test_fetch_keeps_the_feeds_title(feed_server: FeedServer) -> None:
+    assert fetch(Feed(feed_server.url)).title == "Big Think"
+
+
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "ftp://example.com/feed", "data:,x"])
+def test_fetch_reads_only_http_and_https(url: str) -> None:
+    with pytest.raises(FeedRefused, match="only over http or https"):
+        fetch(Feed(url))
+
+
+def test_fetch_refuses_a_web_page(feed_server: FeedServer) -> None:
+    page = feed_server.add("/page", b"<!doctype html><html><head><title>Hi</title></head></html>")
+
+    with pytest.raises(FeedRefused, match="web page"):
+        fetch(Feed(page))
+
+
+def test_fetch_refuses_a_feed_too_big_by_its_length(
+    feed_server: FeedServer, feed_xml: bytes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("simile.news.feed.MAX_BYTES", len(feed_xml) - 1)
+
+    with pytest.raises(FeedRefused, match="too big for a news feed"):
+        fetch(Feed(feed_server.url))
+
+
+def test_fetch_stops_reading_a_feed_too_big_without_a_length(
+    feed_server: FeedServer, feed_xml: bytes, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    feed_server.drips["/feed"] = 0
+    monkeypatch.setattr("simile.news.feed.MAX_BYTES", len(feed_xml) // 2)
+
+    with pytest.raises(FeedRefused, match="too big for a news feed"):
+        fetch(Feed(feed_server.url))
+
+
+def test_fetch_gives_up_on_a_feed_that_trickles_in(
+    feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    feed_server.drips["/feed"] = 0.05
+    monkeypatch.setattr("simile.news.feed.DEADLINE", 0.2)
+
+    with pytest.raises(TimeoutError, match="took over 0.2 seconds"):
+        fetch(Feed(feed_server.url))
+
+
+def test_fetch_follows_a_redirect_on_the_same_machine(feed_server: FeedServer) -> None:
+    feed_server.redirects["/moved"] = "/feed"
+
+    fetched = fetch(Feed(feed_server.url_of("/moved")))
+
+    assert fetched.items is not None and len(fetched.items) == 5
+    assert feed_server.paths == ["/moved", "/feed"]
+
+
+def test_fetch_wont_be_redirected_to_a_file(feed_server: FeedServer) -> None:
+    feed_server.redirects["/moved"] = "file:///etc/passwd"
+
+    with pytest.raises(FeedRefused, match="redirects to file:///etc/passwd"):
+        fetch(Feed(feed_server.url_of("/moved")))
+
+
+def test_fetch_wont_be_redirected_from_the_internet_to_a_private_address(
+    feed_server: FeedServer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("simile.news.feed.is_private", lambda host: host.startswith("10."))
+    feed_server.redirects["/moved"] = "http://10.0.0.1/admin"
+
+    with pytest.raises(FeedRefused, match="redirects to http://10.0.0.1/admin"):
+        fetch(Feed(feed_server.url_of("/moved")))
+    assert feed_server.paths == ["/moved"]
+
+
+def test_fetch_follows_only_a_few_redirects(feed_server: FeedServer) -> None:
+    for hop in range(6):
+        feed_server.redirects[f"/hop{hop}"] = f"/hop{hop + 1}"
+    feed_server.redirects["/hop6"] = "/feed"
+
+    with pytest.raises(HTTPError, match="infinite loop"):
+        fetch(Feed(feed_server.url_of("/hop0")))
+
+
+@pytest.mark.parametrize(
+    ("host", "private"),
+    [("127.0.0.1", True), ("10.1.2.3", True), ("192.168.0.1", True), ("169.254.169.254", True)]
+    + [("::1", True), ("8.8.8.8", False), ("2606:4700:4700::1111", False)],
+)
+def test_knows_a_private_address(host: str, private: bool) -> None:
+    assert is_private(host) is private

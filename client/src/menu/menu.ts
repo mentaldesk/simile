@@ -7,27 +7,15 @@ import type {
   Pin,
   Resident,
 } from './api';
+import { type Child, el, plural } from './dom';
 import './menu.css';
 import { BONDS, bondLabel, NewWorldState } from './new-world';
+import { NewsFeedsScreen } from './news-feeds';
 
 export type MenuActions = {
   play(): void;
   creator?: () => void;
 };
-
-type Child = Node | string | null | undefined | false;
-
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  props: Partial<HTMLElementTagNameMap[K]> & { className?: string } = {},
-  ...children: Child[]
-): HTMLElementTagNameMap[K] {
-  const element = Object.assign(document.createElement(tag), props);
-  element.append(...children.filter((child): child is Node | string => !!child));
-  return element;
-}
-
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 const continueHint = (world: CurrentWorld) =>
   `${world.default ? world.name : `World ${world.name}`} · ${plural(world.residents.length, 'resident')}`;
@@ -66,6 +54,9 @@ export class Menu {
         () => characters?.(),
         !characters,
       ),
+      this.item('News feeds', el('small', {}, 'Choose what the village reads'), () =>
+        this.newsFeeds(),
+      ),
     ];
     this.show(
       el(
@@ -91,23 +82,32 @@ export class Menu {
       ]);
       new NewWorldScreen(this, this.api, new NewWorldState(houses), characters);
     } catch (error) {
-      this.show(
-        el(
-          'div',
-          { className: 'menu-screen' },
-          el(
-            'p',
-            { className: 'menu-error' },
-            `Couldn't open the library: ${(error as Error).message}`,
-          ),
-          el(
-            'footer',
-            {},
-            this.button('Back', () => this.title()),
-          ),
-        ),
-      );
+      this.failed(`Couldn't open the library: ${(error as Error).message}`);
     }
+  }
+
+  async newsFeeds(): Promise<void> {
+    this.show(el('div', { className: 'menu-screen' }, el('p', {}, 'Asking the server…')));
+    try {
+      new NewsFeedsScreen(this, this.api, await this.api.feeds());
+    } catch (error) {
+      this.failed(`Couldn't list the feeds: ${(error as Error).message}`);
+    }
+  }
+
+  private failed(reason: string): void {
+    this.show(
+      el(
+        'div',
+        { className: 'menu-screen' },
+        el('p', { className: 'menu-error' }, reason),
+        el(
+          'footer',
+          {},
+          this.button('Back', () => this.title()),
+        ),
+      ),
+    );
   }
 
   ready(world: MadeWorld, names: Map<string, string>): void {

@@ -11,6 +11,12 @@ class NewsConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
+    max_feeds: int = Field(
+        default=12,
+        ge=1,
+        description="The most feeds the saved list takes. Each one switched on adds up to 10 "
+        "analysis calls when its new stories come in.",
+    )
     min_summary_words: int = Field(
         default=3,
         ge=0,
