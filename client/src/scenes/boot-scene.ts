@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
+import { MENU_SCENE } from '../menu';
 import { characters } from '../world';
-import { ISO_SCENE } from './iso-scene';
 
 const harnessOpen = () => {
   const params = new URLSearchParams(location.search);
@@ -18,6 +18,6 @@ export class BootScene extends Phaser.Scene {
 
   create(): void {
     // The dev harnesses set up their own world view and positions.
-    if (!harnessOpen()) this.scene.start(ISO_SCENE);
+    if (!harnessOpen()) this.scene.start(MENU_SCENE);
   }
 }
