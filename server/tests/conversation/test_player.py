@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from simile.behaviour import Activity, Behaviour, Goal
+from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.conversation import (
     DEFAULT_CONFIG,
     ConversationConfig,
@@ -579,6 +579,27 @@ async def test_a_bored_npc_says_goodbye_and_the_conversation_ends() -> None:
     assert cooldown == conversation.ended + timedelta(minutes=DEFAULT_CONFIG.cooldown)
 
 
+async def test_a_starving_npc_wraps_up_sooner_and_says_why() -> None:
+    prompts = []
+    for hunger in (0.3, 0.95):
+        village = Village()
+        village.behaviour.minds["ana"].needs[Need.HUNGER] = hunger
+        village.players.say("Hello!", "ana")
+        await village.run(5)
+        village.players.say("Lovely weather.", "ana")
+        await village.run(5)
+        prompts.append(village.script.prompts)
+
+    fed, starving = prompts
+    assert fed[1].endswith("Keep the conversation going: don't wrap it up or say goodbye yet.")
+    assert starving[1].endswith(
+        "You need to get something to eat. Wrap it up now with a brief, natural goodbye to "
+        "Visitor, and say why you're going."
+    )
+    assert all("\n\nRight now you're starving.\n\n" in prompt for prompt in starving)
+    assert not any("Right now" in prompt for prompt in fed)
+
+
 async def test_answering_a_goodbye_ends_it_without_another_reply() -> None:
     village = Village(["Hm. Hello. [values: tradition]", "Right, I'm off."], npcs=(BEN,))
 
@@ -996,6 +1017,23 @@ async def test_an_npc_who_dislikes_the_player_doesnt_greet_them() -> None:
     await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
 
     assert village.of(ConversationStarted) == []
+
+
+async def test_an_npc_with_an_urgent_need_doesnt_greet_the_player() -> None:
+    village = Village(
+        ["Hello! New in town? [values: connection]"],
+        npcs=(ANA,),
+        player=PlayerConfig(greet_cooldown=0),
+    )
+    village.behaviour.minds["ana"].needs[Need.BLADDER] = 0.95
+
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
+    assert village.of(ConversationStarted) == []
+
+    village.behaviour.minds["ana"].needs[Need.BLADDER] = 0.2
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    [started] = village.of(ConversationStarted)
+    assert started.conversation.participants == ["ana", PLAYER_ID]
 
 
 async def test_an_npc_who_leaves_the_player_alone_doesnt_greet_them_until_let_go() -> None:

@@ -13,7 +13,9 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   Independence and Peace of Mind against), their social need, which weighs most (someone lonely
   accepts almost anyone, someone who's just talked mostly doesn't), and what they're busy with:
   someone at a terminal or the maker space, or looking for someone else, is less keen, and someone
-  who was looking for `a` is very keen. `accept_score(a, b)` is that score. Anyone already talking
+  who was looking for `a` is very keen. Someone with an urgent need, one at or past B1's critical
+  level for it (hunger or the bladder at 0.9), loses `accept_urgent` (5), which declines even a
+  friend they were looking for. `accept_score(a, b)` is that score. Anyone already talking
   is declined, and so is anything beyond `max_conversations` (2) conversations between NPCs. The
   player's doesn't count: I1's `max_voiced` already caps how many are voiced. Requests involving
   the player go to `engine.player_request` (see below).
@@ -23,18 +25,23 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   gets a keenness from 0 to 1: `initial_engagement` (how much they like the other, and Connection),
   plus `keen_social` times their social need above or below 0.5, `keen_topics` times their topic
   interest, `keen_goal` times what they were doing's `accept_goals` score (`seeking_them` if they
-  were looking for the other), less `keen_pressing` times their most pressing need (rest, curiosity
+  were looking for the other), less `keen_pressing` times their most pressing want (rest, curiosity
   or news) over `pressing`. Topic interest is how much the values of what both sides are likely to
   bring up matter to them, from -1 to 1: B4's articles behind their news topics and the works they
   might bring up, weighted by how much each relates to each value, or for someone with neither,
   their own top three values. Someone at `leave_below` or less wants to wrap up after `min_lines`,
-  someone at 1 after `long_talk` (30), in a straight line between. Whoever wants to leave first does
-  (the one approached, on a tie), and the scene runs that many lines plus the goodbye and its
-  answer. The direction says each side's keenness in words ("keen to talk", "happy to chat",
-  "lukewarm", "would rather not talk"), what draws them in (came looking for them, could do with
-  company) and what holds them back (was off to read the news, has had plenty of company, tired):
-  the reasons that agree with their keenness in brackets, the others after "though". Then who'll
-  want to leave after about how many lines, and the length.
+  someone at 1 after `long_talk` (30), in a straight line between. A need with a critical level in
+  B1 (hunger, the bladder) past `drain_from` (0.75) drains them faster: the lines they'd talk for
+  past `min_lines` are divided by up to 1 + `need_drain` (4) at the critical level, in a straight
+  line from 1 at `drain_from`. Whoever wants to leave first does (the one approached, on a tie),
+  and the scene runs that many lines plus the goodbye and its answer. The direction says each
+  side's keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk"),
+  what draws them in (came looking for them, could do with company) and what holds them back (was
+  off to read the news, has had plenty of company, itching to catch up on the news): the reasons
+  that agree with their keenness in brackets, the others after "though". Then who'll want to leave
+  after about how many lines, and the length, ending when the leaver takes their leave and, if a
+  need drains them, what it sends them off to do ("to get something to eat", "to find a loo"), so
+  the goodbye gives the reason.
 - **The script.** One L1 `stream()` call with Haiku 4.5 and `purpose="conversation"` writes the
   whole scene. Haiku 5.5 thinks before it writes and can't be told not to: on the same scenes it
   sometimes took over 20 s to its first line, where Haiku 4.5 took 2 to 7 s. The system prompt, the same for every scene, asks for it like a scene in a novel:
@@ -44,14 +51,14 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   take up is let go and nobody goes back over a point; pet words and verbal habits now and then. The
   prompt has, for each side, their persona, backstory, speaking style and mannerisms (as verbal
   habits, to use now and then), values and interests, R1's `describe()` of how they feel about
-  the other told in the third person, and, each marked as only theirs, any
-  grudge they hold against the other, R2's `recall` (memories of the other, then recent or salient
-  ones) and the secrets others told them (open `secret` flags about anyone else), the works they
-  might bring up (see *Works*), and B4's `topics_to_raise`. Then what's between them, which both
-  know: R2's `shared_history` events and their open debts, promises, broken promises and saved
-  lives, and a secret told between them, marked as known only to the two. Then where and when they
-  are, and the direction. Each line is the speaker's first name, a colon, the line and its
-  `[values: ...]` tag.
+  the other told in the third person, how their needs feel (see *Needs* below), and, each marked
+  as only theirs, any grudge they hold against the other, R2's `recall` (memories of the other,
+  then recent or salient ones) and the secrets others told them (open `secret` flags about anyone
+  else), the works they might bring up (see *Works*), and B4's `topics_to_raise`. Then what's
+  between them, which both know: R2's `shared_history` events and their open debts, promises,
+  broken promises and saved lives, and a secret told between them, marked as known only to the
+  two. Then where and when they are, and the direction. Each line is the speaker's first name, a
+  colon, the line and its `[values: ...]` tag.
 - **Works.** Each side's work topics are their memories of works they made, read or saw (`work`
   memories from `simile.works`), up to `works` (2): those about the other first (the other's works,
   or the other painting over theirs), then their strongest by salience × recency, with a
@@ -82,9 +89,11 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   `Line.duration` how long it lasts. Engagement still moves with each line's values, as for the
   player below, for the debug overlay and the logs, but no longer ends anything.
 - **Interruptions.** A resident is pulled out of a conversation when the player starts one with
-  them, or when their rest, curiosity or news rises past `urgent_need` (0.95) during it. The line
-  being said finishes, then they say a short goodbye (`GOODBYES`), unless they've just said one; if
-  the other has, a "Bye" back. Nothing after that is said, and the rest of the script never happened.
+  them, when their rest, curiosity or news rises past `urgent_need` (0.95) during it, or when a need
+  rises past B1's critical level for it, as B1 would pull them away from anything else. The line
+  being said finishes, then they say a short goodbye that gives the reason (`GOODBYES`: "Sorry,
+  Ana, I'm starving. I'd better get something to eat."), unless they've just said one; if the other
+  has, a "Bye" back. Nothing after that is said, and the rest of the script never happened.
   Pulled away before anyone has spoken, the conversation ends with no lines.
 - **Ending.** After the last line plays, the conversation ends. So does one whose script fails or
   stops streaming for `line_timeout` real seconds (30) between lines: after its last complete line,
@@ -151,19 +160,34 @@ with the player as `player_relief` (half) of one with a resident towards their s
   expert advice; that it's a chat between neighbours, not a consultation; and that when the player
   changes the subject they go with it, or say once that they'd rather not and let it go.
 - **Engagement.** The NPC starts from `start_engagement`, more if they like the player or value
-  Connection. After every line they lose `fatigue` and gain `topic_weight` times how much the values
+  Connection. After every line they lose `fatigue`, faster with a pressing need as in *The plan*
+  above (`drain_from`, `need_drain`), and gain `topic_weight` times how much the values
   it brings up for the first time in the conversation matter to them (from -1 to 1) plus
   `like_weight` times how much they like the player. Each player line and each reply counts as a
   line, and each player line touches the values the NPC's last reply did.
 - **Ending.** From `min_lines` on, an NPC whose engagement is below `leave_below` answers with a
-  goodbye. A player line within `farewell_wait` (8 s) of that goodbye joins the conversation and
-  ends it. If the player says goodbye ("bye", "see you", "gotta go", ...), the
+  goodbye. With a pressing need, its cue says what the need sends them off to do and asks them to
+  say why they're going. A player line within `farewell_wait` (8 s) of that goodbye joins the
+  conversation and ends it. If the player says goodbye ("bye", "see you", "gotta go", ...), the
   NPC says goodbye back and it ends. It ends at once if the player walks beyond `leave_range` (6
   tiles) or disconnects. After `silence` (60 s) without a word from the player, the NPC says
   goodbye, or just leaves if the player never answered their hello. A reply that fails or says
   nothing ends it too. Cooldowns are as in B2.
 
 Every constant is in `PlayerConfig`.
+
+## Needs
+
+`needs.py` reads B1's needs live, through `behaviour.needs` and the critical levels in
+`behaviour.config.urgency`, and `engine.pressing(npc)` is what they bring to a conversation now.
+*Asking*, *The plan*, *Interruptions* and B5's *Engagement* and *Ending* above say what that does.
+
+The prompts describe needs in words, never numbers: each reply to the player has "Right now you're
+hungry and tired." after the background, and each side of a scene "Right now Ben is starving."
+`MOODS` has the words and where each starts: hungry from 0.75 and starving from 0.9, needing and
+then bursting for the loo at the same levels, tired from 0.6 and exhausted from 0.9, and feeling
+grubby from 0.75 and badly in need of a shower from 0.9. A hungry, tired resident comes across
+short, and B3 picks that up from the transcript like anything else.
 
 ## Events
 
@@ -199,7 +223,8 @@ published.
   another, as in *Interruptions*, for `why`: `PLAYER` or a `Need`. It returns when they've finished
   their goodbye, or None if they weren't in one.
 - **The ambient director.** `engine.accept_score(a, b)` says how keen `b` would be if `a` walked up
-  now, so [`simile.ambient`](../ambient/README.md) only nudges pairs who would accept each other.
+  now, so [`simile.ambient`](../ambient/README.md) only nudges pairs who would accept each other,
+  and nobody with an urgent need.
 - **Writing an NPC's replies to the player.** `app.state.players` is the server's
   `PlayerConversations`. `players.writers[npc]` is an async function of the cue and the lines so
   far that returns the NPC's reply, which is paced and voiced like any other, or None for B5's own.

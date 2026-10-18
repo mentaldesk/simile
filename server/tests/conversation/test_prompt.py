@@ -1,3 +1,4 @@
+import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -225,6 +226,35 @@ def test_a_turn_has_the_works_they_might_bring_up_after_the_background() -> None
         "Works by others you might bring up:\n- I read Tobias's poem. Lovely.\n\n"
         "The conversation hasn't started yet."
     )
+
+
+def test_a_turn_says_how_the_speaker_feels_after_the_background_in_words() -> None:
+    feeling = ("starving", "needing the loo")
+
+    prompt = turn_prompt("B", [], NAMES, Cue.OPEN, "Henrietta", mood=feeling)
+
+    assert prompt.startswith(
+        "B\n\nRight now you're starving and needing the loo.\n\n"
+        "The conversation hasn't started yet."
+    )
+    [said] = [part for part in prompt.split("\n\n") if part.startswith("Right now")]
+    assert re.search(r"\d", said) is None
+    assert "Right now" not in turn_prompt("B", [], NAMES, Cue.OPEN, "Henrietta")
+
+
+def test_a_goodbye_says_what_their_need_sends_them_off_to_do() -> None:
+    eat = "get something to eat"
+
+    prompt = turn_prompt("B", [], NAMES, Cue.GOODBYE, "Henrietta", errand=eat)
+
+    assert prompt.endswith(
+        "You need to get something to eat. Wrap it up now with a brief, natural goodbye to "
+        "Henrietta, and say why you're going."
+    )
+    for cue in (Cue.OPEN, Cue.REPLY, Cue.FAREWELL):
+        assert turn_prompt("B", [], NAMES, cue, "H", errand=eat) == turn_prompt(
+            "B", [], NAMES, cue, "H"
+        )
 
 
 def test_news_the_other_just_mentioned_follows_the_transcript() -> None:
