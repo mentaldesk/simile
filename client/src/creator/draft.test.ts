@@ -36,6 +36,16 @@ describe('a new draft', () => {
     });
   });
 
+  it('puts the verbal habits in the brief with the biography', () => {
+    const draft = Draft.blank();
+    draft.edit('biography', { mannerisms: ['teases the people they like most'] });
+    expect(draft.locked('biography')).toBe(true);
+    expect(draft.brief()).toEqual({
+      source: 'player',
+      mannerisms: ['teases the people they like most'],
+    });
+  });
+
   it('keeps born-here as a locked arrival of null', () => {
     const draft = Draft.blank();
     draft.edit('background', { arrival: null });
@@ -183,6 +193,15 @@ describe('validation before saving', () => {
       'Life event 1 happened at 40, but they’re 26.',
       'Tie 1 is empty.',
       'Say what they make, or choose nothing.',
+    ]);
+  });
+
+  it('refuses more than three verbal habits, or a long one', () => {
+    const draft = Draft.of(character());
+    draft.edit('biography', { mannerisms: ['a', 'b', 'c', 'x'.repeat(121)] });
+    expect(draft.problems(2026)).toEqual([
+      'Keep to 3 verbal habits at most.',
+      'Verbal habit 4 is over 120 characters.',
     ]);
   });
 
