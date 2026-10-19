@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 import pytest
 
 from simile.behaviour import Activity, Goal, Need
@@ -11,7 +13,7 @@ from simile.conversation.plan import (
     topic_interest,
 )
 from simile.npc import load_npcs
-from simile.schema import CoreValue, Relationship
+from simile.schema import CoreValue, Humour, HumourStyle, Relationship
 from simile.social import meet
 
 TEMPLATE = load_npcs()[0]
@@ -144,6 +146,38 @@ def test_the_direction_says_whos_keen_who_leaves_when_and_how_long_it_runs() -> 
         "- Ana speaks first. About 7 lines in all, ending when Ben takes their leave and Ana "
         "answers."
     )
+
+
+def test_each_humour_rolls_how_many_of_their_lines_joke_never_all() -> None:
+    names = {"ana": "Ana", "ben": "Ben"}
+    stances = {"ana": Stance(0.8, 22), "ben": Stance(0.8, 7)}
+    joker = Humour(style=HumourStyle.SILLY, seriousness=0.1)
+    straight = Humour(style=HumourStyle.NONE, seriousness=1)
+
+    planned = [
+        plan(names, stances, "ana", humours={"ana": joker, "ben": straight}, seed=f"talk-{n}")
+        for n in range(50)
+    ]
+
+    assert {p.length for p in planned} == {9}
+    assert {p.jokes["ben"] for p in planned} == {0}
+    assert max(p.jokes["ana"] for p in planned) == 4
+    assert min(p.jokes["ana"] for p in planned) < 4
+    assert planned[0] == plan(
+        names, stances, "ana", humours={"ana": joker, "ben": straight}, seed="talk-0"
+    )
+
+
+def test_the_direction_says_how_many_lines_each_humour_jokes_in() -> None:
+    stances = {"ana": Stance(0.8, 22), "ben": Stance(0.8, 7)}
+    planned = plan({"ana": "Ana", "ben": "Ben"}, stances, "ana")
+
+    assert "joke" not in direction(planned)
+    assert direction(replace(planned, jokes={"ana": 3, "ben": 0})).splitlines()[3:5] == [
+        "- Ana jokes in 3 of their lines.",
+        "- Ben doesn't joke this time.",
+    ]
+    assert "- Ana jokes in one of their lines." in direction(replace(planned, jokes={"ana": 1}))
 
 
 def test_a_pair_who_both_want_out_soon_are_told_so() -> None:

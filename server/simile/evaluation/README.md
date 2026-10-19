@@ -7,13 +7,14 @@ their replies are.
 ```bash
 cd server
 uv run simile evaluate characters --sample 10                          # stock replies, no Claude
-uv run simile evaluate characters --sample 10 --claude --out /tmp/p6   # 90 replies + 1 label call
+uv run simile evaluate characters --sample 10 --claude --out /tmp/p6   # 100 replies + 1 label call
 ```
 
 `--pick a,b,c` names the characters instead, `--seed` changes the draw and `--pool` the folder.
 `--scenarios a,b` plays only those, or `--scenarios tempting` the six with a temptation.
-`--no-lies` rolls no lies, as before #285, and `--reuse <folder>` reuses another run's replies to
-the same prompts without counting its calls, so an after run only calls for what changed.
+`--no-lies` rolls no lies, as before #285, `--no-humour` leaves humour out of the prompts, as
+before #287, and `--reuse <folder>` reuses another run's replies to the same prompts without
+counting its calls, so an after run only calls for what changed.
 
 ## A scenario
 
@@ -24,6 +25,7 @@ Someone says one line to the character, who answers it (`scenarios.py`):
 | `favour` | a stranger (the player as B5 sees them) | my car's died, help me push it? |
 | `promise` | Robin, a friend who stood them up this morning | cheerful hello, as if nothing happened |
 | `news` | Jo, a neighbour they know by sight | cameras on every lamp post: nothing to hide, nothing to fear |
+| `rain` | Chris, a neighbour | rain's called off the barbecue for the third weekend running |
 | `complaint` | Pat, next door | your bins have been out since Thursday |
 | `lie` | Sam, from the café | tell Sandra I was helping you on Thursday |
 | `rent` | Alex, a friend | you're not struggling for money, are you? |
@@ -52,6 +54,13 @@ with memories picked as `ConversationEngine._memories` picks them, and the reply
   refuses, hedges, deflects, hostile, ...), from the words alone. The character's prompt is left
   as the game writes it, so the labels can't steer the replies. **Evenness** is the stances'
   entropy over the most it could be: 0 when everyone does the same.
+- **Humour.** A character without a stored humour is given one as casting gives it
+  (`simile.casting.humour`), seeded by `--seed`, and the report shows it either way. With it in
+  the prompts, B5's joke roll is seeded by the scenario and the character. The judge's call also
+  lists the replies that joke, each with the one style that fits it best, and the report's
+  *Humour* section compares each character's share of joking replies with the share their
+  seriousness implies (1 minus it), by style, by character and by scenario, with how the rolls
+  came out.
 - **Lies.** The same call lists the replies that lie: untrue by the situation, agreeing to say
   something untrue, or an excuse that sounds made up. The report's *Honesty* section counts who
   lies among characters who value honesty below 0.4 and from 0.7, how many replies a lie roll

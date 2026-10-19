@@ -24,6 +24,8 @@ from simile.schema import (
     CoreValue,
     Flag,
     FlagKind,
+    Humour,
+    HumourStyle,
     InteractionEvent,
     Medium,
     Memory,
@@ -371,6 +373,24 @@ def test_each_side_lists_their_own_mannerisms_as_verbal_habits() -> None:
     assert "verbal habits" not in henriettas
 
 
+def test_each_side_with_a_humour_has_it_told_about_them() -> None:
+    punning = Humour(style=HumourStyle.PUNNING, seriousness=0.5)
+    kofi = Character(
+        KOFI.model_copy(update={"mannerisms": [], "humour": punning}), meet(KOFI, "henrietta")
+    )
+    henrietta = Character(HENRIETTA.model_copy(update={"humour": None}), meet(HENRIETTA, "kofi"))
+
+    prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
+
+    _, kofis, henriettas, _ = prompt.split("\n\n## ")
+    assert (
+        f"How Kofi speaks: {KOFI.speaking_style}\n"
+        "Kofi's humour is punning: wordplay and puns, the more groan-worthy the better. Kofi jokes "
+        "often, but never in every line.\n\n"
+    ) in kofis
+    assert "humour" not in henriettas
+
+
 def test_only_a_side_with_low_scores_gets_direction_told_about_them() -> None:
     assert (HENRIETTA.values[H], HENRIETTA.values[CoreValue.COMPASSION]) == (0.13, 0.16)
     kofi = Character(KOFI, meet(KOFI, "henrietta"))
@@ -411,6 +431,10 @@ def test_the_system_prompt_sets_the_rules_and_the_format() -> None:
     assert "not a consultation" in system
     assert "they let it go" in system
     assert "pet words, phrases and verbal habits now and then, not in every line" in system
+    assert (
+        "- A character with a humour jokes only as often as it says, and in its style. Nobody's "
+        "jokes are cruel or punch down, and any sarcasm stays dry, never insulting.\n"
+    ) in system
     assert "Mara: Morning! Lovely out, isn't it? [values: connection]" in system
     assert "peace of mind" in system
     assert "at most 30 words" in system

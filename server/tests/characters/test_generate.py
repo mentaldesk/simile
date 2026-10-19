@@ -9,6 +9,7 @@ import pytest
 from simile.art.palette import PALETTE
 from simile.characters.brief import LOCKABLE, SECTIONS, Brief
 from simile.characters.generate import TooSimilar, character_id, generate, reroll
+from simile.characters.humour import sketch
 from simile.characters.novelty import Embedder, Novelty
 from simile.characters.sheet import draw
 from simile.characters.tables import load_tables
@@ -152,6 +153,34 @@ async def test_a_character_without_mannerisms_keeps_none(fake_llm: Fakes) -> Non
 
     assert character.mannerisms == []
     assert "mannerisms" not in character.model_dump()
+
+
+async def test_a_humour_is_drawn_in_code_stored_and_in_the_brief(fake_llm: Fakes) -> None:
+    for seed in range(4):
+        humour = draw(random.Random(seed), Brief()).humour
+        result, fake = await make(fake_llm, seed=seed)
+
+        assert humour is not None
+        assert result.character.humour == humour
+        prompt = fake.requests[0].messages[-1].content
+        assert f"- Sense of humour: {sketch(humour)}." in prompt
+        assert "age and sense of humour" in prompt
+        for request in fake.requests:
+            assert "humour" not in requested_fields(request)
+
+
+async def test_a_reroll_keeps_the_humour_unless_it_redoes_the_biography(fake_llm: Fakes) -> None:
+    original = (await make(fake_llm, seed=1))[0].character
+    mine = original.model_copy(
+        update={"humour": Humour(style=HumourStyle.GALLOWS, seriousness=0.3)}
+    )
+    llm, _ = fake_llm()
+
+    kept = (await reroll(llm, mine, "voice", rng=random.Random(2), now=NOW)).character
+    redone = (await reroll(llm, mine, "biography", rng=random.Random(5), now=NOW)).character
+
+    assert kept.humour == mine.humour
+    assert redone.humour is not None and redone.humour != mine.humour
 
 
 async def test_build_hair_and_top_are_drawn_in_code(fake_llm: Fakes) -> None:
