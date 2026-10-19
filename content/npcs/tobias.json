@@ -42,6 +42,10 @@
     "repeats a request back in their own words to be sure of it",
     "asks whether something has been tried before whenever a new idea comes up"
   ],
+  "humour": {
+    "style": "none",
+    "seriousness": 1.0
+  },
   "interests": [
     "river levels and the old lock routines",
     "keeping appointments and daily habits",

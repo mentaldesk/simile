@@ -279,6 +279,43 @@
       "title": "HookSide",
       "type": "string"
     },
+    "Humour": {
+      "additionalProperties": false,
+      "description": "Their sense of humour: its style, and how seldom they joke.",
+      "properties": {
+        "style": {
+          "$ref": "#/$defs/HumourStyle"
+        },
+        "seriousness": {
+          "description": "How seldom they joke, 0-1: at 0 they joke in most lines, at 1 never.",
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Seriousness",
+          "type": "number"
+        }
+      },
+      "required": [
+        "style",
+        "seriousness"
+      ],
+      "title": "Humour",
+      "type": "object"
+    },
+    "HumourStyle": {
+      "enum": [
+        "dry",
+        "deadpan",
+        "sarcastic",
+        "cynical",
+        "punning",
+        "silly",
+        "teasing",
+        "gallows",
+        "none"
+      ],
+      "title": "HumourStyle",
+      "type": "string"
+    },
     "Medium": {
       "enum": [
         "writing",
@@ -459,6 +496,18 @@
       "maxItems": 3,
       "title": "Mannerisms",
       "type": "array"
+    },
+    "humour": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Humour"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Null when unset, and left out."
     },
     "interests": {
       "items": {

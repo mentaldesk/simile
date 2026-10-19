@@ -1,24 +1,25 @@
 import pytest
 
 from simile.conversation import ConversationConfig
-from simile.conversation.prompt import system_prompt
+from simile.conversation.prompt import JOKE, PLAIN, system_prompt
 from simile.evaluation.play import Reply, play, prompt, resident
 from simile.evaluation.scenarios import NOW, SCENARIOS, TEMPTING
 from simile.llm import FakeProvider, LLMClient, LLMError
-from simile.schema import Character, CoreValue, PastMemory
+from simile.schema import Character, CoreValue, Humour, PastMemory
 
 pytestmark = pytest.mark.anyio
 
-FAVOUR, PROMISE, NEWS, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
+FAVOUR, PROMISE, NEWS, RAIN, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
 ALWAYS = ConversationConfig(lie_most=1, lie_peak=0.55, lie_bias=1)
 NEVER = ConversationConfig(lie_most=0)
 
 
-def test_the_scenarios_are_the_five_fixed_ones_and_four_with_a_temptation() -> None:
+def test_the_scenarios_are_four_fixed_ones_and_six_with_a_temptation() -> None:
     assert [s.id for s in SCENARIOS] == [
         "favour",
         "promise",
         "news",
+        "rain",
         "complaint",
         "lie",
         "rent",
@@ -238,6 +239,38 @@ async def test_play_starts_at_most_max_calls_and_leaves_out_failures(
     assert len(fake.requests) == 3
     assert [r.text for r in replies] == ["One.", "Three."]
     assert seen == replies
+
+
+def test_a_humour_reaches_the_prompts_with_a_seeded_joke_roll(pool: list[Character]) -> None:
+    character = pool[0].model_copy(update={"humour": Humour(style="dry", seriousness=0.5)})
+
+    asked = {scenario.id: prompt(character, scenario) for scenario in SCENARIOS}
+
+    assert all("Your humour is dry" in p.system for p in asked.values())
+    assert {p.joke for p in asked.values()} == {True, False}
+    for id, p in asked.items():
+        assert (JOKE if p.joke else PLAIN) in p.text
+        assert prompt(character, next(s for s in SCENARIOS if s.id == id)).joke == p.joke
+
+
+def test_without_humour_the_prompt_is_as_it_was(pool: list[Character]) -> None:
+    character = pool[0].model_copy(update={"humour": Humour(style="dry", seriousness=0.5)})
+    plain = pool[0].model_copy(update={"humour": None})
+
+    asked = prompt(character, RAIN, humour=False)
+
+    assert asked == prompt(plain, RAIN)
+    assert asked.joke is None
+    assert "humour" not in asked.system and "joke" not in asked.text.lower()
+
+
+async def test_a_reply_says_how_its_joke_roll_came_out(pool: list[Character]) -> None:
+    character = pool[0].model_copy(update={"humour": Humour(style="dry", seriousness=0.5)})
+
+    replies = await play(LLMClient(FakeProvider(default="Ha.")), [character], SCENARIOS, model="m")
+
+    assert [r.joke_roll for r in replies] == [prompt(character, s).joke for s in SCENARIOS]
+    assert all(r.jokes is None for r in replies)
 
 
 async def test_a_reply_to_a_directed_prompt_says_so(pool: list[Character]) -> None:

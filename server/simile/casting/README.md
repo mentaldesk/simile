@@ -74,6 +74,12 @@ among the best three candidates for one of:
 - **conflict** (a fifth of the cast): values at least `conflict` (0.45 RMS) from someone's
 - **affinity** (a fifth): values within `affinity` (0.3 RMS) of someone's
 
+**Humour.** `distance` also counts a difference in humour style, so spread draws vary it. A
+character without a humour gets one when the cast is bound (`humour.py`), drawn as generation draws
+it, from their values and a temperament drawn from them, with styles others in the cast have made
+much less likely, so a cast of 10 has six or more styles. The cast records it as part of their
+character, and their `Npc` has it.
+
 It refuses more residents than the village map has houses, and two residents with the same
 `reference_clip`. A character without a clip clashes with nobody.
 

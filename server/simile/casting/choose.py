@@ -12,7 +12,7 @@ from simile.casting.roles import fits, holders, village_roles
 from simile.characters import jobs
 from simile.characters.tables.load import Role
 from simile.npc.values import distance as profile_distance
-from simile.schema import Character, CoreValue, Id, Medium
+from simile.schema import Character, CoreValue, HumourStyle, Id, Medium
 
 type Source = Literal["maker", "elder", "other"]
 
@@ -31,6 +31,7 @@ def distance(a: Character, b: Character, config: CastingConfig = DEFAULT_CONFIG)
         + w.age * min(abs(a.birth_year - b.birth_year) / config.age_scale, 1.0)
         + w.occupation * (family(a) != family(b))
         + w.gender * (a.gender != b.gender)
+        + w.humour * (_style(a) != _style(b))
     )
 
 
@@ -140,6 +141,10 @@ def cast(
         options = _narrow(options, source, chosen, held, year, config)
         take(rng.choice(options) if not chosen else _best(options, chosen, kind, rng, config))
     return chosen
+
+
+def _style(character: Character) -> HumourStyle | None:
+    return character.humour.style if character.humour else None
 
 
 def _medium(character: Character) -> Medium | None:

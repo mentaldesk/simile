@@ -322,7 +322,14 @@ class ConversationEngine:
         history = self.memory.shared_history(a, b, now, k=config.history)
         lying = self._scene_lies(conversation.id, sides, history, loan)
         scene_plan = plan(
-            names, stances, a, config, loan=loan, lies=[set_up.said for set_up in lying]
+            names,
+            stances,
+            a,
+            config,
+            loan=loan,
+            lies=[set_up.said for set_up in lying],
+            humours={npc: npcs[npc].humour for npc in names},
+            seed=conversation.id,
         )
         location = self.behaviour.places.at(here)
         prompt = scene_prompt(
@@ -525,7 +532,10 @@ class ConversationEngine:
         if scene.written:
             prompt = continue_prompt(scene.prompt, scene.written, scene.names)
         stream = self.llm().stream(
-            prompt, system=script_system(config), model=config.model, purpose="conversation"
+            prompt,
+            system=script_system(config, humour=any(p.npc.humour for p in scene.parties.values())),
+            model=config.model,
+            purpose="conversation",
         )
         loop = asyncio.get_running_loop()
         first = config.first_line_timeout

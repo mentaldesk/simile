@@ -506,7 +506,7 @@ def test_nobody_starts_making_something_just_before_bed() -> None:
 
 def test_finishing_counts_towards_what_a_stay_promises() -> None:
     assert promised(A.CREATE, Need.INSPIRATION) == -1.0
-    assert promised(A.CREATE, Need.CURIOSITY) == pytest.approx(-0.6)
+    assert promised(A.CREATE, Need.CURIOSITY) == pytest.approx(-0.6 * (20 + 45) / 2 / 60)
 
 
 def test_places_are_looked_up_on_the_points_own_map() -> None:

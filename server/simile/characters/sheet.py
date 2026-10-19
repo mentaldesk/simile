@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from simile.characters.brief import Brief
+from simile.characters.humour import sample_humour
 from simile.characters.tables import (
     YEAR,
     Happening,
@@ -25,7 +26,7 @@ from simile.characters.tables import (
 from simile.characters.tables.conditions import LEAN, choose
 from simile.characters.tables.load import Job
 from simile.npc import values as npc_values
-from simile.schema import Build, CoreValue, HairStyle, HookKind, HookSide
+from simile.schema import Build, CoreValue, HairStyle, HookKind, HookSide, Humour
 
 type Profile = dict[CoreValue, float]
 
@@ -125,6 +126,7 @@ class Sheet:
     look: "Look | None" = None
     interest: str | None = None
     """What one of their interests is about."""
+    humour: Humour | None = None
 
     def seeds(self) -> list["Seed"]:
         """What happened to them in age order, each to become one past memory."""
@@ -209,6 +211,7 @@ def draw(
     hooks = [] if brief.locked("hooks") else sample_hooks(rng, skeleton, values, village=village)
     look = None if brief.locked("appearance") else sample_look(rng, skeleton, village=village)
     interest = None if brief.locked("interests") else sample_interest(rng, village=village)
+    humour = brief.humour if brief.locked("humour") else sample_humour(rng, scores, village=village)
     return Sheet(
         skeleton,
         country,
@@ -222,6 +225,7 @@ def draw(
         hooks,
         look,
         interest,
+        humour,
     )
 
 

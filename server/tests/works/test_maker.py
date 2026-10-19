@@ -1,5 +1,6 @@
 import asyncio
 import io
+import random
 from datetime import timedelta
 from typing import Any
 
@@ -21,7 +22,7 @@ from simile.schema import (
 )
 from simile.sim import Clock
 from simile.works import DEFAULT_CONFIG, Maker, WorksConfig, WorksStore
-from simile.works.maker import PaintingReply
+from simile.works.maker import PaintingReply, draw_seed
 from simile.works.render import canvas, draw, painting_canvas
 from simile.works.svg import BadSvg
 
@@ -112,12 +113,68 @@ def test_writes_from_the_strongest_memories_and_the_latest_works(
     assert MADE.content not in asked
     assert '- "Old Stones": Stone outlasts us.\n- "Rust": Rust is neglect.' in asked
     assert '"First"' not in asked
-    assert "Not His" not in asked
-    assert "Write something new in your craft, plain verse about old bridges." in asked
+    assert "- \"Not His\", Mei's writing: Mei's piece." in asked
+    assert (
+        "Write something new in your craft, plain verse about old bridges: a piece of fiction or "
+        "poetry, not an opinion piece"
+    ) in asked
+    assert "You know what someone with your life and job would know." in asked
     assert VIKTOR.persona in request.system
     assert "You care most about: " in request.system
     assert "In your own time you write plain verse about old bridges." in request.system
+    assert "have your say" not in request.system
     assert request.model == Model.SONNET
+
+
+def test_others_works_weigh_less_among_what_is_on_their_mind(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    seen = MURAL.model_copy(update={"salience": 0.8})
+    memory.add(seen, TALK, WEAK)
+    fake = FakeProvider([reply()])
+    llm = LLMClient(fake)
+    config = CONFIG.model_copy(update={"memories": 2, "others_works": 0.5})
+
+    asyncio.run(make(Maker(works, memory, Clock(NOW), lambda: llm, config=config)))
+
+    asked = fake.requests[0].messages[-1].content
+    assert f"1. {TALK.content}" in asked
+    assert f"2. {seen.content}" in asked
+    assert WEAK.content not in asked
+
+
+def test_the_prompt_carries_the_villages_latest_works_and_a_random_seed(
+    memory: MemoryStore, works: WorksStore
+) -> None:
+    works.add(work("mine", title="My Own", hours_ago=1))
+    works.add(
+        mural("chair", artist="suki", hours_ago=2).model_copy(
+            update={"title": "Save a Seat", "tags": ["empty chair", "belonging", "supper", "x"]}
+        )
+    )
+    works.add(work("older", artist="mei", title="Too Old", hours_ago=30))
+    fake = FakeProvider([reply(), reply()])
+    llm = LLMClient(fake)
+    config = CONFIG.model_copy(update={"village_works": 1})
+    maker = Maker(
+        works, memory, Clock(NOW), lambda: llm, npcs=NPCS, rng=random.Random(1), config=config
+    )
+    expected = draw_seed(Medium.WRITING, random.Random(1), config)
+
+    asyncio.run(make(maker))
+    asyncio.run(make(maker))
+
+    first, second = (request.messages[-1].content for request in fake.requests)
+    assert (
+        "Your neighbours' latest works, newest first. Make yours unlike them, in its subject, its "
+        f'images and its feeling:\n- "Save a Seat", {SUKI.name}\'s mural: empty chair, '
+        "belonging, supper\n\n"
+    ) in first
+    assert "Too Old" not in first
+    assert '- "My Own"' in first and '"My Own",' not in first
+    assert f"For a spark this time, try {expected}." in first
+    assert str(expected) not in second
+    assert expected.genre in CONFIG.writing_genres
 
 
 @pytest.mark.usefixtures("remembered")
@@ -514,6 +571,30 @@ def test_a_painter_paints_a_canvas_and_hangs_it(memory: MemoryStore, works: Work
         request.system
     )
     assert request.model == Model.SONNET
+
+
+@pytest.mark.parametrize("medium", [Medium.MURAL, Medium.PAINTING], ids=str)
+def test_murals_and_paintings_carry_a_random_seed_and_the_knowledge_limit(
+    memory: MemoryStore, works: WorksStore, medium: Medium
+) -> None:
+    if medium is Medium.MURAL:
+        fake = FakeProvider([mural_reply()])
+        maker, npc, wall = muralist(works, memory, fake), SUKI, "wall_1"
+    else:
+        fake = FakeProvider([painting_reply()])
+        maker, npc, wall = gallery_painter(works, memory, fake, []), PAINTER, None
+    maker.rng = random.Random(3)
+    expected = draw_seed(medium, random.Random(3), CONFIG)
+
+    asyncio.run(paint(maker, npc, wall))
+
+    asked = fake.requests[0].messages[-1].content
+    assert expected.genre in CONFIG.picture_genres
+    assert f"For a spark this time, try {expected}." in asked
+    assert (
+        "You know what someone with your life and job would know. Stay within it: paint from "
+        "your own life, work and village, never as an expert on what you don't know."
+    ) in asked
 
 
 def test_a_muralist_given_anything_but_a_wall_paints_for_the_gallery(

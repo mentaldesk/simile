@@ -7,13 +7,13 @@ Residents' paintings on the gallery's walls. Every `painting` interactable on a 
 
 - **Painters**, residents whose craft is `painting`, make something for the gallery whenever they
   finish a `create` stay. They paint where writers write (B1's `writing_places`).
-- **Muralists** paint for the gallery too: after each mural, and whenever no wall is worth
-  painting. The gallery wraps B1's `mural_wall` hook (`taking_turns`), which then names the
+- **Muralists** paint for the gallery too: after every `murals_per_canvas` (2) murals in a row,
+  and whenever no wall is worth painting. The gallery wraps B1's `mural_wall` hook (`taking_turns`), which then names the
   muralist's home rather than a wall, so they paint the canvas there and B1 calls `create` with
   their home's id.
 
 In today's village Priya paints imaginary bars and night markets and Tobias the river and the old
-lock, beside the three muralists. A fresh save starts with five of their paintings hung
+lock, beside the three muralists. A save starts with five of their paintings hung
 (`works/README.md`'s *Starter works*).
 
 M8's `Maker` makes the painting (`works/README.md` has how), with its SVG checks and its renderer

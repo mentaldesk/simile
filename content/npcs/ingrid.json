@@ -56,6 +56,10 @@
     "states the bottom line before any explanation",
     "follows a tangent three steps deep before returning to the original point"
   ],
+  "humour": {
+    "style": "deadpan",
+    "seriousness": 0.6
+  },
   "interests": [
     "woven electronics and conductive thread",
     "natural dye experiments",

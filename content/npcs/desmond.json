@@ -56,6 +56,10 @@
     "asks what the other person meant before deciding how to respond",
     "returns to an earlier conversation to ask how it turned out"
   ],
+  "humour": {
+    "style": "dry",
+    "seriousness": 0.75
+  },
   "interests": [
     "tenancy law and housing rights",
     "community repair and reuse projects",
@@ -83,6 +87,6 @@
   },
   "craft": {
     "medium": "writing",
-    "form": "plain tenants' rights guides and stories"
+    "form": "short stories about neighbours getting by"
   }
 }

@@ -42,6 +42,10 @@
     "tells long stories that wander off and come back",
     "ends a serious point with a joke"
   ],
+  "humour": {
+    "style": "teasing",
+    "seriousness": 0.25
+  },
   "interests": [
     "sea swimming",
     "old ballads",

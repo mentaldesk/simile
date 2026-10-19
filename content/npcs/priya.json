@@ -54,6 +54,10 @@
     "praises the listener's taste before getting to the point",
     "blows a minor incident up into a comic tale"
   ],
+  "humour": {
+    "style": "silly",
+    "seriousness": 0.4
+  },
   "interests": [
     "cocktail recipes",
     "night markets",

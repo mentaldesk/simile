@@ -7,8 +7,8 @@ import numpy as np
 from simile.evaluation.fake import STOCK
 from simile.evaluation.metric import Spread, correlation
 from simile.evaluation.play import Reply
-from simile.evaluation.scenarios import NOW
-from simile.schema import Character, CoreValue
+from simile.evaluation.scenarios import NOW, Scenario
+from simile.schema import Character, CoreValue, HumourStyle
 
 LOW_HONESTY = 0.4
 HIGH_HONESTY = 0.7
@@ -25,7 +25,7 @@ class Run:
     calls: int
 
 
-def report(spread: Spread, replies: Sequence[Reply], run: Run) -> str:
+def report(spread: Spread, replies: Sequence[Reply], run: Run, *, humour: bool = True) -> str:
     by = {(reply.character, reply.scenario): reply for reply in replies}
     characters = spread.characters
     lines = [
@@ -67,6 +67,8 @@ def report(spread: Spread, replies: Sequence[Reply], run: Run) -> str:
         "and backstory.",
         "",
         *honesty(characters, by, [result.scenario.id for result in spread.scenarios]),
+        "",
+        *humours(characters, by, [result.scenario for result in spread.scenarios], humour),
     ]
     for result in spread.scenarios:
         scenario = result.scenario
@@ -149,9 +151,101 @@ def honesty(
     return lines
 
 
+def humours(
+    characters: Sequence[Character],
+    by: dict[tuple[str, str], Reply],
+    scenarios: Sequence[Scenario],
+    prompted: bool,
+) -> list[str]:
+    """Who jokes, against how often their seriousness implies and in what style: by style, by
+    character and by scenario."""
+    ids = [scenario.id for scenario in scenarios]
+    ranked = sorted(characters, key=implied, reverse=True)
+    jokes = {c.id: [by[c.id, s] for s in ids if by[c.id, s].jokes] for c in ranked}
+    told = (
+        "The prompts gave each character their humour."
+        if prompted
+        else "The prompts left humour out, so this is how often they joke without it, against "
+        "the humour they'd have."
+    )
+    styled = [c for c in ranked if c.humour and c.humour.style is not HumourStyle.NONE]
+    own = [reply.joke == c.humour.style for c in styled if c.humour for reply in jokes[c.id]]
+    expected = np.array([implied(c) for c in ranked])
+    share = np.array([len(jokes[c.id]) / len(ids) for c in ranked])
+    lines = [
+        "## Humour",
+        "",
+        "Does each character joke about as often as their seriousness implies (1 minus it), and "
+        "in their style? A reply jokes when the judge lists it as meant to amuse, with the style "
+        f"that fits it best. {told}",
+        "",
+        f"- **Jokes** in {sum(map(len, jokes.values()))} of {len(ranked) * len(ids)} replies, "
+        f"where seriousness implies {expected.sum() * len(ids):.0f}.",
+        f"- **In their own style:** {sum(own)} of {len(own)} jokes by characters with a style.",
+        *rolls([by[c.id, s] for c in ranked for s in ids]),
+        "",
+        "Implied share against each character's share of joking replies, Pearson r over "
+        f"characters: {r(correlation(expected, share))}.",
+        "",
+        "| Style | Characters | Implied | Joke in | Jokes in that style |",
+        "|---|--:|--:|--:|--:|",
+    ]
+    for style in HumourStyle:
+        group = [c for c in ranked if c.humour and c.humour.style is style]
+        if not group:
+            continue
+        theirs = [reply for c in group for reply in jokes[c.id]]
+        same = sum(reply.joke == style for reply in theirs)
+        lines.append(
+            f"| {style} | {len(group)} | {np.mean([implied(c) for c in group]):.0%} | "
+            f"{len(theirs)} of {len(group) * len(ids)} | "
+            f"{'' if style is HumourStyle.NONE else f'{same} of {len(theirs)}'} |"
+        )
+    lines += [
+        "",
+        "| Character | Humour | Implied | Jokes in | Their jokes' styles |",
+        "|---|---|--:|---|---|",
+    ]
+    for c in ranked:
+        styles = Counter(str(reply.joke) for reply in jokes[c.id] if reply.joke)
+        lines.append(
+            f"| {who(c)} | {shown(c)} | {implied(c):.0%} | "
+            f"{', '.join(reply.scenario for reply in jokes[c.id]) or 'none'} | "
+            f"{tally(styles) or 'none'} |"
+        )
+    lines += ["", "| Scenario | Joking replies |", "|---|--:|"]
+    for scenario in scenarios:
+        joking = sum(bool(by[c.id, scenario.id].jokes) for c in ranked)
+        lines.append(f"| {scenario.title} | {joking} of {len(ranked)} |")
+    return lines
+
+
+def rolls(replies: Sequence[Reply]) -> list[str]:
+    """How the joke rolls came out, when there were any."""
+    told = [reply for reply in replies if reply.joke_roll]
+    held = [reply for reply in replies if reply.joke_roll is False]
+    if not told and not held:
+        return []
+    return [
+        f"- **Rolled to joke:** {len(told)} replies, {sum(bool(r.jokes) for r in told)} of them "
+        f"joking. Told not to, {sum(bool(r.jokes) for r in held)} of {len(held)} joke."
+    ]
+
+
+def implied(character: Character) -> float:
+    """The share of replies with a joke their seriousness implies: none without a humour."""
+    return 1 - character.humour.seriousness if character.humour else 0.0
+
+
+def shown(character: Character) -> str:
+    humour = character.humour
+    return f"{humour.style}, {humour.seriousness:.2f}" if humour else "unset"
+
+
 def stance(reply: Reply) -> str:
     directed = ", directed" if reply.directed else ""
-    return f"{reply.stance or ''}{', lies' if reply.lies else ''}{directed}"
+    joke = f", jokes ({reply.joke})" if reply.jokes else ""
+    return f"{reply.stance or ''}{', lies' if reply.lies else ''}{joke}{directed}"
 
 
 def made(run: Run) -> str:

@@ -27,6 +27,20 @@ export type SpeakingStyle = string;
  * @maxItems 3
  */
 export type Mannerisms = string[];
+export type HumourStyle =
+  | 'dry'
+  | 'deadpan'
+  | 'sarcastic'
+  | 'cynical'
+  | 'punning'
+  | 'silly'
+  | 'teasing'
+  | 'gallows'
+  | 'none';
+/**
+ * How seldom they joke, 0-1: at 0 they joke in most lines, at 1 never.
+ */
+export type Seriousness = number;
 export type Interests = string[];
 /**
  * How old they were when it happened.
@@ -146,6 +160,10 @@ export interface Character {
   persona: Persona;
   speaking_style: SpeakingStyle;
   mannerisms?: Mannerisms;
+  /**
+   * Null when unset, and left out.
+   */
+  humour?: Humour | null;
   interests: Interests;
   past: Past;
   hooks: Hooks;
@@ -173,6 +191,13 @@ export interface Arrival {
  */
 export interface Values {
   [k: string]: number;
+}
+/**
+ * Their sense of humour: its style, and how seldom they joke.
+ */
+export interface Humour {
+  style: HumourStyle;
+  seriousness: Seriousness;
 }
 /**
  * A memory of their life before the game, which casting turns into a `past` Memory.

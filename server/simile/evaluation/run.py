@@ -102,11 +102,13 @@ async def evaluate(
     scenarios: Sequence[Scenario] = SCENARIOS,
     reuse: Path | None = None,
     config: ConversationConfig = DEFAULT_CONFIG,
+    humour: bool = True,
 ) -> Evaluation:
     """Play every scenario for every character, label the stances and measure the spread.
     With `out`, replies are saved there as they come and reused by a later run, and replies in
     `reuse` whose prompt and model match are reused too. `run` describes the run for the report,
-    given the call count."""
+    given the call count. Without `humour`, the prompts leave out the characters' humour, which
+    the report still gives."""
     if out is not None:
         check_writable(out)
     done, earlier = load(out)
@@ -136,10 +138,13 @@ async def evaluate(
             max_calls=max_calls,
             on_reply=kept,
             config=config,
+            humour=humour,
         )
         missing = len(characters) * len(scenarios) - len(replies)
         if not missing and (
-            unlabelled := [r for r in replies if r.stance is None or r.lies is None]
+            unlabelled := [
+                r for r in replies if r.stance is None or r.lies is None or r.jokes is None
+            ]
         ):
             labelled = {r.key: r for r in await label(llm, scenarios, unlabelled, model=judge)}
             replies = [labelled.get(r.key, r) for r in replies]
@@ -152,7 +157,7 @@ async def evaluate(
     if missing:
         return Evaluation(replies, missing, calls)
     measured = spread(characters, scenarios, replies, embedder)
-    text = report(measured, replies, run(calls))
+    text = report(measured, replies, run(calls), humour=humour)
     if out is not None:
         (out / REPORT).write_text(text, encoding="utf-8")
     return Evaluation(replies, 0, calls, measured, text)

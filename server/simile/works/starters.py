@@ -101,18 +101,24 @@ def seed(
     path: Path = STARTERS,
     config: WorksConfig = DEFAULT_CONFIG,
 ) -> list[Work]:
-    """Store the starter works as if made before `now`, the newest `starters_newest` ago, give
-    each artist their memory of making theirs, put the murals on their walls and hang the
-    paintings. Only into a store with no works that's never had them, so never twice."""
+    """Store the starter works as if made before the save's first work, or before `now` if it
+    has none, the newest `starters_newest` before it, give each artist their memory of making
+    theirs, put the murals on the walls that are still blank and hang the paintings. Only into a
+    store that's never had them, so never twice."""
     starters = load(path)
-    if not starters or not works.empty() or not works.first_time(SEEDED, now):
+    if not starters or not works.first_time(SEEDED, now):
         return []
-    shift = now - config.starters_newest - max(starter.work.created for starter in starters)
+    first = works.oldest()
+    before = min(now, first.created) if first else now
+    shift = before - config.starters_newest - max(starter.work.created for starter in starters)
+    painted = set(works.showing())
     seeded = []
     for starter in starters:
         work = starter.work.model_copy(update={"created": starter.work.created + shift})
         svg, png = starter.svg or "", starter.png or b""
         if work.medium is Medium.MURAL:
+            if work.wall in painted:
+                continue
             works.paint(work, svg, png)
         else:
             works.add(work)

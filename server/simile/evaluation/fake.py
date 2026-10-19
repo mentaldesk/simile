@@ -12,11 +12,14 @@ LINES = (
     "Hmm, I'd want to know a bit more first. [values: security]",
     "Funny you should say that, have you tried the new bakery? [values: pleasure]",
 )
+JOKING = 3
+"""Every this many replies, the stock judge says one jokes."""
 
 
 class Stock:
     """Answers without Claude: replies from `LINES` in turn, and stances for the judge's call,
-    each reply's labels in turn, with no lies."""
+    each reply's labels in turn, with no lies and a joke every `JOKING` replies, in each style in
+    turn."""
 
     def __init__(self) -> None:
         self._turn = count()
@@ -25,9 +28,16 @@ class Stock:
         if "no code fence:\n" not in request.system:
             return LINES[next(self._turn) % len(LINES)]
         schema = json.loads(request.system.split("no code fence:\n", 1)[1])
-        return json.dumps(
-            {
-                name: field["enum"][n % len(field["enum"])] if "enum" in field else []
-                for n, (name, field) in enumerate(schema["properties"].items())
-            }
-        )
+        labels = {
+            name: field["enum"][n % len(field["enum"])] if "enum" in field else []
+            for n, (name, field) in enumerate(schema["properties"].items())
+        }
+        if "jokes" in labels:
+            styles = schema["$defs"]["Joke"]["properties"]["style"]["enum"]
+            numbers = [name for name in labels if name not in ("lies", "jokes")]
+            labels["jokes"] = [
+                {"reply": number, "style": styles[n // JOKING % len(styles)]}
+                for n, number in enumerate(numbers)
+                if n % JOKING == 0
+            ]
+        return json.dumps(labels)

@@ -1,12 +1,13 @@
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from simile.behaviour import Activity, Goal, Need
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.engagement import initial_engagement
 from simile.conversation.loans import Loan, told
 from simile.conversation.needs import CRITICAL, pressing
-from simile.schema import CoreValue, Id, Relationship
+from simile.conversation.prompt import jokes
+from simile.schema import CoreValue, Humour, Id, Relationship
 
 PRESSING = (Need.REST, Need.NEWS, Need.CURIOSITY)
 """Wants that make someone less keen, and pull them away once past `urgent_need`."""
@@ -57,6 +58,8 @@ class Plan:
     """A loan one of them asks for or pays back."""
     lies: tuple[str, ...] = ()
     """What either is set up to lie about if it comes up, as direction."""
+    jokes: dict[Id, int] = field(default_factory=dict)
+    """How many of their lines each one with a humour jokes in."""
 
     def other(self, npc: Id) -> Id:
         return next(other for other in self.names if other != npc)
@@ -149,12 +152,25 @@ def plan(
     *,
     loan: Loan | None = None,
     lies: Sequence[str] = (),
+    humours: Mapping[Id, Humour | None] | None = None,
+    seed: str = "",
 ) -> Plan:
-    """Whoever wants to wrap up first leaves, the one who was approached if it's a tie."""
+    """Whoever wants to wrap up first leaves, the one who was approached if it's a tie. Each of
+    their `humours` decides, line by line on rolls seeded by `seed`, how many of their lines
+    joke: never all of them."""
     approached = next(npc for npc in names if npc != opener)
     leaver = min((approached, opener), key=lambda npc: stances[npc].leaves_after)
     length = min(stances[leaver].leaves_after + goodbyes(config), config.max_lines)
-    return Plan(dict(names), dict(stances), opener, leaver, length, loan, tuple(lies))
+    spoken = {opener: (length + 1) // 2, approached: length // 2}
+    joking = {
+        npc: min(
+            sum(bool(jokes(humour, f"{seed}/{npc}/{n}")) for n in range(spoken[npc])),
+            spoken[npc] - 1,
+        )
+        for npc, humour in (humours or {}).items()
+        if humour is not None
+    }
+    return Plan(dict(names), dict(stances), opener, leaver, length, loan, tuple(lies), joking)
 
 
 def direction(plan: Plan) -> str:
@@ -181,6 +197,7 @@ def direction(plan: Plan) -> str:
     if plan.loan is not None:
         lines.append(f"- {told(plan.loan, names)}")
     lines += [f"- {lie}" for lie in plan.lies]
+    lines += [f"- {names[npc]} {joking(count)}" for npc, count in plan.jokes.items()]
     answer = f" and {names[stayer]} answers" if plan.length > leaving.leaves_after + 1 else ""
     errand = f" to {leaving.errand}" if leaving.errand else ""
     lines.append(
@@ -188,6 +205,12 @@ def direction(plan: Plan) -> str:
         f"{names[leaver]} takes their leave{errand}{answer}."
     )
     return "\n".join(lines)
+
+
+def joking(count: int) -> str:
+    if count == 0:
+        return "doesn't joke this time."
+    return "jokes in one of their lines." if count == 1 else f"jokes in {count} of their lines."
 
 
 def joined(reasons: Sequence[str]) -> str:

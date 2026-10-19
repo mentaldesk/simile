@@ -1,8 +1,8 @@
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 
 from simile.memory import MemoryStore
-from simile.protocol import Artist, WorksMessage, WrittenWork
+from simile.protocol import Artist, Notice, WorksMessage, WrittenWork
 from simile.schema import PLAYER_ID, Id, Medium, Memory, MemoryKind, Npc, Work
 from simile.sim import Clock
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
@@ -11,7 +11,8 @@ from simile.works.store import WorksStore
 
 
 class PlayerWorks:
-    """`list_works` and `read_work` for the player at a terminal's Village tab."""
+    """`list_works` and `read_work` for the player at a terminal's Village tab: the writing, and
+    the `notices` board beside it."""
 
     def __init__(
         self,
@@ -20,9 +21,11 @@ class PlayerWorks:
         clock: Clock,
         npcs: Mapping[Id, Npc],
         *,
+        notices: Callable[[], list[Notice]] = list,
         config: WorksConfig = DEFAULT_CONFIG,
     ) -> None:
         self.works = works
+        self.notices = notices
         self.memory = memory
         self.clock = clock
         self.npcs = npcs
@@ -43,7 +46,8 @@ class PlayerWorks:
                     read=work.id in read,
                 )
                 for work in self.works.latest(Medium.WRITING, self.config.listed)
-            ]
+            ],
+            notices=self.notices(),
         )
 
     def read(self, work_id: str) -> WorksMessage:

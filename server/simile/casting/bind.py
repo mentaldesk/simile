@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 
 from simile.casting.choose import value_distance
 from simile.casting.config import DEFAULT_CONFIG, CastingConfig
+from simile.casting.humour import humoured
 from simile.casting.model import Bond, Cast, CastError, Pin, Resident
 from simile.casting.roles import holders, village_roles
 from simile.characters.jobs import job_of, retired
@@ -32,13 +33,15 @@ def bind(
     roles: Sequence[Role] | None = None,
     config: CastingConfig = DEFAULT_CONFIG,
 ) -> Cast:
-    """Give each resident a home and some money, each of the village's `roles` to the first
-    resident whose job fits it, with its workplace, shifts and pay, and everyone else work by
-    their job, or a pension. Then bind the pins, then open hooks between residents."""
+    """Give each resident a home and some money, a humour if their character has none, each of
+    the village's `roles` to the first resident whose job fits it, with its workplace, shifts
+    and pay, and everyone else work by their job, or a pension. Then bind the pins, then open
+    hooks between residents."""
     houses = list(village_houses() if houses is None else houses)
     if len(chosen) > len(houses):
         raise CastError(f"The village has {len(houses)} houses, too few for {len(chosen)}")
     game_date = game_date or datetime.now(UTC).date()
+    chosen = humoured(chosen, seed)
     for character in chosen:
         _check_age(character, game_date)
     rng = random.Random(f"{seed}:bind")

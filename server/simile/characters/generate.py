@@ -224,6 +224,7 @@ def assemble(
         if name in written:
             made[name] = written[name]
     made["mannerisms"] = sheet.mannerisms
+    made["humour"] = sheet.humour
     if "interests" in written:
         made["interests"] = written["interests"][:MAX_INTERESTS]
     if appearance := written.get("appearance"):
