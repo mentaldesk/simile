@@ -359,7 +359,9 @@ def test_each_side_says_how_their_needs_feel_and_the_leaver_why_they_go() -> Non
 def test_each_side_lists_their_own_mannerisms_as_verbal_habits() -> None:
     habits = ["answers a question with another question", "teases the people they like most"]
     kofi = Character(KOFI.model_copy(update={"mannerisms": habits}), meet(KOFI, "henrietta"))
-    henrietta = Character(HENRIETTA.model_copy(update={"mannerisms": []}), meet(HENRIETTA, "kofi"))
+    henrietta = Character(
+        HENRIETTA.model_copy(update={"mannerisms": [], "humour": None}), meet(HENRIETTA, "kofi")
+    )
 
     prompt = scene_prompt(kofi, henrietta, SharedHistory([], []), None, NOW, PLAN)
 
@@ -431,14 +433,21 @@ def test_the_system_prompt_sets_the_rules_and_the_format() -> None:
     assert "not a consultation" in system
     assert "they let it go" in system
     assert "pet words, phrases and verbal habits now and then, not in every line" in system
-    assert (
-        "- A character with a humour jokes only as often as it says, and in its style. Nobody's "
-        "jokes are cruel or punch down, and any sarcasm stays dry, never insulting.\n"
-    ) in system
     assert "Mara: Morning! Lovely out, isn't it? [values: connection]" in system
     assert "peace of mind" in system
     assert "at most 30 words" in system
     assert re.search(r"\{|\}", system) is None
+    assert "humour" not in system and "joke" not in system
+
+
+def test_only_a_scene_with_a_humour_gets_the_rule_for_jokes() -> None:
+    rule = (
+        "- A character with a humour jokes only as often as it says, and in its style. Nobody's "
+        "jokes are cruel or punch down, and any sarcasm stays dry, never insulting.\n"
+    )
+    habits = "vary how their lines begin.\n"
+
+    assert script_system(humour=True) == script_system().replace(habits, habits + rule)
 
 
 def test_asking_for_the_rest_shows_the_scene_so_far() -> None:

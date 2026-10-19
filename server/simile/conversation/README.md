@@ -226,13 +226,15 @@ how they speak, and code decides which lines joke, as it decides lies.
   jokes: never cruel, never punching down, and sarcasm dry, never insulting. Seriousness under 0.35
   is "a lot", under 0.65 "often", under 0.9 "now and then", and otherwise "rarely". A `none` style
   is "You are not one for jokes: you say what you mean." A scene has the line for each side in the
-  third person, and its rules carry the bounds.
+  third person, and when either side has a humour, its rules carry the bounds.
 - **The roll.** Each B5 reply rolls for a joke with a chance of 1 minus their seriousness, seeded by
-  the conversation, the resident and the line, and the reply prompt says "Work a joke into this
-  line, in your own humour." or "No joke in this line: say it plainly." A scene's plan rolls each
-  side's lines the same way, seeded by the conversation, and the direction says how many of them
-  joke, never all of them.
-- Without a humour, nothing is added and the prompts are as they were.
+  the conversation, the resident and the line, but never straight after a reply that was told to
+  joke, so no two replies running joke. The reply prompt says "Work a joke into this line, in your
+  own humour." or "No joke in this line: say it plainly." A scene's plan rolls each side's lines
+  the same way, seeded by the conversation, and the direction says how many of them joke, never
+  all of them.
+- Without a humour, nothing is added and the prompts are as they were, scenes included when
+  neither side has one.
 
 ## Lies
 

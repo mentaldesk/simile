@@ -324,12 +324,12 @@ def turn_prompt(
     return "\n\n".join([*parts, asked])
 
 
-def jokes(humour: Humour | None, seed: str) -> bool | None:
+def jokes(humour: Humour | None, seed: str, *, after_joke: bool = False) -> bool | None:
     """Whether a line jokes, as often as their seriousness leaves room for, the same each time
-    for the same `seed`. None without a humour."""
+    for the same `seed`, and never straight `after_joke`. None without a humour."""
     if humour is None:
         return None
-    return random.Random(seed).random() < 1 - humour.seriousness
+    return not after_joke and random.Random(seed).random() < 1 - humour.seriousness
 
 
 def detailed(*memories: Sequence[Memory]) -> Memory | None:

@@ -49,6 +49,12 @@ SENTENCE = re.compile(r"(?<=[.!?])\s+")
 LABEL = r"^[\s*_]*(?P<name>{names})[\s*_]*(?:\([^)\n]*\))?[\s*_]*:(?:\*\*|__)?\s*(?P<text>.*)$"
 
 
+HUMOUR_RULE = (
+    "- A character with a humour jokes only as often as it says, and in its style. Nobody's "
+    "jokes are cruel or punch down, and any sarcasm stays dry, never insulting.\n"
+)
+
+
 @dataclass(frozen=True)
 class Character:
     """What one side of a scripted conversation brings to it."""
@@ -72,9 +78,10 @@ class ScriptLine:
     draft: Draft
 
 
-def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
-    """How to write a scene. The same for every conversation."""
+def script_system(config: ConversationConfig = DEFAULT_CONFIG, *, humour: bool = False) -> str:
+    """How to write a scene, with the rule for jokes when a side has a `humour`."""
     bounds = BOUNDS.format(who="the speaker", their="their", they="they")
+    jokes = HUMOUR_RULE if humour else ""
     return "\n\n".join(
         [
             "You write the dialogue for a life simulation set in a small, modern village. Each "
@@ -99,8 +106,7 @@ def script_system(config: ConversationConfig = DEFAULT_CONFIG) -> str:
             "as they leave.\n"
             "- Use each character's pet words, phrases and verbal habits now and then, not in "
             "every line, and vary how their lines begin.\n"
-            "- A character with a humour jokes only as often as it says, and in its style. "
-            "Nobody's jokes are cruel or punch down, and any sarcasm stays dry, never insulting.\n"
+            f"{jokes}"
             "- Nobody agrees just to be pleasant. Saying no, being brief, or disagreeing is fine "
             "when it's in character.\n"
             f"- {bounds}",

@@ -169,6 +169,18 @@ async def test_a_humour_is_drawn_in_code_stored_and_in_the_brief(fake_llm: Fakes
             assert "humour" not in requested_fields(request)
 
 
+async def test_a_locked_humour_reaches_the_sheet_and_the_brief(fake_llm: Fakes) -> None:
+    gallows = Humour(style=HumourStyle.GALLOWS, seriousness=0.3)
+
+    for seed in range(4):
+        assert draw(random.Random(seed), Brief(humour=gallows)).humour == gallows
+        result, fake = await make(fake_llm, Brief(humour=gallows), seed=seed)
+
+        assert result.character.humour == gallows
+        assert f"- Sense of humour: {sketch(gallows)}." in fake.requests[0].messages[-1].content
+    assert draw(random.Random(0), Brief(humour=None)).humour is None
+
+
 async def test_a_reroll_keeps_the_humour_unless_it_redoes_the_biography(fake_llm: Fakes) -> None:
     original = (await make(fake_llm, seed=1))[0].character
     mine = original.model_copy(
