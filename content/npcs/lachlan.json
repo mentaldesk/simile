@@ -63,6 +63,10 @@
     "celebrates small wins out loud",
     "ends a discussion by naming who does what next"
   ],
+  "humour": {
+    "style": "teasing",
+    "seriousness": 0.55
+  },
   "interests": [
     "youth football drills",
     "fair play and refereeing",

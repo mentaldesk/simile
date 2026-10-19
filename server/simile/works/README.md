@@ -20,7 +20,8 @@ prompt has:
   each made them feel, but not their memories of making their own works. A memory of someone else's
   work counts for `others_works` (0.4) of one as strong and as recent, so one striking piece
   doesn't become everyone's theme;
-- their values, persona, backstory, interests, way of talking and craft;
+- their values, persona, backstory, interests, way of talking and craft, and their humour (B5's
+  line, with "It can show in your work too."), when they have one;
 - the titles and statements of their last 3 works, so they don't repeat themselves;
 - the village's 8 latest works by others, each with its title, artist, medium and a few words on
   it (its first 3 tags, or the start of its statement), and an ask for something unlike them in

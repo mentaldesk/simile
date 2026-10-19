@@ -22,6 +22,7 @@ from simile.conversation.prompt import (
     detailed,
     duration,
     first_name,
+    jokes,
     parse_reply,
     system_prompt,
     turn_prompt,
@@ -192,6 +193,8 @@ class PlayerTalk(Talk):
     """The conversation the NPC was pulled out of, whose end their lines wait for."""
     lies: dict[str, Temptation] = field(default_factory=dict)
     """What the NPC has been set up to lie about, by key."""
+    joked: bool = False
+    """Whether the NPC's last reply was told to joke."""
 
     @property
     def npc(self) -> Id:
@@ -372,6 +375,9 @@ class PlayerConversations:
         pressed = engine.pressing(npc)
         recalled = self._recalled(npc, lines)
         self._tempt(talk, lines)
+        seed = f"{talk.conversation.id}/{npc}/{len(lines)}"
+        joke = jokes(party.npc.humour, seed, after_joke=talk.joked)
+        talk.joked = bool(joke)
         prompt = turn_prompt(
             party.background,
             lines,
@@ -386,6 +392,7 @@ class PlayerConversations:
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
             lies=[temptation.direction() for temptation in talk.lies.values()],
+            joke=joke,
         )
         stream = engine.llm().stream(
             prompt,

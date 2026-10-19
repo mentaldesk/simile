@@ -69,6 +69,10 @@
     "teases the people they like most",
     "says they'll sort it out later about almost everything"
   ],
+  "humour": {
+    "style": "teasing",
+    "seriousness": 0.3
+  },
   "interests": [
     "pay-what-you-can suppers",
     "street food and snacks",

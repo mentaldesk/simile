@@ -124,3 +124,25 @@ def test_no_lies_directs_nobody_and_reuse_takes_another_runs_replies(tmp_path: P
     assert not any(reply["directed"] for reply in before)
     assert any(reply["directed"] for reply in after)
     assert {reply["key"] for reply in before} & {reply["key"] for reply in after}
+
+
+def test_no_humour_leaves_it_out_of_the_prompts_but_not_the_report(tmp_path: Path) -> None:
+    picks = ["--pick", "chloe_clarke,kamran_malik", "--scenarios", "rain,news"]
+
+    without = evaluate(*picks, "--no-humour", "--out", str(tmp_path / "a"))
+    given = evaluate(*picks, "--out", str(tmp_path / "b"), "--reuse", str(tmp_path / "a"))
+
+    assert without.exit_code == 0 and given.exit_code == 0, without.output + given.output
+    before = json.loads((tmp_path / "a" / REPLIES).read_text())["replies"]
+    after = json.loads((tmp_path / "b" / REPLIES).read_text())["replies"]
+    keys = {reply["key"] for reply in before}
+    fresh = [reply for reply in after if reply["key"] not in keys]
+    assert all(reply["joke_roll"] is None for reply in before)
+    assert len(fresh) == 4
+    assert all(reply["joke_roll"] is not None for reply in fresh)
+    left_out = (tmp_path / "a" / REPORT).read_text(encoding="utf-8")
+    assert "The prompts left humour out" in left_out
+    assert "| Chloe Clarke, 32, Quantum physicist building gravity sensors | gallows, " in left_out
+    assert "The prompts gave each character their humour." in (tmp_path / "b" / REPORT).read_text(
+        encoding="utf-8"
+    )

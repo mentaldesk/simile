@@ -16,6 +16,7 @@ from simile.conversation.prompt import (
     background,
     duration,
     first_name,
+    jokes,
     parse_reply,
     system_prompt,
     turn_prompt,
@@ -32,7 +33,7 @@ from simile.conversation.temptation import (
 from simile.evaluation.scenarios import NOW, Scenario
 from simile.llm import LLMClient, LLMError
 from simile.memory import MemoryStore
-from simile.schema import Character, Id, Line, Memory, Npc
+from simile.schema import Character, HumourStyle, Id, Line, Memory, Npc
 from simile.social import as_of, meet
 
 logger = logging.getLogger(__name__)
@@ -50,8 +51,13 @@ class Reply(BaseModel):
     values: list[str] = []
     stance: str | None = None
     lies: bool | None = None
+    jokes: bool | None = None
+    joke: HumourStyle | None = None
+    """The style of its joke, when it jokes."""
     directed: bool = False
     """Whether a lie roll gave the prompt a direction to lie."""
+    joke_roll: bool | None = None
+    """Whether a roll told it to joke, or not to. None without a humour."""
 
 
 @dataclass(frozen=True)
@@ -62,6 +68,8 @@ class Prompt:
     others: tuple[str, ...]
     lies: tuple[str, ...] = ()
     """The directions to lie a roll gave it."""
+    joke: bool | None = None
+    """Whether a roll told it to joke, or not to."""
 
     def key(self, model: str) -> str:
         """Changes whenever the model or anything in the prompt does."""
@@ -81,8 +89,13 @@ def prompt(
     scenario: Scenario,
     now: datetime = NOW,
     config: ConversationConfig = DEFAULT_CONFIG,
+    humour: bool = True,
 ) -> Prompt:
-    """B5's system prompt and reply prompt for the character's answer to the scenario's line."""
+    """B5's system prompt and reply prompt for the character's answer to the scenario's line,
+    without their humour unless `humour`. Rolls for lies and a joke are seeded by the scenario and
+    the character."""
+    if not humour:
+        character = character.model_copy(update={"humour": None})
     npc, cast = resident(character, now)
     other = Player(name=scenario.name, description=scenario.description, id=scenario.other)
     with MemoryStore(":memory:") as memory:
@@ -109,9 +122,10 @@ def prompt(
         config,
         speaker=npc.id,
         lies=directed,
+        joke=(joke := jokes(npc.humour, f"{PURPOSE}/{scenario.id}/{npc.id}")),
     )
     names = (first_name(npc), npc.name)
-    return Prompt(system_prompt(npc, config), text, names, (other.name,), tuple(directed))
+    return Prompt(system_prompt(npc, config), text, names, (other.name,), tuple(directed), joke)
 
 
 def tempted(
@@ -171,16 +185,17 @@ async def play(
     max_calls: int | None = None,
     on_reply: Callable[[Reply], None] = lambda reply: None,
     config: ConversationConfig = DEFAULT_CONFIG,
+    humour: bool = True,
 ) -> list[Reply]:
     """Every character's reply to every scenario, reusing those in `done` whose prompt and model
     haven't changed. Starts at most `max_calls` calls; a reply that fails or isn't started is
-    left out."""
+    left out. Without `humour`, the prompts leave out the characters' humour."""
     reused = {reply.key: reply for reply in done}
     started = 0
 
     async def reply(character: Character, scenario: Scenario) -> Reply | None:
         nonlocal started
-        asked = prompt(character, scenario, config=config)
+        asked = prompt(character, scenario, config=config, humour=humour)
         key = asked.key(model)
         if key in reused:
             return reused[key]
@@ -202,6 +217,7 @@ async def play(
             text=draft.text,
             values=[value.value for value in draft.values],
             directed=bool(asked.lies),
+            joke_roll=asked.joke,
         )
         on_reply(made)
         return made

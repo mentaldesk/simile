@@ -56,6 +56,10 @@
     "name-drops a connection whenever a plan is mentioned",
     "talks up a small achievement as a stepping stone to something bigger"
   ],
+  "humour": {
+    "style": "punning",
+    "seriousness": 0.8
+  },
   "interests": [
     "franchise growth figures",
     "corporate hierarchy and etiquette",

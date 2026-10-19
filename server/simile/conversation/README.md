@@ -215,6 +215,27 @@ rudeness is curtness and never insults, and a lie stays small and in character, 
 their reasons, plans or what they did or saw. Nobody makes up facts about the village, its places,
 times or people.
 
+## Humour
+
+Left alone, the model jokes in about one reply in twenty, and the same mild way for everyone. A
+resident's `humour` (a style and a seriousness, see `simile.characters.humour`) becomes a line after
+how they speak, and code decides which lines joke, as it decides lies.
+
+- **The line.** B5's system prompt says it in the second person ("Your humour is dry: understatement
+  and wry asides, said plainly. You joke now and then, never in every line."), with the bounds on
+  jokes: never cruel, never punching down, and sarcasm dry, never insulting. Seriousness under 0.35
+  is "a lot", under 0.65 "often", under 0.9 "now and then", and otherwise "rarely". A `none` style
+  is "You are not one for jokes: you say what you mean." A scene has the line for each side in the
+  third person, and when either side has a humour, its rules carry the bounds.
+- **The roll.** Each B5 reply rolls for a joke with a chance of 1 minus their seriousness, seeded by
+  the conversation, the resident and the line, but never straight after a reply that was told to
+  joke, so no two replies running joke. The reply prompt says "Work a joke into this line, in your
+  own humour." or "No joke in this line: say it plainly." A scene's plan rolls each side's lines
+  the same way, seeded by the conversation, and the direction says how many of them joke, never
+  all of them.
+- Without a humour, nothing is added and the prompts are as they were, scenes included when
+  neither side has one.
+
 ## Lies
 
 The model avoids deceiving even in character, so code decides when a resident lies, and the prompt

@@ -58,6 +58,10 @@
     "opens with a question about how the other person's week has gone",
     "lets silences stretch rather than filling them"
   ],
+  "humour": {
+    "style": "gallows",
+    "seriousness": 0.9
+  },
   "interests": [
     "her grandmother's recipes and feast days",
     "how regulars are really doing",

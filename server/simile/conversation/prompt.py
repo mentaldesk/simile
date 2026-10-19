@@ -1,9 +1,11 @@
+import random
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from simile.characters.humour import describe_humour
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.needs import feels
 from simile.memory import SharedHistory
@@ -12,6 +14,7 @@ from simile.schema import (
     PLAYER_ID,
     CoreValue,
     FlagKind,
+    Humour,
     Id,
     Line,
     Memory,
@@ -41,6 +44,8 @@ CUES: dict[Cue, str] = {
     f"goodbye to {{other}}. {SETTING_OFF}",
     Cue.FAREWELL: f"{{other}} is leaving. Say a brief goodbye back. {SETTING_OFF}",
 }
+JOKE = "Work a joke into this line, in your own humour."
+PLAIN = "No joke in this line: say it plainly."
 OFF_TO = (
     "You need to {errand}. Wrap it up now with a brief, natural goodbye to {other}, and say why "
     "you're going."
@@ -211,11 +216,13 @@ def rough_edges(npc: Npc, name: str | None = None) -> list[str]:
 def how_you_speak(npc: Npc) -> str:
     style = f"How you speak: {npc.speaking_style}"
     if not npc.mannerisms:
-        return f"{style} Use your pet words and phrases now and then, not in every line."
-    return (
-        f"{style}\nYour verbal habits: {habits(npc)}. Use these now and then, not in every line, "
-        "and the same goes for your pet words and phrases."
-    )
+        spoken = f"{style} Use your pet words and phrases now and then, not in every line."
+    else:
+        spoken = (
+            f"{style}\nYour verbal habits: {habits(npc)}. Use these now and then, not in every "
+            "line, and the same goes for your pet words and phrases."
+        )
+    return f"{spoken}\n{describe_humour(npc.humour, kind=True)}" if npc.humour else spoken
 
 
 def habits(npc: Npc) -> str:
@@ -280,10 +287,11 @@ def turn_prompt(
     errand: str | None = None,
     detail: Memory | None = None,
     lies: Sequence[str] = (),
+    joke: bool | None = None,
 ) -> str:
     """The speaker's next line, feeling `mood`, with what stuck with them from the article
-    `detail` is of and the `lies` they've been directed to tell. A goodbye says they're off to
-    do `errand`."""
+    `detail` is of and the `lies` they've been directed to tell, and with a `joke` or without
+    when it's set. A goodbye says they're off to do `errand`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)
@@ -308,10 +316,20 @@ def turn_prompt(
             f"Your lines so far began {listed}. Begin this one another way, and don't greet "
             f"{other} again."
         )
+    if joke is not None:
+        parts.append(JOKE if joke else PLAIN)
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
     off_to = cue is Cue.GOODBYE and errand
     asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
     return "\n\n".join([*parts, asked])
+
+
+def jokes(humour: Humour | None, seed: str, *, after_joke: bool = False) -> bool | None:
+    """Whether a line jokes, as often as their seriousness leaves room for, the same each time
+    for the same `seed`, and never straight `after_joke`. None without a humour."""
+    if humour is None:
+        return None
+    return not after_joke and random.Random(seed).random() < 1 - humour.seriousness
 
 
 def detailed(*memories: Sequence[Memory]) -> Memory | None:

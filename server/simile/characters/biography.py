@@ -6,6 +6,7 @@ from pydantic import AfterValidator, Field, create_model
 
 from simile.art.characters import SKIN_TONES
 from simile.art.palette import PALETTE
+from simile.characters.humour import sketch
 from simile.characters.sheet import Sheet
 from simile.characters.tables import YEAR, Tables, describe_temperament
 from simile.npc.values import format_scores, ranked
@@ -180,6 +181,8 @@ def describe(facts: Mapping[str, Any], sheet: Sheet, t: Tables) -> str:
         lines.append(f"- Health: {_text(census.health.condition, s.health)}.")
     if sheet.mannerisms:
         lines.append(f"- Verbal habits: {'; '.join(sheet.mannerisms)}.")
+    if sheet.humour:
+        lines.append(f"- Sense of humour: {sketch(sheet.humour)}.")
     tension = sheet.tension
     if tension.wound:
         lines.append(f"- Wound: {tension.wound.text}.")
@@ -320,8 +323,8 @@ INSTRUCTIONS = {
     ),
     "speaking_style": lambda sheet: (
         "one or two sentences on pace, formality, vocabulary and verbal habits, shaped by their "
-        "temperament, values and age. It can build on a verbal habit from the brief, but don't "
-        "just repeat it."
+        "temperament, values, age and sense of humour. It can build on a verbal habit from the "
+        "brief, but don't just repeat it."
     ),
     "interests": lambda sheet: (
         "three to six short topics they bring up, two to five words each, each one particular to "

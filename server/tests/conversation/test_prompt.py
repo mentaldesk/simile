@@ -18,6 +18,7 @@ from simile.conversation.prompt import (
     WorkTopic,
     detailed,
     first_name,
+    jokes,
     rough_edges,
     takes_leave,
 )
@@ -29,6 +30,8 @@ from simile.schema import (
     CoreValue,
     Flag,
     FlagKind,
+    Humour,
+    HumourStyle,
     InteractionEvent,
     Line,
     Medium,
@@ -85,6 +88,35 @@ def test_without_mannerisms_the_system_prompt_has_only_the_style() -> None:
         f"How you speak: {KOFI.speaking_style} Use your pet words and phrases now and then, not in "
         "every line."
     ) in prompt
+
+
+def test_the_system_prompt_gives_their_humour_with_its_guard_and_bounds() -> None:
+    humour = Humour(style=HumourStyle.DEADPAN, seriousness=0.7)
+
+    prompt = system_prompt(KOFI.model_copy(update={"humour": humour, "mannerisms": []}))
+
+    assert (
+        f"How you speak: {KOFI.speaking_style} Use your pet words and phrases now and then, not in "
+        "every line.\n"
+        "Your humour is deadpan: absurd or ironic remarks made with a perfectly straight face. You "
+        "joke now and then, never in every line. Your jokes are never cruel and never punch down, "
+        "and any sarcasm stays dry, never insulting.\n\n"
+    ) in prompt
+
+
+def test_someone_with_no_humour_is_told_to_say_what_they_mean() -> None:
+    none = Humour(style=HumourStyle.NONE, seriousness=1)
+
+    prompt = system_prompt(KOFI.model_copy(update={"humour": none}))
+
+    assert "\nYou are not one for jokes: you say what you mean.\n\n" in prompt
+    assert "Your jokes" not in prompt
+
+
+def test_without_a_humour_the_system_prompt_doesnt_mention_one() -> None:
+    prompt = system_prompt(KOFI.model_copy(update={"humour": None}))
+
+    assert "humour" not in prompt and "joke" not in prompt
 
 
 def test_the_system_prompt_keeps_the_resident_within_what_they_would_know() -> None:
@@ -333,6 +365,40 @@ def test_a_turn_is_the_background_the_transcript_and_the_cue() -> None:
         "Say your next line to Henrietta. Keep the conversation going: don't wrap it up or say "
         "goodbye yet."
     )
+
+
+@pytest.mark.parametrize(
+    ("joke", "direction"),
+    [
+        (True, "Work a joke into this line, in your own humour."),
+        (False, "No joke in this line: say it plainly."),
+    ],
+)
+def test_a_roll_tells_the_line_to_joke_or_not_before_its_length(joke: bool, direction: str) -> None:
+    prompt = turn_prompt("BACKGROUND", [], NAMES, Cue.REPLY, "Henrietta", joke=joke)
+
+    assert f"{direction}\n\nSay one or two sentences, at most 40 words." in prompt
+
+
+def test_without_a_roll_a_turn_says_nothing_about_jokes() -> None:
+    assert "joke" not in turn_prompt("BACKGROUND", [], NAMES, Cue.REPLY, "Henrietta").lower()
+
+
+@pytest.mark.parametrize("seriousness", [0.1, 0.5, 0.8])
+def test_lines_joke_as_often_as_seriousness_leaves_room_for(seriousness: float) -> None:
+    humour = Humour(style=HumourStyle.DRY, seriousness=seriousness)
+
+    rolls = [jokes(humour, f"talk/kofi/{n}") for n in range(2000)]
+
+    assert sum(map(bool, rolls)) / len(rolls) == pytest.approx(1 - seriousness, abs=0.03)
+    assert rolls == [jokes(humour, f"talk/kofi/{n}") for n in range(2000)]
+
+
+def test_no_humour_rolls_nothing_and_none_never_jokes() -> None:
+    none = Humour(style=HumourStyle.NONE, seriousness=1)
+
+    assert jokes(None, "talk/kofi/1") is None
+    assert not any(jokes(none, f"talk/kofi/{n}") for n in range(200))
 
 
 def test_a_turn_has_the_works_they_might_bring_up_after_the_background() -> None:
