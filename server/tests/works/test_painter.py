@@ -25,7 +25,7 @@ from simile.works.painter import (
     image_prompt,
 )
 
-from .conftest import NOW
+from .conftest import NOW, Hanging
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -100,20 +100,6 @@ def test_the_time_limit_runs_from_handing_the_picture_over() -> None:
     assert str(second) == "it took more than 0.6 s to paint"
 
 
-class Hanging(FakeImageModel):
-    """Hangs inside a step, as a stuck GPU call would, until released."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.release = threading.Event()
-
-    def paint(
-        self, prompt: str, width: int, height: int, seed: int, step: Callable[[], None]
-    ) -> Image.Image:
-        self.release.wait()
-        return super().paint(prompt, width, height, seed, step)
-
-
 def test_a_hung_picture_fails_and_new_ones_fail_at_once_until_it_returns() -> None:
     model = Hanging()
 
@@ -139,6 +125,27 @@ def test_a_hung_picture_fails_and_new_ones_fail_at_once_until_it_returns() -> No
     assert waited < 0.1
     assert isinstance(then, Image.Image)
     assert model.prompts == ["a", "c"]
+
+
+def test_a_picture_handed_over_while_another_paints_waits_its_turn() -> None:
+    model = Hanging()
+
+    async def scenario() -> list[object]:
+        async with Painter(model, timeout=10) as painter:
+            try:
+                first = asyncio.create_task(painter.paint("a", 64, 48, 1))
+                assert await asyncio.to_thread(model.painting.wait, 5)
+                second = asyncio.create_task(painter.paint("b", 64, 48, 1))
+                await asyncio.sleep(0.05)
+                model.release.set()
+                return await asyncio.gather(first, second, return_exceptions=True)
+            finally:
+                model.release.set()
+
+    pictures = asyncio.run(scenario())
+
+    assert [type(picture) for picture in pictures] == [Image.Image, Image.Image]
+    assert model.prompts == ["a", "b"]
 
 
 def test_waits_while_the_player_talks() -> None:

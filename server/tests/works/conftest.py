@@ -1,14 +1,17 @@
 import json
-from collections.abc import Iterator
+import threading
+from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from PIL import Image
 
 from simile.memory import MemoryStore
 from simile.schema import CoreValue, Medium, Npc, Tile, Work
 from simile.works import WorksStore
 from simile.works.maker import MuralReply, Reply
+from simile.works.painter import FakeImageModel
 from simile.world.map import MuralWall
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -108,3 +111,19 @@ def mural_reply(**fields: object) -> str:
             **fields,
         }
     ).model_dump_json()
+
+
+class Hanging(FakeImageModel):
+    """Hangs as a stuck GPU call would, until released. `painting` is set once it starts."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.painting = threading.Event()
+        self.release = threading.Event()
+
+    def paint(
+        self, prompt: str, width: int, height: int, seed: int, step: Callable[[], None]
+    ) -> Image.Image:
+        self.painting.set()
+        self.release.wait()
+        return super().paint(prompt, width, height, seed, step)

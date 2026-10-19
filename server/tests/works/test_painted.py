@@ -1,7 +1,5 @@
 import asyncio
 import io
-import threading
-from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -16,7 +14,7 @@ from simile.works.maker import MuralPictureReply, PaintingPictureReply
 from simile.works.painter import FakeImageModel, Painter
 from simile.works.render import canvas, painting_canvas
 
-from .conftest import NOW, SUKI, VIKTOR, WALL, mural_reply, svg
+from .conftest import NOW, SUKI, VIKTOR, WALL, Hanging, mural_reply, svg
 
 NPCS = {npc.id: npc for npc in (VIKTOR, SUKI)}
 PAINTER = VIKTOR.model_copy(
@@ -158,18 +156,6 @@ def test_draws_it_as_svg_when_painting_it_fails(
     assert "Draw it as one SVG document" in drawn
     svg_of = works.svg(made.id) if medium is Medium.MURAL else hung[0][1]
     assert svg_of and svg_of.startswith("<svg")
-
-
-class Hanging(FakeImageModel):
-    def __init__(self) -> None:
-        super().__init__()
-        self.release = threading.Event()
-
-    def paint(
-        self, prompt: str, width: int, height: int, seed: int, step: Callable[[], None]
-    ) -> Image.Image:
-        self.release.wait()
-        return super().paint(prompt, width, height, seed, step)
 
 
 def test_draws_it_as_svg_when_the_image_model_hangs(memory: MemoryStore, works: WorksStore) -> None:
