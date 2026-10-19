@@ -48,18 +48,31 @@ def test_the_prompt_groups_replies_by_scenario_without_names() -> None:
 def test_each_reply_takes_only_its_scenarios_labels() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
 
-    assert schema(r1="helps", r2="confronts", r3="hostile", r4="ignores", lies=[])
+    assert schema(r1="helps", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[])
     with pytest.raises(ValidationError):
-        schema(r1="confronts", r2="confronts", r3="hostile", r4="ignores", lies=[])
+        schema(r1="confronts", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[])
 
 
 def test_lies_name_only_replies_that_were_asked_about() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
     labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores"}
 
-    assert schema(**labels, lies=["r2", "r4"])
+    assert schema(**labels, lies=["r2", "r4"], jokes=[])
     with pytest.raises(ValidationError):
-        schema(**labels, lies=["r5"])
+        schema(**labels, lies=["r5"], jokes=[])
+    with pytest.raises(ValidationError):
+        schema(**labels, jokes=[])
+
+
+def test_jokes_name_a_reply_and_one_style() -> None:
+    schema = stance_schema(SCENARIOS, REPLIES)
+    labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores", "lies": []}
+
+    assert schema(**labels, jokes=[{"reply": "r3", "style": "sarcastic"}])
+    with pytest.raises(ValidationError):
+        schema(**labels, jokes=[{"reply": "r5", "style": "dry"}])
+    with pytest.raises(ValidationError):
+        schema(**labels, jokes=[{"reply": "r1", "style": "none"}])
     with pytest.raises(ValidationError):
         schema(**labels)
 
@@ -69,22 +82,35 @@ def test_the_judge_is_told_what_counts_as_a_lie() -> None:
     assert "an excuse that sounds made up" in SYSTEM
 
 
+def test_the_judge_is_told_what_counts_as_a_joke() -> None:
+    assert "list under jokes every reply that jokes" in SYSTEM
+    assert "Being friendly, cheerful or blunt isn't joking" in SYSTEM
+    assert "the one style that fits it best" in SYSTEM
+
+
 async def test_label_asks_once_and_sets_each_stance_and_lie() -> None:
     fake = FakeProvider(
         [
             json.dumps(
-                {"r1": "helps", "r2": "hostile", "r3": "confronts", "r4": "ignores", "lies": ["r2"]}
+                {
+                    "r1": "helps",
+                    "r2": "hostile",
+                    "r3": "confronts",
+                    "r4": "ignores",
+                    "lies": ["r2"],
+                    "jokes": [{"reply": "r3", "style": "deadpan"}],
+                }
             )
         ]
     )
 
     labelled = await label(LLMClient(fake), SCENARIOS, REPLIES, model="judge")
 
-    assert [(r.key, r.stance, r.lies) for r in labelled] == [
-        ("ann/favour", "helps", False),
-        ("bob/favour", "hostile", True),
-        ("ann/promise", "confronts", False),
-        ("bob/promise", "ignores", False),
+    assert [(r.key, r.stance, r.lies, r.jokes, r.joke) for r in labelled] == [
+        ("ann/favour", "helps", False, False, None),
+        ("bob/favour", "hostile", True, False, None),
+        ("ann/promise", "confronts", False, True, "deadpan"),
+        ("bob/promise", "ignores", False, False, None),
     ]
     [request] = fake.requests
     assert request.model == "judge"
@@ -95,9 +121,25 @@ async def test_a_label_from_another_scenario_is_asked_again() -> None:
     fake = FakeProvider(
         [
             json.dumps(
-                {"r1": "confronts", "r2": "helps", "r3": "hints", "r4": "ignores", "lies": []}
+                {
+                    "r1": "confronts",
+                    "r2": "helps",
+                    "r3": "hints",
+                    "r4": "ignores",
+                    "lies": [],
+                    "jokes": [],
+                }
             ),
-            json.dumps({"r1": "helps", "r2": "helps", "r3": "hints", "r4": "ignores", "lies": []}),
+            json.dumps(
+                {
+                    "r1": "helps",
+                    "r2": "helps",
+                    "r3": "hints",
+                    "r4": "ignores",
+                    "lies": [],
+                    "jokes": [],
+                }
+            ),
         ]
     )
 

@@ -9,16 +9,17 @@ from simile.schema import Character, CoreValue, PastMemory
 
 pytestmark = pytest.mark.anyio
 
-FAVOUR, PROMISE, NEWS, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
+FAVOUR, PROMISE, NEWS, RAIN, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
 ALWAYS = ConversationConfig(lie_most=1, lie_peak=0.55, lie_bias=1)
 NEVER = ConversationConfig(lie_most=0)
 
 
-def test_the_scenarios_are_the_five_fixed_ones_and_four_with_a_temptation() -> None:
+def test_the_scenarios_are_four_fixed_ones_and_six_with_a_temptation() -> None:
     assert [s.id for s in SCENARIOS] == [
         "favour",
         "promise",
         "news",
+        "rain",
         "complaint",
         "lie",
         "rent",

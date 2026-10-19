@@ -165,6 +165,25 @@ SCENARIOS = (
         },
     ),
     Scenario(
+        id="rain",
+        title="A rained-off barbecue",
+        situation="A neighbour grumbles that the rain has called off their barbecue for the "
+        "third weekend running.",
+        name="Chris",
+        description="a neighbour of yours, a driving instructor",
+        other="chris",
+        feelings={"like": 0.6, "familiarity": 0.6},
+        line="Rain again. That's the barbecue off for the third weekend running. I've had "
+        "sausages in the freezer since August.",
+        stances={
+            "commiserates": "sympathises, or says it's a shame",
+            "cheers": "looks on the bright side or suggests another plan",
+            "jokes": "makes light of it, mainly with a joke",
+            "shrugs": "brief or indifferent, or talks about something else",
+            "hostile": "rude, cold or attacking",
+        },
+    ),
+    Scenario(
         id="complaint",
         title="A neighbour complains",
         situation="Their next-door neighbour complains that their bins have been left out on "

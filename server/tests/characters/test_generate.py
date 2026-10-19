@@ -26,6 +26,8 @@ from simile.schema import (
     Hook,
     HookKind,
     HookSide,
+    Humour,
+    HumourStyle,
     PastMemory,
     Traits,
 )
@@ -60,6 +62,7 @@ FULL = {
     "persona": "Dry, exacting and impossible to hurry.",
     "speaking_style": "Short sentences, times and numbers.",
     "mannerisms": ["answers a question with another question"],
+    "humour": Humour(style=HumourStyle.DEADPAN, seriousness=0.8),
     "interests": ["timetables", "Polish crime novels", "tomatoes"],
     "past": [
         PastMemory(age=22, content="Passed the bus test first time.", salience=0.6, valence=0.6)

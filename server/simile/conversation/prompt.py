@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import StrEnum
 
+from simile.characters.humour import describe_humour
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.needs import feels
 from simile.memory import SharedHistory
@@ -211,11 +212,13 @@ def rough_edges(npc: Npc, name: str | None = None) -> list[str]:
 def how_you_speak(npc: Npc) -> str:
     style = f"How you speak: {npc.speaking_style}"
     if not npc.mannerisms:
-        return f"{style} Use your pet words and phrases now and then, not in every line."
-    return (
-        f"{style}\nYour verbal habits: {habits(npc)}. Use these now and then, not in every line, "
-        "and the same goes for your pet words and phrases."
-    )
+        spoken = f"{style} Use your pet words and phrases now and then, not in every line."
+    else:
+        spoken = (
+            f"{style}\nYour verbal habits: {habits(npc)}. Use these now and then, not in every "
+            "line, and the same goes for your pet words and phrases."
+        )
+    return f"{spoken}\n{describe_humour(npc.humour, kind=True)}" if npc.humour else spoken
 
 
 def habits(npc: Npc) -> str:

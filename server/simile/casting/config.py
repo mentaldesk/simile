@@ -19,6 +19,7 @@ class Weights(BaseModel):
     age: float = Field(default=0.5, ge=0, description="Times their age gap over `age_scale`.")
     occupation: float = Field(default=0.5, ge=0, description="When their job's family differs.")
     gender: float = Field(default=0.5, ge=0, description="When their genders differ.")
+    humour: float = Field(default=0.5, ge=0, description="When their humour's styles differ.")
 
 
 class Side(BaseModel):

@@ -56,6 +56,13 @@ def register(app: typer.Typer) -> None:
             bool,
             typer.Option(help="Roll for lies. Without it, nobody is directed to lie."),
         ] = True,
+        humour: Annotated[
+            bool,
+            typer.Option(
+                help="Give the prompts each character's humour. A character without one is "
+                "given one as casting would, seeded by --seed, which the report shows either way."
+            ),
+        ] = True,
         reuse: Annotated[
             Path | None,
             typer.Option(
@@ -69,6 +76,7 @@ def register(app: typer.Typer) -> None:
         import asyncio
         import os
 
+        from simile.casting.humour import humoured
         from simile.characters.novelty import LocalEmbedder
         from simile.characters.pool import POOL_DIR, load_pool
         from simile.conversation.config import ConversationConfig
@@ -82,7 +90,7 @@ def register(app: typer.Typer) -> None:
         directory = pool or POOL_DIR
         picks = [id.strip() for id in pick.split(",") if id.strip()] if pick else []
         try:
-            chosen = choose(load_pool(directory), sample, seed, picks)
+            chosen = humoured(choose(load_pool(directory), sample, seed, picks), seed)
             playing = played(scenarios)
         except Refused as e:
             raise typer.BadParameter(str(e)) from e
@@ -127,6 +135,7 @@ def register(app: typer.Typer) -> None:
                     scenarios=playing,
                     reuse=reuse,
                     config=config,
+                    humour=humour,
                 )
             )
         except Refused as e:

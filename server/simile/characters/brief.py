@@ -14,6 +14,7 @@ from simile.schema import (
     Craft,
     Gender,
     Hook,
+    Humour,
     PastMemory,
     Traits,
     Unit,
@@ -33,6 +34,7 @@ LOCKABLE = (
     "persona",
     "speaking_style",
     "mannerisms",
+    "humour",
     "interests",
     "past",
     "hooks",
@@ -47,7 +49,15 @@ SECTIONS: dict[str, tuple[str, ...]] = {
     "identity": ("birth_year", "gender", "origin", "arrival", "occupation"),
     "values": ("values", "traits"),
     "past": ("past",),
-    "biography": ("backstory", "persona", "speaking_style", "mannerisms", "interests", "craft"),
+    "biography": (
+        "backstory",
+        "persona",
+        "speaking_style",
+        "mannerisms",
+        "humour",
+        "interests",
+        "craft",
+    ),
     "hooks": ("hooks",),
     "voice": ("voice",),
     "appearance": ("appearance",),
@@ -81,6 +91,7 @@ class Brief(Schema):
     persona: str | None = None
     speaking_style: str | None = None
     mannerisms: list[Mannerism] | None = Field(default=None, max_length=3)
+    humour: Humour | None = None
     interests: list[str] | None = None
     past: list[PastMemory] | None = None
     hooks: list[Hook] | None = None
