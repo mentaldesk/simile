@@ -322,7 +322,14 @@ class ConversationEngine:
         history = self.memory.shared_history(a, b, now, k=config.history)
         lying = self._scene_lies(conversation.id, sides, history, loan)
         scene_plan = plan(
-            names, stances, a, config, loan=loan, lies=[set_up.said for set_up in lying]
+            names,
+            stances,
+            a,
+            config,
+            loan=loan,
+            lies=[set_up.said for set_up in lying],
+            humours={npc: npcs[npc].humour for npc in names},
+            seed=conversation.id,
         )
         location = self.behaviour.places.at(here)
         prompt = scene_prompt(

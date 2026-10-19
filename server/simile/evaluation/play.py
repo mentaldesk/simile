@@ -16,6 +16,7 @@ from simile.conversation.prompt import (
     background,
     duration,
     first_name,
+    jokes,
     parse_reply,
     system_prompt,
     turn_prompt,
@@ -55,6 +56,8 @@ class Reply(BaseModel):
     """The style of its joke, when it jokes."""
     directed: bool = False
     """Whether a lie roll gave the prompt a direction to lie."""
+    joke_roll: bool | None = None
+    """Whether a roll told it to joke, or not to. None without a humour."""
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,8 @@ class Prompt:
     others: tuple[str, ...]
     lies: tuple[str, ...] = ()
     """The directions to lie a roll gave it."""
+    joke: bool | None = None
+    """Whether a roll told it to joke, or not to."""
 
     def key(self, model: str) -> str:
         """Changes whenever the model or anything in the prompt does."""
@@ -87,7 +92,8 @@ def prompt(
     humour: bool = True,
 ) -> Prompt:
     """B5's system prompt and reply prompt for the character's answer to the scenario's line,
-    without their humour unless `humour`."""
+    without their humour unless `humour`. Rolls for lies and a joke are seeded by the scenario and
+    the character."""
     if not humour:
         character = character.model_copy(update={"humour": None})
     npc, cast = resident(character, now)
@@ -116,9 +122,10 @@ def prompt(
         config,
         speaker=npc.id,
         lies=directed,
+        joke=(joke := jokes(npc.humour, f"{PURPOSE}/{scenario.id}/{npc.id}")),
     )
     names = (first_name(npc), npc.name)
-    return Prompt(system_prompt(npc, config), text, names, (other.name,), tuple(directed))
+    return Prompt(system_prompt(npc, config), text, names, (other.name,), tuple(directed), joke)
 
 
 def tempted(
@@ -210,6 +217,7 @@ async def play(
             text=draft.text,
             values=[value.value for value in draft.values],
             directed=bool(asked.lies),
+            joke_roll=asked.joke,
         )
         on_reply(made)
         return made

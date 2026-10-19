@@ -182,6 +182,7 @@ def humours(
         f"- **Jokes** in {sum(map(len, jokes.values()))} of {len(ranked) * len(ids)} replies, "
         f"where seriousness implies {expected.sum() * len(ids):.0f}.",
         f"- **In their own style:** {sum(own)} of {len(own)} jokes by characters with a style.",
+        *rolls([by[c.id, s] for c in ranked for s in ids]),
         "",
         "Implied share against each character's share of joking replies, Pearson r over "
         f"characters: {r(correlation(expected, share))}.",
@@ -217,6 +218,18 @@ def humours(
         joking = sum(bool(by[c.id, scenario.id].jokes) for c in ranked)
         lines.append(f"| {scenario.title} | {joking} of {len(ranked)} |")
     return lines
+
+
+def rolls(replies: Sequence[Reply]) -> list[str]:
+    """How the joke rolls came out, when there were any."""
+    told = [reply for reply in replies if reply.joke_roll]
+    held = [reply for reply in replies if reply.joke_roll is False]
+    if not told and not held:
+        return []
+    return [
+        f"- **Rolled to joke:** {len(told)} replies, {sum(bool(r.jokes) for r in told)} of them "
+        f"joking. Told not to, {sum(bool(r.jokes) for r in held)} of {len(held)} joke."
+    ]
 
 
 def implied(character: Character) -> float:

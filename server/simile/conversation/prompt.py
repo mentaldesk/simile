@@ -1,3 +1,4 @@
+import random
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -13,6 +14,7 @@ from simile.schema import (
     PLAYER_ID,
     CoreValue,
     FlagKind,
+    Humour,
     Id,
     Line,
     Memory,
@@ -42,6 +44,8 @@ CUES: dict[Cue, str] = {
     f"goodbye to {{other}}. {SETTING_OFF}",
     Cue.FAREWELL: f"{{other}} is leaving. Say a brief goodbye back. {SETTING_OFF}",
 }
+JOKE = "Work a joke into this line, in your own humour."
+PLAIN = "No joke in this line: say it plainly."
 OFF_TO = (
     "You need to {errand}. Wrap it up now with a brief, natural goodbye to {other}, and say why "
     "you're going."
@@ -283,10 +287,11 @@ def turn_prompt(
     errand: str | None = None,
     detail: Memory | None = None,
     lies: Sequence[str] = (),
+    joke: bool | None = None,
 ) -> str:
     """The speaker's next line, feeling `mood`, with what stuck with them from the article
-    `detail` is of and the `lies` they've been directed to tell. A goodbye says they're off to
-    do `errand`."""
+    `detail` is of and the `lies` they've been directed to tell, and with a `joke` or without
+    when it's set. A goodbye says they're off to do `errand`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)
@@ -311,10 +316,20 @@ def turn_prompt(
             f"Your lines so far began {listed}. Begin this one another way, and don't greet "
             f"{other} again."
         )
+    if joke is not None:
+        parts.append(JOKE if joke else PLAIN)
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
     off_to = cue is Cue.GOODBYE and errand
     asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
     return "\n\n".join([*parts, asked])
+
+
+def jokes(humour: Humour | None, seed: str) -> bool | None:
+    """Whether a line jokes, as often as their seriousness leaves room for, the same each time
+    for the same `seed`. None without a humour."""
+    if humour is None:
+        return None
+    return random.Random(seed).random() < 1 - humour.seriousness
 
 
 def detailed(*memories: Sequence[Memory]) -> Memory | None:

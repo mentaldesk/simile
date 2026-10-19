@@ -22,6 +22,7 @@ from simile.conversation.prompt import (
     detailed,
     duration,
     first_name,
+    jokes,
     parse_reply,
     system_prompt,
     turn_prompt,
@@ -386,6 +387,7 @@ class PlayerConversations:
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
             lies=[temptation.direction() for temptation in talk.lies.values()],
+            joke=jokes(party.npc.humour, f"{talk.conversation.id}/{npc}/{len(lines)}"),
         )
         stream = engine.llm().stream(
             prompt,
