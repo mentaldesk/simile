@@ -54,6 +54,33 @@ Mannerisms = Annotated[
 ]
 
 
+class HumourStyle(StrEnum):
+    DRY = "dry"
+    DEADPAN = "deadpan"
+    SARCASTIC = "sarcastic"
+    CYNICAL = "cynical"
+    PUNNING = "punning"
+    SILLY = "silly"
+    TEASING = "teasing"
+    GALLOWS = "gallows"
+    NONE = "none"
+
+
+class Humour(Model):
+    """Their sense of humour: its style, and how seldom they joke."""
+
+    style: HumourStyle
+    seriousness: Unit = Field(
+        description="How seldom they joke, 0-1: at 0 they joke in most lines, at 1 never."
+    )
+
+    @model_validator(mode="after")
+    def _none_never_jokes(self) -> Self:
+        if self.style is HumourStyle.NONE and self.seriousness != 1:
+            raise ValueError("someone with no humour never jokes, so their seriousness is 1")
+        return self
+
+
 class HairStyle(StrEnum):
     BALD = "bald"
     BUZZ = "buzz"
@@ -247,6 +274,11 @@ class Npc(Model):
     persona: str
     speaking_style: str
     mannerisms: Mannerisms = []
+    humour: Humour | None = Field(
+        default=None,
+        exclude_if=lambda humour: humour is None,
+        description="Null when unset, and left out.",
+    )
     interests: list[str]
     appearance: Appearance
     voice: Voice
