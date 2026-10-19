@@ -7,6 +7,7 @@ import time
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Protocol, Self
 
 from simile.schema import PLAYER_ID, Id, Medium
@@ -71,11 +72,17 @@ class ImageModel(Protocol):
         ...
 
 
+@dataclass
+class _Job:
+    deadline: float
+    cancelled: threading.Event = field(default_factory=threading.Event)
+
+
 class Painter:
     """One image model, loaded once, painting one picture at a time on its own thread. Before it
     starts and between steps it waits while `waiting()`, up to `patience` seconds a picture all
-    told, and it gives up on a picture after `timeout` seconds of painting, not counting the
-    waits."""
+    told. A picture not painted within `timeout` seconds of being handed over fails, and so does
+    every new one while the thread is still busy with a picture past its time."""
 
     def __init__(
         self,
@@ -91,6 +98,7 @@ class Painter:
         self.patience = patience
         self._thread = ThreadPoolExecutor(max_workers=1, thread_name_prefix="simile-painter")
         self._closed = threading.Event()
+        self._painting: _Job | None = None
 
     async def __aenter__(self) -> Self:
         try:
@@ -106,43 +114,46 @@ class Painter:
 
     async def paint(self, prompt: str, width: int, height: int, seed: int) -> "Image.Image":
         """`PaintingFailed` if it fails or takes too long."""
-        cancelled = threading.Event()
+        stuck = self._painting
+        if stuck is not None and time.monotonic() > stuck.deadline:
+            raise PaintingFailed("the image model is still stuck on an earlier picture")
+        job = _Job(time.monotonic() + self.timeout)
         loop = asyncio.get_running_loop()
         try:
-            return await loop.run_in_executor(
-                self._thread, self._paint, prompt, width, height, seed, cancelled
+            return await asyncio.wait_for(
+                loop.run_in_executor(self._thread, self._paint, job, prompt, width, height, seed),
+                self.timeout,
             )
-        except asyncio.CancelledError:
-            cancelled.set()
-            raise
+        except TimeoutError:
+            raise PaintingFailed(f"it took more than {self.timeout:g} s to paint") from None
         except PaintingFailed:
             raise
         except Exception as error:
             raise PaintingFailed(f"{type(error).__name__}: {error}") from error
+        finally:
+            job.cancelled.set()
 
-    def _paint(
-        self, prompt: str, width: int, height: int, seed: int, cancelled: threading.Event
-    ) -> "Image.Image":
-        painting = waited = 0.0
-        since = time.monotonic()
+    def _paint(self, job: _Job, prompt: str, width: int, height: int, seed: int) -> "Image.Image":
+        self._painting = job
+        waited = 0.0
 
         def step() -> None:
-            nonlocal painting, waited, since
-            painting += time.monotonic() - since
+            nonlocal waited
             since = time.monotonic()
-            while self.waiting() and waited < self.patience and not self._stopped(cancelled):
+            while self.waiting() and waited < self.patience and not self._stopped(job):
                 time.sleep(WAIT_EVERY)
                 waited += time.monotonic() - since
                 since = time.monotonic()
-            if self._stopped(cancelled):
+            if self._stopped(job):
                 raise PaintingFailed("it was stopped")
-            if painting > self.timeout:
-                raise PaintingFailed(f"it took more than {self.timeout:g} s to paint")
 
-        return self.model.paint(prompt, width, height, seed, step)
+        try:
+            return self.model.paint(prompt, width, height, seed, step)
+        finally:
+            self._painting = None
 
-    def _stopped(self, cancelled: threading.Event) -> bool:
-        return cancelled.is_set() or self._closed.is_set()
+    def _stopped(self, job: _Job) -> bool:
+        return job.cancelled.is_set() or self._closed.is_set()
 
 
 class FakeImageModel:

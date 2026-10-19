@@ -90,12 +90,63 @@ def test_gives_up_on_a_picture_that_takes_too_long() -> None:
     assert str(failed) == "it took more than 0.08 s to paint"
 
 
-def test_waits_while_the_player_talks_without_counting_it() -> None:
+def test_the_time_limit_runs_from_handing_the_picture_over() -> None:
+    model = Slow(each=0.1)
+
+    first, second = asyncio.run(painted(Painter(model, timeout=0.6), "a", "b"))
+
+    assert isinstance(first, Image.Image)
+    assert isinstance(second, PaintingFailed)
+    assert str(second) == "it took more than 0.6 s to paint"
+
+
+class Hanging(FakeImageModel):
+    """Hangs inside a step, as a stuck GPU call would, until released."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.release = threading.Event()
+
+    def paint(
+        self, prompt: str, width: int, height: int, seed: int, step: Callable[[], None]
+    ) -> Image.Image:
+        self.release.wait()
+        return super().paint(prompt, width, height, seed, step)
+
+
+def test_a_hung_picture_fails_and_new_ones_fail_at_once_until_it_returns() -> None:
+    model = Hanging()
+
+    async def scenario() -> list[object]:
+        async with Painter(model, timeout=0.2) as painter:
+            try:
+                hung = await asyncio.gather(painter.paint("a", 64, 48, 1), return_exceptions=True)
+                started = time.monotonic()
+                stuck = await asyncio.gather(painter.paint("b", 64, 48, 1), return_exceptions=True)
+                waited = time.monotonic() - started
+                model.release.set()
+                await asyncio.sleep(0.1)
+                return [*hung, *stuck, waited, await painter.paint("c", 64, 48, 1)]
+            finally:
+                model.release.set()
+
+    hung, stuck, waited, then = asyncio.run(scenario())
+
+    assert isinstance(hung, PaintingFailed)
+    assert str(hung) == "it took more than 0.2 s to paint"
+    assert isinstance(stuck, PaintingFailed)
+    assert str(stuck) == "the image model is still stuck on an earlier picture"
+    assert waited < 0.1
+    assert isinstance(then, Image.Image)
+    assert model.prompts == ["a", "c"]
+
+
+def test_waits_while_the_player_talks() -> None:
     model = Slow(each=0.02)
     until = time.monotonic() + 0.3
 
     [picture] = asyncio.run(
-        painted(Painter(model, timeout=0.2, waiting=lambda: time.monotonic() < until), "a")
+        painted(Painter(model, timeout=10, waiting=lambda: time.monotonic() < until), "a")
     )
 
     assert isinstance(picture, Image.Image)
@@ -162,8 +213,9 @@ async def opened() -> Painter | None:
         return painter
 
 
-def test_no_painter_unless_asked_for(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("SIMILE_IMAGES", raising=False)
+def test_no_painter_unless_asked_for(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    fake_flux(monkeypatch, tmp_path)
+    monkeypatch.delenv("SIMILE_IMAGES")
 
     assert asyncio.run(opened()) is None
 
@@ -254,9 +306,10 @@ def test_the_server_gives_the_maker_the_painter_and_waits_while_the_player_talks
 
 
 def test_the_server_draws_svg_without_images(
-    monkeypatch: pytest.MonkeyPatch, make_package: MakePackage
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, make_package: MakePackage
 ) -> None:
-    monkeypatch.delenv("SIMILE_IMAGES", raising=False)
+    fake_flux(monkeypatch, tmp_path)
+    monkeypatch.delenv("SIMILE_IMAGES")
     app = create_app(lifespans(make_package, "works"))
 
     with TestClient(app):

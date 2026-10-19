@@ -126,12 +126,14 @@ SIMILE_IMAGES=1 make dev
 - **One model, one picture at a time.** `works`' lifespan loads the model once, on its own thread,
   and puts it on the `Maker`. It paints one picture at a time, below conversations: before it
   starts and between steps it waits while the player is in a conversation, up to `image_patience`
-  (5 minutes) a picture. Loading takes a few seconds once the weights are in the OS file cache.
+  (a minute) a picture. Loading takes a few seconds once the weights are in the OS file cache.
 - **SVG stays the fallback.** Without `SIMILE_IMAGES=1`, on Linux and CI, without the extra or the
   download, or when the model won't load, every mural and painting is SVG as above, and the log
-  says why. A picture the model fails on, or that takes more than `image_timeout` (180 s) of
-  painting, is drawn as SVG instead: the work is asked for again as SVG, from the same commission,
-  in one more Sonnet call. If the description call itself fails, nothing is made.
+  says why. A picture the model fails on, or doesn't finish within `image_timeout` (180 s) of
+  being handed to it, waits included, is drawn as SVG instead: the work is asked for again as SVG,
+  from the same commission, in one more Sonnet call. A step that hangs can't be cut short, so
+  while the model is still busy with a picture past its time, every new one goes straight to SVG.
+  If the description call itself fails, nothing is made.
 - **Weights.** `image_bits` (8) quantizes the weights as they load. `image_model` can also name a
   directory `mflux-save` wrote. On an M2 Max, with nothing else on the GPU:
 

@@ -1,5 +1,7 @@
 import asyncio
 import io
+import threading
+from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -52,13 +54,14 @@ async def make(
     works: WorksStore,
     npc: Npc = SUKI,
     wall: str | None = "wall_1",
+    timeout: float = 10,
 ) -> tuple[Work | None, list[tuple[Work, str, bytes]]]:
     llm, hung = LLMClient(fake), []
 
     def hang(work: Work, svg: str, png: bytes) -> None:
         hung.append((work, svg, png))
 
-    async with Painter(model, timeout=10) as painter:
+    async with Painter(model, timeout=timeout) as painter:
         maker = Maker(
             works,
             memory,
@@ -135,7 +138,7 @@ def test_a_painting_is_painted_on_canvas_and_hung_with_no_svg(
         (Medium.MURAL, SUKI, "wall_1", mural_reply()),
         (Medium.PAINTING, PAINTER, None, mural_reply(svg=svg(*painting_canvas()))),
     ],
-    ids=str,
+    ids=["mural", "painting"],
 )
 def test_draws_it_as_svg_when_painting_it_fails(
     medium: Medium,
@@ -155,6 +158,31 @@ def test_draws_it_as_svg_when_painting_it_fails(
     assert "Draw it as one SVG document" in drawn
     svg_of = works.svg(made.id) if medium is Medium.MURAL else hung[0][1]
     assert svg_of and svg_of.startswith("<svg")
+
+
+class Hanging(FakeImageModel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.release = threading.Event()
+
+    def paint(
+        self, prompt: str, width: int, height: int, seed: int, step: Callable[[], None]
+    ) -> Image.Image:
+        self.release.wait()
+        return super().paint(prompt, width, height, seed, step)
+
+
+def test_draws_it_as_svg_when_the_image_model_hangs(memory: MemoryStore, works: WorksStore) -> None:
+    fake, model = FakeProvider([picture_reply(), mural_reply()]), Hanging()
+
+    try:
+        made, _ = asyncio.run(make(fake, model, memory, works, timeout=0.2))
+    finally:
+        model.release.set()
+
+    assert made is not None
+    assert (works.svg(made.id) or "").startswith("<svg")
+    assert "Draw it as one SVG document" in fake.requests[1].messages[-1].content
 
 
 def test_a_failed_description_makes_nothing_and_paints_nothing(

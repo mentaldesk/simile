@@ -206,14 +206,16 @@ class WorksConfig(BaseModel):
     image_timeout: float = Field(
         default=180.0,
         gt=0,
-        description="Real seconds the image model gets to paint a picture, not counting waits "
-        "while the player talks. Past it, the work is drawn as SVG instead.",
+        description="Real seconds from handing a picture to the image model to having it, its "
+        "waits for other pictures and for the player included. Past it, the work is drawn as SVG "
+        "instead, and so is every new one while the model is still busy past its time.",
     )
     image_patience: float = Field(
-        default=300.0,
+        default=60.0,
         ge=0,
         description="Real seconds a picture waits, all told, while the player talks, before the "
-        "image model paints on regardless.",
+        "image model paints on regardless. Well under `image_timeout`, so a long talk doesn't "
+        "send it to SVG.",
     )
     picture_words: int = Field(
         default=90,
