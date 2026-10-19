@@ -32,6 +32,11 @@ class GalleryConfig(BaseModel):
         description="The salience of the player's memory of seeing a painting. They don't react "
         "to it, so its valence is 0.",
     )
+    murals_per_canvas: int = Field(
+        default=2,
+        ge=1,
+        description="Murals in a row after which a muralist paints a canvas for the gallery.",
+    )
     look_again: timedelta = Field(
         default=timedelta(hours=1),
         description="Sim time before a visitor tries again to say how a painting lands, after the "

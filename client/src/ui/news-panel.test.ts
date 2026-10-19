@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi, type MockInstance } from 'vitest';
-import { server, type NewsArticle, type WrittenWork } from '../net';
+import { server, type NewsArticle, type Notice, type WrittenWork } from '../net';
 import { NewsPanel } from './news-panel';
 
 const ARTICLES: NewsArticle[] = [
@@ -45,11 +45,23 @@ const WORKS: WrittenWork[] = [
   },
 ];
 
+const NOTICES: Notice[] = [
+  {
+    notice_id: 'quiz',
+    title: 'Quiz night at the Golden Bowl',
+    text: 'Friday at eight.\nTeams of four.',
+    poster: { id: 'odalys', name: 'Odalys' },
+    created: '2026-10-17T15:00:00Z',
+  },
+];
+
 let panel: NewsPanel;
 let send: MockInstance<typeof server.send>;
 
 const section = () => document.querySelector<HTMLElement>('.news')!;
-const items = () => [...document.querySelectorAll<HTMLElement>('.news li')];
+const items = () => [...document.querySelectorAll<HTMLElement>('.news ol li')];
+const board = () => document.querySelector<HTMLElement>('.news-board')!;
+const pinned = () => [...board().querySelectorAll<HTMLElement>('li')];
 const titles = () => items().map((item) => item.querySelector('b')!.textContent);
 const selected = () => document.querySelector('.news-selected b')?.textContent;
 const status = () => document.querySelector('.news > p')!.textContent;
@@ -64,8 +76,8 @@ function news(articles: NewsArticle[]): void {
   server.dispatch(JSON.stringify({ type: 'news', articles }));
 }
 
-function works(list: WrittenWork[]): void {
-  server.dispatch(JSON.stringify({ type: 'works', works: list }));
+function works(list: WrittenWork[], notices: Notice[] = []): void {
+  server.dispatch(JSON.stringify({ type: 'works', works: list, notices }));
 }
 
 function press(key: string, init: KeyboardEventInit = {}): KeyboardEvent {
@@ -287,6 +299,40 @@ it('lists residents’ writing with its artist, form and when it was made, and t
   expect(items().map((item) => item.classList.contains('news-read'))).toEqual([false, true]);
   expect(selected()).toBe('The river in May');
   expect(paragraphs(items()[0])).toHaveLength(1);
+});
+
+it('pins shopkeepers’ notices above the writing on the village tab, apart from the works', () => {
+  panel.open('Terminal');
+  press('ArrowRight');
+  expect(board().hidden).toBe(true);
+
+  works(WORKS, NOTICES);
+
+  expect(board().hidden).toBe(false);
+  expect(board().querySelector('h2')!.textContent).toBe('Notice board');
+  expect(pinned().map((item) => item.querySelector('b')!.textContent)).toEqual([
+    'Quiz night at the Golden Bowl',
+  ]);
+  expect(byline(pinned()[0])).toBe('Odalys · 17 Oct, 15:00');
+  expect(pinned()[0].querySelectorAll('p br')).toHaveLength(1);
+  expect(titles()).toEqual(['The river in May', 'Notice to residents']);
+  expect(selected()).toBe('The river in May');
+
+  press('ArrowLeft');
+  expect(board().hidden).toBe(true);
+  press('ArrowRight');
+  expect(board().hidden).toBe(false);
+
+  works(WORKS);
+  expect(board().hidden).toBe(true);
+});
+
+it('ignores notices while closed', () => {
+  works(WORKS, NOTICES);
+  panel.open('Terminal');
+  press('ArrowRight');
+
+  expect(board().hidden).toBe(true);
 });
 
 it('opens a work with Enter, sending read_work and showing the artist’s statement', () => {

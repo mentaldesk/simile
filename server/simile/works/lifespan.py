@@ -5,6 +5,7 @@ from pathlib import Path
 
 from starlette.applications import Starlette
 
+from simile.schema import Id
 from simile.sim import world_of
 from simile.works.store import works_of
 
@@ -19,6 +20,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.protocol import ListWorksMessage, ReadWorkMessage, hub_of
     from simile.schema import Id, IntentionKind
     from simile.works.maker import Maker
+    from simile.works.notices import Noticeboard
     from simile.works.player import PlayerWorks
     from simile.works.reading import WorksReader
     from simile.works.sightings import Passers
@@ -93,7 +95,17 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         stack.push_async_callback(passers.stop)
         stack.callback(world.loop.register(passers))
         stack.callback(hub.greet(walls.message))
-        player = PlayerWorks(store, memory, world.clock, npcs)
+        board = Noticeboard(
+            store,
+            world.clock,
+            llm,
+            npcs,
+            shopkeepers(),
+            awake=lambda npc: behaviour.minds[npc].goal.activity is not Activity.SLEEP,
+        )
+        stack.push_async_callback(board.stop)
+        stack.callback(world.loop.register(board))
+        player = PlayerWorks(store, memory, world.clock, npcs, notices=board.board)
         stack.callback(hub.subscribe(ListWorksMessage, lambda _: hub.broadcast(player.listing())))
         stack.callback(
             hub.subscribe(
@@ -101,6 +113,18 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             )
         )
         yield
+
+
+def shopkeepers() -> list[Id]:
+    """Who puts up notices: today's village's shopkeepers, or a new world's role holders."""
+    from simile.casting import load_cast
+    from simile.casting.roles import holders, village_roles
+    from simile.works.config import DEFAULT_CONFIG
+
+    cast = load_cast()
+    if cast is None:
+        return list(DEFAULT_CONFIG.shopkeepers)
+    return list(holders([resident.character for resident in cast.residents], village_roles()))
 
 
 @asynccontextmanager

@@ -32,7 +32,9 @@ def readiness(
     painter: Npc, mural: Work, fondness: float, now: datetime, config: WorksConfig = DEFAULT_CONFIG
 ) -> float | None:
     """How ready `painter` is to paint over `mural`, given their B1 affinity for its artist, or
-    None if they never would."""
+    None if they never would, or not while it's `fresh`."""
+    if now - mural.created < config.fresh:
+        return None
     age = config.age_weight * min((now - mural.created) / config.mural_age, 1.0)
     if mural.artist == painter.id:
         return age + config.own_mural

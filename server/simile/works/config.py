@@ -3,6 +3,74 @@ from datetime import timedelta
 from pydantic import BaseModel, ConfigDict, Field
 
 from simile.llm import Model
+from simile.schema import Id
+
+WRITING_GENRES = (
+    "a fable",
+    "a ghost story",
+    "a love story",
+    "a tall tale",
+    "a letter from somewhere imaginary",
+    "a monologue",
+    "a small mystery",
+    "a myth of how something came to be",
+    "a comedy of errors",
+    "a lullaby",
+    "a story told backwards",
+    "a dialogue between two unlikely speakers",
+)
+PICTURE_GENRES = (
+    "a portrait",
+    "a landscape",
+    "a street scene",
+    "a still life",
+    "a night scene",
+    "a dream",
+    "a map",
+    "a festival",
+    "a creature",
+    "a crowd",
+    "an interior",
+    "a weather study",
+)
+SUBJECTS = (
+    "someone the village overlooks",
+    "a stranger passing through",
+    "something lost and found",
+    "a childhood memory",
+    "the weather turning",
+    "an animal",
+    "a first meeting",
+    "a promise",
+    "an old object with a story",
+    "a meal",
+    "a journey",
+    "a secret",
+    "a celebration",
+    "water",
+    "the night",
+    "work done well",
+    "a mistake",
+    "the far future",
+    "a door",
+    "a gift",
+    "a machine",
+    "the sky",
+)
+MOODS = (
+    "tender",
+    "playful",
+    "eerie",
+    "wistful",
+    "comic",
+    "hopeful",
+    "uneasy",
+    "fierce",
+    "serene",
+    "bittersweet",
+    "mischievous",
+    "solemn",
+)
 
 
 class WorksConfig(BaseModel):
@@ -27,11 +95,46 @@ class WorksConfig(BaseModel):
     half_life: timedelta = Field(
         default=timedelta(hours=24), description="Sim time over which a memory's pull halves."
     )
+    recalled: int = Field(
+        default=40,
+        ge=0,
+        description="The strongest memories weighed for what's on the artist's mind, before "
+        "`others_works` weighs others' works down.",
+    )
+    others_works: float = Field(
+        default=0.4,
+        ge=0,
+        description="What a memory of someone else's work counts for among what's on the artist's "
+        "mind, as a share of any other memory as strong and as recent, so one striking piece "
+        "doesn't become everyone's theme.",
+    )
     past_works: int = Field(
         default=3,
         ge=0,
         description="The artist's latest works whose titles and statements go in the prompt, so "
         "they don't repeat themselves.",
+    )
+    village_works: int = Field(
+        default=8,
+        ge=0,
+        description="The village's latest works by others, a title and a few words on each, put "
+        "in the prompt so the new one is unlike them.",
+    )
+    writing_genres: tuple[str, ...] = Field(
+        default=WRITING_GENRES,
+        min_length=1,
+        description="Genres a piece of writing's seed draws from, one at random.",
+    )
+    picture_genres: tuple[str, ...] = Field(
+        default=PICTURE_GENRES,
+        min_length=1,
+        description="Genres a mural's or painting's seed draws from, one at random.",
+    )
+    subjects: tuple[str, ...] = Field(
+        default=SUBJECTS, min_length=1, description="Subjects a work's seed draws from."
+    )
+    moods: tuple[str, ...] = Field(
+        default=MOODS, min_length=1, description="Moods a work's seed draws from."
     )
     words: int = Field(default=250, ge=1, description="The most words a piece should run to.")
     cares_most: int = Field(
@@ -90,8 +193,12 @@ class WorksConfig(BaseModel):
         "fraction of it. What doesn't fit is cropped.",
     )
     mural_age: timedelta = Field(
-        default=timedelta(days=2),
+        default=timedelta(hours=8),
         description="The age at which a mural is as ready to be painted over as age makes it.",
+    )
+    fresh: timedelta = Field(
+        default=timedelta(hours=2),
+        description="Murals younger than this are never painted over, even by their artist.",
     )
     age_weight: float = Field(
         default=1.0, ge=0, description="Readiness to paint over a mural `mural_age` old or older."
@@ -133,14 +240,37 @@ class WorksConfig(BaseModel):
     )
     look_again: timedelta = Field(
         default=timedelta(hours=1),
-        description="Sim time before a resident tries again to say how a mural lands, after "
-        "the call failed.",
+        description="Sim time before a resident tries again to say how a mural lands, or a "
+        "shopkeeper to put up a notice, after the call failed.",
     )
     painted_over_salience: float = Field(
         default=0.7,
         ge=0,
         le=1,
         description="The least salience of an artist's memory of finding their mural painted over.",
+    )
+
+    shopkeepers: tuple[Id, ...] = Field(
+        default=("priya", "odalys", "mirela"),
+        description="Residents of today's village who put up notices for their business. In a "
+        "new world, whoever holds one of the village's roles does.",
+    )
+    notice_model: str = Field(
+        default=Model.HAIKU_5_5, description="The model that writes a notice."
+    )
+    notice_every: timedelta = Field(
+        default=timedelta(hours=12),
+        description="Sim time between a shopkeeper's notices. They put one up once they're awake.",
+    )
+    notice_check: float = Field(
+        default=60.0, gt=0, description="Sim seconds between looks at whose notice is due."
+    )
+    notice_words: int = Field(default=50, ge=1, description="The most words a notice may run to.")
+    notice_life: timedelta = Field(
+        default=timedelta(days=1), description="How long a notice stays up on the board."
+    )
+    notices_listed: int = Field(
+        default=6, ge=0, description="The most notices on the board, newest first."
     )
 
     starters: int = Field(
@@ -151,8 +281,9 @@ class WorksConfig(BaseModel):
     )
     starters_newest: timedelta = Field(
         default=timedelta(hours=3),
-        description="How long before a fresh save starts the newest of today's village's starter "
-        "works was made. The rest keep their spacing before it.",
+        description="How long before a save's first work, or before it starts if it has none, the "
+        "newest of today's village's starter works was made. The rest keep their spacing before "
+        "it.",
     )
 
 

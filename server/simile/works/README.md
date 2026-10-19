@@ -17,12 +17,24 @@ One Sonnet call through L1, below conversations' priority, makes the work and an
 prompt has:
 
 - their 8 strongest memories by salience × recency (news, conversations, others' works), with how
-  each made them feel, but not their memories of making their own works;
+  each made them feel, but not their memories of making their own works. A memory of someone else's
+  work counts for `others_works` (0.4) of one as strong and as recent, so one striking piece
+  doesn't become everyone's theme;
 - their values, persona, backstory, interests, way of talking and craft;
-- the titles and statements of their last 3 works, so they don't repeat themselves.
+- the titles and statements of their last 3 works, so they don't repeat themselves;
+- the village's 8 latest works by others, each with its title, artist, medium and a few words on
+  it (its first 3 tags, or the start of its statement), and an ask for something unlike them in
+  subject, images and feeling;
+- a seed drawn at random for this work: a genre (writing's or pictures'), a subject and a mood, from
+  the small tables in `WorksConfig`, as a spark to take wherever their craft leads;
+- #148's knowledge limits: they know what someone with their life and job would know, and make
+  what they make from their own life, work and village, never as an expert on what they don't
+  know.
 
-It asks for a work in their voice that says something in line with their values, taking a side
-where they care strongly.
+Writing asks for a piece of fiction or poetry in their craft, not an opinion piece, advice or a
+notice: it grows from a mix of what's on their mind and what they care about, and is about a person,
+a place or a moment rather than a stance. Murals and paintings still say something in line with
+their values, taking a side where they care strongly.
 
 B1's `create` hook hands over the intention a stay kept, if it kept one (see *Intentions* in B1's
 README), and `make(npc, wall, intention)` leads the prompt with its idea: "You told Visitor you'd
@@ -38,11 +50,12 @@ tone and relatedness to every core value, scored as for news.
   (an open `create` intention naming it, see B1's README) comes first, while it's blank or ready
   enough as below, so they go where they told the player. Then a blank wall, the nearest
   of them to a muralist on the village, or the first for one indoors. Otherwise each painted wall
-  gets a readiness to paint over it: its age up to `mural_age` (2 days), plus `own_mural` (0.3) for
+  gets a readiness to paint over it: its age up to `mural_age` (8 sim hours), plus `own_mural` (0.3) for
   the painter's own, or for someone else's their boldness above 0.5 (the mean of 1 - Tradition, 1 -
   Obedience and Freedom) minus half their B1 affinity for the artist. The readiest wall at or above
   0.5 is picked, and None while there's none. A painter less bold than 0.75 never paints over a
-  friend's (affinity 0.4 or more), and nobody picks a wall someone else is off to paint.
+  friend's (affinity 0.4 or more), nobody paints over a mural younger than `fresh` (2 sim hours),
+  even their own, and nobody picks a wall someone else is off to paint.
 - **Painting.** The prompt also has the wall's size and what's on it now, and asks for an SVG with
   the wall's `viewBox`, beside a plain description of what it shows (the work's `text`).
 - **Checking the SVG** (`svg.checked`). It must be under 60,000 characters and 2,000 elements,
@@ -89,11 +102,14 @@ does this once per save, and never into an in-memory store:
   (Kofi's on the tower and the corner shop, Ingrid's on the garden flats, Odalys's on the Daily
   Grind), a piece from each of the six writers for the terminals, and five paintings for the
   gallery (Priya's and Tobias's, two each, and a canvas of Ingrid's). `works.json` has the `Work`s,
-  oldest first, beside each mural's and painting's SVG and PNG. A save with no works that has never
-  had them gets them all, as if made before it starts, the newest `starters_newest` (3 sim hours)
-  earlier and the rest with their spacing before it. The murals go on their walls, the paintings
-  hang in the gallery's first frames, and each artist remembers making theirs. The `seeded` table
-  records that it's been done, so it's never done twice, even once the starters are painted over.
+  oldest first, beside each mural's and painting's SVG and PNG. Any save that has never had them
+  gets them, as if made before its first work, or before it starts if it has none: the newest
+  `starters_newest` (3 sim hours) earlier and the rest with their spacing before it. The murals go
+  on the walls that are still blank, and a starter for a wall that's painted already is left out.
+  The paintings hang in the gallery's free frames, and each artist remembers making theirs. The
+  `seeded` table records that it's been done, so it's never done twice, even once the starters are
+  painted over. The writing is in the writers' forms from before #286, since `form` is the work's
+  own.
 - **A new world** (a cast in the data directory, `worlds/README.md`) makes its own in the
   background instead, once its save first runs: up to `starters` (8) of its residents with a
   craft, the most creative first, start one work each through the usual `Maker`, muralists on the
@@ -111,6 +127,21 @@ uv run simile works starter   # about 15 Sonnet calls, into content/works/
 It makes only the works `content/works/` doesn't have yet, saving each as it's made, and stops at the
 first that fails, so running it again carries on. `--out` puts them elsewhere, and with
 `SIMILE_LLM=fake` it makes stand-ins through the same checks and renderer.
+
+## Notices
+
+Shopkeepers put up short notices at the terminals: an offer, an event or an invitation. In today's
+village they're `shopkeepers` (Priya, Odalys and Mirela), and in a new world whoever holds one of
+the village's roles (`content/characters/tables/roles.toml`). A notice isn't a work: it's stored in
+its own `notices` table, never in `works`, so nobody reads it at a terminal, remembers making it, or
+sees it among the village's latest works, and it doesn't meet their inspiration.
+
+`Noticeboard` ticks on the sim loop and looks once a sim minute (`notice_check`) for a shopkeeper
+who's awake on a day they work, and whose last notice is `notice_every` (12 sim hours) old or who's
+never put one up. One Haiku call through L1, below conversations' priority, writes it: a heading
+and at most `notice_words` (50) words, from their persona, the day and time, their shifts and their
+last notice. If the call fails they try again after `look_again`. So each shopkeeper puts up about
+one a working day, and about three Haiku calls a sim day across today's village.
 
 ## Reading at the terminals
 
@@ -132,8 +163,10 @@ first), so a terminal offers the best unread article or piece of writing:
 ## The player
 
 `list_works` and `read_work` are answered with `works`: the 20 newest pieces of writing, with the
-artist's name and whether the player has read each. Reading one stores the player's own `work`
-memory, once, with no LLM call. As with the news, residents never see it.
+artist's name and whether the player has read each, and beside them the `notices` still up, those
+from the last `notice_life` (a sim day), at most `notices_listed` (6), newest first. Reading a
+piece stores the player's own `work` memory, once, with no LLM call. As with the news, residents
+never see it.
 
 Every constant is in `WorksConfig`.
 
