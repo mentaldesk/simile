@@ -1,19 +1,103 @@
 import pytest
 
+from simile.conversation import ConversationConfig
 from simile.conversation.prompt import system_prompt
 from simile.evaluation.play import Reply, play, prompt, resident
-from simile.evaluation.scenarios import NOW, SCENARIOS
+from simile.evaluation.scenarios import NOW, SCENARIOS, TEMPTING
 from simile.llm import FakeProvider, LLMClient, LLMError
-from simile.schema import Character, PastMemory
+from simile.schema import Character, CoreValue, PastMemory
 
 pytestmark = pytest.mark.anyio
 
-FAVOUR, PROMISE, NEWS, COMPLAINT, LIE = SCENARIOS
+FAVOUR, PROMISE, NEWS, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
+ALWAYS = ConversationConfig(lie_most=1, lie_peak=0.55, lie_bias=1)
+NEVER = ConversationConfig(lie_most=0)
 
 
-def test_the_scenarios_are_the_five_fixed_ones() -> None:
-    assert [s.id for s in SCENARIOS] == ["favour", "promise", "news", "complaint", "lie"]
+def test_the_scenarios_are_the_five_fixed_ones_and_four_with_a_temptation() -> None:
+    assert [s.id for s in SCENARIOS] == [
+        "favour",
+        "promise",
+        "news",
+        "complaint",
+        "lie",
+        "rent",
+        "loan",
+        "shift",
+        "letdown",
+    ]
+    assert [s.id for s in TEMPTING] == ["complaint", "lie", "rent", "loan", "shift", "letdown"]
     assert all(len(s.stances) >= 4 and "hostile" in s.stances for s in SCENARIOS)
+
+
+def sly(character: Character) -> Character:
+    return character.model_copy(update={"values": character.values | {CoreValue.HONESTY: 0.05}})
+
+
+DIRECTED = {
+    "complaint": "Pat is complaining to you. If it's fair, don't own up to it: say you "
+    "didn't know.",
+    "lie": "Sam is asking you to cover for them. Say you'll do it.",
+    "rent": "You are short of money this week. If it comes up, say you're doing fine.",
+    "loan": "You still owe Kim for a loan of 100. If it comes up, say you'll pay Kim back in a day "
+    "or two.",
+    "shift": "You skipped your shift at work today. If it comes up, say you were ill.",
+    "letdown": "You told Jess you'd drop her box of books at the school fair yesterday, and "
+    "didn't. If it comes up, say something came up that you couldn't get out of.",
+}
+
+
+@pytest.mark.parametrize("scenario", SCENARIOS, ids=lambda s: s.id)
+def test_a_tempting_scenario_directs_a_lie_roll_from_what_the_game_knows(
+    pool: list[Character], scenario
+) -> None:
+    character = sly(pool[0])
+
+    asked = prompt(character, scenario, config=ALWAYS)
+
+    assert asked.lies == ((DIRECTED[scenario.id],) if scenario.tempting else ())
+    for lie in asked.lies:
+        assert f"{lie}\n\nThe conversation so far:" in asked.text
+
+
+@pytest.mark.parametrize("scenario", TEMPTING, ids=lambda s: s.id)
+def test_without_a_lie_roll_the_prompt_is_as_it_was(pool: list[Character], scenario) -> None:
+    character = sly(pool[0])
+
+    asked = prompt(character, scenario, config=NEVER)
+
+    assert asked.lies == ()
+    assert asked.text == prompt(character, scenario, config=ALWAYS).text.replace(
+        f"{DIRECTED[scenario.id]}\n\n", ""
+    )
+
+
+def test_the_honest_are_never_directed_to_lie(pool: list[Character]) -> None:
+    straight = pool[0].model_copy(update={"values": pool[0].values | {CoreValue.HONESTY: 0.6}})
+
+    assert all(prompt(straight, scenario, config=ALWAYS).lies == () for scenario in TEMPTING)
+
+
+def test_the_roll_is_seeded_by_the_scenario_and_the_character(pool: list[Character]) -> None:
+    rolls = {
+        (character.id, scenario.id): prompt(sly(character), scenario).lies != ()
+        for character in pool[:20]
+        for scenario in TEMPTING
+    }
+
+    assert rolls == {
+        (character.id, scenario.id): prompt(sly(character), scenario).lies != ()
+        for character in pool[:20]
+        for scenario in TEMPTING
+    }
+    assert set(rolls.values()) == {True, False}
+
+
+def test_a_tempting_scenario_tells_them_the_truth_either_way(pool: list[Character]) -> None:
+    for scenario in (RENT, LOAN, SHIFT, LETDOWN):
+        asked = prompt(pool[0], scenario, config=NEVER)
+        assert f"- {scenario.truth}" in asked.text
+    assert "You still owe Kim for a loan of 100." in prompt(pool[0], LOAN, config=NEVER).text
 
 
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=lambda s: s.id)
@@ -104,6 +188,7 @@ async def test_play_asks_b5s_prompts_and_parses_replies_as_the_game_does(
         ("favour", "Go on then, I'll grab my coat.", ["compassion", "connection"]),
         ("promise", "I waited all morning, you know.", ["honesty"]),
     ]
+    assert not any(reply.directed for reply in replies)
     first = fake.requests[0]
     assert first.model == "m"
     assert first.system == prompt(character, FAVOUR).system
@@ -149,3 +234,14 @@ async def test_play_starts_at_most_max_calls_and_leaves_out_failures(
     assert len(fake.requests) == 3
     assert [r.text for r in replies] == ["One.", "Three."]
     assert seen == replies
+
+
+async def test_a_reply_to_a_directed_prompt_says_so(pool: list[Character]) -> None:
+    character = sly(pool[0])
+
+    [reply] = await play(
+        LLMClient(FakeProvider(default="Fine.")), [character], [RENT], model="m", config=ALWAYS
+    )
+
+    assert reply.directed
+    assert reply.key == prompt(character, RENT, config=ALWAYS).key("m")

@@ -126,6 +126,23 @@ in B1's README). The lifespan gives the `Reflector` B1's `options`, `intentions`
   opened, and an event that lowers their trust (`broken_promise_magnitude`), without counting as
   an encounter for familiarity. One promised to nobody expires with nothing to remember.
 
+## Lies
+
+B2 sets residents up to lie (see *Lies* in its README), and the lifespan gives the `Reflector`
+`engine.lies`. The prompt lists each lie a conversation set up as `L1`, `L2`, ..., with whether
+the listener knows it isn't true or believed it, and the reply's `lies` gives the refs of those
+told.
+
+- **The liar** remembers each lie they told as an `observation` memory about the listener, topic
+  `lie`: "I lied to Ben about being short of money.", with `lie_salience` and `lie_valence`.
+- **A listener who knew better,** whose own flags held the truth, remembers being lied to, topic
+  `lied to me`: "Ana lied to me about being short of money.", with `lied_to_salience` and
+  `lied_to_valence`. Their trust in the liar falls through R1: unless their own events about the
+  liar already lower it, B3 adds one that does (`lied_to_valence`, `lied_to_magnitude`), counted
+  towards `max_magnitude` like the rest. A listener who didn't know believes it.
+
+Being found out later is not handled yet.
+
 ## The player
 
 The player (`player`) has no `Npc`, so they never reflect: no memories, relationships or flags

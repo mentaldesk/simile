@@ -215,6 +215,38 @@ rudeness is curtness and never insults, and a lie stays small and in character, 
 their reasons, plans or what they did or saw. Nobody makes up facts about the village, its places,
 times or people.
 
+## Lies
+
+The model avoids deceiving even in character, so code decides when a resident lies, and the prompt
+tells the model what the lie is (`temptation.py`).
+
+- **Temptations.** What the game knows a resident would rather not own up to, with no Claude call:
+  being short of money (E3's money against their savings target, as for loans); a debt, secret or
+  grudge someone holds about them (open `debt`, `secret` and `grudge` flags); a promise they broke
+  (B3's "I told Ana I'd ..., and didn't." memory); a shift they skipped or were late to (E3's turns,
+  through `engine.missed`); a work of theirs someone's memory of is at or below `went_badly` (-0.3).
+  Broken promises and shifts count for `tempted_for` (2 days). In a conversation with the player,
+  the player's lines can raise two more: being asked to cover for them, or a complaint about
+  something of theirs.
+- **Touched.** A temptation comes up when the other's words match it: the player's lines since the
+  resident last spoke, or in a scene what the other might bring up (their memories and topics, news,
+  works and secrets) and what's between the two. Each kind has its own words in code (`CUES`), and
+  the words of what it's about (the promise, the workplace, the work's title, the flag) count too.
+  In a scene, someone it's about (the lender, who knows the secret, ...) being there touches it.
+- **The roll.** A touched temptation is lied about with a chance from Honesty: none from
+  `honest_from` (0.6), rising in a straight line to `lie_most` (0.7) at `lie_peak` (0.1) and below.
+  #185's negativity bias bends it by `lie_bias` (1.5): owning up is a bad turn, and weighs more
+  with them. The roll is seeded by the conversation's id, the resident and the temptation, so it's
+  the same every time it comes up in that conversation.
+- **The direction.** On a lie roll, B5's reply prompt has it after the background ("You are short
+  of money this week. If it comes up, say you're doing fine.") for the rest of the conversation,
+  and a scene's direction has it in the third person. Without a roll nothing is added. The lies
+  stay within *Rough edges*' bounds: about the resident, what they did and what they'll do.
+- **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
+  was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
+  lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a
+  debt in a scene set up for them to borrow or pay back.
+
 ## Only promising what's possible
 
 B3 turns what a resident says they'll do into an intention that B1 acts on (see *Intentions* in

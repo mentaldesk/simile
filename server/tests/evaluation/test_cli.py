@@ -1,3 +1,4 @@
+import json
 import re
 from pathlib import Path
 
@@ -91,3 +92,35 @@ def test_unknown_picks_are_refused() -> None:
 
     assert result.exit_code != 0
     assert "No character nobody in the pool" in said(result)
+
+
+def test_scenarios_picks_which_to_play() -> None:
+    tempting = evaluate("--sample", "2", "--scenarios", "tempting")
+    two = evaluate("--sample", "2", "--scenarios", "rent,favour")
+
+    assert tempting.exit_code == 0, tempting.output
+    assert "(2 drawn with seed 0), 6 scenarios" in tempting.stdout
+    assert "## A stranger asks a favour" not in tempting.stdout
+    assert "## Short of money" in two.stdout and "## A stranger asks a favour" in two.stdout
+    assert "## Asked to lie" not in two.stdout
+
+
+def test_unknown_scenarios_are_refused() -> None:
+    result = evaluate("--scenarios", "nowhere")
+
+    assert result.exit_code != 0
+    assert "No scenario nowhere" in said(result)
+
+
+def test_no_lies_directs_nobody_and_reuse_takes_another_runs_replies(tmp_path: Path) -> None:
+    picks = ["--pick", "grzegorz_pietrzak,marcin_wozniak", "--scenarios", "tempting"]
+
+    honest = evaluate(*picks, "--no-lies", "--out", str(tmp_path / "a"))
+    rolled = evaluate(*picks, "--out", str(tmp_path / "b"), "--reuse", str(tmp_path / "a"))
+
+    assert honest.exit_code == 0 and rolled.exit_code == 0, honest.output + rolled.output
+    before = json.loads((tmp_path / "a" / REPLIES).read_text())["replies"]
+    after = json.loads((tmp_path / "b" / REPLIES).read_text())["replies"]
+    assert not any(reply["directed"] for reply in before)
+    assert any(reply["directed"] for reply in after)
+    assert {reply["key"] for reply in before} & {reply["key"] for reply in after}
