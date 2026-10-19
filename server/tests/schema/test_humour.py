@@ -6,6 +6,7 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
+from simile.npc.content import NPCS_DIR
 from simile.schema import Character, Humour, HumourStyle, Npc, export
 
 type Kind = type[Npc] | type[Character]
@@ -92,3 +93,16 @@ def test_the_exported_schema_allows_but_does_not_require_a_humour(case: Case) ->
     assert not schema(model).is_valid(item | {"humour": {"style": "slapstick", "seriousness": 0}})
     assert not schema(model).is_valid(item | {"humour": {"style": "dry", "seriousness": 2}})
     assert not schema(model).is_valid(item | {"humour": {"style": "dry"}})
+
+
+def test_every_resident_has_a_humour_and_the_village_keeps_its_range() -> None:
+    paths = sorted(NPCS_DIR.glob("*.json"))
+    residents = [Npc.model_validate_json(path.read_bytes()) for path in paths]
+
+    for path in paths:
+        assert schema(Npc).is_valid(data(path)), path.name
+    humours = [npc.humour for npc in residents if npc.humour]
+    assert len(humours) == len(residents) == 11
+    assert {humour.style for humour in humours} == set(HumourStyle)
+    assert sum(humour.seriousness >= 0.9 for humour in humours) >= 3
+    assert sum(humour.seriousness < 0.5 for humour in humours) >= 3

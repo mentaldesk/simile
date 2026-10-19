@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
+from simile.characters.humour import describe_humour
 from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
 from simile.memory.store import recency
@@ -18,6 +19,7 @@ from simile.schema import (
     PLAYER_ID,
     CoreValue,
     Craft,
+    HumourStyle,
     Id,
     Intention,
     Medium,
@@ -120,7 +122,7 @@ def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) 
         f"Your values, scored 0 to 1. You care most about: {most}. You care least about: "
         f"{least}.\n"
         f"Your interests: {', '.join(npc.interests)}.\n"
-        f"How you talk: {npc.speaking_style}\n\n"
+        f"How you talk: {npc.speaking_style}\n{your_humour(npc)}\n"
         + {
             Medium.MURAL: f"In your own time you paint {craft.form} on the village's walls, where "
             "everyone who walks by sees them. It's how you have your say in public.",
@@ -132,6 +134,14 @@ def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) 
             "own making, not news or opinion.",
         }[craft.medium]
     )
+
+
+def your_humour(npc: Npc) -> str:
+    """Their humour on a line of its own, which can show in their work, or nothing without one."""
+    if npc.humour is None:
+        return ""
+    shows = "" if npc.humour.style is HumourStyle.NONE else " It can show in your work too."
+    return f"{describe_humour(npc.humour, kind=True)}{shows}\n"
 
 
 @dataclass(frozen=True)

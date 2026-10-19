@@ -55,6 +55,10 @@
     "cuts a rambling speaker off with a single word",
     "answers a vague claim by asking for a number"
   ],
+  "humour": {
+    "style": "sarcastic",
+    "seriousness": 0.7
+  },
   "interests": [
     "patent law and emerging tech",
     "maker space prototypes worth backing",

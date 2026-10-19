@@ -56,6 +56,10 @@
     "trades one wild hypothetical for another until everyone is laughing",
     "abandons a story halfway through and starts a different one"
   ],
+  "humour": {
+    "style": "silly",
+    "seriousness": 0.25
+  },
   "interests": [
     "street murals and paint experiments",
     "hitchhiking and cheap night trains",

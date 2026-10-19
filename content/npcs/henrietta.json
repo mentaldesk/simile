@@ -53,6 +53,10 @@
     "skips the pleasantries and opens with the problem",
     "closes a discussion by restating the usual arrangement"
   ],
+  "humour": {
+    "style": "cynical",
+    "seriousness": 0.92
+  },
   "interests": [
     "bin and recycling rota",
     "residents' association minutes",
