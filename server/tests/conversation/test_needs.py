@@ -15,7 +15,7 @@ def needs(**levels: float) -> dict[Need, float]:
 
 
 def test_the_critical_levels_are_b1s() -> None:
-    assert CRITICAL == critical(BEHAVIOUR.urgency) == {Need.HUNGER: 0.9, Need.BLADDER: 0.9}
+    assert CRITICAL == critical(BEHAVIOUR.urgency) == {Need.HUNGER: 0.9}
 
 
 def test_needs_below_drain_from_bring_nothing() -> None:
@@ -35,37 +35,32 @@ def test_pressure_rises_from_drain_from_to_the_critical_level() -> None:
 
 
 def test_a_need_at_its_critical_level_is_urgent_and_drains_fastest() -> None:
-    bursting = pressing(needs(hunger=0.8, bladder=0.95))
+    starving = pressing(needs(hunger=0.95))
 
-    assert bursting.urgent
-    assert (bursting.pressure, bursting.errand) == (1, "find a loo")
-    assert bursting.drain(ConversationConfig(need_drain=2)) == 3
+    assert starving.urgent
+    assert (starving.pressure, starving.errand) == (1, "get something to eat")
+    assert starving.drain(ConversationConfig(need_drain=2)) == 3
 
 
 def test_only_needs_with_a_critical_level_press() -> None:
-    grubby = pressing(needs(hygiene=1.0, rest=1.0, social=1.0))
+    weary = pressing(needs(rest=1.0, social=1.0, exercise=1.0))
 
-    assert (grubby.pressure, grubby.errand, grubby.urgent) == (0, None, False)
+    assert (weary.pressure, weary.errand, weary.urgent) == (0, None, False)
     assert pressing(needs(hunger=0.95), {}).urgent is False
 
 
 def test_moods_are_words_for_how_each_need_feels() -> None:
     assert mood(CALM) == ()
     assert mood(needs(hunger=0.8, rest=0.65)) == ("hungry", "tired")
-    assert mood(needs(hunger=0.95, bladder=0.9, rest=0.9, hygiene=0.9)) == (
-        "starving",
-        "bursting for the loo",
-        "exhausted",
-        "badly in need of a shower",
-    )
-    assert mood(needs(bladder=0.8, hygiene=0.8)) == ("needing the loo", "feeling grubby")
+    assert mood(needs(hunger=0.95, rest=0.9)) == ("starving", "exhausted")
+    assert mood(needs(social=1.0, exercise=1.0)) == ()
 
 
 def test_the_mood_line_uses_words_never_numbers() -> None:
-    hungry = needs(hunger=0.93, rest=0.71, bladder=0.82)
+    hungry = needs(hunger=0.93, rest=0.71)
 
     line = feels("you", mood(hungry))
-    assert line == "Right now you're starving, needing the loo and tired."
+    assert line == "Right now you're starving and tired."
     assert re.search(r"\d", line) is None
     assert feels("Kofi", mood(needs(hunger=0.8))) == "Right now Kofi is hungry."
     assert feels("you", ()) == ""

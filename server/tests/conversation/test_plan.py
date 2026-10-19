@@ -96,7 +96,6 @@ def test_a_pressing_need_has_them_wrap_up_sooner_and_says_why() -> None:
     assert (fed.errand, fed.drain) == (None, 1)
     assert hungry.errand == "get something to eat"
     assert starving.drain == 1 + DEFAULT_CONFIG.need_drain
-    assert keen(like=0.9, bladder=0.95).errand == "find a loo"
 
 
 def test_topic_interest_weighs_each_value_by_how_much_the_topic_relates_to_it() -> None:
@@ -193,7 +192,7 @@ def test_a_pair_who_both_want_out_soon_are_told_so() -> None:
 def test_the_direction_says_what_the_leaver_is_off_to_do() -> None:
     names = {"ana": "Ana", "ben": "Ben"}
     stances = {
-        "ana": Stance(0.8, 22, errand="find a loo"),
+        "ana": Stance(0.8, 22, errand="pick up a parcel"),
         "ben": Stance(0.8, 6, mood=("hungry",), errand="get something to eat", drain=2.5),
     }
 

@@ -1,6 +1,8 @@
 from datetime import date
 from typing import TYPE_CHECKING
 
+from pydantic import field_validator
+
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.economy import Batch
 from simile.schema import VILLAGE_MAP, Id, Intention, Key, MapTile, Model, Tile, Timestamp
@@ -19,6 +21,14 @@ class SavedNpc(Model):
     since: Timestamp
     until: Timestamp | None = None
     cooldowns: dict[Id, Timestamp] = {}
+
+    @field_validator("needs", mode="before")
+    @classmethod
+    def _known(cls, needs: object) -> object:
+        """Drops needs B1 no longer has, so a save from before still loads."""
+        if isinstance(needs, dict):
+            return {need: level for need, level in needs.items() if need in Need}
+        return needs
 
 
 class SavedEconomy(Model):

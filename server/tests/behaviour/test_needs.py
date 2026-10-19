@@ -23,7 +23,7 @@ A = Activity
 PARK = Goal(A.PARK, "park")
 CAFE = Goal(A.COFFEE_SHOP, "coffee_shop")
 NOODLES = Goal(A.NOODLE_BAR, "noodle_bar")
-TOILETS = {A.HOME, A.COFFEE_SHOP, A.NOODLE_BAR}
+KITCHENS = {A.HOME, A.COFFEE_SHOP, A.NOODLE_BAR}
 STEADY = DEFAULT_CONFIG.model_copy(update={"temperature": 0.0})
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -92,34 +92,34 @@ class Village:
             self.behaviour.minds[npc].needs[Need(need)] = level
 
 
-def test_an_urgent_bladder_ends_a_stay_early_for_a_toilet() -> None:
+def test_urgent_hunger_ends_a_stay_early_for_a_meal() -> None:
     village = Village([ANA], placed={"ana": "park"})
-    village.stay("ana", PARK, bladder=0.5)
+    village.stay("ana", PARK, hunger=0.5)
     village.run(minutes=5)
     assert village.behaviour.goal("ana") == PARK
 
-    village.set("ana", bladder=0.95)
+    village.set("ana", hunger=0.95)
     village.run(minutes=0.1)
 
     mind = village.behaviour.minds["ana"]
-    assert mind.goal.activity in TOILETS
+    assert mind.goal.activity in KITCHENS
     assert mind.walk is not None
 
 
 def test_a_stay_that_meets_the_urgent_need_carries_on() -> None:
     village = Village([ANA], placed={"ana": "house_1"})
     home = Goal(A.HOME, "house_1")
-    village.stay("ana", home, bladder=0.95)
+    village.stay("ana", home, hunger=0.95)
 
     village.run(minutes=5)
 
     assert village.behaviour.goal("ana") == home
-    assert village.behaviour.needs("ana")[Need.BLADDER] < 0.9
+    assert village.behaviour.needs("ana")[Need.HUNGER] < 0.9
 
 
 def test_wants_never_interrupt_only_bodily_needs_do() -> None:
     village = Village([ANA], placed={"ana": "park"})
-    village.stay("ana", PARK, social=1.0, news=1.0, rest=1.0, curiosity=1.0, hygiene=1.0)
+    village.stay("ana", PARK, social=1.0, news=1.0, rest=1.0, curiosity=1.0, exercise=1.0)
 
     village.run(minutes=5)
 
@@ -132,18 +132,18 @@ def test_a_held_resident_stays_put_while_their_spot_meets_the_need() -> None:
     village.behaviour.hold("ana", spot, CAFE)
     village.run(minutes=10)
 
-    village.set("ana", bladder=0.95, hunger=0.95)
+    village.set("ana", hunger=0.95)
     village.run(minutes=1)
     assert village.behaviour.minds["ana"].held is not None
 
     village.behaviour.hooks.set(supply=shut_cafe)
-    village.set("ana", bladder=0.5)
+    village.set("ana", hunger=0.0)
     village.run(minutes=0.1)
-    village.set("ana", bladder=0.95)
+    village.set("ana", hunger=0.95)
     village.run(minutes=0.1)
     mind = village.behaviour.minds["ana"]
     assert mind.held is None
-    assert mind.goal != CAFE and mind.goal.activity in TOILETS
+    assert mind.goal != CAFE and mind.goal.activity in KITCHENS
 
 
 def shut_cafe(goal: Goal, need: Need) -> float:
@@ -179,13 +179,13 @@ def test_eating_happens_once_they_are_hungry_and_stops_when_they_are_full() -> N
 def test_a_shut_place_feeds_nobody() -> None:
     village = Village([ANA], placed={"ana": "coffee_shop"})
     village.behaviour.hooks.set(supply=lambda goal, need: 0.0 if need is Need.HUNGER else 1.0)
-    village.stay("ana", CAFE, hunger=0.85, bladder=0.6)
+    village.stay("ana", CAFE, hunger=0.85, relaxation=0.6)
 
     village.run(minutes=10)
 
     needs = village.behaviour.needs("ana")
     assert needs[Need.HUNGER] > 0.85
-    assert needs[Need.BLADDER] < 0.6
+    assert needs[Need.RELAXATION] < 0.6
 
 
 def test_a_meal_under_way_is_finished_when_the_place_stops_serving() -> None:
@@ -245,7 +245,7 @@ def test_a_resident_queuing_at_the_cafe_is_not_pulled_away_by_a_need_it_meets() 
     village, behaviour = town.village, town.village.behaviour
     town.queuing()
 
-    village.set("ana", bladder=0.95, hunger=0.95, hygiene=1.0)
+    village.set("ana", hunger=0.95, exercise=1.0)
     village.run(minutes=0.5)
 
     assert behaviour.minds["ana"].held is not None
@@ -258,7 +258,7 @@ def test_the_cafe_lets_go_cleanly_of_someone_an_urgent_need_takes_away() -> None
     town.queuing()
 
     behaviour.hooks.set(supply=shut_cafe)
-    village.set("ana", bladder=0.95)
+    village.set("ana", hunger=0.95)
     village.run(minutes=0.5)
 
     assert behaviour.minds["ana"].held is None
@@ -276,7 +276,7 @@ def test_the_daily_grind_feeds_people_only_while_the_barista_is_on_shift(
     town.village.run(minutes=0.1)
 
     assert town.cafe.supply(CAFE, Need.HUNGER) == fed
-    assert town.cafe.supply(CAFE, Need.BLADDER) == 1.0
+    assert town.cafe.supply(CAFE, Need.RELAXATION) == 1.0
     assert town.cafe.supply(Goal(A.HOME, "coffee_shop"), Need.HUNGER) == 1.0
 
 

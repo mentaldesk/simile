@@ -29,9 +29,10 @@ each NPC back to their tile, inside or out, and B1's `restore` gives them back t
 cooldowns, and `restore_intentions` what they'd said they'd do. Their money comes back, and the
 ledger opens on it, with what was in the fridges and left of the noodle bar's batch. A save from
 before the interiors has no maps, and puts everyone on the village. A save from before intentions
-has none. A save from before money starts everyone with their own `money` from `content/npcs/`,
-and the next midnight's rent is their first. A save from before fridges stocks them as a fresh
-start does, and the noodle bar cooks a new batch when its keeper next arrives.
+has none. Needs B1 no longer has are dropped. A save from before money starts everyone with their
+own `money` from `content/npcs/`, and the next midnight's rent is their first. A save from before
+fridges stocks them as a fresh start does, and the noodle bar cooks a new batch when its keeper
+next arrives.
 Anyone who was walking or talking decides again on their first think, within 5 sim seconds. NPCs who
 weren't saved carry on from B1's first start, and saved ones who are no longer in `content/` are
 ignored. A save this version can't read is logged and ignored. `simile headless --duration` counts

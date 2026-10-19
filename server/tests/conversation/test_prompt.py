@@ -420,13 +420,12 @@ def test_a_turn_has_the_works_they_might_bring_up_after_the_background() -> None
 
 
 def test_a_turn_says_how_the_speaker_feels_after_the_background_in_words() -> None:
-    feeling = ("starving", "needing the loo")
+    feeling = ("starving", "tired")
 
     prompt = turn_prompt("B", [], NAMES, Cue.OPEN, "Henrietta", mood=feeling)
 
     assert prompt.startswith(
-        "B\n\nRight now you're starving and needing the loo.\n\n"
-        "The conversation hasn't started yet."
+        "B\n\nRight now you're starving and tired.\n\nThe conversation hasn't started yet."
     )
     [said] = [part for part in prompt.split("\n\n") if part.startswith("Right now")]
     assert re.search(r"\d", said) is None

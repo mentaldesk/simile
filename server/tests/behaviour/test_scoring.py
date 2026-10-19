@@ -198,9 +198,9 @@ def test_the_same_relief_is_worth_far_more_to_someone_desperate() -> None:
 
 
 def test_every_need_has_an_urgency_curve() -> None:
-    curves = {need: u for need, u in DEFAULT_CONFIG.urgency.items() if need is not Need.HYGIENE}
+    curves = {need: u for need, u in DEFAULT_CONFIG.urgency.items() if need is not Need.EXERCISE}
 
-    with pytest.raises(ValidationError, match="hygiene need an urgency curve"):
+    with pytest.raises(ValidationError, match="exercise need an urgency curve"):
         BehaviourConfig(urgency=curves)
 
 
