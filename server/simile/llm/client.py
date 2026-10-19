@@ -98,6 +98,7 @@ class LLMClient:
         listeners: Iterable[Callable[[CallRecord], None]] = (),
     ) -> None:
         self._provider = provider
+        self._given = provider is not None
         self._ollama: Provider | None = None
         self._slots = Slots(max_concurrency, reserved)
         self.listeners = list(listeners)
@@ -114,7 +115,7 @@ class LLMClient:
         """Ollama for `ollama:<model>`, unless the client was given a provider for everything."""
         from simile.llm.ollama import PREFIX
 
-        if self._provider is None and model.startswith(PREFIX):
+        if not self._given and model.startswith(PREFIX):
             if self._ollama is None:
                 from simile.llm.ollama import OllamaProvider
 

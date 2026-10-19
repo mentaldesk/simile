@@ -111,6 +111,23 @@ class FakeOllama:
         await asyncio.wait_for(self.hung_up.wait(), timeout=2)
 
 
+class NoClaude:
+    """Stands in for Claude Code, so a routing slip fails a test instead of calling Claude."""
+
+    name = "claude-code"
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        pass
+
+    def stream(self, request: Request) -> AsyncIterator[str | Usage]:
+        raise AssertionError(f"tried to reach Claude with {request.model}")
+
+
+@pytest.fixture(autouse=True)
+def no_claude(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("simile.llm.claude_code.ClaudeCodeProvider", NoClaude)
+
+
 @pytest.fixture
 async def ollama(monkeypatch: pytest.MonkeyPatch) -> AsyncIterator[FakeOllama]:
     fake = FakeOllama()
@@ -188,6 +205,23 @@ async def test_the_client_sends_ollama_models_to_ollama(ollama: FakeOllama) -> N
     assert record.usage is not None and record.usage.output_tokens == 9
 
 
+async def test_ollama_models_still_go_to_ollama_once_claude_code_is_up(
+    ollama: FakeOllama,
+) -> None:
+    ollama.replies.append(Reply([said("Morning."), DONE]))
+    client = LLMClient()
+    assert client.provider.name == "claude-code"
+    client.warm(system="You are Mara.", model="haiku")
+
+    assert await client.complete("Morning!", model="ollama:gemma4:26b") == "Morning."
+    assert ollama.bodies[0]["model"] == "gemma4:26b"
+
+
+async def test_no_test_here_can_reach_claude() -> None:
+    with pytest.raises(AssertionError, match="tried to reach Claude with haiku"):
+        await LLMClient().complete("Hello", model="haiku")
+
+
 async def test_a_given_provider_takes_ollama_models_too() -> None:
     fake = FakeProvider(["Hi."])
 
@@ -211,6 +245,13 @@ async def test_an_http_error_raises_its_message(ollama: FakeOllama) -> None:
 
     with pytest.raises(LLMError, match="model 'nope' not found"):
         await LLMClient().complete("Hi", model="ollama:nope")
+
+
+async def test_an_http_error_without_an_error_frame_gives_its_status(ollama: FakeOllama) -> None:
+    ollama.replies.append(Reply(["Internal Server Error"], status=500))
+
+    with pytest.raises(LLMError, match="Ollama: HTTP 500 Internal Server Error"):
+        await LLMClient().complete("Hi", model="ollama:gemma4:26b")
 
 
 async def test_an_error_mid_stream_fails_the_call(ollama: FakeOllama) -> None:

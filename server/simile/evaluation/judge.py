@@ -90,7 +90,7 @@ async def label(
     stances = found.model_dump()
     lying = set(stances["lies"])
     joking = {joke["reply"]: HumourStyle(joke["style"]) for joke in stances["jokes"]}
-    broken = {(found["reply"], Bound(found["bound"])) for found in stances["breaks"]}
+    broken = {(entry["reply"], Bound(entry["bound"])) for entry in stances["breaks"]}
     return [
         reply.model_copy(
             update={
