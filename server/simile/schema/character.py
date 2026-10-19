@@ -4,7 +4,7 @@ from typing import Self
 from pydantic import Field, field_validator, model_validator
 
 from simile.schema.common import PLAYER_ID, Id, Model, Signed, Timestamp, Unit
-from simile.schema.npc import Appearance, Craft, EveryValue, Mannerisms, Voice
+from simile.schema.npc import Appearance, Craft, EveryValue, Humour, Mannerisms, Voice
 
 MAX_AGE = 120
 
@@ -134,6 +134,11 @@ class Character(Model):
     persona: str = Field(min_length=1)
     speaking_style: str = Field(min_length=1)
     mannerisms: Mannerisms = []
+    humour: Humour | None = Field(
+        default=None,
+        exclude_if=lambda humour: humour is None,
+        description="Null when unset, and left out.",
+    )
     interests: list[str]
     past: list[PastMemory]
     hooks: list[Hook]
