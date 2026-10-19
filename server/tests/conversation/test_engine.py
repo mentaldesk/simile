@@ -605,23 +605,20 @@ async def test_a_need_that_was_already_urgent_doesnt_cut_it_short() -> None:
     assert len(village.ended[0].conversation.lines) == 4
 
 
-@pytest.mark.parametrize(("need", "why"), [(Need.HUNGER, "eat|food"), (Need.BLADDER, "loo|nature")])
-async def test_an_urgent_need_ends_it_with_a_goodbye_that_gives_the_reason(
-    need: Need, why: str
-) -> None:
+async def test_an_urgent_need_ends_it_with_a_goodbye_that_gives_the_reason() -> None:
     village = Village([LONG_CHAT], relationships=friends(ANA, BEN))
     village.engine.start("ana", "ben")
     await village.run_until(lambda: len(village.spoken) == 2)
 
-    village.behaviour.minds["ben"].needs[need] = 0.91
+    village.behaviour.minds["ben"].needs[Need.HUNGER] = 0.91
     await village.run()
 
     [ended] = village.ended
     *said, goodbye = ended.conversation.lines
     assert len(said) == 2
     assert goodbye.speaker == "ben"
-    assert goodbye.text in [text.format(name="Ana") for text in GOODBYES[need]]
-    assert re.search(why, goodbye.text)
+    assert goodbye.text in [text.format(name="Ana") for text in GOODBYES[Need.HUNGER]]
+    assert re.search("eat|food", goodbye.text)
 
 
 async def test_a_need_short_of_its_critical_level_doesnt_cut_it_short() -> None:
@@ -641,13 +638,13 @@ async def test_an_urgent_need_declines_even_a_friend() -> None:
     village = Village(
         relationships=friends(ANA, BEN), config=ConversationConfig(accept_temperature=0)
     )
-    village.behaviour.minds["ben"].needs[Need.BLADDER] = 0.95
+    village.behaviour.minds["ben"].needs[Need.HUNGER] = 0.95
 
     assert village.engine.accept_score("ana", "ben") < 0
     assert not village.engine.request("ana", "ben")
     assert village.events == []
 
-    village.behaviour.minds["ben"].needs[Need.BLADDER] = 0.1
+    village.behaviour.minds["ben"].needs[Need.HUNGER] = 0.1
     assert village.engine.request("ana", "ben")
 
 

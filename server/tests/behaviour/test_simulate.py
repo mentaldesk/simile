@@ -139,11 +139,10 @@ def test_a_day_has_meals_at_mealtimes_and_no_need_runs_away() -> None:
     assert not any(hours[hour] for hour in range(0, 5))
     for meal in ((5, 10), (11, 15), (17, 22)):
         assert sum(hours[hour] for hour in range(*meal)) > 0, meal
-    for need in (Need.HUNGER, Need.BLADDER, Need.HYGIENE):
-        awake = [level for level, up in observer.needs[need] if up]
-        assert sum(level >= 0.9 for level in awake) / len(awake) < 0.02, need
+    awake = [level for level, up in observer.needs[Need.HUNGER] if up]
+    assert sum(level >= 0.9 for level in awake) / len(awake) < 0.02
     assert "**Time by place.**" in summary and "**Meals.**" in summary
-    assert "| hunger |" in summary and "| hygiene |" in summary
+    assert "| hunger |" in summary and "| exercise |" in summary
 
 
 def test_a_day_has_residents_out_walking_rather_than_standing_about() -> None:

@@ -15,8 +15,6 @@ class Need(StrEnum):
     NEWS = "news"
     INSPIRATION = "inspiration"
     HUNGER = "hunger"
-    BLADDER = "bladder"
-    HYGIENE = "hygiene"
     FINANCES = "finances"
     BOREDOM = "boredom"
     RELAXATION = "relaxation"
@@ -102,8 +100,6 @@ RISE: dict[Need, float] = {
     Need.NEWS: -0.1,
     Need.INSPIRATION: 0.06,
     Need.HUNGER: 0.16,
-    Need.BLADDER: 0.28,
-    Need.HYGIENE: 0.035,
     Need.BOREDOM: 0.4,
     Need.RELAXATION: 0.02,
     Need.EXERCISE: 0.03,
@@ -116,7 +112,6 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
     Need.INSPIRATION: {V.CREATIVITY: 0.22, V.SELF_ACTUALIZATION: 0.05},
     Need.HUNGER: {V.PLEASURE: 0.06},
-    Need.HYGIENE: {V.DISCIPLINE: 0.02},
     Need.BOREDOM: {
         V.ADVENTURE: 0.3,
         V.FREEDOM: 0.15,
@@ -128,29 +123,22 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.EXERCISE: {V.DISCIPLINE: 0.05, V.ADVENTURE: 0.03},
 }
 
-RISE_ASLEEP: dict[Need, float] = {Need.HUNGER: 0.3, Need.BLADDER: 0.2, Need.HYGIENE: 0.5}
+RISE_ASLEEP: dict[Need, float] = {Need.HUNGER: 0.3}
 
 EFFECTS: dict[Activity, dict[Need, float]] = {
-    A.HOME: {
-        Need.REST: -0.3,
-        Need.HUNGER: -1.2,
-        Need.BLADDER: -4.0,
-        Need.HYGIENE: -2.0,
-        Need.RELAXATION: -0.4,
-    },
+    A.HOME: {Need.REST: -0.3, Need.HUNGER: -1.2, Need.RELAXATION: -0.4},
     A.SLEEP: {Need.REST: -0.25, Need.BOREDOM: -1.0, Need.RELAXATION: -0.2},
     A.COFFEE_SHOP: {
         Need.SOCIAL: -0.15,
         Need.REST: -0.1,
         Need.CURIOSITY: -0.3,
         Need.HUNGER: -2.0,
-        Need.BLADDER: -4.0,
         Need.RELAXATION: -0.6,
     },
     A.SQUARE: {Need.SOCIAL: -0.1, Need.CURIOSITY: -0.4},
     A.NEWS: {Need.CURIOSITY: -3.0, Need.NEWS: -3.6, Need.BOREDOM: -3.0, Need.RELAXATION: -0.8},
     A.PARK: {Need.REST: -0.2, Need.CURIOSITY: -0.2, Need.RELAXATION: -1.5},
-    A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.HUNGER: -3.0, Need.BLADDER: -4.0},
+    A.NOODLE_BAR: {Need.SOCIAL: -0.15, Need.REST: -0.1, Need.HUNGER: -3.0},
     A.MAKER_SPACE: {Need.CURIOSITY: -0.9, Need.RELAXATION: 0.05},
     A.GALLERY: {
         Need.CURIOSITY: -0.5,
@@ -161,7 +149,7 @@ EFFECTS: dict[Activity, dict[Need, float]] = {
     A.SEEK: {Need.SOCIAL: -0.3},
     A.IDLE: {Need.REST: -0.1},
     A.CREATE: {Need.CURIOSITY: -0.6, Need.BOREDOM: -1.0, Need.RELAXATION: 0.1},
-    A.WORK: {Need.BLADDER: -4.0, Need.BOREDOM: -0.5, Need.RELAXATION: 0.1},
+    A.WORK: {Need.BOREDOM: -0.5, Need.RELAXATION: 0.1},
     A.TALK: {Need.SOCIAL: -6.0, Need.BOREDOM: -3.0},
     A.EXERCISE: {Need.EXERCISE: -2.5, Need.BOREDOM: -1.0},
 }
@@ -257,8 +245,6 @@ URGENCY: dict[Need, Urgency] = {
     Need.NEWS: Urgency(power=2.0, weight=10.0, critical=None),
     Need.INSPIRATION: Urgency(power=2.0, weight=20.0, critical=None),
     Need.HUNGER: Urgency(weight=16.0, appetite=0.75),
-    Need.BLADDER: Urgency(weight=12.0),
-    Need.HYGIENE: Urgency(weight=8.0, critical=None),
     Need.FINANCES: Urgency(power=1.0, weight=100.0, critical=None),
     Need.BOREDOM: Urgency(power=1.0, weight=4.0, critical=None),
     Need.RELAXATION: Urgency(power=2.0, weight=6.0, critical=None),
@@ -547,8 +533,6 @@ class BehaviourConfig(BaseModel):
             Need.NEWS: (0.1, 0.6),
             Need.INSPIRATION: (0.0, 0.8),
             Need.HUNGER: (0.2, 0.6),
-            Need.BLADDER: (0.0, 0.5),
-            Need.HYGIENE: (0.0, 0.4),
             Need.BOREDOM: (0.0, 0.2),
             Need.RELAXATION: (0.1, 0.5),
             Need.EXERCISE: (0.1, 0.5),

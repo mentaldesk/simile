@@ -127,8 +127,6 @@ def test_shows_who_they_are_what_they_want_and_their_top_values() -> None:
         "news",
         "inspiration",
         "hunger",
-        "bladder",
-        "hygiene",
         "boredom",
         "relaxation",
         "exercise",

@@ -14,11 +14,11 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   accepts almost anyone, someone who's just talked mostly doesn't), and what they're busy with:
   someone at a terminal or the maker space, or looking for someone else, is less keen, and someone
   who was looking for `a` is very keen. Someone with an urgent need, one at or past B1's critical
-  level for it (hunger or the bladder at 0.9), loses `accept_urgent` (5), which declines even a
-  friend they were looking for. `accept_score(a, b)` is that score. Anyone already talking
-  is declined, and so is anything beyond `max_conversations` (2) conversations between NPCs. The
-  player's doesn't count: I1's `max_voiced` already caps how many are voiced. Requests involving
-  the player go to `engine.player_request` (see below).
+  level for it (hunger at 0.9), loses `accept_urgent` (5), which declines even a friend they were
+  looking for. `accept_score(a, b)` is that score. Anyone already talking is declined, and so is
+  anything beyond `max_conversations` (2) conversations between NPCs. The player's doesn't count:
+  I1's `max_voiced` already caps how many are voiced. Requests involving the player go to
+  `engine.player_request` (see below).
 - **Starting.** Both are paused with B1, which stops their walks, and each turns to face the other.
   `a` opens. On the next tick the engine asks for the script.
 - **The plan.** What would have decided engagement turn by turn plans the scene instead. Each side
@@ -31,8 +31,8 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   might bring up, weighted by how much each relates to each value, or for someone with neither,
   their own top three values. Someone at `leave_below` or less wants to wrap up after `min_lines`,
   someone at 1 after `long_talk` (30), in a straight line between. A need with a critical level in
-  B1 (hunger, the bladder) past `drain_from` (0.75) drains them faster: the lines they'd talk for
-  past `min_lines` are divided by up to 1 + `need_drain` (4) at the critical level, in a straight
+  B1 (hunger) past `drain_from` (0.75) drains them faster: the lines they'd talk for past
+  `min_lines` are divided by up to 1 + `need_drain` (4) at the critical level, in a straight
   line from 1 at `drain_from`. Whoever wants to leave first does (the one approached, on a tie),
   and the scene runs that many lines plus the goodbye and its answer. The direction says each
   side's keenness in words ("keen to talk", "happy to chat", "lukewarm", "would rather not talk"),
@@ -40,7 +40,7 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   off to read the news, has had plenty of company, itching to catch up on the news): the reasons
   that agree with their keenness in brackets, the others after "though". Then who'll want to leave
   after about how many lines, and the length, ending when the leaver takes their leave and, if a
-  need drains them, what it sends them off to do ("to get something to eat", "to find a loo"), so
+  need drains them, what it sends them off to do ("to get something to eat"), so
   the goodbye gives the reason.
 - **The script.** One L1 `stream()` call with Haiku 4.5 and `purpose="conversation"` writes the
   whole scene. Haiku 5.5 thinks before it writes and can't be told not to: on the same scenes it
@@ -188,10 +188,9 @@ Every constant is in `PlayerConfig`.
 
 The prompts describe needs in words, never numbers: each reply to the player has "Right now you're
 hungry and tired." after the background, and each side of a scene "Right now Ben is starving."
-`MOODS` has the words and where each starts: hungry from 0.75 and starving from 0.9, needing and
-then bursting for the loo at the same levels, tired from 0.6 and exhausted from 0.9, and feeling
-grubby from 0.75 and badly in need of a shower from 0.9. A hungry, tired resident comes across
-short, and B3 picks that up from the transcript like anything else.
+`MOODS` has the words and where each starts: hungry from 0.75 and starving from 0.9, and tired from
+0.6 and exhausted from 0.9. A hungry, tired resident comes across short, and B3 picks that up
+from the transcript like anything else.
 
 ## Rough edges
 

@@ -142,8 +142,8 @@ class ConversationConfig(BaseModel):
         default=0.75,
         ge=0,
         le=1,
-        description="A need with a critical level in B1 (hunger, the bladder) drains engagement "
-        "faster from here, and the goodbye says what it sends them off to do.",
+        description="A need with a critical level in B1 (hunger) drains engagement faster from "
+        "here, and the goodbye says what it sends them off to do.",
     )
     need_drain: float = Field(
         default=3.0,

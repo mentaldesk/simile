@@ -8,16 +8,11 @@ from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 
 MOODS: dict[Need, tuple[tuple[float, str], ...]] = {
     Need.HUNGER: ((0.9, "starving"), (0.75, "hungry")),
-    Need.BLADDER: ((0.9, "bursting for the loo"), (0.75, "needing the loo")),
     Need.REST: ((0.9, "exhausted"), (0.6, "tired")),
-    Need.HYGIENE: ((0.9, "badly in need of a shower"), (0.75, "feeling grubby")),
 }
 """How each need feels from each level, as words that follow "you're" or "Kofi is"."""
 
-ERRANDS: dict[Need, str] = {
-    Need.HUNGER: "get something to eat",
-    Need.BLADDER: "find a loo",
-}
+ERRANDS: dict[Need, str] = {Need.HUNGER: "get something to eat"}
 """What a pressing need sends them off to do."""
 
 

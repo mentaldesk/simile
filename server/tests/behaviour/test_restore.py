@@ -19,8 +19,6 @@ OLD_NEEDS = {
 BEFORE_STAYS = {
     **OLD_NEEDS,
     Need.HUNGER: 0.45,
-    Need.BLADDER: 0.1,
-    Need.HYGIENE: 0.3,
     Need.FINANCES: 0.0,
 }
 NEEDS = {**BEFORE_STAYS, Need.BOREDOM: 0.2, Need.RELAXATION: 0.4, Need.EXERCISE: 0.6}
@@ -97,7 +95,7 @@ def test_someone_restored_without_an_until_decides_on_the_next_think() -> None:
     assert behaviour.goal("kofi").activity is not Activity.TALK
 
 
-def test_a_save_from_before_hunger_bladder_and_hygiene_keeps_their_start_values() -> None:
+def test_a_save_from_before_hunger_keeps_its_start_value() -> None:
     village = Village()
     behaviour = village.behaviour
     started = behaviour.needs("kofi")
@@ -107,9 +105,8 @@ def test_a_save_from_before_hunger_bladder_and_hygiene_keeps_their_start_values(
 
     needs = behaviour.needs("kofi")
     assert {need: needs[need] for need in OLD_NEEDS} == OLD_NEEDS
-    for need in (Need.HUNGER, Need.BLADDER, Need.HYGIENE):
-        low, high = behaviour.config.start_needs[need]
-        assert needs[need] == started[need] and low <= needs[need] <= high
+    low, high = behaviour.config.start_needs[Need.HUNGER]
+    assert needs[Need.HUNGER] == started[Need.HUNGER] and low <= needs[Need.HUNGER] <= high
 
 
 def test_a_save_from_before_boredom_relaxation_and_exercise_keeps_their_start_values() -> None:
