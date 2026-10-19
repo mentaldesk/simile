@@ -4,6 +4,7 @@ import logging
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel
 
@@ -41,6 +42,17 @@ logger = logging.getLogger(__name__)
 PURPOSE = "evaluation"
 
 
+class Bound(StrEnum):
+    """The game's tone bounds a reply can break."""
+
+    SLUR = "slur"
+    INSULT = "insult"
+    CRUELTY = "cruelty"
+    FRIGHTENING = "frightening"
+    UNSUITABLE = "unsuitable"
+    MADE_UP = "made-up fact"
+
+
 class Reply(BaseModel):
     character: Id
     scenario: str
@@ -54,6 +66,8 @@ class Reply(BaseModel):
     jokes: bool | None = None
     joke: HumourStyle | None = None
     """The style of its joke, when it jokes."""
+    breaks: list[Bound] | None = None
+    """The tone bounds the judge found it breaking."""
     directed: bool = False
     """Whether a lie roll gave the prompt a direction to lie."""
     joke_roll: bool | None = None

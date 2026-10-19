@@ -1,6 +1,6 @@
-from simile.evaluation.play import Reply
-from simile.evaluation.report import honesty, humours, stance
-from simile.evaluation.scenarios import SCENARIOS
+from simile.evaluation.play import Bound, Reply
+from simile.evaluation.report import honesty, humours, stance, tone
+from simile.evaluation.scenarios import NOW, SCENARIOS
 from simile.schema import Character, CoreValue, Humour
 
 IDS = ["favour", "promise", "news", "complaint", "lie"]
@@ -132,3 +132,62 @@ def test_without_humour_in_the_prompts_the_report_says_so(pool: list[Character])
 
     assert "The prompts left humour out" in text
     assert "| unset | 0% | news | dry 1 |" in text
+
+
+def test_a_reply_that_breaks_a_bound_says_which() -> None:
+    reply = Reply(character="a", scenario="rude", model="m", key="k", raw="", text="")
+
+    broken = reply.model_copy(update={"stance": "hostile", "breaks": [Bound.INSULT]})
+    assert stance(broken) == "hostile, breaks insult"
+    assert stance(reply.model_copy(update={"stance": "shrugs", "breaks": []})) == "shrugs"
+
+
+def breaking(
+    character: Character, scenarios: list[str], breaks: dict[str, list[Bound]]
+) -> dict[tuple[str, str], Reply]:
+    return {
+        (character.id, id): Reply(
+            character=character.id,
+            scenario=id,
+            model="m",
+            key=f"{character.id}/{id}",
+            raw="",
+            text=f"{character.id} on {id}",
+            breaks=breaks.get(id, []),
+        )
+        for id in scenarios
+    }
+
+
+def who(character: Character) -> str:
+    return f"{character.name}, {NOW.year - character.birth_year}, {character.occupation}"
+
+
+def test_tone_counts_the_flagged_replies_and_quotes_every_one(pool: list[Character]) -> None:
+    ids = ["complaint", "rude", "scary", "mean"]
+    scenes = [scenario for scenario in SCENARIOS if scenario.id in ids]
+    by = {
+        **breaking(pool[0], ids, {"complaint": [Bound.MADE_UP]}),
+        **breaking(pool[1], ids, {"rude": [Bound.INSULT, Bound.CRUELTY], "scary": []}),
+    }
+
+    text = "\n".join(tone(pool[:2], by, scenes))
+
+    assert "- **Flagged:** 2 of 8 replies (25%): insult 1, cruelty 1, made-up fact 1." in text
+    assert "- **Other than made-up facts:** 1 of 8 (12%)." in text
+    assert "- **When the player pushes:** 1 of 6 (17%)." in text
+    rows = [line for line in text.splitlines() if line.count(" | ") == 3]
+    assert rows[1:] == [
+        f"| {who(pool[0])} | A neighbour complains | made-up fact | {pool[0].id} on complaint |",
+        f"| {who(pool[1])} | A rude visitor | insult, cruelty | {pool[1].id} on rude |",
+    ]
+
+
+def test_with_nothing_flagged_tone_has_no_table(pool: list[Character]) -> None:
+    scenes = [scenario for scenario in SCENARIOS if scenario.id in IDS]
+
+    text = "\n".join(tone(pool[:1], breaking(pool[0], IDS, {}), scenes))
+
+    assert "- **Flagged:** 0 of 5 replies (0%)." in text
+    assert "When the player pushes" not in text
+    assert "| Character |" not in text

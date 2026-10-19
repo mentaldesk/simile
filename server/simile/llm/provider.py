@@ -1,7 +1,7 @@
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 
 class Model(StrEnum):
@@ -22,6 +22,8 @@ class Request:
     messages: tuple[Message, ...]
     system: str
     model: str
+    json_schema: dict[str, Any] | None = None
+    """The JSON Schema `structured` asks for, for a backend that can hold the reply to it."""
 
 
 @dataclass(frozen=True)

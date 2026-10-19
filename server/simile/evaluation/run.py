@@ -11,8 +11,9 @@ from simile.evaluation.judge import label
 from simile.evaluation.metric import Spread, spread
 from simile.evaluation.play import Reply, play
 from simile.evaluation.report import Run, report
-from simile.evaluation.scenarios import SCENARIOS, TEMPTING, Scenario
-from simile.llm import CallRecord, FakeProvider, LLMClient
+from simile.evaluation.scenarios import PUSHBACK, SCENARIOS, TEMPTING, Scenario
+from simile.llm import CallRecord, LLMClient
+from simile.llm.claude_code import ClaudeCodeProvider
 from simile.memory.store import DEFAULT_PATH
 from simile.schema import Character, Id
 
@@ -52,11 +53,13 @@ def choose(
 
 
 def played(ids: str | None) -> list[Scenario]:
-    """The scenarios `ids` names, comma-separated, the tempting ones for "tempting", or all."""
+    """The scenarios `ids` names, comma-separated, the tempting ones for "tempting", the
+    push-back ones for "pushback", or all."""
     if not ids:
         return list(SCENARIOS)
-    if ids.strip() == "tempting":
-        return list(TEMPTING)
+    groups = {"tempting": TEMPTING, "pushback": PUSHBACK}
+    if ids.strip() in groups:
+        return list(groups[ids.strip()])
     by = {scenario.id: scenario for scenario in SCENARIOS}
     named = [id.strip() for id in ids.split(",") if id.strip()]
     if unknown := [id for id in named if id not in by]:
@@ -118,7 +121,7 @@ async def evaluate(
     records: list[CallRecord] = []
 
     def called(record: CallRecord) -> None:
-        if record.provider != FakeProvider.name:
+        if record.provider == ClaudeCodeProvider.name:
             records.append(record)
 
     llm.listeners.append(called)
@@ -143,7 +146,9 @@ async def evaluate(
         missing = len(characters) * len(scenarios) - len(replies)
         if not missing and (
             unlabelled := [
-                r for r in replies if r.stance is None or r.lies is None or r.jokes is None
+                r
+                for r in replies
+                if r.stance is None or r.lies is None or r.jokes is None or r.breaks is None
             ]
         ):
             labelled = {r.key: r for r in await label(llm, scenarios, unlabelled, model=judge)}

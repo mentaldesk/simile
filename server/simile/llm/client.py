@@ -7,7 +7,7 @@ import time
 from collections.abc import AsyncIterator, Callable, Iterable, Sequence
 from contextlib import aclosing, asynccontextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from simile.llm.provider import Message, Model, Provider, Request, Usage
 
@@ -98,6 +98,8 @@ class LLMClient:
         listeners: Iterable[Callable[[CallRecord], None]] = (),
     ) -> None:
         self._provider = provider
+        self._given = provider is not None
+        self._ollama: Provider | None = None
         self._slots = Slots(max_concurrency, reserved)
         self.listeners = list(listeners)
 
@@ -109,6 +111,18 @@ class LLMClient:
             self._provider = ClaudeCodeProvider()
         return self._provider
 
+    def provider_for(self, model: str) -> Provider:
+        """Ollama for `ollama:<model>`, unless the client was given a provider for everything."""
+        from simile.llm.ollama import PREFIX
+
+        if not self._given and model.startswith(PREFIX):
+            if self._ollama is None:
+                from simile.llm.ollama import OllamaProvider
+
+                self._ollama = OllamaProvider()
+            return self._ollama
+        return self.provider
+
     async def stream(
         self,
         prompt: Prompt,
@@ -117,9 +131,10 @@ class LLMClient:
         model: str = Model.HAIKU,
         purpose: str = "",
         priority: int = 0,
+        json_schema: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
-        request = Request(as_messages(prompt), system, str(model))
-        provider = self.provider
+        request = Request(as_messages(prompt), system, str(model), json_schema)
+        provider = self.provider_for(request.model)
         queued = time.perf_counter()
         async with self._slots.hold(priority):
             started_at, start = time.time(), time.perf_counter()
@@ -160,7 +175,7 @@ class LLMClient:
     def warm(self, *, system: str = "", model: str = Model.HAIKU) -> None:
         """Get the provider ready for a `stream` with this system prompt and model, if it can.
         Claude Code starts a process, which saves its startup on that call."""
-        warm = getattr(self.provider, "warm", None)
+        warm = getattr(self.provider_for(str(model)), "warm", None)
         if warm is not None:
             warm(system, str(model))
 
@@ -196,10 +211,17 @@ class LLMClient:
 
         messages = list(as_messages(prompt))
         system = f"{system}\n\n{json_instructions(schema)}".strip()
+        json_schema = schema.model_json_schema()
         for _ in range(2):
-            text = await self.complete(
-                messages, system=system, model=model, purpose=purpose, priority=priority
+            chunks = self.stream(
+                messages,
+                system=system,
+                model=model,
+                purpose=purpose,
+                priority=priority,
+                json_schema=json_schema,
             )
+            text = "".join([chunk async for chunk in chunks])
             try:
                 return schema.model_validate_json(extract_json(text))
             except ValidationError as e:

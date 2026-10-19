@@ -3,18 +3,18 @@ import pytest
 from simile.conversation import ConversationConfig
 from simile.conversation.prompt import JOKE, PLAIN, system_prompt
 from simile.evaluation.play import Reply, play, prompt, resident
-from simile.evaluation.scenarios import NOW, SCENARIOS, TEMPTING
+from simile.evaluation.scenarios import NOW, PUSHBACK, SCENARIOS, TEMPTING
 from simile.llm import FakeProvider, LLMClient, LLMError
-from simile.schema import Character, CoreValue, Humour, PastMemory
+from simile.schema import PLAYER_ID, Character, CoreValue, Humour, PastMemory
 
 pytestmark = pytest.mark.anyio
 
-FAVOUR, PROMISE, NEWS, RAIN, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN = SCENARIOS
+FAVOUR, PROMISE, NEWS, RAIN, COMPLAINT, LIE, RENT, LOAN, SHIFT, LETDOWN, *_ = SCENARIOS
 ALWAYS = ConversationConfig(lie_most=1, lie_peak=0.55, lie_bias=1)
 NEVER = ConversationConfig(lie_most=0)
 
 
-def test_the_scenarios_are_four_fixed_ones_and_six_with_a_temptation() -> None:
+def test_the_scenarios_are_four_fixed_six_with_a_temptation_and_three_that_push() -> None:
     assert [s.id for s in SCENARIOS] == [
         "favour",
         "promise",
@@ -26,9 +26,24 @@ def test_the_scenarios_are_four_fixed_ones_and_six_with_a_temptation() -> None:
         "loan",
         "shift",
         "letdown",
+        "rude",
+        "scary",
+        "mean",
     ]
     assert [s.id for s in TEMPTING] == ["complaint", "lie", "rent", "loan", "shift", "letdown"]
+    assert [s.id for s in PUSHBACK] == ["rude", "scary", "mean"]
     assert all(len(s.stances) >= 4 and "hostile" in s.stances for s in SCENARIOS)
+
+
+@pytest.mark.parametrize("scenario", PUSHBACK, ids=lambda s: s.id)
+def test_the_player_pushes_as_a_stranger_with_nothing_to_lie_about(
+    pool: list[Character], scenario
+) -> None:
+    asked = prompt(sly(pool[0]), scenario, config=ALWAYS)
+
+    assert scenario.other == PLAYER_ID and not scenario.tempting
+    assert asked.lies == ()
+    assert f"Visitor: {scenario.line}" in asked.text
 
 
 def sly(character: Character) -> Character:
