@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from simile.behaviour import IntentionBroken, IntentionKept, Options
 from simile.conversation.loans import Loan
+from simile.conversation.temptation import Lie
 from simile.economy.loans import transfer
 from simile.llm import LLMClient, LLMError, StructuredOutputError
 from simile.memory import MemoryStore
@@ -35,14 +36,18 @@ def ignore(intention: Intention) -> bool:
     return False
 
 
+def no_lies(conversation_id: str) -> list[Lie]:
+    return []
+
+
 class Reflector:
     """Hears every `ConversationEnded` and, in a task, asks the LLM what it meant to each NPC in
     it, then stores their memories, the events, the flags and how they now feel. Moves the
     money of a loan the conversation was set up to settle through the `economy`. `settle` hands
     over that loan, by conversation id, and is called once for every conversation that ends.
     What each resident said they'd do goes to `intend`, checked against B1's `options`, and B1's
-    `planned` says what they've said already. `on_broken` and `on_kept` record what became of a
-    promise."""
+    `planned` says what they've said already. `lies` hands over, once, what B2 set residents up
+    to lie about. `on_broken` and `on_kept` record what became of a promise."""
 
     def __init__(
         self,
@@ -56,6 +61,7 @@ class Reflector:
         options: Callable[[Id], Options | None] = no_options,
         planned: Callable[[Id], list[Intention]] = no_plans,
         intend: Callable[[Intention], bool] = ignore,
+        lies: Callable[[str], list[Lie]] = no_lies,
         clock: Clock | None = None,
     ) -> None:
         self.memory = memory
@@ -67,6 +73,7 @@ class Reflector:
         self.options = options
         self.planned = planned
         self.intend = intend
+        self.lies = lies
         self.clock = clock
         self.tasks: set[asyncio.Task[Outcome | None]] = set()
 
@@ -76,6 +83,7 @@ class Reflector:
         llm = self.llm()
         if not conversation.lines or llm is None:
             self.settle(conversation.id)
+            self.lies(conversation.id)
             return
         task = asyncio.get_running_loop().create_task(self.reflect(llm, conversation))
         self.tasks.add(task)
@@ -119,7 +127,13 @@ class Reflector:
         }
         planned = {npc: self.planned(npc) for npc in options}
         context = gather(
-            conversation, npcs, self.memory, self.config, options=options, planned=planned
+            conversation,
+            npcs,
+            self.memory,
+            self.config,
+            options=options,
+            planned=planned,
+            lies=self.lies(conversation.id),
         )
         if not context.npcs:
             return None

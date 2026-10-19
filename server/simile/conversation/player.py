@@ -26,6 +26,7 @@ from simile.conversation.prompt import (
     system_prompt,
     turn_prompt,
 )
+from simile.conversation.temptation import Temptation, raised, touched
 from simile.llm import Model
 from simile.news.interest import shared, words
 from simile.news.reactions import mentioned
@@ -70,6 +71,12 @@ TURNED_AWAY = (
     "I'll leave you with {name}. Bye for now.",
     "Right, I'll let you go. See you!",
 )
+
+
+def since(npc: Id, lines: Sequence[Line]) -> str:
+    """What's been said since `npc` last spoke."""
+    latest = takewhile(lambda line: line.speaker != npc, reversed(lines))
+    return " ".join(line.text for line in reversed(list(latest)))
 
 
 def says_goodbye(text: str) -> bool:
@@ -183,6 +190,8 @@ class PlayerTalk(Talk):
     """The NPC's lines wait for the goodbye of the resident the player turned away from."""
     pulled_from: str | None = None
     """The conversation the NPC was pulled out of, whose end their lines wait for."""
+    lies: dict[str, Temptation] = field(default_factory=dict)
+    """What the NPC has been set up to lie about, by key."""
 
     @property
     def npc(self) -> Id:
@@ -362,6 +371,7 @@ class PlayerConversations:
                 return sentences.draft
         pressed = engine.pressing(npc)
         recalled = self._recalled(npc, lines)
+        self._tempt(talk, lines)
         prompt = turn_prompt(
             party.background,
             lines,
@@ -375,6 +385,7 @@ class PlayerConversations:
             mood=pressed.mood,
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
+            lies=[temptation.direction() for temptation in talk.lies.values()],
         )
         stream = engine.llm().stream(
             prompt,
@@ -401,10 +412,23 @@ class PlayerConversations:
             if not came_up(topic, self.engine._name(topic.work.artist), lines[: last + 1])
         ]
 
+    def _tempt(self, talk: PlayerTalk, lines: Sequence[Line]) -> None:
+        """Sets the NPC up to lie about what the player's latest lines touch, on a lie roll."""
+        engine, npc = self.engine, talk.npc
+        said = since(npc, lines)
+        if not said:
+            return
+        found = [*talk.parties[npc].temptations, *raised(said, engine.player.name, npc)]
+        for temptation in found:
+            if temptation.key in talk.lies or not touched(temptation, said):
+                continue
+            if engine.lies_about(temptation, talk.conversation.id):
+                talk.lies[temptation.key] = temptation
+                engine.tell(talk.conversation.id, temptation, PLAYER_ID)
+
     def _recalled(self, npc: Id, lines: Sequence[Line]) -> list[Memory]:
         """What `npc` read about the articles the player has mentioned since `npc` last spoke."""
-        latest = takewhile(lambda line: line.speaker != npc, reversed(lines))
-        said = " ".join(line.text for line in latest)
+        said = since(npc, lines)
         if not said:
             return []
         try:

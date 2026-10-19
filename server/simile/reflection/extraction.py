@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 from simile.behaviour import Options
 from simile.behaviour.intentions import when
+from simile.conversation.temptation import Lie
 from simile.npc.values import format_scores, ranked
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.schema import (
@@ -173,6 +174,11 @@ class Extraction(BaseModel):
         "('one day', 'some time'), only maybe, already planned or for after tomorrow, anything "
         "they can't do here, and what the visitor said they'd do.",
     )
+    lies: list[str] = Field(
+        default=[],
+        description="Refs (like L1) of the lies listed that were told in the conversation, in "
+        "those words or others. Leave out any that never came up.",
+    )
 
 
 SYSTEM = (
@@ -207,6 +213,8 @@ class Context:
     """What each NPC has already said they'd do."""
     residents: dict[Id, Npc] = field(default_factory=dict)
     """Everyone in the village, whom a resident could say they'll look up."""
+    lies: dict[str, Lie] = field(default_factory=dict)
+    """The lies its residents were set up to tell, by the ref the prompt gives them."""
 
     @property
     def now(self) -> datetime:
@@ -246,8 +254,10 @@ def gather(
     *,
     options: Mapping[Id, Options] | None = None,
     planned: Mapping[Id, Sequence[Intention]] | None = None,
+    lies: Sequence[Lie] = (),
 ) -> Context:
-    """With `options`, what each NPC could say they'll do, and `planned`, what they have."""
+    """With `options`, what each NPC could say they'll do, `planned`, what they have, and
+    `lies`, what they were set up to lie about."""
     now = ended_at(conversation)
     reflecting = {p: npcs[p] for p in conversation.participants if p in npcs}
     names = {
@@ -272,7 +282,13 @@ def gather(
         {npc: options[npc] for npc in reflecting if npc in options},
         {npc: list(planned[npc]) for npc in reflecting if planned.get(npc)},
         dict(npcs),
+        {f"L{n}": lie for n, lie in enumerate(_present(lies, conversation), start=1)},
     )
+
+
+def _present(lies: Sequence[Lie], conversation: Conversation) -> list[Lie]:
+    there = set(conversation.participants)
+    return [lie for lie in lies if {lie.liar, lie.listener} <= there]
 
 
 def prompt(context: Context, config: ReflectionConfig = DEFAULT_CONFIG) -> str:
@@ -300,6 +316,16 @@ def prompt(context: Context, config: ReflectionConfig = DEFAULT_CONFIG) -> str:
             for ref, flag in context.flags.items()
         )
         parts.append(f"Open flags between them:\n{listed}")
+    if context.lies:
+        listed = "\n".join(
+            f"- {ref}: {lie.said} {context.names[lie.listener]} "
+            + ("knows it isn't true." if lie.known else "didn't know, and believed it.")
+            for ref, lie in context.lies.items()
+        )
+        parts.append(
+            "Lies they were set up to tell if it came up. List the refs of those told under "
+            f"lies:\n{listed}"
+        )
     lines = conversation.lines[-config.transcript_lines :]
     transcript = "\n".join(f"{context.names[line.speaker]}: {line.text}" for line in lines)
     if len(conversation.lines) > len(lines):

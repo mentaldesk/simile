@@ -52,6 +52,29 @@ class ReflectionConfig(BaseModel):
         description="Salience of the memories a promise left to expire leaves, the resident's and "
         "each promisee's. Their valence is `broken_promise_valence`.",
     )
+    lie_salience: float = Field(
+        default=0.5, ge=0, le=1, description="Salience of a liar's memory of a lie they told."
+    )
+    lie_valence: float = Field(
+        default=-0.2, ge=-1, le=1, description="Valence of a liar's memory of a lie they told."
+    )
+    lied_to_salience: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Salience of the memory of being lied to, by someone whose own memories "
+        "contradict the lie.",
+    )
+    lied_to_valence: float = Field(
+        default=-0.5,
+        ge=-1,
+        lt=0,
+        description="Valence of that memory, and of the trust event it adds when their own "
+        "events don't already lower their trust in the liar.",
+    )
+    lied_to_magnitude: float = Field(
+        default=0.5, gt=0, le=1, description="Magnitude of that trust event."
+    )
     intentions: int = Field(
         default=2, ge=0, description="Most intentions kept per NPC per conversation."
     )

@@ -55,6 +55,8 @@ class Plan:
     """Lines in all, goodbyes included."""
     loan: Loan | None = None
     """A loan one of them asks for or pays back."""
+    lies: tuple[str, ...] = ()
+    """What either is set up to lie about if it comes up, as direction."""
 
     def other(self, npc: Id) -> Id:
         return next(other for other in self.names if other != npc)
@@ -146,12 +148,13 @@ def plan(
     config: ConversationConfig = DEFAULT_CONFIG,
     *,
     loan: Loan | None = None,
+    lies: Sequence[str] = (),
 ) -> Plan:
     """Whoever wants to wrap up first leaves, the one who was approached if it's a tie."""
     approached = next(npc for npc in names if npc != opener)
     leaver = min((approached, opener), key=lambda npc: stances[npc].leaves_after)
     length = min(stances[leaver].leaves_after + goodbyes(config), config.max_lines)
-    return Plan(dict(names), dict(stances), opener, leaver, length, loan)
+    return Plan(dict(names), dict(stances), opener, leaver, length, loan, tuple(lies))
 
 
 def direction(plan: Plan) -> str:
@@ -177,6 +180,7 @@ def direction(plan: Plan) -> str:
         lines.append(f"- Both will want to wrap up after about {leaving.leaves_after} lines.")
     if plan.loan is not None:
         lines.append(f"- {told(plan.loan, names)}")
+    lines += [f"- {lie}" for lie in plan.lies]
     answer = f" and {names[stayer]} answers" if plan.length > leaving.leaves_after + 1 else ""
     errand = f" to {leaving.errand}" if leaving.errand else ""
     lines.append(

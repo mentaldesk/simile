@@ -183,6 +183,37 @@ class ConversationConfig(BaseModel):
         description="Sim time before a resident asks someone who turned them down again.",
     )
 
+    honest_from: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Honesty from which a resident never lies about a temptation. Below it the "
+        "chance rises in a straight line to `lie_most` at `lie_peak`.",
+    )
+    lie_peak: float = Field(
+        default=0.1, ge=0, le=1, description="Honesty at or below which the chance is `lie_most`."
+    )
+    lie_most: float = Field(
+        default=0.7, ge=0, le=1, description="The chance of lying at `lie_peak` and below."
+    )
+    lie_bias: float = Field(
+        default=1.5,
+        ge=1,
+        description="How far #185's negativity bias moves the chance: times this at 1, divided "
+        "by it at 0. Owning up is a bad turn, and weighs more with them.",
+    )
+    tempted_for: timedelta = Field(
+        default=timedelta(days=2),
+        description="Sim time a broken promise or a missed shift stays something to lie about.",
+    )
+    went_badly: float = Field(
+        default=-0.3,
+        ge=-1,
+        le=0,
+        description="Valence at or below which someone's memory of a resident's work means it "
+        "went down badly.",
+    )
+
     words_per_minute: float = Field(
         default=200,
         gt=0,
@@ -269,6 +300,8 @@ class ConversationConfig(BaseModel):
     def _room_to_talk(self) -> Self:
         if self.max_lines < self.min_lines + (2 if self.farewell else 1):
             raise ValueError("max_lines must leave room for min_lines and the goodbyes")
+        if self.lie_peak >= self.honest_from:
+            raise ValueError("lie_peak must be below honest_from")
         return self
 
 

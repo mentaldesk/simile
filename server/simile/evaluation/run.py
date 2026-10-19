@@ -6,11 +6,12 @@ from pathlib import Path
 
 from simile.characters.novelty import Embedder
 from simile.characters.pool import CONTENT_DIR, within
+from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.evaluation.judge import label
 from simile.evaluation.metric import Spread, spread
 from simile.evaluation.play import Reply, play
 from simile.evaluation.report import Run, report
-from simile.evaluation.scenarios import SCENARIOS, Scenario
+from simile.evaluation.scenarios import SCENARIOS, TEMPTING, Scenario
 from simile.llm import CallRecord, FakeProvider, LLMClient
 from simile.memory.store import DEFAULT_PATH
 from simile.schema import Character, Id
@@ -50,6 +51,19 @@ def choose(
     return sorted((library[id] for id in drawn), key=lambda c: c.id)
 
 
+def played(ids: str | None) -> list[Scenario]:
+    """The scenarios `ids` names, comma-separated, the tempting ones for "tempting", or all."""
+    if not ids:
+        return list(SCENARIOS)
+    if ids.strip() == "tempting":
+        return list(TEMPTING)
+    by = {scenario.id: scenario for scenario in SCENARIOS}
+    named = [id.strip() for id in ids.split(",") if id.strip()]
+    if unknown := [id for id in named if id not in by]:
+        raise Refused(f"No scenario {', '.join(unknown)}")
+    return [by[id] for id in dict.fromkeys(named)]
+
+
 def check_writable(out: Path) -> None:
     """Refuse content/ and the default save's folder."""
     for folder in (CONTENT_DIR, DEFAULT_PATH.parent):
@@ -86,13 +100,18 @@ async def evaluate(
     out: Path | None = None,
     max_calls: int | None = None,
     scenarios: Sequence[Scenario] = SCENARIOS,
+    reuse: Path | None = None,
+    config: ConversationConfig = DEFAULT_CONFIG,
 ) -> Evaluation:
     """Play every scenario for every character, label the stances and measure the spread.
-    With `out`, replies are saved there as they come and reused by a later run. `run` describes
-    the run for the report, given the call count."""
+    With `out`, replies are saved there as they come and reused by a later run, and replies in
+    `reuse` whose prompt and model match are reused too. `run` describes the run for the report,
+    given the call count."""
     if out is not None:
         check_writable(out)
     done, earlier = load(out)
+    have = {reply.key for reply in done}
+    done += [reply for reply in load(reuse)[0] if reply.key not in have]
     made: list[Reply] = []
     records: list[CallRecord] = []
 
@@ -109,7 +128,14 @@ async def evaluate(
 
     try:
         replies = await play(
-            llm, characters, scenarios, model=model, done=done, max_calls=max_calls, on_reply=kept
+            llm,
+            characters,
+            scenarios,
+            model=model,
+            done=done,
+            max_calls=max_calls,
+            on_reply=kept,
+            config=config,
         )
         missing = len(characters) * len(scenarios) - len(replies)
         if not missing and (

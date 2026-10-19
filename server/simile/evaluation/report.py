@@ -2,8 +2,10 @@ from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+import numpy as np
+
 from simile.evaluation.fake import STOCK
-from simile.evaluation.metric import Spread
+from simile.evaluation.metric import Spread, correlation
 from simile.evaluation.play import Reply
 from simile.evaluation.scenarios import NOW
 from simile.schema import Character, CoreValue
@@ -101,6 +103,7 @@ def honesty(
     `HIGH_HONESTY`."""
     ranked = sorted(characters, key=lambda c: c.values[CoreValue.HONESTY])
     lies = {c.id: [s for s in scenarios if by[c.id, s].lies] for c in ranked}
+    directed = {c.id: [s for s in scenarios if by[c.id, s].directed] for c in ranked}
     lines = [
         "## Honesty",
         "",
@@ -119,16 +122,36 @@ def honesty(
             f"- **{band}:** {sum(map(bool, lied))} of {len(group)} lie at least once, in "
             f"{sum(map(len, lied))} of {len(group) * len(scenarios)} replies."
         )
-    lines += ["", "| Character | Honesty | Lies in |", "|---|--:|---|"]
+    replies = [by[c.id, s] for c in ranked for s in scenarios]
+    rolled = [reply for reply in replies if reply.directed]
+    free = [reply for reply in replies if not reply.directed]
+    if rolled:
+        lines.append(
+            f"- **Directed to lie** by a roll: {len(rolled)} replies, "
+            f"{sum(bool(reply.lies) for reply in rolled)} of them lying. Without a direction, "
+            f"{sum(bool(reply.lies) for reply in free)} of {len(free)} lie."
+        )
+    honesty = np.array([c.values[CoreValue.HONESTY] for c in ranked])
+    share = np.array([len(lies[c.id]) / len(scenarios) for c in ranked])
+    lines += [
+        "",
+        "Honesty against the share of each character's replies that lie, Pearson r over "
+        f"characters: {r(correlation(honesty, share))}.",
+        "",
+        "| Character | Honesty | Directed in | Lies in |",
+        "|---|--:|---|---|",
+    ]
     for c in ranked:
         lines.append(
-            f"| {who(c)} | {c.values[CoreValue.HONESTY]:.2f} | {', '.join(lies[c.id]) or 'none'} |"
+            f"| {who(c)} | {c.values[CoreValue.HONESTY]:.2f} | "
+            f"{', '.join(directed[c.id]) or 'none'} | {', '.join(lies[c.id]) or 'none'} |"
         )
     return lines
 
 
 def stance(reply: Reply) -> str:
-    return f"{reply.stance or ''}{', lies' if reply.lies else ''}"
+    directed = ", directed" if reply.directed else ""
+    return f"{reply.stance or ''}{', lies' if reply.lies else ''}{directed}"
 
 
 def made(run: Run) -> str:
