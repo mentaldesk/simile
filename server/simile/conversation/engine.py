@@ -92,10 +92,6 @@ GOODBYES: dict[str, tuple[str, ...]] = {
         "Sorry, {name}, I'm starving. I'd better get something to eat. See you.",
         "I need some food, {name}, I'm running on empty. Catch you later.",
     ),
-    Need.BLADDER: (
-        "Excuse me, {name}, I really need the loo. See you later.",
-        "Sorry, {name}, nature calls. Catch you later.",
-    ),
 }
 FAREWELLS = ("Bye, {name}.", "See you, {name}.")
 

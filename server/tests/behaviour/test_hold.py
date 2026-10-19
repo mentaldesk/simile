@@ -104,11 +104,12 @@ def test_a_released_resident_decides_on_the_next_think() -> None:
     village = Village()
     village.behaviour.hold("ana", SPOT, WORK)
     village.run(minutes=1)
+    village.goals.clear()
 
     village.behaviour.release("ana")
     village.run(minutes=0.1)
 
-    assert village.behaviour.goal("ana") != WORK
+    assert "ana" in {goal.npc for goal in village.goals}
     assert village.behaviour.available("ben", "ana") or village.behaviour.at_home("ana")
 
 
