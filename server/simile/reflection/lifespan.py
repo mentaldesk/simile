@@ -8,6 +8,7 @@ from starlette.applications import Starlette
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import IntentionBroken, IntentionKept, Options, behaviour_of
     from simile.conversation.loans import Loan
+    from simile.conversation.temptation import Lie
     from simile.memory import memory_of
     from simile.reflection.reflector import Reflector
     from simile.schema import Id, Intention
@@ -16,6 +17,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     def settle(conversation_id: str) -> Loan | None:
         engine = getattr(app.state, "conversation", None)
         return engine.settle(conversation_id) if engine is not None else None
+
+    def lies(conversation_id: str) -> list[Lie]:
+        engine = getattr(app.state, "conversation", None)
+        return engine.lies(conversation_id) if engine is not None else []
 
     def options(npc: Id) -> Options | None:
         behaviour = behaviour_of(app)
@@ -37,6 +42,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         options=options,
         planned=planned,
         intend=intend,
+        lies=lies,
         clock=world.clock,
     )
     app.state.reflection = reflector

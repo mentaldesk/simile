@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from simile.behaviour import Options
 from simile.behaviour.intentions import deed
+from simile.conversation.temptation import BROKE, BROKEN
 from simile.memory import Record
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.reflection.extraction import Context, Extraction, Intent, Relationships, relationship
@@ -153,7 +154,7 @@ def broken(
     first = owner.name.split()[0]
     told = ", ".join(_name(npcs, p, config) for p in intention.promised_to)
     records: list[Record] = [
-        _memory(intention, intention.owner, f"I told {told} I'd {said}, and didn't.", now, config)
+        _memory(intention, intention.owner, BROKE.format(told=told, deed=said), now, config)
     ]
     for promised in intention.promised_to:
         records.append(
@@ -231,7 +232,7 @@ def _memory(
         valence=config.broken_promise_valence,
         timestamp=now,
         about=[other for other in dict.fromkeys(others) if other != owner],
-        topics=["broken promise"],
+        topics=[BROKEN],
         conversation_id=intention.conversation_id,
     )
 

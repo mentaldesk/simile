@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 
+from simile.conversation.temptation import Lie
 from simile.memory import Record
 from simile.reflection.config import DEFAULT_CONFIG, ReflectionConfig
 from simile.reflection.extraction import (
@@ -68,17 +69,20 @@ def outcome(
             reflections[npc] = reflection
 
     opened = _flags(extraction, context, config)
+    told = _told(extraction, context)
     for npc in context.npcs:
         reflection = reflections.get(npc)
         deeds = _deeds(npc, reflection, context)[: config.events]
         for other in context.others(npc):
             theirs = [deed for by, deed in deeds if by == other]
             theirs += _breaches(npc, other, theirs, opened, config)
+            theirs += _caught(npc, other, theirs, told, config)
             events = _events(npc, other, theirs, context, config)
             result.after[(npc, other)] = apply_events(result.after[(npc, other)], events, now)
             result.events += events
         if reflection is not None and reflection.summary.strip():
             result.memories.append(_memory(npc, reflection, context, config))
+    result.memories += [memory for lie in told for memory in _remembered(lie, context, config)]
 
     settled: set[tuple[Id, Id]] = set()
     for ref in extraction.flags_resolved:
@@ -142,6 +146,65 @@ def _breaches(
         for flag in opened
         if flag.kind == FlagKind.BROKEN_PROMISE and (flag.owner, flag.about) == (npc, other)
     ]
+
+
+def _told(extraction: Extraction, context: Context) -> list[Lie]:
+    refs = dict.fromkeys(ref.strip().upper() for ref in extraction.lies)
+    return [context.lies[ref] for ref in refs if ref in context.lies]
+
+
+def _caught(
+    npc: Id, other: Id, deeds: list[Deed], told: list[Lie], config: ReflectionConfig
+) -> list[Deed]:
+    """A trust hit for each lie `other` told `npc` that `npc` knew wasn't true, unless `npc`'s
+    own deeds already count against their trust in `other`."""
+    if any(deed.valence < 0 and Aspect.TRUST in deed.aspects for deed in deeds):
+        return []
+    return [
+        Deed(
+            by=other,
+            action=f"lied about {lie.subject}",
+            aspects=[Aspect.TRUST],
+            valence=config.lied_to_valence,
+            magnitude=config.lied_to_magnitude,
+        )
+        for lie in told
+        if lie.known and (lie.listener, lie.liar) == (npc, other)
+    ]
+
+
+def _remembered(lie: Lie, context: Context, config: ReflectionConfig) -> list[Memory]:
+    """The liar remembers telling it, and a listener who knew better remembers being lied to."""
+    memories = []
+    if lie.liar in context.npcs:
+        memories.append(
+            Memory(
+                owner=lie.liar,
+                kind=MemoryKind.OBSERVATION,
+                content=lie.admits,
+                salience=config.lie_salience,
+                valence=config.lie_valence,
+                timestamp=context.now,
+                about=[lie.listener],
+                topics=["lie"],
+                conversation_id=context.conversation.id,
+            )
+        )
+    if lie.known and lie.listener in context.npcs:
+        memories.append(
+            Memory(
+                owner=lie.listener,
+                kind=MemoryKind.OBSERVATION,
+                content=f"{context.names[lie.liar]} lied to me about {lie.subject}.",
+                salience=config.lied_to_salience,
+                valence=config.lied_to_valence,
+                timestamp=context.now,
+                about=[lie.liar],
+                topics=["lied to me"],
+                conversation_id=context.conversation.id,
+            )
+        )
+    return memories
 
 
 def _flags(extraction: Extraction, context: Context, config: ReflectionConfig) -> list[Flag]:

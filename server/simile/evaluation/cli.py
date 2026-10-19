@@ -45,6 +45,24 @@ def register(app: typer.Typer) -> None:
                 help="Most reply calls to start. Defaults to one per character and scenario."
             ),
         ] = None,
+        scenarios: Annotated[
+            str | None,
+            typer.Option(
+                help="Scenario ids to play, comma-separated, or 'tempting' for those with "
+                "something to lie about. Defaults to all."
+            ),
+        ] = None,
+        lies: Annotated[
+            bool,
+            typer.Option(help="Roll for lies. Without it, nobody is directed to lie."),
+        ] = True,
+        reuse: Annotated[
+            Path | None,
+            typer.Option(
+                help="Another run's folder whose replies to the same prompts are reused, "
+                "without counting its calls."
+            ),
+        ] = None,
     ) -> None:
         """Play fixed scenarios for a sample of characters and report how differently they
         reply."""
@@ -53,11 +71,11 @@ def register(app: typer.Typer) -> None:
 
         from simile.characters.novelty import LocalEmbedder
         from simile.characters.pool import POOL_DIR, load_pool
+        from simile.conversation.config import ConversationConfig
         from simile.conversation.player import PlayerConfig
         from simile.evaluation.fake import STOCK, Stock
         from simile.evaluation.report import Run
-        from simile.evaluation.run import MAX_WITH_CLAUDE, Refused, choose, evaluate
-        from simile.evaluation.scenarios import SCENARIOS
+        from simile.evaluation.run import MAX_WITH_CLAUDE, Refused, choose, evaluate, played
         from simile.llm import CallRecord, FakeProvider, LLMClient
         from simile.llm.lifespan import FAKE_ENV
 
@@ -65,6 +83,7 @@ def register(app: typer.Typer) -> None:
         picks = [id.strip() for id in pick.split(",") if id.strip()] if pick else []
         try:
             chosen = choose(load_pool(directory), sample, seed, picks)
+            playing = played(scenarios)
         except Refused as e:
             raise typer.BadParameter(str(e)) from e
         fake = os.environ.get(FAKE_ENV) == "fake"
@@ -77,7 +96,8 @@ def register(app: typer.Typer) -> None:
             typer.echo(f"{FAKE_ENV}=fake, so stock replies stand in for Claude.", err=True)
         model = (model or PlayerConfig().model) if calling else STOCK
         judge = judge if calling else STOCK
-        limit = len(chosen) * len(SCENARIOS) if max_calls is None else max_calls
+        limit = len(chosen) * len(playing) if max_calls is None else max_calls
+        config = ConversationConfig() if lies else ConversationConfig(lie_most=0)
 
         def called(record: CallRecord) -> None:
             if calling:
@@ -104,6 +124,9 @@ def register(app: typer.Typer) -> None:
                     run=run,
                     out=out,
                     max_calls=limit,
+                    scenarios=playing,
+                    reuse=reuse,
+                    config=config,
                 )
             )
         except Refused as e:

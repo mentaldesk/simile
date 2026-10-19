@@ -133,6 +133,7 @@ def test_the_schema_asks_for_each_part_of_a_reflection() -> None:
         "flags_resolved",
         "loans",
         "intentions",
+        "lies",
     ]
     assert list(schema["$defs"]["Reflection"]["properties"]) == [
         "npc",

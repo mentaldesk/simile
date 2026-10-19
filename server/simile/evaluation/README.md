@@ -7,10 +7,13 @@ their replies are.
 ```bash
 cd server
 uv run simile evaluate characters --sample 10                          # stock replies, no Claude
-uv run simile evaluate characters --sample 10 --claude --out /tmp/p6   # 50 replies + 1 label call
+uv run simile evaluate characters --sample 10 --claude --out /tmp/p6   # 90 replies + 1 label call
 ```
 
 `--pick a,b,c` names the characters instead, `--seed` changes the draw and `--pool` the folder.
+`--scenarios a,b` plays only those, or `--scenarios tempting` the six with a temptation.
+`--no-lies` rolls no lies, as before #285, and `--reuse <folder>` reuses another run's replies to
+the same prompts without counting its calls, so an after run only calls for what changed.
 
 ## A scenario
 
@@ -23,6 +26,19 @@ Someone says one line to the character, who answers it (`scenarios.py`):
 | `news` | Jo, a neighbour they know by sight | cameras on every lamp post: nothing to hide, nothing to fear |
 | `complaint` | Pat, next door | your bins have been out since Thursday |
 | `lie` | Sam, from the café | tell Sandra I was helping you on Thursday |
+| `rent` | Alex, a friend | you're not struggling for money, are you? |
+| `loan` | Kim, a friend who lent them 100 | any chance of that hundred back this week? |
+| `shift` | Lee, who works with them | missed you at work this morning |
+| `letdown` | Jess, a neighbour | did the books get to the school fair? |
+
+The last six are `tempting`: the line touches something they'd rather not own up to, which B2
+finds as it would in the game (see *Lies* in its README). `complaint` and `lie` are a complaint
+and a request to cover, found from the line. The four new ones set up what the game knows: what
+they hold (`money`, 20, against their savings target), a loan Kim holds (`owe`), B3's memory of a
+promise to Jess they let go (`broke`) and a shift skipped this morning (`skipped`). Each also gives
+them a memory of the truth (`truth`), so a reply that hides it is a lie with or without a
+direction. The lie roll is B5's, seeded by the scenario and the character, and on a lie roll the
+prompt has B5's direction.
 
 Each character is cast alone, as P4 casts a village starting at `NOW` (`Cast.npc`, and `history`
 stamps their past), into an in-memory store with the scenario's feelings, flag and memory. The
@@ -38,7 +54,9 @@ with memories picked as `ConversationEngine._memories` picks them, and the reply
   entropy over the most it could be: 0 when everyone does the same.
 - **Lies.** The same call lists the replies that lie: untrue by the situation, agreeing to say
   something untrue, or an excuse that sounds made up. The report's *Honesty* section counts who
-  lies among characters who value honesty below 0.4 and from 0.7.
+  lies among characters who value honesty below 0.4 and from 0.7, how many replies a lie roll
+  directed and how many of those lie, and Pearson r over characters between Honesty and the share
+  of their replies that lie. A directed reply's stance says so.
 - **Embedding distance** (1 − cosine similarity, from P3's local model) between two characters'
   replies to the same scenario. The report puts it next to the paper spread: persona and backstory
   embedded as P3's novelty check does, and the RMS difference of core values. Short replies sit

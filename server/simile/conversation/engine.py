@@ -38,6 +38,19 @@ from simile.conversation.script import (
     scene_prompt,
     script_system,
 )
+from simile.conversation.temptation import (
+    Kind,
+    Lie,
+    Missed,
+    Temptation,
+    chance,
+    found,
+    honesty,
+    lie,
+    lies,
+    standing,
+    touched,
+)
 from simile.llm import LLMClient
 from simile.memory import SharedHistory
 from simile.memory.store import recency
@@ -56,7 +69,7 @@ from simile.schema import (
     Work,
 )
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
-from simile.social import as_of, meet
+from simile.social import as_of, meet, traits_of
 from simile.voice import speaking_rate
 from simile.world import Point
 
@@ -131,6 +144,8 @@ class Party:
     """Works they might bring up, in a conversation written a line at a time."""
     topics: list[Memory] = field(default_factory=list)
     """News they might bring up, in a conversation written a line at a time."""
+    temptations: list[Temptation] = field(default_factory=list)
+    """What they'd rather not own up to, in a conversation written a line at a time."""
 
 
 @dataclass
@@ -217,8 +232,11 @@ class ConversationEngine:
         """B4's article by id, for what its news topics are about."""
         self.work: Callable[[str], Work | None] = lambda _: None
         """A work by id, for the works residents might bring up."""
+        self.missed: Callable[[Id], list[Missed]] = lambda _: []
+        """E3's shifts a resident skipped or was late to."""
         self._talks: dict[str, Talk] = {}
         self._loans: dict[str, Loan] = {}
+        self._lies: dict[str, list[Lie]] = {}
         self._declined: dict[tuple[Id, Id], datetime] = {}
         """When each lender last turned each borrower down."""
 
@@ -272,6 +290,9 @@ class ConversationEngine:
             for topic in self._topic_values(npcs[npc], topics[npc], works[npc])
         ]
         needs = {npc: self.behaviour.needs(npc) for npc in names}
+        conversation = Conversation(
+            id=f"{now:%Y%m%dT%H%M%S}-{a}-{b}", participants=[a, b], started=now
+        )
         stances = {
             npc: stance(
                 npcs[npc].values,
@@ -286,7 +307,6 @@ class ConversationEngine:
             for npc, other in ((a, b), (b, a))
         }
         loan = self._loan(a, b, rels)
-        scene_plan = plan(names, stances, a, config, loan=loan)
         sides = {
             npc: Character(
                 npcs[npc],
@@ -299,17 +319,14 @@ class ConversationEngine:
             )
             for npc, other in ((a, b), (b, a))
         }
+        history = self.memory.shared_history(a, b, now, k=config.history)
+        lying = self._scene_lies(conversation.id, sides, history, loan)
+        scene_plan = plan(
+            names, stances, a, config, loan=loan, lies=[set_up.said for set_up in lying]
+        )
         location = self.behaviour.places.at(here)
         prompt = scene_prompt(
-            sides[a],
-            sides[b],
-            self.memory.shared_history(a, b, now, k=config.history),
-            location.name if location else None,
-            now,
-            scene_plan,
-        )
-        conversation = Conversation(
-            id=f"{now:%Y%m%dT%H%M%S}-{a}-{b}", participants=[a, b], started=now
+            sides[a], sides[b], history, location.name if location else None, now, scene_plan
         )
         directions = {a: facing(here, there), b: facing(there, here)}
         parties = {
@@ -337,12 +354,52 @@ class ConversationEngine:
             if isinstance(loan, Ask) and not loan.lends:
                 self._declined[(loan.borrower, loan.lender)] = now
             self._log("%s: %s", conversation.id, told(loan, names))
+        for set_up in lying:
+            self._log("%s: %s", conversation.id, set_up.said)
         return conversation
 
     def settle(self, conversation_id: str) -> Loan | None:
         """For B3, once: the loan a live or recently finished scene was set up to settle. Until
         then it's pending, and no other scene between the two settles anything."""
         return self._loans.pop(conversation_id, None)
+
+    def lies(self, conversation_id: str) -> list[Lie]:
+        """For B3, once: the lies a live or recently finished conversation set someone up to
+        tell."""
+        return self._lies.pop(conversation_id, [])
+
+    def tempted(self, npc: Id, listener: Id) -> list[Temptation]:
+        """What the game knows `npc` would rather not own up to, talking with `listener`."""
+        resident, now = self.behaviour.npcs[npc], self.clock.now
+        money = self.behaviour.hooks.money(resident)
+        workplace = resident.workplace
+        known = standing(
+            resident,
+            self.memory,
+            now,
+            self.behaviour.npcs,
+            {id: self._name(id) for id in [*self.behaviour.npcs, PLAYER_ID]},
+            self.config,
+            money=money if isinstance(money, int | float) else None,
+            target=self.behaviour.savings(npc),
+            missed=self.missed(npc),
+            workplace=self.behaviour.places.location(workplace).name if workplace else None,
+            work=self.work,
+        )
+        return found(known, listener, now, self.config)
+
+    def lies_about(self, temptation: Temptation, conversation_id: str) -> bool:
+        """The roll, seeded by the conversation."""
+        npc = self.behaviour.npcs[temptation.owner]
+        odds = chance(honesty(npc), traits_of(npc.id), self.config)
+        return lies(temptation, conversation_id, odds)
+
+    def tell(self, conversation_id: str, temptation: Temptation, listener: Id) -> Lie:
+        """Set `temptation`'s owner up to lie about it to `listener`, for B3."""
+        names = {id: self._name(id) for id in (temptation.owner, listener)}
+        lying = lie(temptation, listener, names)
+        self._lies.setdefault(conversation_id, []).append(lying)
+        return lying
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
@@ -609,6 +666,7 @@ class ConversationEngine:
         self.finished.append(conversation)
         kept = {*self._talks, *(finished.id for finished in self.finished)}
         self._loans = {id: loan for id, loan in self._loans.items() if id in kept}
+        self._lies = {id: lying for id, lying in self._lies.items() if id in kept}
         self._log(
             "%s ended after %d lines (engagement %s)",
             conversation.id,
@@ -651,6 +709,7 @@ class ConversationEngine:
             ),
             works=works,
             topics=topics,
+            temptations=self.tempted(npc, other),
         )
 
     def _plans(self, npc: Id, name: str | None = None) -> str:
@@ -663,6 +722,28 @@ class ConversationEngine:
 
     def _critical(self) -> dict[Need, float]:
         return critical(self.behaviour.config.urgency)
+
+    def _scene_lies(
+        self,
+        conversation_id: str,
+        sides: dict[Id, Character],
+        history: SharedHistory,
+        loan: Loan | None,
+    ) -> list[Lie]:
+        """What each side is set up to lie about: what touches the other's notes or what's
+        between them, on a lie roll. Nobody hides being short while asking for a loan."""
+        lying = []
+        for npc, other in itertools.permutations(sides):
+            notes = brings_up(sides[other], history)
+            borrowing = loan is not None and loan.borrower == npc
+            for temptation in self.tempted(npc, other):
+                if borrowing and temptation.kind in (Kind.SHORT, Kind.DEBT):
+                    continue
+                if touched(temptation, notes, other) and self.lies_about(
+                    temptation, conversation_id
+                ):
+                    lying.append(self.tell(conversation_id, temptation, other))
+        return lying
 
     def _loan(self, a: Id, b: Id, rels: dict[Id, Relationship]) -> Loan | None:
         purses = {}
@@ -799,6 +880,18 @@ def pull(memory: Memory, now: datetime, half_life: timedelta) -> float:
     """Salience × recency."""
     age = (now - memory.timestamp).total_seconds()
     return memory.salience * recency(age, half_life.total_seconds())
+
+
+def brings_up(side: Character, history: SharedHistory) -> str:
+    """What one side of a scene might bring up, and what's between the two: their memories and
+    their topics, news, works and secrets."""
+    said = [memory.content for memory in [*side.memories, *side.topics]]
+    said += [topic for memory in side.memories for topic in memory.topics]
+    said += [topic.memory.content for topic in side.works]
+    said += [what for _, what in side.secrets]
+    said += [event.action for event in history.events]
+    said += [flag.description for flag in history.flags]
+    return "\n".join(said)
 
 
 def felt(mood: tuple[str, ...]) -> str:

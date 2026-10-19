@@ -7,6 +7,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from simile.behaviour.scoring import savings
 from simile.casting import Cast, Resident, history
 from simile.conversation.config import DEFAULT_CONFIG, ConversationConfig
 from simile.conversation.prompt import (
@@ -18,6 +19,15 @@ from simile.conversation.prompt import (
     parse_reply,
     system_prompt,
     turn_prompt,
+)
+from simile.conversation.temptation import (
+    chance,
+    found,
+    honesty,
+    lies,
+    raised,
+    standing,
+    touched,
 )
 from simile.evaluation.scenarios import NOW, Scenario
 from simile.llm import LLMClient, LLMError
@@ -40,6 +50,8 @@ class Reply(BaseModel):
     values: list[str] = []
     stance: str | None = None
     lies: bool | None = None
+    directed: bool = False
+    """Whether a lie roll gave the prompt a direction to lie."""
 
 
 @dataclass(frozen=True)
@@ -48,6 +60,8 @@ class Prompt:
     text: str
     names: tuple[str, ...]
     others: tuple[str, ...]
+    lies: tuple[str, ...] = ()
+    """The directions to lie a roll gave it."""
 
     def key(self, model: str) -> str:
         """Changes whenever the model or anything in the prompt does."""
@@ -77,6 +91,7 @@ def prompt(
         rel = as_of(stored, now) if stored else meet(npc, other.id)
         shared = memory.shared_history(npc.id, other.id, now, k=config.history)
         memories = on_mind(memory, npc.id, other.id, now, config)
+        directed = tempted(character, npc, scenario, memory, now, config)
     said = Line(
         id=0,
         conversation_id=PURPOSE,
@@ -93,8 +108,45 @@ def prompt(
         other.name,
         config,
         speaker=npc.id,
+        lies=directed,
     )
-    return Prompt(system_prompt(npc, config), text, (first_name(npc), npc.name), (other.name,))
+    names = (first_name(npc), npc.name)
+    return Prompt(system_prompt(npc, config), text, names, (other.name,), tuple(directed))
+
+
+def tempted(
+    character: Character,
+    npc: Npc,
+    scenario: Scenario,
+    memory: MemoryStore,
+    now: datetime,
+    config: ConversationConfig,
+) -> list[str]:
+    """B5's directions to lie about what the scenario's line touches, on a roll seeded by the
+    scenario and the character."""
+    names = {scenario.other: scenario.name}
+    known = standing(
+        npc,
+        memory,
+        now,
+        [scenario.other],
+        names,
+        config,
+        money=scenario.money,
+        target=savings(npc.values),
+        missed=scenario.missed(now),
+    )
+    every = [
+        *found(known, scenario.other, now, config),
+        *raised(scenario.line, scenario.name, npc.id),
+    ]
+    odds = chance(honesty(npc), character.traits, config)
+    seed = f"{PURPOSE}/{scenario.id}/{npc.id}"
+    return [
+        temptation.direction()
+        for temptation in every
+        if touched(temptation, scenario.line) and lies(temptation, seed, odds)
+    ]
 
 
 def on_mind(
@@ -149,6 +201,7 @@ async def play(
             raw=raw,
             text=draft.text,
             values=[value.value for value in draft.values],
+            directed=bool(asked.lies),
         )
         on_reply(made)
         return made

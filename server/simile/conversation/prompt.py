@@ -279,9 +279,11 @@ def turn_prompt(
     mood: Sequence[str] = (),
     errand: str | None = None,
     detail: Memory | None = None,
+    lies: Sequence[str] = (),
 ) -> str:
     """The speaker's next line, feeling `mood`, with what stuck with them from the article
-    `detail` is of. A goodbye says they're off to do `errand`."""
+    `detail` is of and the `lies` they've been directed to tell. A goodbye says they're off to
+    do `errand`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)
@@ -291,7 +293,7 @@ def turn_prompt(
     else:
         so_far = "The conversation hasn't started yet."
     parts = [background, feels("you", mood)] if mood else [background]
-    parts += [*your_works(works, speaker), so_far]
+    parts += [*lies, *your_works(works, speaker), so_far]
     if recalled:
         parts.append(
             f"You read about what {other} just mentioned:\n"

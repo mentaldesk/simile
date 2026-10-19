@@ -112,7 +112,7 @@ def test_the_past_is_stamped_just_before_the_start_and_surfaces_in_recall(make: 
         PastMemory(age=30, content="The wedding.", salience=0.9, valence=0.8),
         PastMemory(age=55, content="A quiet loss.", salience=0.6, valence=-0.6),
     ]
-    made = bind([make("a", birth_year=1956, past=past)], houses=HOUSES)
+    made = bind([make("a", birth_year=1956, past=past)], game_date=START.date(), houses=HOUSES)
     assert made.npcs()[0].age == 70
 
     memories = [m for m in history(made, START) if isinstance(m, Memory)]
