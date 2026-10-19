@@ -58,7 +58,9 @@ tone and relatedness to every core value, scored as for news.
   friend's (affinity 0.4 or more), nobody paints over a mural younger than `fresh` (2 sim hours),
   even their own, and nobody picks a wall someone else is off to paint.
 - **Painting.** The prompt also has the wall's size and what's on it now, and asks for an SVG with
-  the wall's `viewBox`, beside a plain description of what it shows (the work's `text`).
+  the wall's `viewBox`, beside a plain description of what it shows (the work's `text`). With the
+  image model, it asks for a description of the picture to paint instead of the SVG (see
+  *Painting with an image model*).
 - **Checking the SVG** (`svg.checked`). It must be under 60,000 characters and 2,000 elements,
   roughly the wall's shape, and only shapes, text, gradients, patterns, masks and filters: no
   scripts, images, foreign objects, event handlers, CSS escapes, or references to anything outside
@@ -90,9 +92,59 @@ gallery has given the maker its `hang` (`gallery/README.md`). Without one, nobod
 - **Painting.** The prompt asks for something new in their craft, or for a muralist in its spirit
   on canvas, as an SVG at the frame's opening: 1.34 × 0.84 m (`PAINTING_M`, from the iso frames),
   960 × 602 px. It's checked as a mural's is, asked for once more if it won't do, and drawn in the
-  same child process under the same limits, onto a primed canvas with no weathering.
+  same child process under the same limits, onto a primed canvas with no weathering. With the
+  image model, it's painted from a description instead, as a mural is.
 - **Hanging.** The `Work` (`medium` painting, the artist's `form`, no `wall`) is stored, `hang` gets
-  it with its SVG and PNG, and the artist remembers painting it for the gallery.
+  it with its SVG and PNG, and the artist remembers painting it for the gallery. A painted one has
+  an empty SVG.
+
+## Painting with an image model
+
+On Apple Silicon, a local image model can paint murals and paintings instead of Claude drawing them
+as SVG: FLUX.2 [klein] 4B (Apache 2.0) through `mflux`, on MLX. It's off unless you install the
+`images` extra, download the model and set `SIMILE_IMAGES=1`:
+
+```bash
+cd server && uv sync --extra images
+uv run simile works download   # about 16 GB, into the Hugging Face cache, once
+SIMILE_IMAGES=1 make dev
+```
+
+- **The prompt.** The Sonnet call is the same, but asks for `picture` in place of `svg`: what's in
+  it and where, its colours and the style of their craft, in plain, concrete words, at most
+  `picture_words` (90). It carries the tone rules, since the image model has no judgement of its
+  own: nothing violent, frightening or adult, fit for children who walk by. It also asks for no
+  words, letters, numbers, signs or logos, since the model can't letter. The title, statement,
+  `inspired_by`, tags and value scores are as before.
+- **Painting it** (`painter.py`, `flux.py`). The image model paints `picture`, then a fixed style
+  for the game's look (a flat, hand-painted street mural, or an acrylic on canvas, both "stylised
+  and warm like the art in a cosy village game"), then always "No text, no lettering, no logos."
+  It paints at the wall's or frame's size, rounded up to multiples of 16 and at least 256 px
+  across, in `image_steps` (4) steps, seeded by the work's id. The picture is then scaled to the
+  canvas and finished as an SVG one is: weathered plaster for a mural, a primed canvas for a
+  painting. It's stored as before, with an empty SVG.
+- **One model, one picture at a time.** `works`' lifespan loads the model once, on its own thread,
+  and puts it on the `Maker`. It paints one picture at a time, below conversations: before it
+  starts and between steps it waits while the player is in a conversation, up to `image_patience`
+  (a minute) a picture. Loading takes a few seconds once the weights are in the OS file cache.
+- **SVG stays the fallback.** Without `SIMILE_IMAGES=1`, on Linux and CI, without the extra or the
+  download, or when the model won't load, every mural and painting is SVG as above, and the log
+  says why. A picture the model fails on, or doesn't finish within `image_timeout` (180 s) of
+  being handed to it, waits included, is drawn as SVG instead: the work is asked for again as SVG,
+  from the same commission, in one more Sonnet call. A step that hangs can't be cut short, so
+  while the model is still busy with a picture past its time, every new one goes straight to SVG.
+  If the description call itself fails, nothing is made.
+- **Weights.** `image_bits` (8) quantizes the weights as they load. `image_model` can also name a
+  directory `mflux-save` wrote. On an M2 Max, with nothing else on the GPU:
+
+  | Weights | Resident | Peak | 960 × 608 | 384 × 560 |
+  |---|--:|--:|--:|--:|
+  | bf16 | 14.9 GB | 20.1 GB | 13 to 16 s | 6.5 s |
+  | 8-bit | 8.0 GB | 13.2 GB | 16.5 to 17.5 s | 8.5 s |
+  | 4-bit | 4.3 GB | 9.5 GB | 16.4 to 18 s | 8.7 s |
+
+  8-bit pictures are all but identical to bf16's. 4-bit ones keep the quality but drift in their
+  details. For comparison, the voice model takes about 3 GB.
 
 ## Starter works
 
@@ -179,4 +231,5 @@ cd server
 uv run simile works make tobias   # what's on his mind, then the piece, stored in $SIMILE_DB
 uv run simile works make kofi --png kofi.png   # a mural on the wall he'd pick, if any
 uv run simile works make kofi --wall tower     # or on the one named
+SIMILE_IMAGES=1 uv run simile works make kofi --png kofi.png   # painted by the image model
 ```

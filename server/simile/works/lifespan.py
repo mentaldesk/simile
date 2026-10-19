@@ -19,8 +19,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.memory import memory_of
     from simile.protocol import ListWorksMessage, ReadWorkMessage, hub_of
     from simile.schema import Id, IntentionKind
+    from simile.sim import ConversationEnded, ConversationStarted
     from simile.works.maker import Maker
     from simile.works.notices import Noticeboard
+    from simile.works.painter import Talking, easel
     from simile.works.player import PlayerWorks
     from simile.works.reading import WorksReader
     from simile.works.sightings import Passers
@@ -61,6 +63,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             painting=painting,
             promised=promised,
         )
+        talking = Talking()
+        stack.callback(world.bus.subscribe(ConversationStarted, talking.on_started))
+        stack.callback(world.bus.subscribe(ConversationEnded, talking.on_ended))
+        painter = await stack.enter_async_context(easel(waiting=talking))
         app.state.maker = maker = Maker(
             store,
             memory,
@@ -69,6 +75,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             walls=town.murals,
             npcs=npcs,
             painted=lambda _: hub.broadcast(walls.message()),
+            painter=painter,
         )
         stack.push_async_callback(maker.stop)
         reader = WorksReader(

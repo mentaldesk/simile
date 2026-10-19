@@ -9,6 +9,7 @@ from simile.world.map import MuralWall
 
 if TYPE_CHECKING:
     import numpy as np
+    from PIL import Image
 
 PX_PER_M = TILE_W / TILE_M
 PLASTER = (0.84, 0.8, 0.72)
@@ -116,12 +117,25 @@ def render(svg: str, width: int, height: int, *, seed: int, on_canvas: bool = Fa
     primed canvas, as a PNG. Call it through `draw`."""
     import io
 
-    import numpy as np
     import resvg_py
     from PIL import Image
 
     drawn = bytes(resvg_py.svg_to_bytes(svg_string=svg, width=width, height=height))
-    paint = np.asarray(Image.open(io.BytesIO(drawn)).convert("RGBA"), dtype=np.float32) / 255
+    return finish(Image.open(io.BytesIO(drawn)), width, height, seed=seed, on_canvas=on_canvas)
+
+
+def finish(
+    picture: "Image.Image", width: int, height: int, *, seed: int, on_canvas: bool = False
+) -> bytes:
+    """The picture scaled to `width` × `height` and painted onto lightly weathered plaster, or
+    onto a primed canvas, as a PNG."""
+    import numpy as np
+    from PIL import Image
+
+    picture = picture.convert("RGBA")
+    if picture.size != (width, height):
+        picture = picture.resize((width, height), Image.Resampling.LANCZOS)
+    paint = np.asarray(picture, dtype=np.float32) / 255
     if on_canvas:
         return _png(_primed(paint, width, height))
     rng = np.random.default_rng(seed)
