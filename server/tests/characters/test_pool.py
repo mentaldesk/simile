@@ -1,6 +1,6 @@
 import json
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -27,7 +27,6 @@ type Fakes = Callable[..., tuple[LLMClient, FakeProvider]]
 type Reply = Callable[..., str]
 
 runner = CliRunner()
-NOW = datetime(2026, 10, 19, 9, 0, tzinfo=UTC)
 
 
 def quiet(_: str) -> None:
@@ -218,10 +217,12 @@ async def test_a_renamed_character_keeps_its_slot_in_the_plan(
     path = tmp_path / f"{old.id}.json"
     path.write_text(path.read_text().replace(old.persona, f"{given} keeps to himself."))
 
-    character = rename(tmp_path, old.id, "Ana Folau", now=NOW)
+    later = old.updated + timedelta(hours=1)
+    character = rename(tmp_path, old.id, "Ana Folau", now=later)
     second, fake = await run(fake_llm, embedder, tmp_path, 2)
 
     assert (character.id, character.name, character.version) == ("ana_folau", "Ana Folau", 2)
+    assert (character.created, character.updated) == (old.created, later)
     assert character.persona == "Ana keeps to himself."
     assert not path.exists()
     assert json.loads((tmp_path / RENAMES).read_text()) == {"3:0": "ana_folau"}
@@ -238,12 +239,13 @@ async def test_renaming_again_points_the_slot_at_the_latest_name(
 ) -> None:
     first, _ = await run(fake_llm, embedder, tmp_path, 1)
     planned = first.written[0]
+    later = planned.updated + timedelta(hours=1)
 
-    rename(tmp_path, planned.id, "Ana Folau", now=NOW)
-    rename(tmp_path, "ana_folau", "Bram de Wit", now=NOW)
+    rename(tmp_path, planned.id, "Ana Folau", now=later)
+    rename(tmp_path, "ana_folau", "Bram de Wit", now=later)
     assert json.loads((tmp_path / RENAMES).read_text()) == {"3:0": "bram_de_wit"}
 
-    rename(tmp_path, "bram_de_wit", planned.name, now=NOW)
+    rename(tmp_path, "bram_de_wit", planned.name, now=later)
     assert json.loads((tmp_path / RENAMES).read_text()) == {}
     assert [c.id for c in load_pool(tmp_path)] == [planned.id]
 
