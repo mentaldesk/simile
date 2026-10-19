@@ -58,6 +58,20 @@ def test_loads_nothing_before_the_first_save() -> None:
         assert store.load() is None
 
 
+def test_loads_a_save_with_needs_since_dropped_without_them(tmp_path: Path) -> None:
+    path = tmp_path / "simile.db"
+    with opened(path) as store:
+        store.save(WORLD)
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE saved_world SET data = json_set(data, '$.npcs.kofi.needs.bladder', 0.95, "
+            "'$.npcs.kofi.needs.hygiene', 0.4)"
+        )
+
+    with opened(path) as store:
+        assert store.load() == WORLD
+
+
 def test_starts_afresh_from_a_save_it_cannot_read(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:

@@ -1047,12 +1047,12 @@ async def test_an_npc_with_an_urgent_need_doesnt_greet_the_player() -> None:
         npcs=(ANA,),
         player=PlayerConfig(greet_cooldown=0),
     )
-    village.behaviour.minds["ana"].needs[Need.BLADDER] = 0.95
+    village.behaviour.minds["ana"].needs[Need.HUNGER] = 0.95
 
     await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
     assert village.of(ConversationStarted) == []
 
-    village.behaviour.minds["ana"].needs[Need.BLADDER] = 0.2
+    village.behaviour.minds["ana"].needs[Need.HUNGER] = 0.2
     await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
     [started] = village.of(ConversationStarted)
     assert started.conversation.participants == ["ana", PLAYER_ID]

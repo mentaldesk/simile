@@ -18,8 +18,8 @@ sets F3's snapshot to the NPCs' real positions.
   away from seeking company), Adventure to wander, Creativity to the maker space, and
   Open-mindedness, Knowledge, Creativity and Peace of Mind to the gallery. The coffee shop peaks in
   the morning and home in the two hours before bed. The activity just finished scores less.
-- **Relief.** Needs (`social`, `curiosity`, `rest`, `news`, `inspiration`, `hunger`, `bladder`,
-  `hygiene`, `boredom`, `relaxation`, `exercise`, 0 to 1) rise over time, and being somewhere changes them by its `effects` each hour.
+- **Relief.** Needs (`social`, `curiosity`, `rest`, `news`, `inspiration`, `hunger`, `boredom`,
+  `relaxation`, `exercise`, 0 to 1) rise over time, and being somewhere changes them by its `effects` each hour.
   Each need has an urgency curve, `need ** power` (`urgency`, 3 unless it says otherwise), and one
   function prices any change to it (`worth`): its weight times the area under the curve between
   the level before and after. An option scores the relief it would bring over a typical stay
@@ -42,19 +42,17 @@ sets F3's snapshot to the NPCs' real positions.
   enough: they look for company more often, and come to a conversation lonelier, which the
   conversation engine reads as keener to talk. Neutral (0.5), as for everyone in today's village,
   changes nothing.
-- **Hunger, bladder and hygiene.** Hunger goes from full to urgent in 4 to 5.5 hours (faster with
-  Pleasure), the bladder in about 3 and hygiene in about a day (faster with Discipline). Asleep,
-  hunger rises at `rise_asleep` 0.3 of that, the bladder 0.2 and hygiene 0.5, so they wake hungry
-  and breakfast puts the next meal around midday. Home meets hunger slowly and the bladder and
-  hygiene; the noodle bar and the coffee shop meet hunger quickly and the bladder. They only eat
+- **Hunger.** Hunger goes from full to urgent in 4 to 5.5 hours (faster with Pleasure). Asleep, it
+  rises at `rise_asleep` 0.3 of that, so they wake hungry and breakfast puts the next meal around
+  midday. Home meets it slowly, and the noodle bar and the coffee shop quickly. They only eat
   once hunger reaches its `appetite` (0.75), and then until they're full or leave, so a coffee
-  isn't a meal. Nothing on the clock says when to eat. P1's traits don't touch these needs.
-- **Urgent needs.** Above its `critical` level (0.9), hunger or the bladder makes them drop what
-  they're doing and decide again straight away, walking off mid-stay or mid-walk, unless what
-  they're doing meets it. A stay cut short brings none of its `finishing`. Being held lets go too,
-  but only then: the café's customers and barista are held at the coffee shop, which meets both.
-  Asleep or talking, nobody's interrupted. Wants (social, curiosity, rest, the news, inspiration)
-  and hygiene never interrupt.
+  isn't a meal. Nothing on the clock says when to eat. P1's traits don't touch it.
+- **Urgent needs.** Above its `critical` level (0.9), hunger makes them drop what they're doing
+  and decide again straight away, walking off mid-stay or mid-walk, unless what they're doing
+  meets it. A stay cut short brings none of its `finishing`. Being held lets go too, but only
+  then: the café's customers and barista are held at the coffee shop, which feeds them. Asleep or
+  talking, nobody's interrupted. Wants (social, curiosity, rest, the news, inspiration) never
+  interrupt.
 - **What's there.** A place meets a need only as far as the `supply` hook says it can now, 0 to 1,
   in what it scores and what it does. E4's economy plugs it in: a shop feeds people only while
   it's staffed and its batch lasts, and home only while there's food in the fridge. The café wraps

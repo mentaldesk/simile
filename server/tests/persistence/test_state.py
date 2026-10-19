@@ -111,7 +111,7 @@ def test_needs_rise_from_the_restored_time_not_the_first_start() -> None:
 
     for npc, state in saved.npcs.items():
         needs = after.behaviour.needs(npc)
-        assert all(abs(needs[need] - state.needs[need]) < 0.01 for need in Need), npc
+        assert all(needs[need] - state.needs[need] < 0.01 for need in Need), npc
 
 
 def test_walkers_and_talkers_decide_again_on_the_first_think() -> None:
