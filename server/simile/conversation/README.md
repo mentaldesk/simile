@@ -40,7 +40,7 @@ B1's hooks, hands `player_say` to `PlayerConversations`, and ticks both on the s
   off to read the news, has had plenty of company, itching to catch up on the news): the reasons
   that agree with their keenness in brackets, the others after "though". Then who'll want to leave
   after about how many lines, and the length, ending when the leaver takes their leave and, if a
-  need drains them, what it sends them off to do ("to get something to eat", "to find a loo"), so
+  need drains them, what it sends them off to do ("to get something to eat"), so
   the goodbye gives the reason.
 - **The script.** One L1 `stream()` call with Haiku 4.5 and `purpose="conversation"` writes the
   whole scene. Haiku 5.5 thinks before it writes and can't be told not to: on the same scenes it

@@ -192,7 +192,7 @@ def test_a_pair_who_both_want_out_soon_are_told_so() -> None:
 def test_the_direction_says_what_the_leaver_is_off_to_do() -> None:
     names = {"ana": "Ana", "ben": "Ben"}
     stances = {
-        "ana": Stance(0.8, 22, errand="find a loo"),
+        "ana": Stance(0.8, 22, errand="pick up a parcel"),
         "ben": Stance(0.8, 6, mood=("hungry",), errand="get something to eat", drain=2.5),
     }
 
