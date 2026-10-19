@@ -23,6 +23,7 @@ from simile.protocol import (
     MuralsMessage,
     NewsArticle,
     NewsMessage,
+    Notice,
     NpcStateMessage,
     Painting,
     PaintingsMessage,
@@ -70,7 +71,16 @@ POEM = WrittenWork(
     created=datetime(2026, 3, 14, 8, 40, tzinfo=UTC),
     read=False,
 )
-WORKS = WorksMessage(works=[POEM.model_copy(update={"work_id": "work_3", "read": True}), POEM])
+NOTICE = Notice(
+    notice_id="notice_1",
+    title="Two-for-one flat whites",
+    text="All afternoon, while the oat milk lasts.",
+    poster=Artist(id="mirela", name="Mirela Popescu"),
+    created=datetime(2026, 3, 14, 9, tzinfo=UTC),
+)
+WORKS = WorksMessage(
+    works=[POEM.model_copy(update={"work_id": "work_3", "read": True}), POEM], notices=[NOTICE]
+)
 MURAL = Mural(
     work_id="work_2",
     title="Who Owns the Sky",
@@ -350,7 +360,22 @@ def test_works_lists_every_field_of_each_work() -> None:
                 "read": False,
             }
         ],
+        "notices": [],
     }
+
+
+def test_works_lists_every_field_of_each_notice() -> None:
+    message = WorksMessage(works=[], notices=[NOTICE])
+
+    assert json.loads(message.model_dump_json())["notices"] == [
+        {
+            "notice_id": "notice_1",
+            "title": "Two-for-one flat whites",
+            "text": "All afternoon, while the oat milk lasts.",
+            "poster": {"id": "mirela", "name": "Mirela Popescu"},
+            "created": "2026-03-14T09:00:00Z",
+        }
+    ]
 
 
 def test_murals_lists_every_wall_with_its_mural_or_null() -> None:

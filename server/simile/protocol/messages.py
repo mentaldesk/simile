@@ -159,11 +159,26 @@ class WrittenWork(Model):
     read: bool = Field(description="Whether the player has read it.")
 
 
+class Notice(Model):
+    """A short notice a shopkeeper, the `poster`, puts up at the terminals: an offer, an event or
+    an invitation. It isn't a work."""
+
+    notice_id: Key
+    title: str
+    text: str = Field(description="The notice itself, with its line breaks.")
+    poster: Artist
+    created: Timestamp = Field(description="Sim time.")
+
+
 class WorksMessage(Model):
-    """Residents' writing at the terminals, newest first. The reply to list_works and read_work."""
+    """Residents' writing at the terminals, newest first, and the notice board. The reply to
+    list_works and read_work."""
 
     type: Literal["works"] = "works"
     works: list[WrittenWork]
+    notices: list[Notice] = Field(
+        default=[], description="The notices up on the board, newest first. Apart from the works."
+    )
 
 
 class Face(StrEnum):

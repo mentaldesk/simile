@@ -539,6 +539,40 @@
       "title": "NewsMessage",
       "type": "object"
     },
+    "Notice": {
+      "additionalProperties": false,
+      "description": "A short notice a shopkeeper, the `poster`, puts up at the terminals: an offer, an event or\nan invitation. It isn't a work.",
+      "properties": {
+        "notice_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "text": {
+          "description": "The notice itself, with its line breaks.",
+          "type": "string"
+        },
+        "poster": {
+          "$ref": "#/$defs/Artist"
+        },
+        "created": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "notice_id",
+        "title",
+        "text",
+        "poster",
+        "created"
+      ],
+      "title": "Notice",
+      "type": "object"
+    },
     "NpcStateMessage": {
       "additionalProperties": false,
       "description": "Debug state for the overlay. The fields in `state` are up to the modules that send them.",
@@ -934,7 +968,7 @@
     },
     "WorksMessage": {
       "additionalProperties": false,
-      "description": "Residents' writing at the terminals, newest first. The reply to list_works and read_work.",
+      "description": "Residents' writing at the terminals, newest first, and the notice board. The reply to\nlist_works and read_work.",
       "properties": {
         "type": {
           "const": "works",
@@ -946,11 +980,20 @@
             "$ref": "#/$defs/WrittenWork"
           },
           "type": "array"
+        },
+        "notices": {
+          "default": [],
+          "description": "The notices up on the board, newest first. Apart from the works.",
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "type": "array"
         }
       },
       "required": [
         "type",
-        "works"
+        "works",
+        "notices"
       ],
       "title": "WorksMessage",
       "type": "object"
