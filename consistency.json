@@ -1,0 +1,162 @@
+[
+ {
+  "asset": "sky",
+  "referenced": 8.1,
+  "text": 9.2
+ },
+ {
+  "asset": "far",
+  "referenced": 7.9,
+  "text": 10.1
+ },
+ {
+  "asset": "mid",
+  "referenced": 7.8,
+  "text": 9.1
+ },
+ {
+  "asset": "ground",
+  "referenced": 8.6,
+  "text": 9.2
+ },
+ {
+  "asset": "cafe",
+  "referenced": 8.0,
+  "text": 8.1
+ },
+ {
+  "asset": "noodle",
+  "referenced": 8.5,
+  "text": 8.3
+ },
+ {
+  "asset": "shophouse",
+  "referenced": 8.3,
+  "text": 9.2
+ },
+ {
+  "asset": "house",
+  "referenced": 18.3,
+  "text": 16.3
+ },
+ {
+  "asset": "grocer",
+  "referenced": 6.0,
+  "text": 14.9
+ },
+ {
+  "asset": "banyan",
+  "referenced": 9.0,
+  "text": 13.6
+ },
+ {
+  "asset": "lamp",
+  "referenced": 15.1,
+  "text": 18.0
+ },
+ {
+  "asset": "pot",
+  "referenced": 15.8,
+  "text": 25.7
+ },
+ {
+  "asset": "sofa",
+  "referenced": 25.2,
+  "text": 26.8
+ },
+ {
+  "asset": "armchair",
+  "referenced": 17.4,
+  "text": 21.2
+ },
+ {
+  "asset": "bookshelf",
+  "referenced": 9.4,
+  "text": 18.1
+ },
+ {
+  "asset": "floor-lamp",
+  "referenced": 5.2,
+  "text": 3.7
+ },
+ {
+  "asset": "monstera",
+  "referenced": 14.5,
+  "text": 23.9
+ },
+ {
+  "asset": "sideboard",
+  "referenced": 8.1,
+  "text": 8.5
+ },
+ {
+  "asset": "stove",
+  "referenced": 6.0,
+  "text": 5.0
+ },
+ {
+  "asset": "counter",
+  "referenced": 39.3,
+  "text": 36.6
+ },
+ {
+  "asset": "fridge",
+  "referenced": 11.5,
+  "text": 11.2
+ },
+ {
+  "asset": "dining",
+  "referenced": 7.1,
+  "text": 7.9
+ },
+ {
+  "asset": "bed",
+  "referenced": 16.8,
+  "text": 19.2
+ },
+ {
+  "asset": "wardrobe",
+  "referenced": 8.9,
+  "text": 6.3
+ },
+ {
+  "asset": "bedside",
+  "referenced": 8.8,
+  "text": 11.4
+ },
+ {
+  "asset": "bathtub",
+  "referenced": 7.6,
+  "text": 6.8
+ },
+ {
+  "asset": "basin",
+  "referenced": 6.8,
+  "text": 6.1
+ },
+ {
+  "asset": "canopy",
+  "referenced": 8.3,
+  "text": 10.1
+ },
+ {
+  "asset": "planks",
+  "referenced": 6.3,
+  "text": 8.3
+ },
+ {
+  "asset": "ridge",
+  "referenced": 8.2,
+  "text": 11.9
+ },
+ {
+  "asset": "awning",
+  "referenced": 25.3,
+  "text": 28.1
+ },
+ {
+  "asset": "ladder",
+  "referenced": 5.5,
+  "text": 6.3
+ }
+]
