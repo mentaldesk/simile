@@ -103,6 +103,24 @@ def register(app: typer.Typer) -> None:
             typer.echo(f"Stopped: {failed}.", err=True)
             raise typer.Exit(1)
 
+    @works.command()
+    def download() -> None:
+        """Download the image model that paints murals and paintings with SIMILE_IMAGES=1.
+
+        FLUX.2 [klein] 4B, about 16 GB, from its Hugging Face repo into the local cache. Needs
+        Apple Silicon and the images extra: uv sync --extra images.
+        """
+        from simile.works.config import DEFAULT_CONFIG
+
+        try:
+            from simile.works import flux
+        except ImportError:
+            typer.echo(
+                "It needs Apple Silicon and the images extra: uv sync --extra images", err=True
+            )
+            raise typer.Exit(1) from None
+        typer.echo(f"Downloaded to {flux.download(DEFAULT_CONFIG.image_model)}")
+
     app.add_typer(works, name="works")
 
 
@@ -171,6 +189,7 @@ async def create(
     from simile.schema import Medium
     from simile.sim import Clock
     from simile.works.maker import Maker
+    from simile.works.painter import easel
     from simile.works.store import WorksStore
     from simile.works.walls import Walls
     from simile.world.map import load_map
@@ -189,12 +208,15 @@ async def create(
                 raise NoWall
             wall = spot.wall
         llm = LLMClient(CannedProvider() if os.environ.get(FAKE_ENV) == "fake" else None)
-        maker = Maker(works, memory, clock, lambda: llm, walls=walls, npcs=npcs)
-        memories, _ = maker.on_mind(npc, clock.now)
         try:
-            task = maker.make(npc, wall)
-            work = await task if task else None
-            return memories, work, works.picture(work.id) if work else None
+            async with easel() as painter:
+                maker = Maker(
+                    works, memory, clock, lambda: llm, walls=walls, npcs=npcs, painter=painter
+                )
+                memories, _ = maker.on_mind(npc, clock.now)
+                task = maker.make(npc, wall)
+                work = await task if task else None
+                return memories, work, works.picture(work.id) if work else None
         finally:
             await llm.aclose()
 

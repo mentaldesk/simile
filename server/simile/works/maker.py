@@ -30,8 +30,9 @@ from simile.schema import (
 )
 from simile.sim import Clock
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
+from simile.works.painter import Painter, PaintingFailed, image_prompt
 from simile.works.reading import name_of
-from simile.works.render import PAINTING_M, canvas, draw, metres, painting_canvas
+from simile.works.render import PAINTING_M, canvas, draw, finish, metres, painting_canvas
 from simile.works.store import WorksStore
 from simile.works.svg import BadSvg, checked
 from simile.works.walls import wall_name
@@ -100,7 +101,7 @@ class Painting(Mural):
 
 
 type Hang = Callable[[Work, str, bytes], None]
-"""Hangs a painting in the gallery, given its SVG and PNG."""
+"""Hangs a painting in the gallery, given its SVG and PNG. A painted one has no SVG."""
 
 RELATES: dict[str, Any] = {
     value.value: (float, Field(ge=0, le=SCALE, description=f"How closely it relates to {m}."))
@@ -109,6 +110,27 @@ RELATES: dict[str, Any] = {
 Reply = create_model("Piece", __base__=Piece, **RELATES)
 MuralReply = create_model("Mural", __base__=Mural, **RELATES)
 PaintingReply = create_model("Painting", __base__=Painting, **RELATES)
+
+
+def pictured(model: type[Mural], name: str) -> type[BaseModel]:
+    """`model` with a description of the picture for the image model where its SVG was."""
+    fields: dict[str, Any] = {}
+    for key, info in model.model_fields.items():
+        if key == "svg":
+            fields["picture"] = (
+                str,
+                Field(min_length=1, description="The picture to paint, described for a painter."),
+            )
+        else:
+            fields[key] = (info.annotation, info)
+    return create_model(name, __config__=model.model_config, **fields, **RELATES)
+
+
+MuralPictureReply = pictured(Mural, "Mural")
+PaintingPictureReply = pictured(Painting, "Painting")
+DRAWN = {Medium.MURAL: MuralReply, Medium.PAINTING: PaintingReply}
+PAINTED = {Medium.MURAL: MuralPictureReply, Medium.PAINTING: PaintingPictureReply}
+GOES_UP = {Medium.MURAL: "go up", Medium.PAINTING: "be hung"}
 
 
 def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) -> str:
@@ -270,6 +292,20 @@ TAKE_A_SIDE = (
     "to tell where you stand, and guess it's yours without your name on it."
 )
 
+TONE = (
+    "Keep it fit for every neighbour who sees it, children too: no violence, weapons or blood, "
+    "nothing frightening or gruesome, and nothing adult or suggestive."
+)
+
+
+def picture_rules(config: WorksConfig) -> str:
+    return (
+        "It's painted from your description alone, taken literally, so describe the picture "
+        "itself in plain, concrete words: what's in it and where, its colours and the style of "
+        f"your craft, in {config.picture_words} words at most. Put no words, letters, numbers, "
+        f"signs or logos in it: let the images say it. {TONE}"
+    )
+
 
 def idea(intention: Intention | None, npcs: Mapping[Id, Npc]) -> str | None:
     """The idea they said they'd make, to lead the prompt."""
@@ -307,31 +343,43 @@ def mural_prompt(
     wall: MuralWall,
     on_it: str = "It's blank.",
     config: WorksConfig = DEFAULT_CONFIG,
+    *,
+    painted: bool = False,
 ) -> str:
-    """`on_it` says what's on the wall now."""
+    """`on_it` says what's on the wall now. `painted` asks for the picture described for the
+    image model rather than drawn as SVG."""
     width, height = canvas(wall)
     across, up = metres(wall)
+    if painted:
+        how = f"Describe the picture you'll paint, filling the whole wall. {picture_rules(config)}"
+    else:
+        how = (
+            f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
+            "canvas, since it's paint on a wall: no frame and no transparent background. "
+            f"{svg_rules(config)} Any words on it should be few, and big enough to read from "
+            "across the street. Keep them well inside the edges, allowing each letter 0.7 of the "
+            "font size, since the wall may not have your font."
+        )
     return (
         f"{on_your_mind(commission, 'murals')}\n\n"
         f"You've come to paint a new mural on {wall_name(wall.id)}, {across:.1f} m wide and "
         f"{up:.1f} m high. {on_it}\n\n"
         f"Paint something new in your craft, {craft.form}. {start(commission)} something in line "
         f"with what you care about. {TAKE_A_SIDE} {spark(commission.seed)} The composition, "
-        f"palette and style are yours.\n\n{knowing('paint')}\n\n"
-        f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
-        "canvas, since it's paint on a wall: no frame and no transparent background. "
-        f"{svg_rules(config)} Any words on it should be few, and big enough to read from across "
-        "the street. Keep them well inside the edges, allowing each letter 0.7 of the font size, "
-        "since the wall may not have your font.\n\n"
+        f"palette and style are yours.\n\n{knowing('paint')}\n\n{how}\n\n"
         "Describe what it shows in a few plain sentences, as a passer-by would see it, and say in "
         f"a sentence or two of your own what it's saying.\n\n{analysis('mural')}"
     )
 
 
 def painting_prompt(
-    craft: Craft, commission: Commission, config: WorksConfig = DEFAULT_CONFIG
+    craft: Craft,
+    commission: Commission,
+    config: WorksConfig = DEFAULT_CONFIG,
+    *,
+    painted: bool = False,
 ) -> str:
-    """For a painter, or a muralist painting a canvas for once."""
+    """For a painter, or a muralist painting a canvas for once. `painted` as for murals."""
     width, height = painting_canvas()
     across, up = PAINTING_M
     what = (
@@ -339,18 +387,27 @@ def painting_prompt(
         if craft.medium is Medium.MURAL
         else f"in your craft, {craft.form}"
     )
+    if painted:
+        how = (
+            "Describe the picture you'll paint, filling the whole canvas, since it hangs in a "
+            "frame. Visitors see it close up, so detail rewards them. "
+            f"{picture_rules(config)}"
+        )
+    else:
+        how = (
+            f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
+            "canvas: no frame, since it hangs in one, and no transparent background. "
+            f"{svg_rules(config)} Visitors see it close up, so detail rewards them. Any words on "
+            "it should be few. Keep them well inside the edges, allowing each letter 0.7 of the "
+            "font size, since the gallery may not have your font."
+        )
     return (
         f"{on_your_mind(commission, 'works')}\n\n"
         f"You're painting a canvas for the village gallery, {across:.2f} m wide and {up:.2f} m "
         f"high, to hang beside your neighbours' work. Paint something new {what}. "
         f"{start(commission)} something in line with what you care about. {TAKE_A_SIDE} "
         f"{spark(commission.seed)} The composition, palette and style are yours.\n\n"
-        f"{knowing('paint')}\n\n"
-        f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
-        "canvas: no frame, since it hangs in one, and no transparent background. "
-        f"{svg_rules(config)} Visitors see it close up, so detail rewards them. Any words on it "
-        "should be few. Keep them well inside the edges, allowing each letter 0.7 of the font "
-        "size, since the gallery may not have your font.\n\n"
+        f"{knowing('paint')}\n\n{how}\n\n"
         "Describe what it shows in a few plain sentences, as a visitor would see it, and say in "
         f"a sentence or two of your own what it's saying.\n\n{analysis('painting')}"
     )
@@ -400,10 +457,13 @@ class Maker:
         npcs: Mapping[Id, Npc] | None = None,
         painted: Callable[[Work], None] = nothing_painted,
         hang: Hang | None = None,
+        painter: Painter | None = None,
         rng: random.Random | None = None,
         config: WorksConfig = DEFAULT_CONFIG,
     ) -> None:
-        """Without `hang`, nobody paints for the gallery. `rng` draws each work's seed."""
+        """Without `hang`, nobody paints for the gallery. With `painter`, murals and paintings
+        are painted from a description, and drawn as SVG if that fails. `rng` draws each work's
+        seed."""
         self.works = works
         self.memory = memory
         self.clock = clock
@@ -412,6 +472,7 @@ class Maker:
         self.npcs = npcs or {}
         self.painted = painted
         self.hang = hang
+        self.painter = painter
         self.rng = rng or random.Random()
         self.config = config
         self.making: set[Id] = set()
@@ -529,21 +590,15 @@ class Maker:
                 f'You\'re painting over {self._whose(npc, showing)} "{showing.title}", of which '
                 f'{who} said: "{showing.statement}"'
             )
-        ask = first = mural_prompt(craft, commission, wall, on_it, self.config)
         key = uuid.uuid4().hex[:8]
-        for _ in range(2):
-            reply = await self._ask(llm, npc, craft, ask, MuralReply, "mural")
-            if reply is None:
-                return None
-            try:
-                svg, png = await self._picture(reply.svg, *canvas(wall), int(key, 16))
-                break
-            except BadSvg as error:
-                logger.info("%s's mural for %s won't do: %s", npc.id, wall.id, error)
-                ask = f"{first}\n\nYour last try couldn't go up, because {error}. Fix that."
-        else:
-            logger.warning("%s couldn't paint a mural that would go up, so made nothing", npc.id)
+
+        def ask(painted: bool) -> str:
+            return mural_prompt(craft, commission, wall, on_it, self.config, painted=painted)
+
+        made = await self._picture(llm, npc, craft, Medium.MURAL, ask, canvas(wall), int(key, 16))
+        if made is None:
             return None
+        reply, svg, png = made
         work = self._work(
             npc,
             craft,
@@ -580,23 +635,16 @@ class Maker:
         intention: Intention | None,
     ) -> Work | None:
         commission = self.commission(npc, Medium.PAINTING, now, intention)
-        ask = first = painting_prompt(craft, commission, self.config)
         key = uuid.uuid4().hex[:8]
-        for _ in range(2):
-            reply = await self._ask(llm, npc, craft, ask, PaintingReply, "painting")
-            if reply is None:
-                return None
-            try:
-                svg, png = await self._picture(
-                    reply.svg, *painting_canvas(), int(key, 16), on_canvas=True
-                )
-                break
-            except BadSvg as error:
-                logger.info("%s's painting won't do: %s", npc.id, error)
-                ask = f"{first}\n\nYour last try couldn't be hung, because {error}. Fix that."
-        else:
-            logger.warning("%s couldn't paint anything that would hang, so made nothing", npc.id)
+
+        def ask(painted: bool) -> str:
+            return painting_prompt(craft, commission, self.config, painted=painted)
+
+        size = painting_canvas()
+        made = await self._picture(llm, npc, craft, Medium.PAINTING, ask, size, int(key, 16))
+        if made is None:
             return None
+        reply, svg, png = made
         work = self._work(
             npc,
             craft,
@@ -621,6 +669,57 @@ class Maker:
         return work
 
     async def _picture(
+        self,
+        llm: LLMClient,
+        npc: Npc,
+        craft: Craft,
+        medium: Medium,
+        ask: Callable[[bool], str],
+        size: tuple[int, int],
+        seed: int,
+    ) -> tuple[Any, str, bytes] | None:
+        """A mural's or painting's reply, SVG and PNG. With a painter, it's painted from a
+        description and has no SVG. Without one, or if painting fails, it's drawn as SVG. None if
+        a call fails or no SVG will do."""
+        on_canvas = medium is Medium.PAINTING
+        if self.painter is not None:
+            reply = await self._ask(llm, npc, craft, ask(True), PAINTED[medium], medium.value)
+            if reply is None:
+                return None
+            try:
+                picture = await self.painter.paint(image_prompt(reply.picture, medium), *size, seed)
+            except PaintingFailed as error:
+                logger.warning(
+                    "%s's %s couldn't be painted, so drawing it: %s", npc.id, medium.value, error
+                )
+            else:
+                png = await asyncio.to_thread(
+                    finish, picture, *size, seed=seed, on_canvas=on_canvas
+                )
+                return reply, "", png
+        first = again = ask(False)
+        for _ in range(2):
+            reply = await self._ask(llm, npc, craft, again, DRAWN[medium], medium.value)
+            if reply is None:
+                return None
+            try:
+                svg, png = await self._drawing(reply.svg, *size, seed, on_canvas=on_canvas)
+                return reply, svg, png
+            except BadSvg as error:
+                logger.info("%s's %s won't do: %s", npc.id, medium.value, error)
+                again = (
+                    f"{first}\n\nYour last try couldn't {GOES_UP[medium]}, because {error}. "
+                    "Fix that."
+                )
+        logger.warning(
+            "%s couldn't draw a %s that would %s, so made nothing",
+            npc.id,
+            medium.value,
+            GOES_UP[medium],
+        )
+        return None
+
+    async def _drawing(
         self, svg: str, width: int, height: int, seed: int, *, on_canvas: bool = False
     ) -> tuple[str, bytes]:
         config = self.config
@@ -666,7 +765,7 @@ class Maker:
         self,
         npc: Npc,
         craft: Craft,
-        reply: Piece | Mural,
+        reply: Any,
         text: str,
         memories: Sequence[Memory],
         now: datetime,

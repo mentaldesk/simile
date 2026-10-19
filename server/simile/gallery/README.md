@@ -17,7 +17,8 @@ lock, beside the three muralists. A save starts with five of their paintings hun
 (`works/README.md`'s *Starter works*).
 
 M8's `Maker` makes the painting (`works/README.md` has how), with its SVG checks and its renderer
-in a child process under the same time and memory limits as murals. Once `works` is up, the
+in a child process under the same time and memory limits as murals, or with the image model when
+the server runs with `SIMILE_IMAGES=1`, and then its SVG is empty. Once `works` is up, the
 gallery's `running` hook gives the maker its `hang`, and without it nobody paints for the gallery.
 
 ## Hanging
@@ -55,6 +56,7 @@ Every constant is in `GalleryConfig`.
 cd server
 uv run simile gallery paint kofi   # a canvas from what's on his mind, hung in $SIMILE_DB
 uv run simile gallery paint kofi --png kofi.png   # and the picture saved too
+SIMILE_IMAGES=1 uv run simile gallery paint priya --png priya.png   # painted by the image model
 ```
 
 With `SIMILE_LLM=fake` it hangs a plain "Stand-in" in the artist's colour instead, through the same

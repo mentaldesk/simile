@@ -61,6 +61,7 @@ async def create(
     from simile.persistence import WorldStore
     from simile.sim import Clock
     from simile.works.maker import Maker
+    from simile.works.painter import easel
     from simile.works.store import WorksStore
     from simile.world.map import load_maps
 
@@ -80,13 +81,16 @@ async def create(
         def hang(work: "Work", svg: str, png: bytes) -> None:
             hung.append(gallery.hang(work, svg, png))
 
-        maker = Maker(works, memory, clock, lambda: llm, npcs=npcs, hang=hang)
-        memories, _ = maker.on_mind(npc, clock.now)
         try:
-            task = maker.make(npc)
-            work = await task if task else None
-            picture = store.picture(work.id) if work else None
-            return memories, work, hung[0] if hung else None, picture
+            async with easel() as painter:
+                maker = Maker(
+                    works, memory, clock, lambda: llm, npcs=npcs, hang=hang, painter=painter
+                )
+                memories, _ = maker.on_mind(npc, clock.now)
+                task = maker.make(npc)
+                work = await task if task else None
+                picture = store.picture(work.id) if work else None
+                return memories, work, hung[0] if hung else None, picture
         finally:
             await llm.aclose()
 

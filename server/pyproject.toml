@@ -25,6 +25,9 @@ simile = "simile.cli:main"
 voice = [
     "mlx-audio>=0.5.9 ; platform_machine == 'arm64' and sys_platform == 'darwin'",
 ]
+images = [
+    "mflux>=0.23.0 ; platform_machine == 'arm64' and sys_platform == 'darwin'",
+]
 
 [dependency-groups]
 dev = [

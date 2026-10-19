@@ -192,6 +192,34 @@ class WorksConfig(BaseModel):
         description="How far a mural's viewBox may stray from its wall's aspect ratio, as a "
         "fraction of it. What doesn't fit is cropped.",
     )
+    image_model: str = Field(
+        default="black-forest-labs/FLUX.2-klein-4B",
+        description="The image model that paints murals and paintings with SIMILE_IMAGES=1: a "
+        "Hugging Face repo in the local cache, or a directory mflux-save wrote.",
+    )
+    image_bits: int | None = Field(
+        default=8,
+        description="Bits the image model's weights are quantized to as it loads, or None for "
+        "bf16. A directory mflux-save wrote keeps its own.",
+    )
+    image_steps: int = Field(default=4, ge=1, description="The image model's denoising steps.")
+    image_timeout: float = Field(
+        default=180.0,
+        gt=0,
+        description="Real seconds the image model gets to paint a picture, not counting waits "
+        "while the player talks. Past it, the work is drawn as SVG instead.",
+    )
+    image_patience: float = Field(
+        default=300.0,
+        ge=0,
+        description="Real seconds a picture waits, all told, while the player talks, before the "
+        "image model paints on regardless.",
+    )
+    picture_words: int = Field(
+        default=90,
+        ge=1,
+        description="The most words the description of a picture for the image model runs to.",
+    )
     mural_age: timedelta = Field(
         default=timedelta(hours=8),
         description="The age at which a mural is as ready to be painted over as age makes it.",
