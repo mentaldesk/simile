@@ -259,8 +259,9 @@ class WorksConfig(BaseModel):
         default=Model.HAIKU_5_5, description="The model that writes a notice."
     )
     notice_every: timedelta = Field(
-        default=timedelta(hours=12),
-        description="Sim time between a shopkeeper's notices. They put one up once they're awake.",
+        default=timedelta(hours=24),
+        description="Sim time between a shopkeeper's notices, so one a day they work. They put "
+        "it up once they're awake.",
     )
     notice_check: float = Field(
         default=60.0, gt=0, description="Sim seconds between looks at whose notice is due."

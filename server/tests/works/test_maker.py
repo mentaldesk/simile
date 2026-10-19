@@ -573,6 +573,30 @@ def test_a_painter_paints_a_canvas_and_hangs_it(memory: MemoryStore, works: Work
     assert request.model == Model.SONNET
 
 
+@pytest.mark.parametrize("medium", [Medium.MURAL, Medium.PAINTING], ids=str)
+def test_murals_and_paintings_carry_a_random_seed_and_the_knowledge_limit(
+    memory: MemoryStore, works: WorksStore, medium: Medium
+) -> None:
+    if medium is Medium.MURAL:
+        fake = FakeProvider([mural_reply()])
+        maker, npc, wall = muralist(works, memory, fake), SUKI, "wall_1"
+    else:
+        fake = FakeProvider([painting_reply()])
+        maker, npc, wall = gallery_painter(works, memory, fake, []), PAINTER, None
+    maker.rng = random.Random(3)
+    expected = draw_seed(medium, random.Random(3), CONFIG)
+
+    asyncio.run(paint(maker, npc, wall))
+
+    asked = fake.requests[0].messages[-1].content
+    assert expected.genre in CONFIG.picture_genres
+    assert f"For a spark this time, try {expected}." in asked
+    assert (
+        "You know what someone with your life and job would know. Stay within it: paint from "
+        "your own life, work and village, never as an expert on what you don't know."
+    ) in asked
+
+
 def test_a_muralist_given_anything_but_a_wall_paints_for_the_gallery(
     memory: MemoryStore, works: WorksStore
 ) -> None:

@@ -129,8 +129,8 @@ def shopkeepers() -> list[Id]:
 
 @asynccontextmanager
 async def running(app: Starlette) -> AsyncIterator[None]:
-    """A fresh save of today's village starts with the works it ships with, and a new world's
-    starts making its own in the background. Never into an in-memory store."""
+    """Any save of today's village that has never had the works it ships with gets them, and a
+    new world's starts making its own in the background. Never into an in-memory store."""
     from simile.behaviour import behaviour_of
     from simile.casting import load_cast
     from simile.memory import memory_of

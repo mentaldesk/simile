@@ -137,11 +137,12 @@ its own `notices` table, never in `works`, so nobody reads it at a terminal, rem
 sees it among the village's latest works, and it doesn't meet their inspiration.
 
 `Noticeboard` ticks on the sim loop and looks once a sim minute (`notice_check`) for a shopkeeper
-who's awake on a day they work, and whose last notice is `notice_every` (12 sim hours) old or who's
+who's awake on a day they work, and whose last notice is `notice_every` (24 sim hours) old or who's
 never put one up. One Haiku call through L1, below conversations' priority, writes it: a heading
 and at most `notice_words` (50) words, from their persona, the day and time, their shifts and their
-last notice. If the call fails they try again after `look_again`. So each shopkeeper puts up about
-one a working day, and about three Haiku calls a sim day across today's village.
+last notice. If the call fails they try again after `look_again`. So each shopkeeper puts up one
+when they wake on each day they work: 16 Haiku calls a sim week across today's village, about 2.3
+a day (Mirela 7, Odalys 6 and Priya 3).
 
 ## Reading at the terminals
 
