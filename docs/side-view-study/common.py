@@ -21,11 +21,6 @@ from references.gen import NO_TEXT, STYLE  # noqa: E402
 
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
-SPRITE = (
-    "Side view, straight-on elevation, one single object centred on a plain flat white "
-    "background with empty space all around it, nothing else in the picture."
-)
-
 
 def styled(subject: str) -> str:
     return f"{subject} Art style: {STYLE}.{NO_TEXT}"

@@ -80,6 +80,9 @@ other:
 |---|---|
 | ![The street, referenced](images/1-street.jpg) | ![The street, from text](images/consistency-street-text.jpg) |
 | ![Furniture, referenced](images/furniture.jpg) | ![Furniture, from text](images/consistency-furniture-text.jpg) |
+| ![The dollhouse, referenced](images/2-dollhouse.jpg) | ![The dollhouse, furniture from text](images/consistency-dollhouse-text.jpg) |
+
+In the dollhouse only the furniture changes; its walls, roof and stairs are referenced in both.
 
 Measured as the mean CIE76 distance from each asset's eight main colours to the nearest of the
 references' colours, the referenced assets sit at 11.5 and the text-only ones at 13.4; the
@@ -96,6 +99,9 @@ What edit mode gets wrong:
   colours in the prompt.
 - **It paints in what it sees.** The first mid layer had little people on its street, frozen in
   place. "No people" fixed it, but every painting needs a look.
+
+In either mode, "no text, no lettering" doesn't fully stop lettering: the mid layer's café has a
+small sign of made-up, illegible letters, which shows in the street and behind the dollhouse.
 
 ### Side-on characters that walk
 
@@ -153,6 +159,11 @@ Tint alone, tint with the emission map, and FLUX's own night painting:
 
 ![Night: tint, tint and emission, painted](images/time-night-compare.jpg)
 
+The glow map leaks wherever the night painting brightened something that gives off no light. The
+café's cream awning stripes glow, and its upper-left window is speckled where the night painting
+has reflections in the glass (middle picture, and the night quarter above). Limiting the map to
+where light can come from, such as windows and lamps, or checking each map by hand would fix it.
+
 So time of day costs one 29 s painting a building, rather than #116's four lighting sets, and
 fades are a tint change rather than a crossfade between sprites.
 
@@ -172,8 +183,9 @@ Measured on an M2 Max (96 GB), bf16, 4 steps, with nothing loaded in Ollama:
 
 - **The model.** 15.9 GB as downloaded. In memory it's 16.0 GB at bf16, 8.6 GB at 8-bit and
   4.6 GB at 4-bit (quantized as it loads). Quantized isn't faster on this M2 (the armchair:
-  13.4 s, 19.6 s, 18.0 s; the café: 22.7 s, 22.6 s, 22.5 s), and the pictures are all but
-  identical (below: bf16, 8-bit and 4-bit).
+  13.4 s, 19.6 s, 18.0 s; the café: 22.7 s, 22.6 s, 22.5 s). The armchair comes out all but
+  identical at each, while the café keeps its layout but changes its roof trim, door and awning
+  colours (below: bf16, 8-bit and 4-bit).
 - **Cutting out.** IS-Net (179 MB) takes about 2 s a painting on the CPU, after 20 s to load.
 - **Compositing.** Every picture here in 55 s of Python. A street frame takes 0.3 s; in Phaser
   it's a few dozen textured quads.
@@ -226,6 +238,7 @@ a human pass over every painting.
 - The evening tint (orange-pink, perhaps too strong) and morning (barely different from
   afternoon).
 - The enamel bathtub and basin, which look photographic next to the card.
+- Each building's glow map, for leaks like the café's awning.
 
 ## What wasn't tested
 
