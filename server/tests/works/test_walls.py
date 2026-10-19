@@ -54,7 +54,13 @@ def test_boldness_is_low_tradition_and_obedience_and_high_freedom() -> None:
 
 
 def test_the_older_a_mural_the_readier_they_are_to_paint_over_it() -> None:
-    assert ready(SUKI, 1) < ready(SUKI, 24) < ready(SUKI, 48) == ready(SUKI, 200)
+    assert ready(SUKI, 3) < ready(SUKI, 5) < ready(SUKI, 8) == ready(SUKI, 200)
+
+
+def test_nobody_paints_over_a_fresh_mural_even_their_own() -> None:
+    assert readiness(SUKI, mural("m", "x", hours_ago=1.9), STRANGER, NOW) is None
+    assert readiness(SUKI, mural("m", "suki", hours_ago=1.9), STRANGER, NOW) is None
+    assert readiness(SUKI, mural("m", "x", hours_ago=2), STRANGER, NOW) is not None
 
 
 def test_their_own_mural_is_fine_to_replace() -> None:
@@ -127,7 +133,7 @@ def test_picks_the_wall_they_are_readiest_to_paint_over(
     works: WorksStore, memory: MemoryStore
 ) -> None:
     works.paint(mural("fresh", "viktor", "wall_1", hours_ago=1), "<svg/>", b"")
-    works.paint(mural("faded", "viktor", "wall_2", hours_ago=12), "<svg/>", b"")
+    works.paint(mural("faded", "viktor", "wall_2", hours_ago=2.5), "<svg/>", b"")
 
     assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
     assert walls(works, memory).pick(VIKTOR) == MuralSpot("wall_2", OTHER_WALL.stand)
@@ -137,11 +143,11 @@ def test_picks_the_wall_they_are_readiest_to_paint_over(
 def test_leaves_every_wall_alone_while_none_is_ready_enough(
     works: WorksStore, memory: MemoryStore
 ) -> None:
-    works.paint(mural("a", "mei", "wall_1", hours_ago=2), "<svg/>", b"")
-    works.paint(mural("b", "mei", "wall_2", hours_ago=2), "<svg/>", b"")
+    works.paint(mural("a", "suki", "wall_1", hours_ago=2.5), "<svg/>", b"")
+    works.paint(mural("b", "suki", "wall_2", hours_ago=2.5), "<svg/>", b"")
 
     assert walls(works, memory).pick(VIKTOR) is None
-    assert walls(works, memory).pick(SUKI) is None
+    assert walls(works, memory).pick(MEI) is None
 
 
 def test_a_timid_painter_never_paints_over_a_friend(works: WorksStore, memory: MemoryStore) -> None:

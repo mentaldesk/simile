@@ -52,6 +52,11 @@ when it was made, with a tick on those the player has read. Reading one sends `r
 the whole piece, with a poem's line breaks, and the artist's statement. Until `works` arrives the
 tab says nobody has written anything, rather than waiting on a server that may not answer.
 
+Above the writing, the Village tab pins a **Notice board** with the `notices` that came with
+`works`: shopkeepers' offers, events and invitations, each with its title, who put it up, when, and
+the whole text. They aren't works, so they can't be chosen or read, and the board is hidden while
+there are none.
+
 Esc or E closes the panel, and so does walking away from the terminal. ↑, ↓, Enter, Tab and the
 focus trap work the same in both tabs. The panel keeps its key-downs from `window`, like the chat
 input, so the player doesn't walk while reading, and it ignores `news` and `works` while closed.

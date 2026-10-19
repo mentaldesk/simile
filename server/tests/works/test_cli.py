@@ -56,7 +56,7 @@ def test_writes_a_piece_at_the_saved_time_and_stores_it(
         f"On their mind (* inspired it; valence, salience):\n* +0.6 0.8  {RIVER.content}\n\n"
     )
     assert (
-        '"The Footbridge", plain tenants\' rights guides and stories, by Desmond Puna\n\n'
+        '"The Footbridge", short stories about neighbours getting by, by Desmond Puna\n\n'
         in result.output
     )
     assert "Statement: Things last when people look after them.\n" in result.output

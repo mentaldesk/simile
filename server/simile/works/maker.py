@@ -1,7 +1,9 @@
 import asyncio
 import logging
+import random
 import uuid
 from collections.abc import Callable, Coroutine, Mapping, Sequence
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
@@ -9,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from simile.llm import LLMClient, StructuredOutputError
 from simile.memory import MemoryStore
+from simile.memory.store import recency
 from simile.news.analysis import MEANINGS, SCALE, clean_tags
 from simile.npc.values import format_scores, ranked
 from simile.schema import (
@@ -125,10 +128,40 @@ def system_prompt(npc: Npc, craft: Craft, config: WorksConfig = DEFAULT_CONFIG) 
             "gallery, where your neighbours come to look at them. It's how you have your say in "
             "public.",
             Medium.WRITING: f"In your own time you write {craft.form}. They go up on the news "
-            "terminals beside the news, for your neighbours to read. It's how you have your say "
-            "in public.",
+            "terminals beside the news, for your neighbours to read: stories and poems of your "
+            "own making, not news or opinion.",
         }[craft.medium]
     )
+
+
+@dataclass(frozen=True)
+class Seed:
+    """A spark drawn at random for each work, so the village's works don't all circle one idea."""
+
+    genre: str
+    subject: str
+    mood: str
+
+    def __str__(self) -> str:
+        return f"{self.genre}, with {self.subject} at its heart, {self.mood} in mood"
+
+
+def draw_seed(medium: Medium, rng: random.Random, config: WorksConfig = DEFAULT_CONFIG) -> Seed:
+    genres = config.writing_genres if medium is Medium.WRITING else config.picture_genres
+    return Seed(rng.choice(genres), rng.choice(config.subjects), rng.choice(config.moods))
+
+
+@dataclass(frozen=True)
+class Commission:
+    """What a new work starts from: what's on the artist's mind, their own latest works, their
+    neighbours' latest, a seed, and the idea they said they'd make, if any."""
+
+    memories: Sequence[Memory]
+    past: Sequence[Work]
+    village: Sequence[Work]
+    seed: Seed
+    idea: str | None = None
+    names: Mapping[Id, Npc] = field(default_factory=dict)
 
 
 def feeling(memory: Memory) -> str:
@@ -143,27 +176,64 @@ def feeling(memory: Memory) -> str:
     return f"({felt}{strength}.)"
 
 
-def on_your_mind(
-    memories: Sequence[Memory], past: Sequence[Work], works: str, idea: str | None = None
-) -> tuple[str, str]:
-    """What's on their mind and their last few works for a prompt, and how to start the ask.
-    An `idea` they said they'd make leads it."""
-    if memories:
+def gist(work: Work, words: int = 12) -> str:
+    """A few words on what a work is about: its first tags, or else the start of its statement."""
+    if work.tags:
+        return ", ".join(work.tags[:3])
+    said = work.statement.split()
+    return " ".join(said[:words]) + ("…" if len(said) > words else "")
+
+
+def on_your_mind(commission: Commission, works: str) -> str:
+    """What's on their mind, the idea they said they'd make, their last few works and their
+    neighbours' latest, for a prompt."""
+    if commission.memories:
         mind = "What's been on your mind lately, strongest first:\n" + "\n".join(
-            f"{n}. {m.content} {feeling(m)}" for n, m in enumerate(memories, 1)
+            f"{n}. {m.content} {feeling(m)}" for n, m in enumerate(commission.memories, 1)
         )
-        start = "Start from one or more of the things on your mind, and say"
     else:
         mind = "Nothing in particular has been on your mind lately."
-        start = "Say"
-    if idea:
-        mind = f"{idea}\n\n{mind}"
-        start = "Make that idea, in your own way, drawing on what's on your mind, and say"
-    if past:
+    if commission.idea:
+        mind = f"{commission.idea}\n\n{mind}"
+    if commission.past:
         mind += f"\n\nYour last few {works}, newest first. Don't repeat yourself:\n" + "\n".join(
-            f'- "{work.title}": {work.statement}' for work in past
+            f'- "{work.title}": {work.statement}' for work in commission.past
         )
-    return mind, start
+    if commission.village:
+        mind += (
+            "\n\nYour neighbours' latest works, newest first. Make yours unlike them, in its "
+            "subject, its images and its feeling:\n"
+            + "\n".join(
+                f'- "{work.title}", {name_of(commission.names, work.artist)}\'s '
+                f"{work.medium.value}: {gist(work)}"
+                for work in commission.village
+            )
+        )
+    return mind
+
+
+def start(commission: Commission) -> str:
+    """How to start the ask for a mural or painting."""
+    if commission.idea:
+        return "Make that idea, in your own way, drawing on what's on your mind, and say"
+    if commission.memories:
+        return "Start from one or more of the things on your mind, and say"
+    return "Say"
+
+
+def spark(seed: Seed) -> str:
+    return (
+        f"For a spark this time, try {seed}. Take it wherever your craft and what's on your "
+        "mind lead."
+    )
+
+
+def knowing(making: str) -> str:
+    return (
+        "You know what someone with your life and job would know. Stay within it: "
+        f"{making} from your own life, work and village, never as an expert on what you don't "
+        "know."
+    )
 
 
 def analysis(noun: str) -> str:
@@ -200,41 +270,44 @@ def idea(intention: Intention | None, npcs: Mapping[Id, Npc]) -> str | None:
     return f"{said}, and you're making it now: {intention.description}"
 
 
-def prompt(
-    craft: Craft,
-    memories: Sequence[Memory],
-    past: Sequence[Work],
-    config: WorksConfig = DEFAULT_CONFIG,
-    idea: str | None = None,
-) -> str:
-    mind, start = on_your_mind(memories, past, "pieces", idea)
+def prompt(craft: Craft, commission: Commission, config: WorksConfig = DEFAULT_CONFIG) -> str:
+    if commission.idea:
+        grow = (
+            "Make that idea, in your own way, drawing on what's on your mind and what you care "
+            "about."
+        )
+    elif commission.memories:
+        grow = "Let it grow from a mix of the things on your mind and what you care about."
+    else:
+        grow = "Let it grow from what you care about."
     return (
-        f"{mind}\n\n"
-        f"Write something new in your craft, {craft.form}. {start} something in line with what you "
-        f"care about. {TAKE_A_SIDE} Write in your own voice and the style of your craft, and keep "
-        f"it short: {config.words} words at most.\n\n{analysis('piece')}"
+        f"{on_your_mind(commission, 'pieces')}\n\n"
+        f"Write something new in your craft, {craft.form}: a piece of fiction or poetry, not an "
+        f"opinion piece, advice or a notice. {grow} Make it about a person, a place or a moment "
+        "rather than a stance, and let what you care about show in it rather than argue for it. "
+        f"{spark(commission.seed)}\n\n{knowing('write')}\n\n"
+        f"Write in your own voice and the style of your craft, and keep it short: {config.words} "
+        f"words at most.\n\n{analysis('piece')}"
     )
 
 
 def mural_prompt(
     craft: Craft,
-    memories: Sequence[Memory],
-    past: Sequence[Work],
+    commission: Commission,
     wall: MuralWall,
     on_it: str = "It's blank.",
     config: WorksConfig = DEFAULT_CONFIG,
-    idea: str | None = None,
 ) -> str:
     """`on_it` says what's on the wall now."""
-    mind, start = on_your_mind(memories, past, "murals", idea)
     width, height = canvas(wall)
     across, up = metres(wall)
     return (
-        f"{mind}\n\n"
+        f"{on_your_mind(commission, 'murals')}\n\n"
         f"You've come to paint a new mural on {wall_name(wall.id)}, {across:.1f} m wide and "
         f"{up:.1f} m high. {on_it}\n\n"
-        f"Paint something new in your craft, {craft.form}. {start} something in line with what you "
-        f"care about. {TAKE_A_SIDE} The composition, palette and style are yours.\n\n"
+        f"Paint something new in your craft, {craft.form}. {start(commission)} something in line "
+        f"with what you care about. {TAKE_A_SIDE} {spark(commission.seed)} The composition, "
+        f"palette and style are yours.\n\n{knowing('paint')}\n\n"
         f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
         "canvas, since it's paint on a wall: no frame and no transparent background. "
         f"{svg_rules(config)} Any words on it should be few, and big enough to read from across "
@@ -246,14 +319,9 @@ def mural_prompt(
 
 
 def painting_prompt(
-    craft: Craft,
-    memories: Sequence[Memory],
-    past: Sequence[Work],
-    config: WorksConfig = DEFAULT_CONFIG,
-    idea: str | None = None,
+    craft: Craft, commission: Commission, config: WorksConfig = DEFAULT_CONFIG
 ) -> str:
     """For a painter, or a muralist painting a canvas for once."""
-    mind, start = on_your_mind(memories, past, "works", idea)
     width, height = painting_canvas()
     across, up = PAINTING_M
     what = (
@@ -262,11 +330,12 @@ def painting_prompt(
         else f"in your craft, {craft.form}"
     )
     return (
-        f"{mind}\n\n"
+        f"{on_your_mind(commission, 'works')}\n\n"
         f"You're painting a canvas for the village gallery, {across:.2f} m wide and {up:.2f} m "
-        f"high, to hang beside your neighbours' work. Paint something new {what}. {start} "
-        f"something in line with what you care about. {TAKE_A_SIDE} The composition, palette and "
-        "style are yours.\n\n"
+        f"high, to hang beside your neighbours' work. Paint something new {what}. "
+        f"{start(commission)} something in line with what you care about. {TAKE_A_SIDE} "
+        f"{spark(commission.seed)} The composition, palette and style are yours.\n\n"
+        f"{knowing('paint')}\n\n"
         f'Draw it as one SVG document with viewBox="0 0 {width} {height}", filling the whole '
         "canvas: no frame, since it hangs in one, and no transparent background. "
         f"{svg_rules(config)} Visitors see it close up, so detail rewards them. Any words on it "
@@ -306,8 +375,9 @@ def nothing_painted(work: Work) -> None:
 
 class Maker:
     """Residents make works from what's on their mind: their strongest recent memories, their
-    values and craft, and their own last few works. One LLM call makes the piece or mural and
-    analyses it, off the tick, and the artist remembers making it."""
+    values and craft, their own last few works and their neighbours', and a random seed. One LLM
+    call makes the piece or mural and analyses it, off the tick, and the artist remembers making
+    it."""
 
     def __init__(
         self,
@@ -320,9 +390,10 @@ class Maker:
         npcs: Mapping[Id, Npc] | None = None,
         painted: Callable[[Work], None] = nothing_painted,
         hang: Hang | None = None,
+        rng: random.Random | None = None,
         config: WorksConfig = DEFAULT_CONFIG,
     ) -> None:
-        """Without `hang`, nobody paints for the gallery."""
+        """Without `hang`, nobody paints for the gallery. `rng` draws each work's seed."""
         self.works = works
         self.memory = memory
         self.clock = clock
@@ -331,6 +402,7 @@ class Maker:
         self.npcs = npcs or {}
         self.painted = painted
         self.hang = hang
+        self.rng = rng or random.Random()
         self.config = config
         self.making: set[Id] = set()
         self.tasks: set[asyncio.Task[Work | None]] = set()
@@ -377,31 +449,56 @@ class Maker:
             return None
 
     def on_mind(self, npc: Npc, now: datetime) -> tuple[list[Memory], list[Work]]:
-        """`npc`'s strongest memories, leaving out making their own works, and their latest
-        works."""
+        """`npc`'s strongest memories by salience × recency, others' works weighed down by
+        `others_works` and their own left out, and their latest works."""
+        config = self.config
         theirs = self.works.by(npc.id)
         own = {work.id for work in theirs}
         recalled = self.memory.recall(
-            npc.id, now, k=self.config.memories + len(own), half_life=self.config.half_life
+            npc.id, now, k=config.recalled + len(own), half_life=config.half_life
         )
-        memories = [m for m in recalled if m.work_id not in own][: self.config.memories]
-        return memories, theirs[: self.config.past_works]
+        half_life = config.half_life.total_seconds()
+
+        def pull(memory: Memory) -> float:
+            weight = config.others_works if memory.work_id else 1.0
+            age = (now - memory.timestamp).total_seconds()
+            return memory.salience * recency(age, half_life) * weight
+
+        mine = [m for m in recalled if m.work_id not in own]
+        return sorted(mine, key=pull, reverse=True)[: config.memories], theirs[: config.past_works]
+
+    def commission(
+        self, npc: Npc, medium: Medium, now: datetime, intention: Intention | None = None
+    ) -> Commission:
+        memories, past = self.on_mind(npc, now)
+        village = self.works.newest(self.config.village_works, besides=npc.id)
+        seed = draw_seed(medium, self.rng, self.config)
+        told = idea(intention, self.npcs)
+        return Commission(memories, past, village, seed, told, self.npcs)
 
     async def _write(
         self, llm: LLMClient, npc: Npc, craft: Craft, now: datetime, intention: Intention | None
     ) -> Work | None:
-        memories, past = self.on_mind(npc, now)
-        ask = prompt(craft, memories, past, self.config, idea(intention, self.npcs))
+        commission = self.commission(npc, Medium.WRITING, now, intention)
+        ask = prompt(craft, commission, self.config)
         reply = await self._ask(llm, npc, craft, ask, Reply, "work")
         if reply is None:
             return None
         key = uuid.uuid4().hex[:8]
         work = self._work(
-            npc, craft, reply, reply.text, memories, now, key, Medium.WRITING, intention=intention
+            npc,
+            craft,
+            reply,
+            reply.text,
+            commission.memories,
+            now,
+            key,
+            Medium.WRITING,
+            intention=intention,
         )
         self.works.add(work)
         self.memory.add(remember(npc, work, self.config))
-        logger.info("%s wrote %r: %s", npc.id, work.title, work.statement)
+        logger.info("%s wrote %r (%s): %s", npc.id, work.title, commission.seed, work.statement)
         return work
 
     async def _paint(
@@ -413,7 +510,7 @@ class Maker:
         now: datetime,
         intention: Intention | None,
     ) -> Work | None:
-        memories, past = self.on_mind(npc, now)
+        commission = self.commission(npc, Medium.MURAL, now, intention)
         showing = self.works.showing().get(wall.id)
         on_it = "It's blank."
         if showing:
@@ -422,8 +519,7 @@ class Maker:
                 f'You\'re painting over {self._whose(npc, showing)} "{showing.title}", of which '
                 f'{who} said: "{showing.statement}"'
             )
-        told = idea(intention, self.npcs)
-        ask = first = mural_prompt(craft, memories, past, wall, on_it, self.config, told)
+        ask = first = mural_prompt(craft, commission, wall, on_it, self.config)
         key = uuid.uuid4().hex[:8]
         for _ in range(2):
             reply = await self._ask(llm, npc, craft, ask, MuralReply, "mural")
@@ -443,7 +539,7 @@ class Maker:
             craft,
             reply,
             reply.description,
-            memories,
+            commission.memories,
             now,
             key,
             Medium.MURAL,
@@ -453,7 +549,14 @@ class Maker:
         covered = self.works.paint(work, svg, png)
         over = f' over {self._whose(npc, covered, "my")} "{covered.title}"' if covered else ""
         self.memory.add(remember(npc, work, self.config, over))
-        logger.info("%s painted %r on %s: %s", npc.id, work.title, wall.id, work.statement)
+        logger.info(
+            "%s painted %r on %s (%s): %s",
+            npc.id,
+            work.title,
+            wall.id,
+            commission.seed,
+            work.statement,
+        )
         self.painted(work)
         return work
 
@@ -466,9 +569,8 @@ class Maker:
         now: datetime,
         intention: Intention | None,
     ) -> Work | None:
-        memories, past = self.on_mind(npc, now)
-        told = idea(intention, self.npcs)
-        ask = first = painting_prompt(craft, memories, past, self.config, told)
+        commission = self.commission(npc, Medium.PAINTING, now, intention)
+        ask = first = painting_prompt(craft, commission, self.config)
         key = uuid.uuid4().hex[:8]
         for _ in range(2):
             reply = await self._ask(llm, npc, craft, ask, PaintingReply, "painting")
@@ -490,7 +592,7 @@ class Maker:
             craft,
             reply,
             reply.description,
-            memories,
+            commission.memories,
             now,
             key,
             Medium.PAINTING,
@@ -499,7 +601,13 @@ class Maker:
         self.works.add(work)
         hang(work, svg, png)
         self.memory.add(remember(npc, work, self.config))
-        logger.info("%s painted %r for the gallery: %s", npc.id, work.title, work.statement)
+        logger.info(
+            "%s painted %r for the gallery (%s): %s",
+            npc.id,
+            work.title,
+            commission.seed,
+            work.statement,
+        )
         return work
 
     async def _picture(

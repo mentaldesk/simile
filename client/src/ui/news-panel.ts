@@ -1,4 +1,4 @@
-import type { ClientMessage, NewsArticle, WrittenWork, server } from '../net';
+import type { ClientMessage, NewsArticle, Notice, WrittenWork, server } from '../net';
 import { pressedNewsKey } from './keys';
 import { NEWS_KEY } from './tuning';
 
@@ -91,6 +91,16 @@ const VILLAGE: Kind<WrittenWork> = {
   },
 };
 
+/** A shopkeeper's notice, pinned above the Village tab's works. */
+function noticeItem(notice: Notice): HTMLLIElement {
+  const item = document.createElement('li');
+  item.appendChild(document.createElement('b')).textContent = notice.title;
+  item.appendChild(document.createElement('small')).textContent =
+    `${notice.poster.name} · ${madeAt(notice.created)}`;
+  appendLines(item.appendChild(document.createElement('p')), notice.text);
+  return item;
+}
+
 /** A tab's entries, the one the player is on, and the one they opened. */
 class Shelf<T extends { read: boolean }> {
   readonly kind: Kind<T>;
@@ -159,9 +169,12 @@ export class NewsPanel {
   private readonly tabs: HTMLButtonElement[];
   private readonly list: HTMLOListElement;
   private readonly status: HTMLElement;
+  private readonly board: HTMLElement;
+  private readonly notices: HTMLUListElement;
   private readonly news: Shelf<NewsArticle>;
   private readonly works: Shelf<WrittenWork>;
   private shown = 0;
+  private pinned: Notice[] = [];
   readonly stop: () => void;
 
   constructor(parent: HTMLElement, server: Server) {
@@ -189,6 +202,12 @@ export class NewsPanel {
       return tab;
     });
     this.status = this.panel.appendChild(document.createElement('p'));
+    this.board = this.panel.appendChild(document.createElement('section'));
+    this.board.className = 'news-board';
+    this.board.ariaLabel = 'Notice board';
+    this.board.hidden = true;
+    this.board.appendChild(document.createElement('h2')).textContent = 'Notice board';
+    this.notices = this.board.appendChild(document.createElement('ul'));
     this.list = this.panel.appendChild(document.createElement('ol'));
     this.markTab();
 
@@ -202,7 +221,10 @@ export class NewsPanel {
       if (item?.dataset.id && this.shelf.read(item.dataset.id)) this.render();
     });
     const stopNews = server.on('news', ({ articles }) => this.receive(this.news, articles));
-    const stopWorks = server.on('works', ({ works }) => this.receive(this.works, works));
+    const stopWorks = server.on('works', ({ works, notices }) => {
+      if (this.isOpen) this.pinned = notices;
+      this.receive(this.works, works);
+    });
     this.stop = () => {
       stopNews();
       stopWorks();
@@ -286,6 +308,9 @@ export class NewsPanel {
   private render(): void {
     const focused = this.panel.contains(document.activeElement);
     this.status.textContent = this.shelf.status;
+    const pinned = this.shelf === this.works ? this.pinned : [];
+    this.board.hidden = pinned.length === 0;
+    this.notices.replaceChildren(...pinned.map(noticeItem));
     this.list.replaceChildren(...this.shelf.items());
     if (focused && !this.panel.contains(document.activeElement)) this.panel.focus();
     this.list.querySelector('.news-selected')?.scrollIntoView?.({ block: 'nearest' });

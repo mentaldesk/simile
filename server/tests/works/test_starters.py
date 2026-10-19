@@ -64,7 +64,8 @@ def test_each_starter_is_by_a_resident_in_their_craft_with_a_picture_that_fits(
 ) -> None:
     work = starter.work
     craft = RESIDENTS[work.artist].craft
-    assert craft is not None and work.form == craft.form
+    assert craft is not None
+    assert work.form == craft.form or work.medium is Medium.WRITING
     assert work.medium is craft.medium or (craft.medium, work.medium) == (
         Medium.MURAL,
         Medium.PAINTING,
@@ -127,16 +128,35 @@ def test_each_artist_remembers_making_theirs() -> None:
             assert all(not m.about for m in remembered)
 
 
-def test_nothing_is_seeded_twice_or_over_works_already_there() -> None:
+def test_nothing_is_seeded_twice() -> None:
     with WorksStore(":memory:") as works, MemoryStore(":memory:") as memory:
         assert seed(works, memory, RESIDENTS, NOW)
         assert seed(works, memory, RESIDENTS, NOW + timedelta(days=1)) == []
         assert len(works.by("kofi")) == 2
 
-    with WorksStore(":memory:") as works, MemoryStore(":memory:") as memory:
-        works.add(mural("m1", artist="kofi"))
-        assert seed(works, memory, RESIDENTS, NOW) == []
-        assert [work.id for work in works.by("kofi")] == ["m1"]
+
+def test_a_save_with_works_but_no_starters_gets_them_once_leaving_painted_walls_be() -> None:
+    first = NOW - timedelta(hours=20)
+    painted = mural("odalys-1", artist="odalys", wall="tower").model_copy(update={"created": first})
+    with (
+        WorksStore(":memory:") as works,
+        MemoryStore(":memory:") as memory,
+        GalleryStore(":memory:") as store,
+    ):
+        hall = gallery(works, store)
+        works.paint(painted, "<svg/>", b"png")
+
+        seeded = seed(works, memory, RESIDENTS, NOW, hang=hall.hang)
+
+        on_tower = [s.work for s in STARTERS if s.work.wall == "tower"]
+        assert len(seeded) == len(STARTERS) - len(on_tower)
+        assert {work.id for work in seeded}.isdisjoint(work.id for work in on_tower)
+        assert works.showing()["tower"].id == "odalys-1"
+        assert {wall for wall in works.showing()} == {s.work.wall for s in STARTERS if s.work.wall}
+        assert len(hall.showing()) == 5
+        assert max(work.created for work in seeded) == first - DEFAULT_CONFIG.starters_newest
+        assert seed(works, memory, RESIDENTS, NOW + timedelta(days=1)) == []
+        assert len(works.by("kofi")) == 1
 
 
 def maker(works: WorksStore, memory: MemoryStore, llm: LLMClient, hung: list[str]) -> Maker:
@@ -226,6 +246,7 @@ def test_a_new_world_makes_its_starter_works_once(
 ) -> None:
     monkeypatch.setenv("SIMILE_DB", str(tmp_path / "simile.db"))
     monkeypatch.setattr("simile.casting.load_cast", lambda: object())
+    monkeypatch.setattr("simile.works.lifespan.shopkeepers", list)
     package = lifespans(make_package, "gallery", "llm", "memory", "works")
     caplog.set_level(logging.INFO, "simile.works.lifespan")
 
