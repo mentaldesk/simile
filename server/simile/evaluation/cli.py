@@ -34,7 +34,11 @@ def register(app: typer.Typer) -> None:
             ),
         ] = False,
         model: Annotated[
-            str | None, typer.Option(help="Model for the replies. Defaults to B5's.")
+            str | None,
+            typer.Option(
+                help="Model for the replies, e.g. ollama:gemma4:26b for a local one. Defaults "
+                "to B5's."
+            ),
         ] = None,
         judge: Annotated[
             str, typer.Option(help="Model that labels the stances, in one call.")
@@ -48,8 +52,9 @@ def register(app: typer.Typer) -> None:
         scenarios: Annotated[
             str | None,
             typer.Option(
-                help="Scenario ids to play, comma-separated, or 'tempting' for those with "
-                "something to lie about. Defaults to all."
+                help="Scenario ids to play, comma-separated, 'tempting' for those with "
+                "something to lie about, or 'pushback' for those where the player pushes. "
+                "Defaults to all."
             ),
         ] = None,
         lies: Annotated[
@@ -110,7 +115,7 @@ def register(app: typer.Typer) -> None:
         def called(record: CallRecord) -> None:
             if calling:
                 typer.echo(
-                    f"  Claude call: {record.purpose}, {record.latency_ms / 1000:.1f}s"
+                    f"  {record.provider} call: {record.purpose}, {record.latency_ms / 1000:.1f}s"
                     + (f", {record.error}" if record.error else ""),
                     err=True,
                 )
