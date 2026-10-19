@@ -8,7 +8,7 @@ from typing import Self
 from starlette.applications import Starlette
 
 from simile.memory import memory_of
-from simile.schema import Id, Medium, Work
+from simile.schema import Id, Key, Medium, Model, Timestamp, Work
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS works (
@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS seeded (
     what TEXT PRIMARY KEY,
     at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS notices (
+    id TEXT PRIMARY KEY,
+    poster TEXT NOT NULL,
+    created REAL NOT NULL,
+    data TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS notices_by_poster ON notices (poster, created);
 """
 SHOWING = """
 SELECT w.data FROM murals m JOIN works w ON w.id = m.work_id
@@ -39,6 +46,17 @@ WHERE NOT EXISTS (SELECT 1 FROM murals c WHERE c.covers = m.work_id)
 """
 
 NEWEST = "ORDER BY created DESC, rowid DESC"
+
+
+class Notice(Model):
+    """A short notice a shopkeeper puts up at the terminals: an offer, an event or an invitation.
+    It isn't a work."""
+
+    id: Key
+    poster: Id
+    title: str
+    text: str
+    created: Timestamp
 
 
 class WorksStore:
@@ -140,12 +158,43 @@ class WorksStore:
         """`artist`'s works, newest first: the `n` newest, or all of them."""
         return self._select(f"WHERE artist = ? {NEWEST} LIMIT ?", (artist, n))
 
+    def newest(self, n: int, *, besides: Id | None = None) -> list[Work]:
+        """The `n` newest works in any medium, newest first, leaving out those by `besides`."""
+        return self._select(f"WHERE artist IS NOT ? {NEWEST} LIMIT ?", (besides, n))
+
+    def oldest(self) -> Work | None:
+        works = self._select("ORDER BY created, rowid LIMIT 1", ())
+        return works[0] if works else None
+
+    def post(self, notice: Notice) -> None:
+        """Put `notice` up, replacing any with its id. Notices aren't works."""
+        with self._lock, self._db:
+            self._db.execute(
+                "INSERT OR REPLACE INTO notices (id, poster, created, data) VALUES (?, ?, ?, ?)",
+                (notice.id, notice.poster, notice.created.timestamp(), notice.model_dump_json()),
+            )
+
+    def notices(self, since: datetime, n: int = -1) -> list[Notice]:
+        """The `n` newest notices put up since `since`, or all of them, newest first."""
+        return self._notices("WHERE created >= ?", (since.timestamp(), n))
+
+    def last_notice(self, poster: Id) -> Notice | None:
+        found = self._notices("WHERE poster = ?", (poster, 1))
+        return found[0] if found else None
+
     def _insert(self, work: Work) -> None:
         self._db.execute(
             "INSERT OR REPLACE INTO works (id, artist, medium, created, data)"
             " VALUES (?, ?, ?, ?, ?)",
             (work.id, work.artist, work.medium, work.created.timestamp(), work.model_dump_json()),
         )
+
+    def _notices(self, where: str, params: tuple[object, ...]) -> list[Notice]:
+        with self._lock:
+            rows = self._db.execute(
+                f"SELECT data FROM notices {where} {NEWEST} LIMIT ?", params
+            ).fetchall()
+        return [Notice.model_validate_json(data) for (data,) in rows]
 
     def _select(self, where: str, params: tuple[object, ...]) -> list[Work]:
         with self._lock:

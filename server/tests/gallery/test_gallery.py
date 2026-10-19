@@ -98,9 +98,13 @@ def at_home(npc: Npc) -> MuralSpot:
     return MuralSpot(npc.home, PLACES.location(npc.home).entry)
 
 
-def test_a_muralist_paints_for_the_gallery_at_home_after_each_mural(works: WorksStore) -> None:
+def test_a_muralist_paints_for_the_gallery_at_home_after_two_murals_in_a_row(
+    works: WorksStore,
+) -> None:
     assert turns(works) == WALL
-    works.add(painting("m1", medium=Medium.MURAL, wall="tower", hours_ago=2))
+    works.add(painting("m1", medium=Medium.MURAL, wall="tower", hours_ago=3))
+    assert turns(works) == WALL
+    works.add(painting("m2", medium=Medium.MURAL, wall="tower", hours_ago=2))
     assert turns(works) == at_home(KOFI)
     works.add(painting("p1", hours_ago=1))
     assert turns(works) == WALL

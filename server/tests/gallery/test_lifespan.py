@@ -30,7 +30,10 @@ def until_paintings(ws: Any) -> dict[str, Any]:
 
 
 @pytest.mark.usefixtures("database")
-def test_paintings_made_in_the_server_hang_and_everyone_hears() -> None:
+def test_paintings_made_in_the_server_hang_and_everyone_hears(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("simile.works.lifespan.shopkeepers", list)
     app = create_app()
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:

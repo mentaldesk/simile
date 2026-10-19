@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime
 
 from simile.behaviour import MuralSpot, Places, WallPicker
+from simile.gallery.config import DEFAULT_CONFIG, GalleryConfig
 from simile.gallery.store import FrameKey, GalleryStore
 from simile.protocol import Artist, Frame, Painting, PaintingsMessage
 from simile.schema import VILLAGE_MAP, Id, Interactable, InteractableKind, Medium, Npc, Work
@@ -98,17 +99,21 @@ class Gallery:
         )
 
 
-def taking_turns(pick: WallPicker, works: WorksStore, places: Places) -> WallPicker:
-    """B1's `mural_wall` around `pick`: a muralist paints for the gallery after each mural, and
-    whenever no wall is worth painting. Then it names their home, where they paint a canvas."""
+def taking_turns(
+    pick: WallPicker, works: WorksStore, places: Places, config: GalleryConfig = DEFAULT_CONFIG
+) -> WallPicker:
+    """B1's `mural_wall` around `pick`: a muralist paints for the gallery after every
+    `murals_per_canvas` murals in a row, and whenever no wall is worth painting. Then it names
+    their home, where they paint a canvas."""
 
     def home(npc: Npc) -> MuralSpot | None:
         location = places.location(npc.home)
         return MuralSpot(npc.home, location.entry) if location.map == VILLAGE_MAP else None
 
     def mural_wall(npc: Npc) -> MuralSpot | None:
-        latest = works.by(npc.id, 1)
-        if latest and latest[0].medium is Medium.MURAL:
+        latest = works.by(npc.id, config.murals_per_canvas)
+        murals = [work for work in latest if work.medium is Medium.MURAL]
+        if latest and len(murals) == config.murals_per_canvas:
             return home(npc) or pick(npc)
         return pick(npc) or home(npc)
 

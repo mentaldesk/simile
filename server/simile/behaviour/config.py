@@ -100,7 +100,7 @@ RISE: dict[Need, float] = {
     Need.CURIOSITY: 0.03,
     Need.REST: 0.04,
     Need.NEWS: -0.1,
-    Need.INSPIRATION: 0.01,
+    Need.INSPIRATION: 0.06,
     Need.HUNGER: 0.16,
     Need.BLADDER: 0.28,
     Need.HYGIENE: 0.035,
@@ -114,7 +114,7 @@ RISE_VALUES: dict[Need, dict[CoreValue, float]] = {
     Need.CURIOSITY: {V.KNOWLEDGE: 0.05, V.OPEN_MINDEDNESS: 0.05},
     Need.REST: {V.PEACE_OF_MIND: 0.03},
     Need.NEWS: {V.KNOWLEDGE: 0.4, V.OPEN_MINDEDNESS: 0.15},
-    Need.INSPIRATION: {V.CREATIVITY: 0.022, V.SELF_ACTUALIZATION: 0.01},
+    Need.INSPIRATION: {V.CREATIVITY: 0.22, V.SELF_ACTUALIZATION: 0.05},
     Need.HUNGER: {V.PLEASURE: 0.06},
     Need.HYGIENE: {V.DISCIPLINE: 0.02},
     Need.BOREDOM: {
@@ -180,7 +180,7 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.WANDER: (3, 10),
     A.SEEK: (3, 10),
     A.IDLE: (1, 3),
-    A.CREATE: (45, 75),
+    A.CREATE: (20, 45),
     A.WORK: (30, 75),
     A.EXERCISE: (15, 40),
 }
