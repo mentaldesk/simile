@@ -6,7 +6,7 @@ import pytest
 
 from simile.behaviour import Behaviour
 from simile.conversation import ConversationConfig, ConversationEngine
-from simile.conversation.temptation import Lie
+from simile.conversation.temptation import Kind, Lie, Temptation, chance, lies
 from simile.llm import FakeProvider, LLMClient
 from simile.memory import MemoryStore
 from simile.schema import Flag, FlagKind, MapTile, Npc, Relationship
@@ -21,7 +21,10 @@ pytestmark = pytest.mark.anyio
 
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 ALWAYS = ConversationConfig(lie_most=1.0, leave_below=0.0)
-SHORT = "You are short of money this week. If it comes up, say you're doing fine."
+SHORT = (
+    "You are short of money this week. If it comes up, say you're doing fine. Use that cover story "
+    "and nothing else: no days, times, places or other people."
+)
 
 
 def liar(id: str = "ana", home: str = "house_1") -> Npc:
@@ -133,6 +136,17 @@ class Scenes:
         return self.provider.requests[-1].messages[-1].content, self.engine.lies(conversation.id)
 
 
+def test_the_engines_roll_is_seeded_by_the_conversation() -> None:
+    engine = Scenes(make_npc("ana", "house_1", honesty=0.35)).engine
+    short = Temptation(Kind.SHORT, "ana", "short", "", "", "")
+    odds = chance(0.35, config=ALWAYS)
+
+    rolls = [engine.lies_about(short, f"talk_{n}") for n in range(40)]
+
+    assert set(rolls) == {True, False}
+    assert rolls == [lies(short, f"talk_{n}", odds) for n in range(40)]
+
+
 def bens_secret() -> Relationship:
     """Ben once saw Ana do something she wants kept quiet."""
     flag = Flag(
@@ -152,7 +166,8 @@ async def test_a_scene_with_someone_who_knows_the_secret_directs_the_lie_in_the_
     direction = prompt.split("## Direction\n", 1)[1].splitlines()
     assert (
         "- Ana has a secret to keep: something best kept quiet. If anyone gets near it, Ana says "
-        "there's nothing to tell."
+        "there's nothing to tell. Ana uses that cover story and nothing else: no days, times, "
+        "places or other people."
     ) in direction
     assert (told.liar, told.listener, told.known) == ("ana", "ben", True)
 

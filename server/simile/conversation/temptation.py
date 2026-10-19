@@ -67,6 +67,7 @@ WORKS = {Medium.MURAL: "mural", Medium.PAINTING: "painting", Medium.WRITING: "pi
 HELD = {FlagKind.DEBT, FlagKind.SECRET, FlagKind.GRUDGE}
 BLANK = re.compile(r"\{(\w+)\}")
 ADMITS = "I lied to {listener} about {subject}."
+ONLY = "{Use} that cover story and nothing else: no days, times, places or other people."
 NEUTRAL = Traits()
 
 
@@ -76,6 +77,26 @@ class Missed:
 
     start: datetime
     late: bool = False
+
+
+class Turn(Protocol):
+    """One of E3's shifts, as it went."""
+
+    npc: Id
+    start: datetime
+    end: datetime
+    arrived: datetime | None
+
+    def late(self, grace: timedelta) -> bool: ...
+
+
+def missed_shifts(turns: Iterable[Turn], npc: Id, now: datetime, grace: timedelta) -> list[Missed]:
+    """`npc`'s shifts they were late to, or skipped: over without their ever arriving."""
+    return [
+        Missed(turn.start, late=turn.arrived is not None)
+        for turn in turns
+        if turn.npc == npc and (turn.late(grace) or turn.arrived is None and now >= turn.end)
+    ]
 
 
 @dataclass(frozen=True)
@@ -121,7 +142,7 @@ class Temptation:
 
     def direction(self, name: str | None = None) -> str:
         """Told to them, or with `name`, about them."""
-        return blanks(f"{self.fact} {self.cover}", person(name))
+        return blanks(f"{self.fact} {self.cover} {ONLY}", person(name))
 
 
 @dataclass(frozen=True)
@@ -305,7 +326,8 @@ def _held(flag: Flag, holder: str, listener: Id) -> Temptation:
             flag.about,
             f"grudge/{flag.id}",
             blanks("{holder} blames {them} for {description}.", about),
-            "If it comes up, {say} it wasn't {their} fault.",
+            "If it comes up, {say} it wasn't {their} fault, without blaming anyone or anything "
+            "else.",
             description,
             detail,
             holders,
@@ -354,7 +376,8 @@ def raised(said: str, asker: str, owner: Id) -> list[Temptation]:
                 owner,
                 "complaint",
                 blanks("{asker} is complaining to {them}.", who),
-                "If it's fair, don't own up to it: {say} {they} didn't know.",
+                "If it's fair, don't own up to it: {say} {they} hadn't noticed, and give no other "
+                "reason.",
                 "a complaint",
             )
         )
@@ -417,6 +440,7 @@ def person(name: str | None) -> dict[str, str]:
             "s": "",
             "say": "say",
             "Say": "Say",
+            "Use": "Use",
         }
     return {
         "Who": name,
@@ -430,6 +454,7 @@ def person(name: str | None) -> dict[str, str]:
         "s": "s",
         "say": f"{name} says",
         "Say": f"{name} says",
+        "Use": f"{name} uses",
     }
 
 

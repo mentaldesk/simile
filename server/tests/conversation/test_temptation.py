@@ -15,10 +15,12 @@ from simile.conversation.temptation import (
     found,
     lie,
     lies,
+    missed_shifts,
     raised,
     standing,
     touched,
 )
+from simile.economy.economy import Turn
 from simile.memory import MemoryStore, Record
 from simile.npc import load_npcs
 from simile.reflection.intentions import broken
@@ -91,8 +93,14 @@ def tempted(
     return found(known, listener, NOW)
 
 
+ONLY = "Use that cover story and nothing else: no days, times, places or other people."
+
+
 def told(temptation: Temptation) -> str:
-    return temptation.direction()
+    """The direction told to them, without the line every direction ends with."""
+    said = temptation.direction()
+    assert said.endswith(f" {ONLY}")
+    return said.removesuffix(f" {ONLY}")
 
 
 def test_being_short_of_money_is_found_from_what_they_hold(store: MemoryStore) -> None:
@@ -103,7 +111,8 @@ def test_being_short_of_money_is_found_from_what_they_hold(store: MemoryStore) -
         "You are short of money this week. If it comes up, say you're doing fine."
     )
     assert short.direction("Ana") == (
-        "Ana is short of money this week. If it comes up, Ana says they're doing fine."
+        "Ana is short of money this week. If it comes up, Ana says they're doing fine. Ana uses "
+        "that cover story and nothing else: no days, times, places or other people."
     )
     assert tempted(store, money=250) == []
     assert tempted(store) == []
@@ -150,7 +159,8 @@ def test_a_grudge_against_them_is_a_complaint_they_could_deny(store: MemoryStore
 
     assert grudge.kind is Kind.COMPLAINT
     assert told(grudge) == (
-        "Ben blames you for the broken fence. If it comes up, say it wasn't your fault."
+        "Ben blames you for the broken fence. If it comes up, say it wasn't your fault, without "
+        "blaming anyone or anything else."
     )
     assert grudge.known_by == {"ben"}
 
@@ -208,6 +218,22 @@ def test_a_missed_shift_is_found_from_e3s_turns(store: MemoryStore) -> None:
     )
 
 
+def test_e3s_turns_count_once_skipped_or_late() -> None:
+    def turn(hours_ago: float, arrived_after: float | None, npc: str = "ana") -> Turn:
+        start = NOW - timedelta(hours=hours_ago)
+        arrived = None if arrived_after is None else start + timedelta(minutes=arrived_after)
+        return Turn(npc, start, start + timedelta(hours=4), arrived)
+
+    skipped, late, on_time = turn(6, None), turn(30, 20), turn(54, 2)
+    under_way, someone_elses = turn(1, None), turn(6, None, npc="ben")
+
+    found = missed_shifts(
+        [skipped, late, on_time, under_way, someone_elses], "ana", NOW, timedelta(minutes=5)
+    )
+
+    assert found == [Missed(skipped.start), Missed(late.start, late=True)]
+
+
 def test_a_work_that_went_down_badly_is_found_from_others_memories(store: MemoryStore) -> None:
     mural = work("w1", "ana", "Mars Rising", NOW - timedelta(days=1), medium=Medium.MURAL)
     poem = work("w2", "ana", "Small Hours", NOW - timedelta(days=1), medium=Medium.WRITING)
@@ -243,9 +269,12 @@ def test_being_asked_to_cover_or_complained_at_is_found_from_the_line() -> None:
     [complaint] = raised("Your bins have been out on the pavement since Thursday.", "Pat", "ana")
 
     assert told(cover) == "Sam is asking you to cover for them. Say you'll do it."
-    assert cover.direction("Ana") == "Sam is asking Ana to cover for them. Ana says they'll do it."
+    assert cover.direction("Ana").startswith(
+        "Sam is asking Ana to cover for them. Ana says they'll do it. Ana uses that cover story"
+    )
     assert told(complaint) == (
-        "Pat is complaining to you. If it's fair, don't own up to it: say you didn't know."
+        "Pat is complaining to you. If it's fair, don't own up to it: say you hadn't noticed, "
+        "and give no other reason."
     )
     assert raised("Did you see the cameras? Nothing to hide, nothing to fear.", "Jo", "ana") == []
     assert raised("Sorry to bother you. My car's blocking the road.", "Visitor", "ana") == []
@@ -329,7 +358,7 @@ def test_a_lie_says_what_b3_needs() -> None:
     assert (told.liar, told.listener, told.known) == ("ana", "ben", True)
     assert told.said == (
         "Ana has a secret to keep: the van. If anyone gets near it, Ana says there's nothing to "
-        "tell."
+        "tell. Ana uses that cover story and nothing else: no days, times, places or other people."
     )
     assert told.admits == "I lied to Ben about a secret."
     assert not lie(secret, "cal", NAMES).known

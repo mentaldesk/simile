@@ -11,7 +11,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import behaviour_of
     from simile.conversation.engine import conversations_of
     from simile.conversation.player import PlayerConversations
-    from simile.conversation.temptation import Missed
+    from simile.conversation.temptation import Missed, missed_shifts
     from simile.news import news_of
     from simile.protocol import PlayerSayMessage, hub_of
     from simile.schema import Id, NewsItem, Work
@@ -30,12 +30,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         economy = getattr(app.state, "economy", None)
         if economy is None:
             return []
-        grace, now = timedelta(minutes=economy.config.late), economy.clock.now
-        return [
-            Missed(turn.start, late=turn.arrived is not None)
-            for turn in economy.turns
-            if turn.npc == npc and (turn.late(grace) or turn.arrived is None and now >= turn.end)
-        ]
+        grace = timedelta(minutes=economy.config.late)
+        return missed_shifts(economy.turns, npc, economy.clock.now, grace)
 
     players = PlayerConversations(engine, connected=lambda: bool(hub.connections), article=article)
     engine.player_request, engine.article, engine.work = players.request, article, work

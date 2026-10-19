@@ -34,16 +34,20 @@ def sly(character: Character) -> Character:
     return character.model_copy(update={"values": character.values | {CoreValue.HONESTY: 0.05}})
 
 
+ONLY = "Use that cover story and nothing else: no days, times, places or other people."
 DIRECTED = {
-    "complaint": "Pat is complaining to you. If it's fair, don't own up to it: say you "
-    "didn't know.",
-    "lie": "Sam is asking you to cover for them. Say you'll do it.",
-    "rent": "You are short of money this week. If it comes up, say you're doing fine.",
-    "loan": "You still owe Kim for a loan of 100. If it comes up, say you'll pay Kim back in a day "
-    "or two.",
-    "shift": "You skipped your shift at work today. If it comes up, say you were ill.",
-    "letdown": "You told Jess you'd drop her box of books at the school fair yesterday, and "
-    "didn't. If it comes up, say something came up that you couldn't get out of.",
+    id: f"{said} {ONLY}"
+    for id, said in {
+        "complaint": "Pat is complaining to you. If it's fair, don't own up to it: say you hadn't "
+        "noticed, and give no other reason.",
+        "lie": "Sam is asking you to cover for them. Say you'll do it.",
+        "rent": "You are short of money this week. If it comes up, say you're doing fine.",
+        "loan": "You still owe Kim for a loan of 100. If it comes up, say you'll pay Kim back in a "
+        "day or two.",
+        "shift": "You skipped your shift at work today. If it comes up, say you were ill.",
+        "letdown": "You told Jess you'd drop her box of books at the school fair yesterday, and "
+        "didn't. If it comes up, say something came up that you couldn't get out of.",
+    }.items()
 }
 
 

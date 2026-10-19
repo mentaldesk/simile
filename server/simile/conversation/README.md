@@ -241,7 +241,8 @@ tells the model what the lie is (`temptation.py`).
 - **The direction.** On a lie roll, B5's reply prompt has it after the background ("You are short
   of money this week. If it comes up, say you're doing fine.") for the rest of the conversation,
   and a scene's direction has it in the third person. Without a roll nothing is added. The lies
-  stay within *Rough edges*' bounds: about the resident, what they did and what they'll do.
+  stay within *Rough edges*' bounds: about the resident, what they did and what they'll do. Each
+  direction ends "Use that cover story and nothing else: no days, times, places or other people."
 - **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
   was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
   lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a
