@@ -24,16 +24,52 @@ work it would take. **Each numbered part is one issue and one PR**, and each nam
 The eleven residents keep their ids, values, voices, memories and `Appearance`. Only how they're
 drawn changes, and their new art is made from the `Appearance` they already have.
 
-## The approach: the sim stays on its grid
+## The approach, for the user to choose
 
-A side-view map is still a Tiled grid, read the other way up: x runs along the street, y counts
-rows down from the top, and a resident stands on a cell with solid ground under it. Streets are
-maps, and every building is an interior map joined to the street by its door, as today. Only the
-neighbour rule changes: left and right on the ground, and up and down only on stairs, ladders and
-lifts. So `Tile`, `MapTile`, `TileArea`, `Position`, `Facing` and the protocol's `Face` all keep
-their shape, now and later, and nothing that uses them has to change because of them. The client
-draws the four eastward facings as right and the four westward ones as left, and every mural wall
-faces the camera (`south`).
+**This departs from #295's sketch**, which has a contract change for positions and distance along
+a street. It's offered as an option for the user to choose, alongside that sketch.
+
+The sim stays on its grid. A side-view map is still a Tiled grid, read the other way up: x runs
+along the street, y counts rows down from the top, and a resident stands on a cell with solid
+ground under it. Every building is an interior map joined to the street by its door, as today.
+Only the neighbour rule changes: left and right on the ground, and up and down only where the map
+allows it (stairs, ladders, lifts). So `Tile`, `MapTile`, `TileArea`, `Position`, `Facing` and the
+protocol's `Face` keep their shape, and nothing that uses them has to change because of them.
+Every mural wall faces the camera (`south`). The questions this leaves open are below.
+
+## Decisions before the migration starts
+
+These are the user's, once they've decided to switch. The parts below assume whichever is chosen.
+
+1. **How floors connect inside one map.** Today's `Door` rejects two ends on the same map
+   (`Door._between_maps` in `schema/world.py`), and part 1 as drafted only adds `kind`.
+   - Drop the same-map check in part 1, so a stair, ladder or lift is a `Door` between two cells
+     of one map.
+   - Or give stairs, ladders and lifts their own map layer, which part 2's neighbour rule reads,
+     and keep `Door` for doors between maps.
+2. **Map ids.** One outdoor map called `village` is assumed by `VILLAGE_MAP` (`schema/world.py`)
+   and `MAP_ID` (`world/map.py`, `protocol/fixtures.py`), by `Position.map`'s default, by a
+   `player_move` with no map (which means the village), by `sim/events.py`, and by tests that
+   place people on `coffee_shop` tiles.
+   - Keep today's ids: one `village` map holding every street, and interiors by location id.
+     Part 7's per-map tables then need another key, such as the location.
+   - Or change them (a map per street, a map per floor): a contract change, owned in part 1, with
+     every user above in its Owns.
+3. **Jumping later.** #295 asks for a world that can take jumping. On a grid of standing cells, a
+   jump is a move through empty cells along an arc, with gravity bringing the jumper down onto the
+   next cell with ground under it. `Position` already holds float x and y, so a resident can be
+   between cells mid-air. What it would need: the client running the arc (part 8's player
+   movement), the neighbour rule allowing jumps of a set reach (part 2), and a way for the server
+   to accept a position in the air (`player_move`). None of that is in this migration.
+4. **Facing.** The eight-way `Facing` has three eastward values (`north_east`, `east`,
+   `south_east`), three westward ones, and `north` and `south`. Eastward is drawn facing right and
+   westward facing left, but `north` and `south` have no side-view meaning. Today's map builder
+   points viewing, desk, bar and terminal spots `north`, and a resident looking at a mural faces
+   `north`.
+   - Draw `north` as the back of the doll (facing into the picture) and `south` as its front, which
+     needs two more poses in part 4's rig.
+   - Or map them onto left and right (keep the last direction), and point those spots east or west
+     in part 2's maps.
 
 ## Order
 
@@ -64,8 +100,10 @@ not A1's sprites: part 9 moves them rather than deleting them.
 (regenerated), `server/tests/schema/`, `server/tests/protocol/`.
 
 `Door` gains an optional `kind`: door (the default), stairs, ladder or lift, so a connection
-between two maps, or two floors of one, can say how it's crossed. The docs on `Tile`, `Position`,
-`Facing` and `Face` say how a side-view map reads them, as above. Nothing is removed.
+can say how it's crossed. The docs on `Tile`, `Position`, `Facing` and `Face` say how a side-view
+map reads them, as above. If decision 1 joins floors with doors, part 1 also drops
+`_between_maps`'s same-map check, and if decision 2 changes the map ids, part 1 owns that change
+and every user of them. Nothing else is removed.
 
 ## 2. Side-view maps and the neighbour rule
 
@@ -74,9 +112,10 @@ between two maps, or two floors of one, can say how it's crossed. The docs on `T
 **Owns:** `server/simile/street/` (new), `content/street/` (new), `server/tests/street/` (new).
 
 A builder for side-view maps of the village and its interiors, replacing W1's for the new world,
-with the same layers as today (locations, doors, spots, interactables, murals, collision) and
-**the same location, door, spot and interactable ids** as `content/map/`, so code that works by
-id keeps working. Each house interior holds its floors and rooms, joined by stairs. The neighbour
+with the same layers as today (locations, doors, spots, interactables, murals, collision), plus
+a layer for stairs, ladders and lifts if decision 1 picks one, and **the same location, door, spot
+and interactable ids** as `content/map/`, so code that works by id keeps working. Each house
+interior holds its floors and rooms, joined as decision 1 settles. The neighbour
 rule for pathfinding lives here too, with tests. Nothing loads these maps yet.
 
 ## 3. Papercraft scenery build step
@@ -105,7 +144,9 @@ run FLUX; tests that need it are marked `mlx`.
 - **Server.** #295's `doll.py`: the flat pieces from `Appearance`, the sheet, painting it in edit
   mode with the villagers reference, cutting the pieces on their outlines and pulling their
   colours back to the `Appearance`. About 58 s a resident. A doll job does the same for a new or
-  changed character; part 9 registers it in place of A1's sprite job.
+  changed character; part 9 registers it in place of A1's sprite job. Like the study's `doll.py`,
+  it takes each resident's accent colour from `simile.art.characters.Colours` and the player's
+  look from `PLAYER` there, until part 9 moves them.
 - **Client.** The rig: each piece an image in a container, a pose a set of joint angles. Walking,
   standing and jumping are in the study; `Pose`'s sitting, reading, working and looking are new
   pose functions, with no new art. The flat pieces draw at once, before the painted ones exist.
@@ -150,8 +191,8 @@ out of earshot. On today's maps nothing changes. The tests load both `content/ma
 `server/tests/conversation/` except `test_player.py`, `server/tests/gallery/`, `server/tests/cafe/`.
 
 Behaviour, conversation, relationships and memory reason about places, not tiles. What's tied to
-today's map becomes a table by map id, with entries for both worlds' maps, so it reads the same
-from either:
+today's map becomes a table with entries for both worlds' maps, keyed as decision 2 settles
+(by map id, or by location if the ids stay), so it reads the same from either:
 
 - `behaviour/config.py`'s exercise `LOOPS` (tile lists).
 - `cafe/config.py`'s `entrance`, `machine`, `hand_over` and the other fixed tiles, and the
@@ -197,9 +238,10 @@ signature.
 stair, ladder or lift (`world/player.ts`, `map.ts`, `throttle.ts`, `motion.ts`, `doors.ts`).
 `world/assets.ts` and `maps.fixture.ts` read `content/street/` and part 4's dolls instead of
 `content/map/` and A1's atlases, and the creator previews the rig instead of calling
-`/api/art/preview`. `TERMINAL_REACH_TILES` stays in tiles. The non-drawing halves of
-`world/iso/murals.ts` and `paintings.ts` (`MuralWalls`, `muralWalls`, `wallNear`, `muralView`,
-`GalleryFrames`, `galleryFrames`) move to `client/src/world/`. Then it deletes `IsoScene`,
+`/api/art/preview`. It still saves through A1's sprite job until part 9. `TERMINAL_REACH_TILES`
+stays in tiles. The non-drawing halves of `world/iso/murals.ts` and `paintings.ts` (`MuralWalls`,
+`muralWalls`, `wallNear`, `muralView`, `GalleryFrames`, `galleryFrames`) move to
+`client/src/world/`. Then it deletes `IsoScene`,
 `iso-characters.ts`, `iso-critters.ts` and `world/iso/`. The other modules that `audio/`, `debug/`
 and `ui/` import from `client/src/world/` (`map`, `hit`, `view`, `interactables`, `terminals`,
 `assets`, `tuning`) keep their exports.
@@ -235,7 +277,12 @@ and `ui/` import from `client/src/world/` (`map`, `hit`, `view`, `interactables`
   `server/tests/jobs/test_capabilities.py`. Part 8 has already removed `works/render.py`'s and
   `tests/world/test_murals.py`'s imports of it.
 - The sprite job: `server/simile/jobs/lifespan.py` (`SPRITE`), which registers part 4's doll job
-  instead.
+  instead; `client/src/creator/look.ts` and `look.test.ts`, which submit `sprite` jobs and read
+  `/api/jobs/files/sprite/`, and switch to the doll job; and `server/tests/jobs/test_routes.py`,
+  which tests the `sprite` kind.
+- `Colours` and `PLAYER` in `server/simile/dolls/`: part 9 moves `Colours.of`'s accent and apron
+  rule into `characters/palette.py` with the palette, and repoints the dolls' imports of both.
+  `server/simile/papercraft/` imports neither.
 - `art/routes.py`'s `/api/art/preview`: `server/tests/test_guard.py`, which lists the guarded
   routes. Part 8 has already moved the creator off it.
 - `content/art/`: `server/simile/worlds/store.py` (`SPRITES`, which checks for a resident's art in
