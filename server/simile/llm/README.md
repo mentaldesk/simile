@@ -1,7 +1,8 @@
 # simile.llm
 
 Every LLM call in Simile goes through `LLMClient`. By default it drives the local Claude Code CLI on
-the user's subscription login through the Claude Agent SDK. Never the Claude API.
+the user's subscription login through the Claude Agent SDK. Never the Claude API. A model named
+`ollama:<model>` runs on a local Ollama server instead (see *Ollama*).
 
 ## Calling it
 
@@ -24,8 +25,8 @@ events = await llm.structured(transcript, Extraction, model=Model.SONNET, purpos
   Code takes one user message per turn, so earlier turns are folded into it as
   `<earlier_turns>`.
 - `model` is `Model.HAIKU` (the default), `Model.SONNET`, `Model.HAIKU_4_5`, `Model.HAIKU_5_5`, or
-  any model name or alias `claude --model` accepts. Each module's config names its model (see
-  *Which model* below).
+  any model name or alias `claude --model` accepts, or `ollama:<model>`. Each module's config names
+  its model (see *Which model* below).
 - `structured(prompt, schema)` adds the JSON Schema of a pydantic model to the system prompt,
   validates the reply, and retries once with the validation error before raising
   `StructuredOutputError`.
@@ -190,3 +191,21 @@ early, it interrupts the turn and reads the rest of it, so the same session can 
 Warm processes and `SessionProvider` in `smoke.py` both build on these two.
 
 Another backend implements `Provider`: an async generator of text chunks followed by one `Usage`.
+
+## Ollama
+
+`OllamaProvider` streams from Ollama's `/api/chat` at `OLLAMA_HOST` (default `127.0.0.1:11434`).
+`LLMClient` sends it every `ollama:<model>` call, like `ollama:gemma4:26b`, unless the client was
+given one provider for everything (a test's `FakeProvider`, or `SIMILE_LLM=fake`).
+
+- Thinking is off (`think: false`).
+- `structured` also passes the JSON Schema as Ollama's `format`, which holds the reply to it.
+- `Usage` has the prompt's tokens (`cache_read_tokens` are those Ollama reused from the call before),
+  the reply's, and Ollama's whole time in `api_ms`, model loading included. There's no cost.
+- An HTTP error, an `error` frame, a reply cut short at the length limit, or no server raises
+  `LLMError`. Leaving the stream early hangs up, which stops Ollama generating.
+- Ollama serves one request at a time unless `OLLAMA_NUM_PARALLEL` says otherwise, so calls beyond
+  that queue in Ollama while holding their slot here.
+
+The tests use a fake server. `SIMILE_OLLAMA_TEST_MODEL=<model>` also runs one call against a real
+Ollama that has that model.
