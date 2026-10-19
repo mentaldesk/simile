@@ -498,7 +498,7 @@ class Maker:
         )
         self.works.add(work)
         self.memory.add(remember(npc, work, self.config))
-        logger.info("%s wrote %r: %s", npc.id, work.title, work.statement)
+        logger.info("%s wrote %r (%s): %s", npc.id, work.title, commission.seed, work.statement)
         return work
 
     async def _paint(
@@ -549,7 +549,14 @@ class Maker:
         covered = self.works.paint(work, svg, png)
         over = f' over {self._whose(npc, covered, "my")} "{covered.title}"' if covered else ""
         self.memory.add(remember(npc, work, self.config, over))
-        logger.info("%s painted %r on %s: %s", npc.id, work.title, wall.id, work.statement)
+        logger.info(
+            "%s painted %r on %s (%s): %s",
+            npc.id,
+            work.title,
+            wall.id,
+            commission.seed,
+            work.statement,
+        )
         self.painted(work)
         return work
 
@@ -594,7 +601,13 @@ class Maker:
         self.works.add(work)
         hang(work, svg, png)
         self.memory.add(remember(npc, work, self.config))
-        logger.info("%s painted %r for the gallery: %s", npc.id, work.title, work.statement)
+        logger.info(
+            "%s painted %r for the gallery (%s): %s",
+            npc.id,
+            work.title,
+            commission.seed,
+            work.statement,
+        )
         return work
 
     async def _picture(
