@@ -126,6 +126,10 @@ has read it. `form` is the work's own, copied from the artist's craft when they 
 doesn't change if their craft does. The server sends it in reply to [`list_works`](#list_works) and
 [`read_work`](#read_work), to every client, as with `news`.
 
+`notices`: the notice board beside the works, newest first. A notice is a shopkeeper's offer, event
+or invitation, not a work, so it's never in `works`. Each has its `notice_id`, `title`, `text`,
+`poster` (`id` and `name`) and `created` (sim time). It's empty while nobody has put one up.
+
 ### `murals`
 
 `walls`: every wall that takes a mural, painted or not. The server sends it after the `snapshot`

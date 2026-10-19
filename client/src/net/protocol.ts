@@ -189,11 +189,16 @@ export interface NewsArticle {
   read: boolean;
 }
 /**
- * Residents' writing at the terminals, newest first. The reply to list_works and read_work.
+ * Residents' writing at the terminals, newest first, and the notice board. The reply to
+ * list_works and read_work.
  */
 export interface WorksMessage {
   type: 'works';
   works: WrittenWork[];
+  /**
+   * The notices up on the board, newest first. Apart from the works.
+   */
+  notices: Notice[];
 }
 export interface WrittenWork {
   work_id: string;
@@ -223,6 +228,23 @@ export interface WrittenWork {
 export interface Artist {
   id: string;
   name: string;
+}
+/**
+ * A short notice a shopkeeper, the `poster`, puts up at the terminals: an offer, an event or
+ * an invitation. It isn't a work.
+ */
+export interface Notice {
+  notice_id: string;
+  title: string;
+  /**
+   * The notice itself, with its line breaks.
+   */
+  text: string;
+  poster: Artist;
+  /**
+   * Sim time.
+   */
+  created: string;
 }
 /**
  * Every mural wall and what's on it. Sent on connect and whenever a mural changes.

@@ -76,6 +76,15 @@ const works: WorksMessage = {
       read: false,
     },
   ],
+  notices: [
+    {
+      notice_id: 'notice_1',
+      title: 'Two-for-one flat whites',
+      text: 'All afternoon, while the oat milk lasts.',
+      poster: { id: 'mirela', name: 'Mirela Popescu' },
+      created: '2026-03-14T09:00:00Z',
+    },
+  ],
 };
 const murals: MuralsMessage = {
   type: 'murals',
