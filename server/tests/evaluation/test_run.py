@@ -17,8 +17,10 @@ from simile.evaluation.run import (
     evaluate,
     played,
 )
-from simile.evaluation.scenarios import SCENARIOS, TEMPTING
-from simile.llm import FakeProvider, LLMClient
+from simile.evaluation.scenarios import PUSHBACK, SCENARIOS, TEMPTING
+from simile.llm import FakeProvider, LLMClient, Provider
+from simile.llm.claude_code import ClaudeCodeProvider
+from simile.llm.ollama import OllamaProvider
 from simile.memory.store import DEFAULT_PATH
 from simile.schema import Character, CoreValue
 
@@ -30,7 +32,22 @@ REPLIED = 2 * len(SCENARIOS)
 class StandIn(FakeProvider):
     """Counts as Claude for the call count, without calling it."""
 
-    name = "stand-in"
+    name = ClaudeCodeProvider.name
+
+
+class Local(FakeProvider):
+    name = OllamaProvider.name
+
+
+class Split(LLMClient):
+    """Replies from a local model, judged by a stand-in for Claude."""
+
+    def __init__(self, local: FakeProvider, claude: FakeProvider) -> None:
+        super().__init__(claude)
+        self.local = local
+
+    def provider_for(self, model: str) -> Provider:
+        return self.local if model.startswith("ollama:") else super().provider_for(model)
 
 
 def run(calls: int) -> Run:
@@ -128,6 +145,45 @@ async def test_fake_calls_are_not_counted_as_claude(pool: list[Character], embed
     assert result.calls == 0
 
 
+async def test_only_claude_calls_are_counted(pool: list[Character], embedder: Any) -> None:
+    local, claude = Local(default=Stock()), StandIn(default=Stock())
+
+    result = await evaluate(
+        Split(local, claude), pool[:2], embedder, model="ollama:m", judge="j", run=run
+    )
+
+    assert len(local.requests) == REPLIED and len(claude.requests) == 1
+    assert result.calls == 1
+
+
+async def test_reused_replies_are_judged_again_for_their_tone(
+    pool: list[Character], embedder: Any, tmp_path: Path
+) -> None:
+    fake = StandIn(default=Stock())
+    first = await evaluate(
+        LLMClient(fake), pool[:2], embedder, model="m", judge="j", run=run, out=tmp_path / "a"
+    )
+    saved = json.loads((tmp_path / "a" / REPLIES).read_text())
+    for reply in saved["replies"]:
+        del reply["breaks"]
+    (tmp_path / "a" / REPLIES).write_text(json.dumps(saved))
+
+    again = await evaluate(
+        LLMClient(fake),
+        pool[:2],
+        embedder,
+        model="m",
+        judge="j",
+        run=run,
+        out=tmp_path / "b",
+        reuse=tmp_path / "a",
+    )
+
+    assert again.calls == 1 and len(fake.requests) == first.calls + 1
+    assert all(reply.breaks is not None for reply in again.replies)
+    assert any(reply.breaks for reply in again.replies)
+
+
 async def test_the_report_shows_every_reply_beside_the_paper_spread(
     pool: list[Character], embedder: Any
 ) -> None:
@@ -144,8 +200,10 @@ async def test_the_report_shows_every_reply_beside_the_paper_spread(
         assert f'"{scenario.line}"' in report
     assert "## Honesty" in report
     assert "## Humour" in report
+    assert "## Tone" in report
     for character in pool[:2]:
-        assert report.count(f"| {character.name}, ") == len(SCENARIOS) + 2
+        flagged = sum(bool(r.breaks) for r in result.replies if r.character == character.id)
+        assert report.count(f"| {character.name}, ") == len(SCENARIOS) + 2 + flagged
 
 
 async def test_a_run_reuses_another_runs_replies_without_counting_its_calls(
@@ -200,9 +258,10 @@ async def test_a_run_reuses_another_runs_replies_without_counting_its_calls(
     assert len(fake.requests) == before.calls + after.calls
 
 
-def test_played_takes_ids_or_the_tempting_ones() -> None:
+def test_played_takes_ids_or_a_group() -> None:
     assert played(None) == list(SCENARIOS)
     assert played("tempting") == list(TEMPTING)
+    assert played("pushback") == list(PUSHBACK)
     assert [s.id for s in played("lie, favour,lie")] == ["lie", "favour"]
     with pytest.raises(Refused, match="No scenario nowhere"):
         played("favour,nowhere")

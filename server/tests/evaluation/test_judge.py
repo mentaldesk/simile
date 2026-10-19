@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from simile.evaluation.judge import SYSTEM, judge_prompt, label, stance_schema
-from simile.evaluation.play import Reply
+from simile.evaluation.play import Bound, Reply
 from simile.evaluation.scenarios import SCENARIOS
 from simile.llm import FakeProvider, LLMClient
 
@@ -48,25 +48,36 @@ def test_the_prompt_groups_replies_by_scenario_without_names() -> None:
 def test_each_reply_takes_only_its_scenarios_labels() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
 
-    assert schema(r1="helps", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[])
+    assert schema(
+        r1="helps", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[], breaks=[]
+    )
     with pytest.raises(ValidationError):
-        schema(r1="confronts", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[])
+        schema(
+            r1="confronts", r2="confronts", r3="hostile", r4="ignores", lies=[], jokes=[], breaks=[]
+        )
 
 
 def test_lies_name_only_replies_that_were_asked_about() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
     labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores"}
 
-    assert schema(**labels, lies=["r2", "r4"], jokes=[])
+    assert schema(**labels, lies=["r2", "r4"], jokes=[], breaks=[])
     with pytest.raises(ValidationError):
-        schema(**labels, lies=["r5"], jokes=[])
+        schema(**labels, lies=["r5"], jokes=[], breaks=[])
     with pytest.raises(ValidationError):
-        schema(**labels, jokes=[])
+        schema(**labels, jokes=[], breaks=[])
 
 
 def test_jokes_name_a_reply_and_one_style() -> None:
     schema = stance_schema(SCENARIOS, REPLIES)
-    labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores", "lies": []}
+    labels = {
+        "r1": "helps",
+        "r2": "confronts",
+        "r3": "hostile",
+        "r4": "ignores",
+        "lies": [],
+        "breaks": [],
+    }
 
     assert schema(**labels, jokes=[{"reply": "r3", "style": "sarcastic"}])
     with pytest.raises(ValidationError):
@@ -88,7 +99,30 @@ def test_the_judge_is_told_what_counts_as_a_joke() -> None:
     assert "the one style that fits it best" in SYSTEM
 
 
-async def test_label_asks_once_and_sets_each_stance_and_lie() -> None:
+def test_the_judge_is_told_the_bounds_a_child_needs() -> None:
+    assert "list under breaks every reply that breaks the bounds of a game a child plays" in SYSTEM
+    for bound in Bound:
+        assert f"; {bound}, " in SYSTEM or f": {bound}, " in SYSTEM
+    assert "which being curt, refusing or disagreeing isn't" in SYSTEM
+    assert "isn't a made-up fact, even when it's a lie" in SYSTEM
+
+
+def test_breaks_name_a_reply_and_one_bound_each() -> None:
+    schema = stance_schema(SCENARIOS, REPLIES)
+    labels = {"r1": "helps", "r2": "confronts", "r3": "hostile", "r4": "ignores"}
+    labels |= {"lies": [], "jokes": []}
+
+    assert schema(**labels, breaks=[{"reply": "r3", "bound": "insult"}])
+    assert schema(**labels, breaks=[{"reply": "r3", "bound": "made-up fact"}])
+    with pytest.raises(ValidationError):
+        schema(**labels, breaks=[{"reply": "r5", "bound": "insult"}])
+    with pytest.raises(ValidationError):
+        schema(**labels, breaks=[{"reply": "r3", "bound": "rudeness"}])
+    with pytest.raises(ValidationError):
+        schema(**labels)
+
+
+async def test_label_asks_once_and_sets_each_stance_lie_joke_and_break() -> None:
     fake = FakeProvider(
         [
             json.dumps(
@@ -99,6 +133,11 @@ async def test_label_asks_once_and_sets_each_stance_and_lie() -> None:
                     "r4": "ignores",
                     "lies": ["r2"],
                     "jokes": [{"reply": "r3", "style": "deadpan"}],
+                    "breaks": [
+                        {"reply": "r2", "bound": "made-up fact"},
+                        {"reply": "r2", "bound": "insult"},
+                        {"reply": "r2", "bound": "insult"},
+                    ],
                 }
             )
         ]
@@ -106,11 +145,11 @@ async def test_label_asks_once_and_sets_each_stance_and_lie() -> None:
 
     labelled = await label(LLMClient(fake), SCENARIOS, REPLIES, model="judge")
 
-    assert [(r.key, r.stance, r.lies, r.jokes, r.joke) for r in labelled] == [
-        ("ann/favour", "helps", False, False, None),
-        ("bob/favour", "hostile", True, False, None),
-        ("ann/promise", "confronts", False, True, "deadpan"),
-        ("bob/promise", "ignores", False, False, None),
+    assert [(r.key, r.stance, r.lies, r.jokes, r.joke, r.breaks) for r in labelled] == [
+        ("ann/favour", "helps", False, False, None, []),
+        ("bob/favour", "hostile", True, False, None, [Bound.INSULT, Bound.MADE_UP]),
+        ("ann/promise", "confronts", False, True, "deadpan", []),
+        ("bob/promise", "ignores", False, False, None, []),
     ]
     [request] = fake.requests
     assert request.model == "judge"
@@ -128,6 +167,7 @@ async def test_a_label_from_another_scenario_is_asked_again() -> None:
                     "r4": "ignores",
                     "lies": [],
                     "jokes": [],
+                    "breaks": [],
                 }
             ),
             json.dumps(
@@ -138,6 +178,7 @@ async def test_a_label_from_another_scenario_is_asked_again() -> None:
                     "r4": "ignores",
                     "lies": [],
                     "jokes": [],
+                    "breaks": [],
                 }
             ),
         ]
