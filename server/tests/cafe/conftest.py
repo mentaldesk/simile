@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import Any
@@ -14,7 +14,7 @@ from simile.npc import load_npcs
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Line, MapTile, Npc
 from simile.sim import Clock, Event, FakeWallClock, World
 from simile.world import Movement, Point
-from simile.world.map import load_maps
+from simile.world.map import TownMap, load_maps
 
 MAPS = load_maps()
 DAY = datetime(2026, 1, 1, tzinfo=UTC)
@@ -92,9 +92,10 @@ class Village:
         replies: Sequence[Any] = (),
         director: Any = None,
         players: Any = None,
+        maps: Mapping[str, TownMap] = MAPS,
     ) -> None:
         self.world = World(Clock(start), FakeWallClock())
-        self.movement = Movement(MAPS, self.world.bus)
+        self.movement = Movement(maps, self.world.bus)
         self.store = MemoryStore(":memory:")
         self.behaviour = Behaviour(
             self.world.clock,

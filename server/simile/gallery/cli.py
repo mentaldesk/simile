@@ -15,6 +15,14 @@ def register(app: typer.Typer) -> None:
     def paint(
         npc: Annotated[str, typer.Argument(help="A painter's or muralist's id, e.g. kofi.")],
         png: Annotated[Path | None, typer.Option(help="Where to save the picture too.")] = None,
+        maps: Annotated[
+            Path | None,
+            typer.Option(
+                exists=True,
+                file_okay=False,
+                help="A folder of maps whose frames to hang it in. Defaults to the server's.",
+            ),
+        ] = None,
     ) -> None:
         """Have a resident paint a canvas for the gallery from what's on their mind, with Claude.
 
@@ -33,7 +41,7 @@ def register(app: typer.Typer) -> None:
         if resident.craft is None or resident.craft.medium is Medium.WRITING:
             typer.echo(f"{resident.name} doesn't paint.", err=True)
             raise typer.Exit(1)
-        memories, work, frame, picture = asyncio.run(create(resident, residents))
+        memories, work, frame, picture = asyncio.run(create(resident, residents, maps))
         typer.echo(on_mind(memories, work))
         if work is None or frame is None:
             typer.echo(f"{resident.name} couldn't paint anything.", err=True)
@@ -47,9 +55,10 @@ def register(app: typer.Typer) -> None:
 
 
 async def create(
-    npc: "Npc", npcs: dict[str, "Npc"]
+    npc: "Npc", npcs: dict[str, "Npc"], maps: Path | None = None
 ) -> tuple[list["Memory"], "Work | None", "FrameKey | None", bytes | None]:
-    """What's on their mind, what they painted, where it hangs, and its picture."""
+    """What's on their mind, what they painted, where it hangs in the frames on `maps`, or else
+    the default maps, and its picture."""
     import os
     from datetime import UTC, datetime
 
@@ -73,7 +82,8 @@ async def create(
     ):
         saved = world.load()
         clock = Clock(saved.now if saved else datetime.now(UTC))
-        gallery = Gallery(frames_of(load_maps()), store, works, clock, npcs)
+        towns = load_maps() if maps is None else load_maps(maps)
+        gallery = Gallery(frames_of(towns), store, works, clock, npcs)
         hung: list[FrameKey] = []
         fake = os.environ.get(FAKE_ENV) == "fake"
         llm = LLMClient(FakeProvider(default=stand_in(npc)) if fake else None)

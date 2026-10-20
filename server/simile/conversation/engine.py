@@ -331,7 +331,11 @@ class ConversationEngine:
         prompt = scene_prompt(
             sides[a], sides[b], history, location.name if location else None, now, scene_plan
         )
-        directions = {a: facing(here, there), b: facing(there, here)}
+        side_view = movement.maps[here.map].side_view
+        directions = {
+            a: facing(here, there, side_view=side_view),
+            b: facing(there, here, side_view=side_view),
+        }
         parties = {
             npc: Party(npcs[npc], rels[npc].like, stances[npc].keen, directions[npc])
             for npc in names
@@ -908,11 +912,13 @@ def noted(works: list[WorkTopic]) -> list[Memory]:
     return [topic.memory for topic in works]
 
 
-def facing(here: Point, there: Point) -> Direction:
+def facing(here: Point, there: Point, *, side_view: bool = False) -> Direction:
+    """Which way to turn to face them: on a side-view map only left or right, unless they're
+    straight above or below, and then towards the camera."""
     dx, dy = there.x - here.x, there.y - here.y
-    if dx == dy == 0:
+    if dx == 0 and (side_view or dy == 0):
         return "down"
-    if abs(dx) >= abs(dy):
+    if side_view or abs(dx) >= abs(dy):
         return "right" if dx > 0 else "left"
     return "down" if dy > 0 else "up"
 

@@ -40,14 +40,25 @@ refuses if someone already lives above the café. Her voice and sprite came from
   behind the counter, rather than standing at the café's entry, which is the front of the queue.
   B1's stay carries on there.
 
+## Where things are
+
+`entrance`, `machine`, `hand_over`, `pickup`, `upstairs` and `seats` are a `Layout` in
+`CafeConfig.layouts`, by the map the café's location is on, so the café works in either world:
+`coffee_shop` on today's maps, and `coffee_shop_floor_0` on the side-view maps (`content/street/`),
+where the counter, the queue and the bar are downstairs, `upstairs` is the foot of the stairs at
+the east end, and the tables are on the floor above. The seats are listed in the same order in
+both, by spot id. The barista still sleeps at the foot of the stairs rather than in the flat on the
+top floor.
+
 ## The queue
 
 - A resident who chooses the coffee shop while it's open, and hasn't been served in the last `again`
-  (90) minutes, is a customer. They head for `entrance`, inside the door. Once they're on the café's
-  map they join the queue: the front is the counter's `stand` (also `coffee_shop_queue`'s entry),
-  and the rest line up behind it down the lane and on south. Someone already inside who chooses it
-  joins at once. A resident whose goal was the coffee shop before the café took any notice, like a
-  saved one standing on the terrace, is left alone until they next decide.
+  (90) minutes, is a customer. They head for `entrance`, inside the door. Once they're inside, on
+  any of the café's floors, they join the queue: the front is the counter's `stand` (also
+  `coffee_shop_queue`'s entry), and the rest line up behind it down the lane and on south, or on a
+  side-view map along the floor through the lane, east. Someone already inside who chooses it, on
+  any floor, joins at once. A resident whose goal was the coffee shop before the café took any
+  notice, like a saved one standing on the terrace, is left alone until they next decide.
 - The barista serves the front of the queue, one order at a time: once she's at the till and they're
   on their spot, they talk, then the customer moves to `pickup` at the end of the counter and the
   next one steps up. She makes the drink at `machine` for its `seconds` from the menu, then hands it

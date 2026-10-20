@@ -24,10 +24,11 @@ gallery's `running` hook gives the maker its `hang`, and without it nobody paint
 ## Hanging
 
 `Gallery.hang` stores the painting's PNG and SVG in the `paintings` table of the memory store's file
-and hangs it in a frame (the `hung` table): the first empty one, nearest the gallery's door first, or
-else in place of the painting hung longest ago. Paintings taken down keep their pictures, and the
-`Work` stays in `works`. A starter painting is hung as of when it was made, so the starters are the
-first to go.
+and hangs it in a frame (the `hung` table): the first empty one, nearest the gallery's door first
+(on the side-view maps, the ground floor first and each floor above from the lift), or else in
+place of the painting hung longest ago. Paintings taken down keep their pictures, and the `Work`
+stays in `works`. A starter painting is hung as of when it was made, so the starters are the first
+to go.
 
 Each new client gets `paintings` with every frame, hung or empty, and everyone gets it again when a
 painting goes up. `GET /api/gallery/<work_id>.png` serves a painting's PNG from the `paintings`
@@ -36,9 +37,9 @@ table, and 404s for anything else.
 ## Visitors
 
 B1 sends residents to the gallery as an outing. Once one has arrived and is staying, `Visitors`
-walks them from painting to painting: the nearest they haven't seen first, then any but the one
-they've just looked at, `linger` (2 to 5 sim minutes) at each. A new goal or a conversation stops
-the tour.
+walks them from painting to painting: the nearest they haven't seen first, on their own floor
+before the others of the building, then any but the one they've just looked at, `linger` (2 to 5
+sim minutes) at each. A new goal or a conversation stops the tour.
 
 - **Looking.** At someone else's painting they haven't seen, a resident says how it lands in one
   Haiku call through L1, below conversations' priority, as at the terminals and murals. The reply
@@ -56,6 +57,7 @@ Every constant is in `GalleryConfig`.
 cd server
 uv run simile gallery paint kofi   # a canvas from what's on his mind, hung in $SIMILE_DB
 uv run simile gallery paint kofi --png kofi.png   # and the picture saved too
+uv run simile gallery paint kofi --maps ../content/street   # hung in the side-view gallery's frames
 SIMILE_IMAGES=1 uv run simile gallery paint priya --png priya.png   # painted by the image model
 ```
 
