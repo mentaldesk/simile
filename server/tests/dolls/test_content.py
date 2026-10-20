@@ -19,10 +19,10 @@ FIELDS = {
     "bottom": "bottom_colour",
     "shoe": "shoe_colour",
 }
-FROM_LOOK = 4.0
+FROM_LOOK = 3.5
 """How far a painted piece's colour may be from the look it was cut from (CIEDE2000)."""
-FROM_APPEARANCE = {"skin": 4.0, "hair": 10.0, "top": 10.0, "bottom": 10.0, "shoe": 10.0}
-"""And from the `Appearance`: skin is kept exactly, the rest muted by up to about 8."""
+FROM_APPEARANCE = {"skin": 3.5, "hair": 8.0, "top": 8.0, "bottom": 8.0, "shoe": 8.0}
+"""And from the `Appearance`: skin is kept exactly, the rest muted by up to about 6."""
 
 
 def manifest(who: str) -> dict:
@@ -30,7 +30,7 @@ def manifest(who: str) -> dict:
 
 
 def painted_colours(who: str) -> list[tuple[str, str, np.ndarray, RGB]]:
-    """(piece, colour name, mean painted colour, look colour) for each named colour each piece
+    """(piece, colour name, typical painted colour, look colour) for each named colour each piece
     shows, away from its edges."""
     look = Look.of(EVERYONE[who], who)
     found = manifest(who)
@@ -47,7 +47,7 @@ def painted_colours(who: str) -> list[tuple[str, str, np.ndarray, RGB]]:
             target = getattr(look, name)
             mask = window & inner & (f == target).all(axis=2)
             if mask.sum() >= 150:
-                out.append((piece, name, painted[mask].mean(axis=0), target))
+                out.append((piece, name, np.median(painted[mask], axis=0), target))
     return out
 
 

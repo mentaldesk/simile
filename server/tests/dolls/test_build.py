@@ -1,15 +1,18 @@
 import json
 from collections.abc import Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 
+import numpy as np
 import pytest
 from PIL import Image
 
 from simile.dolls import build
+from simile.dolls.colour import delta_e
+from simile.dolls.look import Look
 from simile.dolls.paint import FakeSheetPainter
 from simile.dolls.shapes import PIECES
-from simile.dolls.sheet import LAYOUTS
+from simile.dolls.sheet import LAYOUTS, sheet
 
 
 class Painters:
@@ -113,6 +116,31 @@ def test_the_manifest_frames_every_piece_inside_both_atlases(tmp_path: Path, two
         box = (x, y, x + w, y + h)
         assert flat.crop(box).getchannel("A").getbbox() is not None, name
         assert painted.crop(box).getchannel("A").getbbox() is not None, name
+
+
+class DropsTheFrontShoe(FakeSheetPainter):
+    def paint(self, prompt: str, images: list[Path], size: tuple[int, int], seed: int):
+        painted = super().paint(prompt, images, size, seed)
+        if "front and the back of the torso" in prompt:
+            laid = sheet("front_back", Look.of(build.people()["player"], "player"))
+            x, y = laid.spots["shoe_front"]
+            w, h = laid.pieces["shoe_front"].image.size
+            painted.paste(painted.getpixel((2, 2)), (x - 4, y - 4, x + w + 4, y + h + 4))
+        return painted
+
+
+def test_a_front_shoe_the_painter_drops_is_painted_like_the_side_one(
+    tmp_path: Path, two: dict
+) -> None:
+    painter = DropsTheFrontShoe()
+
+    painted = build.build(lambda: nullcontext(painter), tmp_path, only=["player"], cache=None)
+
+    assert painted[0].misplaced["shoe_front"] > 0.9
+    shoe = np.asarray(painted[0].doll.painted["shoe_front"].image, dtype=np.float64)
+    look = Look.of(build.people()["player"], "player")
+    solid = shoe[..., 3] == 255
+    assert (delta_e(shoe[solid][:, :3], (look.shoe)) < 20).mean() > 0.6
 
 
 def test_unknown_people_are_refused(tmp_path: Path) -> None:

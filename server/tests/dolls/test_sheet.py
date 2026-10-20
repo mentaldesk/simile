@@ -9,7 +9,9 @@ from simile.dolls.sheet import (
     BACKGROUND,
     LAYOUTS,
     SIZE,
+    cut,
     misplaced,
+    paper,
     regions,
     restore,
     sheet,
@@ -104,3 +106,22 @@ def test_misplaced_finds_a_piece_the_painter_dropped() -> None:
 
     assert found["torso_back"] > 0.95
     assert all(share < 0.01 for name, share in found.items() if name != "torso_back")
+
+
+def test_cut_fills_what_the_painter_left_bare_inside_an_outline() -> None:
+    laid = sheet("front_back", Look.of(EVERYONE["ingrid"], "ingrid"))
+    painting = drifted(laid.image(), (-30, -20, -10))
+    background = tuple(int(v) for v in paper(laid, painting))
+    flat = laid.pieces["head_back"].image
+    alpha = np.asarray(flat.getchannel("A"))
+    core = np.asarray(flat.getchannel("A").filter(ImageFilter.MinFilter(15))) > 0
+    rim = Image.fromarray(((alpha > 0) & ~core).astype(np.uint8) * 255)
+    painting.paste(background, laid.spots["head_back"], rim)
+
+    pieces = cut(laid, painting)
+
+    head = np.asarray(pieces["head_back"], dtype=np.float64)
+    assert misplaced(laid, painting)["head_back"] > 0.05
+    assert (delta_e(head[alpha == 255], background) > 12).all()
+    for mean, colour in region_means(pieces["head_back"], flat):
+        assert delta_e(mean, colour) < 3

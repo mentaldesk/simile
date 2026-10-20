@@ -16,6 +16,7 @@ from PIL import Image
 from simile.dolls.doll import VERSION, Doll, aligned, atlas, flat_doll, manifest, pack, webp
 from simile.dolls.look import Look
 from simile.dolls.paint import SheetPainter, prompt, seed
+from simile.dolls.pieces import Piece
 from simile.dolls.sheet import LAYOUTS, SIZE, cut, misplaced, patches, sheet
 from simile.schema import PLAYER_ID, Appearance
 
@@ -30,7 +31,9 @@ REFERENCES = (
 )
 """The villagers reference: part 3's copy once it lands, the study's until then."""
 REFERENCE_WIDTH = 768
-REROLLS: dict[str, int] = {}
+DONORS = {"shoe_front": "shoe"}
+"""A piece the painter often drops, and the piece of the same colours to take its paint from."""
+REROLLS: dict[str, int] = {"ingrid/side": 1, "lachlan/side": 1, "odalys/front_back": 5}
 """`<id>/<sheet>` to a reroll number, for a painting that came out off-model or off-tone."""
 
 
@@ -89,7 +92,7 @@ def paint(
     """Every sheet painted and cut, the pieces laid over the flat ones at the atlas's scale."""
     look = Look.of(appearance, who)
     doll = flat_doll(look)
-    pieces = {}
+    pieces: dict[str, tuple[Image.Image, Piece, float]] = {}
     out = Painted(who, doll)
     small = scratch / "reference.png"
     if not small.exists():
@@ -119,8 +122,16 @@ def paint(
         out.misplaced |= misplaced(laid, painting)
         out.patches |= patches(laid, painting)
         for piece, image in cut(laid, painting).items():
-            pieces[piece] = aligned(image, laid.pieces[piece], laid.scale, doll.flat[piece])
-    doll.painted = pieces
+            pieces[piece] = (image, laid.pieces[piece], laid.scale)
+    for piece, donor in DONORS.items():
+        if out.misplaced.get(piece, 0.0) > 0.5:
+            given, _, scale = pieces[donor]
+            flat = pieces[piece][1]
+            pieces[piece] = (given.resize(flat.image.size, Image.Resampling.LANCZOS), flat, scale)
+    doll.painted = {
+        piece: aligned(image, laid_piece, scale, doll.flat[piece])
+        for piece, (image, laid_piece, scale) in pieces.items()
+    }
     return out
 
 

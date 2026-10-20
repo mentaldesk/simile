@@ -295,7 +295,7 @@ def head_front(pen: Pen, look: Look) -> None:
     style, acc, hair = look.hair_style, look.accessories, look.hair
     rx, ry = FACE_R
     if style == "long":
-        pen.blob([(-12.4, -22.0), (12.4, -22.0), (12.4, -6.0), (-12.4, -6.0)], 1.6, hair)
+        pen.blob([(-12.4, -22.0), (12.4, -22.0), (12.4, -10.0), (-12.4, -10.0)], 1.6, hair)
         for side in (-1, 1):
             pen.blob(
                 [(side * 13.0, -8.0), (side * 7.8, -8.0), (side * 8.4, 12.0), (side * 13.2, 12.0)],
@@ -352,12 +352,14 @@ def head_front(pen: Pen, look: Look) -> None:
             ],
         )
     if style == "long":
+        outer = rx + 1.7
         front_shell(
             pen,
             look,
             2.2,
-            90,
+            0,
             [
+                (outer, 9.0),
                 (10.6, 9.0),
                 (10.2, -10.0),
                 (6.0, -17.4),
@@ -367,6 +369,7 @@ def head_front(pen: Pen, look: Look) -> None:
                 (-6.0, -17.4),
                 (-10.2, -10.0),
                 (-10.6, 9.0),
+                (-outer, 9.0),
             ],
         )
     if style in ("ponytail", "bun"):

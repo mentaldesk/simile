@@ -17,7 +17,9 @@ MOST = 8.0
 """Pixels per unit on a sheet, when the pieces fit."""
 GAP = 40
 BACKGROUND = (214, 210, 202)
-KEEP_COLOUR = 0.9
+KEEP_COLOUR = 1.0
+"""How far each region's mean is pulled back to its flat colour: all the way, so pieces cut from
+the same cloth match each other and the `Appearance`."""
 TEXTURE = 1.8
 """How much the painting's mottling, at the scale that survives street size, is strengthened."""
 LAYOUTS: dict[str, tuple[tuple[str, ...], ...]] = {
@@ -99,8 +101,9 @@ def regions(flat: Image.Image) -> tuple[NDArray[np.intp], NDArray[np.float64], N
 
 
 def restore(painted: Image.Image, flat: Image.Image, amount: float = KEEP_COLOUR) -> Image.Image:
-    """Scales each region of `painted` so its mean moves `amount` of the way to the region's
-    flat colour, keeping the painted texture and shading."""
+    """Scales each region of `painted` so its median moves `amount` of the way to the region's
+    flat colour, keeping the painted texture and shading. The median, so a little of something
+    else painted into the region doesn't shift the rest of it."""
     p = np.asarray(painted.convert("RGB"), dtype=np.float64)
     nearest, main, opaque = regions(flat)
     f = np.asarray(flat.convert("RGB"), dtype=np.float64)
@@ -110,8 +113,8 @@ def restore(painted: Image.Image, flat: Image.Image, amount: float = KEEP_COLOUR
         core = region & (np.abs(f - target).max(axis=2) < 1)
         if not core.any():
             continue
-        mean = p[core].mean(axis=0)
-        gain = np.clip(np.maximum(target, 8) / np.maximum(mean, 8), 0.15, 4.0)
+        typical = np.median(p[core], axis=0)
+        gain = np.clip(np.maximum(target, 8) / np.maximum(typical, 8), 0.15, 4.0)
         out[region] = p[region] * (1 + (gain - 1) * amount)
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
 
@@ -164,14 +167,67 @@ def strengthen(
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8))
 
 
+def paper(sheet: Sheet, painted: Image.Image) -> NDArray[np.float64]:
+    """The colour the painter gave the sheet's background, away from every piece."""
+    covered = Image.new("L", SIZE, 0)
+    for name, (x, y) in sheet.spots.items():
+        covered.paste(255, (x, y), sheet.pieces[name].image.getchannel("A"))
+    clear = np.asarray(covered.filter(ImageFilter.MaxFilter(2 * (GAP // 3) + 1))) == 0
+    return np.median(np.asarray(painted.convert("RGB"), dtype=np.float64)[clear], axis=0)
+
+
+def bare(crop: Image.Image, flat: Image.Image, background: NDArray[np.float64]) -> NDArray:
+    """Pixels inside the piece the painter left as background, where it drew it a little small."""
+    f = np.asarray(flat.convert("RGBA"), dtype=np.float64)
+    inside = f[..., 3] > 0
+    return (
+        inside
+        & (delta_e(np.asarray(crop, dtype=np.float64), background) < 6)
+        & (delta_e(f[..., :3], background) > 12)
+    )
+
+
+def patched(crop: Image.Image, flat: Image.Image, background: NDArray[np.float64]) -> Image.Image:
+    """`crop` with its bare pixels filled from the painted ones around them in the same region,
+    or with the flat colour where the painter left the whole region bare."""
+    holes = bare(crop, flat, background)
+    if not holes.any():
+        return crop
+    p = np.asarray(crop, dtype=np.float64).copy()
+    f = np.asarray(flat.convert("RGB"), dtype=np.float64)
+    nearest, main, opaque = regions(flat)
+    for i in range(len(main)):
+        region = opaque & (nearest == i)
+        todo = region & holes
+        if not todo.any():
+            continue
+        known = (region & ~holes).astype(np.float64)
+        if not known.any():
+            p[todo] = f[todo]
+            continue
+        for sigma in (1.0, 2.0, 4.0, 8.0, 16.0):
+            spread = _blur(p, known, sigma)
+            reach = gaussian(known[..., None], sigma)[..., 0] > 1e-3
+            now = todo & reach
+            p[now] = spread[now]
+            known[now] = 1.0
+            todo &= ~now
+            if not todo.any():
+                break
+        p[todo] = f[todo]
+    return Image.fromarray(np.clip(p, 0, 255).astype(np.uint8))
+
+
 def cut(sheet: Sheet, painted: Image.Image) -> dict[str, Image.Image]:
-    """Each painted piece as RGB, cropped to its flat piece, restored to its colours and
-    strengthened. Outside its outline it's filled from its edge, so scaling it doesn't bleed
-    the sheet's background in."""
+    """Each painted piece as RGB, cropped to its flat piece, with anything the painter left
+    bare filled in, strengthened and restored to its colours. Outside its outline it's filled
+    from its edge, so scaling it doesn't bleed the sheet's background in."""
+    background = paper(sheet, painted)
     out = {}
     for name, flat in sheet.pieces.items():
-        crop = restore(sheet.crop(painted, name), flat.image)
+        crop = patched(sheet.crop(painted, name), flat.image, background)
         crop = strengthen(crop, flat.image, sheet.scale)
+        crop = restore(crop, flat.image)
         out[name] = bleed(crop, flat.image.getchannel("A"))
     return out
 
@@ -194,16 +250,13 @@ def bleed(image: Image.Image, alpha: Image.Image) -> Image.Image:
 
 def misplaced(sheet: Sheet, painted: Image.Image) -> dict[str, float]:
     """For each piece, the share of its inside the painting left as bare background: high when
-    the painter moved or dropped a piece."""
+    the painter moved, dropped or shrank a piece."""
+    background = paper(sheet, painted)
     out = {}
     for name, flat in sheet.pieces.items():
-        crop = np.asarray(sheet.crop(painted, name), dtype=np.float64)
-        f = np.asarray(flat.image, dtype=np.float64)
-        alpha = np.asarray(flat.image.getchannel("A").filter(ImageFilter.MinFilter(5))) > 250
-        unlike = delta_e(f[..., :3], BACKGROUND) > 12
-        inside = alpha & unlike
-        bare = inside & (delta_e(crop, BACKGROUND) < 5)
-        out[name] = float(bare.sum() / max(1, inside.sum()))
+        holes = bare(sheet.crop(painted, name), flat.image, background)
+        inside = np.asarray(flat.image.getchannel("A").filter(ImageFilter.MinFilter(5))) > 250
+        out[name] = float((holes & inside).sum() / max(1, inside.sum()))
     return out
 
 
@@ -211,9 +264,11 @@ def patches(sheet: Sheet, painted: Image.Image, far: float = 10.0) -> dict[str, 
     """For each piece, the share of its inside that, with its colours restored and smoothed over
     about a unit so the texture evens out, is far from the colour drawn there: high when the
     painter added something, like a stray patch."""
+    background = paper(sheet, painted)
     out = {}
     for name, flat in sheet.pieces.items():
-        restored = np.asarray(restore(sheet.crop(painted, name), flat.image), dtype=np.float64)
+        crop = patched(sheet.crop(painted, name), flat.image, background)
+        restored = np.asarray(restore(crop, flat.image), dtype=np.float64)
         nearest, main, _ = regions(flat.image)
         inside = np.asarray(flat.image.getchannel("A").filter(ImageFilter.MinFilter(7))) > 250
         off = np.zeros(inside.shape, dtype=bool)
