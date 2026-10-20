@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, expect, it } from 'vitest';
-import { server, type Wall } from '../net';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { server, type Position, type Wall } from '../net';
 import { MuralWalls, type MuralView } from '../world/iso/murals';
 import { MuralPanel } from './mural-panel';
+import { setMaps } from './side-view';
 
 const GRIND: Wall = {
   id: 'daily_grind',
@@ -169,4 +170,46 @@ it('shows the new mural when the wall is painted over, and closes when it goes b
 
   murals([{ ...GRIND, mural: null }, BLANK]);
   expect(panel.isOpen).toBe(false);
+});
+
+describe('on a side-view map', () => {
+  const HIGH_STREET = 'high_street';
+  /** content/street/high_street.tmj's wall, along cells 27 to 29. */
+  const ALONG: Wall = { ...GRIND, map: HIGH_STREET, x: 27, y: 15 };
+  const street = (x: number, y = 15): Position => ({ x, y, map: HIGH_STREET });
+  let unset: () => void;
+
+  beforeEach(() => {
+    const view = [{ name: 'view', type: 'string', value: 'side' }];
+    const map = { width: 84, height: 20, tilewidth: 16, tileheight: 16, layers: [] };
+    unset = setMaps({ [HIGH_STREET]: { ...map, properties: view } });
+    murals([ALONG]);
+  });
+
+  afterEach(() => unset());
+
+  it('hints within reach along the street of either end of the wall', () => {
+    const hinted = [23, 24, 28, 32, 33].map((x) => {
+      panel.update(street(x));
+      return !hint().hidden;
+    });
+
+    expect(hinted).toEqual([false, true, true, true, false]);
+  });
+
+  it('reaches nothing from inside the building behind the wall', () => {
+    panel.update({ x: 3, y: 2, map: 'coffee_shop_floor_0' });
+
+    expect(hint().hidden).toBe(true);
+    expect(panel.look({ x: 3, y: 2, map: 'coffee_shop_floor_0' })).toBe(false);
+  });
+
+  it('closes once the player walks a tile along from where it opened, out of reach', () => {
+    expect(panel.look(street(32))).toBe(true);
+    panel.update(street(33, 12));
+    expect(panel.isOpen).toBe(true);
+
+    panel.update(street(34));
+    expect(panel.isOpen).toBe(false);
+  });
 });

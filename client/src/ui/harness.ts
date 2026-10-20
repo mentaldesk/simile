@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { server, type ClientMessage, type Entity, type LineMessage, type Position } from '../net';
 import { npcAt } from '../world/hit';
+import { mapOf } from '../world/map';
 import { speakingSeconds } from './bubbles';
 import './harness.css';
+import { sideView } from './side-view';
 import { CHAT_RANGE_TILES } from './tuning';
 import { PLAYER_ID, trackedWorld } from './world-view';
 
@@ -102,7 +104,10 @@ class HarnessScene extends Phaser.Scene {
     const centre = player && trackedWorld.feetOnScreen(player);
     if (!centre) return;
     const { scale, tilePx: tile } = trackedWorld;
-    g.lineStyle(scale, 0x7fc8a9).strokeCircle(centre.x, centre.y - tile / 2, CHAT_RANGE_TILES * tile);
+    const range = CHAT_RANGE_TILES * tile;
+    g.lineStyle(scale, 0x7fc8a9);
+    if (sideView(mapOf(player))) g.strokeRect(centre.x - range, 0, 2 * range, this.cameras.main.height);
+    else g.strokeCircle(centre.x, centre.y - tile / 2, range);
     for (const entity of trackedWorld.all()) {
       const feet = trackedWorld.feetOnScreen(entity.position)!;
       g.fillStyle(0x2f4a40).fillRect(feet.x - tile / 2, feet.y - tile, tile, tile);

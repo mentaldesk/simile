@@ -1,7 +1,7 @@
 import asyncio
 import itertools
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -39,6 +39,7 @@ from simile.schema import (
     CoreValue,
     InteractionEvent,
     Line,
+    MapTile,
     Medium,
     Memory,
     MemoryKind,
@@ -58,13 +59,14 @@ from simile.sim import (
 from simile.social import describe, meet
 from simile.voice import SpeakingRate
 from simile.world import Movement, Point
-from simile.world.map import load_maps
+from simile.world.map import STREET_DIR, TownMap, load_maps
 
 from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
 MAPS = load_maps()
+STREETS = load_maps(STREET_DIR)
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 
@@ -124,11 +126,12 @@ class Village:
         config: ConversationConfig = DEFAULT_CONFIG,
         player: PlayerConfig = DEFAULT_PLAYER_CONFIG,
         provider: FakeProvider | None = None,
+        maps: Mapping[str, TownMap] = MAPS,
     ) -> None:
         self.world = World(Clock(START), FakeWallClock())
         self.store = MemoryStore(":memory:")
         self.store.add(*relationships)
-        self.movement = Movement(MAPS, self.world.bus)
+        self.movement = Movement(maps, self.world.bus)
         for npc in npcs:
             self.movement.place(npc.id, "coffee_shop")
         self.behaviour = Behaviour(
@@ -1425,3 +1428,106 @@ async def test_nobody_interjects_while_the_player_talks_to_someone_else() -> Non
 
     assert not village.players.interject("ana", "Flat white for you!")
     assert "Flat white for you!" not in village.said("ana")
+
+
+LANE = "lychee_lane"
+LOOKOUT = (47, 12)
+"""A cell of the park's lookout, up a ladder above Lychee Lane's row 15."""
+
+
+def on_the_lookout(replies: Sequence[str] = ("Hello down there! [values: connection]",)) -> Village:
+    """Ana up the lookout on the side-view maps, and the player down on the lane."""
+    village = Village(replies, npcs=(ANA,), maps=STREETS)
+    village.movement.place("ana", MapTile(map=LANE, x=LOOKOUT[0], y=LOOKOUT[1]))
+    return village
+
+
+def player_on(village: Village, x: float, map: str = LANE, y: float = 15) -> None:
+    village.movement.track(PLAYER_ID, Point(x, y, map))
+
+
+async def test_on_a_side_view_map_the_player_talks_within_say_range_along_the_street() -> None:
+    village, reach = on_the_lookout(), DEFAULT_PLAYER_CONFIG.say_range
+
+    player_on(village, LOOKOUT[0] - reach - 0.1)
+    assert village.players.say("Hello up there!", "ana") is None
+
+    player_on(village, LOOKOUT[0] - reach)
+    assert village.players.say("Hello up there!", "ana") is not None
+
+
+async def test_on_a_side_view_map_walking_beyond_leave_range_along_the_street_ends_it() -> None:
+    village, reach = on_the_lookout(), DEFAULT_PLAYER_CONFIG.leave_range
+    player_on(village, LOOKOUT[0] - 4)
+    village.players.say("Hello up there!", "ana")
+    await village.run(4)
+
+    player_on(village, LOOKOUT[0] - reach)
+    await village.run(0.2)
+    assert village.ended == []
+    assert village.players.say("Can you hear me from here?", "ana") is not None
+
+    player_on(village, LOOKOUT[0] - reach - 0.5)
+    await village.run(0.2)
+    assert len(village.ended) == 1
+
+
+async def test_on_a_side_view_map_a_resident_greets_the_player_from_near_along_the_street() -> None:
+    village, near = on_the_lookout(), DEFAULT_PLAYER_CONFIG.near
+
+    player_on(village, LOOKOUT[0] - near - 1)
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    assert village.of(ConversationStarted) == []
+
+    player_on(village, LOOKOUT[0] - near)
+    await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    [started] = village.of(ConversationStarted)
+    assert started.conversation.participants == ["ana", PLAYER_ID]
+
+
+async def test_on_a_side_view_map_nobody_on_another_floor_or_inside_is_in_range() -> None:
+    village = Village(npcs=(ANA,), maps=STREETS)
+    village.movement.place("ana", MapTile(map="coffee_shop_floor_0", x=5, y=2))
+
+    for map, x, y in (("coffee_shop_floor_1", 5, 2), ("high_street", 30, 15)):
+        player_on(village, x, map, y)
+        assert village.players.say("Hello?", "ana") is None
+        await village.run(DEFAULT_PLAYER_CONFIG.look_every + 1)
+    assert village.of(ConversationStarted) == []
+
+    player_on(village, 6, "coffee_shop_floor_0", 2)
+    assert village.players.say("Hello?", "ana") is not None
+
+
+@pytest.mark.parametrize(
+    ("ana", "player", "turns"),
+    [
+        (LOOKOUT, (LOOKOUT[0] - 2, 15), "left"),
+        (LOOKOUT, (LOOKOUT[0] + 2, 15), "right"),
+        (LOOKOUT, (LOOKOUT[0], 15), "down"),
+        ((45, 15), (45, 13), "down"),
+    ],
+    ids=["below to the left", "below to the right", "straight below", "straight above"],
+)
+async def test_on_a_side_view_map_a_resident_turns_left_or_right_to_the_player(
+    ana: tuple[int, int], player: tuple[float, float], turns: str
+) -> None:
+    village = on_the_lookout()
+    village.movement.place("ana", MapTile(map=LANE, x=ana[0], y=ana[1]))
+    player_on(village, player[0], y=player[1])
+
+    village.players.say("Hello!", "ana")
+    await village.run(0.1)
+
+    assert village.of(Facing) == [Facing("ana", PLAYER_ID, turns)]
+
+
+async def test_on_todays_maps_a_resident_still_turns_up_or_down_to_the_player() -> None:
+    village = Village(npcs=(ANA,))
+    here = village.movement.position("ana")
+    village.movement.track(PLAYER_ID, Point(here.x + 0.5, here.y - 2, here.map))
+
+    village.players.say("Hello!", "ana")
+    await village.run(0.1)
+
+    assert village.of(Facing) == [Facing("ana", PLAYER_ID, "up")]

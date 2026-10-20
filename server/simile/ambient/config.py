@@ -6,7 +6,8 @@ from simile.voicing import DEFAULT_CONFIG as VOICING
 
 
 class AmbientConfig(BaseModel):
-    """Every constant of the ambient director. Distances are in tiles, times in sim seconds."""
+    """Every constant of the ambient director. Distances are in tiles, `earshot` and
+    `out_of_earshot` along x on a side-view map as I1 measures them, and times in sim seconds."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

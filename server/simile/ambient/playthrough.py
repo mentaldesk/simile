@@ -31,6 +31,7 @@ from simile.sim import (
     LineSpoken,
     World,
 )
+from simile.voicing.distance import apart, between
 from simile.world.movement import Point, inside
 from simile.world.paths import DOOR, Spot, find_route
 
@@ -394,8 +395,7 @@ class ScriptedPlayer:
         return deque([*self.rng.sample(SAY, k=self.rng.randint(*self.turns)), BYE])
 
     def _distance(self, npc: Id) -> float:
-        there = self.movement.position(npc)
-        return math.dist(self.position, there) if there.map == self.position.map else math.inf
+        return apart(self.movement.maps, self.position, self.movement.position(npc))
 
     def _on_started(self, event: ConversationStarted) -> None:
         participants = event.conversation.participants
@@ -497,7 +497,7 @@ class Listener:
 
     def _from_player(self, npc: Id) -> float | None:
         try:
-            return self.movement.distance(npc, PLAYER_ID)
+            return between(self.movement, npc, PLAYER_ID)
         except KeyError:
             return None
 

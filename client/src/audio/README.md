@@ -17,9 +17,11 @@ from where the speaker stands.
   conversation ends still plays at full volume.
 - Overheard voices are capped at a quarter of full volume (about −12 dB) within 2 tiles of the
   listener and fall to silence at `SILENT_BEYOND` (6.5), where the server stops voicing them
-  (`out_of_earshot`). Pan follows the speaker's direction, up to 0.8 either side. `spatial.ts`
-  has both mixes, and `server/tests/voicing/test_client_earshot.py` fails if `SILENT_BEYOND` and
-  `out_of_earshot` drift apart.
+  (`out_of_earshot`). Pan follows the speaker's direction, up to 0.8 either side. On a side-view
+  map both go by distance along x, the street (`tilesApart` in `ui/side-view.ts`), so pan is by
+  the side the speaker is on, however high they are. `spatial.ts` has both mixes, and
+  `server/tests/voicing/test_client_earshot.py` fails if `SILENT_BEYOND` and `out_of_earshot`
+  drift apart.
 - Browsers keep audio suspended until the page gets a key press or click. Chunks that arrive before
   then are dropped.
 
