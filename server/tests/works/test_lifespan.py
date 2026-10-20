@@ -219,7 +219,7 @@ def test_new_clients_get_the_murals_and_everyone_hears_of_a_new_one(
         assert await task is not None
 
     with TestClient(app) as client:
-        app.state.llm = LLMClient(FakeProvider([mural_reply(svg=svg(288, 223))]))
+        app.state.llm = LLMClient(FakeProvider([mural_reply(svg=svg(288, 326))]))
         with client.websocket_connect("/ws") as early:
             assert early.receive_json()["type"] == "snapshot"
             blank = early.receive_json()
@@ -235,7 +235,7 @@ def test_new_clients_get_the_murals_and_everyone_hears_of_a_new_one(
     assert broadcast == greeted
     assert broadcast["type"] == "murals"
     [painted] = [wall for wall in broadcast["walls"] if wall["mural"]]
-    assert painted["id"] == "daily_grind"
+    assert (painted["id"], painted["map"]) == ("daily_grind", "high_street")
     assert painted["mural"]["artist"]["id"] == "kofi"
     assert painted["mural"]["image"] == f"/api/works/{painted['mural']['work_id']}.png"
     assert len(broadcast["walls"]) == 5

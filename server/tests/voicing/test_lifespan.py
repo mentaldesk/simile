@@ -17,7 +17,7 @@ from simile.protocol import AudioChunk, LineMessage, hub_of
 from simile.protocol.hub import Outgoing
 from simile.sim import Clock, World, world_of
 from simile.voice import FakeSynthesiser
-from simile.world import movement_of
+from simile.world import Point, movement_of
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -82,7 +82,7 @@ def audio_of(received: Iterator[Frame], line_id: int) -> list[AudioChunk]:
 def stand_by(ws: WebSocketTestSession, received: Iterator[Frame], npc: str, dx: float) -> None:
     snapshot = next(f for f in received if isinstance(f, dict) and f["type"] == "snapshot")
     position = next(e for e in snapshot["entities"] if e["id"] == npc)["position"]
-    ws.send_json({"type": "player_move", "position": {"x": position["x"] + dx, "y": position["y"]}})
+    ws.send_json({"type": "player_move", "position": position | {"x": position["x"] + dx}})
 
 
 def test_registers_every_npc_voice_at_startup(qwen: FakeSynthesiser) -> None:
@@ -136,9 +136,9 @@ def test_overhears_npcs_only_within_earshot(app: Starlette, qwen: FakeSynthesise
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         movement = movement_of(app)
 
-        def move_player(x: float, y: float) -> None:
-            ws.send_json({"type": "player_move", "position": {"x": x, "y": y}})
-            wait_for(lambda: movement.entities().get("player") == (x, y))
+        def move_player(x: float, y: float, map: str) -> None:
+            ws.send_json({"type": "player_move", "position": {"x": x, "y": y, "map": map}})
+            wait_for(lambda: movement.entities().get("player") == Point(x, y, map))
 
         def next_spoken(conversation: str) -> LineMessage:
             def said() -> list[LineMessage]:
@@ -156,11 +156,11 @@ def test_overhears_npcs_only_within_earshot(app: Starlette, qwen: FakeSynthesise
             raise AssertionError("nobody spoke")
 
         kofi = client.portal.call(movement.position, "kofi")
-        move_player(kofi.x + 2, kofi.y)
+        move_player(kofi.x + 2, kofi.y, kofi.map)
         talk = client.portal.call(conversations_of(app).start, "kofi", "priya")
         near = next_spoken(talk.id)
         wait_for(lambda: any(c.last for c in sent if isinstance(c, AudioChunk)))
-        move_player(-100, -100)
+        move_player(kofi.x + 100, kofi.y, kofi.map)
         far = next_spoken(talk.id)
 
     assert near.voiced

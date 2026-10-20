@@ -32,23 +32,22 @@ from simile.behaviour.scoring import (
 )
 from simile.schema import (
     PLAYER_ID,
-    VILLAGE_MAP,
     Baseline,
     CoreValue,
     LocationKind,
     MapTile,
     Medium,
     Relationship,
-    Tile,
 )
 from simile.sim import EventBus
-from simile.world.map import load_maps, with_every_location
+from simile.world.map import MapKind, load_maps, with_every_location
 from simile.world.movement import Movement, Point
 from simile.world.paths import DOOR
 
 MAPS = load_maps()
 PLACES = Places(with_every_location(MAPS))
-SQUARE = Point(31, 22)
+SQUARE = Point(51, 15, "high_street")
+CAFE_FLOOR = "coffee_shop_floor_0"
 NEUTRAL = {value: 0.5 for value in CoreValue}
 CONTENT = {need: 0.2 for need in Need}
 
@@ -156,21 +155,21 @@ def test_open_mindedness_knowledge_and_creativity_go_to_the_gallery() -> None:
 
 
 def test_connection_and_loneliness_seek_someone_out() -> None:
-    kofi = Other("kofi", Point(33, 24), affinity=0.2)
+    kofi = Other("kofi", Point(53, 15, "high_street"), affinity=0.2)
     s = situation({V.CONNECTION: 0.95}, {Need.SOCIAL: 0.9}, others=[kofi])
 
     assert best(s) == Goal(A.SEEK, "kofi")
 
 
 def test_low_connection_does_not_seek_anyone_out() -> None:
-    kofi = Other("kofi", Point(33, 24), affinity=0.2)
+    kofi = Other("kofi", Point(53, 15, "high_street"), affinity=0.2)
     s = situation({V.CONNECTION: 0.05, V.INDEPENDENCE: 0.9}, {Need.SOCIAL: 0.6}, others=[kofi])
 
     assert best(s).activity is not A.SEEK
 
 
 def test_peace_of_mind_keeps_them_from_seeking_company() -> None:
-    kofi = [Other("kofi", Point(33, 24), affinity=0.2)]
+    kofi = [Other("kofi", Point(53, 15, "high_street"), affinity=0.2)]
     seek = Goal(A.SEEK, "kofi")
 
     content = situation({V.PEACE_OF_MIND: 0.95}, others=kofi)
@@ -179,7 +178,7 @@ def test_peace_of_mind_keeps_them_from_seeking_company() -> None:
 
 
 def test_a_little_loneliness_barely_registers_and_a_lot_crowds_out_the_rest() -> None:
-    kofi = [Other("kofi", Point(33, 24), affinity=0.0)]
+    kofi = [Other("kofi", Point(53, 15, "high_street"), affinity=0.0)]
     seek = Goal(A.SEEK, "kofi")
 
     def pull(social: float) -> float:
@@ -218,8 +217,8 @@ def test_seeking_someone_out_promises_a_talk() -> None:
 
 
 def test_seeking_the_player_promises_less_relief_than_seeking_a_resident() -> None:
-    resident = Other("kofi", Point(33, 24), affinity=0.0)
-    player = Other(PLAYER_ID, Point(33, 24), affinity=0.0)
+    resident = Other("kofi", Point(53, 15, "high_street"), affinity=0.0)
+    player = Other(PLAYER_ID, Point(53, 15, "high_street"), affinity=0.0)
     s = situation({V.CONNECTION: 0.9}, {Need.SOCIAL: 0.8}, others=[resident, player])
     urgency, talk = DEFAULT_CONFIG.urgency[Need.SOCIAL], promised(A.SEEK, Need.SOCIAL)
     halved = talk * DEFAULT_CONFIG.player_relief
@@ -237,15 +236,15 @@ def test_seeking_the_player_promises_less_relief_than_seeking_a_resident() -> No
 
 
 def test_seeks_a_friend_over_a_stranger() -> None:
-    friend = Other("mei", Point(34, 24), affinity=0.6)
-    stranger = Other("kofi", Point(28, 20), affinity=0.0)
+    friend = Other("mei", Point(54, 15, "high_street"), affinity=0.6)
+    stranger = Other("kofi", Point(48, 15, "high_street"), affinity=0.0)
     s = situation({V.CONNECTION: 0.9}, {Need.SOCIAL: 0.9}, others=[stranger, friend])
 
     assert best(s) == Goal(A.SEEK, "mei")
 
 
 def test_nobody_seeks_someone_who_is_not_available() -> None:
-    busy = Other("kofi", Point(33, 24), affinity=0.8, available=False)
+    busy = Other("kofi", Point(53, 15, "high_street"), affinity=0.8, available=False)
     s = situation({V.CONNECTION: 0.95}, {Need.SOCIAL: 0.9}, others=[busy])
 
     assert all(goal.activity is not A.SEEK for goal in scores(s, PLACES))
@@ -253,7 +252,7 @@ def test_nobody_seeks_someone_who_is_not_available() -> None:
 
 def test_avoids_a_place_where_someone_they_dislike_is() -> None:
     values = {V.PLEASURE: 0.9, V.CONNECTION: 0.8}
-    rival = Other("viktor", Point(31, 9), affinity=-0.6, place="coffee_shop")
+    rival = Other("viktor", Point(12, 2, CAFE_FLOOR), affinity=-0.6, place="coffee_shop")
     alone = situation(values, {Need.SOCIAL: 0.6}, hour=8.5)
     spoiled = situation(values, {Need.SOCIAL: 0.6}, hour=8.5, others=[rival])
 
@@ -262,14 +261,14 @@ def test_avoids_a_place_where_someone_they_dislike_is() -> None:
 
 
 def test_friends_make_a_place_more_attractive() -> None:
-    friend = Other("mei", Point(31, 9), affinity=0.6, place="coffee_shop")
+    friend = Other("mei", Point(12, 2, CAFE_FLOOR), affinity=0.6, place="coffee_shop")
     coffee = Goal(A.COFFEE_SHOP, "coffee_shop")
 
     assert score_of(coffee, situation(others=[friend])) > score_of(coffee, situation())
 
 
 def test_connection_scales_the_pull_of_friends() -> None:
-    friend = Other("mei", Point(31, 9), affinity=0.6, place="coffee_shop")
+    friend = Other("mei", Point(12, 2, CAFE_FLOOR), affinity=0.6, place="coffee_shop")
     coffee = Goal(A.COFFEE_SHOP, "coffee_shop")
 
     def gain(connection: float) -> float:
@@ -331,14 +330,14 @@ def test_the_activity_just_finished_scores_less() -> None:
 def test_further_places_score_less() -> None:
     news = Goal(A.NEWS, "terminal_3")
 
-    assert score_of(news, situation(position=Point(46, 36))) > score_of(
-        news, situation(position=Point(3, 11))
+    assert score_of(news, situation(position=Point(60, 18, "banyan_row"))) > score_of(
+        news, situation(position=Point(3, 2, "house_1_floor_0"))
     )
 
 
 def test_needs_raise_the_activities_that_meet_them() -> None:
     seek = Goal(A.SEEK, "kofi")
-    kofi = [Other("kofi", Point(33, 24), affinity=0.0)]
+    kofi = [Other("kofi", Point(53, 15, "high_street"), affinity=0.0)]
 
     lonely = situation({}, {Need.SOCIAL: 0.9}, others=kofi)
     content = situation({}, {Need.SOCIAL: 0.1}, others=kofi)
@@ -425,7 +424,7 @@ def test_curve_is_linear_between_points_and_zero_outside() -> None:
 
 
 INSPIRED = {Need.INSPIRATION: 0.9}
-WALL = MuralSpot("wall_a", Tile(x=19, y=12))
+WALL = MuralSpot("wall_a", MapTile(map="high_street", x=22, y=15))
 
 
 def creating(s: Situation) -> list[Goal]:
@@ -489,8 +488,8 @@ def test_inspiration_barely_registers_until_it_builds() -> None:
 
 
 def test_a_farther_wall_scores_less() -> None:
-    near = MuralSpot("near", Tile(x=31, y=23))
-    far = MuralSpot("far", Tile(x=59, y=12))
+    near = MuralSpot("near", MapTile(map="high_street", x=52, y=15))
+    far = MuralSpot("far", MapTile(map="high_street", x=22, y=15))
 
     def pull(spot: MuralSpot) -> float:
         s = situation(needs=INSPIRED, craft=Medium.MURAL, mural=spot)
@@ -510,37 +509,39 @@ def test_finishing_counts_towards_what_a_stay_promises() -> None:
 
 
 def test_places_are_looked_up_on_the_points_own_map() -> None:
-    cafe = Places(load_maps()["coffee_shop"])
+    cafe = Places(MAPS[CAFE_FLOOR])
 
-    assert PLACES.at(Point(3, 8)) == PLACES.location("house_1")
-    assert PLACES.at(Point(3, 8, "coffee_shop")) == PLACES.location("coffee_shop")
-    assert cafe.at(Point(3, 8, "coffee_shop")) == cafe.location("coffee_shop")
-    assert cafe.at(Point(3, 8)) is None
+    assert PLACES.at(Point(3, 2, "house_1_floor_0")) == PLACES.location("house_1")
+    assert PLACES.at(Point(3, 2, CAFE_FLOOR)) == PLACES.location("coffee_shop")
+    assert cafe.at(Point(3, 2, CAFE_FLOOR)) == cafe.location("coffee_shop")
+    assert cafe.at(Point(3, 2, "house_1_floor_0")) is None
 
 
 def test_residents_at_the_counter_or_behind_it_are_at_the_coffee_shop() -> None:
-    cafe = Places(load_maps()["coffee_shop"])
+    cafe = Places(MAPS[CAFE_FLOOR])
     coffee_shop = cafe.location("coffee_shop")
 
     for spot in ("coffee_shop_queue", "coffee_shop_staff"):
         entry = cafe.location(spot).entry
         assert cafe.at(Point(entry.x, entry.y, coffee_shop.map)) == coffee_shop
-    assert PLACES.at(Point(47, 24)) == PLACES.location("park")
+    assert PLACES.at(Point(47, 15, "lychee_lane")) == PLACES.location("park")
 
 
 @pytest.mark.parametrize(
     "activity", [A.COFFEE_SHOP, A.NOODLE_BAR, A.MAKER_SPACE, A.GALLERY], ids=str
 )
-def test_each_building_is_inside_on_its_own_map_under_its_own_kind(activity: Activity) -> None:
+def test_each_building_is_inside_on_its_own_floors_under_its_own_kind(activity: Activity) -> None:
     [location] = PLACES.by_activity[activity]
+    ground = MAPS[location.map]
 
-    assert location.id == location.map == activity.value
+    assert location.id == ground.building == activity.value
+    assert (ground.kind, ground.floor) == (MapKind.FLOOR, 0)
     assert location.kind is LocationKind(activity.value)
 
 
 def door(id: str) -> tuple[Point, Point]:
     """The door's tiles outside and inside."""
-    found = next(d for d in MAPS[VILLAGE_MAP].doors if d.id == id)
+    found = next(d for d in PLACES.town.doors if d.id == id)
     outside, inside = found.outside, found.inside
     return Point(outside.x, outside.y, outside.map), Point(inside.x, inside.y, inside.map)
 
@@ -565,7 +566,7 @@ def test_trips_inside_are_priced_through_the_door() -> None:
 
 def test_a_trip_inside_is_priced_about_as_long_as_the_walk() -> None:
     movement = Movement(MAPS, EventBus())
-    movement.place("mei", MapTile(map=VILLAGE_MAP, x=31, y=22))
+    movement.place("mei", MapTile(map="high_street", x=51, y=15))
     cafe = PLACES.location("coffee_shop")
 
     walk = movement.walk_to("mei", "coffee_shop")
@@ -577,8 +578,10 @@ def test_a_trip_inside_is_priced_about_as_long_as_the_walk() -> None:
 def test_a_map_without_a_door_is_out_of_reach() -> None:
     shut = Places(replace(with_every_location(MAPS), doors=()))
 
-    assert shut.walk_minutes(SQUARE, Point(5, 6, "coffee_shop")) == math.inf
-    assert shut.walk_minutes(SQUARE, Point(47, 24)) == PLACES.walk_minutes(SQUARE, Point(47, 24))
+    terrace = Point(35, 15, "high_street")
+    assert shut.walk_minutes(SQUARE, Point(12, 2, CAFE_FLOOR)) == math.inf
+    assert shut.walk_minutes(SQUARE, Point(47, 15, "lychee_lane")) == math.inf
+    assert shut.walk_minutes(SQUARE, terrace) == PLACES.walk_minutes(SQUARE, terrace)
 
 
 def test_nobody_starts_making_something_with_an_urgent_need() -> None:
@@ -592,6 +595,6 @@ def test_nobody_starts_making_something_with_an_urgent_need() -> None:
 
 def test_staying_on_where_nothing_is_relieved_is_worth_less_than_coming_fresh() -> None:
     park = Goal(A.PARK, "park")
-    s = situation(position=Point(55, 20))
+    s = situation(position=Point(55, 15, "lychee_lane"))
 
     assert score(park, s, PLACES, staying=True) < score(park, s, PLACES)

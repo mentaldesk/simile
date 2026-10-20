@@ -90,7 +90,7 @@ class Village:
         )
         movement = Movement(load_maps(), bus)
         for npc in npcs:
-            movement.place(npc.id, MapTile(map="coffee_shop", x=13, y=8))
+            movement.place(npc.id, MapTile(map="coffee_shop_floor_0", x=12, y=2))
         behaviour = Behaviour(clock, bus, movement, npcs, self.store)
         behaviour.start()
         self.economy = Economy(clock, behaviour)

@@ -1,12 +1,12 @@
 import io
+from dataclasses import replace
 
 import pytest
 from PIL import Image, ImageStat
 
-from simile.art.iso.camera import TILE_W
-from simile.works.render import PAINTING_M, canvas, draw, painting_canvas
+from simile.works.render import PAINTING_M, canvas, draw, metres, painting_canvas
 from simile.works.svg import BadSvg, checked
-from simile.world.map import load_map
+from simile.world.map import load_maps, with_every_location
 
 from .conftest import WALL, svg
 
@@ -18,13 +18,22 @@ def picture(drawing: str, seed: int = 1, timeout: float = 30, memory: int = 2**3
     return Image.open(io.BytesIO(png))
 
 
-def test_a_mural_is_an_iso_tile_wide_per_tile_and_as_tall_at_that_scale() -> None:
-    assert canvas(WALL) == (3 * TILE_W, 262)
-    for wall in load_map().murals:
+def test_a_mural_is_96_px_a_tile_wide_and_as_tall_at_that_scale() -> None:
+    assert metres(WALL) == pytest.approx((3 * 1.1, 4.4))
+    assert canvas(WALL) == (3 * 96, 384)
+    for wall in with_every_location(load_maps()).murals:
         width, height = canvas(wall)
-        assert width == wall.width * TILE_W
-        metres = (wall.width * 1.1, (wall.top - wall.bottom) * 3.0)
-        assert width / height == pytest.approx(metres[0] / metres[1], rel=0.01)
+        across, up = metres(wall)
+        assert width == wall.width * 96
+        assert width / height == pytest.approx(across / up, rel=0.01)
+
+
+def test_a_mural_goes_no_higher_than_its_buildings_eaves() -> None:
+    walls = {wall.id: wall for wall in with_every_location(load_maps()).murals}
+    house_10 = walls["banyan_row"]
+
+    assert metres(house_10)[1] == pytest.approx(7 * 1.1 - house_10.bottom * 4.4)
+    assert metres(replace(WALL, top=5))[1] == pytest.approx(11 * 1.1 - WALL.bottom * 4.4)
 
 
 def test_paints_the_svg_onto_plaster_at_the_walls_size() -> None:

@@ -2,8 +2,9 @@ from datetime import timedelta
 
 from simile.behaviour import MuralSpot, Places
 from simile.gallery import Gallery, GalleryStore, frames_of, taking_turns
+from simile.gallery.gallery import key
 from simile.protocol import Artist, Frame, Painting, PaintingsMessage
-from simile.schema import Medium, Npc, Tile
+from simile.schema import MapTile, Medium, Npc
 from simile.sim import Clock
 from simile.works import WorksStore
 from simile.world.map import with_every_location
@@ -13,15 +14,20 @@ from .conftest import KOFI, MAPS, NOW, RESIDENTS, painting
 FRAMES = frames_of(MAPS)
 
 
-def test_every_painting_on_the_gallery_map_is_a_frame_nearest_the_door_first() -> None:
+def test_every_painting_in_the_gallery_is_a_frame_from_the_ground_floor_up() -> None:
     assert sorted(frame.id for frame in FRAMES) == sorted(f"painting_{n}" for n in range(1, 14))
-    assert {frame.map for frame in FRAMES} == {"gallery"}
-    [door] = [door.inside for door in MAPS["gallery"].doors]
-    distances = [
-        ((frame.stand[0].x - door.x) ** 2 + (frame.stand[0].y - door.y) ** 2) for frame in FRAMES
-    ]
-    assert distances == sorted(distances)
-    assert FRAMES[0].id in {"painting_10", "painting_11"}
+    floors = [frame.map for frame in FRAMES]
+    assert floors == sorted(floors, key=lambda floor: MAPS[floor].floor or 0)
+    assert set(floors) == {"gallery_floor_0", "gallery_floor_1", "gallery_floor_2"}
+    for floor in set(floors):
+        ways_in = [door.inside for door in MAPS[floor].doors if door.inside.map == floor]
+        distances = [
+            min(abs(frame.stand[0].x - way.x) for way in ways_in)
+            for frame in FRAMES
+            if frame.map == floor
+        ]
+        assert distances == sorted(distances)
+    assert FRAMES[0].id == "painting_1"
 
 
 def test_the_message_has_every_frame_and_what_hangs_in_it(
@@ -35,13 +41,13 @@ def test_the_message_has_every_frame_and_what_hangs_in_it(
     hung = gallery.hang(painting("kofi-1"), "<svg/>", b"png")
 
     first = FRAMES[0]
-    assert hung == ("gallery", first.id)
+    assert hung == ("gallery_floor_0", first.id)
     [message] = sent
     assert message == gallery.message()
     assert len(message.frames) == 13
     assert message.frames[0] == Frame(
         id=first.id,
-        map="gallery",
+        map="gallery_floor_0",
         painting=Painting(
             work_id="kofi-1",
             title="Painting kofi-1",
@@ -51,7 +57,7 @@ def test_the_message_has_every_frame_and_what_hangs_in_it(
         ),
     )
     assert all(frame.painting is None for frame in message.frames[1:])
-    assert gallery.showing() == {("gallery", first.id): works.get("kofi-1")}
+    assert gallery.showing() == {("gallery_floor_0", first.id): works.get("kofi-1")}
 
 
 def test_a_new_painting_replaces_the_one_hung_longest_ago(
@@ -65,7 +71,7 @@ def test_a_new_painting_replaces_the_one_hung_longest_ago(
         clock.now = clock.now.replace(hour=clock.now.hour + 1)
 
     showing = {frame: work.id for frame, work in gallery.showing().items()}
-    assert showing == {("gallery", FRAMES[0].id): "p2", ("gallery", FRAMES[1].id): "p1"}
+    assert showing == {key(FRAMES[0]): "p2", key(FRAMES[1]): "p1"}
 
 
 def test_a_painting_hung_earlier_is_the_first_replaced(
@@ -80,11 +86,11 @@ def test_a_painting_hung_earlier_is_the_first_replaced(
     gallery.hang(painting("p2"), "<svg/>", b"")
 
     showing = {frame: work.id for frame, work in gallery.showing().items()}
-    assert showing == {("gallery", FRAMES[0].id): "p0", ("gallery", FRAMES[1].id): "p2"}
+    assert showing == {key(FRAMES[0]): "p0", key(FRAMES[1]): "p2"}
 
 
 PLACES = Places(with_every_location(MAPS))
-WALL = MuralSpot("tower", Tile(x=1, y=2))
+WALL = MuralSpot("tower", MapTile(map="lychee_lane", x=63, y=15))
 
 
 def turns(works: WorksStore, wall: MuralSpot | None = WALL) -> MuralSpot | None:
@@ -95,7 +101,8 @@ def turns(works: WorksStore, wall: MuralSpot | None = WALL) -> MuralSpot | None:
 
 
 def at_home(npc: Npc) -> MuralSpot:
-    return MuralSpot(npc.home, PLACES.location(npc.home).entry)
+    home = PLACES.location(npc.home)
+    return MuralSpot(npc.home, MapTile(map=home.map, x=home.entry.x, y=home.entry.y))
 
 
 def test_a_muralist_paints_for_the_gallery_at_home_after_two_murals_in_a_row(
@@ -112,14 +119,16 @@ def test_a_muralist_paints_for_the_gallery_at_home_after_two_murals_in_a_row(
 
 def test_a_muralist_with_no_wall_worth_painting_paints_for_the_gallery(works: WorksStore) -> None:
     assert turns(works, wall=None) == at_home(KOFI)
-    assert at_home(KOFI).wall == KOFI.home == "house_6"
+    assert at_home(KOFI) == MuralSpot("house_6", MapTile(map="house_6_floor_0", x=3, y=2))
 
 
-def test_a_muralist_whose_home_is_off_the_village_keeps_to_walls(works: WorksStore) -> None:
-    upstairs = KOFI.model_copy(update={"home": "coffee_shop"})
-    works.add(painting("m1", medium=Medium.MURAL, wall="tower"))
+def test_a_muralist_who_lives_at_the_cafe_paints_for_the_gallery_there(
+    works: WorksStore,
+) -> None:
+    barista = KOFI.model_copy(update={"home": "coffee_shop"})
 
     def pick(npc: Npc) -> MuralSpot | None:
-        return WALL
+        return None
 
-    assert taking_turns(pick, works, PLACES)(upstairs) == WALL
+    assert taking_turns(pick, works, PLACES)(barista) == at_home(barista)
+    assert at_home(barista).tile.map == "coffee_shop_floor_0"

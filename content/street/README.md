@@ -1,8 +1,8 @@
 # Street
 
 The side-view village (#306): a Tiled map per street, and one per floor of every building with a
-way in. They're built by `server/simile/street/` and replace W1's `content/map/` at the cut-over
-(#314). Until then nothing loads them by default: `load_maps(STREET_DIR)` reads them.
+way in. They're built by `server/simile/street/` and, since the cut-over (#314), are the maps the
+game runs on: `load_maps()` reads them.
 
 Don't edit them by hand or save them from Tiled: change the builder and run
 
@@ -184,8 +184,9 @@ join the rule later.
 
 `simile.world.map` reads them alongside today's maps.
 
-- `STREET_DIR` is this folder. `load_maps(STREET_DIR)` returns every street (by file name) and
-  then every floor, by map id. `load_maps()` still reads `content/map/`, exactly as before.
+- `STREET_DIR` is this folder, and `MAP_DIR`. `load_maps()` returns every street (by file name)
+  and then every floor, by map id. `load_maps(ISO_DIR)` still reads today's `content/map/` until
+  #315.
 - `TownMap` has, after its old fields, `side_view`, `kind` (`MapKind.STREET` or `FLOOR`, `None` on
   today's maps), `building` and `floor` (on floors), and `climbable`, rows of `DoorKind` or `None`
   (empty on today's maps). `climb(x, y)` is the climbable kind on a cell and `standing(x, y)`

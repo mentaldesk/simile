@@ -15,9 +15,9 @@ from simile.voicing import DEFAULT_CONFIG
 from simile.voicing.distance import apart, between
 from simile.voicing.voicing import Voicing
 from simile.world import Movement, Point
-from simile.world.map import STREET_DIR, load_maps
+from simile.world.map import ISO_DIR, load_maps
 
-STREETS = load_maps(STREET_DIR)
+STREETS = load_maps()
 NOW = datetime(2026, 1, 1, 10, tzinfo=UTC)
 VOICE = Voice(
     description="Warm.", reference_line="Hello.", reference_clip="content/voices/kofi.wav"
@@ -50,7 +50,7 @@ def test_nobody_on_another_floor_or_map_is_in_reach(here: Point, there: Point) -
 
 
 def test_measures_as_movement_does_on_todays_maps() -> None:
-    movement = Movement(load_maps(), EventBus())
+    movement = Movement(load_maps(ISO_DIR), EventBus())
     movement.place("mei", MapTile(map="village", x=20, y=13))
     movement.place("viktor", MapTile(map="village", x=23, y=17))
     movement.track(PLAYER_ID, Point(17, 12, "coffee_shop"))

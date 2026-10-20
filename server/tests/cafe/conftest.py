@@ -20,9 +20,10 @@ MAPS = load_maps()
 DAY = datetime(2026, 1, 1, tzinfo=UTC)
 MORNING = DAY.replace(hour=8)
 TEMPLATE = load_npcs()[0]
-TILL = MapTile(map="coffee_shop", x=5, y=4)
-STAND = Point(5, 6, "coffee_shop")
-UPSTAIRS = Point(1, 3, "coffee_shop")
+GROUND = "coffee_shop_floor_0"
+TILL = MapTile(map=GROUND, x=3, y=2)
+STAND = Point(6, 2, GROUND)
+UPSTAIRS = Point(15, 2, GROUND)
 
 
 def make_npc(id: str, home: str, **values: float) -> Npc:

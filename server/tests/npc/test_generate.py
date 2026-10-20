@@ -9,7 +9,7 @@ from simile.llm import FakeProvider, LLMClient, Model, StructuredOutputError
 from simile.npc.generate import CRAFT, HOMES, SYSTEM, Draft, generate, npc_id, plan, prompt
 from simile.npc.values import ranked
 from simile.schema import Craft, LocationKind, Medium, Npc
-from simile.world.map import load_map
+from simile.world.map import load_maps, with_every_location
 
 MakeDraft = Callable[..., Draft]
 
@@ -33,7 +33,8 @@ def test_plan_gives_each_resident_a_home() -> None:
 
 
 def test_homes_are_the_houses_on_the_map() -> None:
-    houses = {loc.id for loc in load_map().locations if loc.kind is LocationKind.HOUSE}
+    town = with_every_location(load_maps())
+    houses = {loc.id for loc in town.locations if loc.kind is LocationKind.HOUSE}
 
     assert set(HOMES) == houses
 

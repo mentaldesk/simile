@@ -6,11 +6,11 @@ from simile.cafe.events import Ordered, Served
 from simile.schema import MapTile, Npc, Pay, PayKind, Shift, Weekday
 from simile.world import Point
 
-from .conftest import ANA, BEA, DAY, Village, keen
+from .conftest import ANA, BEA, DAY, GROUND, Village, keen
 
 pytestmark = pytest.mark.anyio
 
-TILL = Point(5, 4, "coffee_shop")
+TILL = Point(3, 2, GROUND)
 CAFE = Goal(Activity.COFFEE_SHOP, "coffee_shop")
 COFFEE = keen(Activity.COFFEE_SHOP)
 
@@ -52,7 +52,7 @@ async def test_a_skipped_shift_keeps_the_cafe_shut_and_its_customers_sit_down() 
 
     await village.run(minutes=15)
 
-    assert village.behaviour.goal("ana") == CAFE and village.at("ana").map == "coffee_shop"
+    assert village.behaviour.goal("ana") == CAFE and village.at("ana").map in village.cafe.maps
     assert not village.cafe.on_shift
     assert village.cafe.queue == [] and village.of(Ordered) == []
     assert village.cafe.supply(CAFE, Need.HUNGER) == 0.0
@@ -95,5 +95,5 @@ async def test_a_customer_let_go_mid_order_takes_their_order_with_them() -> None
 
     assert cafe.job is None and "ana" not in cafe.visits
     held = village.behaviour.minds["bea"].held
-    assert held is not None and held[0] == MapTile(map="coffee_shop", x=5, y=4)
+    assert held is not None and held[0] == MapTile(map=GROUND, x=3, y=2)
     assert village.of(Served) == []

@@ -40,7 +40,7 @@ def hunger_term(town: Town, goal: Goal) -> float:
     def at(level: float) -> float:
         values = {value: 0.5 for value in CoreValue}
         needs = {need: 0.0 for need in Need} | {Need.HUNGER: level}
-        here = Point(31, 22)
+        here = Point(51, 15, "high_street")
         situation = Situation(
             values, needs, 12.0, here, "house_1", 22.5, supply=town.economy.supply
         )

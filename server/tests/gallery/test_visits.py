@@ -19,7 +19,7 @@ from .conftest import KOFI, MAPS, NOW, RESIDENTS, painting
 FRAMES = frames_of(MAPS)
 REACTION = Reaction(take="Loud, but it stays with you.", valence=0.4, intensity=0.6)
 TOBIAS, ODALYS = RESIDENTS["tobias"], RESIDENTS["odalys"]
-ENTRY = MapTile(map="gallery", x=16, y=12)
+ENTRY = MapTile(map="gallery_floor_0", x=3, y=2)
 
 
 class Visit:
@@ -177,13 +177,14 @@ def test_the_player_remembers_each_painting_they_stand_at_once(
 ) -> None:
     visit = Visit(works, store, memory, None, [])
     visit.hang(("kofi-1", "kofi"))
-    stand = FRAMES[0].stand[1]
+    frame = FRAMES[0]
+    stand = frame.stand[1]
 
-    visit.movement.track(PLAYER_ID, Point(stand.x + 0.3, stand.y - 0.2, "gallery"))
+    visit.movement.track(PLAYER_ID, Point(stand.x + 0.3, stand.y - 0.2, frame.map))
     asyncio.run(visit.run(minutes=1))
-    visit.movement.track(PLAYER_ID, Point(16, 15, "gallery"))
+    visit.movement.track(PLAYER_ID, Point(13, 2, frame.map))
     asyncio.run(visit.run(minutes=1))
-    visit.movement.track(PLAYER_ID, Point(stand.x, stand.y, "gallery"))
+    visit.movement.track(PLAYER_ID, Point(stand.x, stand.y, frame.map))
     asyncio.run(visit.run(minutes=1))
 
     [seen] = looked_at(memory, PLAYER_ID)

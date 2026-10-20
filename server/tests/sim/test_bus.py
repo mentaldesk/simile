@@ -12,7 +12,7 @@ CONVERSATION = Conversation(
     id="c1", participants=["ada", "bo"], started=NOW, ended=NOW, lines=[LINE]
 )
 
-MOVED = EntityMoved("ada", 1.0, 2.0)
+MOVED = EntityMoved("ada", 1.0, 2.0, "high_street")
 SPOKEN = LineSpoken(LINE)
 
 

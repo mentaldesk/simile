@@ -10,13 +10,13 @@ from simile.memory import MemoryStore
 from simile.schema import MapTile
 from simile.sim import Clock, Event, FakeWallClock, World
 from simile.world import Movement, Point
-from simile.world.map import STREET_DIR, load_maps
+from simile.world.map import load_maps
 
 from .test_engine import ANA, BEN, CHAT, START, friends
 
 pytestmark = pytest.mark.anyio
 
-STREETS = load_maps(STREET_DIR)
+STREETS = load_maps()
 
 
 def test_in_side_view_people_face_left_or_right_or_else_the_camera() -> None:

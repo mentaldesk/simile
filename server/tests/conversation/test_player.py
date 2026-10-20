@@ -34,7 +34,6 @@ from simile.npc import load_npcs
 from simile.reflection import Deed, Extraction, Reflection, Reflector
 from simile.schema import (
     PLAYER_ID,
-    VILLAGE_MAP,
     Aspect,
     CoreValue,
     InteractionEvent,
@@ -59,14 +58,14 @@ from simile.sim import (
 from simile.social import describe, meet
 from simile.voice import SpeakingRate
 from simile.world import Movement, Point
-from simile.world.map import STREET_DIR, TownMap, load_maps
+from simile.world.map import ISO_DIR, TownMap, load_maps
 
 from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
 MAPS = load_maps()
-STREETS = load_maps(STREET_DIR)
+TODAY = load_maps(ISO_DIR)
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 
@@ -680,7 +679,7 @@ async def test_a_player_on_another_map_has_walked_away() -> None:
     village.players.say("Hello!", "ana")
     await village.run(1)
     here = village.movement.position(PLAYER_ID)
-    village.movement.track(PLAYER_ID, Point(here.x, here.y, VILLAGE_MAP))
+    village.movement.track(PLAYER_ID, Point(here.x, here.y, "coffee_shop_floor_1"))
     await village.run(0.2)
 
     [ended] = village.ended
@@ -1023,8 +1022,8 @@ async def test_a_sociable_npc_nearby_greets_the_player_and_an_unsociable_one_doe
 async def test_the_player_and_residents_talk_only_on_the_same_map() -> None:
     village = Village(["Hello! New in town? [values: connection]"], npcs=(ANA,))
     here = village.movement.position("ana")
-    assert here.map == "coffee_shop"
-    village.movement.track(PLAYER_ID, Point(here.x + 1, here.y, VILLAGE_MAP))
+    assert here.map == "coffee_shop_floor_0"
+    village.movement.track(PLAYER_ID, Point(here.x + 1, here.y, "coffee_shop_floor_1"))
 
     assert village.players.say("Hello?", "ana") is None
     await village.run(DEFAULT_PLAYER_CONFIG.look_every * 3)
@@ -1437,7 +1436,7 @@ LOOKOUT = (47, 12)
 
 def on_the_lookout(replies: Sequence[str] = ("Hello down there! [values: connection]",)) -> Village:
     """Ana up the lookout on the side-view maps, and the player down on the lane."""
-    village = Village(replies, npcs=(ANA,), maps=STREETS)
+    village = Village(replies, npcs=(ANA,))
     village.movement.place("ana", MapTile(map=LANE, x=LOOKOUT[0], y=LOOKOUT[1]))
     return village
 
@@ -1486,7 +1485,7 @@ async def test_on_a_side_view_map_a_resident_greets_the_player_from_near_along_t
 
 
 async def test_on_a_side_view_map_nobody_on_another_floor_or_inside_is_in_range() -> None:
-    village = Village(npcs=(ANA,), maps=STREETS)
+    village = Village(npcs=(ANA,))
     village.movement.place("ana", MapTile(map="coffee_shop_floor_0", x=5, y=2))
 
     for map, x, y in (("coffee_shop_floor_1", 5, 2), ("high_street", 30, 15)):
@@ -1523,7 +1522,7 @@ async def test_on_a_side_view_map_a_resident_turns_left_or_right_to_the_player(
 
 
 async def test_on_todays_maps_a_resident_still_turns_up_or_down_to_the_player() -> None:
-    village = Village(npcs=(ANA,))
+    village = Village(npcs=(ANA,), maps=TODAY)
     here = village.movement.position("ana")
     village.movement.track(PLAYER_ID, Point(here.x + 0.5, here.y - 2, here.map))
 

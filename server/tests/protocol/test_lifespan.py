@@ -39,20 +39,22 @@ LINE = CONVERSATION.lines[-1]
 
 CASES = [
     pytest.param(
-        EntityMoved("mei", 4.5, 6),
-        EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
+        EntityMoved("mei", 4.5, 15, "high_street"),
+        EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=15, map="high_street")),
         id="entity_moved",
     ),
     pytest.param(
-        EntityMoved("mei", 10, 13, "coffee_shop"),
-        EntityMovedMessage(entity_id="mei", position=Position(x=10, y=13, map="coffee_shop")),
+        EntityMoved("mei", 10, 2, "coffee_shop_floor_0"),
+        EntityMovedMessage(
+            entity_id="mei", position=Position(x=10, y=2, map="coffee_shop_floor_0")
+        ),
         id="entity_moved_inside",
     ),
     pytest.param(
-        EntityMoved("mei", 11, 3, "coffee_shop", Pose.SITTING, Facing.EAST),
+        EntityMoved("mei", 11, 2, "coffee_shop_floor_1", Pose.SITTING, Facing.EAST),
         EntityMovedMessage(
             entity_id="mei",
-            position=Position(x=11, y=3, map="coffee_shop"),
+            position=Position(x=11, y=2, map="coffee_shop_floor_1"),
             pose=Pose.SITTING,
             facing=Facing.EAST,
         ),
@@ -155,12 +157,12 @@ def test_clients_receive_events_published_on_the_bus() -> None:
         assert ws.receive_json()["type"] == "paintings"
         assert ws.receive_json()["type"] == "murals"
 
-        client.portal.call(world_of(app).bus.publish, EntityMoved("suki", 18, 7.5))
+        client.portal.call(world_of(app).bus.publish, EntityMoved("suki", 18, 15, "high_street"))
 
         assert ws.receive_json() == {
             "type": "entity_moved",
             "entity_id": "suki",
-            "position": {"x": 18, "y": 7.5, "map": "village"},
+            "position": {"x": 18, "y": 15, "map": "high_street"},
             "pose": "standing",
             "facing": "south_east",
         }

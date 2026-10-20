@@ -10,7 +10,7 @@ from simile.world.map import load_maps
 MAPS = load_maps()
 MORNING = datetime(2026, 1, 1, 8, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
-SPOT = MapTile(map="coffee_shop", x=5, y=4)
+SPOT = MapTile(map="coffee_shop_floor_0", x=3, y=2)
 WORK = Goal(Activity.COFFEE_SHOP, "coffee_shop")
 
 
@@ -92,7 +92,7 @@ def test_a_held_resident_goes_back_to_the_spot_after_a_talk() -> None:
 
     village.behaviour.pause("ana", "ben")
     assert village.behaviour.goal("ana") == Goal(Activity.TALK, "ben")
-    village.movement.place("ana", MapTile(map="coffee_shop", x=12, y=9))
+    village.movement.place("ana", MapTile(map="coffee_shop_floor_0", x=12, y=2))
     village.behaviour.resume("ana")
     village.run(minutes=1)
 

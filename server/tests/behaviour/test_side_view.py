@@ -114,8 +114,9 @@ class Village:
         return location.id if location else None
 
     def stops(self, npc: str) -> list[EntityMoved]:
-        """Where they stood still, rather than mid-walk."""
-        return [m for m in self.moves if m.entity == npc and m.pose is not Pose.WALKING]
+        """Where they stood still, rather than mid-walk or mid-climb."""
+        moving = (Pose.WALKING, Pose.CLIMBING, Pose.RIDING)
+        return [m for m in self.moves if m.entity == npc and m.pose not in moving]
 
 
 def standing(move: EntityMoved) -> bool:
@@ -262,14 +263,14 @@ def test_a_wander_from_upstairs_starts_outside_the_front_door() -> None:
 
 def test_the_exercise_walks_are_on_the_streets_and_climb_to_the_lookout() -> None:
     walks = loops(PLACES)
-    config = keen(A.EXERCISE, loops_on={"lychee_lane": STEADY.loops_on["lychee_lane"]})
+    config = keen(A.EXERCISE, loops={"lychee_lane": STEADY.loops["lychee_lane"]})
     village = Village([ANA], config=config)
     village.behaviour.minds["ana"].needs[Need.EXERCISE] = 0.8
 
     village.run(minutes=20)
 
     passed = {(m.map, round(m.x), round(m.y)) for m in village.moves if m.entity == "ana"}
-    assert set(walks) == set(DEFAULT_CONFIG.loops)
+    assert set(walks) == {name for named in DEFAULT_CONFIG.loops.values() for name in named}
     assert all(STREETS[p.map].standing(round(p.x), round(p.y)) for w in walks.values() for p in w)
     assert village.behaviour.goal("ana") == Goal(A.EXERCISE, "lotus_lake")
     assert {(p.map, round(p.x), round(p.y)) for p in walks["lotus_lake"]} <= passed

@@ -1,58 +1,100 @@
 map,y,first_x,last_x,new_map,new_x,new_y,by
-village,0,0,23,high_street,67,15,near door noodle_bar
+village,0,0,6,lychee_lane,7,15,near location house_1
+village,0,7,12,lychee_lane,10,15,near location house_2
+village,0,13,23,high_street,67,15,near door noodle_bar
 village,0,24,32,high_street,43,15,near door coffee_shop
 village,0,33,37,high_street,35,15,near location cafe_terrace
-village,0,38,63,high_street,16,15,near door maker_space
-village,1,0,23,high_street,67,15,near door noodle_bar
+village,0,38,43,high_street,16,15,near door maker_space
+village,0,44,49,lychee_lane,24,15,near location house_3
+village,0,50,63,lychee_lane,27,15,near location house_4
+village,1,0,6,lychee_lane,7,15,near location house_1
+village,1,7,12,lychee_lane,10,15,near location house_2
+village,1,13,23,high_street,67,15,near door noodle_bar
 village,1,24,32,high_street,43,15,near door coffee_shop
 village,1,33,37,high_street,35,15,near location cafe_terrace
-village,1,38,63,high_street,16,15,near door maker_space
-village,2,0,23,high_street,67,15,near door noodle_bar
+village,1,38,43,high_street,16,15,near door maker_space
+village,1,44,49,lychee_lane,24,15,near location house_3
+village,1,50,63,lychee_lane,27,15,near location house_4
+village,2,0,6,lychee_lane,7,15,near location house_1
+village,2,7,12,lychee_lane,10,15,near location house_2
+village,2,13,23,high_street,67,15,near door noodle_bar
 village,2,24,32,high_street,43,15,near door coffee_shop
 village,2,33,37,high_street,35,15,near location cafe_terrace
-village,2,38,63,high_street,16,15,near door maker_space
-village,3,0,23,high_street,67,15,near door noodle_bar
+village,2,38,43,high_street,16,15,near door maker_space
+village,2,44,49,lychee_lane,24,15,near location house_3
+village,2,50,63,lychee_lane,27,15,near location house_4
+village,3,0,6,lychee_lane,7,15,near location house_1
+village,3,7,12,lychee_lane,10,15,near location house_2
+village,3,13,23,high_street,67,15,near door noodle_bar
 village,3,25,32,high_street,43,15,near door coffee_shop
 village,3,33,37,high_street,35,15,near location cafe_terrace
-village,3,38,63,high_street,16,15,near door maker_space
-village,4,0,23,high_street,67,15,near door noodle_bar
+village,3,38,43,high_street,16,15,near door maker_space
+village,3,44,49,lychee_lane,24,15,near location house_3
+village,3,50,63,lychee_lane,27,15,near location house_4
+village,4,0,6,lychee_lane,7,15,near location house_1
+village,4,7,12,lychee_lane,10,15,near location house_2
+village,4,13,23,high_street,67,15,near door noodle_bar
 village,4,24,30,high_street,43,15,near door coffee_shop
 village,4,34,37,high_street,35,15,near location cafe_terrace
-village,4,40,63,high_street,16,15,near door maker_space
-village,5,0,23,high_street,67,15,near door noodle_bar
+village,4,40,43,high_street,16,15,near door maker_space
+village,4,44,47,lychee_lane,24,15,near location house_3
+village,4,50,63,lychee_lane,27,15,near location house_4
+village,5,0,6,lychee_lane,7,15,near location house_1
+village,5,7,12,lychee_lane,10,15,near location house_2
+village,5,13,23,high_street,67,15,near door noodle_bar
 village,5,24,32,high_street,43,15,near door coffee_shop
 village,5,33,36,high_street,35,15,near location cafe_terrace
-village,5,43,63,high_street,16,15,near door maker_space
-village,6,0,23,high_street,67,15,near door noodle_bar
+village,5,43,43,high_street,16,15,near door maker_space
+village,5,44,49,lychee_lane,24,15,near location house_3
+village,5,50,63,lychee_lane,27,15,near location house_4
+village,6,0,6,lychee_lane,7,15,near location house_1
+village,6,12,12,lychee_lane,10,15,near location house_2
+village,6,22,23,high_street,67,15,near door noodle_bar
 village,6,24,27,high_street,43,15,near door coffee_shop
 village,6,36,36,high_street,35,15,near location cafe_terrace
-village,6,43,63,high_street,16,15,near door maker_space
-village,7,0,23,high_street,67,15,near door noodle_bar
+village,6,43,43,high_street,16,15,near door maker_space
+village,6,44,44,lychee_lane,24,15,near location house_3
+village,6,50,63,lychee_lane,27,15,near location house_4
+village,7,0,6,lychee_lane,7,15,near location house_1
+village,7,12,12,lychee_lane,10,15,near location house_2
+village,7,22,23,high_street,67,15,near door noodle_bar
 village,7,24,27,high_street,43,15,near door coffee_shop
 village,7,36,36,high_street,35,15,near location cafe_terrace
-village,7,43,56,high_street,16,15,near door maker_space
+village,7,43,43,high_street,16,15,near door maker_space
+village,7,44,44,lychee_lane,24,15,near location house_3
+village,7,50,56,lychee_lane,27,15,near location house_4
 village,7,63,63,lychee_lane,63,15,spot viewing-63-7
-village,8,0,12,high_street,67,15,near door noodle_bar
+village,8,0,6,lychee_lane,7,15,near location house_1
+village,8,12,12,lychee_lane,10,15,near location house_2
 village,8,22,22,high_street,22,15,spot viewing-22-8
 village,8,23,23,high_street,67,15,near door noodle_bar
 village,8,24,27,high_street,43,15,near door coffee_shop
 village,8,36,36,high_street,35,15,near location cafe_terrace
-village,8,43,63,high_street,16,15,near door maker_space
-village,9,0,23,high_street,67,15,near door noodle_bar
+village,8,43,43,high_street,16,15,near door maker_space
+village,8,44,44,lychee_lane,24,15,near location house_3
+village,8,50,63,lychee_lane,27,15,near location house_4
+village,9,0,6,lychee_lane,7,15,near location house_1
+village,9,12,12,lychee_lane,10,15,near location house_2
+village,9,22,23,high_street,67,15,near door noodle_bar
 village,9,24,27,high_street,43,15,near door coffee_shop
 village,9,36,36,high_street,35,15,near location cafe_terrace
-village,9,43,56,high_street,16,15,near door maker_space
-village,9,63,63,lychee_lane,37,15,near location park
-village,10,0,23,high_street,67,15,near door noodle_bar
+village,9,43,43,high_street,16,15,near door maker_space
+village,9,44,44,lychee_lane,24,15,near location house_3
+village,9,50,63,lychee_lane,27,15,near location house_4
+village,10,0,6,lychee_lane,7,15,near location house_1
+village,10,12,12,lychee_lane,10,15,near location house_2
+village,10,23,23,high_street,67,15,near door noodle_bar
 village,10,24,27,high_street,43,15,near door coffee_shop
 village,10,36,36,high_street,35,15,near location cafe_terrace
-village,10,43,56,high_street,16,15,near door maker_space
-village,10,63,63,lychee_lane,37,15,near location park
-village,11,0,0,high_street,67,15,near door noodle_bar
+village,10,43,43,high_street,16,15,near door maker_space
+village,10,44,44,lychee_lane,24,15,near location house_3
+village,10,50,63,lychee_lane,27,15,near location house_4
+village,11,0,0,lychee_lane,7,15,near location house_1
 village,11,2,5,house_1_floor_0,3,2,location house_1
-village,11,6,6,high_street,67,15,near door noodle_bar
+village,11,6,6,lychee_lane,7,15,near location house_1
 village,11,7,10,house_2_floor_0,3,2,location house_2
-village,11,12,15,high_street,67,15,near door noodle_bar
+village,11,12,12,lychee_lane,10,15,near location house_2
+village,11,15,15,high_street,67,15,near door noodle_bar
 village,11,16,16,high_street,67,15,door noodle_bar
 village,11,17,23,high_street,67,15,near door noodle_bar
 village,11,24,27,high_street,43,15,near door coffee_shop
@@ -62,43 +104,58 @@ village,11,32,34,high_street,35,15,location cafe_terrace
 village,11,36,36,high_street,35,15,near location cafe_terrace
 village,11,38,40,high_street,16,15,near door maker_space
 village,11,41,41,high_street,16,15,door maker_space
-village,11,42,44,high_street,16,15,near door maker_space
+village,11,42,43,high_street,16,15,near door maker_space
+village,11,44,44,lychee_lane,24,15,near location house_3
 village,11,45,48,house_3_floor_0,3,2,location house_3
-village,11,50,50,high_street,16,15,near door maker_space
+village,11,50,50,lychee_lane,27,15,near location house_4
 village,11,51,55,house_4_floor_0,3,2,location house_4
-village,11,56,58,high_street,16,15,near door maker_space
-village,11,59,63,lychee_lane,37,15,near location park
-village,12,0,23,high_street,67,15,near door noodle_bar
+village,11,56,63,lychee_lane,27,15,near location house_4
+village,12,0,6,lychee_lane,7,15,near location house_1
+village,12,7,12,lychee_lane,10,15,near location house_2
+village,12,13,23,high_street,67,15,near door noodle_bar
 village,12,24,27,high_street,43,15,near door coffee_shop
 village,12,28,35,high_street,35,15,location cafe_terrace
 village,12,36,37,high_street,35,15,near location cafe_terrace
-village,12,38,55,high_street,16,15,near door maker_space
-village,12,56,63,lychee_lane,37,15,near location park
-village,13,0,19,high_street,67,15,near door noodle_bar
+village,12,38,43,high_street,16,15,near door maker_space
+village,12,44,49,lychee_lane,24,15,near location house_3
+village,12,50,63,lychee_lane,27,15,near location house_4
+village,13,0,6,lychee_lane,7,15,near location house_1
+village,13,7,12,lychee_lane,10,15,near location house_2
+village,13,13,19,high_street,67,15,near door noodle_bar
 village,13,20,35,high_street,51,15,location square
 village,13,36,36,high_street,60,15,location terminal_1
 village,13,37,43,high_street,51,15,location square
-village,13,44,45,high_street,16,15,near door maker_space
+village,13,44,45,lychee_lane,24,15,near location house_3
 village,13,46,63,lychee_lane,37,15,location park
-village,14,0,19,high_street,67,15,near door noodle_bar
+village,14,0,6,lychee_lane,7,15,near location house_1
+village,14,12,12,lychee_lane,10,15,near location house_2
+village,14,17,19,high_street,67,15,near door noodle_bar
 village,14,20,43,high_street,51,15,location square
-village,14,44,45,high_street,16,15,near door maker_space
+village,14,44,45,lychee_lane,24,15,near location house_3
 village,14,46,63,lychee_lane,37,15,location park
-village,15,0,19,high_street,67,15,near door noodle_bar
+village,15,0,0,lychee_lane,7,15,near location house_1
+village,15,6,6,kapok_walk,14,15,near location house_5
+village,15,12,12,lychee_lane,10,15,near location house_2
+village,15,17,19,high_street,67,15,near door noodle_bar
 village,15,20,35,high_street,51,15,location square
 village,15,36,36,high_street,60,15,spot terminal-36-15
 village,15,37,43,high_street,51,15,location square
-village,15,44,45,high_street,16,15,near door maker_space
+village,15,44,45,lychee_lane,24,15,near location house_3
 village,15,46,63,lychee_lane,37,15,location park
-village,16,0,19,high_street,67,15,near door noodle_bar
+village,16,0,6,kapok_walk,14,15,near location house_5
+village,16,12,18,kapok_walk,28,15,near location house_7
+village,16,19,19,high_street,67,15,near door noodle_bar
 village,16,20,43,high_street,51,15,location square
-village,16,44,45,high_street,16,15,near door maker_space
+village,16,44,45,lychee_lane,24,15,near location house_3
 village,16,46,63,lychee_lane,37,15,location park
-village,17,0,19,high_street,67,15,near door noodle_bar
+village,17,0,6,kapok_walk,14,15,near location house_5
+village,17,12,19,kapok_walk,28,15,near location house_7
 village,17,20,43,high_street,51,15,location square
-village,17,44,45,lychee_lane,34,15,near location terminal_2
+village,17,44,44,lychee_lane,34,15,near location terminal_2
+village,17,45,45,lychee_lane,24,15,near location house_3
 village,17,46,63,lychee_lane,37,15,location park
-village,18,0,19,high_street,67,15,near door noodle_bar
+village,18,0,6,kapok_walk,14,15,near location house_5
+village,18,12,19,kapok_walk,28,15,near location house_7
 village,18,20,29,high_street,51,15,location square
 village,18,31,31,high_street,55,15,spot standing-31-18
 village,18,32,43,high_street,51,15,location square
@@ -107,13 +164,13 @@ village,18,46,58,lychee_lane,37,15,location park
 village,18,59,59,lychee_lane,53,15,spot seat-59-18
 village,18,60,60,lychee_lane,54,15,spot seat-60-18
 village,18,61,63,lychee_lane,37,15,location park
-village,19,0,0,high_street,67,15,near door noodle_bar
+village,19,0,0,kapok_walk,14,15,near location house_5
 village,19,1,5,house_5_floor_0,3,2,location house_5
-village,19,6,6,high_street,67,15,near door noodle_bar
+village,19,6,6,kapok_walk,14,15,near location house_5
 village,19,7,11,house_6_floor_0,3,2,location house_6
-village,19,12,12,high_street,67,15,near door noodle_bar
+village,19,12,12,kapok_walk,28,15,near location house_7
 village,19,13,16,house_7_floor_0,3,2,location house_7
-village,19,17,19,high_street,67,15,near door noodle_bar
+village,19,17,19,kapok_walk,28,15,near location house_7
 village,19,21,26,high_street,51,15,location square
 village,19,27,27,high_street,48,15,spot seat-27-19
 village,19,28,28,high_street,49,15,spot seat-28-19
@@ -124,7 +181,9 @@ village,19,35,35,high_street,59,15,spot seat-35-19
 village,19,36,42,high_street,51,15,location square
 village,19,44,45,lychee_lane,34,15,near location terminal_2
 village,19,46,54,lychee_lane,37,15,location park
-village,20,0,19,high_street,67,15,near door noodle_bar
+village,20,0,6,kapok_walk,14,15,near location house_5
+village,20,7,11,kapok_walk,17,15,near location house_6
+village,20,12,19,kapok_walk,28,15,near location house_7
 village,20,20,24,high_street,51,15,location square
 village,20,26,26,high_street,47,15,spot standing-26-20
 village,20,27,29,high_street,51,15,location square
@@ -134,7 +193,9 @@ village,20,37,37,high_street,63,15,spot standing-37-20
 village,20,39,43,high_street,51,15,location square
 village,20,44,45,lychee_lane,34,15,near location terminal_2
 village,20,46,54,lychee_lane,37,15,location park
-village,21,0,19,high_street,67,15,near door noodle_bar
+village,21,0,6,kapok_walk,14,15,near location house_5
+village,21,7,11,kapok_walk,17,15,near location house_6
+village,21,12,19,kapok_walk,28,15,near location house_7
 village,21,20,26,high_street,51,15,location square
 village,21,27,27,high_street,52,15,spot seat-27-21
 village,21,28,28,high_street,53,15,spot seat-28-21
@@ -146,35 +207,43 @@ village,21,36,43,high_street,51,15,location square
 village,21,44,44,lychee_lane,34,15,location terminal_2
 village,21,45,45,lychee_lane,34,15,near location terminal_2
 village,21,46,52,lychee_lane,37,15,location park
-village,22,0,19,high_street,67,15,near door noodle_bar
+village,22,0,6,kapok_walk,14,15,near location house_5
+village,22,7,11,kapok_walk,17,15,near location house_6
+village,22,12,19,kapok_walk,28,15,near location house_7
 village,22,20,43,high_street,51,15,location square
 village,22,45,45,lychee_lane,34,15,near location terminal_2
 village,22,46,52,lychee_lane,37,15,location park
-village,23,0,18,high_street,67,15,near door noodle_bar
-village,23,19,19,high_street,51,15,near location square
+village,23,0,6,kapok_walk,14,15,near location house_5
+village,23,7,11,kapok_walk,17,15,near location house_6
+village,23,14,19,kapok_walk,28,15,near location house_7
 village,23,20,43,high_street,51,15,location square
 village,23,44,44,lychee_lane,34,15,spot terminal-44-23
 village,23,45,45,lychee_lane,34,15,near location terminal_2
 village,23,46,52,lychee_lane,37,15,location park
-village,24,0,18,high_street,67,15,near door noodle_bar
-village,24,19,19,high_street,51,15,near location square
+village,24,0,6,kapok_walk,14,15,near location house_5
+village,24,7,11,kapok_walk,17,15,near location house_6
+village,24,12,19,kapok_walk,28,15,near location house_7
 village,24,20,43,high_street,51,15,location square
 village,24,44,45,lychee_lane,34,15,near location terminal_2
 village,24,46,52,lychee_lane,37,15,location park
-village,25,0,17,high_street,67,15,near door noodle_bar
-village,25,18,19,high_street,51,15,near location square
+village,25,0,6,kapok_walk,14,15,near location house_5
+village,25,9,11,kapok_walk,17,15,near location house_6
+village,25,12,19,kapok_walk,28,15,near location house_7
 village,25,20,43,high_street,51,15,location square
 village,25,44,44,lychee_lane,34,15,near location terminal_2
 village,25,45,45,lychee_lane,37,15,near location park
 village,25,46,52,lychee_lane,37,15,location park
-village,26,0,16,high_street,67,15,near door noodle_bar
-village,26,17,19,high_street,51,15,near location square
+village,26,0,6,kapok_walk,14,15,near location house_5
+village,26,7,11,kapok_walk,17,15,near location house_6
+village,26,12,19,kapok_walk,28,15,near location house_7
 village,26,20,43,high_street,51,15,location square
 village,26,44,44,lychee_lane,34,15,near location terminal_2
 village,26,45,45,lychee_lane,37,15,near location park
 village,26,46,52,lychee_lane,37,15,location park
-village,27,0,15,high_street,67,15,near door noodle_bar
-village,27,16,36,high_street,51,15,near location square
+village,27,0,7,banyan_row,7,15,near location house_8
+village,27,8,12,banyan_row,10,15,near location house_9
+village,27,13,22,banyan_row,17,15,near location house_10
+village,27,23,36,high_street,51,15,near location square
 village,27,37,39,banyan_row,28,15,near door gallery
 village,27,40,44,lychee_lane,34,15,near location terminal_2
 village,27,45,45,lychee_lane,37,15,near location park
@@ -182,61 +251,71 @@ village,27,46,48,lychee_lane,37,15,location park
 village,27,49,49,lychee_lane,39,15,spot seat-49-27
 village,27,50,50,lychee_lane,40,15,spot seat-50-27
 village,27,51,54,lychee_lane,37,15,location park
-village,28,0,15,high_street,67,15,near door noodle_bar
-village,28,16,34,high_street,51,15,near location square
+village,28,0,7,banyan_row,7,15,near location house_8
+village,28,8,12,banyan_row,10,15,near location house_9
+village,28,13,22,banyan_row,17,15,near location house_10
+village,28,23,34,high_street,51,15,near location square
 village,28,35,37,banyan_row,28,15,near door gallery
 village,28,44,45,lychee_lane,37,15,near location park
 village,28,46,54,lychee_lane,37,15,location park
-village,29,0,13,high_street,67,15,near door noodle_bar
-village,29,18,28,high_street,51,15,near location square
+village,29,0,7,banyan_row,7,15,near location house_8
+village,29,13,20,banyan_row,17,15,near location house_10
+village,29,27,28,high_street,51,15,near location square
 village,29,34,44,banyan_row,28,15,near door gallery
 village,29,45,45,lychee_lane,37,15,near location park
 village,29,46,63,lychee_lane,37,15,location park
-village,30,0,13,high_street,67,15,near door noodle_bar
-village,30,18,28,high_street,51,15,near location square
+village,30,0,7,banyan_row,7,15,near location house_8
+village,30,13,20,banyan_row,17,15,near location house_10
+village,30,27,28,high_street,51,15,near location square
 village,30,34,45,banyan_row,28,15,near door gallery
 village,30,46,63,lychee_lane,37,15,location park
-village,31,0,7,high_street,67,15,near door noodle_bar
-village,31,13,28,high_street,51,15,near location square
+village,31,0,7,banyan_row,7,15,near location house_8
+village,31,13,20,banyan_row,17,15,near location house_10
+village,31,27,28,high_street,51,15,near location square
 village,31,34,34,banyan_row,47,15,spot viewing-34-31
 village,31,35,45,banyan_row,28,15,near door gallery
 village,31,46,63,lychee_lane,37,15,location park
-village,32,0,7,high_street,67,15,near door noodle_bar
-village,32,13,13,high_street,51,15,near location square
+village,32,0,7,banyan_row,7,15,near location house_8
+village,32,13,13,banyan_row,17,15,near location house_10
 village,32,18,18,banyan_row,20,15,spot viewing-18-32
-village,32,19,28,high_street,51,15,near location square
+village,32,19,20,banyan_row,17,15,near location house_10
+village,32,27,28,high_street,51,15,near location square
 village,32,34,45,banyan_row,28,15,near door gallery
 village,32,46,63,lychee_lane,37,15,location park
-village,33,0,7,high_street,67,15,near door noodle_bar
-village,33,13,28,high_street,51,15,near location square
+village,33,0,7,banyan_row,7,15,near location house_8
+village,33,13,20,banyan_row,17,15,near location house_10
+village,33,27,28,high_street,51,15,near location square
 village,33,34,39,banyan_row,28,15,near door gallery
 village,33,40,40,banyan_row,28,15,door gallery
 village,33,41,44,banyan_row,28,15,near door gallery
 village,33,45,45,banyan_row,60,18,near location terminal_3
 village,33,46,63,lychee_lane,37,15,location park
-village,34,0,1,high_street,67,15,near door noodle_bar
+village,34,0,1,banyan_row,7,15,near location house_8
 village,34,2,6,house_8_floor_0,3,2,location house_8
-village,34,7,7,high_street,67,15,near door noodle_bar
+village,34,7,7,banyan_row,7,15,near location house_8
 village,34,8,12,house_9_floor_0,3,2,location house_9
-village,34,13,13,high_street,51,15,near location square
+village,34,13,13,banyan_row,17,15,near location house_10
 village,34,14,17,house_10_floor_0,3,2,location house_10
-village,34,18,27,high_street,51,15,near location square
+village,34,18,27,banyan_row,17,15,near location house_10
 village,34,28,43,banyan_row,28,15,near door gallery
 village,34,44,45,banyan_row,60,18,near location terminal_3
 village,34,46,63,lychee_lane,37,15,location park
-village,35,0,9,high_street,67,15,near door noodle_bar
-village,35,10,26,high_street,51,15,near location square
-village,35,27,43,banyan_row,28,15,near door gallery
+village,35,0,7,banyan_row,7,15,near location house_8
+village,35,8,12,banyan_row,10,15,near location house_9
+village,35,13,27,banyan_row,17,15,near location house_10
+village,35,28,43,banyan_row,28,15,near door gallery
 village,35,44,45,banyan_row,60,18,near location terminal_3
 village,35,46,46,banyan_row,60,18,location terminal_3
 village,35,47,63,banyan_row,60,18,near location terminal_3
-village,36,0,9,high_street,67,15,near door noodle_bar
-village,36,10,25,high_street,51,15,near location square
-village,36,26,41,banyan_row,28,15,near door gallery
+village,36,0,7,banyan_row,7,15,near location house_8
+village,36,8,11,banyan_row,10,15,near location house_9
+village,36,13,27,banyan_row,17,15,near location house_10
+village,36,28,41,banyan_row,28,15,near door gallery
 village,36,43,63,banyan_row,60,18,near location terminal_3
-village,37,0,7,high_street,67,15,near door noodle_bar
-village,37,10,23,high_street,51,15,near location square
-village,37,24,41,banyan_row,28,15,near door gallery
+village,37,0,7,banyan_row,7,15,near location house_8
+village,37,10,12,banyan_row,10,15,near location house_9
+village,37,13,26,banyan_row,17,15,near location house_10
+village,37,28,41,banyan_row,28,15,near door gallery
 village,37,42,45,banyan_row,60,18,near location terminal_3
 village,37,46,46,banyan_row,60,18,spot terminal-46-37
 village,37,47,63,banyan_row,60,18,near location terminal_3

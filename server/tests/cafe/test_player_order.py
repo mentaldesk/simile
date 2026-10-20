@@ -122,7 +122,7 @@ async def test_a_drink_left_on_the_counter_is_called_out_without_a_conversation(
     counter.players.say("A flat white with oat milk, please.", "bea")
     await counter.run(seconds=5)
 
-    counter.movement.track(PLAYER_ID, Point(31, 11))
+    counter.movement.track(PLAYER_ID, Point(31, 15, "high_street"))
     await counter.run(seconds=60)
 
     assert counter.said("bea")[-1] == "Oat flat white for the Visitor!"

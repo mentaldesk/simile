@@ -9,7 +9,7 @@ from simile.app import create_app
 from simile.behaviour import MuralSpot, behaviour_of
 from simile.gallery import Gallery
 from simile.llm import FakeProvider, LLMClient
-from simile.schema import Medium, Npc, Work
+from simile.schema import MapTile, Medium, Npc, Work
 from simile.works import Maker, works_of
 from simile.works.render import painting_canvas
 
@@ -76,4 +76,4 @@ def test_muralists_take_turns_painting_for_the_gallery() -> None:
         works_of(app).add(painting("m1", "kofi", medium=Medium.MURAL, wall="tower"))
         turn = behaviour_of(app).hooks.mural_wall(KOFI)
 
-    assert turn == MuralSpot("house_6", behaviour_of(app).places.location("house_6").entry)
+    assert turn == MuralSpot("house_6", MapTile(map="house_6_floor_0", x=3, y=2))

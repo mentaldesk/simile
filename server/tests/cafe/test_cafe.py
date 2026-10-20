@@ -10,13 +10,25 @@ from simile.sim import ConversationEnded, ConversationStarted, LineSpoken
 from simile.social import meet
 from simile.world import Point
 
-from .conftest import ANA, BEA, BEN, CAL, DAY, UPSTAIRS, Village, keen, make_npc, quiet_director
+from .conftest import (
+    ANA,
+    BEA,
+    BEN,
+    CAL,
+    DAY,
+    GROUND,
+    UPSTAIRS,
+    Village,
+    keen,
+    make_npc,
+    quiet_director,
+)
 
 pytestmark = pytest.mark.anyio
 
 COFFEE = keen(Activity.COFFEE_SHOP)
 CAREFUL = CAFE_CONFIG.model_copy(update={"mistake": 0.0})
-TILL = Point(5, 4, "coffee_shop")
+TILL = Point(3, 2, GROUND)
 
 
 async def test_the_barista_starts_at_the_till_when_the_cafe_opens() -> None:
@@ -43,7 +55,7 @@ async def test_the_barista_finishes_at_closing_time() -> None:
     assert village.behaviour.minds["bea"].held is None or village.cafe.going_home is not None
 
 
-async def test_off_shift_the_barista_sleeps_upstairs_not_at_the_counter() -> None:
+async def test_off_shift_the_barista_sleeps_at_the_stairs_not_at_the_counter() -> None:
     village = Village(start=DAY.replace(hour=23, minute=30))
 
     await village.run(minutes=3)
@@ -84,7 +96,7 @@ def all_at_once(village: Village) -> None:
         village.behaviour.nudge(npc, Goal(Activity.COFFEE_SHOP, "coffee_shop"), 0.0)
 
 
-async def test_the_queue_runs_down_the_lane_from_the_counter() -> None:
+async def test_the_queue_runs_along_the_floor_from_the_counter() -> None:
     village = Village((BEA, ANA, BEN, CAL), behaviour=COFFEE, config=CAREFUL)
     all_at_once(village)
     cafe = village.cafe
@@ -99,7 +111,9 @@ async def test_the_queue_runs_down_the_lane_from_the_counter() -> None:
 
     await village.run_until(lined_up)
 
-    assert [(spot.x, spot.y) for spot in cafe.spots[:4]] == [(5, 6), (5, 7), (5, 8), (5, 9)]
+    assert [(spot.map, spot.x, spot.y) for spot in cafe.spots[:4]] == [
+        (GROUND, x, 2) for x in (6, 7, 8, 9)
+    ]
     assert longest >= 2
 
 
@@ -172,7 +186,7 @@ async def test_someone_whose_walk_in_ends_short_of_the_cafe_is_let_go() -> None:
 
     assert "ana" not in village.cafe.visits
     assert not village.behaviour.minds["ana"].held
-    assert village.at("ana").map == "village"
+    assert village.at("ana").map not in village.cafe.maps
 
 
 async def test_stock_orders_call_no_llm_and_start_no_conversation() -> None:
@@ -243,8 +257,8 @@ async def test_a_resident_who_was_just_served_sits_down_instead_of_queuing() -> 
 
     assert len(village.of(Served)) == 1
     here = village.at("ana")
-    seats = {(seat.x, seat.y) for seat in CAREFUL.seats}
-    assert here.map == "coffee_shop" and (round(here.x), round(here.y)) in seats
+    seats = {(seat.map, seat.x, seat.y) for seat in CAREFUL.layouts[GROUND].seats}
+    assert (here.map, round(here.x), round(here.y)) in seats
 
 
 async def test_the_barista_and_the_queue_leave_the_player_to_come_to_them() -> None:

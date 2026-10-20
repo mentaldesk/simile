@@ -56,7 +56,7 @@ from .conftest import remembers, work
 pytestmark = pytest.mark.anyio
 
 MAPS = load_maps()
-CAFE = MapTile(map="coffee_shop", x=13, y=8)
+CAFE = MapTile(map="coffee_shop_floor_0", x=12, y=2)
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 

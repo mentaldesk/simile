@@ -139,7 +139,8 @@ def _smallest(locations: tuple[Location, ...], x: int, y: int) -> Location | Non
 
 
 def _anchors(town: TownMap, found: _Found) -> Iterator[tuple[Tile, MapTile, str]]:
-    """Today's places on the map whose new places are on a street."""
+    """Today's doors and places on the map, each with its new place on a street, or the street in
+    front of its front door, such as a house's. Inside, a building's places."""
     for door in town.doors:
         end = door.outside if door.outside.map == town.id else door.inside
         new = found.doors[door.id]
@@ -147,6 +148,8 @@ def _anchors(town: TownMap, found: _Found) -> Iterator[tuple[Tile, MapTile, str]
         yield Tile(x=end.x, y=end.y), to, f"near door {door.id}"
     for location in town.locations:
         to = found.entry(location.id)
+        if town.street and not found.maps[to.map].street and location.id in found.doors:
+            to = found.doors[location.id].outside
         if found.maps[to.map].street or not town.street:
             yield location.entry, to, f"near location {location.id}"
 

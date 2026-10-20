@@ -32,4 +32,4 @@ def register(app: typer.Typer) -> None:
 
         rows = build(load_maps(ISO_DIR), load_maps(STREET_DIR))
         write(rows)
-        typer.echo(f"Wrote {len(rows)} cells to {TABLE}")
+        typer.echo(f"Wrote {len(rows)} runs of cells to {TABLE}")

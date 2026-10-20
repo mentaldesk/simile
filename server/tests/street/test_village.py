@@ -16,7 +16,7 @@ from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER
 from simile.street.village import FLOOR_ROW, GROUND, STOREY, village
 from simile.world import Movement, Outcome, Walk
 from simile.world.map import (
-    MAP_DIR,
+    ISO_DIR,
     STREET_DIR,
     WALKING_SPEED,
     MapKind,
@@ -29,7 +29,7 @@ from simile.world.movement import Point, inside
 from simile.world.paths import Spot, door_ends, find_route, route_length, steps
 from simile.world.spots import Purpose
 
-TODAY = load_maps(MAP_DIR)
+TODAY = load_maps(ISO_DIR)
 MAPS = load_maps(STREET_DIR)
 TOWN = with_every_location(MAPS)
 STREETS = [town for town in MAPS.values() if town.kind is MapKind.STREET]

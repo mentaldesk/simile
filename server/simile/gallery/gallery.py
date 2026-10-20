@@ -58,13 +58,20 @@ class Gallery:
         *,
         hung: Callable[[], None] = nothing_hung,
     ) -> None:
-        """`hung()` is called after each new painting goes up."""
+        """`hung()` is called after each new painting goes up. A painting saved in a frame of the
+        same id on another map, as on today's `gallery` map, moves to this one."""
         self.frames = list(frames)
         self.store = store
         self.works = works
         self.clock = clock
         self.npcs = npcs
         self.hung = hung
+        keys = {frame.id: key(frame) for frame in self.frames}
+        moved = {
+            old: keys[old[1]] for old in store.hanging() if old[1] in keys and old != keys[old[1]]
+        }
+        if moved:
+            store.move(moved)
 
     def hang(self, work: Work, svg: str, png: bytes, when: datetime | None = None) -> FrameKey:
         """Maker's `hang`, hung `when`, or now."""

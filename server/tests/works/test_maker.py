@@ -368,7 +368,7 @@ def test_paints_a_mural_at_its_walls_size_and_says_so(
     assert made.tags == ["mornings", "the square"]
     assert made.values[CoreValue.FREEDOM] == pytest.approx(0.8)
     picture = Image.open(io.BytesIO(works.picture(made.id) or b""))
-    assert picture.size == canvas(WALL) == (288, 262)
+    assert picture.size == canvas(WALL) == (288, 384)
     [remembered] = memory.recall("suki", NOW, kind=MemoryKind.WORK)
     assert remembered.content == (
         'I painted "Sunrise Over the Square" on the wall 1 wall. Morning belongs to everyone.'
@@ -377,9 +377,9 @@ def test_paints_a_mural_at_its_walls_size_and_says_so(
     [request] = fake.requests
     asked = request.messages[-1].content
     assert f"1. {SKY.content}" in asked
-    assert "a new mural on the wall 1 wall, 3.3 m wide and 3.0 m high. It's blank." in asked
+    assert "a new mural on the wall 1 wall, 3.3 m wide and 4.4 m high. It's blank." in asked
     assert f"Paint something new in your craft, {SUKI.craft.form}." in asked
-    assert 'one SVG document with viewBox="0 0 288 262"' in asked
+    assert 'one SVG document with viewBox="0 0 288 384"' in asked
     assert f"In your own time you paint {SUKI.craft.form} on the village's walls" in request.system
     assert request.model == Model.SONNET
 

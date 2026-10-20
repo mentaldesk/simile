@@ -28,7 +28,7 @@ class Walker:
 
     def tick(self, dt: float) -> None:
         if (self.world.clock.now - START) % timedelta(minutes=20) == timedelta(0):
-            self.world.bus.publish(EntityMoved("ada", 1.0, 2.0))
+            self.world.bus.publish(EntityMoved("ada", 1.0, 2.0, "high_street"))
 
 
 def test_runs_for_the_given_sim_hours_and_logs_events(
@@ -42,7 +42,7 @@ def test_runs_for_the_given_sim_hours_and_logs_events(
     assert world.clock.now == START + timedelta(hours=1)
     assert wall.now() == pytest.approx(3600 / 10)
     moved = (
-        "EntityMoved(entity='ada', x=1.0, y=2.0, map='village', "
+        "EntityMoved(entity='ada', x=1.0, y=2.0, map='high_street', "
         "pose=<Pose.STANDING: 'standing'>, facing=<Facing.SOUTH_EAST: 'south_east'>)"
     )
     assert caplog.messages == [

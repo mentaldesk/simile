@@ -13,7 +13,7 @@ from simile.behaviour.mind import create_behaviour
 from simile.conversation import create_engine
 from simile.memory import MemoryStore, memory_of
 from simile.npc import load_npcs
-from simile.schema import VILLAGE_MAP, MapTile, Relationship
+from simile.schema import MapTile, Relationship
 from simile.sim import Clock, FakeWallClock, World
 from simile.social import meet
 from simile.tools import Recorder, RecordStore, load_run, report
@@ -100,11 +100,11 @@ async def test_takes_every_relationship_at_the_start_and_the_end(database: Path)
 @pytest.mark.parametrize(
     ("tile", "place"),
     [
-        (MapTile(map="coffee_shop", x=13, y=4), ("coffee_shop", "coffee_shop")),
-        (MapTile(map="coffee_shop", x=5, y=6), ("coffee_shop", "coffee_shop")),
-        (MapTile(map=VILLAGE_MAP, x=13, y=4), ("street", None)),
-        (MapTile(map="gallery", x=16, y=12), ("gallery", "gallery")),
-        (MapTile(map=VILLAGE_MAP, x=31, y=22), ("square", "square")),
+        (MapTile(map="coffee_shop_floor_0", x=12, y=2), ("coffee_shop", "coffee_shop")),
+        (MapTile(map="coffee_shop_floor_1", x=5, y=2), ("coffee_shop", "coffee_shop")),
+        (MapTile(map="high_street", x=21, y=15), ("street", None)),
+        (MapTile(map="gallery_floor_2", x=8, y=2), ("gallery", "gallery")),
+        (MapTile(map="high_street", x=51, y=15), ("square", "square")),
     ],
 )
 def test_places_residents_on_the_map_they_are_on(
@@ -126,7 +126,7 @@ def test_a_resident_who_lives_above_a_shop_is_home_there(tmp_path: Path) -> None
     behaviour = Behaviour(world.clock, world.bus, movement, load_npcs())
     with MemoryStore(":memory:") as memory, RecordStore(tmp_path / "record.db") as store:
         recorder = Recorder(store, world, behaviour, memory, None)
-        movement.place("kofi", MapTile(map="coffee_shop", x=5, y=4))
+        movement.place("kofi", MapTile(map="coffee_shop_floor_2", x=5, y=2))
 
         assert recorder.place("kofi", "coffee_shop") == ("home", "coffee_shop")
 

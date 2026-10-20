@@ -14,7 +14,7 @@ from simile.behaviour import (
     reliability,
 )
 from simile.behaviour.intentions import boosted, deed, matches, when
-from simile.schema import PLAYER_ID, CoreValue, Intention, IntentionKind, Npc, Tile
+from simile.schema import PLAYER_ID, CoreValue, Intention, IntentionKind, MapTile, Npc
 
 from .test_mind import ANA, BEN, PAINTER, WALL, WRITER, Village, at
 
@@ -289,7 +289,9 @@ def test_options_say_where_they_can_go_and_make_something() -> None:
     assert behaviour.options("pia").making == {}
     behaviour.hooks.set(mural_wall=lambda npc: WALL)
     assert behaviour.options("pia").making == {"wall_a": "the wall a wall"}
-    behaviour.hooks.set(mural_wall=lambda npc: MuralSpot("house_2", Tile(x=1, y=1)))
+    behaviour.hooks.set(
+        mural_wall=lambda npc: MuralSpot("house_2", MapTile(map="lychee_lane", x=12, y=15))
+    )
     assert behaviour.options("pia").making == {"house_2": "home"}
 
 
