@@ -36,19 +36,25 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
     to a plan one house wide but redraws a wider one as some other building, so a front wider
     than 8.6 m is painted as a terrace of units, each a whole front with its own roof, and put
     back together side by side. FLUX also likes to give every unit a door, so on the café the
-    units without one get windows rather than a shop window, which it boards up.
-  - Stairs, the ladder, the lift and the white bathroom fittings and fridge are redrawn from flat
-    sketches the same way (`sketches.py`), so they fit their cells and come out as card.
+    units without one get windows rather than a shop window, which it boards up. And it fills a
+    big blank wall with windows, so the tower's and Garden Flats' prompts ask outright for their
+    mural walls to stay empty.
+  - Stairs, the ladder, the ledge, the lift and the white bathroom fittings and fridge are
+    redrawn from flat sketches the same way (`sketches.py`), so they fit their cells and come out
+    as card.
   - A night picture is an edit of its day front, and a colour variant an edit of its item.
 - **Cut out** with IS-Net plus a colour key on the plain backdrop (`cutout.py`). White things are
-  painted on grey. A front is cut on its plan's outline.
+  painted on grey. Some items also have painted shadow, or backdrop showing between their legs,
+  cut away (`cut` in the catalogue). A front is cut on its plan's outline.
 - **Scaled** to its height in metres at 120 px/m. Street layers, papers and the sky keep their
   painted size, and are made to tile along x (papers both ways).
-- **Hashed.** A piece's `hash` covers its prompt, seed, size, style images, the pipeline's
-  version, and for a front or sketched piece the plan's parameters and the code that draws it
-  (`fronts.py`, `sketches.py`), not its pixels, which differ by a pixel between platforms. A run repaints and rewrites only the pieces whose hash changed. Paintings
-  are cached by their own hash in `~/.cache/simile/papercraft/raw/`, so a change to how pieces
-  are cut re-cuts them without repainting on the machine that painted them.
+- **Hashed.** A piece's `hash` covers its prompt, seed, size, style images and the pipeline's
+  version. For a front it covers the plan's parameters and `fronts.PLAN` (bump it when a change
+  to the drawing should repaint the fronts), and for a sketched piece the sketch's code, rather
+  than their pixels, which differ by a pixel between platforms.
+  A run repaints and rewrites only the pieces whose hash changed. Paintings are cached by their
+  own hash in `~/.cache/simile/papercraft/raw/`, so a change to how pieces are cut re-cuts them
+  without repainting on the machine that painted them.
 
 IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download once into
 `~/.cache/simile/models/` and are checked against their MD5.
@@ -108,9 +114,9 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   for each floor's back wall, ground floor first. A mural wall's stretch of the front is left
   blank, from its `bottom` to its `top` in the building's storeys (4.4 m each), up to the eaves.
 - **`furniture`**, by the name the maps' `furniture` objects use: its piece, any colour
-  variants, and `stretch` for runs like counters and workbenches, to draw as wide as their cells
-  by repeating their middle and keeping their ends. Also some pieces the maps don't use yet, for
-  dressing rooms and streets, and `picture_frame` for the gallery's paintings.
+  variants, and `stretch` for runs like kitchens, counters and workbenches, to draw as wide as
+  their cells by repeating their middle and keeping their ends. Also some pieces the maps don't
+  use yet, for dressing rooms and streets, and `picture_frame` for the gallery's paintings.
 - **`platforms`**: `stairs` (one storey, rising to the right: mirror it for a flight to the left),
   `ladder`, `steps` (stone steps rising to the right), `ledge` (stretch it by repeating its
   middle), `lift` (the car), `lift_shaft` (one storey of it, to stack), and an inside `window`

@@ -109,6 +109,22 @@ def lift_shaft(width: float = 2.2, height: float = 4.4) -> Image.Image:
     return s.image
 
 
+def ledge(length: float = 3.0, height: float = 0.6) -> Image.Image:
+    """A deck of planks on two brackets, seen from the side."""
+    s = Sheet(length, height, 300)
+    deck = 0.12
+    s.rect(0, height - deck, length, height, WOOD, DARK_WOOD)
+    for x in np.arange(0.25, length, 0.25):
+        s.rect(x - 0.01, height - deck, x + 0.01, height, DARK_WOOD)
+    for x in (0.45, length - 0.45):
+        s.polygon(
+            [(x - 0.3, height - deck), (x + 0.3, height - deck), (x + 0.05, 0), (x - 0.05, 0)],
+            WOOD,
+            DARK_WOOD,
+        )
+    return s.image
+
+
 def steps(rise: float = 2.2, run: float = 2.2, count: int = 8) -> Image.Image:
     """Stone steps rising to the right, from the river path up to the street."""
     s = Sheet(run + 0.3, rise, 200)
@@ -157,6 +173,7 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "lift": lift,
     "lift_shaft": lift_shaft,
     "steps": steps,
+    "ledge": ledge,
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,

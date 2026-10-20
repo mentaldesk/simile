@@ -29,7 +29,6 @@ SPRITE = (
     "else in the picture, and no shadow on the background."
 )
 SIDE_SPRITE = SPRITE.replace("straight from the front", "exactly from the side")
-ON_GREY = SPRITE.replace("plain flat white", "plain flat medium grey")
 LEAD = "Make a new picture in exactly the papercraft style of the reference picture: "
 REDRAW = (
     "Redraw image 1 as {subject}, made of cut paper and card in the papercraft style of image 2: "
@@ -80,6 +79,8 @@ class Painting:
     """For a front or glow map painted a unit at a time, each unit's prompt."""
     reseed: int = 0
     """Added to the seed, to paint a rejected painting again from the same prompt."""
+    cut: tuple[str, ...] = ()
+    """For a sprite, what else to cut away: `shadows` and `gaps` (see `cutout.tidy`)."""
 
     @property
     def seed(self) -> int:
@@ -278,6 +279,9 @@ class Item:
     """Painted on grey, since white on white defeats the cut-out."""
     stretch: bool = False
     """A run, like a counter, drawn as wide as its cells by repeating its middle."""
+    cut: tuple[str, ...] = ()
+    """What else to cut away: a kind of painted shadow from `cutout.SHADOWS`, `gaps` of backdrop
+    showing through the object, and for a sketched piece `outline`, all that's off its sketch."""
     reseed: int = 0
     ref: str = "furniture"
     sketch: str | None = None
@@ -289,10 +293,12 @@ class Item:
 STREET = "street"
 FURNITURE: dict[str, Item] = {
     "kitchen": Item(
-        "a fitted kitchen run of blue-painted wooden cupboards with a wooden worktop, a sink "
-        "with a tap and a little two-ring cooker on it, and a few jars on the worktop",
-        1.0,
-        (784, 576),
+        "a fitted kitchen run, twice as wide as it is tall: blue-painted wooden base cupboards "
+        "under a wooden worktop, with a sink and tap and a little two-ring hob set into the "
+        "worktop. No wall cupboards, nothing above the worktop",
+        0.95,
+        (1024, 512),
+        stretch=True,
     ),
     "sofa": Item(
         "a three-seat sofa upholstered in deep teal velvet with round wooden feet",
@@ -327,6 +333,7 @@ FURNITURE: dict[str, Item] = {
         0.95,
         (896, 512),
         side=True,
+        cut=("shadows", "gaps"),
     ),
     "plant": Item("a big leafy monstera plant in a terracotta pot", 1.1, (512, 640)),
     "counter": Item(
@@ -368,6 +375,8 @@ FURNITURE: dict[str, Item] = {
         0.95,
         (896, 512),
         side=True,
+        grey=True,
+        cut=("shadows", "gaps"),
     ),
     "stove": Item(
         f"a big noodle stove of grey card with two burners, two tall stock pots and a wok, "
@@ -401,6 +410,8 @@ FURNITURE: dict[str, Item] = {
         1.9,
         (768, 768),
         side=True,
+        grey=True,
+        cut=("deep shadows", "gaps"),
     ),
     "laser_cutter": Item(
         "a big laser cutter, a wide boxy cabinet of pale grey card with a tinted orange lid "
@@ -441,7 +452,7 @@ FURNITURE: dict[str, Item] = {
     "shelf": Item(
         "a long run of open wooden shelves full of boxes, jars of screws, spools of thread and "
         "rolls of fabric",
-        2.0,
+        1.6,
         (944, 480),
     ),
     "plinth": Item(
@@ -462,6 +473,7 @@ FURNITURE: dict[str, Item] = {
         2.2,
         (512, 1024),
         ref=STREET,
+        cut=("tinted shadows",),
     ),
     "fountain": Item(
         "a round stone town fountain with two tiers and water splashing into its basin",
@@ -545,11 +557,14 @@ EXTRAS: dict[str, Item] = {
         "a slender coconut palm tree with a gently curving trunk", 7.0, (512, 1024), ref=STREET
     ),
     "bicycle": Item(
-        "an old bicycle with a basket on the front, painted pale blue",
+        "an old bicycle with a basket on the front, painted pale blue, its wheels thin rims "
+        "with fine wire spokes and open gaps between them",
         1.0,
         (896, 576),
         side=True,
+        grey=True,
         ref=STREET,
+        cut=("gaps",),
     ),
     "bin": Item(
         f"a round litter bin of muted dark green card with a domed lid and a paper texture, "
@@ -578,13 +593,12 @@ PLATFORMS: dict[str, Item] = {
         folder="platforms",
     ),
     "ledge": Item(
-        "a long flat wooden walkway of planks with wooden brackets underneath, seen exactly "
-        "from the side",
+        "a long flat wooden walkway of planks on two wooden brackets",
         0.6,
-        (1536, 384),
-        side=True,
         ref="rooftops",
+        sketch="ledge",
         folder="platforms",
+        cut=("outline", "shadows", "gaps"),
     ),
     "lift_shaft": Item(
         "one storey of a lift shaft's black iron frame with a cable down the middle",
@@ -618,11 +632,16 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
         back = "medium grey" if sketch.getpixel((0, 0)) == GREY else "white"
         prompt = styled(REDRAW.format(subject=spec.subject, back=back))
         refs = (spec.ref,)
-        return Painting(key, "sprite", prompt, sketch.size, refs, spec.height, sketch=spec.sketch)
+        size, height = sketch.size, spec.height
+        return Painting(key, "sprite", prompt, size, refs, height, sketch=spec.sketch, cut=spec.cut)
     size = spec.size
-    backdrop_text = ON_GREY if spec.grey else SIDE_SPRITE if spec.side else SPRITE
+    backdrop_text = SIDE_SPRITE if spec.side else SPRITE
+    if spec.grey:
+        backdrop_text = backdrop_text.replace("plain flat white", "plain flat medium grey")
     prompt = styled(LEAD + f"2D game asset: {spec.subject}. {backdrop_text}")
-    return Painting(key, "sprite", prompt, size, (spec.ref,), spec.height, reseed=spec.reseed)
+    return Painting(
+        key, "sprite", prompt, size, (spec.ref,), spec.height, reseed=spec.reseed, cut=spec.cut
+    )
 
 
 def variants(spec: Item, base: Painting) -> list[Painting]:
@@ -665,6 +684,18 @@ ROOF_TILES = {
 }
 
 
+MURAL_WORDS = (
+    " The wide plain stretch of wall on the {side} is a blank wall kept for a mural: leave it "
+    "smooth and empty, with no windows, no doors, no flower boxes and no plants on it."
+)
+
+
+def _side(unit: Front) -> str:
+    x0, _, x1, _ = unit.murals[0]
+    middle = (x0 + x1) / 2 / unit.width
+    return "left" if middle < 0.4 else "right" if middle > 0.6 else "middle"
+
+
 def front_prompt(look: Look, unit: Front) -> str:
     """The prompt for one unit of a front, naming only what its plan has."""
     roof = (
@@ -692,6 +723,8 @@ def front_prompt(look: Look, unit: Front) -> str:
             extras.append("a glass door")
     ground = "grey" if backdrop(unit) == GREY else "white"
     rules = " Leave the blank stretches of wall plain, with nothing on them." if unit.murals else ""
+    if unit.murals and look.mural_words:
+        rules = MURAL_WORDS.format(side=_side(unit))
     if unit.door is None and unit.awnings:
         rules += " This part of the building has no door: only the windows shown."
     elif unit.door is None:

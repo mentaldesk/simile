@@ -106,7 +106,7 @@ class EditPainter:
                     num_inference_steps=self.steps,
                     width=across,
                     height=up,
-                    image_paths=paths or None,
+                    image_paths=paths,
                 ).image
             finally:
                 mx.clear_cache()

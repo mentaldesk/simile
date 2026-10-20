@@ -43,6 +43,28 @@ def at(key: str, ppm: float, height: float | None = None) -> Image.Image:
     return image.resize((w, h), Image.Resampling.LANCZOS)
 
 
+def furnish(p: "Placed", ppm: float) -> Image.Image:
+    """A map's piece of furniture at scale, a run stretched to its cells' width."""
+    entry_ = manifest()["furniture"][p.name]
+    image = at(entry_["piece"], ppm)
+    if entry_.get("stretch"):
+        image = stretch(image, round(p.w * TILE * ppm * 0.96))
+    return image
+
+
+def stretch(image: Image.Image, width: int, cap: float = 0.15) -> Image.Image:
+    """`image` made `width` wide by repeating its middle and keeping its ends."""
+    w, h = image.size
+    c = round(w * cap)
+    middle = image.crop((c, 0, w - c, h))
+    out = Image.new("RGBA", (max(width, 2 * c), h), (0, 0, 0, 0))
+    for x in range(c, out.width - c, middle.width):
+        out.paste(middle.crop((0, 0, min(middle.width, out.width - c - x), h)), (x, 0))
+    out.paste(image.crop((0, 0, c, h)), (0, 0))
+    out.paste(image.crop((w - c, 0, w, h)), (out.width - c, 0))
+    return out
+
+
 def tint(image: Image.Image, rgb) -> Image.Image:
     a = np.asarray(image.convert("RGBA"), dtype=np.float32)
     a[..., :3] *= np.array(rgb[:3])
@@ -296,7 +318,7 @@ def street_scene(view: MapView, when: str, x0: float = 0, width: int | None = No
     for p in view.furniture:
         if p.name not in m["furniture"]:
             continue
-        image = at(m["furniture"][p.name]["piece"], SCENE_PPM)
+        image = furnish(p, SCENE_PPM)
         bottom = origin + (p.y + p.h) * tile
         canvas.put(tint(image, t["tint"]), (p.x + p.w / 2) * tile - camera, bottom + 4)
         if p.name == "lamp" and t["glow"] > 0:
@@ -349,7 +371,9 @@ def dollhouse(views: dict[str, MapView], building: str, when: str = "afternoon")
     tile = TILE * ppm
     x_left = (W - facade.w * tile) / 2
     ground_y = H - 60
-    backdrop = street_scene(street, when, max(0, facade.x + facade.w / 2 - W / (2 * TILE * 40)))
+    span = W / (TILE * SCENE_PPM)
+    x0 = min(max(0, facade.x + facade.w / 2 - span / 2), max(0, street.width - span))
+    backdrop = street_scene(street, when, x0, W)
     canvas = Canvas((W, H))
     canvas.over(backdrop.convert("RGBA").filter(ImageFilter.GaussianBlur(3)), 0, 0)
     inside = (1.0, 1.0, 1.0) if when != "night" else (0.85, 0.76, 0.62)
@@ -399,8 +423,7 @@ def dollhouse(views: dict[str, MapView], building: str, when: str = "afternoon")
         for p in view.furniture:
             if p.name not in m["furniture"]:
                 continue
-            key = m["furniture"][p.name]["piece"]
-            image = tint(at(key, ppm), inside)
+            image = tint(furnish(p, ppm), inside)
             if p.name == "lift":
                 shaft = tint(at("platforms/lift_shaft", ppm, 4.4), inside)
                 canvas.put(shaft, x_left + (p.x + p.w / 2) * tile, y_of(view, 3), offset=None)

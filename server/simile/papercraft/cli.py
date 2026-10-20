@@ -39,7 +39,7 @@ def register(app: typer.Typer) -> None:
         if dry_run:
             stale = build.stale(build.read_manifest(), [k for k in build.pieces if chosen(k)])
             for piece in stale:
-                cached = "cached" if build.raw_path(piece).exists() else "to paint"
+                cached = "to paint" if build.unpainted([piece]) else "cached"
                 typer.echo(f"{piece.key} ({cached})")
             typer.echo(f"{len(stale)} stale")
             return

@@ -4,7 +4,9 @@ Each piece keeps a hash of its inputs, so a run repaints only what changed. Pain
 by their own hash outside the repo, so changing how pieces are cut doesn't repaint them.
 """
 
+import dataclasses
 import hashlib
+import inspect
 import json
 import time
 from collections.abc import Callable, Iterable, Sequence
@@ -30,7 +32,7 @@ PPM = 120
 """Pixels per metre of every scaled piece."""
 PAINTING = 1
 """Bump when what a painting is made from changes in a way its inputs don't show."""
-PIPELINE = 1
+PIPELINE = 8
 """Bump when cutting, scaling or saving changes."""
 NIGHT_SIDE = 768
 NIGHT_TINT = (0.3, 0.36, 0.6)
@@ -72,6 +74,28 @@ def _fit(image: Image.Image, side: int) -> Image.Image:
 @cache
 def _whole(f: Front, ppm: float) -> Plan:
     return draw(f, ppm)
+
+
+def _fields(f: Front) -> dict:
+    """A front's fields that differ from their defaults, so a new field leaves other fronts'
+    hashes alone."""
+    return {
+        k.name: getattr(f, k.name)
+        for k in dataclasses.fields(f)
+        if k.default is dataclasses.MISSING or getattr(f, k.name) != k.default
+    }
+
+
+@cache
+def _sketch_source(name: str) -> str:
+    return inspect.getsource(sketches.Sheet) + inspect.getsource(SKETCHES[name])
+
+
+@cache
+def _sketch_shape(name: str) -> np.ndarray:
+    """What a sketch covers: everything not its backdrop."""
+    a = np.asarray(_sketch(name), dtype=np.int16)
+    return np.abs(a - a[0, 0]).max(axis=2) > 6
 
 
 @cache
@@ -131,17 +155,19 @@ class Build:
         inputs += [_file_hash(REFERENCES / f"{name}.jpg") for name in piece.refs]
         if piece.kind == "front":
             unit_front = units(self.front(piece))[unit or 0][1]
-            inputs += [unit, repr(unit_front), _file_hash(Path(fronts.__file__))]
+            inputs += [unit, fronts.PLAN, _fields(unit_front)]
         if piece.sketch:
-            inputs += [piece.sketch, _file_hash(Path(sketches.__file__))]
+            inputs += [piece.sketch, _sketch_source(piece.sketch)]
         if piece.base:
             inputs.append(self.paint_hash(self.pieces[piece.base], unit))
         return digest(*inputs)
 
     def out_hash(self, piece: Painting) -> str:
         inputs: list[object] = [PIPELINE, PPM, piece.kind, piece.height, self.paint_hash(piece)]
+        if piece.cut:
+            inputs.append(list(piece.cut))
         if piece.kind in ("front", "glow"):
-            inputs += [repr(self.front(piece)), _file_hash(Path(fronts.__file__))]
+            inputs += [fronts.PLAN, _fields(self.front(piece))]
         return digest(*inputs)
 
     def prompt(self, piece: Painting, unit: int | None = None) -> str:
@@ -269,7 +295,14 @@ class Build:
                 image = tileable(trim_rows(cutout.unmix(raw, mask)))
                 height = piece.height or image.height / PPM
             else:
-                image = cutout.unmix(raw, self.mask(raw))
+                if piece.sketch and "outline" in piece.cut:
+                    shape = _sketch_shape(piece.sketch)
+                    mask = outline_mask(raw, shape, round(0.012 * raw.width) | 1, 5)
+                else:
+                    mask = self.mask(raw)
+                if piece.cut:
+                    mask = cutout.tidy(raw, mask, piece.cut)
+                image = cutout.unmix(raw, mask)
                 image = image.crop(image.getchannel("A").getbbox() or (0, 0, *image.size))
                 image = scaled(image, round((piece.height or 1) * PPM))
                 height = piece.height or 1
@@ -346,21 +379,29 @@ def top_backdrop(image: Image.Image) -> np.ndarray:
 
 
 def silhouette(plan: Plan) -> np.ndarray:
-    a = np.asarray(plan.image, dtype=np.int16)
-    return np.abs(a - a[0, 0]).max(axis=2) > 6
+    return np.asarray(plan.shape) > 0
 
 
-def front_mask(painted: Image.Image, plan: Plan, lo: float = 18, hi: float = 48) -> Image.Image:
-    """Solid inside the plan's outline, and beyond it, out to a little way off, wherever the
+def front_mask(painted: Image.Image, plan: Plan) -> Image.Image:
+    reach, grain = round(0.3 * plan.ppm) | 1, round(0.05 * plan.ppm) | 1
+    return outline_mask(painted, silhouette(plan), reach, grain)
+
+
+def outline_mask(
+    painted: Image.Image, shape: np.ndarray, reach: int, grain: int, lo: float = 28, hi: float = 60
+) -> Image.Image:
+    """Solid inside the drawing's `shape`, and beyond it, out to `reach` px, wherever the
     painting differs clearly from the backdrop: so roof edges painted past the plan stay, and
-    painted ground, shadows and paper margins go."""
-    inside = silhouette(plan).astype(np.float32) * 255
+    painted ground, shadows and paper margins go. Specks of backdrop grain outside are opened
+    away."""
+    inside = shape.astype(np.float32) * 255
     solid = -dilate(-inside, 5)
-    near = dilate(inside, round(0.3 * plan.ppm) | 1)
+    near = dilate(inside, reach)
     a = np.asarray(painted, dtype=np.float32)
     d = np.abs(a - top_backdrop(painted)).max(axis=2)
-    keyed = np.clip((d - lo) / (hi - lo), 0, 1) * 255
-    m = np.minimum(np.maximum(keyed, solid), near)
+    keyed = np.minimum(np.clip((d - lo) / (hi - lo), 0, 1) * 255, near)
+    keyed = dilate(-dilate(-keyed, grain), grain)
+    m = np.maximum(keyed, solid)
     return Image.fromarray(m.astype(np.uint8)).filter(ImageFilter.MedianFilter(3))
 
 
@@ -397,9 +438,10 @@ def trim_rows(image: Image.Image) -> Image.Image:
     return image.crop((0, int(rows[0]), image.width, int(rows[-1]) + 1))
 
 
-def tileable(image: Image.Image, both: bool = False, overlap: int = 96) -> Image.Image:
+def tileable(image: Image.Image, both: bool = False, overlap: int = 32) -> Image.Image:
     """`image` made to repeat without a seam: cut at a gap near each end if it has one, or else
-    its ends crossfaded. `both` crossfades top and bottom too."""
+    cut where its two ends look most alike and crossfaded there. `both` does top and bottom
+    too."""
     a = np.asarray(image, dtype=np.float32)
     if a.shape[2] == 4:
         cover = (a[..., 3] > 8).sum(axis=0)
@@ -409,18 +451,33 @@ def tileable(image: Image.Image, both: bool = False, overlap: int = 96) -> Image
         right = w - reach + int(np.argmin(cover[w - reach :]))
         if cover[left] == 0 and cover[right] == 0:
             return image.crop((left, 0, right, image.height))
-    a = _crossfade(a, overlap)
+    a = _seamless(a, overlap)
     if both:
-        a = _crossfade(a.transpose(1, 0, 2), overlap).transpose(1, 0, 2)
+        a = _seamless(a.transpose(1, 0, 2), overlap).transpose(1, 0, 2)
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), image.mode)
 
 
-def _crossfade(a: np.ndarray, overlap: int) -> np.ndarray:
+def _seamless(a: np.ndarray, overlap: int, step: int = 4) -> np.ndarray:
+    """`a` cropped from column `i` to `j`, where the stretch after `j` most resembles the one
+    after `i`, with the two crossfaded: a plain crossfade of unlike ends ghosts both."""
     w = a.shape[1]
-    overlap = min(overlap, w // 4)
+    overlap = min(overlap, w // 6)
+    reach = w // 6
+    small = a[::step, ::step]
+    band = overlap // step
+    starts = range(0, reach // step)
+    ends = range((w - reach - overlap) // step, (w - overlap) // step)
+    cost = np.array(
+        [
+            [np.abs(small[:, i : i + band] - small[:, j : j + band]).mean() for j in ends]
+            for i in starts
+        ]
+    )
+    bi, bj = np.unravel_index(int(np.argmin(cost)), cost.shape)
+    i, j = starts[bi] * step, ends[bj] * step
     t = np.linspace(0, 1, overlap)[None, :, None]
-    out = a[:, : w - overlap].copy()
-    out[:, :overlap] = a[:, w - overlap :] * (1 - t) + a[:, :overlap] * t
+    out = a[:, i:j].copy()
+    out[:, :overlap] = a[:, j : j + overlap] * (1 - t) + a[:, i : i + overlap] * t
     return out
 
 

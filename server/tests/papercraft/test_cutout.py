@@ -47,6 +47,20 @@ def test_the_key_cuts_away_the_backdrop_touching_the_border() -> None:
     assert alpha[100, 120] == 255 and alpha[5, 5] == 0
 
 
+def test_tidying_cuts_away_painted_shadow_and_backdrop_seen_through_an_object() -> None:
+    pytest.importorskip("cv2")
+    image = block_on((240, 240, 240), (60, 120, 200))
+    pen = ImageDraw.Draw(image)
+    pen.rectangle((60, 172, 180, 190), fill=(150, 146, 140))
+    pen.rectangle((100, 80, 140, 120), fill=(240, 240, 240))
+    mask = Image.new("L", image.size, 0)
+    ImageDraw.Draw(mask).rectangle((60, 40, 180, 190), fill=255)
+
+    alpha = np.asarray(cutout.tidy(image, mask, ("shadows", "gaps")))
+
+    assert alpha[150, 70] == 255 and alpha[180, 120] == 0 and alpha[100, 120] == 0
+
+
 def test_small_holes_are_filled_and_big_ones_kept() -> None:
     pytest.importorskip("cv2")
     mask = np.full((100, 100), 255, dtype=np.uint8)

@@ -122,6 +122,49 @@ def hybrid(image: Image.Image) -> Image.Image:
     return fill_holes(clean(Image.fromarray(np.maximum(seg, keyed).astype(np.uint8)), floor=8))
 
 
+SHADOWS = {"shadows": (0.16, 0.3), "tinted shadows": (0.3, 0.3), "deep shadows": (0.16, 0.05)}
+"""Kinds of painted shadow to cut away: how saturated it may be, and how dark, against the
+backdrop. A shadow tinted by a bright object is more saturated, and a deep one darker, which
+only does for an object with no near-black parts."""
+
+
+def shadows(image: Image.Image, kind: str = "shadows") -> np.ndarray:
+    """Shadow painted on the backdrop: darker than it and nearly grey."""
+    greyness, darkest = SHADOWS[kind]
+    a = np.asarray(image.convert("RGB"), dtype=np.float32)
+    top, bottom = a.max(axis=2), a.min(axis=2)
+    saturation = (top - bottom) / np.maximum(top, 1)
+    level = top / max(background(image).max(), 1)
+    return (saturation < greyness) & (level > darkest) & (level < 0.99)
+
+
+def tidy(image: Image.Image, mask: Image.Image, cut: tuple[str, ...]) -> Image.Image:
+    """`mask` with what `cut` names cut away: a kind of painted shadow from `SHADOWS`, and
+    `gaps`, the backdrop showing through the object, between a chair's legs or inside a wheel.
+    Specks much smaller than the object go too."""
+    m = np.asarray(mask, dtype=np.float32).copy()
+    for kind in set(cut) & set(SHADOWS):
+        m[shadows(image, kind)] = 0
+    gaps = "gaps" in cut
+    if gaps:
+        a = np.asarray(image.convert("RGB"), dtype=np.float32)
+        m[np.abs(a - background(image)).max(axis=2) < 10] = 0
+    return _drop_specks(clean(Image.fromarray(m.astype(np.uint8)), floor=8))
+
+
+def _drop_specks(mask: Image.Image, smallest: float = 0.03) -> Image.Image:
+    import cv2
+
+    m = np.asarray(mask).copy()
+    count, labels, stats, _ = cv2.connectedComponentsWithStats((m > 128).astype(np.uint8), 8)
+    if count > 2:
+        areas = stats[1:, cv2.CC_STAT_AREA]
+        small = 1 + np.flatnonzero(areas < smallest * areas.max())
+        near = cv2.dilate(np.isin(labels, small).astype(np.uint8), np.ones((5, 5), np.uint8))
+        m[near > 0] = 0
+    return Image.fromarray(m)
+
+
 def fill_holes(mask: Image.Image, largest: int = 600) -> Image.Image:
     """The mask with small enclosed gaps made solid, leaving big ones like a ladder's rungs."""
     import cv2

@@ -17,6 +17,8 @@ type Roof = Literal["gable", "hip", "flat", "lean"]
 type Box = tuple[float, float, float, float]
 """left, bottom, right, top in metres: x from the front's left edge, y up from the ground."""
 
+PLAN = 1
+"""Bump when a change to the drawing should repaint every front."""
 WINDOW = (1.0, 1.35)
 DOOR = (1.1, 2.15)
 SILL = 0.95
@@ -88,11 +90,18 @@ class Front:
         return (self.door - DOOR[0] / 2, 0.15, self.door + DOOR[0] / 2, 0.15 + DOOR[1])
 
     def lamp_box(self) -> Box | None:
+        """Beside the door, towards the middle of the front, or else the other side, on the
+        wall and off any mural."""
         if not self.lamp or self.door is None:
             return None
-        side = -1 if self.door > self.width / 2 else 1
-        x = self.door + side * (DOOR[0] / 2 + 0.35)
-        return (x - 0.14, 2.0, x + 0.14, 2.4)
+        first = -1 if self.door > self.width / 2 else 1
+        for side in (first, -first):
+            x = self.door + side * (DOOR[0] / 2 + 0.35)
+            box = (x - 0.14, 2.0, x + 0.14, 2.4)
+            on_wall = box[0] > 0.2 and box[2] < self.width - 0.2
+            if on_wall and not any(_overlaps(box, m) for m in self.murals):
+                return box
+        return None
 
     def shop_boxes(self) -> list[Box]:
         """Shop windows along the ground floor, clear of the door and murals, none wider than
@@ -189,13 +198,16 @@ def _free_spans(
 @dataclass(frozen=True)
 class Plan:
     """A front drawn flat: the picture, its scale, where the front's ground line and left edge
-    are in it, and the mask of what can glow at night."""
+    are in it, the mask of what can glow at night, and its outline."""
 
     image: Image.Image
     glow: Image.Image
     ppm: float
     left: float
     ground: float
+    shape: Image.Image
+    """Everything the front covers: its walls and roof, even where a roof is the backdrop's
+    colour, and whatever is drawn on or past them."""
 
 
 def backdrop(front: Front) -> Rgb:
@@ -277,7 +289,9 @@ def draw(front: Front, ppm: float | None = None) -> Plan:
         pen.rectangle(px(box), fill=fill, outline=outline, width=max(1, round(width * ppm)))
 
     w, top = front.width, front.wall_height
-    _roof(pen, front, px)
+    outline = Image.new("L", size, 0)
+    _roof(pen, front, px, ImageDraw.Draw(outline))
+    ImageDraw.Draw(outline).rectangle(px((0, 0, front.width, front.wall_height)), fill=255)
     rect((0, 0, w, top), front.wall)
     rect((0, 0.15, w, 0.55), _darker(front.wall, 0.88))
     for level in range(1, front.storeys):
@@ -307,7 +321,10 @@ def draw(front: Front, ppm: float | None = None) -> Plan:
             rect((x - 0.01, box[3], x + 0.01, box[3] + 0.15), (90, 70, 50))
             pen.ellipse(px(box), fill=(236, 120, 90))
         light.ellipse(px(box), fill=255)
-    return Plan(image, glow, ppm, left, ground)
+    a = np.asarray(image, dtype=np.int16)
+    drawn = (np.abs(a - np.array(backdrop(front))).max(axis=2) > 6).astype(np.uint8) * 255
+    shape = Image.fromarray(np.maximum(drawn, np.asarray(outline)))
+    return Plan(image, glow, ppm, left, ground, shape)
 
 
 def _door(
@@ -403,12 +420,13 @@ def _awning(pen: ImageDraw.ImageDraw, px, span: tuple[float, float], y: float, c
         pen.pieslice((l0, b0 - (r0 - l0) / 2, r0, b0 + (r0 - l0) / 2), 0, 180, fill=fill)
 
 
-def _roof(pen: ImageDraw.ImageDraw, front: Front, px) -> None:
+def _roof(pen: ImageDraw.ImageDraw, front: Front, px, outline: ImageDraw.ImageDraw) -> None:
     w, top, rise = front.width, front.wall_height, front.rise
     colour, dark = front.roof, _darker(front.roof)
     if front.roof_shape == "flat":
         l0, t0, r0, b0 = px((-0.2, top, w + 0.2, top + rise))
         pen.rectangle((l0, t0, r0, b0), fill=colour, outline=dark, width=2)
+        outline.rectangle((l0, t0, r0, b0), fill=255)
         return
     slope = min(w * 0.22, rise * 1.6)
     corners = {
@@ -418,6 +436,7 @@ def _roof(pen: ImageDraw.ImageDraw, front: Front, px) -> None:
     }[front.roof_shape]
     points = [px((x, y, x, y))[:2] for x, y in corners]
     pen.polygon(points, fill=colour, outline=dark, width=3)
+    outline.polygon(points, fill=255)
     inside = Image.new("L", pen.im.size, 0)
     ImageDraw.Draw(inside).polygon(points, fill=255)
     lines = Image.new("L", pen.im.size, 0)

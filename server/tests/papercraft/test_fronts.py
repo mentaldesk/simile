@@ -18,7 +18,7 @@ def test_every_opening_is_on_the_wall_and_clear_of_the_others_and_the_murals(
     building: str,
 ) -> None:
     f = FRONTS[building]
-    openings = [*f.window_boxes(), *f.shop_boxes()]
+    openings = [*f.window_boxes(), *f.shop_boxes(), *f.lamp_boxes()]
 
     assert openings or f.murals
     for box in openings:
@@ -76,6 +76,19 @@ def test_a_mural_wall_is_left_blank_between_its_storeys() -> None:
     assert mural == pytest.approx((1.1, 0.7 * 4.4, 5.5, 11 * TILE - 0.3))
     assert f.shop_boxes() and not any(overlaps(b, mural) for b in f.window_boxes())
     assert f.door_box and not overlaps(f.door_box, mural)
+
+
+@pytest.mark.parametrize("building", FRONTS)
+def test_a_plans_outline_covers_its_walls_and_roof(building: str) -> None:
+    f = FRONTS[building]
+    plan = draw(f)
+    shape = np.asarray(plan.shape) > 0
+    roof = round(plan.ground - (f.wall_height + f.rise / 2) * plan.ppm)
+    middle = round(plan.left + f.width * plan.ppm / 2)
+
+    assert shape[roof, middle]
+    assert shape[round(plan.ground - plan.ppm), middle]
+    assert not shape[2, 2]
 
 
 def test_a_white_building_is_drawn_on_grey() -> None:

@@ -60,6 +60,8 @@ class Look:
     glass_door: bool = False
     window: tuple[float, float] = WINDOW
     one_shop: bool = False
+    mural_words: bool = False
+    """Ask outright for the mural wall to stay empty, where FLUX fills it otherwise."""
     reseed: int = 0
     """Added to the seed, to paint a rejected front again."""
 
@@ -189,13 +191,15 @@ LOOKS: dict[str, Look] = {
         glass_door=True,
     ),
     "tower": Look(
-        "a three-storey block of flats of pale grey concrete",
+        "an old three-storey tower of pale grey concrete with plain blank walls and no "
+        "windows, and a small service door",
         (200, 198, 190),
         (120, 124, 128),
         SLATE,
         "flat",
         glass_door=True,
-        reseed=1,
+        mural_words=True,
+        reseed=4,
     ),
     "garden_flats": Look(
         "a three-storey block of garden flats of cream plaster",
@@ -205,6 +209,7 @@ LOOKS: dict[str, Look] = {
         "flat",
         shutters=(110, 140, 110),
         flower_boxes=BOXES,
+        mural_words=True,
     ),
     "gallery": Look(
         "a three-storey art gallery of white plaster with tall windows",
