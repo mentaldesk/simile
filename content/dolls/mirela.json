@@ -1,0 +1,254 @@
+{
+  "id": "mirela",
+  "hash": "d0d9975e0af8bb83",
+  "appearance": {
+    "skin": "#ead4aa",
+    "hair_style": "bob",
+    "hair_colour": "#733e39",
+    "top_colour": "#3e8948",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#b86f50",
+    "build": "average",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "version": 1,
+  "unit": 5.0,
+  "height": 98.8,
+  "flat": "mirela-flat.webp",
+  "painted": "mirela-painted.webp",
+  "pieces": {
+    "head": {
+      "frame": [
+        300,
+        254,
+        139,
+        163
+      ],
+      "pivot": [
+        69.0,
+        146.0
+      ],
+      "joints": {}
+    },
+    "torso": {
+      "frame": [
+        0,
+        0,
+        110,
+        252
+      ],
+      "pivot": [
+        49.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          53.0,
+          9.0
+        ],
+        "shoulder": [
+          47.0,
+          29.0
+        ],
+        "hip": [
+          49.0,
+          169.0
+        ]
+      }
+    },
+    "upper_arm": {
+      "frame": [
+        48,
+        432,
+        44,
+        106
+      ],
+      "pivot": [
+        22.0,
+        22.0
+      ],
+      "joints": {
+        "elbow": [
+          22.0,
+          87.0
+        ]
+      }
+    },
+    "lower_arm": {
+      "frame": [
+        94,
+        432,
+        39,
+        101
+      ],
+      "pivot": [
+        18.0,
+        18.0
+      ],
+      "joints": {
+        "hand": [
+          20.0,
+          80.5
+        ]
+      }
+    },
+    "upper_leg": {
+      "frame": [
+        441,
+        254,
+        54,
+        142
+      ],
+      "pivot": [
+        27.0,
+        27.0
+      ],
+      "joints": {
+        "knee": [
+          27.0,
+          119.5
+        ]
+      }
+    },
+    "lower_leg": {
+      "frame": [
+        0,
+        432,
+        46,
+        130
+      ],
+      "pivot": [
+        23.0,
+        23.0
+      ],
+      "joints": {
+        "ankle": [
+          23.0,
+          110.5
+        ]
+      }
+    },
+    "shoe": {
+      "frame": [
+        135,
+        432,
+        81,
+        43
+      ],
+      "pivot": [
+        27.0,
+        14.0
+      ],
+      "joints": {}
+    },
+    "head_front": {
+      "frame": [
+        150,
+        254,
+        148,
+        173
+      ],
+      "pivot": [
+        74.0,
+        145.0
+      ],
+      "joints": {}
+    },
+    "torso_front": {
+      "frame": [
+        112,
+        0,
+        132,
+        252
+      ],
+      "pivot": [
+        66.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          66.0,
+          9.0
+        ],
+        "shoulder_left": [
+          23.0,
+          29.0
+        ],
+        "shoulder_right": [
+          109.0,
+          29.0
+        ],
+        "hip_left": [
+          41.0,
+          169.0
+        ],
+        "hip_right": [
+          91.0,
+          169.0
+        ]
+      }
+    },
+    "head_back": {
+      "frame": [
+        0,
+        254,
+        148,
+        176
+      ],
+      "pivot": [
+        74.0,
+        148.0
+      ],
+      "joints": {}
+    },
+    "torso_back": {
+      "frame": [
+        246,
+        0,
+        132,
+        199
+      ],
+      "pivot": [
+        66.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          66.0,
+          9.0
+        ],
+        "shoulder_left": [
+          23.0,
+          29.0
+        ],
+        "shoulder_right": [
+          109.0,
+          29.0
+        ],
+        "hip_left": [
+          41.0,
+          169.0
+        ],
+        "hip_right": [
+          91.0,
+          169.0
+        ]
+      }
+    },
+    "shoe_front": {
+      "frame": [
+        218,
+        432,
+        54,
+        39
+      ],
+      "pivot": [
+        27.0,
+        10.0
+      ],
+      "joints": {}
+    }
+  }
+}
