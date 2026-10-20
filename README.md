@@ -11,8 +11,10 @@ everything the build painted and composed, full size.
   with its glow map added at night.
 - `paintings/`: every FLUX.2 Klein 4B painting the committed pieces are cut from, as JPEG. Fronts
   and glow maps wider than a house are painted a unit at a time (`-0`, `-1`, `-2`).
-- `rejected/`: paintings that were replaced, with the reason in the PR: the first runs, the café
-  painted whole and in slices, and items re-prompted after a look.
+- `rejected/`: every other painting, in the order it was painted (`<time>-<hash>.jpg`): the first
+  runs, the café painted whole and in slices, the seeds tried for the tower and Garden Flats, and
+  items re-prompted after a look. The PR says why each was replaced.
 - `plans/`: the flat plans the fronts are redrawn from, and the sketches for stairs, the ladder,
-  the lift and the white fittings.
-- `timings.jsonl`: every painting with its key, size and seconds, on an M2 Max at 8-bit.
+  the ledge, the lift and the white fittings.
+- `timings.jsonl`: the paintings the build made, with key, size and seconds, on an M2 Max at
+  8-bit. Seed trials made outside the build aren't in it.

@@ -191,3 +191,14 @@
 {"key": "glow/coffee_shop#1", "kind": "glow", "size": [848, 1408], "seconds": 55.3}
 {"key": "glow/coffee_shop#2", "kind": "glow", "size": [848, 1408], "seconds": 55.0}
 {"key": "furniture/picture_frame", "kind": "sprite", "size": [768, 640], "seconds": 26.2}
+{"key": "fronts/garden_flats#0", "kind": "front", "size": [848, 1408], "seconds": 66.7}
+{"key": "glow/garden_flats#0", "kind": "glow", "size": [848, 1408], "seconds": 48.1}
+{"key": "fronts/tower#0", "kind": "front", "size": [848, 1408], "seconds": 73.6}
+{"key": "glow/tower#0", "kind": "glow", "size": [848, 1408], "seconds": 48.7}
+{"key": "furniture/kitchen", "kind": "sprite", "size": [1024, 512], "seconds": 24.3}
+{"key": "furniture/cafe_table", "kind": "sprite", "size": [896, 512], "seconds": 22.4}
+{"key": "glow/garden_flats#0", "kind": "glow", "size": [848, 1408], "seconds": 43.6}
+{"key": "glow/tower#0", "kind": "glow", "size": [848, 1408], "seconds": 44.6}
+{"key": "furniture/noodle_table", "kind": "sprite", "size": [768, 768], "seconds": 24.2}
+{"key": "furniture/bicycle", "kind": "sprite", "size": [896, 576], "seconds": 24.3}
+{"key": "platforms/ledge", "kind": "sprite", "size": [1056, 336], "seconds": 29.3}
