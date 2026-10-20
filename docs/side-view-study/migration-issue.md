@@ -20,6 +20,8 @@ work it would take. **Each numbered part is one issue and one PR**, and each nam
 - **A part that deletes, moves or removes something, or changes a default other code relies on,
   also owns every file that imports or reads it, tests included, and updates them in the same
   PR.** Every such file is listed under the part, from a search of `main`.
+- The Owns lists were checked against `main` at `da3f436`. Each part re-checks its importers when
+  it's filed.
 
 The eleven residents keep their ids, values, voices, memories and `Appearance`. Only how they're
 drawn changes, and their new art is made from the `Appearance` they already have.
@@ -280,12 +282,24 @@ and `ui/` import from `client/src/world/` (`map`, `hit`, `view`, `interactables`
 - `art/iso/`: `server/simile/jobs/capabilities.py` (`blender.find`) and
   `server/tests/jobs/test_capabilities.py`. Part 8 has already removed `works/render.py`'s and
   `tests/world/test_murals.py`'s imports of it.
-- The sprite job: `server/simile/jobs/lifespan.py` (`SPRITE`), which registers part 4's doll job
-  instead; `client/src/creator/look.ts` and `look.test.ts`, which submit `sprite` jobs and read
-  `/api/jobs/files/sprite/`, and `editor.ts` and `editor.test.ts`, which show the creator's sprite
-  only when `capabilities.kinds.sprite` is available and assert `submit('sprite', …)`, all
-  switching to the doll job; and `server/tests/jobs/test_routes.py`, which tests the `sprite`
-  kind.
+- The sprite job, which part 9 replaces with part 4's doll job. Every reference to it on `main`
+  (the `sprite` job kind, `kinds.sprite`, `/api/jobs/files/sprite/`, `jobs/sprite`, `SPRITE`):
+  - `server/simile/jobs/lifespan.py`, which registers `SPRITE`, and registers the doll job instead.
+  - `server/simile/jobs/README.md`, which documents the `sprite` kind and its files.
+  - `server/tests/jobs/test_routes.py`, which tests the `sprite` kind, its capability and its
+    files. (`server/simile/jobs/sprite.py` and `server/tests/jobs/test_sprite.py` are deleted.)
+  - `client/src/creator/look.ts`, which submits `sprite` jobs and reads `/api/jobs/files/sprite/`,
+    and `look.test.ts`, whose capabilities have a `sprite` kind.
+  - `client/src/creator/editor.ts`, which shows the creator's sprite only when
+    `capabilities.kinds.sprite` is available, and `editor.test.ts`, which asserts
+    `submit('sprite', …)`.
+  - `client/src/creator/player-look.ts`, which shows the player look editor's sprite only when
+    `capabilities.kinds.sprite` is available. No test covers it yet; part 9 adds one.
+  - `client/src/creator/jobs.test.ts`, whose fixtures are a `sprite` job and its file URL.
+
+  The `sprite` value in a world's `needs` is kept, meaning the resident has no doll yet:
+  `server/simile/worlds/store.py`, `server/tests/worlds/test_routes.py`, and `client/src/menu/`
+  (`api.ts`, `menu.ts`, `menu.test.ts`).
 - `Colours` and `PLAYER` in `server/simile/dolls/`: part 9 moves `Colours.of`'s accent and apron
   rule into `characters/palette.py` with the palette, and repoints the dolls' imports of both.
   `server/simile/papercraft/` imports neither.
