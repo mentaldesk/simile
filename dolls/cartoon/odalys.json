@@ -1,0 +1,253 @@
+{
+  "id": "odalys",
+  "appearance": {
+    "skin": "#e4a672",
+    "hair_style": "curly",
+    "hair_colour": "#3e2731",
+    "top_colour": "#f77622",
+    "bottom_colour": "#3e8948",
+    "shoe_colour": "#ffffff",
+    "build": "average",
+    "accessories": [
+      "apron"
+    ]
+  },
+  "version": 2,
+  "unit": 5.0,
+  "height": 98.8,
+  "flat": "odalys-flat.webp",
+  "painted": "odalys-painted.webp",
+  "pieces": {
+    "head": {
+      "frame": [
+        342,
+        254,
+        162,
+        174
+      ],
+      "pivot": [
+        80.0,
+        157.0
+      ],
+      "joints": {}
+    },
+    "torso": {
+      "frame": [
+        0,
+        0,
+        124,
+        252
+      ],
+      "pivot": [
+        56.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          60.0,
+          9.0
+        ],
+        "shoulder": [
+          54.0,
+          29.0
+        ],
+        "hip": [
+          56.0,
+          169.0
+        ]
+      }
+    },
+    "upper_arm": {
+      "frame": [
+        110,
+        442,
+        46,
+        108
+      ],
+      "pivot": [
+        23.0,
+        23.0
+      ],
+      "joints": {
+        "elbow": [
+          23.0,
+          88.0
+        ]
+      }
+    },
+    "lower_arm": {
+      "frame": [
+        158,
+        442,
+        40,
+        102
+      ],
+      "pivot": [
+        19.0,
+        19.0
+      ],
+      "joints": {
+        "hand": [
+          21.0,
+          81.5
+        ]
+      }
+    },
+    "upper_leg": {
+      "frame": [
+        0,
+        442,
+        58,
+        146
+      ],
+      "pivot": [
+        29.0,
+        29.0
+      ],
+      "joints": {
+        "knee": [
+          29.0,
+          121.5
+        ]
+      }
+    },
+    "lower_leg": {
+      "frame": [
+        60,
+        442,
+        48,
+        132
+      ],
+      "pivot": [
+        24.0,
+        24.0
+      ],
+      "joints": {
+        "ankle": [
+          24.0,
+          111.5
+        ]
+      }
+    },
+    "shoe": {
+      "frame": [
+        200,
+        442,
+        81,
+        43
+      ],
+      "pivot": [
+        27.0,
+        14.0
+      ],
+      "joints": {}
+    },
+    "head_front": {
+      "frame": [
+        172,
+        254,
+        168,
+        186
+      ],
+      "pivot": [
+        84.0,
+        158.0
+      ],
+      "joints": {}
+    },
+    "torso_front": {
+      "frame": [
+        126,
+        0,
+        150,
+        252
+      ],
+      "pivot": [
+        75.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          75.0,
+          9.0
+        ],
+        "shoulder_left": [
+          23.0,
+          29.0
+        ],
+        "shoulder_right": [
+          127.0,
+          29.0
+        ],
+        "hip_left": [
+          47.81,
+          169.0
+        ],
+        "hip_right": [
+          102.19,
+          169.0
+        ]
+      }
+    },
+    "head_back": {
+      "frame": [
+        0,
+        254,
+        170,
+        186
+      ],
+      "pivot": [
+        85.0,
+        158.0
+      ],
+      "joints": {}
+    },
+    "torso_back": {
+      "frame": [
+        278,
+        0,
+        150,
+        199
+      ],
+      "pivot": [
+        75.0,
+        169.0
+      ],
+      "joints": {
+        "neck": [
+          75.0,
+          9.0
+        ],
+        "shoulder_left": [
+          23.0,
+          29.0
+        ],
+        "shoulder_right": [
+          127.0,
+          29.0
+        ],
+        "hip_left": [
+          47.81,
+          169.0
+        ],
+        "hip_right": [
+          102.19,
+          169.0
+        ]
+      }
+    },
+    "shoe_front": {
+      "frame": [
+        283,
+        442,
+        56,
+        39
+      ],
+      "pivot": [
+        28.0,
+        10.0
+      ],
+      "joints": {}
+    }
+  }
+}

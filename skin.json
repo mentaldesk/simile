@@ -1,0 +1,116 @@
+{
+ "now": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#e5c071",
+   "delta_e": 12.2,
+   "lighter": 6.5
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#debfac",
+   "delta_e": 5.9,
+   "lighter": 1.5
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#dfbca4",
+   "delta_e": 15.6,
+   "lighter": 17.6
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#6c4b3d",
+   "delta_e": 7.9,
+   "lighter": 2.4
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#694c43",
+   "delta_e": 8.0,
+   "lighter": 2.5
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e0b799",
+   "delta_e": 14.2,
+   "lighter": 16.3
+  }
+ },
+ "papercraft": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#e7bc69",
+   "delta_e": 11.2,
+   "lighter": 5.6
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#e7cab1",
+   "delta_e": 6.9,
+   "lighter": 5.1
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#d2b6a0",
+   "delta_e": 15.2,
+   "lighter": 14.9
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#674434",
+   "delta_e": 7.6,
+   "lighter": -0.3
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#62463b",
+   "delta_e": 8.4,
+   "lighter": -0.2
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#dfb58e",
+   "delta_e": 14.5,
+   "lighter": 15.5
+  }
+ },
+ "cartoon": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#d5a95b",
+   "delta_e": 9.3,
+   "lighter": -1.1
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#fad3b4",
+   "delta_e": 6.9,
+   "lighter": 9.1
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#e0b998",
+   "delta_e": 15.1,
+   "lighter": 16.7
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#6c412a",
+   "delta_e": 8.5,
+   "lighter": -0.6
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#724b3d",
+   "delta_e": 6.4,
+   "lighter": 3.2
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e5bb95",
+   "delta_e": 15.7,
+   "lighter": 17.7
+  }
+ }
+}
