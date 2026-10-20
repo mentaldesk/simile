@@ -84,6 +84,23 @@ async def test_the_queue_runs_along_the_floor_away_from_the_counter() -> None:
     ]
 
 
+async def test_someone_upstairs_who_chooses_the_cafe_queues_without_going_to_the_door() -> None:
+    village = side_village((BEA, ANA), behaviour=COFFEE, config=CAREFUL)
+    village.movement.place("ana", MapTile(map="coffee_shop_floor_1", x=3, y=2))
+    village.behaviour.restore("ana", Goal(Activity.IDLE), {}, village.now, None, {})
+    mind, sent_to = village.behaviour.minds["ana"], []
+
+    def queuing() -> bool:
+        if mind.held is not None:
+            sent_to.append(mind.held[0])
+        return "ana" in village.cafe.queue
+
+    await village.run_until(queuing)
+
+    assert village.at("ana").map == "coffee_shop_floor_1"
+    assert SIDE.entrance not in sent_to
+
+
 async def test_the_barista_takes_orders_at_the_till_and_makes_and_hands_over_beside_it() -> None:
     village = side_village((BEA, ANA), behaviour=COFFEE, config=CAREFUL)
 
