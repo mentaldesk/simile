@@ -44,8 +44,9 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
   painted on grey. A front is cut on its plan's outline.
 - **Scaled** to its height in metres at 120 px/m. Street layers, papers and the sky keep their
   painted size, and are made to tile along x (papers both ways).
-- **Hashed.** A piece's `hash` covers its prompt, seed, size, style images, plan or sketch, and the
-  pipeline's version. A run repaints and rewrites only the pieces whose hash changed. Paintings
+- **Hashed.** A piece's `hash` covers its prompt, seed, size, style images, the pipeline's
+  version, and for a front or sketched piece the plan's parameters and the code that draws it
+  (`fronts.py`, `sketches.py`), not its pixels, which differ by a pixel between platforms. A run repaints and rewrites only the pieces whose hash changed. Paintings
   are cached by their own hash in `~/.cache/simile/papercraft/raw/`, so a change to how pieces
   are cut re-cuts them without repainting on the machine that painted them.
 
