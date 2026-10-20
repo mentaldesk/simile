@@ -120,9 +120,12 @@ class DoorKind(StrEnum):
 
 
 class Door(Model):
-    """A link between two maps: taking it from either tile puts you on the other one. A door joins
-    the village or a street (`outside`) and a building's ground floor (`inside`). Stairs, a ladder
-    or a lift join two floors' maps, `outside` the lower and `inside` the upper."""
+    """A link between two maps: taking it from either end tile puts you on the other one. A door
+    joins the village or a street (`outside`) and a building's ground floor (`inside`), or two
+    streets, with `outside` on the one whose id comes first alphabetically. Stairs, a ladder or a
+    lift join two floors' maps, `outside` the lower and `inside` the upper. No two links share an
+    end tile, so a lift serving three floors, or two flights meeting on a landing, has a separate
+    end tile on the middle floor for each link."""
 
     id: Id
     kind: DoorKind = Field(
@@ -131,10 +134,12 @@ class Door(Model):
         description="How it's crossed. Left out for a door.",
     )
     outside: MapTile = Field(
-        description="The walkable tile in front of the building's door, or the lower floor's end."
+        description="The walkable tile in front of the building's door, the lower floor's end, or "
+        "the end on the street whose id comes first."
     )
     inside: MapTile = Field(
-        description="The mat just inside the interior's entrance, or the upper floor's end."
+        description="The mat just inside the interior's entrance, the upper floor's end, or the "
+        "end on the other street."
     )
 
     @model_validator(mode="after")

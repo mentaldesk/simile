@@ -41,7 +41,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "A link between two maps: taking it from either tile puts you on the other one. A door joins\nthe village or a street (`outside`) and a building's ground floor (`inside`). Stairs, a ladder\nor a lift join two floors' maps, `outside` the lower and `inside` the upper.",
+  "description": "A link between two maps: taking it from either end tile puts you on the other one. A door\njoins the village or a street (`outside`) and a building's ground floor (`inside`), or two\nstreets, with `outside` on the one whose id comes first alphabetically. Stairs, a ladder or a\nlift join two floors' maps, `outside` the lower and `inside` the upper. No two links share an\nend tile, so a lift serving three floors, or two flights meeting on a landing, has a separate\nend tile on the middle floor for each link.",
   "properties": {
     "id": {
       "maxLength": 64,
@@ -56,11 +56,11 @@
     },
     "outside": {
       "$ref": "#/$defs/MapTile",
-      "description": "The walkable tile in front of the building's door, or the lower floor's end."
+      "description": "The walkable tile in front of the building's door, the lower floor's end, or the end on the street whose id comes first."
     },
     "inside": {
       "$ref": "#/$defs/MapTile",
-      "description": "The mat just inside the interior's entrance, or the upper floor's end."
+      "description": "The mat just inside the interior's entrance, the upper floor's end, or the end on the other street."
     }
   },
   "required": [

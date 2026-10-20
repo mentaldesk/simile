@@ -62,9 +62,15 @@ differently, this document says so beside today's reading.
   only in [`paintings`](#paintings).
   - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
     door. A door joins a street or the village (`outside`) and a building's ground floor
-    (`inside`). Stairs, a ladder or a lift join two floors' maps, with `outside` the lower and
-    `inside` the upper. Stairs and ladders within one map aren't doors: they're climbable cells on
-    the map.
+    (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
+    `"high_street"` before `"mill_lane"`. Stairs, a ladder or a lift join two floors' maps, with
+    `outside` the lower and `inside` the upper. Stairs and ladders within one map aren't doors:
+    they're climbable cells on the map.
+  - No two links share an end tile. The client finds a link from its end tile, and the server's
+    `door_ends` (`server/simile/world/paths.py`) keys links by their end tiles, so it would drop
+    one of two that share a tile. A lift serving three or more floors, or two flights of stairs
+    meeting on a landing, has a separate end tile on the middle floor for each link. #308's map
+    loader rejects a map that breaks this.
   - A `Location`'s `map`, `area` and `entry` are where you arrive. On side-view maps its `floors`
     are its building's other floors, each a `MapArea` (a `TileArea` with a `map`) on a map of its
     own. It's left out when empty, as on today's maps.
@@ -112,7 +118,8 @@ On a side-view map:
 - One taking stairs, a ladder or a lift to another floor's map gets an `entity_moved` at the
   link's end on the map it's leaving, `climbing` or `riding`. It holds that for the climb or ride,
   then arrives on the other map as through a door.
-- The client finds the link from that end and plays a climb or a ride by its `kind`.
+- The client finds the link from that end tile, which no other link shares, and plays a climb or
+  a ride by its `kind`.
 
 ### `conversation_started`
 
