@@ -6,7 +6,6 @@ from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any
 
-from simile.art.palette import PALETTE
 from simile.characters.biography import (
     CRITIC,
     CRITIQUED,
@@ -19,6 +18,7 @@ from simile.characters.biography import (
 )
 from simile.characters.brief import Brief
 from simile.characters.novelty import Match, Novelty
+from simile.characters.palette import PALETTE
 from simile.characters.sheet import Look, Sheet, draw, split_name
 from simile.characters.tables import Tables, Village, load_tables
 from simile.characters.traits import derive_traits

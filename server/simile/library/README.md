@@ -16,7 +16,7 @@ the player's own characters, and the player's look. P8's creator and P9's new-wo
 | `POST /api/characters/reroll` | Writes sections of a character again, streamed. Saves nothing. |
 | `GET /api/characters/{id}/export` | A player character as one file (below). |
 | `POST /api/characters/import` | Saves the character in an exported file as a player character (201). |
-| `GET /api/player`, `PUT /api/player` | The player's look, as `{"appearance": {...}}`. Until it's set, the built-in look from `simile.art.characters`. |
+| `GET /api/player`, `PUT /api/player` | The player's look, as `{"appearance": {...}}`. Until it's set, the built-in look, `simile.characters.palette.PLAYER`. |
 
 The server sets `source` (always `player`), `created`, `updated` and `version` on everything it
 saves, and `voice.reference_clip` (see *Voice clips*). A POST starts at version 1, and each PUT adds
@@ -88,7 +88,7 @@ For P11 (#189), casting and anything else that reads a clip:
 ## Export and import
 
 An export is a zip of `character.json`, with `voice.reference_clip` set to `voice.wav`, and
-`voice.wav` if the character has a clip. The sprite isn't in it, because it's drawn again from
+`voice.wav` if the character has a clip. The doll isn't in it, because it's painted again from
 `appearance`. Only player characters export: copying premade ones isn't allowed yet.
 
 An import is refused, with the reason, when:

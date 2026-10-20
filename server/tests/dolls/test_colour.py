@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from simile.art.palette import PALETTE
+from simile.characters.palette import PALETTE
 from simile.dolls.colour import KNEE, delta_e, delta_e_lab, hex_of, muted, oklab, rgb
 
 SHARMA = [

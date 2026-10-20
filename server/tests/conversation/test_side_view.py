@@ -19,15 +19,13 @@ pytestmark = pytest.mark.anyio
 STREETS = load_maps()
 
 
-def test_in_side_view_people_face_left_or_right_or_else_the_camera() -> None:
+def test_people_face_left_or_right_or_else_the_camera() -> None:
     here = Point(5, 2, "coffee_shop_floor_1")
 
-    assert facing(here, Point(9, 1, here.map), side_view=True) == "right"
-    assert facing(here, Point(2, 8, here.map), side_view=True) == "left"
-    assert facing(here, Point(5, 0, here.map), side_view=True) == "down"
     assert facing(here, Point(9, 1, here.map)) == "right"
+    assert facing(here, Point(2, 8, here.map)) == "left"
+    assert facing(here, Point(5, 0, here.map)) == "down"
     assert facing(here, Point(5, 9, here.map)) == "down"
-    assert facing(here, Point(5, 0, here.map)) == "up"
 
 
 async def test_a_conversation_on_a_street_turns_them_to_face_each_other_across_it() -> None:

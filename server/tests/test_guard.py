@@ -338,13 +338,13 @@ def test_finds_the_servers_routes() -> None:
     found = {param.values for param in CHANGING}
 
     assert found >= {
-        ("/api/art/preview", "POST"),
         ("/api/characters/1", "DELETE"),
         ("/api/characters/1", "PUT"),
         ("/api/characters/1/voice/recording", "POST"),
         ("/api/characters/generate", "POST"),
         ("/api/characters/import", "POST"),
         ("/api/characters/reroll", "POST"),
+        ("/api/dolls/flat", "POST"),
         ("/api/jobs", "POST"),
         ("/api/news/feeds", "POST"),
         ("/api/news/feeds/check", "POST"),

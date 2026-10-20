@@ -1,5 +1,4 @@
-"""Paints a new or changed character's doll: `python -m simile.dolls.job <work>`. Shaped like
-`jobs/sprite.py`, which part 9 replaces with it; nothing registers it yet."""
+"""Paints a new or changed character's doll: `python -m simile.dolls.job <work>`."""
 
 import os
 import sys

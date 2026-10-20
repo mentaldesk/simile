@@ -63,10 +63,6 @@ def corridor(length: int) -> TownMap:
     return TownMap("corridor", length, 1, ((False,) * length,), ())
 
 
-def open_field(size: int) -> TownMap:
-    return TownMap("field", size, size, ((False,) * size,) * size, ())
-
-
 def test_walks_at_walking_speed() -> None:
     village = Village(corridor(14))
     village.movement.place("mei", Tile(x=0, y=0))
@@ -109,18 +105,6 @@ def test_publishes_per_tile_not_per_tick_at_10x() -> None:
     assert len(village.moves) == 13
 
 
-def test_takes_longer_on_a_diagonal() -> None:
-    village = Village(open_field(3))
-    village.movement.place("mei", Tile(x=0, y=0))
-
-    walk = village.movement.walk_to("mei", Tile(x=2, y=2))
-    village.finish(walk)
-
-    assert walk.distance == pytest.approx(2 * math.sqrt(2))
-    assert_on_time(village.now, walk.distance)
-    assert village.tiles("mei")[1:] == [(1, 1), (2, 2)]
-
-
 @pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
 def test_walks_from_every_house_to_the_coffee_shop(house) -> None:
     village = Village()
@@ -158,27 +142,27 @@ def test_npcs_going_to_the_same_place_end_on_different_tiles() -> None:
 
 
 def test_two_npcs_walking_to_the_same_tile_end_side_by_side() -> None:
-    village = Village(open_field(9))
+    village = Village(corridor(9))
     village.movement.place("mei", Tile(x=0, y=0))
-    village.movement.place("suki", Tile(x=8, y=8))
+    village.movement.place("suki", Tile(x=8, y=0))
 
-    walks = [village.movement.walk_to(npc, Tile(x=4, y=4)) for npc in ("mei", "suki")]
+    walks = [village.movement.walk_to(npc, Tile(x=4, y=0)) for npc in ("mei", "suki")]
     village.finish(*walks)
 
-    assert walks[0].destination == MapTile(map="field", x=4, y=4)
-    assert walks[1].destination != MapTile(map="field", x=4, y=4)
+    assert walks[0].destination == MapTile(map="corridor", x=4, y=0)
+    assert walks[1].destination != MapTile(map="corridor", x=4, y=0)
     mei, suki = village.movement.position("mei"), village.movement.position("suki")
-    assert max(abs(mei.x - suki.x), abs(mei.y - suki.y)) == 1
+    assert abs(mei.x - suki.x) == 1
 
 
 def test_walking_to_someone_ends_next_to_them() -> None:
-    village = Village(open_field(9))
+    village = Village(corridor(9))
     village.movement.place("mei", Tile(x=0, y=0))
-    village.movement.place("suki", Tile(x=6, y=3))
+    village.movement.place("suki", Tile(x=6, y=0))
 
-    village.finish(village.movement.walk_to("mei", Tile(x=6, y=3)))
+    village.finish(village.movement.walk_to("mei", Tile(x=6, y=0)))
 
-    assert village.movement.position("mei") == (5, 2)
+    assert village.movement.position("mei") == (5, 0)
 
 
 def test_steps_aside_when_someone_is_standing_on_the_destination() -> None:
@@ -326,11 +310,11 @@ def test_tracks_the_player_without_publishing() -> None:
 
 
 def test_lists_entities_and_distances() -> None:
-    village = Village(open_field(9))
+    village = Village(corridor(9))
     village.movement.place("mei", Tile(x=0, y=0))
-    village.movement.place("suki", Tile(x=3, y=4))
+    village.movement.place("suki", Tile(x=5, y=0))
 
-    assert village.movement.entities() == {"mei": (0, 0), "suki": (3, 4)}
+    assert village.movement.entities() == {"mei": (0, 0), "suki": (5, 0)}
     assert village.movement.distance("mei", "suki") == 5
 
 
@@ -547,10 +531,10 @@ def test_walks_into_the_gallery_through_its_door() -> None:
 
 
 def test_nobody_reaches_a_map_without_a_door() -> None:
-    village = Village({**MAPS, "field": open_field(3)})
+    village = Village({**MAPS, "corridor": corridor(3)})
     village.movement.place("mei", "square")
 
-    field = MapTile(map="field", x=1, y=1)
+    field = MapTile(map="corridor", x=1, y=0)
     assert village.movement.walk_to("mei", field).outcome is Outcome.UNREACHABLE
     with pytest.raises(KeyError):
         village.movement.walk_to("mei", MapTile(map="moon", x=0, y=0))

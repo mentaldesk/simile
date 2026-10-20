@@ -58,14 +58,13 @@ from simile.sim import (
 from simile.social import describe, meet
 from simile.voice import SpeakingRate
 from simile.world import Movement, Point
-from simile.world.map import ISO_DIR, TownMap, load_maps
+from simile.world.map import TownMap, load_maps
 
 from .conftest import remembers, work
 
 pytestmark = pytest.mark.anyio
 
 MAPS = load_maps()
-TODAY = load_maps(ISO_DIR)
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
 
@@ -1519,14 +1518,3 @@ async def test_on_a_side_view_map_a_resident_turns_left_or_right_to_the_player(
     await village.run(0.1)
 
     assert village.of(Facing) == [Facing("ana", PLAYER_ID, turns)]
-
-
-async def test_on_todays_maps_a_resident_still_turns_up_or_down_to_the_player() -> None:
-    village = Village(npcs=(ANA,), maps=TODAY)
-    here = village.movement.position("ana")
-    village.movement.track(PLAYER_ID, Point(here.x + 0.5, here.y - 2, here.map))
-
-    village.players.say("Hello!", "ana")
-    await village.run(0.1)
-
-    assert village.of(Facing) == [Facing("ana", PLAYER_ID, "up")]

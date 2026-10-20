@@ -9,7 +9,7 @@ disconnects. Only one job of a kind runs at a time; later ones wait in order, at
 | Route | What it does |
 |---|---|
 | `GET /api/jobs/capabilities` | What this machine can run (below). |
-| `POST /api/jobs` | Starts a job from `{"kind": "sprite", "params": {...}}`. 202 with the job, 422 with `{"error": reason}` for a bad request, 429 when too many of that kind are waiting. |
+| `POST /api/jobs` | Starts a job from `{"kind": "doll", "params": {...}}`. 202 with the job, 422 with `{"error": reason}` for a bad request, 429 when too many of that kind are waiting. |
 | `GET /api/jobs`, `GET /api/jobs/{id}` | The jobs since the server started (the latest 100 that finished), or one of them. |
 | `POST /api/jobs/{id}/cancel` | Stops a waiting or running job, killing its subprocess and anything it started, and returns it. 409 once it has finished. |
 | `WS /ws/jobs/{id}` | Sends the job as JSON now and after every change, then closes once it has finished. Close code 4404 for an unknown job. Leaving early doesn't stop the job. |
@@ -21,14 +21,15 @@ A job looks like this. `state` is `queued`, `running`, `succeeded`, `failed` or 
 ```json
 {
   "id": "3f9c2a7d1b6e4c08",
-  "kind": "sprite",
+  "kind": "doll",
   "state": "succeeded",
   "progress": 1.0,
-  "message": "Drawn",
+  "message": "Painted",
   "error": null,
   "result": {
-    "image": "/api/jobs/files/sprite/new_face.png",
-    "atlas": "/api/jobs/files/sprite/new_face.json"
+    "doll": "/api/jobs/files/doll/new_face.json",
+    "flat": "/api/jobs/files/doll/new_face-flat.webp",
+    "painted": "/api/jobs/files/doll/new_face-painted.webp"
   },
   "created": "2026-10-18T09:30:00Z",
   "started": "2026-10-18T09:30:00Z",
@@ -38,28 +39,27 @@ A job looks like this. `state` is `queued`, `running`, `succeeded`, `failed` or 
 
 ## Capabilities
 
-The server checks once at startup whether Blender is found (`$BLENDER`, the `PATH`, then the macOS
-app), whether it's on Apple Silicon, and whether `voice-lab/.venv` and `voice-lab/.venv-mlx` exist.
+The server checks once at startup whether it's on Apple Silicon, and whether `voice-lab/.venv` and
+`voice-lab/.venv-mlx` exist.
 `/api/jobs/capabilities` reports those under `machine`, and under `kinds` whether each kind can run
 here, so the creator can hide what can't:
 
 ```json
 {
-  "machine": {"blender": true, "apple_silicon": true, "voice_lab": false, "voice_lab_mlx": true},
-  "kinds": {"sprite": {"available": true, "reason": null}}
+  "machine": {"apple_silicon": true, "voice_lab": false, "voice_lab_mlx": true},
+  "kinds": {"doll": {"available": true, "reason": null}}
 }
 ```
 
 A job whose kind needs something missing fails as soon as it's submitted, with the same `reason`.
 
-## Sprite jobs
+## Doll jobs
 
-`{"kind": "sprite", "params": {"character": "new_face", "appearance": {...}}}` draws the character's
-pixel-art sprite sheet from its `Appearance` with A1's generator, seeded by its id as `simile art`
-seeds an NPC's. The result has the sheet's `image` and its Phaser `atlas`, in the same format as
-`content/art/characters/`. Drawing a character again replaces its sprite. A character id that has a
-sprite or an NPC file in `content/` is refused, except `player`: the creator draws the player's
-chosen look as `sprite/player.png`, beside the built-in one in `content/`.
+`{"kind": "doll", "params": {"character": "new_face", "appearance": {...}}}` paints the character's
+paper doll from its `Appearance`, as [`content/dolls/`](../../../content/dolls/README.md#the-doll-job)
+describes. It needs Apple Silicon and the `images` extra. Painting a character again replaces its
+doll. A character id that has a doll or an NPC file in `content/` is refused, except `player`: the
+creator paints the player's chosen look as `doll/player.json`, beside the built-in one in `content/`.
 
 ## Where jobs write
 

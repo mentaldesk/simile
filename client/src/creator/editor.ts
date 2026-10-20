@@ -3,7 +3,7 @@ import type { Character } from './character';
 import { type Child, button, h, humanise, message } from './dom';
 import { Draft, SECTIONS, type Section, TITLES } from './draft';
 import { Generation, passages } from './generation';
-import { SpritePreview, lookEditor } from './look';
+import { DollPreview, lookEditor } from './look';
 import { SampleLine } from './sample-line';
 import { age, backgroundView, biographyView } from './story';
 import { valuesView } from './values-view';
@@ -44,7 +44,8 @@ export class Editor {
   private readonly bodies = {} as Record<Section, HTMLElement>;
   private readonly heads = {} as Record<Section, HTMLElement>;
   private readonly voice: VoiceStep;
-  private readonly sprite: SpritePreview | null;
+  private readonly doll: DollPreview | null;
+  private readonly paints: boolean;
   private readonly sample: SampleLine | null = null;
   private generation: Generation | null = null;
   private ticker: ReturnType<typeof setInterval> | undefined;
@@ -52,7 +53,7 @@ export class Editor {
   private notice: Child = '';
   private problems: string[] = [];
   private confirm: Confirm | null = null;
-  private drawnLook: string | null = null;
+  private paintedLook: string | null = null;
   private readonly unsaved = (event: BeforeUnloadEvent) => {
     if (!this.readOnly && (this.draft.dirty || this.generation?.running)) event.preventDefault();
   };
@@ -71,8 +72,8 @@ export class Editor {
         this.draft.saved && !this.draft.dirty ? Promise.resolve(true) : this.save(),
       picked: (character, description) => this.picked(character, description),
     });
-    const sprites = ctx.capabilities?.kinds.sprite?.available ?? false;
-    this.sprite = sprites && !readOnly ? new SpritePreview(ctx.api) : null;
+    this.paints = !readOnly && (ctx.capabilities?.kinds.doll?.available ?? false);
+    this.doll = readOnly ? null : new DollPreview(ctx.api);
     if (!readOnly)
       this.sample = new SampleLine((values, signal) => this.sampleLine(values, signal));
 
@@ -113,9 +114,9 @@ export class Editor {
       );
     }
     this.renderAll();
-    if (this.sprite && draft.saved) {
-      void this.sprite.show(draft.saved.id).then((found) => {
-        if (found) this.drawnLook = JSON.stringify(draft.saved?.appearance);
+    if (this.paints && this.doll && draft.saved) {
+      void this.doll.show(draft.saved.id).then((found) => {
+        if (found) this.paintedLook = JSON.stringify(draft.saved?.appearance);
       });
     }
     window.addEventListener('beforeunload', this.unsaved);
@@ -127,7 +128,7 @@ export class Editor {
     this.generation?.cancel();
     this.sample?.dispose();
     this.voice.dispose();
-    this.sprite?.dispose();
+    this.doll?.dispose();
   }
 
   private renderAll(): void {
@@ -140,13 +141,13 @@ export class Editor {
         w.appearance!,
         (appearance) => {
           this.edit('look', { appearance });
-          this.sprite?.preview(appearance, this.draft.work.id);
+          this.doll?.preview(appearance, this.draft.work.id);
         },
         disabled,
       ),
     );
-    if (this.sprite) look.append(this.sprite.root);
-    this.sprite?.preview(w.appearance!, w.id);
+    if (this.doll) look.append(this.doll.root);
+    this.doll?.preview(w.appearance!, w.id);
     this.bodies.look.replaceChildren(look);
     this.sample?.setValues({ ...w.values });
     this.bodies.values.replaceChildren(
@@ -436,9 +437,9 @@ export class Editor {
       this.ctx.saved(character);
       this.notice = 'Saved.';
       const look = JSON.stringify(character.appearance);
-      if (this.sprite && look !== this.drawnLook) {
-        this.drawnLook = look;
-        void this.sprite.render(character.id, character.appearance);
+      if (this.paints && this.doll && look !== this.paintedLook) {
+        this.paintedLook = look;
+        void this.doll.paint(character.id, character.appearance);
       }
       return true;
     } catch (error) {

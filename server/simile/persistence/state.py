@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class SavedNpc(Model):
     position: Tile
     map: Key = VILLAGE_MAP
-    """The map they're on. A save from before the interiors has none: it's on today's village."""
+    """The map they're on. A save from before the interiors has none: it's on the iso village."""
     activity: Activity
     target: str | None = None
     needs: dict[Need, float]
@@ -93,11 +93,10 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
 def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
     money they had, what was in their fridges and what they'd said they'd do. Anyone saved on
-    one of today's maps, while the side-view maps are loaded, goes to the matching place on
-    them (`old_cells`). Anyone who was walking or talking decides again on the next think. NPCs
-    who weren't saved carry on from their first start, a save from before money opens the
-    ledger on everyone's starting money, and one from before fridges stocks them as at the
-    start."""
+    one of the iso maps goes to the matching place on the side-view maps (`old_cells`). Anyone
+    who was walking or talking decides again on the next think. NPCs who weren't saved carry on
+    from their first start, a save from before money opens the ledger on everyone's starting
+    money, and one from before fridges stocks them as at the start."""
     movement = behaviour.movement
     saved = {npc: world.npcs[npc] for npc in behaviour.minds if npc in world.npcs}
     for npc in saved:
@@ -134,7 +133,7 @@ def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" =
 
 
 def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
-    """Where they were, moved from today's maps if those aren't loaded, or None if they can't
+    """Where they were, moved from the iso maps if those aren't loaded, or None if they can't
     be put anywhere loaded."""
     if state.map in maps:
         return state

@@ -6,12 +6,12 @@ from starlette.applications import Starlette
 
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
+    from simile.dolls.job import DOLL
     from simile.jobs.runner import jobs_of
-    from simile.jobs.sprite import SPRITE
 
     jobs = jobs_of(app)
     jobs.remove_leftovers()
-    unregister = jobs.register(SPRITE)
+    unregister = jobs.register(DOLL)
     try:
         yield
     finally:

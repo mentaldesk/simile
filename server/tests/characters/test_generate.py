@@ -6,11 +6,11 @@ from typing import Any
 
 import pytest
 
-from simile.art.palette import PALETTE
 from simile.characters.brief import LOCKABLE, SECTIONS, Brief
 from simile.characters.generate import TooSimilar, character_id, generate, reroll
 from simile.characters.humour import sketch
 from simile.characters.novelty import Embedder, Novelty
+from simile.characters.palette import PALETTE
 from simile.characters.sheet import draw
 from simile.characters.tables import load_tables
 from simile.characters.voice import accent_sentence

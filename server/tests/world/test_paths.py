@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from simile.schema import Door, DoorKind, LocationKind, MapTile
-from simile.world.map import ISO_DIR, TownMap, load_maps, with_every_location
+from simile.world.map import TownMap, load_maps, with_every_location
 from simile.world.paths import (
     DOOR,
     Cell,
@@ -45,13 +45,6 @@ def shortest_distance(town: TownMap, start: Cell, goal: Cell) -> float:
                 best[neighbour] = so_far + step
                 heapq.heappush(queue, (so_far + step, neighbour))
     return math.inf
-
-
-def assert_walkable(town: TownMap, path: list[Cell]) -> None:
-    for (x, y), (nx, ny) in zip(path, path[1:], strict=False):
-        assert town.walkable(nx, ny)
-        assert max(abs(nx - x), abs(ny - y)) == 1
-        assert town.walkable(nx, y) and town.walkable(x, ny), "cut a corner"
 
 
 def door(outside: tuple[int, int], inside: tuple[int, int]) -> Door:
@@ -94,48 +87,15 @@ def test_finds_the_shortest_path_between_every_two_link_ends_on_a_street(street)
             assert path_length(path) == pytest.approx(shortest_distance(street, start, goal))
 
 
-def test_walks_diagonally_in_the_open() -> None:
-    path = find_path(grid("...", "...", "..."), (0, 0), (2, 2))
-
-    assert path == [(0, 0), (1, 1), (2, 2)]
-    assert path_length(path) == pytest.approx(2 * math.sqrt(2))
-
-
-@pytest.mark.parametrize("rows", [(".#", ".."), ("..", "#.")], ids=["above", "beside"])
-def test_never_cuts_a_corner(rows: tuple[str, str]) -> None:
-    town = grid(*rows)
-
-    path = find_path(town, (0, 0), (1, 1))
-
-    assert path is not None and len(path) == 3
-    assert_walkable(town, path)
-
-
 @pytest.mark.parametrize("goal", [(1, 0), (2, 0), (5, 5)], ids=["wall", "cut_off", "off_the_map"])
 def test_finds_no_path_where_there_is_none(goal: Cell) -> None:
     assert find_path(grid(".#.", ".#.", ".#."), (0, 0), goal) is None
 
 
 def test_lists_nearby_tiles_nearest_first() -> None:
-    town = grid("...#.", ".....", ".....")
+    town = grid("....#..", ".......")
 
-    found = list(nearby(town, (1, 1)))
-
-    depths = {cell: depth for cell, depth in found}
-    assert found[0] == ((1, 1), 0)
-    assert [depth for _, depth in found] == sorted(depths.values())
-    assert {cell for cell, depth in found if depth == 1} == {
-        (0, 0),
-        (1, 0),
-        (2, 0),
-        (0, 1),
-        (2, 1),
-        (0, 2),
-        (1, 2),
-        (2, 2),
-    }
-    assert depths[(4, 0)] == 4
-    assert set(depths) == {(x, y) for x in range(5) for y in range(3)} - {(3, 0)}
+    assert list(nearby(town, (1, 0))) == [((1, 0), 0), ((0, 0), 1), ((2, 0), 1), ((3, 0), 2)]
 
 
 def test_lists_nothing_near_a_wall() -> None:
@@ -185,14 +145,14 @@ def test_the_lift_goes_straight_to_the_floor_wanted() -> None:
 
 def test_a_door_is_an_edge_between_its_two_tiles() -> None:
     maps = {
-        "street": replace(grid("...", "..."), id="street", doors=(door((1, 0), (0, 0)),)),
+        "street": replace(grid("..."), id="street", doors=(door((1, 0), (0, 0)),)),
         "shop": replace(grid(".."), id="shop"),
     }
     doors = door_ends(maps)
 
     along = find_route(maps, Spot("street", 0, 0), Spot("street", 2, 0), doors)
     inside = find_route(maps, Spot("street", 0, 0), Spot("shop", 1, 0), doors)
-    out = find_route(maps, Spot("shop", 1, 0), Spot("street", 2, 1), doors)
+    out = find_route(maps, Spot("shop", 1, 0), Spot("street", 2, 0), doors)
 
     assert along == [Spot("street", 0, 0), Spot("street", 1, 0), Spot("street", 2, 0)]
     assert inside == [
@@ -205,10 +165,9 @@ def test_a_door_is_an_edge_between_its_two_tiles() -> None:
         Spot("shop", 1, 0),
         Spot("shop", 0, 0),
         Spot("street", 1, 0),
-        Spot("street", 2, 1),
+        Spot("street", 2, 0),
     ]
-    assert route_length(inside) == 2 + DOOR
-    assert route_length(out) == pytest.approx(1 + DOOR + math.sqrt(2))
+    assert route_length(inside) == route_length(out) == 2 + DOOR
 
 
 def test_finds_no_route_to_a_map_without_a_door() -> None:
@@ -225,13 +184,10 @@ def test_every_door_end_leads_to_the_other() -> None:
         assert DOORS[there] == end and end.map != there.map
 
 
-def test_only_the_streets_and_todays_village_are_outdoors() -> None:
-    today = load_maps(ISO_DIR)
-
+def test_only_the_streets_are_outdoors() -> None:
     assert {town.id for town in STREETS} == {
         "banyan_row",
         "high_street",
         "kapok_walk",
         "lychee_lane",
     }
-    assert [town.id for town in today.values() if town.street] == ["village"]

@@ -4,7 +4,7 @@ import { type Job, JobWatch, type SocketLike, UNKNOWN_JOB, describe as describeJ
 function job(overrides: Partial<Job> = {}): Job {
   return {
     id: '3f9c2a7d1b6e4c08',
-    kind: 'sprite',
+    kind: 'doll',
     state: 'queued',
     progress: 0,
     message: null,
@@ -48,10 +48,10 @@ describe('watching a job', () => {
   it('follows its progress over the WebSocket until it finishes', async () => {
     const { socket, connect, watch, seen } = watching(job());
     expect(connect).toHaveBeenCalledWith('3f9c2a7d1b6e4c08');
-    socket.send(job({ state: 'running', progress: 0.5, message: 'Drawing' }));
-    expect(describeJob(watch.job)).toBe('Drawing (50%)');
-    const result = { image: '/api/jobs/files/sprite/wren.png' };
-    socket.send(job({ state: 'succeeded', progress: 1, message: 'Drawn', result }));
+    socket.send(job({ state: 'running', progress: 0.5, message: 'Painting 1 of 2' }));
+    expect(describeJob(watch.job)).toBe('Painting 1 of 2 (50%)');
+    const result = { doll: '/api/jobs/files/doll/wren.json' };
+    socket.send(job({ state: 'succeeded', progress: 1, message: 'Painted', result }));
     expect((await watch.done).result).toEqual(result);
     expect(seen.map((j) => j.state)).toEqual(['running', 'succeeded']);
     expect(socket.closed).toBe(true);
@@ -62,12 +62,12 @@ describe('watching a job', () => {
       .fn<(id: string) => Promise<Job>>()
       .mockRejectedValueOnce(new Error('restarting'))
       .mockResolvedValueOnce(job({ state: 'running', progress: 0.2 }))
-      .mockResolvedValueOnce(job({ state: 'failed', error: 'Blender crashed' }));
+      .mockResolvedValueOnce(job({ state: 'failed', error: 'FLUX ran out of memory' }));
     const { socket, watch } = watching(job(), poll);
     socket.drop();
     const done = await watch.done;
     expect(done.state).toBe('failed');
-    expect(describeJob(done)).toBe('Failed: Blender crashed');
+    expect(describeJob(done)).toBe('Failed: FLUX ran out of memory');
     expect(poll).toHaveBeenCalledTimes(3);
   });
 

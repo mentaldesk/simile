@@ -35,8 +35,7 @@ def register(app: typer.Typer) -> None:
             typer.Option(
                 exists=True,
                 file_okay=False,
-                help="A folder of maps to run on, such as today's content/map. Defaults to the "
-                "server's.",
+                help="A folder of maps to run on. Defaults to the server's.",
             ),
         ] = None,
     ) -> None:

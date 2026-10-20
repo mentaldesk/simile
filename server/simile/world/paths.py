@@ -11,8 +11,6 @@ from simile.world.map import WALKING_SPEED, TownMap
 
 type Cell = tuple[int, int]
 
-STRAIGHT = ((1, 0), (-1, 0), (0, 1), (0, -1))
-DIAGONAL = ((1, 1), (1, -1), (-1, 1), (-1, -1))
 ROOT_2 = math.sqrt(2)
 DOOR = 1.0
 """Going through a door takes as long as a step."""
@@ -39,18 +37,9 @@ class OnMap(Protocol):
 
 
 def steps(town: TownMap, cell: Cell) -> Iterator[tuple[Cell, float]]:
-    """Walkable neighbours and step costs, in 8 directions without cutting corners, or on a
-    side-view map by its neighbour rule, `simile.street.moves`."""
-    if town.side_view:
-        yield from moves(town, cell)
-        return
-    x, y = cell
-    for dx, dy in STRAIGHT:
-        if town.walkable(x + dx, y + dy):
-            yield (x + dx, y + dy), 1.0
-    for dx, dy in DIAGONAL:
-        if town.walkable(x + dx, y + dy) and town.walkable(x + dx, y) and town.walkable(x, y + dy):
-            yield (x + dx, y + dy), ROOT_2
+    """Walkable neighbours and step costs, by the side view's neighbour rule,
+    `simile.street.moves`."""
+    yield from moves(town, cell)
 
 
 def octile(a: Cell, b: Cell) -> float:

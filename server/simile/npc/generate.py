@@ -6,8 +6,7 @@ from dataclasses import dataclass
 
 from pydantic import Field, field_validator
 
-from simile.art.characters import SKIN_TONES
-from simile.art.palette import PALETTE, hex_to_rgb, nearest
+from simile.characters.palette import PALETTE, SKIN_TONES, hex_to_rgb, nearest
 from simile.llm import LLMClient, Model
 from simile.npc.facts import Facts, sample_facts
 from simile.npc.values import Profile, format_scores, ranked, sample_values

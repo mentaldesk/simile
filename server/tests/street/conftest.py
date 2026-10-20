@@ -23,7 +23,6 @@ def side_view(*rows: str, map_id: str = "street") -> TownMap:
         height,
         blocked,
         (),
-        side_view=True,
         kind=MapKind.STREET,
         climbable=climbable,
     )

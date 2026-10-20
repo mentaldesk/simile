@@ -15,7 +15,7 @@ from simile.voicing import DEFAULT_CONFIG
 from simile.voicing.distance import apart, between
 from simile.voicing.voicing import Voicing
 from simile.world import Movement, Point
-from simile.world.map import ISO_DIR, load_maps
+from simile.world.map import load_maps
 
 STREETS = load_maps()
 NOW = datetime(2026, 1, 1, 10, tzinfo=UTC)
@@ -31,8 +31,8 @@ def test_measures_along_the_street_however_high_or_low_each_stands() -> None:
     lookout, lane = Point(48, LOOKOUT, LANE), Point(43, 15, LANE)
     promenade, row = Point(58, 18, "banyan_row"), Point(53, 15, "banyan_row")
 
-    assert apart(STREETS, lane, lookout) == apart(STREETS, lookout, lane) == 5
-    assert apart(STREETS, row, promenade) == 5
+    assert apart(lane, lookout) == apart(lookout, lane) == 5
+    assert apart(row, promenade) == 5
     assert math.dist(lane, lookout) > DEFAULT_CONFIG.earshot
 
 
@@ -46,14 +46,14 @@ def test_measures_along_the_street_however_high_or_low_each_stands() -> None:
     ids=["floor above", "inside from the street", "street through a door"],
 )
 def test_nobody_on_another_floor_or_map_is_in_reach(here: Point, there: Point) -> None:
-    assert apart(STREETS, here, there) == math.inf
+    assert apart(here, there) == math.inf
 
 
-def test_measures_as_movement_does_on_todays_maps() -> None:
-    movement = Movement(load_maps(ISO_DIR), EventBus())
-    movement.place("mei", MapTile(map="village", x=20, y=13))
-    movement.place("viktor", MapTile(map="village", x=23, y=17))
-    movement.track(PLAYER_ID, Point(17, 12, "coffee_shop"))
+def test_measures_as_movement_does_along_a_row() -> None:
+    movement = Movement(STREETS, EventBus())
+    movement.place("mei", MapTile(map="high_street", x=30, y=15))
+    movement.place("viktor", MapTile(map="high_street", x=35, y=15))
+    movement.track(PLAYER_ID, Point(5, 2, "coffee_shop_floor_0"))
 
     assert between(movement, "mei", "viktor") == movement.distance("mei", "viktor") == 5
     assert between(movement, "mei", PLAYER_ID) == movement.distance("mei", PLAYER_ID)

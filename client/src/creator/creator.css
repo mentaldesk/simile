@@ -479,11 +479,11 @@
   font-size: 12px;
 }
 
-.creator-sprite {
+.creator-doll {
   margin-top: 12px;
 }
 
-.creator-sprite canvas {
+.creator-doll canvas {
   display: block;
   max-width: 100%;
 }

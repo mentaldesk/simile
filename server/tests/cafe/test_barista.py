@@ -81,7 +81,7 @@ def test_the_command_refuses_a_second_barista(tmp_path: Path) -> None:
     assert "already lives above the café" in result.output
 
 
-def test_the_committed_barista_lives_above_the_cafe_with_their_own_voice_and_sprite() -> None:
+def test_the_committed_barista_lives_above_the_cafe_with_their_own_voice_and_doll() -> None:
     [barista] = [npc for npc in NPCS if npc.home == HOME]
 
     assert barista.occupation == OCCUPATION
@@ -91,4 +91,4 @@ def test_the_committed_barista_lives_above_the_cafe_with_their_own_voice_and_spr
     assert (REPO / "content" / "voices" / f"{barista.id}.txt").read_text().strip() == (
         barista.voice.reference_line
     )
-    assert (REPO / "content" / "art" / "characters" / f"{barista.id}.png").exists()
+    assert (REPO / "content" / "dolls" / f"{barista.id}.json").exists()

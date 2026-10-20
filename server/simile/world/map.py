@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Literal
 
 from simile.schema import (
-    VILLAGE_MAP,
     Door,
     DoorKind,
     Facing,
@@ -24,10 +23,6 @@ from simile.schema import (
 CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
 STREET_DIR = CONTENT_DIR / "street"
 MAP_DIR = STREET_DIR
-MAP_ID = VILLAGE_MAP
-"""Today's iso village, which W1's builder writes to `ISO_DIR` until #315."""
-ISO_DIR = CONTENT_DIR / "map"
-INTERIORS = "interiors"
 FLOORS = "floors"
 COLLISION_LAYER = "collision"
 CLIMBABLE_LAYER = "climbable"
@@ -121,9 +116,8 @@ class TownMap:
     """Every door with an end on this map."""
     interactables: tuple[Interactable, ...] = ()
     spots: tuple[Spot, ...] = ()
-    side_view: bool = False
     kind: MapKind | None = None
-    """A street or a floor, on side-view maps."""
+    """A street or a floor."""
     building: str | None = None
     """A floor's building, by its location id."""
     floor: int | None = None
@@ -146,7 +140,7 @@ class TownMap:
 
     @property
     def street(self) -> bool:
-        """Outdoors: a side-view street, or today's village, where no door leads in."""
+        """Outdoors: a street, or a map without a kind that no door leads into."""
         if self.kind is not None:
             return self.kind is MapKind.STREET
         return not any(door.inside.map == self.id for door in self.doors)
@@ -168,8 +162,8 @@ class TownMap:
 
 
 def load_map(path: Path) -> TownMap:
-    """Read a Tiled map: walls from its collision layer, and places, mural walls, doors and
-    interactables from its objects, and on a side-view map its properties and climbable cells.
+    """Read a Tiled map: walls from its collision layer, climbable cells from its climbable
+    layer, places, mural walls, doors and interactables from its objects, and its properties.
     Its id is the file's name. Raises ValueError if two of its links share an end tile."""
     data = json.loads(path.read_text())
     map_id, width, height, size = path.stem, data["width"], data["height"], data["tilewidth"]
@@ -201,7 +195,6 @@ def load_map(path: Path) -> TownMap:
         doors=doors,
         interactables=tuple(_interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)),
         spots=tuple(_spot(o, size, map_id) for o in objects(SPOTS_LAYER)),
-        side_view=props.get("view") == "side",
         kind=MapKind(props["kind"]) if "kind" in props else None,
         building=props.get("building"),
         floor=props.get("floor"),
@@ -210,21 +203,15 @@ def load_map(path: Path) -> TownMap:
 
 
 def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
-    """Every map in the directory, by map id: the streets and then every floor in floors/, or for
-    today's village in `ISO_DIR`, the village and then every interior in interiors/. Raises
+    """Every map in the directory, by map id: the streets and then every floor in floors/. Raises
     ValueError if the maps break docs/protocol.md's rules for links and floors."""
-    village = directory / f"{MAP_ID}.tmj"
-    if village.exists():
-        paths = [village, *sorted((directory / INTERIORS).glob("*.tmj"))]
-    else:
-        paths = [*sorted(directory.glob("*.tmj")), *sorted((directory / FLOORS).glob("*.tmj"))]
-        if not paths:
-            raise FileNotFoundError(f"No maps in {directory}")
+    paths = [*sorted(directory.glob("*.tmj")), *sorted((directory / FLOORS).glob("*.tmj"))]
+    if not paths:
+        raise FileNotFoundError(f"No maps in {directory}")
     maps = {town.id: town for town in map(load_map, paths)}
     links = _first_by_id(door for town in maps.values() for door in town.doors)
     _one_link_per_end(links)
-    if not village.exists():
-        _check_side_view(maps, links)
+    _check_maps(maps, links)
     return maps
 
 
@@ -263,7 +250,7 @@ def _one_link_per_end(links: Iterable[Door]) -> None:
                 raise ValueError(f"{link.id} and {other} share an end tile: {end}")
 
 
-def _check_side_view(maps: Mapping[str, TownMap], links: Iterable[Door]) -> None:
+def _check_maps(maps: Mapping[str, TownMap], links: Iterable[Door]) -> None:
     for link in links:
         outside, inside = (maps.get(end.map) for end in (link.outside, link.inside))
         if outside is None or inside is None:
@@ -394,12 +381,11 @@ def _spot(obj: dict[str, Any], size: int, map_id: str) -> Spot:
 
 def _mural(obj: dict[str, Any], size: int, map_id: str) -> MuralWall:
     props = _props(obj)
-    along = obj["width"] if props["face"] == "south" else obj["height"]
     return MuralWall(
         id=obj["name"],
         x=round(obj["x"] / size),
         y=round(obj["y"] / size),
-        width=round(along / size),
+        width=round(obj["width"] / size),
         face=props["face"],
         bottom=props["bottom"],
         top=props["top"],

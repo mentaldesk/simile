@@ -816,15 +816,15 @@ class Cafe:
         return mind is not None and mind.paused
 
     def _queue(self, lane: Location) -> list[MapTile]:
-        """The front of the queue at the lane's entry, then each tile to stand on behind it: down
-        the grid, or on a side-view map along the floor and through the lane."""
+        """The front of the queue at the lane's entry, then each tile to stand on behind it, along
+        the floor and through the lane."""
         town, front = self.movement.maps[lane.map], lane.entry
-        dx, dy = (1 if front.x == lane.area.x else -1, 0) if town.side_view else (0, 1)
+        dx = 1 if front.x == lane.area.x else -1
         spots = [MapTile(map=lane.map, x=front.x, y=front.y)]
-        x, y = front.x + dx, front.y + dy
-        while town.standing(x, y):
-            spots.append(MapTile(map=lane.map, x=x, y=y))
-            x, y = x + dx, y + dy
+        x = front.x + dx
+        while town.standing(x, front.y):
+            spots.append(MapTile(map=lane.map, x=x, y=front.y))
+            x += dx
         return spots
 
     def _minutes(self, bounds: tuple[float, float]) -> timedelta:

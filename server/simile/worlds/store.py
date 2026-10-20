@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 REPO = Path(__file__).resolve().parents[3]
 SERVER = REPO / "server"
 DEFAULT_ROOT = SERVER / "worlds"
-SPRITES = REPO / "content" / "art" / "characters"
+DOLLS = REPO / "content" / "dolls"
 TODAY = "Today's village"
 
 
@@ -213,7 +213,7 @@ def _missing(characters: Sequence[Character]) -> list[Missing]:
         needs: list[Literal["voice", "sprite"]] = []
         if character.voice.reference_clip is None:
             needs.append("voice")
-        if not all((SPRITES / f"{character.id}.{kind}").is_file() for kind in ("png", "json")):
+        if not (DOLLS / f"{character.id}.json").is_file():
             needs.append("sprite")
         if needs:
             found.append(Missing(id=character.id, name=character.name, needs=needs))

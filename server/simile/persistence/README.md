@@ -28,7 +28,7 @@ When the server starts, after B1 has put everyone at home, the clock goes back t
 each NPC back to their tile, inside or out, and B1's `restore` gives them back their goal, needs and
 cooldowns, and `restore_intentions` what they'd said they'd do. Their money comes back, and the
 ledger opens on it, with what was in the fridges and left of the noodle bar's batch. A save from
-before the interiors has no maps, and puts everyone on today's village. A save from before the
+before the interiors has no maps, so everyone in it is on the iso village. A save from before the
 side view (#314) is moved onto it as it loads (below). A save from before intentions
 has none. Needs B1 no longer has are dropped. A save from before money starts everyone with their
 own `money` from `content/npcs/`, and the next midnight's rent is their first. A save from before
@@ -39,24 +39,24 @@ weren't saved carry on from B1's first start, and saved ones who are no longer i
 ignored. A save this version can't read is logged and ignored. `simile headless --duration` counts
 from the restored time.
 
-## Saves from today's maps
+## Saves from the iso maps
 
 Before #314 the village was isometric, on `village` and its interiors `coffee_shop`, `gallery`,
 `maker_space` and `noodle_bar`. No side-view map reuses those ids, so a position saved on one of
 them is from then. When it isn't on a loaded map, `restore` moves it to the matching place on the
-side-view maps through [`old_cells.csv`](old_cells.csv), a table from each walkable cell of today's
+side-view maps through [`old_cells.csv`](old_cells.csv), a table from each walkable cell of the iso
 maps, in runs along each row, to a cell on the new ones, with what matched it:
 
 - `spot <id>`, `door <id>` or `interactable <id>`: the spot, the door's end on the same side, or
   the stand, with the same id. Every id is kept on the new maps.
 - `location <id>`: the entry of the location it was in, the smallest if there are two.
-- `near door <id>` or `near location <id>`: the nearest door, or place, on today's map, and its
+- `near door <id>` or `near location <id>`: the nearest door, or place, on the iso map, and its
   door's end or entry on a street, or for a house, the street in front of its front door.
 
 Nothing else in a save is on the maps: memories, relationships, money, intentions, works, murals by
-wall id, paintings by frame id and casts by house id carry over untouched. The table is committed,
-so old saves still load once #315 deletes `content/map/`. While both maps exist,
-`uv run simile old-cells` rewrites it, and a test fails if it's out of date.
+wall id, paintings by frame id and casts by house id carry over untouched. The iso maps are gone
+(#315), so the committed table is all that's left of them. `simile old-cells`, which wrote it from
+both maps, is in the history at `a176e1d`.
 
 ## Starting afresh
 

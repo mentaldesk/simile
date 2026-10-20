@@ -1,7 +1,7 @@
 import type { Capabilities, CreatorApi } from './api';
 import type { Appearance } from './character';
 import { button, h, message } from './dom';
-import { SpritePreview, lookEditor } from './look';
+import { DollPreview, lookEditor } from './look';
 
 export const PLAYER_ID = 'player';
 
@@ -13,13 +13,15 @@ export class PlayerLookView {
     className: 'creator-primary',
     disabled: true,
   });
-  private readonly sprite: SpritePreview | null;
+  private readonly doll: DollPreview;
+  private readonly paints: boolean;
   private look: Appearance | null = null;
   private readonly api: CreatorApi;
 
   constructor(api: CreatorApi, capabilities: Capabilities | null, back: () => void) {
     this.api = api;
-    this.sprite = capabilities?.kinds.sprite?.available ? new SpritePreview(api) : null;
+    this.doll = new DollPreview(api);
+    this.paints = capabilities?.kinds.doll?.available ?? false;
     this.root.append(
       h(
         'header',
@@ -37,13 +39,13 @@ export class PlayerLookView {
   }
 
   dispose(): void {
-    this.sprite?.dispose();
+    this.doll.dispose();
   }
 
   private async load(): Promise<void> {
     try {
       this.draw(await this.api.player());
-      void this.sprite?.show(PLAYER_ID);
+      if (this.paints) void this.doll.show(PLAYER_ID);
     } catch (error) {
       this.note.textContent = `Couldn’t load your look: ${message(error)}`;
     }
@@ -56,11 +58,11 @@ export class PlayerLookView {
         this.look = changed;
         this.save.disabled = false;
         this.note.textContent = '';
-        this.sprite?.preview(changed, PLAYER_ID);
+        this.doll.preview(changed, PLAYER_ID);
       }),
-      this.sprite?.root ?? '',
+      this.doll.root,
     );
-    this.sprite?.preview(look, PLAYER_ID);
+    this.doll.preview(look, PLAYER_ID);
   }
 
   private async store(): Promise<void> {
@@ -69,7 +71,7 @@ export class PlayerLookView {
     try {
       const saved = await this.api.savePlayer(this.look);
       this.note.textContent = 'Saved.';
-      void this.sprite?.render(PLAYER_ID, saved);
+      if (this.paints) void this.doll.paint(PLAYER_ID, saved);
     } catch (error) {
       this.save.disabled = false;
       this.note.textContent = `Couldn’t save: ${message(error)}`;

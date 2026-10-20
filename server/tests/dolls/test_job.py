@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from simile.art.characters import PLAYER
+from simile.characters.palette import PLAYER
 from simile.dolls.job import DOLL, Doll, main
 from simile.dolls.paint import FakeSheetPainter
 from simile.jobs.report import PREFIX

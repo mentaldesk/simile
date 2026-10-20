@@ -297,8 +297,7 @@ Every request to talk is declined unless you pass `--talk MINUTES`: then each is
 conversation lasts that long, and the summary adds how many conversations each resident started,
 by sociability, and how many there were a sim hour.
 
-With `--maps DIR` it runs on the maps in that folder instead of the server's, such as today's
-village until #315: `uv run simile behaviour simulate --maps ../content/map`.
+With `--maps DIR` it runs on the maps in that folder instead of the server's.
 
 With `--intentions HOURS`, every that many sim hours each resident who's awake says they'll do
 something at random, to someone at random: half due now, to expire 2 sim hours later, and half due

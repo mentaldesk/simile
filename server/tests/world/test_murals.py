@@ -94,7 +94,7 @@ def test_load_map_reads_mural_walls_in_tiles_on_their_map(tmp_path: Path) -> Non
         {
             "name": "murals",
             "type": "objectgroup",
-            "objects": [wall("long", "south", 0, 16, 48, 16), wall("tall", "east", 32, 0, 16, 32)],
+            "objects": [wall("long", "south", 0, 16, 48, 16), wall("high", "south", 32, 0, 16, 16)],
         },
     ]
     path = tmp_path / "tiny.tmj"
@@ -105,8 +105,8 @@ def test_load_map_reads_mural_walls_in_tiles_on_their_map(tmp_path: Path) -> Non
     stand = Tile(x=1, y=2)
     assert tiny.murals == (
         MuralWall("long", 0, 1, 3, "south", 0.5, 1.5, stand, "tiny"),
-        MuralWall("tall", 2, 0, 2, "east", 0.5, 1.5, stand, "tiny"),
+        MuralWall("high", 2, 0, 1, "south", 0.5, 1.5, stand, "tiny"),
     )
-    assert tiny.mural("tall") is tiny.murals[1]
+    assert tiny.mural("high") is tiny.murals[1]
     with pytest.raises(KeyError):
         tiny.mural("nowhere")
