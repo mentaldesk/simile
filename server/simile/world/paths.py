@@ -5,8 +5,9 @@ from collections.abc import Iterator, Mapping, Sequence
 from itertools import pairwise
 from typing import NamedTuple, Protocol
 
+from simile.schema import DoorKind
 from simile.street.moves import moves
-from simile.world.map import TownMap
+from simile.world.map import WALKING_SPEED, TownMap
 
 type Cell = tuple[int, int]
 
@@ -15,6 +16,9 @@ DIAGONAL = ((1, 1), (1, -1), (-1, 1), (-1, -1))
 ROOT_2 = math.sqrt(2)
 DOOR = 1.0
 """Going through a door takes as long as a step."""
+CROSSING_SPEED = {DoorKind.STAIRS: 1.3, DoorKind.LADDER: 1.0, DoorKind.LIFT: 2.4}
+"""Tiles a sim second up or down stairs, a ladder or a lift between floors, as the client plays
+them (`client/src/side/motion.ts`)."""
 
 
 class Spot(NamedTuple):
@@ -91,18 +95,55 @@ def door_ends(maps: Mapping[str, TownMap]) -> dict[Spot, Spot]:
     return ends
 
 
-def route_length(route: Sequence[OnMap]) -> float:
-    """In tiles, with each change of map a door."""
+def crossings(maps: Mapping[str, TownMap]) -> dict[Spot, tuple[DoorKind, float]]:
+    """Each end of every link between these maps, its kind, and how long crossing it takes in
+    tiles of walking: a step through a door, or the climb or ride to another floor at its
+    `CROSSING_SPEED`, with the floors stacked one above the other."""
+    found: dict[Spot, tuple[DoorKind, float]] = {}
+    for town in maps.values():
+        for door in town.doors:
+            ends = [maps.get(end.map) for end in (door.outside, door.inside)]
+            if ends[0] is None or ends[1] is None:
+                continue
+            cost = DOOR
+            if door.kind is not DoorKind.DOOR:
+                low, high = (
+                    (end.x, end.y - (town.floor or 0) * town.height)
+                    for end, town in zip((door.outside, door.inside), ends, strict=True)
+                )
+                dx, dy = abs(high[0] - low[0]), abs(high[1] - low[1])
+                length = dx + dy if door.kind is DoorKind.LIFT else math.hypot(dx, dy)
+                cost = max(length / CROSSING_SPEED[door.kind] * WALKING_SPEED, DOOR)
+            for end in (door.outside, door.inside):
+                found[Spot(end.map, end.x, end.y)] = (door.kind, cost)
+    return found
+
+
+def route_length(
+    route: Sequence[OnMap], costs: Mapping[Spot, tuple[DoorKind, float]] | None = None
+) -> float:
+    """In tiles, with each change of map a door, or with `costs`, as long as crossing that link."""
+
+    def across(a: OnMap) -> float:
+        spot = Spot(a.map, round(a.x), round(a.y))
+        return costs[spot][1] if costs and spot in costs else DOOR
+
     return sum(
-        math.dist((a.x, a.y), (b.x, b.y)) if a.map == b.map else DOOR for a, b in pairwise(route)
+        math.dist((a.x, a.y), (b.x, b.y)) if a.map == b.map else across(a)
+        for a, b in pairwise(route)
     )
 
 
 def find_route(
-    maps: Mapping[str, TownMap], start: Spot, goal: Spot, doors: Mapping[Spot, Spot]
+    maps: Mapping[str, TownMap],
+    start: Spot,
+    goal: Spot,
+    doors: Mapping[Spot, Spot],
+    costs: Mapping[Spot, tuple[DoorKind, float]] | None = None,
 ) -> list[Spot] | None:
     """The shortest walk from start to goal, both included, or None if there isn't one. Each door
-    is an edge between its two tiles, so going through one is two spots on different maps."""
+    is an edge between its two tiles, so going through one is two spots on different maps. It
+    costs a step, or with `costs`, as long as crossing that link takes."""
 
     def walkable(spot: Spot) -> bool:
         return spot.map in maps and maps[spot.map].walkable(spot.x, spot.y)
@@ -121,7 +162,7 @@ def find_route(
 
     def moves(spot: Spot) -> Iterator[tuple[Spot, float]]:
         if spot in doors:
-            yield doors[spot], DOOR
+            yield doors[spot], costs[spot][1] if costs and spot in costs else DOOR
         for cell, step in steps(maps[spot.map], (spot.x, spot.y)):
             yield Spot(spot.map, *cell), step
 

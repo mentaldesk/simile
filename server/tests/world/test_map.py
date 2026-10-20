@@ -13,7 +13,8 @@ from simile.schema import Location, LocationKind
 from simile.world.build_map import Tileset, Town
 from simile.world.map import (
     CONTENT_DIR,
-    MAP_PATH,
+    ISO_DIR,
+    MAP_ID,
     WALKING_SPEED,
     TownMap,
     load_map,
@@ -22,12 +23,13 @@ from simile.world.map import (
 )
 
 ART = CONTENT_DIR / "art"
+MAP_PATH = ISO_DIR / f"{MAP_ID}.tmj"
 MAP_FILES = [MAP_PATH, *sorted((MAP_PATH.parent / "interiors").glob("*.tmj"))]
 
 
 @pytest.fixture(scope="module")
 def town() -> TownMap:
-    return load_map()
+    return load_map(MAP_PATH)
 
 
 def distances(town: TownMap, start: tuple[int, int]) -> dict[tuple[int, int], int]:
@@ -43,7 +45,7 @@ def distances(town: TownMap, start: tuple[int, int]) -> dict[tuple[int, int], in
 
 
 def test_every_required_location_exists(town: TownMap) -> None:
-    everywhere = with_every_location(load_maps()).locations
+    everywhere = with_every_location(load_maps(ISO_DIR)).locations
     ids = [location.id for location in everywhere]
     kinds = Counter(location.kind for location in everywhere)
 
@@ -88,7 +90,7 @@ def test_f2_location_fixtures_stand_where_the_map_puts_them(town: TownMap) -> No
     fixtures = Path(__file__).parents[1] / "fixtures" / "locations.json"
     locations = TypeAdapter(list[Location]).validate_json(fixtures.read_bytes())
 
-    everywhere = with_every_location(load_maps())
+    everywhere = with_every_location(load_maps(ISO_DIR))
     for location in locations:
         expected = everywhere.location(location.id).model_copy(update={"name": location.name})
         assert location == expected, location.id

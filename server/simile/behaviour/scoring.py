@@ -7,7 +7,6 @@ from dataclasses import dataclass, replace
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
 from simile.schema import (
     PLAYER_ID,
-    VILLAGE_MAP,
     CoreValue,
     Id,
     Location,
@@ -15,7 +14,6 @@ from simile.schema import (
     MapTile,
     Medium,
     Relationship,
-    Tile,
 )
 from simile.world.map import WALKING_SPEED, TownMap
 from simile.world.movement import Point, inside
@@ -85,9 +83,8 @@ class Places:
     def location(self, location_id: str) -> Location:
         return self.town.location(location_id)
 
-    def point(self, tile: Tile | MapTile) -> Point:
-        """A tile as a point, a plain `Tile` on the town's own map, as `walk_to` takes one."""
-        return Point(tile.x, tile.y, tile.map if isinstance(tile, MapTile) else self.town.id)
+    def point(self, tile: MapTile) -> Point:
+        return Point(tile.x, tile.y, tile.map)
 
     def ids(self, activity: Activity) -> list[Id]:
         return [location.id for location in self.by_activity.get(activity, [])]
@@ -138,11 +135,10 @@ def _part_of_another(location: Location, locations: Sequence[Location]) -> bool:
 
 @dataclass(frozen=True)
 class MuralSpot:
-    """A wall to paint, and the tile to stand on to paint it, on the town's own map if it's a plain
-    `Tile`."""
+    """A wall to paint, and the tile to stand on to paint it."""
 
     wall: Id
-    tile: Tile | MapTile
+    tile: MapTile
 
 
 @dataclass(frozen=True)
@@ -411,10 +407,9 @@ def rising(
 
 def loops(places: Places, config: BehaviourConfig = DEFAULT_CONFIG) -> dict[str, list[Point]]:
     """Every exercise walk on the places' maps, by name, as the tiles it passes in order."""
-    walks = {VILLAGE_MAP: config.loops, **config.loops_on}
     return {
         name: [Point(x, y, map_id) for x, y in tiles]
-        for map_id, named in walks.items()
+        for map_id, named in config.loops.items()
         if map_id in places.maps
         for name, tiles in named.items()
     }

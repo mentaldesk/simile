@@ -8,7 +8,8 @@ PLAYER_SPAWN = "square"
 
 
 def snapshot(behaviour: Behaviour) -> SnapshotMessage:
-    """The player is in the square until their first `player_move`."""
+    """The player is in the square until their first `player_move`, and the snapshot's map is
+    the one they're on."""
     movement = behaviour.movement
     positions = movement.entities()
     entities = [
@@ -21,12 +22,12 @@ def snapshot(behaviour: Behaviour) -> SnapshotMessage:
     if PLAYER_ID in positions:
         player = _position(positions[PLAYER_ID])
     else:
-        spawn = movement.town.location(PLAYER_SPAWN).entry
-        player = Position(x=spawn.x, y=spawn.y)
+        square = movement.town.location(PLAYER_SPAWN)
+        player = Position(x=square.entry.x, y=square.entry.y, map=square.map)
     entities.append(Entity(id=PLAYER_ID, kind=EntityKind.PLAYER, name=PLAYER_NAME, position=player))
     return SnapshotMessage(
         time=behaviour.clock.now,
-        map_id=movement.town.id,
+        map_id=player.map,
         entities=entities,
         conversations=behaviour.hooks.conversations(),
     )

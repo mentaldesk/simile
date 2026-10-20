@@ -4,12 +4,13 @@ from dataclasses import replace
 
 import pytest
 
-from simile.schema import VILLAGE_MAP, Door, LocationKind, MapTile
-from simile.world.map import TownMap, load_map, load_maps
+from simile.schema import Door, DoorKind, LocationKind, MapTile
+from simile.world.map import TownMap, load_maps, with_every_location
 from simile.world.paths import (
     DOOR,
     Cell,
     Spot,
+    crossings,
     door_ends,
     find_path,
     find_route,
@@ -19,10 +20,12 @@ from simile.world.paths import (
     steps,
 )
 
-TOWN = load_map()
 MAPS = load_maps()
+TOWN = with_every_location(MAPS)
 DOORS = door_ends(MAPS)
+CROSSINGS = crossings(MAPS)
 HOUSES = [location for location in TOWN.locations if location.kind is LocationKind.HOUSE]
+STREETS = [town for town in MAPS.values() if town.street]
 
 
 def grid(*rows: str) -> TownMap:
@@ -59,18 +62,36 @@ def door(outside: tuple[int, int], inside: tuple[int, int]) -> Door:
     )
 
 
-@pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
-def test_finds_the_shortest_path_from_every_house_to_the_terrace(house) -> None:
-    start = (house.entry.x, house.entry.y)
-    terrace = TOWN.location("cafe_terrace").entry
-    goal = (terrace.x, terrace.y)
+def shortest_route(start: Spot, goal: Spot) -> float:
+    """Dijkstra over every map, each link costing as long as crossing it."""
+    best = {start: 0.0}
+    queue = [(0.0, start)]
+    while queue:
+        so_far, spot = heapq.heappop(queue)
+        if spot == goal:
+            return so_far
+        moves = [(Spot(spot.map, *cell), step) for cell, step in steps(MAPS[spot.map], spot[1:])]
+        if spot in DOORS:
+            moves.append((DOORS[spot], CROSSINGS[spot][1]))
+        for neighbour, step in moves:
+            if so_far + step < best.get(neighbour, math.inf):
+                best[neighbour] = so_far + step
+                heapq.heappush(queue, (so_far + step, neighbour))
+    return math.inf
 
-    path = find_path(TOWN, start, goal)
 
-    assert path is not None
-    assert path[0] == start and path[-1] == goal
-    assert_walkable(TOWN, path)
-    assert path_length(path) == pytest.approx(shortest_distance(TOWN, start, goal))
+@pytest.mark.parametrize("street", STREETS, ids=lambda street: street.id)
+def test_finds_the_shortest_path_between_every_two_link_ends_on_a_street(street) -> None:
+    ends = sorted((end.x, end.y) for end in DOORS if end.map == street.id)
+    for start in ends:
+        for goal in ends:
+            path = find_path(street, start, goal)
+
+            assert path is not None
+            assert path[0] == start and path[-1] == goal
+            for a, b in zip(path, path[1:], strict=False):
+                assert b in dict(steps(street, a)), (a, b)
+            assert path_length(path) == pytest.approx(shortest_distance(street, start, goal))
 
 
 def test_walks_diagonally_in_the_open() -> None:
@@ -123,30 +144,43 @@ def test_lists_nothing_near_a_wall() -> None:
 
 @pytest.mark.parametrize("house", HOUSES, ids=lambda house: house.id)
 def test_routes_from_every_house_through_the_door_to_the_coffee_shop_counter(house) -> None:
-    cafe = MAPS["coffee_shop"]
-    counter = cafe.location("coffee_shop").entry
-    [doorstep] = [end for end, there in DOORS.items() if there.map == cafe.id]
-    mat = DOORS[doorstep]
-    start = Spot(VILLAGE_MAP, house.entry.x, house.entry.y)
-    goal = Spot(cafe.id, counter.x, counter.y)
+    cafe = TOWN.location("coffee_shop")
+    [door] = [door for door in TOWN.doors if door.id == "coffee_shop"]
+    doorstep = Spot(door.outside.map, door.outside.x, door.outside.y)
+    start = Spot(house.map, house.entry.x, house.entry.y)
+    goal = Spot(cafe.map, cafe.entry.x, cafe.entry.y)
 
-    route = find_route(MAPS, start, goal, DOORS)
+    route = find_route(MAPS, start, goal, DOORS, CROSSINGS)
 
     assert route is not None
     assert route[0] == start and route[-1] == goal
     crossing = route.index(doorstep)
-    assert route[crossing + 1] == mat
-    assert {spot.map for spot in route[: crossing + 1]} == {VILLAGE_MAP}
-    assert {spot.map for spot in route[crossing + 1 :]} == {cafe.id}
-    outside = [(spot.x, spot.y) for spot in route[: crossing + 1]]
-    inside = [(spot.x, spot.y) for spot in route[crossing + 1 :]]
-    assert_walkable(TOWN, outside)
-    assert_walkable(cafe, inside)
-    assert route_length(route) == pytest.approx(
-        shortest_distance(TOWN, outside[0], outside[-1])
-        + DOOR
-        + shortest_distance(cafe, inside[0], inside[-1])
-    )
+    assert route[crossing + 1] == DOORS[doorstep]
+    assert route[crossing].map == "high_street"
+    assert {spot.map for spot in route[crossing + 1 :]} == {cafe.map}
+    for a, b in zip(route, route[1:], strict=False):
+        assert DOORS.get(a) == b or (b.x, b.y) in dict(steps(MAPS[a.map], (a.x, a.y))), (a, b)
+    assert route_length(route, CROSSINGS) == pytest.approx(shortest_route(start, goal))
+
+
+def test_stairs_and_lifts_take_as_long_as_their_climb_or_ride() -> None:
+    stairs = CROSSINGS[Spot("house_1_floor_0", 1, 2)]
+    lift = CROSSINGS[Spot("gallery_floor_0", 16, 2)]
+    far_lift = CROSSINGS[Spot("gallery_floor_0", 15, 2)]
+
+    assert stairs == (DoorKind.STAIRS, pytest.approx(4 * math.sqrt(2)))
+    assert lift == (DoorKind.LIFT, pytest.approx(4 / 2.4 * 1.3))
+    assert far_lift[1] > 2 * lift[1]
+    assert CROSSINGS[Spot("gallery_floor_0", 2, 2)] == (DoorKind.DOOR, DOOR)
+
+
+def test_the_lift_goes_straight_to_the_floor_wanted() -> None:
+    painting = Spot("gallery_floor_1", 13, 2)
+
+    route = find_route(MAPS, Spot("gallery_floor_0", 2, 2), painting, DOORS, CROSSINGS)
+
+    assert route is not None
+    assert "gallery_floor_2" not in {spot.map for spot in route}
 
 
 def test_a_door_is_an_edge_between_its_two_tiles() -> None:
@@ -186,6 +220,6 @@ def test_finds_no_route_to_a_map_without_a_door() -> None:
 
 
 def test_every_door_end_leads_to_the_other() -> None:
-    assert len(DOORS) == 2 * len(TOWN.doors)
+    assert len(DOORS) == 2 * len(TOWN.doors) == len(CROSSINGS)
     for end, there in DOORS.items():
         assert DOORS[there] == end and end.map != there.map

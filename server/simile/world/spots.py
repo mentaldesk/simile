@@ -79,9 +79,10 @@ def pose_on(spot: Spot, purpose: Purpose | None) -> Pose:
     return spot.pose
 
 
-def taste(entity: Id, spot: Spot) -> float:
-    """Each resident's own liking for a spot, 0 to 1, the same every time."""
-    return zlib.crc32(f"{entity}/{spot.map}/{spot.id}".encode()) / 0xFFFFFFFF
+def taste(entity: Id, spot: Spot, place: str | None = None) -> float:
+    """Each resident's own liking for a spot, 0 to 1, the same every time. It's keyed by the
+    place the spot is in, or else its map: an interior's map id was its place's."""
+    return zlib.crc32(f"{entity}/{place or spot.map}/{spot.id}".encode()) / 0xFFFFFFFF
 
 
 def choose(
@@ -92,13 +93,15 @@ def choose(
     start: tuple[float, float] | None,
     affinity: Affinity,
     config: SpotConfig = DEFAULT_SPOTS,
+    *,
+    place: str | None = None,
 ) -> Spot | None:
     """Near friends and away from foes, then to taste, then the shortest walk."""
 
     liking: dict[Id, float] = {}
 
     def score(spot: Spot) -> float:
-        value = kinds[spot.kind] + config.taste * taste(entity, spot)
+        value = kinds[spot.kind] + config.taste * taste(entity, spot, place)
         for other, there in others.items():
             if (gap := math.dist(spot.seat, there)) < config.near:
                 if other not in liking:

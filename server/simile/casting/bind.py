@@ -1,4 +1,5 @@
 import random
+import re
 from collections.abc import Sequence
 from datetime import UTC, date, datetime
 
@@ -17,10 +18,15 @@ type Hook = tuple[Id, int]
 
 
 def village_houses() -> list[Id]:
-    """The houses on the village map, which are the homes a cast can have."""
-    from simile.world.map import load_map
+    """The village's houses, on every map, which are the homes a cast can have. In number order,
+    so a seed gives the same homes as on today's map."""
+    from simile.world.map import load_maps, with_every_location
 
-    return [loc.id for loc in load_map().locations if loc.kind is LocationKind.HOUSE]
+    town = with_every_location(load_maps())
+    houses = [loc.id for loc in town.locations if loc.kind is LocationKind.HOUSE]
+    return sorted(
+        houses, key=lambda id: [int(p) if p.isdigit() else p for p in re.split(r"(\d+)", id)]
+    )
 
 
 def bind(

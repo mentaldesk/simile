@@ -1,33 +1,49 @@
+import json
+import math
+from functools import cache
 from multiprocessing.connection import Connection
 from typing import TYPE_CHECKING
 
-from simile.art.iso.camera import TILE_M, TILE_W
-from simile.art.iso.interior import FRAME_W_M, FRAME_Z, MOULDING_M
-from simile.art.iso.town import STOREY_M
 from simile.works.svg import BadSvg
-from simile.world.map import MuralWall
+from simile.world.map import CONTENT_DIR, MuralWall
 
 if TYPE_CHECKING:
     import numpy as np
     from PIL import Image
 
-PX_PER_M = TILE_W / TILE_M
+TILE_M = 1.1
+STOREY_M = 4.4
+"""A storey of a side-view building: 4 tiles."""
+PX_PER_M = 96 / TILE_M
+LAYOUT = CONTENT_DIR / "papercraft" / "layout.json"
 PLASTER = (0.84, 0.8, 0.72)
 PRIMED = (0.93, 0.91, 0.86)
-PAINTING_M = (FRAME_W_M - 2 * MOULDING_M, FRAME_Z[1] - FRAME_Z[0] - 2 * MOULDING_M)
+PAINTING_M = (1.34, 0.84)
 PAINTING_W = 960
 STARTING = 60.0
 WATCH_EVERY = 0.05
 
 
 def metres(wall: MuralWall) -> tuple[float, float]:
-    return wall.width * TILE_M, (wall.top - wall.bottom) * STOREY_M
+    """How much of the building's front the mural covers: from `bottom` to `top` storeys up, as
+    far as the eaves, as the side view draws it."""
+    top = min(wall.top * STOREY_M, _eaves(wall.map, wall.x))
+    return wall.width * TILE_M, top - wall.bottom * STOREY_M
 
 
 def canvas(wall: MuralWall) -> tuple[int, int]:
-    """A mural's size in px: an iso tile's width per tile, at the same scale up the wall."""
+    """A mural's size in px, `PX_PER_M` each way."""
     width, height = metres(wall)
     return round(width * PX_PER_M), round(height * PX_PER_M)
+
+
+@cache
+def _eaves(street: str | None, x: int) -> float:
+    """The height of the walls of the front at `x` on the street, from part 3's layout."""
+    for front in json.loads(LAYOUT.read_text())["facades"].values():
+        if front["street"] == street and front["x"] <= x < front["x"] + front["width"]:
+            return front["height"] * TILE_M
+    return math.inf
 
 
 def painting_canvas() -> tuple[int, int]:

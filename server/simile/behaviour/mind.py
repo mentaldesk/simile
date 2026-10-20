@@ -58,7 +58,6 @@ from simile.schema import (
     Id,
     Intention,
     IntentionKind,
-    Location,
     LocationKind,
     MapTile,
     Medium,
@@ -72,6 +71,7 @@ from simile.schema import (
 )
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
+from simile.voicing.distance import between
 from simile.world.map import MapKind
 from simile.world.movement import Movement, Outcome, Point, Target, Walk, inside
 from simile.world.paths import nearby
@@ -1239,7 +1239,7 @@ class Behaviour:
         location = self.places.location(goal.target)
         positions = self.movement.entities()
         here = positions[npc]
-        rise = self._stacked(location)
+        rise = self.movement.rise(location)
         taken = {(p.map, round(p.x), round(p.y)) for p in positions.values()}
         free = {
             replace(spot, y=spot.y - rise[spot.map]) if rise[spot.map] else spot: spot
@@ -1264,17 +1264,6 @@ class Behaviour:
             self.movement.spot_config,
         )
         return None if spot is None else MapTile(map=spot.map, x=spot.x, y=free[spot].y)
-
-    def _stacked(self, location: Location) -> dict[str, int]:
-        """How far up each of the location's maps is stacked, in tiles, as movement measures its
-        floors."""
-        maps = self.movement.maps
-        base = maps[location.map].floor or 0
-        floors = (maps[floor.map] for floor in location.floors if floor.map in maps)
-        return {
-            town.id: ((town.floor or 0) - base) * town.height
-            for town in (maps[location.map], *floors)
-        }
 
     def _route(self, mind: Mind, goal: Goal) -> list[MapTile]:
         """The loop's tiles, from the one nearest them."""
@@ -1310,7 +1299,7 @@ class Behaviour:
         if other not in self.movement.entities() or not self._available(mind, other):
             self._give_up(mind, other)
             return True
-        if self.movement.distance(npc, other) <= self.config.talk_range:
+        if between(self.movement, npc, other) <= self.config.talk_range:
             if self._call(self.hooks.request_conversation, npc, other):
                 self.pause(npc, other)
                 self.pause(other, npc)

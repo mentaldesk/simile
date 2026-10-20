@@ -22,10 +22,11 @@ from simile.schema import (
 )
 
 CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
-MAP_ID = VILLAGE_MAP
-MAP_DIR = CONTENT_DIR / "map"
-MAP_PATH = MAP_DIR / f"{MAP_ID}.tmj"
 STREET_DIR = CONTENT_DIR / "street"
+MAP_DIR = STREET_DIR
+MAP_ID = VILLAGE_MAP
+"""Today's iso village, which W1's builder writes to `ISO_DIR` until #315."""
+ISO_DIR = CONTENT_DIR / "map"
 INTERIORS = "interiors"
 FLOORS = "floors"
 COLLISION_LAYER = "collision"
@@ -52,6 +53,8 @@ class MuralWall:
     bottom: float
     top: float
     stand: Tile
+    map: str | None = None
+    """The map it's on, once loaded."""
 
 
 class MapKind(StrEnum):
@@ -141,6 +144,15 @@ class TownMap:
         """Walkable and not partway up stairs or a ladder."""
         return self.walkable(x, y) and self.climb(x, y) is None
 
+    @property
+    def street(self) -> bool:
+        """Outdoors: a side-view street, or today's village."""
+        return self.kind is MapKind.STREET or (self.kind is None and not self.interior)
+
+    @property
+    def interior(self) -> bool:
+        return self.kind is MapKind.FLOOR or any(door.inside.map == self.id for door in self.doors)
+
     def location(self, location_id: str) -> Location:
         for location in self.locations:
             if location.id == location_id:
@@ -157,7 +169,7 @@ class TownMap:
         return next((spot for spot in self.spots if (spot.x, spot.y) == (x, y)), None)
 
 
-def load_map(path: Path = MAP_PATH) -> TownMap:
+def load_map(path: Path) -> TownMap:
     """Read a Tiled map: walls from its collision layer, and places, mural walls, doors and
     interactables from its objects, and on a side-view map its properties and climbable cells.
     Its id is the file's name. Raises ValueError if two of its links share an end tile."""
@@ -187,7 +199,7 @@ def load_map(path: Path = MAP_PATH) -> TownMap:
         height,
         rows(COLLISION_LAYER, lambda gid: gid != 0),
         locations=tuple(_location(o, size, map_id) for o in objects(LOCATIONS_LAYER)),
-        murals=tuple(_mural(o, size) for o in objects(MURALS_LAYER)),
+        murals=tuple(_mural(o, size, map_id) for o in objects(MURALS_LAYER)),
         doors=doors,
         interactables=tuple(_interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)),
         spots=tuple(_spot(o, size, map_id) for o in objects(SPOTS_LAYER)),
@@ -200,9 +212,9 @@ def load_map(path: Path = MAP_PATH) -> TownMap:
 
 
 def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
-    """Every map in the directory, by map id: the village and then every interior in
-    interiors/, or without a village, as in content/street/, the streets and then every floor in
-    floors/. Raises ValueError if the maps break docs/protocol.md's rules for links and floors."""
+    """Every map in the directory, by map id: the streets and then every floor in floors/, or for
+    today's village in `ISO_DIR`, the village and then every interior in interiors/. Raises
+    ValueError if the maps break docs/protocol.md's rules for links and floors."""
     village = directory / f"{MAP_ID}.tmj"
     if village.exists():
         paths = [village, *sorted((directory / INTERIORS).glob("*.tmj"))]
@@ -218,14 +230,12 @@ def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
     return maps
 
 
-def with_every_location(maps: Mapping[str, TownMap], home: str = MAP_ID) -> TownMap:
-    """The home map, carrying the locations, doors and mural walls of every map, as today's
-    village has every door and wall, so `location(id)` finds any location. An id on more than one
-    map is the home map's, or else the first map's. Without the home map, as on side-view maps,
-    home is the first street, or else the first map."""
+def with_every_location(maps: Mapping[str, TownMap], home: str | None = None) -> TownMap:
+    """The home map, carrying the locations, doors and mural walls of every map, so
+    `location(id)` finds any location. An id on more than one map is the home map's, or else the
+    first map's. Without a home map it's `home_of(maps)`."""
     if home not in maps:
-        streets = [town.id for town in maps.values() if town.kind is MapKind.STREET]
-        home = streets[0] if streets else next(iter(maps))
+        home = home_of(maps)
     towns = (maps[home], *maps.values())
     return replace(
         maps[home],
@@ -233,6 +243,11 @@ def with_every_location(maps: Mapping[str, TownMap], home: str = MAP_ID) -> Town
         doors=_first_by_id(door for town in towns for door in town.doors),
         murals=_first_by_id(wall for town in towns for wall in town.murals),
     )
+
+
+def home_of(maps: Mapping[str, TownMap]) -> str:
+    """The first street, which holds the others' locations and walls in `with_every_location`."""
+    return next((town.id for town in maps.values() if town.street), next(iter(maps)))
 
 
 def _first_by_id[T: (Location, Door, MuralWall)](items: Iterable[T]) -> tuple[T, ...]:
@@ -379,7 +394,7 @@ def _spot(obj: dict[str, Any], size: int, map_id: str) -> Spot:
     )
 
 
-def _mural(obj: dict[str, Any], size: int) -> MuralWall:
+def _mural(obj: dict[str, Any], size: int, map_id: str) -> MuralWall:
     props = _props(obj)
     along = obj["width"] if props["face"] == "south" else obj["height"]
     return MuralWall(
@@ -391,4 +406,5 @@ def _mural(obj: dict[str, Any], size: int) -> MuralWall:
         bottom=props["bottom"],
         top=props["top"],
         stand=Tile(x=props["stand_x"], y=props["stand_y"]),
+        map=map_id,
     )

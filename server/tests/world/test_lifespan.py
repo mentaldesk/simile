@@ -8,7 +8,7 @@ from simile.behaviour import GoalChosen
 from simile.memory import memory_of
 from simile.npc import load_npcs
 from simile.protocol import hub_of
-from simile.schema import PLAYER_ID, VILLAGE_MAP, Tile
+from simile.schema import PLAYER_ID, MapTile
 from simile.sim import world_of
 from simile.social import meet
 from simile.world import Point, movement_of
@@ -37,39 +37,44 @@ def test_tracks_the_player_from_player_move(make_package: MakePackage) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
 
     with TestClient(app):
-        hub_of(app).receive('{"type": "player_move", "position": {"x": 14, "y": 12.5}}')
+        street = '{"x": 14, "y": 15, "map": "high_street"}'
+        hub_of(app).receive(f'{{"type": "player_move", "position": {street}}}')
         outside = movement_of(app).position(PLAYER_ID)
-        inside = '{"x": 10, "y": 12, "map": "coffee_shop"}'
+        inside = '{"x": 10.5, "y": 2, "map": "coffee_shop_floor_0"}'
         hub_of(app).receive(f'{{"type": "player_move", "position": {inside}}}')
 
-        assert outside == Point(14, 12.5, VILLAGE_MAP)
-        assert movement_of(app).position(PLAYER_ID) == Point(10, 12, "coffee_shop")
+        assert outside == Point(14, 15, "high_street")
+        assert movement_of(app).position(PLAYER_ID) == Point(10.5, 2, "coffee_shop_floor_0")
 
 
-def test_ignores_a_player_move_onto_an_unknown_map(
-    make_package: MakePackage, caplog: pytest.LogCaptureFixture
+@pytest.mark.parametrize("onto", ['"map": "moon"', '"map": "village"', ""], ids=str)
+def test_ignores_a_player_move_onto_an_unknown_map_or_none(
+    make_package: MakePackage, caplog: pytest.LogCaptureFixture, onto: str
 ) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
 
     with TestClient(app):
-        hub_of(app).receive('{"type": "player_move", "position": {"x": 14, "y": 12.5}}')
-        hub_of(app).receive('{"type": "player_move", "position": {"x": 5, "y": 6, "map": "moon"}}')
+        street = '{"x": 14, "y": 15, "map": "high_street"}'
+        hub_of(app).receive(f'{{"type": "player_move", "position": {street}}}')
+        nowhere = ", ".join(part for part in ('"x": 5, "y": 6', onto) if part)
+        hub_of(app).receive(f'{{"type": "player_move", "position": {{{nowhere}}}}}')
         world_of(app).loop.tick()
 
-        assert movement_of(app).position(PLAYER_ID) == Point(14, 12.5, VILLAGE_MAP)
+        assert movement_of(app).position(PLAYER_ID) == Point(14, 15, "high_street")
     assert "Ignored a player_move onto an unknown map" in caplog.text
 
 
 def test_stops_on_shutdown(make_package: MakePackage) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
+    start = MapTile(map="lychee_lane", x=3, y=15)
     with TestClient(app):
         movement = movement_of(app)
-        movement.place("mei", Tile(x=3, y=11))
+        movement.place("mei", start)
         walk = movement.walk_to("mei", "coffee_shop")
 
     world_of(app).loop.tick()
 
-    assert movement.position("mei") == (3, 11)
+    assert movement.position("mei") == Point(start.x, start.y, start.map)
     assert not walk.done
 
 
@@ -83,7 +88,7 @@ def test_residents_take_a_spot_for_the_goal_behaviour_publishes(make_package: Ma
         walk = movement.walk_to("mei", "noodle_bar")
 
     assert walk.destination is not None
-    spot = MAPS["noodle_bar"].spot_at(walk.destination.x, walk.destination.y)
+    spot = MAPS[walk.destination.map].spot_at(walk.destination.x, walk.destination.y)
     assert spot is not None and spot.kind is SpotKind.SEAT
 
 

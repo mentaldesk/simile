@@ -6,8 +6,6 @@ from simile.llm import Model
 from simile.schema import CoreValue, MapTile
 
 V = CoreValue
-TODAY = "coffee_shop"
-"""The café's interior on today's maps."""
 
 
 class Layout(BaseModel):
@@ -30,16 +28,7 @@ def _on(map_id: str, *cells: tuple[int, int]) -> list[MapTile]:
 
 
 TABLES = ((12, 3), (15, 3), (12, 7), (15, 7), (12, 10), (15, 10), (2, 8), (2, 11))
-SEATS = _on(TODAY, *((x + side, y) for x, y in TABLES for side in (-1, 1)))
 LAYOUTS = {
-    TODAY: Layout(
-        entrance=MapTile(map=TODAY, x=10, y=12),
-        machine=MapTile(map=TODAY, x=7, y=3),
-        hand_over=MapTile(map=TODAY, x=8, y=4),
-        pickup=MapTile(map=TODAY, x=8, y=6),
-        upstairs=MapTile(map=TODAY, x=1, y=3),
-        seats=SEATS,
-    ),
     "coffee_shop_floor_0": Layout(
         entrance=MapTile(map="coffee_shop_floor_0", x=17, y=2),
         machine=MapTile(map="coffee_shop_floor_0", x=2, y=2),
@@ -50,9 +39,17 @@ LAYOUTS = {
             "coffee_shop_floor_1", *((x, 2) for x in (*range(5, 11), *range(12, 18), 1, 2, 3, 4))
         ),
     ),
+    "coffee_shop": Layout(
+        entrance=MapTile(map="coffee_shop", x=10, y=12),
+        machine=MapTile(map="coffee_shop", x=7, y=3),
+        hand_over=MapTile(map="coffee_shop", x=8, y=4),
+        pickup=MapTile(map="coffee_shop", x=8, y=6),
+        upstairs=MapTile(map="coffee_shop", x=1, y=3),
+        seats=_on("coffee_shop", *((x + side, y) for x, y in TABLES for side in (-1, 1))),
+    ),
 }
-"""By the map the café's location is on: today's interior, and its ground floor in side view,
-whose tables are upstairs. Each world's seats are in the same order, by spot id."""
+"""By the map the café's location is on: its ground floor, whose tables are upstairs, and today's
+interior until #315. Each world's seats are in the same order, by spot id."""
 
 
 class Nudge(BaseModel):
@@ -167,31 +164,6 @@ class CafeConfig(BaseModel):
         if self.opens >= self.closes:
             raise ValueError("the café must open before it closes")
         return self
-
-    @property
-    def entrance(self) -> MapTile:
-        """On today's maps, as are `machine`, `hand_over`, `pickup`, `upstairs` and `seats`."""
-        return self.layouts[TODAY].entrance
-
-    @property
-    def machine(self) -> MapTile:
-        return self.layouts[TODAY].machine
-
-    @property
-    def hand_over(self) -> MapTile:
-        return self.layouts[TODAY].hand_over
-
-    @property
-    def pickup(self) -> MapTile:
-        return self.layouts[TODAY].pickup
-
-    @property
-    def upstairs(self) -> MapTile:
-        return self.layouts[TODAY].upstairs
-
-    @property
-    def seats(self) -> list[MapTile]:
-        return self.layouts[TODAY].seats
 
 
 DEFAULT_CONFIG = CafeConfig()

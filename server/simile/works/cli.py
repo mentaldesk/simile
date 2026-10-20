@@ -38,7 +38,7 @@ def register(app: typer.Typer) -> None:
 
         from simile.npc import load_npcs
         from simile.schema import Medium
-        from simile.world.map import load_map
+        from simile.world.map import load_maps, with_every_location
 
         residents = {resident.id: resident for resident in load_npcs()}
         if npc not in residents:
@@ -47,7 +47,7 @@ def register(app: typer.Typer) -> None:
         if resident.craft is None:
             typer.echo(f"{resident.name} doesn't make anything.", err=True)
             raise typer.Exit(1)
-        walls = load_map().murals
+        walls = with_every_location(load_maps()).murals
         if wall is not None and wall not in {w.id for w in walls}:
             raise typer.BadParameter(f"no such wall: {wall}", param_hint="--wall")
         mural = resident.craft.medium is Medium.MURAL
@@ -132,15 +132,16 @@ async def starters(out: Path | None, calls: list["CallRecord"]) -> list["Starter
     from simile.llm.lifespan import FAKE_ENV
     from simile.npc import NPCS_DIR, load_npcs
     from simile.works.starters import STARTERS, make
-    from simile.world.map import load_map
+    from simile.world.map import load_maps, with_every_location
 
     fake = os.environ.get(FAKE_ENV) == "fake"
     provider = FakeProvider([stand_in] * 64) if fake else None
     llm = LLMClient(provider, listeners=[calls.append])
     npcs = {npc.id: npc for npc in load_npcs(NPCS_DIR)}
     start = datetime(2026, 1, 1, 8, tzinfo=UTC)
+    walls = with_every_location(load_maps()).murals
     try:
-        return await make(llm, npcs, load_map().murals, out or STARTERS, start=start)
+        return await make(llm, npcs, walls, out or STARTERS, start=start)
     finally:
         await llm.aclose()
 
@@ -192,9 +193,9 @@ async def create(
     from simile.works.painter import easel
     from simile.works.store import WorksStore
     from simile.works.walls import Walls
-    from simile.world.map import load_map
+    from simile.world.map import load_maps, with_every_location
 
-    walls = load_map().murals
+    walls = with_every_location(load_maps()).murals
     with (
         MemoryStore(default_path()) as memory,
         WorksStore(memory.path) as works,

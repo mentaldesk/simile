@@ -40,11 +40,11 @@ from simile.schema import (
     Npc,
     Relationship,
     Shift,
-    Tile,
 )
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social import as_of, meet
 from simile.voice import speaking_rate
+from simile.voicing.distance import between
 from simile.world import Point
 
 logger = logging.getLogger(__name__)
@@ -185,7 +185,8 @@ class Cafe:
         self.maps = {home.map, *(floor.map for floor in home.floors)}
         """Its own and every floor of its building."""
         self.layout = config.layouts[self.map]
-        self.till = self._tile(town.location(config.staff).entry)
+        staff = town.location(config.staff)
+        self.till = MapTile(map=staff.map, x=staff.entry.x, y=staff.entry.y)
         self.spots = self._queue(town.location(config.queue))
         self.on_shift = False
         self.closing: datetime | None = None
@@ -799,7 +800,7 @@ class Cafe:
 
     def _from_player(self, npc: Id) -> float | None:
         try:
-            return self.movement.distance(npc, PLAYER_ID)
+            return between(self.movement, npc, PLAYER_ID)
         except KeyError:
             return None
 
@@ -814,18 +815,15 @@ class Cafe:
         mind = self.behaviour.minds.get(npc)
         return mind is not None and mind.paused
 
-    def _tile(self, tile: Tile) -> MapTile:
-        return MapTile(map=self.map, x=tile.x, y=tile.y)
-
     def _queue(self, lane: Location) -> list[MapTile]:
         """The front of the queue at the lane's entry, then each tile to stand on behind it: down
         the grid, or on a side-view map along the floor and through the lane."""
         town, front = self.movement.maps[lane.map], lane.entry
         dx, dy = (1 if front.x == lane.area.x else -1, 0) if town.side_view else (0, 1)
-        spots = [self._tile(front)]
+        spots = [MapTile(map=lane.map, x=front.x, y=front.y)]
         x, y = front.x + dx, front.y + dy
         while town.standing(x, y):
-            spots.append(self._tile(Tile(x=x, y=y)))
+            spots.append(MapTile(map=lane.map, x=x, y=y))
             x, y = x + dx, y + dy
         return spots
 

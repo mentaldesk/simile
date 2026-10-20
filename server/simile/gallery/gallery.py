@@ -7,7 +7,7 @@ from simile.behaviour import MuralSpot, Places, WallPicker
 from simile.gallery.config import DEFAULT_CONFIG, GalleryConfig
 from simile.gallery.store import FrameKey, GalleryStore
 from simile.protocol import Artist, Frame, Painting, PaintingsMessage
-from simile.schema import VILLAGE_MAP, Id, Interactable, InteractableKind, Medium, Npc, Work
+from simile.schema import Id, Interactable, InteractableKind, MapTile, Medium, Npc, Work
 from simile.sim import Clock
 from simile.works.reading import name_of
 from simile.works.store import WorksStore
@@ -108,9 +108,9 @@ def taking_turns(
     `murals_per_canvas` murals in a row, and whenever no wall is worth painting. Then it names
     their home, where they paint a canvas."""
 
-    def home(npc: Npc) -> MuralSpot | None:
+    def home(npc: Npc) -> MuralSpot:
         location = places.location(npc.home)
-        return MuralSpot(npc.home, location.entry) if location.map == VILLAGE_MAP else None
+        return MuralSpot(npc.home, MapTile(map=location.map, **location.entry.model_dump()))
 
     def mural_wall(npc: Npc) -> MuralSpot | None:
         latest = works.by(npc.id, config.murals_per_canvas)

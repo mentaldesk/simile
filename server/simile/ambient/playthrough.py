@@ -22,7 +22,7 @@ from simile.llm import CallRecord, LLMClient, Request, Usage
 from simile.llm.fake import cast
 from simile.protocol import PlayerMoveMessage, PlayerSayMessage, Position
 from simile.reflection.extraction import SYSTEM as REFLECTING
-from simile.schema import PLAYER_ID, VILLAGE_MAP, CoreValue, Id, Npc
+from simile.schema import PLAYER_ID, CoreValue, Id, Npc
 from simile.sim import (
     Clock,
     ConversationEnded,
@@ -357,17 +357,22 @@ class ScriptedPlayer:
 
     def _set_path(self, goal: Spot) -> None:
         here = Spot(self.position.map, round(self.position.x), round(self.position.y))
-        route = find_route(self.movement.maps, here, goal, self.movement.doors)
+        movement = self.movement
+        route = find_route(movement.maps, here, goal, movement.doors, movement.crossings)
         self.path, self.through = deque((route or [])[1:]), 0.0
         if not self.path:
             self._arrive()
+
+    def _crossing(self, end: Point) -> float:
+        crossing = self.movement.crossings.get(Spot(end.map, round(end.x), round(end.y)))
+        return crossing[1] if crossing else DOOR
 
     def _walk(self, budget: float) -> None:
         moved = False
         while self.path and budget > 0:
             spot, here = self.path[0], self.position
             door = spot.map != here.map
-            gap = DOOR - self.through if door else math.dist(here, (spot.x, spot.y))
+            gap = self._crossing(here) - self.through if door else math.dist(here, (spot.x, spot.y))
             step = min(budget, gap)
             budget -= step
             moved = True
@@ -504,7 +509,7 @@ class Listener:
     def _look_around(self) -> None:
         spots = self.movement.entities()
         here = spots.get(PLAYER_ID)
-        if here is None or here.map == VILLAGE_MAP:
+        if here is None or self.movement.maps[here.map].street:
             return
         self.result.inside += 1
         self.result.seen_inside |= {
