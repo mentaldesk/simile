@@ -152,6 +152,34 @@ def seed(who: str, sheet: str, reroll: int = 0) -> int:
     return zlib.crc32(f"{who}/{sheet}/{reroll}".encode()) % 2**31
 
 
+class EditPainter:
+    """Part 3's edit-mode painter, `simile.papercraft.painter.EditPainter`, behind
+    `SheetPainter`: FLUX.2 [klein] 4B at 8-bit, on Apple Silicon with the `images` extra. Loads
+    on entering and unloads on leaving."""
+
+    def __init__(self) -> None:
+        try:
+            from simile.papercraft.painter import EditPainter as Papercraft
+        except ImportError as error:
+            raise RuntimeError(
+                "Painting dolls needs part 3's painter, simile.papercraft"
+            ) from error
+        self._painter = Papercraft()
+
+    def __enter__(self) -> "EditPainter":
+        self._painter.__enter__()
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self._painter.__exit__(*exc_info)
+
+    def paint(
+        self, prompt: str, images: list[Path], size: tuple[int, int], seed: int
+    ) -> Image.Image:
+        pictures = [Image.open(path).convert("RGB") for path in images]
+        return self._painter.paint(prompt, size, seed, pictures)
+
+
 class FakeSheetPainter:
     """Returns the sheet itself, lightly mottled, without a model: for tests and dry runs."""
 

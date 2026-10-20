@@ -85,9 +85,9 @@ def main(work: Path, painter: Callable[[], AbstractContextManager[SheetPainter]]
     if painter is None:
         if importlib.util.find_spec("mflux") is None:
             sys.exit("Doll jobs need the images extra: `uv sync --extra images`.")
-        from simile.dolls.flux import FluxEdit
+        from simile.dolls.paint import EditPainter
 
-        painter = FluxEdit
+        painter = EditPainter
     progress(0.0, "Cutting out")
     with painter() as model, tempfile.TemporaryDirectory() as scratch:
         reporting = Reporting(model, len(LAYOUTS))

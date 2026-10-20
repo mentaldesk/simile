@@ -4,25 +4,25 @@ import pytest
 
 from simile.art.characters import PLAYER
 from simile.dolls.look import Look
-from simile.dolls.paint import prompt
+from simile.dolls.paint import EditPainter, prompt
 from simile.dolls.sheet import sheet
 
 
 @pytest.mark.mlx
-def test_flux_paints_over_a_sheet_in_edit_mode(tmp_path: Path) -> None:
+def test_part_3s_painter_paints_over_a_sheet(tmp_path: Path) -> None:
     pytest.importorskip("mflux")
-    from simile.dolls.flux import MODEL, FluxEdit
+    pytest.importorskip("simile.papercraft.painter")
+    from simile.works.config import DEFAULT_CONFIG
     from simile.works.flux import downloaded
 
-    if downloaded(MODEL) is None:
-        pytest.skip(f"{MODEL} isn't downloaded")
-    look = Look.of(PLAYER, "player")
+    if downloaded(DEFAULT_CONFIG.image_model) is None:
+        pytest.skip(f"{DEFAULT_CONFIG.image_model} isn't downloaded")
     path = tmp_path / "sheet.png"
-    flat = sheet("side", look).image().resize((512, 384))
+    flat = sheet("side", Look.of(PLAYER, "player")).image().resize((512, 384))
     flat.save(path)
 
-    with FluxEdit(steps=2) as flux:
-        painted = flux.paint(prompt("side", PLAYER, "player"), [path], (512, 384), 1)
+    with EditPainter() as painter:
+        painted = painter.paint(prompt("side", PLAYER, "player"), [path], (512, 384), 1)
 
     assert painted.size == (512, 384)
     assert painted.tobytes() != flat.tobytes()

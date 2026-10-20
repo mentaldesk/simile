@@ -17,12 +17,12 @@ def register(app: typer.Typer) -> None:
             Path | None, typer.Option(help="Also save each sheet and painting here, to look at.")
         ] = None,
     ) -> None:
-        """Paint the dolls in content/dolls/ whose Appearance changed, with FLUX on Apple Silicon
-        (`uv sync --extra images`)."""
+        """Paint the dolls in content/dolls/ whose Appearance changed, with part 3's FLUX painter
+        on Apple Silicon (`uv sync --extra images`)."""
         from simile.dolls.build import build
-        from simile.dolls.flux import FluxEdit
+        from simile.dolls.paint import EditPainter
 
-        for painted in build(FluxEdit, only=who or (), force=force):
+        for painted in build(EditPainter, only=who or (), force=force):
             if paintings is not None:
                 paintings.mkdir(parents=True, exist_ok=True)
                 for sheet, image in painted.paintings.items():

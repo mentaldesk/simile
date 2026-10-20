@@ -33,7 +33,12 @@ REFERENCES = (
 REFERENCE_WIDTH = 768
 DONORS = {"shoe_front": "shoe"}
 """A piece the painter often drops, and the piece of the same colours to take its paint from."""
-REROLLS: dict[str, int] = {"ingrid/side": 1, "lachlan/side": 1, "odalys/front_back": 5}
+REROLLS: dict[str, int] = {
+    "ingrid/side": 1,
+    "ingrid/front_back": 1,
+    "lachlan/side": 1,
+    "odalys/front_back": 5,
+}
 """`<id>/<sheet>` to a reroll number, for a painting that came out off-model or off-tone."""
 
 

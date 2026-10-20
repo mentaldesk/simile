@@ -46,7 +46,9 @@ The two atlases share one frame table, so the painted one replaces the flat one 
 
 - **`unit`** is atlas pixels a unit, and **`height`** a standing doll's height in units, sole to
   crown without hair or hats: so a doll is about 500 px tall in its atlas, twice its size on the
-  street. The head is about a quarter of that.
+  street. The head is about a quarter of that. Against part 3's scenery (120 px/m), draw a doll
+  2.04 m tall, a 1.7 m resident 20% over scale as #295's study did: 245 px. Seated, its hips are
+  then about 0.45 m up, a chair's or bench's seat.
 - **`flat`** and **`painted`** are relative to the manifest. The flat-doll route sends `flat` as a
   data URL and no `painted`.
 - **`pieces`**: each piece's `frame` in the atlas (x, y, width, height), its `pivot`, the point it
