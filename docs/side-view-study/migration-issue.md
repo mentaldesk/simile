@@ -31,7 +31,7 @@ a street. It's offered as an option for the user to choose, alongside that sketc
 
 The sim stays on its grid. A side-view map is still a Tiled grid, read the other way up: x runs
 along the street, y counts rows down from the top, and a resident stands on a cell with solid
-ground under it. Every building is an interior map joined to the street by its door, as today.
+ground under it. Every building has interior maps, joined to the street by its door, as today.
 Only the neighbour rule changes: left and right on the ground, and up and down only where the map
 allows it (stairs, ladders, lifts). So `Tile`, `MapTile`, `TileArea`, `Position`, `Facing` and the
 protocol's `Face` keep their shape, and nothing that uses them has to change because of them.
@@ -53,8 +53,10 @@ These are the user's, once they've decided to switch. The parts below assume whi
    place people on `coffee_shop` tiles.
    - Keep today's ids: one `village` map holding every street, and interiors by location id.
      Part 7's per-map tables then need another key, such as the location.
-   - Or change them (a map per street, a map per floor): a contract change, owned in part 1, with
-     every user above in its Owns.
+   - Or change them (a map per street, a map per floor). Part 1 only adds what the new ids need,
+     since the game still runs on `content/map/` when it merges, and `load_map()` finds
+     `village.tmj` through `MAP_ID`. The switch lands with the cut-over in part 8, which then owns
+     every user above.
 3. **Jumping later.** #295 asks for a world that can take jumping. On a grid of standing cells, a
    jump is a move through empty cells along an arc, with gravity bringing the jumper down onto the
    next cell with ground under it. `Position` already holds float x and y, so a resident can be
@@ -73,7 +75,8 @@ These are the user's, once they've decided to switch. The parts below assume whi
 
 ## Order
 
-1. **Part 1**, the contract PR, first. It only adds an optional field, so it merges green.
+1. **Part 1**, the contract PR, first. It only adds or relaxes: the optional `kind`, and
+   whatever decisions 1 and 2 need. So it merges green while the game runs on today's maps.
 2. **Parts 2, 3 and 4** in parallel. They create new paths only, and nothing uses them yet, so the
    game stays isometric. Part 4 paints with part 3's painter, so it merges after part 3.
 3. **Part 5** after 3 and 4. **Parts 6 and 7** after 2. All three can run at the same time.
@@ -102,8 +105,8 @@ not A1's sprites: part 9 moves them rather than deleting them.
 `Door` gains an optional `kind`: door (the default), stairs, ladder or lift, so a connection
 can say how it's crossed. The docs on `Tile`, `Position`, `Facing` and `Face` say how a side-view
 map reads them, as above. If decision 1 joins floors with doors, part 1 also drops
-`_between_maps`'s same-map check, and if decision 2 changes the map ids, part 1 owns that change
-and every user of them. Nothing else is removed.
+`_between_maps`'s same-map check, and if decision 2 changes the map ids, part 1 only adds what
+the new ids need; part 8 switches to them. Nothing else is removed.
 
 ## 2. Side-view maps and the neighbour rule
 
@@ -212,13 +215,14 @@ gives the same share of time per location, within noise, in both.
 *Movement, Locations and positions, Gone.* After parts 5, 6 and 7. One PR for server and client.
 
 **Server.** `load_maps()`'s default (`world/map.py`'s `MAP_DIR`) becomes `content/street/`, and
-movement uses part 2's neighbour rule. Saved positions that aren't standing cells in the new maps
-go to their location's entry, so old saves still load. Mural walls face the camera:
-`works/sightings.py`'s "in front of the wall" becomes the same floor, and `works/render.py` sizes
-murals for the side view without importing `art/iso/`. Everything other packages import from
-`server/simile/world/` (`Movement`, `Point`, `movement_of`, `inside`, `load_maps`, `TownMap`,
-`MuralWall`, `Spot`, `SpotKind`, `find_route`, `choose` and the rest) keeps its name and
-signature.
+movement uses part 2's neighbour rule. If decision 2 changes the map ids, the switch lands here
+too, and part 8 owns every user of them that decision 2 lists. Saved positions that aren't
+standing cells in the new maps go to their location's entry, so old saves still load. Mural walls
+face the camera: `works/sightings.py`'s "in front of the wall" becomes the same floor, and
+`works/render.py` sizes murals for the side view without importing `art/iso/`. Everything other
+packages import from `server/simile/world/` (`Movement`, `Point`, `movement_of`, `inside`,
+`load_maps`, `TownMap`, `MuralWall`, `Spot`, `SpotKind`, `find_route`, `choose` and the rest)
+keeps its name and signature.
 
 - **Owns:** `server/simile/world/` except `build_map.py` and `cli.py`, `server/simile/persistence/`,
   `server/simile/works/walls.py`, `render.py` and `sightings.py`, `server/tests/world/`,
@@ -278,8 +282,10 @@ and `ui/` import from `client/src/world/` (`map`, `hit`, `view`, `interactables`
   `tests/world/test_murals.py`'s imports of it.
 - The sprite job: `server/simile/jobs/lifespan.py` (`SPRITE`), which registers part 4's doll job
   instead; `client/src/creator/look.ts` and `look.test.ts`, which submit `sprite` jobs and read
-  `/api/jobs/files/sprite/`, and switch to the doll job; and `server/tests/jobs/test_routes.py`,
-  which tests the `sprite` kind.
+  `/api/jobs/files/sprite/`, and `editor.ts` and `editor.test.ts`, which show the creator's sprite
+  only when `capabilities.kinds.sprite` is available and assert `submit('sprite', …)`, all
+  switching to the doll job; and `server/tests/jobs/test_routes.py`, which tests the `sprite`
+  kind.
 - `Colours` and `PLAYER` in `server/simile/dolls/`: part 9 moves `Colours.of`'s accent and apron
   rule into `characters/palette.py` with the palette, and repoints the dolls' imports of both.
   `server/simile/papercraft/` imports neither.
