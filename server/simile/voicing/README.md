@@ -19,6 +19,10 @@ an M2 Max, then follows the bus and ticks on the sim loop.
   the screen and 34 up it, so 6.5 tiles reaches 440 px to either side and 220 above and below. With
   a resident's sprite on top, a window of about 950 × 540 art px (CSS px at the default zoom on a 1×
   or 2× screen) has every voiced speaker on screen.
+- On a side-view map (`TownMap.side_view`), distance is along x, the street, so someone up a ladder
+  is as near as someone on the ground below them. Each floor and each street is its own map, so
+  nobody on another floor or street is in earshot. `distance.py` measures it for voicing, the
+  ambient director and the player's conversations. On today's maps it's a straight line, as before.
 - Coming into earshot voices the next line on, including one already written and waiting for its
   turn. Leaving it cuts the line being said and drops the rest.
 - The player's own conversation is always in earshot: B5 ends it beyond 6 tiles.

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { server, type Position } from '../net';
-import { village } from '../world/assets';
+import { maps, village } from '../world/assets';
 import { interactables } from '../world/interactables';
 import { muralWalls } from '../world/iso/murals';
 import { terminalAt, terminalsOf, type Terminal } from '../world/terminals';
@@ -14,12 +14,14 @@ import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
 import { fitOverlay, inOverlay } from './overlay';
+import { setMaps } from './side-view';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
 import { NEWS_KEY } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
 const terminals = terminalsOf(village);
+setMaps(maps);
 
 export class DialogueScene extends Phaser.Scene {
   private root!: HTMLElement;

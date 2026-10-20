@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { Position } from '../net';
+import { loadStreets } from '../ui/street.fixture';
 import {
   FULL_VOLUME_WITHIN,
   OVERHEARD_GAIN,
@@ -92,5 +94,41 @@ describe('another map', () => {
 
   it('plays the partner at full volume, centred', () => {
     expect(partnerMix(listener, { ...inside, x: 14 })).toEqual({ gain: 1, pan: 0 });
+  });
+});
+
+describe('on a side-view map', () => {
+  let unload: () => void;
+  beforeEach(() => (unload = loadStreets()));
+  afterEach(() => unload());
+
+  const lane = (x: number, y = 15): Position => ({ x, y, map: 'lychee_lane' });
+  const listener = lane(45);
+  const heard = (x: number, y = 15) => overheardMix(listener, lane(x, y));
+
+  it('turns an overheard voice down by how far along the street it is, not how high', () => {
+    const gains = [47, 47.5, 48, 49, 50, 51, 51.4].map((x) => heard(x).gain);
+
+    expect(gains).toEqual([...gains].sort((a, b) => b - a));
+    expect(new Set(gains).size).toBe(gains.length);
+    expect(heard(45, 12).gain).toBe(OVERHEARD_GAIN);
+    expect(heard(48, 12).gain).toBe(heard(48).gain);
+    expect(heard(45 + SILENT_BEYOND, 12).gain).toBe(0);
+  });
+
+  it('pans by the side the speaker is on', () => {
+    expect(heard(48, 12).pan).toBe(heard(48).pan);
+    expect(heard(48, 12).pan).toBeCloseTo(heard(50).pan, 12);
+    expect(heard(40).pan).toBeCloseTo(-heard(50).pan, 12);
+    expect(heard(45, 12).pan).toBe(0);
+    expect(partnerMix(listener, lane(48, 12)).pan).toBeCloseTo(partnerMix(listener, lane(50)).pan, 12);
+  });
+
+  it('silences a voice on another floor or inside a building, whatever its x', () => {
+    const below = { x: 5, y: 2, map: 'coffee_shop_floor_0' };
+
+    expect(overheardMix({ ...below, map: 'coffee_shop_floor_1' }, below)).toEqual({ gain: 0, pan: 0 });
+    expect(overheardMix({ x: 30, y: 15, map: 'high_street' }, below)).toEqual({ gain: 0, pan: 0 });
+    expect(partnerMix({ x: 30, y: 15, map: 'high_street' }, below)).toEqual({ gain: 1, pan: 0 });
   });
 });

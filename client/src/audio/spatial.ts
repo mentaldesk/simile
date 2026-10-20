@@ -1,5 +1,5 @@
 import type { Position } from '../net';
-import { mapOf } from '../world/map';
+import { tilesApart } from '../ui/side-view';
 
 /** A voice's volume (0 to 1) and stereo pan (-1 left to 1 right). */
 export type Mix = { gain: number; pan: number };
@@ -13,24 +13,21 @@ const PARTNER_MAX_PAN = 0.3;
 
 export const UNPOSITIONED: Mix = { gain: 1, pan: 0 };
 
-function panning(listener: Position, source: Position, maxPan: number) {
-  const dx = source.x - listener.x;
-  const distance = Math.hypot(dx, source.y - listener.y);
-  return { distance, pan: (maxPan * dx) / Math.max(distance, FULL_VOLUME_WITHIN) };
-}
+const panning = (listener: Position, source: Position, distance: number, maxPan: number) =>
+  (maxPan * (source.x - listener.x)) / Math.max(distance, FULL_VOLUME_WITHIN);
 
 const SILENT: Mix = { gain: 0, pan: 0 };
 
-const apart = (listener: Position, source: Position) => mapOf(listener) !== mapOf(source);
-
 export function partnerMix(listener: Position, source: Position): Mix {
-  if (apart(listener, source)) return UNPOSITIONED;
-  return { gain: 1, pan: panning(listener, source, PARTNER_MAX_PAN).pan };
+  const distance = tilesApart(listener, source);
+  if (distance === undefined) return UNPOSITIONED;
+  return { gain: 1, pan: panning(listener, source, distance, PARTNER_MAX_PAN) };
 }
 
 export function overheardMix(listener: Position, source: Position): Mix {
-  if (apart(listener, source)) return SILENT;
-  const { distance, pan } = panning(listener, source, MAX_PAN);
+  const distance = tilesApart(listener, source);
+  if (distance === undefined) return SILENT;
   const fade = (SILENT_BEYOND - distance) / (SILENT_BEYOND - FULL_VOLUME_WITHIN);
-  return { gain: OVERHEARD_GAIN * Math.min(1, Math.max(0, fade)) ** 2, pan };
+  const gain = OVERHEARD_GAIN * Math.min(1, Math.max(0, fade)) ** 2;
+  return { gain, pan: panning(listener, source, distance, MAX_PAN) };
 }

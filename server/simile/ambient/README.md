@@ -12,7 +12,8 @@ ticks on the sim loop.
   conversation between NPCs comes into earshot once the player is within `earshot` (5 tiles) of
   one of its speakers, and stays in it until they're further than `out_of_earshot` (6.5) from all
   of them. Nothing is in earshot while no client is connected or the player isn't on the map, and
-  nothing on a map other than the player's.
+  nothing on a map other than the player's. On a side-view map I1 measures along the street, so
+  that's nothing on another floor or street either.
 - **When.** Every `look_every` (5 s), once nothing has been in earshot for `quiet` (1 minute) and
   at least `retry` (60 s) after its last nudge. The quiet only counts while a client is connected,
   the player is on the map and they aren't in a conversation of their own, so it never nudges
