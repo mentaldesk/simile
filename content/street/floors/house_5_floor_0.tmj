@@ -1,0 +1,380 @@
+{
+  "compressionlevel": -1,
+  "height": 4,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        2,0,0,0,0,0,2,
+        2,0,0,0,0,0,2,
+        2,0,0,0,0,0,2,
+        2,2,2,2,2,2,2
+      ],
+      "height": 4,
+      "id": 1,
+      "name": "solid",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 7,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0
+      ],
+      "height": 4,
+      "id": 2,
+      "name": "climbable",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 7,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,
+        1,0,0,0,0,0,1,
+        1,1,1,1,1,1,1
+      ],
+      "height": 4,
+      "id": 3,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 7,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "buildings",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "furniture",
+      "objects": [
+        {
+          "height": 32,
+          "id": 1,
+          "name": "kitchen",
+          "properties": [],
+          "rotation": 0,
+          "type": "kitchen",
+          "visible": true,
+          "width": 32,
+          "x": 16,
+          "y": 16
+        },
+        {
+          "height": 16,
+          "id": 2,
+          "name": "sofa",
+          "properties": [],
+          "rotation": 0,
+          "type": "sofa",
+          "visible": true,
+          "width": 32,
+          "x": 48,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "locations",
+      "objects": [
+        {
+          "height": 48,
+          "id": 3,
+          "name": "house_5",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 3
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "floors",
+              "type": "string",
+              "value": "house_5_floor_1:1,0,5,3"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "1 Kapok Walk"
+            }
+          ],
+          "rotation": 0,
+          "type": "house",
+          "visible": true,
+          "width": 80,
+          "x": 16,
+          "y": 0
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "murals",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 4,
+          "name": "house_5",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "kapok_walk"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 14
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 5,
+          "name": "house_5_stairs",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "stairs"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "house_5_floor_1"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 5
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 11,
+  "nextobjectid": 6,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "building",
+      "type": "string",
+      "value": "house_5"
+    },
+    {
+      "name": "floor",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "value": "floor"
+    },
+    {
+      "name": "room",
+      "type": "string",
+      "value": "living_room"
+    },
+    {
+      "name": "street",
+      "type": "string",
+      "value": "kapok_walk"
+    },
+    {
+      "name": "street_x",
+      "type": "int",
+      "value": 9
+    },
+    {
+      "name": "street_y",
+      "type": "int",
+      "value": 13
+    },
+    {
+      "name": "view",
+      "type": "string",
+      "value": "side"
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [
+    {
+      "columns": 4,
+      "firstgid": 1,
+      "image": "../markers.png",
+      "imageheight": 16,
+      "imagewidth": 64,
+      "margin": 0,
+      "name": "markers",
+      "spacing": 0,
+      "tilecount": 4,
+      "tileheight": 16,
+      "tiles": [
+        {
+          "id": 0,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "solid"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stairs"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "ladder"
+            }
+          ]
+        }
+      ],
+      "tilewidth": 16
+    }
+  ],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 7
+}

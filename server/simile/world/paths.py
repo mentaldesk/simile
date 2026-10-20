@@ -5,6 +5,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from itertools import pairwise
 from typing import NamedTuple, Protocol
 
+from simile.street.moves import moves
 from simile.world.map import TownMap
 
 type Cell = tuple[int, int]
@@ -34,7 +35,11 @@ class OnMap(Protocol):
 
 
 def steps(town: TownMap, cell: Cell) -> Iterator[tuple[Cell, float]]:
-    """Walkable neighbours and step costs, in 8 directions without cutting corners."""
+    """Walkable neighbours and step costs, in 8 directions without cutting corners, or on a
+    side-view map by its neighbour rule, `simile.street.moves`."""
+    if town.side_view:
+        yield from moves(town, cell)
+        return
     x, y = cell
     for dx, dy in STRAIGHT:
         if town.walkable(x + dx, y + dy):

@@ -1,0 +1,657 @@
+{
+  "compressionlevel": -1,
+  "height": 4,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+      ],
+      "height": 4,
+      "id": 1,
+      "name": "solid",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 18,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ],
+      "height": 4,
+      "id": 2,
+      "name": "climbable",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 18,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+      ],
+      "height": 4,
+      "id": 3,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 18,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "buildings",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "furniture",
+      "objects": [
+        {
+          "height": 48,
+          "id": 1,
+          "name": "lift",
+          "properties": [],
+          "rotation": 0,
+          "type": "lift",
+          "visible": true,
+          "width": 32,
+          "x": 240,
+          "y": 0
+        },
+        {
+          "height": 16,
+          "id": 2,
+          "name": "bench",
+          "properties": [],
+          "rotation": 0,
+          "type": "bench",
+          "visible": true,
+          "width": 32,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 3,
+          "name": "plinth",
+          "properties": [],
+          "rotation": 0,
+          "type": "plinth",
+          "visible": true,
+          "width": 16,
+          "x": 96,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 4,
+          "name": "plinth",
+          "properties": [],
+          "rotation": 0,
+          "type": "plinth",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "locations",
+      "objects": [
+        {
+          "height": 48,
+          "id": 5,
+          "name": "gallery",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 3
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "floors",
+              "type": "string",
+              "value": "gallery_floor_1:1,0,16,3 gallery_floor_2:1,0,16,3"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "The Gallery"
+            }
+          ],
+          "rotation": 0,
+          "type": "gallery",
+          "visible": true,
+          "width": 256,
+          "x": 16,
+          "y": 0
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "murals",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 6,
+          "name": "gallery",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "banyan_row"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 28
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 7,
+          "name": "gallery_lift_0_1",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "lift"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "gallery_floor_1"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 16
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 256,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 8,
+          "name": "gallery_lift_0_2",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "lift"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "gallery_floor_2"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 16
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 240,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [
+        {
+          "height": 16,
+          "id": 9,
+          "name": "painting_1",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Painting"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "4,2 5,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "painting",
+          "visible": true,
+          "width": 32,
+          "x": 64,
+          "y": 16
+        },
+        {
+          "height": 16,
+          "id": 10,
+          "name": "painting_2",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Painting"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "7,2 8,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "painting",
+          "visible": true,
+          "width": 32,
+          "x": 112,
+          "y": 16
+        },
+        {
+          "height": 16,
+          "id": 11,
+          "name": "painting_3",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Painting"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "10,2 11,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "painting",
+          "visible": true,
+          "width": 32,
+          "x": 160,
+          "y": 16
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 12,
+          "name": "viewing-3-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 13,
+          "name": "viewing-4-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 14,
+          "name": "viewing-7-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 112,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 15,
+          "name": "viewing-8-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 16,
+          "name": "viewing-11-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 17,
+          "name": "viewing-12-2",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "viewing",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 18,
+          "name": "seat-8-4",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 19,
+          "name": "seat-9-4",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 11,
+  "nextobjectid": 20,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "building",
+      "type": "string",
+      "value": "gallery"
+    },
+    {
+      "name": "floor",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "value": "floor"
+    },
+    {
+      "name": "room",
+      "type": "string",
+      "value": "gallery"
+    },
+    {
+      "name": "street",
+      "type": "string",
+      "value": "banyan_row"
+    },
+    {
+      "name": "street_x",
+      "type": "int",
+      "value": 26
+    },
+    {
+      "name": "street_y",
+      "type": "int",
+      "value": 13
+    },
+    {
+      "name": "view",
+      "type": "string",
+      "value": "side"
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [
+    {
+      "columns": 4,
+      "firstgid": 1,
+      "image": "../markers.png",
+      "imageheight": 16,
+      "imagewidth": 64,
+      "margin": 0,
+      "name": "markers",
+      "spacing": 0,
+      "tilecount": 4,
+      "tileheight": 16,
+      "tiles": [
+        {
+          "id": 0,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "solid"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stairs"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "ladder"
+            }
+          ]
+        }
+      ],
+      "tilewidth": 16
+    }
+  ],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 18
+}
