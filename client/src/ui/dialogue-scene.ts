@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
 import { server, type Position } from '../net';
-import { maps, village } from '../world/assets';
-import { interactables } from '../world/interactables';
-import { muralWalls } from '../world/iso/murals';
-import { terminalAt, terminalsOf, type Terminal } from '../world/terminals';
+import { maps } from '../world/assets';
+import type { Interactable } from '../world/interactables';
+import { muralWalls } from '../world/murals';
+import { usedByE, wayHint, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { ChatBox } from './chat-box';
-import { counterOf, CounterPrompt, servingAt } from './counter';
+import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
 import { onGameKey } from './keys';
@@ -20,7 +20,6 @@ import { TargetMarker } from './target-marker';
 import { NEWS_KEY } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
-const terminals = terminalsOf(village);
 setMaps(maps);
 
 export class DialogueScene extends Phaser.Scene {
@@ -29,6 +28,7 @@ export class DialogueScene extends Phaser.Scene {
   private marker!: TargetMarker;
   private news!: NewsPanel;
   private newsHint!: HTMLElement;
+  private wayHint!: HTMLElement;
   private murals!: MuralPanel;
   private counter!: CounterPrompt;
   private chat!: ChatBox;
@@ -54,20 +54,13 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint = this.root.appendChild(document.createElement('div'));
     this.newsHint.className = 'news-hint';
     this.newsHint.textContent = `Press ${NEWS_KEY.toUpperCase()} to read the news.`;
+    this.wayHint = this.root.appendChild(document.createElement('div'));
+    this.wayHint.className = 'news-hint';
     this.murals = new MuralPanel(this.root, muralWalls);
     this.counter = new CounterPrompt(this.root);
     const onKeyDown = onGameKey({
       chat,
-      news: () => {
-        if (this.order()) return;
-        const terminal = this.terminal();
-        if (!terminal) {
-          this.murals.look(this.player());
-          return;
-        }
-        this.murals.close();
-        this.news.open(terminal.label);
-      },
+      news: () => this.use(usedByE(this.player())),
     });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
@@ -97,33 +90,40 @@ export class DialogueScene extends Phaser.Scene {
     const view = inOverlay(worldView(), this.fromGame);
     this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id));
     this.bubbles.render(dialogue.bubbles.current(), view);
-    const atTerminal = this.terminal() !== undefined;
+    const player = this.player();
+    const used = usedByE(player);
+    const atTerminal = used?.kind === 'terminal';
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
-    this.murals.update(this.player(), !atTerminal && !this.news.isOpen);
-    this.counter.update(counterOf(interactables.current), !this.chat.isOpen);
+    this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
+    this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
+    const way = used || this.news.isOpen || this.murals.isOpen ? undefined : wayHint();
+    this.wayHint.hidden = !way;
+    if (way && this.wayHint.textContent !== way) this.wayHint.textContent = way;
+  }
+
+  /** E uses the nearest thing in reach; the gallery scene looks at paintings. */
+  private use(used: Reachable | undefined): void {
+    if (used?.kind === 'counter') this.order(used.interactable);
+    else if (used?.kind === 'terminal') {
+      this.murals.close();
+      this.news.open(used.terminal.label);
+    } else if (used?.kind === 'mural') this.murals.look(this.player());
   }
 
   /** At a counter, E opens the chat to whoever is serving behind it. */
-  private order(): boolean {
-    const counter = counterOf(interactables.current);
-    if (!counter) return false;
+  private order(counter: Interactable): void {
     const serving = servingAt(counter, worldView()) ?? dialogue.partner();
     if (!serving) {
       this.counter.flash("Nobody's behind the counter.");
-      return true;
+      return;
     }
     this.chat.choose(serving);
     this.chat.open();
-    return true;
   }
 
   private player(): Position | undefined {
     return worldView().positionOf(PLAYER_ID);
-  }
-
-  private terminal(): Terminal | undefined {
-    return terminalAt(terminals, this.player());
   }
 
   private fitToCanvas(): void {
