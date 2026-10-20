@@ -20,7 +20,8 @@ Output is deterministic, and `tests/street` fails if a file drifts from the buil
   squares are doors, yellow and orange lines stairs and ladders between floors, pink lines the
   lift. Violet dots are spots, with a tick the way they face (up for `north`, down for `south`).
   Yellow squares are entries, teal boxes locations, orange boxes things to use, cyan boxes mural
-  walls from `bottom` to `top`, and thin grey boxes furniture.
+  walls from `bottom` to `top`, and thin grey boxes furniture. Mural walls and doors to other
+  streets are named in the ground under them.
 
 ## The grid
 
@@ -93,7 +94,9 @@ As in [`content/map/`](../map/README.md), with these additions.
   - A **street door** joins two streets, `outside` on the one whose id comes first. Its id is
     `<outside>_to_<inside>`. It's a lane or steps between buildings, at a street's end or partway
     along it, so the square can be the middle of the village.
-  - **Stairs, a ladder or a lift** join two floors of a building, `outside` the lower.
+  - **Stairs or a ladder** join a floor of a building to the one above it, and **a lift** any
+    two of its floors, `outside` the lower.
+  - Link ends on a street are at least 3 tiles apart, so no two openings are drawn side by side.
 - **Mural walls** face `south`, the camera. A wall's `x`, `y` is the standing cell at its west end
   on the street in front, and its rectangle is the `width` cells along the street from there. Its
   painter's `stand` is the cell in front of its middle. `bottom` and `top` are in storeys above the
@@ -105,13 +108,13 @@ As in [`content/map/`](../map/README.md), with these additions.
 
 ## The village
 
-Four streets. Kapok Walk and Lychee Lane lead off the west end of the square on the High Street,
-and steps go down to Banyan Row off its east end. The farthest two places are about 70 s' walk
-apart, against today's 47 s.
+Four streets. Kapok Walk and Lychee Lane lead off the square on the High Street, and steps go
+down to Banyan Row off its east end. The farthest two places are about 70 s' walk apart, against
+today's 47 s.
 
 | Street | Width | West to east (x) |
 |---|--:|---|
-| `high_street` High Street | 84 | `maker_space` (2–17), `corner_shop` (19–24, a mural), `coffee_shop` (25–44, a mural) with `cafe_terrace` in front, `square` (45–64) with `terminal_1` at 59 and the doors to Kapok Walk (45), Lychee Lane (46) and Banyan Row (63), `noodle_bar` (65–81) |
+| `high_street` High Street | 84 | `maker_space` (2–17), `corner_shop` (19–24, a mural), `coffee_shop` (25–44, a mural) with `cafe_terrace` in front, `square` (45–64) with the fountain at 55–56, `terminal_1` at 60 and the doors to Kapok Walk (46), Lychee Lane (50) and Banyan Row (64), `noodle_bar` (65–81) |
 | `lychee_lane` Lychee Lane | 68 | `house_1` (2–8), `house_2` (9–15), the door to the High Street (17), `house_3` (19–25), `house_4` (26–32), `terminal_2` at the park gate (34), `park` (36–59) with a lookout up a ladder at 45, `tower` (61–66, a mural) |
 | `kapok_walk` Kapok Walk | 34 | a garden (1–8), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
 | `banyan_row` Banyan Row | 68 | `house_8` (2–8), `house_9` (9–15), `house_10` (16–22, a mural), the door to the High Street (24), `gallery` (26–43), `garden_flats` (45–50, a mural), then two stairs down from 53 to the river's promenade, row 18, with `terminal_3` at 60 |
@@ -198,5 +201,6 @@ The loader rejects maps that break `docs/protocol.md`'s rules, with a `ValueErro
 - a link that isn't the same from both ends, leads to a missing map, or ends off a standing cell
 - a street door whose `outside` isn't the street whose id comes first
 - a door that doesn't join two streets or a street and a ground floor
-- stairs, a ladder or a lift that doesn't join a floor to a higher one of the same building
+- stairs, a ladder or a lift that doesn't join a floor to a higher one of the same building, or
+  stairs or a ladder that skip a floor
 - a floor its building's location doesn't list, or a listed floor that isn't its building's

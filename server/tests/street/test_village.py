@@ -200,8 +200,22 @@ def test_floors_join_by_stairs_ladders_and_lifts_with_an_end_tile_each() -> None
     for door in links:
         low, high = MAPS[door.outside.map], MAPS[door.inside.map]
         assert low.building == high.building and low.floor < high.floor, door.id
+        if door.kind is not DoorKind.LIFT:
+            assert high.floor == low.floor + 1, door.id
     lifts = {door.id for door in links if door.kind is DoorKind.LIFT}
     assert lifts == {"gallery_lift_0_1", "gallery_lift_0_2", "gallery_lift_1_2"}
+
+
+def test_no_two_openings_on_a_street_are_closer_than_three_tiles() -> None:
+    for street in STREETS:
+        ends = sorted(
+            end.x
+            for door in street.doors
+            for end in (door.outside, door.inside)
+            if end.map == street.id
+        )
+        gaps = {(a, b) for a, b in itertools.pairwise(ends) if b - a < 3}
+        assert not gaps, street.id
 
 
 def test_a_building_is_one_location_arriving_on_its_ground_floor() -> None:

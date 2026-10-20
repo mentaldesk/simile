@@ -382,8 +382,8 @@ def gallery(street: Plan, x: int) -> list[Plan]:
 
 def high_street() -> tuple[Plan, list[Plan]]:
     """The maker space, the corner shop, the Daily Grind and its terrace, the square, and the
-    noodle bar. Kapok Walk and Lychee Lane lead off the square's west end, and steps down to
-    Banyan Row off its east end."""
+    noodle bar. Kapok Walk and Lychee Lane lead off the square, and steps down to Banyan Row off
+    its east end."""
     plan = street("high_street", "High Street", 84)
     floors = maker_space(plan, 2)
     scenery(plan, "corner_shop", "The corner shop", 19, 6, 3)
@@ -412,7 +412,8 @@ def high_street() -> tuple[Plan, list[Plan]]:
 
 
 def square(plan: Plan) -> None:
-    """The fountain, with a bench either side of each lamp and the news terminal."""
+    """The fountain, with benches and a lamp either side and the news terminal, and the doors to
+    Kapok Walk (46), Lychee Lane (50) and Banyan Row (64)."""
     area = TileArea(x=45, y=GROUND - 2, width=20, height=3)
     plan.locations.append(
         Location(
@@ -421,20 +422,20 @@ def square(plan: Plan) -> None:
             kind=LocationKind.SQUARE,
             map=plan.id,
             area=area,
-            entry=Tile(x=50, y=GROUND),
+            entry=Tile(x=51, y=GROUND),
         )
     )
-    terminal(plan, 1, "News terminal on the square", 59, "terminal-36-15")
-    plan.piece("fountain", 54, GROUND - 1, 2, 2)
-    for at in (47, 62):
+    terminal(plan, 1, "News terminal on the square", 60, "terminal-36-15")
+    plan.piece("fountain", 55, GROUND - 1, 2, 2)
+    for at in (47, 63):
         plan.piece("lamp", at, GROUND - 2, 1, 3)
     bench(plan, 48, GROUND, S, "seat-27-19", "seat-28-19")
-    bench(plan, 51, GROUND, S, "seat-27-21", "seat-28-21")
-    bench(plan, 57, GROUND, S, "seat-34-19", "seat-35-19")
-    bench(plan, 60, GROUND, S, "seat-34-21", "seat-35-21")
-    standing = [("standing-26-20", 47, E), ("standing-30-20", 53, E)]
-    standing += [("standing-31-18", 54, N), ("standing-32-21", 55, N)]
-    standing += [("standing-33-19", 56, W), ("standing-37-20", 62, W)]
+    bench(plan, 52, GROUND, S, "seat-27-21", "seat-28-21")
+    bench(plan, 58, GROUND, S, "seat-34-19", "seat-35-19")
+    bench(plan, 61, GROUND, S, "seat-34-21", "seat-35-21")
+    standing = [("standing-26-20", 47, E), ("standing-30-20", 54, E)]
+    standing += [("standing-31-18", 55, N), ("standing-32-21", 56, N)]
+    standing += [("standing-33-19", 57, W), ("standing-37-20", 63, W)]
     for spot_id, at, facing in standing:
         plan.spot(spot_id, SpotKind.STANDING, at, GROUND, facing)
 
@@ -515,9 +516,9 @@ def village() -> list[Plan]:
     lychee, lychee_floors = lychee_lane()
     kapok, kapok_floors = kapok_walk()
     banyan, banyan_floors = banyan_row()
-    join(high, 45, kapok, 32)
-    join(high, 46, lychee, 17)
-    join(high, 63, banyan, 24)
+    join(high, 46, kapok, 32)
+    join(high, 50, lychee, 17)
+    join(high, 64, banyan, 24)
     plans = [high, lychee, kapok, banyan, *high_floors, *lychee_floors, *kapok_floors]
     plans += banyan_floors
     for plan in plans:

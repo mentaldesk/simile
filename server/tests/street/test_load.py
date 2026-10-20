@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -97,9 +98,10 @@ def village(
     streets: tuple[str, str] = ("high_street", "mill_lane"),
     stairs: tuple[int, int] = (0, 1),
     floors: str = "house_1_floor_1:0,0,6,1",
+    kind: str = "stairs",
 ) -> Path:
     """Two streets joined by a door, the first's at its outside end, and a house on the first
-    with two floors and stairs between them, the first's at its outside end."""
+    with two floors and a flight of `kind` between them, the first's at its outside end."""
     first, second = streets
     to_second = link("streets", 5, "outside", second, 0)
     front_door = link("house_1", 2, "outside", "house_1_floor_0", 1)
@@ -108,8 +110,8 @@ def village(
     write(tmp_path, second, side_view_map(6, "street", doors=[to_first]))
     low, high = stairs
     flight = {
-        low: link("house_1_stairs", 4, "outside", f"house_1_floor_{high}", 4, "stairs"),
-        high: link("house_1_stairs", 4, "inside", f"house_1_floor_{low}", 4, "stairs"),
+        low: link("house_1_stairs", 4, "outside", f"house_1_floor_{high}", 4, kind),
+        high: link("house_1_stairs", 4, "inside", f"house_1_floor_{low}", 4, kind),
     }
     props = {"entry_x": 2, "entry_y": 0, "label": "1 High Street"}
     location = rectangle("house_1", "house", 0, 6, props | ({"floors": floors} if floors else {}))
@@ -120,6 +122,19 @@ def village(
         data = side_view_map(6, "floor", doors, locations, building="house_1", floor=floor)
         write(tmp_path / "floors", f"house_1_floor_{floor}", data)
     return tmp_path
+
+
+def upstairs(village_dir: Path, change: Callable[[dict[str, Any]], object]) -> None:
+    """Change the house's upper floor map."""
+    path = village_dir / "floors" / "house_1_floor_1.tmj"
+    data = json.loads(path.read_text())
+    change(data)
+    path.write_text(json.dumps(data))
+
+
+def set_property(data: dict[str, Any], name: str, value: Any) -> None:
+    data["properties"] = [p for p in data["properties"] if p["name"] != name]
+    data["properties"].append(prop(name, value))
 
 
 def test_reads_the_kind_of_each_link_and_the_floors_of_a_location(tmp_path: Path) -> None:
@@ -214,7 +229,51 @@ def test_two_streets_join_through_a_door_outside_on_the_street_whose_id_comes_fi
 def test_rejects_stairs_whose_outside_is_the_upper_floor(tmp_path: Path) -> None:
     village(tmp_path, stairs=(1, 0))
 
-    with pytest.raises(ValueError, match="joins? a floor of a building to one above it"):
+    with pytest.raises(ValueError, match="doesn't join a floor of a building to one above it"):
+        load_maps(tmp_path)
+
+
+@pytest.mark.parametrize("kind", ["stairs", "ladder", "lift"])
+def test_rejects_stairs_a_ladder_or_a_lift_between_two_buildings(tmp_path: Path, kind: str) -> None:
+    village(tmp_path, kind=kind)
+    upstairs(tmp_path, lambda data: set_property(data, "building", "house_2"))
+
+    with pytest.raises(ValueError, match="doesn't join a floor of a building to one above it"):
+        load_maps(tmp_path)
+
+
+@pytest.mark.parametrize(("kind", "skips"), [("stairs", False), ("ladder", False), ("lift", True)])
+def test_only_a_lift_skips_a_floor(tmp_path: Path, kind: str, skips: bool) -> None:
+    village(tmp_path, kind=kind)
+    upstairs(tmp_path, lambda data: set_property(data, "floor", 2))
+
+    if skips:
+        assert load_maps(tmp_path)["house_1_floor_1"].floor == 2
+    else:
+        with pytest.raises(ValueError, match="skips a floor, which only a lift can"):
+            load_maps(tmp_path)
+
+
+def test_rejects_a_link_that_differs_between_its_ends(tmp_path: Path) -> None:
+    village(tmp_path)
+
+    def ladder_up_here(data: dict[str, Any]) -> None:
+        [stairs] = data["layers"][1]["objects"]
+        stairs["properties"] = [p for p in stairs["properties"] if p["name"] != "kind"]
+        stairs["properties"].append(prop("kind", "ladder"))
+
+    upstairs(tmp_path, ladder_up_here)
+
+    with pytest.raises(ValueError, match="house_1_stairs isn't the same link on house_1_floor_1"):
+        load_maps(tmp_path)
+
+
+def test_rejects_a_link_whose_end_isnt_a_standing_cell(tmp_path: Path) -> None:
+    village(tmp_path)
+    on_a_stair = {"name": "climbable", "type": "tilelayer", "data": [0] * 4 + [3] + [0] * 7}
+    upstairs(tmp_path, lambda data: data["layers"].append(on_a_stair))
+
+    with pytest.raises(ValueError, match="end on house_1_floor_1 isn't a standing cell"):
         load_maps(tmp_path)
 
 
@@ -222,6 +281,15 @@ def test_rejects_a_floor_its_building_doesnt_list(tmp_path: Path) -> None:
     village(tmp_path, floors="")
 
     with pytest.raises(ValueError, match="isn't one of house_1's floors"):
+        load_maps(tmp_path)
+
+
+def test_rejects_a_location_listing_another_buildings_floor(tmp_path: Path) -> None:
+    village(tmp_path, floors="house_1_floor_1:0,0,6,1 house_2_floor_1:0,0,6,1")
+    other = side_view_map(6, "floor", building="house_2", floor=1)
+    write(tmp_path / "floors", "house_2_floor_1", other)
+
+    with pytest.raises(ValueError, match="house_1's floor house_2_floor_1 isn't a floor of it"):
         load_maps(tmp_path)
 
 

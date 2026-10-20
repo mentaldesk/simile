@@ -125,13 +125,14 @@ class Panel:
                     a = self.middle(door.outside.x, door.outside.y, *placed[door.outside.map])
                     b = self.middle(door.inside.x, door.inside.y, *placed[door.inside.map])
                     self.draw.line((*a, *b), fill=COLOURS[LINKS[door.kind]], width=3)
+        notes = []
         for wall in street.murals:
             bottom, top = (GROUND + 1 - s * STOREY for s in (wall.bottom, wall.top))
             x0, y0, x1, y1 = self.box(wall.x, top, wall.width, bottom - top)
             self.draw.rectangle(
                 (x0, y0, x1, y1), fill=COLOURS["mural"], outline=COLOURS["mural_edge"]
             )
-            self.label(f"MURAL {wall.id.upper()}", x0 + 2, y1 - 14, "sky")
+            notes.append((wall.x, f"MURAL {wall.id.upper()}", "mural_edge"))
         for facade in street.buildings:
             self.label(
                 facade.id.upper(),
@@ -139,19 +140,24 @@ class Panel:
                 self.top + facade.area.y * SCALE - 14,
                 "front",
             )
-        lanes = [
-            door
-            for door in street.doors
-            if door.outside.map not in placed and door.inside.map not in placed
-        ]
-        for i, door in enumerate(lanes):
-            here, there = (
-                (door.outside, door.inside)
-                if door.outside.map == street.id
-                else (door.inside, door.outside)
-            )
-            x0, y0, _, _ = self.box(here.x, here.y)
-            self.label(f"TO {there.map.upper()}", x0, y0 - (2 + 1.2 * i) * SCALE, "path")
+        for door in street.doors:
+            ends = (door.outside, door.inside)
+            here, there = ends if door.outside.map == street.id else ends[::-1]
+            if there.map not in placed:
+                notes.append((here.x, f"TO {there.map.upper()}", "door"))
+        self.underground(sorted(notes))
+
+    def underground(self, notes: Sequence[tuple[int, str, str]]) -> None:
+        """Labels in the ground under the cells they name, in rows so none overlap."""
+        rows: list[float] = []
+        for x, text, colour in notes:
+            left = x * SCALE + 2
+            width = self.draw.textlength(text, font=self.font)
+            row = next((i for i, end in enumerate(rows) if end < left), len(rows))
+            rows[row : row + 1] = [left + width + 8]
+            y = self.top + (GROUND + 2) * SCALE + 2 + row * 15
+            self.draw.line((left - 2, y - 4, left - 2, y + 10), fill=COLOURS[colour], width=2)
+            self.label(text, left + 2, y, "path")
 
     def plan(self, plan: Plan, dx: int, dy: int, cells: bool = True) -> None:
         if cells:

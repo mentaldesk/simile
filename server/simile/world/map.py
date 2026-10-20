@@ -262,15 +262,15 @@ def _check_side_view(maps: Mapping[str, TownMap], links: Iterable[Door]) -> None
                 raise ValueError(f"{link.id}'s end on {town.id} isn't a standing cell")
         _check_link(link, outside, inside)
     locations = {loc.id: loc for town in maps.values() for loc in town.locations}
+    for location in locations.values():
+        for floor in location.floors:
+            if floor.map not in maps or maps[floor.map].building != location.id:
+                raise ValueError(f"{location.id}'s floor {floor.map} isn't a floor of it")
     for town in maps.values():
         if town.kind is MapKind.FLOOR:
             location = locations.get(town.building or "")
             if location is None or town.id not in _maps_of(location):
                 raise ValueError(f"{town.id} isn't one of {town.building}'s floors")
-    for location in locations.values():
-        for floor in location.floors:
-            if floor.map not in maps or maps[floor.map].building != location.id:
-                raise ValueError(f"{location.id}'s floor {floor.map} isn't a floor of it")
 
 
 def _check_link(link: Door, outside: TownMap, inside: TownMap) -> None:
@@ -288,6 +288,8 @@ def _check_link(link: Door, outside: TownMap, inside: TownMap) -> None:
         or (outside.floor or 0) >= (inside.floor or 0)
     ):
         raise ValueError(f"{link.id} doesn't join a floor of a building to one above it")
+    elif link.kind is not DoorKind.LIFT and (inside.floor or 0) - (outside.floor or 0) != 1:
+        raise ValueError(f"{link.id} skips a floor, which only a lift can")
 
 
 def _maps_of(location: Location) -> list[str]:
