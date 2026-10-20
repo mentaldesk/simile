@@ -139,21 +139,22 @@ async def test_cancelling_a_finished_job_is_refused(root: Path) -> None:
 
 
 async def test_fails_at_once_with_a_clear_reason_when_a_tool_is_missing(root: Path) -> None:
-    jobs = Jobs(root, {"blender": False, "apple_silicon": True})
+    jobs = Jobs(root, {"voice_lab": False, "apple_silicon": True})
 
     def never(fake: Fake, work: Path) -> list[str]:
         raise AssertionError("started a job this machine can't run")
 
-    jobs.register(fake_kind("render", requires=("blender", "apple_silicon"), command=never))
+    jobs.register(fake_kind("render", requires=("voice_lab", "apple_silicon"), command=never))
 
     job = jobs.submit("render", {})
 
     reason = (
-        "render jobs need Blender (install it or set $BLENDER), which this machine doesn't have"
+        "render jobs need voice-lab/.venv (see voice-lab/README.md), "
+        "which this machine doesn't have"
     )
     assert job.state is State.FAILED and job.error == reason
     assert jobs.capabilities() == {
-        "machine": {"blender": False, "apple_silicon": True},
+        "machine": {"voice_lab": False, "apple_silicon": True},
         "kinds": {"render": {"available": False, "reason": reason}},
     }
     assert not root.exists()
@@ -234,7 +235,7 @@ async def test_closing_cancels_every_job(root: Path, tmp_path: Path) -> None:
 
 async def test_keeps_only_the_latest_finished_jobs(root: Path) -> None:
     jobs = Jobs(root, {}, keep=2)
-    jobs.register(fake_kind(requires=("blender",)))
+    jobs.register(fake_kind(requires=("voice_lab",)))
 
     ids = [jobs.submit("fake", {}).id for _ in range(3)]
 
@@ -243,7 +244,7 @@ async def test_keeps_only_the_latest_finished_jobs(root: Path) -> None:
 
 def test_never_writes_inside_content(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="content"):
-        Jobs(CONTENT / "art", {})
+        Jobs(CONTENT / "dolls", {})
     jobs = Jobs(CONTENT.parent, {})
     with pytest.raises(ValueError, match="content"):
         jobs.register(fake_kind("content"))

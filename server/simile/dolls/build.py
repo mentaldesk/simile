@@ -42,7 +42,7 @@ REROLLS: dict[str, int] = {
 
 def people() -> dict[str, Appearance]:
     """Every resident in `content/npcs/` and the player, by id."""
-    from simile.art.characters import PLAYER
+    from simile.characters.palette import PLAYER
     from simile.npc.content import NPCS_DIR, load_npcs
 
     return {npc.id: npc.appearance for npc in load_npcs(NPCS_DIR)} | {PLAYER_ID: PLAYER}

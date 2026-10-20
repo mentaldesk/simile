@@ -27,7 +27,6 @@ def _on(map_id: str, *cells: tuple[int, int]) -> list[MapTile]:
     return [MapTile(map=map_id, x=x, y=y) for x, y in cells]
 
 
-TABLES = ((12, 3), (15, 3), (12, 7), (15, 7), (12, 10), (15, 10), (2, 8), (2, 11))
 LAYOUTS = {
     "coffee_shop_floor_0": Layout(
         entrance=MapTile(map="coffee_shop_floor_0", x=17, y=2),
@@ -39,17 +38,8 @@ LAYOUTS = {
             "coffee_shop_floor_1", *((x, 2) for x in (*range(5, 11), *range(12, 18), 1, 2, 3, 4))
         ),
     ),
-    "coffee_shop": Layout(
-        entrance=MapTile(map="coffee_shop", x=10, y=12),
-        machine=MapTile(map="coffee_shop", x=7, y=3),
-        hand_over=MapTile(map="coffee_shop", x=8, y=4),
-        pickup=MapTile(map="coffee_shop", x=8, y=6),
-        upstairs=MapTile(map="coffee_shop", x=1, y=3),
-        seats=_on("coffee_shop", *((x + side, y) for x, y in TABLES for side in (-1, 1))),
-    ),
 }
-"""By the map the café's location is on: its ground floor, whose tables are upstairs, and today's
-interior until #315. Each world's seats are in the same order, by spot id."""
+"""By the map the café's location is on: its ground floor, whose tables are upstairs."""
 
 
 class Nudge(BaseModel):

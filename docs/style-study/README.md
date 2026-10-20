@@ -359,3 +359,6 @@ The simulation stays on its square grid. Only the projection changes. Screen pos
 Renders and scratch files go to `out/`, which is gitignored. `make test` and `make lint` don't reach
 this folder: ruff runs in `server/` and eslint in `client/`. The scripts pass the server's ruff
 config anyway.
+
+The scripts read W1's map and A1's palette and tiles, which #315 removed with the isometric
+village, so they run only on a checkout from before it, such as `a176e1d`.

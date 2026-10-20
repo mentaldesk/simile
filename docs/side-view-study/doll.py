@@ -68,9 +68,8 @@ class Look:
 
     @classmethod
     def of(cls, appearance, seed: str) -> "Look":
-        from simile.art.characters import Colours
+        from simile.characters.palette import accent
 
-        a1 = Colours.of(appearance, seed=seed)
         top = rgb(appearance.top_colour)
         return cls(
             skin=rgb(appearance.skin),
@@ -78,7 +77,7 @@ class Look:
             top=top,
             bottom=rgb(appearance.bottom_colour),
             shoe=rgb(appearance.shoe_colour),
-            accent=rgb(ACCENTS.get(a1.accent, "#feae34")),
+            accent=rgb(ACCENTS.get(accent(appearance, seed), "#feae34")),
             apron=rgb(APRON_ON_LIGHT if luminance(top) > 0.6 else APRON),
             hair_style=appearance.hair_style.value,
             width=BUILD[appearance.build.value],

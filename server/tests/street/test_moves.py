@@ -1,5 +1,4 @@
 import math
-from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -158,10 +157,8 @@ def test_costs_a_step_a_rung_and_the_diagonal_of_a_stair() -> None:
     assert (1.0, 1.0, math.sqrt(2)) == (WALK, CLIMB, STAIR)
 
 
-def test_paths_follow_the_rule_on_side_view_maps_and_eight_directions_on_todays() -> None:
+def test_paths_follow_the_rule() -> None:
     field = side_view("....", "....", "####")
-    top_down = replace(field, side_view=False, blocked=((False,) * 4,) * 3)
 
     assert dict(steps(field, (1, 1))) == {(0, 1): WALK, (2, 1): WALK}
-    assert len(dict(steps(top_down, (1, 1)))) == 8
     assert [cell for cell, _ in nearby(field, (0, 1))] == [(0, 1), (1, 1), (2, 1), (3, 1)]

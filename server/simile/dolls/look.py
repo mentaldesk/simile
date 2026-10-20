@@ -24,19 +24,17 @@ class Look:
     @classmethod
     def of(cls, appearance: Appearance, seed: str | None) -> "Look":
         """Skin is kept exactly; everything else is muted to sit in the papercraft world. The
-        accent and apron follow A1's sprites (`Colours`), seeded by the character's id."""
-        from simile.art.characters import Colours
-        from simile.art.palette import PALETTE
+        accent, seeded by the character's id, and the apron are the palette's."""
+        from simile.characters.palette import PALETTE, accent, apron
 
-        sprite = Colours.of(appearance, seed=seed)
         return cls(
             skin=rgb(appearance.skin),
             hair=muted(rgb(appearance.hair_colour)),
             top=muted(rgb(appearance.top_colour)),
             bottom=muted(rgb(appearance.bottom_colour)),
             shoe=muted(rgb(appearance.shoe_colour)),
-            accent=muted(rgb(PALETTE[sprite.accent])),
-            apron=muted(rgb(PALETTE[sprite.apron])),
+            accent=muted(rgb(PALETTE[accent(appearance, seed)])),
+            apron=muted(rgb(PALETTE[apron(appearance)])),
             hair_style=appearance.hair_style.value,
             width=BUILD[appearance.build.value],
             accessories=frozenset(a.value for a in appearance.accessories),

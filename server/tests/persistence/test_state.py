@@ -19,12 +19,12 @@ from simile.persistence import (
     capture,
     restore,
 )
-from simile.persistence.old_cells import TABLE, build, moved, write
+from simile.persistence.old_cells import TABLE, moved
 from simile.reflection import Reflector
 from simile.schema import PLAYER_ID, VILLAGE_MAP, Intention, IntentionKind, MapTile, Tile
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement, Point
-from simile.world.map import ISO_DIR, load_maps, with_every_location
+from simile.world.map import load_maps, with_every_location
 
 MAPS = load_maps()
 TOWN = with_every_location(MAPS)
@@ -278,21 +278,6 @@ def test_every_cell_in_the_table_lands_somewhere_to_stand_on_the_new_maps() -> N
             map=row["new_map"], x=int(row["new_x"]), y=int(row["new_y"])
         )
     assert moved("village", 999, 999) is None and moved("moon", 1, 1) is None
-
-
-@pytest.mark.skipif(not ISO_DIR.exists(), reason="today's maps are gone, with W1's builder")
-def test_the_committed_table_covers_every_cell_of_todays_maps(tmp_path: Path) -> None:
-    today = load_maps(ISO_DIR)
-    fresh = tmp_path / "old_cells.csv"
-
-    write(build(today, MAPS), fresh)
-
-    assert fresh.read_text() == TABLE.read_text()
-    for town in today.values():
-        for y in range(town.height):
-            for x in range(town.width):
-                if town.walkable(x, y):
-                    assert moved(town.id, x, y) is not None, (town.id, x, y)
 
 
 def intention(owner: str, target: str, hours: float) -> Intention:

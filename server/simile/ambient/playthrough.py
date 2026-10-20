@@ -400,7 +400,7 @@ class ScriptedPlayer:
         return deque([*self.rng.sample(SAY, k=self.rng.randint(*self.turns)), BYE])
 
     def _distance(self, npc: Id) -> float:
-        return apart(self.movement.maps, self.position, self.movement.position(npc))
+        return apart(self.position, self.movement.position(npc))
 
     def _on_started(self, event: ConversationStarted) -> None:
         participants = event.conversation.participants

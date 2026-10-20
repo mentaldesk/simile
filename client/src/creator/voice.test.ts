@@ -69,7 +69,6 @@ function fakeApi() {
     job: vi.fn(),
     cancel: vi.fn(),
     watch: vi.fn(() => socket),
-    atlas: vi.fn(),
     voices: vi.fn(async () => []),
     record: vi.fn(async () => checked()),
     pick: vi.fn(async () => voiced),

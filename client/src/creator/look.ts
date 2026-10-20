@@ -1,4 +1,4 @@
-import { flatDoll } from '../dolls/assets';
+import { flatDoll, loadDoll } from '../dolls/assets';
 import type { DollManifest } from '../dolls/manifest';
 import type { CreatorApi } from './api';
 import type { Accessory, Appearance } from './character';
@@ -151,8 +151,15 @@ export type MakeStage = (parent: HTMLElement) => Promise<PreviewStage>;
 
 const dollStage: MakeStage = async (parent) => new (await import('./doll-stage')).DollStage(parent);
 
-export class SpritePreview {
-  readonly root = h('div', { className: 'creator-sprite' });
+export const paintedUrl = (id: string) => `/api/jobs/files/doll/${id}.json`;
+
+export type LoadDoll = (url: string) => Promise<DollManifest>;
+
+const loadFresh: LoadDoll = (url) => loadDoll(url, (input) => fetch(input, { cache: 'no-cache' }));
+
+/** The look's flat doll as it changes, and the doll job's painted one once there is one. */
+export class DollPreview {
+  readonly root = h('div', { className: 'creator-doll' });
   private readonly dolls = h('div', { className: 'creator-dolls', hidden: true });
   private readonly note = h('p', { className: 'creator-hint' });
   private readonly status = h('p', { className: 'creator-hint' });
@@ -162,7 +169,9 @@ export class SpritePreview {
   private readonly draw: DrawPreview;
   private readonly delay: number;
   private readonly makeStage: MakeStage;
+  private readonly load: LoadDoll;
   private stage?: Promise<PreviewStage>;
+  private showing: Promise<void> = Promise.resolve();
   private latest: PreviewRequest | null = null;
   private due: PreviewRequest | null = null;
   private drawn = '';
@@ -175,11 +184,13 @@ export class SpritePreview {
     draw: DrawPreview = drawPreview,
     delay = PREVIEW_DELAY_MS,
     makeStage: MakeStage = dollStage,
+    load: LoadDoll = loadFresh,
   ) {
     this.api = api;
     this.draw = draw;
     this.delay = delay;
     this.makeStage = makeStage;
+    this.load = load;
     this.root.append(this.dolls, this.note, this.bar, this.status);
   }
 
@@ -192,20 +203,32 @@ export class SpritePreview {
     }, this.delay);
   }
 
+  /** Shows the character's painted doll in place of the flat one, if the doll job painted one. */
   async show(id: string): Promise<boolean> {
-    const atlas = await this.api.atlas(`/api/jobs/files/sprite/${id}.json`).catch(() => null);
-    if (!atlas) this.say('The sprite isn’t saved yet: saving draws it.');
-    return atlas !== null;
+    const key = JSON.stringify(this.latest);
+    const doll = await this.load(paintedUrl(id)).catch(() => null);
+    if (!doll) this.say('The doll isn’t painted yet: saving paints it.');
+    else if (key === JSON.stringify(this.latest)) await this.display(doll, key).catch(() => {});
+    return doll !== null;
   }
 
-  async render(id: string, appearance: Appearance): Promise<Job | null> {
+  async paint(id: string, appearance: Appearance): Promise<Job | null> {
     this.watch?.stop();
     this.preview(appearance, id);
+    const key = JSON.stringify(this.latest);
     try {
-      const job = await this.api.submit('sprite', { character: id, appearance });
-      return await this.follow(job);
+      const job = await this.api.submit('doll', { character: id, appearance });
+      const done = await this.follow(job);
+      const url = done.result?.doll;
+      if (done.state === 'succeeded' && typeof url === 'string' && !this.disposed) {
+        const doll = await this.load(url);
+        const fresh = (src?: string) => src && `${src}?job=${done.id}`;
+        const painted = { ...doll, flat: fresh(doll.flat) ?? '', painted: fresh(doll.painted) };
+        if (key === JSON.stringify(this.latest)) await this.display(painted, key);
+      }
+      return done;
     } catch (error) {
-      this.say(`Couldn’t draw the sprite: ${message(error)}`);
+      this.say(`Couldn’t paint the doll: ${message(error)}`);
       return null;
     }
   }
@@ -227,16 +250,27 @@ export class SpritePreview {
       try {
         const doll = await this.draw(request);
         if (this.disposed) break;
-        this.stage ??= this.makeStage(this.dolls);
-        await (await this.stage).show(doll);
-        this.drawn = key;
-        this.note.textContent = '';
-        this.dolls.hidden = false;
+        if (key !== this.drawn) await this.display(doll, key);
       } catch (error) {
         this.note.textContent = `Couldn’t draw the preview: ${message(error)}`;
       }
     }
     this.drawing = false;
+  }
+
+  private display(doll: DollManifest, key: string): Promise<void> {
+    this.drawn = key;
+    this.stage ??= this.makeStage(this.dolls);
+    const stage = this.stage;
+    const shown = this.showing.then(async () => {
+      await (await stage).show(doll);
+      this.note.textContent = '';
+      this.dolls.hidden = false;
+    });
+    this.showing = shown.catch(() => {
+      if (this.drawn === key) this.drawn = '';
+    });
+    return shown;
   }
 
   private async follow(job: Job): Promise<Job> {
@@ -248,13 +282,13 @@ export class SpritePreview {
     const update = (current: Job) => {
       this.bar.hidden = false;
       this.bar.value = current.progress;
-      this.say(`Sprite: ${describe(current)}`);
+      this.say(`Doll: ${describe(current)}`);
     };
     update(job);
     watch.onChange = update;
     const done = await watch.done;
     this.bar.hidden = true;
-    if (done.state === 'succeeded') this.say('Sprite saved.');
+    if (done.state === 'succeeded') this.say('Doll painted.');
     return done;
   }
 

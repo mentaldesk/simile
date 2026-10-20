@@ -13,8 +13,10 @@ or *Characters* on the title menu. It's a DOM overlay over the game, built on th
   - **Look** (`look.ts`): the appearance controls, with the look's paper doll walking from the
     side, the front and the back, drawn by the dolls' rig (`makeDoll`) in a small game of its own
     (`doll-stage.ts`). It redraws 150 ms after the last change, one request at a time, from the
-    server's flat doll for the look (`flatDoll`, `POST /api/dolls/flat`). Saving still draws A1's
-    sprite as a P10 job, where the server can draw sprites.
+    server's flat doll for the look (`flatDoll`, `POST /api/dolls/flat`). Where the server can
+    paint dolls (the `doll` job's capability), opening a saved character shows the doll it last
+    painted, and saving paints the look with part 4's `doll` job and shows the painted doll once
+    it's done. Elsewhere the flat doll stays.
   - **Values**: the four latent traits and the presets move all 24 values at once, through the same
     model P3 samples from (`values.ts`). A value set by hand in the advanced view keeps its place
     relative to the traits. The sample line is a `voice` reroll of the character with these values,
@@ -32,7 +34,7 @@ or *Characters* on the title menu. It's a DOM overlay over the game, built on th
     samples and sent as 16-bit PCM WAV (`wav.ts`), since the server refuses the WebM that browsers
     record. Picking a designed voice saves the description that made it.
 - **Your look** (`player-look.ts`): the same appearance controls and preview, saved through
-  `/api/player` and drawn as the `player` sprite job.
+  `/api/player` and painted as the `player` doll.
 
 `draft.ts` holds a character's state: what's on screen, what's saved, the locks, the brief and the
 reroll sections, and the checks before saving. `character.ts` is generated from the server's JSON

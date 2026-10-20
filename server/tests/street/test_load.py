@@ -1,22 +1,12 @@
 import json
 from collections.abc import Callable
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 from simile.schema import DoorKind, Location, LocationKind, MapArea, Tile, TileArea
-from simile.world.map import (
-    INTERIORS,
-    ISO_DIR,
-    MAP_ID,
-    MapKind,
-    TownMap,
-    load_map,
-    load_maps,
-    with_every_location,
-)
+from simile.world.map import MapKind, load_map, load_maps, with_every_location
 from simile.world.movement import Point, inside
 
 SIZE = 16
@@ -148,24 +138,14 @@ def test_reads_the_kind_of_each_link_and_the_floors_of_a_location(tmp_path: Path
     assert list(maps) == ["high_street", "mill_lane", "house_1_floor_0", "house_1_floor_1"]
 
 
-def test_reads_whether_a_map_is_a_side_view_street_or_floor_and_its_building(
+def test_reads_whether_a_map_is_a_street_or_floor_and_its_building(
     tmp_path: Path,
 ) -> None:
     maps = load_maps(village(tmp_path))
     street, floor = maps["high_street"], maps["house_1_floor_1"]
 
-    assert (street.side_view, street.kind, street.building, street.floor) == (
-        True,
-        MapKind.STREET,
-        None,
-        None,
-    )
-    assert (floor.side_view, floor.kind, floor.building, floor.floor) == (
-        True,
-        MapKind.FLOOR,
-        "house_1",
-        1,
-    )
+    assert (street.kind, street.building, street.floor) == (MapKind.STREET, None, None)
+    assert (floor.kind, floor.building, floor.floor) == (MapKind.FLOOR, "house_1", 1)
     assert street.climbable == ()
     assert street.climb(0, 0) is None
 
@@ -304,76 +284,6 @@ def test_rejects_a_link_to_a_map_that_isnt_there(tmp_path: Path) -> None:
 def test_a_directory_without_maps_is_an_error(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         load_maps(tmp_path)
-
-
-def todays_load_maps(directory: Path) -> dict[str, TownMap]:
-    """`load_maps` as it was before side-view maps, which reads today's maps the same."""
-    from simile.world.map import (
-        COLLISION_LAYER,
-        DOORS_LAYER,
-        INTERACTABLES_LAYER,
-        LOCATIONS_LAYER,
-        MURALS_LAYER,
-        SPOTS_LAYER,
-        _door,
-        _interactable,
-        _location,
-        _mural,
-        _spot,
-    )
-
-    def read(path: Path) -> TownMap:
-        data = json.loads(path.read_text())
-        map_id, width, height, size = path.stem, data["width"], data["height"], data["tilewidth"]
-        layers = {layer["name"]: layer for layer in data["layers"]}
-        cells = layers[COLLISION_LAYER]["data"]
-        blocked = tuple(
-            tuple(gid != 0 for gid in cells[y * width : (y + 1) * width]) for y in range(height)
-        )
-
-        def objects(layer: str) -> list[dict[str, Any]]:
-            return layers.get(layer, {}).get("objects", [])
-
-        return TownMap(
-            map_id,
-            width,
-            height,
-            blocked,
-            locations=tuple(_location(o, size, map_id) for o in objects(LOCATIONS_LAYER)),
-            murals=tuple(_mural(o, size, map_id) for o in objects(MURALS_LAYER)),
-            doors=tuple(_door(o, size, map_id) for o in objects(DOORS_LAYER)),
-            interactables=tuple(
-                _interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)
-            ),
-            spots=tuple(_spot(o, size, map_id) for o in objects(SPOTS_LAYER)),
-        )
-
-    paths = [directory / f"{MAP_ID}.tmj", *sorted((directory / INTERIORS).glob("*.tmj"))]
-    return {town.id: town for town in map(read, paths)}
-
-
-def test_todays_maps_load_exactly_as_before() -> None:
-    maps, before = load_maps(ISO_DIR), todays_load_maps(ISO_DIR)
-
-    assert list(maps) == list(before)
-    for map_id, town in maps.items():
-        assert town == before[map_id], map_id
-        assert not town.side_view and town.kind is None and town.climbable == ()
-        for door, old in zip(town.doors, before[map_id].doors, strict=True):
-            assert door.model_fields_set == old.model_fields_set
-        for location, old in zip(town.locations, before[map_id].locations, strict=True):
-            assert location.model_fields_set == old.model_fields_set
-
-
-def test_every_location_on_todays_maps_is_the_village_as_before() -> None:
-    maps = load_maps(ISO_DIR)
-    village_map = maps[MAP_ID]
-    found: dict[str, Location] = {}
-    for town in (village_map, *maps.values()):
-        for location in town.locations:
-            found.setdefault(location.id, location)
-
-    assert with_every_location(maps) == replace(village_map, locations=tuple(found.values()))
 
 
 def test_every_location_without_a_village_is_on_the_first_street(tmp_path: Path) -> None:

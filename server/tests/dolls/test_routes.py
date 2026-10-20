@@ -8,7 +8,7 @@ from PIL import Image
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
-from simile.art.palette import PALETTE
+from simile.characters.palette import PALETTE
 from simile.dolls.routes import MAX_BODY, routes
 from simile.dolls.shapes import PIECES
 from simile.schema import Accessory, Build, HairStyle
@@ -58,7 +58,7 @@ def test_draws_a_flat_doll_for_any_appearance(client: TestClient, appearance: di
 
 
 def test_a_characters_id_picks_their_accent(client: TestClient) -> None:
-    from simile.art.characters import PLAYER
+    from simile.characters.palette import PLAYER
 
     look = PLAYER.model_dump(mode="json")
 

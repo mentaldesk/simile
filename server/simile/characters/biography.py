@@ -4,9 +4,8 @@ from typing import Annotated, Any
 
 from pydantic import AfterValidator, Field, create_model
 
-from simile.art.characters import SKIN_TONES
-from simile.art.palette import PALETTE
 from simile.characters.humour import sketch
+from simile.characters.palette import PALETTE, SKIN_TONES
 from simile.characters.sheet import Sheet
 from simile.characters.tables import YEAR, Tables, describe_temperament
 from simile.npc.values import format_scores, ranked

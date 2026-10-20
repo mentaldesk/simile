@@ -14,9 +14,9 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
 
 ## Conventions
 
-The village is moving to a side view (#306): a map per street and a map per floor, drawn from the
-side. The server sends today's maps until the cut-over. Where a side-view map reads a value
-differently, this document says so beside today's reading.
+The village is drawn from the side (#306): a map per street and a map per floor. The isometric
+maps it replaced are gone (#315), but some defaults still name their village, `"village"`, and the
+interiors' ids; this document says where.
 
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
@@ -31,7 +31,7 @@ differently, this document says so beside today's reading.
   - So the generated TypeScript has `map?: string`, and the client can keep using `Position` as a
     plain point. Read it as `position.map ?? 'village'`. K5 (#171) may tighten the type.
   - On a side-view map, x runs along the street and y counts rows down from the top. `map` is a
-    street's or a floor's id. A tile is the same size as today's, about 1.1 m, so distances in
+    street's or a floor's id. A tile is about 1.1 m, as on the isometric maps, so distances in
     tiles mean the same in both. A resident stands on a cell with ground under it, or on a
     climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb.
 - An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
@@ -43,16 +43,11 @@ differently, this document says so beside today's reading.
   - On a side-view map, the three eastward facings draw them facing right and the three westward
     ones left. `north` draws their back, looking into the picture (at a mural or a terminal), and
     `south` their front.
-  - Today's maps have no stairs, ladders or lifts, so nobody is `climbing` or `riding` on them.
-  - The server always sends both. Without them an entity is standing, facing south-east, towards the
-    iso camera. As with `map`, the generated TypeScript has them optional: read
-    `entity.pose ?? 'standing'` and `entity.facing ?? 'south_east'`.
-  - Grid east runs down and to the right on screen, so the facings are the client's `ISO_FACINGS`
-    in the same order, which name A1's frames: `east` is `down_right`, `south_east` is `down`,
-    `south` is `down_left`, `south_west` is `left`, `west` is `up_left`, `north_west` is `up`,
-    `north` is `up_right` and `north_east` is `right`.
+  - The server always sends both. Without them an entity is standing, facing south-east. As with
+    `map`, the generated TypeScript has them optional: read `entity.pose ?? 'standing'` and
+    `entity.facing ?? 'south_east'`.
   - Sitting, reading, working and looking come with #264's spots, which face along the grid:
-    `north`, `east`, `south` or `west`, A1's three-quarter views.
+    `north`, `east`, `south` or `west`.
   - The server doesn't track the player's, so the player's entity is always `standing`, facing
     `south_east`.
 - Entity ids are F2 `Id`s. The player is always `"player"`.
@@ -73,7 +68,7 @@ differently, this document says so beside today's reading.
     loader rejects a map that breaks this.
   - A `Location`'s `map`, `area` and `entry` are where you arrive. On side-view maps its `floors`
     are its building's other floors, each a `MapArea` (a `TileArea` with a `map`) on a map of its
-    own. It's left out when empty, as on today's maps.
+    own. It's left out when empty.
 - A message the server can't parse is logged and ignored. The connection stays open.
 
 ## Server → client
@@ -176,10 +171,10 @@ what it had.
 | Field | Type | |
 |---|---|---|
 | `id` | string | The wall's id. |
-| `map` | string | The map it's on, such as a street on side-view maps. Left out on the village, so it's absent from every wall on today's maps: read it as `wall.map ?? 'village'`. |
+| `map` | string | The map it's on, such as a street on side-view maps. Left out on the village, so it was absent from every wall on the isometric maps: read it as `wall.map ?? 'village'`. |
 | `x`, `y` | integer | The building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (`y + 1`) or east edge (`x + 1`). On a side-view map, the standing cell at the wall's west end, on the street in front of it. |
 | `width` | integer | Tiles, running east from (`x`, `y`) for a south face, or south for an east face. |
-| `face` | `"south"` or `"east"` | Which way the wall faces. The iso camera sees only these. A side-view map has only `"south"` walls, facing the camera. |
+| `face` | `"south"` or `"east"` | Which way the wall faces. Every wall on the side-view maps faces `"south"`, the camera; `"east"` was only on the isometric village. |
 | `bottom`, `top` | number | The mural's lower and upper edges, in storeys up from the ground there: `0` is the ground and `1` the top of the ground floor. Fractions are fine, and `top` is above `bottom`. |
 | `mural` | `Mural` or `null` | What's painted there now, or `null` while it's blank. |
 

@@ -35,7 +35,7 @@ def residents() -> dict:
 
 
 def player_appearance():
-    from simile.art.characters import PLAYER
+    from simile.characters.palette import PLAYER
 
     return PLAYER
 

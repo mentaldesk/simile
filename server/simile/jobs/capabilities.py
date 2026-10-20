@@ -1,7 +1,6 @@
 """What this machine can run, checked once when the server starts."""
 
 import platform
-import shutil
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -17,13 +16,6 @@ class Capability:
     check: Callable[[], bool]
 
 
-def blender() -> bool:
-    from simile.art.iso.blender import find
-
-    path = find()
-    return path is not None and shutil.which(path) is not None
-
-
 def apple_silicon() -> bool:
     return sys.platform == "darwin" and platform.machine() == "arm64"
 
@@ -35,7 +27,6 @@ def venv(name: str) -> Callable[[], bool]:
 CAPABILITIES = {
     c.name: c
     for c in (
-        Capability("blender", "Blender (install it or set $BLENDER)", blender),
         Capability("apple_silicon", "a Mac with Apple Silicon", apple_silicon),
         Capability("voice_lab", "voice-lab/.venv (see voice-lab/README.md)", venv(".venv")),
         Capability(

@@ -1331,39 +1331,29 @@ class Behaviour:
         return MapTile(map=position.map, x=max(round(position.x), 0), y=max(round(position.y), 0))
 
     def _wander_tile(self, mind: Mind) -> MapTile | None:
-        """Somewhere near them to stand that isn't a house, or near the door outside if they're
-        indoors. On a side-view map, one of the standing cells they can reach in
-        `wander_radius` steps."""
+        """One of the standing cells they can reach in `wander_radius` steps that isn't a house,
+        or from the door outside if they're indoors."""
         here = self.movement.position(mind.npc.id)
         door = self._way_out(here.map)
         if door is not None:
             here = Point(door.outside.x, door.outside.y, door.outside.map)
         town, reach = self.movement.maps[here.map], self.config.wander_radius
-        if town.side_view:
-            cells = []
-            for cell, steps in nearby(town, (round(here.x), round(here.y))):
-                if steps > reach:
-                    break
-                if town.standing(*cell) and not self._in_a_house(Point(*cell, town.id)):
-                    cells.append(cell)
-            if not cells:
-                return None
-            x, y = self.rng.choice(cells)
-            return MapTile(map=town.id, x=x, y=y)
-        for _ in range(20):
-            x = round(here.x) + self.rng.randint(-reach, reach)
-            y = round(here.y) + self.rng.randint(-reach, reach)
-            if town.standing(x, y) and not self._in_a_house(Point(x, y, here.map)):
-                return MapTile(map=here.map, x=x, y=y)
-        return None
+        cells = []
+        for cell, steps in nearby(town, (round(here.x), round(here.y))):
+            if steps > reach:
+                break
+            if town.standing(*cell) and not self._in_a_house(Point(*cell, town.id)):
+                cells.append(cell)
+        if not cells:
+            return None
+        x, y = self.rng.choice(cells)
+        return MapTile(map=town.id, x=x, y=y)
 
     def _way_out(self, map_id: str) -> Door | None:
-        """The door out to the street from indoors: on a side-view map, from any floor of a
-        building, its front door."""
+        """The door out to the street from indoors: from any floor of a building, its front
+        door."""
         maps, doors = self.movement.maps, self.movement.town.doors
         town = maps[map_id]
-        if not town.side_view:
-            return next((d for d in doors if d.inside.map == map_id), None)
         if town.kind is not MapKind.FLOOR:
             return None
         return next(

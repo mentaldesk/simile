@@ -91,7 +91,7 @@ def an(word: str) -> str:
 
 
 def named(hex_colour: str, names: dict[str, str]) -> str:
-    from simile.art.palette import PALETTE, hex_to_rgb, nearest
+    from simile.characters.palette import PALETTE, hex_to_rgb, nearest
 
     name = nearest(hex_to_rgb(hex_colour), tuple(PALETTE))
     return names.get(name, name)
@@ -100,8 +100,7 @@ def named(hex_colour: str, names: dict[str, str]) -> str:
 def person(appearance: Appearance, who: str | None) -> str:
     """The resident in words, so the painter keeps their skin, hair and accessories. Naming
     their clothes makes it paint the rest of them."""
-    from simile.art.characters import Colours
-    from simile.art.palette import PALETTE
+    from simile.characters.palette import PALETTE, accent, apron
 
     style = appearance.hair_style.value
     hair = (
@@ -109,12 +108,11 @@ def person(appearance: Appearance, who: str | None) -> str:
         if style == "bald"
         else STYLES[style].format(named(appearance.hair_colour, HAIR))
     )
-    sprite = Colours.of(appearance, seed=who)
-    accent = named(PALETTE[sprite.accent], CLOTH)
+    worn = named(PALETTE[accent(appearance, seed=who)], CLOTH)
     colours = {
-        "accent": accent,
-        "a_accent": an(accent),
-        "a_apron": an(named(PALETTE[sprite.apron], CLOTH)),
+        "accent": worn,
+        "a_accent": an(worn),
+        "a_apron": an(named(PALETTE[apron(appearance)], CLOTH)),
     }
     worn = [WEARS[a.value].format(**colours) for a in appearance.accessories]
     wears = f", and wears {' and '.join(worn)}" if worn else ""

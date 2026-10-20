@@ -54,18 +54,18 @@ def test_clears_up_after_a_killed_server(app: Starlette, root: Path) -> None:
 
 
 def test_reports_what_this_machine_can_run(app: Starlette, root: Path) -> None:
-    app.state.jobs = Jobs(root, {"blender": False, "apple_silicon": True})
+    app.state.jobs = Jobs(root, {"voice_lab": False, "apple_silicon": True})
     with TestClient(app) as client:
-        jobs_of(app).register(fake_kind("render", requires=("blender",)))
+        jobs_of(app).register(fake_kind("render", requires=("voice_lab",)))
         response = client.get("/api/jobs/capabilities")
 
     assert response.json() == {
-        "machine": {"blender": False, "apple_silicon": True},
+        "machine": {"voice_lab": False, "apple_silicon": True},
         "kinds": {
-            "sprite": {"available": True, "reason": None},
+            "doll": {"available": True, "reason": None},
             "render": {
                 "available": False,
-                "reason": "render jobs need Blender (install it or set $BLENDER), "
+                "reason": "render jobs need voice-lab/.venv (see voice-lab/README.md), "
                 "which this machine doesn't have",
             },
         },
@@ -162,7 +162,7 @@ def test_refuses_more_waiting_jobs_than_it_holds(client: TestClient, tmp_path: P
         (b'{"kind": "fake", "extra": 1}', "extra: Extra inputs are not permitted"),
         (b'{"kind": "nope"}', "there's no 'nope' job"),
         (b'{"kind": "fake", "params": {"exit": "x"}}', "exit: Input should be a valid integer"),
-        (b'{"kind": "sprite", "params": {"character": "../up"}}', "character: String should"),
+        (b'{"kind": "doll", "params": {"character": "../up"}}', "character: String should"),
     ],
 )
 def test_refuses_a_bad_job(client: TestClient, body: bytes, error: str) -> None:
@@ -195,7 +195,7 @@ def test_knows_no_other_jobs(client: TestClient) -> None:
         "/api/jobs/files/fake/..%2F..%2Fwork%2Fout.txt",
         "/api/jobs/files/fake/%2E%2E%2Fout.txt",
         "/api/jobs/files/work/out.txt",
-        "/api/jobs/files/sprite/kofi.png",
+        "/api/jobs/files/doll/kofi.json",
     ],
 )
 def test_serves_nothing_but_published_files(

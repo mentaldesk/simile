@@ -3,8 +3,8 @@
 The village, the floors of its buildings, and how entities move along its streets, up and down,
 and through its doors. The side-view maps are described in
 [`content/street/README.md`](../../../content/street/README.md); `simile.world.map.load_maps()`
-loads them all by id, and `load_map(path)` one. Today's isometric maps, W1's, are still in
-`content/map/` until #315 and load by path, `load_maps(ISO_DIR)`.
+loads them all by id, and `load_map(path)` one. Positions saved on the isometric maps before #314
+are moved onto them as they load (`simile.persistence`).
 
 ## Movement
 
@@ -68,8 +68,7 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on `home`, the fir
   every map it crosses, so it takes `walk.distance / WALKING_SPEED` sim seconds.
 - Entities walk at `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second, at any sim speed.
 - Paths are A\* on each map's grid by its neighbour rule, `simile.street.moves`: left and right
-  along a row, and up and down only along stairs and ladders. On today's maps they're in 8
-  directions without cutting a corner.
+  along a row, and up and down only along stairs and ladders.
 - Each link is an edge between its two tiles. Going through a door takes as long as a step
   (`simile.world.paths.DOOR`, 1 tile). Stairs, a ladder or a lift to another floor take as long as
   the climb or ride, at `CROSSING_SPEED` (1.3, 1 and 2.4 tiles a second) with the floors stacked,
@@ -129,8 +128,8 @@ they're `climbing` or `riding` until they're through. `posture(entity)` is their
 for the snapshot, and `on_spot(entity)` the spot they've stopped on, if any.
 
 **Taste** is keyed by the place a spot is in (`choose(..., place=)`), so the regulars of the café,
-the noodle bar, the gallery and the maker space, whose maps were named after their places on
-today's maps, keep their usual spots.
+the noodle bar, the gallery and the maker space, whose maps were named after their places on the
+isometric maps, keep their usual spots.
 
 ## `EntityMoved`
 
@@ -148,12 +147,11 @@ Movement publishes it:
 So positions are always whole tiles (`x=43.0, y=15.0, map='high_street'`), and consecutive
 positions of a walking entity are neighbouring tiles on the same map, or the two ends of a link. A
 walker sends one every 0.77 sim seconds (1.09 s a stair), however many ticks that is: 13 a real
-second at 10x. Player moves aren't published back to the client; one without a map, which means
-today's village, is ignored.
+second at 10x. Player moves aren't published back to the client; one without a map is ignored.
 
-To animate a walker, tween its sprite from where it's drawn to each new position over
+To animate a walker, tween its doll from where it's drawn to each new position over
 `distance / WALKING_SPEED` sim seconds (real seconds under `simile serve`, which runs at 1x). The
-next position arrives as the tween ends, so the sprite moves continuously, one tile behind the
+next position arrives as the tween ends, so the doll moves continuously, one tile behind the
 server. A jump of more than a tile and a half, or onto another map, is a `place`: snap to it. Face
 the direction of travel. Once it has stopped, draw its pose facing the way it's given, on the spot's
 seat if it's on one.

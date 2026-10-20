@@ -55,10 +55,6 @@ export type LibraryVoice = {
 export type Pick =
   { design: string; candidate: number } | { recording: string } | { library: string };
 
-export type Atlas = {
-  frames: Record<string, { frame: { x: number; y: number; w: number; h: number } }>;
-};
-
 export class ApiError extends Error {
   readonly status: number;
 
@@ -88,7 +84,6 @@ export interface CreatorApi {
   job(id: string): Promise<Job>;
   cancel(id: string): Promise<Job>;
   watch(id: string): SocketLike;
-  atlas(url: string): Promise<Atlas | null>;
   voices(): Promise<LibraryVoice[]>;
   record(id: string, audio: Blob, transcript?: string): Promise<Job>;
   pick(id: string, choice: Pick): Promise<Character>;
@@ -175,11 +170,6 @@ export class ServerApi implements CreatorApi {
   watch(id: string): SocketLike {
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
     return this.socket(`${scheme}://${location.host}/ws/jobs/${id}`);
-  }
-
-  async atlas(url: string): Promise<Atlas | null> {
-    const response = await this.fetcher(url, { cache: 'no-cache' });
-    return response.ok ? response.json() : null;
   }
 
   voices(): Promise<LibraryVoice[]> {

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from PIL import ImageDraw
 
-from simile.art.characters import PLAYER
+from simile.characters.palette import PLAYER
 from simile.dolls.colour import muted, rgb
 from simile.dolls.look import Look
 from simile.dolls.pieces import Piece, flat_pieces

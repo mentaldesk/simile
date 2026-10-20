@@ -11,7 +11,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 from starlette.types import Message
 
-from simile.art.characters import PLAYER
+from simile.characters.palette import PLAYER
 from simile.library import Library
 from simile.library.generation import MAX_GENERATING
 from simile.library.routes import EventStream

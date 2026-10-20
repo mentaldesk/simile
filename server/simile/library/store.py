@@ -196,7 +196,7 @@ class Library:
                 return PlayerLook.model_validate_json(path.read_bytes()).appearance
             except ValidationError:
                 logger.warning("Ignoring %s, which isn't a valid look", path)
-        from simile.art.characters import PLAYER
+        from simile.characters.palette import PLAYER
 
         return PLAYER
 

@@ -8,17 +8,20 @@ import type { Job, SocketLike } from './jobs';
 import { LibraryView } from './library';
 
 // Its globs of content/ don't load under jsdom.
-vi.mock('../dolls/assets', () => ({ flatDoll: vi.fn(() => new Promise(() => {})) }));
+vi.mock('../dolls/assets', () => ({
+  flatDoll: vi.fn(() => new Promise(() => {})),
+  loadDoll: vi.fn(async () => Promise.reject(new Error('Not painted'))),
+}));
 
-const CAN_DRAW: Capabilities = {
+const CAN_PAINT: Capabilities = {
   machine: {},
-  kinds: { sprite: { available: true, reason: null } },
+  kinds: { doll: { available: true, reason: null } },
 };
 
 function job(overrides: Partial<Job>): Job {
   return {
     id: '3f9c2a7d1b6e4c08',
-    kind: 'sprite',
+    kind: 'doll',
     state: 'queued',
     progress: 0,
     message: null,
@@ -47,12 +50,11 @@ function fakeApi() {
     reroll: vi.fn(),
     player: vi.fn(),
     savePlayer: vi.fn(),
-    capabilities: vi.fn(async () => CAN_DRAW),
+    capabilities: vi.fn(async () => CAN_PAINT),
     submit: vi.fn(async () => job({ state: 'succeeded', progress: 1 })),
     job: vi.fn(),
     cancel: vi.fn(),
     watch: vi.fn(() => socket),
-    atlas: vi.fn(async () => null),
     voices: vi.fn(async () => []),
     record: vi.fn(),
     pick: vi.fn(),
@@ -60,7 +62,7 @@ function fakeApi() {
   } satisfies CreatorApi;
 }
 
-function context(api: CreatorApi, capabilities: Capabilities | null = CAN_DRAW): EditorContext {
+function context(api: CreatorApi, capabilities: Capabilities | null = CAN_PAINT): EditorContext {
   return { api, capabilities, back: vi.fn(), saved: vi.fn(), deleted: vi.fn() };
 }
 
@@ -103,7 +105,7 @@ afterEach(() => {
 });
 
 describe('the editor', () => {
-  it('writes a new character from what the player set, saves it and draws its sprite', async () => {
+  it('writes a new character from what the player set, saves it and paints its doll', async () => {
     const api = fakeApi();
     api.generate.mockReturnValue(
       stream({ type: 'call', purpose: 'character-biography' }, written()),
@@ -126,7 +128,7 @@ describe('the editor', () => {
     await settle();
 
     expect(api.create).toHaveBeenCalledWith(character());
-    expect(api.submit).toHaveBeenCalledWith('sprite', {
+    expect(api.submit).toHaveBeenCalledWith('doll', {
       character: 'wren_abernethy',
       appearance: character().appearance,
     });
@@ -253,9 +255,18 @@ describe('the editor', () => {
     expect(field(editor.root, 'Name').disabled).toBe(true);
   });
 
-  it('hides the sprite where the server can’t draw one', () => {
-    const editor = new Editor(context(fakeApi(), null), Draft.of(character()));
-    expect(editor.root.querySelector('.creator-sprite')).toBeNull();
+  it('previews the flat doll but paints none where the server can’t paint one', async () => {
+    const api = fakeApi();
+    const editor = new Editor(context(api, null), Draft.of(character()));
+    document.body.append(editor.root);
+    expect(editor.root.querySelector('.creator-doll')).not.toBeNull();
+
+    type(field(editor.root, 'Name'), 'Wren Abernethy-Hale');
+    buttonCalled(editor.root, 'Save').click();
+    await settle();
+
+    expect(api.update).toHaveBeenCalled();
+    expect(api.submit).not.toHaveBeenCalled();
   });
 });
 

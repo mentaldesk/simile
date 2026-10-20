@@ -16,7 +16,6 @@ from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER
 from simile.street.village import FLOOR_ROW, GROUND, STOREY, village
 from simile.world import Movement, Outcome, Walk
 from simile.world.map import (
-    ISO_DIR,
     STREET_DIR,
     WALKING_SPEED,
     MapKind,
@@ -29,7 +28,6 @@ from simile.world.movement import Point, inside
 from simile.world.paths import Spot, door_ends, find_route, route_length, steps
 from simile.world.spots import Purpose
 
-TODAY = load_maps(ISO_DIR)
 MAPS = load_maps(STREET_DIR)
 TOWN = with_every_location(MAPS)
 STREETS = [town for town in MAPS.values() if town.kind is MapKind.STREET]
@@ -39,11 +37,6 @@ START = datetime(2026, 1, 1, 8, tzinfo=UTC)
 
 def floors_of(location_id: str) -> list[TownMap]:
     return [town for town in FLOORS if town.building == location_id]
-
-
-def maps_of(old_map: str) -> list[TownMap]:
-    """Where today's map went: the village to the streets, a building to its floors."""
-    return STREETS if old_map == "village" else floors_of(old_map)
 
 
 def test_the_committed_maps_are_up_to_date(tmp_path: Path) -> None:
@@ -68,34 +61,7 @@ def test_the_committed_maps_are_up_to_date(tmp_path: Path) -> None:
                 ), f"{name}: {stale}"
 
 
-def test_every_id_from_todays_maps_is_kept() -> None:
-    def ids(maps: list[TownMap], kind: str) -> set[str]:
-        return {thing.id for town in maps for thing in getattr(town, kind)}
-
-    every_map = list(MAPS.values())
-    for kind in ("locations", "doors", "interactables", "murals"):
-        assert ids(list(TODAY.values()), kind) <= ids(every_map, kind), kind
-    for old in TODAY.values():
-        assert {spot.id for spot in old.spots} == ids(maps_of(old.id), "spots"), old.id
-    assert sum(len(town.spots) for town in MAPS.values()) == sum(
-        len(town.spots) for town in TODAY.values()
-    )
-
-
-def test_every_spot_keeps_its_kind_and_its_place() -> None:
-    for old in TODAY.values():
-        spots = {spot.id: spot for town in maps_of(old.id) for spot in town.spots}
-        for spot in old.spots:
-            new = spots[spot.id]
-            assert new.kind is spot.kind, spot.id
-            here = Point(new.x, new.y, new.map)
-            places = [loc for loc in TODAY[old.id].locations if inside(loc, (spot.x, spot.y))]
-            for place in places:
-                assert inside(TOWN.location(place.id), here), (spot.id, place.id)
-
-
-def test_no_new_map_id_is_one_of_todays() -> None:
-    assert not set(MAPS) & set(TODAY)
+def test_no_map_id_is_one_of_the_iso_villages() -> None:
     assert not set(MAPS) & {"village", "coffee_shop", "gallery", "maker_space", "noodle_bar"}
 
 
@@ -107,8 +73,7 @@ def test_every_map_is_a_side_view_street_or_floor() -> None:
         "lychee_lane",
     ]
     assert len(FLOORS) == 31
-    for town in MAPS.values():
-        assert town.side_view, town.id
+    assert len(STREETS) + len(FLOORS) == len(MAPS)
     for floor in FLOORS:
         assert floor.id == f"{floor.building}_floor_{floor.floor}"
         assert floor.height == STOREY
@@ -255,13 +220,11 @@ def test_each_floor_says_where_its_building_stands() -> None:
 def test_every_mural_wall_is_on_a_street_facing_the_camera() -> None:
     walls = [(town, wall) for town in MAPS.values() for wall in town.murals]
 
-    assert {wall.id for _, wall in walls} == {w.id for w in TODAY["village"].murals}
+    assert walls
     for town, wall in walls:
         assert town.kind is MapKind.STREET
         assert wall.face == "south"
         assert wall.stand.y == wall.y and wall.x <= wall.stand.x < wall.x + wall.width
-        old = TODAY["village"].mural(wall.id)
-        assert (wall.width, wall.bottom, wall.top) == (old.width, old.bottom, old.top)
         spot = town.spot_at(wall.stand.x, wall.stand.y)
         assert spot is not None and spot.kind is SpotKind.VIEWING and spot.facing is Facing.NORTH
 

@@ -1,4 +1,3 @@
-from collections.abc import Mapping
 from typing import Any
 
 import pytest
@@ -9,14 +8,13 @@ from simile.cafe.events import Ordered, Served
 from simile.schema import MapTile, Npc
 from simile.sim import EntityMoved
 from simile.world import Point
-from simile.world.map import ISO_DIR, STREET_DIR, SpotKind, TownMap, load_maps
+from simile.world.map import STREET_DIR, SpotKind, load_maps
 
 from .conftest import ANA, BEA, BEN, CAL, DAY, Village, keen
 
 pytestmark = pytest.mark.anyio
 
 STREETS = load_maps(STREET_DIR)
-TODAY, TODAYS_MAPS = "coffee_shop", load_maps(ISO_DIR)
 GROUND = "coffee_shop_floor_0"
 SIDE = CAFE_CONFIG.layouts[GROUND]
 TILL = Point(3, 2, GROUND)
@@ -28,22 +26,14 @@ def side_village(npcs: tuple[Npc, ...] = (BEA,), **kwargs: Any) -> Village:
     return Village(npcs, maps=STREETS, **kwargs)
 
 
-def seat_spots(ground: str, maps: Mapping[str, TownMap]) -> list[str]:
-    spots = [maps[s.map].spot_at(s.x, s.y) for s in CAFE_CONFIG.layouts[ground].seats]
-    return [spot.id if spot and spot.kind is SpotKind.SEAT else "" for spot in spots]
+def test_the_cafes_tiles_are_cells_to_stand_on_and_its_seats_are_seat_spots() -> None:
+    tiles = [SIDE.entrance, SIDE.machine, SIDE.hand_over, SIDE.pickup, SIDE.upstairs]
+    seats = [STREETS[s.map].spot_at(s.x, s.y) for s in SIDE.seats]
 
-
-@pytest.mark.parametrize(("ground", "maps"), [(TODAY, TODAYS_MAPS), (GROUND, STREETS)], ids=str)
-def test_each_worlds_cafe_tiles_are_cells_to_stand_on_and_its_seats_are_seat_spots(
-    ground: str, maps: Mapping[str, TownMap]
-) -> None:
-    layout = CAFE_CONFIG.layouts[ground]
-    tiles = [layout.entrance, layout.machine, layout.hand_over, layout.pickup, layout.upstairs]
-
-    assert {tile.map for tile in tiles} == {ground}
-    assert all(maps[t.map].standing(t.x, t.y) for t in [*tiles, *layout.seats])
-    assert seat_spots(ground, maps) == seat_spots(TODAY, TODAYS_MAPS)
-    assert all(seat_spots(ground, maps))
+    assert {tile.map for tile in tiles} == {GROUND}
+    assert all(STREETS[t.map].standing(t.x, t.y) for t in [*tiles, *SIDE.seats])
+    assert all(seat and seat.kind is SpotKind.SEAT for seat in seats)
+    assert len({seat.id for seat in seats if seat}) == len(seats)
 
 
 def test_in_side_view_the_tables_are_upstairs_and_the_barista_rests_at_the_stairs() -> None:

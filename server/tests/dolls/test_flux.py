@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from simile.art.characters import PLAYER
+from simile.characters.palette import PLAYER
 from simile.dolls.look import Look
 from simile.dolls.paint import EditPainter, prompt
 from simile.dolls.sheet import sheet

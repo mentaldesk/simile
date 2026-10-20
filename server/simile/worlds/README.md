@@ -54,4 +54,4 @@ world later, and a plain `make dev` opens today's village.
 The report lists, for each resident, what they still need:
 
 - `voice`: no reference clip yet, so their lines show as text (P4's *Voices*)
-- `sprite`: no sprite in `content/art/characters/`, so the client draws a stand-in
+- `sprite`: no doll in `content/dolls/`, so the client draws a stand-in, another resident's doll
