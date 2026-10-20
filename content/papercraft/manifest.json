@@ -458,7 +458,7 @@
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "b50ad514666698514172"
+   "hash": "0c243c8eb0125258c463"
   },
   "fronts/corner_shop": {
    "file": "fronts/corner_shop.webp",
@@ -474,7 +474,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "42f3aba80aa1c6e20a4d"
+   "hash": "c561621fa331c711ff55"
   },
   "fronts/gallery": {
    "file": "fronts/gallery.webp",
@@ -490,7 +490,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "44666098df8e8bd03a06"
+   "hash": "ed50aeebac8824c044bb"
   },
   "fronts/garden_flats": {
    "file": "fronts/garden_flats.webp",
@@ -506,7 +506,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "4c2cbc37cc71789539c4"
+   "hash": "59315ce6c2372bd041fb"
   },
   "fronts/house_1": {
    "file": "fronts/house_1.webp",
@@ -522,7 +522,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "2d816ae8e17128bd3639"
+   "hash": "adc37812fc5e8644b314"
   },
   "fronts/house_10": {
    "file": "fronts/house_10.webp",
@@ -538,7 +538,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "62c1266cb7d94daf0d78"
+   "hash": "d4c4fe962a17bd66a286"
   },
   "fronts/house_2": {
    "file": "fronts/house_2.webp",
@@ -554,7 +554,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "1dc357663fdacabd7656"
+   "hash": "89ebb8b66c4dfe7ed388"
   },
   "fronts/house_3": {
    "file": "fronts/house_3.webp",
@@ -570,7 +570,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "2e89507f03fb1b80fbe4"
+   "hash": "a5889b064117cea9dba2"
   },
   "fronts/house_4": {
    "file": "fronts/house_4.webp",
@@ -586,7 +586,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "5e9756b713c3afca73ac"
+   "hash": "7e82b2278eae34e0ffce"
   },
   "fronts/house_5": {
    "file": "fronts/house_5.webp",
@@ -602,7 +602,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "b84a4cb5924487ebcf5a"
+   "hash": "1aa2f961e5e63b84413c"
   },
   "fronts/house_6": {
    "file": "fronts/house_6.webp",
@@ -618,7 +618,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "02f4576cdf34e78ad27a"
+   "hash": "0d8b1d848d0fe465bbe3"
   },
   "fronts/house_7": {
    "file": "fronts/house_7.webp",
@@ -634,7 +634,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "7bb5bf103e4ba162ae67"
+   "hash": "01659423368b9bf80f45"
   },
   "fronts/house_8": {
    "file": "fronts/house_8.webp",
@@ -650,7 +650,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "c7489c13367fa6538501"
+   "hash": "f99dbfa21acb30dcfa7b"
   },
   "fronts/house_9": {
    "file": "fronts/house_9.webp",
@@ -666,7 +666,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "165069386c6645d6d77a"
+   "hash": "f3df1488e11b1dc42ece"
   },
   "fronts/maker_space": {
    "file": "fronts/maker_space.webp",
@@ -682,7 +682,7 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "159218c9b86a58d58fcc"
+   "hash": "4c63afd4ec6d966c8c52"
   },
   "fronts/noodle_bar": {
    "file": "fronts/noodle_bar.webp",
@@ -698,7 +698,7 @@
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "b1e34569024aadba4843"
+   "hash": "91651c08737b253afe76"
   },
   "fronts/tower": {
    "file": "fronts/tower.webp",
@@ -714,7 +714,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "9c7f2a89d418628dc4bd"
+   "hash": "50b3ccaadc609ea8315a"
   },
   "furniture/armchair": {
    "file": "furniture/armchair.webp",
@@ -798,7 +798,7 @@
     0.5,
     1.0
    ],
-   "hash": "fa2e3a2e6fbd822edc60"
+   "hash": "60572b5e0c5d621d1763"
   },
   "furniture/bed": {
    "file": "furniture/bed.webp",
@@ -994,7 +994,7 @@
     0.5,
     1.0
    ],
-   "hash": "f970ed518c2012f7d6e4"
+   "hash": "28d3f8241f76292b2435"
   },
   "furniture/grinder": {
    "file": "furniture/grinder.webp",
@@ -1414,7 +1414,7 @@
     0.5,
     1.0
    ],
-   "hash": "43e1d41066fef002d0c5"
+   "hash": "c6f010d5ac55e0cef2d2"
   },
   "furniture/workbench": {
    "file": "furniture/workbench.webp",
@@ -1444,7 +1444,7 @@
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "4a30a8e4bf9cfa879156"
+   "hash": "209edb90d3ee9e8117ad"
   },
   "glow/corner_shop": {
    "file": "glow/corner_shop.webp",
@@ -1460,7 +1460,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "c0271b02224187eea3c6"
+   "hash": "3eae1e825ac6024fb73f"
   },
   "glow/gallery": {
    "file": "glow/gallery.webp",
@@ -1476,7 +1476,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "30c0890658c7c1672706"
+   "hash": "3df98086b8d3ad7a4f66"
   },
   "glow/garden_flats": {
    "file": "glow/garden_flats.webp",
@@ -1492,7 +1492,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "88824ea0370b5a485f5d"
+   "hash": "f61c94b49bdf5ab972f1"
   },
   "glow/house_1": {
    "file": "glow/house_1.webp",
@@ -1508,7 +1508,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d977385bedb1a06639ca"
+   "hash": "fa8f223abd1d1499775e"
   },
   "glow/house_10": {
    "file": "glow/house_10.webp",
@@ -1524,7 +1524,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "15c5e0542532d886c173"
+   "hash": "5094c03d496bff411037"
   },
   "glow/house_2": {
    "file": "glow/house_2.webp",
@@ -1540,7 +1540,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "438bf7f6aeda36d3a082"
+   "hash": "6e0d1cde77f35adf4e6e"
   },
   "glow/house_3": {
    "file": "glow/house_3.webp",
@@ -1556,7 +1556,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "7d47128dcad8babe6a10"
+   "hash": "85bf3c8a5a8ad61b5c7f"
   },
   "glow/house_4": {
    "file": "glow/house_4.webp",
@@ -1572,7 +1572,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "6f13d0e39fb97d18d8e4"
+   "hash": "13f70f4bbad1d1d6721e"
   },
   "glow/house_5": {
    "file": "glow/house_5.webp",
@@ -1588,7 +1588,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "e3d7b67a8110ca7694f1"
+   "hash": "a4d13d0887bc967cc1d2"
   },
   "glow/house_6": {
    "file": "glow/house_6.webp",
@@ -1604,7 +1604,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "b032bb7e2eddfe38ba6e"
+   "hash": "d517d64cd3e75c6387c3"
   },
   "glow/house_7": {
    "file": "glow/house_7.webp",
@@ -1620,7 +1620,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "78dcba49b77ab74a73c1"
+   "hash": "b19d54c500caee63b97c"
   },
   "glow/house_8": {
    "file": "glow/house_8.webp",
@@ -1636,7 +1636,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "82d3f0127b3ad9a6f8a9"
+   "hash": "366f79386b1eeb5d6ca1"
   },
   "glow/house_9": {
    "file": "glow/house_9.webp",
@@ -1652,7 +1652,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "a226991502cddc0f8ac8"
+   "hash": "ba6b63c48afed7b80dd1"
   },
   "glow/maker_space": {
    "file": "glow/maker_space.webp",
@@ -1668,7 +1668,7 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "a7cd715cff49019387af"
+   "hash": "db07b4301dd4fba27cd9"
   },
   "glow/noodle_bar": {
    "file": "glow/noodle_bar.webp",
@@ -1684,7 +1684,7 @@
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "ff6d42d7e517552f4acb"
+   "hash": "29dbf0ab611090960253"
   },
   "glow/tower": {
    "file": "glow/tower.webp",
@@ -1700,7 +1700,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "64e60f1eb394e424beb6"
+   "hash": "bd14d11c45337b904800"
   },
   "layers/far-hills": {
    "file": "layers/far-hills.webp",
@@ -2038,7 +2038,7 @@
     0.5,
     1.0
    ],
-   "hash": "dc86a0ccae41b9a9e6b9"
+   "hash": "73a82aa635a9d685141d"
   },
   "platforms/ledge": {
    "file": "platforms/ledge.webp",
@@ -2066,7 +2066,7 @@
     0.5,
     1.0
    ],
-   "hash": "d95e4b3ff95b1aa72925"
+   "hash": "d3d6f3f9372a686b2d8d"
   },
   "platforms/lift_shaft": {
    "file": "platforms/lift_shaft.webp",
@@ -2080,7 +2080,7 @@
     0.5,
     1.0
    ],
-   "hash": "e015dc2921b86335741d"
+   "hash": "b6ba2e48607005a0d08f"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",
@@ -2094,7 +2094,7 @@
     0.5,
     1.0
    ],
-   "hash": "4b8e710649cbd5fcf0b5"
+   "hash": "bd1244df65ea43061c56"
   },
   "platforms/steps": {
    "file": "platforms/steps.webp",
@@ -2108,7 +2108,7 @@
     0.5,
     1.0
    ],
-   "hash": "0bc25137b3fba0d59eff"
+   "hash": "1e7eaceada30358187dd"
   },
   "platforms/window": {
    "file": "platforms/window.webp",

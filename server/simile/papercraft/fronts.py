@@ -345,16 +345,26 @@ def _shop(rect, pen: ImageDraw.ImageDraw, px, shop: Box, front: Front) -> None:
         _awning(pen, px, (x0 - 0.25, x1 + 0.25), y1 + 0.65, front.shop)
 
 
+LEAVES = (
+    (-0.882948, 0.469472),
+    (-0.615661, 0.788011),
+    (-0.241922, 0.970296),
+    (0.173648, 0.984808),
+    (0.559193, 0.829038),
+    (0.848048, 0.529919),
+)
+"""Each leaf's direction as (sin, cos), written out: libm differs by platform, and a moved pixel
+changes the plan's hash."""
+
+
 def _plant(pen: ImageDraw.ImageDraw, px, x: float) -> None:
-    for angle in (-62, -38, -14, 10, 34, 58):
-        a = np.radians(angle)
-        tip = (x + 0.62 * np.sin(a), 0.5 + 0.7 * np.cos(a))
-        side = (0.1 * np.cos(a), -0.1 * np.sin(a))
+    for sin, cos in LEAVES:
+        tip = (x + 0.62 * sin, 0.5 + 0.7 * cos)
+        side = (0.1 * cos, -0.1 * sin)
         mid = ((x + tip[0]) / 2, (0.52 + tip[1]) / 2)
         shape = [(x, 0.52), (mid[0] + side[0], mid[1] + side[1]), tip]
         shape.append((mid[0] - side[0], mid[1] - side[1]))
-        green = (86, 136, 84) if angle % 20 else (110, 156, 96)
-        pen.polygon([px((u, v, u, v))[:2] for u, v in shape], fill=green)
+        pen.polygon([px((u, v, u, v))[:2] for u, v in shape], fill=(86, 136, 84))
     l0, t0, r0, b0 = px((x - 0.22, 0.15, x + 0.22, 0.55))
     inset = (r0 - l0) * 0.15
     pen.polygon([(l0, t0), (r0, t0), (r0 - inset, b0), (l0 + inset, b0)], fill=(184, 104, 74))

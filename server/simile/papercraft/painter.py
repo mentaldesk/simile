@@ -85,14 +85,14 @@ class EditPainter:
     ) -> Image.Image:
         """A `size` painting, at least 256 px across and in multiples of 16 as FLUX needs, scaled
         to `size` exactly."""
-        import mlx.core as mx
-
-        from simile.works.flux import size as paint_size
-
         if not images:
             raise ValueError("edit mode paints from at least one image")
         if self._flux is None:
             raise RuntimeError("load the painter with `with EditPainter() as painter:` first")
+        import mlx.core as mx
+
+        from simile.works.flux import size as paint_size
+
         across, up = paint_size(*size)
         with tempfile.TemporaryDirectory() as folder:
             paths = []

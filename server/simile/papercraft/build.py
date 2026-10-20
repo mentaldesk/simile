@@ -16,9 +16,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFilter
 
-from simile.papercraft import cutout
+from simile.papercraft import cutout, fronts, sketches
 from simile.papercraft.catalogue import Painting, index, paintings
-from simile.papercraft.fronts import EAVES, Front, Plan, draw, unit_plans
+from simile.papercraft.fronts import EAVES, Front, Plan, draw, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
 from simile.papercraft.painter import REFERENCES, EditPainter, Painter, reference
 from simile.papercraft.sketches import SKETCHES
@@ -59,10 +59,6 @@ def digest(*parts: object) -> str:
 @cache
 def _file_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _pixels(image: Image.Image) -> bytes:
-    return f"{image.mode} {image.size}".encode() + image.tobytes()
 
 
 def _fit(image: Image.Image, side: int) -> Image.Image:
@@ -134,9 +130,10 @@ class Build:
         inputs: list[object] = [PAINTING, prompt, list(self.size(piece, unit)), piece.seed]
         inputs += [_file_hash(REFERENCES / f"{name}.jpg") for name in piece.refs]
         if piece.kind == "front":
-            inputs += [unit, _pixels(self.units(piece)[unit or 0][1].image)]
+            unit_front = units(self.front(piece))[unit or 0][1]
+            inputs += [unit, repr(unit_front), _file_hash(Path(fronts.__file__))]
         if piece.sketch:
-            inputs.append(_pixels(_sketch(piece.sketch)))
+            inputs += [piece.sketch, _file_hash(Path(sketches.__file__))]
         if piece.base:
             inputs.append(self.paint_hash(self.pieces[piece.base], unit))
         return digest(*inputs)
@@ -144,7 +141,7 @@ class Build:
     def out_hash(self, piece: Painting) -> str:
         inputs: list[object] = [PIPELINE, PPM, piece.kind, piece.height, self.paint_hash(piece)]
         if piece.kind in ("front", "glow"):
-            inputs += [_pixels(plan.glow) for _, plan in self.units(piece)]
+            inputs += [repr(self.front(piece)), _file_hash(Path(fronts.__file__))]
         return digest(*inputs)
 
     def prompt(self, piece: Painting, unit: int | None = None) -> str:
