@@ -4,7 +4,7 @@ import { characters } from '../world';
 
 const harnessOpen = () => {
   const params = new URLSearchParams(location.search);
-  return import.meta.env.DEV && (params.has('harness') || params.has('audio-harness'));
+  return import.meta.env.DEV && (params.has('harness') || params.has('audio-harness') || params.has('side'));
 };
 
 export class BootScene extends Phaser.Scene {
