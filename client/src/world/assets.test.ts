@@ -1,22 +1,25 @@
-import { describe, expect, it, vi } from 'vitest';
-import { loadMap, mapIds, maps } from './assets';
+import { describe, expect, it } from 'vitest';
+import { dollFor, dolls, mapIds, maps } from './assets';
 
 describe('maps', () => {
-  it('has the village, and every interior once loaded', async () => {
-    expect([...mapIds].sort()).toEqual(['coffee_shop', 'gallery', 'maker_space', 'noodle_bar', 'village']);
-    expect(maps.village?.width).toBe(64);
-    expect(maps.noodle_bar).toBeUndefined();
-
-    const json = JSON.stringify({ width: 20, height: 14, tilewidth: 16, tileheight: 16, layers: [] });
-    const read = vi.fn(async (url: string) => (url.endsWith('/noodle_bar.tmj') ? json : ''));
-    const noodles = await loadMap('noodle_bar', read);
-    expect(noodles.width).toBe(20);
-    expect(maps.noodle_bar).toBe(noodles);
-    expect(await loadMap('noodle_bar', read)).toBe(noodles);
-    expect(read).toHaveBeenCalledTimes(1);
+  it('has every street and floor, bundled', () => {
+    expect(mapIds).toContain('high_street');
+    expect(mapIds).toContain('banyan_row');
+    expect(mapIds).toContain('coffee_shop_floor_0');
+    expect(mapIds).toContain('house_10_floor_1');
+    expect(mapIds).not.toContain('village');
+    expect(maps.high_street?.width).toBe(84);
+    expect(maps.gallery_floor_2?.properties).toContainEqual({ name: 'view', type: 'string', value: 'side' });
   });
+});
 
-  it('has no map it doesn’t know', async () => {
-    await expect(loadMap('moon')).rejects.toThrow('No map moon');
+describe('dollFor', () => {
+  it('is their own doll, or the same resident’s every time for anyone without one', () => {
+    expect(dollFor('kofi')).toBe(dolls.kofi);
+    expect(dollFor('player')).toBe(dolls.player);
+    const stranger = dollFor('wren_abernethy');
+    expect(dollFor('wren_abernethy')).toBe(stranger);
+    expect(stranger).not.toBe(dolls.player);
+    expect(Object.values(dolls)).toContain(stranger);
   });
 });

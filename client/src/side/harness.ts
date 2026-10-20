@@ -1,4 +1,4 @@
-// The `?side` dev harness: README.md.
+// The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
 import { server, type Entity, type Facing, type Frame, type Pose, type Position, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';

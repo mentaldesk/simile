@@ -9,9 +9,13 @@ export type Interactable = {
   kind: string;
   label: string;
   map: string;
+  /** What it covers, in tiles. */
+  area: Area;
   stand: Tile[];
   prompt: string;
 };
+
+export type Area = { x: number; y: number; width: number; height: number };
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
@@ -41,6 +45,12 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
       kind: object.type,
       label: name,
       map: id,
+      area: {
+        x: (object.x ?? 0) / map.tilewidth,
+        y: (object.y ?? 0) / map.tileheight,
+        width: (object.width ?? 0) / map.tilewidth,
+        height: (object.height ?? 0) / map.tileheight,
+      },
       stand: tiles(propertyOf(object, 'stand')),
       prompt: PROMPTS[object.type]?.(name) ?? name,
     };

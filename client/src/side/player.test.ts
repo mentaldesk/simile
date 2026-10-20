@@ -76,6 +76,14 @@ describe('doors', () => {
     player.update(idle, 1 / 60);
     expect(player.update(press({ y: 1 }), 1 / 60)?.to).toEqual({ map: 'high_street', x: 43, y: 15 });
   });
+
+  it("doesn't go in through a front door or a street door on down", () => {
+    for (const x of [43, 46]) {
+      const player = at({ x, y: 15, map: 'high_street' });
+      expect(hold(player, press({ y: 1 }), 0.5)).toBeUndefined();
+      expect(player.map).toBe('high_street');
+    }
+  });
 });
 
 describe('stairs and ladders between floors', () => {
@@ -159,6 +167,8 @@ describe('stairs and ladders on a street', () => {
     expect(player.position.y).toBeLessThan(15);
     hold(player, press({ y: -1 }), 4);
     expect(player.position).toEqual({ x: 46, y: 12 });
+    expect(player.climbing).toBeUndefined();
+    expect(player.drawn.pose).toBe('standing');
     hold(player, press({ x: 1 }), 1);
     expect(player.position.x).toBe(48);
   });

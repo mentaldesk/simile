@@ -1,12 +1,11 @@
-import type { Position } from '../net';
-import { mapOf } from './map';
+import type { MapPosition } from './map';
 import { SEND_INTERVAL_SECONDS } from './tuning';
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
 export class MoveThrottle {
   private readonly interval: number;
-  private sent?: Position;
+  private sent?: MapPosition;
   private sentAt = -Infinity;
 
   constructor(interval = SEND_INTERVAL_SECONDS) {
@@ -14,8 +13,8 @@ export class MoveThrottle {
   }
 
   /** A move onto another map goes at once. */
-  next(position: Position, now: number): Position | undefined {
-    const rounded = { x: round(position.x), y: round(position.y), map: mapOf(position) };
+  next(position: MapPosition, now: number): MapPosition | undefined {
+    const rounded = { x: round(position.x), y: round(position.y), map: position.map };
     const { sent } = this;
     const sameMap = sent?.map === rounded.map;
     if (sameMap && sent.x === rounded.x && sent.y === rounded.y) return undefined;

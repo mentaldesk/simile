@@ -8,14 +8,15 @@ import {
   type WorldView,
 } from './world-view';
 
+const MAP = 'high_street';
 const snapshot: SnapshotMessage = {
   type: 'snapshot',
   time: '2026-03-14T08:05:00Z',
-  map_id: 'village',
+  map_id: MAP,
   entities: [
-    { id: 'player', kind: 'player', name: 'Player', position: { x: 14, y: 13 } },
-    { id: 'mei', kind: 'npc', name: 'Mei Lin', position: { x: 4, y: 6 } },
-    { id: 'viktor', kind: 'npc', name: 'Viktor Hale', position: { x: 11, y: 6 } },
+    { id: 'player', kind: 'player', name: 'Player', position: { x: 14, y: 13, map: MAP } },
+    { id: 'mei', kind: 'npc', name: 'Mei Lin', position: { x: 4, y: 6, map: MAP } },
+    { id: 'viktor', kind: 'npc', name: 'Viktor Hale', position: { x: 11, y: 6, map: MAP } },
   ],
   conversations: [],
 };
@@ -24,12 +25,12 @@ describe('the stand-in world view', () => {
   it('follows the snapshot and entity moves', () => {
     server.dispatch(JSON.stringify(snapshot));
     server.dispatch(
-      JSON.stringify({ type: 'entity_moved', entity_id: 'mei', position: { x: 11, y: 13 } }),
+      JSON.stringify({ type: 'entity_moved', entity_id: 'mei', position: { x: 11, y: 13, map: MAP } }),
     );
 
     expect(worldView()).toBe(trackedWorld);
     expect([...trackedWorld.npcIds()]).toEqual(['mei', 'viktor']);
-    expect(trackedWorld.positionOf('mei')).toEqual({ x: 11, y: 13 });
+    expect(trackedWorld.positionOf('mei')).toEqual({ x: 11, y: 13, map: MAP });
     expect(distanceFromPlayer(trackedWorld, 'mei')).toBe(3);
   });
 
@@ -39,7 +40,7 @@ describe('the stand-in world view', () => {
         ...snapshot,
         entities: [
           ...snapshot.entities,
-          { id: 'suki', kind: 'npc', name: 'Suki Tan', position: { x: 14, y: 14, map: 'coffee_shop' } },
+          { id: 'suki', kind: 'npc', name: 'Suki Tan', position: { x: 14, y: 14, map: 'coffee_shop_floor_0' } },
         ],
       }),
     );
@@ -48,14 +49,14 @@ describe('the stand-in world view', () => {
     expect(distanceFromPlayer(trackedWorld, 'suki')).toBeUndefined();
 
     server.dispatch(
-      JSON.stringify({ type: 'entity_moved', entity_id: 'suki', position: { x: 14, y: 14, map: 'village' } }),
+      JSON.stringify({ type: 'entity_moved', entity_id: 'suki', position: { x: 14, y: 14, map: MAP } }),
     );
     expect(distanceFromPlayer(trackedWorld, 'suki')).toBe(1);
   });
 
   it('measures no distance between maps, whatever the view', () => {
     const view: WorldView = {
-      positionOf: (id) => (id === 'player' ? { x: 5, y: 6, map: 'coffee_shop' } : { x: 5, y: 7 }),
+      positionOf: (id) => (id === 'player' ? { x: 5, y: 2, map: 'coffee_shop_floor_0' } : { x: 5, y: 2, map: MAP }),
       npcIds: () => ['mei'],
       bubbleAnchor: () => undefined,
       spriteOf: () => undefined,

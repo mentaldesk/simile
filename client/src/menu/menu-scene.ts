@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ISO_SCENE } from '../scenes/iso-scene';
+import { SIDE_SCENE } from '../side';
 import { ServerApi } from './api';
 import { Menu } from './menu';
 
@@ -15,12 +15,12 @@ export class MenuScene extends Phaser.Scene {
   create(): void {
     const params = new URLSearchParams(location.search);
     if (params.has('play')) {
-      this.scene.start(ISO_SCENE);
+      this.scene.start(SIDE_SCENE);
       return;
     }
     if (params.has('creator')) return;
     const menu = new Menu(document.body, new ServerApi(), {
-      play: () => this.scene.start(ISO_SCENE),
+      play: () => this.scene.start(SIDE_SCENE),
       creator: hasCreator ? () => (location.search = '?creator') : undefined,
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => menu.remove());

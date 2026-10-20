@@ -1,26 +1,5 @@
 import type { Position } from '../net';
-
-/** As content/street/README.md describes them. */
-export type TiledProperty = { name: string; type: string; value: unknown };
-export type TiledObject = {
-  name: string;
-  type: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  properties?: TiledProperty[];
-};
-export type TiledLayer = { name: string; type: string; data?: number[]; objects?: TiledObject[] };
-export type TiledFile = {
-  width: number;
-  height: number;
-  tilewidth: number;
-  tileheight: number;
-  properties?: TiledProperty[];
-  layers: TiledLayer[];
-  tilesets: { firstgid: number; tiles?: { id: number; properties?: TiledProperty[] }[] }[];
-};
+import type { TiledMap, TiledObject, TiledProperty } from '../world/map';
 
 export type Cell = { x: number; y: number };
 export type ClimbKind = 'stairs' | 'ladder';
@@ -66,7 +45,7 @@ export type SideMap = {
   links: Link[];
   interactables: Placed[];
   spots: Placed[];
-  file: TiledFile;
+  file: TiledMap;
 };
 
 export const CLIMB_KINDS: readonly ClimbKind[] = ['stairs', 'ladder'];
@@ -74,16 +53,16 @@ export const CLIMB_KINDS: readonly ClimbKind[] = ['stairs', 'ladder'];
 const propsOf = (properties: TiledProperty[] = []): Record<string, unknown> =>
   Object.fromEntries(properties.map(({ name, value }) => [name, value]));
 
-function cellsOf(file: TiledFile, object: TiledObject): Cell & { w: number; h: number } {
+function cellsOf(file: TiledMap, { x = 0, y = 0, width = 0, height = 0 }: TiledObject): Cell & { w: number; h: number } {
   return {
-    x: Math.round(object.x / file.tilewidth),
-    y: Math.round(object.y / file.tileheight),
-    w: Math.round(object.width / file.tilewidth),
-    h: Math.round(object.height / file.tileheight),
+    x: Math.round(x / file.tilewidth),
+    y: Math.round(y / file.tileheight),
+    w: Math.round(width / file.tilewidth),
+    h: Math.round(height / file.tileheight),
   };
 }
 
-function objects(file: TiledFile, layer: string): Placed[] {
+function objects(file: TiledMap, layer: string): Placed[] {
   const found = file.layers.find(({ name }) => name === layer)?.objects ?? [];
   return found.map((object) => ({
     name: object.name,
@@ -93,17 +72,17 @@ function objects(file: TiledFile, layer: string): Placed[] {
   }));
 }
 
-function tiles(file: TiledFile, layer: string, value: (gid: number) => number): Uint8Array {
+function tiles(file: TiledMap, layer: string, value: (gid: number) => number): Uint8Array {
   const cells = new Uint8Array(file.width * file.height);
   const data = file.layers.find(({ name }) => name === layer)?.data ?? [];
   data.forEach((gid, i) => (cells[i] = gid ? value(gid) : 0));
   return cells;
 }
 
-export function readMap(id: string, file: TiledFile): SideMap {
+export function readMap(id: string, file: TiledMap): SideMap {
   const props = propsOf(file.properties);
   const names = new Map<number, unknown>();
-  for (const { firstgid, tiles: described = [] } of file.tilesets) {
+  for (const { firstgid, tiles: described = [] } of file.tilesets ?? []) {
     for (const tile of described) names.set(firstgid + tile.id, propsOf(tile.properties).name);
   }
   const climbCode = (gid: number) => CLIMB_KINDS.indexOf(names.get(gid) as ClimbKind) + 1;
@@ -195,8 +174,8 @@ export class Village {
     }
   }
 
-  static read(files: Record<string, TiledFile>): Village {
-    return new Village(Object.entries(files).map(([id, file]) => readMap(id, file)));
+  static read(files: Readonly<Record<string, TiledMap | undefined>>): Village {
+    return new Village(Object.entries(files).flatMap(([id, file]) => (file ? [readMap(id, file)] : [])));
   }
 
   map(id: string): SideMap | undefined {

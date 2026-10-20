@@ -1,6 +1,6 @@
 import type { Frame, Painting, Position } from '../net';
 import type { Interactable } from '../world/interactables';
-import type { GalleryFrames } from '../world/iso/paintings';
+import type { GalleryFrames } from '../world/paintings';
 import { mapOf } from '../world/map';
 import './gallery-panel.css';
 import { pressedNewsKey } from './keys';
