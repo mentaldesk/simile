@@ -315,7 +315,7 @@ player, who has no money.
 | Event | When |
 |---|---|
 | `ConversationStarted(conversation)` | It starts, with no lines. |
-| `Facing(entity, toward, direction)` | Each participant turns to the other, `direction` being `down`, `left`, `right` or `up`. |
+| `Facing(entity, toward, direction)` | Each participant turns to the other, `direction` being `down`, `left`, `right` or `up`. On a side-view map it's `left` or `right`, or `down`, towards the camera, for someone straight above or below. |
 | `LineDrafted(line)` | A line is written, before its turn. Its `timestamp` is when it'll be spoken. |
 | `LineSpoken(line)` | At `line.timestamp`, with the same line. F3 sends it to clients as `line`. |
 | `ConversationEnded(conversation)` | It ends, with every line and `ended` set. |

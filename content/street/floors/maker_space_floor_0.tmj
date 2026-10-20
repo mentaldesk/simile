@@ -1,0 +1,702 @@
+{
+  "compressionlevel": -1,
+  "height": 4,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+      ],
+      "height": 4,
+      "id": 1,
+      "name": "solid",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 16,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ],
+      "height": 4,
+      "id": 2,
+      "name": "climbable",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 16,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+      ],
+      "height": 4,
+      "id": 3,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 16,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "buildings",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "furniture",
+      "objects": [
+        {
+          "height": 16,
+          "id": 1,
+          "name": "workbench",
+          "properties": [],
+          "rotation": 0,
+          "type": "workbench",
+          "visible": true,
+          "width": 64,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 2,
+          "name": "pegboard",
+          "properties": [],
+          "rotation": 0,
+          "type": "pegboard",
+          "visible": true,
+          "width": 64,
+          "x": 32,
+          "y": 0
+        },
+        {
+          "height": 32,
+          "id": 3,
+          "name": "laser_cutter",
+          "properties": [],
+          "rotation": 0,
+          "type": "laser_cutter",
+          "visible": true,
+          "width": 32,
+          "x": 96,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 4,
+          "name": "printer_3d",
+          "properties": [],
+          "rotation": 0,
+          "type": "printer_3d",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 5,
+          "name": "loom",
+          "properties": [],
+          "rotation": 0,
+          "type": "loom",
+          "visible": true,
+          "width": 32,
+          "x": 144,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 6,
+          "name": "sewing_machine",
+          "properties": [],
+          "rotation": 0,
+          "type": "sewing_machine",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 16
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "locations",
+      "objects": [
+        {
+          "height": 48,
+          "id": 7,
+          "name": "maker_space",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 13
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "floors",
+              "type": "string",
+              "value": "maker_space_floor_1:1,0,14,3 maker_space_floor_2:1,0,14,3"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Spark Maker Space"
+            }
+          ],
+          "rotation": 0,
+          "type": "maker_space",
+          "visible": true,
+          "width": 224,
+          "x": 16,
+          "y": 0
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "murals",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 8,
+          "name": "maker_space",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "high_street"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 16
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 9,
+          "name": "maker_space_stairs",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "stairs"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "maker_space_floor_1"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 5
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [
+        {
+          "height": 32,
+          "id": 10,
+          "name": "laser_cutter",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Laser cutter"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "6,2 7,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "machine",
+          "visible": true,
+          "width": 32,
+          "x": 96,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 11,
+          "name": "printer_3d",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "3D printer"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "8,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "machine",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 12,
+          "name": "loom",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Loom"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "9,2 10,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "machine",
+          "visible": true,
+          "width": 32,
+          "x": 144,
+          "y": 16
+        },
+        {
+          "height": 32,
+          "id": 13,
+          "name": "sewing_machine",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Sewing machine"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "11,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "machine",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 16
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 14,
+          "name": "desk-3-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 15,
+          "name": "desk-4-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 16,
+          "name": "desk-3-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 17,
+          "name": "desk-4-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 18,
+          "name": "desk-2-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 96,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 19,
+          "name": "desk-3-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 112,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 20,
+          "name": "desk-6-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 21,
+          "name": "desk-10-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 22,
+          "name": "desk-11-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 23,
+          "name": "desk-15-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "desk",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 11,
+  "nextobjectid": 24,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "building",
+      "type": "string",
+      "value": "maker_space"
+    },
+    {
+      "name": "floor",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "value": "floor"
+    },
+    {
+      "name": "room",
+      "type": "string",
+      "value": "workshop"
+    },
+    {
+      "name": "street",
+      "type": "string",
+      "value": "high_street"
+    },
+    {
+      "name": "street_x",
+      "type": "int",
+      "value": 2
+    },
+    {
+      "name": "street_y",
+      "type": "int",
+      "value": 13
+    },
+    {
+      "name": "view",
+      "type": "string",
+      "value": "side"
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [
+    {
+      "columns": 4,
+      "firstgid": 1,
+      "image": "../markers.png",
+      "imageheight": 16,
+      "imagewidth": 64,
+      "margin": 0,
+      "name": "markers",
+      "spacing": 0,
+      "tilecount": 4,
+      "tileheight": 16,
+      "tiles": [
+        {
+          "id": 0,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "solid"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stairs"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "ladder"
+            }
+          ]
+        }
+      ],
+      "tilewidth": 16
+    }
+  ],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 16
+}

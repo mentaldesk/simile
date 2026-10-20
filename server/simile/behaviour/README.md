@@ -160,6 +160,10 @@ sets F3's snapshot to the NPCs' real positions.
   a straight line (`Places.walk_minutes`), and a walk to them goes through the door. Only someone
   within `near` on the same map is company. A wander from indoors heads out, to somewhere near the
   door.
+- **Side view.** On the side-view maps (`content/street/`), a building's location covers every
+  floor of it (`Location.floors`), so someone at home is inside on its ground floor, and someone
+  upstairs is still at the café or the gallery. A wander from any floor heads out of the front door,
+  and a wander on a street stays on it. Both worlds share location ids, so nothing else changes.
 - **The gallery** is an occasional outing (base -0.1) for the open-minded: Open-mindedness for
   seeing things another way, Knowledge, Creativity for others' art, and Peace of Mind for a quiet
   room. Creativity counts for less than at the maker space, so the makers keep making. A stay of
@@ -181,7 +185,8 @@ sets F3's snapshot to the NPCs' real positions.
 - **Variety.** Before leaving, a bored resident may move to another free spot in the same place
   that suits what they're there for: another painting, the bar, or a bench with a friend on it,
   chosen as W2 chooses spots. It eases boredom by `new_spot` (0.15), and they move once that's
-  worth more than `spot_switch` (0.04). A place without spots has nowhere to move to.
+  worth more than `spot_switch` (0.04). A place without spots has nowhere to move to. The spots
+  are on any floor of the place, measured as W2 measures them, with the floors stacked.
 - **Relaxation**, separate from `rest`, which is sleepiness. It rises slowly awake, faster with
   Peace of Mind and Pleasure, at work, making something and at the maker space, and in busy places:
   `busy` (0.03) an hour for each other person near them out of home, up to `crowd_cap`, divided by
@@ -191,8 +196,12 @@ sets F3's snapshot to the NPCs' real positions.
 - **Exercise** rises through the day, faster with Discipline and Adventure, and a walk meets
   it. A walk goes round one of the `loops` on the village map, around Lotus Lake or through the
   village, lap after lap from the tile nearest them, for 15 to 40 minutes or until it stops paying.
-  A wander meets a little.
-- **Wandering** is a stroll from one tile to another near it, for 3 to 10 minutes.
+  `loops_on` has the walks on other maps by map id, under the same names: on the side-view maps,
+  `lotus_lake` goes through the park on Lychee Lane and up the lookout's ladder, and `village` along
+  the High Street. Only the walks on the world's maps are options. A wander meets a little.
+- **Wandering** is a stroll from one tile to another near it, for 3 to 10 minutes. On a side-view
+  map it's to one of the cells to stand on that they can reach in `wander_radius` (12) steps,
+  never partway up stairs or a ladder.
 - **Idle** is a fallback: 1 to 3 minutes standing where they are, scored below everything else.
 - **When.** An NPC decides when their stay somewhere stops paying or runs out, not every tick. Needs
   update every 5 sim seconds.
@@ -220,7 +229,7 @@ restore()
 | `news_interest(npc)` | With the `Npc` at each decision: how interesting the best unread article is, 0 to 1 | 0, so nobody goes to the terminals |
 | `conversations()` | For each snapshot | `[]` |
 | `create(npc, wall, intention)` | With the `Npc` when they finish a stay making something, the wall's id for a mural (`None` for writing), and the `Intention` the stay kept, or `None` | Does nothing |
-| `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, or `None` | `None`, so muralists don't paint |
+| `mural_wall(npc)` | With the `Npc` at each decision, for muralists: a `MuralSpot` with the wall's id and the tile to stand on, a `MapTile` or a `Tile` on the town's own map, or `None` | `None`, so muralists don't paint |
 | `supply(goal, need)` | For a goal at a place, when scoring it and while someone's there: how much of what it does for `need` it can do now, 0 to 1 | 1 everywhere |
 | `money(npc)` | With the `Npc` every think: what they hold, or `None` | `None`, so finances stay at 0 |
 | `price(npc, goal)` | With the `Npc` for each option: what it would cost them | 0 |
@@ -287,6 +296,9 @@ runs another cast.
 Every request to talk is declined unless you pass `--talk MINUTES`: then each is accepted, the
 conversation lasts that long, and the summary adds how many conversations each resident started,
 by sociability, and how many there were a sim hour.
+
+With `--maps DIR` it runs on the maps in that folder instead of the server's, such as the side-view
+village: `uv run simile behaviour simulate --maps ../content/street`.
 
 With `--intentions HOURS`, every that many sim hours each resident who's awake says they'll do
 something at random, to someone at random: half due now, to expire 2 sim hours later, and half due
