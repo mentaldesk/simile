@@ -19,7 +19,7 @@ FIELDS = {
     "bottom": "bottom_colour",
     "shoe": "shoe_colour",
 }
-FROM_LOOK = 3.5
+FROM_LOOK = 4.0
 """How far a painted piece's colour may be from the look it was cut from (CIEDE2000)."""
 FROM_APPEARANCE = {"skin": 3.5, "hair": 8.0, "top": 8.0, "bottom": 8.0, "shoe": 8.0}
 """And from the `Appearance`: skin is kept exactly, the rest muted by up to about 6."""

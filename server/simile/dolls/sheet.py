@@ -248,9 +248,9 @@ def cut(sheet: Sheet, painted: Image.Image) -> dict[str, Image.Image]:
     background = paper(sheet, painted)
     out = {}
     for name, flat in sheet.pieces.items():
-        crop = patched(sheet.crop(painted, name), flat.image, background, sheet.scale)
-        crop = strengthen(crop, flat.image, sheet.scale)
-        crop = restore(crop, flat.image)
+        crop = patched(sheet.crop(painted, name), flat.drawn, background, sheet.scale)
+        crop = strengthen(crop, flat.drawn, sheet.scale)
+        crop = restore(crop, flat.drawn)
         out[name] = bleed(crop, flat.image.getchannel("A"))
     return out
 
@@ -277,7 +277,7 @@ def misplaced(sheet: Sheet, painted: Image.Image) -> dict[str, float]:
     background = paper(sheet, painted)
     out = {}
     for name, flat in sheet.pieces.items():
-        holes = bare(sheet.crop(painted, name), flat.image, background)
+        holes = bare(sheet.crop(painted, name), flat.drawn, background)
         inside = np.asarray(flat.image.getchannel("A").filter(ImageFilter.MinFilter(5))) > 250
         out[name] = float((holes & inside).sum() / max(1, inside.sum()))
     return out
@@ -288,7 +288,7 @@ def patches(sheet: Sheet, painted: Image.Image) -> dict[str, float]:
     region: high when the painter added something, like a stray patch. Cutting paints over it."""
     out = {}
     for name, flat in sheet.pieces.items():
-        added = foreign(sheet.crop(painted, name), flat.image, sheet.scale)
+        added = foreign(sheet.crop(painted, name), flat.drawn, sheet.scale)
         inside = np.asarray(flat.image.getchannel("A").filter(ImageFilter.MinFilter(7))) > 250
         out[name] = float((added & inside).sum() / max(1, inside.sum()))
     return out

@@ -22,7 +22,12 @@ def register(app: typer.Typer) -> None:
         from simile.dolls.build import build
         from simile.dolls.paint import EditPainter
 
-        for painted in build(EditPainter, only=who or (), force=force):
+        try:
+            done = build(EditPainter, only=who or (), force=force)
+        except (KeyError, RuntimeError) as error:
+            typer.echo(error.args[0] if error.args else error, err=True)
+            raise typer.Exit(1) from None
+        for painted in done:
             if paintings is not None:
                 paintings.mkdir(parents=True, exist_ok=True)
                 for sheet, image in painted.paintings.items():

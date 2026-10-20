@@ -81,8 +81,10 @@ the heads; apron, scarf and backpack are part of the torsos.
    (`sheet.py`), and each painted in edit mode with the villagers reference as the style image.
    The prompt names the skin, hair and accessories, or the painter drops them, and not the
    clothes, or it paints the rest of the person.
-3. **Cutting**: each piece is cut on its own outline. Anything the painter left bare inside it,
-   where it drew the piece a little small, is filled from the paint around it. The paper texture
+3. **Cutting**: each piece is cut on its own outline, its colour regions read from the flat piece
+   as drawn, before antialiasing. Anything the painter left bare inside it, where it drew the
+   piece a little small, or painted as something else in a region, is repainted in that region's
+   own colour, keeping the painting's fine texture. The paper texture
    between a third of a unit and two units is strengthened, so it still reads at street size, and
    each colour region is pulled all the way back to its flat colour by its median, so the texture
    stays and something else painted into a region doesn't shift the rest. The pieces are scaled

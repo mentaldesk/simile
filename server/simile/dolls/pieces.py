@@ -15,6 +15,8 @@ class Piece:
     image: Image.Image
     pivot: Px
     joints: dict[str, Px]
+    drawn: Image.Image | None = None
+    """The flat piece's colours exactly as drawn, without antialiasing."""
 
     def trimmed(self, pad: int = 2) -> "Piece":
         box = self.image.getchannel("A").getbbox()
@@ -31,6 +33,7 @@ class Piece:
             self.image.crop((x0, y0, x1, y1)),
             shift(self.pivot),
             {k: shift(v) for k, v in self.joints.items()},
+            None if self.drawn is None else self.drawn.crop((x0, y0, x1, y1)),
         )
 
 
@@ -39,7 +42,7 @@ def flat_piece(name: str, look: Look, scale: float) -> Piece:
     pen = Pen(shape.box, scale)
     shape.draw(pen, look)
     joints = {k: pen.px(v) for k, v in shape.joints(look).items()}
-    return Piece(pen.image(), pen.px((0.0, 0.0)), joints).trimmed()
+    return Piece(pen.image(), pen.px((0.0, 0.0)), joints, pen.drawn()).trimmed()
 
 
 def flat_pieces(look: Look, scale: float, names: tuple[str, ...] = PIECES) -> dict[str, Piece]:

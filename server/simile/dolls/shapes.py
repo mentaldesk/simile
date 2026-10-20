@@ -111,6 +111,10 @@ class Pen:
     def image(self) -> Image.Image:
         return self.layer.resize(self.size, Image.Resampling.LANCZOS)
 
+    def drawn(self) -> Image.Image:
+        """The colours exactly as drawn, without antialiasing, so thin lines keep their own."""
+        return self.layer.resize(self.size, Image.Resampling.NEAREST)
+
 
 def strand(look: Look) -> RGB:
     """A lighter shade for strands: on grey hair a darker one reads as the seams of a cap."""
@@ -203,6 +207,13 @@ def head(pen: Pen, look: Look) -> None:
             pen.line(arc(c, 1.6, 1.6, 200, 380, 8), 0.45, strand(look))
     elif style in shells:
         side_strands(pen, look, shells[style][0])
+    if acc & {"cap", "beanie"} and style != "bald":
+        dr = shells[style][0]
+        tufts = 0 if style == "buzz" else 3
+        nape = tufted(SKULL, rx + dr - 0.4, ry + dr - 0.4, -186, -238, tufts, 0.8)
+        pen.poly([*nape, (-4.8, -5.0), (-4.4, -10.0), (-3.4, -15.0)], hair)
+        for top, bottom in (((-8.6, -12.0), (-7.4, -7.0)), ((-6.4, -12.6), (-5.8, -7.6))):
+            pen.line([top, bottom], 0.45, strand(look))
     if "cap" in acc:
         cap(pen, look, side=True)
     if "beanie" in acc:
@@ -260,13 +271,32 @@ def beanie(pen: Pen, look: Look, centre: Pt, side: bool) -> None:
         pen.line([(a[0], a[1]), (a[0] * 0.98, band_top - 0.6)], 0.4, darker(look.accent, 0.88))
 
 
-def front_shell(pen: Pen, look: Look, dr: float, drop: float, hairline: list[Pt]) -> None:
+def front_shell(pen: Pen, look: Look, dr: float, drop: float, hairline: list[Pt]) -> list[Pt]:
+    """Draws the hair over the face and returns its outline."""
     rx, ry = FACE_R
     tufts, depth = (0, 0.0) if look.hair_style == "buzz" else (6, 1.0)
     outer = tufted(
         FACE, rx + dr - depth / 2, ry + dr - depth / 2, 180 - drop, 360 + drop, tufts, depth
     )
-    pen.poly([*outer, *hairline], look.hair)
+    shell = [*outer, *hairline]
+    pen.poly(shell, look.hair)
+    return shell
+
+
+def within(p: Pt, polygon: list[Pt], margin: float = 0.5) -> bool:
+    """Whether `p` is inside `polygon` by at least about `margin`."""
+
+    def inside(x: float, y: float) -> bool:
+        hit = False
+        for (x0, y0), (x1, y1) in zip(polygon, [*polygon[1:], polygon[0]], strict=True):
+            if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
+                hit = not hit
+        return hit
+
+    return all(
+        inside(p[0] + dx, p[1] + dy)
+        for dx, dy in ((0, 0), (margin, 0), (-margin, 0), (0, margin), (0, -margin))
+    )
 
 
 def fringe(width: float, top: float, depth: float, tufts: int) -> list[Pt]:
@@ -279,10 +309,18 @@ def fringe(width: float, top: float, depth: float, tufts: int) -> list[Pt]:
     return pts
 
 
-def front_strands(pen: Pen, look: Look, dr: float) -> None:
+def front_strands(pen: Pen, look: Look, dr: float, shell: list[Pt]) -> None:
+    """Strands across the hair, each cut where it would leave `shell`."""
     rx, ry = FACE_R
     for t0, t1, inset in ((250, 200, 2.6), (290, 340, 2.6), (265, 225, 4.6), (275, 315, 4.6)):
-        pen.line(arc(FACE, rx + dr - inset, ry + dr - inset, t0, t1, 10), 0.45, strand(look))
+        run: list[Pt] = []
+        for p in [*arc(FACE, rx + dr - inset, ry + dr - inset, t0, t1, 20), None]:
+            if p is not None and within(p, shell):
+                run.append(p)
+                continue
+            if len(run) > 1:
+                pen.line(run, 0.45, strand(look))
+            run = []
 
 
 def head_front(pen: Pen, look: Look) -> None:
@@ -320,10 +358,13 @@ def head_front(pen: Pen, look: Look) -> None:
     brow = hair if style != "bald" else darker(look.skin, 0.7)
     for side in (-1, 1):
         pen.line([(side * 2.6, -16.6), (side * 5.6, -17.0)], 0.8, brow)
+    shell: list[Pt] = []
     if style == "buzz":
-        front_shell(pen, look, 0.5, 6, fringe(10.2, -19.4, 0.4, 5))
+        temples = [(11.4, -13.4), (10.0, -17.6)]
+        hairline = [*temples, *fringe(8.8, -19.4, 0.4, 5), *mirrored(reversed(temples))]
+        shell = front_shell(pen, look, 0.5, 6, hairline)
     if style == "short":
-        front_shell(
+        shell = front_shell(
             pen, look, 1.6, 10, [(10.6, -11.0), *fringe(9.6, -17.0, 1.6, 4), (-10.6, -11.0)]
         )
     if style == "curly":
@@ -331,7 +372,7 @@ def head_front(pen: Pen, look: Look) -> None:
         for x in (-6.4, -2.2, 2.2, 6.4):
             pen.ellipse((x, -18.4), 2.4, 2.2, hair)
     if style == "bob":
-        front_shell(
+        shell = front_shell(
             pen,
             look,
             2.2,
@@ -347,7 +388,7 @@ def head_front(pen: Pen, look: Look) -> None:
         )
     if style == "long":
         outer = rx + 1.7
-        front_shell(
+        shell = front_shell(
             pen,
             look,
             2.2,
@@ -367,7 +408,7 @@ def head_front(pen: Pen, look: Look) -> None:
             ],
         )
     if style in ("ponytail", "bun"):
-        front_shell(
+        shell = front_shell(
             pen,
             look,
             1.2,
@@ -382,8 +423,8 @@ def head_front(pen: Pen, look: Look) -> None:
                 (-10.4, -12.4),
             ],
         )
-    if style in ("buzz", "short", "bob", "long", "ponytail", "bun"):
-        front_strands(pen, look, {"buzz": 0.5, "short": 1.6}.get(style, 1.6))
+    if shell:
+        front_strands(pen, look, {"buzz": 0.5, "short": 1.6}.get(style, 1.6), shell)
     if "cap" in acc:
         cap(pen, look, side=False)
         pen.blob(
@@ -616,38 +657,41 @@ def torso(pen: Pen, look: Look) -> None:
         pen.capsule((-h + 0.6, -30.6), (-h - 1.8, -19.0), 1.9, 1.5, darker(look.accent, 0.88))
 
 
-def front_torso(pen: Pen, look: Look) -> list[Pt]:
+def front_torso(pen: Pen, look: Look) -> None:
+    """The top, ending under the trousers' waistband so nothing shows between the legs."""
     h = front_width(look) / 2
-    outline = [
-        (-h + 2.4, -29.4),
-        (-3.6, -30.8),
-        (3.6, -30.8),
-        (h - 2.4, -29.4),
-        (h - 1.8, -16.0),
-        (h - 2.6, -7.5),
-        (h - 2.4, 3.0),
-        (-h + 2.4, 3.0),
-        (-h + 2.6, -7.5),
-        (-h + 1.8, -16.0),
-    ]
-    pen.blob(outline, 2.0, look.top)
+    pen.blob(
+        [
+            (-h + 2.4, -29.4),
+            (-3.6, -30.8),
+            (3.6, -30.8),
+            (h - 2.4, -29.4),
+            (h - 1.8, -16.0),
+            (h - 2.6, -7.5),
+            (h - 2.6, -6.0),
+            (-h + 2.6, -6.0),
+            (-h + 2.6, -7.5),
+            (-h + 1.8, -16.0),
+        ],
+        2.0,
+        look.top,
+    )
     pen.poly(
         [
-            (-h + 0.8, -7.6),
-            (h - 0.8, -7.6),
-            (h - 0.6, 5.0),
+            (-h + 0.5, -7.6),
+            (h - 0.5, -7.6),
+            (h - 0.5, 5.0),
             (1.4, 5.0),
             (0.0, 2.4),
             (-1.4, 5.0),
-            (-h + 0.6, 5.0),
+            (-h + 0.5, 5.0),
         ],
         look.bottom,
     )
     pen.poly(
-        [(-h + 0.6, -8.4), (h - 0.6, -8.4), (h - 0.6, -6.8), (-h + 0.6, -6.8)],
+        [(-h + 0.5, -8.4), (h - 0.5, -8.4), (h - 0.5, -6.8), (-h + 0.5, -6.8)],
         darker(look.bottom, 0.6),
     )
-    return outline
 
 
 def torso_front(pen: Pen, look: Look) -> None:

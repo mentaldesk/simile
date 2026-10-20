@@ -37,7 +37,10 @@ REROLLS: dict[str, int] = {
     "ingrid/side": 1,
     "ingrid/front_back": 1,
     "lachlan/side": 1,
+    "marguerite/front_back": 1,
+    "mirela/side": 3,
     "odalys/front_back": 5,
+    "tobias/side": 4,
 }
 """`<id>/<sheet>` to a reroll number, for a painting that came out off-model or off-tone."""
 
