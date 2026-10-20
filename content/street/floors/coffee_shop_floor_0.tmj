@@ -1,0 +1,599 @@
+{
+  "compressionlevel": -1,
+  "height": 4,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+      ],
+      "height": 4,
+      "id": 1,
+      "name": "solid",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ],
+      "height": 4,
+      "id": 2,
+      "name": "climbable",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+      ],
+      "height": 4,
+      "id": 3,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "buildings",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "furniture",
+      "objects": [
+        {
+          "height": 16,
+          "id": 1,
+          "name": "grinder",
+          "properties": [],
+          "rotation": 0,
+          "type": "grinder",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 2,
+          "name": "espresso_machine",
+          "properties": [],
+          "rotation": 0,
+          "type": "espresso_machine",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 3,
+          "name": "counter",
+          "properties": [],
+          "rotation": 0,
+          "type": "counter",
+          "visible": true,
+          "width": 48,
+          "x": 48,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 4,
+          "name": "menu_board",
+          "properties": [],
+          "rotation": 0,
+          "type": "menu_board",
+          "visible": true,
+          "width": 48,
+          "x": 32,
+          "y": 0
+        },
+        {
+          "height": 16,
+          "id": 5,
+          "name": "bar_counter",
+          "properties": [],
+          "rotation": 0,
+          "type": "bar_counter",
+          "visible": true,
+          "width": 80,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 6,
+          "name": "plant",
+          "properties": [],
+          "rotation": 0,
+          "type": "plant",
+          "visible": true,
+          "width": 16,
+          "x": 256,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "locations",
+      "objects": [
+        {
+          "height": 48,
+          "id": 7,
+          "name": "coffee_shop",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 6
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "floors",
+              "type": "string",
+              "value": "coffee_shop_floor_1:1,0,18,3 coffee_shop_floor_2:1,0,18,3"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "The Daily Grind"
+            }
+          ],
+          "rotation": 0,
+          "type": "coffee_shop",
+          "visible": true,
+          "width": 288,
+          "x": 16,
+          "y": 0
+        },
+        {
+          "height": 48,
+          "id": 8,
+          "name": "coffee_shop_staff",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 3
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Behind the counter at the Daily Grind"
+            }
+          ],
+          "rotation": 0,
+          "type": "amenity",
+          "visible": true,
+          "width": 64,
+          "x": 16,
+          "y": 0
+        },
+        {
+          "height": 48,
+          "id": 9,
+          "name": "coffee_shop_queue",
+          "properties": [
+            {
+              "name": "entry_x",
+              "type": "int",
+              "value": 6
+            },
+            {
+              "name": "entry_y",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "The queue at the Daily Grind"
+            }
+          ],
+          "rotation": 0,
+          "type": "amenity",
+          "visible": true,
+          "width": 64,
+          "x": 96,
+          "y": 0
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "murals",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 10,
+          "name": "coffee_shop",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "high_street"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 43
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 288,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 11,
+          "name": "coffee_shop_stairs",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "stairs"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "coffee_shop_floor_1"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 11
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 240,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [
+        {
+          "height": 16,
+          "id": 12,
+          "name": "coffee_shop_counter",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Counter"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "6,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "counter",
+          "visible": true,
+          "width": 48,
+          "x": 48,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 13,
+          "name": "bar-2-6",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "bar",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 14,
+          "name": "bar-3-6",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "bar",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 15,
+          "name": "bar-10-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "bar",
+          "visible": true,
+          "width": 16,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 16,
+          "name": "bar-10-4",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "bar",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 17,
+          "name": "bar-10-5",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "north"
+            }
+          ],
+          "rotation": 0,
+          "type": "bar",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 11,
+  "nextobjectid": 18,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "building",
+      "type": "string",
+      "value": "coffee_shop"
+    },
+    {
+      "name": "floor",
+      "type": "int",
+      "value": 0
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "value": "floor"
+    },
+    {
+      "name": "room",
+      "type": "string",
+      "value": "cafe"
+    },
+    {
+      "name": "street",
+      "type": "string",
+      "value": "high_street"
+    },
+    {
+      "name": "street_x",
+      "type": "int",
+      "value": 25
+    },
+    {
+      "name": "street_y",
+      "type": "int",
+      "value": 13
+    },
+    {
+      "name": "view",
+      "type": "string",
+      "value": "side"
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [
+    {
+      "columns": 4,
+      "firstgid": 1,
+      "image": "../markers.png",
+      "imageheight": 16,
+      "imagewidth": 64,
+      "margin": 0,
+      "name": "markers",
+      "spacing": 0,
+      "tilecount": 4,
+      "tileheight": 16,
+      "tiles": [
+        {
+          "id": 0,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "solid"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stairs"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "ladder"
+            }
+          ]
+        }
+      ],
+      "tilewidth": 16
+    }
+  ],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 20
+}

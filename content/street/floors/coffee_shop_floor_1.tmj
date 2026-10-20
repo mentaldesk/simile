@@ -1,0 +1,707 @@
+{
+  "compressionlevel": -1,
+  "height": 4,
+  "infinite": false,
+  "layers": [
+    {
+      "data": [
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,
+        2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+      ],
+      "height": 4,
+      "id": 1,
+      "name": "solid",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ],
+      "height": 4,
+      "id": 2,
+      "name": "climbable",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": true,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "data": [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+        1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+      ],
+      "height": 4,
+      "id": 3,
+      "name": "collision",
+      "opacity": 1,
+      "type": "tilelayer",
+      "visible": false,
+      "width": 20,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 4,
+      "name": "buildings",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 5,
+      "name": "furniture",
+      "objects": [
+        {
+          "height": 16,
+          "id": 1,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 16,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 2,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 48,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 3,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 4,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 112,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 5,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 144,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 6,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 7,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 224,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 8,
+          "name": "cafe_table",
+          "properties": [],
+          "rotation": 0,
+          "type": "cafe_table",
+          "visible": true,
+          "width": 32,
+          "x": 256,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 6,
+      "name": "locations",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 7,
+      "name": "murals",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 8,
+      "name": "doors",
+      "objects": [
+        {
+          "height": 16,
+          "id": 9,
+          "name": "coffee_shop_stairs",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "stairs"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "inside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "coffee_shop_floor_0"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 15
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 10,
+          "name": "coffee_shop_flat_stairs",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "stairs"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "coffee_shop_floor_2"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 14
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 288,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 9,
+      "name": "interactables",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 10,
+      "name": "spots",
+      "objects": [
+        {
+          "height": 16,
+          "id": 11,
+          "name": "seat-1-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 12,
+          "name": "seat-3-8",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 13,
+          "name": "seat-1-11",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 14,
+          "name": "seat-3-11",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 64,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 15,
+          "name": "seat-11-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 16,
+          "name": "seat-13-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 96,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 17,
+          "name": "seat-14-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 112,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 18,
+          "name": "seat-16-3",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 128,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 19,
+          "name": "seat-11-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 144,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 20,
+          "name": "seat-13-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 21,
+          "name": "seat-14-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 22,
+          "name": "seat-16-7",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 23,
+          "name": "seat-11-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 24,
+          "name": "seat-13-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 240,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 25,
+          "name": "seat-14-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 256,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 26,
+          "name": "seat-16-10",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "west"
+            }
+          ],
+          "rotation": 0,
+          "type": "seat",
+          "visible": true,
+          "width": 16,
+          "x": 272,
+          "y": 32
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "nextlayerid": 11,
+  "nextobjectid": 27,
+  "orientation": "orthogonal",
+  "properties": [
+    {
+      "name": "building",
+      "type": "string",
+      "value": "coffee_shop"
+    },
+    {
+      "name": "floor",
+      "type": "int",
+      "value": 1
+    },
+    {
+      "name": "kind",
+      "type": "string",
+      "value": "floor"
+    },
+    {
+      "name": "room",
+      "type": "string",
+      "value": "cafe_upstairs"
+    },
+    {
+      "name": "street",
+      "type": "string",
+      "value": "high_street"
+    },
+    {
+      "name": "street_x",
+      "type": "int",
+      "value": 25
+    },
+    {
+      "name": "street_y",
+      "type": "int",
+      "value": 9
+    },
+    {
+      "name": "view",
+      "type": "string",
+      "value": "side"
+    }
+  ],
+  "renderorder": "right-down",
+  "tiledversion": "1.11.2",
+  "tileheight": 16,
+  "tilesets": [
+    {
+      "columns": 4,
+      "firstgid": 1,
+      "image": "../markers.png",
+      "imageheight": 16,
+      "imagewidth": 64,
+      "margin": 0,
+      "name": "markers",
+      "spacing": 0,
+      "tilecount": 4,
+      "tileheight": 16,
+      "tiles": [
+        {
+          "id": 0,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "blocked"
+            }
+          ]
+        },
+        {
+          "id": 1,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "solid"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "stairs"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "properties": [
+            {
+              "name": "name",
+              "type": "string",
+              "value": "ladder"
+            }
+          ]
+        }
+      ],
+      "tilewidth": 16
+    }
+  ],
+  "tilewidth": 16,
+  "type": "map",
+  "version": "1.10",
+  "width": 20
+}

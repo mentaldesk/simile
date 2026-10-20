@@ -3,13 +3,13 @@ import logging
 import math
 from collections import deque
 from collections.abc import Callable, Generator, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Self
 
 from starlette.applications import Starlette
 
-from simile.schema import VILLAGE_MAP, Facing, Id, Location, MapTile, Pose, Tile
+from simile.schema import VILLAGE_MAP, Facing, Id, Location, MapArea, MapTile, Pose, Tile, TileArea
 from simile.sim import EntityMoved, EventBus, world_of
 from simile.world.map import WALKING_SPEED, TownMap, load_maps, with_every_location
 from simile.world.map import Spot as MapSpot
@@ -175,15 +175,19 @@ def spot_of(point: Point) -> Spot:
 
 
 def inside(location: Location, where: Cell | Spot | Point) -> bool:
-    """Whether a tile, or a point's tile, is in the location's area. A plain `(x, y)` cell is
-    taken to be on the location's map; a `Spot` or `Point` on another map is never inside."""
+    """Whether a tile, or a point's tile, is in the location's area or on one of its floors. A
+    plain `(x, y)` cell is taken to be on the location's map; a `Spot` or `Point` on a map the
+    location doesn't cover is never inside."""
     if isinstance(where, Point):
         where = spot_of(where)
-    if isinstance(where, Spot):
-        if where.map != location.map:
-            return False
-        where = (where.x, where.y)
-    area, (x, y) = location.area, where
+    if not isinstance(where, Spot):
+        return _within(location.area, *where)
+    if where.map == location.map and _within(location.area, where.x, where.y):
+        return True
+    return any(f.map == where.map and _within(f, where.x, where.y) for f in location.floors)
+
+
+def _within(area: TileArea | MapArea, x: int, y: int) -> bool:
     return area.x <= x < area.x + area.width and area.y <= y < area.y + area.height
 
 
@@ -395,21 +399,43 @@ class Movement:
         here = self._spots.get(start) if start is not None else None
         if here and here.kind in kinds and inside(location, start) and start not in claimed:
             return start
+        rise = self._rise(location)
         if location.id not in self._spots_in:
-            spots = self.maps[location.map].spots
             self._spots_in[location.id] = [
-                spot for spot in spots if inside(location, Spot(spot.map, spot.x, spot.y))
+                spot
+                for map_id in rise
+                for spot in self.maps[map_id].spots
+                if inside(location, Spot(spot.map, spot.x, spot.y))
             ]
-        free = [s for s in self._spots_in[location.id] if Spot(s.map, s.x, s.y) not in claimed]
-        others = {
-            other: self._seat(body.claim)
-            for other, body in self._bodies.items()
-            if other != entity and body.claim.map == location.map
+
+        def level(x: float, y: float, map_id: str) -> tuple[float, float]:
+            return x, y - rise[map_id]
+
+        free = {
+            replace(s, y=s.y - rise[s.map]) if rise[s.map] else s: s
+            for s in self._spots_in[location.id]
+            if Spot(s.map, s.x, s.y) not in claimed
         }
-        entry = (location.entry.x, location.entry.y)
-        near = (start.x, start.y) if start is not None and start.map == location.map else entry
+        others = {
+            other: level(*self._seat(body.claim), body.claim.map)
+            for other, body in self._bodies.items()
+            if other != entity and body.claim.map in rise
+        }
+        near = (location.entry.x, location.entry.y)
+        if start is not None and start.map in rise:
+            near = level(start.x, start.y, start.map)
         spot = choose(entity, free, kinds, others, near, self.affinity, self.spot_config)
-        return None if spot is None else Spot(spot.map, spot.x, spot.y)
+        return None if spot is None else Spot(spot.map, free[spot].x, free[spot].y)
+
+    def _rise(self, location: Location) -> dict[str, int]:
+        """How many tiles up each map the location covers is stacked, so its floors measure as one
+        picture."""
+        base = self.maps[location.map].floor or 0
+        floors = (self.maps[f.map] for f in location.floors if f.map in self.maps)
+        return {
+            town.id: ((town.floor or 0) - base) * town.height
+            for town in (self.maps[location.map], *floors)
+        }
 
     def _seat(self, tile: Spot) -> tuple[float, float]:
         spot = self._spots.get(tile)
