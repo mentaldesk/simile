@@ -17,7 +17,7 @@ from .conftest import MEI, NOW, OTHER_WALL, SUKI, VIKTOR, WALL, mural
 
 NPCS = {npc.id: npc for npc in (VIKTOR, SUKI, MEI)}
 REACTION = Reaction(take="Cheerful, I'll give it that.", valence=0.3, intensity=0.4)
-IN_FRONT, FAR, BEHIND = Point(11, 7), Point(11, 12), Point(11, 4)
+IN_FRONT, FAR = Point(11, 15, "high_street"), Point(17, 15, "high_street")
 
 
 def passers(
@@ -45,23 +45,20 @@ def work_memories(memory: MemoryStore, owner: str) -> list[Memory]:
 @pytest.mark.parametrize(
     ("position", "distance"),
     [
-        (IN_FRONT, 1.5),
-        (Point(10, 6), 0.5),
-        (Point(15, 7), (1.5**2 + 2.5**2) ** 0.5),
-        (FAR, 6.5),
-        (BEHIND, None),
-        (Point(11, 5), None),
+        (IN_FRONT, 0),
+        (Point(10, 15, "high_street"), 0),
+        (Point(14, 15, "high_street"), 1.5),
+        (Point(7, 15, "high_street"), 2.5),
+        (FAR, 4.5),
     ],
 )
-def test_how_far_someone_is_in_front_of_a_south_face(
-    position: Point, distance: float | None
-) -> None:
+def test_how_far_along_the_street_someone_is_from_a_wall(position: Point, distance: float) -> None:
     assert distance_in_front(WALL, position) == pytest.approx(distance)
 
 
-def test_how_far_someone_is_in_front_of_an_east_face() -> None:
-    assert distance_in_front(OTHER_WALL, Point(22, 6)) == pytest.approx(1.5)
-    assert distance_in_front(OTHER_WALL, Point(20, 6)) is None
+def test_someone_off_the_walls_street_isnt_in_front_of_it() -> None:
+    assert distance_in_front(WALL, Point(11, 15, "lychee_lane")) is None
+    assert distance_in_front(WALL, Point(9, 2, "maker_space_floor_0")) is None
 
 
 def test_a_passer_by_reacts_to_a_mural_once(works: WorksStore, memory: MemoryStore) -> None:
@@ -97,12 +94,12 @@ def test_a_passer_by_reacts_to_a_mural_once(works: WorksStore, memory: MemorySto
     assert work_memories(memory, "mei") == work_memories(memory, "suki") == []
 
 
-def test_a_resident_inside_the_cafe_doesnt_see_a_mural_whose_front_they_share(
+def test_a_resident_inside_doesnt_see_a_mural_on_their_buildings_front(
     works: WorksStore, memory: MemoryStore
 ) -> None:
     works.paint(mural("m1", "suki"), "<svg/>", b"")
     fake = FakeProvider([REACTION])
-    inside = Point(IN_FRONT.x, IN_FRONT.y, "coffee_shop")
+    inside = Point(9, 2, "maker_space_floor_0")
 
     asyncio.run(walk_by(passers(works, memory, {"viktor": inside}, LLMClient(fake))))
 

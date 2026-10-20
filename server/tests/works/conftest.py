@@ -12,6 +12,7 @@ from simile.schema import CoreValue, Medium, Npc, Tile, Work
 from simile.works import WorksStore
 from simile.works.maker import MuralReply, Reply
 from simile.works.painter import FakeImageModel
+from simile.works.render import canvas
 from simile.world.map import MuralWall
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -25,8 +26,8 @@ def npc(name: str) -> Npc:
 VIKTOR = npc("viktor")
 SUKI = npc("suki")
 MEI = npc("mei")
-WALL = MuralWall("wall_1", 10, 5, 3, "south", 0.5, 1.5, Tile(x=11, y=7))
-OTHER_WALL = MuralWall("wall_2", 20, 5, 2, "east", 0.0, 1.0, Tile(x=22, y=6))
+WALL = MuralWall("wall_1", 10, 15, 3, "south", 0.5, 1.5, Tile(x=11, y=15), "high_street")
+OTHER_WALL = MuralWall("wall_2", 20, 15, 2, "south", 0.0, 1.0, Tile(x=21, y=15), "high_street")
 FIXTURE_WORKS = [
     Work.model_validate(work) for work in json.loads((FIXTURES / "works.json").read_text())
 ]
@@ -102,7 +103,7 @@ def mural_reply(**fields: object) -> str:
             "title": " Sunrise Over the Square ",
             "description": "A red wall with a yellow sun in the middle.",
             "statement": "Morning belongs to everyone.",
-            "svg": svg(),
+            "svg": svg(*canvas(WALL)),
             "inspired_by": [1],
             "tags": ["Mornings", "the square"],
             "sentiment": 7.0,

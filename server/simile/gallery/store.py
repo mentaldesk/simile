@@ -1,6 +1,6 @@
 import sqlite3
 import threading
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
@@ -78,6 +78,14 @@ class GalleryStore:
                 (*frame, work_id, when.timestamp()),
             )
         return frame
+
+    def move(self, frames: Mapping[FrameKey, FrameKey]) -> None:
+        """Hang what's in each old frame in its new one, as when a frame's map is renamed."""
+        with self._lock, self._db:
+            self._db.executemany(
+                "UPDATE OR REPLACE hung SET map = ?, frame = ? WHERE map = ? AND frame = ?",
+                [(*new, *old) for old, new in frames.items()],
+            )
 
     def hanging(self) -> dict[FrameKey, str]:
         """The work id of the painting in each frame that has one."""

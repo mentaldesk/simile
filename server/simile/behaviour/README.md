@@ -194,11 +194,11 @@ sets F3's snapshot to the NPCs' real positions.
   (on a bench over Lotus Lake), at the gallery, reading at a terminal, at the coffee shop and at
   home, fastest in the park. So residents aren't always busy, and their lingering looks chosen.
 - **Exercise** rises through the day, faster with Discipline and Adventure, and a walk meets
-  it. A walk goes round one of the `loops` on the village map, around Lotus Lake or through the
-  village, lap after lap from the tile nearest them, for 15 to 40 minutes or until it stops paying.
-  `loops_on` has the walks on other maps by map id, under the same names: on the side-view maps,
-  `lotus_lake` goes through the park on Lychee Lane and up the lookout's ladder, and `village` along
-  the High Street. Only the walks on the world's maps are options. A wander meets a little.
+  it. A walk goes round one of the `loops`, by map id: `lotus_lake` through the park on Lychee Lane
+  and up the lookout's ladder, or `village` along the High Street, lap after lap from the tile
+  nearest them, for 15 to 40 minutes or until it stops paying. They keep their names from today's
+  village, so a saved walk still finds its way. Only the walks on the world's maps are options. A
+  wander meets a little.
 - **Wandering** is a stroll from one tile to another near it, for 3 to 10 minutes. On a side-view
   map it's to one of the cells to stand on that they can reach in `wander_radius` (12) steps,
   never partway up stairs or a ladder.
@@ -297,8 +297,8 @@ Every request to talk is declined unless you pass `--talk MINUTES`: then each is
 conversation lasts that long, and the summary adds how many conversations each resident started,
 by sociability, and how many there were a sim hour.
 
-With `--maps DIR` it runs on the maps in that folder instead of the server's, such as the side-view
-village: `uv run simile behaviour simulate --maps ../content/street`.
+With `--maps DIR` it runs on the maps in that folder instead of the server's, such as today's
+village until #315: `uv run simile behaviour simulate --maps ../content/map`.
 
 With `--intentions HOURS`, every that many sim hours each resident who's awake says they'll do
 something at random, to someone at random: half due now, to expire 2 sim hours later, and half due

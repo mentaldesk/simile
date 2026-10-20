@@ -104,7 +104,7 @@ def situation(goal_work: Work | None = None, **changes: object) -> Situation:
         "values": NEUTRAL,
         "needs": needs,
         "hour": 12.0,
-        "position": Point(30, 20),
+        "position": Point(51, 15, "high_street"),
         "home": "house_1",
         "bedtime": 22.5,
         "work": goal_work,

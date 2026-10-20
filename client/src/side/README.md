@@ -1,16 +1,16 @@
 # Side
 
-The village from the side (#306, part 5): part 2's maps ([`content/street/`](../../../content/street/README.md)),
+The village from the side (#306): part 2's maps ([`content/street/`](../../../content/street/README.md)),
 part 3's papercraft scenery ([`content/papercraft/`](../../../content/papercraft/README.md)) and part
-4's paper dolls ([`../dolls/`](../dolls/README.md)), drawn by `SideScene`. Nothing starts it yet: the
-cut-over (#314) makes it the game's world scene. Until then `?side` shows it in development.
+4's paper dolls ([`../dolls/`](../dolls/README.md)), drawn by `SideScene`, the game's world scene.
+The menu starts it (`?play` skips the menu).
 
 ## Looking at it
 
-`make dev` (or `npx vite` in `client/`), then open http://localhost:5173/?side. The server isn't
-needed: the dev harness (`harness.ts`) dispatches a stand-in snapshot on the side-view maps, a clock,
-the murals and paintings from `content/works/`, and moves the residents through every pose by the
-protocol, through `server.dispatch`.
+`make dev` and open http://localhost:5173 with the server, or http://localhost:5173/?harness=side
+without it: the dev harness (`harness.ts`) dispatches a stand-in snapshot on the side-view maps, a
+clock, the murals and paintings from `content/works/`, and moves the residents through every pose by
+the protocol, through `server.dispatch`.
 
 | Query | |
 |---|---|
@@ -22,7 +22,12 @@ protocol, through `server.dispatch`.
 
 Left and right (or A and D) walk. E or up takes a door in front of you; down also leaves a building
 by its front door. E gets on stairs or a ladder, then up and down climb, stopping anywhere; E rides a
-lift all the way. In the harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
+lift all the way. Where a terminal, the counter, a painting or a mural is in reach, E uses that
+instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door. A hint says what E or up
+takes where you stand ("Press E or ↑ to go into The Daily Grind.", `ways.ts`), or with E taken,
+what up takes ("Press ↑ to go into 3 Banyan Row."). The scene reads its keys through `input.ts`'s
+`readControls`, which leaves E to what's in reach. Clicking a mural
+looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
 
 ## How it draws
 
@@ -46,8 +51,9 @@ it, and rises to the top floor or drops to Banyan Row's river.
   lamplit rooms after dark.
 - **Shadows** are made at runtime from each picture's alpha, blurred and offset (`textures.ts`).
 
-Every texture is filtered smoothly, since `main.ts` sets `pixelArt`. Each street loads its pictures
-when the player first goes there and frees the last street's.
+Every texture is filtered smoothly, Phaser's default. A mural painted at another aspect than its
+wall is cropped to cover it, not stretched (`coverCrop`). Each street loads its pictures when the
+player first goes there and frees the last street's.
 
 ## Movement
 
@@ -62,9 +68,12 @@ The Phaser-free halves are tested under vitest.
 - Jumping isn't here. Positions are floats, so an arc through open air, drawn with the rig's
   `jumping` pose, can come later as another mode beside walking and climbing.
 
-## For the cut-over
+## What it provides
 
-`scenes` exports `SideScene` (key `side-world`), which starts the dev harness only under `?side`.
-Starting it from the menu needs no more than `this.scene.start(SIDE_SCENE)`. It registers the
-dialogue UI's world view and the audio's positions, and tells `ui/side-view.ts` which maps are side
-view. It reads the player's start from the snapshot, or the square on the High Street.
+`scenes` exports `SideScene` (key `side-world`), started with `this.scene.start(SIDE_SCENE)`. It
+reads the player's start from the snapshot, or the square on the High Street. It registers the
+dialogue UI's world view, the audio's positions, the `MuralView` that finds the mural under a click,
+and the hint for the way where the player stands, and updates `world/interactables.ts` with the
+player's position every frame. The murals and paintings come from `world/murals.ts`'s and
+`world/paintings.ts`'s stores, the maps from `world/assets.ts` (`content.ts` reads them into a
+`Village`), and the dialogue scene hands the same `maps` to `ui/side-view.ts`.

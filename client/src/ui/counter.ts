@@ -3,23 +3,25 @@ import { mapOf } from '../world/map';
 import { NEWS_KEY } from './tuning';
 import type { WorldView } from './world-view';
 
-/** How many rows behind a counter, and tiles along it, whoever serves at it stands. */
-const BEHIND_ROWS = 3;
-const ALONG_TILES = 4;
+/** How far past the counter's far end whoever serves at it can stand. */
+const PAST_END_TILES = 2;
 const HINT_MS = 2500;
 
-/** The NPC serving at a counter: behind it, nearest the tile the player orders from. */
+/** Whoever's on the counter's row and side of the stand, past the customers' pickup beside it, nearest it. */
 export function servingAt(counter: Interactable, view: WorldView): string | undefined {
   const [stand] = counter.stand;
   if (!stand) return undefined;
+  const { area } = counter;
+  const way = area.x + area.width / 2 < stand.x + 0.5 ? -1 : 1;
+  const farEnd = way < 0 ? area.x : area.x + area.width - 1;
+  const reach = (farEnd - stand.x) * way + PAST_END_TILES;
   let best: [number, string] | undefined;
   for (const id of view.npcIds()) {
     const at = view.positionOf(id);
-    if (!at || mapOf(at) !== counter.map) continue;
-    const behind = stand.y - at.y;
-    if (behind < 0.5 || behind > BEHIND_ROWS || Math.abs(at.x - stand.x) > ALONG_TILES) continue;
-    const distance = Math.hypot(at.x - stand.x, behind);
-    if (!best || distance < best[0]) best = [distance, id];
+    if (!at || mapOf(at) !== counter.map || Math.abs(at.y - stand.y) >= 1) continue;
+    const along = (at.x - stand.x) * way;
+    if (along <= 1 || along > reach) continue;
+    if (!best || along < best[0]) best = [along, id];
   }
   return best?.[1];
 }
@@ -50,9 +52,4 @@ export class CounterPrompt {
     clearTimeout(this.flashing);
     this.flashing = setTimeout(() => (this.flashing = undefined), HINT_MS);
   }
-}
-
-/** The counter the player is standing at, if the interactable they're at is one. */
-export function counterOf(interactable: Interactable | undefined): Interactable | undefined {
-  return interactable?.kind === 'counter' ? interactable : undefined;
 }

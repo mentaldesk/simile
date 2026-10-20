@@ -19,7 +19,6 @@ function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRend
   return [canvas, context];
 }
 
-/** Smoothly filtered, though `main.ts` sets `pixelArt`. */
 export class SideTextures {
   private readonly scene: Phaser.Scene;
   private readonly loading = new Map<string, Promise<string>>();
@@ -234,10 +233,7 @@ export class SideTextures {
   }
 
   private add(key: string, source: HTMLImageElement | HTMLCanvasElement): void {
-    const texture =
-      source instanceof HTMLCanvasElement
-        ? this.scene.textures.addCanvas(key, source)
-        : this.scene.textures.addImage(key, source);
-    texture?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+    if (source instanceof HTMLCanvasElement) this.scene.textures.addCanvas(key, source);
+    else this.scene.textures.addImage(key, source);
   }
 }

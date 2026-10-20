@@ -10,7 +10,7 @@ from simile.behaviour.simulate import ranks, report, simulate, spearman
 from simile.cli import create_cli
 from simile.npc import load_npcs
 from simile.schema import Craft, Medium
-from simile.world.map import load_map
+from simile.world.map import load_maps, with_every_location
 
 runner = CliRunner()
 
@@ -120,7 +120,7 @@ def test_reports_the_works_residents_with_a_craft_make() -> None:
     summary = report(observer, 12, start, 0, seconds)
 
     places = {place for made in observer.works.values() for place in made}
-    walls = {wall.id for wall in load_map().murals}
+    walls = {wall.id for wall in with_every_location(load_maps()).murals}
     assert sum(sum(made.values()) for made in observer.works.values()) >= 3
     assert places & walls and places - walls
     works = summary.split("**Works.**")[1].split("\n\n**")[0]

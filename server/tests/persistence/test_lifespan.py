@@ -107,13 +107,13 @@ async def test_restarting_keeps_the_clock_positions_goals_relationships_and_memo
 @pytest.mark.anyio
 async def test_a_resident_inside_at_shutdown_is_inside_after_restarting(database: Path) -> None:
     async def go_in(app: Starlette) -> None:
-        movement_of(app).place("kofi", MapTile(map="coffee_shop", x=12, y=9))
+        movement_of(app).place("kofi", MapTile(map="coffee_shop_floor_1", x=11, y=2))
 
     await run_village(timedelta(minutes=10), after=go_in)
-    assert saved(database).npcs["kofi"].map == "coffee_shop"
+    assert saved(database).npcs["kofi"].map == "coffee_shop_floor_1"
 
     async def still_inside(app: Starlette) -> None:
-        assert movement_of(app).position("kofi") == Point(12, 9, "coffee_shop")
+        assert movement_of(app).position("kofi") == Point(11, 2, "coffee_shop_floor_1")
 
     await run_village(timedelta(minutes=1), before=still_inside)
 

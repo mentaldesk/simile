@@ -128,7 +128,7 @@ def test_wants_never_interrupt_only_bodily_needs_do() -> None:
 
 def test_a_held_resident_stays_put_while_their_spot_meets_the_need() -> None:
     village = Village([ANA])
-    spot = MapTile(map="coffee_shop", x=5, y=4)
+    spot = MapTile(map="coffee_shop_floor_0", x=3, y=2)
     village.behaviour.hold("ana", spot, CAFE)
     village.run(minutes=10)
 

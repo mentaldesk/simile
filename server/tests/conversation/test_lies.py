@@ -116,7 +116,7 @@ class Scenes:
         store.add(*relationships)
         movement = Movement(load_maps(), self.world.bus)
         for npc in (ana, ben):
-            movement.place(npc.id, MapTile(map="coffee_shop", x=13, y=8))
+            movement.place(npc.id, MapTile(map="coffee_shop_floor_0", x=12, y=2))
         behaviour = Behaviour(self.world.clock, self.world.bus, movement, [ana, ben], store)
         behaviour.start()
         if money is not None:

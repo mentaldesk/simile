@@ -40,8 +40,7 @@ def test_puts_every_npc_at_home(app: Starlette) -> None:
     with TestClient(app):
         movement = movement_of(app)
         for npc in NPCS:
-            x, y = movement.position(npc.id)
-            assert inside(movement.town.location(npc.home), (round(x), round(y)))
+            assert inside(movement.town.location(npc.home), movement.position(npc.id))
 
 
 def test_decides_on_the_tick_loop(app: Starlette) -> None:
@@ -64,22 +63,22 @@ def test_clients_get_the_village_in_their_snapshot(app: Starlette) -> None:
     npcs = [entity for entity in snapshot.entities if entity.kind is EntityKind.NPC]
     assert [(e.id, e.name) for e in npcs] == [(npc.id, npc.name) for npc in NPCS]
     assert all((e.position.x, e.position.y) == positions[e.id] for e in npcs)
-    assert snapshot.map_id == "village"
+    assert snapshot.map_id == "high_street"
     assert snapshot.conversations == []
     assert snapshot.time >= START
 
 
 def test_the_snapshot_puts_a_resident_inside_on_the_interiors_map(app: Starlette) -> None:
     with TestClient(app):
-        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=13, y=9))
+        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop_floor_0", x=13, y=2))
         entity = next(e for e in hub_of(app).snapshot().entities if e.id == NPCS[0].id)
 
-    assert entity.position == Position(x=13, y=9, map="coffee_shop")
+    assert entity.position == Position(x=13, y=2, map="coffee_shop_floor_0")
 
 
 def test_the_snapshot_carries_each_residents_pose_and_facing(app: Starlette) -> None:
     with TestClient(app):
-        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop", x=11, y=3))
+        movement_of(app).place(NPCS[0].id, MapTile(map="coffee_shop_floor_1", x=5, y=2))
         entities = {e.id: e for e in hub_of(app).snapshot().entities}
 
     assert (entities[NPCS[0].id].pose, entities[NPCS[0].id].facing) == (Pose.SITTING, Facing.EAST)
@@ -90,16 +89,18 @@ def test_the_snapshot_carries_each_residents_pose_and_facing(app: Starlette) -> 
 def test_the_player_starts_in_the_square_then_is_where_they_moved(app: Starlette) -> None:
     with TestClient(app):
         hub = hub_of(app)
-        square = movement_of(app).town.location("square").entry
+        square = movement_of(app).town.location("square")
 
-        def player() -> tuple[float, float]:
+        def player() -> tuple[float, float, str]:
             entity = next(e for e in hub.snapshot().entities if e.id == PLAYER_ID)
             assert entity.kind is EntityKind.PLAYER
-            return entity.position.x, entity.position.y
+            return entity.position.x, entity.position.y, entity.position.map
 
-        assert player() == (square.x, square.y)
-        hub.receive('{"type": "player_move", "position": {"x": 14, "y": 12.5}}')
-        assert player() == (14, 12.5)
+        assert player() == (square.entry.x, square.entry.y, square.map)
+        hub.receive(
+            '{"type": "player_move", "position": {"x": 14.5, "y": 15, "map": "high_street"}}'
+        )
+        assert player() == (14.5, 15, "high_street")
 
 
 def test_conversations_in_the_snapshot_come_from_the_hook(app: Starlette) -> None:

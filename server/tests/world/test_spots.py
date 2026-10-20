@@ -1,21 +1,25 @@
 import math
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
 
-from simile.schema import VILLAGE_MAP, Facing, MapTile, Pose, Tile
+from simile.schema import Facing, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.world import Movement, Outcome, Walk
-from simile.world.map import Spot, SpotKind, TownMap, load_maps
+from simile.world.map import Spot, SpotKind, TownMap, load_maps, with_every_location
 from simile.world.movement import inside
 from simile.world.paths import Spot as PathSpot
 from simile.world.spots import Purpose, choose, purpose_of, taste
 
 MAPS = load_maps()
+TOWN = with_every_location(MAPS)
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
 GRID = {Facing.EAST, Facing.SOUTH, Facing.WEST, Facing.NORTH}
-TABLE = (12, 7)
-"""A café table, with a seat either side."""
+UPSTAIRS = "coffee_shop_floor_1"
+TABLE = (1, 2)
+"""The west seat at a café table upstairs, facing the east one across it."""
+SQUARE = "high_street"
 
 
 class Village:
@@ -52,6 +56,10 @@ def spots(map_id: str, kind: SpotKind | None = None) -> list[Spot]:
     return [spot for spot in MAPS[map_id].spots if kind is None or spot.kind is kind]
 
 
+def everywhere(kind: SpotKind | None = None) -> list[Spot]:
+    return [spot for map_id in MAPS for spot in spots(map_id, kind)]
+
+
 def test_every_spot_is_on_a_walkable_tile_of_its_own_facing_a_wall_or_a_thing() -> None:
     for town in MAPS.values():
         tiles = [(spot.x, spot.y) for spot in town.spots]
@@ -64,54 +72,62 @@ def test_every_spot_is_on_a_walkable_tile_of_its_own_facing_a_wall_or_a_thing() 
 
 
 def test_every_spot_but_the_murals_is_in_a_place() -> None:
-    walls = {(wall.stand.x, wall.stand.y) for wall in MAPS[VILLAGE_MAP].murals}
-    for town in MAPS.values():
-        for spot in town.spots:
-            if town.id == VILLAGE_MAP and (spot.x, spot.y) in walls:
-                assert spot.kind is SpotKind.VIEWING
-                continue
-            assert any(inside(location, spot_tile(spot)) for location in town.locations), spot
+    walls = {(wall.map, wall.stand.x, wall.stand.y) for wall in TOWN.murals}
+    for spot in everywhere():
+        if (spot.map, spot.x, spot.y) in walls:
+            assert spot.kind is SpotKind.VIEWING
+            continue
+        assert any(inside(location, spot_tile(spot)) for location in TOWN.locations), spot
 
 
 @pytest.mark.parametrize(
-    ("map_id", "location", "kinds"),
+    ("location", "kinds"),
     [
-        ("coffee_shop", "coffee_shop", {SpotKind.SEAT, SpotKind.BAR}),
-        ("noodle_bar", "noodle_bar", {SpotKind.SEAT}),
-        ("maker_space", "maker_space", {SpotKind.DESK}),
-        ("gallery", "gallery", {SpotKind.VIEWING, SpotKind.SEAT}),
-        (VILLAGE_MAP, "park", {SpotKind.SEAT}),
-        (VILLAGE_MAP, "square", {SpotKind.STANDING, SpotKind.SEAT, SpotKind.TERMINAL}),
-        (VILLAGE_MAP, "terminal_2", {SpotKind.TERMINAL}),
+        ("coffee_shop", {SpotKind.SEAT, SpotKind.BAR}),
+        ("noodle_bar", {SpotKind.SEAT}),
+        ("maker_space", {SpotKind.DESK}),
+        ("gallery", {SpotKind.VIEWING, SpotKind.SEAT}),
+        ("park", {SpotKind.SEAT}),
+        ("square", {SpotKind.STANDING, SpotKind.SEAT, SpotKind.TERMINAL}),
+        ("terminal_2", {SpotKind.TERMINAL}),
     ],
 )
-def test_each_place_has_the_spots_its_furniture_offers(
-    map_id: str, location: str, kinds: set[SpotKind]
-) -> None:
-    place = MAPS[map_id].location(location)
-    assert {spot.kind for spot in spots(map_id) if inside(place, spot_tile(spot))} == kinds
+def test_each_place_has_the_spots_its_furniture_offers(location: str, kinds: set[SpotKind]) -> None:
+    place = TOWN.location(location)
+    assert {spot.kind for spot in everywhere() if inside(place, spot_tile(spot))} == kinds
 
 
-def test_seats_face_their_table_and_sit_on_its_chairs() -> None:
+def test_seats_face_each_other_across_their_table() -> None:
     x, y = TABLE
-    west, east = (MAPS["coffee_shop"].spot_at(x + dx, y) for dx in (-1, 1))
+    west, east = (MAPS[UPSTAIRS].spot_at(x + dx, y) for dx in (0, 1))
     assert west and east
     assert (west.kind, west.facing, west.pose) == (SpotKind.SEAT, Facing.EAST, Pose.SITTING)
     assert (east.kind, east.facing) == (SpotKind.SEAT, Facing.WEST)
-    assert x - 1 < west.seat[0] < x < east.seat[0] < x + 1
+    assert west.seat == (x, y) and east.seat == (x + 1, y)
 
 
 def test_the_paintings_are_viewed_from_their_stand_tiles() -> None:
-    gallery = MAPS["gallery"]
-    viewing = {(spot.x, spot.y) for spot in spots("gallery", SpotKind.VIEWING)}
-    stands = {(tile.x, tile.y) for item in gallery.interactables for tile in item.stand}
+    floors = [town for town in MAPS.values() if town.building == "gallery"]
+    viewing = {
+        (spot.map, spot.x, spot.y)
+        for town in floors
+        for spot in town.spots
+        if spot.kind is SpotKind.VIEWING
+    }
+    stands = {
+        (item.map, tile.x, tile.y)
+        for town in floors
+        for item in town.interactables
+        for tile in item.stand
+    }
     assert viewing == stands
-    assert {spot.pose for spot in spots("gallery", SpotKind.VIEWING)} == {Pose.LOOKING}
+    assert {spot.pose for spot in everywhere(SpotKind.VIEWING)} == {Pose.LOOKING}
 
 
 def test_only_the_stools_raise_a_sitter() -> None:
-    raised = [spot for town in MAPS.values() for spot in town.spots if spot.dz]
-    assert raised and all(spot.map == "noodle_bar" and spot.y == 5 for spot in raised)
+    raised = [spot for spot in everywhere() if spot.dz]
+    assert raised and all(spot.map == "noodle_bar_floor_0" for spot in raised)
+    assert {(spot.kind, spot.facing) for spot in raised} == {(SpotKind.SEAT, Facing.NORTH)}
 
 
 @pytest.mark.parametrize(
@@ -145,32 +161,34 @@ def test_takes_a_free_spot_that_suits_what_they_are_there_for(
 
 def test_a_full_place_falls_back_to_standing_nearby() -> None:
     village = Village()
-    [terminal] = spots(VILLAGE_MAP, SpotKind.TERMINAL)[:1]
-    village.movement.place("ada", Tile(x=terminal.x, y=terminal.y))
+    [terminal] = [spot for spot in spots(SQUARE, SpotKind.TERMINAL)]
+    village.movement.place("ada", MapTile(map=SQUARE, x=terminal.x, y=terminal.y))
 
     walk = village.go("mei", Purpose.READ, "terminal_1")
 
     assert walk.outcome is Outcome.ARRIVED
     assert village.spot("mei") is None
-    assert inside(village.movement.town.location("terminal_1"), village.movement.position("mei"))
+    here = village.movement.position("mei")
+    assert inside(TOWN.location("square"), here) and abs(here.x - terminal.x) < 5
     assert village.moves[-1].pose is Pose.STANDING
 
 
 def test_standing_nearby_keeps_off_other_spots() -> None:
     village = Village()
+    noodles = TOWN.location("noodle_bar")
+    village.movement.place("ada", MapTile(map=noodles.map, **noodles.entry.model_dump()))
 
     village.go("mei", None, "noodle_bar")
 
-    entry = MAPS["noodle_bar"].location("noodle_bar").entry
-    assert MAPS["noodle_bar"].spot_at(entry.x, entry.y) is not None
     assert village.spot("mei") is None
+    assert inside(noodles, village.movement.position("mei"))
     assert village.movement.posture("mei")[0] is Pose.STANDING
 
 
 def test_friends_sit_near_each_other() -> None:
     village = Village()
     x, y = TABLE
-    village.movement.place("ada", MapTile(map="coffee_shop", x=x - 1, y=y))
+    village.movement.place("ada", MapTile(map=UPSTAIRS, x=x, y=y))
     village.movement.affinity = lambda a, b: 1.0 if {a, b} == {"ada", "mei"} else 0.0
 
     village.go("mei", Purpose.EAT, "coffee_shop")
@@ -181,19 +199,19 @@ def test_friends_sit_near_each_other() -> None:
 def test_people_sit_away_from_someone_they_dislike() -> None:
     village = Village()
     x, y = TABLE
-    village.movement.place("ada", MapTile(map="coffee_shop", x=x - 1, y=y))
+    village.movement.place("ada", MapTile(map=UPSTAIRS, x=x, y=y))
     village.movement.affinity = lambda a, b: -1.0
 
     village.go("mei", Purpose.EAT, "coffee_shop")
 
     here = village.movement.position("mei")
-    assert math.dist(here, (x - 1, y)) >= 3
+    assert here.map == UPSTAIRS and abs(here.x - x) >= 3
 
 
 def test_someone_already_on_a_suitable_spot_stays_there() -> None:
     village = Village()
     x, y = TABLE
-    village.movement.place("mei", MapTile(map="coffee_shop", x=x + 1, y=y))
+    village.movement.place("mei", MapTile(map=UPSTAIRS, x=x + 1, y=y))
     village.movement.intend("mei", Purpose.DRINK)
     village.moves.clear()
 
@@ -205,22 +223,23 @@ def test_someone_already_on_a_suitable_spot_stays_there() -> None:
 
 def test_walking_faces_each_step_and_stopping_off_a_spot_keeps_the_last_facing() -> None:
     village = Village()
-    village.movement.place("mei", Tile(x=24, y=20))
+    village.movement.place("mei", MapTile(map=SQUARE, x=40, y=15))
     village.moves.clear()
 
-    village.finish(village.movement.walk_to("mei", Tile(x=22, y=20)))
+    village.finish(village.movement.walk_to("mei", MapTile(map=SQUARE, x=38, y=15)))
 
     assert [(m.x, m.pose, m.facing) for m in village.moves] == [
-        (23, Pose.WALKING, Facing.WEST),
-        (22, Pose.STANDING, Facing.WEST),
+        (39, Pose.WALKING, Facing.WEST),
+        (38, Pose.STANDING, Facing.WEST),
     ]
 
 
 def test_stopping_mid_walk_on_a_spot_takes_its_pose() -> None:
     village = Village()
-    [bench, _] = [s for s in spots(VILLAGE_MAP, SpotKind.SEAT) if s.y == 19][:2]
-    village.movement.place("mei", Tile(x=bench.x - 1, y=bench.y))
-    walk = village.movement.walk_to("mei", Tile(x=bench.x + 3, y=bench.y))
+    bench = MAPS[SQUARE].spot_at(52, 15)
+    assert bench is not None and bench.kind is SpotKind.SEAT
+    village.movement.place("mei", MapTile(map=SQUARE, x=bench.x - 1, y=bench.y))
+    walk = village.movement.walk_to("mei", MapTile(map=SQUARE, x=bench.x + 3, y=bench.y))
 
     def stop_on_the_bench(moved: EntityMoved) -> None:
         if (moved.x, moved.y) == (bench.x, bench.y) and not walk.done:
@@ -234,8 +253,9 @@ def test_stopping_mid_walk_on_a_spot_takes_its_pose() -> None:
 
 def test_a_muralist_works_on_the_spot_others_look_from() -> None:
     village = Village()
-    wall = MAPS[VILLAGE_MAP].murals[0]
-    stand = MapTile(map=VILLAGE_MAP, x=wall.stand.x, y=wall.stand.y)
+    wall = TOWN.murals[0]
+    assert wall.map is not None
+    stand = MapTile(map=wall.map, x=wall.stand.x, y=wall.stand.y)
 
     for entity, purpose, pose in (
         ("kofi", Purpose.MAKE, Pose.WORKING),
@@ -252,7 +272,7 @@ def test_placing_someone_on_a_spot_seats_them() -> None:
     village = Village()
     x, y = TABLE
 
-    village.movement.place("mei", MapTile(map="coffee_shop", x=x - 1, y=y))
+    village.movement.place("mei", MapTile(map=UPSTAIRS, x=x, y=y))
 
     assert (village.moves[-1].pose, village.moves[-1].facing) == (Pose.SITTING, Facing.EAST)
 
@@ -283,7 +303,7 @@ def test_what_each_goal_is_there_for(activity: str, target: str, purpose: Purpos
 
 
 def test_each_resident_has_their_own_favourites() -> None:
-    seats = spots("coffee_shop", SpotKind.SEAT)
+    seats = spots(UPSTAIRS, SpotKind.SEAT)
     kinds = {SpotKind.SEAT: 0.0}
 
     favourites = {
@@ -294,3 +314,16 @@ def test_each_resident_has_their_own_favourites() -> None:
     assert len(set(favourites.values())) > 1
     assert all(0 <= taste(entity, seats[0]) <= 1 for entity in favourites)
     assert favourites["ada"] == choose("ada", seats, kinds, {}, None, lambda a, b: 0.0)
+
+
+def test_regulars_keep_their_usual_seats_from_todays_map_ids() -> None:
+    seats = spots(UPSTAIRS, SpotKind.SEAT)
+    today = [replace(seat, map="coffee_shop") for seat in seats]
+    kinds = {SpotKind.SEAT: 0.0}
+
+    for entity in ("ada", "mei", "kofi", "ingrid", "tobias"):
+        here = choose(entity, seats, kinds, {}, None, lambda a, b: 0.0, place="coffee_shop")
+        before = choose(entity, today, kinds, {}, None, lambda a, b: 0.0)
+        assert here is not None and before is not None
+        assert here.id == before.id
+        assert taste(entity, here, "coffee_shop") == taste(entity, before)

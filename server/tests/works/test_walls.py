@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import timedelta
 
 import pytest
@@ -9,7 +10,7 @@ from simile.schema import Npc, Relationship
 from simile.sim import Clock
 from simile.social import meet
 from simile.works import WorksStore
-from simile.works.walls import Walls, boldness, readiness
+from simile.works.walls import Walls, boldness, readiness, stand
 from simile.world.movement import Point
 
 from .conftest import MEI, NOW, OTHER_WALL, SUKI, VIKTOR, WALL, mural
@@ -84,21 +85,28 @@ def test_only_the_boldest_ever_paint_over_a_friends_mural() -> None:
 def test_a_blank_wall_comes_first_and_the_nearest_of_them(
     works: WorksStore, memory: MemoryStore
 ) -> None:
-    near_other = {"suki": Point(23, 6)}
+    near_other = {"suki": Point(23, 15, "high_street")}
 
-    assert walls(works, memory, near_other).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
-    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    assert walls(works, memory, near_other).pick(SUKI) == MuralSpot("wall_2", stand(OTHER_WALL))
+    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_1", stand(WALL))
 
     works.paint(mural("old", "viktor", "wall_1", hours_ago=500), "<svg/>", b"")
-    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", stand(OTHER_WALL))
 
 
-def test_only_where_they_stand_on_the_village_picks_the_nearest_wall(
+def test_only_where_they_stand_on_the_walls_street_picks_the_nearest_wall(
     works: WorksStore, memory: MemoryStore
 ) -> None:
-    inside = {"suki": Point(23, 6, "coffee_shop")}
+    inside = {"suki": Point(18, 2, "coffee_shop_floor_0")}
+    elsewhere = {"suki": Point(21, 15, "lychee_lane")}
 
-    assert walls(works, memory, inside).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    assert walls(works, memory, inside).pick(SUKI) == MuralSpot("wall_1", stand(WALL))
+    assert walls(works, memory, elsewhere).pick(SUKI) == MuralSpot("wall_1", stand(WALL))
+
+
+def test_a_wall_on_no_map_has_nowhere_to_stand() -> None:
+    with pytest.raises(ValueError, match="wall_1 isn't on a map"):
+        stand(replace(WALL, map=None))
 
 
 def test_nobody_picks_a_wall_someone_else_is_painting(
@@ -108,7 +116,9 @@ def test_nobody_picks_a_wall_someone_else_is_painting(
     theirs = {"mei": "wall_1", "suki": "wall_2"}
 
     assert walls(works, memory, painting=others).pick(SUKI) is None
-    assert walls(works, memory, painting=theirs).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert walls(works, memory, painting=theirs).pick(SUKI) == MuralSpot(
+        "wall_2", stand(OTHER_WALL)
+    )
 
 
 def test_the_wall_they_said_theyd_paint_comes_first_while_its_free_and_ready(
@@ -119,14 +129,14 @@ def test_the_wall_they_said_theyd_paint_comes_first_while_its_free_and_ready(
         picker.promised = {"suki": "wall_2"}.get
         return picker
 
-    assert said().pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
-    assert said().pick(MEI) == MuralSpot("wall_1", WALL.stand)
-    assert said({"mei": "wall_2"}).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    assert said().pick(SUKI) == MuralSpot("wall_2", stand(OTHER_WALL))
+    assert said().pick(MEI) == MuralSpot("wall_1", stand(WALL))
+    assert said({"mei": "wall_2"}).pick(SUKI) == MuralSpot("wall_1", stand(WALL))
 
     works.paint(mural("fresh", "mei", "wall_2", hours_ago=1), "<svg/>", b"")
-    assert said().pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    assert said().pick(SUKI) == MuralSpot("wall_1", stand(WALL))
     works.paint(mural("faded", "viktor", "wall_2", hours_ago=40), "<svg/>", b"")
-    assert said().pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert said().pick(SUKI) == MuralSpot("wall_2", stand(OTHER_WALL))
 
 
 def test_picks_the_wall_they_are_readiest_to_paint_over(
@@ -135,8 +145,8 @@ def test_picks_the_wall_they_are_readiest_to_paint_over(
     works.paint(mural("fresh", "viktor", "wall_1", hours_ago=1), "<svg/>", b"")
     works.paint(mural("faded", "viktor", "wall_2", hours_ago=2.5), "<svg/>", b"")
 
-    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", OTHER_WALL.stand)
-    assert walls(works, memory).pick(VIKTOR) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_2", stand(OTHER_WALL))
+    assert walls(works, memory).pick(VIKTOR) == MuralSpot("wall_2", stand(OTHER_WALL))
     assert walls(works, memory).pick(MEI) is None
 
 
@@ -156,11 +166,11 @@ def test_a_timid_painter_never_paints_over_a_friend(works: WorksStore, memory: M
     works.paint(mural("fresh", "suki", "wall_2", hours_ago=1), "<svg/>", b"")
 
     assert walls(works, memory).pick(MEI) is None
-    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_1", WALL.stand)
+    assert walls(works, memory).pick(SUKI) == MuralSpot("wall_1", stand(WALL))
 
     later = walls(works, memory)
     later.clock.now = NOW + timedelta(days=10)
-    assert later.pick(MEI) == MuralSpot("wall_2", OTHER_WALL.stand)
+    assert later.pick(MEI) == MuralSpot("wall_2", stand(OTHER_WALL))
 
 
 def test_the_murals_message_has_every_wall_and_what_is_on_it(
@@ -176,8 +186,9 @@ def test_the_murals_message_has_every_wall_and_what_is_on_it(
         walls=[
             Wall(
                 id="wall_1",
+                map="high_street",
                 x=10,
-                y=5,
+                y=15,
                 width=3,
                 face="south",
                 bottom=0.5,
@@ -190,6 +201,16 @@ def test_the_murals_message_has_every_wall_and_what_is_on_it(
                     image="/api/works/second.png",
                 ),
             ),
-            Wall(id="wall_2", x=20, y=5, width=2, face="east", bottom=0, top=1, mural=None),
+            Wall(
+                id="wall_2",
+                map="high_street",
+                x=20,
+                y=15,
+                width=2,
+                face="south",
+                bottom=0,
+                top=1,
+                mural=None,
+            ),
         ]
     )

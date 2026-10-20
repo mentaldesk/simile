@@ -8,12 +8,15 @@ import { sideView } from './side-view';
 import { CHAT_RANGE_TILES } from './tuning';
 import { PLAYER_ID, trackedWorld } from './world-view';
 
+const MAP = 'high_street';
+const onStreet = (x: number): Position => ({ x, y: 15, map: MAP });
+
 const entities: Entity[] = [
-  { id: PLAYER_ID, kind: 'player', name: 'Player', position: { x: 14, y: 13 } },
-  { id: 'mei', kind: 'npc', name: 'Mei Lin', position: { x: 12, y: 13 } },
-  { id: 'viktor', kind: 'npc', name: 'Viktor Hale', position: { x: 12, y: 15 } },
-  { id: 'suki', kind: 'npc', name: 'Suki Tan', position: { x: 19, y: 12 } },
-  { id: 'tom', kind: 'npc', name: 'Tom Reed', position: { x: 25, y: 9 } },
+  { id: PLAYER_ID, kind: 'player', name: 'Player', position: onStreet(51) },
+  { id: 'mei', kind: 'npc', name: 'Mei Lin', position: onStreet(53) },
+  { id: 'viktor', kind: 'npc', name: 'Viktor Hale', position: onStreet(49) },
+  { id: 'suki', kind: 'npc', name: 'Suki Tan', position: onStreet(56) },
+  { id: 'tom', kind: 'npc', name: 'Tom Reed', position: onStreet(62) },
 ];
 
 const conversation = [
@@ -65,7 +68,7 @@ function movePlayer(position: Position): void {
 
 function step(dx: number, dy: number): void {
   const at = trackedWorld.positionOf(PLAYER_ID);
-  if (at) movePlayer({ x: at.x + dx, y: at.y + dy });
+  if (at) movePlayer({ ...at, x: at.x + dx, y: at.y + dy });
 }
 
 class HarnessScene extends Phaser.Scene {
@@ -94,7 +97,7 @@ class HarnessScene extends Phaser.Scene {
     });
     this.input.on('pointerdown', ({ x, y }: Phaser.Input.Pointer) => {
       const tile = trackedWorld.tileAt({ x, y });
-      if (tile && !npcAt({ x, y }, trackedWorld)) movePlayer(tile);
+      if (tile && !npcAt({ x, y }, trackedWorld)) movePlayer({ ...tile, map: MAP });
     });
   }
 
@@ -145,7 +148,7 @@ export function startHarness(scene: Phaser.Scene, root: HTMLElement): void {
     JSON.stringify({
       type: 'snapshot',
       time: new Date().toISOString(),
-      map_id: 'village',
+      map_id: MAP,
       entities,
       conversations: [],
     }),

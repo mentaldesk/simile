@@ -78,7 +78,7 @@ async def test_reflections_are_valid_and_store_nothing() -> None:
 
 
 async def test_short_playthroughs_chat_and_overhear() -> None:
-    results = [await playthrough(minutes=20, warmup=5, seed=seed) for seed in range(3)]
+    results = [await playthrough(minutes=20, warmup=15, seed=seed) for seed in range(3)]
 
     assert all(r.minutes == 20 and r.player_conversations for r in results)
     assert all(r.calls["player-reply"] for r in results)

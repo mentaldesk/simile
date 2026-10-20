@@ -5,7 +5,7 @@ import pytest
 from simile.cafe.config import DEFAULT_CONFIG, CafeConfig
 from simile.cafe.lines import Lines
 from simile.cafe.menu import load_menu
-from simile.world.map import load_maps
+from simile.world.map import SpotKind, load_maps
 
 from .conftest import make_npc
 
@@ -72,16 +72,21 @@ def test_every_stock_line_fills_in() -> None:
             assert "{" not in lines.pick(kind, rng, **names), kind
 
 
-def test_the_cafe_spots_are_walkable_floor_inside() -> None:
-    cafe = load_maps()["coffee_shop"]
+def test_the_cafe_spots_are_floor_to_stand_on_inside() -> None:
+    maps = load_maps()
     config = DEFAULT_CONFIG
-    spots = [config.entrance, config.machine, config.hand_over, config.pickup, config.upstairs]
+    layout = config.layouts["coffee_shop_floor_0"]
+    ground = maps["coffee_shop_floor_0"]
+    spots = [layout.entrance, layout.machine, layout.hand_over, layout.pickup, layout.upstairs]
+    floors = {ground.id, *(floor.map for floor in ground.location(config.home).floors)}
 
-    assert all(cafe.walkable(tile.x, tile.y) for tile in [*spots, *config.seats])
-    for seat in config.seats:
-        assert not cafe.walkable(seat.x - 1, seat.y) or not cafe.walkable(seat.x + 1, seat.y)
-    staff = cafe.location(config.staff).area
-    for tile in (config.machine, config.hand_over, config.upstairs):
+    assert {tile.map for tile in [*spots, *layout.seats]} <= floors
+    assert all(maps[tile.map].standing(tile.x, tile.y) for tile in [*spots, *layout.seats])
+    for seat in layout.seats:
+        spot = maps[seat.map].spot_at(seat.x, seat.y)
+        assert spot is not None and spot.kind is SpotKind.SEAT
+    staff = ground.location(config.staff).area
+    for tile in (layout.machine, layout.hand_over):
         assert (
             staff.x <= tile.x < staff.x + staff.width and staff.y <= tile.y < staff.y + staff.height
         )

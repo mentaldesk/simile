@@ -9,7 +9,7 @@ import pytest
 from simile.schema import DoorKind, Location, LocationKind, MapArea, Tile, TileArea
 from simile.world.map import (
     INTERIORS,
-    MAP_DIR,
+    ISO_DIR,
     MAP_ID,
     MapKind,
     TownMap,
@@ -340,7 +340,7 @@ def todays_load_maps(directory: Path) -> dict[str, TownMap]:
             height,
             blocked,
             locations=tuple(_location(o, size, map_id) for o in objects(LOCATIONS_LAYER)),
-            murals=tuple(_mural(o, size) for o in objects(MURALS_LAYER)),
+            murals=tuple(_mural(o, size, map_id) for o in objects(MURALS_LAYER)),
             doors=tuple(_door(o, size, map_id) for o in objects(DOORS_LAYER)),
             interactables=tuple(
                 _interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)
@@ -353,7 +353,7 @@ def todays_load_maps(directory: Path) -> dict[str, TownMap]:
 
 
 def test_todays_maps_load_exactly_as_before() -> None:
-    maps, before = load_maps(), todays_load_maps(MAP_DIR)
+    maps, before = load_maps(ISO_DIR), todays_load_maps(ISO_DIR)
 
     assert list(maps) == list(before)
     for map_id, town in maps.items():
@@ -366,7 +366,7 @@ def test_todays_maps_load_exactly_as_before() -> None:
 
 
 def test_every_location_on_todays_maps_is_the_village_as_before() -> None:
-    maps = load_maps()
+    maps = load_maps(ISO_DIR)
     village_map = maps[MAP_ID]
     found: dict[str, Location] = {}
     for town in (village_map, *maps.values()):

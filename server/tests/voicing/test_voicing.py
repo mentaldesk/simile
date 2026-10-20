@@ -4,15 +4,17 @@ import math
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from functools import partial
 
 import pytest
 
 from simile.conversation import LineDrafted
 from simile.protocol import SAMPLE_RATE, AudioChunk
-from simile.schema import PLAYER_ID, VILLAGE_MAP, Conversation, Id, Line, MapTile, Voice
+from simile.schema import PLAYER_ID, Conversation, Id, Line, MapTile, Voice
 from simile.sim import ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.voice import FakeSynthesiser, VoiceService
 from simile.voicing import DEFAULT_CONFIG, VoicingConfig
+from simile.voicing.distance import between
 from simile.voicing.voicing import Voicing
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -159,17 +161,16 @@ def test_the_player_inside_the_coffee_shop_doesnt_hear_a_conversation_on_the_squ
     synthesiser: FakeSynthesiser,
 ) -> None:
     movement = Movement(load_maps(), EventBus())
-    movement.place("mei", MapTile(map=VILLAGE_MAP, x=20, y=13))
-    movement.place("viktor", MapTile(map=VILLAGE_MAP, x=21, y=13))
-    movement.track(PLAYER_ID, Point(17, 12, "coffee_shop"))
-    assert math.dist((17, 12), (20, 13)) < DEFAULT_CONFIG.earshot
+    movement.place("mei", MapTile(map="high_street", x=45, y=15))
+    movement.place("viktor", MapTile(map="high_street", x=46, y=15))
+    movement.track(PLAYER_ID, Point(17, 2, "coffee_shop_floor_0"))
 
     async def scenario() -> tuple[bool, bool]:
         async with village(synthesiser) as world:
-            world.voicing.distance = movement.distance
+            world.voicing.distance = partial(between, movement)
             talk = world.start("mei", "viktor")
             _, inside = world.say(talk, "mei", "Morning, Viktor.")
-            movement.track(PLAYER_ID, Point(17, 12))
+            movement.track(PLAYER_ID, Point(43, 15, "high_street"))
             world.voicing.tick(0.1)
             _, outside = world.say(talk, "viktor", "Morning, Mei.")
             await settle()

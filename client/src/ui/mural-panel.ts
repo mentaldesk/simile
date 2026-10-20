@@ -1,35 +1,15 @@
 import type { Position, Wall } from '../net';
-import {
-  MURAL_REACH_TILES,
-  muralView,
-  wallNear,
-  type MuralView,
-  type MuralWalls,
-} from '../world/iso/murals';
-import { mapOf, VILLAGE } from '../world/map';
+import { muralView, wallNear, type MuralView, type MuralWalls } from '../world/murals';
 import type { Point } from '../world/view';
 import { pressedNewsKey } from './keys';
 import './mural-panel.css';
-import { sideView, tilesApart } from './side-view';
+import { tilesApart } from './side-view';
 import { NEWS_KEY } from './tuning';
 
 const KEY = NEWS_KEY.toUpperCase();
 
 /** How far the player can walk from where they opened a mural's panel, out of its wall's reach. */
 const STAY_TILES = 1;
-
-/** On a side-view map every wall faces the camera, so its reach runs along x from its ends. */
-function wallAlong(walls: readonly Wall[], position: Position): Wall | undefined {
-  const along = position.x + 0.5;
-  let nearest: { wall: Wall; distance: number } | undefined;
-  for (const wall of walls) {
-    if (!wall.mural || (wall.map ?? VILLAGE) !== mapOf(position)) continue;
-    const distance = Math.max(wall.x - along, 0, along - (wall.x + wall.width));
-    if (distance > MURAL_REACH_TILES) continue;
-    if (!nearest || distance < nearest.distance) nearest = { wall, distance };
-  }
-  return nearest?.wall;
-}
 
 export class MuralPanel {
   readonly hint: HTMLElement;
@@ -86,9 +66,7 @@ export class MuralPanel {
 
   /** The painted wall the player stands near, while murals are drawn. */
   near(position: Position | undefined): Wall | undefined {
-    if (!this.view() || !position) return undefined;
-    const walls = this.walls.walls;
-    return sideView(mapOf(position)) ? wallAlong(walls, position) : wallNear(walls, position);
+    return this.view() ? wallNear(this.walls.walls, position) : undefined;
   }
 
   look(position: Position | undefined): boolean {

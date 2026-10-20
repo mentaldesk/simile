@@ -1,67 +1,47 @@
 import json
-import math
 from pathlib import Path
 
 import pytest
 
-from simile.art.iso.camera import TILE_H, UPRIGHT_PX_PER_M
-from simile.art.iso.town import STOREY_M, Building
-from simile.art.iso.town import Town as IsoTown
 from simile.protocol import Wall
 from simile.schema import Tile
-from simile.world.build_map import facade
-from simile.world.map import MAP_PATH, MuralWall, TownMap, load_map
-
-BLANK = {name for m in ("cream", "slate") for row in facade(m, "...", "...") for name in row}
-BLANK |= {"cafe_wall_l", "cafe_wall", "cafe_wall_r"}
-CLIMB_PER_TILE = TILE_H / UPRIGHT_PX_PER_M
+from simile.world.map import MAP_DIR, MuralWall, TownMap, load_map, load_maps, with_every_location
 
 
 @pytest.fixture(scope="module")
-def town() -> TownMap:
-    return load_map()
+def maps() -> dict[str, TownMap]:
+    return load_maps()
 
 
-@pytest.fixture(scope="module")
-def iso() -> IsoTown:
-    return IsoTown(MAP_PATH)
+def buildings(street: str) -> list[dict]:
+    data = json.loads((MAP_DIR / f"{street}.tmj").read_text())
+    [layer] = [layer for layer in data["layers"] if layer["name"] == "buildings"]
+    size = data["tilewidth"]
+    return [
+        {
+            "id": o["name"],
+            "x0": o["x"] // size,
+            "x1": (o["x"] + o["width"]) // size,
+            **{p["name"]: p["value"] for p in o["properties"]},
+        }
+        for o in layer["objects"]
+    ]
 
 
-def building_of(iso: IsoTown, wall: MuralWall) -> Building:
-    [building] = [b for b in iso.buildings if b.x0 <= wall.x < b.x1 and b.y0 <= wall.y < b.y1]
+def building_of(wall: MuralWall) -> dict:
+    assert wall.map is not None
+    [building] = [b for b in buildings(wall.map) if b["x0"] <= wall.x < b["x1"]]
     return building
 
 
-def face_points(wall: MuralWall) -> list[tuple[float, float, float]]:
-    points = []
-    for i in range(wall.width * 4):
-        along = (i + 0.5) / 4
-        for j in range(8):
-            z = (wall.bottom + (wall.top - wall.bottom) * (j + 0.5) / 8) * STOREY_M
-            if wall.face == "south":
-                points.append((wall.x + along, wall.y + 1, z))
-            else:
-                points.append((wall.x + 1, wall.y + along, z))
-    return points
-
-
-def sight_line_hits(point: tuple[float, float, float], box: tuple[float, ...]) -> bool:
-    """Whether the line from a point toward the iso camera passes through a box on the map."""
-    x, y, z = point
-    x0, y0, x1, y1, z0, z1 = box
-    near = max(x0 - x, y0 - y, (z0 - z) / CLIMB_PER_TILE, 0.0)
-    far = min(x1 - x, y1 - y, (z1 - z) / CLIMB_PER_TILE)
-    return near < far
-
-
-def test_there_are_four_to_six_walls_on_different_buildings(town: TownMap, iso: IsoTown) -> None:
-    ids = [wall.id for wall in town.murals]
-    buildings = {building_of(iso, wall).id for wall in town.murals}
+def test_there_are_four_to_six_walls_on_different_buildings(maps: dict[str, TownMap]) -> None:
+    walls = with_every_location(maps).murals
+    ids = [wall.id for wall in walls]
 
     assert 4 <= len(ids) <= 6
-    assert len(set(ids)) == len(ids) == len(buildings)
-    for wall in town.murals:
-        Wall(
+    assert len(set(ids)) == len(ids) == len({building_of(wall)["id"] for wall in walls})
+    for wall in walls:
+        sent = Wall(
             id=wall.id,
             x=wall.x,
             y=wall.y,
@@ -70,53 +50,32 @@ def test_there_are_four_to_six_walls_on_different_buildings(town: TownMap, iso: 
             bottom=wall.bottom,
             top=wall.top,
             mural=None,
+            map=wall.map,
         )
+        assert sent.map == wall.map
 
 
-def test_every_wall_is_blank_facade_on_a_face_the_camera_sees(town: TownMap, iso: IsoTown) -> None:
-    for wall in town.murals:
-        b = building_of(iso, wall)
-        assert wall.width >= 3, wall.id
-        assert 0 < wall.bottom < wall.top <= b.storeys, wall.id
-        if wall.face == "east":
-            assert wall.x == b.x1 - 1 and wall.y + wall.width <= b.y1, wall.id
-            continue
-        # The renders draw windows, doors and signs on south faces only.
-        assert wall.y == b.y1 - 1 and wall.x + wall.width <= b.x1, wall.id
-        for storey in range(math.floor(wall.bottom), math.ceil(wall.top)):
-            row = b.facade[b.storeys - 1 - storey]
-            for tile, decor in row[wall.x - b.x0 : wall.x - b.x0 + wall.width]:
-                assert tile in BLANK and decor is None, (wall.id, storey, tile, decor)
+def test_every_wall_faces_the_camera_on_a_street_front(maps: dict[str, TownMap]) -> None:
+    for town in maps.values():
+        for wall in town.murals:
+            b = building_of(wall)
+            assert town.street and wall.map == town.id, wall.id
+            assert wall.face == "south" and wall.width >= 3, wall.id
+            assert b["x0"] <= wall.x and wall.x + wall.width <= b["x1"], wall.id
+            assert 0 < wall.bottom < wall.top <= b["storeys"], wall.id
 
 
-def test_nothing_stands_between_a_wall_and_the_iso_camera(town: TownMap, iso: IsoTown) -> None:
-    boxes = {b.id: (*b.footprint, 0.0, b.height_m) for b in iso.buildings}
-    for prop in iso.props:
-        x0, y0, x1, y1 = prop.footprint
-        r = prop.reach * math.sqrt(0.5)
-        boxes[prop.id] = (x0 - r, y0 - r, x1 + r, y1 + r, 0.0, prop.height_m)
-
-    for wall in town.murals:
-        hidden_by = {
-            name
-            for point in face_points(wall)
-            for name, box in boxes.items()
-            if sight_line_hits(point, box)
-        }
-        assert not hidden_by, wall.id
+def test_every_painter_stands_on_the_street_in_front_of_their_wall(
+    maps: dict[str, TownMap],
+) -> None:
+    for town in maps.values():
+        for wall in town.murals:
+            stand = wall.stand
+            assert town.standing(stand.x, stand.y), wall.id
+            assert stand.y == wall.y and wall.x <= stand.x < wall.x + wall.width, wall.id
 
 
-def test_every_painter_stands_on_a_walkable_tile_in_front_of_their_wall(town: TownMap) -> None:
-    for wall in town.murals:
-        stand = wall.stand
-        assert town.walkable(stand.x, stand.y), wall.id
-        if wall.face == "south":
-            assert stand.y == wall.y + 1 and wall.x <= stand.x < wall.x + wall.width, wall.id
-        else:
-            assert stand.x == wall.x + 1 and wall.y <= stand.y < wall.y + wall.width, wall.id
-
-
-def test_load_map_reads_mural_walls_in_tiles(tmp_path: Path) -> None:
+def test_load_map_reads_mural_walls_in_tiles_on_their_map(tmp_path: Path) -> None:
     def wall(name: str, face: str, x: int, y: int, width: int, height: int) -> dict:
         props = {"bottom": 0.5, "face": face, "stand_x": 1, "stand_y": 2, "top": 1.5}
         return {
@@ -145,8 +104,8 @@ def test_load_map_reads_mural_walls_in_tiles(tmp_path: Path) -> None:
 
     stand = Tile(x=1, y=2)
     assert tiny.murals == (
-        MuralWall("long", 0, 1, 3, "south", 0.5, 1.5, stand),
-        MuralWall("tall", 2, 0, 2, "east", 0.5, 1.5, stand),
+        MuralWall("long", 0, 1, 3, "south", 0.5, 1.5, stand, "tiny"),
+        MuralWall("tall", 2, 0, 2, "east", 0.5, 1.5, stand, "tiny"),
     )
     assert tiny.mural("tall") is tiny.murals[1]
     with pytest.raises(KeyError):

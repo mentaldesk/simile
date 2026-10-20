@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import date
 from typing import TYPE_CHECKING
 
@@ -5,6 +6,7 @@ from pydantic import field_validator
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.economy import Batch
+from simile.persistence.old_cells import moved
 from simile.schema import VILLAGE_MAP, Id, Intention, Key, MapTile, Model, Tile, Timestamp
 from simile.world.movement import Movement, Point, cell_of
 
@@ -15,6 +17,7 @@ if TYPE_CHECKING:
 class SavedNpc(Model):
     position: Tile
     map: Key = VILLAGE_MAP
+    """The map they're on. A save from before the interiors has none: it's on today's village."""
     activity: Activity
     target: str | None = None
     needs: dict[Need, float]
@@ -89,16 +92,22 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
 
 def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
-    money they had, what was in their fridges and what they'd said they'd do. Anyone who was
-    walking or talking decides again on the next think. NPCs who weren't saved carry on from
-    their first start, a save from before money opens the ledger on everyone's starting money,
-    and one from before fridges stocks them as at the start."""
+    money they had, what was in their fridges and what they'd said they'd do. Anyone saved on
+    one of today's maps, while the side-view maps are loaded, goes to the matching place on
+    them (`old_cells`). Anyone who was walking or talking decides again on the next think. NPCs
+    who weren't saved carry on from their first start, a save from before money opens the
+    ledger on everyone's starting money, and one from before fridges stocks them as at the
+    start."""
     movement = behaviour.movement
     saved = {npc: world.npcs[npc] for npc in behaviour.minds if npc in world.npcs}
     for npc in saved:
         movement.stop(npc)
     behaviour.clock.now = world.now
-    pending = dict(saved)
+    pending = {
+        npc: here
+        for npc, state in saved.items()
+        if (here := _on_maps(state, movement.maps)) is not None
+    }
     while free := {npc: state for npc, state in pending.items() if _free(movement, npc, state)}:
         for npc, state in free.items():
             _put(movement, npc, state)
@@ -122,6 +131,17 @@ def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" =
             economy.restore({}, world.now.date())
         else:
             economy.restore(saved.money, saved.settled, saved.fridges, saved.batches)
+
+
+def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
+    """Where they were, moved from today's maps if those aren't loaded, or None if they can't
+    be put anywhere loaded."""
+    if state.map in maps:
+        return state
+    to = moved(state.map, state.position.x, state.position.y)
+    if to is None or to.map not in maps:
+        return None
+    return state.model_copy(update={"map": to.map, "position": Tile(x=to.x, y=to.y)})
 
 
 def _free(movement: Movement, npc: Id, state: SavedNpc) -> bool:

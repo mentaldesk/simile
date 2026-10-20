@@ -1,16 +1,19 @@
 import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
-import { dolls as committedDolls } from '../dolls/assets';
-import type { DollManifest } from '../dolls/manifest';
 import { addAtlas } from '../dolls/paper-doll';
 import { server, type Position } from '../net';
-import { setMaps } from '../ui/side-view';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
+import { dollFor } from '../world/assets';
+import { interactables } from '../world/interactables';
+import { muralWalls, setMuralView } from '../world/murals';
+import { galleryFrames } from '../world/paintings';
+import { setWayHint } from '../world/reach';
 import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { DEPTH } from './depths';
+import { readControls, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt } from './light';
 import type { Link, Village } from './maps';
@@ -21,7 +24,7 @@ import { sideResidents } from './residents';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
 import { SideTextures } from './textures';
-import { sideWorks } from './works';
+import { wayHint } from './ways';
 
 export const SIDE_SCENE = 'side-world';
 
@@ -39,10 +42,9 @@ const NAME_M = 0.45;
 type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
 type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x: number; feet: number; shown: boolean };
 
-const isDev = import.meta.env.DEV;
-const params = new URLSearchParams(globalThis.location?.search ?? '');
+const harness = import.meta.env.DEV && new URLSearchParams(globalThis.location?.search ?? '').get('harness') === 'side';
 
-/** Started by `?side` in development until the cut-over: README.md. */
+/** The village from the side: README.md. */
 export class SideScene extends Phaser.Scene {
   private content?: Content;
   private pictures!: SideTextures;
@@ -60,22 +62,23 @@ export class SideScene extends Phaser.Scene {
   private readonly feet = { x: 0, y: 0 };
   private readonly size = { width: 0, height: 0 };
   private readonly sent = { x: NaN, y: NaN, map: '' };
+  private readonly held: Held = { up: false, down: false, left: false, right: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false };
   private passing = false;
-  private works = -1;
+  private worksChanged = true;
   private snap = true;
   /** A tap shorter than a frame still counts. */
   private used = false;
 
   constructor() {
-    super({ key: SIDE_SCENE, active: isDev && params.has('side') });
+    super(SIDE_SCENE);
   }
 
   create(): void {
     this.scene.sendToBack();
     this.pictures = new SideTextures(this);
     const camera = this.cameras.main;
-    camera.setRoundPixels(false).setBackgroundColor('#9fc3d8').fadeOut(0);
+    camera.setBackgroundColor('#9fc3d8').fadeOut(0);
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
@@ -86,6 +89,16 @@ export class SideScene extends Phaser.Scene {
         listenerPosition: () => this.positionOf(PLAYER_ID),
       }),
       server.on('snapshot', () => this.throttle.forget()),
+      setMuralView({
+        wallAt: ({ x, y }) => {
+          const point = this.cameras.main.getWorldPoint(x, y);
+          return this.street?.muralAt(point.x, point.y);
+        },
+      }),
+      setWayHint((eTaken) => this.hint(eTaken)),
+      muralWalls.onChange(() => (this.worksChanged = true)),
+      galleryFrames.onChange(() => (this.worksChanged = true)),
+      () => interactables.update(undefined),
       () => this.street?.destroy(),
       () => this.pictures.destroy(),
     ];
@@ -97,8 +110,7 @@ export class SideScene extends Phaser.Scene {
     const content = await import('./content');
     this.content = content;
     sideResidents.village = content.village;
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, setMaps(content.tiledFiles));
-    if (isDev && params.has('side')) {
+    if (harness) {
       const { startHarness } = await import('./harness');
       startHarness(this, content.village);
     }
@@ -118,9 +130,10 @@ export class SideScene extends Phaser.Scene {
     if (!content || !player || !street) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
     if (!this.passing) {
-      const door = player.update(this.read(), dt);
+      const door = player.update(this.read(player), dt);
       if (door) this.takeDoor(door);
     }
+    interactables.update(player.mapPosition);
     sideResidents.update(dt);
     const hour = sideClock.hour();
     const lightChanged = !(Math.abs(hour - this.lightHour) < LIGHT_STEP_HOURS);
@@ -131,11 +144,11 @@ export class SideScene extends Phaser.Scene {
     const open = content.village.map(player.drawnMap);
     this.frame(dt, street);
     street.update(this.view, this.light, lightChanged, open?.kind === 'floor' ? open.building : undefined, dt);
-    if (sideWorks.version !== this.works) {
-      this.works = sideWorks.version;
+    if (this.worksChanged) {
+      this.worksChanged = false;
       const load = (url: string) => this.pictures.load(`work:${url}`, url);
-      street.setMurals(sideWorks.walls, load);
-      street.setPaintings(sideWorks.frames, load);
+      street.setMurals(muralWalls.walls, load);
+      street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
     this.report(player.mapPosition, time / 1000);
@@ -157,13 +170,21 @@ export class SideScene extends Phaser.Scene {
     return start && village.map(start.map) ? start : DEFAULT_START;
   }
 
-  private read(): Controls {
-    const { controls, keys } = this;
-    controls.x = Number(keys.RIGHT.isDown || keys.D.isDown) - Number(keys.LEFT.isDown || keys.A.isDown);
-    controls.y = Number(keys.DOWN.isDown || keys.S.isDown) - Number(keys.UP.isDown || keys.W.isDown);
-    controls.use = this.used;
+  private read(player: SidePlayer): Controls {
+    const { held, keys } = this;
+    held.up = keys.UP.isDown || keys.W.isDown;
+    held.down = keys.DOWN.isDown || keys.S.isDown;
+    held.left = keys.LEFT.isDown || keys.A.isDown;
+    held.right = keys.RIGHT.isDown || keys.D.isDown;
+    readControls(held, this.used, player.mapPosition, this.controls);
     this.used = false;
-    return controls;
+    return this.controls;
+  }
+
+  private hint(eTaken: boolean): string | undefined {
+    const { content, player } = this;
+    const way = !this.passing && player?.way();
+    return way ? wayHint(content!.village, way, eTaken) : undefined;
   }
 
   private frame(dt: number, street: StreetView): void {
@@ -226,7 +247,7 @@ export class SideScene extends Phaser.Scene {
     }
     this.street = new StreetView(this, this.pictures, content, map);
     this.lightHour = NaN;
-    this.works = -1;
+    this.worksChanged = true;
     this.snap = true;
   }
 
@@ -243,7 +264,10 @@ export class SideScene extends Phaser.Scene {
       if (crossing) this.ride(crossing, player.at, street, player.drawnMap);
     }
     for (const figure of this.figures.values()) {
-      if (figure.id !== PLAYER_ID && !sideResidents.all.has(figure.id)) figure.doll.setVisible(false);
+      if (figure.id === PLAYER_ID || sideResidents.all.has(figure.id)) continue;
+      figure.shown = false;
+      figure.doll.setVisible(false);
+      figure.contact.setVisible(false);
     }
     street.endRides();
   }
@@ -348,17 +372,4 @@ export class SideScene extends Phaser.Scene {
       },
     };
   }
-}
-
-const RESIDENT_DOLLS = Object.keys(committedDolls)
-  .filter((id) => id !== PLAYER_ID)
-  .sort();
-
-/** One picked by its id for a resident with none yet. */
-function dollFor(id: string): DollManifest {
-  const own = committedDolls[id];
-  if (own) return own;
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < id.length; i++) hash = Math.imul(hash ^ id.charCodeAt(i), 0x01000193);
-  return committedDolls[RESIDENT_DOLLS[(hash >>> 0) % RESIDENT_DOLLS.length]];
 }

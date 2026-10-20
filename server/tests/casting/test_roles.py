@@ -10,7 +10,7 @@ from simile.casting.choose import elder, family
 from simile.casting.roles import holders, village_roles
 from simile.characters.jobs import maker
 from simile.schema import Character, Npc, PayKind, Weekday
-from simile.world.map import load_maps
+from simile.world.map import MapKind, load_maps, with_every_location
 
 type Make = Callable[..., Character]
 
@@ -124,12 +124,13 @@ def test_the_barista_and_cook_take_their_shops_takings() -> None:
     assert (cafe.days, cafe.start, cafe.end) == (list(Weekday), 7, 17)
 
 
-def test_every_roles_workplace_is_an_interior_on_the_map() -> None:
-    interiors = load_maps()
+def test_every_roles_workplace_is_a_building_on_the_map() -> None:
+    maps = load_maps()
+    town = with_every_location(maps)
 
     for role in village_roles():
-        assert role.workplace in interiors
-        assert interiors[role.workplace].location(role.workplace).map == role.workplace
+        ground = maps[town.location(role.workplace).map]
+        assert (ground.kind, ground.building, ground.floor) == (MapKind.FLOOR, role.workplace, 0)
 
 
 def test_a_cast_from_the_pool_fills_every_role(pool: list[Character]) -> None:

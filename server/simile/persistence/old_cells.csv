@@ -1,0 +1,544 @@
+map,y,first_x,last_x,new_map,new_x,new_y,by
+village,0,0,6,lychee_lane,7,15,near location house_1
+village,0,7,12,lychee_lane,10,15,near location house_2
+village,0,13,23,high_street,67,15,near door noodle_bar
+village,0,24,32,high_street,43,15,near door coffee_shop
+village,0,33,37,high_street,35,15,near location cafe_terrace
+village,0,38,43,high_street,16,15,near door maker_space
+village,0,44,49,lychee_lane,24,15,near location house_3
+village,0,50,63,lychee_lane,27,15,near location house_4
+village,1,0,6,lychee_lane,7,15,near location house_1
+village,1,7,12,lychee_lane,10,15,near location house_2
+village,1,13,23,high_street,67,15,near door noodle_bar
+village,1,24,32,high_street,43,15,near door coffee_shop
+village,1,33,37,high_street,35,15,near location cafe_terrace
+village,1,38,43,high_street,16,15,near door maker_space
+village,1,44,49,lychee_lane,24,15,near location house_3
+village,1,50,63,lychee_lane,27,15,near location house_4
+village,2,0,6,lychee_lane,7,15,near location house_1
+village,2,7,12,lychee_lane,10,15,near location house_2
+village,2,13,23,high_street,67,15,near door noodle_bar
+village,2,24,32,high_street,43,15,near door coffee_shop
+village,2,33,37,high_street,35,15,near location cafe_terrace
+village,2,38,43,high_street,16,15,near door maker_space
+village,2,44,49,lychee_lane,24,15,near location house_3
+village,2,50,63,lychee_lane,27,15,near location house_4
+village,3,0,6,lychee_lane,7,15,near location house_1
+village,3,7,12,lychee_lane,10,15,near location house_2
+village,3,13,23,high_street,67,15,near door noodle_bar
+village,3,25,32,high_street,43,15,near door coffee_shop
+village,3,33,37,high_street,35,15,near location cafe_terrace
+village,3,38,43,high_street,16,15,near door maker_space
+village,3,44,49,lychee_lane,24,15,near location house_3
+village,3,50,63,lychee_lane,27,15,near location house_4
+village,4,0,6,lychee_lane,7,15,near location house_1
+village,4,7,12,lychee_lane,10,15,near location house_2
+village,4,13,23,high_street,67,15,near door noodle_bar
+village,4,24,30,high_street,43,15,near door coffee_shop
+village,4,34,37,high_street,35,15,near location cafe_terrace
+village,4,40,43,high_street,16,15,near door maker_space
+village,4,44,47,lychee_lane,24,15,near location house_3
+village,4,50,63,lychee_lane,27,15,near location house_4
+village,5,0,6,lychee_lane,7,15,near location house_1
+village,5,7,12,lychee_lane,10,15,near location house_2
+village,5,13,23,high_street,67,15,near door noodle_bar
+village,5,24,32,high_street,43,15,near door coffee_shop
+village,5,33,36,high_street,35,15,near location cafe_terrace
+village,5,43,43,high_street,16,15,near door maker_space
+village,5,44,49,lychee_lane,24,15,near location house_3
+village,5,50,63,lychee_lane,27,15,near location house_4
+village,6,0,6,lychee_lane,7,15,near location house_1
+village,6,12,12,lychee_lane,10,15,near location house_2
+village,6,22,23,high_street,67,15,near door noodle_bar
+village,6,24,27,high_street,43,15,near door coffee_shop
+village,6,36,36,high_street,35,15,near location cafe_terrace
+village,6,43,43,high_street,16,15,near door maker_space
+village,6,44,44,lychee_lane,24,15,near location house_3
+village,6,50,63,lychee_lane,27,15,near location house_4
+village,7,0,6,lychee_lane,7,15,near location house_1
+village,7,12,12,lychee_lane,10,15,near location house_2
+village,7,22,23,high_street,67,15,near door noodle_bar
+village,7,24,27,high_street,43,15,near door coffee_shop
+village,7,36,36,high_street,35,15,near location cafe_terrace
+village,7,43,43,high_street,16,15,near door maker_space
+village,7,44,44,lychee_lane,24,15,near location house_3
+village,7,50,56,lychee_lane,27,15,near location house_4
+village,7,63,63,lychee_lane,63,15,spot viewing-63-7
+village,8,0,6,lychee_lane,7,15,near location house_1
+village,8,12,12,lychee_lane,10,15,near location house_2
+village,8,22,22,high_street,22,15,spot viewing-22-8
+village,8,23,23,high_street,67,15,near door noodle_bar
+village,8,24,27,high_street,43,15,near door coffee_shop
+village,8,36,36,high_street,35,15,near location cafe_terrace
+village,8,43,43,high_street,16,15,near door maker_space
+village,8,44,44,lychee_lane,24,15,near location house_3
+village,8,50,63,lychee_lane,27,15,near location house_4
+village,9,0,6,lychee_lane,7,15,near location house_1
+village,9,12,12,lychee_lane,10,15,near location house_2
+village,9,22,23,high_street,67,15,near door noodle_bar
+village,9,24,27,high_street,43,15,near door coffee_shop
+village,9,36,36,high_street,35,15,near location cafe_terrace
+village,9,43,43,high_street,16,15,near door maker_space
+village,9,44,44,lychee_lane,24,15,near location house_3
+village,9,50,63,lychee_lane,27,15,near location house_4
+village,10,0,6,lychee_lane,7,15,near location house_1
+village,10,12,12,lychee_lane,10,15,near location house_2
+village,10,23,23,high_street,67,15,near door noodle_bar
+village,10,24,27,high_street,43,15,near door coffee_shop
+village,10,36,36,high_street,35,15,near location cafe_terrace
+village,10,43,43,high_street,16,15,near door maker_space
+village,10,44,44,lychee_lane,24,15,near location house_3
+village,10,50,63,lychee_lane,27,15,near location house_4
+village,11,0,0,lychee_lane,7,15,near location house_1
+village,11,2,5,house_1_floor_0,3,2,location house_1
+village,11,6,6,lychee_lane,7,15,near location house_1
+village,11,7,10,house_2_floor_0,3,2,location house_2
+village,11,12,12,lychee_lane,10,15,near location house_2
+village,11,15,15,high_street,67,15,near door noodle_bar
+village,11,16,16,high_street,67,15,door noodle_bar
+village,11,17,23,high_street,67,15,near door noodle_bar
+village,11,24,27,high_street,43,15,near door coffee_shop
+village,11,29,29,high_street,28,15,spot viewing-29-11
+village,11,31,31,high_street,43,15,door coffee_shop
+village,11,32,34,high_street,35,15,location cafe_terrace
+village,11,36,36,high_street,35,15,near location cafe_terrace
+village,11,38,40,high_street,16,15,near door maker_space
+village,11,41,41,high_street,16,15,door maker_space
+village,11,42,43,high_street,16,15,near door maker_space
+village,11,44,44,lychee_lane,24,15,near location house_3
+village,11,45,48,house_3_floor_0,3,2,location house_3
+village,11,50,50,lychee_lane,27,15,near location house_4
+village,11,51,55,house_4_floor_0,3,2,location house_4
+village,11,56,63,lychee_lane,27,15,near location house_4
+village,12,0,6,lychee_lane,7,15,near location house_1
+village,12,7,12,lychee_lane,10,15,near location house_2
+village,12,13,23,high_street,67,15,near door noodle_bar
+village,12,24,27,high_street,43,15,near door coffee_shop
+village,12,28,35,high_street,35,15,location cafe_terrace
+village,12,36,37,high_street,35,15,near location cafe_terrace
+village,12,38,43,high_street,16,15,near door maker_space
+village,12,44,49,lychee_lane,24,15,near location house_3
+village,12,50,63,lychee_lane,27,15,near location house_4
+village,13,0,6,lychee_lane,7,15,near location house_1
+village,13,7,12,lychee_lane,10,15,near location house_2
+village,13,13,19,high_street,67,15,near door noodle_bar
+village,13,20,35,high_street,51,15,location square
+village,13,36,36,high_street,60,15,location terminal_1
+village,13,37,43,high_street,51,15,location square
+village,13,44,45,lychee_lane,24,15,near location house_3
+village,13,46,63,lychee_lane,37,15,location park
+village,14,0,6,lychee_lane,7,15,near location house_1
+village,14,12,12,lychee_lane,10,15,near location house_2
+village,14,17,19,high_street,67,15,near door noodle_bar
+village,14,20,43,high_street,51,15,location square
+village,14,44,45,lychee_lane,24,15,near location house_3
+village,14,46,63,lychee_lane,37,15,location park
+village,15,0,0,lychee_lane,7,15,near location house_1
+village,15,6,6,kapok_walk,14,15,near location house_5
+village,15,12,12,lychee_lane,10,15,near location house_2
+village,15,17,19,high_street,67,15,near door noodle_bar
+village,15,20,35,high_street,51,15,location square
+village,15,36,36,high_street,60,15,spot terminal-36-15
+village,15,37,43,high_street,51,15,location square
+village,15,44,45,lychee_lane,24,15,near location house_3
+village,15,46,63,lychee_lane,37,15,location park
+village,16,0,6,kapok_walk,14,15,near location house_5
+village,16,12,18,kapok_walk,28,15,near location house_7
+village,16,19,19,high_street,67,15,near door noodle_bar
+village,16,20,43,high_street,51,15,location square
+village,16,44,45,lychee_lane,24,15,near location house_3
+village,16,46,63,lychee_lane,37,15,location park
+village,17,0,6,kapok_walk,14,15,near location house_5
+village,17,12,19,kapok_walk,28,15,near location house_7
+village,17,20,43,high_street,51,15,location square
+village,17,44,44,lychee_lane,34,15,near location terminal_2
+village,17,45,45,lychee_lane,24,15,near location house_3
+village,17,46,63,lychee_lane,37,15,location park
+village,18,0,6,kapok_walk,14,15,near location house_5
+village,18,12,19,kapok_walk,28,15,near location house_7
+village,18,20,29,high_street,51,15,location square
+village,18,31,31,high_street,55,15,spot standing-31-18
+village,18,32,43,high_street,51,15,location square
+village,18,44,45,lychee_lane,34,15,near location terminal_2
+village,18,46,58,lychee_lane,37,15,location park
+village,18,59,59,lychee_lane,53,15,spot seat-59-18
+village,18,60,60,lychee_lane,54,15,spot seat-60-18
+village,18,61,63,lychee_lane,37,15,location park
+village,19,0,0,kapok_walk,14,15,near location house_5
+village,19,1,5,house_5_floor_0,3,2,location house_5
+village,19,6,6,kapok_walk,14,15,near location house_5
+village,19,7,11,house_6_floor_0,3,2,location house_6
+village,19,12,12,kapok_walk,28,15,near location house_7
+village,19,13,16,house_7_floor_0,3,2,location house_7
+village,19,17,19,kapok_walk,28,15,near location house_7
+village,19,21,26,high_street,51,15,location square
+village,19,27,27,high_street,48,15,spot seat-27-19
+village,19,28,28,high_street,49,15,spot seat-28-19
+village,19,29,30,high_street,51,15,location square
+village,19,33,33,high_street,57,15,spot standing-33-19
+village,19,34,34,high_street,58,15,spot seat-34-19
+village,19,35,35,high_street,59,15,spot seat-35-19
+village,19,36,42,high_street,51,15,location square
+village,19,44,45,lychee_lane,34,15,near location terminal_2
+village,19,46,54,lychee_lane,37,15,location park
+village,20,0,6,kapok_walk,14,15,near location house_5
+village,20,7,11,kapok_walk,17,15,near location house_6
+village,20,12,19,kapok_walk,28,15,near location house_7
+village,20,20,24,high_street,51,15,location square
+village,20,26,26,high_street,47,15,spot standing-26-20
+village,20,27,29,high_street,51,15,location square
+village,20,30,30,high_street,54,15,spot standing-30-20
+village,20,33,36,high_street,51,15,location square
+village,20,37,37,high_street,63,15,spot standing-37-20
+village,20,39,43,high_street,51,15,location square
+village,20,44,45,lychee_lane,34,15,near location terminal_2
+village,20,46,54,lychee_lane,37,15,location park
+village,21,0,6,kapok_walk,14,15,near location house_5
+village,21,7,11,kapok_walk,17,15,near location house_6
+village,21,12,19,kapok_walk,28,15,near location house_7
+village,21,20,26,high_street,51,15,location square
+village,21,27,27,high_street,52,15,spot seat-27-21
+village,21,28,28,high_street,53,15,spot seat-28-21
+village,21,29,31,high_street,51,15,location square
+village,21,32,32,high_street,56,15,spot standing-32-21
+village,21,34,34,high_street,61,15,spot seat-34-21
+village,21,35,35,high_street,62,15,spot seat-35-21
+village,21,36,43,high_street,51,15,location square
+village,21,44,44,lychee_lane,34,15,location terminal_2
+village,21,45,45,lychee_lane,34,15,near location terminal_2
+village,21,46,52,lychee_lane,37,15,location park
+village,22,0,6,kapok_walk,14,15,near location house_5
+village,22,7,11,kapok_walk,17,15,near location house_6
+village,22,12,19,kapok_walk,28,15,near location house_7
+village,22,20,43,high_street,51,15,location square
+village,22,45,45,lychee_lane,34,15,near location terminal_2
+village,22,46,52,lychee_lane,37,15,location park
+village,23,0,6,kapok_walk,14,15,near location house_5
+village,23,7,11,kapok_walk,17,15,near location house_6
+village,23,14,19,kapok_walk,28,15,near location house_7
+village,23,20,43,high_street,51,15,location square
+village,23,44,44,lychee_lane,34,15,spot terminal-44-23
+village,23,45,45,lychee_lane,34,15,near location terminal_2
+village,23,46,52,lychee_lane,37,15,location park
+village,24,0,6,kapok_walk,14,15,near location house_5
+village,24,7,11,kapok_walk,17,15,near location house_6
+village,24,12,19,kapok_walk,28,15,near location house_7
+village,24,20,43,high_street,51,15,location square
+village,24,44,45,lychee_lane,34,15,near location terminal_2
+village,24,46,52,lychee_lane,37,15,location park
+village,25,0,6,kapok_walk,14,15,near location house_5
+village,25,9,11,kapok_walk,17,15,near location house_6
+village,25,12,19,kapok_walk,28,15,near location house_7
+village,25,20,43,high_street,51,15,location square
+village,25,44,44,lychee_lane,34,15,near location terminal_2
+village,25,45,45,lychee_lane,37,15,near location park
+village,25,46,52,lychee_lane,37,15,location park
+village,26,0,6,kapok_walk,14,15,near location house_5
+village,26,7,11,kapok_walk,17,15,near location house_6
+village,26,12,19,kapok_walk,28,15,near location house_7
+village,26,20,43,high_street,51,15,location square
+village,26,44,44,lychee_lane,34,15,near location terminal_2
+village,26,45,45,lychee_lane,37,15,near location park
+village,26,46,52,lychee_lane,37,15,location park
+village,27,0,7,banyan_row,7,15,near location house_8
+village,27,8,12,banyan_row,10,15,near location house_9
+village,27,13,22,banyan_row,17,15,near location house_10
+village,27,23,36,high_street,51,15,near location square
+village,27,37,39,banyan_row,28,15,near door gallery
+village,27,40,44,lychee_lane,34,15,near location terminal_2
+village,27,45,45,lychee_lane,37,15,near location park
+village,27,46,48,lychee_lane,37,15,location park
+village,27,49,49,lychee_lane,39,15,spot seat-49-27
+village,27,50,50,lychee_lane,40,15,spot seat-50-27
+village,27,51,54,lychee_lane,37,15,location park
+village,28,0,7,banyan_row,7,15,near location house_8
+village,28,8,12,banyan_row,10,15,near location house_9
+village,28,13,22,banyan_row,17,15,near location house_10
+village,28,23,34,high_street,51,15,near location square
+village,28,35,37,banyan_row,28,15,near door gallery
+village,28,44,45,lychee_lane,37,15,near location park
+village,28,46,54,lychee_lane,37,15,location park
+village,29,0,7,banyan_row,7,15,near location house_8
+village,29,13,20,banyan_row,17,15,near location house_10
+village,29,27,28,high_street,51,15,near location square
+village,29,34,44,banyan_row,28,15,near door gallery
+village,29,45,45,lychee_lane,37,15,near location park
+village,29,46,63,lychee_lane,37,15,location park
+village,30,0,7,banyan_row,7,15,near location house_8
+village,30,13,20,banyan_row,17,15,near location house_10
+village,30,27,28,high_street,51,15,near location square
+village,30,34,45,banyan_row,28,15,near door gallery
+village,30,46,63,lychee_lane,37,15,location park
+village,31,0,7,banyan_row,7,15,near location house_8
+village,31,13,20,banyan_row,17,15,near location house_10
+village,31,27,28,high_street,51,15,near location square
+village,31,34,34,banyan_row,47,15,spot viewing-34-31
+village,31,35,45,banyan_row,28,15,near door gallery
+village,31,46,63,lychee_lane,37,15,location park
+village,32,0,7,banyan_row,7,15,near location house_8
+village,32,13,13,banyan_row,17,15,near location house_10
+village,32,18,18,banyan_row,20,15,spot viewing-18-32
+village,32,19,20,banyan_row,17,15,near location house_10
+village,32,27,28,high_street,51,15,near location square
+village,32,34,45,banyan_row,28,15,near door gallery
+village,32,46,63,lychee_lane,37,15,location park
+village,33,0,7,banyan_row,7,15,near location house_8
+village,33,13,20,banyan_row,17,15,near location house_10
+village,33,27,28,high_street,51,15,near location square
+village,33,34,39,banyan_row,28,15,near door gallery
+village,33,40,40,banyan_row,28,15,door gallery
+village,33,41,44,banyan_row,28,15,near door gallery
+village,33,45,45,banyan_row,60,18,near location terminal_3
+village,33,46,63,lychee_lane,37,15,location park
+village,34,0,1,banyan_row,7,15,near location house_8
+village,34,2,6,house_8_floor_0,3,2,location house_8
+village,34,7,7,banyan_row,7,15,near location house_8
+village,34,8,12,house_9_floor_0,3,2,location house_9
+village,34,13,13,banyan_row,17,15,near location house_10
+village,34,14,17,house_10_floor_0,3,2,location house_10
+village,34,18,27,banyan_row,17,15,near location house_10
+village,34,28,43,banyan_row,28,15,near door gallery
+village,34,44,45,banyan_row,60,18,near location terminal_3
+village,34,46,63,lychee_lane,37,15,location park
+village,35,0,7,banyan_row,7,15,near location house_8
+village,35,8,12,banyan_row,10,15,near location house_9
+village,35,13,27,banyan_row,17,15,near location house_10
+village,35,28,43,banyan_row,28,15,near door gallery
+village,35,44,45,banyan_row,60,18,near location terminal_3
+village,35,46,46,banyan_row,60,18,location terminal_3
+village,35,47,63,banyan_row,60,18,near location terminal_3
+village,36,0,7,banyan_row,7,15,near location house_8
+village,36,8,11,banyan_row,10,15,near location house_9
+village,36,13,27,banyan_row,17,15,near location house_10
+village,36,28,41,banyan_row,28,15,near door gallery
+village,36,43,63,banyan_row,60,18,near location terminal_3
+village,37,0,7,banyan_row,7,15,near location house_8
+village,37,10,12,banyan_row,10,15,near location house_9
+village,37,13,26,banyan_row,17,15,near location house_10
+village,37,28,41,banyan_row,28,15,near door gallery
+village,37,42,45,banyan_row,60,18,near location terminal_3
+village,37,46,46,banyan_row,60,18,spot terminal-46-37
+village,37,47,63,banyan_row,60,18,near location terminal_3
+coffee_shop,2,10,17,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,3,1,8,coffee_shop_floor_0,3,2,location coffee_shop_staff
+coffee_shop,3,10,10,coffee_shop_floor_0,12,2,spot bar-10-3
+coffee_shop,3,11,11,coffee_shop_floor_1,5,2,spot seat-11-3
+coffee_shop,3,13,13,coffee_shop_floor_1,6,2,spot seat-13-3
+coffee_shop,3,14,14,coffee_shop_floor_1,7,2,spot seat-14-3
+coffee_shop,3,16,16,coffee_shop_floor_1,8,2,spot seat-16-3
+coffee_shop,3,17,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,4,1,8,coffee_shop_floor_0,3,2,location coffee_shop_staff
+coffee_shop,4,10,10,coffee_shop_floor_0,13,2,spot bar-10-4
+coffee_shop,4,11,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,5,1,1,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,5,10,10,coffee_shop_floor_0,14,2,spot bar-10-5
+coffee_shop,5,11,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,6,1,1,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,6,2,2,coffee_shop_floor_0,10,2,spot bar-2-6
+coffee_shop,6,3,3,coffee_shop_floor_0,11,2,spot bar-3-6
+coffee_shop,6,4,4,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,6,5,5,coffee_shop_floor_0,6,2,interactable coffee_shop_counter
+coffee_shop,6,6,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,7,1,4,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,7,5,5,coffee_shop_floor_0,6,2,location coffee_shop_queue
+coffee_shop,7,6,10,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,7,11,11,coffee_shop_floor_1,9,2,spot seat-11-7
+coffee_shop,7,13,13,coffee_shop_floor_1,10,2,spot seat-13-7
+coffee_shop,7,14,14,coffee_shop_floor_1,12,2,spot seat-14-7
+coffee_shop,7,16,16,coffee_shop_floor_1,13,2,spot seat-16-7
+coffee_shop,7,17,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,8,1,1,coffee_shop_floor_1,1,2,spot seat-1-8
+coffee_shop,8,3,3,coffee_shop_floor_1,2,2,spot seat-3-8
+coffee_shop,8,4,4,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,8,5,5,coffee_shop_floor_0,6,2,location coffee_shop_queue
+coffee_shop,8,6,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,9,1,4,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,9,5,5,coffee_shop_floor_0,6,2,location coffee_shop_queue
+coffee_shop,9,6,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,10,1,10,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,10,11,11,coffee_shop_floor_1,14,2,spot seat-11-10
+coffee_shop,10,13,13,coffee_shop_floor_1,15,2,spot seat-13-10
+coffee_shop,10,14,14,coffee_shop_floor_1,16,2,spot seat-14-10
+coffee_shop,10,16,16,coffee_shop_floor_1,17,2,spot seat-16-10
+coffee_shop,10,17,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,11,1,1,coffee_shop_floor_1,3,2,spot seat-1-11
+coffee_shop,11,3,3,coffee_shop_floor_1,4,2,spot seat-3-11
+coffee_shop,11,4,18,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,12,1,17,coffee_shop_floor_0,6,2,location coffee_shop
+coffee_shop,13,10,10,coffee_shop_floor_0,18,2,door coffee_shop
+gallery,2,2,2,gallery_floor_0,3,2,location gallery
+gallery,2,3,3,gallery_floor_0,4,2,spot viewing-3-2
+gallery,2,4,4,gallery_floor_0,5,2,spot viewing-4-2
+gallery,2,5,6,gallery_floor_0,3,2,location gallery
+gallery,2,7,7,gallery_floor_0,7,2,spot viewing-7-2
+gallery,2,8,8,gallery_floor_0,8,2,spot viewing-8-2
+gallery,2,9,10,gallery_floor_0,3,2,location gallery
+gallery,2,11,11,gallery_floor_0,10,2,spot viewing-11-2
+gallery,2,12,12,gallery_floor_0,11,2,spot viewing-12-2
+gallery,2,13,14,gallery_floor_0,3,2,location gallery
+gallery,2,15,15,gallery_floor_1,1,2,spot viewing-15-2
+gallery,2,16,16,gallery_floor_1,2,2,spot viewing-16-2
+gallery,2,17,18,gallery_floor_0,3,2,location gallery
+gallery,2,19,19,gallery_floor_1,3,2,spot viewing-19-2
+gallery,2,20,20,gallery_floor_1,4,2,spot viewing-20-2
+gallery,2,21,22,gallery_floor_0,3,2,location gallery
+gallery,2,23,23,gallery_floor_1,7,2,spot viewing-23-2
+gallery,2,24,24,gallery_floor_1,8,2,spot viewing-24-2
+gallery,2,25,26,gallery_floor_0,3,2,location gallery
+gallery,2,27,27,gallery_floor_1,9,2,spot viewing-27-2
+gallery,2,28,28,gallery_floor_1,10,2,spot viewing-28-2
+gallery,2,29,29,gallery_floor_0,3,2,location gallery
+gallery,3,1,30,gallery_floor_0,3,2,location gallery
+gallery,4,1,7,gallery_floor_0,3,2,location gallery
+gallery,4,8,8,gallery_floor_0,12,2,spot seat-8-4
+gallery,4,9,9,gallery_floor_0,13,2,spot seat-9-4
+gallery,4,10,21,gallery_floor_0,3,2,location gallery
+gallery,4,22,22,gallery_floor_1,5,2,spot seat-22-4
+gallery,4,23,23,gallery_floor_1,6,2,spot seat-23-4
+gallery,4,24,30,gallery_floor_0,3,2,location gallery
+gallery,5,1,30,gallery_floor_0,3,2,location gallery
+gallery,6,1,30,gallery_floor_0,3,2,location gallery
+gallery,7,1,30,gallery_floor_0,3,2,location gallery
+gallery,8,1,30,gallery_floor_0,3,2,location gallery
+gallery,9,1,30,gallery_floor_0,3,2,location gallery
+gallery,10,1,30,gallery_floor_0,3,2,location gallery
+gallery,11,1,4,gallery_floor_0,3,2,location gallery
+gallery,11,5,5,gallery_floor_1,13,2,spot viewing-5-11
+gallery,11,6,6,gallery_floor_1,14,2,spot viewing-6-11
+gallery,11,7,7,gallery_floor_0,3,2,location gallery
+gallery,11,8,8,gallery_floor_2,1,2,spot viewing-8-11
+gallery,11,9,9,gallery_floor_2,2,2,spot viewing-9-11
+gallery,11,10,10,gallery_floor_0,3,2,location gallery
+gallery,11,11,11,gallery_floor_2,3,2,spot viewing-11-11
+gallery,11,12,12,gallery_floor_2,4,2,spot viewing-12-11
+gallery,11,13,18,gallery_floor_0,3,2,location gallery
+gallery,11,19,19,gallery_floor_2,5,2,spot viewing-19-11
+gallery,11,20,20,gallery_floor_2,6,2,spot viewing-20-11
+gallery,11,21,21,gallery_floor_0,3,2,location gallery
+gallery,11,22,22,gallery_floor_2,9,2,spot viewing-22-11
+gallery,11,23,23,gallery_floor_2,10,2,spot viewing-23-11
+gallery,11,24,24,gallery_floor_0,3,2,location gallery
+gallery,11,25,25,gallery_floor_2,11,2,spot viewing-25-11
+gallery,11,26,26,gallery_floor_2,12,2,spot viewing-26-11
+gallery,11,27,30,gallery_floor_0,3,2,location gallery
+gallery,12,1,30,gallery_floor_0,3,2,location gallery
+gallery,13,1,7,gallery_floor_0,3,2,location gallery
+gallery,13,8,8,gallery_floor_1,11,2,spot seat-8-13
+gallery,13,9,9,gallery_floor_1,12,2,spot seat-9-13
+gallery,13,10,21,gallery_floor_0,3,2,location gallery
+gallery,13,22,22,gallery_floor_2,7,2,spot seat-22-13
+gallery,13,23,23,gallery_floor_2,8,2,spot seat-23-13
+gallery,13,24,30,gallery_floor_0,3,2,location gallery
+gallery,14,1,30,gallery_floor_0,3,2,location gallery
+gallery,15,1,30,gallery_floor_0,3,2,location gallery
+gallery,16,1,30,gallery_floor_0,3,2,location gallery
+gallery,17,1,30,gallery_floor_0,3,2,location gallery
+gallery,18,2,29,gallery_floor_0,3,2,location gallery
+gallery,19,16,16,gallery_floor_0,2,2,door gallery
+maker_space,2,1,18,maker_space_floor_0,13,2,location maker_space
+maker_space,3,1,1,maker_space_floor_0,13,2,location maker_space
+maker_space,3,2,2,maker_space_floor_0,6,2,spot desk-2-3
+maker_space,3,3,3,maker_space_floor_0,7,2,spot desk-3-3
+maker_space,3,4,5,maker_space_floor_0,13,2,location maker_space
+maker_space,3,6,6,maker_space_floor_0,8,2,spot desk-6-3
+maker_space,3,7,9,maker_space_floor_0,13,2,location maker_space
+maker_space,3,10,10,maker_space_floor_0,9,2,spot desk-10-3
+maker_space,3,11,11,maker_space_floor_0,10,2,spot desk-11-3
+maker_space,3,12,14,maker_space_floor_0,13,2,location maker_space
+maker_space,3,15,15,maker_space_floor_0,11,2,spot desk-15-3
+maker_space,3,16,18,maker_space_floor_0,13,2,location maker_space
+maker_space,4,1,18,maker_space_floor_0,13,2,location maker_space
+maker_space,5,1,2,maker_space_floor_0,13,2,location maker_space
+maker_space,5,3,3,maker_space_floor_0,2,2,spot desk-3-5
+maker_space,5,4,4,maker_space_floor_0,3,2,spot desk-4-5
+maker_space,5,5,7,maker_space_floor_0,13,2,location maker_space
+maker_space,5,8,8,maker_space_floor_1,7,2,spot desk-8-5
+maker_space,5,9,9,maker_space_floor_1,8,2,spot desk-9-5
+maker_space,5,10,12,maker_space_floor_0,13,2,location maker_space
+maker_space,5,13,13,maker_space_floor_2,1,2,spot desk-13-5
+maker_space,5,14,14,maker_space_floor_2,2,2,spot desk-14-5
+maker_space,5,15,18,maker_space_floor_0,13,2,location maker_space
+maker_space,6,1,18,maker_space_floor_0,13,2,location maker_space
+maker_space,7,1,2,maker_space_floor_0,13,2,location maker_space
+maker_space,7,3,3,maker_space_floor_0,4,2,spot desk-3-7
+maker_space,7,4,4,maker_space_floor_0,5,2,spot desk-4-7
+maker_space,7,5,7,maker_space_floor_0,13,2,location maker_space
+maker_space,7,8,8,maker_space_floor_1,9,2,spot desk-8-7
+maker_space,7,9,9,maker_space_floor_1,10,2,spot desk-9-7
+maker_space,7,10,12,maker_space_floor_0,13,2,location maker_space
+maker_space,7,13,13,maker_space_floor_2,3,2,spot desk-13-7
+maker_space,7,14,14,maker_space_floor_2,4,2,spot desk-14-7
+maker_space,7,15,18,maker_space_floor_0,13,2,location maker_space
+maker_space,8,1,2,maker_space_floor_0,13,2,location maker_space
+maker_space,8,3,3,maker_space_floor_1,1,2,spot desk-3-8
+maker_space,8,4,4,maker_space_floor_1,2,2,spot desk-4-8
+maker_space,8,5,7,maker_space_floor_0,13,2,location maker_space
+maker_space,8,8,8,maker_space_floor_1,11,2,spot desk-8-8
+maker_space,8,9,9,maker_space_floor_1,12,2,spot desk-9-8
+maker_space,8,10,12,maker_space_floor_0,13,2,location maker_space
+maker_space,8,13,13,maker_space_floor_2,7,2,spot desk-13-8
+maker_space,8,14,14,maker_space_floor_2,8,2,spot desk-14-8
+maker_space,8,15,18,maker_space_floor_0,13,2,location maker_space
+maker_space,9,1,18,maker_space_floor_0,13,2,location maker_space
+maker_space,10,1,2,maker_space_floor_0,13,2,location maker_space
+maker_space,10,3,3,maker_space_floor_1,3,2,spot desk-3-10
+maker_space,10,4,4,maker_space_floor_1,4,2,spot desk-4-10
+maker_space,10,5,7,maker_space_floor_0,13,2,location maker_space
+maker_space,10,8,8,maker_space_floor_1,13,2,spot desk-8-10
+maker_space,10,9,9,maker_space_floor_1,14,2,spot desk-9-10
+maker_space,10,10,12,maker_space_floor_0,13,2,location maker_space
+maker_space,10,13,13,maker_space_floor_2,9,2,spot desk-13-10
+maker_space,10,14,14,maker_space_floor_2,10,2,spot desk-14-10
+maker_space,10,15,18,maker_space_floor_0,13,2,location maker_space
+maker_space,11,1,18,maker_space_floor_0,13,2,location maker_space
+maker_space,12,2,18,maker_space_floor_0,13,2,location maker_space
+maker_space,13,14,14,maker_space_floor_0,14,2,door maker_space
+noodle_bar,2,14,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,3,1,14,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,3,15,15,noodle_bar_floor_1,14,2,spot seat-15-3
+noodle_bar,3,17,17,noodle_bar_floor_1,15,2,spot seat-17-3
+noodle_bar,3,18,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,4,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,1,2,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,3,3,noodle_bar_floor_0,8,2,spot seat-3-5
+noodle_bar,5,4,4,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,5,5,noodle_bar_floor_0,9,2,spot seat-5-5
+noodle_bar,5,6,6,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,7,7,noodle_bar_floor_0,10,2,spot seat-7-5
+noodle_bar,5,8,8,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,9,9,noodle_bar_floor_0,11,2,spot seat-9-5
+noodle_bar,5,10,10,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,5,11,11,noodle_bar_floor_0,12,2,spot seat-11-5
+noodle_bar,5,12,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,6,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,7,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,8,1,2,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,8,3,3,noodle_bar_floor_0,3,2,spot seat-3-8
+noodle_bar,8,5,5,noodle_bar_floor_0,4,2,spot seat-5-8
+noodle_bar,8,6,6,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,8,7,7,noodle_bar_floor_1,1,2,spot seat-7-8
+noodle_bar,8,9,9,noodle_bar_floor_1,2,2,spot seat-9-8
+noodle_bar,8,10,10,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,8,11,11,noodle_bar_floor_1,6,2,spot seat-11-8
+noodle_bar,8,13,13,noodle_bar_floor_1,7,2,spot seat-13-8
+noodle_bar,8,14,14,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,8,15,15,noodle_bar_floor_1,10,2,spot seat-15-8
+noodle_bar,8,17,17,noodle_bar_floor_1,11,2,spot seat-17-8
+noodle_bar,8,18,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,9,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,10,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,11,1,2,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,11,3,3,noodle_bar_floor_0,5,2,spot seat-3-11
+noodle_bar,11,5,5,noodle_bar_floor_0,6,2,spot seat-5-11
+noodle_bar,11,6,6,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,11,7,7,noodle_bar_floor_1,3,2,spot seat-7-11
+noodle_bar,11,9,9,noodle_bar_floor_1,4,2,spot seat-9-11
+noodle_bar,11,10,10,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,11,11,11,noodle_bar_floor_1,8,2,spot seat-11-11
+noodle_bar,11,13,13,noodle_bar_floor_1,9,2,spot seat-13-11
+noodle_bar,11,14,14,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,11,15,15,noodle_bar_floor_1,12,2,spot seat-15-11
+noodle_bar,11,17,17,noodle_bar_floor_1,13,2,spot seat-17-11
+noodle_bar,11,18,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,12,1,18,noodle_bar_floor_0,7,2,location noodle_bar
+noodle_bar,13,15,15,noodle_bar_floor_0,2,2,door noodle_bar

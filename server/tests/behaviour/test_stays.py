@@ -203,7 +203,7 @@ def test_busy_places_wear_out_the_unsociable_more() -> None:
     village = Village([loner, mixer, *crowd], config=STAY_PUT, traits=traits)
     for n, npc in enumerate(village.behaviour.npcs):
         village.stay(npc, Goal(A.SQUARE, "square"))
-        village.movement.place(npc, MapTile(map="village", x=36 + n % 3, y=23 + n // 3))
+        village.movement.place(npc, MapTile(map="high_street", x=52 + n, y=15))
 
     village.run(minutes=30)
 
@@ -220,27 +220,30 @@ def test_discipline_and_adventure_want_more_exercise() -> None:
 
 
 def test_a_walk_round_lotus_lake_meets_exercise() -> None:
-    lake = {"lotus_lake": LOOPS["lotus_lake"]}
-    config = STEADY.model_copy(update={"base": {A.EXERCISE: 10.0}, "loops": lake})
+    lake = LOOPS["lychee_lane"]["lotus_lake"]
+    config = STEADY.model_copy(
+        update={"base": {A.EXERCISE: 10.0}, "loops": {"lychee_lane": {"lotus_lake": lake}}}
+    )
     village = Village([ANA], config=config)
     village.behaviour.minds["ana"].needs[Need.EXERCISE] = 0.8
 
     village.run(minutes=20)
 
-    tiles = [(m.x, m.y) for m in village.moves if m.entity == "ana" and m.map == "village"]
+    tiles = [(m.x, m.y) for m in village.moves if m.entity == "ana" and m.map == "lychee_lane"]
     walked = sum(math.dist(a, b) for a, b in zip(tiles, tiles[1:], strict=False))
-    passed = {tile for tile in LOOPS["lotus_lake"] if tile in tiles}
+    passed = {tile for tile in lake if tile in tiles}
     assert village.behaviour.goal("ana") == Goal(A.EXERCISE, "lotus_lake")
     assert village.behaviour.minds["ana"].until is None
-    assert walked > 300 and len(passed) == len(LOOPS["lotus_lake"])
+    assert walked > 300 and len(passed) == len(lake)
     assert village.need("ana", Need.EXERCISE) < 0.3
 
 
 def test_every_loop_is_walkable() -> None:
-    village = MAPS["village"]
-    for loop, tiles in DEFAULT_CONFIG.loops.items():
-        assert len(tiles) >= 3, loop
-        assert all(village.walkable(x, y) for x, y in tiles), loop
+    for map_id, named in DEFAULT_CONFIG.loops.items():
+        town = MAPS[map_id]
+        for loop, tiles in named.items():
+            assert len(tiles) >= 2, loop
+            assert all(town.walkable(x, y) for x, y in tiles), loop
 
 
 def test_nobody_seeks_out_someone_out_for_a_walk() -> None:
@@ -256,7 +259,7 @@ def test_nobody_seeks_out_someone_out_for_a_walk() -> None:
 def test_a_wander_keeps_walking_until_it_ends() -> None:
     config = STEADY.model_copy(update={"base": {A.WANDER: 10.0}, "dwell": {A.WANDER: (8, 8)}})
     village = Village([ANA], config=config)
-    village.movement.place("ana", MapTile(map="village", x=31, y=22))
+    village.movement.place("ana", MapTile(map="high_street", x=51, y=15))
     mind = village.behaviour.minds["ana"]
     village.run_until(lambda: mind.goal.activity is A.WANDER and mind.ends is not None)
     since, stops = mind.since, set()
@@ -272,7 +275,7 @@ def test_a_wander_keeps_walking_until_it_ends() -> None:
 def test_a_bored_resident_moves_to_another_painting_before_leaving() -> None:
     village = Village([ANA], config=STEADY.model_copy(update={"switch": 100.0}))
     village.stay("ana", GALLERY, ago=20, left=20, boredom=0.6)
-    village.movement.place("ana", MapTile(map="gallery", x=3, y=2))
+    village.movement.place("ana", MapTile(map="gallery_floor_0", x=4, y=2))
     first = village.movement.on_spot("ana")
     assert first is not None and first.kind is SpotKind.VIEWING
 
@@ -296,7 +299,7 @@ def test_making_something_still_lasts_its_whole_stay() -> None:
 
 def test_idle_is_short_and_only_a_fallback() -> None:
     neutral = {value: 0.5 for value in CoreValue}
-    situation = Situation(neutral, CONTENT, 11.0, Point(31, 22), "house_1", 22.5)
+    situation = Situation(neutral, CONTENT, 11.0, Point(51, 15, "high_street"), "house_1", 22.5)
     places = Places(with_every_location(MAPS))
 
     best = best_per_activity(scores(situation, places))

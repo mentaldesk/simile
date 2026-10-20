@@ -58,8 +58,8 @@ def test_the_player_conversations_are_on_the_app_while_it_runs(app: Starlette) -
 def test_walk_up_to_an_npc_type_and_see_the_reply(app: Starlette) -> None:
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         kofi = next(e for e in receive(ws, "snapshot")["entities"] if e["id"] == "kofi")
-        x, y = kofi["position"]["x"], kofi["position"]["y"]
-        ws.send_json({"type": "player_move", "position": {"x": x + 1, "y": y}})
+        position = kofi["position"]
+        ws.send_json({"type": "player_move", "position": position | {"x": position["x"] + 1}})
         ws.send_json({"type": "player_say", "text": "Hello!", "target": "kofi"})
 
         started = receive(ws, "conversation_started")["conversation"]
@@ -110,8 +110,8 @@ def test_a_reply_recalls_an_article_by_its_stored_tags_and_summary(
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         app.state.llm = LLMClient(provider)
         kofi = next(e for e in receive(ws, "snapshot")["entities"] if e["id"] == "kofi")
-        x, y = kofi["position"]["x"], kofi["position"]["y"]
-        ws.send_json({"type": "player_move", "position": {"x": x + 1, "y": y}})
+        position = kofi["position"]
+        ws.send_json({"type": "player_move", "position": position | {"x": position["x"] + 1}})
         ws.send_json({"type": "player_say", "text": "Robots out in the desert!", "target": "kofi"})
         receive(ws, "line")
         receive(ws, "line")

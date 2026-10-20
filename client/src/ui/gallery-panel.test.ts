@@ -2,23 +2,25 @@
 import { afterEach, beforeEach, expect, it } from 'vitest';
 import { server, type Frame, type Position } from '../net';
 import type { Interactable } from '../world/interactables';
-import { GalleryFrames } from '../world/iso/paintings';
+import { GalleryFrames } from '../world/paintings';
 import { mapOf, tileOf } from '../world/map';
 import { GalleryPanel } from './gallery-panel';
 
-/** Two of the gallery map's frames: tests under jsdom can't read the maps from disk. */
+const GALLERY = 'gallery_floor_2';
+/** Two of content/street/floors/gallery_floor_2.tmj's frames: tests under jsdom can't read the maps from disk. */
 const frameAt = (id: string, x: number): Interactable => ({
   id,
   kind: 'painting',
   label: 'Painting',
-  map: 'gallery',
+  map: GALLERY,
+  area: { x, y: 1, width: 2, height: 1 },
   stand: [
-    { x, y: 11 },
-    { x: x + 1, y: 11 },
+    { x, y: 2 },
+    { x: x + 1, y: 2 },
   ],
   prompt: 'Look at the painting',
 });
-const ON_THE_MAP = [frameAt('painting_11', 19), frameAt('painting_10', 11)];
+const ON_THE_MAP = [frameAt('painting_11', 5), frameAt('painting_10', 3)];
 
 function find(map: string, position: Position | undefined): Interactable | undefined {
   if (!position || mapOf(position) !== map) return undefined;
@@ -28,7 +30,7 @@ function find(map: string, position: Position | undefined): Interactable | undef
 
 const HARBOUR: Frame = {
   id: 'painting_11',
-  map: 'gallery',
+  map: GALLERY,
   painting: {
     work_id: 'kofi-1',
     title: 'Harbour at Dusk',
@@ -37,12 +39,12 @@ const HARBOUR: Frame = {
     image: '/api/gallery/kofi-1.png',
   },
 };
-const EMPTY: Frame = { id: 'painting_10', map: 'gallery', painting: null };
+const EMPTY: Frame = { id: 'painting_10', map: GALLERY, painting: null };
 
-const AT_HARBOUR = { x: 19, y: 11, map: 'gallery' };
-const BESIDE_IT = { x: 20, y: 11, map: 'gallery' };
-const AT_EMPTY = { x: 12, y: 11, map: 'gallery' };
-const MID_ROOM = { x: 16, y: 15, map: 'gallery' };
+const AT_HARBOUR = { x: 5, y: 2, map: GALLERY };
+const BESIDE_IT = { x: 6, y: 2, map: GALLERY };
+const AT_EMPTY = { x: 4, y: 2, map: GALLERY };
+const MID_ROOM = { x: 8, y: 2, map: GALLERY };
 
 let frames: GalleryFrames;
 let panel: GalleryPanel;
@@ -102,7 +104,8 @@ it('opens at a painting with it large, its title, artist and statement', () => {
 it('opens nothing at an empty frame, away from the frames or on another map', () => {
   expect(panel.look(AT_EMPTY)).toBe(false);
   expect(panel.look(MID_ROOM)).toBe(false);
-  expect(panel.look({ x: 19, y: 11 })).toBe(false);
+  expect(panel.look({ x: 5, y: 2 })).toBe(false);
+  expect(panel.look({ x: 5, y: 2, map: 'gallery_floor_1' })).toBe(false);
   expect(panel.look(undefined)).toBe(false);
   expect(section().hidden).toBe(true);
 });
@@ -131,7 +134,7 @@ it('closes when the player steps away from the frame', () => {
   panel.update(BESIDE_IT);
   expect(panel.isOpen).toBe(true);
 
-  panel.update({ x: 19, y: 12, map: 'gallery' });
+  panel.update({ x: 7, y: 2, map: GALLERY });
   expect(panel.isOpen).toBe(false);
 });
 

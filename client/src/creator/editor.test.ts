@@ -7,6 +7,9 @@ import { Editor, type EditorContext } from './editor';
 import type { Job, SocketLike } from './jobs';
 import { LibraryView } from './library';
 
+// Its globs of content/ don't load under jsdom.
+vi.mock('../dolls/assets', () => ({ flatDoll: vi.fn(() => new Promise(() => {})) }));
+
 const CAN_DRAW: Capabilities = {
   machine: {},
   kinds: { sprite: { available: true, reason: null } },

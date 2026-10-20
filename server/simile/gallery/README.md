@@ -47,7 +47,7 @@ sim minutes) at each. A new goal or a conversation stops the tour.
   they talk about it later (M10). If the call fails, they try again after `look_again` (a sim
   hour). What's been seen is read back from memories, so a restart doesn't repeat it.
 - **The player** remembers each painting they stand at, once, with no call. The client's panel
-  shows it up close (`client/src/world/iso/README.md`).
+  shows it up close (`client/src/ui/gallery-panel.ts`).
 
 Every constant is in `GalleryConfig`.
 

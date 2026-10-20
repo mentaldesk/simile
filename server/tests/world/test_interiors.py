@@ -1,3 +1,5 @@
+"""Today's interiors, W1's, read from content/map/ until #315 removes them."""
+
 import json
 from collections import deque
 from pathlib import Path
@@ -5,9 +7,9 @@ from pathlib import Path
 import pytest
 
 from simile.schema import VILLAGE_MAP, Door, InteractableKind, LocationKind, MapTile, Tile
-from simile.world.map import TownMap, load_map, load_maps
+from simile.world.map import ISO_DIR, TownMap, load_map, load_maps
 
-MAPS = load_maps()
+MAPS = load_maps(ISO_DIR)
 INTERIORS = ["coffee_shop", "gallery", "maker_space", "noodle_bar"]
 
 
@@ -28,7 +30,7 @@ def walkable(town: TownMap) -> set[tuple[int, int]]:
 
 def test_load_maps_has_the_village_and_every_interior_by_id() -> None:
     assert list(MAPS) == [VILLAGE_MAP, *INTERIORS]
-    assert MAPS[VILLAGE_MAP] == load_map()
+    assert MAPS[VILLAGE_MAP] == load_map(ISO_DIR / f"{VILLAGE_MAP}.tmj")
     for map_id, town in MAPS.items():
         assert town.id == map_id
 

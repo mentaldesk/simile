@@ -70,10 +70,10 @@ input, so the player doesn't walk while reading, and it ignores `news` and `work
 
 ## Looking at a mural
 
-The world scene paints murals on walls (see [`world/iso/README.md`](../world/iso/README.md#murals)).
-Within `MURAL_REACH_TILES` (3) in front of a painted wall (on a side-view map, of either end of it
-along its street, since every wall faces the camera), a hint says "Press E to look at
-“<title>”", and E opens the mural panel: the picture, its title, the artist and their statement.
+The side scene paints murals on the buildings' fronts ([`side/`](../side/README.md)). Within
+`MURAL_REACH_TILES` (3) along the street of either end of a painted wall, since every wall faces the
+camera, a hint says "Press E to look at “<title>”", and E opens the mural panel: the picture, its
+title, the artist and their statement.
 Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or E
 closes it, and so does walking off: out of the wall's reach and more than a tile from where the
 panel opened. At a terminal E opens the news instead, and only one of the two panels is open at a
@@ -82,15 +82,15 @@ goes blank it closes. The panel keeps its key-downs from `window`, like the news
 nothing: the server notices a player near a mural itself.
 
 `MuralPanel` reads the walls from `muralWalls` and asks the scene drawing murals for the one under
-a click through `muralView()`, both in [`world/iso/murals.ts`](../world/iso/murals.ts). With no
+a click through `muralView()`, both in [`world/murals.ts`](../world/murals.ts). With no
 such scene, as in the dialogue harness, it never hints or opens.
 
 ## Ordering at a counter
 
 On a counter's stand tile (`interactables` in [`world/interactables.ts`](../world/interactables.ts)),
 a hint says "Press E to order at the counter.", and E opens the chat box to whoever is serving: the
-NPC behind the counter nearest the stand (`servingAt` in [`counter.ts`](counter.ts)), or else the
-player's partner. With nobody there it says so. The rest is the server's: the barista greets the
+NPC behind the counter nearest the stand, on its row past the tile beside the stand where customers
+wait for their drinks (`servingAt` in [`counter.ts`](counter.ts)), or else the player's partner. With nobody there it says so. The rest is the server's: the barista greets the
 player as they step up and takes the order over `player_say` like any conversation
 ([`simile.cafe`](../../../server/simile/cafe/README.md)). Other kinds of interactable get their own
 prompts from their own tasks.
@@ -100,6 +100,13 @@ prompts from their own tasks.
 The game's keys (Enter, Tab, Esc, E) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
+
+E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
+a terminal, the counter, a painting (the gallery panel's) or a mural. The world scene takes a door,
+stairs, a ladder or a lift on E only when none is, so one press never does two things. A hint says
+what E, or ↑ at a door, takes where the player stands: "Press E or ↑ to go into The Daily Grind.",
+"Press E to take the lift to the first floor." With something in reach, it's only a door's, under
+that thing's hint: "Press ↑ to go into 3 Banyan Row." The world scene words it (`wayHint`).
 
 ## What the world scene provides
 
@@ -130,7 +137,7 @@ The UI calls these every frame, after the world scene's `update`. Until a view i
 `TrackedWorld`, which follows `snapshot` and `entity_moved`, centres a camera of 48 overlay px tiles
 on the player and gives each sprite a 48 × 72 box. Either way, an NPC on another map than the
 player's has no position, and `distanceFromPlayer` measures nothing between maps, so it's neither
-heard, bubbled nor picked. Murals are only in reach on their wall's map, and terminals on the village.
+heard, bubbled nor picked. Murals and terminals are only in reach on their own map.
 
 The overlay is laid out in at least 640 × 360 px and scaled to cover the canvas (`fitOverlay` in
 [`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. The canvas is in device

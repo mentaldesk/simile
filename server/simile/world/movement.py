@@ -2,18 +2,27 @@ import asyncio
 import logging
 import math
 from collections import deque
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Iterator, Mapping
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any, Self
 
 from starlette.applications import Starlette
 
-from simile.schema import VILLAGE_MAP, Facing, Id, Location, MapArea, MapTile, Pose, Tile, TileArea
+from simile.schema import DoorKind, Facing, Id, Location, MapArea, MapTile, Pose, Tile, TileArea
 from simile.sim import EntityMoved, EventBus, world_of
-from simile.world.map import WALKING_SPEED, TownMap, load_maps, with_every_location
+from simile.world.map import WALKING_SPEED, TownMap, home_of, load_maps, with_every_location
 from simile.world.map import Spot as MapSpot
-from simile.world.paths import DOOR, Cell, Spot, door_ends, find_route, nearby, route_length
+from simile.world.paths import (
+    DOOR,
+    Cell,
+    Spot,
+    crossings,
+    door_ends,
+    find_route,
+    nearby,
+    route_length,
+)
 from simile.world.spots import (
     DEFAULT_SPOTS,
     Affinity,
@@ -37,7 +46,7 @@ class Point(tuple[float, float]):
 
     map: str
 
-    def __new__(cls, x: float, y: float, map: str = VILLAGE_MAP) -> Self:
+    def __new__(cls, x: float, y: float, map: str) -> Self:
         point = super().__new__(cls, (x, y))
         point.map = map
         return point
@@ -197,9 +206,10 @@ class Movement:
 
     def __init__(self, maps: TownMap | Mapping[str, TownMap], bus: EventBus) -> None:
         self.maps = {maps.id: maps} if isinstance(maps, TownMap) else dict(maps)
-        self.home = VILLAGE_MAP if VILLAGE_MAP in self.maps else next(iter(self.maps))
+        self.home = home_of(self.maps)
         self.town = with_every_location(self.maps, self.home)
         self.doors = door_ends(self.maps)
+        self.crossings = crossings(self.maps)
         self.bus = bus
         self.affinity: Affinity = indifferent
         """How much one entity likes being near another, for choosing a spot."""
@@ -261,7 +271,7 @@ class Movement:
         previous, walk = body.walk, Walk(entity, target)
         start = body.heading
         goal = self._resolve(entity, target, start)
-        path = None if goal is None else find_route(self.maps, start, goal, self.doors)
+        path = None if goal is None else self._route(start, goal)
         body.walk = walk
         body.path = deque(path or [start])
         if not body.stepping:
@@ -270,11 +280,14 @@ class Movement:
             self._end(body, Outcome.UNREACHABLE)
         else:
             walk.destination = map_tile(path[-1])
-            walk.distance = route_length([body.position, *body.path]) - body.through
+            walk.distance = route_length([body.position, *body.path], self.crossings)
+            walk.distance -= body.through
             if not body.path:
                 self._end(body, Outcome.ARRIVED)
         if not body.path:
             self._settle(entity, body)
+        elif body.path[0].map != body.tile.map and not body.through:
+            self._climb_or_ride(entity, body)
         if previous:
             previous.finish(Outcome.SUPERSEDED)
         return walk
@@ -295,7 +308,7 @@ class Movement:
         while body.path:
             spot = body.path[0]
             if spot.map != body.tile.map:
-                gap = DOOR - body.through
+                gap = self._crossing(body.tile)[1] - body.through
                 if gap > budget + EPSILON:
                     body.through += budget
                     return
@@ -318,7 +331,7 @@ class Movement:
             if body.claim in self._claims(entity):
                 self._reroute(entity, body)
             if body.path:
-                body.pose = Pose.WALKING
+                self._go(body)
             else:
                 self._rest(entity, body)
             self._publish(entity, body)
@@ -330,12 +343,40 @@ class Movement:
         walk, tile = body.walk, body.tile
         target = walk.target if walk else MapTile(map=tile.map, x=tile.x, y=tile.y)
         goal = self._resolve(entity, target, tile)
-        path = None if goal is None else find_route(self.maps, tile, goal, self.doors)
+        path = None if goal is None else self._route(tile, goal)
         if path:
             if walk:
-                walk.distance += route_length(path) - route_length([tile, *body.path])
+                walk.distance += route_length(path, self.crossings)
+                walk.distance -= route_length([tile, *body.path], self.crossings)
                 walk.destination = map_tile(path[-1])
             body.path = deque(path[1:])
+
+    def _route(self, start: Spot, goal: Spot) -> list[Spot] | None:
+        return find_route(self.maps, start, goal, self.doors, self.crossings)
+
+    def _crossing(self, end: Spot) -> tuple[DoorKind, float]:
+        return self.crossings.get(end, (DoorKind.DOOR, DOOR))
+
+    def _go(self, body: Body) -> None:
+        """On their way: climbing on stairs or a ladder, and for a crossing to another floor,
+        climbing or riding at its end until they're there. A ladder is climbed facing it."""
+        tile, ahead = body.tile, body.path[0]
+        kind = self._crossing(tile)[0] if ahead.map != tile.map else self._climb(tile)
+        if kind is None or kind is DoorKind.DOOR:
+            body.pose = Pose.WALKING
+            return
+        body.pose = Pose.RIDING if kind is DoorKind.LIFT else Pose.CLIMBING
+        if kind is DoorKind.LADDER:
+            body.facing = Facing.NORTH
+
+    def _climb_or_ride(self, entity: Id, body: Body) -> None:
+        """Setting off from the end of stairs, a ladder or a lift to another floor."""
+        if self._crossing(body.tile)[0] is not DoorKind.DOOR:
+            self._go(body)
+            self._publish(entity, body)
+
+    def _climb(self, tile: Spot) -> DoorKind | None:
+        return self.maps[tile.map].climb(tile.x, tile.y)
 
     def _replace(self, entity: Id, body: Body) -> None:
         old = self._bodies.get(entity)
@@ -355,38 +396,66 @@ class Movement:
 
     def _resolve(self, entity: Id, target: Target, start: Spot | None) -> Spot | None:
         """The free tile nearest the target, in its location if there's room, nearest the start.
-        A plain `Tile` is on the village."""
+        A location's other floors are tried, in turn, when the floor it's entered by is full. A
+        plain `Tile` is on the home map. Cells partway up stairs or a ladder come last."""
         claimed = self._claims(entity)
-        location = None
-        if isinstance(target, MapTile):
-            origin = Spot(target.map, target.x, target.y)
-        elif isinstance(target, Tile):
-            origin = Spot(self.home, target.x, target.y)
-        else:
-            location = self.town.location(target)
-            if (taken := self._take_spot(entity, location, start, claimed)) is not None:
-                return taken
-            if (
-                start is not None
-                and inside(location, start)
-                and start not in claimed
-                and start not in self._spots
-            ):
-                return start
-            origin = Spot(location.map, location.entry.x, location.entry.y)
+        if isinstance(target, MapTile | Tile):
+            map_id = target.map if isinstance(target, MapTile) else self.home
+            found = self._nearest(Spot(map_id, target.x, target.y), None, start, claimed)
+            return found[1] if found else None
+        location = self.town.location(target)
+        if (taken := self._take_spot(entity, location, start, claimed)) is not None:
+            return taken
+        if (
+            start is not None
+            and inside(location, start)
+            and start not in claimed
+            and start not in self._spots
+            and self._climb(start) is None
+        ):
+            return start
+        best: tuple[tuple[bool, bool, bool, int, float], Spot] | None = None
+        for origin in self._origins(location):
+            found = self._nearest(origin, location, start, claimed)
+            if found and (best is None or found[0][:3] < best[0][:3]):
+                best = found
+            if best and not any(best[0][:3]):
+                break
+        return best[1] if best else None
+
+    def _origins(self, location: Location) -> Iterator[Spot]:
+        """Where to look for room in a location: its entry, then a cell on each other floor."""
+        yield Spot(location.map, location.entry.x, location.entry.y)
+        for floor in location.floors:
+            town = self.maps.get(floor.map)
+            if town is None:
+                continue
+            cells = (
+                (x, y)
+                for y in range(floor.y + floor.height - 1, floor.y - 1, -1)
+                for x in range(floor.x, floor.x + floor.width)
+            )
+            cell = next((cell for cell in cells if town.standing(*cell)), None)
+            if cell is not None:
+                yield Spot(floor.map, *cell)
+
+    def _nearest(
+        self, origin: Spot, location: Location | None, start: Spot | None, claimed: set[Spot]
+    ) -> tuple[tuple[bool, bool, bool, int, float], Spot] | None:
         near = start if start is not None and start.map == origin.map else origin
-        best: tuple[tuple[bool, bool, int, float], Spot] | None = None
+        best: tuple[tuple[bool, bool, bool, int, float], Spot] | None = None
         for cell, depth in nearby(self.maps[origin.map], (origin.x, origin.y)):
-            if best and not best[0][0] and not best[0][1] and depth > best[0][2]:
+            if best and not any(best[0][:3]) and depth > best[0][3]:
                 break
             spot = Spot(origin.map, *cell)
             if spot not in claimed:
                 outside = location is not None and not inside(location, spot)
                 on_spot = location is not None and spot in self._spots
-                rank = (outside, on_spot, depth, math.dist(cell, (near.x, near.y)))
+                climbing = spot != origin and self._climb(spot) is not None
+                rank = (outside, on_spot, climbing, depth, math.dist(cell, (near.x, near.y)))
                 if best is None or rank < best[0]:
                     best = (rank, spot)
-        return best[1] if best else None
+        return best
 
     def _take_spot(
         self, entity: Id, location: Location, start: Spot | None, claimed: set[Spot]
@@ -399,7 +468,7 @@ class Movement:
         here = self._spots.get(start) if start is not None else None
         if here and here.kind in kinds and inside(location, start) and start not in claimed:
             return start
-        rise = self._rise(location)
+        rise = self.rise(location)
         if location.id not in self._spots_in:
             self._spots_in[location.id] = [
                 spot
@@ -424,10 +493,12 @@ class Movement:
         near = (location.entry.x, location.entry.y)
         if start is not None and start.map in rise:
             near = level(start.x, start.y, start.map)
-        spot = choose(entity, free, kinds, others, near, self.affinity, self.spot_config)
+        spot = choose(
+            entity, free, kinds, others, near, self.affinity, self.spot_config, place=location.id
+        )
         return None if spot is None else Spot(spot.map, free[spot].x, free[spot].y)
 
-    def _rise(self, location: Location) -> dict[str, int]:
+    def rise(self, location: Location) -> dict[str, int]:
         """How many tiles up each map the location covers is stacked, so its floors measure as one
         picture."""
         base = self.maps[location.map].floor or 0
@@ -442,9 +513,14 @@ class Movement:
         return spot.seat if spot else (tile.x, tile.y)
 
     def _rest(self, entity: Id, body: Body) -> None:
-        """Stopped: the pose and facing of the spot they're on, or standing as they were."""
+        """Stopped: the pose and facing of the spot they're on, climbing partway up stairs or a
+        ladder, or standing as they were."""
         spot = self._spots.get(body.tile)
-        if spot is None:
+        if spot is None and (kind := self._climb(body.tile)) is not None:
+            body.pose = Pose.CLIMBING
+            if kind is DoorKind.LADDER:
+                body.facing = Facing.NORTH
+        elif spot is None:
             body.pose = Pose.STANDING
         else:
             body.pose, body.facing = pose_on(spot, self._purposes.get(entity)), spot.facing

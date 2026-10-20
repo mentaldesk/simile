@@ -1,4 +1,5 @@
 import asyncio
+import csv
 import logging
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime, timedelta
@@ -18,13 +19,16 @@ from simile.persistence import (
     capture,
     restore,
 )
+from simile.persistence.old_cells import TABLE, build, moved, write
 from simile.reflection import Reflector
-from simile.schema import PLAYER_ID, VILLAGE_MAP, Intention, IntentionKind, MapTile
+from simile.schema import PLAYER_ID, VILLAGE_MAP, Intention, IntentionKind, MapTile, Tile
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement, Point
-from simile.world.map import load_maps
+from simile.world.map import ISO_DIR, load_maps, with_every_location
 
 MAPS = load_maps()
+TOWN = with_every_location(MAPS)
+TODAY = ("village", "coffee_shop", "gallery", "maker_space", "noodle_bar")
 NPCS = load_npcs()
 MORNING = datetime(2026, 1, 1, 8, tzinfo=UTC)
 
@@ -147,32 +151,36 @@ def test_npcs_missing_from_the_save_start_afresh_and_strangers_are_ignored() -> 
 
 def test_a_resident_inside_saves_and_reloads_inside() -> None:
     before = Village()
-    before.movement.place("kofi", MapTile(map="coffee_shop", x=13, y=9))
+    before.movement.place("kofi", MapTile(map="coffee_shop_floor_1", x=11, y=2))
     saved = capture(before.behaviour)
-    assert (saved.npcs["kofi"].map, saved.npcs["henrietta"].map) == ("coffee_shop", VILLAGE_MAP)
+    assert (saved.npcs["kofi"].map, saved.npcs["henrietta"].map) == (
+        "coffee_shop_floor_1",
+        "house_4_floor_0",
+    )
 
     after = Village(seed=1)
     restore(saved, after.behaviour)
 
-    assert after.movement.position("kofi") == Point(13, 9, "coffee_shop")
+    assert after.movement.position("kofi") == Point(11, 2, "coffee_shop_floor_1")
 
 
 def test_residents_saved_where_someone_starts_get_their_tiles_back() -> None:
     before = Village()
     barista = next(npc.id for npc in NPCS if npc.home == "coffee_shop")
+    ground = "coffee_shop_floor_0"
     saved_at = {
-        barista: MapTile(map="coffee_shop", x=13, y=9),
-        "ingrid": MapTile(map="coffee_shop", x=5, y=6),
-        "kofi": MapTile(map="coffee_shop", x=7, y=6),
-        "lachlan": MapTile(map="coffee_shop", x=6, y=7),
-        "raymond": MapTile(map="coffee_shop", x=6, y=6),
+        barista: MapTile(map=ground, x=9, y=2),
+        "ingrid": MapTile(map=ground, x=6, y=2),
+        "kofi": MapTile(map=ground, x=7, y=2),
+        "lachlan": MapTile(map=ground, x=8, y=2),
+        "raymond": MapTile(map=ground, x=5, y=2),
     }
     for npc, tile in saved_at.items():
         before.movement.place(npc, tile)
     saved = capture(before.behaviour)
 
     after = Village(seed=1)
-    assert after.movement.position(barista) == Point(5, 6, "coffee_shop")
+    assert after.movement.position(barista) == Point(6, 2, ground)
     restore(saved, after.behaviour)
 
     for npc, tile in saved_at.items():
@@ -187,6 +195,104 @@ def test_a_save_from_before_interiors_loads_onto_the_village() -> None:
     old = SavedWorld.model_validate(saved)
 
     assert {state.map for state in old.npcs.values()} == {VILLAGE_MAP}
+
+
+def on_todays_maps(saved: SavedWorld, at: dict[str, tuple[str, int, int]]) -> SavedWorld:
+    npcs = {
+        npc: state.model_copy(
+            update={"map": at[npc][0], "position": Tile(x=at[npc][1], y=at[npc][2])}
+        )
+        if npc in at
+        else state
+        for npc, state in saved.npcs.items()
+    }
+    return saved.model_copy(update={"npcs": npcs})
+
+
+def test_a_save_on_todays_maps_puts_everyone_in_the_same_place_on_the_new_ones() -> None:
+    before = Village()
+    for npc in before.behaviour.minds:
+        before.movement.place(npc, "square")
+    saved = on_todays_maps(
+        capture(before.behaviour),
+        {
+            "kofi": ("village", 27, 19),
+            "henrietta": ("coffee_shop", 5, 6),
+            "raymond": ("village", 14, 19),
+            "ingrid": ("village", 31, 11),
+            "marguerite": ("gallery", 3, 2),
+            "lachlan": ("coffee_shop", 13, 9),
+            "tobias": ("village", 47, 30),
+            "priya": ("village", 9, 13),
+        },
+    )
+    bench = MAPS["high_street"].spots
+    [cafe_door] = [door for door in TOWN.doors if door.id == "coffee_shop"]
+    [counter] = MAPS["coffee_shop_floor_0"].interactables
+    [painting] = [
+        item for town in MAPS.values() for item in town.interactables if item.id == "painting_1"
+    ]
+
+    after = Village(seed=1)
+    restore(saved, after.behaviour)
+
+    def at(npc: str) -> Point:
+        return after.movement.position(npc)
+
+    [seat] = [spot for spot in bench if spot.id == "seat-27-19"]
+    assert at("kofi") == Point(seat.x, seat.y, seat.map)
+    assert at("henrietta") == Point(counter.stand[0].x, counter.stand[0].y, counter.map)
+    house = TOWN.location("house_7")
+    assert at("raymond") == Point(house.entry.x, house.entry.y, house.map)
+    assert at("ingrid") == Point(cafe_door.outside.x, cafe_door.outside.y, cafe_door.outside.map)
+    assert at("marguerite") == Point(painting.stand[0].x, painting.stand[0].y, painting.map)
+    assert at("lachlan").map.startswith("coffee_shop_floor_")
+    park = TOWN.location("park")
+    assert at("tobias") == Point(park.entry.x, park.entry.y, park.map)
+    [house_2] = [door for door in TOWN.doors if door.id == "house_2"]
+    assert at("priya") == Point(house_2.outside.x, house_2.outside.y, house_2.outside.map)
+    assert all(MAPS[at(npc).map].walkable(int(at(npc).x), int(at(npc).y)) for npc in saved.npcs)
+    assert after.behaviour.minds["kofi"].goal == before.behaviour.minds["kofi"].goal
+
+
+def test_someone_saved_on_a_map_neither_world_has_stays_where_they_start() -> None:
+    before = Village()
+    saved = on_todays_maps(capture(before.behaviour), {"kofi": ("moon", 1, 1)})
+    after = Village(seed=1)
+    start = after.movement.position("kofi")
+
+    restore(saved, after.behaviour)
+
+    assert after.movement.position("kofi") == start
+
+
+def test_every_cell_in_the_table_lands_somewhere_to_stand_on_the_new_maps() -> None:
+    with TABLE.open(newline="") as file:
+        rows = list(csv.DictReader(file))
+
+    assert rows and {row["map"] for row in rows} == set(TODAY)
+    for row in rows:
+        town = MAPS[row["new_map"]]
+        assert town.standing(int(row["new_x"]), int(row["new_y"])), row
+        assert moved(row["map"], int(row["first_x"]), int(row["y"])) == MapTile(
+            map=row["new_map"], x=int(row["new_x"]), y=int(row["new_y"])
+        )
+    assert moved("village", 999, 999) is None and moved("moon", 1, 1) is None
+
+
+@pytest.mark.skipif(not ISO_DIR.exists(), reason="today's maps are gone, with W1's builder")
+def test_the_committed_table_covers_every_cell_of_todays_maps(tmp_path: Path) -> None:
+    today = load_maps(ISO_DIR)
+    fresh = tmp_path / "old_cells.csv"
+
+    write(build(today, MAPS), fresh)
+
+    assert fresh.read_text() == TABLE.read_text()
+    for town in today.values():
+        for y in range(town.height):
+            for x in range(town.width):
+                if town.walkable(x, y):
+                    assert moved(town.id, x, y) is not None, (town.id, x, y)
 
 
 def intention(owner: str, target: str, hours: float) -> Intention:

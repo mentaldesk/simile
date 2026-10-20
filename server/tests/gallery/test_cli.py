@@ -37,7 +37,7 @@ def test_paints_a_canvas_and_hangs_it(
     assert f'"Harbour at Dusk", {KOFI.craft.form if KOFI.craft else ""}, by {KOFI.name}' in (
         result.output
     )
-    assert result.output.endswith(f"Hung in {next(iter(hanging))[1]} on gallery.\n")
+    assert result.output.endswith(f"Hung in {next(iter(hanging))[1]} on gallery_floor_0.\n")
     assert Image.open(out).size == painting_canvas()
 
 

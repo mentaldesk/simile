@@ -11,9 +11,9 @@ from simile.persistence import WorldStore, capture, restore
 from simile.schema import MapTile
 from simile.world import Point
 
-from .conftest import DAY, Village
+from .conftest import DAY, GROUND, Village
 
-TILL = Point(5, 4, "coffee_shop")
+TILL = Point(3, 2, GROUND)
 COFFEE = Goal(Activity.COFFEE_SHOP, "coffee_shop")
 
 pytestmark = pytest.mark.anyio
@@ -38,7 +38,7 @@ async def test_a_save_from_before_the_barista_loads_with_them_at_the_cafe(tmp_pa
     assert after.now >= saved.now
     for npc, state in saved.npcs.items():
         assert after.behaviour.goal(npc) == Goal(state.activity, state.target)
-    assert after.at(BARISTA.id).map == "coffee_shop"
+    assert after.at(BARISTA.id).map in after.cafe.maps
     await after.run(minutes=1)
     assert after.cafe.on_shift
     assert after.behaviour.goal(BARISTA.id) == COFFEE
@@ -49,7 +49,7 @@ async def test_a_save_from_before_the_barista_loads_with_them_at_the_cafe(tmp_pa
 async def test_someone_restored_mid_stay_in_the_cafe_sits_rather_than_queuing_again() -> None:
     npc = BEFORE[0].id
     village = Village((BARISTA, BEFORE[0]), start=DAY.replace(hour=9))
-    village.movement.place(npc, MapTile(map="coffee_shop", x=13, y=9))
+    village.movement.place(npc, MapTile(map=GROUND, x=12, y=2))
     now, needs = village.now, village.behaviour.needs(npc)
     since, until = now - timedelta(minutes=20), now + timedelta(minutes=10)
     village.behaviour.restore(npc, COFFEE, needs, since, until, {})
@@ -58,4 +58,4 @@ async def test_someone_restored_mid_stay_in_the_cafe_sits_rather_than_queuing_ag
 
     assert village.cafe.queue == [] and village.of(Ordered) == []
     assert village.behaviour.goal(npc) == COFFEE
-    assert village.at(npc).map == "coffee_shop"
+    assert village.at(npc).map in village.cafe.maps

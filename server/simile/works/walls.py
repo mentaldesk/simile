@@ -6,7 +6,7 @@ from simile.behaviour import MuralSpot
 from simile.behaviour.scoring import affinity
 from simile.memory import MemoryStore
 from simile.protocol import Artist, Mural, MuralsMessage, Wall
-from simile.schema import VILLAGE_MAP, CoreValue, Id, Npc, Work
+from simile.schema import CoreValue, Id, MapTile, Npc, Work
 from simile.sim import Clock
 from simile.social import as_of, meet
 from simile.works.config import DEFAULT_CONFIG, WorksConfig
@@ -42,6 +42,20 @@ def readiness(
     if fondness >= config.friend and bold < config.friend_boldness:
         return None
     return age + config.boldness_weight * (bold - 0.5) - config.fondness_weight * fondness
+
+
+def stand(wall: MuralWall) -> MapTile:
+    """Where its painter stands, on its map."""
+    if wall.map is None:
+        raise ValueError(f"{wall.id} isn't on a map")
+    return MapTile(map=wall.map, x=wall.stand.x, y=wall.stand.y)
+
+
+def away(here: Point, wall: MuralWall) -> float:
+    """How far it is to the wall's painter's tile, on the same map, or else infinitely far."""
+    if wall.map is not None and wall.map != here.map:
+        return math.inf
+    return math.dist(here, (wall.stand.x, wall.stand.y))
 
 
 def nobody_painting() -> dict[Id, Id]:
@@ -89,11 +103,11 @@ class Walls:
         showing = self.works.showing()
         said = next((wall for wall in free if wall.id == self.promised(npc.id)), None)
         if said is not None and self._ready(npc, showing.get(said.id)):
-            return MuralSpot(said.id, said.stand)
+            return MuralSpot(said.id, stand(said))
         if blank := [wall for wall in free if wall.id not in showing]:
-            if (here := self.positions().get(npc.id)) is not None and here.map == VILLAGE_MAP:
-                blank.sort(key=lambda wall: math.dist(here, (wall.stand.x, wall.stand.y)))
-            return MuralSpot(blank[0].id, blank[0].stand)
+            if (here := self.positions().get(npc.id)) is not None:
+                blank.sort(key=lambda wall: away(here, wall))
+            return MuralSpot(blank[0].id, stand(blank[0]))
         ready = [
             (score, wall)
             for wall in free
@@ -102,7 +116,7 @@ class Walls:
         best = max(ready, key=lambda pair: pair[0], default=None)
         if best is None or best[0] < self.config.min_readiness:
             return None
-        return MuralSpot(best[1].id, best[1].stand)
+        return MuralSpot(best[1].id, stand(best[1]))
 
     def readiness(self, painter: Npc, mural: Work) -> float | None:
         fondness = 0.0
@@ -131,6 +145,7 @@ class Walls:
                     bottom=wall.bottom,
                     top=wall.top,
                     mural=self._mural(showing[wall.id]) if wall.id in showing else None,
+                    **({"map": wall.map} if wall.map else {}),
                 )
                 for wall in self.walls
             ]

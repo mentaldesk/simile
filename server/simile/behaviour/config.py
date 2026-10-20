@@ -173,12 +173,7 @@ DWELL: dict[Activity, tuple[float, float]] = {
     A.EXERCISE: (15, 40),
 }
 
-LOOPS: dict[str, tuple[tuple[int, int], ...]] = {
-    "lotus_lake": ((47, 14), (62, 14), (62, 17), (52, 18), (51, 29), (62, 30), (62, 33), (47, 33)),
-    "village": ((1, 12), (44, 12), (45, 35), (1, 35)),
-}
-
-STREET_LOOPS: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
+LOOPS: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
     "lychee_lane": {"lotus_lake": ((36, 15), (59, 15), (48, 12))},
     "high_street": {"village": ((1, 15), (82, 15))},
 }
@@ -462,15 +457,11 @@ class BehaviourConfig(BaseModel):
         "out of home, up to `crowd_cap`. Sociability divides it, by up to "
         "`sociability_spread`.",
     )
-    loops: dict[str, tuple[tuple[int, int], ...]] = Field(
+    loops: dict[str, dict[str, tuple[tuple[int, int], ...]]] = Field(
         default=LOOPS,
-        description="Walks round the village map for exercise, as the tiles they pass in order, "
-        "back to the first.",
-    )
-    loops_on: dict[str, dict[str, tuple[tuple[int, int], ...]]] = Field(
-        default=STREET_LOOPS,
-        description="Walks for exercise on other maps, by map id, as `loops` are on the village. "
-        "Only the walks on the world's maps are options.",
+        description="Walks for exercise by map id, each by name as the tiles it passes in order, "
+        "back to the first. Only the walks on the world's maps are options. A walk keeps its "
+        "name from today's village, so a saved goal still finds it.",
     )
     start_dwell: tuple[float, float] = Field(
         default=(0.5, 5), description="Minutes awake at home before the first decision."

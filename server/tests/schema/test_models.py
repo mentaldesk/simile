@@ -33,7 +33,7 @@ from simile.schema import (
     TileArea,
     Work,
 )
-from simile.world.map import load_map, load_maps
+from simile.world.map import load_maps
 
 from .conftest import COUNTER, DOOR
 
@@ -351,11 +351,13 @@ def test_locations_stored_without_a_map_are_on_the_village() -> None:
     assert Location.model_validate_json(json.dumps(location)).map == VILLAGE_MAP
 
 
-def test_the_committed_village_map_still_loads_onto_the_village() -> None:
-    locations = load_map().locations
+def test_the_committed_maps_load_their_locations_onto_themselves() -> None:
+    maps = load_maps()
 
-    assert locations
-    assert {location.map for location in locations} == {VILLAGE_MAP}
+    assert any(town.locations for town in maps.values())
+    for town in maps.values():
+        assert {location.map for location in town.locations} <= {town.id}
+    assert VILLAGE_MAP not in maps
 
 
 def test_no_two_links_on_the_committed_maps_share_an_end_tile() -> None:

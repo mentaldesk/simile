@@ -1,8 +1,10 @@
 # simile.world
 
-The village, the interiors of its buildings, and how entities move around them and through their
-doors. The maps are described in [`content/map/README.md`](../../../content/map/README.md);
-`simile.world.map.load_maps()` loads them all by id, and `load_map()` the village.
+The village, the floors of its buildings, and how entities move along its streets, up and down,
+and through its doors. The side-view maps are described in
+[`content/street/README.md`](../../../content/street/README.md); `simile.world.map.load_maps()`
+loads them all by id, and `load_map(path)` one. Today's isometric maps, W1's, are still in
+`content/map/` until #315 and load by path, `load_maps(ISO_DIR)`.
 
 ## Movement
 
@@ -26,25 +28,29 @@ if await walk is Outcome.ARRIVED:
 | `stop(entity)` | Cancels the entity's walk. |
 | `position(entity)` | A `Point(x, y, map)` in tiles. Fractions are mid-step. |
 | `entities()` | `{id: Point}` for every entity. |
-| `distance(a, b)` | Straight-line distance between two entities, in tiles, or `math.inf` if they're on different maps. |
+| `distance(a, b)` | Straight-line distance between two entities, in tiles, or `math.inf` if they're on different maps. For hearing and talking, `simile.voicing.distance.between` measures along the street. |
 | `intend(entity, purpose)` | What they're at their next place for, which says which spots suit them (see *Spots*). `None` for nothing in particular. |
 | `posture(entity)` | Their `(Pose, Facing)`. |
 | `on_spot(entity)` | The `Spot` they've stopped on, or `None`. |
 | `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position and map on every `player_move`, so `position("player")` raises `KeyError` until the first one. It logs and drops a move onto a map that isn't loaded. |
-| `town` | The village's `TownMap`, carrying every map's locations, so `town.location(id)` finds any of them. An id on two maps is the village's. |
-| `maps` | Every `TownMap` by id. |
+| `town` | The first street's `TownMap`, carrying every map's locations, doors and mural walls, so `town.location(id)` finds any of them. |
+| `maps` | Every `TownMap` by id. `TownMap.street` says whether one is outdoors. |
+| `crossings` | Each end of every link, its `DoorKind` and how long crossing it takes, in tiles of walking. |
+| `rise(location)` | How far up each of its floors' maps is stacked, in tiles, so its floors measure as one picture. |
 
 `Movement(maps, bus)` takes the maps by id, or a single `TownMap`.
 
 A `Point` unpacks, measures and compares with a plain `(x, y)` like a pair, so `math.dist` and
 `x, y = point` work. Two points on different maps are never equal.
 
-A target is a location id, a `MapTile`, or a `Tile`, which is on the village.
+A target is a location id, a `MapTile`, or a `Tile`, which is on `home`, the first street.
 
 - **A location** means a free spot there that suits what the entity is there for (see *Spots*), or
   else its entry tile. If someone else has that, it's the nearest free walkable tile in the
-  location's area that isn't a spot, or outside the area if that's full. An entity already in the
-  area, and not on a spot, stays where it is.
+  location's area that isn't a spot, then on each of its other floors in turn, or outside the area
+  if they're all full. An entity already in the area, and not on a spot, stays where it is.
+- Nobody is put partway up stairs or a ladder while there's a cell to stand on nearby, unless they
+  walk there on purpose.
 - **A tile** means that tile or, if it's taken, the nearest free one on its map, on the walker's
   side. So walking to another NPC's tile ends next to them.
 - **Taken** means another entity is standing on it or walking to it, so two entities never end up on
@@ -61,11 +67,14 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on the village.
 - `walk.destination` is the `MapTile` it's heading for and `walk.distance` its length in tiles, on
   every map it crosses, so it takes `walk.distance / WALKING_SPEED` sim seconds.
 - Entities walk at `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second, at any sim speed.
-- Paths are A\* on each map's grid in 8 directions. A diagonal step needs both tiles beside it to be
-  walkable, so nobody cuts a corner.
-- Each door is an edge between its two tiles. Going through takes as long as a step
-  (`simile.world.paths.DOOR`, 1 tile): the walker stands on the door's tile until it's through, then
-  is on the tile at the other end.
+- Paths are A\* on each map's grid by its neighbour rule, `simile.street.moves`: left and right
+  along a row, and up and down only along stairs and ladders. On today's maps they're in 8
+  directions without cutting a corner.
+- Each link is an edge between its two tiles. Going through a door takes as long as a step
+  (`simile.world.paths.DOOR`, 1 tile). Stairs, a ladder or a lift to another floor take as long as
+  the climb or ride, at `CROSSING_SPEED` (1.3, 1 and 2.4 tiles a second) with the floors stacked,
+  as the client plays it, so a lift goes straight to the floor wanted. The walker stands on the
+  link's tile until it's through, then is on the tile at the other end.
 - Entities only stop on whole tiles. A walk that ends early finishes the step it's on, or goes
   through the door it has started through, and a new walk starts from that tile. If someone else has that tile,
   the entity steps on to the nearest free one.
@@ -74,7 +83,7 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on the village.
 ## Spots
 
 Each place has spots: somewhere to spend a stay, each a walkable tile with a kind and a way to
-face, in the maps' `spots` layer ([`content/map/README.md`](../../../content/map/README.md#spots)).
+face, in the maps' `spots` layer ([`content/street/README.md`](../../../content/street/README.md#objects)).
 `TownMap.spots` has a map's, and `spot_at(x, y)` the one on a tile.
 
 | Kind | Pose | Where |
@@ -113,9 +122,15 @@ spot free, they stand nearby as before, on a tile that isn't a spot.
 
 **Poses.** Stopped on a spot, an entity takes its pose and faces its way, however they got there:
 the café seats its customers itself. A muralist on a mural wall's viewing spot is `working`.
-Anywhere else they're `standing`, facing the way they last stepped. On their way they're `walking`,
-facing each step. `posture(entity)` is their `(pose, facing)`, for the snapshot, and
-`on_spot(entity)` the spot they've stopped on, if any.
+Partway up stairs or a ladder they're `climbing`. Anywhere else they're `standing`, facing the way
+they last stepped. On their way they're `walking`, facing each step, or `climbing` on stairs and a
+ladder, facing `north` on a ladder. At the end of stairs, a ladder or a lift to another floor
+they're `climbing` or `riding` until they're through. `posture(entity)` is their `(pose, facing)`,
+for the snapshot, and `on_spot(entity)` the spot they've stopped on, if any.
+
+**Taste** is keyed by the place a spot is in (`choose(..., place=)`), so the regulars of the café,
+the noodle bar, the gallery and the maker space, whose maps were named after their places on
+today's maps, keep their usual spots.
 
 ## `EntityMoved`
 
@@ -124,14 +139,17 @@ Movement publishes it:
 
 - when an entity is placed,
 - each time a walking entity reaches a tile, including the one it stops on and the far end of a
-  door, and
+  link,
+- as one sets off from the end of stairs, a ladder or a lift to another floor, `climbing` or
+  `riding`, and
 - when an entity stops without a step, as when a walk is cancelled, if that changes its pose or
   facing.
 
-So positions are always whole tiles (`x=31.0, y=11.0, map='village'`), and consecutive positions of
-a walking entity are neighbouring tiles on the same map, diagonals included, or the two ends of a
-door. A walker sends one every 0.77 sim seconds (1.09 s on a diagonal), however many ticks that is:
-13 a real second at 10x. Player moves aren't published back to the client.
+So positions are always whole tiles (`x=43.0, y=15.0, map='high_street'`), and consecutive
+positions of a walking entity are neighbouring tiles on the same map, or the two ends of a link. A
+walker sends one every 0.77 sim seconds (1.09 s a stair), however many ticks that is: 13 a real
+second at 10x. Player moves aren't published back to the client; one without a map, which means
+today's village, is ignored.
 
 To animate a walker, tween its sprite from where it's drawn to each new position over
 `distance / WALKING_SPEED` sim seconds (real seconds under `simile serve`, which runs at 1x). The

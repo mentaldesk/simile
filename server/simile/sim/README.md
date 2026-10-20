@@ -67,7 +67,7 @@ Events are frozen dataclasses. They refer to entities by id and carry the
 
 | Event | Fields |
 |---|---|
-| `EntityMoved` | `entity` (an id), `x`, `y` (in tiles), `map` (the map's id, `"village"` by default), `pose` and `facing` (standing, facing south-east by default) |
+| `EntityMoved` | `entity` (an id), `x`, `y` (in tiles), `map` (the map's id), `pose` and `facing` (standing, facing south-east by default) |
 | `ConversationStarted` | `conversation`: a `Conversation` |
 | `LineSpoken` | `line`: a `Line`, with its id, speaker, text, timestamp and duration |
 | `ConversationEnded` | `conversation`: a `Conversation`, with its lines and `ended` set |
