@@ -224,7 +224,7 @@
     },
     "EntityMovedMessage": {
       "additionalProperties": false,
-      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.",
+      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.\nOn a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a\nlift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb\nor ride, then one onto the other map, as through a door.",
       "properties": {
         "type": {
           "const": "entity_moved",
@@ -255,7 +255,7 @@
       "type": "object"
     },
     "Face": {
-      "description": "The way a wall faces. The iso camera sees only south and east faces.",
+      "description": "The way a wall faces. The iso camera sees only south and east faces, and a side-view map\nhas only south faces, towards the camera.",
       "enum": [
         "south",
         "east"
@@ -264,7 +264,7 @@
       "type": "string"
     },
     "Facing": {
-      "description": "Which way someone faces on the map, x east and y south, by angle from east through south.",
+      "description": "Which way someone faces on the map, x east and y south, by angle from east through south.\nIn side view, the three eastward values face right and the westward ones left, `north` shows\ntheir back, looking into the picture, and `south` their front.",
       "enum": [
         "east",
         "south_east",
@@ -282,7 +282,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "description": "The painting interactable's id, which is also its frame's id in the interior's iso manifest.",
+          "description": "The painting interactable's id.",
           "maxLength": 64,
           "pattern": "^[a-z][a-z0-9_]*$",
           "type": "string"
@@ -659,6 +659,7 @@
     },
     "PlayerMoveMessage": {
       "additionalProperties": false,
+      "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map.",
       "properties": {
         "type": {
           "const": "player_move",
@@ -704,21 +705,23 @@
       "type": "object"
     },
     "Pose": {
-      "description": "What someone is doing where they are.",
+      "description": "What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in\na lift.",
       "enum": [
         "standing",
         "walking",
         "sitting",
         "reading",
         "working",
-        "looking"
+        "looking",
+        "climbing",
+        "riding"
       ],
       "title": "Pose",
       "type": "string"
     },
     "Position": {
       "additionalProperties": false,
-      "description": "Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step.",
+      "description": "Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a\nside-view map, x runs along the street and y counts rows down from the top, and fractions are\nmid-step or mid-climb.",
       "properties": {
         "x": {
           "type": "number"
@@ -850,6 +853,7 @@
           "type": "string"
         },
         "map_id": {
+          "description": "The map the player starts on: the village, or a street on side-view maps.",
           "minLength": 1,
           "type": "string"
         },
@@ -885,13 +889,19 @@
           "pattern": "^[a-z][a-z0-9_]*$",
           "type": "string"
         },
+        "map": {
+          "default": "village",
+          "description": "The map it's on, such as a street. Left out on the village.",
+          "minLength": 1,
+          "type": "string"
+        },
         "x": {
-          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1). On a side-view map, it's the standing cell at the wall's west end, on the street in front of it.",
           "minimum": 0,
           "type": "integer"
         },
         "y": {
-          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).",
+          "description": "(x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1). On a side-view map, it's the standing cell at the wall's west end, on the street in front of it.",
           "minimum": 0,
           "type": "integer"
         },
@@ -904,12 +914,12 @@
           "$ref": "#/$defs/Face"
         },
         "bottom": {
-          "description": "The mural's lower edge, in storeys above the ground.",
+          "description": "The mural's lower edge, in storeys above the ground there.",
           "minimum": 0,
           "type": "number"
         },
         "top": {
-          "description": "The mural's upper edge, in storeys above the ground.",
+          "description": "The mural's upper edge, in storeys above the ground there.",
           "type": "number"
         },
         "mural": {

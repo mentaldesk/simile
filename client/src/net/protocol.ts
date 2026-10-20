@@ -16,17 +16,22 @@ export type ServerMessage =
   | PaintingsMessage;
 export type EntityKind = 'npc' | 'player';
 /**
- * What someone is doing where they are.
+ * What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
+ * a lift.
  */
-export type Pose = 'standing' | 'walking' | 'sitting' | 'reading' | 'working' | 'looking';
+export type Pose =
+  'standing' | 'walking' | 'sitting' | 'reading' | 'working' | 'looking' | 'climbing' | 'riding';
 /**
  * Which way someone faces on the map, x east and y south, by angle from east through south.
+ * In side view, the three eastward values face right and the westward ones left, `north` shows
+ * their back, looking into the picture, and `south` their front.
  */
 export type Facing =
   'east' | 'south_east' | 'south' | 'south_west' | 'west' | 'north_west' | 'north' | 'north_east';
 export type JsonValue = unknown;
 /**
- * The way a wall faces. The iso camera sees only south and east faces.
+ * The way a wall faces. The iso camera sees only south and east faces, and a side-view map
+ * has only south faces, towards the camera.
  */
 export type Face = 'south' | 'east';
 export type ClientMessage =
@@ -47,6 +52,9 @@ export interface SnapshotMessage {
    * Sim time.
    */
   time: string;
+  /**
+   * The map the player starts on: the village, or a street on side-view maps.
+   */
   map_id: string;
   entities: Entity[];
   /**
@@ -66,7 +74,9 @@ export interface Entity {
   facing?: Facing;
 }
 /**
- * Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step.
+ * Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a
+ * side-view map, x runs along the street and y counts rows down from the top, and fractions are
+ * mid-step or mid-climb.
  */
 export interface Position {
   x: number;
@@ -122,6 +132,9 @@ export interface ClockMessage {
 }
 /**
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+ * On a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a
+ * lift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb
+ * or ride, then one onto the other map, as through a door.
  */
 export interface EntityMovedMessage {
   type: 'entity_moved';
@@ -256,11 +269,15 @@ export interface MuralsMessage {
 export interface Wall {
   id: string;
   /**
-   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   * The map it's on, such as a street. Left out on the village.
+   */
+  map?: string;
+  /**
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1). On a side-view map, it's the standing cell at the wall's west end, on the street in front of it.
    */
   x: number;
   /**
-   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1).
+   * (x, y) is the building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (y + 1) or east edge (x + 1). On a side-view map, it's the standing cell at the wall's west end, on the street in front of it.
    */
   y: number;
   /**
@@ -269,11 +286,11 @@ export interface Wall {
   width: number;
   face: Face;
   /**
-   * The mural's lower edge, in storeys above the ground.
+   * The mural's lower edge, in storeys above the ground there.
    */
   bottom: number;
   /**
-   * The mural's upper edge, in storeys above the ground.
+   * The mural's upper edge, in storeys above the ground there.
    */
   top: number;
   /**
@@ -303,7 +320,7 @@ export interface PaintingsMessage {
 }
 export interface Frame {
   /**
-   * The painting interactable's id, which is also its frame's id in the interior's iso manifest.
+   * The painting interactable's id.
    */
   id: string;
   /**
@@ -328,6 +345,10 @@ export interface Painting {
    */
   image: string;
 }
+/**
+ * A position without `map` is on the village. Side-view maps have no village, so there the
+ * server ignores it, as it ignores any unknown map.
+ */
 export interface PlayerMoveMessage {
   type: 'player_move';
   position: Position;

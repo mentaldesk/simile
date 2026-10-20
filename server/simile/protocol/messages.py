@@ -30,7 +30,9 @@ def _not_required(*names: str) -> Callable[[dict[str, Any]], None]:
 
 
 class Position(Model):
-    """Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step."""
+    """Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a
+    side-view map, x runs along the street and y counts rows down from the top, and fractions are
+    mid-step or mid-climb."""
 
     # The client uses Position as its plain point type, so map stays optional in TypeScript.
     model_config = ConfigDict(json_schema_extra=_not_required("map"))
@@ -71,7 +73,9 @@ class SnapshotMessage(Model):
 
     type: Literal["snapshot"] = "snapshot"
     time: Timestamp = Field(description="Sim time.")
-    map_id: Key
+    map_id: Key = Field(
+        description="The map the player starts on: the village, or a street on side-view maps."
+    )
     entities: list[Entity]
     conversations: list[Conversation] = Field(description="Only those still going on.")
 
@@ -85,7 +89,10 @@ class ClockMessage(Model):
 
 
 class EntityMovedMessage(Model):
-    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east."""
+    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+    On a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a
+    lift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb
+    or ride, then one onto the other map, as through a door."""
 
     model_config = _POSE_NOT_REQUIRED
 
@@ -182,7 +189,8 @@ class WorksMessage(Model):
 
 
 class Face(StrEnum):
-    """The way a wall faces. The iso camera sees only south and east faces."""
+    """The way a wall faces. The iso camera sees only south and east faces, and a side-view map
+    has only south faces, towards the camera."""
 
     SOUTH = "south"
     EAST = "east"
@@ -199,20 +207,28 @@ class Mural(Model):
 WALL_TILE = (
     "(x, y) is the building's tile at the west end of a south face or the north end of an east "
     "face: on its south row or east column, whatever storeys the mural spans. The face runs along "
-    "that tile's south edge (y + 1) or east edge (x + 1)."
+    "that tile's south edge (y + 1) or east edge (x + 1). On a side-view map, it's the standing "
+    "cell at the wall's west end, on the street in front of it."
 )
 
 
 class Wall(Model):
     id: Id
+    map: Key = Field(
+        default=VILLAGE_MAP,
+        exclude_if=lambda key: key == VILLAGE_MAP,
+        description="The map it's on, such as a street. Left out on the village.",
+    )
     x: int = Field(ge=0, description=WALL_TILE)
     y: int = Field(ge=0, description=WALL_TILE)
     width: int = Field(
         ge=1, description="In tiles, east from (x, y) for a south face or south for an east face."
     )
     face: Face
-    bottom: float = Field(ge=0, description="The mural's lower edge, in storeys above the ground.")
-    top: float = Field(description="The mural's upper edge, in storeys above the ground.")
+    bottom: float = Field(
+        ge=0, description="The mural's lower edge, in storeys above the ground there."
+    )
+    top: float = Field(description="The mural's upper edge, in storeys above the ground there.")
     mural: Mural | None = Field(description="Null while the wall is blank.")
 
     @model_validator(mode="after")
@@ -238,10 +254,7 @@ class Painting(Model):
 
 
 class Frame(Model):
-    id: Id = Field(
-        description="The painting interactable's id, which is also its frame's id in the "
-        "interior's iso manifest."
-    )
+    id: Id = Field(description="The painting interactable's id.")
     map: Key = Field(description="The map the interactable is on.")
     painting: Painting | None = Field(description="Null while the frame is empty.")
 
@@ -254,6 +267,9 @@ class PaintingsMessage(Model):
 
 
 class PlayerMoveMessage(Model):
+    """A position without `map` is on the village. Side-view maps have no village, so there the
+    server ignores it, as it ignores any unknown map."""
+
     type: Literal["player_move"] = "player_move"
     position: Position
 

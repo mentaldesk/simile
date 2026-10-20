@@ -11,7 +11,7 @@
     },
     "Tile": {
       "additionalProperties": false,
-      "description": "A cell of the map grid, counted in tiles from the top-left corner.",
+      "description": "A cell of the map grid, about 1.1 m across, counted in tiles from the top-left corner. On a\nside-view map, x runs along the street and y counts rows down from the top, and a resident\nstands on a cell with ground under it or on a climbable cell.",
       "properties": {
         "x": {
           "minimum": 0,
@@ -33,6 +33,7 @@
     },
     "TileArea": {
       "additionalProperties": false,
+      "description": "A rectangle of tiles, from its top-left tile (x, y). On a side-view map, x runs along the\nstreet and y counts rows down from the top.",
       "properties": {
         "x": {
           "minimum": 0,

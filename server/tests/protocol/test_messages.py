@@ -97,6 +97,18 @@ MURALS = MuralsMessage(
         Wall(id="park_east", x=30, y=14, width=3, face=Face.EAST, bottom=0.2, top=2, mural=None),
     ]
 )
+STREET_WALL = Wall(
+    id="market_mural",
+    map="market_street",
+    x=20,
+    y=11,
+    width=5,
+    face=Face.SOUTH,
+    bottom=0,
+    top=2,
+    mural=MURAL,
+)
+STREET_MURALS = MuralsMessage(walls=[STREET_WALL])
 PAINTING = Painting(
     work_id="work_4",
     title="Low Tide, Six O'Clock",
@@ -123,6 +135,18 @@ LOOKING = EntityMovedMessage(
     pose=Pose.LOOKING,
     facing=Facing.NORTH,
 )
+CLIMBING = EntityMovedMessage(
+    entity_id="kofi",
+    position=Position(x=7, y=6.5, map="house_1"),
+    pose=Pose.CLIMBING,
+    facing=Facing.NORTH,
+)
+RIDING = EntityMovedMessage(
+    entity_id="ingrid",
+    position=Position(x=3, y=9, map="flats"),
+    pose=Pose.RIDING,
+    facing=Facing.SOUTH,
+)
 
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
@@ -131,6 +155,8 @@ SERVER = [
     EntityMovedMessage(entity_id="suki", position=Position(x=10, y=12, map="coffee_shop")),
     SEATED,
     LOOKING,
+    CLIMBING,
+    RIDING,
     ConversationStartedMessage(conversation=CONVERSATION.model_copy(update={"lines": []})),
     ConversationEndedMessage(
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
@@ -147,6 +173,7 @@ SERVER = [
     CLOCK,
     WORKS,
     MURALS,
+    STREET_MURALS,
     PAINTINGS,
 ]
 CLIENT = [
@@ -242,6 +269,14 @@ def test_moves_carry_a_pose_and_facing() -> None:
     message = json.loads(LOOKING.model_dump_json())
 
     assert (message["pose"], message["facing"]) == ("looking", "north")
+
+
+@pytest.mark.parametrize(
+    ("message", "pose"), [(CLIMBING, "climbing"), (RIDING, "riding")], ids=["climbing", "riding"]
+)
+def test_moves_can_climb_or_ride(message: EntityMovedMessage, pose: str) -> None:
+    assert json.loads(message.model_dump_json())["pose"] == pose
+    assert pose in json.loads(SCHEMA_FILE.read_text())["$defs"]["Pose"]["enum"]
 
 
 @pytest.mark.parametrize(
@@ -421,11 +456,35 @@ def test_murals_lists_every_wall_with_its_mural_or_null() -> None:
         ({"bottom": -0.5}, "bottom"),
         ({"top": 0}, "top must be above bottom"),
         ({"id": "Square North"}, "String should match pattern"),
+        ({"map": ""}, "at least 1 character"),
     ],
 )
 def test_rejects_invalid_walls(update: dict[str, Any], match: str) -> None:
     with pytest.raises(ValidationError, match=match):
         Wall.model_validate(SQUARE_WALL.model_dump() | update)
+
+
+def test_a_wall_without_a_map_is_on_the_village_and_dumps_without_one() -> None:
+    wall = SQUARE_WALL.model_dump()
+
+    assert "map" not in wall
+    assert Wall.model_validate(wall).map == "village"
+    assert "map" not in json.loads(Wall.model_validate(wall | {"map": "village"}).model_dump_json())
+
+
+def test_a_wall_off_the_village_says_which_map_after_its_id() -> None:
+    wall = json.loads(STREET_WALL.model_dump_json())
+
+    assert wall["map"] == "market_street"
+    assert list(wall)[:3] == ["id", "map", "x"]
+    assert Wall.model_validate(wall) == STREET_WALL
+
+
+def test_the_exported_wall_has_a_map_but_does_not_require_it() -> None:
+    wall = json.loads(SCHEMA_FILE.read_text())["$defs"]["Wall"]
+
+    assert "map" in wall["properties"]
+    assert "map" not in wall["required"]
 
 
 def test_paintings_lists_every_frame_with_its_painting_or_null() -> None:

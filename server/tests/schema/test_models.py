@@ -33,7 +33,7 @@ from simile.schema import (
     TileArea,
     Work,
 )
-from simile.world.map import load_map
+from simile.world.map import load_map, load_maps
 
 from .conftest import COUNTER, DOOR
 
@@ -358,6 +358,16 @@ def test_the_committed_village_map_still_loads_onto_the_village() -> None:
     assert {location.map for location in locations} == {VILLAGE_MAP}
 
 
+def test_no_two_links_on_the_committed_maps_share_an_end_tile() -> None:
+    doors = {door.id: door for town in load_maps().values() for door in town.doors}
+    ends = [
+        (end.map, end.x, end.y) for door in doors.values() for end in (door.outside, door.inside)
+    ]
+
+    assert doors
+    assert len(ends) == len(set(ends))
+
+
 @pytest.mark.parametrize("kind", ["gallery", "maker_space", "noodle_bar"])
 def test_a_location_can_be_inside_a_building(kind: str) -> None:
     location = Location.model_validate(
@@ -421,6 +431,8 @@ def test_poses_are_a_closed_set() -> None:
         "reading",
         "working",
         "looking",
+        "climbing",
+        "riding",
     ]
 
 

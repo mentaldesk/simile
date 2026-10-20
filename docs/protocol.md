@@ -14,9 +14,14 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
 
 ## Conventions
 
+The village is moving to a side view (#306): a map per street and a map per floor, drawn from the
+side. The server sends today's maps until the cut-over. Where a side-view map reads a value
+differently, this document says so beside today's reading.
+
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
-  position's `map` and an entity's `pose` and `facing`, below.
+  position's `map`, an entity's `pose` and `facing`, an article's `long_summary` and a wall's
+  `map`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -25,11 +30,20 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
     village, so clients that predate interiors keep working.
   - So the generated TypeScript has `map?: string`, and the client can keep using `Position` as a
     plain point. Read it as `position.map ?? 'village'`. K5 (#171) may tighten the type.
+  - On a side-view map, x runs along the street and y counts rows down from the top. `map` is a
+    street's or a floor's id. A tile is the same size as today's, about 1.1 m, so distances in
+    tiles mean the same in both. A resident stands on a cell with ground under it, or on a
+    climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb.
 - An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
-  `"working"` or `"looking"`. Its **facing** is the way it faces on the map, x east and y south:
-  `"east"`, `"south_east"`, `"south"`, `"south_west"`, `"west"`, `"north_west"`, `"north"` or
-  `"north_east"`, in order of angle from east round through south. Both are F2 types, `Pose` and
+  `"working"`, `"looking"`, `"climbing"` (on stairs or a ladder) or `"riding"` (in a lift). Its
+  **facing** is the way it faces on the map, x east and y south: `"east"`, `"south_east"`,
+  `"south"`, `"south_west"`, `"west"`, `"north_west"`, `"north"` or `"north_east"`, in order of
+  angle from east round through south. Both are F2 types, `Pose` and
   `Facing` in `server/simile/schema/world.py`, so the world and the sim's events can use them too.
+  - On a side-view map, the three eastward facings draw them facing right and the three westward
+    ones left. `north` draws their back, looking into the picture (at a mural or a terminal), and
+    `south` their front.
+  - Today's maps have no stairs, ladders or lifts, so nobody is `climbing` or `riding` on them.
   - The server always sends both. Without them an entity is standing, facing south-east, towards the
     iso camera. As with `map`, the generated TypeScript has them optional: read
     `entity.pose ?? 'standing'` and `entity.facing ?? 'south_east'`.
@@ -46,6 +60,20 @@ built on the F2 domain schemas in `server/simile/schema/`. The TypeScript types 
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
   you can use inside, and a `Location` says which map it's on. Interactable ids go over the wire
   only in [`paintings`](#paintings).
+  - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
+    door. A door joins a street or the village (`outside`) and a building's ground floor
+    (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
+    `"high_street"` before `"mill_lane"`. Stairs, a ladder or a lift join two floors' maps, with
+    `outside` the lower and `inside` the upper. Stairs and ladders within one map aren't doors:
+    they're climbable cells on the map.
+  - No two links share an end tile. The client finds a link from its end tile, and the server's
+    `door_ends` (`server/simile/world/paths.py`) keys links by their end tiles, so it would drop
+    one of two that share a tile. A lift serving three or more floors, or two flights of stairs
+    meeting on a landing, has a separate end tile on the middle floor for each link. #308's map
+    loader rejects a map that breaks this.
+  - A `Location`'s `map`, `area` and `entry` are where you arrive. On side-view maps its `floors`
+    are its building's other floors, each a `MapArea` (a `TileArea` with a `map`) on a map of its
+    own. It's left out when empty, as on today's maps.
 - A message the server can't parse is logged and ignored. The connection stays open.
 
 ## Server → client
@@ -58,7 +86,7 @@ client replaces whatever it had.
 | Field | Type | |
 |---|---|---|
 | `time` | timestamp | Sim time now. |
-| `map_id` | string | The map the player starts on, e.g. `"village"`. |
+| `map_id` | string | The map the player starts on, e.g. `"village"`, or on side-view maps a street's id. |
 | `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 
@@ -83,6 +111,15 @@ the position it's already at, so the pose or facing can change on its own.
 An entity going through a door arrives as an `entity_moved` onto the other map, and the client
 snaps it there rather than walking it. The `entity_moved` before that is the door's tile on the map
 it's leaving, a step's time earlier.
+
+On a side-view map:
+
+- An entity on a run of stairs or ladder cells within one map is `climbing`.
+- One taking stairs, a ladder or a lift to another floor's map gets an `entity_moved` at the
+  link's end on the map it's leaving, `climbing` or `riding`. It holds that for the climb or ride,
+  then arrives on the other map as through a door.
+- The client finds the link from that end tile, which no other link shares, and plays a climb or
+  a ride by its `kind`.
 
 ### `conversation_started`
 
@@ -139,10 +176,11 @@ what it had.
 | Field | Type | |
 |---|---|---|
 | `id` | string | The wall's id. |
-| `x`, `y` | integer | The building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (`y + 1`) or east edge (`x + 1`). |
+| `map` | string | The map it's on, such as a street on side-view maps. Left out on the village, so it's absent from every wall on today's maps: read it as `wall.map ?? 'village'`. |
+| `x`, `y` | integer | The building's tile at the west end of a south face or the north end of an east face: on its south row or east column, whatever storeys the mural spans. The face runs along that tile's south edge (`y + 1`) or east edge (`x + 1`). On a side-view map, the standing cell at the wall's west end, on the street in front of it. |
 | `width` | integer | Tiles, running east from (`x`, `y`) for a south face, or south for an east face. |
-| `face` | `"south"` or `"east"` | Which way the wall faces. The iso camera sees only these. |
-| `bottom`, `top` | number | The mural's lower and upper edges, in storeys above the ground: `0` is the ground and `1` the top of the ground floor. Fractions are fine, and `top` is above `bottom`. |
+| `face` | `"south"` or `"east"` | Which way the wall faces. The iso camera sees only these. A side-view map has only `"south"` walls, facing the camera. |
+| `bottom`, `top` | number | The mural's lower and upper edges, in storeys up from the ground there: `0` is the ground and `1` the top of the ground floor. Fractions are fine, and `top` is above `bottom`. |
 | `mural` | `Mural` or `null` | What's painted there now, or `null` while it's blank. |
 
 A `Mural` has its `work_id`, `title`, `artist` (`id` and `name`), `statement`, and `image`, the URL
@@ -157,7 +195,7 @@ client replaces what it had. Clients that predate the gallery ignore it.
 
 | Field | Type | |
 |---|---|---|
-| `id` | string | The F2 `Interactable`'s id, e.g. `"painting_1"`. It's also the id of its frame in the interior's iso manifest, whose `canvas` is where the picture goes. |
+| `id` | string | The F2 `Interactable`'s id, e.g. `"painting_1"`. |
 | `map` | string | The map the interactable is on, e.g. `"gallery"`. |
 | `painting` | `Painting` or `null` | What hangs there now, or `null` while the frame is empty. |
 
@@ -198,7 +236,8 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 
 `position`. The client sends the player's position as it changes, and the server trusts it.
 Going through a door is a `player_move` with the other map's `map`. A position without `map` puts
-the player on the village.
+the player on the village. Side-view maps have no village, so there the server ignores a position
+without `map`, as it ignores a position on any map it doesn't know.
 
 ### `player_say`
 
