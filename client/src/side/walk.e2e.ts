@@ -123,7 +123,10 @@ async function walkLeg(page: Page, api: ReturnType<typeof walkApi>, leg: Leg, in
   if (!prompts.some((prompt) => prompt.split(':')[0].includes(key))) {
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
-  if (screens) await page.screenshot({ path: `${screens}/${String(index).padStart(3, '0')}-${leg.name.replaceAll(/\W+/g, '-')}.png` });
+  if (screens) {
+    const path = `${screens}/${String(index).padStart(3, '0')}-${leg.name.replaceAll(/\W+/g, '-')}.jpg`;
+    await page.screenshot({ path, type: 'jpeg', quality: 80 });
+  }
   if (leg.e) {
     await page.keyboard.press('e');
     await run(page, 100);
@@ -137,9 +140,11 @@ async function walkLeg(page: Page, api: ReturnType<typeof walkApi>, leg: Leg, in
 const root = new URL('../..', import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { port: 0 } });
 await server.listen();
-const browser = await chromium.launch({
-  args: process.platform === 'linux' ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] : [],
-});
+const GL: Record<string, string[]> = {
+  darwin: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'],
+  linux: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+};
+const browser = await chromium.launch({ args: GL[process.platform] ?? [] });
 const failures: string[] = [];
 try {
   const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 640, height: 400 } });

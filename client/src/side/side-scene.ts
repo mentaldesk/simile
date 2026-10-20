@@ -31,8 +31,8 @@ export const SIDE_SCENE = 'side-world';
 /** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
 const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
-/** Above the end of a way, where its prompt sits. */
-const PROMPT_M = 2.75;
+/** Above the end of a way, where its prompt sits: under a room's ceiling, or over a street's signposts. */
+const PROMPT_M = { floor: 2.75, street: 3.35 };
 /** Half a sim minute. */
 const LIGHT_STEP_HOURS = 1 / 120;
 const DOLL_WIDTH_M = 0.7;
@@ -201,7 +201,7 @@ export class SideScene extends Phaser.Scene {
       keys,
       action,
       x: (xOf(map.offset.x + way.at.x) - this.view.x) * zoom,
-      y: (feetOf(map.offset.y + way.at.y) - PROMPT_M * PPM - this.view.y) * zoom,
+      y: (feetOf(map.offset.y + way.at.y) - PROMPT_M[map.kind] * PPM - this.view.y) * zoom,
     }));
   }
 
