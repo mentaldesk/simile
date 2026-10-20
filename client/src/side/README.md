@@ -59,8 +59,8 @@ The Phaser-free halves are tested under vitest.
 - `player.ts`: the player's walking, doors, climbs and rides by the lead's choices on #311. Walking
   stops at stairs and ladders, which are taken with E. While crossing between floors the player's
   position stays at the end they left from, as the protocol holds residents.
-- Jumping isn't here. Positions are floats and nothing assumes the player stands on a row, so the
-  rig's `jumping` pose and an arc can come later.
+- Jumping isn't here. Positions are floats, so an arc through open air, drawn with the rig's
+  `jumping` pose, can come later as another mode beside walking and climbing.
 
 ## For the cut-over
 
