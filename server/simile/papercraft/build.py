@@ -32,7 +32,7 @@ PPM = 120
 """Pixels per metre of every scaled piece."""
 PAINTING = 1
 """Bump when what a painting is made from changes in a way its inputs don't show."""
-PIPELINE = 16
+PIPELINE = 19
 """Bump when cutting, scaling or saving changes."""
 NIGHT_SIDE = 768
 NIGHT_TINT = (0.3, 0.36, 0.6)
@@ -286,8 +286,10 @@ class Build:
         else:
             raw = self.raw(piece)
             if piece.kind == "paper":
-                sky = piece.key == "layers/sky"
-                image = tileable(raw, both=not sky and piece.key != "papers/slab", plain=sky)
+                sky, slab = piece.key == "layers/sky", piece.key == "papers/slab"
+                image = tileable(raw, both=not (sky or slab), plain=sky)
+                if slab:
+                    image = band_rows(image)
                 height = piece.height or image.height / PPM
             elif piece.kind in ("layer", "strip", "ground"):
                 mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
@@ -430,6 +432,19 @@ def glow_map(day: Image.Image, night: Image.Image, plan: Plan) -> Image.Image:
     return Image.fromarray(light.astype(np.uint8))
 
 
+def band_rows(image: Image.Image, share: float = 0.97) -> Image.Image:
+    """`image` cut to its longest run of rows that are almost all painting, not backdrop: a
+    band painted across a picture, without the backdrop above it or its ragged edge."""
+    a = np.asarray(image.convert("RGB"), dtype=np.float32)
+    painted = (np.abs(a - top_backdrop(image)).max(axis=2) > 30).mean(axis=1) >= share
+    edges = np.flatnonzero(np.diff(np.r_[0, painted.astype(int), 0]))
+    runs = list(zip(edges[::2], edges[1::2], strict=True))
+    if not runs:
+        return image
+    top, bottom = max(runs, key=lambda r: r[1] - r[0])
+    return image.crop((0, int(top), image.width, int(bottom)))
+
+
 def trim_rows(image: Image.Image) -> Image.Image:
     """`image` without the fully transparent rows above and below it, keeping its width."""
     alpha = np.asarray(image.getchannel("A")) > 8
@@ -494,28 +509,37 @@ def _seamless(a: np.ndarray, overlap: int, plain: bool, step: int = 4) -> np.nda
     return _level(out, after, start)
 
 
+LUMA = np.array([0.299, 0.587, 0.114])
+
+
 def _level(tile: np.ndarray, after: np.ndarray, start: np.ndarray) -> np.ndarray:
-    """`tile` with the brightness its two joined stretches differ by, row by row and smoothed,
-    added from the join and fading out by the tile's far end, so where the painting's light
-    falls off, the join shows no step."""
+    """`tile` lightened or darkened so that its two joined stretches meet at the brightness
+    halfway between them, row by row and smoothed: where the painting's light falls off, the
+    join shows no step, and the tile keeps its mean brightness. Each pixel's channels move by
+    the same amount, which keeps its hue, and near-white isn't darkened, so clouds stay white."""
     overlap = after.shape[1]
     both = np.ones(after.shape[:2], bool)
+    opaque = np.ones(tile.shape[:2], bool)
     if tile.shape[2] == 4:
         both = (after[..., 3] > 128) & (start[..., 3] > 128)
-    diff = np.where(both[..., None], after[..., :3] - start[..., :3], 0.0)
-    count = both.sum(axis=1)[:, None]
-    rows = diff.sum(axis=1) / np.maximum(count, 1)
+        opaque = tile[..., 3] > 128
+    diff = np.where(both, (after[..., :3] - start[..., :3]) @ LUMA, 0.0)
+    rows = diff.sum(axis=1) / np.maximum(both.sum(axis=1), 1)
     sigma = max(2.0, len(rows) / 12)
     x = np.arange(-round(3 * sigma), round(3 * sigma) + 1)
     kernel = np.exp(-(x**2) / (2 * sigma**2))
-    kernel /= kernel.sum()
-    padded = np.pad(rows, ((len(x) // 2, len(x) // 2), (0, 0)), mode="edge")
-    smooth = np.stack([np.convolve(padded[:, c], kernel, mode="valid") for c in range(3)], 1)
+    smooth = np.convolve(np.pad(rows, len(x) // 2, mode="edge"), kernel / kernel.sum(), "valid")
     w = tile.shape[1]
     ramp = np.clip(1 - np.arange(w) / (w - 1), 0, 1)
     ramp[:overlap] *= np.linspace(0, 1, overlap)
+    shift = smooth[:, None] * ramp[None, :]
+    weight = np.where(opaque, 1.0, 0.0)
+    total = np.maximum(weight.sum(axis=1, keepdims=True), 1)
+    shift -= (shift * weight).sum(axis=1, keepdims=True) / total
+    highlight = np.clip((250 - tile[..., :3] @ LUMA) / 40, 0, 1)
+    shift = np.where(shift < 0, shift * highlight, shift)
     out = tile.copy()
-    out[..., :3] += ramp[None, :, None] * smooth[:, None, :]
+    out[..., :3] += shift[..., None]
     return out
 
 

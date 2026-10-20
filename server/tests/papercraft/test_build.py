@@ -1,3 +1,4 @@
+import colorsys
 import json
 import zlib
 from collections.abc import Sequence
@@ -201,28 +202,49 @@ def test_the_glow_map_is_dark_away_from_the_windows_and_lamps(build: Build) -> N
 
 
 def test_a_tiled_paper_joins_itself_without_a_step_where_its_light_falls_off() -> None:
-    x = np.arange(400)[None, :, None]
-    stripes = 40 * np.sin(x / 7) + np.linspace(200, 140, 400)[None, :, None]
-    paper = Image.fromarray(np.broadcast_to(stripes, (60, 400, 3)).astype(np.uint8))
+    rng = np.random.default_rng(0)
+    falloff = np.linspace(200, 140, 400)[None, :, None]
+    painted = falloff + rng.normal(0, 2, (200, 400, 3))
+    paper = Image.fromarray(np.clip(painted, 0, 255).astype(np.uint8))
 
     tiled = np.asarray(tileable(paper), dtype=np.float32)
-    wrapped = np.concatenate([tiled, tiled[:, :1]], axis=1)
-    steps = np.abs(np.diff(wrapped, axis=1)).mean(axis=(0, 2))
-    painted = np.abs(np.diff(np.asarray(paper, dtype=np.float32), axis=1)).mean(axis=(0, 2))
+    columns = np.tile(tiled.mean(axis=(0, 2)), 2)
+    smooth = np.convolve(columns, np.ones(8) / 8, mode="valid")
 
-    assert steps.max() < 1.5 * painted.max()
+    assert np.abs(np.diff(smooth)).max() < 0.6
+
+
+def test_levelling_keeps_a_tiles_mean_brightness_and_its_colours_hues() -> None:
+    falloff = np.linspace(1.0, 0.7, 400)[None, :, None]
+    painted = np.broadcast_to(np.array([150.0, 20.0, 35.0]), (40, 400, 3)) * falloff
+    gold = np.array([181.0, 160.0, 103.0])
+    painted[:, 150:160] = gold * falloff[:, 150:160]
+    tile, after, start = painted[:, :300], painted[:, 300:332], painted[:, :32]
+
+    levelled = build_module._level(tile, after, start)
+
+    luma = np.array([0.299, 0.587, 0.114])
+    assert abs((levelled @ luma).mean() - (tile @ luma).mean()) < 1.5
+    hues = [
+        [colorsys.rgb_to_hsv(*(pixel / 255))[0] for pixel in stripe[:, 150:160].reshape(-1, 3)]
+        for stripe in (tile, levelled)
+    ]
+    assert np.allclose(hues[0], hues[1], atol=0.002)
 
 
 def test_a_tiled_sky_is_not_joined_through_a_cloud() -> None:
-    sky = np.zeros((80, 600, 3), dtype=np.uint8)
-    sky[:] = np.linspace(150, 230, 80, dtype=np.uint8)[:, None, None]
-    sky[20:40, 30:110] = 255
-    sky[25:45, 400:470] = 255
+    x = np.arange(600)[None, :]
+    y = np.arange(80)[:, None]
+    sky = np.repeat((150 - 50 * x / 600 + 30 * y / 80)[..., None], 3, axis=2)
+    sky[15:55, 20:90] = 255
+    sky[15:55, 520:590] = 255
 
-    tiled = np.asarray(tileable(Image.fromarray(sky), plain=True), dtype=np.int16)
-    row = tiled[30].min(axis=1)
+    tiled = np.asarray(tileable(Image.fromarray(sky.astype(np.uint8)), plain=True), np.float32)
+    cloud = (tiled[35] - tiled[70]).mean(axis=1) > 40
+    edges = np.flatnonzero(np.diff(np.r_[0, cloud.astype(int), 0]))
+    widths = edges[1::2] - edges[::2]
 
-    assert ((row < 200) | (row > 240)).all()
+    assert all(69 <= w <= 71 for w in widths)
 
 
 def test_a_layer_with_a_gap_near_each_end_is_cut_at_the_gaps() -> None:
