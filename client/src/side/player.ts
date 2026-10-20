@@ -16,6 +16,9 @@ export type MapPosition = Position & { map: string };
 type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
 
+/** What E takes here: a link, or a run from its foot (`distance` 0) or head. */
+export type Way = { link: Link; across?: Crossing } | OnRun;
+
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);
 
 export class SidePlayer {
@@ -86,32 +89,43 @@ export class SidePlayer {
     return door;
   }
 
+  /** Undefined while climbing or riding. */
+  way(): Way | undefined {
+    const map = this.village.map(this.map);
+    if (!map || this.onRun || this.crossed) return undefined;
+    const x = Math.floor(this.position.x + 0.5);
+    const y = Math.round(this.position.y);
+    const link = this.village.linkAt(this.map, x, y);
+    if (link?.kind === 'door') return { link };
+    const across = link && crossing(this.village, link);
+    if (link && across) return { link, across };
+    return runAt(this.runsOf(map), { x, y });
+  }
+
   private walk(controls: Controls, dt: number): Link | undefined {
     const map = this.village.map(this.map);
     if (!map) return undefined;
-    const x = Math.floor(this.position.x + 0.5);
-    const y = Math.round(this.position.y);
-    const link = controls.use || controls.y !== 0 ? this.village.linkAt(this.map, x, y) : undefined;
+    const way = controls.use || controls.y !== 0 ? this.way() : undefined;
     const up = controls.y < 0 && this.armed;
     const down = controls.y > 0 && this.armed;
-    if (link?.kind === 'door' && (controls.use || up || (down && link.side === 'inside' && map.kind === 'floor'))) {
-      this.armed = false;
-      return link;
-    }
-    if (controls.use) {
-      const across = link && crossing(this.village, link);
-      if (across) {
+    if (way && 'link' in way) {
+      const { link, across } = way;
+      if (link.kind === 'door' && (controls.use || up || (down && link.side === 'inside' && map.kind === 'floor'))) {
+        this.armed = false;
+        return link;
+      }
+      if (across && controls.use) {
         this.crossed = { crossing: across, distance: 0 };
         return undefined;
       }
-      const found = runAt(this.runsOf(map), { x, y });
-      if (found) {
-        this.onRun = found;
-        return undefined;
-      }
+    } else if (way && controls.use) {
+      this.onRun = { run: way.run, distance: way.distance };
+      return undefined;
     }
     this.walking = false;
     if (controls.x !== 0) {
+      const x = Math.floor(this.position.x + 0.5);
+      const y = Math.round(this.position.y);
       this.heading = controls.x;
       this.facing = sideways(controls.x);
       const low = spanEnd(map, x, y, -1);

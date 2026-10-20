@@ -5,6 +5,7 @@ import { DEPTH } from './depths';
 import { dropShadow, furnitureKey, placeDerived, SHADOW_ALPHA, tileAlong, Tints, type TintGroup } from './draw';
 import { House } from './house';
 import {
+  coverCrop,
   feetOf,
   frontPlacement,
   furniturePlacement,
@@ -19,6 +20,7 @@ import {
   TILE,
   TILE_M,
   xOf,
+  type Rect,
 } from './layout';
 import { colour, hazeOf, overflow, type Light } from './light';
 import type { Placed, SideMap, Village } from './maps';
@@ -66,7 +68,7 @@ type Front = {
   bloom: Image;
   roof?: Image;
   house?: House;
-  murals: Map<string, { image: Image; y: number }>;
+  murals: Map<string, { image: Image; y: number; rect: Rect }>;
   open: number;
 };
 
@@ -207,13 +209,27 @@ export class StreetView {
       const rect = muralRect(wall, eaves);
       void load(wall.mural!.image).then((texture) => {
         if (!this.scene.sys.isActive() || this.murals !== signature) return;
-        const image = this.scene.add.image(rect.x, rect.y, texture).setOrigin(0, 0).setDepth(DEPTH.mural);
-        image.setDisplaySize(rect.width, rect.height);
-        front.murals.set(wall.id, { image: this.tints.add('ground', image), y: rect.y });
+        const { width, height } = this.scene.textures.getFrame(texture);
+        const crop = coverCrop(width, height, rect);
+        const [x, y] = [rect.x - crop.x * crop.scale, rect.y - crop.y * crop.scale];
+        const image = this.scene.add.image(x, y, texture).setOrigin(0, 0).setDepth(DEPTH.mural);
+        image.setScale(crop.scale).setCrop(crop.x, crop.y, crop.width, crop.height);
+        front.murals.set(wall.id, { image: this.tints.add('ground', image), y, rect });
         this.owned.push(image);
         this.openFront(front);
       });
     }
+  }
+
+  /** The mural wall drawn at a world point, while its front is on. */
+  muralAt(x: number, y: number): string | undefined {
+    for (const { murals, open } of this.fronts) {
+      if (open > 0) continue;
+      for (const [id, { rect }] of murals) {
+        if (x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height) return id;
+      }
+    }
+    return undefined;
   }
 
   setPaintings(frames: readonly Frame[], load: (url: string) => Promise<string>): void {

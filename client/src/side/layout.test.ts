@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { scenery, village } from './content';
 import {
+  coverCrop,
   dollhouse,
   feetOf,
   frontPlacement,
@@ -51,6 +52,20 @@ describe('the street layout', () => {
     expect(corner.y).toBeCloseTo(feetOf(15) - 12.1 * PPM);
     const low = muralRect({ x: 19, y: 15, width: 3, bottom: 0.15, top: 1.85 });
     expect(low.height).toBeCloseTo(1.7 * 4.4 * PPM);
+  });
+
+  it('crops a mural painted at another aspect to cover its wall, centred, unstretched', () => {
+    const wall = { x: 0, y: 0, width: 288, height: 614 };
+    const tall = coverCrop(288, 445, wall);
+    expect(tall.height).toBeCloseTo(445);
+    expect(tall.width).toBeCloseTo((288 * 445) / 614);
+    expect(tall.x).toBeCloseTo((288 - tall.width) / 2);
+    expect(tall.y).toBe(0);
+    expect(tall.width * tall.scale).toBeCloseTo(288);
+    expect(tall.height * tall.scale).toBeCloseTo(614);
+    const wide = coverCrop(400, 100, { x: 5, y: 5, width: 100, height: 100 });
+    expect(wide).toEqual({ x: 150, y: 0, width: 100, height: 100, scale: 1 });
+    expect(coverCrop(144, 307, wall)).toEqual({ x: 0, y: 0, width: 144, height: 307, scale: 2 });
   });
 
   it('stands furniture on its cells, and hangs what is above a room on its wall', () => {

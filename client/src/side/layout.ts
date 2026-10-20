@@ -45,6 +45,13 @@ export function muralRect(wall: WallSpan, eaves = Infinity): Rect {
   return { x: wall.x * TILE, y: base - top, width: wall.width * TILE, height: Math.max(0, top - bottom) };
 }
 
+/** The middle of a picture, in its own px, that covers `rect` at one scale: `scale` takes it to world px. */
+export function coverCrop(width: number, height: number, rect: Rect): Rect & { scale: number } {
+  const scale = Math.max(rect.width / width, rect.height / height);
+  const [cropWidth, cropHeight] = [rect.width / scale, rect.height / scale];
+  return { x: (width - cropWidth) / 2, y: (height - cropHeight) / 2, width: cropWidth, height: cropHeight, scale };
+}
+
 /** Hung on the wall if it's above a room's standing row. */
 export function furniturePlacement(item: Placed, map: SideMap): Placement {
   const x = (map.offset.x + item.x + item.w / 2) * TILE;
