@@ -1,6 +1,6 @@
 {
   "id": "henrietta",
-  "hash": "ab0d9ee0c1dc1990",
+  "hash": "78b4ae4a821e90f2",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "bun",
@@ -13,7 +13,7 @@
       "scarf"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "henrietta-flat.webp",

@@ -58,6 +58,18 @@ def test_paints_a_new_character_and_publishes_what_the_client_loads(
     assert json.loads(reports[-1].removeprefix(PREFIX))["progress"] == 1.0
 
 
+def test_says_what_it_needs_on_a_machine_without_flux(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from simile.dolls import paint
+
+    (tmp_path / "params.json").write_text(json.dumps(params("new_face")))
+    monkeypatch.setattr(paint, "find_spec", lambda name: None)
+
+    with pytest.raises(SystemExit, match="uv sync --extra images"):
+        main(tmp_path)
+
+
 def test_needs_apple_silicon() -> None:
     assert DOLL.requires == ("apple_silicon",)
     assert DOLL.command(Doll.model_validate(params("player")), Path("w"))[1:] == [

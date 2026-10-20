@@ -1,6 +1,6 @@
 {
   "id": "lachlan",
-  "hash": "42860aa1e54695f5",
+  "hash": "f37bb47bb9d474af",
   "appearance": {
     "skin": "#e8b796",
     "hair_style": "buzz",
@@ -13,7 +13,7 @@
       "cap"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "lachlan-flat.webp",

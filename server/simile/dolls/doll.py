@@ -15,7 +15,7 @@ from simile.dolls.shapes import PIECES, STANDING_HEIGHT
 
 UNIT = 5.0
 """Atlas pixels a unit, so a standing doll is about 500 px: twice its size on the street."""
-VERSION = 1
+VERSION = 2
 PAD = 2
 ATLAS_WIDTH = 512
 RIM = 0.3

@@ -1,6 +1,6 @@
 {
   "id": "tobias",
-  "hash": "34795de9721d356c",
+  "hash": "9a6044a09e7c6834",
   "appearance": {
     "skin": "#ead4aa",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "cap"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "tobias-flat.webp",

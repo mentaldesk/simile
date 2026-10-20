@@ -1,6 +1,6 @@
 {
   "id": "marguerite",
-  "hash": "f69da22d46a4cd4d",
+  "hash": "bad23cfdf298000c",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "glasses"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "marguerite-flat.webp",

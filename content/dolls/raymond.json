@@ -1,6 +1,6 @@
 {
   "id": "raymond",
-  "hash": "989cc47d484fea83",
+  "hash": "8ab771555cd4571f",
   "appearance": {
     "skin": "#c28569",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "sunglasses"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "raymond-flat.webp",

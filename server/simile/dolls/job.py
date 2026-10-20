@@ -1,7 +1,6 @@
 """Paints a new or changed character's doll: `python -m simile.dolls.job <work>`. Shaped like
 `jobs/sprite.py`, which part 9 replaces with it; nothing registers it yet."""
 
-import importlib.util
 import os
 import sys
 import tempfile
@@ -13,7 +12,7 @@ from typing import Any
 from pydantic import field_validator
 from pydantic_core import PydanticCustomError
 
-from simile.dolls.paint import SheetPainter
+from simile.dolls.paint import NoPainter, SheetPainter
 from simile.jobs.report import progress
 from simile.jobs.runner import CONTENT, Kind, url
 from simile.schema import PLAYER_ID, Appearance, Id, Model
@@ -83,13 +82,15 @@ def main(work: Path, painter: Callable[[], AbstractContextManager[SheetPainter]]
 
     doll = Doll.model_validate_json((work / "params.json").read_text())
     if painter is None:
-        if importlib.util.find_spec("mflux") is None:
-            sys.exit("Doll jobs need the images extra: `uv sync --extra images`.")
         from simile.dolls.paint import EditPainter
 
         painter = EditPainter
     progress(0.0, "Cutting out")
-    with painter() as model, tempfile.TemporaryDirectory() as scratch:
+    try:
+        loading = painter()
+    except NoPainter as error:
+        sys.exit(str(error))
+    with loading as model, tempfile.TemporaryDirectory() as scratch:
         reporting = Reporting(model, len(LAYOUTS))
         painted = paint(doll.character, doll.appearance, reporting, Path(scratch), cache=None)
     appearance = doll.appearance.model_dump(mode="json")

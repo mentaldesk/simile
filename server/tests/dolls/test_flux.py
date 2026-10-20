@@ -11,7 +11,6 @@ from simile.dolls.sheet import sheet
 @pytest.mark.mlx
 def test_part_3s_painter_paints_over_a_sheet(tmp_path: Path) -> None:
     pytest.importorskip("mflux")
-    pytest.importorskip("simile.papercraft.painter")
     from simile.works.config import DEFAULT_CONFIG
     from simile.works.flux import downloaded
 

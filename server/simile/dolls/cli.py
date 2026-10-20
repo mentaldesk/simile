@@ -20,12 +20,12 @@ def register(app: typer.Typer) -> None:
         """Paint the dolls in content/dolls/ whose Appearance changed, with part 3's FLUX painter
         on Apple Silicon (`uv sync --extra images`)."""
         from simile.dolls.build import build
-        from simile.dolls.paint import EditPainter
+        from simile.dolls.paint import EditPainter, NoPainter
 
         try:
             done = build(EditPainter, only=who or (), force=force)
-        except (KeyError, RuntimeError) as error:
-            typer.echo(error.args[0] if error.args else error, err=True)
+        except (KeyError, NoPainter) as error:
+            typer.echo(error.args[0], err=True)
             raise typer.Exit(1) from None
         for painted in done:
             if paintings is not None:

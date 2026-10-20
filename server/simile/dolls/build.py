@@ -18,6 +18,7 @@ from simile.dolls.look import Look
 from simile.dolls.paint import SheetPainter, prompt, seed
 from simile.dolls.pieces import Piece
 from simile.dolls.sheet import LAYOUTS, SIZE, cut, misplaced, patches, sheet
+from simile.papercraft.painter import reference
 from simile.schema import PLAYER_ID, Appearance
 
 REPO = Path(__file__).resolve().parents[3]
@@ -25,12 +26,6 @@ CONTENT = REPO / "content" / "dolls"
 PAINTINGS = REPO / "server" / "data" / "dolls" / "paintings"
 """Every painting as FLUX returned it, by what it was painted from, so cutting can be retuned
 without painting again. Ignored by git."""
-REFERENCES = (
-    REPO / "content" / "papercraft" / "references" / "characters.jpg",
-    REPO / "docs" / "side-view-study" / "references" / "characters.jpg",
-)
-"""The villagers reference: part 3's copy once it lands, the study's until then."""
-REFERENCE_WIDTH = 768
 DONORS = {"shoe_front": "shoe"}
 """A piece the painter often drops, and the piece of the same colours to take its paint from."""
 REROLLS: dict[str, int] = {
@@ -51,10 +46,6 @@ def people() -> dict[str, Appearance]:
     from simile.npc.content import NPCS_DIR, load_npcs
 
     return {npc.id: npc.appearance for npc in load_npcs(NPCS_DIR)} | {PLAYER_ID: PLAYER}
-
-
-def reference() -> Path:
-    return next(path for path in REFERENCES if path.exists())
 
 
 def fingerprint(who: str, appearance: Appearance) -> str:
@@ -104,9 +95,7 @@ def paint(
     out = Painted(who, doll)
     small = scratch / "reference.png"
     if not small.exists():
-        image = Image.open(reference()).convert("RGB")
-        height = round(image.height * REFERENCE_WIDTH / image.width / 16) * 16
-        image.resize((REFERENCE_WIDTH, height), Image.Resampling.LANCZOS).save(small)
+        reference("characters").save(small)
     for name in LAYOUTS:
         laid = sheet(name, look)
         path = scratch / f"{who}-{name}.png"

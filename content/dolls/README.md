@@ -30,9 +30,9 @@ The two atlases share one frame table, so the painted one replaces the flat one 
 ```json
 {
   "id": "odalys",
-  "hash": "16dd23efd47c4415",
+  "hash": "0b6afdf24ae9a3ca",
   "appearance": {"skin": "#e4a672", "hair_style": "curly", "...": "..."},
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 100.4,
   "flat": "odalys-flat.webp",

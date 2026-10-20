@@ -1,18 +1,16 @@
 """What the painter is asked for, and the interface it paints through. Never imports MLX."""
 
 import zlib
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Protocol
 
 from PIL import Image
 
+from simile.papercraft.painter import EditPainter as Papercraft
+from simile.papercraft.painter import styled
 from simile.schema import Appearance
 
-STYLE = (
-    "papercraft diorama made of cut coloured paper and cardboard layers, visible paper edges and "
-    "fibres, soft drop shadows between layers, handmade crafty look"
-)
-NO_TEXT = " No text, no lettering, no logos, no words on signs."
 SKIN = {
     "cream": "pale",
     "peach": "light",
@@ -139,17 +137,20 @@ def prompt(sheet: str, appearance: Appearance, who: str | None) -> str:
             f"right is the back of the same head, {back_of_head(appearance)}, and between them "
             "are the front and the back of the torso alone, with no head, arms or legs."
         )
-    return (
+    return styled(
         "Redraw image 1 as paper doll parts cut from coloured paper and card in the style of the "
         f"villagers in image 2: visible paper fibres and texture, cut card edges, {layout} "
         f"{person(appearance, who)} Keep every piece exactly where it is, with the same outline "
-        "and the same colours, and add nothing to it, on a plain light grey background. "
-        f"Art style: {STYLE}.{NO_TEXT}"
+        "and the same colours, and add nothing to it, on a plain light grey background."
     )
 
 
 def seed(who: str, sheet: str, reroll: int = 0) -> int:
     return zlib.crc32(f"{who}/{sheet}/{reroll}".encode()) % 2**31
+
+
+class NoPainter(RuntimeError):
+    """This machine can't paint dolls: FLUX needs Apple Silicon and the `images` extra."""
 
 
 class EditPainter:
@@ -158,12 +159,10 @@ class EditPainter:
     on entering and unloads on leaving."""
 
     def __init__(self) -> None:
-        try:
-            from simile.papercraft.painter import EditPainter as Papercraft
-        except ImportError as error:
-            raise RuntimeError(
-                "Painting dolls needs part 3's painter, simile.papercraft"
-            ) from error
+        if find_spec("mflux") is None:
+            raise NoPainter(
+                "Painting dolls needs FLUX: on Apple Silicon, `uv sync --extra images`."
+            )
         self._painter = Papercraft()
 
     def __enter__(self) -> "EditPainter":

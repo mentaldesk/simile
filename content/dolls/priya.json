@@ -1,6 +1,6 @@
 {
   "id": "priya",
-  "hash": "f1edf9d64aeeaf65",
+  "hash": "18c6c6915593e04f",
   "appearance": {
     "skin": "#c28569",
     "hair_style": "long",
@@ -11,7 +11,7 @@
     "build": "average",
     "accessories": []
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "priya-flat.webp",

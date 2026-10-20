@@ -1,6 +1,6 @@
 {
   "id": "odalys",
-  "hash": "16dd23efd47c4415",
+  "hash": "0b6afdf24ae9a3ca",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "curly",
@@ -13,7 +13,7 @@
       "apron"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "odalys-flat.webp",

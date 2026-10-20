@@ -1,6 +1,6 @@
 {
   "id": "player",
-  "hash": "e8c5735da07b2698",
+  "hash": "01b6bccee03ef93d",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "backpack"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "player-flat.webp",

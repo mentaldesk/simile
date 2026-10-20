@@ -1,6 +1,6 @@
 {
   "id": "desmond",
-  "hash": "31b0740660faac4e",
+  "hash": "638b5f4b841ec936",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "buzz",
@@ -13,7 +13,7 @@
       "backpack"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "desmond-flat.webp",

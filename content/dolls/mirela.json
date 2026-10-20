@@ -1,6 +1,6 @@
 {
   "id": "mirela",
-  "hash": "12d44e49f01e30df",
+  "hash": "05d0ed38eca79d80",
   "appearance": {
     "skin": "#ead4aa",
     "hair_style": "bob",
@@ -13,7 +13,7 @@
       "apron"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "mirela-flat.webp",

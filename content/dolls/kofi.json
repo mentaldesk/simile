@@ -1,6 +1,6 @@
 {
   "id": "kofi",
-  "hash": "920f1deabad49e8c",
+  "hash": "9ac0d04e779a669f",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "curly",
@@ -13,7 +13,7 @@
       "headphones"
     ]
   },
-  "version": 1,
+  "version": 2,
   "unit": 5.0,
   "height": 98.8,
   "flat": "kofi-flat.webp",
