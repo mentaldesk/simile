@@ -264,8 +264,9 @@ function showPanel(): void {
   const panel = document.body.appendChild(document.createElement('section'));
   panel.className = 'side-harness';
   panel.innerHTML = `<b>Side-view harness</b>
-    <p>Left and right walk. E or up takes a door. E gets on stairs or a ladder, then up and down
-    climb; E rides a lift. [ and ] move the clock an hour; 1 to 4 go to each street.</p>`;
+    <p>Left and right walk. E or up takes a door. Up or down climbs stairs or a ladder from a tile
+    away, as E then up or down does; E rides a lift. [ and ] move the clock an hour; 1 to 4 go to
+    each street.</p>`;
 }
 
 /** Work from each step's start to the end of its render, and the gaps between frames. */
