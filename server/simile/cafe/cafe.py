@@ -35,6 +35,7 @@ from simile.schema import (
     Conversation,
     Id,
     Line,
+    Location,
     MapTile,
     Npc,
     Relationship,
@@ -106,7 +107,7 @@ class Visit:
     phase: Phase
     queued: datetime | None = None
     spot: MapTile | None = None
-    seat: Tile | None = None
+    seat: MapTile | None = None
     stay: timedelta | None = None
 
 
@@ -179,9 +180,13 @@ class Cafe:
         self.rng = random.Random(seed)
         self.barista = barista(behaviour.npcs.values(), config.home)
         town = self.movement.town
-        self.map = town.location(config.home).map
+        home = town.location(config.home)
+        self.map = home.map
+        self.maps = {home.map, *(floor.map for floor in home.floors)}
+        """Its own and every floor of its building."""
+        self.layout = config.layouts[self.map]
         self.till = self._tile(town.location(config.staff).entry)
-        self.spots = self._queue(town.location(config.queue).entry)
+        self.spots = self._queue(town.location(config.queue))
         self.on_shift = False
         self.closing: datetime | None = None
         """When the barista's shift ends, while they're on it."""
@@ -327,7 +332,7 @@ class Cafe:
             return
         if mind.paused or mind.held or mind.walk is not None or mind.until is None:
             return
-        upstairs = self._tile(self.config.upstairs)
+        upstairs = self.layout.upstairs
         here = self.movement.position(barista)
         at_home = mind.goal.activity in AWAY and mind.goal.target == self.config.home
         if at_home and not _at(here, upstairs):
@@ -365,7 +370,7 @@ class Cafe:
                 if self._inside(npc):
                     self._arrive(visit, now)
                 else:
-                    self.behaviour.hold(npc, self._tile(self.config.entrance), goal)
+                    self.behaviour.hold(npc, self.layout.entrance, goal)
             elif mind.walk is None and mind.until is not None:
                 self._seat(Visit(npc, goal, Phase.SITTING), max(mind.until - now, timedelta()))
             else:
@@ -420,7 +425,7 @@ class Cafe:
             self._written(job)
         elif job.step is Step.MAKING and job.ready_at is not None and now >= job.ready_at:
             job.step = Step.HANDING
-            self.behaviour.hold(barista, self._tile(self.config.hand_over), self.working)
+            self.behaviour.hold(barista, self.layout.hand_over, self.working)
         elif job.step is Step.HANDING and self.script is None and self._settled(barista):
             self._hand_over(job, now)
 
@@ -510,7 +515,7 @@ class Cafe:
     def _make(self, job: Job) -> None:
         barista = self.barista
         assert barista is not None
-        self.behaviour.hold(barista, self._tile(self.config.machine), self.working)
+        self.behaviour.hold(barista, self.layout.machine, self.working)
         job.step = Step.MAKING
         job.ready_at = self.clock.now + timedelta(seconds=self.menu.seconds(job.menu))
         if job.customer == PLAYER_ID:
@@ -518,7 +523,7 @@ class Cafe:
         if job.customer in self.queue:
             self.queue.remove(job.customer)
             visit = self.visits[job.customer]
-            visit.phase, visit.spot = Phase.WAITING, self._tile(self.config.pickup)
+            visit.phase, visit.spot = Phase.WAITING, self.layout.pickup
             self.behaviour.hold(job.customer, visit.spot, visit.goal)
             self.bus.publish(Ordered(job.customer, barista, job.drink, job.menu))
 
@@ -638,7 +643,7 @@ class Cafe:
             return
         visit.phase, visit.seat, visit.stay = Phase.SITTING, seat, stay
         self._unquiet(visit.npc)
-        visit.spot = self._tile(seat)
+        visit.spot = seat
         self.visits[visit.npc] = visit
         self.behaviour.hold(visit.npc, visit.spot, visit.goal)
 
@@ -778,12 +783,10 @@ class Cafe:
         chance = self.config.sit + sum(w * (npc.values[v] - 0.5) for v, w in weights.items())
         return min(max(chance, 0.0), 1.0)
 
-    def _free_seat(self) -> Tile | None:
-        taken = {
-            (round(p.x), round(p.y)) for p in self.movement.entities().values() if p.map == self.map
-        }
-        taken |= {(v.seat.x, v.seat.y) for v in self.visits.values() if v.seat is not None}
-        free = [seat for seat in self.config.seats if (seat.x, seat.y) not in taken]
+    def _free_seat(self) -> MapTile | None:
+        taken = {(p.map, round(p.x), round(p.y)) for p in self.movement.entities().values()}
+        taken |= {(v.seat.map, v.seat.x, v.seat.y) for v in self.visits.values() if v.seat}
+        free = [seat for seat in self.layout.seats if (seat.map, seat.x, seat.y) not in taken]
         return self.rng.choice(free) if free else None
 
     def _player_at_counter(self) -> bool:
@@ -801,7 +804,7 @@ class Cafe:
             return None
 
     def _inside(self, npc: Id) -> bool:
-        return self.movement.position(npc).map == self.map
+        return self.movement.position(npc).map in self.maps
 
     def _settled(self, npc: Id) -> bool:
         mind = self.behaviour.minds[npc]
@@ -812,14 +815,18 @@ class Cafe:
         return mind is not None and mind.paused
 
     def _tile(self, tile: Tile) -> MapTile:
-        return MapTile(map=self.movement.town.location(self.config.home).map, x=tile.x, y=tile.y)
+        return MapTile(map=self.map, x=tile.x, y=tile.y)
 
-    def _queue(self, front: Tile) -> list[MapTile]:
-        """The front of the queue, then each walkable tile behind it."""
-        town = self.movement.maps[self.movement.town.location(self.config.queue).map]
+    def _queue(self, lane: Location) -> list[MapTile]:
+        """The front of the queue at the lane's entry, then each tile to stand on behind it: down
+        the grid, or on a side-view map along the floor and through the lane."""
+        town, front = self.movement.maps[lane.map], lane.entry
+        dx, dy = (1 if front.x == lane.area.x else -1, 0) if town.side_view else (0, 1)
         spots = [self._tile(front)]
-        while town.walkable(front.x, front.y + len(spots)):
-            spots.append(self._tile(Tile(x=front.x, y=front.y + len(spots))))
+        x, y = front.x + dx, front.y + dy
+        while town.standing(x, y):
+            spots.append(self._tile(Tile(x=x, y=y)))
+            x, y = x + dx, y + dy
         return spots
 
     def _minutes(self, bounds: tuple[float, float]) -> timedelta:
