@@ -11,21 +11,22 @@ export type TiledObject = {
   height?: number;
 };
 export type TiledLayer = { name: string; type: string; data?: number[]; objects?: TiledObject[] };
+export type TiledTileset = { firstgid: number; tiles?: { id: number; properties?: TiledProperty[] }[] };
 export type TiledMap = {
   width: number;
   height: number;
   tilewidth: number;
   tileheight: number;
+  properties?: TiledProperty[];
   layers: TiledLayer[];
+  tilesets?: TiledTileset[];
 };
 
 export const COLLISION_LAYER = 'collision';
 export const LOCATIONS_LAYER = 'locations';
 
-export const VILLAGE = 'village';
-
-/** A position with no map is on the village, as the protocol has it. */
-export const mapOf = (position: Position): string => position.map ?? VILLAGE;
+/** The server always sends a position's map: one without is on none of them. */
+export const mapOf = (position: Position): string => position.map ?? '';
 
 export type MapPosition = Position & { map: string };
 

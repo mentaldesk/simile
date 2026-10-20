@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { collectScenes, type Area } from './areas';
-import { nativeCanvas } from './world/iso/canvas';
+import { nativeCanvas } from './world/canvas';
 
 const native = nativeCanvas(window);
 
@@ -10,7 +10,6 @@ const game = new Phaser.Game({
   parent: 'game',
   width: native.width,
   height: native.height,
-  pixelArt: true,
   // Phaser's FX render targets grow with the cube of the canvas height: 4.5 GB of GPU memory at 5K.
   disablePreFX: true,
   disablePostFX: true,

@@ -1,5 +1,5 @@
 import type { Position } from '../net';
-import { LOCATIONS_LAYER, mapOf, objectsOf, propertyOf, tileOf, VILLAGE, type TiledMap } from './map';
+import { LOCATIONS_LAYER, mapOf, objectsOf, propertyOf, tileOf, type TiledMap } from './map';
 import { TERMINAL_REACH_TILES } from './tuning';
 
 /** A news terminal location, its area in tiles. */
@@ -13,7 +13,7 @@ export type Terminal = {
   height: number;
 };
 
-export function terminalsOf(map: TiledMap, id = VILLAGE): Terminal[] {
+export function terminalsOf(map: TiledMap, id: string): Terminal[] {
   return objectsOf(map, LOCATIONS_LAYER)
     .filter(({ type }) => type === 'terminal')
     .map((object) => {
@@ -28,6 +28,11 @@ export function terminalsOf(map: TiledMap, id = VILLAGE): Terminal[] {
         height: (object.height ?? 0) / map.tileheight,
       };
     });
+}
+
+/** Every map's terminals. */
+export function terminalsOn(maps: Readonly<Record<string, TiledMap | undefined>>): Terminal[] {
+  return Object.entries(maps).flatMap(([id, map]) => (map ? terminalsOf(map, id) : []));
 }
 
 /** The terminal within reach of the tile the player stands on, as the server reads it. */

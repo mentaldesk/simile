@@ -1,23 +1,23 @@
 import Phaser from 'phaser';
 import { MENU_SCENE } from '../menu';
-import { characters } from '../world';
+import { SIDE_SCENE } from '../side';
 
-const harnessOpen = () => {
+/** `?harness=side` starts the side scene; the other harnesses set up their own world view. */
+function devHarness(): string | undefined {
+  if (!import.meta.env.DEV) return undefined;
   const params = new URLSearchParams(location.search);
-  return import.meta.env.DEV && (params.has('harness') || params.has('audio-harness') || params.has('side'));
-};
+  if (params.has('audio-harness')) return 'audio';
+  return params.get('harness') ?? undefined;
+}
 
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('boot');
   }
 
-  preload(): void {
-    for (const { key, image, atlas } of characters) this.load.atlas(key, image, atlas);
-  }
-
   create(): void {
-    // The dev harnesses set up their own world view and positions.
-    if (!harnessOpen()) this.scene.start(MENU_SCENE);
+    const harness = devHarness();
+    if (harness === 'side') this.scene.start(SIDE_SCENE);
+    else if (harness === undefined) this.scene.start(MENU_SCENE);
   }
 }
