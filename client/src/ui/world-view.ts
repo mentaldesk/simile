@@ -1,5 +1,6 @@
 import { server, type Entity, type Position } from '../net';
 import { mapOf } from '../world/map';
+import { tilesApart } from './side-view';
 
 export const PLAYER_ID = 'player';
 
@@ -111,6 +112,5 @@ export function worldView(): WorldView {
 export function distanceFromPlayer(view: WorldView, entityId: string): number | undefined {
   const player = view.positionOf(PLAYER_ID);
   const other = view.positionOf(entityId);
-  if (!player || !other || mapOf(player) !== mapOf(other)) return undefined;
-  return Math.hypot(other.x - player.x, other.y - player.y);
+  return player && other ? tilesApart(player, other) : undefined;
 }

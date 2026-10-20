@@ -10,6 +10,7 @@ from simile.behaviour import Activity, Behaviour, Goal
 from simile.conversation import ConversationEngine
 from simile.schema import PLAYER_ID, Id, LocationKind
 from simile.sim import ConversationEnded, ConversationStarted
+from simile.voicing.distance import between
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ class Director:
 
     def from_player(self, npc: Id) -> float | None:
         try:
-            return self.behaviour.movement.distance(npc, PLAYER_ID)
+            return between(self.behaviour.movement, npc, PLAYER_ID)
         except KeyError:
             return None
 

@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { Position } from '../net';
 import { bubbleAlpha, distanceAlpha, fadeAlpha, SpeechBubbles, speakingSeconds } from './bubbles';
+import { loadStreets } from './street.fixture';
 import {
   BUBBLE_FADE_SECONDS,
   EARSHOT_TILES,
@@ -9,6 +11,7 @@ import {
   SECONDS_PER_WORD,
   THINKING_SECONDS,
 } from './tuning';
+import { distanceFromPlayer, PLAYER_ID, type WorldView } from './world-view';
 
 describe('SpeechBubbles', () => {
   beforeEach(() => vi.useFakeTimers());
@@ -121,4 +124,48 @@ it('keeps the player’s partner opaque however far away they are', () => {
 
 it('estimates how long the player takes to say something', () => {
   expect(speakingSeconds("  Hi Mei, how's your morning going? ")).toBeCloseTo(6 * SECONDS_PER_WORD);
+});
+
+describe('on a side-view map', () => {
+  let unload: () => void;
+  beforeEach(() => (unload = loadStreets()));
+  afterEach(() => unload());
+
+  const lane = (x: number, y = 15): Position => ({ x, y, map: 'lychee_lane' });
+
+  function viewOf(positions: Record<string, Position>): WorldView {
+    return {
+      positionOf: (id) => positions[id],
+      npcIds: () => Object.keys(positions).filter((id) => id !== PLAYER_ID),
+      bubbleAnchor: () => ({ x: 0, y: 0 }),
+      spriteOf: () => undefined,
+    };
+  }
+
+  it('fades a speaker by how far along the street they are, however high they stand', () => {
+    const view = viewOf({ [PLAYER_ID]: lane(43), mei: lane(48, 12), tom: lane(49, 12) });
+
+    expect(distanceAlpha(distanceFromPlayer(view, 'mei')!)).toBeCloseTo(FAINTEST_ALPHA);
+    expect(distanceAlpha(distanceFromPlayer(view, 'tom')!)).toBe(0);
+  });
+
+  it('shows a speaker on the ladder straight above the player in full', () => {
+    const view = viewOf({ [PLAYER_ID]: lane(45), mei: lane(45, 12) });
+
+    expect(distanceAlpha(distanceFromPlayer(view, 'mei')!)).toBe(1);
+  });
+
+  it('shows nobody inside a building to the player outside it, or on another floor', () => {
+    const view = viewOf({
+      [PLAYER_ID]: { x: 30, y: 15, map: 'high_street' },
+      mei: { x: 5, y: 2, map: 'coffee_shop_floor_0' },
+    });
+    const upstairs = viewOf({
+      [PLAYER_ID]: { x: 5, y: 2, map: 'coffee_shop_floor_1' },
+      mei: { x: 5, y: 2, map: 'coffee_shop_floor_0' },
+    });
+
+    expect(distanceFromPlayer(view, 'mei')).toBeUndefined();
+    expect(distanceFromPlayer(upstairs, 'mei')).toBeUndefined();
+  });
 });

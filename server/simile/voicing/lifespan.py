@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 
 from starlette.applications import Starlette
 
@@ -17,13 +18,14 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.conversation import LineDrafted, conversations_of
     from simile.protocol import hub_of
     from simile.sim import ConversationEnded, ConversationStarted, LineSpoken, world_of
+    from simile.voicing.distance import between
     from simile.voicing.voicing import Voicing, add_voices
     from simile.world import movement_of
 
     world, hub = world_of(app), hub_of(app)
     voicing = Voicing(
         voice,
-        movement_of(app).distance,
+        partial(between, movement_of(app)),
         hub.broadcast,
         listening=lambda: bool(hub.connections),
     )
