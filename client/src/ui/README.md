@@ -36,6 +36,13 @@ label never changes under the player; if they walk off or get busy, sending says
 Distances and timings are in [`tuning.ts`](tuning.ts). `CHAT_RANGE_TILES` (3) is a tile inside
 the server's `say_range` (4), so an NPC the chat box picks is still in range when the line arrives.
 
+On a side-view map, one whose Tiled properties have `view: side`
+([`content/street/`](../../../content/street/README.md)), every distance is along x, the street, as
+the server measures it: someone up a ladder is as near as someone below them. Each floor and street
+is its own map, so nobody on another is in reach. `tilesApart` in [`side-view.ts`](side-view.ts)
+measures it for bubbles, the chat range, the mural panel and audio. It reads the maps' properties
+from `world/assets.ts`'s `maps`, which the dialogue scene hands to `setMaps`.
+
 ## Reading the news
 
 Near one of the map's `terminal` locations (`terminalAt` in [`world/terminals.ts`](../world/terminals.ts)),
@@ -64,7 +71,8 @@ input, so the player doesn't walk while reading, and it ignores `news` and `work
 ## Looking at a mural
 
 The world scene paints murals on walls (see [`world/iso/README.md`](../world/iso/README.md#murals)).
-Within `MURAL_REACH_TILES` (3) in front of a painted wall, a hint says "Press E to look at
+Within `MURAL_REACH_TILES` (3) in front of a painted wall (on a side-view map, of either end of it
+along its street, since every wall faces the camera), a hint says "Press E to look at
 “<title>”", and E opens the mural panel: the picture, its title, the artist and their statement.
 Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or E
 closes it, and so does walking off: out of the wall's reach and more than a tile from where the
@@ -122,7 +130,7 @@ The UI calls these every frame, after the world scene's `update`. Until a view i
 `TrackedWorld`, which follows `snapshot` and `entity_moved`, centres a camera of 48 overlay px tiles
 on the player and gives each sprite a 48 × 72 box. Either way, an NPC on another map than the
 player's has no position, and `distanceFromPlayer` measures nothing between maps, so it's neither
-heard, bubbled nor picked. Terminals and murals are only in reach on their own map, the village.
+heard, bubbled nor picked. Murals are only in reach on their wall's map, and terminals on the village.
 
 The overlay is laid out in at least 640 × 360 px and scaled to cover the canvas (`fitOverlay` in
 [`overlay.ts`](overlay.ts)), so text keeps its size relative to the window. The canvas is in device

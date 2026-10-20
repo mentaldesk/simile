@@ -7,6 +7,7 @@ import {
   type SnapshotMessage,
 } from '../net';
 import { Dialogue } from './dialogue';
+import { loadStreets } from './street.fixture';
 import { ChatTarget } from './target';
 import { CHAT_RANGE_TILES, EARSHOT_TILES, LOG_LIMIT } from './tuning';
 import { PLAYER_ID, type WorldView } from './world-view';
@@ -347,5 +348,45 @@ describe('Dialogue', () => {
 
     expect(dialogue.log.entries).toHaveLength(LOG_LIMIT);
     expect(dialogue.log.entries[0].text).toBe('Line 1');
+  });
+});
+
+describe('on a side-view map', () => {
+  const lane = (x: number, y = 15): Position => ({ x, y, map: 'lychee_lane' });
+  const view = viewOf({
+    player: lane(43),
+    mei: lane(48, 12),
+    tom: lane(49, 12),
+    suki: { x: 3, y: 2, map: 'house_4_floor_1' },
+  });
+  let dialogue: Dialogue;
+  let stops: (() => void)[];
+
+  function deliver(id: number, speaker: string, text: string): void {
+    const line: Line = {
+      id,
+      conversation_id: `conv_${speaker}`,
+      speaker,
+      text,
+      timestamp: '2026-03-14T08:05:00Z',
+      duration: 2,
+    };
+    server.dispatch(JSON.stringify({ type: 'line', line, voiced: false }));
+  }
+
+  beforeEach(() => {
+    dialogue = new Dialogue(server, () => view);
+    stops = [dialogue.listen(), loadStreets()];
+  });
+
+  afterEach(() => stops.forEach((stop) => stop()));
+
+  it('hears whoever is within earshot along the street, however high they stand', () => {
+    deliver(1, 'mei', 'Lovely view from up here.');
+    deliver(2, 'tom', 'Can anyone hear me?');
+    deliver(3, 'suki', 'Is that the door?');
+
+    expect(dialogue.bubbles.current().map(({ speaker }) => speaker)).toEqual(['mei']);
+    expect(dialogue.log.entries.map(({ speaker }) => speaker)).toEqual(['mei']);
   });
 });

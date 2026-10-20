@@ -7,10 +7,12 @@ from dataclasses import dataclass, replace
 from simile.behaviour.config import DEFAULT_CONFIG, Activity, BehaviourConfig, Curve, Need
 from simile.schema import (
     PLAYER_ID,
+    VILLAGE_MAP,
     CoreValue,
     Id,
     Location,
     LocationKind,
+    MapTile,
     Medium,
     Relationship,
     Tile,
@@ -77,9 +79,15 @@ class Places:
         for door in town.doors:
             out, into = (Point(end.x, end.y, end.map) for end in (door.outside, door.inside))
             self._doors[out], self._doors[into] = into, out
+        self.maps = {town.id, *(loc.map for loc in town.locations), *(p.map for p in self._doors)}
+        """Every map the town's locations and doors are on."""
 
     def location(self, location_id: str) -> Location:
         return self.town.location(location_id)
+
+    def point(self, tile: Tile | MapTile) -> Point:
+        """A tile as a point, a plain `Tile` on the town's own map, as `walk_to` takes one."""
+        return Point(tile.x, tile.y, tile.map if isinstance(tile, MapTile) else self.town.id)
 
     def ids(self, activity: Activity) -> list[Id]:
         return [location.id for location in self.by_activity.get(activity, [])]
@@ -130,10 +138,11 @@ def _part_of_another(location: Location, locations: Sequence[Location]) -> bool:
 
 @dataclass(frozen=True)
 class MuralSpot:
-    """A wall to paint, and the tile to stand on to paint it."""
+    """A wall to paint, and the tile to stand on to paint it, on the town's own map if it's a plain
+    `Tile`."""
 
     wall: Id
-    tile: Tile
+    tile: Tile | MapTile
 
 
 @dataclass(frozen=True)
@@ -251,7 +260,7 @@ def candidates(
             continue
         goals.extend(Goal(activity, location.id) for location in locations)
     goals += [Goal(Activity.WANDER), Goal(Activity.IDLE)]
-    goals += [Goal(Activity.EXERCISE, loop) for loop in config.loops]
+    goals += [Goal(Activity.EXERCISE, name) for name in loops(places, config)]
     if situation.work is not None:
         goals.append(Goal(Activity.WORK, situation.work.workplace))
     goals.extend(Goal(Activity.SEEK, o.id) for o in situation.others if o.available)
@@ -311,7 +320,7 @@ def score(
         start = min(places.walk_minutes(situation.position, p) for p in loop(goal, places, config))
         total -= config.travel_weight * start
     elif (spot := painting(goal, situation)) is not None:
-        wall = Point(spot.tile.x, spot.tile.y)
+        wall = places.point(spot.tile)
         total -= config.travel_weight * places.walk_minutes(situation.position, wall)
     elif goal.target is not None:
         location = places.location(goal.target)
@@ -400,10 +409,21 @@ def rising(
     return config.rise.get(need, 0.0) + sum(w * values[v] for v, w in weights.items())
 
 
+def loops(places: Places, config: BehaviourConfig = DEFAULT_CONFIG) -> dict[str, list[Point]]:
+    """Every exercise walk on the places' maps, by name, as the tiles it passes in order."""
+    walks = {VILLAGE_MAP: config.loops, **config.loops_on}
+    return {
+        name: [Point(x, y, map_id) for x, y in tiles]
+        for map_id, named in walks.items()
+        if map_id in places.maps
+        for name, tiles in named.items()
+    }
+
+
 def loop(goal: Goal, places: Places, config: BehaviourConfig = DEFAULT_CONFIG) -> list[Point]:
     """The tiles an exercise walk passes, in order."""
     assert goal.target is not None
-    return [Point(x, y, places.town.id) for x, y in config.loops[goal.target]]
+    return loops(places, config)[goal.target]
 
 
 def money(goal: Goal, situation: Situation, config: BehaviourConfig = DEFAULT_CONFIG) -> float:

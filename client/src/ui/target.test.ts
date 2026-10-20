@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { Position } from '../net';
+import { loadStreets } from './street.fixture';
 import { ChatTarget, claimClicks, clicked, type Talks } from './target';
 import { CHAT_RANGE_TILES } from './tuning';
 import { PLAYER_ID, TILE_PX, type WorldView } from './world-view';
@@ -227,5 +228,41 @@ describe('clicking', () => {
     open = true;
     unclaim();
     expect(clicked(on('mei'), view)).toBe('mei');
+  });
+});
+
+describe('on a side-view map', () => {
+  let unload: () => void;
+  beforeEach(() => (unload = loadStreets()));
+  afterEach(() => unload());
+
+  const lane = (x: number, y = 15): Position => ({ x, y, map: 'lychee_lane' });
+
+  it('reaches NPCs within range along the street, however high they stand', () => {
+    const chat = targets({ player: lane(44), mei: lane(47, 12), suki: lane(41) });
+
+    expect(chat.refusal('mei')).toBeUndefined();
+    expect(chat.reachable()).toEqual(['mei', 'suki']);
+  });
+
+  it('refuses an NPC further along than the range', () => {
+    const chat = targets({ player: lane(44 - 0.1), mei: lane(47, 12) });
+
+    expect(chat.refusal('mei')).toBe('far');
+    expect(chat.current()).toBeUndefined();
+  });
+
+  it('reaches nobody on another floor or inside a building, whatever their x', () => {
+    const upstairs = targets({
+      player: { x: 5, y: 2, map: 'coffee_shop_floor_1' },
+      mei: { x: 5, y: 2, map: 'coffee_shop_floor_0' },
+    });
+    const outside = targets({
+      player: { x: 30, y: 15, map: 'high_street' },
+      mei: { x: 5, y: 2, map: 'coffee_shop_floor_0' },
+    });
+
+    expect(upstairs.refusal('mei')).toBe('far');
+    expect(outside.current()).toBeUndefined();
   });
 });

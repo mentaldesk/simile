@@ -53,9 +53,12 @@ from simile.behaviour.scoring import (
 from simile.schema import (
     PLAYER_ID,
     Conversation,
+    Door,
+    DoorKind,
     Id,
     Intention,
     IntentionKind,
+    Location,
     LocationKind,
     MapTile,
     Medium,
@@ -69,7 +72,9 @@ from simile.schema import (
 )
 from simile.sim import Clock, EventBus
 from simile.social import as_of, cast_traits, meet, trait_factor
+from simile.world.map import MapKind
 from simile.world.movement import Movement, Outcome, Point, Target, Walk, inside
+from simile.world.paths import nearby
 from simile.world.spots import choose as choose_spot
 from simile.world.spots import purpose_of
 
@@ -1234,29 +1239,42 @@ class Behaviour:
         location = self.places.location(goal.target)
         positions = self.movement.entities()
         here = positions[npc]
-        taken = {(round(p.x), round(p.y)) for other, p in positions.items() if p.map == here.map}
-        free = [
-            spot
-            for spot in self.movement.maps[location.map].spots
+        rise = self._stacked(location)
+        taken = {(p.map, round(p.x), round(p.y)) for p in positions.values()}
+        free = {
+            replace(spot, y=spot.y - rise[spot.map]) if rise[spot.map] else spot: spot
+            for map_id in rise
+            for spot in self.movement.maps[map_id].spots
             if spot.kind in kinds
-            and (spot.x, spot.y) not in taken
+            and (spot.map, spot.x, spot.y) not in taken
             and inside(location, Point(spot.x, spot.y, spot.map))
-        ]
+        }
         others = {
-            other: (p.x, p.y)
+            other: (p.x, p.y - rise[p.map])
             for other, p in positions.items()
-            if other != npc and p.map == here.map
+            if other != npc and p.map in rise
         }
         spot = choose_spot(
             npc,
             free,
             kinds,
             others,
-            (here.x, here.y),
+            (here.x, here.y - rise.get(here.map, 0)),
             self.movement.affinity,
             self.movement.spot_config,
         )
-        return None if spot is None else MapTile(map=spot.map, x=spot.x, y=spot.y)
+        return None if spot is None else MapTile(map=spot.map, x=spot.x, y=free[spot].y)
+
+    def _stacked(self, location: Location) -> dict[str, int]:
+        """How far up each of the location's maps is stacked, in tiles, as movement measures its
+        floors."""
+        maps = self.movement.maps
+        base = maps[location.map].floor or 0
+        floors = (maps[floor.map] for floor in location.floors if floor.map in maps)
+        return {
+            town.id: ((town.floor or 0) - base) * town.height
+            for town in (maps[location.map], *floors)
+        }
 
     def _route(self, mind: Mind, goal: Goal) -> list[MapTile]:
         """The loop's tiles, from the one nearest them."""
@@ -1324,21 +1342,55 @@ class Behaviour:
         return MapTile(map=position.map, x=max(round(position.x), 0), y=max(round(position.y), 0))
 
     def _wander_tile(self, mind: Mind) -> MapTile | None:
-        """Somewhere near them that isn't a house, or near the door outside if they're indoors."""
+        """Somewhere near them to stand that isn't a house, or near the door outside if they're
+        indoors. On a side-view map, one of the standing cells they can reach in
+        `wander_radius` steps."""
         here = self.movement.position(mind.npc.id)
-        door = next((d for d in self.movement.town.doors if d.inside.map == here.map), None)
+        door = self._way_out(here.map)
         if door is not None:
             here = Point(door.outside.x, door.outside.y, door.outside.map)
         town, reach = self.movement.maps[here.map], self.config.wander_radius
+        if town.side_view:
+            cells = []
+            for cell, steps in nearby(town, (round(here.x), round(here.y))):
+                if steps > reach:
+                    break
+                if town.standing(*cell) and not self._in_a_house(Point(*cell, town.id)):
+                    cells.append(cell)
+            if not cells:
+                return None
+            x, y = self.rng.choice(cells)
+            return MapTile(map=town.id, x=x, y=y)
         for _ in range(20):
             x = round(here.x) + self.rng.randint(-reach, reach)
             y = round(here.y) + self.rng.randint(-reach, reach)
-            if not town.walkable(x, y):
-                continue
-            location = self.places.at(Point(x, y, here.map))
-            if location is None or location.kind is not LocationKind.HOUSE:
+            if town.standing(x, y) and not self._in_a_house(Point(x, y, here.map)):
                 return MapTile(map=here.map, x=x, y=y)
         return None
+
+    def _way_out(self, map_id: str) -> Door | None:
+        """The door out to the street from indoors: on a side-view map, from any floor of a
+        building, its front door."""
+        maps, doors = self.movement.maps, self.movement.town.doors
+        town = maps[map_id]
+        if not town.side_view:
+            return next((d for d in doors if d.inside.map == map_id), None)
+        if town.kind is not MapKind.FLOOR:
+            return None
+        return next(
+            (
+                d
+                for d in doors
+                if d.kind is DoorKind.DOOR
+                and d.inside.map in maps
+                and maps[d.inside.map].building == town.building
+            ),
+            None,
+        )
+
+    def _in_a_house(self, point: Point) -> bool:
+        location = self.places.at(point)
+        return location is not None and location.kind is LocationKind.HOUSE
 
     def _at_home(self, mind: Mind) -> bool:
         location = self.places.at(self.movement.position(mind.npc.id))

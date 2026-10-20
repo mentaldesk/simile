@@ -3,24 +3,56 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.llm import Model
-from simile.schema import CoreValue, Tile
+from simile.schema import CoreValue, MapTile
 
 V = CoreValue
+TODAY = "coffee_shop"
+"""The café's interior on today's maps."""
 
-SEATS = [
-    Tile(x=x, y=y)
-    for table_x, table_y in (
-        (12, 3),
-        (15, 3),
-        (12, 7),
-        (15, 7),
-        (12, 10),
-        (15, 10),
-        (2, 8),
-        (2, 11),
+
+class Layout(BaseModel):
+    """Where the Daily Grind's fixed tiles are, on one world's maps."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    entrance: MapTile = Field(description="Just inside the door, where customers head first.")
+    machine: MapTile = Field(description="Where the barista makes drinks.")
+    hand_over: MapTile = Field(description="Where the barista hands drinks across the counter.")
+    pickup: MapTile = Field(description="Where customers wait for their drink.")
+    upstairs: MapTile = Field(
+        description="The foot of the stairs to the barista's flat, where they rest and sleep."
     )
-    for x, y in ((table_x - 1, table_y), (table_x + 1, table_y))
-]
+    seats: list[MapTile] = Field(description="Beside the tables.")
+
+
+def _on(map_id: str, *cells: tuple[int, int]) -> list[MapTile]:
+    return [MapTile(map=map_id, x=x, y=y) for x, y in cells]
+
+
+TABLES = ((12, 3), (15, 3), (12, 7), (15, 7), (12, 10), (15, 10), (2, 8), (2, 11))
+SEATS = _on(TODAY, *((x + side, y) for x, y in TABLES for side in (-1, 1)))
+LAYOUTS = {
+    TODAY: Layout(
+        entrance=MapTile(map=TODAY, x=10, y=12),
+        machine=MapTile(map=TODAY, x=7, y=3),
+        hand_over=MapTile(map=TODAY, x=8, y=4),
+        pickup=MapTile(map=TODAY, x=8, y=6),
+        upstairs=MapTile(map=TODAY, x=1, y=3),
+        seats=SEATS,
+    ),
+    "coffee_shop_floor_0": Layout(
+        entrance=MapTile(map="coffee_shop_floor_0", x=17, y=2),
+        machine=MapTile(map="coffee_shop_floor_0", x=2, y=2),
+        hand_over=MapTile(map="coffee_shop_floor_0", x=4, y=2),
+        pickup=MapTile(map="coffee_shop_floor_0", x=5, y=2),
+        upstairs=MapTile(map="coffee_shop_floor_0", x=15, y=2),
+        seats=_on(
+            "coffee_shop_floor_1", *((x, 2) for x in (*range(5, 11), *range(12, 18), 1, 2, 3, 4))
+        ),
+    ),
+}
+"""By the map the café's location is on: today's interior, and its ground floor in side view,
+whose tables are upstairs. Each world's seats are in the same order, by spot id."""
 
 
 class Nudge(BaseModel):
@@ -64,21 +96,10 @@ class CafeConfig(BaseModel):
         le=24,
         description="Last orders, when residents stop wanting coffee. The queue is still served.",
     )
-    entrance: Tile = Field(
-        default=Tile(x=10, y=12), description="Just inside the door, where customers head first."
+    layouts: dict[str, Layout] = Field(
+        default=LAYOUTS,
+        description="Where its fixed tiles are, by the map its location is on.",
     )
-    machine: Tile = Field(default=Tile(x=7, y=3), description="Where the barista makes drinks.")
-    hand_over: Tile = Field(
-        default=Tile(x=8, y=4), description="Where the barista hands drinks across the counter."
-    )
-    pickup: Tile = Field(
-        default=Tile(x=8, y=6), description="Where customers wait for their drink."
-    )
-    upstairs: Tile = Field(
-        default=Tile(x=1, y=3),
-        description="The foot of the stairs to the barista's flat, where they rest and sleep.",
-    )
-    seats: list[Tile] = Field(default=SEATS, description="Beside the tables.")
     model: str = Field(
         default=Model.HAIKU_4_5,
         description="Writes the barista's side of an order. Haiku 4.5, which doesn't think first, "
@@ -146,6 +167,31 @@ class CafeConfig(BaseModel):
         if self.opens >= self.closes:
             raise ValueError("the café must open before it closes")
         return self
+
+    @property
+    def entrance(self) -> MapTile:
+        """On today's maps, as are `machine`, `hand_over`, `pickup`, `upstairs` and `seats`."""
+        return self.layouts[TODAY].entrance
+
+    @property
+    def machine(self) -> MapTile:
+        return self.layouts[TODAY].machine
+
+    @property
+    def hand_over(self) -> MapTile:
+        return self.layouts[TODAY].hand_over
+
+    @property
+    def pickup(self) -> MapTile:
+        return self.layouts[TODAY].pickup
+
+    @property
+    def upstairs(self) -> MapTile:
+        return self.layouts[TODAY].upstairs
+
+    @property
+    def seats(self) -> list[MapTile]:
+        return self.layouts[TODAY].seats
 
 
 DEFAULT_CONFIG = CafeConfig()

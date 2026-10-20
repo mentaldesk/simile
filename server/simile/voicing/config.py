@@ -4,7 +4,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class VoicingConfig(BaseModel):
-    """Every constant of earshot voicing. Distances are in tiles, times in real seconds."""
+    """Every constant of earshot voicing. Distances are in tiles, along x on a side-view map
+    (`simile.voicing.distance`), and times in real seconds."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 

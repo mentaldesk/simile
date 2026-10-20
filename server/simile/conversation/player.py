@@ -34,6 +34,7 @@ from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
 from simile.voice import speaking_rate
+from simile.voicing.distance import between
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,8 @@ def titled(title: str, text: str, *, loosely: bool) -> bool:
 
 
 class PlayerConfig(BaseModel):
-    """Every constant of player conversations. Distances are in tiles, times in sim seconds."""
+    """Every constant of player conversations. Distances are in tiles, along x on a side-view
+    map as I1 measures earshot, and times in sim seconds."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -629,16 +631,17 @@ class PlayerConversations:
 
     def _distance(self, npc: Id) -> float | None:
         try:
-            return self.engine.behaviour.movement.distance(npc, PLAYER_ID)
+            return between(self.engine.behaviour.movement, npc, PLAYER_ID)
         except KeyError:
             return None
 
     def _facing(self, npc: Id) -> Direction:
         movement = self.engine.behaviour.movement
         try:
-            return facing(movement.position(npc), movement.position(PLAYER_ID))
+            here, there = movement.position(npc), movement.position(PLAYER_ID)
         except KeyError:
             return "down"
+        return facing(here, there, side_view=movement.maps[here.map].side_view)
 
     def _conversation_id(self, participants: Sequence[Id], now: datetime) -> str:
         base = id = f"{now:%Y%m%dT%H%M%S}-{'-'.join(participants)}"
