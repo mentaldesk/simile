@@ -19,6 +19,7 @@ type SideWalk = {
   standing(map: string, x: number, y: number): boolean;
   teleport(to: Place): void;
 };
+type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
 /** Walk from `start` to `x` on its row, press E or not, hold up or down or not, and arrive at `arrive`. */
 type Leg = { name: string; start: Place; x: number; e: boolean; hold?: Hold; arrive: Place };
@@ -31,13 +32,13 @@ const FRAME_MS = 1000 / 60;
 const SECONDS_TO_ARRIVE = 12;
 
 const walkApi = (page: Page) => ({
-  state: () => page.evaluate(() => (window as unknown as { sideWalk: SideWalk }).sideWalk.state()),
-  links: () => page.evaluate(() => (window as unknown as { sideWalk: SideWalk }).sideWalk.links()),
-  runs: () => page.evaluate(() => (window as unknown as { sideWalk: SideWalk }).sideWalk.runs()),
-  widths: () => page.evaluate(() => (window as unknown as { sideWalk: SideWalk }).sideWalk.widths()),
+  state: () => page.evaluate(() => (window as unknown as Paged).sideWalk.state()),
+  links: () => page.evaluate(() => (window as unknown as Paged).sideWalk.links()),
+  runs: () => page.evaluate(() => (window as unknown as Paged).sideWalk.runs()),
+  widths: () => page.evaluate(() => (window as unknown as Paged).sideWalk.widths()),
   standing: (place: Place) =>
-    page.evaluate(({ map, x, y }) => (window as unknown as { sideWalk: SideWalk }).sideWalk.standing(map, x, y), place),
-  teleport: (to: Place) => page.evaluate((to) => (window as unknown as { sideWalk: SideWalk }).sideWalk.teleport(to), to),
+    page.evaluate(({ map, x, y }) => (window as unknown as Paged).sideWalk.standing(map, x, y), place),
+  teleport: (to: Place) => page.evaluate((to) => (window as unknown as Paged).sideWalk.teleport(to), to),
 });
 
 async function run(page: Page, ms: number): Promise<void> {
