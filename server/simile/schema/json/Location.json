@@ -14,9 +14,49 @@
       "title": "LocationKind",
       "type": "string"
     },
+    "MapArea": {
+      "additionalProperties": false,
+      "description": "A rectangle of tiles on a given map, as a `MapTile` is a tile on one.",
+      "properties": {
+        "map": {
+          "minLength": 1,
+          "title": "Map",
+          "type": "string"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        },
+        "width": {
+          "minimum": 1,
+          "title": "Width",
+          "type": "integer"
+        },
+        "height": {
+          "minimum": 1,
+          "title": "Height",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "map",
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "title": "MapArea",
+      "type": "object"
+    },
     "Tile": {
       "additionalProperties": false,
-      "description": "A cell of the map grid, counted in tiles from the top-left corner.",
+      "description": "A cell of the map grid, about 1.1 m across, counted in tiles from the top-left corner. On a\nside-view map, x runs along the street and y counts rows down from the top, and a resident\nstands on a cell with ground under it or on a climbable cell.",
       "properties": {
         "x": {
           "minimum": 0,
@@ -38,6 +78,7 @@
     },
     "TileArea": {
       "additionalProperties": false,
+      "description": "A rectangle of tiles, from its top-left tile (x, y). On a side-view map, x runs along the\nstreet and y counts rows down from the top.",
       "properties": {
         "x": {
           "minimum": 0,
@@ -71,6 +112,7 @@
     }
   },
   "additionalProperties": false,
+  "description": "A place. Its `map`, `area` and `entry` are where you arrive, and its `floors` are the rest\nof its building.",
   "properties": {
     "id": {
       "maxLength": 64,
@@ -99,6 +141,15 @@
     "entry": {
       "$ref": "#/$defs/Tile",
       "description": "The tile entities walk to when they go there."
+    },
+    "floors": {
+      "default": [],
+      "description": "Its building's other floors, each on a map of its own, as on side-view maps. Left out when empty.",
+      "items": {
+        "$ref": "#/$defs/MapArea"
+      },
+      "title": "Floors",
+      "type": "array"
     }
   },
   "required": [
