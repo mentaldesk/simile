@@ -97,8 +97,9 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
-    const way = used || this.news.isOpen || this.murals.isOpen ? undefined : wayHint();
+    const way = this.news.isOpen || this.murals.isOpen ? undefined : wayHint(used !== undefined);
     this.wayHint.hidden = !way;
+    this.wayHint.classList.toggle('beside', used !== undefined);
     if (way && this.wayHint.textContent !== way) this.wayHint.textContent = way;
   }
 

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class SavedNpc(Model):
     position: Tile
     map: Key = VILLAGE_MAP
-    """A save from before the interiors was all on today's village."""
+    """The map they're on. A save from before the interiors has none: it's on today's village."""
     activity: Activity
     target: str | None = None
     needs: dict[Need, float]

@@ -47,8 +47,8 @@ along the street: a terminal, a counter, a painting's frame, or a painted wall w
 drawn. `usedByE` is the first. The dialogue UI, the gallery panel and the side scene all ask it, so
 one press does one thing: E uses that, and takes a door, stairs, a ladder or a lift only when
 nothing is in reach. Up always takes a door. The side scene says what E or up would take where the
-player stands through `setWayHint`, and the dialogue UI shows `wayHint()` while nothing else is in
-reach.
+player stands through `setWayHint`, and the dialogue UI shows `wayHint(eTaken)`: with something in
+reach, only a door's, for up, under that thing's hint.
 
 `npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point from the view's
 `spriteOf` boxes: front to back, the first whose frame is opaque there, else the first whose box

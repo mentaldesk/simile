@@ -92,4 +92,11 @@ describe('wayHint', () => {
     unset();
     expect(wayHint()).toBeUndefined();
   });
+
+  it('tells the world scene when E is used for something in reach', () => {
+    const unset = setWayHint((eTaken) => (eTaken ? 'Press ↑ to go in.' : 'Press E or ↑ to go in.'));
+    expect(wayHint()).toBe('Press E or ↑ to go in.');
+    expect(wayHint(true)).toBe('Press ↑ to go in.');
+    unset();
+  });
 });

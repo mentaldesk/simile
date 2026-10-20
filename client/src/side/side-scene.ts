@@ -7,12 +7,13 @@ import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
 import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
-import { setWayHint, usedByE } from '../world/reach';
+import { setWayHint } from '../world/reach';
 import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { DEPTH } from './depths';
+import { readControls, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt } from './light';
 import type { Link, Village } from './maps';
@@ -61,6 +62,7 @@ export class SideScene extends Phaser.Scene {
   private readonly feet = { x: 0, y: 0 };
   private readonly size = { width: 0, height: 0 };
   private readonly sent = { x: NaN, y: NaN, map: '' };
+  private readonly held: Held = { up: false, down: false, left: false, right: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false };
   private passing = false;
   private worksChanged = true;
@@ -93,7 +95,7 @@ export class SideScene extends Phaser.Scene {
           return this.street?.muralAt(point.x, point.y);
         },
       }),
-      setWayHint(() => this.hint()),
+      setWayHint((eTaken) => this.hint(eTaken)),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -168,20 +170,21 @@ export class SideScene extends Phaser.Scene {
     return start && village.map(start.map) ? start : DEFAULT_START;
   }
 
-  /** E uses what's in reach before any door, stairs, ladder or lift. */
   private read(player: SidePlayer): Controls {
-    const { controls, keys } = this;
-    controls.x = Number(keys.RIGHT.isDown || keys.D.isDown) - Number(keys.LEFT.isDown || keys.A.isDown);
-    controls.y = Number(keys.DOWN.isDown || keys.S.isDown) - Number(keys.UP.isDown || keys.W.isDown);
-    controls.use = this.used && !usedByE(player.mapPosition);
+    const { held, keys } = this;
+    held.up = keys.UP.isDown || keys.W.isDown;
+    held.down = keys.DOWN.isDown || keys.S.isDown;
+    held.left = keys.LEFT.isDown || keys.A.isDown;
+    held.right = keys.RIGHT.isDown || keys.D.isDown;
+    readControls(held, this.used, player.mapPosition, this.controls);
     this.used = false;
-    return controls;
+    return this.controls;
   }
 
-  private hint(): string | undefined {
+  private hint(eTaken: boolean): string | undefined {
     const { content, player } = this;
     const way = !this.passing && player?.way();
-    return way ? wayHint(content!.village, way) : undefined;
+    return way ? wayHint(content!.village, way, eTaken) : undefined;
   }
 
   private frame(dt: number, street: StreetView): void {

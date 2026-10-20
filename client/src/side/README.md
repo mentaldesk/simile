@@ -24,7 +24,9 @@ Left and right (or A and D) walk. E or up takes a door in front of you; down als
 by its front door. E gets on stairs or a ladder, then up and down climb, stopping anywhere; E rides a
 lift all the way. Where a terminal, the counter, a painting or a mural is in reach, E uses that
 instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door. A hint says what E or up
-takes where you stand ("Press E or ↑ to go into The Daily Grind.", `ways.ts`). Clicking a mural
+takes where you stand ("Press E or ↑ to go into The Daily Grind.", `ways.ts`), or with E taken,
+what up takes ("Press ↑ to go into 3 Banyan Row."). The scene reads its keys through `input.ts`'s
+`readControls`, which leaves E to what's in reach. Clicking a mural
 looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
 
 ## How it draws

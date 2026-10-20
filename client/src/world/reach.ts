@@ -50,14 +50,17 @@ export function inReach(position: Position | undefined, from: Reachables = reach
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
   inReach(position, from)[0];
 
-let wayHere: (() => string | undefined) | undefined;
+type WayHint = (eTaken: boolean) => string | undefined;
+
+let wayHere: WayHint | undefined;
 
 /** The world scene's hint for the door, stairs, ladder or lift where the player stands. */
-export function setWayHint(hint: () => string | undefined): () => void {
+export function setWayHint(hint: WayHint): () => void {
   wayHere = hint;
   return () => {
     if (wayHere === hint) wayHere = undefined;
   };
 }
 
-export const wayHint = (): string | undefined => wayHere?.();
+/** `eTaken` while E uses something in reach, so only up is left, at a door. */
+export const wayHint = (eTaken = false): string | undefined => wayHere?.(eTaken);

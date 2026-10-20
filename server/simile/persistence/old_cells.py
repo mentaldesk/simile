@@ -58,10 +58,10 @@ def write(rows: list[Moved], table: Path = TABLE) -> None:
 
 def build(old: Mapping[str, TownMap], new: Mapping[str, TownMap]) -> list[Moved]:
     """Each walkable cell of today's maps, in runs along its row, and where it is on the
-    side-view maps: a spot, a
-    door's end or an interactable's stand on the one with the same id, else the entry of the
-    location it's in, else the street end of the nearest door or the entry of the nearest
-    outdoor location on today's map. Raises KeyError if an id is missing from the new maps."""
+    side-view maps. A spot, a door's end or an interactable's stand goes to the one with the
+    same id. Any other cell goes to the entry of the location it's in, or else outdoors to the
+    nearest door's end or place on a street, or the street in front of a house's door. Raises
+    KeyError if an id is missing from the new maps."""
     found = _Found(new)
     rows: list[Moved] = []
     for town in old.values():
