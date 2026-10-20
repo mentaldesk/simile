@@ -10,3 +10,5 @@ the game; this branch only holds pictures for the PR.
 - `20`–`27`: a copy of the maintainer's own save, made on today's isometric maps and loaded on the
   side view. Everyone is where the table in `server/simile/persistence/old_cells.csv` put them,
   the murals are on their walls and the paintings in their frames.
+- `28`: the side scene's dev harness (`?harness=side&at=banyan_row:17`) at house 10's door, where E
+  looks at the mural and the door's hint stays, for ↑.
