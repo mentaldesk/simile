@@ -1497,3 +1497,37 @@ async def test_on_a_side_view_map_nobody_on_another_floor_or_inside_is_in_range(
 
     player_on(village, 6, "coffee_shop_floor_0", 2)
     assert village.players.say("Hello?", "ana") is not None
+
+
+@pytest.mark.parametrize(
+    ("ana", "player", "turns"),
+    [
+        (LOOKOUT, (LOOKOUT[0] - 2, 15), "left"),
+        (LOOKOUT, (LOOKOUT[0] + 2, 15), "right"),
+        (LOOKOUT, (LOOKOUT[0], 15), "down"),
+        ((45, 15), (45, 13), "down"),
+    ],
+    ids=["below to the left", "below to the right", "straight below", "straight above"],
+)
+async def test_on_a_side_view_map_a_resident_turns_left_or_right_to_the_player(
+    ana: tuple[int, int], player: tuple[float, float], turns: str
+) -> None:
+    village = on_the_lookout()
+    village.movement.place("ana", MapTile(map=LANE, x=ana[0], y=ana[1]))
+    player_on(village, player[0], y=player[1])
+
+    village.players.say("Hello!", "ana")
+    await village.run(0.1)
+
+    assert village.of(Facing) == [Facing("ana", PLAYER_ID, turns)]
+
+
+async def test_on_todays_maps_a_resident_still_turns_up_or_down_to_the_player() -> None:
+    village = Village(npcs=(ANA,))
+    here = village.movement.position("ana")
+    village.movement.track(PLAYER_ID, Point(here.x + 0.5, here.y - 2, here.map))
+
+    village.players.say("Hello!", "ana")
+    await village.run(0.1)
+
+    assert village.of(Facing) == [Facing("ana", PLAYER_ID, "up")]

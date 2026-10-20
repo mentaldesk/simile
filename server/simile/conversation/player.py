@@ -638,9 +638,10 @@ class PlayerConversations:
     def _facing(self, npc: Id) -> Direction:
         movement = self.engine.behaviour.movement
         try:
-            return facing(movement.position(npc), movement.position(PLAYER_ID))
+            here, there = movement.position(npc), movement.position(PLAYER_ID)
         except KeyError:
             return "down"
+        return facing(here, there, side_view=movement.maps[here.map].side_view)
 
     def _conversation_id(self, participants: Sequence[Id], now: datetime) -> str:
         base = id = f"{now:%Y%m%dT%H%M%S}-{'-'.join(participants)}"
