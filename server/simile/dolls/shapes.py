@@ -128,9 +128,6 @@ def tufted(c: Pt, rx: float, ry: float, t0: float, t1: float, tufts: int, depth:
     return pts
 
 
-# Side view, facing +x.
-
-
 def side_shell(pen: Pen, look: Look, dr: float, t_front: float, t_back: float) -> None:
     rx, ry = SKULL_R
     tufts = 0 if look.hair_style == "buzz" else 5
@@ -261,9 +258,6 @@ def beanie(pen: Pen, look: Look, centre: Pt, side: bool) -> None:
     for t in range(-160 if side else -150, -20, 18):
         a = arc(centre, rx + 0.8, ry + 1.2, t, t, 1)[0]
         pen.line([(a[0], a[1]), (a[0] * 0.98, band_top - 0.6)], 0.4, darker(look.accent, 0.88))
-
-
-# Front view: the face.
 
 
 def front_shell(pen: Pen, look: Look, dr: float, drop: float, hairline: list[Pt]) -> None:
@@ -415,9 +409,6 @@ def head_front(pen: Pen, look: Look) -> None:
         pen.line([(-1.4, -13.4), (1.4, -13.4)], 0.6, (30, 26, 34))
 
 
-# Back view: hair and the back of the head.
-
-
 def dashes(
     pen: Pen,
     look: Look,
@@ -541,9 +532,6 @@ def head_back(pen: Pen, look: Look) -> None:
     if acc & {"glasses", "sunglasses"}:
         for side in (-1, 1):
             pen.line([(side * 9.2, -14.0), (side * 11.2, -13.4)], 0.5, INK)
-
-
-# Torsos.
 
 
 def side_depth(look: Look) -> float:
@@ -729,9 +717,6 @@ def torso_back(pen: Pen, look: Look) -> None:
         pen.line(arc((0.0, -28.6), 2.4, 1.8, 180, 360, 8), 0.8, darker(look.accent, 0.6))
     if "scarf" in acc:
         pen.ellipse((0.0, -31.0), 8.6, 3.2, look.accent)
-
-
-# Limbs, the same from every side.
 
 
 def upper_arm(pen: Pen, look: Look) -> None:
