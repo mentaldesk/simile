@@ -148,7 +148,7 @@ const GL: Record<string, string[]> = {
 const browser = await chromium.launch({ args: GL[process.platform] ?? [] });
 const failures: string[] = [];
 try {
-  const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 640, height: 400 } });
+  const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 320, height: 200 } });
   page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));
   if (!realTime) await page.clock.install();
   const url = server.resolvedUrls!.local[0];
