@@ -287,6 +287,18 @@ def test_cannot_place_on_a_wall() -> None:
         Village(corridor(3)).movement.place("mei", Tile(x=5, y=0))
 
 
+def test_placed_where_nobody_can_stand_goes_to_the_nearest_standing_cell() -> None:
+    movement = Village().movement
+
+    for (map_id, x, y), to in {
+        ("house_1_floor_0", 0, 2): (1, 2),
+        ("high_street", 30, 17): (30, 15),
+        ("lychee_lane", 45, 13): (46, 12),
+    }.items():
+        placed = movement.place("mei", MapTile(map=map_id, x=x, y=y))
+        assert (placed.map, placed.x, placed.y) == (map_id, *to)
+
+
 def test_unknown_locations_and_entities_raise() -> None:
     village = Village()
     village.movement.place("mei", "house_1")

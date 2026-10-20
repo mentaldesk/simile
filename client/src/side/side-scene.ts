@@ -7,7 +7,7 @@ import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
 import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
-import { setWayHint } from '../world/reach';
+import { setWayPrompts, type WayPrompt } from '../world/reach';
 import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
@@ -24,13 +24,15 @@ import { sideResidents } from './residents';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
 import { SideTextures } from './textures';
-import { wayHint } from './ways';
+import { prompts } from './ways';
 
 export const SIDE_SCENE = 'side-world';
 
 /** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
 const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
+/** Above the end of a way, where its prompt sits. */
+const PROMPT_M = 2.75;
 /** Half a sim minute. */
 const LIGHT_STEP_HOURS = 1 / 120;
 const DOLL_WIDTH_M = 0.7;
@@ -69,6 +71,7 @@ export class SideScene extends Phaser.Scene {
   private snap = true;
   /** A tap shorter than a frame still counts. */
   private used = false;
+  private readonly tapped = { up: false, down: false };
 
   constructor() {
     super(SIDE_SCENE);
@@ -82,6 +85,8 @@ export class SideScene extends Phaser.Scene {
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
+    for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
+    for (const key of ['DOWN', 'S']) keyboard.on(`keydown-${key}`, () => (this.tapped.down = true));
     const cleanups = [
       setWorldView(this.worldView()),
       setPositionProvider({
@@ -95,7 +100,7 @@ export class SideScene extends Phaser.Scene {
           return this.street?.muralAt(point.x, point.y);
         },
       }),
-      setWayHint((eTaken) => this.hint(eTaken)),
+      setWayPrompts((eTaken) => this.prompts(eTaken)),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -123,6 +128,11 @@ export class SideScene extends Phaser.Scene {
   /** For the dev harness. */
   teleport(to: MapPosition): void {
     this.takeDoorTo(to);
+  }
+
+  /** For the dev harness. */
+  get playing(): SidePlayer | undefined {
+    return this.player;
   }
 
   update(time: number, delta: number): void {
@@ -171,20 +181,28 @@ export class SideScene extends Phaser.Scene {
   }
 
   private read(player: SidePlayer): Controls {
-    const { held, keys } = this;
-    held.up = keys.UP.isDown || keys.W.isDown;
-    held.down = keys.DOWN.isDown || keys.S.isDown;
+    const { held, keys, tapped } = this;
+    held.up = keys.UP.isDown || keys.W.isDown || tapped.up;
+    held.down = keys.DOWN.isDown || keys.S.isDown || tapped.down;
     held.left = keys.LEFT.isDown || keys.A.isDown;
     held.right = keys.RIGHT.isDown || keys.D.isDown;
     readControls(held, this.used, player.mapPosition, this.controls);
-    this.used = false;
+    this.used = tapped.up = tapped.down = false;
     return this.controls;
   }
 
-  private hint(eTaken: boolean): string | undefined {
+  /** Each in game-canvas px, over the end of its way. */
+  private prompts(eTaken: boolean): WayPrompt[] {
     const { content, player } = this;
-    const way = !this.passing && player?.way();
-    return way ? wayHint(content!.village, way, eTaken) : undefined;
+    const map = player && content?.village.map(player.map);
+    if (!map || this.passing) return [];
+    const zoom = this.cameras.main.zoom;
+    return prompts(content!.village, map, player!.ways(), eTaken).map(({ way, keys, action }) => ({
+      keys,
+      action,
+      x: (xOf(map.offset.x + way.at.x) - this.view.x) * zoom,
+      y: (feetOf(map.offset.y + way.at.y) - PROMPT_M * PPM - this.view.y) * zoom,
+    }));
   }
 
   private frame(dt: number, street: StreetView): void {

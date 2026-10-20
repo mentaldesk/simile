@@ -124,11 +124,11 @@ def test_routes_from_every_house_through_the_door_to_the_coffee_shop_counter(hou
 
 
 def test_stairs_and_lifts_take_as_long_as_their_climb_or_ride() -> None:
-    stairs = CROSSINGS[Spot("house_1_floor_0", 1, 2)]
+    stairs = CROSSINGS[Spot("house_1_floor_0", 2, 2)]
     lift = CROSSINGS[Spot("gallery_floor_0", 16, 2)]
     far_lift = CROSSINGS[Spot("gallery_floor_0", 15, 2)]
 
-    assert stairs == (DoorKind.STAIRS, pytest.approx(4 * math.sqrt(2)))
+    assert stairs == (DoorKind.STAIRS, pytest.approx(5))
     assert lift == (DoorKind.LIFT, pytest.approx(4 / 2.4 * 1.3))
     assert far_lift[1] > 2 * lift[1]
     assert CROSSINGS[Spot("gallery_floor_0", 2, 2)] == (DoorKind.DOOR, DOOR)

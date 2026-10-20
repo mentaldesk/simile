@@ -139,7 +139,7 @@
           "type": "plant",
           "visible": true,
           "width": 16,
-          "x": 256,
+          "x": 272,
           "y": 32
         }
       ],
@@ -327,7 +327,7 @@
             {
               "name": "to_x",
               "type": "int",
-              "value": 11
+              "value": 18
             },
             {
               "name": "to_y",

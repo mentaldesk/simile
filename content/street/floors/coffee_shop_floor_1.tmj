@@ -235,7 +235,7 @@
           "type": "door",
           "visible": true,
           "width": 16,
-          "x": 176,
+          "x": 288,
           "y": 32
         },
         {
@@ -273,7 +273,7 @@
           "type": "door",
           "visible": true,
           "width": 16,
-          "x": 288,
+          "x": 176,
           "y": 32
         }
       ],

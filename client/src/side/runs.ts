@@ -92,14 +92,6 @@ export function climbRuns(map: SideMap): Run[] {
   ].filter((run): run is Run => run !== undefined);
 }
 
-export function runAt(runs: readonly Run[], cell: Cell): { run: Run; distance: number } | undefined {
-  for (const run of runs) {
-    const index = run.path.points.findIndex(({ x, y }) => x === cell.x && y === cell.y);
-    if (index >= 0) return { run, distance: run.path.lengths.slice(0, index).reduce((a, b) => a + b, 0) };
-  }
-  return undefined;
-}
-
 /** In street cells, as walked from `from` to `to`. */
 export type Crossing = { kind: Exclude<Link['kind'], 'door'>; from: Link; to: Link; path: Path; rising: boolean };
 

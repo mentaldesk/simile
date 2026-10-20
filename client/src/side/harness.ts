@@ -6,7 +6,7 @@ import { PLAYER_ID } from '../ui/world-view';
 import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
 import './harness.css';
-import type { Village } from './maps';
+import { isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
 import type { MapPosition } from './player';
 import { climbRuns, crossing, type Path } from './runs';
@@ -293,6 +293,33 @@ function measure(scene: Phaser.Scene): void {
   });
 }
 
+/** What `walk.e2e.ts` drives the player by and checks. */
+function exposeWalk(scene: SideScene, village: Village): void {
+  const prompts = () =>
+    [...document.querySelectorAll<HTMLElement>('.way-prompt')].filter((tag) => !tag.hidden).map((tag) => tag.ariaLabel);
+  Object.assign(window, {
+    sideWalk: {
+      state: () => {
+        const player = scene.playing;
+        if (!player) return undefined;
+        const { map, position, climbing } = player;
+        return { map, x: position.x, y: position.y, climbing: climbing ?? null, prompts: prompts() };
+      },
+      links: () => [...village.maps.values()].flatMap(({ links }) => links),
+      runs: () =>
+        village.streets.flatMap((street) =>
+          climbRuns(street).map(({ kind, path }) => ({ map: street.id, kind, foot: path.points[0], head: path.points.at(-1) })),
+        ),
+      widths: () => Object.fromEntries([...village.maps.values()].map(({ id, width }) => [id, width])),
+      standing: (map: string, x: number, y: number) => {
+        const found = village.map(map);
+        return !!found && isStanding(found, x, y);
+      },
+      teleport: (to: MapPosition) => scene.teleport(to),
+    },
+  });
+}
+
 export function startHarness(scene: SideScene, village: Village): void {
   server.close();
   server.send = (message) => {
@@ -325,6 +352,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   }
   showPanel();
   measure(scene);
+  exposeWalk(scene, village);
   window.addEventListener('keydown', ({ key }) => {
     if (key === '[' || key === ']') {
       const now = performance.now();

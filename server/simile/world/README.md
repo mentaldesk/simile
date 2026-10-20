@@ -56,7 +56,9 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on `home`, the fir
 - **Taken** means another entity is standing on it or walking to it, so two entities never end up on
   the same tile. If someone steps onto a walker's destination, the walker picks another.
 - A wall, a cut-off tile or a map with no door to it makes the walk `UNREACHABLE`, and `place`
-  raises `ValueError`. Unknown entities, locations and maps raise `KeyError`.
+  raises `ValueError` for a tile off its map. Placed on a cell of a map where nobody can stand, as a
+  saved one can be after the maps change, an entity goes to the nearest standing cell to it. Unknown
+  entities, locations and maps raise `KeyError`.
 
 ### Walks
 

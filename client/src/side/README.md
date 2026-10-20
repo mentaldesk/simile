@@ -20,13 +20,15 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 
-Left and right (or A and D) walk. E or up takes a door in front of you; down also leaves a building
-by its front door. E gets on stairs or a ladder, then up and down climb, stopping anywhere; E rides a
-lift all the way. Where a terminal, the counter, a painting or a mural is in reach, E uses that
-instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door. A hint says what E or up
-takes where you stand ("Press E or ↑ to go into The Daily Grind.", `ways.ts`), or with E taken,
-what up takes ("Press ↑ to go into 3 Banyan Row."). The scene reads its keys through `input.ts`'s
-`readControls`, which leaves E to what's in reach. Clicking a mural
+Left and right (or A and D) walk. E or up takes a door you're on; down also leaves a building by its
+front door. Up climbs stairs or a ladder from its foot, and down from its top, from up to a tile
+(`CLIMB_REACH`) either side of the end: the player steps onto it first. E does too, then up and down
+climb, stopping anywhere; E rides a lift all the way. Where a terminal, the counter, a painting or a
+mural is in reach, E uses that instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door.
+A small tag over each way a key takes from where you stand names the keys and what it does ("E ↑: go
+out", "E ↓: downstairs", `ways.ts`), leaving E off while something else takes it. The scene reads its
+keys through `input.ts`'s `readControls`, which leaves E to what's in reach; a tap of E, up or down
+shorter than a frame still counts. Clicking a mural
 looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
 
 ## How it draws
@@ -41,8 +43,11 @@ it, and rises to the top floor or drops to Banyan Row's river.
   with its glow map and murals, and the furniture.
 - **Dollhouses** (`house.ts`): every building with floors has its floors drawn in place behind its
   front, each from its own map: the back wall in its room paper, windows, picture frames with their
-  paintings, furniture, stairs, ladders, the lift shaft and cars, and the slabs. Entering a building
+  paintings, furniture, stairs, ladders, the lift shaft and cars, and the slabs. The front door is
+  drawn from inside too, on the back wall over its mat, with a lit EXIT sign. Entering a building
   lifts its front off; whatever is on the street in front of it goes faint.
+- **Signposts** (`street-view.ts`): a fingerpost at each way to another street names it. The sign and
+  the posts are drawn in code (`textures.ts`).
 - **Residents and the player** (`side-doll.ts`) are drawn with the rig's poses, worked out once per
   step of a cycle and kept (`poses.ts`), and tinted with the light where they are.
 - **Light** (`light.ts`): the manifest's four times of day, blended across each change, give a tint
@@ -62,18 +67,31 @@ The Phaser-free halves are tested under vitest.
 - `residents.ts`: residents from `snapshot` and `entity_moved`, walked between positions, climbing on
   a map's stairs or ladder by their cell's kind, and `climbing` or `riding` at a link's end played
   along the link (`runs.ts`'s `crossing`) until the server moves them onto the other floor.
-- `player.ts`: the player's walking, doors, climbs and rides by the lead's choices on #311. Walking
-  stops at stairs and ladders, which are taken with E. While crossing between floors the player's
-  position stays at the end they left from, as the protocol holds residents.
+- `player.ts`: the player's walking, doors, climbs and rides, by #311's choices and #325's: what the
+  keys take is `ways.ts`'s `waysNear` and `chosen`. Walking stops at stairs and ladders on a map, which
+  are taken with E, up or down. While crossing between floors the player's position stays at the end
+  they left from, as the protocol holds residents.
 - Jumping isn't here. Positions are floats, so an arc through open air, drawn with the rig's
   `jumping` pose, can come later as another mode beside walking and climbing.
+
+## The walk
+
+`walk.e2e.ts` serves the client, opens the harness in Chromium and walks the player by the keys into
+every building, up and down every flight, ladder and lift, out of every exit and along every street
+door, checking each prompt on the way. It steps Playwright's clock rather than waiting, and the
+*Side walk* workflow runs it on every PR.
+
+```bash
+npx playwright install chromium   # once
+node src/side/walk.e2e.ts         # --screens <dir> keeps a screenshot at each prompt, --real-time waits
+```
 
 ## What it provides
 
 `scenes` exports `SideScene` (key `side-world`), started with `this.scene.start(SIDE_SCENE)`. It
 reads the player's start from the snapshot, or the square on the High Street. It registers the
 dialogue UI's world view, the audio's positions, the `MuralView` that finds the mural under a click,
-and the hint for the way where the player stands, and updates `world/interactables.ts` with the
+and the prompts for the ways the player can take from where they stand, and updates `world/interactables.ts` with the
 player's position every frame. The murals and paintings come from `world/murals.ts`'s and
 `world/paintings.ts`'s stores, the maps from `world/assets.ts` (`content.ts` reads them into a
 `Village`), and the dialogue scene hands the same `maps` to `ui/side-view.ts`.

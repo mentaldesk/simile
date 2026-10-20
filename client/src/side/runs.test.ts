@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { village } from './content';
-import { climbRuns, crossing, distanceTo, pathOf, pointAlong, runAt } from './runs';
+import { climbRuns, crossing, distanceTo, pathOf, pointAlong } from './runs';
 
 const map = (id: string) => village.map(id)!;
 const cells = (points: readonly { x: number; y: number }[]) => points.map(({ x, y }) => [x, y]);
@@ -30,11 +30,7 @@ describe('runs of stairs and ladders within a map', () => {
     ]);
   });
 
-  it('finds the run a cell is on or at the end of, and how far along', () => {
-    const runs = climbRuns(map('lychee_lane'));
-    expect(runAt(runs, { x: 45, y: 15 })?.distance).toBe(0);
-    expect(runAt(runs, { x: 46, y: 12 })?.distance).toBe(4);
-    expect(runAt(runs, { x: 47, y: 12 })).toBeUndefined();
+  it('finds none on a street without stairs or a ladder', () => {
     expect(climbRuns(map('high_street'))).toEqual([]);
   });
 });
@@ -72,12 +68,12 @@ describe('crossings between floors', () => {
     expect(up.rising).toBe(true);
     expect(cells(up.path.points)).toEqual([
       [40, 15],
-      [36, 11],
+      [43, 11],
     ]);
-    const down = crossing(village, village.linkAt('coffee_shop_floor_1', 11, 2)!)!;
+    const down = crossing(village, village.linkAt('coffee_shop_floor_1', 18, 2)!)!;
     expect(down.rising).toBe(false);
     expect(cells(down.path.points)).toEqual([
-      [36, 11],
+      [43, 11],
       [40, 15],
     ]);
     expect(down.to).toMatchObject({ map: 'coffee_shop_floor_0', x: 15, y: 2 });

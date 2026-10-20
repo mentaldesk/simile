@@ -50,17 +50,20 @@ export function inReach(position: Position | undefined, from: Reachables = reach
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
   inReach(position, from)[0];
 
-type WayHint = (eTaken: boolean) => string | undefined;
+/** The keys that take a door, stairs, a ladder or a lift, what it does, and a game-canvas point just above it. */
+export type WayPrompt = { keys: readonly string[]; action: string; x: number; y: number };
 
-let wayHere: WayHint | undefined;
+type WayPrompts = (eTaken: boolean) => readonly WayPrompt[];
 
-/** The world scene's hint for the door, stairs, ladder or lift where the player stands. */
-export function setWayHint(hint: WayHint): () => void {
-  wayHere = hint;
+let waysHere: WayPrompts | undefined;
+
+/** The world scene's prompts for the ways the player can take from where they stand. */
+export function setWayPrompts(prompts: WayPrompts): () => void {
+  waysHere = prompts;
   return () => {
-    if (wayHere === hint) wayHere = undefined;
+    if (waysHere === prompts) waysHere = undefined;
   };
 }
 
-/** `eTaken` while E uses something in reach, so only up is left, at a door. */
-export const wayHint = (eTaken = false): string | undefined => wayHere?.(eTaken);
+/** `eTaken` while E uses something in reach, so it's left off. */
+export const wayPrompts = (eTaken = false): readonly WayPrompt[] => waysHere?.(eTaken) ?? [];
