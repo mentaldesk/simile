@@ -1,0 +1,16 @@
+.side-harness {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  max-width: 300px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgb(29 43 38 / 80%);
+  color: #f4ecd8;
+  font: 12px/1.4 system-ui, sans-serif;
+  pointer-events: none;
+}
+
+.side-harness p {
+  margin: 4px 0 0;
+}

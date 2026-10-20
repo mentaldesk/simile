@@ -1,0 +1,371 @@
+import Phaser from 'phaser';
+import { setPositionProvider } from '../audio';
+import { dolls as committedDolls } from '../dolls/assets';
+import type { DollManifest } from '../dolls/manifest';
+import { addAtlas } from '../dolls/paper-doll';
+import { server, type Position } from '../net';
+import { setMaps } from '../ui/side-view';
+import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
+import { MoveThrottle } from '../world/throttle';
+import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
+import { follow, sideZoom, viewCentre } from './camera';
+import { sideClock } from './clock';
+import { DEPTH } from './depths';
+import { DOLL_M, feetOf, PPM, xOf } from './layout';
+import { emptyLight, lightAt } from './light';
+import type { Link, Village } from './maps';
+import type { Drawn } from './motion';
+import type { Crossing } from './runs';
+import { SidePlayer, type Controls, type MapPosition } from './player';
+import { sideResidents } from './residents';
+import { SideDoll } from './side-doll';
+import { StreetView, type Content } from './street-view';
+import { SideTextures } from './textures';
+import { sideWorks } from './works';
+
+export const SIDE_SCENE = 'side-world';
+
+/** The start when the snapshot's player isn't on a side-view map: the square's entry. */
+const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
+const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
+/** Sim hours the light can drift before it's worked out again: half a sim minute. */
+const LIGHT_STEP_HOURS = 1 / 120;
+const DOLL_WIDTH_M = 0.7;
+const CONTACT_M = 0.9;
+const BUBBLE_GAP_M = 0.15;
+/** Room above a head for the target's name, so a speech bubble sits over it. */
+const NAME_M = 0.45;
+
+type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
+type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x: number; feet: number; shown: boolean };
+
+const isDev = import.meta.env.DEV;
+const params = new URLSearchParams(globalThis.location?.search ?? '');
+
+/** The village from the side, from part 2's maps, part 3's scenery and part 4's dolls:
+ * src/side/README.md. Started by `?side` in development until the cut-over starts it. */
+export class SideScene extends Phaser.Scene {
+  private content?: Content;
+  private pictures!: SideTextures;
+  private street?: StreetView;
+  private player?: SidePlayer;
+  private keys!: Keys;
+  private readonly figures = new Map<string, Figure>();
+  private readonly loadingDolls = new Set<string>();
+  private readonly light = emptyLight();
+  private lightHour = NaN;
+  private readonly throttle = new MoveThrottle();
+  private readonly view = new Phaser.Geom.Rectangle();
+  private readonly centre = { x: 0, y: 0 };
+  private readonly target = { x: 0, y: 0 };
+  private readonly feet = { x: 0, y: 0 };
+  private readonly size = { width: 0, height: 0 };
+  private readonly sent = { x: NaN, y: NaN, map: '' };
+  private readonly controls: Controls = { x: 0, y: 0, use: false };
+  /** Fading to another street: the player waits. */
+  private passing = false;
+  private works = -1;
+  private snap = true;
+  /** E, pressed since the last frame: a tap shorter than a frame still counts. */
+  private used = false;
+
+  constructor() {
+    super({ key: SIDE_SCENE, active: isDev && params.has('side') });
+  }
+
+  create(): void {
+    this.scene.sendToBack();
+    this.pictures = new SideTextures(this);
+    const camera = this.cameras.main;
+    camera.setRoundPixels(false).setBackgroundColor('#9fc3d8').fadeOut(0);
+    const keyboard = this.input.keyboard!;
+    this.keys = keyboard.addKeys(KEYS, false) as Keys;
+    keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
+    const cleanups = [
+      setWorldView(this.worldView()),
+      setPositionProvider({
+        positionOf: (id) => this.positionOf(id),
+        listenerPosition: () => this.positionOf(PLAYER_ID),
+      }),
+      server.on('snapshot', () => this.throttle.forget()),
+      () => this.street?.destroy(),
+      () => this.pictures.destroy(),
+    ];
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
+    void this.start();
+  }
+
+  private async start(): Promise<void> {
+    const content = await import('./content');
+    this.content = content;
+    sideResidents.village = content.village;
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, setMaps(content.tiledFiles));
+    if (isDev && params.has('side')) {
+      const { startHarness } = await import('./harness');
+      startHarness(this, content.village);
+    }
+    const start = this.startPosition(content.village);
+    this.player = new SidePlayer(content.village, start);
+    await this.showStreet(content.village.map(start.map)!.street);
+    this.cameras.main.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
+  }
+
+  /** Puts the player somewhere else at once: for the dev harness. */
+  teleport(to: MapPosition): void {
+    this.takeDoorTo(to);
+  }
+
+  update(time: number, delta: number): void {
+    const { content, player, street } = this;
+    if (!content || !player || !street) return;
+    const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
+    if (!this.passing) {
+      const door = player.update(this.read(), dt);
+      if (door) this.takeDoor(door);
+    }
+    sideResidents.update(dt);
+    const hour = sideClock.hour();
+    const lightChanged = !(Math.abs(hour - this.lightHour) < LIGHT_STEP_HOURS);
+    if (lightChanged) {
+      lightAt(hour, content.scenery, this.light);
+      this.lightHour = hour;
+    }
+    const open = content.village.map(player.drawnMap);
+    this.frame(dt, street);
+    street.update(this.view, this.light, lightChanged, open?.kind === 'floor' ? open.building : undefined, dt);
+    if (sideWorks.version !== this.works) {
+      this.works = sideWorks.version;
+      const load = (url: string) => this.pictures.load(`work:${url}`, url);
+      street.setMurals(sideWorks.walls, load);
+      street.setPaintings(sideWorks.frames, load);
+    }
+    this.drawFigures(content.village, street);
+    this.report(player.mapPosition, time / 1000);
+  }
+
+  /** Sends the player's position as it changes, at most as often as the throttle lets it. */
+  private report(position: MapPosition, now: number): void {
+    const { sent } = this;
+    if (position.x === sent.x && position.y === sent.y && position.map === sent.map) return;
+    const throttled = this.throttle.next(position, now);
+    if (!throttled) return;
+    server.send({ type: 'player_move', position: throttled });
+    sent.x = position.x;
+    sent.y = position.y;
+    sent.map = position.map;
+  }
+
+  private startPosition(village: Village): MapPosition {
+    const start = sideResidents.start;
+    return start && village.map(start.map) ? start : DEFAULT_START;
+  }
+
+  private read(): Controls {
+    const { controls, keys } = this;
+    controls.x = Number(keys.RIGHT.isDown || keys.D.isDown) - Number(keys.LEFT.isDown || keys.A.isDown);
+    controls.y = Number(keys.DOWN.isDown || keys.S.isDown) - Number(keys.UP.isDown || keys.W.isDown);
+    controls.use = this.used;
+    this.used = false;
+    return controls;
+  }
+
+  /** Zooms for the canvas and eases the camera to the player along the street. */
+  private frame(dt: number, street: StreetView): void {
+    const camera = this.cameras.main;
+    const zoom = sideZoom(camera);
+    if (zoom !== camera.zoom) camera.setZoom(zoom);
+    const { at } = this.player!;
+    const { size, feet } = this;
+    size.width = camera.width / zoom;
+    size.height = camera.height / zoom;
+    feet.x = xOf(at.x);
+    feet.y = feetOf(at.y);
+    viewCentre(feet, street.feet, street.width, size, this.target);
+    if (this.snap) {
+      this.centre.x = this.target.x;
+      this.centre.y = this.target.y;
+      this.snap = false;
+    } else follow(this.centre, this.target, dt, this.centre);
+    camera.centerOn(this.centre.x, this.centre.y);
+    this.view.setTo(this.centre.x - size.width / 2, this.centre.y - size.height / 2, size.width, size.height);
+  }
+
+  private takeDoor(door: Link): void {
+    this.takeDoorTo({ x: door.to.x, y: door.to.y, map: door.to.map });
+  }
+
+  /** In through a front door the dollhouse opens where the player stands; to another street the
+   * view fades out, loads it and fades back in. */
+  private takeDoorTo(to: MapPosition): void {
+    const { content, player, street } = this;
+    const map = content?.village.map(to.map);
+    if (!content || !player || !street || !map || this.passing) return;
+    if (map.street === street.map.id) {
+      player.place(to);
+      return;
+    }
+    this.passing = true;
+    const camera = this.cameras.main;
+    camera.fadeOut(DOOR_FADE_OUT_SECONDS * 1000);
+    camera.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, async () => {
+      try {
+        await this.showStreet(map.street);
+        player.place(to);
+      } finally {
+        this.passing = false;
+        camera.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
+      }
+    });
+  }
+
+  private async showStreet(id: string): Promise<void> {
+    const content = this.content!;
+    const map = content.village.map(id)!;
+    const keys = StreetView.pieces(content, map);
+    await Promise.all(keys.map((key) => this.pictures.load(key, content.pieceUrl(key))));
+    const old = this.street;
+    if (old) {
+      old.destroy();
+      const kept = new Set(keys);
+      for (const key of StreetView.pieces(content, old.map)) if (!kept.has(key)) this.pictures.unload(key);
+    }
+    this.street = new StreetView(this, this.pictures, content, map);
+    this.lightHour = NaN;
+    this.works = -1;
+    this.snap = true;
+  }
+
+  private drawFigures(village: Village, street: StreetView): void {
+    for (const resident of sideResidents.all.values()) {
+      this.drawFigure(resident.id, resident.drawnMap, resident.at, resident.drawn, village, street);
+      const under = resident.under;
+      if (under?.crossing.kind === 'lift') this.ride(under.crossing, resident.at, street, resident.drawnMap);
+    }
+    const { player } = this;
+    if (player) {
+      this.drawFigure(PLAYER_ID, player.drawnMap, player.at, player.drawn, village, street);
+      const crossing = player.riding;
+      if (crossing) this.ride(crossing, player.at, street, player.drawnMap);
+    }
+    for (const figure of this.figures.values()) {
+      if (figure.id !== PLAYER_ID && !sideResidents.all.has(figure.id)) figure.doll.setVisible(false);
+    }
+    street.endRides();
+  }
+
+  private ride(
+    crossing: Crossing,
+    at: { x: number; y: number },
+    street: StreetView,
+    mapId: string,
+  ): void {
+    const building = this.content!.village.map(mapId)?.building;
+    const { points } = crossing.path;
+    if (!building || !street.isOpen(building)) return;
+    street.ride(building, xOf(points[1].x), feetOf(at.y), feetOf(points[0].y), feetOf(points.at(-1)!.y));
+  }
+
+  private drawFigure(
+    id: string,
+    mapId: string,
+    at: { x: number; y: number },
+    drawn: Drawn,
+    village: Village,
+    street: StreetView,
+  ): void {
+    const figure = this.figure(id);
+    if (!figure) return;
+    const map = village.map(mapId);
+    const inside = map?.kind === 'floor';
+    const shown = map?.street === street.map.id && (!inside || street.isOpen(map.building));
+    figure.shown = shown;
+    figure.doll.setVisible(shown);
+    figure.contact.setVisible(shown && drawn.on !== 'ladder' && drawn.pose !== 'riding');
+    if (!shown) return;
+    figure.x = xOf(at.x);
+    figure.feet = feetOf(at.y);
+    const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
+    const alpha = inside ? 1 : street.ghost(figure.x);
+    figure.doll.setPosition(figure.x, figure.feet).setDepth(depth).setAlpha(alpha);
+    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground']);
+    figure.contact.setPosition(figure.x, figure.feet).setAlpha(alpha);
+    figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
+  }
+
+  /** A resident's or the player's doll, loading it the first time it's asked for. */
+  private figure(id: string): Figure | undefined {
+    const known = this.figures.get(id);
+    if (known || this.loadingDolls.has(id)) return known;
+    this.loadingDolls.add(id);
+    const doll = dollFor(id);
+    const flat = `doll-${id}-flat`;
+    void addAtlas(this, flat, doll.flat, doll).then(() => {
+      if (!this.sys.isActive()) return;
+      const sideDoll = new SideDoll(this, doll, flat);
+      this.add.existing(sideDoll);
+      const contact = this.add.image(0, 0, this.pictures.contact()).setOrigin(0.5, 0.5);
+      contact.setDisplaySize(CONTACT_M * PPM, CONTACT_M * PPM * 0.25);
+      this.figures.set(id, { id, doll: sideDoll, contact, x: 0, feet: 0, shown: false });
+      if (!doll.painted) return;
+      const painted = `doll-${id}-painted`;
+      addAtlas(this, painted, doll.painted, doll).then(
+        () => sideDoll.paint(painted),
+        (error: unknown) => console.warn(error),
+      );
+    });
+    return undefined;
+  }
+
+  private positionOf(id: string): Position | undefined {
+    if (id === PLAYER_ID) return this.player && { ...this.player.mapPosition };
+    const resident = sideResidents.all.get(id);
+    if (!resident) return undefined;
+    const { x, y } = resident.walker.position;
+    return { x, y, map: resident.map };
+  }
+
+  /** What the dialogue UI draws over: positions on each map, and each doll's box on the canvas. */
+  private worldView(): WorldView {
+    const canvasBox = (id: string) => {
+      const figure = this.figures.get(id);
+      if (!figure?.shown) return undefined;
+      const zoom = this.cameras.main.zoom;
+      const half = (DOLL_WIDTH_M * PPM) / 2;
+      const top = figure.feet - (DOLL_M + BUBBLE_GAP_M) * PPM;
+      return {
+        x: (figure.x - half - this.view.x) * zoom,
+        y: (top - this.view.y) * zoom,
+        width: 2 * half * zoom,
+        height: (figure.feet - top) * zoom,
+      };
+    };
+    return {
+      positionOf: (id) => this.positionOf(id),
+      npcIds: () => {
+        const map = this.player?.map;
+        return [...sideResidents.all.values()].filter((resident) => resident.map === map).map(({ id }) => id);
+      },
+      bubbleAnchor: (id) => {
+        const box = canvasBox(id);
+        return box && { x: box.x + box.width / 2, y: box.y - NAME_M * PPM * this.cameras.main.zoom };
+      },
+      spriteOf: (id): ScreenSprite | undefined => {
+        const box = canvasBox(id);
+        return box && { box, depth: box.y + box.height };
+      },
+    };
+  }
+}
+
+const RESIDENT_DOLLS = Object.keys(committedDolls)
+  .filter((id) => id !== PLAYER_ID)
+  .sort();
+
+/** A committed doll for any id: its own, or one picked by its id for a resident with none yet. */
+function dollFor(id: string): DollManifest {
+  const own = committedDolls[id];
+  if (own) return own;
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) hash = Math.imul(hash ^ id.charCodeAt(i), 0x01000193);
+  return committedDolls[RESIDENT_DOLLS[(hash >>> 0) % RESIDENT_DOLLS.length]];
+}
