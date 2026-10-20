@@ -47,7 +47,9 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
   painted on grey. Some items also have painted shadow, or backdrop showing between their legs,
   cut away (`cut` in the catalogue). A front is cut on its plan's outline.
 - **Scaled** to its height in metres at 120 px/m. Street layers, papers and the sky keep their
-  painted size, and are made to tile along x (papers both ways).
+  painted size, and are made to tile along x (room papers both ways). A tile is cut where its
+  ends look most alike and crossfaded there, with the painting's light falloff levelled across
+  it so the join shows no step. The sky is joined only in clear sky, so no cloud is cut.
 - **Hashed.** A piece's `hash` covers its prompt, seed, size, style images and the pipeline's
   version. For a front it covers the plan's parameters and `fronts.PLAN` (bump it when a change
   to the drawing should repaint the fronts), and for a sketched piece the sketch's code, rather
@@ -101,7 +103,7 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 | `layer` | A far street layer, with alpha, solid from its skyline down, tileable along x. |
 | `strip` | A mid, near or foreground street layer, with alpha, tileable along x. |
 | `ground` | A ground street layer, with alpha, solid from its top edge down, tileable along x. Its top edge is the surface people walk on. |
-| `paper` | An opaque texture. Room papers and the floor slab tile both ways, and the sky along x. |
+| `paper` | An opaque texture. Room papers tile both ways, and the floor slab and the sky along x. |
 
 ### Lookups
 

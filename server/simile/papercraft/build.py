@@ -32,7 +32,7 @@ PPM = 120
 """Pixels per metre of every scaled piece."""
 PAINTING = 1
 """Bump when what a painting is made from changes in a way its inputs don't show."""
-PIPELINE = 8
+PIPELINE = 16
 """Bump when cutting, scaling or saving changes."""
 NIGHT_SIDE = 768
 NIGHT_TINT = (0.3, 0.36, 0.6)
@@ -286,7 +286,8 @@ class Build:
         else:
             raw = self.raw(piece)
             if piece.kind == "paper":
-                image = tileable(raw, both=piece.key != "layers/sky")
+                sky = piece.key == "layers/sky"
+                image = tileable(raw, both=not sky and piece.key != "papers/slab", plain=sky)
                 height = piece.height or image.height / PPM
             elif piece.kind in ("layer", "strip", "ground"):
                 mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
@@ -438,10 +439,13 @@ def trim_rows(image: Image.Image) -> Image.Image:
     return image.crop((0, int(rows[0]), image.width, int(rows[-1]) + 1))
 
 
-def tileable(image: Image.Image, both: bool = False, overlap: int = 32) -> Image.Image:
+def tileable(
+    image: Image.Image, both: bool = False, plain: bool = False, overlap: int = 32
+) -> Image.Image:
     """`image` made to repeat without a seam: cut at a gap near each end if it has one, or else
     cut where its two ends look most alike and crossfaded there. `both` does top and bottom
-    too."""
+    too. `plain` joins it only where it's plain, for things on a plain ground, like clouds in a
+    sky, so none is cut in two."""
     a = np.asarray(image, dtype=np.float32)
     if a.shape[2] == 4:
         cover = (a[..., 3] > 8).sum(axis=0)
@@ -451,15 +455,17 @@ def tileable(image: Image.Image, both: bool = False, overlap: int = 32) -> Image
         right = w - reach + int(np.argmin(cover[w - reach :]))
         if cover[left] == 0 and cover[right] == 0:
             return image.crop((left, 0, right, image.height))
-    a = _seamless(a, overlap)
+    a = _seamless(a, overlap, plain)
     if both:
-        a = _seamless(a.transpose(1, 0, 2), overlap).transpose(1, 0, 2)
+        a = _seamless(a.transpose(1, 0, 2), overlap, plain).transpose(1, 0, 2)
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), image.mode)
 
 
-def _seamless(a: np.ndarray, overlap: int, step: int = 4) -> np.ndarray:
+def _seamless(a: np.ndarray, overlap: int, plain: bool, step: int = 4) -> np.ndarray:
     """`a` cropped from column `i` to `j`, where the stretch after `j` most resembles the one
-    after `i`, with the two crossfaded: a plain crossfade of unlike ends ghosts both."""
+    after `i`, with the two crossfaded: a plain crossfade of unlike ends ghosts both. If
+    `plain`, the pair is also kept to stretches where nothing strays from its row's usual
+    colour, so the join falls in clear sky rather than through a cloud."""
     w = a.shape[1]
     overlap = min(overlap, w // 6)
     reach = w // 6
@@ -467,18 +473,61 @@ def _seamless(a: np.ndarray, overlap: int, step: int = 4) -> np.ndarray:
     band = overlap // step
     starts = range(0, reach // step)
     ends = range((w - reach - overlap) // step, (w - overlap) // step)
+    detail = _detail(small, band) if plain else np.zeros(small.shape[1])
     cost = np.array(
         [
-            [np.abs(small[:, i : i + band] - small[:, j : j + band]).mean() for j in ends]
+            [
+                np.abs(small[:, i : i + band] - small[:, j : j + band]).mean()
+                + detail[i]
+                + detail[j]
+                for j in ends
+            ]
             for i in starts
         ]
     )
     bi, bj = np.unravel_index(int(np.argmin(cost)), cost.shape)
     i, j = starts[bi] * step, ends[bj] * step
+    after, start = a[:, j : j + overlap], a[:, i : i + overlap]
     t = np.linspace(0, 1, overlap)[None, :, None]
     out = a[:, i:j].copy()
-    out[:, :overlap] = a[:, j : j + overlap] * (1 - t) + a[:, i : i + overlap] * t
+    out[:, :overlap] = after * (1 - t) + start * t
+    return _level(out, after, start)
+
+
+def _level(tile: np.ndarray, after: np.ndarray, start: np.ndarray) -> np.ndarray:
+    """`tile` with the brightness its two joined stretches differ by, row by row and smoothed,
+    added from the join and fading out by the tile's far end, so where the painting's light
+    falls off, the join shows no step."""
+    overlap = after.shape[1]
+    both = np.ones(after.shape[:2], bool)
+    if tile.shape[2] == 4:
+        both = (after[..., 3] > 128) & (start[..., 3] > 128)
+    diff = np.where(both[..., None], after[..., :3] - start[..., :3], 0.0)
+    count = both.sum(axis=1)[:, None]
+    rows = diff.sum(axis=1) / np.maximum(count, 1)
+    sigma = max(2.0, len(rows) / 12)
+    x = np.arange(-round(3 * sigma), round(3 * sigma) + 1)
+    kernel = np.exp(-(x**2) / (2 * sigma**2))
+    kernel /= kernel.sum()
+    padded = np.pad(rows, ((len(x) // 2, len(x) // 2), (0, 0)), mode="edge")
+    smooth = np.stack([np.convolve(padded[:, c], kernel, mode="valid") for c in range(3)], 1)
+    w = tile.shape[1]
+    ramp = np.clip(1 - np.arange(w) / (w - 1), 0, 1)
+    ramp[:overlap] *= np.linspace(0, 1, overlap)
+    out = tile.copy()
+    out[..., :3] += ramp[None, :, None] * smooth[:, None, :]
     return out
+
+
+def _detail(small: np.ndarray, band: int) -> np.ndarray:
+    """For each column, how far the stretch `band` wide from it strays, at its most, from the
+    usual colour of its rows: low in clear sky, high through a cloud, even inside a big one."""
+    rgb = small[..., :3]
+    strays = np.abs(rgb - np.median(rgb, axis=1, keepdims=True)).sum(axis=2)
+    total = np.cumsum(np.pad(strays, ((0, 0), (1, 0))), axis=1)
+    means = (total[:, band:] - total[:, :-band]) / band
+    means = np.pad(means, ((0, 0), (0, small.shape[1] - means.shape[1])), mode="edge")
+    return means.max(axis=0)
 
 
 def scaled(image: Image.Image, height: int) -> Image.Image:

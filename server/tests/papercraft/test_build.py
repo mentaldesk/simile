@@ -200,13 +200,29 @@ def test_the_glow_map_is_dark_away_from_the_windows_and_lamps(build: Build) -> N
     assert (glow < 12).mean() > 0.7
 
 
-def test_a_tileable_paper_meets_itself_at_its_edges() -> None:
-    rng = np.random.default_rng(0)
-    noise = Image.fromarray(rng.integers(0, 255, (64, 300, 3), dtype=np.uint8))
+def test_a_tiled_paper_joins_itself_without_a_step_where_its_light_falls_off() -> None:
+    x = np.arange(400)[None, :, None]
+    stripes = 40 * np.sin(x / 7) + np.linspace(200, 140, 400)[None, :, None]
+    paper = Image.fromarray(np.broadcast_to(stripes, (60, 400, 3)).astype(np.uint8))
 
-    tiled = np.asarray(tileable(noise, both=True), dtype=np.int16)
+    tiled = np.asarray(tileable(paper), dtype=np.float32)
+    wrapped = np.concatenate([tiled, tiled[:, :1]], axis=1)
+    steps = np.abs(np.diff(wrapped, axis=1)).mean(axis=(0, 2))
+    painted = np.abs(np.diff(np.asarray(paper, dtype=np.float32), axis=1)).mean(axis=(0, 2))
 
-    assert abs(tiled[:, -1] - tiled[:, 0]).mean() < abs(tiled[:, 150] - tiled[:, 0]).mean()
+    assert steps.max() < 1.5 * painted.max()
+
+
+def test_a_tiled_sky_is_not_joined_through_a_cloud() -> None:
+    sky = np.zeros((80, 600, 3), dtype=np.uint8)
+    sky[:] = np.linspace(150, 230, 80, dtype=np.uint8)[:, None, None]
+    sky[20:40, 30:110] = 255
+    sky[25:45, 400:470] = 255
+
+    tiled = np.asarray(tileable(Image.fromarray(sky), plain=True), dtype=np.int16)
+    row = tiled[30].min(axis=1)
+
+    assert ((row < 200) | (row > 240)).all()
 
 
 def test_a_layer_with_a_gap_near_each_end_is_cut_at_the_gaps() -> None:

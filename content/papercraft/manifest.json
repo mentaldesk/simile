@@ -459,7 +459,7 @@
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "1422317122245ad6f974"
+   "hash": "4cd57ec7c0598692821f"
   },
   "fronts/corner_shop": {
    "file": "fronts/corner_shop.webp",
@@ -475,7 +475,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "408b9f8b4e131bbc71b5"
+   "hash": "bcfbc4e575ef34ee87ec"
   },
   "fronts/gallery": {
    "file": "fronts/gallery.webp",
@@ -491,7 +491,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "59b3210e89141d8c00fe"
+   "hash": "6b49e5ddbd8324fe08ea"
   },
   "fronts/garden_flats": {
    "file": "fronts/garden_flats.webp",
@@ -507,7 +507,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "18fbebdb79680df24bc2"
+   "hash": "e563cd4102bcea134aa0"
   },
   "fronts/house_1": {
    "file": "fronts/house_1.webp",
@@ -523,7 +523,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "18a6b7af496f1bb9f205"
+   "hash": "079d1ba09daa3d513ddb"
   },
   "fronts/house_10": {
    "file": "fronts/house_10.webp",
@@ -539,7 +539,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d051aefd4926087ee163"
+   "hash": "00c716cbde4f4176cb66"
   },
   "fronts/house_2": {
    "file": "fronts/house_2.webp",
@@ -555,7 +555,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "8da800ec60779175555c"
+   "hash": "841fd6976013cf0d094d"
   },
   "fronts/house_3": {
    "file": "fronts/house_3.webp",
@@ -571,7 +571,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "9d693e7e34aef92c8980"
+   "hash": "0c0ad9d6ac1f9b71119e"
   },
   "fronts/house_4": {
    "file": "fronts/house_4.webp",
@@ -587,7 +587,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "8a0e8b183b0961177e10"
+   "hash": "da205635330719b4f987"
   },
   "fronts/house_5": {
    "file": "fronts/house_5.webp",
@@ -603,7 +603,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "73bfb03d5b778e3a1eec"
+   "hash": "813a7e43ca98b4c5a9c5"
   },
   "fronts/house_6": {
    "file": "fronts/house_6.webp",
@@ -619,7 +619,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "db43de1964abeeabc400"
+   "hash": "d8adb8478456e6893280"
   },
   "fronts/house_7": {
    "file": "fronts/house_7.webp",
@@ -635,7 +635,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "5883b42916df64c0fcb5"
+   "hash": "537483aa8135c1445267"
   },
   "fronts/house_8": {
    "file": "fronts/house_8.webp",
@@ -651,7 +651,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "108a67769fc623a5ab73"
+   "hash": "fbd96dbd8041544929eb"
   },
   "fronts/house_9": {
    "file": "fronts/house_9.webp",
@@ -667,7 +667,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d2d807f1ccd7f7dc309a"
+   "hash": "d88f4529d73e09865e5a"
   },
   "fronts/maker_space": {
    "file": "fronts/maker_space.webp",
@@ -683,7 +683,7 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "289f5ee168e9ea3b2f47"
+   "hash": "64e236669028c974f09a"
   },
   "fronts/noodle_bar": {
    "file": "fronts/noodle_bar.webp",
@@ -699,7 +699,7 @@
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "a8cec940b736a9f337bd"
+   "hash": "1fcba4d374d53194c302"
   },
   "fronts/tower": {
    "file": "fronts/tower.webp",
@@ -715,7 +715,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "ba5c05b18f48a2f3aff0"
+   "hash": "0409861d88f93e015c11"
   },
   "furniture/armchair": {
    "file": "furniture/armchair.webp",
@@ -729,7 +729,7 @@
     0.5,
     1.0
    ],
-   "hash": "628cb1956c6b93b482d4"
+   "hash": "85fdfeb6711d0a93b6e2"
   },
   "furniture/armchair-sage": {
    "file": "furniture/armchair-sage.webp",
@@ -743,7 +743,7 @@
     0.5,
     1.0
    ],
-   "hash": "ebb6127f5082bb7e604e"
+   "hash": "f952234f7bbb9010f20c"
   },
   "furniture/armchair-teal": {
    "file": "furniture/armchair-teal.webp",
@@ -757,7 +757,7 @@
     0.5,
     1.0
    ],
-   "hash": "da0d253a2df5984da909"
+   "hash": "3c1511f3d6181f5730fb"
   },
   "furniture/banyan_tree": {
    "file": "furniture/banyan_tree.webp",
@@ -771,7 +771,7 @@
     0.5,
     1.0
    ],
-   "hash": "bde04fd1b6e6df8af5bf"
+   "hash": "acdb3c6461d695844376"
   },
   "furniture/bar_counter": {
    "file": "furniture/bar_counter.webp",
@@ -785,7 +785,7 @@
     0.5,
     1.0
    ],
-   "hash": "da548de5e81367d989c9"
+   "hash": "9b51a6754ac20db51621"
   },
   "furniture/bathtub": {
    "file": "furniture/bathtub.webp",
@@ -799,7 +799,7 @@
     0.5,
     1.0
    ],
-   "hash": "9dbcfc72b063eea29a34"
+   "hash": "e5a7e7670d88f673e9bc"
   },
   "furniture/bed": {
    "file": "furniture/bed.webp",
@@ -813,7 +813,7 @@
     0.5,
     1.0
    ],
-   "hash": "84f27bb0b5dcce77b7e4"
+   "hash": "202ace908fadc7700de6"
   },
   "furniture/bed-blue": {
    "file": "furniture/bed-blue.webp",
@@ -827,7 +827,7 @@
     0.5,
     1.0
    ],
-   "hash": "ba46a413cbf3dc81d6ef"
+   "hash": "1184bf20837398fb5804"
   },
   "furniture/bedside_table": {
    "file": "furniture/bedside_table.webp",
@@ -841,7 +841,7 @@
     0.5,
     1.0
    ],
-   "hash": "9d8d2bec6a22dc9aabaf"
+   "hash": "21db7a6d710ebe00523c"
   },
   "furniture/bench": {
    "file": "furniture/bench.webp",
@@ -855,7 +855,7 @@
     0.5,
     1.0
    ],
-   "hash": "faca6d02493fb0932379"
+   "hash": "6350c5c94a8134d501d4"
   },
   "furniture/bicycle": {
    "file": "furniture/bicycle.webp",
@@ -869,7 +869,7 @@
     0.5,
     1.0
    ],
-   "hash": "d21148a1717d9355449c"
+   "hash": "0dc143b39a1ec1ca2ad6"
   },
   "furniture/bin": {
    "file": "furniture/bin.webp",
@@ -883,7 +883,7 @@
     0.5,
     1.0
    ],
-   "hash": "9018473bb51eda5b1e99"
+   "hash": "ef43c63526dc2a0d00ef"
   },
   "furniture/bookshelf": {
    "file": "furniture/bookshelf.webp",
@@ -897,7 +897,7 @@
     0.5,
     1.0
    ],
-   "hash": "af0bbd296369cb3a5a38"
+   "hash": "d05e4adbacc11dbf09f1"
   },
   "furniture/bush": {
    "file": "furniture/bush.webp",
@@ -911,7 +911,7 @@
     0.5,
     1.0
    ],
-   "hash": "1380e279805003023700"
+   "hash": "811920956fb236ccede2"
   },
   "furniture/cafe_table": {
    "file": "furniture/cafe_table.webp",
@@ -925,7 +925,7 @@
     0.5,
     1.0
    ],
-   "hash": "d70e776d71f16f2b4ca2"
+   "hash": "dfc9ca0166ad4594dbb4"
   },
   "furniture/counter": {
    "file": "furniture/counter.webp",
@@ -939,7 +939,7 @@
     0.5,
     1.0
    ],
-   "hash": "381da94fa4bb933220fe"
+   "hash": "44e0c52f3bfab7febaa7"
   },
   "furniture/espresso_machine": {
    "file": "furniture/espresso_machine.webp",
@@ -953,7 +953,7 @@
     0.5,
     1.0
    ],
-   "hash": "9acf7113d596a2e75c79"
+   "hash": "55ba3dc42b6846b29858"
   },
   "furniture/floor_lamp": {
    "file": "furniture/floor_lamp.webp",
@@ -967,7 +967,7 @@
     0.5,
     1.0
    ],
-   "hash": "8c135d2c7435c1b04c54"
+   "hash": "2221d14761a3c2207935"
   },
   "furniture/fountain": {
    "file": "furniture/fountain.webp",
@@ -981,7 +981,7 @@
     0.5,
     1.0
    ],
-   "hash": "226fa490c7edfc5b989e"
+   "hash": "e53c00f659a1dcae1baa"
   },
   "furniture/fridge": {
    "file": "furniture/fridge.webp",
@@ -995,7 +995,7 @@
     0.5,
     1.0
    ],
-   "hash": "cfc81b3a699d4701a06a"
+   "hash": "0bd87cc699e6f2b7b83e"
   },
   "furniture/grinder": {
    "file": "furniture/grinder.webp",
@@ -1009,7 +1009,7 @@
     0.5,
     1.0
    ],
-   "hash": "2fd1a0f79807e10cdb4d"
+   "hash": "9f239a6174b212d3b7e9"
   },
   "furniture/kapok_tree": {
    "file": "furniture/kapok_tree.webp",
@@ -1023,7 +1023,7 @@
     0.5,
     1.0
    ],
-   "hash": "c85de84b2891f6339ad0"
+   "hash": "95d779d7c5bea8ca00d7"
   },
   "furniture/kitchen": {
    "file": "furniture/kitchen.webp",
@@ -1037,7 +1037,7 @@
     0.5,
     1.0
    ],
-   "hash": "79a86969ffcd5328b734"
+   "hash": "57ff16a6aecb652d62da"
   },
   "furniture/kitchen_counter": {
    "file": "furniture/kitchen_counter.webp",
@@ -1051,7 +1051,7 @@
     0.5,
     1.0
    ],
-   "hash": "435122018212d02d5569"
+   "hash": "55910e2b2b8e12e0ef96"
   },
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
@@ -1065,7 +1065,7 @@
     0.5,
     1.0
    ],
-   "hash": "fc85fca406df86750b3f"
+   "hash": "41ecc95cd7e087be4f1b"
   },
   "furniture/laser_cutter": {
    "file": "furniture/laser_cutter.webp",
@@ -1079,7 +1079,7 @@
     0.5,
     1.0
    ],
-   "hash": "70553bffaeb912a6caf1"
+   "hash": "289433516d45210712d7"
   },
   "furniture/loom": {
    "file": "furniture/loom.webp",
@@ -1093,7 +1093,7 @@
     0.5,
     1.0
    ],
-   "hash": "e463a829fb102c06afa3"
+   "hash": "f86c0afa99d7cfb350e7"
   },
   "furniture/menu_board": {
    "file": "furniture/menu_board.webp",
@@ -1107,7 +1107,7 @@
     0.5,
     1.0
    ],
-   "hash": "24e0f4f651e3a544aa4e"
+   "hash": "8a436ac494ba6654268b"
   },
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
@@ -1121,7 +1121,7 @@
     0.5,
     1.0
    ],
-   "hash": "d45251939e9c08bdf643"
+   "hash": "a6d368af1fb84d2bb708"
   },
   "furniture/noodle_counter": {
    "file": "furniture/noodle_counter.webp",
@@ -1135,7 +1135,7 @@
     0.5,
     1.0
    ],
-   "hash": "d05c461c7c7f4084495f"
+   "hash": "80c3448b51b8cb24c2e2"
   },
   "furniture/noodle_table": {
    "file": "furniture/noodle_table.webp",
@@ -1149,7 +1149,7 @@
     0.5,
     1.0
    ],
-   "hash": "267eff6d788273c5cacc"
+   "hash": "90cbd474755c4656287b"
   },
   "furniture/palm_tree": {
    "file": "furniture/palm_tree.webp",
@@ -1163,7 +1163,7 @@
     0.5,
     1.0
    ],
-   "hash": "f50892e4b86bf9908d70"
+   "hash": "d21b1a876c4b2ca0c0a3"
   },
   "furniture/pegboard": {
    "file": "furniture/pegboard.webp",
@@ -1177,7 +1177,7 @@
     0.5,
     1.0
    ],
-   "hash": "052f208fba6b358a0007"
+   "hash": "72703917e8ec40b6d1a5"
   },
   "furniture/picture_frame": {
    "file": "furniture/picture_frame.webp",
@@ -1191,7 +1191,7 @@
     0.5,
     1.0
    ],
-   "hash": "875684039f0cd80b49e3"
+   "hash": "8606efda16f849d83597"
   },
   "furniture/plant": {
    "file": "furniture/plant.webp",
@@ -1205,7 +1205,7 @@
     0.5,
     1.0
    ],
-   "hash": "b79bcbb3140e29bf0728"
+   "hash": "5b45cde189aa8c52400e"
   },
   "furniture/plinth": {
    "file": "furniture/plinth.webp",
@@ -1219,7 +1219,7 @@
     0.5,
     1.0
    ],
-   "hash": "a058368441a4a5962ebd"
+   "hash": "2a3b15bf7a01b42d25b8"
   },
   "furniture/printer_3d": {
    "file": "furniture/printer_3d.webp",
@@ -1233,7 +1233,7 @@
     0.5,
     1.0
    ],
-   "hash": "9a05e4d145181758b96a"
+   "hash": "888db4ffb36e480e9960"
   },
   "furniture/sewing_machine": {
    "file": "furniture/sewing_machine.webp",
@@ -1247,7 +1247,7 @@
     0.5,
     1.0
    ],
-   "hash": "67bec82e40857a50310a"
+   "hash": "87900d5854be4dd80148"
   },
   "furniture/shelf": {
    "file": "furniture/shelf.webp",
@@ -1261,7 +1261,7 @@
     0.5,
     1.0
    ],
-   "hash": "f52092fb6e019fdfa287"
+   "hash": "28d5b671918223881796"
   },
   "furniture/sofa": {
    "file": "furniture/sofa.webp",
@@ -1275,7 +1275,7 @@
     0.5,
     1.0
    ],
-   "hash": "53b7e6e4a625e6eac065"
+   "hash": "718a6c5091be02b22b5f"
   },
   "furniture/sofa-coral": {
    "file": "furniture/sofa-coral.webp",
@@ -1289,7 +1289,7 @@
     0.5,
     1.0
    ],
-   "hash": "88da859428eb16a327a8"
+   "hash": "70b2b7f5802c2df9bbf4"
   },
   "furniture/sofa-mustard": {
    "file": "furniture/sofa-mustard.webp",
@@ -1303,7 +1303,7 @@
     0.5,
     1.0
    ],
-   "hash": "866dcb41ad4afc0aa818"
+   "hash": "e3286c8960958a70b2ac"
   },
   "furniture/sofa-plum": {
    "file": "furniture/sofa-plum.webp",
@@ -1317,7 +1317,7 @@
     0.5,
     1.0
    ],
-   "hash": "e8ef020db1e0db04d634"
+   "hash": "14f8f979964f00aa59f0"
   },
   "furniture/stool": {
    "file": "furniture/stool.webp",
@@ -1331,7 +1331,7 @@
     0.5,
     1.0
    ],
-   "hash": "222747b6f14a16f4a535"
+   "hash": "e7359cc8c9c537fd9e39"
   },
   "furniture/stool-teal": {
    "file": "furniture/stool-teal.webp",
@@ -1345,7 +1345,7 @@
     0.5,
     1.0
    ],
-   "hash": "92bb202cdbe2b273e129"
+   "hash": "3cf13dfc3b7d75aac826"
   },
   "furniture/stove": {
    "file": "furniture/stove.webp",
@@ -1359,7 +1359,7 @@
     0.5,
     1.0
    ],
-   "hash": "665f36bd3263d35e2854"
+   "hash": "f330074b8e04a121e7d5"
   },
   "furniture/table": {
    "file": "furniture/table.webp",
@@ -1373,7 +1373,7 @@
     0.5,
     1.0
    ],
-   "hash": "b6de9a6af1e765afba1e"
+   "hash": "9d0bbfb0e224cca908ba"
   },
   "furniture/tree": {
    "file": "furniture/tree.webp",
@@ -1387,7 +1387,7 @@
     0.5,
     1.0
    ],
-   "hash": "349c8a5f66b2bd873c85"
+   "hash": "0ceca881f830568fb0d4"
   },
   "furniture/wardrobe": {
    "file": "furniture/wardrobe.webp",
@@ -1401,7 +1401,7 @@
     0.5,
     1.0
    ],
-   "hash": "082a56ecc4089539214e"
+   "hash": "64ea17247ab57ffb06b0"
   },
   "furniture/washbasin": {
    "file": "furniture/washbasin.webp",
@@ -1415,7 +1415,7 @@
     0.5,
     1.0
    ],
-   "hash": "4df95cf63c78ff9201c5"
+   "hash": "2b6f194cdb7b65672211"
   },
   "furniture/workbench": {
    "file": "furniture/workbench.webp",
@@ -1429,7 +1429,7 @@
     0.5,
     1.0
    ],
-   "hash": "b10fc400c33d91cf9c0f"
+   "hash": "6c7a5488955e0efb4382"
   },
   "glow/coffee_shop": {
    "file": "glow/coffee_shop.webp",
@@ -1445,7 +1445,7 @@
    ],
    "width": 22.0,
    "eaves": 12.1,
-   "hash": "044df61d7285f59ccf2d"
+   "hash": "7ebce021a9b87c3042d6"
   },
   "glow/corner_shop": {
    "file": "glow/corner_shop.webp",
@@ -1461,7 +1461,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "27b61b2d121fdea077db"
+   "hash": "8a27ad3eeb9c684ade93"
   },
   "glow/gallery": {
    "file": "glow/gallery.webp",
@@ -1477,7 +1477,7 @@
    ],
    "width": 19.8,
    "eaves": 12.1,
-   "hash": "e82b1de5eb75071afa3c"
+   "hash": "9449e5c01f36a29254e3"
   },
   "glow/garden_flats": {
    "file": "glow/garden_flats.webp",
@@ -1493,7 +1493,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "b76ee04ea3bb4436c46d"
+   "hash": "d2757240db9cd63ef1c4"
   },
   "glow/house_1": {
    "file": "glow/house_1.webp",
@@ -1509,7 +1509,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "d0f841e7351ea01ecf34"
+   "hash": "8094fc84886a541567a7"
   },
   "glow/house_10": {
    "file": "glow/house_10.webp",
@@ -1525,7 +1525,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "596ea09a302d8329fb14"
+   "hash": "5cbe969c14975b02cda1"
   },
   "glow/house_2": {
    "file": "glow/house_2.webp",
@@ -1541,7 +1541,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "2229d9c0a65ba7af7354"
+   "hash": "9ab924dc140f8023038d"
   },
   "glow/house_3": {
    "file": "glow/house_3.webp",
@@ -1557,7 +1557,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "ca4c420b366d4fac5d56"
+   "hash": "8b7e05bf5f02a64a70ac"
   },
   "glow/house_4": {
    "file": "glow/house_4.webp",
@@ -1573,7 +1573,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "30b51be1ce3d9658e43a"
+   "hash": "5712f8444a17421671a6"
   },
   "glow/house_5": {
    "file": "glow/house_5.webp",
@@ -1589,7 +1589,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "295d6117b7ab27487519"
+   "hash": "887d3fef1f804a4840bc"
   },
   "glow/house_6": {
    "file": "glow/house_6.webp",
@@ -1605,7 +1605,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "fd3badfa21748951ee53"
+   "hash": "cd65fe69d1778199b279"
   },
   "glow/house_7": {
    "file": "glow/house_7.webp",
@@ -1621,7 +1621,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "283d1e19afc517af6954"
+   "hash": "7af7e4454fecafb75b3a"
   },
   "glow/house_8": {
    "file": "glow/house_8.webp",
@@ -1637,7 +1637,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "aaddc6ff7cac725352c8"
+   "hash": "113ee553f1ce410253bc"
   },
   "glow/house_9": {
    "file": "glow/house_9.webp",
@@ -1653,7 +1653,7 @@
    ],
    "width": 7.7,
    "eaves": 7.7,
-   "hash": "99d4d7c94f84beb66cd2"
+   "hash": "111e7c37a4c3fcbd4345"
   },
   "glow/maker_space": {
    "file": "glow/maker_space.webp",
@@ -1669,7 +1669,7 @@
    ],
    "width": 17.6,
    "eaves": 12.1,
-   "hash": "769eb9e576ab97793257"
+   "hash": "d95e303d000514624479"
   },
   "glow/noodle_bar": {
    "file": "glow/noodle_bar.webp",
@@ -1685,7 +1685,7 @@
    ],
    "width": 18.7,
    "eaves": 7.7,
-   "hash": "c796543f7c21f8ad0b75"
+   "hash": "6f0fcc439938c0e61b1a"
   },
   "glow/tower": {
    "file": "glow/tower.webp",
@@ -1701,7 +1701,7 @@
    ],
    "width": 6.6,
    "eaves": 12.1,
-   "hash": "07a4fc914ae940873669"
+   "hash": "d7c50168ae51c6975c3d"
   },
   "layers/far-hills": {
    "file": "layers/far-hills.webp",
@@ -1711,7 +1711,7 @@
    ],
    "height": 5.0,
    "kind": "layer",
-   "hash": "1f8c62cd7e3879ae044d"
+   "hash": "f1e2a4efb7f25ff7c8d3"
   },
   "layers/far-river": {
    "file": "layers/far-river.webp",
@@ -1721,7 +1721,7 @@
    ],
    "height": 4.0,
    "kind": "layer",
-   "hash": "6db5b730a583678d2123"
+   "hash": "5e4a3e53a3421884f4f7"
   },
   "layers/front-plants": {
    "file": "layers/front-plants.webp",
@@ -1731,7 +1731,7 @@
    ],
    "height": 2.0,
    "kind": "strip",
-   "hash": "16af6b421a9deee37d15"
+   "hash": "4e5163508b1750a4029d"
   },
   "layers/front-reeds": {
    "file": "layers/front-reeds.webp",
@@ -1741,7 +1741,7 @@
    ],
    "height": 2.0,
    "kind": "strip",
-   "hash": "f1182e5a012bf473f72f"
+   "hash": "0ca6922ce10463232597"
   },
   "layers/ground-park": {
    "file": "layers/ground-park.webp",
@@ -1751,7 +1751,7 @@
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "e98ec2544a3adb80da0c"
+   "hash": "f6453e3ad28e9df1abdc"
   },
   "layers/ground-plaza": {
    "file": "layers/ground-plaza.webp",
@@ -1761,7 +1761,7 @@
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "63308e100858a1f56958"
+   "hash": "0b81eadc2df065f0fb76"
   },
   "layers/ground-promenade": {
    "file": "layers/ground-promenade.webp",
@@ -1771,7 +1771,7 @@
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "7c866996109e19da3052"
+   "hash": "0865e88cc72e91a70e62"
   },
   "layers/ground-street": {
    "file": "layers/ground-street.webp",
@@ -1781,7 +1781,7 @@
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "2bc983d8db036f5e34f0"
+   "hash": "045fa23577e738f74a5d"
   },
   "layers/mid-homes": {
    "file": "layers/mid-homes.webp",
@@ -1791,7 +1791,7 @@
    ],
    "height": 8.0,
    "kind": "strip",
-   "hash": "7c3df84d19fc0d6716f1"
+   "hash": "b114fe6f39d04a8f96f8"
   },
   "layers/mid-riverbank": {
    "file": "layers/mid-riverbank.webp",
@@ -1801,7 +1801,7 @@
    ],
    "height": 7.0,
    "kind": "strip",
-   "hash": "8a284cd89583d2686499"
+   "hash": "c3fe7f362ccaa8dd4824"
   },
   "layers/mid-rooftops": {
    "file": "layers/mid-rooftops.webp",
@@ -1811,7 +1811,7 @@
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "1af085864a8dd0bd0674"
+   "hash": "58d418083eb724a1ecc3"
   },
   "layers/mid-shophouses": {
    "file": "layers/mid-shophouses.webp",
@@ -1821,7 +1821,7 @@
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "0bd365691e6bf6c62187"
+   "hash": "ff334d75e4b8932f85ca"
   },
   "layers/near-gardens": {
    "file": "layers/near-gardens.webp",
@@ -1831,7 +1831,7 @@
    ],
    "height": 2.4,
    "kind": "strip",
-   "hash": "540f5affe9aa61e46f32"
+   "hash": "b764c9658ca58b7aa169"
   },
   "layers/near-hedges": {
    "file": "layers/near-hedges.webp",
@@ -1841,7 +1841,7 @@
    ],
    "height": 2.6,
    "kind": "strip",
-   "hash": "aa70ba817c20f249d781"
+   "hash": "8f90d418248ad899cffe"
   },
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
@@ -1851,17 +1851,17 @@
    ],
    "height": 2.2,
    "kind": "strip",
-   "hash": "eb47b07603bd12bb364a"
+   "hash": "4794679781d153c2d299"
   },
   "layers/sky": {
    "file": "layers/sky.webp",
    "size": [
-    1080,
+    1416,
     768
    ],
    "height": 12.0,
    "kind": "paper",
-   "hash": "f894247b459cf5e346a8"
+   "hash": "c8a919ebec2f7fed8dfd"
   },
   "papers/bedroom-lilac": {
    "file": "papers/bedroom-lilac.webp",
@@ -1871,7 +1871,7 @@
    ],
    "height": 2.633,
    "kind": "paper",
-   "hash": "f1ef34e063314ec6eafb"
+   "hash": "86e746c603efd87ad0cc"
   },
   "papers/bedroom-rose": {
    "file": "papers/bedroom-rose.webp",
@@ -1881,7 +1881,7 @@
    ],
    "height": 2.6,
    "kind": "paper",
-   "hash": "a5f974b1380f6ec68c94"
+   "hash": "d7340947bbdef62aa15c"
   },
   "papers/bedroom-sage": {
    "file": "papers/bedroom-sage.webp",
@@ -1891,27 +1891,27 @@
    ],
    "height": 2.933,
    "kind": "paper",
-   "hash": "720bc97ca9eed233ab01"
+   "hash": "63459f5f1a036cb60e9c"
   },
   "papers/block-grey": {
    "file": "papers/block-grey.webp",
    "size": [
     584,
-    356
+    364
    ],
-   "height": 2.967,
+   "height": 3.033,
    "kind": "paper",
-   "hash": "2445fafd46180c43f4fc"
+   "hash": "a1a437b95d4965ec4677"
   },
   "papers/brick": {
    "file": "papers/brick.webp",
    "size": [
     492,
-    344
+    424
    ],
-   "height": 2.867,
+   "height": 3.533,
    "kind": "paper",
-   "hash": "f7e8752b32ad07a125d0"
+   "hash": "43a74052fd6c1c08cea5"
   },
   "papers/cafe-panelling": {
    "file": "papers/cafe-panelling.webp",
@@ -1921,27 +1921,27 @@
    ],
    "height": 2.6,
    "kind": "paper",
-   "hash": "ce13c891b05b07b83448"
+   "hash": "5bd01d447f3132fea446"
   },
   "papers/cafe-tiles": {
    "file": "papers/cafe-tiles.webp",
    "size": [
     564,
-    312
+    316
    ],
-   "height": 2.6,
+   "height": 2.633,
    "kind": "paper",
-   "hash": "85dd25ae528f86d48208"
+   "hash": "6a25a6561f9663faf01e"
   },
   "papers/dining-red": {
    "file": "papers/dining-red.webp",
    "size": [
     484,
-    312
+    332
    ],
-   "height": 2.6,
+   "height": 2.767,
    "kind": "paper",
-   "hash": "4edb7059b763de2be0bd"
+   "hash": "70af910d1051d8e45eae"
   },
   "papers/living-blue": {
    "file": "papers/living-blue.webp",
@@ -1951,7 +1951,7 @@
    ],
    "height": 3.3,
    "kind": "paper",
-   "hash": "e3aaac9b4e64e7d3775e"
+   "hash": "aa1ee753f51adce4eae1"
   },
   "papers/living-green": {
    "file": "papers/living-green.webp",
@@ -1961,7 +1961,7 @@
    ],
    "height": 3.433,
    "kind": "paper",
-   "hash": "2c3e712df463becded2e"
+   "hash": "7006063ad113e03442bd"
   },
   "papers/living-ochre": {
    "file": "papers/living-ochre.webp",
@@ -1971,7 +1971,7 @@
    ],
    "height": 3.267,
    "kind": "paper",
-   "hash": "eba83f73bb1f6480eb78"
+   "hash": "260c3115e02019a2b6c5"
   },
   "papers/loft-boards": {
    "file": "papers/loft-boards.webp",
@@ -1981,7 +1981,7 @@
    ],
    "height": 3.633,
    "kind": "paper",
-   "hash": "c551a59dedd76e7f5124"
+   "hash": "980acbe0ad84c5b50c08"
   },
   "papers/plaster-cream": {
    "file": "papers/plaster-cream.webp",
@@ -1991,7 +1991,7 @@
    ],
    "height": 2.6,
    "kind": "paper",
-   "hash": "24ec06d4bab26acafe81"
+   "hash": "1f36f2fea2cf817599c0"
   },
   "papers/plaster-white": {
    "file": "papers/plaster-white.webp",
@@ -2001,17 +2001,17 @@
    ],
    "height": 2.6,
    "kind": "paper",
-   "hash": "c541dc59786d42244573"
+   "hash": "7577d2061620bc3ff419"
   },
   "papers/slab": {
    "file": "papers/slab.webp",
    "size": [
     656,
-    144
+    256
    ],
    "height": 0.3,
    "kind": "paper",
-   "hash": "1041e2f1149a3bb53de6"
+   "hash": "8c4f3ba61dc3d403376a"
   },
   "platforms/door": {
    "file": "platforms/door.webp",
@@ -2025,7 +2025,7 @@
     0.5,
     1.0
    ],
-   "hash": "60031455793bcc29293e"
+   "hash": "2c77cf4478088a923fff"
   },
   "platforms/ladder": {
    "file": "platforms/ladder.webp",
@@ -2039,7 +2039,7 @@
     0.5,
     1.0
    ],
-   "hash": "94cdf46ccd5214d24c15"
+   "hash": "76dca9f13c8c307cd27a"
   },
   "platforms/ledge": {
    "file": "platforms/ledge.webp",
@@ -2053,7 +2053,7 @@
     0.5,
     1.0
    ],
-   "hash": "c81872eb78aa6a36131e"
+   "hash": "da832d2f68c9e4c3b25d"
   },
   "platforms/lift": {
    "file": "platforms/lift.webp",
@@ -2067,7 +2067,7 @@
     0.5,
     1.0
    ],
-   "hash": "40f8f46da130f5731214"
+   "hash": "6746fe24ef687ea63f40"
   },
   "platforms/lift_shaft": {
    "file": "platforms/lift_shaft.webp",
@@ -2081,7 +2081,7 @@
     0.5,
     1.0
    ],
-   "hash": "7f605cfb80abc8ff17d7"
+   "hash": "399fdae203798fc70999"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",
@@ -2095,7 +2095,7 @@
     0.5,
     1.0
    ],
-   "hash": "c53fcf3f436c8dd8c08a"
+   "hash": "068633bd272336723b56"
   },
   "platforms/steps": {
    "file": "platforms/steps.webp",
@@ -2109,7 +2109,7 @@
     0.5,
     1.0
    ],
-   "hash": "04a5d445616696ef64cd"
+   "hash": "a336846fcc806547da1c"
   },
   "platforms/window": {
    "file": "platforms/window.webp",
@@ -2123,7 +2123,7 @@
     0.5,
     1.0
    ],
-   "hash": "9f4afeb493079607c9cf"
+   "hash": "e5f3dbf57c4fbe3686bd"
   }
  }
 }
