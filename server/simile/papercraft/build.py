@@ -1,0 +1,440 @@
+"""Paints, cuts out and scales every piece into content/papercraft/, and keeps its manifest.
+
+Each piece keeps a hash of its inputs, so a run repaints only what changed. Paintings are cached
+by their own hash outside the repo, so changing how pieces are cut doesn't repaint them.
+"""
+
+import hashlib
+import json
+import time
+from collections.abc import Callable, Iterable, Sequence
+from contextlib import AbstractContextManager
+from dataclasses import dataclass, field
+from functools import cache
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageFilter
+
+from simile.papercraft import cutout
+from simile.papercraft.catalogue import Painting, index, paintings
+from simile.papercraft.fronts import EAVES, Front, Plan, draw, unit_plans
+from simile.papercraft.layout import Layout, load_layout
+from simile.papercraft.painter import REFERENCES, EditPainter, Painter, reference
+from simile.papercraft.sketches import SKETCHES
+from simile.papercraft.village import LOOKS, front
+
+CONTENT = Path(__file__).resolve().parents[3] / "content" / "papercraft"
+MANIFEST = "manifest.json"
+PPM = 120
+"""Pixels per metre of every scaled piece."""
+PAINTING = 1
+"""Bump when what a painting is made from changes in a way its inputs don't show."""
+PIPELINE = 1
+"""Bump when cutting, scaling or saving changes."""
+NIGHT_SIDE = 768
+NIGHT_TINT = (0.3, 0.36, 0.6)
+WEBP_METHOD = 6
+QUALITY = {
+    "sprite": 85,
+    "front": 85,
+    "layer": 82,
+    "strip": 82,
+    "ground": 82,
+    "paper": 80,
+    "glow": 80,
+}
+
+type Mask = Callable[[Image.Image], Image.Image]
+
+
+def digest(*parts: object) -> str:
+    h = hashlib.sha256()
+    for part in parts:
+        h.update(part if isinstance(part, bytes) else json.dumps(part, sort_keys=True).encode())
+        h.update(b"\0")
+    return h.hexdigest()[:20]
+
+
+@cache
+def _file_hash(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _pixels(image: Image.Image) -> bytes:
+    return f"{image.mode} {image.size}".encode() + image.tobytes()
+
+
+def _fit(image: Image.Image, side: int) -> Image.Image:
+    s = side / max(image.size)
+    if s >= 1:
+        return image
+    size = (round(image.width * s), round(image.height * s))
+    return image.resize(size, Image.Resampling.LANCZOS)
+
+
+@cache
+def _whole(f: Front, ppm: float) -> Plan:
+    return draw(f, ppm)
+
+
+@cache
+def _sketch(name: str) -> Image.Image:
+    return SKETCHES[name]()
+
+
+@dataclass
+class Report:
+    painted: dict[str, float] = field(default_factory=dict)
+    """Seconds each painting took."""
+    written: list[str] = field(default_factory=list)
+    removed: list[str] = field(default_factory=list)
+
+
+class Build:
+    def __init__(
+        self,
+        pieces: Sequence[Painting] | None = None,
+        content: Path = CONTENT,
+        cache_dir: Path | None = None,
+        painter: Callable[[], AbstractContextManager[Painter]] = EditPainter,
+        mask: Mask | None = None,
+        key: Mask | None = None,
+        layout: Layout | None = None,
+    ) -> None:
+        self.layout = layout or load_layout()
+        chosen = pieces if pieces is not None else paintings(self.layout)
+        self.pieces = {p.key: p for p in chosen}
+        self.content = content
+        self.cache = cache_dir or cutout.cache_dir() / "papercraft"
+        self.painter = painter
+        self.mask = mask or cutout.hybrid
+        self.key = key or (lambda image: cutout.clean(cutout.key(image)))
+
+    def front(self, piece: Painting) -> Front:
+        building = piece.building or ""
+        return front(self.layout.facades[building], LOOKS[building])
+
+    def units(self, piece: Painting) -> tuple[tuple[float, Plan], ...]:
+        """The units a front is painted in, each with where it starts and its plan."""
+        return unit_plans(self.front(piece))
+
+    def plan(self, piece: Painting) -> Plan:
+        """The whole front's plan, at its units' scale, which they're put together on."""
+        f = self.front(piece)
+        return _whole(f, unit_plans(f)[0][1].ppm)
+
+    def paint_hash(self, piece: Painting, unit: int | None = None) -> str:
+        """The hash of what a painting is made from. A front or glow map is painted a unit at a
+        time, and its own hash covers every unit's."""
+        if piece.kind in ("front", "glow") and unit is None:
+            count = len(self.units(piece))
+            return digest(*(self.paint_hash(piece, i) for i in range(count)))
+        prompt = self.prompt(piece, unit)
+        inputs: list[object] = [PAINTING, prompt, list(self.size(piece, unit)), piece.seed]
+        inputs += [_file_hash(REFERENCES / f"{name}.jpg") for name in piece.refs]
+        if piece.kind == "front":
+            inputs += [unit, _pixels(self.units(piece)[unit or 0][1].image)]
+        if piece.sketch:
+            inputs.append(_pixels(_sketch(piece.sketch)))
+        if piece.base:
+            inputs.append(self.paint_hash(self.pieces[piece.base], unit))
+        return digest(*inputs)
+
+    def out_hash(self, piece: Painting) -> str:
+        inputs: list[object] = [PIPELINE, PPM, piece.kind, piece.height, self.paint_hash(piece)]
+        if piece.kind in ("front", "glow"):
+            inputs += [_pixels(plan.glow) for _, plan in self.units(piece)]
+        return digest(*inputs)
+
+    def prompt(self, piece: Painting, unit: int | None = None) -> str:
+        return piece.prompts[unit] if unit is not None and piece.prompts else piece.prompt
+
+    def size(self, piece: Painting, unit: int | None = None) -> tuple[int, int]:
+        if piece.kind in ("front", "glow"):
+            return self.units(piece)[unit or 0][1].image.size
+        return piece.size
+
+    def raw_path(self, piece: Painting, unit: int | None = None) -> Path:
+        return self.cache / "raw" / f"{self.paint_hash(piece, unit)}.png"
+
+    def jobs(self, piece: Painting) -> list[int | None]:
+        """The paintings a piece is made from: one per unit for a front or glow map."""
+        if piece.kind in ("front", "glow"):
+            return list(range(len(self.units(piece))))
+        return [None]
+
+    def read_manifest(self) -> dict:
+        path = self.content / MANIFEST
+        return json.loads(path.read_text()) if path.exists() else {}
+
+    def stale(self, manifest: dict, keys: Iterable[str]) -> list[Painting]:
+        pieces = manifest.get("pieces", {})
+        out = []
+        for key in keys:
+            piece = self.pieces[key]
+            entry = pieces.get(key)
+            if (
+                entry is None
+                or entry.get("hash") != self.out_hash(piece)
+                or not (self.content / entry["file"]).exists()
+            ):
+                out.append(piece)
+        return out
+
+    def run(self, only: Callable[[str], bool] = lambda key: True, log=print) -> Report:
+        report = Report()
+        manifest = self.read_manifest()
+        stale = self.stale(manifest, [k for k in self.pieces if only(k)])
+        unpainted = self.unpainted(stale)
+        if unpainted:
+            log(f"Painting {len(unpainted)} for {len(stale)} stale pieces")
+            with self.painter() as painter:
+                for piece, unit in unpainted:
+                    start = time.perf_counter()
+                    size = self.size(piece, unit)
+                    seed = piece.seed + (unit or 0)
+                    images = self.images(piece, unit)
+                    prompt = self.prompt(piece, unit)
+                    picture = painter.paint(prompt, size, seed, images)
+                    path = self.raw_path(piece, unit)
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    picture.save(path)
+                    name = piece.key if unit is None else f"{piece.key}#{unit}"
+                    report.painted[name] = round(time.perf_counter() - start, 1)
+                    log(f"  {name} {report.painted[name]}s")
+                    self._time(name, piece, size, report.painted[name])
+        entries = dict(manifest.get("pieces", {}))
+        for piece in stale:
+            entries[piece.key] = self.finish(piece)
+            report.written.append(piece.key)
+            log(f"  wrote {entries[piece.key]['file']}")
+        if all(only(k) for k in entries):
+            for key in sorted(set(entries) - set(self.pieces)):
+                (self.content / entries.pop(key)["file"]).unlink(missing_ok=True)
+                report.removed.append(key)
+        self.write_manifest({k: entries[k] for k in sorted(entries)})
+        return report
+
+    def unpainted(self, stale: list[Painting]) -> list[tuple[Painting, int | None]]:
+        """Every painting `stale` needs that isn't cached, bases first."""
+        need: dict[tuple[str, int | None], tuple[Painting, int | None]] = {}
+
+        def visit(piece: Painting) -> None:
+            if piece.base:
+                visit(self.pieces[piece.base])
+            for unit in self.jobs(piece):
+                if not self.raw_path(piece, unit).exists():
+                    need.setdefault((piece.key, unit), (piece, unit))
+
+        for piece in stale:
+            visit(piece)
+        return list(need.values())
+
+    def _time(self, name: str, piece: Painting, size: tuple, seconds: float) -> None:
+        with (self.cache / "timings.jsonl").open("a") as f:
+            entry = {"key": name, "kind": piece.kind, "size": list(size), "seconds": seconds}
+            f.write(json.dumps(entry) + "\n")
+
+    def raw(self, piece: Painting, unit: int | None = None) -> Image.Image:
+        return Image.open(self.raw_path(piece, unit)).convert("RGB")
+
+    def images(self, piece: Painting, unit: int | None = None) -> list[Image.Image]:
+        """What a painting is painted from: its plan, sketch or base first, then its
+        references."""
+        images = []
+        if piece.kind == "front":
+            images.append(self.units(piece)[unit or 0][1].image)
+        if piece.sketch:
+            images.append(_sketch(piece.sketch))
+        if piece.base:
+            images.append(_fit(self.raw(self.pieces[piece.base], unit), NIGHT_SIDE))
+        for name in piece.refs:
+            images.append(reference(name, 512 if name == "furniture" else 768))
+        return images
+
+    def finish(self, piece: Painting) -> dict:
+        """Cut, scale and save `piece` from its painting, and its manifest entry."""
+        entry: dict = {"kind": piece.kind}
+        if piece.kind in ("front", "glow"):
+            image, extra = self.finish_front(piece)
+            entry.update(extra)
+            height = image.height / PPM
+        else:
+            raw = self.raw(piece)
+            if piece.kind == "paper":
+                image = tileable(raw, both=piece.key != "layers/sky")
+                height = piece.height or image.height / PPM
+            elif piece.kind in ("layer", "strip", "ground"):
+                mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
+                if piece.kind != "strip":
+                    mask = cutout.skyline(mask)
+                image = tileable(trim_rows(cutout.unmix(raw, mask)))
+                height = piece.height or image.height / PPM
+            else:
+                image = cutout.unmix(raw, self.mask(raw))
+                image = image.crop(image.getchannel("A").getbbox() or (0, 0, *image.size))
+                image = scaled(image, round((piece.height or 1) * PPM))
+                height = piece.height or 1
+                entry["anchor"] = [0.5, 1.0]
+        file = f"{piece.key}.webp"
+        path = self.content / file
+        path.parent.mkdir(parents=True, exist_ok=True)
+        save_webp(image, path, QUALITY[piece.kind])
+        return {
+            "file": file,
+            "size": list(image.size),
+            "height": round(height, 3),
+            **entry,
+            "hash": self.out_hash(piece),
+        }
+
+    def finish_front(self, piece: Painting) -> tuple[Image.Image, dict]:
+        """A front, or its glow map, put together from its units' paintings side by side, cut
+        to the front and scaled."""
+        whole, f = self.plan(piece), self.front(piece)
+        glow = piece.kind == "glow"
+        image = Image.new("RGB" if glow else "RGBA", whole.image.size, (0, 0, 0, 0))
+        for i, (x, plan) in enumerate(self.units(piece)):
+            raw = self.raw(piece, i)
+            if glow:
+                part = glow_map(self.raw(self.pieces[piece.base or ""], i), raw, plan)
+            else:
+                part = cutout.unmix(raw, front_mask(raw, plan), top_backdrop(raw))
+            at = (round(whole.left + x * whole.ppm - plan.left), round(whole.ground - plan.ground))
+            layer = Image.new(image.mode, image.size, (0, 0, 0, 0))
+            layer.paste(part, at)
+            if glow:
+                image = Image.fromarray(np.maximum(np.asarray(image), np.asarray(layer)))
+            else:
+                image = Image.alpha_composite(image, layer)
+        box = front_box(whole, f)
+        image = image.crop(tuple(round(v) for v in box))
+        s = PPM / whole.ppm
+        image = image.resize(
+            (round(image.width * s), round(image.height * s)), Image.Resampling.LANCZOS
+        )
+        middle = whole.left + f.width * whole.ppm / 2
+        anchor = [
+            round((middle - box[0]) / (box[2] - box[0]), 4),
+            round((whole.ground - box[1]) / (box[3] - box[1]), 4),
+        ]
+        extra = {"anchor": anchor, "width": round(f.width, 3), "eaves": round(f.wall_height, 3)}
+        return image, extra
+
+    def write_manifest(self, pieces: dict) -> None:
+        manifest = {"version": 1, "ppm": PPM, **index(self.layout), "pieces": pieces}
+        text = json.dumps(manifest, indent=1) + "\n"
+        path = self.content / MANIFEST
+        if not path.exists() or path.read_text() != text:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text)
+
+
+def front_box(plan: Plan, f: Front) -> tuple[float, float, float, float]:
+    """The part of a front's painting that's kept: its walls and roof with the eaves, from a
+    little above the roof down to just under the ground line."""
+    side = (EAVES + 0.25) * plan.ppm
+    return (
+        max(0, plan.left - side),
+        max(0, plan.ground - (f.total_height + 0.3) * plan.ppm),
+        min(plan.image.width, plan.left + f.width * plan.ppm + side),
+        min(plan.image.height, plan.ground + 0.12 * plan.ppm),
+    )
+
+
+def top_backdrop(image: Image.Image) -> np.ndarray:
+    """The backdrop's colour, from the picture's top row, which a slice's sides aren't."""
+    return np.median(np.asarray(image.convert("RGB"), dtype=np.float32)[0], axis=0)
+
+
+def silhouette(plan: Plan) -> np.ndarray:
+    a = np.asarray(plan.image, dtype=np.int16)
+    return np.abs(a - a[0, 0]).max(axis=2) > 6
+
+
+def front_mask(painted: Image.Image, plan: Plan, lo: float = 18, hi: float = 48) -> Image.Image:
+    """Solid inside the plan's outline, and beyond it, out to a little way off, wherever the
+    painting differs clearly from the backdrop: so roof edges painted past the plan stay, and
+    painted ground, shadows and paper margins go."""
+    inside = silhouette(plan).astype(np.float32) * 255
+    solid = -dilate(-inside, 5)
+    near = dilate(inside, round(0.3 * plan.ppm) | 1)
+    a = np.asarray(painted, dtype=np.float32)
+    d = np.abs(a - top_backdrop(painted)).max(axis=2)
+    keyed = np.clip((d - lo) / (hi - lo), 0, 1) * 255
+    m = np.minimum(np.maximum(keyed, solid), near)
+    return Image.fromarray(m.astype(np.uint8)).filter(ImageFilter.MedianFilter(3))
+
+
+def dilate(a: np.ndarray, size: int) -> np.ndarray:
+    """A square max filter `size` across, as two passes."""
+    pad = size // 2
+    for axis in (0, 1):
+        widths = [(0, 0), (0, 0)]
+        widths[axis] = (pad, pad)
+        padded = np.pad(a, widths, mode="edge")
+        a = np.lib.stride_tricks.sliding_window_view(padded, size, axis=axis).max(axis=-1)
+    return a
+
+
+def glow_map(day: Image.Image, night: Image.Image, plan: Plan) -> Image.Image:
+    """The light a building gives off at night: what's warm and bright in its night picture and
+    not in its day one, only where its plan has windows and lamps."""
+    d = np.asarray(day, dtype=np.float32)
+    n = np.asarray(night.resize(day.size, Image.Resampling.LANCZOS), dtype=np.float32)
+    grown = dilate(np.asarray(plan.glow, dtype=np.float32), round(0.08 * plan.ppm) | 1)
+    where = Image.fromarray(grown.astype(np.uint8)).filter(ImageFilter.GaussianBlur(2))
+    m = np.asarray(where, dtype=np.float32)[..., None] / 255
+    warm = np.clip((n.mean(axis=2) - 100) / 90, 0, 1) * (n[..., 0] > n[..., 2] + 15)
+    light = np.clip(n - d * np.array(NIGHT_TINT), 0, 255) * warm[..., None] * m
+    return Image.fromarray(light.astype(np.uint8))
+
+
+def trim_rows(image: Image.Image) -> Image.Image:
+    """`image` without the fully transparent rows above and below it, keeping its width."""
+    alpha = np.asarray(image.getchannel("A")) > 8
+    rows = np.flatnonzero(alpha.any(axis=1))
+    if not len(rows):
+        return image
+    return image.crop((0, int(rows[0]), image.width, int(rows[-1]) + 1))
+
+
+def tileable(image: Image.Image, both: bool = False, overlap: int = 96) -> Image.Image:
+    """`image` made to repeat without a seam: cut at a gap near each end if it has one, or else
+    its ends crossfaded. `both` crossfades top and bottom too."""
+    a = np.asarray(image, dtype=np.float32)
+    if a.shape[2] == 4:
+        cover = (a[..., 3] > 8).sum(axis=0)
+        w = a.shape[1]
+        reach = w // 5
+        left = int(np.argmin(cover[:reach]))
+        right = w - reach + int(np.argmin(cover[w - reach :]))
+        if cover[left] == 0 and cover[right] == 0:
+            return image.crop((left, 0, right, image.height))
+    a = _crossfade(a, overlap)
+    if both:
+        a = _crossfade(a.transpose(1, 0, 2), overlap).transpose(1, 0, 2)
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), image.mode)
+
+
+def _crossfade(a: np.ndarray, overlap: int) -> np.ndarray:
+    w = a.shape[1]
+    overlap = min(overlap, w // 4)
+    t = np.linspace(0, 1, overlap)[None, :, None]
+    out = a[:, : w - overlap].copy()
+    out[:, :overlap] = a[:, w - overlap :] * (1 - t) + a[:, :overlap] * t
+    return out
+
+
+def scaled(image: Image.Image, height: int) -> Image.Image:
+    h = max(1, height)
+    return image.resize(
+        (max(1, round(image.width * h / image.height)), h), Image.Resampling.LANCZOS
+    )
+
+
+def save_webp(image: Image.Image, path: Path, quality: int) -> None:
+    if image.mode == "RGBA" and image.getchannel("A").getextrema()[0] == 255:
+        image = image.convert("RGB")
+    image.save(path, "WEBP", quality=quality, method=WEBP_METHOD)
