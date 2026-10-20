@@ -146,12 +146,10 @@ class TownMap:
 
     @property
     def street(self) -> bool:
-        """Outdoors: a side-view street, or today's village."""
-        return self.kind is MapKind.STREET or (self.kind is None and not self.interior)
-
-    @property
-    def interior(self) -> bool:
-        return self.kind is MapKind.FLOOR or any(door.inside.map == self.id for door in self.doors)
+        """Outdoors: a side-view street, or today's village, where no door leads in."""
+        if self.kind is not None:
+            return self.kind is MapKind.STREET
+        return not any(door.inside.map == self.id for door in self.doors)
 
     def location(self, location_id: str) -> Location:
         for location in self.locations:

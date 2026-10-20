@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 
 from simile.schema import Door, DoorKind, LocationKind, MapTile
-from simile.world.map import TownMap, load_maps, with_every_location
+from simile.world.map import ISO_DIR, TownMap, load_maps, with_every_location
 from simile.world.paths import (
     DOOR,
     Cell,
@@ -223,3 +223,15 @@ def test_every_door_end_leads_to_the_other() -> None:
     assert len(DOORS) == 2 * len(TOWN.doors) == len(CROSSINGS)
     for end, there in DOORS.items():
         assert DOORS[there] == end and end.map != there.map
+
+
+def test_only_the_streets_and_todays_village_are_outdoors() -> None:
+    today = load_maps(ISO_DIR)
+
+    assert {town.id for town in STREETS} == {
+        "banyan_row",
+        "high_street",
+        "kapok_walk",
+        "lychee_lane",
+    }
+    assert [town.id for town in today.values() if town.street] == ["village"]
