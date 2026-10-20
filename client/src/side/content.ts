@@ -14,7 +14,6 @@ const pictures = import.meta.glob<string>('../../../content/papercraft/*/*.webp'
 
 const stem = (path: string) => path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
 
-/** content/street/'s maps, as Tiled files by map id. */
 export const tiledFiles: Record<string, TiledFile> = Object.fromEntries(
   Object.entries(files).map(([path, raw]) => [stem(path), JSON.parse(raw) as TiledFile]),
 );
@@ -23,7 +22,6 @@ export const village = Village.read(tiledFiles);
 
 export const scenery = manifestJson as unknown as SceneryManifest;
 
-/** A piece's picture, by its manifest key. */
 export function pieceUrl(key: string): string {
   const piece = scenery.pieces[key];
   const url = piece && pictures[`../../../content/papercraft/${piece.file}`];

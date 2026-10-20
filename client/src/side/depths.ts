@@ -1,5 +1,3 @@
-/** Draw order, back to front: the street's layers, a building's dollhouse behind its front, the
- * street's furniture and residents, and the foreground. */
 export const DEPTH = {
   sky: 0,
   skyAdd: 1,

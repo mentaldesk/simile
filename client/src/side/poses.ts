@@ -3,7 +3,7 @@ import type { DollManifest } from '../dolls/manifest';
 import { posed, type DollPose, type PoseOptions, type Posed } from '../dolls/rig';
 import type { ClimbKind } from './maps';
 
-/** Steps a cycle is cut into: the rig's poses are worked out once per step and kept. */
+/** Steps a cycle is cut into. */
 export const STEPS = 48;
 
 const POSES: readonly DollPose[] = [
@@ -23,10 +23,9 @@ const OPTIONS: readonly PoseOptions[] = [{}, { seated: true }, { on: 'ladder' },
 
 const viewIndex = (facing: Facing) => (facing === 'north' ? 2 : facing === 'south' ? 1 : 0);
 
-/** Whether a facing draws the side view mirrored, facing left. */
 export const facesLeft = (facing: Facing): boolean => facing.endsWith('west');
 
-/** A doll's poses, each worked out the first time it's drawn: the rig allocates, this doesn't. */
+/** The rig allocates; a cached pose doesn't. */
 export class PoseCache {
   private readonly doll: DollManifest;
   private readonly posed: (Posed | undefined)[] = [];

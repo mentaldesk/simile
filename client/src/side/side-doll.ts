@@ -8,9 +8,7 @@ import { facesLeft, PoseCache } from './poses';
 const SHADOW = 0x140e0a;
 const SHADOW_ALPHA = 0.3;
 
-/** A paper doll posed from a cache, so drawing it each frame allocates nothing. Like the rig's
- * `PaperDoll`, each piece casts a small shadow on those behind it, and the far limbs are darker;
- * here every piece is also tinted by the time of day. Its origin is on the ground under its hips. */
+/** Posed from a cache and tinted by the light; its origin is on the ground under its hips. */
 export class SideDoll extends Phaser.GameObjects.Container {
   readonly doll: DollManifest;
   private readonly cache: PoseCache;
@@ -34,7 +32,7 @@ export class SideDoll extends Phaser.GameObjects.Container {
     this.shown = undefined;
   }
 
-  /** Poses the doll as `drawn` says, in `tint`. Does nothing if neither has changed. */
+  /** Does nothing unless its pose step, facing or tint changed. */
   show({ pose, facing, phase, seated, on }: Drawn, tint: number): this {
     const posed = this.cache.get(pose, facing, phase, seated, on);
     const flip = posed.view === 'side' && facesLeft(facing);

@@ -26,10 +26,9 @@ import { climbRuns } from './runs';
 import type { LayerName, SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
 
-/** How far a building's front lifts as it comes off, and how quickly. */
 const LIFT_M = 1.2;
 const OPEN_SECONDS = 0.45;
-/** How far past the street's ends the ground runs, for views wider than a short street. */
+/** For views wider than a short street. */
 const GROUND_BEYOND_M = 40;
 const GROUND_DEPTH_M = 40;
 const FOREGROUND_SCALE = 1.4;
@@ -38,7 +37,7 @@ const LAMP_HEAD_M = 3.35;
 const LAMP_LIGHT_M = 3.6;
 const BLOOM = 0.8;
 const LADDER_ABOVE_M = 0.6;
-/** How faint the street's furniture and people are in front of an open dollhouse. */
+/** In front of an open dollhouse. */
 export const GHOST_ALPHA = 0.35;
 
 type Image = Phaser.GameObjects.Image;
@@ -53,7 +52,7 @@ type Layer = {
   group: TintGroup;
   depth: number;
   images: Image[];
-  /** The haze over the far and mid layers, or the sky's additive top-up past full brightness. */
+  /** Haze over the far and mid layers, or the sky's additive top-up. */
   extra: Image[];
   extraOn: boolean;
 };
@@ -77,13 +76,10 @@ export type Content = {
   pieceUrl(key: string): string;
 };
 
-/** One street drawn from its map and the papercraft scenery: parallax layers, the ground, its
- * buildings' fronts with their glow and murals, its furniture, and a dollhouse behind each front
- * that has floors. */
 export class StreetView {
   readonly map: SideMap;
   readonly feet: number;
-  /** The feet line of the lowest ground, the foreground's reference. */
+  /** The foreground's reference. */
   readonly lowest: number;
   readonly width: number;
   readonly tints = new Tints();
@@ -117,7 +113,6 @@ export class StreetView {
     for (const item of map.furniture) this.buildFurniture(item);
   }
 
-  /** Every picture a street needs, by manifest key. */
   static pieces(content: Content, map: SideMap): string[] {
     const { scenery: manifest, village } = content;
     const layers = manifest.streets[map.id] ?? {};
@@ -134,17 +129,16 @@ export class StreetView {
     );
   }
 
-  /** The house a building's floors are drawn in, if it has any. */
   house(name: string): House | undefined {
     return this.byName.get(name)?.house;
   }
 
-  /** Whether a building's floors show: its front is off, or coming off or going back on. */
+  /** Its front is off, coming off or going back on. */
   isOpen(name: string | undefined): boolean {
     return !!name && (this.byName.get(name)?.open ?? 0) > 0;
   }
 
-  /** How opaque something on the street at `x` is: faint in front of an open dollhouse. */
+  /** Faint in front of an open dollhouse. */
   ghost(x: number): number {
     let alpha = 1;
     for (const { building, open } of this.fronts) {
@@ -155,7 +149,6 @@ export class StreetView {
     return alpha;
   }
 
-  /** A lift car round a rider at `x`, `feet`, riding between the floor lines `from` and `to`. */
   ride(building: string, x: number, feet: number, from: number, to: number): void {
     const house = this.house(building);
     if (!house) return;
@@ -164,7 +157,6 @@ export class StreetView {
     this.rides.set(house, count + 1);
   }
 
-  /** After the frame's rides: the cars nobody's riding go back on their floors. */
   endRides(): void {
     for (const { house } of this.fronts) {
       if (!house) continue;
@@ -173,8 +165,6 @@ export class StreetView {
     }
   }
 
-  /** Moves the layers for the camera, opens the front of the building the player is in and closes
-   * the others, and takes the light when it changes. */
   update(worldView: Phaser.Geom.Rectangle, light: Light, lightChanged: boolean, open: string | undefined, dt: number): void {
     if (lightChanged) this.light(light);
     this.view.left = worldView.x;
@@ -201,7 +191,6 @@ export class StreetView {
     }
   }
 
-  /** Draws each mural the server has on this street's walls. */
   setMurals(walls: readonly Wall[], load: (url: string) => Promise<string>): void {
     const mine = walls.filter((wall) => wall.map === this.map.id && wall.mural);
     const signature = mine.map((wall) => `${wall.id}:${wall.mural!.image}`).join('|');

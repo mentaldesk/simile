@@ -18,14 +18,12 @@ import { crossing } from './runs';
 import type { SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
 
-/** Where on a floor's back wall its windows go, as shares of the building's width. */
 const WINDOWS = [0.3, 0.7];
 const WINDOW_ROW = 1.9;
 const SLAB_M = 0.3;
 const FRAME_M = 1.0;
-/** The picture frame's moulding in its picture's px, kept as the frame stretches to a painting. */
+/** In the frame picture's px, kept as it stretches round a painting. */
 const MOULDING = { left: 13, right: 11, top: 18, bottom: 14 };
-/** How much of its wall a frame may take, and its shape while it's empty. */
 const FRAME_FILL = 0.9;
 const EMPTY_ASPECT = 0.85;
 const LADDER_ABOVE_M = 0.6;
@@ -44,8 +42,6 @@ type Hung = {
 
 type Car = { image: Phaser.GameObjects.Image; floorLine: number };
 
-/** A building's dollhouse, drawn in place on its street behind its front: each floor's back
- * wall, windows, paintings, furniture, stairs, ladders and lift, and the slabs between them. */
 export class House {
   readonly name: string;
   readonly box: Dollhouse;
@@ -55,7 +51,6 @@ export class House {
   private readonly images: Phaser.GameObjects.Image[] = [];
   private readonly cars: Car[] = [];
   private readonly riding: Phaser.GameObjects.Image[] = [];
-  /** The floor lines a ride leaves from or arrives at this frame, whose cars are away. */
   private readonly away: number[] = [];
   private readonly frames = new Map<string, Hung>();
   private readonly tints: Tints;
@@ -82,7 +77,6 @@ export class House {
     this.setShown(false);
   }
 
-  /** The pictures every floor of every building needs. */
   static pieces(manifest: SceneryManifest, building: string, village: Village): string[] {
     const floors = village.floors(building);
     const furniture = floors.flatMap((map) => map.furniture.map((item) => furnitureKey(manifest, item, map.id)));
@@ -110,8 +104,7 @@ export class House {
     if (!shown) for (const image of this.riding) image.setVisible(false);
   }
 
-  /** The car on each floor stays put except where a ride leaves or arrives; a moving car is
-   * drawn round each rider. Call with every rider's position each frame, then `endRides`. */
+  /** Hides the cars where a ride leaves and arrives, and draws one round the rider. */
   ride(index: number, x: number, feet: number, from: number, to: number): void {
     this.away.push(from, to);
     let image = this.riding[index];
@@ -129,7 +122,6 @@ export class House {
     this.away.length = 0;
   }
 
-  /** Hangs each painting the server has in this building's frames. */
   hang(frames: readonly Frame[], load: (url: string) => Promise<string>): void {
     for (const hung of this.frames.values()) {
       const painting = frames.find(({ map, id }) => map === hung.map && id === hung.id)?.painting;
@@ -148,7 +140,6 @@ export class House {
     }
   }
 
-  /** Stretches a frame's moulding round a painting of `aspect`, as tall as it can be. */
   private fit(hung: Hung, aspect: number): void {
     const { frame, shadow, image } = hung;
     if (!frame) return;
@@ -277,7 +268,6 @@ export class House {
     this.add(image, onWall ? DEPTH.frame : DEPTH.furniture);
   }
 
-  /** A drop shadow for a stretched or mirrored piece, matching its scale. */
   private shadowOf(image: Phaser.GameObjects.Image, key: string): void {
     const shadow = dropShadow(this.scene, this.textures, key, [image.originX, image.originY], image.x, image.y, {
       ppm: PPM,

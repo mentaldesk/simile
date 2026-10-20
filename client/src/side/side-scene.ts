@@ -25,15 +25,15 @@ import { sideWorks } from './works';
 
 export const SIDE_SCENE = 'side-world';
 
-/** The start when the snapshot's player isn't on a side-view map: the square's entry. */
+/** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
 const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
-/** Sim hours the light can drift before it's worked out again: half a sim minute. */
+/** Half a sim minute. */
 const LIGHT_STEP_HOURS = 1 / 120;
 const DOLL_WIDTH_M = 0.7;
 const CONTACT_M = 0.9;
 const BUBBLE_GAP_M = 0.15;
-/** Room above a head for the target's name, so a speech bubble sits over it. */
+/** Room for the target's name, so a speech bubble sits over it. */
 const NAME_M = 0.45;
 
 type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
@@ -42,8 +42,7 @@ type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x
 const isDev = import.meta.env.DEV;
 const params = new URLSearchParams(globalThis.location?.search ?? '');
 
-/** The village from the side, from part 2's maps, part 3's scenery and part 4's dolls:
- * src/side/README.md. Started by `?side` in development until the cut-over starts it. */
+/** Started by `?side` in development until the cut-over: README.md. */
 export class SideScene extends Phaser.Scene {
   private content?: Content;
   private pictures!: SideTextures;
@@ -62,11 +61,10 @@ export class SideScene extends Phaser.Scene {
   private readonly size = { width: 0, height: 0 };
   private readonly sent = { x: NaN, y: NaN, map: '' };
   private readonly controls: Controls = { x: 0, y: 0, use: false };
-  /** Fading to another street: the player waits. */
   private passing = false;
   private works = -1;
   private snap = true;
-  /** E, pressed since the last frame: a tap shorter than a frame still counts. */
+  /** A tap shorter than a frame still counts. */
   private used = false;
 
   constructor() {
@@ -110,7 +108,7 @@ export class SideScene extends Phaser.Scene {
     this.cameras.main.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
   }
 
-  /** Puts the player somewhere else at once: for the dev harness. */
+  /** For the dev harness. */
   teleport(to: MapPosition): void {
     this.takeDoorTo(to);
   }
@@ -143,7 +141,6 @@ export class SideScene extends Phaser.Scene {
     this.report(player.mapPosition, time / 1000);
   }
 
-  /** Sends the player's position as it changes, at most as often as the throttle lets it. */
   private report(position: MapPosition, now: number): void {
     const { sent } = this;
     if (position.x === sent.x && position.y === sent.y && position.map === sent.map) return;
@@ -169,7 +166,6 @@ export class SideScene extends Phaser.Scene {
     return controls;
   }
 
-  /** Zooms for the canvas and eases the camera to the player along the street. */
   private frame(dt: number, street: StreetView): void {
     const camera = this.cameras.main;
     const zoom = sideZoom(camera);
@@ -194,8 +190,7 @@ export class SideScene extends Phaser.Scene {
     this.takeDoorTo({ x: door.to.x, y: door.to.y, map: door.to.map });
   }
 
-  /** In through a front door the dollhouse opens where the player stands; to another street the
-   * view fades out, loads it and fades back in. */
+  /** A front door just opens the dollhouse; another street fades out and in. */
   private takeDoorTo(to: MapPosition): void {
     const { content, player, street } = this;
     const map = content?.village.map(to.map);
@@ -292,7 +287,6 @@ export class SideScene extends Phaser.Scene {
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
   }
 
-  /** A resident's or the player's doll, loading it the first time it's asked for. */
   private figure(id: string): Figure | undefined {
     const known = this.figures.get(id);
     if (known || this.loadingDolls.has(id)) return known;
@@ -324,7 +318,6 @@ export class SideScene extends Phaser.Scene {
     return { x, y, map: resident.map };
   }
 
-  /** What the dialogue UI draws over: positions on each map, and each doll's box on the canvas. */
   private worldView(): WorldView {
     const canvasBox = (id: string) => {
       const figure = this.figures.get(id);
@@ -361,7 +354,7 @@ const RESIDENT_DOLLS = Object.keys(committedDolls)
   .filter((id) => id !== PLAYER_ID)
   .sort();
 
-/** A committed doll for any id: its own, or one picked by its id for a resident with none yet. */
+/** One picked by its id for a resident with none yet. */
 function dollFor(id: string): DollManifest {
   const own = committedDolls[id];
   if (own) return own;

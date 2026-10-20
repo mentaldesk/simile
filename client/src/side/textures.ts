@@ -7,8 +7,7 @@ const TILE_FRAME = 'tile';
 /** Alpha above which a column of a tiling picture counts as drawn. */
 const OPAQUE = 8;
 
-/** A picture made from another: its texture `key`, its `name` to make more from, and the scale
- * and padding it was drawn at, to scale it back up. */
+/** `name` makes more from it; `scale` and `pad` scale it back up. */
 export type Derived = { key: string; name: string; scale: number; pad: number };
 
 function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -20,8 +19,7 @@ function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRend
   return [canvas, context];
 }
 
-/** The scene's own pictures, each filtered smoothly though the game is set for pixel art, and
- * the silhouettes, light maps and stretched runs made from them, each made once. */
+/** Smoothly filtered, though `main.ts` sets `pixelArt`. */
 export class SideTextures {
   private readonly scene: Phaser.Scene;
   private readonly loading = new Map<string, Promise<string>>();
@@ -31,7 +29,6 @@ export class SideTextures {
     this.scene = scene;
   }
 
-  /** Loads a picture once under `key`, resolving to its texture key. */
   load(key: string, url: string): Promise<string> {
     const texture = PREFIX + key;
     let loading = this.loading.get(texture);
@@ -52,7 +49,7 @@ export class SideTextures {
     return PREFIX + key;
   }
 
-  /** A blurred, dark silhouette of a loaded picture at `scale` of its size, from its alpha. */
+  /** Blurred and dark, from its alpha. */
   shadow(key: string, scale: number, blur: number): Derived {
     return this.make(`${key}#shadow${scale}`, key, (source, context, pad) => {
       context.filter = `blur(${blur}px)`;
@@ -64,7 +61,6 @@ export class SideTextures {
     }, scale, Math.ceil(blur * 2.5));
   }
 
-  /** A light map at `scale`, blurred by `blur` px for its bloom, or sharp. */
   light(key: string, scale: number, blur = 0): Derived {
     return this.make(`${key}#light${scale}x${blur}`, key, (source, context, pad) => {
       context.fillStyle = '#000';
@@ -74,7 +70,6 @@ export class SideTextures {
     }, scale, Math.ceil(blur * 2.5));
   }
 
-  /** A picture blurred where it is: the out-of-focus foreground. */
   blurred(key: string, blur: number): Derived {
     return this.make(`${key}#blur${blur}`, key, (source, context, pad) => {
       context.filter = `blur(${blur}px)`;
@@ -82,7 +77,7 @@ export class SideTextures {
     }, 1, 0);
   }
 
-  /** A run `width` px wide: the picture's ends kept and its middle repeated between them. */
+  /** Its ends kept and its middle repeated. */
   stretched(key: string, width: number): Derived {
     return this.make(`${key}@${width}`, key, (source, context) => {
       const { end, middle, repeats } = stretchParts(width, source.width);
@@ -96,7 +91,6 @@ export class SideTextures {
     }, 1, 0, width);
   }
 
-  /** A picture repeated along a band `width` by `height` px, scaled to the band's height. */
   band(key: string, width: number, height: number): Derived {
     return this.make(`${key}#band${width}x${height}`, key, (source, context) => {
       const step = (source.width * height) / source.height;
@@ -104,8 +98,7 @@ export class SideTextures {
     }, height / this.source(key).height, 0, width);
   }
 
-  /** Black, more opaque towards the top and the sides: a room's back wall in shadow under its
-   * ceiling and in its corners. */
+  /** Darker under the ceiling and in the corners. */
   roomShade(): string {
     const key = `${PREFIX}room-shade`;
     if (this.scene.textures.exists(key)) return key;
@@ -125,8 +118,7 @@ export class SideTextures {
     return key;
   }
 
-  /** A frame of a tiling picture without the empty columns at its ends, so its copies meet
-   * edge to edge: some of #309's strips start with a transparent margin. */
+  /** Without the empty columns some of #309's strips start with, so copies meet. */
   tileFrame(key: string): { frame: string; x: number; width: number } {
     const texture = this.scene.textures.get(PREFIX + key);
     if (texture.has(TILE_FRAME)) {
@@ -148,8 +140,7 @@ export class SideTextures {
     return { frame: TILE_FRAME, x: first, width: last - first + 1 };
   }
 
-  /** The mean colour of the solid part of a picture's lower third, to carry the ground on below
-   * it: a ground strip fades out at its bottom edge. */
+  /** A ground strip fades out at its bottom edge. */
   bottomColour(key: string): number {
     const source = this.source(key);
     const top = Math.floor((source.height * 2) / 3);
@@ -168,7 +159,6 @@ export class SideTextures {
     return (mean(0) << 16) | (mean(1) << 8) | mean(2);
   }
 
-  /** A soft round light, white in the middle, for lamps. */
   lamp(): string {
     const key = `${PREFIX}lamp-light`;
     if (this.scene.textures.exists(key)) return key;
@@ -184,7 +174,6 @@ export class SideTextures {
     return key;
   }
 
-  /** A soft dark ellipse for where someone stands. */
   contact(): string {
     const key = `${PREFIX}contact-shadow`;
     if (this.scene.textures.exists(key)) return key;
@@ -199,7 +188,6 @@ export class SideTextures {
     return key;
   }
 
-  /** Frees every picture this loaded or made. */
   destroy(): void {
     for (const derived of this.derived.values()) this.scene.textures.remove(derived.key);
     for (const texture of this.loading.keys()) if (this.scene.textures.exists(texture)) this.scene.textures.remove(texture);
@@ -207,7 +195,6 @@ export class SideTextures {
     this.loading.clear();
   }
 
-  /** Frees a picture and everything made from it. */
   unload(key: string): void {
     const texture = PREFIX + key;
     for (const [name, derived] of this.derived) {

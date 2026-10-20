@@ -4,24 +4,21 @@ import { CATCH_UP_TILES, IDLE_AFTER_SECONDS, MAX_BEHIND_TILES, TELEPORT_TILES } 
 import { TILE_M } from './layout';
 import { climbAt, type ClimbKind, type SideMap } from './maps';
 
-/** Metres of street a doll covers in one walk cycle, two strides at 2.04 m tall. */
+/** Two strides of a 2.04 m doll. */
 export const WALK_CYCLE_M = 1.6;
-/** Metres along the flight for two treads, and up the ladder for two rungs. */
+/** Two treads, or two rungs. */
 export const CLIMB_CYCLE_M: Record<ClimbKind, number> = { stairs: 0.78, ladder: 0.6 };
-/** Seconds for a cycle of a pose that moves in place: reading, working, looking. */
 export const IDLE_CYCLE_SECONDS = 3.2;
 
-/** Tiles a second up stairs or a ladder, and in a lift. */
+/** Tiles a second. */
 export const CLIMB_SPEED: Record<ClimbKind, number> = { stairs: 1.3, ladder: 1.0 };
 export const RIDE_SPEED = 2.4;
 
-/** Positions kept to walk through: more, and the walker is placed, as while the scene isn't drawn. */
+/** Past this the walker is placed: nothing walks it while the scene isn't drawn. */
 const MAX_WAYPOINTS = 16;
 
-/** Spots where `reading` and `working` sit rather than stand. */
 const SEATED_SPOTS = new Set(['desk', 'seat']);
 
-/** How a figure is drawn: the rig's pose and facing, how far through its cycle, and the options. */
 export type Drawn = {
   pose: DollPose;
   facing: Facing;
@@ -32,7 +29,6 @@ export type Drawn = {
 
 export const sideways = (heading: number): Facing => (heading < 0 ? 'west' : 'east');
 
-/** Whether reading or working sits here: at a desk or on a seat. */
 export function seatedAt(map: SideMap | undefined, x: number, y: number): boolean {
   for (const spot of map?.spots ?? NO_SPOTS) {
     if (spot.x === x && spot.y === y && SEATED_SPOTS.has(spot.type)) return true;
@@ -42,7 +38,7 @@ export function seatedAt(map: SideMap | undefined, x: number, y: number): boolea
 
 const NO_SPOTS: SideMap['spots'] = [];
 
-/** The stairs or ladder a position is on: its cell's, or mid-step between rows, either cell's. */
+/** Mid-step between rows, either cell's. */
 export function climbingAt(map: SideMap, x: number, y: number): ClimbKind | undefined {
   const cx = Math.floor(x + 0.5);
   const cy = Math.floor(y + 0.5);
@@ -51,8 +47,6 @@ export function climbingAt(map: SideMap, x: number, y: number): ClimbKind | unde
   return climbAt(map, x0, y0) ?? climbAt(map, x0 + 1, y0 + 1) ?? climbAt(map, x0, y0 + 1) ?? climbAt(map, x0 + 1, y0);
 }
 
-/** What a resident still on one map looks like: walking while it moves, climbing on stairs or a
- * ladder, and otherwise the pose and facing the server gave it. */
 export function drawnOnMap(
   out: Drawn,
   map: SideMap | undefined,
@@ -83,8 +77,6 @@ export function drawnOnMap(
   return out;
 }
 
-/** What someone crossing between floors looks like: climbing the stairs the way they go, a
- * ladder from the back, and riding a lift facing out. */
 export function drawnCrossing(out: Drawn, kind: ClimbKind | 'lift', heading: number, travelled: number): Drawn {
   out.seated = false;
   if (kind === 'lift') {
@@ -103,11 +95,9 @@ export function drawnCrossing(out: Drawn, kind: ClimbKind | 'lift', heading: num
 
 export const emptyDrawn = (): Drawn => ({ pose: 'standing', facing: 'south', phase: 0, seated: false });
 
-/** A position the server moves: it walks through each one it's sent, in order, in place. */
 export class Walker {
   readonly position: { x: number; y: number };
   private readonly waypoints: { x: number; y: number }[] = [];
-  /** Tiles moved in all, for the walk cycle, and the last way it went along x. */
   travelled = 0;
   heading = 1;
   private still = Infinity;

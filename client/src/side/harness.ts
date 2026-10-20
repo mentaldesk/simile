@@ -1,5 +1,4 @@
-// The `?side` dev harness: a stand-in snapshot on the side-view maps, residents moved through
-// `server.dispatch`, murals and paintings from content/works/, and keys for the clock and streets.
+// The `?side` dev harness: README.md.
 import Phaser from 'phaser';
 import { server, type Entity, type Facing, type Frame, type Pose, type Position, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
@@ -45,7 +44,7 @@ const NAMES: Record<string, string> = {
 type Spot = MapPosition & { pose: Pose; facing: Facing };
 const spot = (map: string, x: number, y: number, pose: Pose, facing: Facing): Spot => ({ map, x, y, pose, facing });
 
-/** Where everyone starts: every pose, facing right, left, back and front. */
+/** Every pose, facing right, left, back and front. */
 const STARTS: Record<string, Spot> = {
   kofi: spot('high_street', 30, 15, 'walking', 'east'),
   priya: spot('high_street', 48, 15, 'sitting', 'south'),
@@ -60,7 +59,6 @@ const STARTS: Record<string, Spot> = {
   ingrid: spot('gallery_floor_0', 10, 2, 'looking', 'north'),
 };
 
-/** Moves one resident about by the protocol, as the server will. */
 class Puppet {
   readonly id: string;
   at: Spot;
@@ -92,7 +90,6 @@ class Puppet {
     this.send(this.at, 'standing', facing);
   }
 
-  /** Along a run of stairs or a ladder on the street, from whichever end it's at. */
   async climb(path: Path): Promise<void> {
     const points = path.points[0].x === this.at.x && path.points[0].y === this.at.y ? path.points : [...path.points].reverse();
     for (let i = 1; i < points.length; i++) {
@@ -105,7 +102,6 @@ class Puppet {
     }
   }
 
-  /** Takes the stairs, ladder or lift at this tile to the other floor. */
   async cross(): Promise<void> {
     const link = this.village.linkAt(this.at.map, this.at.x, this.at.y);
     const across = link && crossing(this.village, link);
@@ -126,7 +122,6 @@ function puppets(village: Village): Record<string, Puppet> {
   return Object.fromEntries(Object.entries(STARTS).map(([id, at]) => [id, new Puppet(id, at, village)]));
 }
 
-/** What each resident does, round and round. */
 function direct(all: Record<string, Puppet>, village: Village): void {
   const { kofi, odalys, desmond, marguerite, tobias, ingrid } = all;
   void forever(async () => {
@@ -273,8 +268,7 @@ function showPanel(): void {
     climb; E rides a lift. [ and ] move the clock an hour; 1 to 4 go to each street.</p>`;
 }
 
-/** Frame times, from the start of each step to the end of its render, and the gaps between
- * frames, for the last 600 frames. */
+/** Work from each step's start to the end of its render, and the gaps between frames. */
 function measure(scene: Phaser.Scene): void {
   const times = new Float64Array(600);
   const gaps = new Float64Array(600);

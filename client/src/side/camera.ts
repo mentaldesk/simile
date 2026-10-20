@@ -1,27 +1,22 @@
 import { PPM } from './layout';
 import type { LayerName } from './scenery';
 
-/** How much of the street the view shows, top to bottom, unless the window is too narrow. */
 export const VIEW_HEIGHT_M = 19;
 export const MIN_VIEW_WIDTH_M = 16;
-/** How far down the view the street's feet line sits, and the highest and lowest the player's
- * feet go, as on a dollhouse's top floor or down by the river. */
+/** The street's feet line this far down the view; the player's feet stay between the other two. */
 export const FEET_AT = 0.82;
 export const HEADROOM = 0.3;
 export const FOOTROOM = 0.84;
-/** How quickly the camera catches up, a share of the gap a second. */
 export const FOLLOW_RATE = 6;
 
 export type Size = { width: number; height: number };
 export type Point = { x: number; y: number };
 
-/** Canvas px per world px: the street `VIEW_HEIGHT_M` tall, or `MIN_VIEW_WIDTH_M` wide. */
 export function sideZoom(canvas: Size): number {
   return Math.min(canvas.height / (VIEW_HEIGHT_M * PPM), canvas.width / (MIN_VIEW_WIDTH_M * PPM));
 }
 
-/** Where the view's middle goes: on the player along the street, kept on the street where it's
- * wider than the view, and at street level unless the player climbs high or goes down below it. */
+/** On the player along the street, kept on it, and at street level unless the player is high or low. */
 export function viewCentre(player: Point, streetFeet: number, streetWidth: number, view: Size, out: Point): Point {
   const half = view.width / 2;
   out.x = streetWidth <= view.width ? streetWidth / 2 : Math.min(Math.max(player.x, half), streetWidth - half);
@@ -30,11 +25,9 @@ export function viewCentre(player: Point, streetFeet: number, streetWidth: numbe
   return out;
 }
 
-/** The view's middle at street level, the reference the layers' heights are given at. */
 export const streetCentreY = (streetFeet: number, view: Size): number =>
   streetFeet - FEET_AT * view.height + view.height / 2;
 
-/** Eases the camera towards its target, framerate-independent. */
 export function follow(current: Point, target: Point, dt: number, out: Point): Point {
   const t = 1 - Math.exp(-FOLLOW_RATE * dt);
   out.x = current.x + (target.x - current.x) * t;
@@ -42,8 +35,7 @@ export function follow(current: Point, target: Point, dt: number, out: Point): P
   return out;
 }
 
-/** Each street layer's height and where its bottom sits, in metres below the feet line (up is
- * negative): #309's previews' composition. The sky fills the view and the ground is the map's. */
+/** Metres below the street's feet line, up negative: #309's previews' composition. */
 export const LAYER_PLACES: Record<Exclude<LayerName, 'sky' | 'ground'>, { bottom: number; height?: number }> = {
   far: { bottom: -7.5, height: 5.75 },
   mid: { bottom: -2.75, height: 6.25 },
@@ -51,8 +43,6 @@ export const LAYER_PLACES: Record<Exclude<LayerName, 'sky' | 'ground'>, { bottom
   foreground: { bottom: 4.3, height: 2.8 },
 };
 
-/** Where a layer is drawn for a camera: copies `width` apart from `first`, `count` of them, moved
- * `parallax` as far as the camera along x, and up and down. */
 export type Copies = { first: number; count: number; y: number };
 
 export function layerCopies(

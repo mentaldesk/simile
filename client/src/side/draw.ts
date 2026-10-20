@@ -7,7 +7,6 @@ import type { Derived, SideTextures } from './textures';
 export type TintGroup = 'sky' | 'far' | 'mid' | 'near' | 'ground' | 'foreground' | 'inside';
 type Tintable = { setTint(colour: number): unknown };
 
-/** What each group of pictures is tinted by, set again only when the light changes. */
 export class Tints {
   private readonly groups = new Map<TintGroup, Tintable[]>();
   private readonly fills: { rect: Phaser.GameObjects.Rectangle; base: number; group: TintGroup }[] = [];
@@ -30,7 +29,6 @@ export class Tints {
     return item;
   }
 
-  /** A solid fill, its colour multiplied by its group's tint. */
   fill(group: TintGroup, rect: Phaser.GameObjects.Rectangle, base: number): Phaser.GameObjects.Rectangle {
     this.fills.push({ rect, base, group });
     rect.setFillStyle(multiply(base, this.colours[group]));
@@ -55,7 +53,6 @@ export function multiply(a: number, b: number): number {
   return (channel(16) << 16) | (channel(8) << 8) | channel(0);
 }
 
-/** A picture made smaller and padded, placed so it lines up with its source at `anchor`. */
 export function placeDerived(
   scene: Phaser.Scene,
   derived: Derived,
@@ -76,7 +73,6 @@ export function placeDerived(
     .setScale(scale / derived.scale);
 }
 
-/** The run of copies a tiled picture needs to fill `x0` to `x1`, the last one cropped. */
 export function tileAlong(
   scene: Phaser.Scene,
   key: string,
@@ -96,7 +92,7 @@ export function tileAlong(
   return images;
 }
 
-/** A furniture piece's picture key for an item, its colour variant picked by where it is. */
+/** Its colour variant is picked by where it is. */
 export function furnitureKey(manifest: SceneryManifest, item: Placed, mapId: string): string | undefined {
   const entry = manifest.furniture[item.name];
   if (!entry) return undefined;
@@ -106,7 +102,6 @@ export function furnitureKey(manifest: SceneryManifest, item: Placed, mapId: str
   return choices[(hash >>> 0) % choices.length];
 }
 
-/** Sprite shadows: offset down and right of the picture, blurred, from its alpha. */
 export const SHADOW_OFFSET_M = { x: 0.17, y: 0.12 };
 export const SHADOW_ALPHA = 0.36;
 

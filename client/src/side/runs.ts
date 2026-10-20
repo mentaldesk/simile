@@ -1,6 +1,5 @@
 import { climbAt, isWalkable, type Cell, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 
-/** A polyline in cells, with its length. */
 export type Path = { points: readonly Cell[]; lengths: readonly number[]; total: number };
 
 export function pathOf(points: readonly Cell[]): Path {
@@ -8,7 +7,7 @@ export function pathOf(points: readonly Cell[]): Path {
   return { points, lengths, total: lengths.reduce((sum, length) => sum + length, 0) };
 }
 
-/** The point `distance` along the path, clamped to its ends, written into `out`. */
+/** Clamped to the path's ends, written into `out`. */
 export function pointAlong(path: Path, distance: number, out: Cell): Cell {
   const { points, lengths } = path;
   let left = Math.min(Math.max(distance, 0), path.total);
@@ -26,7 +25,6 @@ export function pointAlong(path: Path, distance: number, out: Cell): Cell {
   return out;
 }
 
-/** How far along the path a point on it is, to the nearest of its points' segments. */
 export function distanceTo(path: Path, point: Cell): number {
   let best = Infinity;
   let at = 0;
@@ -46,8 +44,7 @@ export function distanceTo(path: Path, point: Cell): number {
   return at;
 }
 
-/** A run of stairs or a ladder within one map, bottom first, from a standing cell to the cell
- * you step off onto at the top: beyond the top stair, or beside a ladder's top rung. */
+/** Bottom first, to the cell stepped off onto at the top. */
 export type Run = { kind: ClimbKind; map: string; path: Path };
 
 function groups(map: SideMap, kind: ClimbKind, joined: (a: Cell, b: Cell) => boolean): Cell[][] {
@@ -86,7 +83,6 @@ function stairsRun(map: SideMap, stairs: Cell[]): Run | undefined {
   return undefined;
 }
 
-/** Every run of stairs or ladder on a map, from its `climbable` layer. */
 export function climbRuns(map: SideMap): Run[] {
   const ladders = groups(map, 'ladder', (a, b) => a.x === b.x && Math.abs(a.y - b.y) === 1);
   const stairs = groups(map, 'stairs', (a, b) => Math.abs(a.x - b.x) === 1 && Math.abs(a.y - b.y) === 1);
@@ -96,7 +92,6 @@ export function climbRuns(map: SideMap): Run[] {
   ].filter((run): run is Run => run !== undefined);
 }
 
-/** The run a cell is on, or at either end of, and how far along it the cell is. */
 export function runAt(runs: readonly Run[], cell: Cell): { run: Run; distance: number } | undefined {
   for (const run of runs) {
     const index = run.path.points.findIndex(({ x, y }) => x === cell.x && y === cell.y);
@@ -105,18 +100,16 @@ export function runAt(runs: readonly Run[], cell: Cell): { run: Run; distance: n
   return undefined;
 }
 
-/** Stairs, a ladder or a lift between two floors, as walked from `from` to `to`, in street cells. */
+/** In street cells, as walked from `from` to `to`. */
 export type Crossing = { kind: Exclude<Link['kind'], 'door'>; from: Link; to: Link; path: Path; rising: boolean };
 
-/** The lift car's middle on a floor, from its `lift` furniture nearest the end. */
 function carX(map: SideMap, end: Cell): number {
   const cars = map.furniture.filter(({ name }) => name === 'lift');
   const nearest = cars.sort((a, b) => Math.abs(a.x - end.x) - Math.abs(b.x - end.x))[0];
   return nearest ? nearest.x + (nearest.w - 1) / 2 : end.x;
 }
 
-/** The way across a link between floors: straight along stairs or up a ladder, or into the lift
- * car, up or down the shaft, and out. Undefined for a door, or a link to a missing map. */
+/** Undefined for a door or a link to a missing map. */
 export function crossing(village: Village, from: Link): Crossing | undefined {
   if (from.kind === 'door') return undefined;
   const to = village.far(from);

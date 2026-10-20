@@ -1,6 +1,6 @@
 import type { Position } from '../net';
 
-/** The parts of a Tiled map that content/street/README.md describes. */
+/** As content/street/README.md describes them. */
 export type TiledProperty = { name: string; type: string; value: unknown };
 export type TiledObject = {
   name: string;
@@ -26,7 +26,6 @@ export type Cell = { x: number; y: number };
 export type ClimbKind = 'stairs' | 'ladder';
 export type LinkKind = 'door' | 'stairs' | 'ladder' | 'lift';
 
-/** An object's cells and properties. */
 export type Placed = Cell & {
   name: string;
   type: string;
@@ -35,7 +34,6 @@ export type Placed = Cell & {
   props: Record<string, unknown>;
 };
 
-/** One end of a door, stairs, ladder or lift, on `map`. */
 export type Link = Cell & {
   id: string;
   kind: LinkKind;
@@ -53,7 +51,7 @@ export type SideMap = {
   building?: string;
   floor: number;
   room?: string;
-  /** The street it's drawn on, itself for a street. */
+  /** Itself for a street. */
   street: string;
   /** The street cell under its top-left cell. */
   offset: Cell;
@@ -102,7 +100,6 @@ function tiles(file: TiledFile, layer: string, value: (gid: number) => number): 
   return cells;
 }
 
-/** A side-view map, read from its Tiled file. */
 export function readMap(id: string, file: TiledFile): SideMap {
   const props = propsOf(file.properties);
   const names = new Map<number, unknown>();
@@ -162,24 +159,22 @@ export function climbAt(map: SideMap, x: number, y: number): ClimbKind | undefin
   return code ? CLIMB_KINDS[code - 1] : undefined;
 }
 
-/** Walkable and not on a run of stairs or a ladder: somewhere to stand. */
 export const isStanding = (map: SideMap, x: number, y: number): boolean =>
   isWalkable(map, x, y) && !climbAt(map, x, y);
 
-/** The top of the solid ground column `x` stands on, under any ledges. */
+/** Under any ledges. */
 export function groundRow(map: SideMap, x: number): number {
   let y = map.height;
   while (y > 0 && isSolid(map, x, y - 1)) y--;
   return y;
 }
 
-/** The tile a position is read as: W2's `floor(p + 0.5)`. */
+/** W2's `floor(p + 0.5)`. */
 export const cellOf = ({ x, y }: { x: number; y: number }): Cell => ({
   x: Math.floor(x + 0.5),
   y: Math.floor(y + 0.5),
 });
 
-/** Every street and floor, and how they join. */
 export class Village {
   readonly maps: ReadonlyMap<string, SideMap>;
   readonly streets: readonly SideMap[];
@@ -208,22 +203,21 @@ export class Village {
     return this.maps.get(id);
   }
 
-  /** A building's floors, ground floor first. */
+  /** Ground floor first. */
   floors(building: string): readonly SideMap[] {
     return this.floorsByBuilding.get(building) ?? [];
   }
 
-  /** The link ending on this tile, which no other link shares. */
+  /** No two links share an end tile. */
   linkAt(map: string, x: number, y: number): Link | undefined {
     return this.ends.get(endKey(map, x, y));
   }
 
-  /** The other end of a link. */
   far(link: Link): Link | undefined {
     return this.linkAt(link.to.map, link.to.x, link.to.y);
   }
 
-  /** Where a position on any map is on its street, in cells. */
+  /** In cells. */
   onStreet(position: Position): Cell & { street: string } {
     const map = this.maps.get(position.map ?? '');
     const offset = map?.offset ?? { x: 0, y: 0 };

@@ -5,11 +5,10 @@ import { drawnCrossing, emptyDrawn, RIDE_SPEED, sideways, WALK_CYCLE_M, type Dra
 import { TILE_M } from './layout';
 import { climbRuns, crossing, pointAlong, runAt, type Crossing, type Path, type Run } from './runs';
 
-/** Tiles a second the player climbs: a little quicker than the residents. */
+/** Tiles a second. */
 export const PLAYER_CLIMB: Record<ClimbKind, number> = { stairs: 2, ladder: 1.5 };
 
-/** What's held this frame: x and y each -1, 0 or 1, y up the screen negative. `use` is E, pressed
- * this frame. */
+/** Each -1, 0 or 1, y negative up; `use` is E pressed since the last frame. */
 export type Controls = { x: number; y: number; use: boolean };
 
 export type MapPosition = Position & { map: string };
@@ -19,13 +18,11 @@ type Crossed = { crossing: Crossing; distance: number };
 
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);
 
-/** The player in side view: left and right along the floor; E or up through a door; E onto stairs
- * or a ladder, then up and down along it, stopping anywhere; E for a lift's whole ride. */
 export class SidePlayer {
   map: string;
   /** On `map`, in cells. */
   readonly position = { x: 0, y: 0 };
-  /** Where it's drawn, in street cells. */
+  /** In street cells. */
   readonly at = { x: 0, y: 0 };
   readonly drawn: Drawn = emptyDrawn();
   facing: Facing = 'east';
@@ -34,7 +31,7 @@ export class SidePlayer {
   private travelled = 0;
   private onRun?: OnRun;
   private crossed?: Crossed;
-  /** A door only opens to up or down once they've been let go, so arriving doesn't go back. */
+  /** Up or down only opens a door once let go, so arriving doesn't go back. */
   private armed = true;
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
@@ -56,8 +53,7 @@ export class SidePlayer {
     this.locate();
   }
 
-  /** Where the server and the dialogue UI have the player: the end of the stairs or lift they're
-   * on until they arrive, as the protocol holds residents. The same object each time. */
+  /** Held at the end left from while crossing, as the protocol holds residents. Reused: copy it to keep it. */
   get mapPosition(): MapPosition {
     const end = this.crossed?.crossing.from;
     const reported = this.reported;
@@ -71,17 +67,15 @@ export class SidePlayer {
     return this.crossed?.crossing.kind ?? this.onRun?.run.kind;
   }
 
-  /** The lift ride it's on, if any. */
   get riding(): Crossing | undefined {
     return this.crossed?.crossing.kind === 'lift' ? this.crossed.crossing : undefined;
   }
 
-  /** The map it's drawn on: where a crossing started, until it arrives. */
   get drawnMap(): string {
     return this.crossed?.crossing.from.map ?? this.map;
   }
 
-  /** Moves the player for a frame. Returns the door it's going through, for the scene to take it. */
+  /** Returns the door to take, for the scene. */
   update(controls: Controls, dt: number): Link | undefined {
     if (controls.y === 0) this.armed = true;
     let door: Link | undefined;
@@ -187,7 +181,6 @@ export class SidePlayer {
     return runs;
   }
 
-  /** Where it's drawn, and how. */
   private locate(): void {
     const { drawn } = this;
     if (this.crossed) {
@@ -214,14 +207,13 @@ export class SidePlayer {
   }
 }
 
-/** Which way x goes as the path rises: 1 east, -1 west, 0 straight up. */
+/** 1 east, -1 west, 0 straight up. */
 function rise(path: Path): number {
   const [first, last] = [path.points[0], path.points.at(-1)!];
   return sign((last.x - first.x) * sign(first.y - last.y));
 }
 
-/** The last cell to stand on from `x` along row `y`, going `way` (-1 west, 1 east). Stairs and
- * ladders are taken with E, so walking stops at them. */
+/** Walking stops at stairs and ladders, which are taken with E. */
 export function spanEnd(map: SideMap, x: number, y: number, way: -1 | 1): number {
   let end = x;
   while (isStanding(map, end + way, y)) end += way;

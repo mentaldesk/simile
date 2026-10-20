@@ -14,7 +14,6 @@ import { crossing, pointAlong, type Crossing } from './runs';
 
 type Under = { crossing: Crossing; distance: number; arrival?: Position & { map: string } };
 
-/** A resident the server moves, as the side view draws it. */
 export class Resident {
   readonly id: string;
   readonly name: string;
@@ -22,11 +21,11 @@ export class Resident {
   pose: Pose;
   facing: Facing;
   readonly walker: Walker;
-  /** Stairs, a ladder or a lift it's waiting to reach the end of, or crossing. */
+  /** Waiting to reach its end before crossing. */
   pending?: Crossing;
   under?: Under;
   idle = 0;
-  /** Where it's drawn, in street cells: written by `Residents.update`. */
+  /** In street cells. */
   readonly at = { x: 0, y: 0 };
   readonly drawn: Drawn = emptyDrawn();
 
@@ -39,18 +38,14 @@ export class Resident {
     this.walker = new Walker(position, WALKING_SPEED);
   }
 
-  /** The map it's drawn on: where a crossing started, until it arrives. */
   get drawnMap(): string {
     return this.under?.crossing.from.map ?? this.map;
   }
 }
 
-/** The residents from `snapshot` and `entity_moved`, walked between positions, with the climbs
- * and rides between floors played out from the link's kind. */
 export class Residents {
   readonly all = new Map<string, Resident>();
   village?: Village;
-  /** Where the latest snapshot put the player, and the map it started them on. */
   start?: Position & { map: string };
 
   reset(entities: readonly Entity[], mapId?: string): void {
