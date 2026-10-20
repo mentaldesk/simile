@@ -153,9 +153,12 @@ const dollStage: MakeStage = async (parent) => new (await import('./doll-stage')
 
 export const paintedUrl = (id: string) => `/api/jobs/files/doll/${id}.json`;
 
-export type LoadDoll = (url: string) => Promise<DollManifest>;
+type Painted = DollManifest & { appearance?: Appearance };
 
-const loadFresh: LoadDoll = (url) => loadDoll(url, (input) => fetch(input, { cache: 'no-cache' }));
+const loadFresh = (url: string): Promise<Painted> =>
+  loadDoll(url, (input) => fetch(input, { cache: 'no-cache' }));
+
+const canonical = (look: object) => JSON.stringify(look, Object.keys(look).sort());
 
 /** The look's flat doll as it changes, and the doll job's painted one once there is one. */
 export class DollPreview {
@@ -169,7 +172,6 @@ export class DollPreview {
   private readonly draw: DrawPreview;
   private readonly delay: number;
   private readonly makeStage: MakeStage;
-  private readonly load: LoadDoll;
   private stage?: Promise<PreviewStage>;
   private showing: Promise<void> = Promise.resolve();
   private latest: PreviewRequest | null = null;
@@ -184,13 +186,11 @@ export class DollPreview {
     draw: DrawPreview = drawPreview,
     delay = PREVIEW_DELAY_MS,
     makeStage: MakeStage = dollStage,
-    load: LoadDoll = loadFresh,
   ) {
     this.api = api;
     this.draw = draw;
     this.delay = delay;
     this.makeStage = makeStage;
-    this.load = load;
     this.root.append(this.dolls, this.note, this.bar, this.status);
   }
 
@@ -203,13 +203,18 @@ export class DollPreview {
     }, this.delay);
   }
 
-  /** Shows the character's painted doll in place of the flat one, if the doll job painted one. */
+  /** Shows the character's painted doll in place of the flat one, if the doll job painted this
+   * look. */
   async show(id: string): Promise<boolean> {
     const key = JSON.stringify(this.latest);
-    const doll = await this.load(paintedUrl(id)).catch(() => null);
-    if (!doll) this.say('The doll isn’t painted yet: saving paints it.');
-    else if (key === JSON.stringify(this.latest)) await this.display(doll, key).catch(() => {});
-    return doll !== null;
+    const look = this.latest?.appearance;
+    const doll = await loadFresh(paintedUrl(id)).catch(() => null);
+    if (!doll?.appearance || !look || canonical(doll.appearance) !== canonical(look)) {
+      this.say('This look isn’t painted yet: saving paints it.');
+      return false;
+    }
+    if (key === JSON.stringify(this.latest)) await this.display(doll, key).catch(() => {});
+    return true;
   }
 
   async paint(id: string, appearance: Appearance): Promise<Job | null> {
@@ -221,7 +226,7 @@ export class DollPreview {
       const done = await this.follow(job);
       const url = done.result?.doll;
       if (done.state === 'succeeded' && typeof url === 'string' && !this.disposed) {
-        const doll = await this.load(url);
+        const doll = await loadFresh(url);
         const fresh = (src?: string) => src && `${src}?job=${done.id}`;
         const painted = { ...doll, flat: fresh(doll.flat) ?? '', painted: fresh(doll.painted) };
         if (key === JSON.stringify(this.latest)) await this.display(painted, key);

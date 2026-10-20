@@ -201,7 +201,12 @@ function jobsApi(done: Job) {
 }
 
 describe('painting the doll', () => {
-  const PAINTED = { ...DOLL, flat: '/api/jobs/files/doll/player-flat.webp', painted: '/p.webp' };
+  const PAINTED = {
+    ...DOLL,
+    appearance: LOOK,
+    flat: '/api/jobs/files/doll/player-flat.webp',
+    painted: '/p.webp',
+  };
 
   beforeEach(() => vi.useFakeTimers());
 
@@ -251,7 +256,7 @@ describe('painting the doll', () => {
     const api = jobsApi(failed);
     const view = new PlayerLookView(api as unknown as CreatorApi, CAN_PAINT, () => {});
     await vi.advanceTimersByTimeAsync(150);
-    expect(view.root.textContent).toContain('The doll isn’t painted yet: saving paints it.');
+    expect(view.root.textContent).toContain('This look isn’t painted yet: saving paints it.');
 
     swatch(view.root, 'Shoes', 'red').click();
     buttonCalled(view.root, 'Save').click();
@@ -260,6 +265,17 @@ describe('painting the doll', () => {
     expect(api.submit).toHaveBeenCalledOnce();
     expect(shown.at(-1)).toBe(DOLL);
     expect(view.root.textContent).toContain('Doll: Failed: Painting dolls needs FLUX');
+    view.dispose();
+  });
+
+  it('keeps the flat doll where the painted one is of another look', async () => {
+    flatDoll.mockResolvedValue(DOLL);
+    loadDoll.mockResolvedValue({ ...PAINTED, appearance: { ...LOOK, shoe_colour: PALETTE.red } });
+    const view = new PlayerLookView(jobsApi(job({})) as unknown as CreatorApi, CAN_PAINT, () => {});
+    await vi.advanceTimersByTimeAsync(150);
+
+    expect(shown).toEqual([DOLL]);
+    expect(view.root.textContent).toContain('This look isn’t painted yet: saving paints it.');
     view.dispose();
   });
 
