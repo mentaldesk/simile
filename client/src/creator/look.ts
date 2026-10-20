@@ -1,5 +1,5 @@
-import { PIXEL_SCALE } from '../world/iso/sheets';
-import { WALK_FPS } from '../world/tuning';
+import { flatDoll } from '../dolls/assets';
+import type { DollManifest } from '../dolls/manifest';
 import type { CreatorApi } from './api';
 import type { Accessory, Appearance } from './character';
 import { button, capitalise, h, message } from './dom';
@@ -141,28 +141,19 @@ export function lookEditor(
 export const PREVIEW_DELAY_MS = 150;
 
 export type PreviewRequest = { character?: string; appearance: Appearance };
-export type DrawPreview = (request: PreviewRequest) => Promise<Blob>;
+export type DrawPreview = (request: PreviewRequest) => Promise<DollManifest>;
 
-export async function drawPreview(request: PreviewRequest): Promise<Blob> {
-  const response = await fetch('/api/art/preview', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    throw new Error(data?.error ?? `the server answered ${response.status}`);
-  }
-  return response.blob();
-}
+/** Part 4's flat doll for the look, which the server makes at once. */
+export const drawPreview: DrawPreview = ({ appearance, character }) => flatDoll(appearance, character);
 
-const FRAME = { width: 16, height: 24 };
-const WALK = [0, 1, 2, 1];
-const GAP = 4;
+export type PreviewStage = { show(doll: DollManifest): Promise<void>; destroy(): void };
+export type MakeStage = (parent: HTMLElement) => Promise<PreviewStage>;
+
+const dollStage: MakeStage = async (parent) => new (await import('./doll-stage')).DollStage(parent);
 
 export class SpritePreview {
   readonly root = h('div', { className: 'creator-sprite' });
-  private readonly canvas = h('canvas', { width: 1, height: 1, hidden: true });
+  private readonly dolls = h('div', { className: 'creator-dolls', hidden: true });
   private readonly note = h('p', { className: 'creator-hint' });
   private readonly status = h('p', { className: 'creator-hint' });
   private readonly bar = h('progress', { max: 1, value: 0, hidden: true });
@@ -170,21 +161,26 @@ export class SpritePreview {
   private readonly api: CreatorApi;
   private readonly draw: DrawPreview;
   private readonly delay: number;
+  private readonly makeStage: MakeStage;
+  private stage?: Promise<PreviewStage>;
   private latest: PreviewRequest | null = null;
   private due: PreviewRequest | null = null;
   private drawn = '';
   private drawing = false;
   private disposed = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
-  private walk: ReturnType<typeof setInterval> | undefined;
-  private frames: ImageBitmap | null = null;
-  private step = 0;
 
-  constructor(api: CreatorApi, draw: DrawPreview = drawPreview, delay = PREVIEW_DELAY_MS) {
+  constructor(
+    api: CreatorApi,
+    draw: DrawPreview = drawPreview,
+    delay = PREVIEW_DELAY_MS,
+    makeStage: MakeStage = dollStage,
+  ) {
     this.api = api;
     this.draw = draw;
     this.delay = delay;
-    this.root.append(this.canvas, this.note, this.bar, this.status);
+    this.makeStage = makeStage;
+    this.root.append(this.dolls, this.note, this.bar, this.status);
   }
 
   preview(appearance: Appearance, character?: string): void {
@@ -218,7 +214,7 @@ export class SpritePreview {
     this.disposed = true;
     this.watch?.stop();
     clearTimeout(this.timer);
-    clearInterval(this.walk);
+    void this.stage?.then((stage) => stage.destroy());
   }
 
   private async redraw(): Promise<void> {
@@ -229,40 +225,18 @@ export class SpritePreview {
       const key = JSON.stringify(request);
       if (key === this.drawn) continue;
       try {
-        const frames = await createImageBitmap(await this.draw(request));
+        const doll = await this.draw(request);
         if (this.disposed) break;
-        this.frames = frames;
+        this.stage ??= this.makeStage(this.dolls);
+        await (await this.stage).show(doll);
         this.drawn = key;
         this.note.textContent = '';
-        this.paint();
-        this.walk ??= setInterval(() => {
-          this.step = (this.step + 1) % WALK.length;
-          this.paint();
-        }, 1000 / WALK_FPS);
+        this.dolls.hidden = false;
       } catch (error) {
         this.note.textContent = `Couldn’t draw the preview: ${message(error)}`;
       }
     }
     this.drawing = false;
-  }
-
-  private paint(): void {
-    const frames = this.frames;
-    if (!frames) return;
-    const { width, height } = FRAME;
-    const directions = Math.floor(frames.height / height);
-    this.canvas.width = (directions * (width + GAP) - GAP) * PIXEL_SCALE;
-    this.canvas.height = height * PIXEL_SCALE;
-    const context = this.canvas.getContext('2d');
-    if (!context) return;
-    context.imageSmoothingEnabled = false;
-    context.scale(PIXEL_SCALE, PIXEL_SCALE);
-    const x = WALK[this.step] * width;
-    for (let row = 0; row < directions; row++) {
-      const [y, left] = [row * height, row * (width + GAP)];
-      context.drawImage(frames, x, y, width, height, left, 0, width, height);
-    }
-    this.canvas.hidden = false;
   }
 
   private async follow(job: Job): Promise<Job> {

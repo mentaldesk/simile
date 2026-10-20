@@ -486,7 +486,6 @@
 .creator-sprite canvas {
   display: block;
   max-width: 100%;
-  image-rendering: pixelated;
 }
 
 .creator progress {

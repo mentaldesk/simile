@@ -10,10 +10,11 @@ or *Characters* on the title menu. It's a DOM overlay over the game, built on th
   written by *Write character*: whatever you set first goes into P3's brief, and anything you edit
   locks its section. *Reroll unlocked*, or a section's *Reroll*, writes those sections again and keeps
   the rest. Save, export and delete live in the bar.
-  - **Look** (`look.ts`): the appearance controls, with the sprite walking in its four
-    three-quarter directions at the game's 4×. It redraws 150 ms after the last change, one request
-    at a time, from `POST /api/art/preview`: the same drawer as the sprite job, without writing a
-    file. Saving draws the sprite as a P10 job, where the server can draw sprites.
+  - **Look** (`look.ts`): the appearance controls, with the look's paper doll walking from the
+    side, the front and the back, drawn by the dolls' rig (`makeDoll`) in a small game of its own
+    (`doll-stage.ts`). It redraws 150 ms after the last change, one request at a time, from the
+    server's flat doll for the look (`flatDoll`, `POST /api/dolls/flat`). Saving still draws A1's
+    sprite as a P10 job, where the server can draw sprites.
   - **Values**: the four latent traits and the presets move all 24 values at once, through the same
     model P3 samples from (`values.ts`). A value set by hand in the advanced view keeps its place
     relative to the traits. The sample line is a `voice` reroll of the character with these values,

@@ -1,20 +1,27 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { WALK_FPS } from '../world/tuning';
+import type { DollManifest } from '../dolls/manifest';
 import type { Capabilities, CreatorApi } from './api';
 import { character } from './character.fixture';
-import { type DrawPreview, SpritePreview, drawPreview, lookEditor } from './look';
+import { type DrawPreview, type PreviewStage, SpritePreview, lookEditor } from './look';
 import { PALETTE } from './palette';
 import { PLAYER_ID, PlayerLookView } from './player-look';
 
+const { flatDoll, shown } = vi.hoisted(() => ({ flatDoll: vi.fn(), shown: [] as unknown[] }));
+vi.mock('../dolls/assets', () => ({ flatDoll }));
+vi.mock('./doll-stage', () => ({
+  DollStage: class {
+    show = async (doll: unknown) => void shown.push(doll);
+    destroy() {}
+  },
+}));
+
 const LOOK = character().appearance;
-const PNG = new Blob([], { type: 'image/png' });
+const DOLL = { unit: 10, height: 20, flat: 'data:image/webp;base64,', pieces: {} } as unknown as DollManifest;
 const CAN_DRAW: Capabilities = {
   machine: {},
   kinds: { sprite: { available: true, reason: null } },
 };
-
-const fakeContext = () => ({ imageSmoothingEnabled: true, scale: vi.fn(), drawImage: vi.fn() });
 
 function swatch(root: HTMLElement, row: string, name: string): HTMLButtonElement {
   const found = [...root.querySelectorAll('.creator-row')].find(
@@ -23,30 +30,29 @@ function swatch(root: HTMLElement, row: string, name: string): HTMLButtonElement
   return found!.querySelector<HTMLButtonElement>(`[aria-label="${name}"]`)!;
 }
 
-function editing(draw: DrawPreview) {
-  const sprite = new SpritePreview({} as CreatorApi, draw, 150);
-  const root = lookEditor(LOOK, (look) => sprite.preview(look, 'wren_abernethy'));
-  return { sprite, root };
+function fakeStage() {
+  const stage = { show: vi.fn<PreviewStage['show']>(async () => {}), destroy: vi.fn() };
+  return { stage, make: vi.fn(async () => stage) };
 }
 
-describe('the live sprite preview', () => {
-  let context: ReturnType<typeof fakeContext>;
+function editing(draw: DrawPreview, made = fakeStage()) {
+  const sprite = new SpritePreview({} as CreatorApi, draw, 150, made.make);
+  const root = lookEditor(LOOK, (look) => sprite.preview(look, 'wren_abernethy'));
+  return { sprite, root, ...made };
+}
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    context = fakeContext();
-    vi.stubGlobal('createImageBitmap', async () => ({ width: 48, height: 96 }));
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as never);
-  });
+describe('the live preview', () => {
+  beforeEach(() => vi.useFakeTimers());
 
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllGlobals();
     vi.restoreAllMocks();
+    flatDoll.mockReset();
+    shown.length = 0;
   });
 
   it('redraws once the controls have been still for the delay', async () => {
-    const draw = vi.fn<DrawPreview>(async () => PNG);
+    const draw = vi.fn<DrawPreview>(async () => DOLL);
     const { root } = editing(draw);
 
     swatch(root, 'Top', 'red').click();
@@ -72,7 +78,7 @@ describe('the live sprite preview', () => {
       return new Promise((resolve) =>
         finish.push(() => {
           inFlight -= 1;
-          resolve(PNG);
+          resolve(DOLL);
         }),
       );
     });
@@ -97,34 +103,23 @@ describe('the live sprite preview', () => {
     expect(most).toBe(1);
   });
 
-  it('walks the four three-quarter directions side by side at the game’s 4×', async () => {
-    const { sprite } = editing(async () => PNG);
+  it('shows the look’s flat doll on a stage it makes once', async () => {
+    const other = { ...DOLL, height: 21 };
+    const draw = vi.fn<DrawPreview>(async ({ appearance }) => (appearance === LOOK ? DOLL : other));
+    const { sprite, root, stage, make } = editing(draw);
+    const dolls = sprite.root.querySelector<HTMLElement>('.creator-dolls')!;
+    expect(dolls.hidden).toBe(true);
+
     sprite.preview(LOOK, 'wren_abernethy');
     await vi.advanceTimersByTimeAsync(150);
-    const canvas = sprite.root.querySelector('canvas')!;
-    const lastFour = () =>
-      context.drawImage.mock.calls.slice(-4).map(([, sx, sy, , , dx]) => [sx, sy, dx]);
+    expect(make).toHaveBeenCalledWith(dolls);
+    expect(stage.show).toHaveBeenLastCalledWith(DOLL);
+    expect(dolls.hidden).toBe(false);
 
-    expect(canvas.hidden).toBe(false);
-    expect([canvas.width, canvas.height]).toEqual([(4 * 16 + 3 * 4) * 4, 24 * 4]);
-    expect(context.scale).toHaveBeenLastCalledWith(4, 4);
-    expect(lastFour()).toEqual([
-      [0, 0, 0],
-      [0, 24, 20],
-      [0, 48, 40],
-      [0, 72, 60],
-    ]);
-    const columns = [];
-    for (let step = 0; step < 4; step++) {
-      await vi.advanceTimersByTimeAsync(1000 / WALK_FPS);
-      columns.push(lastFour().map(([sx]) => sx));
-    }
-    expect(columns).toEqual([
-      [16, 16, 16, 16],
-      [32, 32, 32, 32],
-      [16, 16, 16, 16],
-      [0, 0, 0, 0],
-    ]);
+    swatch(root, 'Top', 'red').click();
+    await vi.advanceTimersByTimeAsync(150);
+    expect(stage.show).toHaveBeenLastCalledWith(other);
+    expect(make).toHaveBeenCalledOnce();
   });
 
   it('says why a preview failed', async () => {
@@ -137,43 +132,32 @@ describe('the live sprite preview', () => {
     expect(sprite.root.textContent).toContain('Couldn’t draw the preview: busy');
   });
 
-  it('asks for nothing after it’s disposed', async () => {
-    const draw = vi.fn<DrawPreview>(async () => PNG);
-    const { sprite, root } = editing(draw);
+  it('asks for nothing after it’s disposed, and takes its stage down', async () => {
+    const draw = vi.fn<DrawPreview>(async () => DOLL);
+    const { sprite, root, stage } = editing(draw);
+    sprite.preview(LOOK, 'wren_abernethy');
+    await vi.advanceTimersByTimeAsync(150);
 
     swatch(root, 'Top', 'red').click();
     sprite.dispose();
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(draw).not.toHaveBeenCalled();
+    expect(draw).toHaveBeenCalledOnce();
+    expect(stage.destroy).toHaveBeenCalledOnce();
   });
 
-  it('previews your look as it loads and as it changes', async () => {
-    const fetch = vi.fn<typeof globalThis.fetch>(async () => new Response(PNG));
-    vi.stubGlobal('fetch', fetch);
+  it('previews your look as it loads and as it changes, with the server’s flat doll', async () => {
+    flatDoll.mockResolvedValue(DOLL);
     const api = { player: async () => LOOK, atlas: async () => null } as unknown as CreatorApi;
     const view = new PlayerLookView(api, CAN_DRAW, () => {});
-    const sent = (call: number) => JSON.parse(String(fetch.mock.calls[call][1]?.body));
 
     await vi.advanceTimersByTimeAsync(150);
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(fetch.mock.calls[0][0]).toBe('/api/art/preview');
-    expect(sent(0)).toEqual({ character: PLAYER_ID, appearance: LOOK });
+    expect(flatDoll).toHaveBeenCalledExactlyOnceWith(LOOK, PLAYER_ID);
+    expect(shown).toEqual([DOLL]);
 
     swatch(view.root, 'Shoes', 'red').click();
     await vi.advanceTimersByTimeAsync(150);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(sent(1)).toEqual({
-      character: PLAYER_ID,
-      appearance: { ...LOOK, shoe_colour: PALETTE.red },
-    });
+    expect(flatDoll).toHaveBeenLastCalledWith({ ...LOOK, shoe_colour: PALETTE.red }, PLAYER_ID);
     view.dispose();
-  });
-
-  it('passes on what the server refused', async () => {
-    const refusal = Response.json({ error: 'appearance.skin: not a colour' }, { status: 422 });
-    vi.stubGlobal('fetch', async () => refusal);
-
-    await expect(drawPreview({ appearance: LOOK })).rejects.toThrow('not a colour');
   });
 });
