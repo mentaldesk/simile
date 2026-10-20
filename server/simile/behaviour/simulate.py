@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterable, Mapping
 from contextlib import AsyncExitStack
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from starlette.applications import Starlette
@@ -22,6 +23,7 @@ from simile.schema import (
     Intention,
     IntentionKind,
     LocationKind,
+    MapTile,
     Medium,
     Memory,
     MemoryKind,
@@ -250,12 +252,14 @@ class Observer:
 
     def mural_wall(self, npc: Npc) -> MuralSpot | None:
         """The map's walls in turn, moving on to the next after each mural."""
-        walls = self.behaviour.movement.town.murals
+        movement = self.behaviour.movement
+        walls = movement.town.murals
         if not walls:
             return None
         muralists = sorted(n.id for n in self.behaviour.npcs.values() if _medium(n) is Medium.MURAL)
         wall = walls[(muralists.index(npc.id) + sum(self.works[npc.id].values())) % len(walls)]
-        return MuralSpot(wall.id, wall.stand)
+        on = next(town.id for town in movement.maps.values() if wall in town.murals)
+        return MuralSpot(wall.id, MapTile(map=on, x=wall.stand.x, y=wall.stand.y))
 
     def tick(self, dt: float) -> None:
         clock = self.behaviour.clock
@@ -406,29 +410,34 @@ async def simulate(
     traits: Mapping[Id, Traits] | None = None,
     talk: float | None = None,
     intentions: float | None = None,
+    maps: Path | None = None,
 ) -> tuple[Observer, float]:
     """Run memory, world, behaviour and E3's economy for `hours` of sim time as fast as the CPU
-    allows, with N1's NPCs and the cast's traits unless given others, on an in-memory store. The
-    economy says which shops are staffed and what's left to eat, and the Daily Grind serves
-    whoever arrives while its barista is at work, as G1 would. Conversations, news and works stay
-    stubbed, so nothing calls Claude: every request to talk is declined, or with `talk` accepted
-    and over after that many minutes, there's always an article of `NEWS_INTEREST` to read,
-    muralists paint the map's walls in turn, and making something does nothing. Each article read
-    and each talk leaves a stand-in memory, which raises a crafter's inspiration. With
-    `intentions`, every that many sim hours each resident awake says they'll do something at
-    random."""
+    allows, with N1's NPCs and the cast's traits unless given others, on an in-memory store, on
+    the maps in the `maps` folder or else the default ones. The economy says which shops are
+    staffed and what's left to eat, and the Daily Grind serves whoever arrives while its barista
+    is at work, as G1 would. Conversations, news and works stay stubbed, so nothing calls Claude:
+    every request to talk is declined, or with `talk` accepted and over after that many minutes,
+    there's always an article of `NEWS_INTEREST` to read, muralists paint the map's walls in turn,
+    and making something does nothing. Each article read and each talk leaves a stand-in memory,
+    which raises a crafter's inspiration. With `intentions`, every that many sim hours each
+    resident awake says they'll do something at random."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.cafe.config import DEFAULT_CONFIG as CAFE
     from simile.economy.economy import economy_of
     from simile.economy.lifespan import lifespan as economy
     from simile.memory.lifespan import lifespan as memory
     from simile.world.lifespan import lifespan as world_lifespan
+    from simile.world.map import load_maps
+    from simile.world.movement import Movement
 
     app = Starlette()
     world = World(Clock(start), FakeWallClock())
     app.state.world = world
     app.state.headless = True
     app.state.memory = MemoryStore(":memory:")
+    if maps is not None:
+        app.state.movement = Movement(load_maps(maps), world.bus)
     app.state.behaviour = create_behaviour(app, seed=seed, npcs=npcs, traits=traits)
     shops = economy_of(app)
     observer = Observer(

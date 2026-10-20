@@ -61,6 +61,8 @@ class Visitors:
         self.npcs = npcs
         self.minds = minds
         self.movement = movement
+        self.buildings = {town.id: town.building for town in movement.maps.values()}
+        """Each map's building, on side-view floors."""
         self.config = config
         self.rng = random.Random(seed)
         self.seen: dict[Id, set[str]] = {}
@@ -102,7 +104,7 @@ class Visitors:
             position = positions.get(who)
             if position is None or not self._staying(mind):
                 continue
-            if here := [(frame, painting) for frame, painting in hung if frame.map == position.map]:
+            if here := [(f, painting) for f, painting in hung if self._near(f.map, position.map)]:
                 self._show_round(who, position, here)
 
     async def stop(self) -> None:
@@ -110,6 +112,11 @@ class Visitors:
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+
+    def _near(self, a: str, b: str) -> bool:
+        """On one map, or on floors of one building."""
+        building = self.buildings.get(a)
+        return a == b or building is not None and building == self.buildings.get(b)
 
     def _staying(self, mind: Mind) -> bool:
         return mind.goal.activity is Activity.GALLERY and mind.walk is None and not mind.paused
@@ -138,11 +145,17 @@ class Visitors:
         hung: list[tuple[Interactable, Work]],
         last: FrameKey | None,
     ) -> Interactable:
-        """The nearest painting they haven't seen, or any but the one they've just looked at."""
+        """The nearest painting they haven't seen, on their own floor first, or any but the one
+        they've just looked at."""
         unseen = [frame for frame, painting in hung if self._new_to(who, painting)]
         if unseen:
-            stand = position.x, position.y
-            return min(unseen, key=lambda f: math.dist(stand, (f.stand[0].x, f.stand[0].y)))
+            here = position.x, position.y
+
+            def distance(frame: Interactable) -> tuple[bool, float]:
+                stand = frame.stand[0]
+                return frame.map != position.map, math.dist(here, (stand.x, stand.y))
+
+            return min(unseen, key=distance)
         others = [frame for frame, _ in hung if key(frame) != last]
         return self.rng.choice(others or [frame for frame, _ in hung])
 

@@ -178,6 +178,11 @@ LOOPS: dict[str, tuple[tuple[int, int], ...]] = {
     "village": ((1, 12), (44, 12), (45, 35), (1, 35)),
 }
 
+STREET_LOOPS: dict[str, dict[str, tuple[tuple[int, int], ...]]] = {
+    "lychee_lane": {"lotus_lake": ((36, 15), (59, 15), (48, 12))},
+    "high_street": {"village": ((1, 15), (82, 15))},
+}
+
 
 CRAFT_WORDS: dict[Medium, tuple[str, ...]] = {
     Medium.WRITING: ("writ", "poem", "poet", "verse", "story", "stories", "book", "essay", "words"),
@@ -461,6 +466,11 @@ class BehaviourConfig(BaseModel):
         default=LOOPS,
         description="Walks round the village map for exercise, as the tiles they pass in order, "
         "back to the first.",
+    )
+    loops_on: dict[str, dict[str, tuple[tuple[int, int], ...]]] = Field(
+        default=STREET_LOOPS,
+        description="Walks for exercise on other maps, by map id, as `loops` are on the village. "
+        "Only the walks on the world's maps are options.",
     )
     start_dwell: tuple[float, float] = Field(
         default=(0.5, 5), description="Minutes awake at home before the first decision."

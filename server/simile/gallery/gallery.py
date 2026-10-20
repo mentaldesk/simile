@@ -17,13 +17,15 @@ logger = logging.getLogger(__name__)
 
 
 def frames_of(maps: Mapping[str, TownMap]) -> list[Interactable]:
-    """Every painting interactable, those nearest their room's door first, so a new gallery
-    fills from the entrance."""
+    """Every painting interactable, the lowest floor first and then those nearest the way into
+    their room, so a new gallery fills from the entrance."""
 
-    def from_door(frame: Interactable) -> float:
-        doors = [door.inside for door in maps[frame.map].doors if door.inside.map == frame.map]
+    def from_door(frame: Interactable) -> tuple[int, float]:
+        town = maps[frame.map]
+        doors = [door.inside for door in town.doors if door.inside.map == frame.map]
         stand = frame.stand[0]
-        return min((math.dist((d.x, d.y), (stand.x, stand.y)) for d in doors), default=0.0)
+        nearest = min((math.dist((d.x, d.y), (stand.x, stand.y)) for d in doors), default=0.0)
+        return town.floor or 0, nearest
 
     found = [
         item

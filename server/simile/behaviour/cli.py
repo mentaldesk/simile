@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -29,6 +30,15 @@ def register(app: typer.Typer) -> None:
                 "random, now or later, and the summary adds how many they kept.",
             ),
         ] = None,
+        maps: Annotated[
+            Path | None,
+            typer.Option(
+                exists=True,
+                file_okay=False,
+                help="A folder of maps to run on, such as content/street. Defaults to the "
+                "server's.",
+            ),
+        ] = None,
     ) -> None:
         """Fast-forward the village's NPCs and summarise where they spent their time.
 
@@ -42,7 +52,7 @@ def register(app: typer.Typer) -> None:
 
         begin = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(hours=start)
         observer, seconds = asyncio.run(
-            simulate(hours, start=begin, seed=seed, talk=talk, intentions=intentions)
+            simulate(hours, start=begin, seed=seed, talk=talk, intentions=intentions, maps=maps)
         )
         typer.echo(report(observer, hours, begin, seed, seconds), nl=False)
 
