@@ -20,17 +20,20 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 
-Left and right (or A and D) walk. E or up takes a door you're on; down also leaves a building by its
-front door. Up climbs stairs or a ladder from its foot, and down from its top, from anywhere in the
-tile either side of the end (`CLIMB_REACH`, 1.5 tiles from its middle): the player steps onto it
-first, and where two are in reach each key takes the nearest its way. E takes the nearest of all, then
-up and down climb, stopping anywhere; E rides a lift all the way. Where a terminal, the counter, a painting or a
-mural is in reach, E uses that instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door.
-A small tag over each way a key takes from where you stand names the keys and what it does ("E ↑: go
-out", "E ↓: downstairs", `ways.ts`), leaving E off while something else takes it. The scene reads its
-keys through `input.ts`'s `readControls`, which leaves E to what's in reach; a tap of E, up or down
-shorter than a frame still counts. Clicking a mural
-looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
+Left and right (or A and D) walk, and holding Shift runs. E takes a door you're on, and never climbs
+or rides; with no door, E talks to the ringed resident (`ui/`). Up climbs stairs or a ladder from
+its foot, and down from its top, from anywhere in the tile either side of the end (`CLIMB_REACH`,
+1.5 tiles from its middle): the player steps onto it first, and where two are in reach each key
+takes the nearest its way. Up and down keep climbing while held, stopping anywhere. On either of the
+lift's cells, up rides it a floor up and down a floor down, all the way. Where a terminal, the
+counter, a painting or a mural is in reach, E uses that instead
+([`world/reach.ts`](../world/reach.ts)) and up takes the door. A door on the cell beside a flight's
+foot, as in the noodle bar, is E's and the stairs are up's; with E in use there too, up takes the
+door from its own cell and the stairs from the next. A small tag over each way a key takes from
+where you stand names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift",
+`ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
+shorter than a frame still counts. Clicking a mural looks at it. In the harness, `[` and `]` move
+the clock an hour and 1 to 4 go to each street.
 
 ## How it draws
 
@@ -68,20 +71,30 @@ The Phaser-free halves are tested under vitest.
 - `residents.ts`: residents from `snapshot` and `entity_moved`, walked between positions, climbing on
   a map's stairs or ladder by their cell's kind, and `climbing` or `riding` at a link's end played
   along the link (`runs.ts`'s `crossing`) until the server moves them onto the other floor.
-- `player.ts`: the player's walking, doors, climbs and rides, by #311's choices and #325's: what the
-  keys take is `ways.ts`'s `waysNear` and `chosen`. Walking stops at stairs and ladders on a map, which
-  are taken with E, up or down. While crossing between floors the player's position stays at the end
-  they left from, as the protocol holds residents.
+- `player.ts`: the player's walking, running, doors, climbs and rides, by #311's choices, #325's and
+  #330's: what the keys take is `ways.ts`'s `waysNear` and `chosen`. Walking stops at stairs and
+  ladders on a map, which are taken with up or down. While crossing between floors the player's
+  position stays at the end they left from, as the protocol holds residents.
+- Running: Shift turns the walk into a run over `RUN_BLEND_SECONDS` and back when it's let go, at up
+  to `RUN_PACE` (2) times `PLAYER_SPEED` along streets and floors. Stairs, ladders and the lift go at
+  their own speeds. The doll blends the rig's walk into its run cycle by the same amount (`Drawn.run`),
+  and its phase steps by `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
+  The server tracks whatever position `player_move` sends (`simile.world`'s lifespan), with no
+  speed check to raise.
 - Jumping isn't here. Positions are floats, so an arc through open air, drawn with the rig's
   `jumping` pose, can come later as another mode beside walking and climbing.
 
 ## The walk
 
 `walk.e2e.ts` serves the client, opens the harness in Chromium and walks the player by the keys into
-every building, up and down every flight, ladder and lift, out of every exit and along every street
-door, checking each prompt on the way. It takes doors and lifts from their cell, and stairs and
-ladders from 1.4 tiles off their end, near the edge of the reach. It steps Playwright's clock rather
-than waiting, and the *Side walk* workflow runs it on every PR.
+every building, out of every exit and along every street door on E, up and down every flight and
+ladder on the arrows alone, and a floor up and down on the lift from each of its cells, checking
+each prompt on the way. Before each arrow it presses E where nothing else takes it, and checks the
+player didn't move. It takes doors and lifts from their cell, and stairs and ladders from 1.4 tiles
+off their end, near the edge of the reach. Then it runs along the High Street with Shift, checking
+the speed and the blend, opens the news at every terminal on E, orders at the café's counter on E,
+and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
+workflow runs it on every PR.
 
 ```bash
 npx playwright install chromium   # once

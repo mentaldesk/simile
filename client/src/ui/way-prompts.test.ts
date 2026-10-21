@@ -13,21 +13,21 @@ describe('WayPromptLayer', () => {
     const layer = new WayPromptLayer(root);
     layer.render(
       [
-        { keys: ['E', '↓'], action: 'downstairs', x: 100, y: 50 },
-        { keys: ['↑'], action: 'climb up', x: 110, y: 50 },
+        { keys: ['E'], action: 'go out', x: 100, y: 50 },
+        { keys: ['↑', '↓'], action: 'lift', x: 110, y: 50 },
       ],
       0.5,
     );
-    expect(shown(root)).toEqual(['E+↓ downstairs', '↑ climb up']);
-    expect(root.querySelector('.way-prompt')?.ariaLabel).toBe('E ↓: downstairs');
+    expect(shown(root)).toEqual(['E go out', '↑+↓ lift']);
+    expect(root.querySelectorAll('.way-prompt')[1]?.ariaLabel).toBe('↑ ↓: lift');
   });
 
   it('hides the tags it no longer needs, and reuses them', () => {
     const root = document.createElement('div');
     const layer = new WayPromptLayer(root);
-    layer.render([{ keys: ['E', '↑'], action: 'go out', x: 0, y: 0 }, { keys: ['↓'], action: 'downstairs', x: 0, y: 0 }], 1);
-    layer.render([{ keys: ['↑'], action: 'go in', x: 0, y: 0 }], 1);
-    expect(shown(root)).toEqual(['↑ go in']);
+    layer.render([{ keys: ['E'], action: 'go out', x: 0, y: 0 }, { keys: ['↓'], action: 'downstairs', x: 0, y: 0 }], 1);
+    layer.render([{ keys: ['↑'], action: 'upstairs', x: 0, y: 0 }], 1);
+    expect(shown(root)).toEqual(['↑ upstairs']);
     layer.render([], 1);
     expect(shown(root)).toEqual([]);
     expect(root.querySelectorAll('.way-prompt')).toHaveLength(2);

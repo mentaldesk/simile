@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dolls } from '../dolls/assets';
 import { posed } from '../dolls/rig';
-import { facesLeft, PoseCache, STEPS } from './poses';
+import { facesLeft, PoseCache, RUN_STEPS, STEPS } from './poses';
 
 describe('the pose cache', () => {
   const doll = dolls.kofi;
@@ -32,5 +32,16 @@ describe('the pose cache', () => {
     expect(cache.get('climbing', 'east', 0, false, 'ladder')).toEqual(
       posed(doll, 'climbing', 'east', 0, { on: 'ladder' }),
     );
+  });
+
+  it('keeps a pose for each step from a walk to a run, and only for walking', () => {
+    const cache = new PoseCache(doll);
+    expect(cache.get('walking', 'east', 0.25, false, undefined, 0)).toBe(cache.get('walking', 'east', 0.25));
+    expect(cache.get('walking', 'east', 0.25, false, undefined, 0.4 / RUN_STEPS)).toBe(cache.get('walking', 'east', 0.25));
+    expect(cache.get('walking', 'east', 0.25, false, undefined, 1)).toEqual(posed(doll, 'walking', 'east', 0.25, { run: 1 }));
+    expect(cache.get('walking', 'south', 0.25, false, undefined, 0.5)).toEqual(
+      posed(doll, 'walking', 'south', 0.25, { run: Math.round(0.5 * RUN_STEPS) / RUN_STEPS }),
+    );
+    expect(cache.get('standing', 'east', 0, false, undefined, 1)).toBe(cache.get('standing', 'east', 0));
   });
 });

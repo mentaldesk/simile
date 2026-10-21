@@ -9,7 +9,8 @@ import { ChatBox } from './chat-box';
 import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
-import { onGameKey } from './keys';
+import { HelpPanel } from './help';
+import { eUse, onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
@@ -58,10 +59,8 @@ export class DialogueScene extends Phaser.Scene {
     this.ways = new WayPromptLayer(this.root);
     this.murals = new MuralPanel(this.root, muralWalls);
     this.counter = new CounterPrompt(this.root);
-    const onKeyDown = onGameKey({
-      chat,
-      news: () => this.use(usedByE(this.player())),
-    });
+    const help = new HelpPanel(this.root);
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), help });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -88,7 +87,6 @@ export class DialogueScene extends Phaser.Scene {
   update(): void {
     this.fitToCanvas();
     const view = inOverlay(worldView(), this.fromGame);
-    this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id));
     this.bubbles.render(dialogue.bubbles.current(), view);
     const player = this.player();
     const used = usedByE(player);
@@ -98,7 +96,18 @@ export class DialogueScene extends Phaser.Scene {
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
     const panelOpen = this.news.isOpen || this.murals.isOpen;
-    this.ways.render(panelOpen ? [] : wayPrompts(used !== undefined), this.fromGame);
+    const ways = panelOpen ? [] : wayPrompts(used !== undefined);
+    this.ways.render(ways, this.fromGame);
+    const target = this.targets.current();
+    const talks = !panelOpen && !this.chat.isOpen && eUse(used, ways, target)?.kind === 'talk';
+    this.marker.render(target, view, (id) => dialogue.nameOf(id), talks);
+  }
+
+  private pressE(): void {
+    const used = usedByE(this.player());
+    const e = eUse(used, wayPrompts(used !== undefined), this.targets.current());
+    if (e?.kind === 'reach') this.use(e.reachable);
+    else if (e?.kind === 'talk') this.chat.open();
   }
 
   /** E uses the nearest thing in reach; the gallery scene looks at paintings. */

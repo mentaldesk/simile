@@ -6,6 +6,8 @@ import { climbAt, type ClimbKind, type SideMap } from './maps';
 
 /** Two strides of a 2.04 m doll. */
 export const WALK_CYCLE_M = 1.6;
+/** Two strides of the same doll running. */
+export const RUN_CYCLE_M = 2.4;
 /** Two treads, or two rungs. */
 export const CLIMB_CYCLE_M: Record<ClimbKind, number> = { stairs: 0.78, ladder: 0.6 };
 export const IDLE_CYCLE_SECONDS = 3.2;
@@ -25,6 +27,8 @@ export type Drawn = {
   phase: number;
   on?: ClimbKind;
   seated: boolean;
+  /** How far a walk has turned into a run, 0 to 1. */
+  run: number;
 };
 
 export const sideways = (heading: number): Facing => (heading < 0 ? 'west' : 'east');
@@ -93,7 +97,7 @@ export function drawnCrossing(out: Drawn, kind: ClimbKind | 'lift', heading: num
   return out;
 }
 
-export const emptyDrawn = (): Drawn => ({ pose: 'standing', facing: 'south', phase: 0, seated: false });
+export const emptyDrawn = (): Drawn => ({ pose: 'standing', facing: 'south', phase: 0, seated: false, run: 0 });
 
 export class Walker {
   readonly position: { x: number; y: number };

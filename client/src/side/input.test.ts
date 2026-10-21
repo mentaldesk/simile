@@ -25,12 +25,12 @@ const HOUSE_10: Wall = {
 };
 const DOORSTEP: MapPosition = { x: 17, y: 15, map: 'banyan_row' };
 const PASSAGE: MapPosition = { x: 24, y: 15, map: 'banyan_row' };
-const NONE: Held = { up: false, down: false, left: false, right: false };
+const NONE: Held = { up: false, down: false, left: false, right: false, run: false };
 
 /** One frame of the side scene's input: the keys held and whether E was pressed. */
 function frame(at: MapPosition, held: Partial<Held>, pressedE: boolean) {
   const player = new SidePlayer(village, at);
-  const controls: Controls = { x: 0, y: 0, use: false };
+  const controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
   readControls({ ...NONE, ...held }, pressedE, player.mapPosition, controls);
   return { controls, door: player.update(controls, 1 / 60) };
 }
@@ -48,20 +48,21 @@ afterEach(() => {
 });
 
 describe('readControls', () => {
-  it('reads the arrows as directions, y negative up', () => {
-    const controls: Controls = { x: 0, y: 0, use: false };
-    readControls({ up: true, down: false, left: true, right: false }, false, { x: 30, y: 15, map: 'high_street' }, controls);
-    expect(controls).toEqual({ x: -1, y: -1, use: false });
+  it('reads the arrows as directions, y negative up, and Shift as running', () => {
+    const controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+    const held = { up: true, down: false, left: true, right: false, run: true };
+    readControls(held, false, { x: 30, y: 15, map: 'high_street' }, controls);
+    expect(controls).toEqual({ x: -1, y: -1, use: false, eTaken: false, run: true });
   });
 
   it('leaves E to the mural by house 10’s door, so one press doesn’t also go in', () => {
     const { controls, door } = frame(DOORSTEP, {}, true);
 
-    expect(controls.use).toBe(false);
+    expect(controls).toMatchObject({ use: false, eTaken: true });
     expect(door).toBeUndefined();
   });
 
-  it('still takes house 10’s door with up, mural or not', () => {
+  it('takes house 10’s door with up instead, while the mural has E', () => {
     expect(frame(DOORSTEP, { up: true }, false).door?.id).toBe('house_10');
   });
 
@@ -70,12 +71,13 @@ describe('readControls', () => {
     expect(frame(PASSAGE, { up: true }, false).door?.to.map).toBe('high_street');
   });
 
-  it('takes the door with E once nothing is in reach', () => {
+  it('takes the door with E once nothing is in reach, and not with up', () => {
     server.dispatch(JSON.stringify({ type: 'murals', walls: [] }));
 
     const { controls, door } = frame(DOORSTEP, {}, true);
 
-    expect(controls.use).toBe(true);
+    expect(controls).toMatchObject({ use: true, eTaken: false });
     expect(door?.id).toBe('house_10');
+    expect(frame(DOORSTEP, { up: true }, false).door).toBeUndefined();
   });
 });

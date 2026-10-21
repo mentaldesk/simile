@@ -170,12 +170,70 @@
   text-shadow: 0 1px 0 #000;
 }
 
+.help-hint {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  opacity: 0.75;
+  text-shadow: 0 1px 0 #000;
+}
+
+.help {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  width: 260px;
+  padding: 3px 6px 4px;
+  border: 1px solid #7fc8a9;
+  border-radius: 3px;
+  background: rgb(17 17 17 / 90%);
+}
+
+.help b {
+  color: #7fc8a9;
+}
+
+.help dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 6px;
+  margin: 3px 0;
+}
+
+.help dt {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.help dd {
+  margin: 0;
+}
+
+.help p {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 7px;
+}
+
+.help-hint kbd,
+.help kbd {
+  min-width: 6px;
+  padding: 0 2px;
+  border: 1px solid #f4ecd8;
+  border-radius: 2px;
+  font: inherit;
+  font-weight: bold;
+  text-align: center;
+}
+
 .way-prompts {
   position: absolute;
   inset: 0;
 }
 
-.way-prompt {
+.way-prompt,
+.dialogue-target-talk {
   position: absolute;
   left: 0;
   top: 0;
@@ -192,7 +250,12 @@
   white-space: nowrap;
 }
 
-.way-prompt kbd {
+.dialogue-target-talk {
+  font-size: inherit;
+}
+
+.way-prompt kbd,
+.dialogue-target-talk kbd {
   min-width: 6px;
   padding: 0 2px;
   border: 1px solid #1d2b26;

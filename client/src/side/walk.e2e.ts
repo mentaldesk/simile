@@ -1,5 +1,6 @@
-// The player's walk through the side view in Chromium, by the keys (#325): into every building, up and down every
-// flight, ladder and lift, and out of every exit. It serves the client itself and drives the `?harness=side` scene.
+// The player's walk through the side view in Chromium, by the keys (#325, #330): into every building and out of every
+// exit on E, up and down every flight, ladder and lift on the arrows alone, a run along a street with Shift, and E at
+// a terminal, the café counter and a resident. It serves the client itself and drives the `?harness=side` scene.
 // Run `npx playwright install chromium` once, then `node src/side/walk.e2e.ts [--screens <dir>] [--real-time]`.
 import { chromium, type Page } from 'playwright';
 import { createServer } from 'vite';
@@ -10,20 +11,23 @@ type Cell = { x: number; y: number };
 type Place = Cell & { map: string };
 type Link = Place & { id: string; kind: 'door' | 'stairs' | 'ladder' | 'lift'; side: 'inside' | 'outside'; to: Place };
 type Run = { map: string; kind: string; foot: Cell; head: Cell };
-type State = Place & { climbing: string | null; prompts: string[] };
+type Counter = Place & { behind: number };
+type State = Place & { climbing: string | null; run: number; used: string | null; prompts: string[]; talk: string | null };
 type SideWalk = {
   state(): State | undefined;
   links(): Link[];
   runs(): Run[];
   widths(): Record<string, number>;
+  terminals(): Place[];
+  counters(): Counter[];
   standing(map: string, x: number, y: number): boolean;
   teleport(to: Place): void;
+  move(id: string, to: Place): void;
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
-/** Walk from `start` to within `reach` of `x` on its row, press E or not, hold up or down or not, and arrive at
- * `arrive`. */
-type Leg = { name: string; start: Place; x: number; reach: number; e: boolean; hold?: Hold; arrive: Place };
+/** Walk from `start` to within `reach` of `x` on its row, then press E or hold up or down, and arrive at `arrive`. */
+type Leg = { name: string; start: Place; x: number; reach: number; key: 'e' | Hold; arrive: Place };
 
 const args = process.argv.slice(2);
 const option = (name: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
@@ -33,16 +37,25 @@ const FRAME_MS = 1000 / 60;
 const SECONDS_TO_ARRIVE = 12;
 /** On the cell of a door or a lift; near the far edge of the tile beside a flight's or a ladder's end. */
 const REACH = { cell: 0.45, edge: 1.4 };
+/** The client's `PLAYER_SPEED` and `RUN_PACE`. */
+const WALK_SPEED = 2.6;
+const RUN_PACE = 2;
+const PROMPT_KEY = { e: 'E', ArrowUp: '↑', ArrowDown: '↓' } as const;
 
 const walkApi = (page: Page) => ({
   state: () => page.evaluate(() => (window as unknown as Paged).sideWalk.state()),
   links: () => page.evaluate(() => (window as unknown as Paged).sideWalk.links()),
   runs: () => page.evaluate(() => (window as unknown as Paged).sideWalk.runs()),
   widths: () => page.evaluate(() => (window as unknown as Paged).sideWalk.widths()),
+  terminals: () => page.evaluate(() => (window as unknown as Paged).sideWalk.terminals()),
+  counters: () => page.evaluate(() => (window as unknown as Paged).sideWalk.counters()),
   standing: (place: Place) =>
     page.evaluate(({ map, x, y }) => (window as unknown as Paged).sideWalk.standing(map, x, y), place),
   teleport: (to: Place) => page.evaluate((to) => (window as unknown as Paged).sideWalk.teleport(to), to),
+  move: (id: string, to: Place) =>
+    page.evaluate(([id, to]) => (window as unknown as Paged).sideWalk.move(id, to), [id, to] as const),
 });
+type Api = ReturnType<typeof walkApi>;
 
 async function run(page: Page, ms: number): Promise<void> {
   if (realTime) await page.waitForTimeout(ms);
@@ -61,8 +74,10 @@ async function until(page: Page, check: () => Promise<boolean>, seconds: number,
 const near = (state: State | undefined, place: Place, by = 0.01) =>
   !!state && state.map === place.map && Math.abs(state.x - place.x) <= by && Math.abs(state.y - place.y) <= by;
 
+const floorOf = (map: string) => Number(/_floor_(\d+)$/.exec(map)?.[1] ?? NaN);
+
 /** A standing cell two tiles from `end` along its row, towards the middle of the map, to walk from. */
-async function startFor(api: ReturnType<typeof walkApi>, end: Place, width: number): Promise<Place> {
+async function startFor(api: Api, end: Place, width: number): Promise<Place> {
   const towards = end.x < width / 2 ? 1 : -1;
   for (const step of [2, -2, 1, -1]) {
     const x = end.x + towards * step;
@@ -71,25 +86,46 @@ async function startFor(api: ReturnType<typeof walkApi>, end: Place, width: numb
   return end;
 }
 
-/** Doors in on up and out on E; stairs and ladders up from their foot on up alone, and down from their top on E
- * then down; lifts on E. */
-async function legs(api: ReturnType<typeof walkApi>): Promise<Leg[]> {
+async function teleport(page: Page, api: Api, to: Place, what: string): Promise<void> {
+  for (let tries = 1; ; tries++) {
+    await api.teleport(to);
+    try {
+      await until(page, async () => near(await api.state(), to), 10, `${what}: getting to ${JSON.stringify(to)}`);
+      return;
+    } catch (error) {
+      if (tries === 3) throw error;
+    }
+  }
+}
+
+/** Doors on E; stairs and ladders up from their foot on up and down from their top on down; the lift a floor up on
+ * up and a floor down on down, from each of its cells. */
+async function legs(api: Api): Promise<Leg[]> {
   const [links, widths] = [await api.links(), await api.widths()];
   const far = (link: Link) => links.find(({ map, x, y }) => map === link.to.map && x === link.to.x && y === link.to.y)!;
   const found: Leg[] = [];
   for (const link of links) {
     const there = far(link);
-    const [inside, goingIn] = [link.map.includes('_floor_'), there.map.includes('_floor_')];
     const arrive = { map: there.map, x: there.x, y: there.y };
     const start = await startFor(api, link, widths[link.map]);
-    const leg = { start, x: link.x, arrive, reach: link.kind === 'stairs' || link.kind === 'ladder' ? REACH.edge : REACH.cell };
-    if (link.kind === 'door' && !inside) {
-      found.push({ ...leg, name: goingIn ? `into ${there.map}` : `${link.map} to ${there.map}`, e: false, hold: 'ArrowUp' });
-    } else if (link.kind === 'door') found.push({ ...leg, name: `out of ${link.map}`, e: true });
-    else if (link.kind === 'lift') found.push({ ...leg, name: `${link.id} from ${link.map}`, e: true });
-    else {
+    const leg = { start, x: link.x, arrive };
+    if (link.kind === 'door') {
+      const [inside, goingIn] = [link.map.includes('_floor_'), there.map.includes('_floor_')];
+      const name = goingIn ? `into ${there.map}` : inside ? `out of ${link.map}` : `${link.map} to ${there.map}`;
+      found.push({ ...leg, name, reach: REACH.cell, key: 'e' });
+    } else if (link.kind === 'lift') {
+      for (const up of [true, false]) {
+        const next = links.find(
+          (other) => other.kind === 'lift' && other.map === link.map && floorOf(other.to.map) === floorOf(link.map) + (up ? 1 : -1),
+        );
+        if (!next) continue;
+        const to = far(next);
+        const name = `lift ${up ? 'up' : 'down'} from ${link.map} at ${link.x}`;
+        found.push({ ...leg, name, reach: REACH.cell, key: up ? 'ArrowUp' : 'ArrowDown', arrive: { map: to.map, x: to.x, y: to.y } });
+      }
+    } else {
       const up = link.side === 'outside';
-      found.push({ ...leg, name: `${link.id} ${up ? 'up' : 'down'} from ${link.map}`, e: !up, hold: up ? 'ArrowUp' : 'ArrowDown' });
+      found.push({ ...leg, name: `${link.id} ${up ? 'up' : 'down'} from ${link.map}`, reach: REACH.edge, key: up ? 'ArrowUp' : 'ArrowDown' });
     }
   }
   for (const run of await api.runs()) {
@@ -99,23 +135,32 @@ async function legs(api: ReturnType<typeof walkApi>): Promise<Leg[]> {
     ] as const) {
       const start = await startFor(api, { map: run.map, ...from }, widths[run.map]);
       const name = `${run.kind} on ${run.map} ${up ? 'up' : 'down'} from ${from.x}, ${from.y}`;
-      const arrive = { map: run.map, ...to };
-      found.push({ name, start, x: from.x, reach: REACH.edge, e: !up, hold: up ? 'ArrowUp' : 'ArrowDown', arrive });
+      found.push({ name, start, x: from.x, reach: REACH.edge, key: up ? 'ArrowUp' : 'ArrowDown', arrive: { map: run.map, ...to } });
     }
   }
   return found;
 }
 
-async function walkLeg(page: Page, api: ReturnType<typeof walkApi>, leg: Leg, index: number): Promise<void> {
-  for (let tries = 1; ; tries++) {
-    await api.teleport(leg.start);
-    try {
-      await until(page, async () => near(await api.state(), leg.start), 10, `${leg.name}: getting to the start`);
-      break;
-    } catch (error) {
-      if (tries === 3) throw error;
-    }
+async function shot(page: Page, index: number, name: string): Promise<void> {
+  if (!screens) return;
+  const path = `${screens}/${String(index).padStart(3, '0')}-${name.replaceAll(/\W+/g, '-')}.jpg`;
+  await page.screenshot({ path, type: 'jpeg', quality: 80 });
+}
+
+/** E where nothing takes it leaves the player where they are. */
+async function pressingE(page: Page, api: Api, name: string): Promise<void> {
+  const before = (await api.state())!;
+  await page.keyboard.press('e');
+  await run(page, 500);
+  const after = (await api.state())!;
+  if (after.climbing || after.map !== before.map || Math.abs(after.x - before.x) > 1e-6 || after.y !== before.y) {
+    throw new Error(`${name}: E moved the player from ${JSON.stringify(before)} to ${JSON.stringify(after)}`);
   }
+}
+
+/** Says whether E was pressed first, to no effect. */
+async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<string | void> {
+  await teleport(page, api, leg.start, leg.name);
   await run(page, 300);
   const state = (await api.state())!;
   if (Math.abs(state.x - leg.x) > leg.reach) {
@@ -126,26 +171,114 @@ async function walkLeg(page: Page, api: ReturnType<typeof walkApi>, leg: Leg, in
     await page.keyboard.up(walk);
   }
   await run(page, 200);
-  const { prompts, x } = (await api.state())!;
+  const { prompts, x, used, talk } = (await api.state())!;
   if (leg.reach === REACH.edge && Math.abs(x - leg.x) < 1.3) {
     throw new Error(`${leg.name}: stopped ${Math.abs(x - leg.x).toFixed(2)} from ${leg.x}, not at the edge of its reach`);
   }
-  const key = leg.e ? 'E' : leg.hold === 'ArrowUp' ? '↑' : '↓';
-  if (!prompts.some((prompt) => prompt.split(':')[0].includes(key))) {
+  const key = PROMPT_KEY[leg.key];
+  if (!prompts.some((prompt) => prompt.split(':')[0].split(' ').includes(key))) {
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
-  if (screens) {
-    const path = `${screens}/${String(index).padStart(3, '0')}-${leg.name.replaceAll(/\W+/g, '-')}.jpg`;
-    await page.screenshot({ path, type: 'jpeg', quality: 80 });
+  await shot(page, index, leg.name);
+  const eFree = !used && !talk && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  if (leg.key === 'e') await page.keyboard.press('e');
+  else {
+    if (eFree) await pressingE(page, api, leg.name);
+    await page.keyboard.down(leg.key);
   }
-  if (leg.e) {
-    await page.keyboard.press('e');
-    await run(page, 100);
-  }
-  if (leg.hold) await page.keyboard.down(leg.hold);
   const arrive = `${leg.name}: arriving at ${JSON.stringify(leg.arrive)}`;
   await until(page, async () => near(await api.state(), leg.arrive), SECONDS_TO_ARRIVE, arrive);
-  if (leg.hold) await page.keyboard.up(leg.hold);
+  if (leg.key !== 'e') await page.keyboard.up(leg.key);
+  if (leg.key !== 'e' && eFree) return 'E first did nothing';
+}
+
+/** Along the High Street, walking, then holding Shift, then letting go. */
+async function runLeg(page: Page, api: Api, index: number): Promise<void> {
+  await teleport(page, api, { map: 'high_street', x: 2, y: 15 }, 'running');
+  await page.keyboard.down('ArrowRight');
+  const along = async (ms: number) => {
+    const from = (await api.state())!.x;
+    await run(page, ms);
+    return (await api.state())!.x - from;
+  };
+  const walked = await along(1000);
+  await page.keyboard.down('Shift');
+  await run(page, 400);
+  const ran = await along(1000);
+  const { run: running } = (await api.state())!;
+  await shot(page, index, 'running on the High Street');
+  await page.keyboard.up('Shift');
+  await run(page, 400);
+  const after = await along(1000);
+  await page.keyboard.up('ArrowRight');
+  const { run: walking } = (await api.state())!;
+  const speeds = `walked ${walked.toFixed(2)}, ran ${ran.toFixed(2)}, then ${after.toFixed(2)} tiles a second`;
+  if (Math.abs(walked - WALK_SPEED) > 0.15 || Math.abs(after - WALK_SPEED) > 0.15) throw new Error(`running: ${speeds}`);
+  if (Math.abs(ran - RUN_PACE * WALK_SPEED) > 0.25 || running !== 1 || walking !== 0) {
+    throw new Error(`running: ${speeds}, blend ${running} running and ${walking} after`);
+  }
+}
+
+const shown = (page: Page, selector: string) =>
+  page.evaluate((selector) => {
+    const element = document.querySelector<HTMLElement>(selector);
+    return element && !element.hidden ? element.textContent : null;
+  }, selector);
+
+/** E at a news terminal opens the news, and Esc closes it. */
+async function terminalLeg(page: Page, api: Api, at: Place, index: number): Promise<void> {
+  const name = `the terminal on ${at.map}`;
+  await teleport(page, api, at, name);
+  await run(page, 200);
+  if (!(await shown(page, '.news-hint'))?.includes('Press E')) throw new Error(`${name}: no hint to press E`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  await shot(page, index, name);
+  if ((await shown(page, 'section.news')) === null) throw new Error(`${name}: E didn't open the news`);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, 'section.news')) !== null) throw new Error(`${name}: Esc didn't close the news`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
+}
+
+/** E at the café counter opens the chat to whoever is behind it, and Esc closes it. */
+async function counterLeg(page: Page, api: Api, counter: Counter, index: number): Promise<void> {
+  const name = `the counter on ${counter.map}`;
+  await api.move('odalys', { map: counter.map, x: counter.behind, y: counter.y });
+  const stand = { map: counter.map, x: counter.x, y: counter.y };
+  await teleport(page, api, stand, name);
+  await run(page, 500);
+  if (!(await shown(page, '.counter-hint'))?.includes('Press E')) throw new Error(`${name}: no hint to press E`);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  await shot(page, index, name);
+  const chat = await shown(page, '.dialogue-chat');
+  if (!chat?.includes('Odalys')) throw new Error(`${name}: E didn't open the chat to Odalys, only ${chat}`);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
+  if (!near(await api.state(), stand)) throw new Error(`${name}: the player moved`);
+}
+
+/** E beside Lachlan, with nothing else here, opens the chat to him, and Esc closes it. */
+async function talkLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'talking to Lachlan';
+  const at = { map: 'high_street', x: 27, y: 15 };
+  await teleport(page, api, at, name);
+  await run(page, 500);
+  const { talk, prompts, used } = (await api.state())!;
+  if (talk !== 'E: talk to Lachlan' || prompts.length || used) {
+    throw new Error(`${name}: ${JSON.stringify({ talk, prompts, used })}`);
+  }
+  await shot(page, index, name);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const chat = await shown(page, '.dialogue-chat');
+  if (!chat?.includes('Lachlan')) throw new Error(`${name}: E didn't open the chat to Lachlan, only ${chat}`);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
 }
 
 const root = new URL('../..', import.meta.url).pathname;
@@ -166,12 +299,24 @@ try {
   if (!realTime) await page.clock.pauseAt(Date.now() + 1000);
   const api = walkApi(page);
   await until(page, async () => !!(await page.evaluate(() => 'sideWalk' in window)) && !!(await api.state()), 60, 'starting');
-  const all = await legs(api);
+  const all: [string, (index: number) => Promise<string | void>][] = [
+    ...(await legs(api)).map((leg): [string, (index: number) => Promise<string | void>] => [leg.name, (i) => walkLeg(page, api, leg, i)]),
+    ['running with Shift', (i) => runLeg(page, api, i)],
+    ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
+      `E at the terminal on ${at.map}`,
+      (i) => terminalLeg(page, api, at, i),
+    ]),
+    ...(await api.counters()).map((counter): [string, (index: number) => Promise<string | void>] => [
+      `E at the counter on ${counter.map}`,
+      (i) => counterLeg(page, api, counter, i),
+    ]),
+    ['E beside a resident', (i) => talkLeg(page, api, i)],
+  ];
   const started = Date.now();
-  for (const [i, leg] of all.entries()) {
+  for (const [i, [name, walk]] of all.entries()) {
     try {
-      await walkLeg(page, api, leg, i);
-      console.log(`ok   ${leg.name}`);
+      const note = await walk(i);
+      console.log(`ok   ${name}${note ? `: ${note}` : ''}`);
     } catch (error) {
       failures.push((error as Error).message);
       console.log(`FAIL ${(error as Error).message}`);

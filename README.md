@@ -15,6 +15,22 @@ On a Mac with Apple Silicon the NPCs speak out loud. The first voiced run downlo
 about 3 GB, and the model needs about 3 GB of memory. `SIMILE_VOICE=0 ./run.sh` turns voices off,
 and everywhere else the village runs with speech bubbles only.
 
+## Controls
+
+| Keys | What they do |
+|---|---|
+| ← → (or A D) | Walk. Hold **Shift** to run. |
+| ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
+| ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
+| E | Read the news at a terminal, look at a mural or a painting, or order at a counter. Otherwise go through a door, or talk to the ringed resident. |
+| Enter | Talk to the ringed resident, then send what you typed. |
+| Tab | Choose who to talk to. Clicking a resident does too. |
+| Esc | Close the chat or a panel. |
+| ? | Show or hide these controls in the game. |
+
+A small tag over each door, flight of stairs, ladder and the lift names its keys. Where E is used for
+something else, like a mural beside a door, ↑ takes the door.
+
 # Concept
 
 Simile is a simulation that takes the form of an isometric video game set in a small village: pixel art characters walking through pre-rendered 3D scenery. 
