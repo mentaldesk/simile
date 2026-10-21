@@ -140,39 +140,39 @@ describe('crossing between floors', () => {
   it('walks to the foot of the stairs, then climbs them to the other floor', () => {
     const all = residents(atFoot);
     const odalysAt = all.all.get('odalys')!;
-    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'west'));
+    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'east'));
     all.update(0.1);
     expect(odalysAt.under).toBeUndefined();
     run(all, 1 / WALKING_SPEED);
     expect(odalysAt.under).toBeDefined();
-    const total = 4 * Math.SQRT2;
+    const total = 5;
     run(all, total / CLIMB_SPEED.stairs / 2);
-    expect(odalysAt.drawn).toMatchObject({ pose: 'climbing', on: 'stairs', facing: 'west' });
-    expect(odalysAt.at.x).toBeCloseTo(38, 0);
+    expect(odalysAt.drawn).toMatchObject({ pose: 'climbing', on: 'stairs', facing: 'east' });
+    expect(odalysAt.at.x).toBeCloseTo(41.5, 0);
     expect(odalysAt.at.y).toBeCloseTo(13, 0);
     expect(odalysAt.drawnMap).toBe('coffee_shop_floor_0');
-    all.move(moved({ x: 11, y: 2, map: 'coffee_shop_floor_1' }, 'walking', 'west'));
+    all.move(moved({ x: 18, y: 2, map: 'coffee_shop_floor_1' }, 'walking', 'east'));
     run(all, 0.2);
     expect(odalysAt.map).toBe('coffee_shop_floor_0');
     run(all, total / CLIMB_SPEED.stairs);
     expect(odalysAt.map).toBe('coffee_shop_floor_1');
     expect(odalysAt.under).toBeUndefined();
-    expect(odalysAt.at).toEqual({ x: 36, y: 11 });
+    expect(odalysAt.at).toEqual({ x: 43, y: 11 });
   });
 
   it('holds at the top until the server moves it on', () => {
     const all = residents({ ...odalys, position: { x: 15, y: 2, map: 'coffee_shop_floor_0' } });
-    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'west'));
+    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'east'));
     run(all, 10);
     const odalysAt = all.all.get('odalys')!;
     expect(odalysAt.map).toBe('coffee_shop_floor_0');
-    expect(odalysAt.at).toEqual({ x: 36, y: 11 });
+    expect(odalysAt.at).toEqual({ x: 43, y: 11 });
   });
 
   it('starts the climb at once if the arrival comes first', () => {
     const all = residents(atFoot);
-    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'west'));
-    all.move(moved({ x: 11, y: 2, map: 'coffee_shop_floor_1' }, 'walking', 'west'));
+    all.move(moved({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'climbing', 'east'));
+    all.move(moved({ x: 18, y: 2, map: 'coffee_shop_floor_1' }, 'walking', 'east'));
     const odalysAt = all.all.get('odalys')!;
     expect(odalysAt.under?.arrival?.map).toBe('coffee_shop_floor_1');
     run(all, 6);

@@ -103,10 +103,11 @@ Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
 a terminal, the counter, a painting (the gallery panel's) or a mural. The world scene takes a door,
-stairs, a ladder or a lift on E only when none is, so one press never does two things. A hint says
-what E, or ↑ at a door, takes where the player stands: "Press E or ↑ to go into The Daily Grind.",
-"Press E to take the lift to the first floor." With something in reach, it's only a door's, under
-that thing's hint: "Press ↑ to go into 3 Banyan Row." The world scene words it (`wayHint`).
+stairs, a ladder or a lift on E only when none is, so one press never does two things. A small tag
+over each door, flight, ladder or lift a key takes from where the player stands names the keys and
+what it does: "E ↑: go in", "E ↓: downstairs", "E: lift to the first floor" (`WayPromptLayer` in
+[`way-prompts.ts`](way-prompts.ts)). With something in reach, E is left off: "↑: go in". The world
+scene words them and says where they go (`wayPrompts`); tags that would overlap move apart.
 
 ## What the world scene provides
 

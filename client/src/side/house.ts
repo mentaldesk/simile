@@ -13,7 +13,7 @@ import {
   xOf,
   type Dollhouse,
 } from './layout';
-import type { Placed, SideMap, Village } from './maps';
+import type { Link, Placed, SideMap, Village } from './maps';
 import { crossing } from './runs';
 import type { SceneryManifest } from './scenery';
 import type { SideTextures } from './textures';
@@ -28,6 +28,12 @@ const FRAME_FILL = 0.9;
 const EMPTY_ASPECT = 0.85;
 const LADDER_ABOVE_M = 0.6;
 const STAIRS_RAIL_M = 0.9;
+/** The papercraft door's height, and the EXIT sign's middle above the floor. */
+const DOOR_M = 2.1;
+const EXIT_SIGN_M = 2.45;
+/** World px a px of the sign's texture. */
+const SIGN_SCALE = 0.6;
+const EXIT_GLOW = { colour: 0x7dffb0, alpha: 0.45, width: 1.7, height: 1.1 };
 
 type Hung = {
   map: string;
@@ -89,6 +95,7 @@ export class House {
       platforms.window,
       platforms.lift,
       platforms.lift_shaft,
+      platforms.door,
       manifest.slab,
       manifest.furniture.picture_frame?.piece,
     ].filter((key): key is string => !!key);
@@ -213,6 +220,7 @@ export class House {
     }
     for (const item of map.furniture) this.furniture(item, map);
     for (const link of map.links) {
+      if (link.kind === 'door') this.exit(map, link);
       if (link.side !== 'outside' || link.kind === 'door') continue;
       const across = crossing(village, link);
       if (!across) continue;
@@ -238,6 +246,26 @@ export class House {
         this.shadowOf(image, key);
       }
     }
+  }
+
+  /** The front door from inside: a door on the back wall with a lit EXIT sign over it. */
+  private exit(map: SideMap, link: Link): void {
+    const { scene, textures, manifest } = this;
+    const x = xOf(map.offset.x + link.x);
+    const feet = feetOf(map.offset.y + link.y);
+    const door = manifest.platforms.door;
+    if (door) {
+      const image = scene.add.image(x, feet, textures.key(door)).setOrigin(0.5, 1);
+      this.shadowOf(this.add(image.setScale((DOOR_M * PPM) / image.height), DEPTH.frame), door);
+    }
+    const y = feet - EXIT_SIGN_M * PPM;
+    const glow = scene.add.image(x, y, textures.lamp()).setBlendMode(Phaser.BlendModes.ADD);
+    glow.setDisplaySize(EXIT_GLOW.width * PPM, EXIT_GLOW.height * PPM).setTint(EXIT_GLOW.colour);
+    this.images.push(glow.setAlpha(EXIT_GLOW.alpha).setDepth(DEPTH.frame + 0.1));
+    const sign = textures.exitSign();
+    const shadow = dropShadow(scene, textures, sign, [0.5, 0.5], x, y, { ppm: PPM, scale: 0.25, alpha: 0.3 });
+    this.images.push(shadow.setScale(shadow.scaleX * SIGN_SCALE).setDepth(DEPTH.frame + 0.15));
+    this.images.push(scene.add.image(x, y, textures.key(sign)).setScale(SIGN_SCALE).setDepth(DEPTH.frame + 0.2));
   }
 
   private furniture(item: Placed, map: SideMap): void {

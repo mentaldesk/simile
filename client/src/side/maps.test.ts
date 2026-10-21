@@ -34,7 +34,7 @@ describe('the side-view maps', () => {
   it('finds a link by its end tile, and its other end', () => {
     const stairs = village.linkAt('coffee_shop_floor_0', 15, 2)!;
     expect(stairs).toMatchObject({ id: 'coffee_shop_stairs', kind: 'stairs', side: 'outside' });
-    expect(village.far(stairs)).toMatchObject({ map: 'coffee_shop_floor_1', x: 11, y: 2, side: 'inside' });
+    expect(village.far(stairs)).toMatchObject({ map: 'coffee_shop_floor_1', x: 18, y: 2, side: 'inside' });
     expect(village.linkAt('high_street', 43, 15)).toMatchObject({ kind: 'door', to: { map: 'coffee_shop_floor_0', x: 18, y: 2 } });
     expect(village.linkAt('high_street', 42, 15)).toBeUndefined();
   });

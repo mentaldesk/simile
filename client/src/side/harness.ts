@@ -6,7 +6,7 @@ import { PLAYER_ID } from '../ui/world-view';
 import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
 import './harness.css';
-import type { Village } from './maps';
+import { isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
 import type { MapPosition } from './player';
 import { climbRuns, crossing, type Path } from './runs';
@@ -264,8 +264,9 @@ function showPanel(): void {
   const panel = document.body.appendChild(document.createElement('section'));
   panel.className = 'side-harness';
   panel.innerHTML = `<b>Side-view harness</b>
-    <p>Left and right walk. E or up takes a door. E gets on stairs or a ladder, then up and down
-    climb; E rides a lift. [ and ] move the clock an hour; 1 to 4 go to each street.</p>`;
+    <p>Left and right walk. E or up takes a door. Up or down climbs stairs or a ladder from the tile
+    beside it, as E then up or down does; E rides a lift. [ and ] move the clock an hour; 1 to 4 go
+    to each street.</p>`;
 }
 
 /** Work from each step's start to the end of its render, and the gaps between frames. */
@@ -290,6 +291,33 @@ function measure(scene: Phaser.Scene): void {
   Object.assign(window, {
     sideScene: scene,
     sideFrameTimes: () => ({ frames: Math.min(count, times.length), work: stats(times), gap: stats(gaps) }),
+  });
+}
+
+/** What `walk.e2e.ts` drives the player by and checks. */
+function exposeWalk(scene: SideScene, village: Village): void {
+  const prompts = () =>
+    [...document.querySelectorAll<HTMLElement>('.way-prompt')].filter((tag) => !tag.hidden).map((tag) => tag.ariaLabel);
+  Object.assign(window, {
+    sideWalk: {
+      state: () => {
+        const player = scene.playing;
+        if (!player) return undefined;
+        const { map, position, climbing } = player;
+        return { map, x: position.x, y: position.y, climbing: climbing ?? null, prompts: prompts() };
+      },
+      links: () => [...village.maps.values()].flatMap(({ links }) => links),
+      runs: () =>
+        village.streets.flatMap((street) =>
+          climbRuns(street).map(({ kind, path }) => ({ map: street.id, kind, foot: path.points[0], head: path.points.at(-1) })),
+        ),
+      widths: () => Object.fromEntries([...village.maps.values()].map(({ id, width }) => [id, width])),
+      standing: (map: string, x: number, y: number) => {
+        const found = village.map(map);
+        return !!found && isStanding(found, x, y);
+      },
+      teleport: (to: MapPosition) => scene.teleport(to),
+    },
   });
 }
 
@@ -325,6 +353,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   }
   showPanel();
   measure(scene);
+  exposeWalk(scene, village);
   window.addEventListener('keydown', ({ key }) => {
     if (key === '[' || key === ']') {
       const now = performance.now();

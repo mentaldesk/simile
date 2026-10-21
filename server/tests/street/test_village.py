@@ -25,7 +25,7 @@ from simile.world.map import (
     with_every_location,
 )
 from simile.world.movement import Point, inside
-from simile.world.paths import Spot, door_ends, find_route, route_length, steps
+from simile.world.paths import Spot, door_ends, find_path, find_route, route_length, steps
 from simile.world.spots import Purpose
 
 MAPS = load_maps(STREET_DIR)
@@ -138,6 +138,39 @@ def test_every_cell_of_every_map_is_reachable_from_every_street() -> None:
     for street in STREETS:
         start = next(Spot(street.id, x, GROUND) for x in range(street.width))
         assert reachable(start) == every_cell, street.id
+
+
+def test_every_stair_and_ladder_end_is_reachable_from_its_floor() -> None:
+    climbs = [door for door in TOWN.doors if door.kind in (DoorKind.STAIRS, DoorKind.LADDER)]
+    ends = [
+        (door.id, end.map, (end.x, end.y)) for door in climbs for end in (door.outside, door.inside)
+    ]
+    ends += [
+        (f"{town.id}'s {town.climb(x, y)}", town.id, (x, y))
+        for town in STREETS
+        for y in range(town.height)
+        for x in range(town.width)
+        if town.climb(x, y) is not None
+    ]
+    assert len(ends) > 2 * len(climbs)
+    for what, map_id, end in ends:
+        town = MAPS[map_id]
+        cells = [
+            (x, y) for y in range(town.height) for x in range(town.width) if town.standing(x, y)
+        ]
+        for cell in cells:
+            assert find_path(town, cell, end) is not None, f"{what} from {cell} on {map_id}"
+
+
+def test_no_flight_or_ladder_starts_against_an_outer_wall() -> None:
+    for door in TOWN.doors:
+        foot, top = door.outside, door.inside
+        town = MAPS[foot.map]
+        if door.kind is DoorKind.STAIRS:
+            behind = foot.x + (1 if top.x < foot.x else -1)
+            assert town.standing(behind, foot.y), door.id
+        elif door.kind is DoorKind.LADDER:
+            assert town.standing(foot.x - 1, foot.y) and town.standing(foot.x + 1, foot.y), door.id
 
 
 def test_streets_join_through_doors_outside_on_the_first_street() -> None:

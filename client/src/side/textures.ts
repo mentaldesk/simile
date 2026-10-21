@@ -19,6 +19,32 @@ function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRend
   return [canvas, context];
 }
 
+/** A card with a darker edge and a lighter top, from (edge, edge) to (width - edge, height - edge). */
+function card(context: CanvasRenderingContext2D, edge: number, width: number, height: number, fill: string, line: string): void {
+  context.beginPath();
+  context.roundRect(edge, edge, width - 2 * edge, height - 2 * edge, 10);
+  context.fillStyle = fill;
+  context.fill();
+  const shine = context.createLinearGradient(0, edge, 0, height - edge);
+  shine.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+  shine.addColorStop(1, 'rgba(0, 0, 0, 0.12)');
+  context.fillStyle = shine;
+  context.fill();
+  context.lineWidth = edge;
+  context.strokeStyle = line;
+  context.stroke();
+}
+
+function lettering(context: CanvasRenderingContext2D, text: string, x: number, y: number, font: string, fill: string): void {
+  context.font = font;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  context.fillText(text, x + 1.5, y + 2);
+  context.fillStyle = fill;
+  context.fillText(text, x, y);
+}
+
 export class SideTextures {
   private readonly scene: Phaser.Scene;
   private readonly loading = new Map<string, Promise<string>>();
@@ -171,6 +197,52 @@ export class SideTextures {
     context.fillRect(0, 0, size, size);
     this.add(key, canvas);
     return key;
+  }
+
+  /** A lit green EXIT sign, drawn large to be scaled down. */
+  exitSign(): string {
+    const name = 'exit-sign';
+    if (this.scene.textures.exists(PREFIX + name)) return name;
+    const [width, height, edge] = [200, 84, 4];
+    const [canvas, context] = canvasOf(width, height);
+    card(context, edge, width, height, '#2f7a4f', '#173f29');
+    context.strokeStyle = 'rgba(246, 240, 216, 0.35)';
+    context.lineWidth = 2;
+    context.beginPath();
+    context.roundRect(edge + 7, edge + 7, width - 2 * edge - 14, height - 2 * edge - 14, 6);
+    context.stroke();
+    lettering(context, 'EXIT', width / 2, height / 2 + 1, 'bold 48px "Trebuchet MS", "Helvetica Neue", Arial, sans-serif', '#f8f2dc');
+    this.add(PREFIX + name, canvas);
+    return name;
+  }
+
+  /** A fingerpost naming where a way goes, drawn large to be scaled down, its post's foot at the bottom middle. */
+  signpost(label: string): string {
+    const name = `signpost:${label}`;
+    if (this.scene.textures.exists(PREFIX + name)) return name;
+    const font = 'bold 46px Georgia, "Times New Roman", serif';
+    const [, measure] = canvasOf(1, 1);
+    measure.font = font;
+    const arrow = 34;
+    const board = { width: Math.ceil(measure.measureText(label).width) + arrow + 64, height: 96 };
+    const [width, height, post] = [board.width + 8, 600, 30];
+    const [canvas, context] = canvasOf(width, height);
+    context.fillStyle = '#6e4b30';
+    context.fillRect(width / 2 - post / 2, board.height - 10, post, height - board.height + 10);
+    context.fillStyle = 'rgba(0, 0, 0, 0.18)';
+    context.fillRect(width / 2 + post / 2 - 9, board.height - 10, 9, height - board.height + 10);
+    card(context, 4, board.width + 4, board.height, '#f1e4c2', '#5b3f27');
+    const left = 4 + 30;
+    context.fillStyle = '#7a2e1f';
+    context.beginPath();
+    context.moveTo(left, board.height / 2 + 14);
+    context.lineTo(left + arrow / 2, board.height / 2 - 18);
+    context.lineTo(left + arrow, board.height / 2 + 14);
+    context.closePath();
+    context.fill();
+    lettering(context, label, left + arrow + 14 + (board.width - arrow - 64) / 2, board.height / 2 + 2, font, '#3b2a1c');
+    this.add(PREFIX + name, canvas);
+    return name;
   }
 
   contact(): string {

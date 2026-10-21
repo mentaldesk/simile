@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { server, type Wall } from '../net';
 import { muralWalls, setMuralView } from './murals';
-import { inReach, reachables, usedByE, wayHint, setWayHint, type Reachables } from './reach';
+import { inReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -84,19 +84,22 @@ describe('inReach', () => {
   });
 });
 
-describe('wayHint', () => {
-  it('is the world scene’s, while it says one', () => {
-    expect(wayHint()).toBeUndefined();
-    const unset = setWayHint(() => 'Press E to take the lift.');
-    expect(wayHint()).toBe('Press E to take the lift.');
+describe('wayPrompts', () => {
+  const lift = { keys: ['E'], action: 'lift to the first floor', x: 10, y: 20 };
+
+  it('are the world scene’s, while it says some', () => {
+    expect(wayPrompts()).toEqual([]);
+    const unset = setWayPrompts(() => [lift]);
+    expect(wayPrompts()).toEqual([lift]);
     unset();
-    expect(wayHint()).toBeUndefined();
+    expect(wayPrompts()).toEqual([]);
   });
 
-  it('tells the world scene when E is used for something in reach', () => {
-    const unset = setWayHint((eTaken) => (eTaken ? 'Press ↑ to go in.' : 'Press E or ↑ to go in.'));
-    expect(wayHint()).toBe('Press E or ↑ to go in.');
-    expect(wayHint(true)).toBe('Press ↑ to go in.');
+  it('tell the world scene when E is used for something in reach', () => {
+    const door = (eTaken: boolean) => ({ keys: eTaken ? ['↑'] : ['E', '↑'], action: 'go in', x: 0, y: 0 });
+    const unset = setWayPrompts((eTaken) => [door(eTaken)]);
+    expect(wayPrompts()[0].keys).toEqual(['E', '↑']);
+    expect(wayPrompts(true)[0].keys).toEqual(['↑']);
     unset();
   });
 });
