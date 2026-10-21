@@ -1,4 +1,4 @@
-"""Paths, the two styles, the period, and FLUX.2 Klein 4B in text mode for the references."""
+"""Paths, the styles, the period, and FLUX.2 Klein 4B in text mode for the references."""
 
 import gc
 import json
@@ -55,7 +55,45 @@ CARTOON = Style(
     "people, is drawn as a simple chunky cartoon with very thick dark outlines, and the people "
     "have big round heads and short sturdy bodies.",
 )
-STYLES = {s.name: s for s in (PAPERCRAFT, CARTOON)}
+GRIMY = Style(
+    "grimy",
+    "hand-drawn 2D cartoon game art: thick dark brown ink outlines that are scratchy, uneven and "
+    "slightly broken, as if drawn with a worn dip pen, flat colour fills with simple soft "
+    "shading, smudges, scuffs, stains and grime on every surface, a slightly dirty, muted "
+    "palette, chunky rounded simplified shapes, bold readable silhouettes",
+    "hand-drawn in the scratchy, grimy cartoon style",
+    "thick scratchy, uneven dark ink outlines around every shape, flat colours with simple soft "
+    "shading, and smudges, grime and wear",
+    "Everything in the picture, the buildings, the glass towers, the trees, the vehicles and the "
+    "people, is drawn as a scratchy, grimy cartoon with thick uneven dark ink lines, smudges and "
+    "worn, dirty surfaces, and the people have very big round heads on small bodies.",
+)
+PIXEL = Style(
+    "pixel",
+    "detailed 2D pixel art for a modern side-scrolling game: crisp square pixels all of one "
+    "fixed size, a limited palette of flat colours with two or three shades each, no "
+    "anti-aliasing, no gradients, no blur, hard clean pixel edges, simple readable shapes",
+    "drawn as crisp pixel art",
+    "hard square pixels all of one size in a limited palette of flat colours, with no "
+    "anti-aliasing, no gradients and no blur",
+    "Everything in the picture, the buildings, the glass towers, the trees, the vehicles and the "
+    "people, is drawn as crisp pixel art with the same big square pixels and the same limited "
+    "palette, with nothing smooth or realistic.",
+)
+FLAT = Style(
+    "flat",
+    "flat modern vector illustration for a 2D game: bold flat colours, simple geometric shapes, "
+    "clean smooth edges, no texture, no grain, no gradients, no dark outlines, at most a thin "
+    "line in a darker shade of the same colour, a single flat shadow tone, a bright harmonious "
+    "palette",
+    "drawn as a flat modern illustration",
+    "bold flat colours and simple geometric shapes with clean edges, no dark outlines, no "
+    "texture and no gradients",
+    "Everything in the picture, the buildings, the glass towers, the trees, the vehicles and the "
+    "people, is drawn as a flat geometric vector illustration in bold flat colours with no dark "
+    "outlines and no texture, and the people are simple geometric figures.",
+)
+STYLES = {s.name: s for s in (PAPERCRAFT, CARTOON, GRIMY, PIXEL, FLAT)}
 
 PERIOD = (
     "a near-future neighbourhood of a southern Chinese tech city like Shenzhen, today: low-rise "
@@ -76,12 +114,20 @@ def reference(style: Style, name: str) -> Path:
     return REFS / style.name / f"{name}.jpg"
 
 
+SHELLS = {"sh", "bash", "zsh", "fish", "sleep", "pgrep", "grep"}
+"""Programs whose command lines may mention mflux without running it."""
+
+
 def busy() -> list[str]:
     """Other image or language models running on this Mac: mflux, a simile build, or Ollama."""
     found = []
     for pattern in ("mflux", "simile (papercraft|dolls)"):
         run = subprocess.run(["pgrep", "-fl", pattern], capture_output=True, text=True)
-        found += [line for line in run.stdout.splitlines() if str(os.getpid()) not in line]
+        for line in run.stdout.splitlines():
+            pid, _, command = line.partition(" ")
+            program = Path(command.split(" ", 1)[0]).name
+            if pid != str(os.getpid()) and program not in SHELLS:
+                found.append(line)
     try:
         ollama = subprocess.run(["ollama", "ps"], capture_output=True, text=True).stdout
         found += [f"ollama: {line}" for line in ollama.splitlines()[1:] if line.strip()]

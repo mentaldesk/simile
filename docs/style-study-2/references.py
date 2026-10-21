@@ -14,6 +14,14 @@ SEEDS = {
     "papercraft/signage": 43,
     "cartoon/street": 44,
     "cartoon/interior": 43,
+    "grimy/street": 47,
+    "grimy/interior": 43,
+    "grimy/signage": 43,
+    "pixel/street": 47,
+    "pixel/interior": 43,
+    "pixel/signage": 44,
+    "flat/street": 43,
+    "flat/signage": 43,
 }
 """`<style>/<scene>` to a seed other than 42, for a reference repainted after a look."""
 

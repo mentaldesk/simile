@@ -1,28 +1,35 @@
 # Draft: the follow-up re-render issue
 
-To be filed only if the user picks the switch #326 recommends. Nothing below starts until then. If
-the user keeps papercraft, the same issue works with the modern papercraft references and prompts,
-and without parts 2 and 5.
+To be filed once the user picks a style from #326's and #329's study. Nothing below starts until
+then. It works for any of the four:
+
+- **papercraft** with the modern references
+- **the Klei-like cartoon**, as #329 revised it: scratchier and grimier, bigger heads, one outline
+- **pixel art**
+- **the flat cartoon**
+
+Fill in `<style>` and keep that style's rows in [What changes per style](#what-changes-per-style).
+#329's recommendation is the revised cartoon.
 
 ---
 
-**Title:** Side view: re-render the village's scenery and dolls as a hand-drawn cartoon, set today
+**Title:** Side view: re-render the village's scenery and dolls in `<style>`, set today
 
 **Body:**
 
-#326's study found that the side view's 1950s look came from #309's prompts, looks and front plans,
-not mainly from its references. It recommends switching the art to a hand-drawn cartoon at the
-same time: thick dark outlines, flat colours with soft shading, and chunky shapes. Its study is in
-`docs/style-study-2/`, with every piece it painted on `previews/326-style-study-2`.
+#326's and #329's studies found that the side view's 1950s look came from #309's prompts, looks
+and front plans, not mainly from its references. They compared five styles on the same pieces, and
+the user chose `<style>`. The study is in `docs/style-study-2/`, with every piece it painted on
+`previews/326-style-study-2` and `previews/329-style-study-3`.
 
 This issue re-renders `content/papercraft/` and `content/dolls/` with #309's and #310's own
 pipelines, new references and new prompts.
 
-**It doesn't touch movement, the maps or the client:**
+**It doesn't touch movement or the maps:**
 
-- `content/street/`, `server/simile/street/`, `server/simile/sim/` and `client/` are unchanged.
+- `content/street/`, `server/simile/street/` and `server/simile/sim/` are unchanged.
 - The manifests keep their format, keys and lookups, so the client's scenery and rig draw the new
-  pieces as they are.
+  pieces as they are. Pixel art is the exception: see its rows below.
 - The client's tests that read the committed manifests (`client/src/side/*.test.ts`,
   `client/src/dolls/`) must pass unchanged.
 
@@ -34,29 +41,28 @@ pipelines, new references and new prompts.
 - `server/simile/dolls/`, except `routes.py` and `job.py`
 - `content/dolls/`
 - `server/tests/dolls/`
+- For pixel art only: the files in `client/src/side/` and `client/src/dolls/` its rows name
 
 ## Task
 
-1. **References.** Replace `content/papercraft/references/` with four cartoon references:
+1. **References.** Replace `content/papercraft/references/` with four references in `<style>`:
    - a street, a dollhouse interior, residents, and a shop with neon signs
-   - start from #326's `references/cartoon/`, or repaint them from `docs/style-study-2/references.py`
+   - start from the study's `references/<style>/`, or repaint them with
+     `docs/style-study-2/references.py`
    - name them in `painter.reference()`'s docstring and the build's `refs`
-   - **describe the look, never the game:** "very thick bold dark brown outlines around every shape,
-     flat colour fills with simple soft shading, chunky rounded simplified shapes, bold readable
-     silhouettes, slightly exaggerated proportions"
+   - **describe the look, never a game or a brand.** The study's `common.py` has each style's
+     words.
    - **signs are neon pictograms in windows, never boards,** or FLUX writes pseudo-Chinese
-     characters on them
-   - **for a grittier, more Klei-like look,** ask for scratchy ink and grime here, if the user wants
-     it
-   - look at each one, zooming in on small signs, and reject any with lettering, as #326 did
-     for 18 of 26
+     characters on them. The user likes the pictograms.
+   - look at each one, zooming in on every sign, and reject any with lettering. The studies
+     rejected most of their first references for it.
 2. **The style as a setting.**
-   - `painter.STYLE` becomes the cartoon's.
-   - The catalogue's medium words become the cartoon's: `LEAD`, `REDRAW`, `TEXTURE`, `PAPER_LEAD`,
+   - `painter.STYLE` becomes the style's.
+   - The catalogue's medium words become the style's: `LEAD`, `REDRAW`, `TEXTURE`, `PAPER_LEAD`,
      `PAPER_CARD`, and "made of cut paper and card" in `front_prompt` and `night_prompt`.
-   - #326's `scenery.leads()` and `TEXTURE` have the wording.
+   - The study's `scenery.leads()`, `TEXTURE` and `SLAB` have the wording.
 3. **Today's village in the prompts and looks** (`catalogue.py`, `village.py`). Name contemporary
-   materials and things throughout, as #326's `scenery.py` does:
+   materials and things throughout, as the study's `scenery.py` does:
    - layers: a glass skyline behind green hills, mid-rise blocks with solar panels and roof
      gardens, concrete planters with tropical plants, and a footpath with tactile paving and a
      cycle lane
@@ -70,58 +76,85 @@ pipelines, new references and new prompts.
    - **cut each ground strip to its own band,** as fronts are cut on their plans.
      - Make the strip solid from the band's usual top row to its usual bottom one.
      - Trim the sloped ends of a slab painted in perspective.
-     - #326's `scenery.banded` does this. Without it, a pale or grey slab keyed away with the
-       backdrop, and a plaza's sloped end, left holes where the sky showed through the pavement.
-4. **Today's details in the front plans** (`fronts.py`), as #326's `scenery.modernised` draws them:
+     - The study's `scenery.banded` does this. Without it, the sky showed through holes in the
+       pavement.
+4. **Today's details in the front plans** (`fronts.py`), as the study's `scenery.modernised`
+   draws them:
    - slim dark window frames with roller blinds, instead of curtains, sills and lintels
    - a plain light band in the shop's colour instead of each striped awning
    - a lit shop window with a ring where the neon pictogram goes
    - AC units beside upper windows
    - Add the light bands and pictograms to the plan's glow mask, so the night maps light them.
    - Bump `PLAN`.
-   - FLUX kept adding doors to door-less cartoon units (three seeds of three on the café). Check
-     every unit, and reseed or tighten the prompt.
-5. **The dolls** (`server/simile/dolls/`):
-   - `paint.prompt` in cartoon words. The front and back sheet asks for "four separate flat pieces
-     of a cartoon cut-out puppet, laid apart", or FLUX merges the torsos into a body (4 of 6 in
-     #326).
-   - An ink outline about 0.9 units wide, baked round each piece in both atlases, with the frames
-     and pivots moved to match. The client's rig then draws it with no change.
-   - Heads about 1.2 times bigger and bodies about 1.15 times wider, as numbers in `shapes.py` and
-     `look.BUILD`. The user decides how far.
-   - `rimmed()`'s light card edge off. `sheet.TEXTURE` lower, since the cartoon has no paper grain to
-     bring out.
-   - Keep #310's colour restore. #326 measured the painter pulling light-brown skin 15 to 18 L\*
-     lighter before it, whatever the reference.
+   - FLUX sometimes adds doors to door-less units. Check every unit, and reseed or tighten the
+     prompt.
+5. **Judge the pieces at the client's real size,** from #329's sharpness study:
+   - `simile papercraft-preview` draws the street at 40 px/m. The client draws about 95 px/m on a
+     retina screen, and #329 found that was what made #295's pictures look sharper. Draw the
+     previews at twice the pixels, as the study's `scaled.py` does, before judging a piece.
+   - Keep 8 bits, the painting sizes and WebP q85. bf16 paints no sharper, though it's 20% faster
+     for 7 GB more. Fronts at 1.5 times the pixels have finer detail but thinner outlines than
+     the rest, for 2.1 times the time.
+6. **The dolls** (`server/simile/dolls/`): `paint.prompt` in the style's words, and the style's
+   rows below.
+   - Keep #310's colour restore. The painter pulls light-brown skin lighter in every style.
    - **Check every colour region of every piece in the atlas, ears included,** against its flat
-     colour, as #326's `compose.py match` does.
-     - The cartoon painter draws ears as a dark ring round an orange or pink disc. The restore,
-       which pins a region's median with each channel's gain capped at 4×, left five residents'
-       ears ΔE 13 to 22 off.
-     - Fill any region still over ΔE 6 with its flat colour, keeping the painting's light and
-       shade, as #326's `dolls.matched` does. It refilled 33 of the cartoon's 222 regions.
-     - Add a test that every committed doll passes the check.
-     - Check thin details too. #326's check needs a region at least 6 matching pixels big in the
-       atlas, so a one- or two-pixel stripe, like the one on a sole, goes unmeasured. Some are off,
-       such as Henrietta's blue sole stripe and Lachlan's mint sole. Measure them on the painted
-       sheet, where they're wider, or pixel by pixel.
+     colour, as the study's `compose.py match` does. Fill any region still over ΔE 4.5 with its
+     flat colour, keeping the painting's light and shade, as the study's `dolls.matched` does:
+     under the check's 6, since the lossy WebP atlas moves a small region by up to 2. Add a test
+     that every committed doll is within ΔE 6.
+   - Check thin details too, on the painted sheet where they're wider: the study's check skips a
+     one- or two-pixel stripe.
    - Bump `VERSION`, and reset `REROLLS`.
-6. **Repaint and commit** every piece and doll:
+7. **Repaint and commit** every piece and doll:
    - `simile papercraft`
    - `simile dolls paint --force`
    - `simile papercraft-preview`, then look at every piece
 
+## What changes per style
+
+| | Papercraft | Klei-like cartoon, revised | Pixel art | Flat cartoon |
+|---|---|---|---|---|
+| References | the study's `papercraft` four | the study's `grimy` four | the study's `pixel` four | the study's `flat` four |
+| Medium words (`common.py`) | as #309's, with today's materials | scratchy, uneven ink, smudges, grime and wear, a dirty palette | crisp square pixels of one size, a limited palette, no anti-aliasing | bold flat colours, geometric shapes, no dark outlines, no texture |
+| Dolls | can stay as they are | repainted | repainted | repainted |
+| Doll prompt (`dolls.SHEETS`) | #310's | "cut-out puppet" for the front and back, with no outline painted round any piece | "pixel art cut-out puppet" | "cut-out puppet in flat illustration", no outlines |
+| Outline | none | drawn round each piece, about 0.9 units, its width varying as a worn pen's, and baked into both atlases with the frames and pivots moved to match | none | none |
+| Proportions (`shapes.py`, `look.BUILD`) | as they are | heads 1.6 or 1.8 times bigger, the user's pick; the neck joint lowered by as much as the head grows below it; shoulder joints 2 units lower; bodies 1.15 times wider | as they are | as they are |
+| `rimmed()`'s card edge | on | off | off | off |
+| Colour fallback (`dolls.matched`) | from ΔE 4.5 | from ΔE 4.5 | from ΔE 4.5 | from ΔE 4.5 |
+| Pixel grid | | | every piece snapped to 20 art pixels a metre in one shared palette and saved lossless, and each doll piece pixelated by colour region, as the study's `pixel.py` does | |
+| Client | unchanged | unchanged | drawn on the grid: see below | unchanged |
+
+### Pixel art in the client
+
+Pixel art is the one style that changes the client, so it needs a client task of its own, blocked
+by this one. #329 found that #310's rig survives pixels unchanged if it's drawn at the art's own
+size, so the change is in how the side scene draws, not in the rig:
+
+- **Draw at the art's size, then scale by a whole number.** The side scene renders into a target
+  of 20 art pixels a metre, with nearest-neighbour filtering and positions rounded to art pixels,
+  and that is drawn to the screen at a whole number of screen pixels to an art pixel
+  (`camera.ts`). Otherwise the grid shimmers as the camera moves, and pieces don't share it.
+- **The rig turns pieces at that size, with nearest-neighbour.** At 41 art pixels tall a limb is 3
+  to 4 pixels wide, and #329 found no frame breaks apart, at 41 or at 20 pixels tall. Frame-by-frame
+  poses aren't needed, and `rig.ts` is unchanged.
+- **The dolls' atlases hold pixelated pieces:** each piece shrunk to 20 px/m by colour region, so
+  each art pixel is a shade of its region's flat colour, with the pivots scaled to match.
+
 ## Done when
 
-- [ ] `content/papercraft/` and `content/dolls/` are repainted in the cartoon, set today, with the
+- [ ] `content/papercraft/` and `content/dolls/` are repainted in `<style>`, set today, with the
       same manifest format, keys and lookups.
 - [ ] Every piece has been looked at, with none showing lettering or extra doors.
 - [ ] Every colour region of every doll, ears included, is within ΔE 6 of its `Appearance`
       colour in the committed atlases, and a test checks it.
 - [ ] `make test` and `make lint` pass, the client's included, with nothing under `client/` or
-      `content/street/` changed.
+      `content/street/` changed, except pixel art's client task.
 - [ ] The PR shows the four streets, the dollhouses and the residents at play size, from
       `simile papercraft-preview` and the client's dolls preview.
 
-**Cost, from #309's and #310's numbers:** about 90 minutes of FLUX for the scenery with night
-pictures, 26 minutes for the twelve dolls, and a look at every painting.
+**Cost, from #309's, #310's and #329's numbers:** about 90 minutes of FLUX for the scenery with
+night pictures, 26 minutes for the twelve dolls, and a look at every painting. Expect to repaint
+a few pieces: every style but papercraft added a door to the café, and every #329 style painted
+the bookshelf as a cut-away house, at its first seed. Pixel art adds its client task.
