@@ -1,0 +1,85 @@
+{
+ "1 pose edit": {
+  "count": 19,
+  "mean": 43.8,
+  "sum": 832
+ },
+ "1 standing, from text": {
+  "count": 4,
+  "mean": 20.4,
+  "sum": 82
+ },
+ "1b walk sheet": {
+  "count": 4,
+  "mean": 73.6,
+  "sum": 294
+ },
+ "2 sheet, loose": {
+  "count": 4,
+  "mean": 69.2,
+  "sum": 277
+ },
+ "2 sheet, tight": {
+  "count": 4,
+  "mean": 67.0,
+  "sum": 268
+ },
+ "3 grime texture": {
+  "count": 1,
+  "mean": 29.1,
+  "sum": 29
+ },
+ "4 frame": {
+  "count": 56,
+  "mean": 29.5,
+  "sum": 1653
+ },
+ "4 strip of four": {
+  "count": 8,
+  "mean": 67.5,
+  "sum": 540
+ },
+ "whole loads": {
+  "count": 6,
+  "sum": 4
+ },
+ "cut loads": {
+  "count": 2,
+  "sum": 1
+ },
+ "model loads": {
+  "count": 2,
+  "sum": 1
+ },
+ "repaint loads": {
+  "count": 1,
+  "sum": 1
+ },
+ "all FLUX minutes": 66.4,
+ "blender": {
+  "lachlan": {
+   "build": 0.73,
+   "frames": 20,
+   "toon per frame": 0.62,
+   "flat per frame": 0.26
+  },
+  "odalys": {
+   "build": 0.63,
+   "frames": 20,
+   "toon per frame": 0.7,
+   "flat per frame": 0.26
+  },
+  "ingrid": {
+   "build": 0.76,
+   "frames": 20,
+   "toon per frame": 0.66,
+   "flat per frame": 0.26
+  },
+  "henrietta": {
+   "build": 0.67,
+   "frames": 20,
+   "toon per frame": 0.61,
+   "flat per frame": 0.26
+  }
+ }
+}

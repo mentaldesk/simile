@@ -1,0 +1,44 @@
+{
+ "dolls": {
+  "mean": 22.0,
+  "lachlan": 30.7,
+  "odalys": 17.8,
+  "ingrid": 20.6,
+  "henrietta": 18.8
+ },
+ "whole": {
+  "mean": 20.3,
+  "lachlan": 34.0,
+  "odalys": 9.5,
+  "ingrid": 21.6,
+  "henrietta": 16.0
+ },
+ "cut": {
+  "mean": 20.4,
+  "lachlan": 29.8,
+  "odalys": 18.2,
+  "ingrid": 17.4,
+  "henrietta": 16.1
+ },
+ "model": {
+  "mean": 23.5,
+  "lachlan": 33.7,
+  "odalys": 8.9,
+  "ingrid": 29.2,
+  "henrietta": 22.1
+ },
+ "repaint": {
+  "mean": 27.2,
+  "lachlan": 39.7,
+  "odalys": 11.2,
+  "ingrid": 31.7,
+  "henrietta": 26.3
+ },
+ "strip": {
+  "mean": 26.4,
+  "lachlan": 38.9,
+  "odalys": 25.2,
+  "ingrid": 21.2,
+  "henrietta": 20.1
+ }
+}

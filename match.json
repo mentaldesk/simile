@@ -1,0 +1,3996 @@
+{
+ "dolls": {
+  "cluster": {
+   "regions": 48,
+   "mean": 2.4,
+   "over 6": 6,
+   "worst": [
+    [
+     18.7,
+     "ingrid",
+     "front",
+     "accent",
+     "#f1b361",
+     "#c3866a"
+    ],
+    [
+     13.9,
+     "lachlan",
+     "front",
+     "hair",
+     "#c0cbdc",
+     "#fefefe"
+    ],
+    [
+     11.8,
+     "lachlan",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#cbd1de"
+    ],
+    [
+     8.9,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#6f59b1"
+    ],
+    [
+     7.3,
+     "ingrid",
+     "stand",
+     "shoe",
+     "#181425",
+     "#170d13"
+    ],
+    [
+     6.5,
+     "henrietta",
+     "front",
+     "shoe",
+     "#181425",
+     "#0f0c15"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e8b797",
+       "share": 0.17,
+       "delta_e": 0.3
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#cbd1de",
+       "share": 0.056,
+       "delta_e": 2.7
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4b8651",
+       "share": 0.1,
+       "delta_e": 0.0
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#3a4467",
+       "share": 0.13,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#cbd1de",
+       "share": 0.056,
+       "delta_e": 11.8
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8a6ee1",
+       "share": 0.138,
+       "delta_e": 1.8
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#eebb9a",
+       "share": 0.168,
+       "delta_e": 1.2
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#fefefe",
+       "share": 0.02,
+       "delta_e": 13.9
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4a8550",
+       "share": 0.116,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#3a4466",
+       "share": 0.176,
+       "delta_e": 0.0
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fefefe",
+       "share": 0.02,
+       "delta_e": 0.2
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#876cd8",
+       "share": 0.103,
+       "delta_e": 0.4
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e7a975",
+       "share": 0.152,
+       "delta_e": 0.8
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3f2731",
+       "share": 0.261,
+       "delta_e": 0.4
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e48451",
+       "share": 0.054,
+       "delta_e": 0.3
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#4c8652",
+       "share": 0.056,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fdfdfb",
+       "share": 0.017,
+       "delta_e": 1.1
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#e9d3a9",
+       "share": 0.114,
+       "delta_e": 0.2
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e5a773",
+       "share": 0.198,
+       "delta_e": 0.3
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "share": 0.25,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e78651",
+       "share": 0.043,
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#4b8651",
+       "share": 0.057,
+       "delta_e": 0.0
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fcfcfc",
+       "share": 0.016,
+       "delta_e": 0.6
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#ebd4aa",
+       "share": 0.138,
+       "delta_e": 0.4
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c2866a",
+       "share": 0.218,
+       "delta_e": 0.3
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3f2832",
+       "share": 0.224,
+       "delta_e": 0.3
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#69e4ed",
+       "share": 0.056,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#643b66",
+       "share": 0.097,
+       "delta_e": 0.5
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#170d13",
+       "share": 0.103,
+       "delta_e": 7.3
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#fdc665",
+       "share": 0.023,
+       "delta_e": 5.8
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c3866a",
+       "share": 0.266,
+       "delta_e": 0.3
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#442c38",
+       "share": 0.097,
+       "delta_e": 1.9
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#68e5ee",
+       "share": 0.073,
+       "delta_e": 0.6
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#643b67",
+       "share": 0.15,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#171321",
+       "share": 0.034,
+       "delta_e": 1.7
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#c3866a",
+       "share": 0.266,
+       "delta_e": 18.7
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#753f3a",
+       "share": 0.214,
+       "delta_e": 0.5
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#98aac6",
+       "share": 0.115,
+       "delta_e": 4.6
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#214f80",
+       "share": 0.074,
+       "delta_e": 0.0
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#252c45",
+       "share": 0.116,
+       "delta_e": 0.9
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#191c28",
+       "share": 0.083,
+       "delta_e": 5.8
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#6f59b1",
+       "share": 0.025,
+       "delta_e": 8.9
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#743e3a",
+       "share": 0.245,
+       "delta_e": 0.5
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#94a5c0",
+       "share": 0.092,
+       "delta_e": 3.1
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#204f80",
+       "share": 0.09,
+       "delta_e": 0.1
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#252b44",
+       "share": 0.182,
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#0f0c15",
+       "share": 0.073,
+       "delta_e": 6.5
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#7b62bb",
+       "share": 0.007,
+       "delta_e": 5.5
+      }
+     }
+    }
+   }
+  },
+  "spatial": {
+   "regions": 45,
+   "mean": 0.8,
+   "over 6": 1,
+   "worst": [
+    [
+     9.7,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#7054b2"
+    ],
+    [
+     5.2,
+     "ingrid",
+     "stand",
+     "accent",
+     "#f1b361",
+     "#fbc361"
+    ],
+    [
+     1.9,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#90a1b9"
+    ],
+    [
+     1.1,
+     "odalys",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#fdfdfb"
+    ],
+    [
+     1.0,
+     "lachlan",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#886cdd"
+    ],
+    [
+     1.0,
+     "henrietta",
+     "stand",
+     "top",
+     "#214f80",
+     "#1f4d7a"
+    ]
+   ],
+   "missing": [
+    "lachlan front hair",
+    "ingrid front accent",
+    "henrietta front accent"
+   ],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "pixels": 9135,
+       "want": "#e8b796",
+       "got": "#e8b797",
+       "delta_e": 0.3
+      },
+      "hair": {
+       "pixels": 220,
+       "want": "#c0cbdc",
+       "got": "#bec9da",
+       "delta_e": 0.5
+      },
+      "top": {
+       "pixels": 6399,
+       "want": "#4b8651",
+       "got": "#4b8651",
+       "delta_e": 0.0
+      },
+      "bottom": {
+       "pixels": 7041,
+       "want": "#3a4466",
+       "got": "#3a4467",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 962,
+       "want": "#ffffff",
+       "got": "#fefdfc",
+       "delta_e": 0.7
+      },
+      "accent": {
+       "pixels": 11302,
+       "want": "#866bd7",
+       "got": "#886cdd",
+       "delta_e": 1.0
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 11717,
+       "want": "#e8b796",
+       "got": "#ecba98",
+       "delta_e": 0.9
+      },
+      "hair": {
+       "pixels": 0,
+       "delta_e": null
+      },
+      "top": {
+       "pixels": 7113,
+       "want": "#4b8651",
+       "got": "#4a8650",
+       "delta_e": 0.3
+      },
+      "bottom": {
+       "pixels": 12405,
+       "want": "#3a4466",
+       "got": "#3a4466",
+       "delta_e": 0.0
+      },
+      "shoe": {
+       "pixels": 712,
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "delta_e": 0.0
+      },
+      "accent": {
+       "pixels": 6754,
+       "want": "#866bd7",
+       "got": "#876cd8",
+       "delta_e": 0.4
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "pixels": 10158,
+       "want": "#e4a672",
+       "got": "#e5a873",
+       "delta_e": 0.6
+      },
+      "hair": {
+       "pixels": 19292,
+       "want": "#3e2731",
+       "got": "#3f2731",
+       "delta_e": 0.4
+      },
+      "top": {
+       "pixels": 2956,
+       "want": "#e48450",
+       "got": "#e58550",
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "pixels": 3634,
+       "want": "#4b8651",
+       "got": "#4c8752",
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "pixels": 962,
+       "want": "#ffffff",
+       "got": "#fdfdfb",
+       "delta_e": 1.1
+      },
+      "apron": {
+       "pixels": 6053,
+       "want": "#ead4aa",
+       "got": "#ead4a9",
+       "delta_e": 0.3
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 12338,
+       "want": "#e4a672",
+       "got": "#e6a772",
+       "delta_e": 0.4
+      },
+      "hair": {
+       "pixels": 20713,
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "delta_e": 0.0
+      },
+      "top": {
+       "pixels": 2491,
+       "want": "#e48450",
+       "got": "#e78651",
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "pixels": 3939,
+       "want": "#4b8651",
+       "got": "#4c8751",
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "pixels": 652,
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "delta_e": 0.0
+      },
+      "apron": {
+       "pixels": 10999,
+       "want": "#ead4aa",
+       "got": "#ebd4aa",
+       "delta_e": 0.4
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "pixels": 12021,
+       "want": "#c28569",
+       "got": "#c2866a",
+       "delta_e": 0.3
+      },
+      "hair": {
+       "pixels": 9096,
+       "want": "#3e2731",
+       "got": "#3f2832",
+       "delta_e": 0.3
+      },
+      "top": {
+       "pixels": 2285,
+       "want": "#67e3ed",
+       "got": "#67e4ec",
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "pixels": 4633,
+       "want": "#653b68",
+       "got": "#653b67",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1021,
+       "want": "#181425",
+       "got": "#171425",
+       "delta_e": 0.5
+      },
+      "accent": {
+       "pixels": 1429,
+       "want": "#f1b361",
+       "got": "#fbc361",
+       "delta_e": 5.2
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 14407,
+       "want": "#c28569",
+       "got": "#c28569",
+       "delta_e": 0.0
+      },
+      "hair": {
+       "pixels": 4116,
+       "want": "#3e2731",
+       "got": "#3f2832",
+       "delta_e": 0.3
+      },
+      "top": {
+       "pixels": 3449,
+       "want": "#67e3ed",
+       "got": "#67e5ee",
+       "delta_e": 0.6
+      },
+      "bottom": {
+       "pixels": 8381,
+       "want": "#653b68",
+       "got": "#653b67",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 828,
+       "want": "#181425",
+       "got": "#171424",
+       "delta_e": 0.8
+      },
+      "accent": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "pixels": 12201,
+       "want": "#733e39",
+       "got": "#743e3a",
+       "delta_e": 0.5
+      },
+      "hair": {
+       "pixels": 6334,
+       "want": "#8b9bb4",
+       "got": "#90a1b9",
+       "delta_e": 1.9
+      },
+      "top": {
+       "pixels": 4307,
+       "want": "#214f80",
+       "got": "#1f4d7a",
+       "delta_e": 1.0
+      },
+      "bottom": {
+       "pixels": 5918,
+       "want": "#262b44",
+       "got": "#252b44",
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "pixels": 1021,
+       "want": "#181425",
+       "got": "#181425",
+       "delta_e": 0.0
+      },
+      "accent": {
+       "pixels": 50,
+       "want": "#866bd7",
+       "got": "#7054b2",
+       "delta_e": 9.7
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 14773,
+       "want": "#733e39",
+       "got": "#743e3a",
+       "delta_e": 0.5
+      },
+      "hair": {
+       "pixels": 4357,
+       "want": "#8b9bb4",
+       "got": "#8e9eb7",
+       "delta_e": 0.9
+      },
+      "top": {
+       "pixels": 4979,
+       "want": "#214f80",
+       "got": "#1f4f81",
+       "delta_e": 0.2
+      },
+      "bottom": {
+       "pixels": 10416,
+       "want": "#262b44",
+       "got": "#262b44",
+       "delta_e": 0.0
+      },
+      "shoe": {
+       "pixels": 872,
+       "want": "#181425",
+       "got": "#181525",
+       "delta_e": 0.8
+      },
+      "accent": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     }
+    }
+   }
+  }
+ },
+ "whole": {
+  "cluster": {
+   "regions": 24,
+   "mean": 8.9,
+   "over 6": 19,
+   "worst": [
+    [
+     18.9,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#6c6d71"
+    ],
+    [
+     15.7,
+     "lachlan",
+     "stand",
+     "bottom",
+     "#3a4466",
+     "#5b656e"
+    ],
+    [
+     14.0,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#805097"
+    ],
+    [
+     12.8,
+     "henrietta",
+     "stand",
+     "top",
+     "#214f80",
+     "#2c3354"
+    ],
+    [
+     12.7,
+     "ingrid",
+     "stand",
+     "shoe",
+     "#181425",
+     "#190902"
+    ],
+    [
+     12.4,
+     "lachlan",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#6e7d85"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#fac2a7",
+       "share": 0.031,
+       "delta_e": 4.6
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#b9b6b2",
+       "share": 0.022,
+       "delta_e": 11.5
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#5f7b52",
+       "share": 0.033,
+       "delta_e": 6.5
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#5b656e",
+       "share": 0.053,
+       "delta_e": 15.7
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fdfffd",
+       "share": 0.05,
+       "delta_e": 1.6
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#6e7d85",
+       "share": 0.154,
+       "delta_e": 12.4
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e3a54c",
+       "share": 0.201,
+       "delta_e": 7.9
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3f2921",
+       "share": 0.16,
+       "delta_e": 9.8
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e98321",
+       "share": 0.057,
+       "delta_e": 8.0
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#517746",
+       "share": 0.045,
+       "delta_e": 5.9
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fdfdfb",
+       "share": 0.039,
+       "delta_e": 1.1
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#d1c9b4",
+       "share": 0.027,
+       "delta_e": 7.8
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#d39d72",
+       "share": 0.185,
+       "delta_e": 8.8
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3d251f",
+       "share": 0.15,
+       "delta_e": 8.6
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#62bab7",
+       "share": 0.133,
+       "delta_e": 11.1
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#743e5f",
+       "share": 0.196,
+       "delta_e": 6.1
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#190902",
+       "share": 0.083,
+       "delta_e": 12.7
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#d2a435",
+       "share": 0.049,
+       "delta_e": 8.8
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#71442e",
+       "share": 0.026,
+       "delta_e": 7.8
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#6c6d71",
+       "share": 0.092,
+       "delta_e": 18.9
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#2c3354",
+       "share": 0.191,
+       "delta_e": 12.8
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#2c3354",
+       "share": 0.191,
+       "delta_e": 3.8
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#242734",
+       "share": 0.196,
+       "delta_e": 7.6
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#805097",
+       "share": 0.047,
+       "delta_e": 14.0
+      }
+     }
+    }
+   }
+  }
+ },
+ "cut": {
+  "cluster": {
+   "regions": 48,
+   "mean": 9.2,
+   "over 6": 39,
+   "worst": [
+    [
+     23.0,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#686765"
+    ],
+    [
+     22.6,
+     "henrietta",
+     "front",
+     "hair",
+     "#8b9bb4",
+     "#686766"
+    ],
+    [
+     17.7,
+     "lachlan",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#b2b3b1"
+    ],
+    [
+     16.5,
+     "ingrid",
+     "front",
+     "accent",
+     "#f1b361",
+     "#b99278"
+    ],
+    [
+     14.2,
+     "lachlan",
+     "front",
+     "bottom",
+     "#3a4466",
+     "#6a5270"
+    ],
+    [
+     13.9,
+     "lachlan",
+     "stand",
+     "bottom",
+     "#3a4466",
+     "#544e52"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e2bca4",
+       "share": 0.142,
+       "delta_e": 3.6
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#b2b3b1",
+       "share": 0.043,
+       "delta_e": 10.9
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#669064",
+       "share": 0.108,
+       "delta_e": 5.9
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#544e52",
+       "share": 0.059,
+       "delta_e": 13.9
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#b2b3b1",
+       "share": 0.043,
+       "delta_e": 17.7
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8d71ae",
+       "share": 0.132,
+       "delta_e": 9.2
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e1bba2",
+       "share": 0.174,
+       "delta_e": 3.3
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#cbcac6",
+       "share": 0.021,
+       "delta_e": 10.3
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#679265",
+       "share": 0.148,
+       "delta_e": 6.3
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#6a5270",
+       "share": 0.035,
+       "delta_e": 14.2
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#cbcac6",
+       "share": 0.021,
+       "delta_e": 11.8
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8d71af",
+       "share": 0.093,
+       "delta_e": 8.9
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#cba369",
+       "share": 0.157,
+       "delta_e": 7.4
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#45312d",
+       "share": 0.326,
+       "delta_e": 8.0
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#b8764f",
+       "share": 0.051,
+       "delta_e": 9.3
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#527552",
+       "share": 0.054,
+       "delta_e": 7.4
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#d7d0be",
+       "share": 0.049,
+       "delta_e": 12.9
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#d7d0be",
+       "share": 0.049,
+       "delta_e": 8.3
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#cba268",
+       "share": 0.157,
+       "delta_e": 7.2
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#43302c",
+       "share": 0.292,
+       "delta_e": 8.1
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#db8551",
+       "share": 0.034,
+       "delta_e": 2.0
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#527552",
+       "share": 0.049,
+       "delta_e": 7.4
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#ddd5be",
+       "share": 0.136,
+       "delta_e": 13.2
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#ddd5be",
+       "share": 0.136,
+       "delta_e": 6.8
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#b79177",
+       "share": 0.213,
+       "delta_e": 6.4
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#45293a",
+       "share": 0.038,
+       "delta_e": 3.5
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#73ccc7",
+       "share": 0.039,
+       "delta_e": 7.7
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#694262",
+       "share": 0.098,
+       "delta_e": 4.2
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#1f130e",
+       "share": 0.193,
+       "delta_e": 12.5
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#c7a256",
+       "share": 0.04,
+       "delta_e": 9.0
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#b99278",
+       "share": 0.262,
+       "delta_e": 6.3
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#503145",
+       "share": 0.032,
+       "delta_e": 6.1
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#74cdc8",
+       "share": 0.093,
+       "delta_e": 7.5
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#6b4363",
+       "share": 0.117,
+       "delta_e": 4.4
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#1f130e",
+       "share": 0.196,
+       "delta_e": 12.5
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#b99278",
+       "share": 0.262,
+       "delta_e": 16.5
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#6e4d3c",
+       "share": 0.214,
+       "delta_e": 9.0
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#686765",
+       "share": 0.167,
+       "delta_e": 23.0
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#343f55",
+       "share": 0.067,
+       "delta_e": 10.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#323345",
+       "share": 0.097,
+       "delta_e": 4.1
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#292630",
+       "share": 0.038,
+       "delta_e": 6.9
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#785794",
+       "share": 0.042,
+       "delta_e": 13.4
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#6b4a3a",
+       "share": 0.259,
+       "delta_e": 8.4
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#686766",
+       "share": 0.083,
+       "delta_e": 22.6
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#2f3c55",
+       "share": 0.126,
+       "delta_e": 10.1
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#323345",
+       "share": 0.151,
+       "delta_e": 4.1
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#2a2831",
+       "share": 0.036,
+       "delta_e": 7.8
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#7b5997",
+       "share": 0.021,
+       "delta_e": 12.8
+      }
+     }
+    }
+   }
+  }
+ },
+ "model": {
+  "cluster": {
+   "regions": 48,
+   "mean": 1.5,
+   "over 6": 5,
+   "worst": [
+    [
+     18.9,
+     "ingrid",
+     "front",
+     "accent",
+     "#f1b361",
+     "#c28569"
+    ],
+    [
+     14.7,
+     "odalys",
+     "stand",
+     "apron",
+     "#ead4aa",
+     "#e4a672"
+    ],
+    [
+     8.5,
+     "lachlan",
+     "front",
+     "hair",
+     "#c0cbdc",
+     "#b3b1be"
+    ],
+    [
+     7.5,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#725bb9"
+    ],
+    [
+     7.5,
+     "henrietta",
+     "front",
+     "accent",
+     "#866bd7",
+     "#735bb9"
+    ],
+    [
+     1.9,
+     "odalys",
+     "front",
+     "bottom",
+     "#4b8651",
+     "#48814e"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e8b796",
+       "share": 0.109,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#c0cbdc",
+       "share": 0.054,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4a8550",
+       "share": 0.063,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#394364",
+       "share": 0.261,
+       "delta_e": 0.5
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fdfdfd",
+       "share": 0.026,
+       "delta_e": 0.4
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#856ad5",
+       "share": 0.1,
+       "delta_e": 0.5
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e8b796",
+       "share": 0.105,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#b3b1be",
+       "share": 0.016,
+       "delta_e": 8.5
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4a8550",
+       "share": 0.196,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#3a4365",
+       "share": 0.214,
+       "delta_e": 0.5
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fcfcfc",
+       "share": 0.021,
+       "delta_e": 0.6
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#856ad5",
+       "share": 0.046,
+       "delta_e": 0.5
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e4a672",
+       "share": 0.128,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3d2630",
+       "share": 0.219,
+       "delta_e": 0.3
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e1824f",
+       "share": 0.083,
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#4a8550",
+       "share": 0.157,
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fbfbfb",
+       "share": 0.032,
+       "delta_e": 0.8
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#e4a672",
+       "share": 0.128,
+       "delta_e": 14.7
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e4a672",
+       "share": 0.102,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3b252e",
+       "share": 0.091,
+       "delta_e": 0.9
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e2834f",
+       "share": 0.085,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#48814e",
+       "share": 0.067,
+       "delta_e": 1.9
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fcfcfc",
+       "share": 0.022,
+       "delta_e": 0.6
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#e9d3a9",
+       "share": 0.233,
+       "delta_e": 0.2
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c28569",
+       "share": 0.109,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "share": 0.188,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#66e0ea",
+       "share": 0.075,
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#643a67",
+       "share": 0.147,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#181324",
+       "share": 0.034,
+       "delta_e": 0.5
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#efb260",
+       "share": 0.084,
+       "delta_e": 0.4
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c28569",
+       "share": 0.132,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "share": 0.055,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#66e1eb",
+       "share": 0.145,
+       "delta_e": 0.5
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#643a67",
+       "share": 0.222,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#181424",
+       "share": 0.025,
+       "delta_e": 0.5
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#c28569",
+       "share": 0.132,
+       "delta_e": 18.9
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#733e39",
+       "share": 0.113,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#8b9bb4",
+       "share": 0.161,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#214e7f",
+       "share": 0.048,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#262b43",
+       "share": 0.18,
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#181424",
+       "share": 0.039,
+       "delta_e": 0.5
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#725bb9",
+       "share": 0.014,
+       "delta_e": 7.5
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#733e39",
+       "share": 0.107,
+       "delta_e": 0.0
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#8b9bb4",
+       "share": 0.063,
+       "delta_e": 0.0
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#214e7f",
+       "share": 0.131,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#262b43",
+       "share": 0.226,
+       "delta_e": 0.4
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#181425",
+       "share": 0.03,
+       "delta_e": 0.0
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#735bb9",
+       "share": 0.011,
+       "delta_e": 7.5
+      }
+     }
+    }
+   }
+  },
+  "spatial": {
+   "regions": 47,
+   "mean": 1.4,
+   "over 6": 4,
+   "worst": [
+    [
+     11.3,
+     "ingrid",
+     "front",
+     "accent",
+     "#f1b361",
+     "#c18f4c"
+    ],
+    [
+     7.6,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#725bb8"
+    ],
+    [
+     7.5,
+     "henrietta",
+     "front",
+     "accent",
+     "#866bd7",
+     "#735bb9"
+    ],
+    [
+     7.2,
+     "lachlan",
+     "stand",
+     "hair",
+     "#c0cbdc",
+     "#a6b0be"
+    ],
+    [
+     5.2,
+     "odalys",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#e6e6e6"
+    ],
+    [
+     4.7,
+     "lachlan",
+     "front",
+     "hair",
+     "#c0cbdc",
+     "#aeb9c8"
+    ]
+   ],
+   "missing": [
+    "odalys stand apron"
+   ],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "pixels": 4817,
+       "want": "#e8b796",
+       "got": "#e8b796",
+       "delta_e": 0.0
+      },
+      "hair": {
+       "pixels": 2256,
+       "want": "#c0cbdc",
+       "got": "#a6b0be",
+       "delta_e": 7.2
+      },
+      "top": {
+       "pixels": 4292,
+       "want": "#4b8651",
+       "got": "#49824e",
+       "delta_e": 1.6
+      },
+      "bottom": {
+       "pixels": 10243,
+       "want": "#3a4466",
+       "got": "#394364",
+       "delta_e": 0.5
+      },
+      "shoe": {
+       "pixels": 1701,
+       "want": "#ffffff",
+       "got": "#f5f5f5",
+       "delta_e": 2.0
+      },
+      "accent": {
+       "pixels": 5519,
+       "want": "#866bd7",
+       "got": "#856ad5",
+       "delta_e": 0.5
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 7861,
+       "want": "#e8b796",
+       "got": "#e7b695",
+       "delta_e": 0.3
+      },
+      "hair": {
+       "pixels": 177,
+       "want": "#c0cbdc",
+       "got": "#aeb9c8",
+       "delta_e": 4.7
+      },
+      "top": {
+       "pixels": 10145,
+       "want": "#4b8651",
+       "got": "#4a8550",
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "pixels": 16725,
+       "want": "#3a4466",
+       "got": "#394365",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1195,
+       "want": "#ffffff",
+       "got": "#fcfcfc",
+       "delta_e": 0.6
+      },
+      "accent": {
+       "pixels": 4392,
+       "want": "#866bd7",
+       "got": "#8369d2",
+       "delta_e": 1.1
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "pixels": 4730,
+       "want": "#e4a672",
+       "got": "#e4a672",
+       "delta_e": 0.0
+      },
+      "hair": {
+       "pixels": 7078,
+       "want": "#3e2731",
+       "got": "#3d2630",
+       "delta_e": 0.3
+      },
+      "top": {
+       "pixels": 2997,
+       "want": "#e48450",
+       "got": "#df814e",
+       "delta_e": 1.1
+      },
+      "bottom": {
+       "pixels": 8398,
+       "want": "#4b8651",
+       "got": "#4a8450",
+       "delta_e": 0.7
+      },
+      "shoe": {
+       "pixels": 1383,
+       "want": "#ffffff",
+       "got": "#e6e6e6",
+       "delta_e": 5.2
+      },
+      "apron": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 6476,
+       "want": "#e4a672",
+       "got": "#e2a571",
+       "delta_e": 0.4
+      },
+      "hair": {
+       "pixels": 3886,
+       "want": "#3e2731",
+       "got": "#3b252e",
+       "delta_e": 0.9
+      },
+      "top": {
+       "pixels": 4980,
+       "want": "#e48450",
+       "got": "#e0824e",
+       "delta_e": 0.9
+      },
+      "bottom": {
+       "pixels": 3088,
+       "want": "#4b8651",
+       "got": "#48814e",
+       "delta_e": 1.9
+      },
+      "shoe": {
+       "pixels": 1004,
+       "want": "#ffffff",
+       "got": "#fcfcfc",
+       "delta_e": 0.6
+      },
+      "apron": {
+       "pixels": 17487,
+       "want": "#ead4aa",
+       "got": "#e7d2a8",
+       "delta_e": 0.6
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "pixels": 4691,
+       "want": "#c28569",
+       "got": "#c28569",
+       "delta_e": 0.0
+      },
+      "hair": {
+       "pixels": 6174,
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "delta_e": 0.0
+      },
+      "top": {
+       "pixels": 2931,
+       "want": "#67e3ed",
+       "got": "#65dfe9",
+       "delta_e": 0.9
+      },
+      "bottom": {
+       "pixels": 7805,
+       "want": "#653b68",
+       "got": "#643a67",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1373,
+       "want": "#181425",
+       "got": "#181423",
+       "delta_e": 1.0
+      },
+      "accent": {
+       "pixels": 3903,
+       "want": "#f1b361",
+       "got": "#efb160",
+       "delta_e": 0.5
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 7293,
+       "want": "#c28569",
+       "got": "#c18569",
+       "delta_e": 0.3
+      },
+      "hair": {
+       "pixels": 1473,
+       "want": "#3e2731",
+       "got": "#3e2731",
+       "delta_e": 0.0
+      },
+      "top": {
+       "pixels": 8049,
+       "want": "#67e3ed",
+       "got": "#66e1eb",
+       "delta_e": 0.5
+      },
+      "bottom": {
+       "pixels": 13509,
+       "want": "#653b68",
+       "got": "#643a67",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1005,
+       "want": "#181425",
+       "got": "#181424",
+       "delta_e": 0.5
+      },
+      "accent": {
+       "pixels": 169,
+       "want": "#f1b361",
+       "got": "#c18f4c",
+       "delta_e": 11.3
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "pixels": 4040,
+       "want": "#733e39",
+       "got": "#733e39",
+       "delta_e": 0.0
+      },
+      "hair": {
+       "pixels": 6389,
+       "want": "#8b9bb4",
+       "got": "#8b9bb4",
+       "delta_e": 0.0
+      },
+      "top": {
+       "pixels": 2808,
+       "want": "#214f80",
+       "got": "#204b79",
+       "delta_e": 1.5
+      },
+      "bottom": {
+       "pixels": 8742,
+       "want": "#262b44",
+       "got": "#252a43",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1383,
+       "want": "#181425",
+       "got": "#181424",
+       "delta_e": 0.5
+      },
+      "accent": {
+       "pixels": 332,
+       "want": "#866bd7",
+       "got": "#725bb8",
+       "delta_e": 7.6
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 6216,
+       "want": "#733e39",
+       "got": "#723e39",
+       "delta_e": 0.3
+      },
+      "hair": {
+       "pixels": 3632,
+       "want": "#8b9bb4",
+       "got": "#8b9bb4",
+       "delta_e": 0.0
+      },
+      "top": {
+       "pixels": 7123,
+       "want": "#214f80",
+       "got": "#204e7f",
+       "delta_e": 0.3
+      },
+      "bottom": {
+       "pixels": 14231,
+       "want": "#262b44",
+       "got": "#252a43",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 1002,
+       "want": "#181425",
+       "got": "#181424",
+       "delta_e": 0.5
+      },
+      "accent": {
+       "pixels": 428,
+       "want": "#866bd7",
+       "got": "#735bb9",
+       "delta_e": 7.5
+      }
+     }
+    }
+   }
+  }
+ },
+ "repaint": {
+  "cluster": {
+   "regions": 48,
+   "mean": 3.1,
+   "over 6": 9,
+   "worst": [
+    [
+     11.9,
+     "ingrid",
+     "front",
+     "shoe",
+     "#181425",
+     "#120400"
+    ],
+    [
+     11.4,
+     "odalys",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#faf2d6"
+    ],
+    [
+     10.5,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#8f46c9"
+    ],
+    [
+     10.0,
+     "ingrid",
+     "front",
+     "accent",
+     "#f1b361",
+     "#ddb331"
+    ],
+    [
+     10.0,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#918c9d"
+    ],
+    [
+     8.6,
+     "odalys",
+     "stand",
+     "apron",
+     "#ead4aa",
+     "#faf2d6"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e9b898",
+       "share": 0.169,
+       "delta_e": 0.4
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#b9c1d8",
+       "share": 0.044,
+       "delta_e": 4.0
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4e8853",
+       "share": 0.106,
+       "delta_e": 0.8
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#424e6f",
+       "share": 0.23,
+       "delta_e": 3.4
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "share": 0.036,
+       "delta_e": 0.0
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#886bd8",
+       "share": 0.103,
+       "delta_e": 0.4
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#eab999",
+       "share": 0.146,
+       "delta_e": 0.6
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#c2c6c9",
+       "share": 0.02,
+       "delta_e": 6.3
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#4c8651",
+       "share": 0.182,
+       "delta_e": 0.2
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#424c6e",
+       "share": 0.196,
+       "delta_e": 2.7
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "share": 0.017,
+       "delta_e": 0.0
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8e70e3",
+       "share": 0.065,
+       "delta_e": 2.6
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e6a771",
+       "share": 0.132,
+       "delta_e": 0.6
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#402831",
+       "share": 0.16,
+       "delta_e": 0.8
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#f58746",
+       "share": 0.045,
+       "delta_e": 3.6
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#569655",
+       "share": 0.078,
+       "delta_e": 6.0
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#faf2d6",
+       "share": 0.153,
+       "delta_e": 11.4
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#faf2d6",
+       "share": 0.153,
+       "delta_e": 8.6
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e5aa76",
+       "share": 0.128,
+       "delta_e": 1.2
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#462e39",
+       "share": 0.066,
+       "delta_e": 2.4
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#e6874e",
+       "share": 0.092,
+       "delta_e": 1.5
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#51985c",
+       "share": 0.054,
+       "delta_e": 6.2
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "share": 0.017,
+       "delta_e": 0.0
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#ead6ab",
+       "share": 0.228,
+       "delta_e": 0.9
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c5876b",
+       "share": 0.141,
+       "delta_e": 0.8
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#422a34",
+       "share": 0.158,
+       "delta_e": 1.1
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#68fffa",
+       "share": 0.07,
+       "delta_e": 7.9
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#5e355e",
+       "share": 0.062,
+       "delta_e": 2.4
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#1d1e35",
+       "share": 0.027,
+       "delta_e": 4.3
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#f8ba62",
+       "share": 0.071,
+       "delta_e": 2.1
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c6886b",
+       "share": 0.149,
+       "delta_e": 1.1
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#432a34",
+       "share": 0.051,
+       "delta_e": 1.3
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#6be8f0",
+       "share": 0.12,
+       "delta_e": 1.3
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#683e6b",
+       "share": 0.203,
+       "delta_e": 1.0
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#120400",
+       "share": 0.144,
+       "delta_e": 11.9
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#ddb331",
+       "share": 0.012,
+       "delta_e": 10.0
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#753f38",
+       "share": 0.129,
+       "delta_e": 1.0
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#918c9d",
+       "share": 0.079,
+       "delta_e": 10.0
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#214f7e",
+       "share": 0.067,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#262b46",
+       "share": 0.213,
+       "delta_e": 0.8
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#1d1a2b",
+       "share": 0.078,
+       "delta_e": 1.9
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8f46c9",
+       "share": 0.024,
+       "delta_e": 10.5
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#743f3a",
+       "share": 0.126,
+       "delta_e": 0.3
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#8596a3",
+       "share": 0.07,
+       "delta_e": 5.9
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#214e80",
+       "share": 0.134,
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#272c45",
+       "share": 0.209,
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#181b2e",
+       "share": 0.108,
+       "delta_e": 3.9
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#9365e1",
+       "share": 0.021,
+       "delta_e": 3.3
+      }
+     }
+    }
+   }
+  },
+  "spatial": {
+   "regions": 45,
+   "mean": 3.6,
+   "over 6": 7,
+   "worst": [
+    [
+     46.2,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#150000"
+    ],
+    [
+     16.9,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#717277"
+    ],
+    [
+     11.8,
+     "ingrid",
+     "front",
+     "shoe",
+     "#181425",
+     "#020000"
+    ],
+    [
+     11.8,
+     "henrietta",
+     "front",
+     "shoe",
+     "#181425",
+     "#020000"
+    ],
+    [
+     8.0,
+     "ingrid",
+     "stand",
+     "top",
+     "#67e3ed",
+     "#67fffa"
+    ],
+    [
+     6.6,
+     "odalys",
+     "front",
+     "bottom",
+     "#4b8651",
+     "#50995c"
+    ]
+   ],
+   "missing": [
+    "lachlan front hair",
+    "odalys stand apron",
+    "ingrid front accent"
+   ],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "pixels": 2746,
+       "want": "#e8b796",
+       "got": "#e9b797",
+       "delta_e": 0.5
+      },
+      "hair": {
+       "pixels": 1339,
+       "want": "#c0cbdc",
+       "got": "#b9c2d7",
+       "delta_e": 3.1
+      },
+      "top": {
+       "pixels": 2721,
+       "want": "#4b8651",
+       "got": "#4d8853",
+       "delta_e": 0.8
+      },
+      "bottom": {
+       "pixels": 8122,
+       "want": "#3a4466",
+       "got": "#424e6f",
+       "delta_e": 3.4
+      },
+      "shoe": {
+       "pixels": 989,
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "delta_e": 0.0
+      },
+      "accent": {
+       "pixels": 4463,
+       "want": "#866bd7",
+       "got": "#876ad8",
+       "delta_e": 0.4
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 4683,
+       "want": "#e8b796",
+       "got": "#eab999",
+       "delta_e": 0.6
+      },
+      "hair": {
+       "pixels": 0,
+       "delta_e": null
+      },
+      "top": {
+       "pixels": 8364,
+       "want": "#4b8651",
+       "got": "#4c8752",
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "pixels": 13389,
+       "want": "#3a4466",
+       "got": "#434e6d",
+       "delta_e": 3.5
+      },
+      "shoe": {
+       "pixels": 616,
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "delta_e": 0.0
+      },
+      "accent": {
+       "pixels": 3450,
+       "want": "#866bd7",
+       "got": "#8c6fe1",
+       "delta_e": 2.1
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "pixels": 2801,
+       "want": "#e4a672",
+       "got": "#e6a772",
+       "delta_e": 0.4
+      },
+      "hair": {
+       "pixels": 5810,
+       "want": "#3e2731",
+       "got": "#3f2831",
+       "delta_e": 0.6
+      },
+      "top": {
+       "pixels": 1851,
+       "want": "#e48450",
+       "got": "#f58b4b",
+       "delta_e": 3.8
+      },
+      "bottom": {
+       "pixels": 6376,
+       "want": "#4b8651",
+       "got": "#559454",
+       "delta_e": 5.3
+      },
+      "shoe": {
+       "pixels": 741,
+       "want": "#ffffff",
+       "got": "#feffff",
+       "delta_e": 0.5
+      },
+      "apron": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 3399,
+       "want": "#e4a672",
+       "got": "#e6aa78",
+       "delta_e": 1.1
+      },
+      "hair": {
+       "pixels": 2704,
+       "want": "#3e2731",
+       "got": "#462d39",
+       "delta_e": 2.3
+      },
+      "top": {
+       "pixels": 3731,
+       "want": "#e48450",
+       "got": "#e6864d",
+       "delta_e": 1.3
+      },
+      "bottom": {
+       "pixels": 1926,
+       "want": "#4b8651",
+       "got": "#50995c",
+       "delta_e": 6.6
+      },
+      "shoe": {
+       "pixels": 479,
+       "want": "#ffffff",
+       "got": "#ffffff",
+       "delta_e": 0.0
+      },
+      "apron": {
+       "pixels": 15720,
+       "want": "#ead4aa",
+       "got": "#ead5ac",
+       "delta_e": 0.4
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "pixels": 2771,
+       "want": "#c28569",
+       "got": "#c4876b",
+       "delta_e": 0.6
+      },
+      "hair": {
+       "pixels": 4353,
+       "want": "#3e2731",
+       "got": "#422a34",
+       "delta_e": 1.1
+      },
+      "top": {
+       "pixels": 1654,
+       "want": "#67e3ed",
+       "got": "#67fffa",
+       "delta_e": 8.0
+      },
+      "bottom": {
+       "pixels": 5926,
+       "want": "#653b68",
+       "got": "#734077",
+       "delta_e": 3.8
+      },
+      "shoe": {
+       "pixels": 730,
+       "want": "#181425",
+       "got": "#1d1f35",
+       "delta_e": 4.5
+      },
+      "accent": {
+       "pixels": 3051,
+       "want": "#f1b361",
+       "got": "#f6b961",
+       "delta_e": 1.9
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 4088,
+       "want": "#c28569",
+       "got": "#c6886b",
+       "delta_e": 1.1
+      },
+      "hair": {
+       "pixels": 583,
+       "want": "#3e2731",
+       "got": "#472e37",
+       "delta_e": 2.5
+      },
+      "top": {
+       "pixels": 6544,
+       "want": "#67e3ed",
+       "got": "#6ae7ef",
+       "delta_e": 1.1
+      },
+      "bottom": {
+       "pixels": 10339,
+       "want": "#653b68",
+       "got": "#683d6a",
+       "delta_e": 0.8
+      },
+      "shoe": {
+       "pixels": 479,
+       "want": "#181425",
+       "got": "#020000",
+       "delta_e": 11.8
+      },
+      "accent": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "pixels": 2190,
+       "want": "#733e39",
+       "got": "#753f38",
+       "delta_e": 1.0
+      },
+      "hair": {
+       "pixels": 5084,
+       "want": "#8b9bb4",
+       "got": "#717277",
+       "delta_e": 16.9
+      },
+      "top": {
+       "pixels": 1502,
+       "want": "#214f80",
+       "got": "#214e7e",
+       "delta_e": 0.4
+      },
+      "bottom": {
+       "pixels": 6892,
+       "want": "#262b44",
+       "got": "#262b46",
+       "delta_e": 0.8
+      },
+      "shoe": {
+       "pixels": 736,
+       "want": "#181425",
+       "got": "#19172a",
+       "delta_e": 1.5
+      },
+      "accent": {
+       "pixels": 40,
+       "want": "#866bd7",
+       "got": "#150000",
+       "delta_e": 46.2
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 3198,
+       "want": "#733e39",
+       "got": "#73403a",
+       "delta_e": 0.8
+      },
+      "hair": {
+       "pixels": 2588,
+       "want": "#8b9bb4",
+       "got": "#8496a2",
+       "delta_e": 6.5
+      },
+      "top": {
+       "pixels": 5404,
+       "want": "#214f80",
+       "got": "#214d7f",
+       "delta_e": 0.8
+      },
+      "bottom": {
+       "pixels": 10940,
+       "want": "#262b44",
+       "got": "#272c45",
+       "delta_e": 0.3
+      },
+      "shoe": {
+       "pixels": 477,
+       "want": "#181425",
+       "got": "#020000",
+       "delta_e": 11.8
+      },
+      "accent": {
+       "pixels": 183,
+       "want": "#866bd7",
+       "got": "#8a6ddb",
+       "delta_e": 1.1
+      }
+     }
+    }
+   }
+  }
+ },
+ "strip": {
+  "cluster": {
+   "regions": 24,
+   "mean": 4.2,
+   "over 6": 7,
+   "worst": [
+    [
+     13.6,
+     "odalys",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#e3dec1"
+    ],
+    [
+     12.1,
+     "ingrid",
+     "stand",
+     "shoe",
+     "#181425",
+     "#402932"
+    ],
+    [
+     9.8,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#7f60a4"
+    ],
+    [
+     9.2,
+     "lachlan",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#d5d6dc"
+    ],
+    [
+     9.2,
+     "henrietta",
+     "stand",
+     "shoe",
+     "#181425",
+     "#282d49"
+    ],
+    [
+     7.1,
+     "odalys",
+     "stand",
+     "apron",
+     "#ead4aa",
+     "#e3dec1"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e5b998",
+       "share": 0.166,
+       "delta_e": 1.5
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#d5d6dc",
+       "share": 0.04,
+       "delta_e": 6.2
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#55935b",
+       "share": 0.072,
+       "delta_e": 4.7
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#39425f",
+       "share": 0.062,
+       "delta_e": 1.8
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#d5d6dc",
+       "share": 0.04,
+       "delta_e": 9.2
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#886dd8",
+       "share": 0.115,
+       "delta_e": 0.7
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#e2a671",
+       "share": 0.131,
+       "delta_e": 0.7
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#3f2731",
+       "share": 0.189,
+       "delta_e": 0.4
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#d58448",
+       "share": 0.049,
+       "delta_e": 4.5
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#4b8053",
+       "share": 0.051,
+       "delta_e": 2.7
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#e3dec1",
+       "share": 0.085,
+       "delta_e": 13.6
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#e3dec1",
+       "share": 0.085,
+       "delta_e": 7.1
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#c68a6d",
+       "share": 0.163,
+       "delta_e": 1.6
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#402932",
+       "share": 0.176,
+       "delta_e": 0.8
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#67e2e2",
+       "share": 0.047,
+       "delta_e": 3.5
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#6e4072",
+       "share": 0.044,
+       "delta_e": 2.5
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#402932",
+       "share": 0.176,
+       "delta_e": 12.1
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#dcae59",
+       "share": 0.035,
+       "delta_e": 5.1
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#753f39",
+       "share": 0.153,
+       "delta_e": 0.6
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#8d9db4",
+       "share": 0.111,
+       "delta_e": 1.0
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#244f82",
+       "share": 0.061,
+       "delta_e": 0.7
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#282d49",
+       "share": 0.066,
+       "delta_e": 1.3
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#282d49",
+       "share": 0.066,
+       "delta_e": 9.2
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#7f60a4",
+       "share": 0.03,
+       "delta_e": 9.8
+      }
+     }
+    }
+   }
+  }
+ },
+ "strip-raw": {
+  "cluster": {
+   "regions": 24,
+   "mean": 9.8,
+   "over 6": 21,
+   "worst": [
+    [
+     15.4,
+     "henrietta",
+     "stand",
+     "top",
+     "#214f80",
+     "#383a48"
+    ],
+    [
+     15.3,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#7c7c7c"
+    ],
+    [
+     14.8,
+     "lachlan",
+     "stand",
+     "bottom",
+     "#3a4466",
+     "#565a5e"
+    ],
+    [
+     14.6,
+     "ingrid",
+     "stand",
+     "shoe",
+     "#181425",
+     "#231309"
+    ],
+    [
+     13.5,
+     "odalys",
+     "stand",
+     "shoe",
+     "#ffffff",
+     "#dbd5bd"
+    ],
+    [
+     12.5,
+     "henrietta",
+     "stand",
+     "shoe",
+     "#181425",
+     "#383a48"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#e2bb9e",
+       "share": 0.166,
+       "delta_e": 2.7
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#ddddda",
+       "share": 0.028,
+       "delta_e": 10.6
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#639363",
+       "share": 0.068,
+       "delta_e": 5.9
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#565a5e",
+       "share": 0.104,
+       "delta_e": 14.8
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#ddddda",
+       "share": 0.028,
+       "delta_e": 7.4
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#9677b5",
+       "share": 0.13,
+       "delta_e": 9.7
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#c59b55",
+       "share": 0.129,
+       "delta_e": 9.5
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#27130b",
+       "share": 0.16,
+       "delta_e": 11.0
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#c57e3d",
+       "share": 0.027,
+       "delta_e": 8.5
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#648360",
+       "share": 0.022,
+       "delta_e": 6.4
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#dbd5bd",
+       "share": 0.082,
+       "delta_e": 13.5
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#dbd5bd",
+       "share": 0.082,
+       "delta_e": 7.2
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#bb9173",
+       "share": 0.163,
+       "delta_e": 5.9
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#553944",
+       "share": 0.062,
+       "delta_e": 6.4
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#68c0b9",
+       "share": 0.029,
+       "delta_e": 10.5
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#744e68",
+       "share": 0.091,
+       "delta_e": 8.0
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#231309",
+       "share": 0.157,
+       "delta_e": 14.6
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#c7a94c",
+       "share": 0.029,
+       "delta_e": 10.9
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#6a4a38",
+       "share": 0.198,
+       "delta_e": 9.4
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#7c7c7c",
+       "share": 0.13,
+       "delta_e": 15.3
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#383a48",
+       "share": 0.193,
+       "delta_e": 15.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#383a48",
+       "share": 0.193,
+       "delta_e": 7.0
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#383a48",
+       "share": 0.193,
+       "delta_e": 12.5
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#805e99",
+       "share": 0.026,
+       "delta_e": 12.3
+      }
+     }
+    }
+   }
+  }
+ },
+ "repaint-raw": {
+  "cluster": {
+   "regions": 48,
+   "mean": 8.5,
+   "over 6": 31,
+   "worst": [
+    [
+     19.9,
+     "lachlan",
+     "front",
+     "bottom",
+     "#3a4466",
+     "#6c7785"
+    ],
+    [
+     18.6,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#717171"
+    ],
+    [
+     17.4,
+     "henrietta",
+     "stand",
+     "top",
+     "#214f80",
+     "#25273f"
+    ],
+    [
+     16.9,
+     "henrietta",
+     "front",
+     "top",
+     "#214f80",
+     "#2c2b47"
+    ],
+    [
+     16.1,
+     "henrietta",
+     "front",
+     "hair",
+     "#8b9bb4",
+     "#777779"
+    ],
+    [
+     15.0,
+     "lachlan",
+     "stand",
+     "bottom",
+     "#3a4466",
+     "#704ea1"
+    ]
+   ],
+   "missing": [],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#f7c5a6",
+       "share": 0.168,
+       "delta_e": 3.6
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#afb4b7",
+       "share": 0.049,
+       "delta_e": 8.5
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#75ac6c",
+       "share": 0.101,
+       "delta_e": 13.2
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#704ea1",
+       "share": 0.009,
+       "delta_e": 15.0
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fcfdfd",
+       "share": 0.036,
+       "delta_e": 0.7
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8e64d7",
+       "share": 0.126,
+       "delta_e": 2.7
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e8b796",
+       "got": "#f4c59c",
+       "share": 0.146,
+       "delta_e": 4.3
+      },
+      "hair": {
+       "want": "#c0cbdc",
+       "got": "#d3cfcf",
+       "share": 0.034,
+       "delta_e": 9.1
+      },
+      "top": {
+       "want": "#4b8651",
+       "got": "#5c865b",
+       "share": 0.036,
+       "delta_e": 3.6
+      },
+      "bottom": {
+       "want": "#3a4466",
+       "got": "#6c7785",
+       "share": 0.107,
+       "delta_e": 19.9
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#d3cfcf",
+       "share": 0.034,
+       "delta_e": 10.4
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#9678d5",
+       "share": 0.065,
+       "delta_e": 5.1
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#ff9326",
+       "share": 0.044,
+       "delta_e": 10.4
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#250d0d",
+       "share": 0.185,
+       "delta_e": 9.3
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#ff9326",
+       "share": 0.044,
+       "delta_e": 10.7
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#5c8e52",
+       "share": 0.08,
+       "delta_e": 4.2
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#fcfdfd",
+       "share": 0.022,
+       "delta_e": 0.7
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#f9f1d5",
+       "share": 0.13,
+       "delta_e": 8.5
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#e4a672",
+       "got": "#f58a1f",
+       "share": 0.081,
+       "delta_e": 10.9
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#150100",
+       "share": 0.174,
+       "delta_e": 12.9
+      },
+      "top": {
+       "want": "#e48450",
+       "got": "#f58a1f",
+       "share": 0.081,
+       "delta_e": 9.3
+      },
+      "bottom": {
+       "want": "#4b8651",
+       "got": "#4b8d52",
+       "share": 0.046,
+       "delta_e": 2.6
+      },
+      "shoe": {
+       "want": "#ffffff",
+       "got": "#dfd1bb",
+       "share": 0.134,
+       "delta_e": 13.8
+      },
+      "apron": {
+       "want": "#ead4aa",
+       "got": "#fbebbd",
+       "share": 0.227,
+       "delta_e": 5.5
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#bb8765",
+       "share": 0.041,
+       "delta_e": 3.6
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#322420",
+       "share": 0.072,
+       "delta_e": 9.1
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#62f1e7",
+       "share": 0.049,
+       "delta_e": 7.7
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#5f3658",
+       "share": 0.069,
+       "delta_e": 3.9
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#322420",
+       "share": 0.072,
+       "delta_e": 13.7
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#e9b584",
+       "share": 0.107,
+       "delta_e": 6.7
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#c28569",
+       "got": "#d6a16a",
+       "share": 0.149,
+       "delta_e": 11.9
+      },
+      "hair": {
+       "want": "#3e2731",
+       "got": "#57304f",
+       "share": 0.085,
+       "delta_e": 9.6
+      },
+      "top": {
+       "want": "#67e3ed",
+       "got": "#6bd5cb",
+       "share": 0.119,
+       "delta_e": 7.9
+      },
+      "bottom": {
+       "want": "#653b68",
+       "got": "#57304f",
+       "share": 0.085,
+       "delta_e": 5.9
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#110400",
+       "share": 0.154,
+       "delta_e": 11.9
+      },
+      "accent": {
+       "want": "#f1b361",
+       "got": "#d6a16a",
+       "share": 0.149,
+       "delta_e": 7.3
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#764631",
+       "share": 0.207,
+       "delta_e": 7.2
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#717171",
+       "share": 0.058,
+       "delta_e": 18.6
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#25273f",
+       "share": 0.278,
+       "delta_e": 17.4
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#25273f",
+       "share": 0.278,
+       "delta_e": 1.7
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#201f27",
+       "share": 0.079,
+       "delta_e": 6.5
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#8f47ca",
+       "share": 0.022,
+       "delta_e": 10.2
+      }
+     },
+     "front": {
+      "skin": {
+       "want": "#733e39",
+       "got": "#694029",
+       "share": 0.137,
+       "delta_e": 8.9
+      },
+      "hair": {
+       "want": "#8b9bb4",
+       "got": "#777779",
+       "share": 0.044,
+       "delta_e": 16.1
+      },
+      "top": {
+       "want": "#214f80",
+       "got": "#2c2b47",
+       "share": 0.34,
+       "delta_e": 16.9
+      },
+      "bottom": {
+       "want": "#262b44",
+       "got": "#2c2b47",
+       "share": 0.34,
+       "delta_e": 2.9
+      },
+      "shoe": {
+       "want": "#181425",
+       "got": "#171623",
+       "share": 0.031,
+       "delta_e": 2.9
+      },
+      "accent": {
+       "want": "#866bd7",
+       "got": "#9760e1",
+       "share": 0.021,
+       "delta_e": 4.6
+      }
+     }
+    }
+   }
+  },
+  "spatial": {
+   "regions": 45,
+   "mean": 10.9,
+   "over 6": 31,
+   "worst": [
+    [
+     46.2,
+     "henrietta",
+     "stand",
+     "accent",
+     "#866bd7",
+     "#150000"
+    ],
+    [
+     37.2,
+     "henrietta",
+     "stand",
+     "hair",
+     "#8b9bb4",
+     "#714a42"
+    ],
+    [
+     29.0,
+     "lachlan",
+     "front",
+     "bottom",
+     "#3a4466",
+     "#848f9f"
+    ],
+    [
+     27.1,
+     "lachlan",
+     "stand",
+     "bottom",
+     "#3a4466",
+     "#798995"
+    ],
+    [
+     18.0,
+     "henrietta",
+     "front",
+     "hair",
+     "#8b9bb4",
+     "#717173"
+    ],
+    [
+     17.2,
+     "henrietta",
+     "stand",
+     "top",
+     "#214f80",
+     "#242643"
+    ]
+   ],
+   "missing": [
+    "lachlan front hair",
+    "odalys stand apron",
+    "ingrid front accent"
+   ],
+   "by resident": {
+    "lachlan": {
+     "stand": {
+      "skin": {
+       "pixels": 2746,
+       "want": "#e8b796",
+       "got": "#f7c5a5",
+       "delta_e": 3.6
+      },
+      "hair": {
+       "pixels": 1339,
+       "want": "#c0cbdc",
+       "got": "#afb4b7",
+       "delta_e": 8.5
+      },
+      "top": {
+       "pixels": 2721,
+       "want": "#4b8651",
+       "got": "#74ac6b",
+       "delta_e": 13.2
+      },
+      "bottom": {
+       "pixels": 8122,
+       "want": "#3a4466",
+       "got": "#798995",
+       "delta_e": 27.1
+      },
+      "shoe": {
+       "pixels": 989,
+       "want": "#ffffff",
+       "got": "#fdfffe",
+       "delta_e": 1.2
+      },
+      "accent": {
+       "pixels": 4463,
+       "want": "#866bd7",
+       "got": "#8e64d7",
+       "delta_e": 2.7
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 4683,
+       "want": "#e8b796",
+       "got": "#f5c59c",
+       "delta_e": 4.3
+      },
+      "hair": {
+       "pixels": 0,
+       "delta_e": null
+      },
+      "top": {
+       "pixels": 8364,
+       "want": "#4b8651",
+       "got": "#699c68",
+       "delta_e": 8.5
+      },
+      "bottom": {
+       "pixels": 13389,
+       "want": "#3a4466",
+       "got": "#848f9f",
+       "delta_e": 29.0
+      },
+      "shoe": {
+       "pixels": 616,
+       "want": "#ffffff",
+       "got": "#d9d7d7",
+       "delta_e": 8.5
+      },
+      "accent": {
+       "pixels": 3450,
+       "want": "#866bd7",
+       "got": "#9477d3",
+       "delta_e": 4.8
+      }
+     }
+    },
+    "odalys": {
+     "stand": {
+      "skin": {
+       "pixels": 2801,
+       "want": "#e4a672",
+       "got": "#e7ae47",
+       "delta_e": 10.9
+      },
+      "hair": {
+       "pixels": 5810,
+       "want": "#3e2731",
+       "got": "#583f30",
+       "delta_e": 15.1
+      },
+      "top": {
+       "pixels": 1851,
+       "want": "#e48450",
+       "got": "#f99728",
+       "delta_e": 11.8
+      },
+      "bottom": {
+       "pixels": 6376,
+       "want": "#4b8651",
+       "got": "#5b8b51",
+       "delta_e": 3.4
+      },
+      "shoe": {
+       "pixels": 741,
+       "want": "#ffffff",
+       "got": "#fbfdfd",
+       "delta_e": 1.1
+      },
+      "apron": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 3399,
+       "want": "#e4a672",
+       "got": "#e8b13e",
+       "delta_e": 12.8
+      },
+      "hair": {
+       "pixels": 2704,
+       "want": "#3e2731",
+       "got": "#3e2719",
+       "delta_e": 13.1
+      },
+      "top": {
+       "pixels": 3731,
+       "want": "#e48450",
+       "got": "#f5891f",
+       "delta_e": 9.0
+      },
+      "bottom": {
+       "pixels": 1926,
+       "want": "#4b8651",
+       "got": "#4a8c51",
+       "delta_e": 2.3
+      },
+      "shoe": {
+       "pixels": 479,
+       "want": "#ffffff",
+       "got": "#e9e9e7",
+       "delta_e": 4.7
+      },
+      "apron": {
+       "pixels": 15720,
+       "want": "#ead4aa",
+       "got": "#fbeabc",
+       "delta_e": 5.2
+      }
+     }
+    },
+    "ingrid": {
+     "stand": {
+      "skin": {
+       "pixels": 2771,
+       "want": "#c28569",
+       "got": "#e9b384",
+       "delta_e": 14.3
+      },
+      "hair": {
+       "pixels": 4353,
+       "want": "#3e2731",
+       "got": "#493129",
+       "delta_e": 10.0
+      },
+      "top": {
+       "pixels": 1654,
+       "want": "#67e3ed",
+       "got": "#60f1e7",
+       "delta_e": 7.7
+      },
+      "bottom": {
+       "pixels": 5926,
+       "want": "#653b68",
+       "got": "#754272",
+       "delta_e": 3.8
+      },
+      "shoe": {
+       "pixels": 730,
+       "want": "#181425",
+       "got": "#262525",
+       "delta_e": 11.9
+      },
+      "accent": {
+       "pixels": 3051,
+       "want": "#f1b361",
+       "got": "#f3c759",
+       "delta_e": 8.8
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 4088,
+       "want": "#c28569",
+       "got": "#d7a16a",
+       "delta_e": 11.8
+      },
+      "hair": {
+       "pixels": 583,
+       "want": "#3e2731",
+       "got": "#52392b",
+       "delta_e": 13.8
+      },
+      "top": {
+       "pixels": 6544,
+       "want": "#67e3ed",
+       "got": "#6ad4ca",
+       "delta_e": 8.0
+      },
+      "bottom": {
+       "pixels": 10339,
+       "want": "#653b68",
+       "got": "#844779",
+       "delta_e": 7.3
+      },
+      "shoe": {
+       "pixels": 479,
+       "want": "#181425",
+       "got": "#010000",
+       "delta_e": 11.9
+      },
+      "accent": {
+       "pixels": 0,
+       "delta_e": null
+      }
+     }
+    },
+    "henrietta": {
+     "stand": {
+      "skin": {
+       "pixels": 2190,
+       "want": "#733e39",
+       "got": "#75442f",
+       "delta_e": 7.0
+      },
+      "hair": {
+       "pixels": 5084,
+       "want": "#8b9bb4",
+       "got": "#714a42",
+       "delta_e": 37.2
+      },
+      "top": {
+       "pixels": 1502,
+       "want": "#214f80",
+       "got": "#242643",
+       "delta_e": 17.2
+      },
+      "bottom": {
+       "pixels": 6892,
+       "want": "#262b44",
+       "got": "#25273f",
+       "delta_e": 1.7
+      },
+      "shoe": {
+       "pixels": 736,
+       "want": "#181425",
+       "got": "#201f26",
+       "delta_e": 7.1
+      },
+      "accent": {
+       "pixels": 40,
+       "want": "#866bd7",
+       "got": "#150000",
+       "delta_e": 46.2
+      }
+     },
+     "front": {
+      "skin": {
+       "pixels": 3198,
+       "want": "#733e39",
+       "got": "#684029",
+       "delta_e": 9.0
+      },
+      "hair": {
+       "pixels": 2588,
+       "want": "#8b9bb4",
+       "got": "#717173",
+       "delta_e": 18.0
+      },
+      "top": {
+       "pixels": 5404,
+       "want": "#214f80",
+       "got": "#282845",
+       "delta_e": 17.2
+      },
+      "bottom": {
+       "pixels": 10940,
+       "want": "#262b44",
+       "got": "#2d2c48",
+       "delta_e": 3.0
+      },
+      "shoe": {
+       "pixels": 477,
+       "want": "#181425",
+       "got": "#010000",
+       "delta_e": 11.9
+      },
+      "accent": {
+       "pixels": 183,
+       "want": "#866bd7",
+       "got": "#9760dd",
+       "delta_e": 4.6
+      }
+     }
+    }
+   }
+  }
+ }
+}

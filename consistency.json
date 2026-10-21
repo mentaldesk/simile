@@ -1,0 +1,496 @@
+{
+ "dolls": {
+  "flicker": {
+   "lachlan": {
+    "skin": 0.0,
+    "hair": 0.68,
+    "top": 0.09,
+    "bottom": 0.11,
+    "shoe": 0.11,
+    "accent": 0.0
+   },
+   "odalys": {
+    "skin": 0.0,
+    "hair": 0.0,
+    "top": 1.06,
+    "bottom": 3.0,
+    "shoe": 0.0,
+    "apron": 0.09
+   },
+   "ingrid": {
+    "skin": 0.07,
+    "hair": 0.06,
+    "top": 0.35,
+    "bottom": 0.35,
+    "shoe": 0.22,
+    "accent": 0.21
+   },
+   "henrietta": {
+    "skin": 0.17,
+    "hair": 0.0,
+    "top": 0.3,
+    "bottom": 0.11,
+    "shoe": 0.53,
+    "accent": 0.1
+   }
+  },
+  "head share": {
+   "lachlan": 0.361,
+   "odalys": 0.379,
+   "ingrid": 0.353,
+   "henrietta": 0.386
+  },
+  "palette": {
+   "lachlan": 17.1,
+   "odalys": 15.1,
+   "ingrid": 16.0,
+   "henrietta": 14.9
+  },
+  "edge L*": {
+   "lachlan": 12.6,
+   "odalys": 12.5,
+   "ingrid": 12.4,
+   "henrietta": 12.4
+  },
+  "mean flicker": 0.32,
+  "worst flicker": 3.0,
+  "head share range": [
+   0.353,
+   0.386
+  ],
+  "mean palette": 15.8,
+  "edge L* range": [
+   12.4,
+   12.6
+  ]
+ },
+ "whole": {
+  "flicker": {
+   "lachlan": {
+    "skin": 1.08,
+    "hair": 0.67,
+    "top": 0.69,
+    "bottom": 2.12,
+    "shoe": 0.26,
+    "accent": 2.68
+   },
+   "odalys": {
+    "skin": 0.92,
+    "hair": 1.7,
+    "top": 0.65,
+    "bottom": 4.58,
+    "shoe": 0.83,
+    "apron": 0.63
+   },
+   "ingrid": {
+    "skin": 1.19,
+    "hair": 1.36,
+    "top": 0.96,
+    "bottom": 1.67,
+    "accent": 5.01
+   },
+   "henrietta": {
+    "skin": 1.52,
+    "hair": 1.21,
+    "bottom": 1.21,
+    "shoe": 0.35,
+    "accent": 1.08
+   }
+  },
+  "head share": {
+   "lachlan": 0.335,
+   "odalys": 0.341,
+   "ingrid": 0.297,
+   "henrietta": 0.312
+  },
+  "palette": {
+   "lachlan": 15.9,
+   "odalys": 20.3,
+   "ingrid": 18.5,
+   "henrietta": 17.4
+  },
+  "edge L*": {
+   "lachlan": 13.6,
+   "odalys": 7.2,
+   "ingrid": 6.0,
+   "henrietta": 4.6
+  },
+  "mean flicker": 1.47,
+  "worst flicker": 5.01,
+  "head share range": [
+   0.297,
+   0.341
+  ],
+  "mean palette": 18.0,
+  "edge L* range": [
+   4.6,
+   13.6
+  ]
+ },
+ "cut": {
+  "flicker": {
+   "lachlan": {
+    "skin": 0.37,
+    "hair": 0.55,
+    "top": 0.2,
+    "bottom": 1.38,
+    "accent": 0.06
+   },
+   "odalys": {
+    "skin": 0.19,
+    "hair": 0.58,
+    "top": 0.11,
+    "bottom": 1.86,
+    "apron": 0.99
+   },
+   "ingrid": {
+    "skin": 0.12,
+    "hair": 0.36,
+    "top": 0.24,
+    "bottom": 0.35,
+    "accent": 0.08
+   },
+   "henrietta": {
+    "skin": 0.0,
+    "hair": 0.67,
+    "top": 0.99,
+    "bottom": 0.53,
+    "shoe": 0.52,
+    "accent": 0.06
+   }
+  },
+  "head share": {
+   "lachlan": 0.347,
+   "odalys": 0.387,
+   "ingrid": 0.354,
+   "henrietta": 0.375
+  },
+  "palette": {
+   "lachlan": 9.0,
+   "odalys": 11.0,
+   "ingrid": 10.5,
+   "henrietta": 7.9
+  },
+  "edge L*": {
+   "lachlan": 20.7,
+   "odalys": 20.3,
+   "ingrid": 18.4,
+   "henrietta": 14.2
+  },
+  "mean flicker": 0.49,
+  "worst flicker": 1.86,
+  "head share range": [
+   0.347,
+   0.387
+  ],
+  "mean palette": 9.6,
+  "edge L* range": [
+   14.2,
+   20.7
+  ]
+ },
+ "model": {
+  "flicker": {
+   "lachlan": {
+    "skin": 0.0,
+    "hair": 0.0,
+    "top": 1.11,
+    "bottom": 0.0,
+    "shoe": 0.1,
+    "accent": 0.0
+   },
+   "odalys": {
+    "skin": 0.0,
+    "hair": 0.0,
+    "top": 0.39,
+    "bottom": 0.28,
+    "shoe": 0.05
+   },
+   "ingrid": {
+    "skin": 0.0,
+    "hair": 0.0,
+    "top": 1.05,
+    "bottom": 0.0,
+    "shoe": 0.32,
+    "accent": 0.13
+   },
+   "henrietta": {
+    "skin": 0.0,
+    "hair": 0.0,
+    "top": 0.91,
+    "bottom": 0.0,
+    "shoe": 0.26,
+    "accent": 0.06
+   }
+  },
+  "head share": {
+   "lachlan": 0.224,
+   "odalys": 0.258,
+   "ingrid": 0.237,
+   "henrietta": 0.243
+  },
+  "palette": {
+   "lachlan": 15.5,
+   "odalys": 17.4,
+   "ingrid": 16.4,
+   "henrietta": 15.6
+  },
+  "edge L*": {
+   "lachlan": 13.8,
+   "odalys": 13.8,
+   "ingrid": 13.8,
+   "henrietta": 13.8
+  },
+  "mean flicker": 0.2,
+  "worst flicker": 1.11,
+  "head share range": [
+   0.224,
+   0.258
+  ],
+  "mean palette": 16.2,
+  "edge L* range": [
+   13.8,
+   13.8
+  ]
+ },
+ "repaint": {
+  "flicker": {
+   "lachlan": {
+    "skin": 0.65,
+    "hair": 2.65,
+    "top": 0.31,
+    "bottom": 4.13,
+    "shoe": 0.0,
+    "accent": 0.23
+   },
+   "odalys": {
+    "skin": 2.26,
+    "hair": 0.36,
+    "top": 3.53,
+    "bottom": 8.44,
+    "shoe": 0.0
+   },
+   "ingrid": {
+    "skin": 1.35,
+    "hair": 0.82,
+    "top": 2.18,
+    "bottom": 1.6,
+    "shoe": 5.84,
+    "accent": 0.57
+   },
+   "henrietta": {
+    "skin": 0.64,
+    "hair": 9.3,
+    "top": 0.56,
+    "bottom": 0.81,
+    "shoe": 3.01,
+    "accent": 3.98
+   }
+  },
+  "head share": {
+   "lachlan": 0.226,
+   "odalys": 0.255,
+   "ingrid": 0.247,
+   "henrietta": 0.243
+  },
+  "palette": {
+   "lachlan": 15.2,
+   "odalys": 15.9,
+   "ingrid": 17.6,
+   "henrietta": 15.0
+  },
+  "edge L*": {
+   "lachlan": 5.2,
+   "odalys": 8.9,
+   "ingrid": 8.5,
+   "henrietta": 5.6
+  },
+  "silhouette kept": {
+   "lachlan": [
+    0.974,
+    0.974,
+    0.968,
+    0.976,
+    0.972,
+    0.98,
+    0.969,
+    0.977
+   ],
+   "odalys": [
+    0.913,
+    0.96,
+    0.978,
+    0.97,
+    0.908,
+    0.946,
+    0.981,
+    0.968
+   ],
+   "ingrid": [
+    0.969,
+    0.966,
+    0.97,
+    0.958,
+    0.968,
+    0.97,
+    0.973,
+    0.963
+   ],
+   "henrietta": [
+    0.936,
+    0.942,
+    0.972,
+    0.96,
+    0.938,
+    0.94,
+    0.976,
+    0.962
+   ]
+  },
+  "flicker repaint-raw": {
+   "lachlan": {
+    "skin": 1.76,
+    "hair": 1.55,
+    "top": 3.05,
+    "bottom": 1.33,
+    "shoe": 0.71,
+    "accent": 1.59
+   },
+   "odalys": {
+    "skin": 1.41,
+    "hair": 1.43,
+    "top": 3.26,
+    "bottom": 8.94,
+    "shoe": 0.51
+   },
+   "ingrid": {
+    "skin": 2.03,
+    "hair": 3.26,
+    "top": 2.92,
+    "bottom": 1.67,
+    "shoe": 3.07,
+    "accent": 0.93
+   },
+   "henrietta": {
+    "skin": 1.93,
+    "hair": 7.79,
+    "top": 1.43,
+    "bottom": 1.35,
+    "shoe": 2.51,
+    "accent": 2.47
+   }
+  },
+  "mean flicker repaint-raw": 2.47,
+  "worst flicker repaint-raw": 8.94,
+  "flicker repaint-strip": {
+   "lachlan": {
+    "skin": 1.45,
+    "hair": 0.48,
+    "top": 3.3,
+    "bottom": 2.51,
+    "accent": 0.39
+   },
+   "odalys": {
+    "skin": 1.24,
+    "hair": 3.28,
+    "top": 2.8,
+    "bottom": 3.8,
+    "shoe": 20.16
+   },
+   "ingrid": {
+    "skin": 0.73,
+    "hair": 0.56,
+    "top": 1.62,
+    "bottom": 0.76,
+    "shoe": 1.63,
+    "accent": 1.15
+   },
+   "henrietta": {
+    "skin": 6.55,
+    "hair": 3.69,
+    "top": 9.57,
+    "bottom": 1.67,
+    "shoe": 1.65,
+    "accent": 0.84
+   }
+  },
+  "mean flicker repaint-strip": 3.17,
+  "worst flicker repaint-strip": 20.16,
+  "mean flicker": 2.31,
+  "worst flicker": 9.3,
+  "head share range": [
+   0.226,
+   0.255
+  ],
+  "mean palette": 15.9,
+  "edge L* range": [
+   5.2,
+   8.9
+  ]
+ },
+ "strip": {
+  "flicker": {
+   "lachlan": {
+    "skin": 1.27,
+    "hair": 2.23,
+    "top": 0.67,
+    "bottom": 2.38,
+    "shoe": 0.0,
+    "accent": 0.95
+   },
+   "odalys": {
+    "skin": 0.43,
+    "hair": 0.25,
+    "top": 0.84,
+    "bottom": 2.36,
+    "shoe": 0.39,
+    "apron": 1.49
+   },
+   "ingrid": {
+    "skin": 0.68,
+    "hair": 0.37,
+    "top": 0.42,
+    "bottom": 1.39,
+    "shoe": 0.45,
+    "accent": 0.55
+   },
+   "henrietta": {
+    "skin": 0.57,
+    "hair": 0.41,
+    "top": 0.47,
+    "bottom": 2.07,
+    "shoe": 0.42,
+    "accent": 0.96
+   }
+  },
+  "head share": {
+   "lachlan": 0.393,
+   "odalys": 0.408,
+   "ingrid": 0.576,
+   "henrietta": 0.416
+  },
+  "palette": {
+   "lachlan": 14.1,
+   "odalys": 14.1,
+   "ingrid": 13.7,
+   "henrietta": 12.8
+  },
+  "edge L*": {
+   "lachlan": 20.0,
+   "odalys": 16.8,
+   "ingrid": 11.1,
+   "henrietta": 9.9
+  },
+  "mean flicker": 0.92,
+  "worst flicker": 2.38,
+  "head share range": [
+   0.393,
+   0.576
+  ],
+  "mean palette": 13.7,
+  "edge L* range": [
+   9.9,
+   20.0
+  ]
+ }
+}

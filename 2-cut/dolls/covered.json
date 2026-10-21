@@ -1,0 +1,78 @@
+{
+ "lachlan": {
+  "upper_leg": 0.736,
+  "lower_leg": 0.241,
+  "shoe": 0.0,
+  "torso": 0.436,
+  "head": 0.024,
+  "upper_arm": 0.01,
+  "lower_arm": 0.0,
+  "shoe_front": 0.0,
+  "torso_front": 0.433,
+  "head_front": 0.0,
+  "torso_back": 0.437,
+  "head_back": 0.0,
+  "fits": {
+   "side": 0.995,
+   "front": 1.017,
+   "back": 1.015
+  }
+ },
+ "odalys": {
+  "upper_leg": 1.0,
+  "lower_leg": 0.365,
+  "shoe": 0.023,
+  "torso": 0.286,
+  "head": 0.017,
+  "upper_arm": 0.306,
+  "lower_arm": 0.0,
+  "shoe_front": 0.0,
+  "torso_front": 0.342,
+  "head_front": 0.0,
+  "torso_back": 0.498,
+  "head_back": 0.0,
+  "fits": {
+   "side": 0.992,
+   "front": 1.034,
+   "back": 1.022
+  }
+ },
+ "ingrid": {
+  "upper_leg": 0.882,
+  "lower_leg": 0.226,
+  "shoe": 0.0,
+  "torso": 0.349,
+  "head": 0.013,
+  "upper_arm": 0.267,
+  "lower_arm": 0.0,
+  "shoe_front": 0.0,
+  "torso_front": 0.542,
+  "head_front": 0.0,
+  "torso_back": 0.569,
+  "head_back": 0.0,
+  "fits": {
+   "side": 0.992,
+   "front": 1.026,
+   "back": 1.017
+  }
+ },
+ "henrietta": {
+  "upper_leg": 0.737,
+  "lower_leg": 0.136,
+  "shoe": 0.0,
+  "torso": 0.354,
+  "head": 0.016,
+  "upper_arm": 0.369,
+  "lower_arm": 0.0,
+  "shoe_front": 0.0,
+  "torso_front": 0.478,
+  "head_front": 0.0,
+  "torso_back": 0.482,
+  "head_back": 0.0,
+  "fits": {
+   "side": 1.028,
+   "front": 1.046,
+   "back": 1.093
+  }
+ }
+}
