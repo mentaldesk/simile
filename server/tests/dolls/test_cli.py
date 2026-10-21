@@ -2,7 +2,7 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from simile.dolls import build, paint
+from simile.dolls import build, flux
 from simile.dolls.cli import register
 
 
@@ -22,7 +22,7 @@ def loads(painter, **kwargs) -> list:
 def test_says_what_painting_needs_without_a_traceback(
     app: typer.Typer, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(paint, "find_spec", lambda name: None)
+    monkeypatch.setattr(flux, "find_spec", lambda name: None)
     monkeypatch.setattr(build, "build", loads)
 
     result = CliRunner().invoke(app, ["dolls", "paint", "player"])

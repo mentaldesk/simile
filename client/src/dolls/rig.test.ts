@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Facing } from '../net/protocol';
-import { dolls } from './assets';
-import { SIDE_PIECES, STRAIGHT_PIECES, type DollManifest, type PieceName } from './manifest';
+import fixtures from './flat.fixture.json';
+import { SIDE_PIECES, STRAIGHT_PIECES, type FlatDoll, type PieceName } from './manifest';
 import {
   FAR,
   lowest,
@@ -44,10 +44,12 @@ const PLANTED: DollPose[] = [
   'riding',
 ];
 const PHASES = [0, 0.2, 0.45, 0.7, 0.95];
+/** The flat-doll route's dolls for a few residents' looks: average, broad, slim, and an apron. */
+const dolls = fixtures as unknown as Record<string, FlatDoll>;
 const doll = dolls.desmond;
 
 /** Where `joint` of the piece `part` places ends up, by Phaser's clockwise turn. */
-function jointOf(doll: DollManifest, part: Placement, joint: string): { x: number; y: number } {
+function jointOf(doll: FlatDoll, part: Placement, joint: string): { x: number; y: number } {
   const spec = doll.pieces[part.piece];
   const [jx, jy] = spec.joints[joint];
   const v = { x: jx - spec.pivot[0], y: (jy - spec.pivot[1]) * part.scaleY };
@@ -59,29 +61,6 @@ function jointOf(doll: DollManifest, part: Placement, joint: string): { x: numbe
 }
 
 const find = (posed: Posed, piece: PieceName) => posed.parts.filter((p) => p.piece === piece);
-
-describe('the committed dolls', () => {
-  it('has every resident and the player, flat and painted', () => {
-    expect(Object.keys(dolls).sort()).toEqual([
-      'desmond',
-      'henrietta',
-      'ingrid',
-      'kofi',
-      'lachlan',
-      'marguerite',
-      'mirela',
-      'odalys',
-      'player',
-      'priya',
-      'raymond',
-      'tobias',
-    ]);
-    for (const doll of Object.values(dolls)) {
-      expect(doll.flat).toMatch(/-flat\.webp$/);
-      expect(doll.painted).toMatch(/-painted\.webp$/);
-    }
-  });
-});
 
 describe('posed', () => {
   it.each(Object.keys(dolls))('draws every pose in every facing for %s', (id) => {

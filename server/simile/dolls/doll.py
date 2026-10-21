@@ -1,5 +1,5 @@
-"""A doll as the client loads it: its pieces packed into a flat and a painted atlas that share one
-frame table, and a manifest of frames, pivots and joints. `content/dolls/README.md` documents it."""
+"""The flat doll the creator previews a look with: its pieces packed into an atlas, and a manifest
+of frames, pivots and joints that the client's rig poses."""
 
 import base64
 import io

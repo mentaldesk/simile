@@ -1,6 +1,6 @@
 {
   "id": "priya",
-  "hash": "18c6c6915593e04f",
+  "hash": "5fb275ae7fd85e6e",
   "appearance": {
     "skin": "#c28569",
     "hair_style": "long",
@@ -11,242 +11,117 @@
     "build": "average",
     "accessories": []
   },
-  "version": 2,
-  "unit": 5.0,
-  "height": 98.8,
-  "flat": "priya-flat.webp",
-  "painted": "priya-painted.webp",
-  "pieces": {
-    "head": {
+  "version": 3,
+  "ppm": 80,
+  "height": 163.2,
+  "painted": "priya.webp",
+  "frames": {
+    "climb": {
       "frame": [
         0,
-        224,
-        146,
-        201
-      ],
-      "pivot": [
-        76.0,
-        147.0
-      ],
-      "joints": {}
-    },
-    "torso": {
-      "frame": [
-        312,
         0,
-        99,
-        202
+        73,
+        169
       ],
-      "pivot": [
-        49.0,
-        169.0
-      ],
-      "joints": {
-        "neck": [
-          53.0,
-          9.0
-        ],
-        "shoulder": [
-          47.0,
-          29.0
-        ],
-        "hip": [
-          49.0,
-          169.0
-        ]
-      }
+      "feet": [
+        38.8,
+        167.0
+      ]
     },
-    "upper_arm": {
+    "pass": {
       "frame": [
-        48,
-        427,
-        44,
-        106
-      ],
-      "pivot": [
-        22.0,
-        22.0
-      ],
-      "joints": {
-        "elbow": [
-          22.0,
-          87.0
-        ]
-      }
-    },
-    "lower_arm": {
-      "frame": [
-        94,
-        427,
-        39,
-        101
-      ],
-      "pivot": [
-        18.0,
-        18.0
-      ],
-      "joints": {
-        "hand": [
-          20.0,
-          80.5
-        ]
-      }
-    },
-    "upper_leg": {
-      "frame": [
-        416,
-        224,
+        75,
+        0,
         54,
+        166
+      ],
+      "feet": [
+        28.0,
+        164.0
+      ]
+    },
+    "run": {
+      "frame": [
+        365,
+        0,
+        106,
+        143
+      ],
+      "feet": [
+        54.0,
+        140.0
+      ]
+    },
+    "run_pass": {
+      "frame": [
+        275,
+        0,
+        88,
+        163
+      ],
+      "feet": [
+        42.5,
+        160.0
+      ]
+    },
+    "sit": {
+      "frame": [
+        473,
+        0,
+        73,
         142
       ],
-      "pivot": [
-        27.0,
-        27.0
-      ],
-      "joints": {
-        "knee": [
-          27.0,
-          119.5
-        ]
-      }
+      "feet": [
+        30.5,
+        139.0
+      ]
     },
-    "lower_leg": {
+    "stand": {
       "frame": [
+        131,
         0,
-        427,
-        46,
-        130
+        58,
+        166
       ],
-      "pivot": [
-        23.0,
-        23.0
-      ],
-      "joints": {
-        "ankle": [
-          23.0,
-          110.5
-        ]
-      }
+      "feet": [
+        28.0,
+        164.0
+      ]
     },
-    "shoe": {
+    "stride": {
       "frame": [
-        135,
-        427,
-        81,
-        43
-      ],
-      "pivot": [
-        27.0,
-        14.0
-      ],
-      "joints": {}
-    },
-    "head_front": {
-      "frame": [
-        154,
+        191,
         0,
-        156,
-        219
+        82,
+        165
       ],
-      "pivot": [
-        78.0,
-        147.0
-      ],
-      "joints": {}
-    },
-    "torso_front": {
-      "frame": [
-        282,
-        224,
-        132,
-        199
-      ],
-      "pivot": [
-        66.0,
-        169.0
-      ],
-      "joints": {
-        "neck": [
-          66.0,
-          9.0
-        ],
-        "shoulder_left": [
-          23.0,
-          29.0
-        ],
-        "shoulder_right": [
-          109.0,
-          29.0
-        ],
-        "hip_left": [
-          41.0,
-          169.0
-        ],
-        "hip_right": [
-          91.0,
-          169.0
-        ]
-      }
-    },
-    "head_back": {
-      "frame": [
-        0,
-        0,
-        152,
-        222
-      ],
-      "pivot": [
-        76.0,
-        148.0
-      ],
-      "joints": {}
-    },
-    "torso_back": {
-      "frame": [
-        148,
-        224,
-        132,
-        199
-      ],
-      "pivot": [
-        66.0,
-        169.0
-      ],
-      "joints": {
-        "neck": [
-          66.0,
-          9.0
-        ],
-        "shoulder_left": [
-          23.0,
-          29.0
-        ],
-        "shoulder_right": [
-          109.0,
-          29.0
-        ],
-        "hip_left": [
-          41.0,
-          169.0
-        ],
-        "hip_right": [
-          91.0,
-          169.0
-        ]
-      }
-    },
-    "shoe_front": {
-      "frame": [
-        218,
-        427,
-        54,
-        39
-      ],
-      "pivot": [
-        27.0,
-        10.0
-      ],
-      "joints": {}
+      "feet": [
+        37.0,
+        163.0
+      ]
     }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "stride",
+      "pass",
+      "stride",
+      "pass"
+    ],
+    "run": [
+      "run",
+      "run_pass",
+      "run",
+      "run_pass"
+    ],
+    "sit": [
+      "sit"
+    ],
+    "climb": [
+      "climb"
+    ]
   }
 }

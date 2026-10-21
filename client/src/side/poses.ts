@@ -1,59 +1,51 @@
 import type { Facing } from '../net';
-import type { DollManifest } from '../dolls/manifest';
-import { posed, type DollPose, type PoseOptions, type Posed } from '../dolls/rig';
+import type { FigureManifest, SpritePose } from '../dolls/manifest';
+import type { DollPose, PoseOptions } from '../dolls/rig';
+import { facesLeft, shown, spritePose, type Shown } from '../dolls/sprite';
 import type { ClimbKind } from './maps';
+
+export { facesLeft };
 
 /** Steps a cycle is cut into. */
 export const STEPS = 48;
-/** Steps from a walk to a run. */
-export const RUN_STEPS = 8;
 
-const POSES: readonly DollPose[] = [
-  'standing',
-  'walking',
-  'sitting',
-  'reading',
-  'working',
-  'looking',
-  'climbing',
-  'riding',
-  'jumping',
-];
-const POSE_INDEX = Object.fromEntries(POSES.map((pose, i) => [pose, i])) as Record<DollPose, number>;
-const VIEW_FACINGS: readonly Facing[] = ['east', 'south', 'north'];
-const OPTIONS: readonly PoseOptions[] = [
-  {},
-  { seated: true },
-  { on: 'ladder' },
-  { on: 'stairs' },
-  ...Array.from({ length: RUN_STEPS }, (_, i) => ({ run: (i + 1) / RUN_STEPS })),
-];
+const KINDS: readonly SpritePose[] = ['stand', 'walk', 'run', 'sit', 'climb'];
+const KIND_INDEX = Object.fromEntries(KINDS.map((kind, i) => [kind, i])) as Record<SpritePose, number>;
+/** A pose and options each kind is drawn for. */
+const AS: Record<SpritePose, [DollPose, PoseOptions]> = {
+  stand: ['standing', {}],
+  walk: ['walking', {}],
+  run: ['walking', { run: 1 }],
+  sit: ['sitting', {}],
+  climb: ['climbing', { on: 'ladder' }],
+};
 
-const viewIndex = (facing: Facing) => (facing === 'north' ? 2 : facing === 'south' ? 1 : 0);
-
-export const facesLeft = (facing: Facing): boolean => facing.endsWith('west');
-
-/** The rig allocates; a cached pose doesn't. */
+/** Allocates nothing once each step of a pose has been drawn. */
 export class PoseCache {
-  private readonly doll: DollManifest;
-  private readonly posed: (Posed | undefined)[] = [];
+  private readonly figure: FigureManifest;
+  private readonly shown: (Shown | undefined)[] = [];
+  private readonly options: PoseOptions = {};
 
-  constructor(doll: DollManifest) {
-    this.doll = doll;
+  constructor(figure: FigureManifest) {
+    this.figure = figure;
   }
 
   /** `run` only turns `walking` into a run. */
-  get(pose: DollPose, facing: Facing, phase: number, seated = false, on?: ClimbKind, run = 0): Posed {
-    const view = viewIndex(facing);
-    const blend = pose === 'walking' ? Math.round(run * RUN_STEPS) : 0;
-    const variant = blend > 0 ? 3 + blend : seated ? 1 : on === 'ladder' ? 2 : on === 'stairs' ? 3 : 0;
+  get(pose: DollPose, facing: Facing, phase: number, seated = false, on?: ClimbKind, run = 0): Shown {
+    const { options } = this;
+    options.seated = seated;
+    options.on = on;
+    options.run = run;
+    const kind = spritePose(pose, facing, options);
+    const left = facesLeft(facing) ? 1 : 0;
     const cycle = phase - Math.floor(phase);
     const step = Math.min(STEPS - 1, Math.floor(cycle * STEPS));
-    const index = ((POSE_INDEX[pose] * VIEW_FACINGS.length + view) * OPTIONS.length + variant) * STEPS + step;
-    return (this.posed[index] ??= posed(this.doll, pose, VIEW_FACINGS[view], step / STEPS, OPTIONS[variant]));
+    const index = (KIND_INDEX[kind] * 2 + left) * STEPS + step;
+    const [as, extra] = AS[kind];
+    return (this.shown[index] ??= shown(this.figure, as, left ? 'west' : 'east', step / STEPS, extra));
   }
 
   get size(): number {
-    return this.posed.filter(Boolean).length;
+    return this.shown.filter(Boolean).length;
   }
 }

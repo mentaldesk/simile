@@ -1,5 +1,5 @@
 import type { Facing, Pose } from '../net/protocol';
-import type { DollManifest, PieceName, PieceSpec } from './manifest';
+import type { FlatDoll, PieceName, PieceSpec } from './manifest';
 
 export type View = 'side' | 'front' | 'back';
 /** The sim's poses, and a jump that nothing uses yet. */
@@ -408,7 +408,7 @@ function placer(parts: Placement[]): Put {
     parts.push({ piece, x: at.x, y: at.y, angle: -turn, scaleY, shade });
 }
 
-function placeSide(doll: DollManifest, a: SideAngles): Placement[] {
+function placeSide(doll: FlatDoll, a: SideAngles): Placement[] {
   const p = doll.pieces;
   const parts: Placement[] = [];
   const put = placer(parts);
@@ -441,7 +441,7 @@ function placeSide(doll: DollManifest, a: SideAngles): Placement[] {
   return parts;
 }
 
-function placeStraight(doll: DollManifest, view: 'front' | 'back', a: StraightAngles): Placement[] {
+function placeStraight(doll: FlatDoll, view: 'front' | 'back', a: StraightAngles): Placement[] {
   const p = doll.pieces;
   const torso = p[view === 'front' ? 'torso_front' : 'torso_back'];
   const legs: Placement[] = [];
@@ -480,7 +480,7 @@ function placeStraight(doll: DollManifest, view: 'front' | 'back', a: StraightAn
 }
 
 /** The lowest point of the posed pieces' frames, in atlas pixels. */
-export function lowest(doll: DollManifest, parts: Placement[]): number {
+export function lowest(doll: FlatDoll, parts: Placement[]): number {
   let low = -Infinity;
   for (const part of parts) {
     const spec = doll.pieces[part.piece];
@@ -508,7 +508,7 @@ function angles(pose: DollPose, view: View, phase: number, options: PoseOptions)
     : straightAngles(pose, phase, { ...options, on });
 }
 
-function place(doll: DollManifest, view: View, a: SideAngles | StraightAngles): Placement[] {
+function place(doll: FlatDoll, view: View, a: SideAngles | StraightAngles): Placement[] {
   return view === 'side'
     ? placeSide(doll, a as SideAngles)
     : placeStraight(doll, view, a as StraightAngles);
@@ -518,7 +518,7 @@ function place(doll: DollManifest, view: View, a: SideAngles | StraightAngles): 
  * poses stand on the ground (y = 0); the rest keep the standing hip height, so a ladder climb
  * or a jump moves only as its caller moves it. */
 export function posed(
-  doll: DollManifest,
+  doll: FlatDoll,
   pose: DollPose,
   facing: Facing,
   phase = 0,
@@ -539,7 +539,7 @@ export function posed(
 }
 
 /** Atlas pixels from the ground to the top of a standing doll's head, hair and hats included. */
-export function standingHeight(doll: DollManifest): number {
+export function standingHeight(doll: FlatDoll): number {
   const { parts } = posed(doll, 'standing', 'south');
   const head = parts.find((part) => part.piece === 'head_front');
   if (!head) throw new Error('A standing doll has a head');

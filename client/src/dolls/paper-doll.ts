@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import type { Facing } from '../net/protocol';
-import { PIECES, type DollManifest } from './manifest';
+import { PIECES, type FlatDoll } from './manifest';
 import { type DollPose, type PoseOptions, posed, standingHeight } from './rig';
 
 const SHADOW = 0x140e0a;
@@ -11,7 +11,7 @@ export function addAtlas(
   scene: Phaser.Scene,
   key: string,
   url: string,
-  doll: DollManifest,
+  doll: FlatDoll,
 ): Promise<void> {
   if (scene.textures.exists(key)) return Promise.resolve();
   return new Promise((resolve, reject) => {
@@ -32,12 +32,12 @@ export function addAtlas(
   });
 }
 
-/** A posed paper doll, its origin on the ground under its hips. Draws the flat pieces at once;
- * `paint` swaps in the painted ones once their atlas has loaded. */
+/** A posed flat doll, its origin on the ground under its hips: the creator's preview while a
+ * figure is painted. */
 export class PaperDoll extends Phaser.GameObjects.Container {
-  readonly doll: DollManifest;
+  readonly doll: FlatDoll;
   readonly shadows: boolean;
-  private key: string;
+  private readonly key: string;
   private size = 1;
   private readonly slots: [Phaser.GameObjects.Image, Phaser.GameObjects.Image][] = [];
   private posedAs?: Parameters<PaperDoll['setPose']>;
@@ -46,7 +46,7 @@ export class PaperDoll extends Phaser.GameObjects.Container {
     scene: Phaser.Scene,
     x: number,
     y: number,
-    doll: DollManifest,
+    doll: FlatDoll,
     flatKey: string,
     height = standingHeight(doll),
     shadows = true,
@@ -62,12 +62,6 @@ export class PaperDoll extends Phaser.GameObjects.Container {
   /** Scales the doll so it stands `height` pixels tall. */
   setDollHeight(height: number): this {
     this.size = height / standingHeight(this.doll);
-    if (this.posedAs) this.setPose(...this.posedAs);
-    return this;
-  }
-
-  paint(paintedKey: string): this {
-    this.key = paintedKey;
     if (this.posedAs) this.setPose(...this.posedAs);
     return this;
   }
@@ -115,25 +109,18 @@ export class PaperDoll extends Phaser.GameObjects.Container {
   }
 }
 
-/** A doll in `scene`, flat at once and painted when its atlas arrives. `id` names its textures. */
+/** The flat doll in `scene`. `id` names its texture. */
 export async function makeDoll(
   scene: Phaser.Scene,
   x: number,
   y: number,
   id: string,
-  doll: DollManifest,
+  doll: FlatDoll,
   height?: number,
 ): Promise<PaperDoll> {
   const flat = `doll-${id}-flat`;
   await addAtlas(scene, flat, doll.flat, doll);
   const paper = new PaperDoll(scene, x, y, doll, flat, height);
   scene.add.existing(paper);
-  if (doll.painted) {
-    const painted = `doll-${id}-painted`;
-    addAtlas(scene, painted, doll.painted, doll).then(
-      () => paper.active && paper.paint(painted),
-      (error: unknown) => console.warn(error),
-    );
-  }
   return paper;
 }

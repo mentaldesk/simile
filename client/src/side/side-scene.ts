@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
-import { addAtlas } from '../dolls/paper-doll';
+import { addFigureAtlas } from '../dolls/sprite-figure';
 import { server, type Position } from '../net';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
@@ -334,22 +334,19 @@ export class SideScene extends Phaser.Scene {
     const known = this.figures.get(id);
     if (known || this.loadingDolls.has(id)) return known;
     this.loadingDolls.add(id);
-    const doll = dollFor(id);
-    const flat = `doll-${id}-flat`;
-    void addAtlas(this, flat, doll.flat, doll).then(() => {
-      if (!this.sys.isActive()) return;
-      const sideDoll = new SideDoll(this, doll, flat);
-      this.add.existing(sideDoll);
-      const contact = this.add.image(0, 0, this.pictures.contact()).setOrigin(0.5, 0.5);
-      contact.setDisplaySize(CONTACT_M * PPM, CONTACT_M * PPM * 0.25);
-      this.figures.set(id, { id, doll: sideDoll, contact, x: 0, feet: 0, shown: false });
-      if (!doll.painted) return;
-      const painted = `doll-${id}-painted`;
-      addAtlas(this, painted, doll.painted, doll).then(
-        () => sideDoll.paint(painted),
-        (error: unknown) => console.warn(error),
-      );
-    });
+    const figure = dollFor(id);
+    const key = `figure-${figure.id ?? id}`;
+    void addFigureAtlas(this, key, figure).then(
+      () => {
+        if (!this.sys.isActive()) return;
+        const sideDoll = new SideDoll(this, figure, key);
+        this.add.existing(sideDoll);
+        const contact = this.add.image(0, 0, this.pictures.contact()).setOrigin(0.5, 0.5);
+        contact.setDisplaySize(CONTACT_M * PPM, CONTACT_M * PPM * 0.25);
+        this.figures.set(id, { id, doll: sideDoll, contact, x: 0, feet: 0, shown: false });
+      },
+      (error: unknown) => console.warn(error),
+    );
     return undefined;
   }
 

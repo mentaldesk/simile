@@ -2,7 +2,8 @@
 
 The village from the side (#306): part 2's maps ([`content/street/`](../../../content/street/README.md)),
 part 3's papercraft scenery ([`content/papercraft/`](../../../content/papercraft/README.md)) and part
-4's paper dolls ([`../dolls/`](../dolls/README.md)), drawn by `SideScene`, the game's world scene.
+the residents' painted figures ([`../dolls/`](../dolls/README.md)), drawn by `SideScene`, the game's
+world scene.
 The menu starts it (`?play` skips the menu).
 
 ## Looking at it
@@ -52,8 +53,8 @@ it, and rises to the top floor or drops to Banyan Row's river.
   lifts its front off; whatever is on the street in front of it goes faint.
 - **Signposts** (`street-view.ts`): a fingerpost at each way to another street names it. The sign and
   the posts are drawn in code (`textures.ts`).
-- **Residents and the player** (`side-doll.ts`) are drawn with the rig's poses, worked out once per
-  step of a cycle and kept (`poses.ts`), and tinted with the light where they are.
+- **Residents and the player** (`side-doll.ts`) are drawn as their painted figures, each step of a
+  cycle's frame worked out once and kept (`poses.ts`), and tinted with the light where they are.
 - **Light** (`light.ts`): the manifest's four times of day, blended across each change, give a tint
   for each layer's depth (distant layers take some of the sky's colour, the foreground falls
   darker), haze on the far and mid layers, the glow maps added at night and 55% in the evening, and
@@ -77,11 +78,11 @@ The Phaser-free halves are tested under vitest.
   position stays at the end they left from, as the protocol holds residents.
 - Running: Shift turns the walk into a run over `RUN_BLEND_SECONDS` and back when it's let go, at up
   to `RUN_PACE` (2) times `PLAYER_SPEED` along streets and floors. Stairs, ladders and the lift go at
-  their own speeds. The doll blends the rig's walk into its run cycle by the same amount (`Drawn.run`),
+  their own speeds. The figure turns from its walk to its run halfway through the blend (`Drawn.run`),
   and its phase steps by `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
   The server tracks whatever position `player_move` sends (`simile.world`'s lifespan), with no
   speed check to raise.
-- Jumping isn't here. Positions are floats, so an arc through open air, drawn with the rig's
+- Jumping isn't here. Positions are floats, so an arc through open air, drawn with the figure's
   `jumping` pose, can come later as another mode beside walking and climbing.
 
 ## The walk

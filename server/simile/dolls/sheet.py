@@ -1,6 +1,6 @@
-"""Laying a doll's flat pieces out on a sheet for the painter, and cutting the painted sheet back
-into pieces: each along its known outline, its colours pulled back to the flat ones, and its paper
-texture made strong enough to read at street size."""
+"""#310's painted paper dolls, which the figures replaced: laying a doll's flat pieces out on a
+sheet for the painter, and cutting the painted sheet back into pieces. Kept for the studies in
+`docs/` that import it."""
 
 from dataclasses import dataclass
 

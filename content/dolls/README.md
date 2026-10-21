@@ -1,13 +1,14 @@
 # Dolls
 
-The residents' and the player's paper dolls, drawn from each `Appearance` in `content/npcs/` and
-the player's look, then painted by FLUX.2 [klein] 4B. The client's rig (`client/src/dolls/`) poses
-them. Made from `server/` on Apple Silicon by
+The residents' and the player's figures: each painted whole by FLUX.2 [klein] 4B from their
+`Appearance` in `content/npcs/` and the player's look, as #334's approach 1, in the clean style.
+The client swaps, flips, bobs and sways the painted frames (`client/src/dolls/`). Made from
+`server/` on Apple Silicon by
 
 ```bash
 uv sync --extra images
-uv run simile dolls paint            # every doll whose Appearance or pipeline changed
-uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, keeping its paintings
+uv run simile dolls paint            # every figure whose Appearance or pipeline changed
+uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, saving its paintings
 ```
 
 Don't edit them by hand. CI never paints; the tests check what's committed.
@@ -19,10 +20,8 @@ For each resident and `player`:
 | File | What it is |
 |---|---|
 | `<id>.json` | The manifest, below. |
-| `<id>-flat.webp` | Every piece in its flat colours, lossless: what the client draws at once. |
-| `<id>-painted.webp` | The same pieces painted, at the same places in the atlas. |
+| `<id>.webp` | Every frame, cut out, in one atlas: WebP at quality 85. |
 
-The two atlases share one frame table, so the painted one replaces the flat one frame for frame.
 `content/dolls/` stays under 3 MB (`tests/dolls/test_content.py`).
 
 ## The manifest
@@ -32,80 +31,82 @@ The two atlases share one frame table, so the painted one replaces the flat one 
   "id": "odalys",
   "hash": "0b6afdf24ae9a3ca",
   "appearance": {"skin": "#e4a672", "hair_style": "curly", "...": "..."},
-  "version": 2,
-  "unit": 5.0,
-  "height": 100.4,
-  "flat": "odalys-flat.webp",
-  "painted": "odalys-painted.webp",
-  "pieces": {
-    "torso": {"frame": [0, 0, 110, 252], "pivot": [49.0, 169.0], "joints": {"neck": [53.0, 9.0], "shoulder": [47.0, 29.0], "hip": [49.0, 169.0]}},
+  "version": 3,
+  "ppm": 80,
+  "height": 163.2,
+  "painted": "odalys.webp",
+  "frames": {
+    "stand": {"frame": [0, 0, 74, 168], "feet": [37.5, 166.0]},
     "...": {}
+  },
+  "poses": {
+    "stand": ["stand"],
+    "walk": ["stride", "pass", "stride", "pass"],
+    "run": ["run", "run_pass", "run", "run_pass"],
+    "sit": ["sit"],
+    "climb": ["climb"]
   }
 }
 ```
 
-- **`unit`** is atlas pixels a unit, and **`height`** a standing doll's height in units, sole to
-  crown without hair or hats: so a doll is about 500 px tall in its atlas, twice its size on the
-  street. The head is about a quarter of that. Against part 3's scenery (120 px/m), draw a doll
-  2.04 m tall, a 1.7 m resident 20% over scale as #295's study did: 245 px. Seated, its hips are
-  then about 0.45 m up, a chair's or bench's seat.
-- **`flat`** and **`painted`** are relative to the manifest. The flat-doll route sends `flat` as a
-  data URL and no `painted`.
-- **`pieces`**: each piece's `frame` in the atlas (x, y, width, height), its `pivot`, the point it
-  turns about, and its `joints`, where its children hang, both from the frame's top-left in pixels.
-- **`hash`** is what the doll was painted from: the pipeline's `version`, the `Appearance` and any
-  reroll. A doll whose hash no longer matches is painted again; nothing else is.
-
-| Piece | Seen | Pivot | Joints |
-|---|---|---|---|
-| `head` | from the side, facing right | the neck | |
-| `torso` | from the side | the hip | `neck`, `shoulder`, `hip` |
-| `head_front`, `torso_front` | from the front (`south`) | the neck, the hips' middle | `neck`, `shoulder_left`, `shoulder_right`, `hip_left`, `hip_right` |
-| `head_back`, `torso_back` | from the back (`north`) | as the front | as the front |
-| `upper_arm`, `lower_arm` | any side | the shoulder, the elbow | `elbow`; `hand` |
-| `upper_leg`, `lower_leg` | any side | the hip, the knee | `knee`; `ankle` |
-| `shoe`, `shoe_front` | the side, or front and back | the ankle | |
-
-Left and right in the front and back pieces are the picture's. Hair, hats and glasses are part of
-the heads; apron, scarf and backpack are part of the torsos.
+- **`ppm`** is atlas pixels a metre, a retina screen's at play size (#329), and **`height`** a
+  standing figure's height in atlas pixels, sole to crown: 2.04 m, the street's resident.
+- **`frames`**: each painting's place in the atlas (x, y, width, height) and its **`feet`**: the
+  ground under the middle of its head, from the frame's top-left. The client puts that point
+  where the resident stands, so the head doesn't jump as the legs change.
+- **`poses`**: the frames each pose plays through its cycle. Every frame faces right in
+  three-quarter view but the climb, seen from behind; the client mirrors them to face west.
+- **`hash`** is what the figure was painted from: the pipeline's `version`, the `Appearance`, who
+  they are (age, and a man or a woman, from their voice) and any reroll. A figure whose hash no
+  longer matches is painted again; nothing else is.
 
 ## How they're made
 
 `server/simile/dolls/`:
 
-1. **Flat pieces** from the `Appearance` (`shapes.py`): skin exactly, everything else muted a
-   little (`colour.muted`: OKLCH chroma over 0.07 kept at 60%), so the loudest colours sit in the
-   papercraft world. The accent (cap, scarf, backpack, headphones) and the apron's colour follow
-   A1's sprites (`simile.art.characters.Colours`), and the player's look is `PLAYER` there.
-2. **Two sheets**, the side pieces and the front and back ones, laid apart in a row on light grey
-   (`sheet.py`), and each painted in edit mode with the villagers reference as the style image.
-   The prompt names the skin, hair and accessories, or the painter drops them, and not the
-   clothes, or it paints the rest of the person.
-3. **Cutting**: each piece is cut on its own outline, its colour regions read from the flat piece
-   as drawn, before antialiasing. Anything the painter left bare inside it, where it drew the
-   piece a little small, or painted as something else in a region, is repainted in that region's
-   own colour, keeping the painting's fine texture. The paper texture
-   between a third of a unit and two units is strengthened, so it still reads at street size, and
-   each colour region is pulled all the way back to its flat colour by its median, so the texture
-   stays and something else painted into a region doesn't shift the rest. The pieces are scaled
-   to the atlas and laid exactly over the flat ones, with a light cut edge. A front shoe the
-   painter dropped takes its paint from the side shoe (`build.DONORS`).
+1. **Standing, from text** (`figure.py`, `words.py`): a full-body figure in three-quarter view
+   facing right on light grey, with a very big round head, a clean face, and their age, skin,
+   hair, accessories, clothes and build, each colour named precisely: FLUX follows a colour's
+   name, not its hex code.
+2. **Every other pose is an edit of that painting:** a stride; a passing step, painted over a
+   rough drawing of its legs (`legs_guide`), since FLUX draws a stride whenever a passing step is
+   asked for in words; a run; a second running frame, an edit of the passing step with the arms
+   pumping; sitting in mid-air; and climbing, seen from behind.
+3. **Cut out** with #309's IS-Net and key, without the shadow FLUX paints on the floor, keeping
+   pale hair the key would take for the background wherever the outline encloses it
+   (`sprites.cut_out`).
+4. **Colours** (`measure.py`): a whole painting has no map of its regions, so each of the
+   `Appearance`'s colours is looked for in its band of the figure (hair at the top, shoes at the
+   bottom): what's painted nearer it than any other colour asked for, or failing that the
+   nearest of the band's main colours, is moved to it, shading and all, a few times over, since
+   one colour painted near another comes right once the other has moved. Hair a cap hides isn't looked for, or the
+   face would be moved towards it.
+5. **Checks.** A frame is painted again with another seed, a few times at most (`build.TRIES`),
+   and the best kept, if:
+   - a colour still misses by more than ΔE 6, or was painted another colour altogether;
+   - its face is painted over (`measure.face_marks`): more than 5% of the front of the face in
+     patches more than ΔE 16 from the skin that aren't ink, eyes or brows;
+   - it's drawn more than a quarter bigger or smaller than the standing figure
+     (`sprites.scale`), by the width of the head, or for a climb its height.
+
+   What still misses is in `build.MISSES`.
+6. **Scaled** so the standing figure is 2.04 m at 80 px/m and every other frame's head is as
+   wide (a climb, seen from behind with its hands up, as tall from the top of its head), then
+   packed into the atlas (`sprites.py`).
 
 Each painting is cached in `server/data/dolls/paintings/` by everything it was painted from, so
-cutting can be retuned without painting again. A painting that comes out off-model gets a reroll in
-`build.REROLLS` (`"<id>/<sheet>": n`), which repaints that sheet with another seed. `simile dolls
-paint` reports pieces the painter moved, dropped or painted something onto.
+cutting and matching can be retuned without painting again. A painting that comes out off-model
+gets a reroll in `build.REROLLS` (`"<id>/<frame>": n`), which repaints that frame with another seed.
 
 ## The flat-doll route
 
 `POST /api/dolls/flat` with `{"appearance": {...}, "character": "new_face"}` (`character`
-optional, for the accent) returns a manifest with `flat` as a data URL, drawn at once, with no
-FLUX. The creator previews any look with it.
+optional, for the accent) returns #310's flat paper doll for any look, with `flat` as a data URL,
+drawn at once, with no FLUX. The creator shows it while a figure is painted.
 
 ## The doll job
 
-`simile.dolls.job.DOLL` is a `jobs` kind, `doll`, shaped like A1's sprite job, which part 9
-replaces with it: `{"character": "new_face", "appearance": {...}}` paints that doll and publishes
-`<id>.json`, `<id>-flat.webp` and `<id>-painted.webp`, with `{"doll", "flat", "painted"}` URLs
-under `/api/jobs/files/doll/`. It needs Apple Silicon and the `images` extra; elsewhere the flat
-doll stays. Like the sprite job, it refuses a resident in `content/`, except `player`.
+`simile.dolls.job.DOLL` is a `jobs` kind, `doll`: `{"character": "new_face", "appearance":
+{...}}` paints that figure and publishes `<id>.json` and `<id>.webp`, with `{"doll", "painted"}`
+URLs under `/api/jobs/files/doll/`. It needs Apple Silicon and the `images` extra; elsewhere the
+flat doll stays. It refuses a resident in `content/`, except `player`.

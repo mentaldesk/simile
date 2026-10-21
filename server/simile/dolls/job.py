@@ -1,22 +1,23 @@
-"""Paints a new or changed character's doll: `python -m simile.dolls.job <work>`."""
+"""Paints a new or changed character's figure: `python -m simile.dolls.job <work>`."""
 
 import os
 import sys
-import tempfile
+import time
 from collections.abc import Callable
 from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import Any
 
+from PIL import Image
 from pydantic import field_validator
 from pydantic_core import PydanticCustomError
 
-from simile.dolls.paint import NoPainter, SheetPainter
+from simile.dolls.flux import Painter
+from simile.dolls.paint import NoPainter
 from simile.jobs.report import progress
 from simile.jobs.runner import CONTENT, Kind, url
 from simile.schema import PLAYER_ID, Appearance, Id, Model
 
-FILES = ("{}.json", "{}-flat.webp", "{}-painted.webp")
+FILES = ("{}.json", "{}.webp")
 
 
 class Doll(Model):
@@ -42,14 +43,10 @@ def command(doll: Doll, work: Path) -> list[str]:
 
 
 def publish(doll: Doll, work: Path, out: Path) -> dict[str, str]:
-    manifest, flat, painted = (name.format(doll.character) for name in FILES)
-    for name in (flat, painted, manifest):
+    manifest, painted = (name.format(doll.character) for name in FILES)
+    for name in (painted, manifest):
         os.replace(work / name, out / name)
-    return {
-        "doll": url("doll", manifest),
-        "flat": url("doll", flat),
-        "painted": url("doll", painted),
-    }
+    return {"doll": url("doll", manifest), "painted": url("doll", painted)}
 
 
 DOLL = Kind(
@@ -58,43 +55,54 @@ DOLL = Kind(
     command,
     publish,
     requires=("apple_silicon",),
-    files=r"[a-z][a-z0-9_]{0,63}(\.json|-flat\.webp|-painted\.webp)",
+    files=r"[a-z][a-z0-9_]{0,63}\.(json|webp)",
 )
 
 
-class Reporting:
-    """Reports each sheet as the job's progress."""
+def persona_of(character: str) -> str:
+    """Whether the library's character is a man or a woman, if it says."""
+    from simile.dolls.words import persona
+    from simile.library.store import Library, default_root
 
-    def __init__(self, model: SheetPainter, sheets: int) -> None:
-        self.model, self.sheets, self.done = model, sheets, 0
-
-    def paint(self, *args: Any) -> Any:
-        progress(0.05 + 0.9 * self.done / self.sheets, f"Painting {self.done + 1} of {self.sheets}")
-        painted = self.model.paint(*args)
-        self.done += 1
-        return painted
+    try:
+        return persona(gender=Library(default_root()).get(character).gender.value)
+    except (LookupError, OSError, ValueError):
+        return ""
 
 
-def main(work: Path, painter: Callable[[], AbstractContextManager[SheetPainter]] | None = None):
-    from simile.dolls.build import files, paint, write
-    from simile.dolls.sheet import LAYOUTS
+def main(
+    work: Path,
+    painter: Callable[[], AbstractContextManager[Painter]] | None = None,
+    cut: Callable[[Image.Image], Image.Image] | None = None,
+) -> None:
+    from simile.dolls.build import Cached, files, paint, write
+    from simile.dolls.figure import FRAMES
+    from simile.dolls.sprites import cut_out
 
     doll = Doll.model_validate_json((work / "params.json").read_text())
     if painter is None:
-        from simile.dolls.paint import EditPainter
+        from simile.dolls.flux import Flux
 
-        painter = EditPainter
-    progress(0.0, "Cutting out")
+        painter = Flux
+    progress(0.0, "Painting them standing")
     try:
         loading = painter()
     except NoPainter as error:
         sys.exit(str(error))
-    with loading as model, tempfile.TemporaryDirectory() as scratch:
-        reporting = Reporting(model, len(LAYOUTS))
-        painted = paint(doll.character, doll.appearance, reporting, Path(scratch), cache=None)
+    done = [0]
+
+    def painted(line: str) -> None:
+        done[0] += 1
+        progress(done[0] / len(FRAMES), f"Painted {done[0]} of {len(FRAMES)} poses")
+
+    start = time.perf_counter()
+    model = Cached(lambda: loading, None)
+    said = "" if doll.character == PLAYER_ID else persona_of(doll.character)
+    with model.stack:
+        figure = paint(doll.character, doll.appearance, model, said, cut or cut_out, painted)
     appearance = doll.appearance.model_dump(mode="json")
-    write(work, files(doll.character, painted.doll, appearance=appearance))
-    progress(1.0, "Painted")
+    write(work, files(doll.character, figure, appearance=appearance))
+    progress(1.0, f"Painted in {time.perf_counter() - start:.0f} s")
 
 
 if __name__ == "__main__":
