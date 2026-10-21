@@ -129,32 +129,35 @@ describe('posed', () => {
   it.each(POSES)('joins every %s piece at its parent joint, in every view', (pose) => {
     for (const facing of ['east', 'south', 'north'] as Facing[]) {
       for (const phase of PHASES) {
-        const p = posed(doll, pose, facing, phase);
-        const torso = p.parts.find((x) => x.piece.startsWith('torso'))!;
-        const head = p.parts.find((x) => x.piece.startsWith('head'))!;
-        const neck = jointOf(doll, torso, 'neck');
-        expect(head.x).toBeCloseTo(neck.x, 6);
-        const thighs = find(p, 'upper_leg');
-        const shins = find(p, 'lower_leg');
-        const uppers = find(p, 'upper_arm');
-        const forearms = find(p, 'lower_arm');
-        const shoes = p.parts.filter((x) => x.piece.startsWith('shoe'));
-        thighs.forEach((thigh, i) => {
-          const knee = jointOf(doll, thigh, 'knee');
-          expect(shins[i].x).toBeCloseTo(knee.x, 6);
-          expect(shins[i].y).toBeCloseTo(knee.y, 6);
-          const ankle = jointOf(doll, shins[i], 'ankle');
-          expect(shoes[i].x).toBeCloseTo(ankle.x, 6);
-          expect(shoes[i].y).toBeCloseTo(ankle.y, 6);
-        });
-        uppers.forEach((upper, i) => {
-          const elbow = jointOf(doll, upper, 'elbow');
-          expect(forearms[i].x).toBeCloseTo(elbow.x, 6);
-          expect(forearms[i].y).toBeCloseTo(elbow.y, 6);
-        });
+        expectJoined(posed(doll, pose, facing, phase));
       }
     }
   });
+
+  function expectJoined(p: Posed): void {
+    const torso = p.parts.find((x) => x.piece.startsWith('torso'))!;
+    const head = p.parts.find((x) => x.piece.startsWith('head'))!;
+    const neck = jointOf(doll, torso, 'neck');
+    expect(head.x).toBeCloseTo(neck.x, 6);
+    const thighs = find(p, 'upper_leg');
+    const shins = find(p, 'lower_leg');
+    const uppers = find(p, 'upper_arm');
+    const forearms = find(p, 'lower_arm');
+    const shoes = p.parts.filter((x) => x.piece.startsWith('shoe'));
+    thighs.forEach((thigh, i) => {
+      const knee = jointOf(doll, thigh, 'knee');
+      expect(shins[i].x).toBeCloseTo(knee.x, 6);
+      expect(shins[i].y).toBeCloseTo(knee.y, 6);
+      const ankle = jointOf(doll, shins[i], 'ankle');
+      expect(shoes[i].x).toBeCloseTo(ankle.x, 6);
+      expect(shoes[i].y).toBeCloseTo(ankle.y, 6);
+    });
+    uppers.forEach((upper, i) => {
+      const elbow = jointOf(doll, upper, 'elbow');
+      expect(forearms[i].x).toBeCloseTo(elbow.x, 6);
+      expect(forearms[i].y).toBeCloseTo(elbow.y, 6);
+    });
+  }
 
   it('draws the far arm and leg first, and darker', () => {
     const { parts } = posed(doll, 'walking', 'east', 0.3);
@@ -245,6 +248,97 @@ describe('posed', () => {
     expect(lowest(doll, posed(doll, 'jumping', 'east').parts)).toBeLessThan(-doll.unit * 5);
     expect(lowest(doll, posed(doll, 'jumping', 'south').parts)).toBeLessThan(-doll.unit * 5);
     expect(lowest(doll, posed(doll, 'riding', 'south').parts)).toBeCloseTo(0, 6);
+  });
+
+  describe('running', () => {
+    const run = (phase: number, facing: Facing = 'east', w = 1) => posed(doll, 'walking', facing, phase, { run: w });
+    const views: Facing[] = ['east', 'south', 'north'];
+    /** Where the legs are furthest apart, and where one is under the hips. */
+    const AIRBORNE = [0.25, 0.75];
+    const LANDED = [0, 0.5];
+
+    it.each(Object.keys(dolls))('draws every piece, joined, in every view for %s', (id) => {
+      for (const facing of FACINGS) {
+        for (const phase of PHASES) {
+          for (const w of [0.3, 1]) {
+            const p = posed(dolls[id], 'walking', facing, phase, { run: w });
+            expect(p.parts).toHaveLength(12);
+            for (const part of p.parts) expect(Number.isFinite(part.x + part.y + part.angle + part.scaleY)).toBe(true);
+          }
+        }
+      }
+      for (const facing of views) for (const phase of PHASES) expectJoined(run(phase, facing));
+    });
+
+    it('leaves the walk as it was when not running', () => {
+      for (const facing of FACINGS) {
+        for (const phase of PHASES) {
+          expect(posed(doll, 'walking', facing, phase, { run: 0 })).toEqual(posed(doll, 'walking', facing, phase));
+        }
+      }
+    });
+
+    it('has both feet off the ground while the legs are furthest apart, in every view', () => {
+      for (const facing of views) {
+        for (const phase of AIRBORNE) {
+          expect(lowest(doll, run(phase, facing).parts), `${facing} at ${phase}`).toBeLessThan(-doll.unit * 4);
+        }
+        for (const phase of LANDED) {
+          expect(lowest(doll, run(phase, facing).parts), `${facing} at ${phase}`).toBeCloseTo(0, 6);
+        }
+      }
+      const shoes = find(run(0.25), 'shoe');
+      expect(shoes.every((shoe) => shoe.y < -doll.unit * 4)).toBe(true);
+    });
+
+    it('bounces, the hips highest in the air and lower than walking on the ground', () => {
+      const hips = (p: Posed) => p.parts.find((x) => x.piece.startsWith('torso'))!.y;
+      for (const facing of views) {
+        expect(hips(run(0.25, facing))).toBeLessThan(hips(run(0, facing)) - doll.unit * 2);
+        expect(hips(run(0, facing))).toBeGreaterThan(hips(posed(doll, 'walking', facing, 0)));
+      }
+    });
+
+    it('leans in, further than walking', () => {
+      for (const phase of PHASES) {
+        expect(find(run(phase), 'torso')[0].angle).toBeGreaterThan(find(posed(doll, 'walking', 'east', phase), 'torso')[0].angle + 8);
+      }
+    });
+
+    it('bends the elbows and pumps the arms', () => {
+      for (const phase of PHASES) {
+        const p = run(phase);
+        const [far, near] = [find(p, 'upper_arm'), find(p, 'lower_arm')].map((arms) => arms.map((arm) => arm.angle));
+        far.forEach((upper, i) => expect(Math.abs(near[i] - upper)).toBeGreaterThanOrEqual(70));
+      }
+      const swing = (phase: number) => find(run(phase), 'upper_arm')[1].angle;
+      expect(Math.abs(swing(0.25) - swing(0.75))).toBeGreaterThan(60);
+      const front = (phase: number) => find(run(phase, 'south'), 'lower_arm').map((arm) => arm.scaleY);
+      expect(Math.max(...front(0.25), ...front(0.75))).toBeLessThan(0.85);
+    });
+
+    it('lifts the knees higher and takes a longer stride than walking', () => {
+      const knees = (w: number) =>
+        Math.min(...PHASES.flatMap((phase) => find(run(phase, 'east', w), 'lower_leg').map((p) => p.y)));
+      const stride = (w: number) =>
+        Math.max(...PHASES.map((phase) => Math.abs(find(run(phase, 'east', w), 'shoe').reduce((a, b) => a - b.x, 0))));
+      expect(knees(1)).toBeLessThan(knees(0) - doll.unit * 4);
+      expect(stride(1)).toBeGreaterThan(stride(0));
+    });
+
+    it('blends from a walk to a run, turning each piece part of the way', () => {
+      for (const phase of PHASES) {
+        const [walking, running] = [run(phase, 'east', 0), run(phase, 'east', 1)];
+        for (const w of [0.01, 0.5, 0.99]) {
+          run(phase, 'east', w).parts.forEach((part, i) => {
+            const [from, to] = [walking.parts[i].angle, running.parts[i].angle];
+            expect(part.angle).toBeCloseTo(from + (to - from) * w, 6);
+          });
+        }
+        expect(run(phase, 'east', 1e-9).parts[0].angle).toBeCloseTo(walking.parts[0].angle, 6);
+        expect(run(phase, 'south', 0.5).parts).toHaveLength(12);
+      }
+    });
   });
 
   it('stands about its height tall, hair and all', () => {

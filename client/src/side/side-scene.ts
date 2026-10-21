@@ -30,7 +30,7 @@ export const SIDE_SCENE = 'side-world';
 
 /** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
-const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
+const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D,SHIFT';
 /** Above the end of a way, where its prompt sits: under a room's ceiling, or over a street's signposts. */
 const PROMPT_M = { floor: 2.75, street: 3.35 };
 /** Half a sim minute. */
@@ -41,7 +41,7 @@ const BUBBLE_GAP_M = 0.15;
 /** Room for the target's name, so a speech bubble sits over it. */
 const NAME_M = 0.45;
 
-type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
+type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D' | 'SHIFT', Phaser.Input.Keyboard.Key>;
 type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x: number; feet: number; shown: boolean };
 
 const harness = import.meta.env.DEV && new URLSearchParams(globalThis.location?.search ?? '').get('harness') === 'side';
@@ -64,8 +64,8 @@ export class SideScene extends Phaser.Scene {
   private readonly feet = { x: 0, y: 0 };
   private readonly size = { width: 0, height: 0 };
   private readonly sent = { x: NaN, y: NaN, map: '' };
-  private readonly held: Held = { up: false, down: false, left: false, right: false };
-  private readonly controls: Controls = { x: 0, y: 0, use: false };
+  private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
+  private readonly controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
   private passing = false;
   private worksChanged = true;
   private snap = true;
@@ -186,6 +186,7 @@ export class SideScene extends Phaser.Scene {
     held.down = keys.DOWN.isDown || keys.S.isDown || tapped.down;
     held.left = keys.LEFT.isDown || keys.A.isDown;
     held.right = keys.RIGHT.isDown || keys.D.isDown;
+    held.run = keys.SHIFT.isDown;
     readControls(held, this.used, player.mapPosition, this.controls);
     this.used = tapped.up = tapped.down = false;
     return this.controls;
@@ -197,11 +198,11 @@ export class SideScene extends Phaser.Scene {
     const map = player && content?.village.map(player.map);
     if (!map || this.passing) return [];
     const zoom = this.cameras.main.zoom;
-    return prompts(content!.village, map, player!.ways(), eTaken).map(({ way, keys, action }) => ({
+    return prompts(content!.village, map, player!.ways(), eTaken).map(({ at, keys, action }) => ({
       keys,
       action,
-      x: (xOf(map.offset.x + way.at.x) - this.view.x) * zoom,
-      y: (feetOf(map.offset.y + way.at.y) - PROMPT_M[map.kind] * PPM - this.view.y) * zoom,
+      x: (xOf(map.offset.x + at.x) - this.view.x) * zoom,
+      y: (feetOf(map.offset.y + at.y) - PROMPT_M[map.kind] * PPM - this.view.y) * zoom,
     }));
   }
 

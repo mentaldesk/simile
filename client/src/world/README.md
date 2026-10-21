@@ -45,10 +45,10 @@ either end. Every wall faces the camera. The scene drawing the murals registers 
 **E** (`reach.ts`): `inReach(position)` lists what E can use where the player stands, nearest first
 along the street: a terminal, a counter, a painting's frame, or a painted wall while murals are
 drawn. `usedByE` is the first. The dialogue UI, the gallery panel and the side scene all ask it, so
-one press does one thing: E uses that, and takes a door, stairs, a ladder or a lift only when
-nothing is in reach. Up always takes a door. The side scene says what each key would take where the
-player stands, and where on the canvas, through `setWayPrompts`, and the dialogue UI shows
-`wayPrompts(eTaken)` over them: with something in reach, without E.
+one press does one thing: E uses that, and takes a door only when nothing is in reach, when up takes
+the door instead. Stairs, ladders and the lift are the arrows'. The side scene says what each key
+would take where the player stands, and where on the canvas, through `setWayPrompts`, and the
+dialogue UI shows `wayPrompts(eTaken)` over them.
 
 `npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point from the view's
 `spriteOf` boxes: front to back, the first whose frame is opaque there, else the first whose box

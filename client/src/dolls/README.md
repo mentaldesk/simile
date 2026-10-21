@@ -26,7 +26,10 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
   facings draw the side facing right, westward ones left, `north` the back and `south` the front.
   `options.seated` sits for `reading` and `working` (at a desk); `options.on` says whether
   `climbing` is on a `ladder` (the default facing `north` or `south`) or `stairs` (the default
-  from the side). Planted poses stand on the ground. A ladder climb or a jump keeps the standing
+  from the side). `options.run`, 0 to 1, turns `walking` into a run: leaning in, the knees higher,
+  the elbows bent and pumping, a longer stride and a moment with both feet off the ground. Values
+  between blend the two, so the walk doesn't snap into a run. Planted poses stand on the ground,
+  except a run in the air. A ladder climb or a jump keeps the standing
   hip height, so the caller moves the doll up the ladder or along the arc.
 
 The far arm and leg draw behind and darker, and each piece casts a small shadow on the ones
@@ -48,6 +51,7 @@ With `make dev` (or `npx vite` in `client/`), `/src/dolls/preview.html` draws th
 | `show=views` | a row for each of `facings` (east, south, north), a column for each doll, in `pose` |
 | `show=poses&who=kofi` | every pose in each facing |
 | `show=walk&who=kofi,priya` | the walk cycle, in `frames` steps |
+| `show=run&who=kofi,priya` | a row each: walking, running from the side, front and back, and walking into a run and back as Shift goes down and up, at the side scene's cadence |
 | `show=climb&who=kofi` | a ladder from the back and stairs from the side |
 | `show=flat&appearance=<base64 JSON>` | the flat-doll route's doll for any look |
 

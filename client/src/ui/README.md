@@ -97,17 +97,21 @@ prompts from their own tasks.
 
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's) or a mural. The world scene takes a door,
-stairs, a ladder or a lift on E only when none is, so one press never does two things. A small tag
-over each door, flight, ladder or lift a key takes from where the player stands names the keys and
-what it does: "E ↑: go in", "E ↓: downstairs", "E: lift to the first floor" (`WayPromptLayer` in
-[`way-prompts.ts`](way-prompts.ts)). With something in reach, E is left off: "↑: go in". The world
-scene words them and says where they go (`wayPrompts`); tags that would overlap move apart.
+a terminal, the counter, a painting (the gallery panel's) or a mural. The world scene takes a door
+on E only when none is, so one press never does two things, and then up takes the door. Stairs,
+ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
+takes from where the player stands names the keys and what it does: "E: go in", "↑: upstairs",
+"↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). With
+something in reach the door's tag says "↑: go in". The world scene words them and says where they go
+(`wayPrompts`); tags that would overlap move apart.
+
+`?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in
+the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README.
 
 ## What the world scene provides
 

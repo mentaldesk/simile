@@ -9,6 +9,7 @@ import { ChatBox } from './chat-box';
 import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
+import { HelpPanel } from './help';
 import { onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -58,9 +59,11 @@ export class DialogueScene extends Phaser.Scene {
     this.ways = new WayPromptLayer(this.root);
     this.murals = new MuralPanel(this.root, muralWalls);
     this.counter = new CounterPrompt(this.root);
+    const help = new HelpPanel(this.root);
     const onKeyDown = onGameKey({
       chat,
       news: () => this.use(usedByE(this.player())),
+      help,
     });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());

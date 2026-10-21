@@ -4,7 +4,8 @@ import { onGameKey } from './keys';
 
 const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
 const news = vi.fn();
-const handler = onGameKey({ chat, news });
+const help = { toggle: vi.fn(), close: vi.fn() };
+const handler = onGameKey({ chat, news, help });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -32,6 +33,15 @@ describe('with nothing focused', () => {
     expect(chat.cycle.mock.calls).toEqual([[1], [-1]]);
   });
 
+  it('? shows or hides the controls, and Esc hides them', () => {
+    expect(press(document.body, '?', { shiftKey: true }).defaultPrevented).toBe(true);
+    press(document.body, '?', { shiftKey: true, repeat: true });
+    press(document.body, 'Escape');
+
+    expect(help.toggle).toHaveBeenCalledOnce();
+    expect(help.close).toHaveBeenCalledOnce();
+  });
+
   it('E opens the news, but not held down or with a modifier', () => {
     press(document.body, 'e');
     press(document.body, 'E', { shiftKey: true });
@@ -50,6 +60,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   const tab = press(element, 'Tab');
   press(element, 'Escape');
   press(element, 'e');
+  press(element, '?');
 
   expect(enter.defaultPrevented).toBe(false);
   expect(tab.defaultPrevented).toBe(false);
@@ -57,4 +68,5 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(chat.clear).not.toHaveBeenCalled();
   expect(chat.cycle).not.toHaveBeenCalled();
   expect(news).not.toHaveBeenCalled();
+  expect(help.toggle).not.toHaveBeenCalled();
 });
