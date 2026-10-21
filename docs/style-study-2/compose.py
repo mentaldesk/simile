@@ -417,48 +417,55 @@ def step_compare() -> None:
     save(stack(refs), "references", 1800)
 
 
+def frame_numbers(image: Image.Image) -> tuple[int, int]:
+    """A pixel art frame's stray pixels, with no neighbour of their colour, and its loose bits."""
+    import cv2
+
+    a = np.asarray(image)
+    solid = a[..., 3] > 0
+    same = np.zeros(solid.shape, dtype=int)
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            if dy or dx:
+                same += solid & (np.roll(np.roll(a, dy, 0), dx, 1) == a).all(axis=2)
+    count, _ = cv2.connectedComponents(solid.astype(np.uint8), connectivity=8)
+    return int((solid & (same == 0)).sum()), count - 1
+
+
 def step_rig() -> None:
     """Pixel art residents three ways: the rig drawn at the art's own size with nearest-neighbour
     turns, the same with turns at eight times the size, and the smooth rig with each frame
-    pixelated. Each at four times its art pixels, and how many stray pixels and loose bits each
-    frame has."""
-    import cv2
-
+    pixelated. Pictured at 41 art pixels tall and four times their art pixels, and measured at 41
+    and at 20: how many stray pixels each frame has, and how many frames fall apart."""
     modes = {
         "nearest": "Rig at 41 px, nearest-neighbour turns",
         "rotsprite": "Rig at 41 px, turns at 8x then back down",
         "baked": "Smooth rig, each frame pixelated",
     }
     frames, zoom, box = 12, 4, (44, 54)
-    numbers = {}
+    numbers: dict = {}
     rows = {mode: [] for mode in modes}
-    for mode in modes:
-        strays, pieces = [], []
-        for i in range(frames):
-            cells = []
-            for name in WHO:
-                image, (ox, oy) = doll("pixel", name).native(
-                    "walking", "east", i / frames, DOLL_M * pixel.NATIVE, mode
-                )
-                a = np.asarray(image)
-                solid = a[..., 3] > 0
-                same = np.zeros(solid.shape, dtype=int)
-                for dy in (-1, 0, 1):
-                    for dx in (-1, 0, 1):
-                        if dy or dx:
-                            moved = np.roll(np.roll(a, dy, 0), dx, 1)
-                            same += solid & (moved == a).all(axis=2)
-                strays.append(int((solid & (same == 0)).sum()))
-                count, _ = cv2.connectedComponents(solid.astype(np.uint8), connectivity=8)
-                pieces.append(count - 1)
-                cell = Image.new("RGBA", box, (240, 234, 222, 255))
-                over(cell, image, round(box[0] / 2 - ox), round(box[1] - 3 - oy))
-                cells.append(cell.convert("RGB"))
-            rows[mode].append(pixel.up(stack(cells, across=True, gap=0), zoom))
-        numbers[mode] = {
-            "stray pixels a frame": round(float(np.mean(strays)), 1),
-            "frames in more than one bit": round(float(np.mean(np.array(pieces) > 1)), 2),
-        }
+    for height in (DOLL_M * pixel.NATIVE, DOLL_M * pixel.NATIVE / 2):
+        for mode in modes:
+            strays, pieces = [], []
+            for i in range(frames):
+                cells = []
+                for name in WHO:
+                    image, (ox, oy) = doll("pixel", name).native(
+                        "walking", "east", i / frames, height, mode
+                    )
+                    stray, bits = frame_numbers(image)
+                    strays.append(stray)
+                    pieces.append(bits)
+                    cell = Image.new("RGBA", box, (240, 234, 222, 255))
+                    over(cell, image, round(box[0] / 2 - ox), round(box[1] - 3 - oy))
+                    cells.append(cell.convert("RGB"))
+                if height == DOLL_M * pixel.NATIVE:
+                    rows[mode].append(pixel.up(stack(cells, across=True, gap=0), zoom))
+            numbers.setdefault(f"{round(height)} px", {})[mode] = {
+                "stray pixels a frame": round(float(np.mean(strays)), 1),
+                "frames in more than one bit": round(float(np.mean(np.array(pieces) > 1)), 2),
+            }
     print(numbers)
     (OUT / "rig.json").write_text(json.dumps(numbers, indent=1))
     shown = [stack([label(rows[m][i], t, 18) for m, t in modes.items()]) for i in range(frames)]

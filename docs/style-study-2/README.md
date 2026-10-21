@@ -194,6 +194,11 @@ places in #309's pipeline:
   plans, in every style. Each is made solid from its band's usual top row to its usual bottom one,
   and a plaza painted as a slab in perspective has its sloped ends trimmed. Without it, the sky
   showed through holes in the pavement.
+  - The cut can only keep what the key found. Pixel art's first plaza was a pale slab over grey
+    stone on a grey backdrop: the stone went with the backdrop, and the slab stood on nothing. It
+    was painted again until the strip was solid to its bottom row.
+  - Every style's ground strips are now opaque in every row but a few soft rows at their top and
+    bottom edges.
 - **The residents barely change.** #310's dolls already wear t-shirts, jeans, caps, headphones
   and backpacks, drawn in code from each `Appearance`.
 
@@ -331,6 +336,7 @@ number with nearest-neighbour:
 | **#310's rig at 41 px, nearest-neighbour turns** | 22.5 | 0 |
 | The same, each piece turned at 8× and shrunk back by majority, as pixel artists' rotation tools do | 19.2 | 0 |
 | #310's rig drawn smooth, each frame pixelated: frame-by-frame poses | 21.1 | 0 |
+| At half the size, 20 px tall: nearest-neighbour, 8× turns, pixelated frames | 4.0, 3.5, 3.0 | 0 |
 
 **The rig drawn at the art's own size works as well as frame-by-frame poses,** and is what the
 pictures here use:
@@ -348,8 +354,8 @@ pictures here use:
 region at 20 px/m, the pivots scale with them, and the client draws the rig into a render target
 at the art's own size with nearest-neighbour, then scales that up by a whole number. Poses stay
 functions of joint angles, so sitting, reading and climbing need no new art. #329 also drew the
-walk at half the size, 20 art pixels tall, and no frame fell apart there either, so frame-by-frame
-poses aren't needed at either density.
+walk at half the size, 20 art pixels tall (`compose.py rig`, `rig.json`), and no frame fell apart
+there either, so frame-by-frame poses aren't needed at either density.
 
 ### The flat cartoon (#329)
 
@@ -382,10 +388,11 @@ prompt ("a cut-out puppet in flat illustration ... no outlines and no texture"),
 
 | | Game now | Papercraft | Klei-like | Revised | Pixel art | Flat |
 |---|--:|--:|--:|--:|--:|--:|
-| Colour distance to its own references (CIE76, lower is closer) | 11.1 | 8.8 | 11.3 | 8.1 | 10.8 | 13.5 |
-| Worst piece | 32.7 | 27.3 | 29.0 | 25.2 | 31.4 | 45.8 |
+| Colour distance to its own references (CIE76, lower is closer) | 11.1 | 8.8 | 11.3 | 7.8 | 10.2 | 12.6 |
+| Worst piece | 32.7 | 27.3 | 29.0 | 25.2 | 22.0 | 29.7 |
 | Café front painted off the plan (an extra door) | | 0 seeds of 1 | 3 of 3 | 2 of 2 | 2 of 2 | 2 of 2 |
-| Pieces painted again for another reason | | | | 3 | 4 | 1 |
+| Bookshelves, skies and plazas painted again | | | | 3 | 5 | 1 |
+| Pieces painted again on grey, for their white parts | | | | 4 | 5 | 4 |
 | Front and back doll sheets painted for the 6 kept | | 6 | 14 | 6, or 9 with the painted outline | 6 | 6 |
 
 The colour distances are the mean over the 34 pieces all six have, as #295 measured it
@@ -402,9 +409,18 @@ colour no reference has.
 - **The other repaints:** every new style's bookshelf came out as a cut-away house with stairs
   inside, copied from the interior reference: at one seed for the flat cartoon, two for the
   revised cartoon and four for pixel art. The revised cartoon's first sky was smudged all over.
-- **The dining table lost its white top** in pixel art and the flat cartoon. With no outline round
-  it, the white top went with the white backdrop when it was cut out. It needs painting on grey,
-  as the café tables are.
+- **White parts went with the white backdrop** when the pieces were cut out:
+  - pixel art: the kitchen's cabinets, the dining table's top, the bed's duvet, the plant's pot
+    and the kiosk's screen
+  - the flat cartoon: the kitchen's cabinets (patchy), the dining table's top, the plant's pot and
+    the kiosk's screen
+  - the revised cartoon, despite its ink: the kitchen's cabinets, the espresso machine's body, the
+    bar's stone top and the kiosk's screen
+  - All 13 are painted again on grey (`scenery.ON_GREY`), as #309 paints its café tables, and keep
+    their white parts. The revised cartoon's kiosk and espresso machine still lose a few grime
+    spots to the cut.
+  - #326's Klei-like cartoon has the same holes in its kitchen cabinets, kiosk screen, plant pot
+    and espresso machine. They're left as #326 painted them.
 
 ### Legibility at play size
 
@@ -417,7 +433,7 @@ of the street just outside it, averaged over the six residents):
 
 | | Game now | Papercraft | Klei-like | Revised | Pixel art | Flat |
 |---|--:|--:|--:|--:|--:|--:|
-| Edge contrast, mean of six | 18.1 | 18.8 | 40.9 | 25.9 | 45.4 | 22.6 |
+| Edge contrast, mean of six | 18.1 | 18.8 | 40.9 | 25.9 | 44.9 | 22.6 |
 
 - **#326's cartoon's double outline** is the thickest line round any resident, and it shows.
 - **The revised cartoon's single scratchy line** is thinner, so it stands out less, but more than
@@ -470,6 +486,8 @@ Before the restore, the painter drifts skin lighter in every style, measured on 
 | Mean lightness change (L\*) | +7.8 | +6.8 | +7.5 | +1.2 | +4.8 | +5.7 |
 
 The revised cartoon's dirty palette pulls skin lighter least. Every style still needs the restore.
+#326 measured the Klei-like cartoon at 10.3 from its PNG sheets. #329 measures it from the JPEG
+copies on #326's previews branch, which move each median by a level or so, and gets 10.1.
 
 ### Cost
 
@@ -487,18 +505,18 @@ The revised cartoon's dirty palette pulls skin lighter least. Every style still 
 The spread is run-to-run noise. Other work ran on this Mac during the pixel art and flat runs,
 which were 20 to 35% slower for it.
 
-**Machine time, #329:** 257 paintings and about 198 minutes of FLUX, all counted:
+**Machine time, #329:** 271 paintings and about 203 minutes of FLUX, all counted:
 
 - 34 references, 12 of them kept
 - 36 for the sharpness study
-- 137 scenery paintings: 40 for each new style, and 17 painted again (9 café units, 7 bookshelves
-  and a sky)
+- 151 scenery paintings: 40 for each new style, and 31 painted again (9 café units, 7 bookshelves,
+  a sky, a plaza, and 13 pieces on grey)
 - 50 doll sheets: 12 for each new style, 12 more for the revised cartoon's residents painted
   without an outline, and 3 rerolls, less one the log lost when the GPU driver aborted a run
-- 37 model loads
+- 43 model loads
 - #326's two styles, re-drawn the sharper way from their cached pieces, with no painting
 
-The timing logs add up to 219 minutes, but one pixel art doll sheet's 22 minutes include 21 spent
+The timing logs add up to 224 minutes, but one pixel art doll sheet's 22 minutes include 21 spent
 waiting for the GPU, while the study's own shell held the lock. #329 needed no LLM calls.
 
 **A whole village** is what #309 and #310 measured, in any style: about 90 minutes for the

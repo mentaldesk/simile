@@ -42,8 +42,25 @@ RESEEDS = {
     "flat/furniture/bookshelf": 1,
     "pixel/fronts/coffee_shop": 1,
     "pixel/furniture/bookshelf": 4,
+    "pixel/layers/ground-plaza": 1,
 }
 """`<style>/<key>` to a reseed, for a piece painted again after a look."""
+ON_GREY = {
+    "grimy/furniture/bar_counter",
+    "grimy/furniture/espresso_machine",
+    "grimy/furniture/kitchen",
+    "grimy/furniture/news_terminal",
+    "pixel/furniture/bed",
+    "pixel/furniture/kitchen",
+    "pixel/furniture/news_terminal",
+    "pixel/furniture/plant",
+    "pixel/furniture/table",
+    "flat/furniture/kitchen",
+    "flat/furniture/news_terminal",
+    "flat/furniture/plant",
+    "flat/furniture/table",
+}
+"""`<style>/<key>` painted on grey, since their white parts went with a white backdrop."""
 FRONT_PIXELS = 1.0
 """How many times #309's pixels a metre to paint the fronts at."""
 
@@ -397,7 +414,7 @@ def item(name: str, spec: Item, style: Style) -> Piece:
         )
     ref = INTERIOR if spec.ref == "furniture" else spec.ref
     backdrop_text = SIDE_SPRITE if spec.side else SPRITE
-    if spec.grey:
+    if spec.grey or f"{style.name}/{key}" in ON_GREY:
         backdrop_text = backdrop_text.replace("plain flat white", "plain flat medium grey")
     prompt = styled(leads(style)["lead"] + f"2D game asset: {spec.subject}. {backdrop_text}", style)
     return Piece(

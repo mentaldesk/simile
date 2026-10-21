@@ -29,7 +29,8 @@ pipelines, new references and new prompts.
 
 - `content/street/`, `server/simile/street/` and `server/simile/sim/` are unchanged.
 - The manifests keep their format, keys and lookups, so the client's scenery and rig draw the new
-  pieces as they are. Pixel art is the exception: see its rows below.
+  pieces as they are. Pixel art keeps them too, but needs the client to draw on its grid: see
+  below.
 - The client's tests that read the committed manifests (`client/src/side/*.test.ts`,
   `client/src/dolls/`) must pass unchanged.
 
@@ -41,7 +42,6 @@ pipelines, new references and new prompts.
 - `server/simile/dolls/`, except `routes.py` and `job.py`
 - `content/dolls/`
 - `server/tests/dolls/`
-- For pixel art only: the files in `client/src/side/` and `client/src/dolls/` its rows name
 
 ## Task
 
@@ -72,12 +72,17 @@ pipelines, new references and new prompts.
    - building looks: tiled, concrete and painted-brick fronts with flat roofs, no shutters, and
      planters
    - **paint pale pieces on a backdrop they don't share,** since white walls on white and grey
-     glass on grey both get keyed away.
+     glass on grey both get keyed away. In #329, without a thick outline, the kitchen's cabinets,
+     the dining table's top, the plant's pot, the kiosk's screen and the bed's duvet all went with
+     a white backdrop, and painted on grey they kept them (the study's `scenery.ON_GREY`). Check
+     every piece for holes where it should be solid.
    - **cut each ground strip to its own band,** as fronts are cut on their plans.
      - Make the strip solid from the band's usual top row to its usual bottom one.
      - Trim the sloped ends of a slab painted in perspective.
      - The study's `scenery.banded` does this. Without it, the sky showed through holes in the
        pavement.
+     - The cut keeps only what the key found: a strip whose lower band went with its backdrop
+       needs painting again. Check every ground strip is opaque to its bottom row.
 4. **Today's details in the front plans** (`fronts.py`), as the study's `scenery.modernised`
    draws them:
    - slim dark window frames with roller blinds, instead of curtains, sills and lintels
@@ -90,8 +95,9 @@ pipelines, new references and new prompts.
      prompt.
 5. **Judge the pieces at the client's real size,** from #329's sharpness study:
    - `simile papercraft-preview` draws the street at 40 px/m. The client draws about 95 px/m on a
-     retina screen, and #329 found that was what made #295's pictures look sharper. Draw the
-     previews at twice the pixels, as the study's `scaled.py` does, before judging a piece.
+     retina screen, and #329 found that was what made #295's pictures look sharper. Look at the
+     pieces in the client on a retina screen, or with the study's `scaled.py`, which draws
+     `preview.py`'s street at twice its pixels without changing it.
    - Keep 8 bits, the painting sizes and WebP q85. bf16 paints no sharper, though it's 20% faster
      for 7 GB more. Fronts at 1.5 times the pixels have finer detail but thinner outlines than
      the rest, for 2.1 times the time.
@@ -128,9 +134,9 @@ pipelines, new references and new prompts.
 
 ### Pixel art in the client
 
-Pixel art is the one style that changes the client, so it needs a client task of its own, blocked
-by this one. #329 found that #310's rig survives pixels unchanged if it's drawn at the art's own
-size, so the change is in how the side scene draws, not in the rig:
+Pixel art is the one style that changes the client. This issue doesn't own the client, so that's
+a task of its own, blocked by this one. #329 found that #310's rig survives pixels unchanged if
+it's drawn at the art's own size, so the change is in how the side scene draws, not in the rig:
 
 - **Draw at the art's size, then scale by a whole number.** The side scene renders into a target
   of 20 art pixels a metre, with nearest-neighbour filtering and positions rounded to art pixels,
@@ -150,7 +156,7 @@ size, so the change is in how the side scene draws, not in the rig:
 - [ ] Every colour region of every doll, ears included, is within ΔE 6 of its `Appearance`
       colour in the committed atlases, and a test checks it.
 - [ ] `make test` and `make lint` pass, the client's included, with nothing under `client/` or
-      `content/street/` changed, except pixel art's client task.
+      `content/street/` changed.
 - [ ] The PR shows the four streets, the dollhouses and the residents at play size, from
       `simile papercraft-preview` and the client's dolls preview.
 
