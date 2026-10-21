@@ -79,7 +79,7 @@
           "type": "workbench",
           "visible": true,
           "width": 64,
-          "x": 32,
+          "x": 48,
           "y": 32
         },
         {
@@ -91,7 +91,7 @@
           "type": "pegboard",
           "visible": true,
           "width": 64,
-          "x": 32,
+          "x": 48,
           "y": 0
         },
         {
@@ -103,7 +103,7 @@
           "type": "laser_cutter",
           "visible": true,
           "width": 32,
-          "x": 96,
+          "x": 112,
           "y": 16
         },
         {
@@ -115,7 +115,7 @@
           "type": "printer_3d",
           "visible": true,
           "width": 16,
-          "x": 128,
+          "x": 144,
           "y": 16
         },
         {
@@ -127,7 +127,7 @@
           "type": "loom",
           "visible": true,
           "width": 32,
-          "x": 144,
+          "x": 160,
           "y": 16
         },
         {
@@ -139,7 +139,7 @@
           "type": "sewing_machine",
           "visible": true,
           "width": 16,
-          "x": 176,
+          "x": 192,
           "y": 16
         }
       ],
@@ -283,7 +283,7 @@
           "type": "door",
           "visible": true,
           "width": 16,
-          "x": 16,
+          "x": 32,
           "y": 32
         }
       ],
@@ -311,14 +311,14 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "6,2 7,2"
+              "value": "7,2 8,2"
             }
           ],
           "rotation": 0,
           "type": "machine",
           "visible": true,
           "width": 32,
-          "x": 96,
+          "x": 112,
           "y": 16
         },
         {
@@ -334,14 +334,14 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "8,2"
+              "value": "9,2"
             }
           ],
           "rotation": 0,
           "type": "machine",
           "visible": true,
           "width": 16,
-          "x": 128,
+          "x": 144,
           "y": 16
         },
         {
@@ -357,14 +357,14 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "9,2 10,2"
+              "value": "10,2 11,2"
             }
           ],
           "rotation": 0,
           "type": "machine",
           "visible": true,
           "width": 32,
-          "x": 144,
+          "x": 160,
           "y": 16
         },
         {
@@ -380,14 +380,14 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "11,2"
+              "value": "12,2"
             }
           ],
           "rotation": 0,
           "type": "machine",
           "visible": true,
           "width": 16,
-          "x": 176,
+          "x": 192,
           "y": 16
         }
       ],
@@ -417,7 +417,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 32,
+          "x": 48,
           "y": 32
         },
         {
@@ -435,7 +435,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 48,
+          "x": 64,
           "y": 32
         },
         {
@@ -453,7 +453,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 64,
+          "x": 80,
           "y": 32
         },
         {
@@ -471,7 +471,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 80,
+          "x": 96,
           "y": 32
         },
         {
@@ -489,7 +489,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 96,
+          "x": 112,
           "y": 32
         },
         {
@@ -507,7 +507,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 112,
+          "x": 128,
           "y": 32
         },
         {
@@ -525,7 +525,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 128,
+          "x": 144,
           "y": 32
         },
         {
@@ -543,7 +543,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 144,
+          "x": 160,
           "y": 32
         },
         {
@@ -561,7 +561,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 160,
+          "x": 176,
           "y": 32
         },
         {
@@ -579,7 +579,7 @@
           "type": "desk",
           "visible": true,
           "width": 16,
-          "x": 176,
+          "x": 192,
           "y": 32
         }
       ],

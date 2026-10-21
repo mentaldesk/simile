@@ -79,7 +79,7 @@
           "type": "noodle_table",
           "visible": true,
           "width": 32,
-          "x": 48,
+          "x": 64,
           "y": 32
         },
         {
@@ -91,7 +91,7 @@
           "type": "noodle_table",
           "visible": true,
           "width": 32,
-          "x": 80,
+          "x": 96,
           "y": 32
         },
         {
@@ -210,7 +210,7 @@
             {
               "name": "entry_x",
               "type": "int",
-              "value": 7
+              "value": 1
             },
             {
               "name": "entry_y",
@@ -319,7 +319,7 @@
             {
               "name": "to_x",
               "type": "int",
-              "value": 5
+              "value": 7
             },
             {
               "name": "to_y",
@@ -331,7 +331,7 @@
           "type": "door",
           "visible": true,
           "width": 16,
-          "x": 16,
+          "x": 48,
           "y": 32
         }
       ],
@@ -372,7 +372,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 48,
+          "x": 64,
           "y": 32
         },
         {
@@ -390,7 +390,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 64,
+          "x": 80,
           "y": 32
         },
         {
@@ -408,7 +408,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 80,
+          "x": 96,
           "y": 32
         },
         {
@@ -426,7 +426,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 96,
+          "x": 112,
           "y": 32
         },
         {

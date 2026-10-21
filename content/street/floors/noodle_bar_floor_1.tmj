@@ -103,7 +103,7 @@
           "type": "noodle_table",
           "visible": true,
           "width": 32,
-          "x": 96,
+          "x": 80,
           "y": 32
         },
         {
@@ -211,7 +211,7 @@
             {
               "name": "to_x",
               "type": "int",
-              "value": 1
+              "value": 3
             },
             {
               "name": "to_y",
@@ -223,7 +223,7 @@
           "type": "door",
           "visible": true,
           "width": 16,
-          "x": 80,
+          "x": 112,
           "y": 32
         }
       ],
@@ -336,7 +336,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 96,
+          "x": 80,
           "y": 32
         },
         {
@@ -354,7 +354,7 @@
           "type": "seat",
           "visible": true,
           "width": 16,
-          "x": 112,
+          "x": 96,
           "y": 32
         },
         {

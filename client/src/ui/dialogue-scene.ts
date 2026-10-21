@@ -3,7 +3,7 @@ import { server, type Position } from '../net';
 import { maps } from '../world/assets';
 import type { Interactable } from '../world/interactables';
 import { muralWalls } from '../world/murals';
-import { usedByE, wayHint, type Reachable } from '../world/reach';
+import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { ChatBox } from './chat-box';
 import { CounterPrompt, servingAt } from './counter';
@@ -17,6 +17,7 @@ import { fitOverlay, inOverlay } from './overlay';
 import { setMaps } from './side-view';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
+import { WayPromptLayer } from './way-prompts';
 import { NEWS_KEY } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
@@ -28,7 +29,7 @@ export class DialogueScene extends Phaser.Scene {
   private marker!: TargetMarker;
   private news!: NewsPanel;
   private newsHint!: HTMLElement;
-  private wayHint!: HTMLElement;
+  private ways!: WayPromptLayer;
   private murals!: MuralPanel;
   private counter!: CounterPrompt;
   private chat!: ChatBox;
@@ -54,8 +55,7 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint = this.root.appendChild(document.createElement('div'));
     this.newsHint.className = 'news-hint';
     this.newsHint.textContent = `Press ${NEWS_KEY.toUpperCase()} to read the news.`;
-    this.wayHint = this.root.appendChild(document.createElement('div'));
-    this.wayHint.className = 'news-hint';
+    this.ways = new WayPromptLayer(this.root);
     this.murals = new MuralPanel(this.root, muralWalls);
     this.counter = new CounterPrompt(this.root);
     const onKeyDown = onGameKey({
@@ -97,10 +97,8 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
-    const way = this.news.isOpen || this.murals.isOpen ? undefined : wayHint(used !== undefined);
-    this.wayHint.hidden = !way;
-    this.wayHint.classList.toggle('beside', used !== undefined);
-    if (way && this.wayHint.textContent !== way) this.wayHint.textContent = way;
+    const panelOpen = this.news.isOpen || this.murals.isOpen;
+    this.ways.render(panelOpen ? [] : wayPrompts(used !== undefined), this.fromGame);
   }
 
   /** E uses the nearest thing in reach; the gallery scene looks at paintings. */

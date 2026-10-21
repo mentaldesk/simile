@@ -7,6 +7,7 @@ import { House } from './house';
 import {
   coverCrop,
   feetOf,
+  FURNITURE_DROP_M,
   frontPlacement,
   furniturePlacement,
   GROUND_LIFT_M,
@@ -39,6 +40,8 @@ const LAMP_HEAD_M = 3.35;
 const LAMP_LIGHT_M = 3.6;
 const BLOOM = 0.8;
 const LADDER_ABOVE_M = 0.6;
+/** World px a px of a signpost's texture. */
+const SIGN_SCALE = 0.6;
 /** In front of an open dollhouse. */
 export const GHOST_ALPHA = 0.35;
 
@@ -113,6 +116,7 @@ export class StreetView {
     this.buildClimbs();
     for (const building of map.buildings) this.buildFront(building, content.village);
     for (const item of map.furniture) this.buildFurniture(item);
+    this.buildSignposts(content.village);
   }
 
   static pieces(content: Content, map: SideMap): string[] {
@@ -426,6 +430,22 @@ export class StreetView {
       const lamp = scene.add.image(place.x, place.y - LAMP_HEAD_M * PPM, textures.lamp());
       lamp.setScale((LAMP_LIGHT_M * PPM) / 256).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.lampGlow);
       this.lamps.push(this.own(lamp.setVisible(false)));
+    }
+  }
+
+  /** A fingerpost at each way to another street, naming it. */
+  private buildSignposts(village: Village): void {
+    const { map, scene, textures } = this;
+    for (const link of map.links) {
+      const there = village.map(link.to.map);
+      if (link.kind !== 'door' || there?.kind !== 'street') continue;
+      const key = textures.signpost(there.label ?? there.id);
+      const [x, y] = [xOf(link.x), feetOf(link.y) + FURNITURE_DROP_M * PPM];
+      const shadow = dropShadow(scene, textures, key, [0.5, 1], x, y, { ppm: PPM, scale: 0.25 });
+      this.own(shadow.setScale(shadow.scaleX * SIGN_SCALE).setDepth(DEPTH.streetShadow));
+      const image = scene.add.image(x, y, textures.key(key)).setOrigin(0.5, 1).setScale(SIGN_SCALE);
+      this.tints.add('ground', this.own(image.setDepth(DEPTH.streetFurniture)));
+      this.props.push({ x, image, shadow });
     }
   }
 

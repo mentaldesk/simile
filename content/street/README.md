@@ -127,18 +127,24 @@ today's 47 s.
 | `maker_space` Spark Maker Space | `high_street` | 16 | 0 and 1 `workshop`, 2 `loft` | `maker_space_stairs` 0 → 1, `maker_space_ladder` 1 → 2 |
 | `gallery` The Gallery | `banyan_row` | 18 | 0, 1 and 2 `gallery` | `gallery_lift_0_1`, `gallery_lift_0_2`, `gallery_lift_1_2` |
 
-- **Houses** have the front door and the foot of the stairs at opposite ends of the living room,
-  and the entry in the middle, at x 3. Houses 2, 4, 6, 9 and 10 have their door at the west end.
+- **No flight or ladder starts against an outer wall** (#325): there's a cell to stand on behind the
+  foot of each flight, away from the flight, and either side of a ladder's. A flight's top can land
+  against the far wall.
+- **Houses** have the front door at one end of the living room and the foot of the stairs a step in
+  from the other (x 2, or 4 where the door is west), rising to the bedroom over the door, and the
+  entry in the middle, at x 3. Houses 2, 4, 6, 9 and 10 have their door at the west end.
 - **The Daily Grind**, ground floor, west to east: behind the counter the grinder (1), the espresso
   machine (2), the till (3, `coffee_shop_staff`'s entry) and the hand-over (4); then on the
   customers' side the pickup (5), the queue from its front (6, the café's entry and the counter's
   stand) running east to 9 (`coffee_shop_queue`), the standing bar (10–14), the foot of the stairs
-  (15), just inside the door (17) and the mat (18). Its eight tables are upstairs. The barista's
+  (15), rising east to 18 upstairs, just inside the door (17) and the mat (18). Its eight tables are
+  upstairs, with the foot of the flat's stairs between them (11), rising east to 14. The barista's
   flat is the top floor.
-- **Golden Bowl Noodles**: the foot of the stairs (1), the mat (2), two tables, the entry (7), the
-  five stools at the counter (8–12) and the kitchen behind it (13–15). Seven tables upstairs.
-- **Spark Maker Space**: the foot of the stairs (1), a workbench, the laser cutter, 3D printer, loom
-  and sewing machine (6–11), the entry (13) and the mat (14). Three workbenches on the first floor,
+- **Golden Bowl Noodles**: the entry (1), the mat (2), the foot of the stairs (3), rising east to 7
+  upstairs, two tables, the five stools at the counter (8–12) and the kitchen behind it (13–15).
+  Seven tables upstairs.
+- **Spark Maker Space**: the foot of the stairs (2), a workbench, the laser cutter, 3D printer, loom
+  and sewing machine (7–12), the entry (13) and the mat (14). Three workbenches on the first floor,
   two in the loft up the ladder from x 6.
 - **The Gallery**: the mat (2), the entry (3), paintings 1 to 3 and a bench on the ground floor,
   4 to 8 and two benches on the first, 9 to 13 and a bench on the second. The lift is at the east

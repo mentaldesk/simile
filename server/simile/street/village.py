@@ -223,16 +223,17 @@ def painting(plan: Plan, number: int, x: int) -> None:
 
 
 def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> list[Plan]:
-    """Two floors: a living room with the front door and the foot of the stairs, and a bedroom."""
+    """Two floors: a living room with the front door and the foot of the stairs, a step in from
+    the far wall, and a bedroom."""
     home = Building(
         street, f"house_{number}", label, LocationKind.HOUSE, x, 7, ("living_room", "bedroom")
     )
     living, bedroom = home.floors
-    mat, foot, top = (1, 5, 1) if door_west else (5, 1, 5)
+    mat, foot, top = (1, 4, 1) if door_west else (5, 2, 5)
     home.door(mat)
     home.link(f"house_{number}_stairs", DoorKind.STAIRS, (0, foot), (1, top))
     home.place(entry=3)
-    living.piece("kitchen", 4 if door_west else 1, FLOOR_ROW - 1, 2, 2)
+    living.piece("kitchen", 5 if door_west else 1, FLOOR_ROW - 1, 1, 2)
     living.piece("sofa", 2 if door_west else 3, FLOOR_ROW, 2, 1)
     bedroom.piece("bed", 2 if door_west else 3, FLOOR_ROW, 2, 1)
     bedroom.piece("wardrobe", 5 if door_west else 1, FLOOR_ROW - 1, 1, 2)
@@ -240,16 +241,16 @@ def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> lis
 
 
 def noodle_bar(street: Plan, x: int) -> list[Plan]:
-    """Two tables, the stools at the counter and the kitchen behind it downstairs, and a dining
-    room above."""
+    """The entry by the door, two tables, the stools at the counter and the kitchen behind it
+    downstairs, and a dining room above."""
     kind = LocationKind.NOODLE_BAR
     rooms = ("noodle_bar", "dining_room")
     shop = Building(street, "noodle_bar", "Golden Bowl Noodles", kind, x, 17, rooms)
     ground, dining = shop.floors
     shop.door(2)
-    shop.link("noodle_bar_stairs", DoorKind.STAIRS, (0, 1), (1, 5))
-    shop.place(entry=7)
-    for at, old in ((3, (4, 8)), (5, (4, 11))):
+    shop.link("noodle_bar_stairs", DoorKind.STAIRS, (0, 3), (1, 7))
+    shop.place(entry=1)
+    for at, old in ((4, (4, 8)), (6, (4, 11))):
         table(ground, "noodle_table", at, old)
     ground.piece("noodle_counter", 8, FLOOR_ROW, 5, 1)
     for i, old_x in enumerate(range(3, 13, 2)):
@@ -257,7 +258,7 @@ def noodle_bar(street: Plan, x: int) -> list[Plan]:
         ground.spot(f"seat-{old_x}-5", SEAT, 8 + i, FLOOR_ROW, N, dz=STOOL_M)
     ground.piece("kitchen_counter", 13, FLOOR_ROW)
     ground.piece("stove", 14, FLOOR_ROW - 1, 2, 2)
-    upstairs = [(1, (8, 8)), (3, (8, 11)), (6, (12, 8)), (8, (12, 11)), (10, (16, 8))]
+    upstairs = [(1, (8, 8)), (3, (8, 11)), (5, (12, 8)), (8, (12, 11)), (10, (16, 8))]
     upstairs += [(12, (16, 11)), (14, (16, 3))]
     for at, old in upstairs:
         table(dining, "noodle_table", at, old)
@@ -273,8 +274,8 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
     cafe = Building(street, "coffee_shop", "The Daily Grind", kind, x, 20, rooms)
     ground, upstairs, flat = cafe.floors
     cafe.door(18)
-    cafe.link("coffee_shop_stairs", DoorKind.STAIRS, (0, 15), (1, 11))
-    cafe.link("coffee_shop_flat_stairs", DoorKind.STAIRS, (1, 18), (2, 14))
+    cafe.link("coffee_shop_stairs", DoorKind.STAIRS, (0, 15), (1, 18))
+    cafe.link("coffee_shop_flat_stairs", DoorKind.STAIRS, (1, 11), (2, 14))
     cafe.place(entry=6)
     amenity = LocationKind.AMENITY
     ground.locations += [
@@ -310,7 +311,7 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
     ground.piece("counter", 3, FLOOR_ROW, 3, 1)
     ground.piece("menu_board", 2, 0, 3, 1)
     ground.piece("bar_counter", 10, FLOOR_ROW, 5, 1)
-    ground.piece("plant", 16, FLOOR_ROW)
+    ground.piece("plant", 17, FLOOR_ROW)
     for at, spot_id in enumerate(("bar-2-6", "bar-3-6", "bar-10-3", "bar-10-4", "bar-10-5"), 10):
         ground.spot(spot_id, BAR, at, FLOOR_ROW, N)
     tables = [(1, (2, 8)), (3, (2, 11)), (5, (12, 3)), (7, (15, 3)), (9, (12, 7))]
@@ -334,15 +335,15 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     shop = Building(street, "maker_space", "Spark Maker Space", kind, x, 16, rooms)
     ground, first, loft = shop.floors
     shop.door(14)
-    shop.link("maker_space_stairs", DoorKind.STAIRS, (0, 1), (1, 5))
+    shop.link("maker_space_stairs", DoorKind.STAIRS, (0, 2), (1, 5))
     shop.link("maker_space_ladder", DoorKind.LADDER, (1, 6), (2, 6))
     shop.place(entry=13)
-    workbench(ground, 2, (3, 6))
-    ground.piece("pegboard", 2, 0, 4, 1)
-    machine(ground, "laser_cutter", "Laser cutter", 6, 2, "desk-2-3", "desk-3-3")
-    machine(ground, "printer_3d", "3D printer", 8, 1, "desk-6-3")
-    machine(ground, "loom", "Loom", 9, 2, "desk-10-3", "desk-11-3")
-    machine(ground, "sewing_machine", "Sewing machine", 11, 1, "desk-15-3")
+    workbench(ground, 3, (3, 6))
+    ground.piece("pegboard", 3, 0, 4, 1)
+    machine(ground, "laser_cutter", "Laser cutter", 7, 2, "desk-2-3", "desk-3-3")
+    machine(ground, "printer_3d", "3D printer", 9, 1, "desk-6-3")
+    machine(ground, "loom", "Loom", 10, 2, "desk-10-3", "desk-11-3")
+    machine(ground, "sewing_machine", "Sewing machine", 12, 1, "desk-15-3")
     for at, old in ((1, (3, 9)), (7, (8, 6)), (11, (8, 9))):
         workbench(first, at, old)
     for at, old in ((1, (13, 6)), (7, (13, 9))):

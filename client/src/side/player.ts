@@ -3,7 +3,8 @@ import { PLAYER_SPEED } from '../world/tuning';
 import { isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import { drawnCrossing, emptyDrawn, RIDE_SPEED, sideways, WALK_CYCLE_M, type Drawn } from './motion';
 import { TILE_M } from './layout';
-import { climbRuns, crossing, pointAlong, runAt, type Crossing, type Path, type Run } from './runs';
+import { climbRuns, pointAlong, type Crossing, type Path, type Run } from './runs';
+import { chosen, waysNear, type Press, type Way } from './ways';
 
 /** Tiles a second. */
 export const PLAYER_CLIMB: Record<ClimbKind, number> = { stairs: 2, ladder: 1.5 };
@@ -15,11 +16,10 @@ export type MapPosition = Position & { map: string };
 
 type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
-
-/** What E takes here: a link, or a run from its foot (`distance` 0) or head. */
-export type Way = { link: Link; across?: Crossing } | OnRun;
+type Climb = Exclude<Way, { kind: 'door' }>;
 
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);
+const EPSILON = 1e-6;
 
 export class SidePlayer {
   map: string;
@@ -34,6 +34,8 @@ export class SidePlayer {
   private travelled = 0;
   private onRun?: OnRun;
   private crossed?: Crossed;
+  /** Stepping to the end of what it's about to climb or ride. */
+  private approaching?: Climb;
   /** Up or down only opens a door once let go, so arriving doesn't go back. */
   private armed = true;
   private readonly village: Village;
@@ -51,7 +53,7 @@ export class SidePlayer {
     this.map = map;
     this.position.x = x;
     this.position.y = y;
-    this.onRun = this.crossed = undefined;
+    this.onRun = this.crossed = this.approaching = undefined;
     this.armed = false;
     this.locate();
   }
@@ -84,42 +86,33 @@ export class SidePlayer {
     let door: Link | undefined;
     if (this.crossed) this.cross(this.crossed, controls, dt);
     else if (this.onRun) this.climb(this.onRun, controls, dt);
+    else if (this.approaching) this.approach(this.approaching, controls, dt);
     else door = this.walk(controls, dt);
     this.locate();
     return door;
   }
 
-  /** Undefined while climbing or riding. */
-  way(): Way | undefined {
+  /** What the player can take from here, nearest first: none while climbing or riding. */
+  ways(): Way[] {
     const map = this.village.map(this.map);
-    if (!map || this.onRun || this.crossed) return undefined;
-    const x = Math.floor(this.position.x + 0.5);
-    const y = Math.round(this.position.y);
-    const link = this.village.linkAt(this.map, x, y);
-    if (link?.kind === 'door') return { link };
-    const across = link && crossing(this.village, link);
-    if (link && across) return { link, across };
-    return runAt(this.runsOf(map), { x, y });
+    if (!map || this.onRun || this.crossed || this.approaching) return [];
+    return waysNear(this.village, map, this.runsOf(map), this.position);
   }
 
+  /** E takes the nearest way; up or down, once let go since arriving, the nearest that way. */
   private walk(controls: Controls, dt: number): Link | undefined {
     const map = this.village.map(this.map);
     if (!map) return undefined;
-    const way = controls.use || controls.y !== 0 ? this.way() : undefined;
-    const up = controls.y < 0 && this.armed;
-    const down = controls.y > 0 && this.armed;
-    if (way && 'link' in way) {
-      const { link, across } = way;
-      if (link.kind === 'door' && (controls.use || up || (down && link.side === 'inside' && map.kind === 'floor'))) {
-        this.armed = false;
-        return link;
-      }
-      if (across && controls.use) {
-        this.crossed = { crossing: across, distance: 0 };
-        return undefined;
-      }
-    } else if (way && controls.use) {
-      this.onRun = { run: way.run, distance: way.distance };
+    const vertical = this.armed && controls.y !== 0 ? (controls.y < 0 ? 'up' : 'down') : undefined;
+    const press: Press | undefined = controls.use ? 'use' : vertical;
+    const way = press && chosen(this.ways(), press, map);
+    if (way?.kind === 'door') {
+      this.armed = false;
+      return way.link;
+    }
+    if (way) {
+      if (Math.abs(way.at.x - this.position.x) <= EPSILON) this.begin(way);
+      else this.approach((this.approaching = way), controls, dt);
       return undefined;
     }
     this.walking = false;
@@ -138,6 +131,34 @@ export class SidePlayer {
       this.facing = controls.y < 0 ? 'north' : 'south';
     }
     return undefined;
+  }
+
+  private begin(way: Climb): void {
+    this.position.x = way.at.x;
+    if ('across' in way) this.crossed = { crossing: way.across, distance: 0 };
+    else this.onRun = { run: way.run, distance: way.distance };
+  }
+
+  /** Walks onto its end, then gets on; turning back lets it go. */
+  private approach(way: Climb, controls: Controls, dt: number): void {
+    const gap = way.at.x - this.position.x;
+    if (controls.x !== 0 && Math.sign(controls.x) !== Math.sign(gap)) {
+      this.approaching = undefined;
+      this.armed = false;
+      this.walk({ x: controls.x, y: 0, use: false }, dt);
+      return;
+    }
+    const step = Math.min(Math.abs(gap), PLAYER_SPEED * dt);
+    this.position.x += Math.sign(gap) * step;
+    this.travelled += step;
+    this.heading = Math.sign(gap);
+    this.facing = sideways(this.heading);
+    this.walking = true;
+    if (Math.abs(way.at.x - this.position.x) <= EPSILON) {
+      this.approaching = undefined;
+      this.walking = false;
+      this.begin(way);
+    }
   }
 
   private climb(on: OnRun, controls: Controls, dt: number): void {
@@ -227,7 +248,7 @@ function rise(path: Path): number {
   return sign((last.x - first.x) * sign(first.y - last.y));
 }
 
-/** Walking stops at stairs and ladders, which are taken with E. */
+/** Walking stops at stairs and ladders on a map, which are taken with E, up or down. */
 export function spanEnd(map: SideMap, x: number, y: number, way: -1 | 1): number {
   let end = x;
   while (isStanding(map, end + way, y)) end += way;
