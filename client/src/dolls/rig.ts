@@ -10,6 +10,8 @@ export type PoseOptions = {
   seated?: boolean;
   /** What `climbing` is on. By default a ladder from the back or front, stairs from the side. */
   on?: 'ladder' | 'stairs';
+  /** How far `walking` has turned into a run, 0 to 1. */
+  run?: number;
 };
 
 export type Placement = {
@@ -42,6 +44,8 @@ type SideAngles = {
   elbow: Pair;
   plant: boolean;
   rise?: number;
+  /** Units a planted pose is off the ground. */
+  air?: number;
 };
 
 type StraightAngles = {
@@ -56,6 +60,7 @@ type StraightAngles = {
   arms: 'beside' | 'forward' | 'raised';
   plant: boolean;
   rise?: number;
+  air?: number;
 };
 
 const TAU = Math.PI * 2;
@@ -63,6 +68,12 @@ const rad = (degrees: number) => (degrees * Math.PI) / 180;
 const add = (a: Vec, b: Vec): Vec => ({ x: a.x + b.x, y: a.y + b.y });
 const sub = (a: Vec, b: Vec): Vec => ({ x: a.x - b.x, y: a.y - b.y });
 const pos = (v: number) => Math.max(0, v);
+const mix = (a: number, b: number, w: number) => a + (b - a) * w;
+const mixPair = (a: Pair, b: Pair, w: number): Pair => [mix(a[0], b[0], w), mix(a[1], b[1], w)];
+/** Units off the ground at the top of a running stride. */
+const RUN_AIR = 5;
+/** Both feet off the ground while the legs are furthest apart, `air` units at most. */
+const flight = (t: number, air: number) => (air * pos(Math.abs(Math.sin(t)) - 0.8)) / 0.2;
 
 /** `v` swung by `degrees`: positive swings a hanging limb forward, to +x. */
 function swing(v: Vec, degrees: number): Vec {
@@ -122,6 +133,46 @@ function walk(phase: number, stride = 24, lift = 0, bend = 34): SideAngles {
   };
 }
 
+/** Leaning in, the knees high, the elbows bent and pumping, and off the ground between strides. */
+function run(phase: number): SideAngles {
+  const t = TAU * phase;
+  const leg = (t: number): [number, number, number] => {
+    const thigh = 10 + 32 * Math.sin(t);
+    const stance = 30 * pos(-Math.cos(t)) ** 2;
+    const knee = 16 + stance + 22 * pos(Math.sin(t)) + 90 * pos(Math.cos(t + 0.2)) ** 1.6;
+    return [thigh, knee, 0.5 * (knee - thigh)];
+  };
+  const near = leg(t);
+  const far = leg(t + Math.PI);
+  return {
+    lean: 13,
+    nod: -8,
+    thigh: [near[0], far[0]],
+    knee: [near[1], far[1]],
+    foot: [near[2], far[2]],
+    shoulder: [10 - 40 * Math.sin(t), 10 + 40 * Math.sin(t)],
+    elbow: [78 + 22 * pos(-Math.sin(t)), 78 + 22 * pos(Math.sin(t))],
+    plant: true,
+    air: flight(t, RUN_AIR),
+  };
+}
+
+function blendSide(walking: SideAngles, running: SideAngles, w: number): SideAngles {
+  if (w <= 0) return walking;
+  if (w >= 1) return running;
+  return {
+    lean: mix(walking.lean, running.lean, w),
+    nod: mix(walking.nod, running.nod, w),
+    thigh: mixPair(walking.thigh, running.thigh, w),
+    knee: mixPair(walking.knee, running.knee, w),
+    foot: mixPair(walking.foot, running.foot, w),
+    shoulder: mixPair(walking.shoulder, running.shoulder, w),
+    elbow: mixPair(walking.elbow, running.elbow, w),
+    plant: true,
+    air: mix(walking.air ?? 0, running.air ?? 0, w),
+  };
+}
+
 /** Up stairs: each foot lifted onto the next tread, under its knee. */
 function stairs(phase: number): SideAngles {
   const t = TAU * phase;
@@ -149,7 +200,7 @@ function sideAngles(pose: DollPose, phase: number, options: PoseOptions): SideAn
   const legs = options.seated ? SIT : STAND;
   switch (pose) {
     case 'walking':
-      return walk(phase);
+      return blendSide(walk(phase), run(phase), options.run ?? 0);
     case 'climbing':
       return options.on === 'ladder' ? ladderFromSide(phase) : stairs(phase);
     case 'sitting':
@@ -250,13 +301,29 @@ function straightAngles(pose: DollPose, phase: number, options: PoseOptions): St
   switch (pose) {
     case 'walking': {
       const lift: Pair = [pos(Math.sin(t)), pos(-Math.sin(t))];
-      return {
+      const walking: StraightAngles = {
         ...STRAIGHT,
         arm: [5 + 4 * lift[1], 5 + 4 * lift[0]],
         elbow: [8 * lift[1], 8 * lift[0]],
         forearm: [1 - 0.15 * lift[1], 1 - 0.15 * lift[0]],
         thigh: [1 - 0.3 * lift[0], 1 - 0.3 * lift[1]],
       };
+      const w = options.run ?? 0;
+      if (w <= 0) return walking;
+      const stance: Pair = [pos(-Math.cos(t)) ** 2, pos(Math.cos(t)) ** 2];
+      const swing: Pair = [pos(Math.cos(t + 0.2)) ** 1.6, pos(-Math.cos(t + 0.2)) ** 1.6];
+      const running: StraightAngles = {
+        ...STRAIGHT,
+        arm: [14 + 6 * lift[1], 14 + 6 * lift[0]],
+        elbow: [35 + 105 * lift[1], 35 + 105 * lift[0]],
+        forearm: [0.7 - 0.25 * lift[1], 0.7 - 0.25 * lift[0]],
+        leg: [2.5, 2.5],
+        thigh: [1 - 0.55 * swing[0] - 0.12 * stance[0], 1 - 0.55 * swing[1] - 0.12 * stance[1]],
+        knee: [4 * swing[0], 4 * swing[1]],
+        nod: -3,
+        air: flight(t, RUN_AIR),
+      };
+      return w >= 1 ? running : blendStraight(walking, running, w);
     }
     case 'climbing':
       return options.on === 'stairs' ? straightAngles('walking', phase, {}) : ladder(phase);
@@ -305,6 +372,20 @@ function straightAngles(pose: DollPose, phase: number, options: PoseOptions): St
     default:
       return STRAIGHT;
   }
+}
+
+function blendStraight(walking: StraightAngles, running: StraightAngles, w: number): StraightAngles {
+  return {
+    ...walking,
+    arm: mixPair(walking.arm, running.arm, w),
+    elbow: mixPair(walking.elbow, running.elbow, w),
+    forearm: mixPair(walking.forearm, running.forearm, w),
+    leg: mixPair(walking.leg, running.leg, w),
+    thigh: mixPair(walking.thigh, running.thigh, w),
+    knee: mixPair(walking.knee, running.knee, w),
+    nod: mix(walking.nod, running.nod, w),
+    air: mix(walking.air ?? 0, running.air ?? 0, w),
+  };
 }
 
 function ladder(phase: number): StraightAngles {
@@ -448,7 +529,7 @@ export function posed(
   const a = angles(pose, view, cycle, options);
   const parts = place(doll, view, a);
   const ground = a.plant
-    ? lowest(doll, parts)
+    ? lowest(doll, parts) + (a.air ?? 0) * doll.unit
     : lowest(doll, place(doll, view, angles('standing', view, 0, {}))) + (a.rise ?? 0) * doll.unit;
   return {
     view,

@@ -1,4 +1,4 @@
-// A dev page drawing the dolls with the real rig: /src/dolls/preview.html?show=lineup|poses|walk|climb|flat
+// A dev page drawing the dolls with the real rig: /src/dolls/preview.html?show=lineup|poses|walk|run|climb|flat
 import Phaser from 'phaser';
 import type { Facing } from '../net/protocol';
 import { dolls, flatDoll } from './assets';
@@ -12,7 +12,15 @@ type Cell = {
   facing: Facing;
   phase?: number;
   options?: PoseOptions;
+  /** Cycles a second, or turning from a walk to a run and back with `shift`. */
+  pace?: number | 'shift';
 };
+
+/** The side scene's cadence: `PLAYER_SPEED` over `WALK_CYCLE_M`, and twice that over `RUN_CYCLE_M`. */
+const WALK_HZ = 1.8;
+const RUN_HZ = 2.4;
+/** Walking, then Shift held, then let go, as the side scene blends. */
+const SHIFT_MS = { walk: 1500, blend: 250, run: 1500 };
 
 const params = new URLSearchParams(location.search);
 const show = params.get('show') ?? 'lineup';
@@ -48,6 +56,14 @@ function cells(ids: string[]): Cell[][] {
       return ids.map((id) =>
         phases.map((phase) => ({ id, pose: 'walking', facing: 'east', phase })),
       );
+    case 'run':
+      return ids.map((id) => [
+        { id, pose: 'walking', facing: 'east', pace: WALK_HZ },
+        { id, pose: 'walking', facing: 'east', pace: RUN_HZ, options: { run: 1 } },
+        { id, pose: 'walking', facing: 'south', pace: RUN_HZ, options: { run: 1 } },
+        { id, pose: 'walking', facing: 'north', pace: RUN_HZ, options: { run: 1 } },
+        { id, pose: 'walking', facing: 'east', pace: 'shift' },
+      ]);
     case 'climb':
       return [
         phases.map((phase) => ({
@@ -113,8 +129,18 @@ async function chosen(): Promise<Record<string, DollManifest>> {
   };
 }
 
+/** How far a walk has turned into a run `ms` into a cycle of walking, holding Shift and letting go. */
+function shifted(ms: number): number {
+  const { walk, blend, run } = SHIFT_MS;
+  const t = ms % (2 * (walk + blend) + run);
+  if (t < walk) return 0;
+  if (t < walk + blend) return (t - walk) / blend;
+  if (t < walk + blend + run) return 1;
+  return Math.max(0, 1 - (t - walk - blend - run) / blend);
+}
+
 class Preview extends Phaser.Scene {
-  private readonly posed: [PaperDoll, Cell][] = [];
+  private readonly posed: [PaperDoll, Cell, { phase: number }][] = [];
   private readonly found: Record<string, DollManifest>;
   private readonly rows: Cell[][];
 
@@ -144,17 +170,24 @@ class Preview extends Phaser.Scene {
         const paper = new PaperDoll(this, (c + 0.5) * cellWidth, y, doll, key, height);
         this.add.existing(paper);
         paper.setPose(cell.pose, cell.facing, cell.phase ?? fixed ?? 0, cell.options);
-        this.posed.push([paper, cell]);
+        this.posed.push([paper, cell, { phase: 0 }]);
       });
     });
     (window as unknown as { dollsReady: boolean }).dollsReady = true;
   }
 
-  update(time: number): void {
+  update(time: number, delta: number): void {
     if (fixed !== undefined) return;
-    for (const [paper, cell] of this.posed) {
-      if (cell.phase === undefined)
+    for (const [paper, cell, at] of this.posed) {
+      if (cell.phase !== undefined) continue;
+      if (cell.pace === undefined) {
         paper.setPose(cell.pose, cell.facing, time / 1000, cell.options);
+        continue;
+      }
+      const run = cell.pace === 'shift' ? shifted(time) : (cell.options?.run ?? 0);
+      const hz = cell.pace === 'shift' ? WALK_HZ + (RUN_HZ - WALK_HZ) * run : cell.pace;
+      at.phase += (hz * delta) / 1000;
+      paper.setPose(cell.pose, cell.facing, at.phase, { ...cell.options, run });
     }
   }
 }

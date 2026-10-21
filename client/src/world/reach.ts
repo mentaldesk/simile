@@ -46,11 +46,11 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 
-/** What E uses: a door, stairs, a ladder or a lift only when there's nothing. */
+/** What E uses: a door only when there's nothing. */
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
   inReach(position, from)[0];
 
-/** The keys that take a door, stairs, a ladder or a lift, what it does, and a game-canvas point just above it. */
+/** The keys that take a door, stairs, a ladder or the lift, what it does, and a game-canvas point just above it. */
 export type WayPrompt = { keys: readonly string[]; action: string; x: number; y: number };
 
 type WayPrompts = (eTaken: boolean) => readonly WayPrompt[];
@@ -65,5 +65,5 @@ export function setWayPrompts(prompts: WayPrompts): () => void {
   };
 }
 
-/** `eTaken` while E uses something in reach, so it's left off. */
+/** `eTaken` while E uses something in reach, so up takes a door instead. */
 export const wayPrompts = (eTaken = false): readonly WayPrompt[] => waysHere?.(eTaken) ?? [];

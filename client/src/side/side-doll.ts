@@ -33,8 +33,8 @@ export class SideDoll extends Phaser.GameObjects.Container {
   }
 
   /** Does nothing unless its pose step, facing or tint changed. */
-  show({ pose, facing, phase, seated, on }: Drawn, tint: number): this {
-    const posed = this.cache.get(pose, facing, phase, seated, on);
+  show({ pose, facing, phase, seated, on, run }: Drawn, tint: number): this {
+    const posed = this.cache.get(pose, facing, phase, seated, on, run);
     const flip = posed.view === 'side' && facesLeft(facing);
     if (posed === this.shown && flip === this.flipped && tint === this.tint) return this;
     this.shown = posed;

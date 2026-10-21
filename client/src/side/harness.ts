@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { server, type Entity, type Facing, type Frame, type Pose, type Position, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
+import { usedByE } from '../world/reach';
 import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
 import './harness.css';
@@ -264,9 +265,9 @@ function showPanel(): void {
   const panel = document.body.appendChild(document.createElement('section'));
   panel.className = 'side-harness';
   panel.innerHTML = `<b>Side-view harness</b>
-    <p>Left and right walk. E or up takes a door. Up or down climbs stairs or a ladder from the tile
-    beside it, as E then up or down does; E rides a lift. [ and ] move the clock an hour; 1 to 4 go
-    to each street.</p>`;
+    <p>Left and right walk, and Shift runs. E takes a door, or uses what's in reach. Up climbs stairs
+    or a ladder from the tile beside its foot, and down from beside its top; up and down ride the lift.
+    [ and ] move the clock an hour; 1 to 4 go to each street.</p>`;
 }
 
 /** Work from each step's start to the end of its render, and the gaps between frames. */
@@ -298,13 +299,19 @@ function measure(scene: Phaser.Scene): void {
 function exposeWalk(scene: SideScene, village: Village): void {
   const prompts = () =>
     [...document.querySelectorAll<HTMLElement>('.way-prompt')].filter((tag) => !tag.hidden).map((tag) => tag.ariaLabel);
+  const talk = () => {
+    const tag = document.querySelector<HTMLElement>('.dialogue-target-talk');
+    return tag && !tag.hidden ? tag.ariaLabel : null;
+  };
   Object.assign(window, {
     sideWalk: {
       state: () => {
         const player = scene.playing;
         if (!player) return undefined;
-        const { map, position, climbing } = player;
-        return { map, x: position.x, y: position.y, climbing: climbing ?? null, prompts: prompts() };
+        const { map, position, climbing, drawn } = player;
+        const used = usedByE(player.mapPosition)?.kind ?? null;
+        const state = { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, used };
+        return { ...state, prompts: prompts(), talk: talk() };
       },
       links: () => [...village.maps.values()].flatMap(({ links }) => links),
       runs: () =>
@@ -312,6 +319,23 @@ function exposeWalk(scene: SideScene, village: Village): void {
           climbRuns(street).map(({ kind, path }) => ({ map: street.id, kind, foot: path.points[0], head: path.points.at(-1) })),
         ),
       widths: () => Object.fromEntries([...village.maps.values()].map(({ id, width }) => [id, width])),
+      terminals: () =>
+        village.streets.flatMap((street) =>
+          street.locations
+            .filter(({ type }) => type === 'terminal')
+            .map(({ props }) => ({ map: street.id, x: Number(props.entry_x), y: Number(props.entry_y) })),
+        ),
+      counters: () =>
+        [...village.maps.values()].flatMap((map) =>
+          map.interactables
+            .filter(({ type }) => type === 'counter')
+            .map(({ x, w, props }) => {
+              const [stand] = String(props.stand).split(' ').map((cell) => cell.split(',').map(Number));
+              return { map: map.id, x: stand[0], y: stand[1], behind: x + Math.floor(w / 2) };
+            }),
+        ),
+      move: (id: string, position: MapPosition) =>
+        dispatch({ type: 'entity_moved', entity_id: id, position, pose: 'standing', facing: 'south' }),
       standing: (map: string, x: number, y: number) => {
         const found = village.map(map);
         return !!found && isStanding(found, x, y);
