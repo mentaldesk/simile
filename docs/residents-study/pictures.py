@@ -37,15 +37,17 @@ def ready(approach: str) -> bool:
 
 
 APPROACHES = tuple(a for a in EVERY if ready(a))
-WALKING = APPROACHES + (("strip",) if ready("strip") else ())
-"""The approaches compared walking: approach 1b paints only the walk."""
+WALKING = tuple(a for a in ("dolls", "whole", "strip", "cut", "model", "repaint") if ready(a))
+"""Every approach, 1b after 1. 1b paints only the walk and the run, so a walk frame stands in
+as its still."""
+STILL = {"strip": " (a walk frame stands in as its still)"}
 TITLES = {
     "dolls": "Today: #310's dolls in #329's grimy cartoon",
     "whole": "1. Whole FLUX characters",
     "cut": "2. Painted whole, then cut",
     "model": "3. 3D, toon-shaded",
     "repaint": "4. 3D, repainted by FLUX",
-    "strip": "1b. Whole, its walk painted from the rig",
+    "strip": "1b. Whole, painted from the rig's poses",
 }
 SHORT = {
     "dolls": "#310 dolls",
@@ -66,6 +68,8 @@ GROUND_ROW = RENDER[1] / 2 + (RENDER[1] / RENDER_PPM / 2 - 0.12) * RENDER_PPM
 def frame_name(pose: str, facing: str, phase: float) -> str:
     if pose == "walking":
         return f"walk-{round(phase * poses.WALK_FRAMES) % poses.WALK_FRAMES}"
+    if pose == "running":
+        return f"run-{round(phase * poses.WALK_FRAMES) % poses.WALK_FRAMES}"
     if pose == "sitting":
         return "sit"
     if pose == "stairs":
@@ -112,10 +116,13 @@ def strip_feet() -> dict:
     return json.loads((OUT / "whole" / "strip" / "feet.json").read_text())
 
 
-def strip_figure(who: str, facing: str, phase: float, height: float):
-    """Approach 1b: the four painted walk frames, each held for two of the cycle's eight."""
+def strip_figure(who: str, pose: str, facing: str, phase: float, height: float):
+    """Approach 1b: the four painted frames of the walk or the run, each held for two of the
+    cycle's eight."""
     i = round(phase * poses.WALK_FRAMES) % poses.WALK_FRAMES
-    name = f"w{i // 2}"
+    name = f"{'r' if pose == 'running' else 'w'}{i // 2}"
+    if f"{who}/{name}" not in strip_feet():
+        return None
     image = Image.open(OUT / "whole" / "strip" / f"{who}-{name}.png").convert("RGBA")
     x, bottom, top = strip_feet()[f"{who}/{name}"]
     scale = height / standing_px("strip", who)
@@ -154,15 +161,21 @@ def rig_doll(approach: str, who: str):
 
 
 def figure(approach: str, who: str, pose: str, facing: str, phase: float, height: float):
-    """A resident standing `height` pixels tall, in `pose`, and where its feet are."""
+    """A resident standing `height` pixels tall, in `pose`, and where its feet are, or None if
+    the approach has no picture of that pose."""
     if approach in ("dolls", "cut", "cut-loose", "cut-tight"):
         return rig_doll(approach, who).draw(pose, facing, phase, height)
     if approach == "strip":
-        if pose == "walking":
-            return strip_figure(who, facing, phase, height)
-        return whole_figure(who, pose, facing, phase, height)
+        if pose in ("walking", "running"):
+            return strip_figure(who, pose, facing, phase, height)
+        if pose == "standing" and facing in ("east", "west"):
+            return strip_figure(who, "walking", facing, 0.0, height)
+        return None
     if approach in ("model", "repaint"):
-        image = rendered(approach, who, frame_name(pose, facing, phase))
+        name = frame_name(pose, facing, phase)
+        if approach == "repaint" and not (OUT / "repaint" / who / "cut" / f"{name}.png").exists():
+            return None
+        image = rendered(approach, who, name)
         scale = height / standing_px(approach, who)
         small = image.resize(
             (max(1, round(image.width * scale)), max(1, round(image.height * scale))), Image.LANCZOS
@@ -172,6 +185,8 @@ def figure(approach: str, who: str, pose: str, facing: str, phase: float, height
             small = small.transpose(Image.FLIP_LEFT_RIGHT)
             origin = (small.width - origin[0], origin[1])
         return small, origin
+    if pose == "running":
+        return None
     return whole_figure(who, pose, facing, phase, height)
 
 
@@ -226,27 +241,30 @@ def row(approach: str, who_poses, height: float, gap: float = 0.62, top: float =
         "RGBA", (step * (len(who_poses) + 1), round(height * top + height * 0.12)), (*BACKDROP, 255)
     )
     for n, (who, pose, facing, phase) in enumerate(who_poses):
-        image, (ox, oy) = figure(approach, who, pose, facing, phase, height)
-        over(out, image, round(step * (n + 1) - ox), round(height * top - oy))
+        drawn = figure(approach, who, pose, facing, phase, height)
+        if drawn is not None:
+            image, (ox, oy) = drawn
+            over(out, image, round(step * (n + 1) - ox), round(height * top - oy))
     return out.convert("RGB")
 
 
 def step_stills() -> None:
     """Each approach's four residents standing, at full size, then at play size 1:1."""
     rows = []
-    for approach in APPROACHES:
+    for approach in WALKING:
         rows.append(
             label(
                 row(approach, [(w, "standing", "east", 0) for w in WHO], 420, 0.75),
-                TITLES[approach],
+                TITLES[approach] + STILL.get(approach, ""),
             )
         )
     save(stack(rows), "compare-stills", 1600)
     small = []
-    for approach in APPROACHES:
+    for approach in WALKING:
         one = row(approach, [(w, "standing", "east", 0) for w in WHO], DOLL_M * 40, 0.75)
         two = row(approach, [(w, "standing", "east", 0) for w in WHO], DOLL_M * 80, 0.75)
-        small.append(label(stack([one, two], across=True, gap=24), TITLES[approach], 18))
+        title = TITLES[approach] + STILL.get(approach, "")
+        small.append(label(stack([one, two], across=True, gap=24), title, 18))
     save(stack(small), "compare-play-stills", None)
     picture = stack(small)
     picture.save(FULL / "compare-play-stills.png")
@@ -259,6 +277,7 @@ POSES = [
     ("walking", "east", 0.25, ""),
     ("walking", "east", 0.5, ""),
     ("walking", "east", 0.75, ""),
+    ("running", "east", 0.25, "run"),
     ("sitting", "east", 0.0, "sit"),
     ("stairs", "east", 0.25, "stairs"),
     ("ladder", "north", 0.25, "ladder"),
@@ -269,20 +288,19 @@ POSES = [
 
 def step_poses() -> None:
     """Each approach's residents in every pose, at about twice street size on a retina screen."""
-    for approach in APPROACHES:
+    for approach in WALKING:
         rows = [row(approach, [(w, p, f, ph) for p, f, ph, _ in POSES], 230, 0.62) for w in WHO]
+        what = ": stand, walk, run, sit, stairs, ladder, front, back; a gap where it has none"
         save(
-            label(
-                stack(rows), TITLES[approach] + ": stand, walk, sit, stairs, ladder, front, back"
-            ),
+            label(stack(rows), TITLES[approach] + what),
             f"{approach}-poses",
             1600,
         )
 
 
-def walk_frames(approach: str, height: float) -> list[Image.Image]:
+def walk_frames(approach: str, height: float, pose: str = "walking") -> list[Image.Image]:
     return [
-        row(approach, [(w, "walking", "east", i / poses.WALK_FRAMES) for w in WHO], height, 0.7)
+        row(approach, [(w, pose, "east", i / poses.WALK_FRAMES) for w in WHO], height, 0.7)
         for i in range(poses.WALK_FRAMES)
     ]
 
@@ -295,6 +313,12 @@ def step_walks() -> None:
         stack([label(rows[a][i], TITLES[a], 16) for a in WALKING]) for i in range(poses.WALK_FRAMES)
     ]
     gif(both, "walk-compare", poses.WALK_MS, 160)
+    running = [a for a in WALKING if figure(a, WHO[0], "running", "east", 0.0, 100) is not None]
+    rows = {a: walk_frames(a, 120, "running") for a in running}
+    both = [
+        stack([label(rows[a][i], TITLES[a], 16) for a in running]) for i in range(poses.WALK_FRAMES)
+    ]
+    gif(both, "run-compare", poses.WALK_MS * 2 // 3, 160)
 
 
 CAMERA = 33.0
@@ -384,13 +408,17 @@ def dollhouse(approach: str) -> Image.Image:
     for who, floor, cell, facing, pose in INSIDE:
         view = floors[floor]
         feet = ground - (facade.y + facade.h - (view.props["street_y"] + 3)) * TILE * ppm + 3
-        image, (ox, oy) = figure(approach, who, pose, facing, 0, DOLL_M * ppm)
+        drawn = figure(approach, who, pose, facing, 0, DOLL_M * ppm)
+        image, (ox, oy) = drawn or figure(approach, who, pose, "east", 0, DOLL_M * ppm)
         over(picture, image, round(left + (cell + 0.5) * tile - ox), round(feet - oy))
     return picture.convert("RGB").crop(styled_study.HOUSE_CROP)
 
 
 def step_dollhouse() -> None:
-    houses = [label(dollhouse(a).crop((126, 66, 1476, 876)), TITLES[a]) for a in APPROACHES]
+    houses = [
+        label(dollhouse(a).crop((126, 66, 1476, 876)), TITLES[a] + STILL.get(a, ""))
+        for a in WALKING
+    ]
     save(stack(houses), "compare-dollhouse", 1600, quality=84)
 
 
@@ -776,7 +804,7 @@ def cost_group(e: dict) -> str:
     approach, key = e["approach"], e["key"]
     if approach == "whole":
         if key.startswith("strip/"):
-            return "1b walk sheet"
+            return "1b run sheet" if key.endswith("/run") else "1b walk sheet"
         return "1 standing, from text" if key.endswith("/stand") else "1 pose edit"
     if approach == "cut":
         return "2 sheet, tight" if "exact pose" in e["prompt"] else "2 sheet, loose"

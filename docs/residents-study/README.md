@@ -51,6 +51,9 @@ FLUX.2 Klein 4B runs through mflux at 8 bits, as #329 recommends. No approach ma
 
 ## Side by side
 
+Approach 1b, which the study added (below), comes after 1 throughout. It paints only the walk and
+the run, so the first frame of its walk stands in as its still.
+
 The four residents standing, at full size, about 420 px tall:
 
 ![Standing, at full size](images/compare-stills.jpg)
@@ -60,9 +63,14 @@ retina screen draws them at 80 px/m (right). Open it at 100% to judge:
 
 ![Standing, at play size](images/compare-play-stills.png)
 
-Walking, eight frames at 135 ms each, with approach 1b (below) last:
+Walking, eight frames at 135 ms each:
 
 ![Walking](images/walk-compare.gif)
+
+Running, eight frames at 90 ms each, for the approaches that have a run: the rig's (today's dolls
+and 2), Blender's (3) and 1b's run sheet. 1 and 4 have none:
+
+![Running](images/run-compare.gif)
 
 On #329's grimy High Street at 80 px/m, the coffee shop's square, as a retina screen draws it:
 
@@ -78,9 +86,19 @@ In #329's coffee shop at 60 px/m:
 
 ## Each approach
 
-Each approach's residents standing, walking (four of its eight frames), sitting, climbing stairs,
-climbing a ladder seen from behind, and from the front and the back, at about twice their size on
-a retina screen. Then its walk, and its residents on #329's grimy street at 80 px/m.
+Each approach's residents standing, walking (four of its eight frames), running, sitting,
+climbing stairs, climbing a ladder seen from behind, and from the front and the back, at about
+twice their size on a retina screen, with a gap where the approach has no picture of a pose. Then
+its walk, and its residents on #329's grimy street at 80 px/m.
+
+| | Walk | Run | Sit | Stairs | Ladder | Front and back |
+|---|---|---|---|---|---|---|
+| Today | rig | rig | rig | rig | rig | rig |
+| 1. Whole | painted | **untested** | painted | the walk | painted, from behind | the three-quarter figure; the climb from behind |
+| 1b. From the rig | painted | painted | **untested** | **untested** | **untested** | **untested** |
+| 2. Painted, then cut | rig | rig | rig | rig | rig | rig |
+| 3. 3D | rendered | rendered | rendered | rendered | rendered | rendered |
+| 4. 3D repainted | repainted | **untested** | repainted | repainted | repainted | repainted |
 
 ### Today: #310's dolls in #329's grimy cartoon
 
@@ -127,28 +145,38 @@ head, so the head doesn't jump as the legs change.
   smooth, even ink line and very little grime: the cleanest of the approaches, and the furthest
   from #329's palette (below).
 
-#### 1b. Its walk painted from the rig
+#### 1b. Whole, painted from the rig's poses
 
-![Approach 1b's walk](images/strip-walk.gif)
+![Approach 1b's walk and run](images/strip-poses.jpg)
+
+![Walking](images/strip-walk.gif)
 
 ![On the street](images/strip-street.jpg)
 
 The issue's approaches left a gap between 1 and 2: FLUX paints a whole character beautifully, but
-only in the poses it chooses. So 1b lays out the rig's own walk, four frames of the flat doll
-side-on at #329's proportions, on one sheet, and FLUX redraws it as one whole person four times,
-with the grimy reference, as approach 2 paints its sheet (`whole.py strip`). Nothing is cut into
-pieces: each figure is cut out whole and played as a sprite, each held for two of the cycle's
-eight frames. Then #310's colour restore pulls each region back to the `Look`, with the fitted
-mannequin as the map. Because the map only roughly lines up with a free painting, each region's
-correction moves only the pixels painted near its typical colour (`study.restored`).
+only in the poses it chooses. So 1b lays out a cycle of the rig's own poses, four frames of the
+flat doll side-on at #329's proportions, on one sheet, and FLUX redraws it as one whole person four
+times, with the grimy reference, as approach 2 paints its sheet (`whole.py strip`). There are two
+sheets a resident, the walk and the run. Nothing is cut into pieces: each figure is cut out whole
+and played as a sprite, each held for two of the cycle's eight frames. Then #310's colour restore
+pulls each region back to the `Look`, with the fitted mannequin as the map. Because the map only
+roughly lines up with a free painting, each region's correction moves only the pixels painted near
+its typical colour (`study.restored`).
 
-- **Every resident is the same person in all four frames,** side-on, with the grimy line, the
-  smudges and the big head, and their legs really walk: the frames follow the rig's leg angles.
+- **Every resident is the same person in all four frames of a sheet,** side-on, with the grimy
+  line, the smudges and the big head.
+- **FLUX didn't keep every pose.** The walk's first frame is a passing pose in the guide, legs
+  together, and FLUX drew a full stride there on all four sheets. So each walk is stride, stride,
+  pass, stride, not pass, stride, pass, stride, and the step hitches once a cycle. A guide with the
+  passing leg drawn clearly lifted, or a reroll of each sheet whose frames repeat, would be needed.
   The arms swing less than the rig's.
-- **The restore works:** skin within ΔE 1.6 of the `Look` for all four, against 9.5 before it.
-- **The same sheet takes any pose the rig has,** so standing, sitting, a stair step and a ladder
-  climb from behind would be one more sheet of four. Only the walk was painted here: standing,
-  sitting and climbing in its pictures are approach 1's.
+- **The run reads as a jog.** FLUX kept the bent, pumping arms and the high knees, but drew every
+  figure upright, without the rig's lean forward.
+- **The restore brings skin within ΔE 1.6** of the `Look` for all four, against 9.5 before it, but
+  leaves 7 of 24 regions over ΔE 6 ([below](#keeping-each-resident-themselves)).
+- **The rest is untested.** Standing, sitting, a stair step, a ladder climb and the front and back
+  views would be more sheets of four, by the same method. None was painted, so the first frame of
+  the walk stands in as its still.
 
 ### 2. Painted whole, then cut
 
@@ -231,8 +259,9 @@ headless, with MPFB:
 - **The pose:** the rig's own angles from `rig.ts`, set on MPFB's `game_engine` bones as turns
   about the side-to-side axis: the same walk, sit, stairs and ladder as the dolls.
 - **The renders:** orthographic, 300 px/m, 512 × 768, one toon render and one flat render in the
-  `Look`'s exact colours per frame, the second for measuring. 20 frames a resident: the walk's
-  eight, standing side-on, front and back, sitting, four stair steps and four ladder steps.
+  `Look`'s exact colours per frame, the second for measuring. 28 frames a resident: the walk's
+  eight, the run's eight (`rig.ts`'s `run()`, lifted off the ground between strides as it is),
+  standing side-on, front and back, sitting, four stair steps and four ladder steps.
 
 ### 4. 3D, repainted by FLUX
 
@@ -247,7 +276,8 @@ cartoon character in exactly the same pose, place and size" in the grimy style, 
 clean" (`repaint.py`). Then #310's colour restore pulls each region back to the `Look`, with
 Blender's flat pass as the map of regions, which approach 3 gives for free. Two ways:
 
-- **Frame by frame:** each of the 14 frames a resident on its own.
+- **Frame by frame:** each of the 14 frames a resident on its own. The run's frames were rendered
+  after the repaints, so 4 has no run.
 - **Four to a painting:** the walk's eight frames as two strips of four, which FLUX keeps more
   alike.
 
@@ -264,9 +294,16 @@ Blender's flat pass as the map of regions, which approach 3 gives for free. Two 
   and redrew Henrietta larger, in three-quarter view, in all eight. Only Lachlan's strips kept to
   the renders. 1b's sheets, four 2D mannequins at the same width, had none of this, so it's the
   3D renders' small, realistic figures that FLUX reads loosely.
-- **The restore is needed and works:** skin within ΔE 1.0 of the `Look` after it, against up to
-  14 before. With a map that only roughly lines up, #310's own restore tinted Henrietta's face
-  where the map had hair; the careful restore 1b uses doesn't.
+- **The restore is needed, and mostly works:** skin within ΔE 1.0 of the `Look` after it, against
+  up to 14 before. It uses the same careful restore as 1b (`study.restored`).
+- **But it still tints Henrietta's face.** Where Blender's flat pass has hair and FLUX painted her
+  forehead, the restore pulls those pixels towards her blue-grey hair: her restored standing
+  frame has a blue-grey upper face (row 6 of the stills above), and so do some walk frames. #310's
+  own restore was worse, turning it cyan. **The skin figure misses it,** because the map labels
+  those pixels hair, so they're measured, and restored, as hair. Her painted skin is only about
+  ΔE 19 to 22 from the grey FLUX painted her hair, so the careful restore's check, which lets
+  through anything within ΔE 20, lets part of it through. A map that lines up better, or a
+  tighter check, would be needed.
 - **The 3D proportions stay:** FLUX keeps approach 3's long legs and small head, so the heads are
   a quarter of the height, against about a third for the 2D approaches.
 
@@ -305,6 +342,7 @@ resident standing side-on (`pictures.py match`):
   colours in 12 clusters, and each region against the nearest cluster covering 0.6% of it. It
   finds whether a colour is there, not where, so it can't fail a region painted in another
   region's colour.
+- **1b has no standing figure,** so its numbers are from the first frame of its walk.
 
 | | Today | 1 | 1b | 1b before restore | 2 | 3 | 4 | 4 before restore |
 |---|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -332,6 +370,12 @@ resident standing side-on (`pictures.py match`):
 - **The restore needs a map of the regions.** Approach 1 has none, so its colours are FLUX's.
   1b's mannequin and 4's flat pass are maps, and with them the restore brings skin within ΔE 1.6
   and 1.0.
+- **1b still has 7 of its 24 regions over ΔE 6 after the restore:** every resident's shoes (black
+  shoes clustered with the ink line, Odalys's white ones painted cream), Odalys's apron, Henrietta's
+  scarf and, just, Lachlan's silver hair. A stronger restore doesn't fix it. Letting through
+  colours within ΔE 30 instead of 20, or restoring twice, left 4 to 6 over 6, and turned Lachlan's
+  hair to ΔE 13. It needs a second pass that fills a region still off with its flat colour, as
+  #329's `dolls.matched` does, and the follow-up asks for one.
 - **3's colours are exact,** being the `Look`'s by construction. Its worst is the apron, which a
   side view shows only as an edge.
 
@@ -342,10 +386,13 @@ from each of the eight frames' median to the cycle's, over every region found in
 (`pictures.py consistency`). Regions are found by their nearest `Look` colour, or for 3 and 4 by
 Blender's flat pass.
 
-| | Today | 1 | 1b | 2 | 3 | 4, frame by frame | 4, four to a painting |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| Mean change between frames, ΔE | 0.3 | 1.5 | 0.9 | 0.5 | 0.2 | 2.5 | 3.2 |
-| Worst region | 3.0 | 5.0 | 2.4 | 1.9 | 1.1 | 8.9 | 20.2 |
+| | Today | 1 | 1b | 2 | 3 | 4, frame by frame, restored | 4, frame by frame, before the restore | 4, four to a painting, before the restore |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| Mean change between frames, ΔE | 0.3 | 1.5 | 0.9 | 0.5 | 0.2 | 2.3 | 2.5 | 3.2 |
+| Worst region | 3.0 | 5.0 | 2.4 | 1.9 | 1.1 | 9.3 | 8.9 | 20.2 |
+
+The restored frames are the ones shown. The restore pulls each frame's colours to the same
+`Look`, but it can't steady what FLUX drew differently in each, so it barely changes the figure.
 
 - **The rigs (today, 2) and Blender (3) don't change between frames** but for resampling and
   light: every frame is the same pieces or the same model.
@@ -379,11 +426,11 @@ closer). #329's grimy scenery pieces sat at 7.8.
 
 | | Today | 1 | 1b | 2 | 3 | 4 |
 |---|--:|--:|--:|--:|--:|--:|
-| Distance to the references, mean of four | 15.8 | 18.0 | 13.7 | 9.6 | 16.2 | 15.9 |
-| Edge contrast with the street at play size, mean of four | 22.0 | 20.3 | 26.4 | 20.4 | 23.5 | 27.2 |
+| Distance to the references, mean of four | 15.8 | 18.0 | 13.6 | 9.6 | 16.2 | 15.9 |
+| Edge contrast with the street at play size, mean of four | 22.0 | 20.3 | 26.3 | 20.4 | 23.5 | 27.2 |
 
 - **Painting in edit mode with #329's residents reference** pulls a resident into the scenery's
-  palette: 2's sheets (9.6) and 1b's (13.7) are closest, and 1, painted from text, is furthest.
+  palette: 2's sheets (9.6) and 1b's (13.6) are closest, and 1, painted from text, is furthest.
   1b's restore pulls colours to the `Look`, which moves them back out a little.
 - **Edge contrast** is #329's legibility measure: the CIEDE2000 between the median colour of a
   resident's own edge and of the street just outside it, at 40 px/m. 4's dark repainted line and
@@ -400,18 +447,18 @@ Measured on this M2 Max, FLUX at 8 bits with nothing else running, mean seconds:
 |---|--:|--:|
 | Today (#310, from #329) | about 120 s: two sheets of 60 s | none: joint angles |
 | 1. Whole | 196 s: standing from text (20 s) and four edits (44 s each) | 44 s: an edit |
-| 1b. Whole from the rig | 74 s for the walk's four frames; about 150 s with a second sheet for standing, sitting, stairs and a ladder | a figure on a sheet: about 18 s each, 74 s a sheet of four |
+| 1b. Whole from the rig | 74 s for the walk's four frames and 68 s for the run's; about 280 s for the four sheets the follow-up plans, with standing, sitting, stairs, a ladder, the front and the back | a figure on a sheet: about 18 s each, 70 s a sheet of four |
 | 2. Painted, then cut | 68 s: one sheet, then 5 s to cut | none: joint angles |
-| 3. 3D | about 20 s of Blender for 20 frames, including starting Blender and building the model (0.7 s); 0.65 s a frame toon-shaded | under 1 s a frame |
-| 4. 3D repainted | 3's 20 s, then 30 s of FLUX a frame: 433 s for 14 frames | 30 s a frame, after 3's render |
+| 3. 3D | about 28 s of Blender for 28 frames, including starting Blender and building the model (0.7 s); 0.65 s a frame toon-shaded | under 1 s a frame: the run's eight frames added 8 s |
+| 4. 3D repainted | 3's render, then 30 s of FLUX a frame: 413 s for 14 frames | 30 s a frame, after 3's render |
 
 - **Model loads are cached:** about a second each here.
 - **#329's estimate for the whole village's dolls,** 26 minutes for 12, scales the same way: 1b at
-  two sheets a resident is about 30 minutes, 1 about 40, and 4 about 85 for 14 frames each.
-- **This study's FLUX time,** every painting and load counted, rejected ones included, was 66
-  minutes: 15 for approach 1 (four from text, 19 edits, three of them the pilot's rejects), 5 for
-  1b, 9 for 2 (both prompts), half a minute for 3's grime texture, and 37 for 4 (56 frames and 8
-  strips). No LLM calls.
+  four sheets a resident is about 56 minutes, 1 about 40, and 4 about 90 for 14 frames each.
+- **This study's FLUX time,** every painting and load counted, rejected ones included, was 71
+  minutes: 15 for approach 1 (four from text, 19 edits, three of them the pilot's rejects), 9 for
+  1b (the walk and run sheets), 9 for 2 (both prompts), half a minute for 3's grime texture, and
+  37 for 4 (56 frames and 8 strips). No LLM calls.
 
 ### What the character creator needs
 
@@ -427,8 +474,8 @@ When a player makes a new resident:
 - **2. Painted, then cut:** as today, with the same instant flat doll, then one sheet.
 - **3. 3D:** the `Appearance`, plus a body (MPFB's gender, age, weight and muscle sliders) and a
   map from each hair style and accessory to a mesh. Blender and MPFB must be installed where the
-  build runs: about 50 MB of add-on and 300 MB of asset packs, and GPL code. Built and rendered
-  in about 20 s, so a creator could preview it nearly live, but only on a machine with Blender.
+  build runs: about 50 MB of add-on and 330 MB of asset packs, and GPL code. Built and rendered
+  in about 28 s, so a creator could preview it nearly live, but only on a machine with Blender.
   Live 3D in the browser would need the models exported to glTF instead.
 - **4. 3D repainted:** as 3, then about 30 s of FLUX a frame, about 7 minutes for 14 frames.
 
@@ -458,7 +505,7 @@ sheet at build time, and the client draws them as it draws any sprite.
   and depth sorting. The toon shader, lines and grime are fixed at build time, where this study
   tuned them, and approach 4's repaint can only work this way. Sprites sit in the dollhouse and
   street layers like furniture. No GPL code ships.
-- **Against:** the frame count is fixed. This study renders 20 frames a resident in about 20 s
+- **Against:** the frame count is fixed. This study renders 28 frames a resident in about 28 s
   of Blender, so a new pose is a rebuild, not a client change, and blending walk into run needs
   frames for each blend. Sheets cost disk: 20 frames at retina size is about 100 kB a
   resident as WebP.
@@ -500,7 +547,7 @@ maps.
   where it lays out the sheets.
 - **It holds together:** four frames on one sheet stay one person, more than separate edits do
   (1) and far more than a repaint per frame (4), and skin comes back within ΔE 1.6.
-- **It's cheap and simple:** about 150 s of FLUX a resident for two sheets, and a sprite swap in
+- **It's cheap and simple:** about 280 s of FLUX a resident for four sheets, and a sprite swap in
   the client, which is simpler than the rig.
 
 **Against it:**
@@ -508,10 +555,16 @@ maps.
 - **Poses are paintings.** Every pose the sim adds is a figure on a sheet for every resident,
   where the rig needs only angles. The sim's list is short (standing, walking, sitting, reading,
   working, looking, climbing, riding), and reading and working can sit or stand at first.
-- **Frames are few:** four walk frames, held two each. A run, today a blend of angles, would be
-  the walk played faster, or another sheet.
-- **Only the walk was painted** as a sheet here. Standing, sitting and climbing on a sheet are the
-  same method, but untested.
+- **Frames are few:** four a cycle, held two each. The run is its own sheet, so a walk turning
+  into a run swaps sheets rather than blending angles as the rig does.
+- **Its colours aren't all back.** After the restore, 7 of its 24 regions are still over ΔE 6,
+  mostly shoes. The follow-up needs a second pass, like #329's `dolls.matched`, to meet its own
+  ΔE 6 bar, and that pass is untested.
+- **FLUX doesn't keep every pose.** It drew the walk's passing frame as a stride on all four
+  sheets, so the walk hitches once a cycle, and it stood the run up straight. Each sheet needs
+  a look and maybe a reroll.
+- **Only the walk and the run were painted** as sheets here. Standing, sitting, climbing and the
+  front and back are the same method, but untested.
 
 **The others:**
 
@@ -523,7 +576,8 @@ maps.
   looks like a 3D game in a drawn world, needs Blender and GPL tooling in the build, and the
   `Appearance` lacks the body it needs.
 - **4, 3D repainted,** draws better than 3 but shimmers from frame to frame, keeps 3D's
-  proportions, sometimes ignores its render, and costs about three times as much FLUX as 1b.
+  proportions, sometimes ignores its render, and costs half as much FLUX again as 1b's four
+  sheets (413 s against 280 s), with no run.
 - **For 3D at all, pre-render sprites** rather than run three.js live (above).
 
 ## Taste calls for the user
@@ -533,8 +587,10 @@ maps.
 - **Faces and grime:** 1b and 2 put a few smudges on faces despite "the face clean". 1 kept them
   clean.
 - **Heads:** 1b's are about 40% of the height, like #329's dolls'. 1's are a third.
-- **Four walk frames held two each,** against the 48 steps a cycle today's rig draws. Is the
-  step choppy at play size?
+- **Four walk frames held two each,** against the 48 steps a cycle today's rig draws, and 1b's
+  walk hitches once a cycle (stride, stride, pass, stride). Is the step choppy at play size?
+- **1b's sideburns:** its paintings keep the mannequin's dark wedge in front of the ear (Odalys,
+  Ingrid and Henrietta).
 - **Odalys reads as a boy** in 1 and 2, and could in 1b. A body type or age in the creator
   would fix it.
 - **3D in a drawn world:** whether 3's or 4's look is wanted at all.
@@ -546,7 +602,9 @@ maps.
   written.
 - **Live 3D:** no three.js or glTF export was tried. The recommendation for pre-rendered sprites
   is reasoned, not measured.
-- **1b beyond the walk:** standing, sitting and climbing sheets, and a run.
+- **Poses some approaches don't have,** marked untested in the table under
+  [each approach](#each-approach): 1's and 4's run, and 1b's standing, sitting, stairs, ladder,
+  front and back. Nor 1b's second-pass colour fill.
 - **Every resident:** four of eleven, and not the player. Each painting is one seed. Nothing
   was rerolled for 1b, 2 or 4, so their failures show as they came, from a few paintings each.
 - **Night and the time-of-day tint** on the sprites.
@@ -562,7 +620,10 @@ untouched. Only the study's scripts and its renders are committed.
 
 | What | From | Licence | Used |
 |---|---|---|---|
-| MPFB 2.0.18, the MakeHuman add-on, with its base mesh, targets and rigs | extensions.blender.org | GPL-3.0-or-later | the body, its sliders and its `game_engine` rig |
+| MPFB 2.0.18's code, the MakeHuman add-on | extensions.blender.org | GPL-3.0-or-later, by its `blender_manifest.toml` | building, fitting and rigging the body in Blender |
+| MPFB's base mesh, `data/3dobjs/base.obj` | inside the add-on | CC0: "explicitly released as CC0 in september 2020", by its header | the body |
+| MPFB's `game_engine` rig weights, `weights.game_engine.json` | inside the add-on | CC0, by its `"license"` field | the skinning |
+| MPFB's body targets and `rig.game_engine.json` | inside the add-on | no licence line of their own | the sliders and the bones' places |
 | MakeHuman system assets | the MakeHuman project's asset packs | CC0 | hair `short04`, `short02`, `afro01` and `ponytail01`, `shoes06`, the low-poly eyes and `eyebrow001` |
 | Shirts 01 | the same | CC0 | `elvs_crude_t-shirt_male` (Elvaerwyn) |
 | Pants 01 | the same | CC0 | `toigo_wool_pants` (MargaretToigo) |
@@ -573,9 +634,10 @@ untouched. Only the study's scripts and its renders are committed.
   the packs as CC0, so they're left out. The cap and the bun are simple shapes made in
   `mpfb/build.py` instead, as are the apron, scarf, backpack and headphones, which no CC0 pack
   has.
-- **MPFB's code is GPL.** Renders from it are the study's own and fine to commit. A game that
-  ships pre-rendered sprites ships no MPFB code; one that ships glTF models ships only the CC0
-  meshes.
+- **Only MPFB's code is GPL.** Renders from it are the study's own and fine to commit, and a game
+  that ships pre-rendered sprites ships nothing of MPFB's. A glTF export would ship the CC0 base
+  mesh and weights, shaped by MPFB's targets. The targets carry no licence line of their own, so
+  check them with the MakeHuman project before shipping models rather than sprites.
 - The grime texture is FLUX's (Apache 2.0, as every painting here).
 
 ## Files
@@ -584,7 +646,7 @@ untouched. Only the study's scripts and its renders are committed.
 |---|---|
 | `study.py` | Paths, the residents, the grimy words, FLUX in text and edit mode behind a lock, the cut-out, and the colour check every approach is measured by |
 | `poses.py` | The client's poses from `rig.ts` as joint angles: walking, sitting, stairs and ladders, for #329's Python rig and for Blender |
-| `whole.py` | Approach 1, and its walk painted from the rig (1b). `python whole.py`, `python whole.py sprites`, `python whole.py strip` |
+| `whole.py` | Approach 1, and 1b, painted from the rig. `python whole.py`, `python whole.py sprites`, `python whole.py strip [walk] [run]` |
 | `cut.py` | Approach 2: the mannequin sheet, its painting, and the cut. `python cut.py paint`, `python cut.py cut`, each with `--tight` for the tighter prompt |
 | `model.py` | Approach 3: each resident's spec from their `Appearance`, rendered by Blender. `python model.py` |
 | `mpfb/build.py` | The Blender side: the MPFB body, CC0 clothes and hair, the accessories, the toon shader and lines, the pose and the renders |

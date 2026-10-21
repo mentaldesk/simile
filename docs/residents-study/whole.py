@@ -94,47 +94,56 @@ def paint(who: list[str], poses: list[str]) -> None:
 
 
 POSES = ("stand", *EDITS)
-STRIP = [(f"w{i}", "side", None, 0.13 + 0.245 * i) for i in range(4)]
-"""Approach 1 painted from the rig instead: four side-on walk frames on one sheet."""
+SHEETS = {"walk": "w", "run": "r"}
+"""Approach 1 painted from the rig instead: four side-on frames of a cycle on one sheet, the
+frames named by the sheet's letter and their number."""
+ACROSS = [0.13 + 0.245 * i for i in range(4)]
 STRIP_PROMPT = (
-    "Redraw image 1 as four drawings of the same cartoon game character walking to the right, "
+    "Redraw image 1 as four drawings of the same cartoon game character {doing} to the right, "
     "seen from the side, in the scratchy, grimy cartoon style of the residents in image 2. Keep "
     "each figure's pose, size and place, its very big round head and its colours, but draw it "
     "freely as one whole person with natural rounded shapes, real clothes, hands and shoes, "
     "rather than separate flat pieces. All four are the same person, drawn alike. {who} {face} "
     "Keep the background plain light grey."
 )
+DOING = {"walk": "walking", "run": "running"}
 
 
-def strip_figures() -> list:
+def strip_figures(sheet: str = "walk") -> list:
     import poses
 
-    return [
-        (name, view, poses.walk(i / 4), across) for i, (name, view, _, across) in enumerate(STRIP)
-    ]
+    cycle = poses.walk if sheet == "walk" else poses.run
+    letter = SHEETS[sheet]
+    return [(f"{letter}{i}", "side", cycle(i / 4), across) for i, across in enumerate(ACROSS)]
 
 
-def paint_strips(who: list[str]) -> None:
+def sheet_path(who: str, sheet: str) -> Path:
+    return FOLDER / "strip" / (f"{who}.png" if sheet == "walk" else f"{who}-{sheet}.png")
+
+
+def paint_strips(who: list[str], sheet: str) -> None:
     import cut
 
-    folder = FOLDER / "strip"
-    todo = [w for w in who if not (folder / f"{w}.png").exists()]
+    todo = [w for w in who if not sheet_path(w, sheet).exists()]
     if not todo:
         return
     reference = Image.open(cut.RESIDENTS_REF).convert("RGB")
     reference = reference.resize((768, round(reference.height * 768 / reference.width / 16) * 16))
-    folder.mkdir(parents=True, exist_ok=True)
+    (FOLDER / "strip").mkdir(parents=True, exist_ok=True)
     with Painter("whole") as painter:
         for name in todo:
-            guide = cut.mannequin(name, figures=strip_figures()).image
-            guide.save(folder / f"{name}-guide.png")
-            words = styled(STRIP_PROMPT.format(who=described(name), face=FACE))
-            image = painter.paint(f"strip/{name}", words, cut.SHEET, 1, [guide, reference])
-            image.save(folder / f"{name}.png")
+            guide = cut.mannequin(name, figures=strip_figures(sheet)).image
+            guide.save(
+                sheet_path(name, sheet).with_name(f"{sheet_path(name, sheet).stem}-guide.png")
+            )
+            words = STRIP_PROMPT.format(doing=DOING[sheet], who=described(name), face=FACE)
+            key = f"strip/{name}" if sheet == "walk" else f"strip/{name}/{sheet}"
+            image = painter.paint(key, styled(words), cut.SHEET, 1, [guide, reference])
+            image.save(sheet_path(name, sheet))
 
 
-def strip_sprites(who: list[str]) -> None:
-    """Each painted walk frame cut out, every painted blob going to the nearest frame: as FLUX
+def strip_sprites(who: list[str], sheet: str) -> None:
+    """Each painted frame cut out, every painted blob going to the nearest frame: as FLUX
     painted it in raw/, and with #310's colour restore, the mannequin fitted over the painting
     naming each region."""
     import cut
@@ -142,17 +151,19 @@ def strip_sprites(who: list[str]) -> None:
 
     folder = FOLDER / "strip"
     (folder / "raw").mkdir(parents=True, exist_ok=True)
-    feet = {}
+    known = folder / "feet.json"
+    feet = json.loads(known.read_text()) if known.exists() else {}
+    figures = strip_figures(sheet)
     for name in who:
-        painting = Image.open(folder / f"{name}.png").convert("RGB")
+        painting = Image.open(sheet_path(name, sheet)).convert("RGB")
         rgba = cut_out(painting)
         alpha = np.asarray(rgba.getchannel("A")) > 128
-        mannequin, _ = cut.fitted(name, alpha.astype(np.float32), strip_figures())
+        mannequin, _ = cut.fitted(name, alpha.astype(np.float32), figures)
         kept = restored(painting, mannequin.image).convert("RGBA")
         kept.putalpha(rgba.getchannel("A"))
         count, labels, stats, centres = cv2.connectedComponentsWithStats(alpha.astype(np.uint8), 8)
-        middles = [cut.SHEET[0] * across for *_, across in STRIP]
-        for i, (frame, *_) in enumerate(STRIP):
+        middles = [cut.SHEET[0] * across for across in ACROSS]
+        for i, (frame, *_) in enumerate(figures):
             mine = np.zeros_like(alpha)
             for c in range(1, count):
                 nearest = min(range(len(middles)), key=lambda k: abs(middles[k] - centres[c][0]))
@@ -171,7 +182,7 @@ def strip_sprites(who: list[str]) -> None:
             top, bottom = rows[0], rows[-1]
             cols = np.flatnonzero(b[top : top + round(0.3 * (bottom - top))].any(axis=0))
             feet[f"{name}/{frame}"] = [round(float(cols.mean()), 1), int(bottom), int(top)]
-    (folder / "feet.json").write_text(json.dumps(feet, indent=1))
+    known.write_text(json.dumps(feet, indent=1))
 
 
 def sprites(who: list[str]) -> None:
@@ -202,8 +213,9 @@ if __name__ == "__main__":
         import poses
 
         poses.use()
-        paint_strips(names)
-        strip_sprites(names)
+        for sheet in [a for a in sys.argv[1:] if a in SHEETS] or list(SHEETS):
+            paint_strips(names, sheet)
+            strip_sprites(names, sheet)
     elif "sprites" in sys.argv[1:]:
         sprites(names)
     else:

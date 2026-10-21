@@ -8,6 +8,8 @@ import study  # noqa: F401  # isort: skip
 import dolls as port
 
 TAU = math.tau
+UNIT = 5.0
+"""Atlas pixels a doll unit, #310's `doll.UNIT`."""
 WALK_FRAMES = 8
 """Frames in every walk cycle shown here, at `WALK_MS` each."""
 WALK_MS = 135
@@ -73,9 +75,45 @@ def ladder(phase: float) -> dict:
     }
 
 
+RUN_AIR = 5
+"""Units off the ground at the top of a running stride, as `rig.ts` lifts it."""
+UNIT_M = 0.0185
+"""A doll unit in metres, for the 3D model: #310's dolls stand about 99 units tall."""
+
+
+def flight(t: float, air: float) -> float:
+    return air * pos(abs(math.sin(t)) - 0.8) / 0.2
+
+
+def run(phase: float) -> dict:
+    """`rig.ts`'s run: leaning in, the knees high, the elbows bent and pumping, and off the
+    ground between strides by `air` units."""
+    t = TAU * phase
+
+    def leg(t: float):
+        thigh = 10 + 32 * math.sin(t)
+        stance = 30 * pos(-math.cos(t)) ** 2
+        knee = 16 + stance + 22 * pos(math.sin(t)) + 90 * pos(math.cos(t + 0.2)) ** 1.6
+        return thigh, knee, 0.5 * (knee - thigh)
+
+    near, far = leg(t), leg(t + math.pi)
+    return {
+        "lean": 13,
+        "nod": -8,
+        "thigh": (near[0], far[0]),
+        "knee": (near[1], far[1]),
+        "foot": (near[2], far[2]),
+        "shoulder": (10 - 40 * math.sin(t), 10 + 40 * math.sin(t)),
+        "elbow": (78 + 22 * pos(-math.sin(t)), 78 + 22 * pos(math.sin(t))),
+        "air": flight(t, RUN_AIR),
+    }
+
+
 def side_angles(pose: str, phase: float) -> dict:
     if pose == "walking":
         return walk(phase)
+    if pose == "running":
+        return run(phase)
     if pose == "sitting":
         return sitting()
     if pose == "stairs":
@@ -85,12 +123,12 @@ def side_angles(pose: str, phase: float) -> dict:
     return STAND
 
 
-PLANTED = {"standing", "walking", "sitting", "stairs"}
+PLANTED = {"standing", "walking", "running", "sitting", "stairs"}
 
 
 def posed(p: dict, pose: str, facing: str, phase: float = 0.0):
-    """#329's `dolls.posed` with `rig.ts`'s sitting, stairs and ladder: every piece placed, its
-    y from the ground, and whether to draw it mirrored. A ladder is climbed facing north."""
+    """#329's `dolls.posed` with `rig.ts`'s run, sitting, stairs and ladder: every piece placed,
+    its y from the ground, and whether to draw it mirrored. A ladder is climbed facing north."""
     if facing in ("north", "south"):
         view = "back" if facing == "north" else "front"
         a = ladder(phase % 1.0) if pose == "ladder" else port.STRAIGHT
@@ -98,8 +136,10 @@ def posed(p: dict, pose: str, facing: str, phase: float = 0.0):
         straight = port.place_straight(p, view, port.STRAIGHT)
         ground = port.lowest(p, parts if pose != "ladder" else straight)
     else:
-        parts = port.place_side(p, side_angles(pose, phase % 1.0))
+        a = side_angles(pose, phase % 1.0)
+        parts = port.place_side(p, a)
         ground = port.lowest(p, parts if pose in PLANTED else port.place_side(p, STAND))
+        ground += a.get("air", 0.0) * UNIT
     for part in parts:
         part.y -= ground
     return parts, facing == "west"

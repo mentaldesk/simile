@@ -1,6 +1,10 @@
-"""Installs the CC0 MakeHuman asset packs into this study's own Blender profile.
+"""Installs the three CC0 MakeHuman asset packs the study uses into its own Blender profile.
 
-./blender.sh -b -P mpfb/install.py -- out/downloads/*/*_cc0.zip
+./blender.sh -b -P mpfb/install.py -- out/downloads/makehuman_system_assets_cc0.zip \
+    out/downloads/shirts01_cc0.zip out/downloads/pants01_cc0.zip
+
+Hats 01 and Hair 01 aren't needed: the only things the study would take from them, a cap and a
+bun, say AGPL3 in their own files.
 """
 
 import sys

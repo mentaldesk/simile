@@ -71,6 +71,10 @@ def frames() -> list[dict]:
         {"name": f"walk-{i}", "view": "side", "angles": poses.walk(i / poses.WALK_FRAMES)}
         for i in range(poses.WALK_FRAMES)
     ]
+    for i in range(poses.WALK_FRAMES):
+        angles = poses.run(i / poses.WALK_FRAMES)
+        air = angles.pop("air") * poses.UNIT_M
+        out.append({"name": f"run-{i}", "view": "side", "angles": angles, "air": air})
     out += [
         {"name": "stand", "view": "side", "angles": poses.STAND},
         {"name": "front", "view": "front", "angles": poses.STAND},
