@@ -21,9 +21,10 @@ the protocol, through `server.dispatch`.
 | `panel=0` | Hides the harness's help. |
 
 Left and right (or A and D) walk. E or up takes a door you're on; down also leaves a building by its
-front door. Up climbs stairs or a ladder from its foot, and down from its top, from up to a tile
-(`CLIMB_REACH`) either side of the end: the player steps onto it first. E does too, then up and down
-climb, stopping anywhere; E rides a lift all the way. Where a terminal, the counter, a painting or a
+front door. Up climbs stairs or a ladder from its foot, and down from its top, from anywhere in the
+tile either side of the end (`CLIMB_REACH`, 1.5 tiles from its middle): the player steps onto it
+first, and where two are in reach each key takes the nearest its way. E takes the nearest of all, then
+up and down climb, stopping anywhere; E rides a lift all the way. Where a terminal, the counter, a painting or a
 mural is in reach, E uses that instead ([`world/reach.ts`](../world/reach.ts)), and up still takes a door.
 A small tag over each way a key takes from where you stand names the keys and what it does ("E ↑: go
 out", "E ↓: downstairs", `ways.ts`), leaving E off while something else takes it. The scene reads its
@@ -78,8 +79,9 @@ The Phaser-free halves are tested under vitest.
 
 `walk.e2e.ts` serves the client, opens the harness in Chromium and walks the player by the keys into
 every building, up and down every flight, ladder and lift, out of every exit and along every street
-door, checking each prompt on the way. It steps Playwright's clock rather than waiting, and the
-*Side walk* workflow runs it on every PR.
+door, checking each prompt on the way. It takes doors and lifts from their cell, and stairs and
+ladders from 1.4 tiles off their end, near the edge of the reach. It steps Playwright's clock rather
+than waiting, and the *Side walk* workflow runs it on every PR.
 
 ```bash
 npx playwright install chromium   # once

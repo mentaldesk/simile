@@ -29,11 +29,19 @@ describe('prompts', () => {
     expect(promptsAt({ x: 5, y: 2, map: 'maker_space_floor_1' })).toEqual(['E ↓: downstairs', '↑: climb up']);
   });
 
-  it('come up within a tile of the end of a flight or a ladder, and not beyond', () => {
-    expect(promptsAt({ x: 16, y: 2, map: 'coffee_shop_floor_0' })).toEqual(['E ↑: upstairs']);
-    expect(promptsAt({ x: 14, y: 2, map: 'coffee_shop_floor_0' })).toEqual(['E ↑: upstairs']);
-    expect(promptsAt({ x: 13.9, y: 2, map: 'coffee_shop_floor_0' })).toEqual([]);
-    expect(promptsAt({ x: 44, y: 15, map: 'lychee_lane' })).toEqual(['E ↑: climb up']);
+  it('come up anywhere in the tile either side of the end of a flight or a ladder, and not beyond', () => {
+    for (const x of [16, 16.4, 14, 13.6, 13.95]) {
+      expect(promptsAt({ x, y: 2, map: 'coffee_shop_floor_0' }), `at ${x}`).toEqual(['E ↑: upstairs']);
+    }
+    expect(promptsAt({ x: 13.5, y: 2, map: 'coffee_shop_floor_0' })).toEqual([]);
+    expect(promptsAt({ x: 43.6, y: 15, map: 'lychee_lane' })).toEqual(['E ↑: climb up']);
+    expect(promptsAt({ x: 43.4, y: 15, map: 'lychee_lane' })).toEqual([]);
+  });
+
+  it('keep the nearest way for each key where two are in reach', () => {
+    expect(promptsAt({ x: 5.4, y: 2, map: 'maker_space_floor_1' })).toEqual(['E ↓: downstairs', '↑: climb up']);
+    expect(promptsAt({ x: 5.6, y: 2, map: 'maker_space_floor_1' })).toEqual(['E ↑: climb up', '↓: downstairs']);
+    expect(promptsAt({ x: 4.4, y: 2, map: 'maker_space_floor_1' })).toEqual(['E ↓: downstairs']);
   });
 
   it('keep a door to the cell it is on, ahead of stairs a tile away', () => {

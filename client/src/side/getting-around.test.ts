@@ -6,7 +6,8 @@ import { climbRuns } from './runs';
 import { chosen, CLIMB_REACH, type Press, type Way } from './ways';
 
 const idle: Controls = { x: 0, y: 0, use: false };
-const OFFSETS = [-CLIMB_REACH, -0.5, 0, 0.5, CLIMB_REACH];
+const EDGE = CLIMB_REACH - 0.1;
+const OFFSETS = [-EDGE, -1, -0.5, 0, 0.5, 1, EDGE];
 const maps = [...village.maps.values()];
 const climbs = maps.flatMap(({ links }) => links.filter(({ kind }) => kind === 'stairs' || kind === 'ladder'));
 
@@ -26,7 +27,7 @@ function climb(at: MapPosition, press: Press, up: boolean, isIt: (way: Way) => b
   return player;
 }
 
-/** Up to a tile either side of `end` along its row, where the player can stand. */
+/** Up to the far edge of the tile either side of `end` along its row, where the player can stand. */
 function around(map: SideMap, end: Cell): number[] {
   return OFFSETS.map((offset) => end.x + offset).filter((x) => isStanding(map, Math.floor(x + 0.5), end.y));
 }
@@ -43,9 +44,9 @@ describe('every flight and ladder between floors', () => {
     }
   });
 
-  it('takes the player to its other end from up to a tile either side, on up or down, or E then up or down', () => {
-    let climbed = 0;
+  it('takes the player to its other end from anywhere in the tile either side, on up or down, or E then up or down', () => {
     for (const link of climbs) {
+      let climbed = 0;
       const far = village.far(link)!;
       const up = village.map(far.map)!.floor > village.map(link.map)!.floor;
       const isIt = (way: Way) => 'link' in way && way.link === link;
@@ -67,7 +68,7 @@ describe('every flight and ladder between floors', () => {
 });
 
 describe('every flight and ladder on a street', () => {
-  it('takes the player from either end to the other from up to a tile away', () => {
+  it('takes the player from either end to the other from anywhere in the tile beside it', () => {
     for (const map of maps.filter(({ kind }) => kind === 'street')) {
       for (const run of climbRuns(map)) {
         const [foot, head] = [run.path.points[0], run.path.points.at(-1)!];

@@ -120,22 +120,22 @@ describe('stairs and ladders between floors', () => {
     expect(player.mapPosition).toEqual({ x: 15, y: 2, map: 'coffee_shop_floor_0' });
   });
 
-  it('steps onto the end from up to a tile away, then climbs', () => {
-    for (const x of [14, 14.4, 15.7, 16]) {
+  it('steps onto the end from anywhere in the tile either side, then climbs', () => {
+    for (const x of [13.6, 14, 14.4, 15.7, 16, 16.4]) {
       const player = at({ x, y: 2, map: 'coffee_shop_floor_0' });
       player.update(press({ y: -1 }), 1 / 60);
       expect(player.drawn.pose).toBe('walking');
-      hold(player, press({ y: -1 }), 0.5 + 5 / PLAYER_CLIMB.stairs);
+      hold(player, press({ y: -1 }), 1 + 5 / PLAYER_CLIMB.stairs);
       expect(player.mapPosition, `from ${x}`).toEqual({ x: 18, y: 2, map: 'coffee_shop_floor_1' });
     }
-    const far = at({ x: 13.9, y: 2, map: 'coffee_shop_floor_0' });
+    const far = at({ x: 13.4, y: 2, map: 'coffee_shop_floor_0' });
     hold(far, press({ y: -1 }), 1);
     expect(far.climbing).toBeUndefined();
-    expect(far.position.x).toBe(13.9);
+    expect(far.position.x).toBe(13.4);
   });
 
-  it('waits at the end after E from a tile away, for up or down', () => {
-    const player = at({ x: 17, y: 2, map: 'coffee_shop_floor_1' });
+  it('waits at the end after E from the tile beside it, for up or down', () => {
+    const player = at({ x: 16.6, y: 2, map: 'coffee_shop_floor_1' });
     player.update(press({ use: true }), 1 / 60);
     hold(player, idle, 1);
     expect(player.climbing).toBe('stairs');

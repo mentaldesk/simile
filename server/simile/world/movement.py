@@ -229,7 +229,7 @@ class Movement:
         someone can."""
         old = self._bodies.get(entity)
         if isinstance(target, MapTile | Tile):
-            target = self._standing_near(target)
+            target = self._standing_near(entity, target)
         spot = self._resolve(entity, target, old.heading if old else None)
         if spot is None:
             raise ValueError(f"{entity} can't stand on {target!r}")
@@ -427,7 +427,7 @@ class Movement:
                 break
         return best[1] if best else None
 
-    def _standing_near(self, tile: MapTile | Tile) -> MapTile | Tile:
+    def _standing_near(self, entity: Id, tile: MapTile | Tile) -> MapTile | Tile:
         town = self.maps[tile.map if isinstance(tile, MapTile) else self.home]
         inside_map = 0 <= tile.x < town.width and 0 <= tile.y < town.height
         if not inside_map or town.standing(tile.x, tile.y):
@@ -438,6 +438,15 @@ class Movement:
         if not cells:
             return tile
         x, y = min(cells, key=lambda cell: (math.dist(cell, (tile.x, tile.y)), cell[1], cell[0]))
+        logger.warning(
+            "Nobody can stand at (%d, %d) on %s: %s goes to (%d, %d)",
+            tile.x,
+            tile.y,
+            town.id,
+            entity,
+            x,
+            y,
+        )
         return tile.model_copy(update={"x": x, "y": y})
 
     def _origins(self, location: Location) -> Iterator[Spot]:

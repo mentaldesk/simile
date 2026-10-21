@@ -287,7 +287,9 @@ def test_cannot_place_on_a_wall() -> None:
         Village(corridor(3)).movement.place("mei", Tile(x=5, y=0))
 
 
-def test_placed_where_nobody_can_stand_goes_to_the_nearest_standing_cell() -> None:
+def test_placed_where_nobody_can_stand_goes_to_the_nearest_standing_cell(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     movement = Village().movement
 
     for (map_id, x, y), to in {
@@ -295,8 +297,16 @@ def test_placed_where_nobody_can_stand_goes_to_the_nearest_standing_cell() -> No
         ("high_street", 30, 17): (30, 15),
         ("lychee_lane", 45, 13): (46, 12),
     }.items():
+        caplog.clear()
         placed = movement.place("mei", MapTile(map=map_id, x=x, y=y))
         assert (placed.map, placed.x, placed.y) == (map_id, *to)
+        assert [record.getMessage() for record in caplog.records] == [
+            f"Nobody can stand at ({x}, {y}) on {map_id}: mei goes to {to}"
+        ]
+
+    caplog.clear()
+    movement.place("mei", MapTile(map="high_street", x=30, y=15))
+    assert not caplog.records
 
 
 def test_unknown_locations_and_entities_raise() -> None:

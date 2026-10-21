@@ -21,8 +21,9 @@ type SideWalk = {
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
-/** Walk from `start` to `x` on its row, press E or not, hold up or down or not, and arrive at `arrive`. */
-type Leg = { name: string; start: Place; x: number; e: boolean; hold?: Hold; arrive: Place };
+/** Walk from `start` to within `reach` of `x` on its row, press E or not, hold up or down or not, and arrive at
+ * `arrive`. */
+type Leg = { name: string; start: Place; x: number; reach: number; e: boolean; hold?: Hold; arrive: Place };
 
 const args = process.argv.slice(2);
 const option = (name: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
@@ -30,6 +31,8 @@ const screens = option('--screens');
 const realTime = args.includes('--real-time');
 const FRAME_MS = 1000 / 60;
 const SECONDS_TO_ARRIVE = 12;
+/** On the cell of a door or a lift; near the far edge of the tile beside a flight's or a ladder's end. */
+const REACH = { cell: 0.45, edge: 1.4 };
 
 const walkApi = (page: Page) => ({
   state: () => page.evaluate(() => (window as unknown as Paged).sideWalk.state()),
@@ -46,10 +49,10 @@ async function run(page: Page, ms: number): Promise<void> {
   else await page.clock.runFor(Math.ceil(ms / FRAME_MS) * FRAME_MS);
 }
 
-async function until(page: Page, check: () => Promise<boolean>, seconds: number, what: string): Promise<void> {
-  for (let waited = 0; waited < seconds * 1000; waited += 100) {
+async function until(page: Page, check: () => Promise<boolean>, seconds: number, what: string, step = 100) {
+  for (let waited = 0; waited < seconds * 1000; waited += step) {
     if (await check()) return;
-    await run(page, 100);
+    await run(page, step);
     if (!realTime) await page.waitForTimeout(10);
   }
   throw new Error(`${what}: not within ${seconds} s`);
@@ -79,7 +82,7 @@ async function legs(api: ReturnType<typeof walkApi>): Promise<Leg[]> {
     const [inside, goingIn] = [link.map.includes('_floor_'), there.map.includes('_floor_')];
     const arrive = { map: there.map, x: there.x, y: there.y };
     const start = await startFor(api, link, widths[link.map]);
-    const leg = { start, x: link.x, arrive };
+    const leg = { start, x: link.x, arrive, reach: link.kind === 'stairs' || link.kind === 'ladder' ? REACH.edge : REACH.cell };
     if (link.kind === 'door' && !inside) {
       found.push({ ...leg, name: goingIn ? `into ${there.map}` : `${link.map} to ${there.map}`, e: false, hold: 'ArrowUp' });
     } else if (link.kind === 'door') found.push({ ...leg, name: `out of ${link.map}`, e: true });
@@ -96,7 +99,8 @@ async function legs(api: ReturnType<typeof walkApi>): Promise<Leg[]> {
     ] as const) {
       const start = await startFor(api, { map: run.map, ...from }, widths[run.map]);
       const name = `${run.kind} on ${run.map} ${up ? 'up' : 'down'} from ${from.x}, ${from.y}`;
-      found.push({ name, start, x: from.x, e: !up, hold: up ? 'ArrowUp' : 'ArrowDown', arrive: { map: run.map, ...to } });
+      const arrive = { map: run.map, ...to };
+      found.push({ name, start, x: from.x, reach: REACH.edge, e: !up, hold: up ? 'ArrowUp' : 'ArrowDown', arrive });
     }
   }
   return found;
@@ -114,12 +118,18 @@ async function walkLeg(page: Page, api: ReturnType<typeof walkApi>, leg: Leg, in
   }
   await run(page, 300);
   const state = (await api.state())!;
-  const walk = leg.x > state.x ? 'ArrowRight' : 'ArrowLeft';
-  await page.keyboard.down(walk);
-  await until(page, async () => Math.abs((await api.state())!.x - leg.x) < 0.45, 5, `${leg.name}: walking to ${leg.x}`);
-  await page.keyboard.up(walk);
+  if (Math.abs(state.x - leg.x) > leg.reach) {
+    const walk = leg.x > state.x ? 'ArrowRight' : 'ArrowLeft';
+    await page.keyboard.down(walk);
+    const there = async () => Math.abs((await api.state())!.x - leg.x) <= leg.reach;
+    await until(page, there, 5, `${leg.name}: walking to within ${leg.reach} of ${leg.x}`, FRAME_MS);
+    await page.keyboard.up(walk);
+  }
   await run(page, 200);
-  const prompts = (await api.state())!.prompts;
+  const { prompts, x } = (await api.state())!;
+  if (leg.reach === REACH.edge && Math.abs(x - leg.x) < 1.3) {
+    throw new Error(`${leg.name}: stopped ${Math.abs(x - leg.x).toFixed(2)} from ${leg.x}, not at the edge of its reach`);
+  }
   const key = leg.e ? 'E' : leg.hold === 'ArrowUp' ? '↑' : '↓';
   if (!prompts.some((prompt) => prompt.split(':')[0].includes(key))) {
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);

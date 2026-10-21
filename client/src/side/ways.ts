@@ -1,8 +1,8 @@
 import { isStanding, type Cell, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import { crossing, type Crossing, type Run } from './runs';
 
-/** Tiles either side of a flight's or a ladder's end that climbing it starts from. */
-export const CLIMB_REACH = 1;
+/** Tiles from the middle of a flight's or a ladder's end that climbing it starts from: the whole tile either side. */
+export const CLIMB_REACH = 1.5;
 
 /** Where on its map, and how far along the row from the player. */
 type Near = { at: Cell; tiles: number };
@@ -33,7 +33,7 @@ export function waysNear(village: Village, map: SideMap, runs: readonly Run[], p
   const found: Way[] = [];
   const reach = (at: Cell) => {
     const tiles = Math.abs(position.x - at.x);
-    return at.y === row && tiles <= CLIMB_REACH && walkableBetween(map, cell, at.x, row) ? tiles : undefined;
+    return at.y === row && tiles < CLIMB_REACH && walkableBetween(map, cell, at.x, row) ? tiles : undefined;
   };
   for (const link of map.links) {
     const at = { x: link.x, y: link.y };
