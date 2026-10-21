@@ -462,22 +462,22 @@
   "drift/mid-shophouses": {
    "file": "drift/mid-shophouses.webp",
    "size": [
-    996,
-    529
+    1056,
+    366
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "37a158d90fcf92945bcc"
+   "hash": "6e49cbab603aa5bf6552"
   },
   "drift/near-gardens": {
    "file": "drift/near-gardens.webp",
    "size": [
-    1502,
-    417
+    1160,
+    437
    ],
    "height": 2.4,
    "kind": "strip",
-   "hash": "d63b00666ae894d456c1"
+   "hash": "c7b1958385e5359987a7"
   },
   "drift/sofa": {
    "file": "drift/sofa.webp",
@@ -588,7 +588,7 @@
   "furniture/bench": {
    "file": "furniture/bench.webp",
    "size": [
-    205,
+    213,
     108
    ],
    "height": 0.9,
@@ -597,7 +597,7 @@
     0.5,
     1.0
    ],
-   "hash": "8dd24f452ce2da6d27ff"
+   "hash": "100a9252f2bec9fd0adf"
   },
   "furniture/bookshelf": {
    "file": "furniture/bookshelf.webp",
@@ -658,7 +658,7 @@
   "furniture/fountain": {
    "file": "furniture/fountain.webp",
    "size": [
-    389,
+    392,
     264
    ],
    "height": 2.2,
@@ -667,7 +667,7 @@
     0.5,
     1.0
    ],
-   "hash": "0babc606012294948ce7"
+   "hash": "96d9e234cfcf027e51cd"
   },
   "furniture/grinder": {
    "file": "furniture/grinder.webp",
@@ -700,7 +700,7 @@
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
    "size": [
-    53,
+    63,
     432
    ],
    "height": 3.6,
@@ -709,7 +709,7 @@
     0.5,
     1.0
    ],
-   "hash": "72a30246fa349fed9510"
+   "hash": "2870a5b7fb0d1fd65e06"
   },
   "furniture/menu_board": {
    "file": "furniture/menu_board.webp",
@@ -728,7 +728,7 @@
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
-    104,
+    106,
     264
    ],
    "height": 2.2,
@@ -737,7 +737,7 @@
     0.5,
     1.0
    ],
-   "hash": "af75d30b59e35e6d463a"
+   "hash": "26574fd26433abcca03e"
   },
   "furniture/plant": {
    "file": "furniture/plant.webp",
@@ -798,72 +798,72 @@
   "layers/far-hills": {
    "file": "layers/far-hills.webp",
    "size": [
-    1304,
-    343
+    1456,
+    312
    ],
    "height": 5.0,
    "kind": "layer",
-   "hash": "797734f17cc0768d1305"
+   "hash": "9ce6843a8cb7bddf8b1d"
   },
   "layers/front-plants": {
    "file": "layers/front-plants.webp",
    "size": [
-    1092,
-    336
+    1168,
+    329
    ],
    "height": 2.0,
    "kind": "strip",
-   "hash": "b96a42b338e61f8b7740"
+   "hash": "2e1ab497dfdb87b3c38a"
   },
   "layers/ground-plaza": {
    "file": "layers/ground-plaza.webp",
    "size": [
-    1248,
-    222
+    1509,
+    176
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "409123d2e0d85c2861df"
+   "hash": "8a2b9615e42d69dd1464"
   },
   "layers/ground-street": {
    "file": "layers/ground-street.webp",
    "size": [
-    1248,
-    169
+    1216,
+    165
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "baafa299bf936f963ff2"
+   "hash": "fe7ddd5235459da62732"
   },
   "layers/mid-shophouses": {
    "file": "layers/mid-shophouses.webp",
    "size": [
-    1240,
-    445
+    1064,
+    417
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "af88f4cbd844e00be274"
+   "hash": "52c8503f43ce143341cf"
   },
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
    "size": [
-    1507,
-    387
+    1491,
+    386
    ],
    "height": 2.2,
    "kind": "strip",
-   "hash": "29065076211632b60ec8"
+   "hash": "094f074bfc2a14e950ad"
   },
   "layers/sky": {
    "file": "layers/sky.webp",
    "size": [
-    1388,
+    1444,
     768
    ],
    "height": 12.0,
    "kind": "paper",
-   "hash": "2eff927286de4bce3e96"
+   "hash": "f92b16904247eba9e83d"
   },
   "papers/cafe-panelling": {
    "file": "papers/cafe-panelling.webp",

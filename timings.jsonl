@@ -74,3 +74,14 @@
 {"at": 1792539706, "event": "load", "mode": "edit", "seconds": 2.3}
 {"at": 1792539878, "event": "load", "mode": "edit", "seconds": 1.9}
 {"at": 1792539920, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792543170, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543201, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 30.1}
+{"at": 1792543223, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543256, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 33.1}
+{"at": 1792543267, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543301, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 34.5}
+{"at": 1792543313, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543346, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 32.2}
+{"at": 1792543368, "event": "load", "mode": "edit", "seconds": 2.1}
+{"at": 1792544284, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792544352, "event": "load", "mode": "edit", "seconds": 2.0}
