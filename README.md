@@ -17,7 +17,8 @@ This branch isn't for merging. Delete it after review. The study is on the PR's 
   - `window-on-white`: the inside window, whose pale blind was keyed away on white.
   - `seed0` and `seed1`: the cartoon café, which grew extra doors.
 - `pieces/<style>/`: the cut, scaled pieces and their `manifest.json`, as `simile papercraft` writes
-  them. The `drift/` pieces are #309's own prompts painted against the modern references.
+  them. The ground strips are cut to their own band (`scenery.banded`). The `drift/` pieces are
+  #309's own prompts painted against the modern references.
 - `dolls/<style>/`: each resident's manifest and atlases, as committed to the study's pictures.
   - `sheets/`: the paintings the dolls are cut from.
   - `paintings/`: every sheet painted, rejected ones included. The cartoon's first front and back

@@ -818,22 +818,22 @@
   "layers/ground-plaza": {
    "file": "layers/ground-plaza.webp",
    "size": [
-    1509,
+    1288,
     176
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "8a2b9615e42d69dd1464"
+   "hash": "5413c5aa25dbe8771821"
   },
   "layers/ground-street": {
    "file": "layers/ground-street.webp",
    "size": [
-    1216,
-    165
+    1172,
+    163
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "fe7ddd5235459da62732"
+   "hash": "d7172d8d1c73e3b3fc76"
   },
   "layers/mid-shophouses": {
    "file": "layers/mid-shophouses.webp",
