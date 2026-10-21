@@ -232,7 +232,8 @@
   inset: 0;
 }
 
-.way-prompt {
+.way-prompt,
+.dialogue-target-talk {
   position: absolute;
   left: 0;
   top: 0;
@@ -249,7 +250,12 @@
   white-space: nowrap;
 }
 
-.way-prompt kbd {
+.dialogue-target-talk {
+  font-size: inherit;
+}
+
+.way-prompt kbd,
+.dialogue-target-talk kbd {
   min-width: 6px;
   padding: 0 2px;
   border: 1px solid #1d2b26;

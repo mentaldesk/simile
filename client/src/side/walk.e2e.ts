@@ -1,6 +1,6 @@
 // The player's walk through the side view in Chromium, by the keys (#325, #330): into every building and out of every
 // exit on E, up and down every flight, ladder and lift on the arrows alone, a run along a street with Shift, and E at
-// a terminal and the café counter. It serves the client itself and drives the `?harness=side` scene.
+// a terminal, the café counter and a resident. It serves the client itself and drives the `?harness=side` scene.
 // Run `npx playwright install chromium` once, then `node src/side/walk.e2e.ts [--screens <dir>] [--real-time]`.
 import { chromium, type Page } from 'playwright';
 import { createServer } from 'vite';
@@ -12,7 +12,7 @@ type Place = Cell & { map: string };
 type Link = Place & { id: string; kind: 'door' | 'stairs' | 'ladder' | 'lift'; side: 'inside' | 'outside'; to: Place };
 type Run = { map: string; kind: string; foot: Cell; head: Cell };
 type Counter = Place & { behind: number };
-type State = Place & { climbing: string | null; run: number; used: string | null; prompts: string[] };
+type State = Place & { climbing: string | null; run: number; used: string | null; prompts: string[]; talk: string | null };
 type SideWalk = {
   state(): State | undefined;
   links(): Link[];
@@ -171,7 +171,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     await page.keyboard.up(walk);
   }
   await run(page, 200);
-  const { prompts, x, used } = (await api.state())!;
+  const { prompts, x, used, talk } = (await api.state())!;
   if (leg.reach === REACH.edge && Math.abs(x - leg.x) < 1.3) {
     throw new Error(`${leg.name}: stopped ${Math.abs(x - leg.x).toFixed(2)} from ${leg.x}, not at the edge of its reach`);
   }
@@ -180,7 +180,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
   await shot(page, index, leg.name);
-  const eFree = !used && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  const eFree = !used && !talk && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
   if (leg.key === 'e') await page.keyboard.press('e');
   else {
     if (eFree) await pressingE(page, api, leg.name);
@@ -260,6 +260,27 @@ async function counterLeg(page: Page, api: Api, counter: Counter, index: number)
   if (!near(await api.state(), stand)) throw new Error(`${name}: the player moved`);
 }
 
+/** E beside Lachlan, with nothing else here, opens the chat to him, and Esc closes it. */
+async function talkLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'talking to Lachlan';
+  const at = { map: 'high_street', x: 27, y: 15 };
+  await teleport(page, api, at, name);
+  await run(page, 500);
+  const { talk, prompts, used } = (await api.state())!;
+  if (talk !== 'E: talk to Lachlan' || prompts.length || used) {
+    throw new Error(`${name}: ${JSON.stringify({ talk, prompts, used })}`);
+  }
+  await shot(page, index, name);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const chat = await shown(page, '.dialogue-chat');
+  if (!chat?.includes('Lachlan')) throw new Error(`${name}: E didn't open the chat to Lachlan, only ${chat}`);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
+}
+
 const root = new URL('../..', import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { port: 0 } });
 await server.listen();
@@ -289,6 +310,7 @@ try {
       `E at the counter on ${counter.map}`,
       (i) => counterLeg(page, api, counter, i),
     ]),
+    ['E beside a resident', (i) => talkLeg(page, api, i)],
   ];
   const started = Date.now();
   for (const [i, [name, walk]] of all.entries()) {

@@ -20,19 +20,20 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 
-Left and right (or A and D) walk, and holding Shift runs. E takes a door you're on, and does nothing
-at stairs, a ladder or the lift. Up climbs stairs or a ladder from its foot, and down from its top,
-from anywhere in the tile either side of the end (`CLIMB_REACH`, 1.5 tiles from its middle): the
-player steps onto it first, and where two are in reach each key takes the nearest its way. Up and
-down keep climbing while held, stopping anywhere. On either of the lift's cells, up rides it a floor
-up and down a floor down, all the way. Where a terminal, the counter, a painting or a mural is in
-reach, E uses that instead ([`world/reach.ts`](../world/reach.ts)) and up takes the door. A door on
-the cell beside a flight's foot, as in the noodle bar, is E's and the stairs are up's; with E in
-use there too, up takes the door from its own cell and the stairs from the next. A small tag over
-each way a key takes from where you stand names the keys and what it does ("E: go out", "↑:
-upstairs", "↑ ↓: lift", `ways.ts`). The scene reads its keys through `input.ts`'s `readControls`;
-a tap of E, up or down shorter than a frame still counts. Clicking a mural looks at it. In the
-harness, `[` and `]` move the clock an hour and 1 to 4 go to each street.
+Left and right (or A and D) walk, and holding Shift runs. E takes a door you're on, and never climbs
+or rides; with no door, E talks to the ringed resident (`ui/`). Up climbs stairs or a ladder from
+its foot, and down from its top, from anywhere in the tile either side of the end (`CLIMB_REACH`,
+1.5 tiles from its middle): the player steps onto it first, and where two are in reach each key
+takes the nearest its way. Up and down keep climbing while held, stopping anywhere. On either of the
+lift's cells, up rides it a floor up and down a floor down, all the way. Where a terminal, the
+counter, a painting or a mural is in reach, E uses that instead
+([`world/reach.ts`](../world/reach.ts)) and up takes the door. A door on the cell beside a flight's
+foot, as in the noodle bar, is E's and the stairs are up's; with E in use there too, up takes the
+door from its own cell and the stairs from the next. A small tag over each way a key takes from
+where you stand names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift",
+`ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
+shorter than a frame still counts. Clicking a mural looks at it. In the harness, `[` and `]` move
+the clock an hour and 1 to 4 go to each street.
 
 ## How it draws
 
@@ -91,9 +92,9 @@ ladder on the arrows alone, and a floor up and down on the lift from each of its
 each prompt on the way. Before each arrow it presses E where nothing else takes it, and checks the
 player didn't move. It takes doors and lifts from their cell, and stairs and ladders from 1.4 tiles
 off their end, near the edge of the reach. Then it runs along the High Street with Shift, checking
-the speed and the blend, opens the news at every terminal on E, and orders at the café's counter on
-E. It steps Playwright's clock rather than waiting, and the *Side walk* workflow runs it on every
-PR.
+the speed and the blend, opens the news at every terminal on E, orders at the café's counter on E,
+and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
+workflow runs it on every PR.
 
 ```bash
 npx playwright install chromium   # once

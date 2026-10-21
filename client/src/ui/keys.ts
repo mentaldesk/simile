@@ -1,12 +1,22 @@
+import type { Reachable, WayPrompt } from '../world/reach';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
 import { NEWS_KEY } from './tuning';
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
-  news: () => void;
+  use: () => void;
   help: Pick<HelpPanel, 'toggle' | 'close'>;
 };
+
+export type EUse = { kind: 'reach'; reachable: Reachable } | { kind: 'door' } | { kind: 'talk'; npcId: string };
+
+/** What E does: uses the nearest thing in reach, else the world scene takes a door, else talks to the ringed resident. */
+export function eUse(reachable: Reachable | undefined, ways: readonly WayPrompt[], ringed: string | undefined): EUse | undefined {
+  if (reachable) return { kind: 'reach', reachable };
+  if (ways.some(({ keys }) => keys.includes('E'))) return { kind: 'door' };
+  return ringed === undefined ? undefined : { kind: 'talk', npcId: ringed };
+}
 
 /** Whether nothing on the page has focus, so a key is the game's and not a link's or a field's. */
 export function unfocused({ target }: Event): boolean {
@@ -15,7 +25,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, news, help }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, use, help }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -34,7 +44,7 @@ export function onGameKey({ chat, news, help }: GameKeys): (event: KeyboardEvent
       chat.cycle(event.shiftKey ? -1 : 1);
     } else if (pressedNewsKey(event)) {
       event.preventDefault();
-      news();
+      use();
     }
   };
 }

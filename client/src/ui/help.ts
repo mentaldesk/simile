@@ -7,7 +7,7 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['Shift'], 'hold to run'],
   [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up'],
   [['↓', 'S'], 'downstairs or down a ladder from beside its top, or the lift down'],
-  [['E'], 'go through a door, read the news at a terminal, look at a mural or a painting, or order at a counter'],
+  [['E'], 'read the news at a terminal, look at a mural or a painting, order at a counter, go through a door, or talk to the ringed resident'],
   [['Enter'], 'talk to the ringed resident, then send'],
   [['Tab'], 'choose who to talk to'],
   [['Esc'], 'close the chat or a panel'],

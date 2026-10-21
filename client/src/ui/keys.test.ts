@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { onGameKey } from './keys';
+import type { Reachable, WayPrompt } from '../world/reach';
+import { eUse, onGameKey } from './keys';
 
 const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
-const news = vi.fn();
+const use = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, news, help });
+const handler = onGameKey({ chat, use, help });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -42,14 +43,14 @@ describe('with nothing focused', () => {
     expect(help.close).toHaveBeenCalledOnce();
   });
 
-  it('E opens the news, but not held down or with a modifier', () => {
+  it('E uses what is here, but not held down or with a modifier', () => {
     press(document.body, 'e');
     press(document.body, 'E', { shiftKey: true });
     press(document.body, 'e', { repeat: true });
     press(document.body, 'e', { metaKey: true });
     press(document.body, 'e', { ctrlKey: true });
 
-    expect(news).toHaveBeenCalledTimes(2);
+    expect(use).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -67,6 +68,25 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(chat.open).not.toHaveBeenCalled();
   expect(chat.clear).not.toHaveBeenCalled();
   expect(chat.cycle).not.toHaveBeenCalled();
-  expect(news).not.toHaveBeenCalled();
+  expect(use).not.toHaveBeenCalled();
   expect(help.toggle).not.toHaveBeenCalled();
+});
+
+describe('what E does', () => {
+  const mural = { kind: 'mural', tiles: 1 } as Reachable;
+  const door: WayPrompt = { keys: ['E'], action: 'go in', x: 0, y: 0 };
+  const doorOnUp: WayPrompt = { keys: ['↑'], action: 'go in', x: 0, y: 0 };
+  const stairs: WayPrompt = { keys: ['↑'], action: 'upstairs', x: 0, y: 0 };
+
+  it('uses what is in reach first, then a door, then talks to the ringed resident', () => {
+    expect(eUse(mural, [doorOnUp], 'lachlan')).toEqual({ kind: 'reach', reachable: mural });
+    expect(eUse(undefined, [door, stairs], 'lachlan')).toEqual({ kind: 'door' });
+    expect(eUse(undefined, [stairs], 'lachlan')).toEqual({ kind: 'talk', npcId: 'lachlan' });
+    expect(eUse(undefined, [], 'lachlan')).toEqual({ kind: 'talk', npcId: 'lachlan' });
+  });
+
+  it('does nothing with none of them', () => {
+    expect(eUse(undefined, [stairs], undefined)).toBeUndefined();
+    expect(eUse(undefined, [], undefined)).toBeUndefined();
+  });
 });

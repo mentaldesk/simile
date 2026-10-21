@@ -22,7 +22,7 @@ and everywhere else the village runs with speech bubbles only.
 | ← → (or A D) | Walk. Hold **Shift** to run. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
-| E | Go through a door. Read the news at a terminal, look at a mural or a painting, or order at a counter. |
+| E | Read the news at a terminal, look at a mural or a painting, or order at a counter. Otherwise go through a door, or talk to the ringed resident. |
 | Enter | Talk to the ringed resident, then send what you typed. |
 | Tab | Choose who to talk to. Clicking a resident does too. |
 | Esc | Close the chat or a panel. |

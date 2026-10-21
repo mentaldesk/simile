@@ -35,7 +35,7 @@ describe('HelpPanel', () => {
 
   it('gives doors to E, and stairs, ladders and the lift to the arrows', () => {
     const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
-    expect(what.E).toMatch(/door/);
+    expect(what.E).toMatch(/door.*talk to the ringed resident/);
     expect(what['↑']).toMatch(/upstairs.*ladder.*lift up/);
     expect(what['↓']).toMatch(/downstairs.*ladder.*lift down/);
     expect(what['↑']).not.toMatch(/door/);

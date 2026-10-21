@@ -1,5 +1,7 @@
 import type { WorldView } from './world-view';
 
+const tag = (name: string, text: string) => Object.assign(document.createElement(name), { textContent: text });
+
 export class TargetMarker {
   private readonly ring: HTMLElement;
   private readonly name: HTMLElement;
@@ -12,12 +14,18 @@ export class TargetMarker {
     this.ring.hidden = this.name.hidden = true;
   }
 
-  render(npcId: string | undefined, view: WorldView, nameOf: (id: string) => string): void {
+  /** With `talks`, the name says E talks to them, as the way tags name their keys. */
+  render(npcId: string | undefined, view: WorldView, nameOf: (id: string) => string, talks = false): void {
     const box = npcId === undefined ? undefined : view.spriteOf(npcId)?.box;
     this.ring.hidden = this.name.hidden = !box;
     if (!box || npcId === undefined) return;
     const name = nameOf(npcId);
-    if (this.name.textContent !== name) this.name.textContent = name;
+    const label = talks ? `E: talk to ${name}` : name;
+    if (this.name.ariaLabel !== label) {
+      this.name.ariaLabel = label;
+      this.name.classList.toggle('dialogue-target-talk', talks);
+      this.name.replaceChildren(...(talks ? [tag('kbd', 'E'), tag('span', `talk to ${name}`)] : [name]));
+    }
     const x = Math.round(box.x + box.width / 2);
     const feet = Math.round(box.y + box.height);
     this.ring.style.transform = `translate(${x}px, ${feet}px) translate(-50%, -75%)`;

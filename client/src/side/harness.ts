@@ -299,6 +299,10 @@ function measure(scene: Phaser.Scene): void {
 function exposeWalk(scene: SideScene, village: Village): void {
   const prompts = () =>
     [...document.querySelectorAll<HTMLElement>('.way-prompt')].filter((tag) => !tag.hidden).map((tag) => tag.ariaLabel);
+  const talk = () => {
+    const tag = document.querySelector<HTMLElement>('.dialogue-target-talk');
+    return tag && !tag.hidden ? tag.ariaLabel : null;
+  };
   Object.assign(window, {
     sideWalk: {
       state: () => {
@@ -306,7 +310,8 @@ function exposeWalk(scene: SideScene, village: Village): void {
         if (!player) return undefined;
         const { map, position, climbing, drawn } = player;
         const used = usedByE(player.mapPosition)?.kind ?? null;
-        return { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, used, prompts: prompts() };
+        const state = { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, used };
+        return { ...state, prompts: prompts(), talk: talk() };
       },
       links: () => [...village.maps.values()].flatMap(({ links }) => links),
       runs: () =>
