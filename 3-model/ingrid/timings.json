@@ -1,5 +1,5 @@
 {
- "build": 0.76,
+ "build": 0.75,
  "frames": {
   "walk-0": {
    "pose": 0.02,
@@ -8,98 +8,138 @@
   },
   "walk-1": {
    "pose": 0.02,
-   "toon": 0.58,
+   "toon": 0.67,
    "flat": 0.27
   },
   "walk-2": {
    "pose": 0.02,
-   "toon": 0.6,
+   "toon": 0.66,
    "flat": 0.27
   },
   "walk-3": {
    "pose": 0.02,
    "toon": 0.58,
-   "flat": 0.26
+   "flat": 0.27
   },
   "walk-4": {
    "pose": 0.02,
-   "toon": 0.81,
-   "flat": 0.27
+   "toon": 0.68,
+   "flat": 0.26
   },
   "walk-5": {
    "pose": 0.02,
-   "toon": 0.8,
-   "flat": 0.27
+   "toon": 0.74,
+   "flat": 0.26
   },
   "walk-6": {
    "pose": 0.02,
-   "toon": 0.68,
+   "toon": 0.58,
    "flat": 0.27
   },
   "walk-7": {
    "pose": 0.02,
-   "toon": 0.74,
+   "toon": 0.72,
+   "flat": 0.27
+  },
+  "run-0": {
+   "pose": 0.02,
+   "toon": 0.7,
+   "flat": 0.26
+  },
+  "run-1": {
+   "pose": 0.02,
+   "toon": 0.64,
+   "flat": 0.26
+  },
+  "run-2": {
+   "pose": 0.02,
+   "toon": 0.81,
+   "flat": 0.27
+  },
+  "run-3": {
+   "pose": 0.02,
+   "toon": 0.66,
+   "flat": 0.27
+  },
+  "run-4": {
+   "pose": 0.02,
+   "toon": 0.71,
+   "flat": 0.27
+  },
+  "run-5": {
+   "pose": 0.02,
+   "toon": 0.68,
+   "flat": 0.27
+  },
+  "run-6": {
+   "pose": 0.02,
+   "toon": 0.7,
+   "flat": 0.26
+  },
+  "run-7": {
+   "pose": 0.02,
+   "toon": 0.59,
    "flat": 0.27
   },
   "stand": {
    "pose": 0.02,
-   "toon": 0.64,
+   "toon": 0.62,
    "flat": 0.27
   },
   "front": {
    "pose": 0.02,
-   "toon": 0.69,
+   "toon": 0.67,
    "flat": 0.27
   },
   "back": {
    "pose": 0.02,
-   "toon": 0.58,
+   "toon": 0.69,
    "flat": 0.26
   },
   "sit": {
-   "pose": 0.01,
-   "toon": 0.58,
+   "pose": 0.02,
+   "toon": 0.6,
    "flat": 0.27
   },
   "stairs-0": {
    "pose": 0.02,
-   "toon": 0.65,
+   "toon": 0.74,
    "flat": 0.26
   },
   "stairs-1": {
    "pose": 0.02,
-   "toon": 0.7,
+   "toon": 0.59,
    "flat": 0.27
   },
   "stairs-2": {
    "pose": 0.02,
-   "toon": 0.79,
+   "toon": 0.68,
    "flat": 0.27
   },
   "stairs-3": {
    "pose": 0.02,
-   "toon": 0.68,
+   "toon": 0.69,
    "flat": 0.26
   },
   "ladder-0": {
    "pose": 0.03,
-   "toon": 0.58,
-   "flat": 0.26
+   "toon": 0.6,
+   "flat": 0.27
   },
   "ladder-1": {
    "pose": 0.01,
-   "toon": 0.56,
-   "flat": 0.26
+   "toon": 0.61,
+   "flat": 0.27
   },
   "ladder-2": {
    "pose": 0.01,
-   "toon": 0.57,
+   "toon": 0.59,
    "flat": 0.27
   },
   "ladder-3": {
    "pose": 0.01,
-   "toon": 0.69,
-   "flat": 0.26
+   "toon": 0.7,
+   "flat": 0.27
   }
  }
 }

@@ -13,6 +13,13 @@
   "ingrid": 21.6,
   "henrietta": 16.0
  },
+ "strip": {
+  "mean": 26.3,
+  "lachlan": 40.3,
+  "odalys": 24.1,
+  "ingrid": 20.3,
+  "henrietta": 20.5
+ },
  "cut": {
   "mean": 20.4,
   "lachlan": 29.8,
@@ -33,12 +40,5 @@
   "odalys": 11.2,
   "ingrid": 31.7,
   "henrietta": 26.3
- },
- "strip": {
-  "mean": 26.4,
-  "lachlan": 38.9,
-  "odalys": 25.2,
-  "ingrid": 21.2,
-  "henrietta": 20.1
  }
 }

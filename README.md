@@ -10,15 +10,16 @@ q92 and 4:4:4; cut-outs, renders and atlases are lossless WebP.
     seed. `rejected/` are the pilot's first step, sit and climb edits: the second stride came
     out the same as the first, the sit on a box and the climb with a ladder.
   - `sprites/`: each painting cut out, with `feet.json`, where each stands.
-  - `strip/`: approach 1b, the walk painted from the rig: each mannequin sheet (`*-guide`),
-    its painting, each frame cut out and colour-restored, and `raw/` before the restore.
+  - `strip/`: approach 1b, the walk (`<who>`, frames `w0` to `w3`) and the run (`<who>-run`,
+    frames `r0` to `r3`) painted from the rig: each mannequin sheet (`*-guide`), its painting,
+    each frame cut out and colour-restored, and `raw/` before the restore.
 - `2-cut/`: approach 2.
   - `mannequins/`: the sheets FLUX painted over.
   - `paintings/`: its paintings, `<who>-1` with the loose prompt and `<who>-1-tight` with the
     tight one.
   - `dolls/` and `dolls-tight/`: the cut dolls, each a manifest and flat and painted atlases in
     #310's format, and `covered.json`, how much of each piece was filled in.
-- `3-model/<who>/`: approach 3's renders, every frame toon-shaded and in flat colours
+- `3-model/<who>/`: approach 3's renders, the walk, the run and every other pose, toon-shaded and in flat colours
   (`*-flat`), the spec Blender built it from, and its timings. `grime` is the texture FLUX
   painted, and `grime-raw` the painting.
 - `4-repaint/<who>/`: approach 4's repaints as FLUX painted them, `raw/` cut out, and `cut/` with

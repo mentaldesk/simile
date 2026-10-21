@@ -9,6 +9,11 @@
   "mean": 20.4,
   "sum": 82
  },
+ "1b run sheet": {
+  "count": 4,
+  "mean": 68.1,
+  "sum": 272
+ },
  "1b walk sheet": {
   "count": 4,
   "mean": 73.6,
@@ -40,7 +45,7 @@
   "sum": 540
  },
  "whole loads": {
-  "count": 6,
+  "count": 7,
   "sum": 4
  },
  "cut loads": {
@@ -55,29 +60,29 @@
   "count": 1,
   "sum": 1
  },
- "all FLUX minutes": 66.4,
+ "all FLUX minutes": 70.9,
  "blender": {
   "lachlan": {
-   "build": 0.73,
-   "frames": 20,
-   "toon per frame": 0.62,
+   "build": 0.75,
+   "frames": 28,
+   "toon per frame": 0.63,
    "flat per frame": 0.26
   },
   "odalys": {
    "build": 0.63,
-   "frames": 20,
+   "frames": 28,
    "toon per frame": 0.7,
    "flat per frame": 0.26
   },
   "ingrid": {
-   "build": 0.76,
-   "frames": 20,
-   "toon per frame": 0.66,
+   "build": 0.75,
+   "frames": 28,
+   "toon per frame": 0.67,
    "flat per frame": 0.26
   },
   "henrietta": {
-   "build": 0.67,
-   "frames": 20,
+   "build": 0.68,
+   "frames": 28,
    "toon per frame": 0.61,
    "flat per frame": 0.26
   }
