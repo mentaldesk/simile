@@ -9,7 +9,12 @@ import time
 from common import CLOTHES, OUT, PERIOD, STYLES, Style, TextPainter, log, reference, styled
 
 SIZE = (1344, 768)
-SEEDS = {"papercraft/signage": 43, "cartoon/interior": 43}
+SEEDS = {
+    "papercraft/street": 46,
+    "papercraft/signage": 43,
+    "cartoon/street": 44,
+    "cartoon/interior": 43,
+}
 """`<style>/<scene>` to a seed other than 42, for a reference repainted after a look."""
 
 SCENES = {

@@ -2,7 +2,7 @@
 shop as a dollhouse, the residents and their walk, side-by-side comparisons, and the numbers.
 
 `python compose.py [step …]` with steps `street`, `parallax`, `dollhouse`, `residents`, `walk`,
-`play`, `sheets`, `compare`, `drift`, `consistency`, `skin`, `costs`. Every picture goes to
+`play`, `sheets`, `compare`, `drift`, `consistency`, `skin`, `match`, `costs`. Every picture goes to
 out/previews/ at full size, and the README's to images/.
 """
 
@@ -15,6 +15,7 @@ from pathlib import Path
 import numpy as np
 from common import IMAGES, OUT, REFS, STYLES
 from dolls import WHO, doll, over
+from dolls import folder as dolls_folder
 from PIL import Image, ImageDraw, ImageFont
 
 from simile.papercraft import preview
@@ -427,6 +428,43 @@ def step_skin() -> None:
     (OUT / "skin.json").write_text(json.dumps(rows, indent=1))
 
 
+def step_match() -> None:
+    """How far each colour region of each painted piece sits from its flat colour, in the
+    atlases as committed: the median of its painted pixels, CIEDE2000. Every region of every
+    doll, so ears and noses count as much as faces."""
+    from simile.dolls.colour import delta_e
+    from simile.dolls.sheet import regions
+
+    rows = {}
+    for look in LOOKS:
+        worst = []
+        for who in WHO:
+            d = doll(look, who)
+            flat = Image.open(dolls_folder(look) / d.manifest["flat"]).convert("RGBA")
+            for piece, spec in d.pieces.items():
+                x, y, w, h = spec["frame"]
+                f = flat.crop((x, y, x + w, y + h))
+                p = np.asarray(d.atlas.crop((x, y, x + w, y + h)).convert("RGB"), dtype=float)
+                a = np.asarray(f, dtype=float)
+                nearest, main, opaque = regions(f)
+                for i, colour in enumerate(main):
+                    core = opaque & (nearest == i) & (np.abs(a[..., :3] - colour).max(axis=2) < 1)
+                    if core.sum() < 6:
+                        continue
+                    got = np.median(p[core], axis=0)
+                    error = round(float(delta_e(got, colour)), 1)
+                    hexes = ["#" + "".join(f"{round(v):02x}" for v in c) for c in (colour, got)]
+                    worst.append((error, who, piece, *hexes))
+        worst.sort(reverse=True)
+        rows[look] = {
+            "regions": len(worst),
+            "over 6": sum(e > 6 for e, *_ in worst),
+            "worst": worst[:8],
+        }
+        print(look, rows[look]["regions"], rows[look]["over 6"], worst[:5])
+    (OUT / "match.json").write_text(json.dumps(rows, indent=1))
+
+
 def step_costs() -> None:
     entries = []
     for path in [OUT / "timings.jsonl", *sorted(OUT.glob("*/cache/timings.jsonl"))]:
@@ -467,6 +505,7 @@ STEPS = {
     "drift": step_drift,
     "consistency": step_consistency,
     "skin": step_skin,
+    "match": step_match,
     "costs": step_costs,
 }
 

@@ -48,7 +48,8 @@ pipelines, new references and new prompts.
      characters on them
    - **for a grittier, more Klei-like look,** ask for scratchy ink and grime here, if the user wants
      it
-   - look at each one and reject any with lettering, as #326 did for 14 of 22
+   - look at each one, zooming in on small signs, and reject any with lettering, as #326 did
+     for 18 of 26
 2. **The style as a setting.**
    - `painter.STYLE` becomes the cartoon's.
    - The catalogue's medium words become the cartoon's: `LEAD`, `REDRAW`, `TEXTURE`, `PAPER_LEAD`,
@@ -64,8 +65,9 @@ pipelines, new references and new prompts.
    - room papers: oak slats, stacked white tiles and plain plaster
    - building looks: tiled, concrete and painted-brick fronts with flat roofs, no shutters, and
      planters
-   - **paint pale layers, such as the mid blocks, on a backdrop they don't share,** since white
-     walls on white and grey glass on grey both get keyed away
+   - **paint pale pieces on a backdrop they don't share,** since white walls on white and grey
+     glass on grey both get keyed away. #326 paints the ground strips on grey, where pale paving on
+     white lost its top.
 4. **Today's details in the front plans** (`fronts.py`), as #326's `scenery.modernised` draws them:
    - slim dark window frames with roller blinds, instead of curtains, sills and lintels
    - a plain light band in the shop's colour instead of each striped awning
@@ -87,6 +89,14 @@ pipelines, new references and new prompts.
      bring out.
    - Keep #310's colour restore. #326 measured the painter pulling light-brown skin 15 to 18 L\*
      lighter before it, whatever the reference.
+   - **Check every colour region of every piece in the atlas, ears included,** against its flat
+     colour, as #326's `compose.py match` does.
+     - The cartoon painter draws ears as a dark ring round an orange or pink disc. The restore,
+       which pins a region's median with each channel's gain capped at 4×, left five residents'
+       ears ΔE 13 to 22 off.
+     - Fill any region still over ΔE 6 with its flat colour, keeping the painting's light and
+       shade, as #326's `dolls.matched` does. It refilled 33 of the cartoon's 222 regions.
+     - Add a test that every committed doll passes the check.
    - Bump `VERSION`, and reset `REROLLS`.
 6. **Repaint and commit** every piece and doll:
    - `simile papercraft`
@@ -98,7 +108,8 @@ pipelines, new references and new prompts.
 - [ ] `content/papercraft/` and `content/dolls/` are repainted in the cartoon, set today, with the
       same manifest format, keys and lookups.
 - [ ] Every piece has been looked at, with none showing lettering or extra doors.
-- [ ] Every resident's skin, hair and clothes match their `Appearance`.
+- [ ] Every colour region of every doll, ears included, is within ΔE 6 of its `Appearance`
+      colour in the committed atlases, and a test checks it.
 - [ ] `make test` and `make lint` pass, the client's included, with nothing under `client/` or
       `content/street/` changed.
 - [ ] The PR shows the four streets, the dollhouses and the residents at play size, from

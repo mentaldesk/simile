@@ -98,6 +98,7 @@ def paint(style: Style, who: list[str]) -> None:
     with styled_pipeline(style), model.stack, tempfile.TemporaryDirectory() as scratch:
         for name in who:
             painted = dolls.paint(name, everyone[name], model, Path(scratch), folder / "paintings")
+            filled = matched(painted.doll)
             appearance = everyone[name].model_dump(mode="json")
             dolls.write(folder, dolls.files(name, painted.doll, appearance=appearance))
             for sheet, seconds in painted.seconds.items():
@@ -105,11 +106,43 @@ def paint(style: Style, who: list[str]) -> None:
                 log({"event": "paint", "key": key, "kind": "doll sheet", "seconds": seconds})
             moved = {k: round(v, 3) for k, v in painted.misplaced.items() if v > 0.02}
             added = {k: round(v, 3) for k, v in painted.patches.items() if v > 0.05}
-            print(f"{name}: {painted.seconds} moved {moved} added {added}", flush=True)
+            print(f"{name}: {painted.seconds} moved {moved} added {added} filled {filled}")
             sheets = folder / "sheets"
             sheets.mkdir(parents=True, exist_ok=True)
             for sheet, image in painted.paintings.items():
                 image.save(sheets / f"{name}-{sheet}.png")
+
+
+OFF = 6.0
+"""CIEDE2000 a painted colour region may stay from its flat colour, in the atlas, before it's
+filled."""
+LUMA = np.array([0.299, 0.587, 0.114])
+
+
+def matched(doll) -> list[str]:
+    """Fills each painted colour region still more than `OFF` from its flat colour with that
+    colour, keeping the painting's light and shade, and names them. #310's restore pins only a
+    region's median, with each channel's gain capped at 4x, so an ear painted as a dark ring
+    round an orange disc stays orange."""
+    from simile.dolls.colour import delta_e, hex_of
+    from simile.dolls.sheet import regions
+
+    filled = []
+    for name, piece in doll.painted.items():
+        f = np.asarray(doll.flat[name].image, dtype=np.float64)
+        p = np.asarray(piece.image, dtype=np.float64).copy()
+        nearest, main, opaque = regions(doll.flat[name].image)
+        lum = p[..., :3] @ LUMA
+        for i, colour in enumerate(main):
+            region = opaque & (nearest == i)
+            core = region & (np.abs(f[..., :3] - colour).max(axis=2) < 1)
+            if core.sum() < 6 or delta_e(np.median(p[..., :3][core], axis=0), colour) <= OFF:
+                continue
+            shade = np.clip(lum[region] / max(float(np.median(lum[core])), 1.0), 0.85, 1.15)
+            p[..., :3][region] = f[..., :3][region] * shade[:, None]
+            filled.append(f"{name} {hex_of(colour)}")
+        piece.image = Image.fromarray(np.clip(p, 0, 255).astype(np.uint8), "RGBA")
+    return filled
 
 
 # The rig, ported from client/src/dolls/rig.ts: angles in degrees, y down, pivots in atlas px.

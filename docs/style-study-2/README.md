@@ -30,9 +30,11 @@ with neon signs. Each one is painted from text alone (`references.py`).
 - **The period is described outright:** glass towers behind low-rise shops, AC units, balconies
   full of plants, e-bikes, a delivery drone, banyan trees and contemporary clothes.
 - **Signs are neon pictograms,** never boards. Asked for "LED sign panels", FLUX wrote
-  pseudo-Chinese characters on every one. 14 of the 22 reference paintings were rejected, all but
-  one for lettering. A sign is now "a glowing neon pictogram in the window: a coffee cup, a noodle
-  bowl or a gear".
+  pseudo-Chinese characters on every one. A sign is now "a glowing neon pictogram in the window: a
+  coffee cup, a noodle bowl or a gear".
+- **Even so, FLUX keeps adding small signs.** 18 of the 26 reference paintings were rejected, all
+  but one for lettering, and the other for a printed logo. The papercraft street took five seeds:
+  each of the first four hid a little vertical sign or plaque of fake characters.
 - **The residents reference names each skin tone,** from pale to deep brown, since #295's had only
   light skin.
 - **The cartoon is described, not named:** "very thick bold dark brown outlines around every shape,
@@ -84,8 +86,9 @@ comes from the words. Three places carry it in #309's pipeline:
 - **A modern palette is pale.**
   - White and grey walls, glass and pale oak lose the warm contrast of the old village.
   - They also fight the cut-out. On white, the mid layer's white blocks were keyed away, leaving it
-    sparse. On grey, their grey glass went instead, leaving a grey smear.
-  - The street above uses the white version.
+    sparse. On grey, their grey glass went instead, leaving a grey smear, so the mid layer stays on
+    white. The pale paving lost its top to the key on white too, so both styles' ground strips are
+    painted on grey.
 - **The residents barely change.** #310's dolls already wear t-shirts, jeans, caps, headphones
   and backpacks, drawn in code from each `Appearance`. A new residents reference only changes
   their texture.
@@ -116,7 +119,9 @@ characters from separate drawn parts.
   laid apart" kept the torsos apart in all six. Odalys's back head left its outline at both seeds,
   as it did in #310, which took six paintings for her. #310's cut repaints the gap in its region's
   own colour.
-- **#310's cut, patching and colour restore work unchanged.**
+- **#310's cut, patching and colour restore work, with one fallback** (see [Skin](#skin)).
+  The painter draws ears as a dark ring round an orange or pink disc, and the restore can't bring
+  them back.
 - **Three additions, all numbers:**
   - An ink outline 0.9 units wide round each piece, drawn when the piece is placed, so overlapping
     joints read as separate parts.
@@ -161,10 +166,11 @@ style.
 
 | | Game now | Papercraft | Cartoon |
 |---|--:|--:|--:|
-| Colour distance to its own references (CIE76, lower is closer) | 11.1 | 8.8 | 11.2 |
+| Colour distance to its own references (CIE76, lower is closer) | 11.1 | 8.8 | 11.3 |
 | Worst piece | 32.7 | 27.3 | 29.0 |
 | Fronts painted off the plan (an extra door) | | 0 of 10 units | 3 seeds of 3 |
 | Front and back doll sheets painted for the 6 kept | | 6 | 14 |
+| Doll colour regions the restore left over ΔE 6, refilled | | 4 of 221 | 33 of 222 |
 
 The colour distances are the mean over the 34 pieces all three have, as #295 measured it
 (`compose.py consistency`).
@@ -210,22 +216,26 @@ Measured on this M2 Max at 8 bits:
 | | Papercraft | Cartoon |
 |---|--:|--:|
 | References, from text (1344 × 768) | 33 s | 30 s |
-| Street layers | 31 s | 36 s |
-| Room papers and the sky | 25 s | 29 s |
+| Street layers | 33 s | 35 s |
+| Room papers and the sky | 29 s | 29 s |
 | Front units (about 1.2 MP) | 73 s | 78 s |
 | Furniture and platform pieces | 23 s | 25 s |
 | Doll sheets (two images, 1024 × 768) | 60 s | 59 s |
 
-A style doesn't change FLUX's work. The cartoon's scenery ran while other work was running on the
-Mac, so its 5 to 18% difference is noise. The doll sheets, painted later, match.
+A style doesn't change FLUX's work, and the two styles are within 10% of each other either way,
+which is run-to-run noise: other work was running on the Mac for parts of both.
 
-- **This study** took 148 paintings and 107 minutes of FLUX, all counted:
-  - 22 references, 8 of them kept
+- **This study** took 169 paintings and 119 minutes of FLUX, all counted:
+  - 26 references, 8 of them kept
   - 40 scenery paintings in each style
-  - 10 repainted: six café units, two windows and two mid layers
+  - 27 repainted:
+    - six café units
+    - two windows and two mid layers
+    - 13 papercraft pieces against the replaced street reference
+    - four ground strips on grey
   - 4 to measure drift
   - 32 doll sheets
-  - 22 model loads, 41 s in all
+  - 29 model loads, 51 s in all
 - **A whole village** is what #309 and #310 measured, in either style: about 90 minutes for the
   scenery, with night pictures, and 26 minutes for 12 dolls.
 - **Papercraft could keep today's dolls,** since they barely change. The cartoon repaints them.
@@ -248,10 +258,37 @@ Mac, so its 5 to 18% difference is noise. The doll sheets, painted later, match.
 
 ### Skin
 
-Every resident's skin, hair and clothes match their `Appearance` in both styles, through #310's
-colour restore, unchanged.
+**Every resident's skin, hair and clothes match their `Appearance` in both styles.**
+`compose.py match` checks every colour region of every piece in the committed atlases: skin, ears,
+noses, hair, clothes and accessories. It compares the median painted colour with the flat
+`Appearance` colour:
 
-The painter still drifts before the restore. On each side sheet, the median painted skin is:
+| | Game now (#310) | Papercraft | Cartoon |
+|---|--:|--:|--:|
+| Colour regions in the six residents | 221 | 221 | 222 |
+| Over ΔE 6 | 1 | 0 | 0 |
+| Worst, CIEDE2000 | 8.2 | 3.8 | 4.6 |
+
+The game's one region over ΔE 6 is Lachlan's dark navy front torso.
+
+**The cartoon needed a fallback for this.**
+
+- **#310's restore** scales each region's colour channels so the region's median lands on its flat
+  colour, with each gain capped at 4×.
+- **The cartoon painter draws ears** as a dark ring round an orange or pink disc, and on some
+  front and back heads it covered the ear with hair or outline.
+  - The capped gain can't lift a near-black region.
+  - A ring-and-disc region's median moves once the piece is scaled to the atlas.
+  - Odalys's, Henrietta's, Priya's, Lachlan's and Ingrid's ears came out ΔE 13 to 22 off.
+- **The fallback:** `dolls.matched` checks each region in the atlas. Any still over ΔE 6 is filled
+  with its flat colour, keeping the painting's light and shade within ±15%.
+- **How often it fires:**
+  - the cartoon: 33 of its 222 regions, mostly ears, eye and mouth ink, and thin cuff and sleeve
+    bands its outline covered
+  - papercraft: 4 of 221
+- **It runs on the cached paintings,** with no repaint.
+
+The painter also drifts skin before the restore. On each side sheet, the median painted skin is:
 
 | | Game now (#310) | Papercraft | Cartoon |
 |---|--:|--:|--:|
@@ -262,7 +299,7 @@ The reference with a range of skin tones didn't reduce the pull.
 
 - Light brown skin (Ingrid, Priya) comes out 15 to 18 L\* lighter in all three.
 - Dark brown skin (Henrietta, Kofi) stays within about 3.
-- The restore is still needed, and still works (`compose.py skin`).
+- The restore is still needed (`compose.py skin`).
 
 ## Recommendation
 
@@ -281,6 +318,7 @@ The reference with a range of skin tones didn't reduce the pull.
   - the residents repainted, about 26 minutes
   - the style made a setting in the painter and catalogue
   - an outline baked into the doll atlases
+  - a colour check on every doll region, ears included, with the fill above
   - a closer look at fronts for extra doors
 - **If the user prefers the papercraft's handmade feel,** the same follow-up works with the modern
   papercraft references instead, and today's dolls can stay. The study shows that fix works for the
@@ -316,7 +354,7 @@ The reference with a range of skin tones didn't reduce the pull.
 | `common.py` | Paths, the two styles, the period, the GPU check before every load, and FLUX in text mode |
 | `references.py` | The eight references. `python references.py [style …]` |
 | `scenery.py` | The pieces in a style: #309's `Build` with this study's references, prompts, looks and modernised plans. `python scenery.py <style> [glob …]` |
-| `dolls.py` | #310's `paint()` with this study's references and the cartoon prompt, and the Python port of the client's rig. `python dolls.py <style> [who …]` |
+| `dolls.py` | #310's `paint()` with this study's references and the cartoon prompt, the colour fallback (`matched`), and the Python port of the client's rig. `python dolls.py <style> [who …]` |
 | `compose.py` | Every picture and number above. `python compose.py [step …]` |
 | `followup-issue.md` | The draft follow-up issue for the switch |
 

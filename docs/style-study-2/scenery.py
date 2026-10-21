@@ -171,7 +171,7 @@ LAYERS = {
         "A long horizontal strip of city street seen exactly from the side: a pale grey paved "
         "footpath with a yellow strip of tactile paving on top, a granite kerb edge, and a band "
         "of dark grey asphalt road with a green painted cycle lane below, running from the left "
-        "edge of the frame to the right edge, on a plain white background.",
+        "edge of the frame to the right edge, on a plain flat medium grey background.",
         (1536, 384),
         2.6,
     ),
@@ -180,7 +180,7 @@ LAYERS = {
         "A long horizontal strip of a modern plaza's paving seen exactly from the side: large "
         "pale granite slabs on top with a thin inset line of warm LED lights, a low step edge, "
         "and a band of pale grey stone below, running from the left edge of the frame to the "
-        "right edge, on a plain white background.",
+        "right edge, on a plain flat medium grey background.",
         (1536, 384),
         2.6,
     ),
