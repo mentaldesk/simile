@@ -16,6 +16,7 @@ from common import OUT, REFS, STYLES, Style, log, styled, wait_for_gpu
 from PIL import Image, ImageDraw
 
 from simile.papercraft import build as pipeline
+from simile.papercraft import cutout
 from simile.papercraft import painter as painting
 from simile.papercraft.build import Build, digest
 from simile.papercraft.catalogue import NOTHING_BUT_PLANTS, SIDE_SPRITE, SPRITE, STRIP, Item
@@ -513,6 +514,52 @@ class StudyBuild(Build):
     def paint_hash(self, piece: Piece, unit: int | None = None) -> str:
         base = super().paint_hash(piece, unit)
         return digest(base, PLAN) if piece.kind == "front" else base
+
+    def out_hash(self, piece: Piece) -> str:
+        base = super().out_hash(piece)
+        return digest(base, BAND) if piece.kind == "ground" else base
+
+    def finish(self, piece: Piece) -> dict:
+        """#309's finish, with each ground strip cut to its own band."""
+        if piece.kind != "ground":
+            return super().finish(piece)
+        raw = self.raw(piece)
+        mask, (x0, x1) = banded(cutout.skyline(self.key(raw)))
+        image = cutout.unmix(raw, mask).crop((x0, 0, x1, raw.height))
+        image = pipeline.tileable(pipeline.trim_rows(image))
+        file = f"{piece.key}.webp"
+        pipeline.save_webp(image, self.content / file, pipeline.QUALITY["ground"])
+        height = piece.height or image.height / pipeline.PPM
+        return {
+            "file": file,
+            "size": list(image.size),
+            "height": round(height, 3),
+            "kind": piece.kind,
+            "hash": self.out_hash(piece),
+        }
+
+
+BAND = 1
+"""Bump when `banded` changes, to cut the ground strips again."""
+
+
+def banded(mask: Image.Image, slack: float = 0.04) -> tuple[Image.Image, tuple[int, int]]:
+    """A ground strip's mask made solid across its own band, from the band's usual top row to its
+    usual bottom one, and the columns where the painting fills that band. A slab keyed away with
+    the backdrop comes back, and the sloped ends of a slab painted in perspective are cut off."""
+    m = np.asarray(mask, dtype=np.uint8)
+    solid = m > 128
+    h = solid.shape[0]
+    any_ = solid.any(axis=0)
+    top = np.where(any_, solid.argmax(axis=0), h)
+    bottom = np.where(any_, h - 1 - solid[::-1].argmax(axis=0), -1)
+    band_top, band_bottom = int(np.median(top[any_])), int(np.median(bottom[any_]))
+    reach = round(slack * h)
+    full = np.flatnonzero((top <= band_top + reach) & (bottom >= band_bottom - reach))
+    x0, x1 = int(full[0]), int(full[-1]) + 1
+    out = m.copy()
+    out[band_top : band_bottom + 1, x0:x1] = 255
+    return Image.fromarray(out), (x0, x1)
 
 
 class TimedPainter(EditPainter):

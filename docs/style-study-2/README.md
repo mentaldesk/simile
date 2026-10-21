@@ -85,10 +85,15 @@ comes from the words. Three places carry it in #309's pipeline:
   cut.
 - **A modern palette is pale.**
   - White and grey walls, glass and pale oak lose the warm contrast of the old village.
-  - They also fight the cut-out. On white, the mid layer's white blocks were keyed away, leaving it
-    sparse. On grey, their grey glass went instead, leaving a grey smear, so the mid layer stays on
-    white. The pale paving lost its top to the key on white too, so both styles' ground strips are
-    painted on grey.
+  - They also fight the cut-out. Pale paving on white loses its top, and painted on grey, the
+    papercraft pavement lost a grey slab instead. The first mid layer lost white blocks on white
+    and its grey glass on grey, so it stays on white. The repainted one keeps its walls, though its
+    hazy towers and a few pale doors are partly see-through.
+  - **Ground strips are cut to their own band** (`scenery.banded`), as #309 cuts fronts on their
+    plans. Each is made solid from its band's usual top row to its usual bottom one, so a slab the
+    key took comes back from the painting. A plaza painted as a slab in perspective has its sloped
+    ends trimmed, so they don't let the sky through. This is a re-cut, with no repaint. Without it,
+    the streets had a gap in the pavement and a wedge of sky where each street met its plaza.
 - **The residents barely change.** #310's dolls already wear t-shirts, jeans, caps, headphones
   and backpacks, drawn in code from each `Appearance`. A new residents reference only changes
   their texture.
@@ -232,7 +237,7 @@ which is run-to-run noise: other work was running on the Mac for parts of both.
     - six café units
     - two windows and two mid layers
     - 13 papercraft pieces against the replaced street reference
-    - four ground strips on grey
+    - four ground strips on grey, then cut to their band without repainting
   - 4 to measure drift
   - 32 doll sheets
   - 29 model loads, 51 s in all
@@ -270,6 +275,10 @@ noses, hair, clothes and accessories. It compares the median painted colour with
 | Worst, CIEDE2000 | 8.2 | 3.8 | 4.6 |
 
 The game's one region over ΔE 6 is Lachlan's dark navy front torso.
+
+The check skips thin details. A region needs at least 6 pixels in the atlas that match their
+neighbours, so a one- or two-pixel stripe isn't measured. Some are off, such as the blue stripe on
+Henrietta's cartoon sole and Lachlan's mint side sole.
 
 **The cartoon needed a fallback for this.**
 

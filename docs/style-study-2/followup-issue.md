@@ -66,8 +66,12 @@ pipelines, new references and new prompts.
    - building looks: tiled, concrete and painted-brick fronts with flat roofs, no shutters, and
      planters
    - **paint pale pieces on a backdrop they don't share,** since white walls on white and grey
-     glass on grey both get keyed away. #326 paints the ground strips on grey, where pale paving on
-     white lost its top.
+     glass on grey both get keyed away.
+   - **cut each ground strip to its own band,** as fronts are cut on their plans.
+     - Make the strip solid from the band's usual top row to its usual bottom one.
+     - Trim the sloped ends of a slab painted in perspective.
+     - #326's `scenery.banded` does this. Without it, a pale or grey slab keyed away with the
+       backdrop, and a plaza's sloped end, left holes where the sky showed through the pavement.
 4. **Today's details in the front plans** (`fronts.py`), as #326's `scenery.modernised` draws them:
    - slim dark window frames with roller blinds, instead of curtains, sills and lintels
    - a plain light band in the shop's colour instead of each striped awning
@@ -97,6 +101,10 @@ pipelines, new references and new prompts.
      - Fill any region still over ΔE 6 with its flat colour, keeping the painting's light and
        shade, as #326's `dolls.matched` does. It refilled 33 of the cartoon's 222 regions.
      - Add a test that every committed doll passes the check.
+     - Check thin details too. #326's check needs a region at least 6 matching pixels big in the
+       atlas, so a one- or two-pixel stripe, like the one on a sole, goes unmeasured. Some are off,
+       such as Henrietta's blue sole stripe and Lachlan's mint sole. Measure them on the painted
+       sheet, where they're wider, or pixel by pixel.
    - Bump `VERSION`, and reset `REROLLS`.
 6. **Repaint and commit** every piece and doll:
    - `simile papercraft`
