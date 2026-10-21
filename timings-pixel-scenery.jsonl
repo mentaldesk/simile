@@ -45,3 +45,9 @@
 {"key": "furniture/bookshelf", "kind": "sprite", "size": [512, 896], "seconds": 20.8}
 {"key": "furniture/bookshelf", "kind": "sprite", "size": [512, 896], "seconds": 22.6}
 {"key": "furniture/bookshelf", "kind": "sprite", "size": [512, 896], "seconds": 22.9}
+{"key": "layers/ground-plaza", "kind": "ground", "size": [1536, 384], "seconds": 22.3}
+{"key": "furniture/kitchen", "kind": "sprite", "size": [1024, 512], "seconds": 21.5}
+{"key": "furniture/table", "kind": "sprite", "size": [896, 512], "seconds": 20.9}
+{"key": "furniture/bed", "kind": "sprite", "size": [896, 512], "seconds": 20.4}
+{"key": "furniture/plant", "kind": "sprite", "size": [512, 640], "seconds": 18.1}
+{"key": "furniture/news_terminal", "kind": "sprite", "size": [512, 1024], "seconds": 23.1}

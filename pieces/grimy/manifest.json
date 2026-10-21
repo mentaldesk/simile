@@ -512,7 +512,7 @@
   "furniture/bar_counter": {
    "file": "furniture/bar_counter.webp",
    "size": [
-    334,
+    324,
     132
    ],
    "height": 1.1,
@@ -521,7 +521,7 @@
     0.5,
     1.0
    ],
-   "hash": "725b5271e93c1363ee3b"
+   "hash": "7a8f8e461584711729d5"
   },
   "furniture/bed": {
    "file": "furniture/bed.webp",
@@ -596,7 +596,7 @@
   "furniture/espresso_machine": {
    "file": "furniture/espresso_machine.webp",
    "size": [
-    109,
+    128,
     186
    ],
    "height": 1.55,
@@ -605,7 +605,7 @@
     0.5,
     1.0
    ],
-   "hash": "6f670bb8ab72d7683934"
+   "hash": "e9c8f8e89f16e1caf841"
   },
   "furniture/fountain": {
    "file": "furniture/fountain.webp",
@@ -638,7 +638,7 @@
   "furniture/kitchen": {
    "file": "furniture/kitchen.webp",
    "size": [
-    157,
+    160,
     114
    ],
    "height": 0.95,
@@ -647,7 +647,7 @@
     0.5,
     1.0
    ],
-   "hash": "09067d120b3e9c9e671a"
+   "hash": "cec32ce7764cf3dd84ee"
   },
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
@@ -680,7 +680,7 @@
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
-    104,
+    112,
     264
    ],
    "height": 2.2,
@@ -689,7 +689,7 @@
     0.5,
     1.0
    ],
-   "hash": "9379b90abb6cbfd23ec7"
+   "hash": "d5d569b921cabf25d263"
   },
   "furniture/plant": {
    "file": "furniture/plant.webp",

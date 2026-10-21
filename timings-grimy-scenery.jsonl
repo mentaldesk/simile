@@ -44,3 +44,7 @@
 {"key": "fronts/coffee_shop#2", "kind": "front", "size": [896, 1344], "seconds": 73.2}
 {"key": "furniture/bookshelf", "kind": "sprite", "size": [512, 896], "seconds": 23.0}
 {"key": "furniture/bookshelf", "kind": "sprite", "size": [512, 896], "seconds": 20.8}
+{"key": "furniture/kitchen", "kind": "sprite", "size": [1024, 512], "seconds": 21.0}
+{"key": "furniture/espresso_machine", "kind": "sprite", "size": [512, 768], "seconds": 19.2}
+{"key": "furniture/bar_counter", "kind": "sprite", "size": [1024, 384], "seconds": 19.4}
+{"key": "furniture/news_terminal", "kind": "sprite", "size": [512, 1024], "seconds": 22.6}

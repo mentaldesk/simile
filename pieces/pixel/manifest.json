@@ -526,7 +526,7 @@
   "furniture/bed": {
    "file": "furniture/bed.webp",
    "size": [
-    246,
+    252,
     126
    ],
    "height": 1.05,
@@ -535,7 +535,7 @@
     0.5,
     1.0
    ],
-   "hash": "a6482dd7c512bbc1ae08"
+   "hash": "e57be24ee4510966fb66"
   },
   "furniture/bench": {
    "file": "furniture/bench.webp",
@@ -638,7 +638,7 @@
   "furniture/kitchen": {
    "file": "furniture/kitchen.webp",
    "size": [
-    144,
+    162,
     114
    ],
    "height": 0.95,
@@ -647,7 +647,7 @@
     0.5,
     1.0
    ],
-   "hash": "d3daf168612b4e418369"
+   "hash": "831a4fd4196d66ad86fe"
   },
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
@@ -689,7 +689,7 @@
     0.5,
     1.0
    ],
-   "hash": "2ee2295e6af32483c495"
+   "hash": "1f970cf5eb9a9224434e"
   },
   "furniture/plant": {
    "file": "furniture/plant.webp",
@@ -703,7 +703,7 @@
     0.5,
     1.0
    ],
-   "hash": "b3137ff4e7049a2a9f25"
+   "hash": "266937854fcb56c04d9d"
   },
   "furniture/sofa": {
    "file": "furniture/sofa.webp",
@@ -731,7 +731,7 @@
     0.5,
     1.0
    ],
-   "hash": "bb91b67cc6126c2a0455"
+   "hash": "af8cde776fbfdaa242fc"
   },
   "furniture/wardrobe": {
    "file": "furniture/wardrobe.webp",
@@ -770,12 +770,12 @@
   "layers/ground-plaza": {
    "file": "layers/ground-plaza.webp",
    "size": [
-    1086,
-    228
+    1290,
+    120
    ],
    "height": 2.6,
    "kind": "ground",
-   "hash": "72d9506272dfc239f839"
+   "hash": "c2fd6bea836c764497ee"
   },
   "layers/ground-street": {
    "file": "layers/ground-street.webp",

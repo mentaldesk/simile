@@ -1,14 +1,30 @@
 {
- "nearest": {
-  "stray pixels a frame": 22.5,
-  "frames in more than one bit": 0.0
+ "41 px": {
+  "nearest": {
+   "stray pixels a frame": 22.5,
+   "frames in more than one bit": 0.0
+  },
+  "rotsprite": {
+   "stray pixels a frame": 19.2,
+   "frames in more than one bit": 0.0
+  },
+  "baked": {
+   "stray pixels a frame": 21.1,
+   "frames in more than one bit": 0.0
+  }
  },
- "rotsprite": {
-  "stray pixels a frame": 19.2,
-  "frames in more than one bit": 0.0
- },
- "baked": {
-  "stray pixels a frame": 21.1,
-  "frames in more than one bit": 0.0
+ "20 px": {
+  "nearest": {
+   "stray pixels a frame": 4.0,
+   "frames in more than one bit": 0.0
+  },
+  "rotsprite": {
+   "stray pixels a frame": 3.5,
+   "frames in more than one bit": 0.0
+  },
+  "baked": {
+   "stray pixels a frame": 3.0,
+   "frames in more than one bit": 0.0
+  }
  }
 }

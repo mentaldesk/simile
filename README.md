@@ -16,6 +16,8 @@ This branch isn't for merging. Delete it after review. The study is on the PR's 
   - `extra-door`: a café unit that grew a door the plan doesn't have
   - `a-dollhouse` and `stairs-inside`: a bookshelf painted as a cut-away house
   - `smudged`: the revised cartoon's first sky
+  - `white-on-white`: a piece whose white parts went with its white backdrop, painted again on grey
+  - `grey-on-grey`: pixel art's first plaza, whose grey stone went with its grey backdrop
 - `pieces/<style>/`: the cut, scaled pieces and their `manifest.json`, as `simile papercraft` writes
   them. `pieces/pixel/` are snapped to the pixel grid, with their palette in `palette.json`, and
   `pieces/pixel-smooth/` are the same pieces before the snap.

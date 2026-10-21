@@ -638,7 +638,7 @@
   "furniture/kitchen": {
    "file": "furniture/kitchen.webp",
    "size": [
-    167,
+    168,
     114
    ],
    "height": 0.95,
@@ -647,7 +647,7 @@
     0.5,
     1.0
    ],
-   "hash": "b823fa928fc38917ed1d"
+   "hash": "b225fae60badf9b7ac47"
   },
   "furniture/lamp": {
    "file": "furniture/lamp.webp",
@@ -680,7 +680,7 @@
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
-    103,
+    99,
     264
    ],
    "height": 2.2,
@@ -689,7 +689,7 @@
     0.5,
     1.0
    ],
-   "hash": "152fa61229975b64a6e0"
+   "hash": "ac330fc58c689e0b538c"
   },
   "furniture/plant": {
    "file": "furniture/plant.webp",
@@ -703,7 +703,7 @@
     0.5,
     1.0
    ],
-   "hash": "9e376deaed9869da4d5a"
+   "hash": "a036213267a3fd697ea9"
   },
   "furniture/sofa": {
    "file": "furniture/sofa.webp",
@@ -722,7 +722,7 @@
   "furniture/table": {
    "file": "furniture/table.webp",
    "size": [
-    226,
+    225,
     114
    ],
    "height": 0.95,
@@ -731,7 +731,7 @@
     0.5,
     1.0
    ],
-   "hash": "4fd9512275f8e3a63624"
+   "hash": "a57a36cdff74532638a6"
   },
   "furniture/wardrobe": {
    "file": "furniture/wardrobe.webp",
