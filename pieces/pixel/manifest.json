@@ -1,0 +1,889 @@
+{
+ "version": 1,
+ "ppm": 120,
+ "parallax": {
+  "sky": 0.04,
+  "far": 0.2,
+  "mid": 0.45,
+  "near": 0.85,
+  "ground": 1.0,
+  "foreground": 1.3
+ },
+ "times": {
+  "morning": {
+   "tint": [
+    0.97,
+    0.95,
+    0.97
+   ],
+   "sky": [
+    1.08,
+    0.9,
+    0.96
+   ],
+   "haze": [
+    0.55,
+    242,
+    222,
+    230
+   ],
+   "glow": 0.0
+  },
+  "afternoon": {
+   "tint": [
+    1.0,
+    0.99,
+    0.96
+   ],
+   "sky": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "haze": [
+    0.2,
+    232,
+    238,
+    240
+   ],
+   "glow": 0.0
+  },
+  "evening": {
+   "tint": [
+    1.0,
+    0.86,
+    0.76
+   ],
+   "sky": [
+    1.02,
+    0.8,
+    0.7
+   ],
+   "haze": [
+    0.3,
+    214,
+    172,
+    160
+   ],
+   "glow": 0.55
+  },
+  "night": {
+   "tint": [
+    0.36,
+    0.42,
+    0.66
+   ],
+   "sky": [
+    0.2,
+    0.24,
+    0.46
+   ],
+   "haze": [
+    0.35,
+    40,
+    50,
+    90
+   ],
+   "glow": 1.0
+  }
+ },
+ "streets": {
+  "banyan_row": {
+   "sky": "layers/sky",
+   "far": "layers/far-river",
+   "mid": "layers/mid-riverbank",
+   "near": "layers/near-hedges",
+   "ground": "layers/ground-street",
+   "foreground": "layers/front-reeds"
+  },
+  "high_street": {
+   "sky": "layers/sky",
+   "far": "layers/far-hills",
+   "mid": "layers/mid-shophouses",
+   "near": "layers/near-walls",
+   "ground": "layers/ground-street",
+   "foreground": "layers/front-plants"
+  },
+  "kapok_walk": {
+   "sky": "layers/sky",
+   "far": "layers/far-hills",
+   "mid": "layers/mid-rooftops",
+   "near": "layers/near-gardens",
+   "ground": "layers/ground-street",
+   "foreground": "layers/front-plants"
+  },
+  "lychee_lane": {
+   "sky": "layers/sky",
+   "far": "layers/far-hills",
+   "mid": "layers/mid-homes",
+   "near": "layers/near-gardens",
+   "ground": "layers/ground-street",
+   "foreground": "layers/front-plants"
+  }
+ },
+ "grounds": {
+  "square": "layers/ground-plaza",
+  "park": "layers/ground-park",
+  "riverside": "layers/ground-promenade"
+ },
+ "buildings": {
+  "coffee_shop": {
+   "street": "high_street",
+   "front": "fronts/coffee_shop",
+   "glow": "glow/coffee_shop",
+   "floors": [
+    "papers/cafe-panelling",
+    "papers/cafe-tiles",
+    "papers/plaster-cream"
+   ]
+  },
+  "corner_shop": {
+   "street": "high_street",
+   "front": "fronts/corner_shop",
+   "glow": "glow/corner_shop",
+   "floors": []
+  },
+  "gallery": {
+   "street": "banyan_row",
+   "front": "fronts/gallery",
+   "glow": "glow/gallery",
+   "floors": [
+    "papers/plaster-white",
+    "papers/plaster-white",
+    "papers/plaster-white"
+   ]
+  },
+  "garden_flats": {
+   "street": "banyan_row",
+   "front": "fronts/garden_flats",
+   "glow": "glow/garden_flats",
+   "floors": []
+  },
+  "house_1": {
+   "street": "lychee_lane",
+   "front": "fronts/house_1",
+   "glow": "glow/house_1",
+   "floors": [
+    "papers/living-ochre",
+    "papers/bedroom-rose"
+   ]
+  },
+  "house_10": {
+   "street": "banyan_row",
+   "front": "fronts/house_10",
+   "glow": "glow/house_10",
+   "floors": [
+    "papers/living-ochre",
+    "papers/bedroom-rose"
+   ]
+  },
+  "house_2": {
+   "street": "lychee_lane",
+   "front": "fronts/house_2",
+   "glow": "glow/house_2",
+   "floors": [
+    "papers/living-blue",
+    "papers/bedroom-sage"
+   ]
+  },
+  "house_3": {
+   "street": "lychee_lane",
+   "front": "fronts/house_3",
+   "glow": "glow/house_3",
+   "floors": [
+    "papers/living-green",
+    "papers/bedroom-lilac"
+   ]
+  },
+  "house_4": {
+   "street": "lychee_lane",
+   "front": "fronts/house_4",
+   "glow": "glow/house_4",
+   "floors": [
+    "papers/living-ochre",
+    "papers/bedroom-rose"
+   ]
+  },
+  "house_5": {
+   "street": "kapok_walk",
+   "front": "fronts/house_5",
+   "glow": "glow/house_5",
+   "floors": [
+    "papers/living-blue",
+    "papers/bedroom-sage"
+   ]
+  },
+  "house_6": {
+   "street": "kapok_walk",
+   "front": "fronts/house_6",
+   "glow": "glow/house_6",
+   "floors": [
+    "papers/living-green",
+    "papers/bedroom-lilac"
+   ]
+  },
+  "house_7": {
+   "street": "kapok_walk",
+   "front": "fronts/house_7",
+   "glow": "glow/house_7",
+   "floors": [
+    "papers/living-ochre",
+    "papers/bedroom-rose"
+   ]
+  },
+  "house_8": {
+   "street": "banyan_row",
+   "front": "fronts/house_8",
+   "glow": "glow/house_8",
+   "floors": [
+    "papers/living-blue",
+    "papers/bedroom-sage"
+   ]
+  },
+  "house_9": {
+   "street": "banyan_row",
+   "front": "fronts/house_9",
+   "glow": "glow/house_9",
+   "floors": [
+    "papers/living-green",
+    "papers/bedroom-lilac"
+   ]
+  },
+  "maker_space": {
+   "street": "high_street",
+   "front": "fronts/maker_space",
+   "glow": "glow/maker_space",
+   "floors": [
+    "papers/block-grey",
+    "papers/block-grey",
+    "papers/loft-boards"
+   ]
+  },
+  "noodle_bar": {
+   "street": "high_street",
+   "front": "fronts/noodle_bar",
+   "glow": "glow/noodle_bar",
+   "floors": [
+    "papers/brick",
+    "papers/dining-red"
+   ]
+  },
+  "tower": {
+   "street": "lychee_lane",
+   "front": "fronts/tower",
+   "glow": "glow/tower",
+   "floors": []
+  }
+ },
+ "furniture": {
+  "kitchen": {
+   "piece": "furniture/kitchen",
+   "stretch": true
+  },
+  "sofa": {
+   "piece": "furniture/sofa",
+   "variants": {
+    "coral": "furniture/sofa-coral",
+    "mustard": "furniture/sofa-mustard",
+    "plum": "furniture/sofa-plum"
+   }
+  },
+  "bed": {
+   "piece": "furniture/bed",
+   "variants": {
+    "blue": "furniture/bed-blue"
+   }
+  },
+  "wardrobe": {
+   "piece": "furniture/wardrobe"
+  },
+  "bookshelf": {
+   "piece": "furniture/bookshelf"
+  },
+  "table": {
+   "piece": "furniture/table"
+  },
+  "plant": {
+   "piece": "furniture/plant"
+  },
+  "counter": {
+   "piece": "furniture/counter",
+   "stretch": true
+  },
+  "espresso_machine": {
+   "piece": "furniture/espresso_machine"
+  },
+  "grinder": {
+   "piece": "furniture/grinder"
+  },
+  "menu_board": {
+   "piece": "furniture/menu_board"
+  },
+  "bar_counter": {
+   "piece": "furniture/bar_counter",
+   "stretch": true
+  },
+  "cafe_table": {
+   "piece": "furniture/cafe_table"
+  },
+  "stove": {
+   "piece": "furniture/stove"
+  },
+  "kitchen_counter": {
+   "piece": "furniture/kitchen_counter"
+  },
+  "noodle_counter": {
+   "piece": "furniture/noodle_counter",
+   "stretch": true
+  },
+  "stool": {
+   "piece": "furniture/stool",
+   "variants": {
+    "teal": "furniture/stool-teal"
+   }
+  },
+  "noodle_table": {
+   "piece": "furniture/noodle_table"
+  },
+  "laser_cutter": {
+   "piece": "furniture/laser_cutter"
+  },
+  "printer_3d": {
+   "piece": "furniture/printer_3d"
+  },
+  "loom": {
+   "piece": "furniture/loom"
+  },
+  "sewing_machine": {
+   "piece": "furniture/sewing_machine"
+  },
+  "workbench": {
+   "piece": "furniture/workbench",
+   "stretch": true
+  },
+  "pegboard": {
+   "piece": "furniture/pegboard",
+   "stretch": true
+  },
+  "shelf": {
+   "piece": "furniture/shelf"
+  },
+  "plinth": {
+   "piece": "furniture/plinth"
+  },
+  "bench": {
+   "piece": "furniture/bench"
+  },
+  "news_terminal": {
+   "piece": "furniture/news_terminal"
+  },
+  "fountain": {
+   "piece": "furniture/fountain"
+  },
+  "lamp": {
+   "piece": "furniture/lamp"
+  },
+  "tree": {
+   "piece": "furniture/tree"
+  },
+  "bush": {
+   "piece": "furniture/bush"
+  },
+  "lift": {
+   "piece": "platforms/lift"
+  },
+  "armchair": {
+   "piece": "furniture/armchair",
+   "variants": {
+    "sage": "furniture/armchair-sage",
+    "teal": "furniture/armchair-teal"
+   }
+  },
+  "floor_lamp": {
+   "piece": "furniture/floor_lamp"
+  },
+  "bedside_table": {
+   "piece": "furniture/bedside_table"
+  },
+  "fridge": {
+   "piece": "furniture/fridge"
+  },
+  "bathtub": {
+   "piece": "furniture/bathtub"
+  },
+  "washbasin": {
+   "piece": "furniture/washbasin"
+  },
+  "picture_frame": {
+   "piece": "furniture/picture_frame"
+  },
+  "banyan_tree": {
+   "piece": "furniture/banyan_tree"
+  },
+  "kapok_tree": {
+   "piece": "furniture/kapok_tree"
+  },
+  "palm_tree": {
+   "piece": "furniture/palm_tree"
+  },
+  "bicycle": {
+   "piece": "furniture/bicycle"
+  },
+  "bin": {
+   "piece": "furniture/bin"
+  }
+ },
+ "platforms": {
+  "lift": "platforms/lift",
+  "stairs": "platforms/stairs",
+  "ladder": "platforms/ladder",
+  "steps": "platforms/steps",
+  "ledge": "platforms/ledge",
+  "lift_shaft": "platforms/lift_shaft",
+  "window": "platforms/window",
+  "door": "platforms/door"
+ },
+ "slab": "papers/slab",
+ "pieces": {
+  "fronts/coffee_shop": {
+   "file": "fronts/coffee_shop.webp",
+   "size": [
+    2784,
+    1572
+   ],
+   "height": 13.1,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9908
+   ],
+   "width": 22.0,
+   "eaves": 12.1,
+   "hash": "48314aad7b2cb89f7c29"
+  },
+  "fronts/corner_shop": {
+   "file": "fronts/corner_shop.webp",
+   "size": [
+    936,
+    1566
+   ],
+   "height": 13.05,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9908
+   ],
+   "width": 6.6,
+   "eaves": 12.1,
+   "hash": "e3aa368bc37e48c5f057"
+  },
+  "fronts/maker_space": {
+   "file": "fronts/maker_space.webp",
+   "size": [
+    2256,
+    1572
+   ],
+   "height": 13.1,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9908
+   ],
+   "width": 17.6,
+   "eaves": 12.1,
+   "hash": "3db74df9b44d553c3e14"
+  },
+  "fronts/noodle_bar": {
+   "file": "fronts/noodle_bar.webp",
+   "size": [
+    2388,
+    1038
+   ],
+   "height": 8.65,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 18.7,
+   "eaves": 7.7,
+   "hash": "de32f137d39ca62c119f"
+  },
+  "furniture/bar_counter": {
+   "file": "furniture/bar_counter.webp",
+   "size": [
+    240,
+    132
+   ],
+   "height": 1.1,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "649c295684b6a0b0c3a5"
+  },
+  "furniture/bed": {
+   "file": "furniture/bed.webp",
+   "size": [
+    246,
+    126
+   ],
+   "height": 1.05,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "a6482dd7c512bbc1ae08"
+  },
+  "furniture/bench": {
+   "file": "furniture/bench.webp",
+   "size": [
+    216,
+    108
+   ],
+   "height": 0.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "abf00e8c12e9521cc0ee"
+  },
+  "furniture/bookshelf": {
+   "file": "furniture/bookshelf.webp",
+   "size": [
+    108,
+    228
+   ],
+   "height": 1.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "1e187da74aa91fb1ab9c"
+  },
+  "furniture/cafe_table": {
+   "file": "furniture/cafe_table.webp",
+   "size": [
+    204,
+    114
+   ],
+   "height": 0.95,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "f38673fd16701c55caaf"
+  },
+  "furniture/counter": {
+   "file": "furniture/counter.webp",
+   "size": [
+    198,
+    150
+   ],
+   "height": 1.25,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "c0c2a865935c5625b752"
+  },
+  "furniture/espresso_machine": {
+   "file": "furniture/espresso_machine.webp",
+   "size": [
+    126,
+    186
+   ],
+   "height": 1.55,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "77ee528efe6a56dbe48d"
+  },
+  "furniture/fountain": {
+   "file": "furniture/fountain.webp",
+   "size": [
+    396,
+    264
+   ],
+   "height": 2.2,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "10962de25ad6d5a54a1c"
+  },
+  "furniture/grinder": {
+   "file": "furniture/grinder.webp",
+   "size": [
+    102,
+    168
+   ],
+   "height": 1.4,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "fc29d893e86a7fbb6ec0"
+  },
+  "furniture/kitchen": {
+   "file": "furniture/kitchen.webp",
+   "size": [
+    144,
+    114
+   ],
+   "height": 0.95,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "d3daf168612b4e418369"
+  },
+  "furniture/lamp": {
+   "file": "furniture/lamp.webp",
+   "size": [
+    60,
+    432
+   ],
+   "height": 3.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "dfcbb7a75d848b00fb7c"
+  },
+  "furniture/menu_board": {
+   "file": "furniture/menu_board.webp",
+   "size": [
+    216,
+    120
+   ],
+   "height": 1.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "9c25c08fbb233b95a630"
+  },
+  "furniture/news_terminal": {
+   "file": "furniture/news_terminal.webp",
+   "size": [
+    108,
+    264
+   ],
+   "height": 2.2,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "2ee2295e6af32483c495"
+  },
+  "furniture/plant": {
+   "file": "furniture/plant.webp",
+   "size": [
+    90,
+    132
+   ],
+   "height": 1.1,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "b3137ff4e7049a2a9f25"
+  },
+  "furniture/sofa": {
+   "file": "furniture/sofa.webp",
+   "size": [
+    204,
+    102
+   ],
+   "height": 0.85,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "b1f3c5ac6f6f7e7e47e7"
+  },
+  "furniture/table": {
+   "file": "furniture/table.webp",
+   "size": [
+    216,
+    114
+   ],
+   "height": 0.95,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "bb91b67cc6126c2a0455"
+  },
+  "furniture/wardrobe": {
+   "file": "furniture/wardrobe.webp",
+   "size": [
+    114,
+    240
+   ],
+   "height": 2.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "aa562b1622dc7d5edecc"
+  },
+  "layers/far-hills": {
+   "file": "layers/far-hills.webp",
+   "size": [
+    1494,
+    258
+   ],
+   "height": 5.0,
+   "kind": "layer",
+   "hash": "6ba77ac556fce0157b4a"
+  },
+  "layers/front-plants": {
+   "file": "layers/front-plants.webp",
+   "size": [
+    1332,
+    294
+   ],
+   "height": 2.0,
+   "kind": "strip",
+   "hash": "72a14538f5e6db1c79df"
+  },
+  "layers/ground-plaza": {
+   "file": "layers/ground-plaza.webp",
+   "size": [
+    1086,
+    228
+   ],
+   "height": 2.6,
+   "kind": "ground",
+   "hash": "72d9506272dfc239f839"
+  },
+  "layers/ground-street": {
+   "file": "layers/ground-street.webp",
+   "size": [
+    1302,
+    222
+   ],
+   "height": 2.6,
+   "kind": "ground",
+   "hash": "228deec27fb1a1becaeb"
+  },
+  "layers/mid-shophouses": {
+   "file": "layers/mid-shophouses.webp",
+   "size": [
+    1080,
+    348
+   ],
+   "height": 9.0,
+   "kind": "strip",
+   "hash": "89b8d73e04785f11a19d"
+  },
+  "layers/near-walls": {
+   "file": "layers/near-walls.webp",
+   "size": [
+    1500,
+    330
+   ],
+   "height": 2.2,
+   "kind": "strip",
+   "hash": "515b586ef16e54cf9441"
+  },
+  "layers/sky": {
+   "file": "layers/sky.webp",
+   "size": [
+    1470,
+    768
+   ],
+   "height": 12.0,
+   "kind": "paper",
+   "hash": "3a3ce4d1bbd1bdbb6a05"
+  },
+  "papers/cafe-panelling": {
+   "file": "papers/cafe-panelling.webp",
+   "size": [
+    624,
+    312
+   ],
+   "height": 2.6,
+   "kind": "paper",
+   "hash": "808b071e00b5d45a2d45"
+  },
+  "papers/cafe-tiles": {
+   "file": "papers/cafe-tiles.webp",
+   "size": [
+    498,
+    324
+   ],
+   "height": 2.7,
+   "kind": "paper",
+   "hash": "50f5dc9999ba0e0b256f"
+  },
+  "papers/plaster-cream": {
+   "file": "papers/plaster-cream.webp",
+   "size": [
+    624,
+    402
+   ],
+   "height": 3.367,
+   "kind": "paper",
+   "hash": "9bf453e7f44e44de3a61"
+  },
+  "papers/slab": {
+   "file": "papers/slab.webp",
+   "size": [
+    822,
+    258
+   ],
+   "height": 0.3,
+   "kind": "paper",
+   "hash": "a75834ada1c41d9c81db"
+  },
+  "platforms/stairs": {
+   "file": "platforms/stairs.webp",
+   "size": [
+    522,
+    636
+   ],
+   "height": 5.3,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "cd23144196f6615f8cd0"
+  },
+  "platforms/window": {
+   "file": "platforms/window.webp",
+   "size": [
+    120,
+    156
+   ],
+   "height": 1.3,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "b0431f3c647196a906c1"
+  }
+ }
+}

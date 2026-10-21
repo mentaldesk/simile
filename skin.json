@@ -1,0 +1,230 @@
+{
+ "now": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#e5c071",
+   "delta_e": 12.2,
+   "lighter": 6.5
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#debfac",
+   "delta_e": 5.9,
+   "lighter": 1.5
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#dfbca4",
+   "delta_e": 15.6,
+   "lighter": 17.6
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#6c4b3d",
+   "delta_e": 7.9,
+   "lighter": 2.4
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#694c43",
+   "delta_e": 8.0,
+   "lighter": 2.5
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e0b799",
+   "delta_e": 14.2,
+   "lighter": 16.3
+  }
+ },
+ "papercraft": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#e6bc6a",
+   "delta_e": 11.3,
+   "lighter": 5.5
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#e6cab1",
+   "delta_e": 7.1,
+   "lighter": 5.0
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#d2b6a1",
+   "delta_e": 15.2,
+   "lighter": 14.9
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#674435",
+   "delta_e": 7.2,
+   "lighter": -0.2
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#62463c",
+   "delta_e": 8.2,
+   "lighter": -0.2
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#dfb68f",
+   "delta_e": 14.8,
+   "lighter": 15.7
+  }
+ },
+ "cartoon": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#d6a95c",
+   "delta_e": 8.9,
+   "lighter": -1.0
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#fad4b5",
+   "delta_e": 7.2,
+   "lighter": 9.4
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#e0b898",
+   "delta_e": 14.7,
+   "lighter": 16.5
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#6c412a",
+   "delta_e": 8.5,
+   "lighter": -0.6
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#724a3d",
+   "delta_e": 5.8,
+   "lighter": 3.0
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e6bb96",
+   "delta_e": 15.6,
+   "lighter": 17.8
+  }
+ },
+ "grimy": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#c39d55",
+   "delta_e": 10.6,
+   "lighter": -6.1
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#edbda0",
+   "delta_e": 2.0,
+   "lighter": 2.1
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#c39c80",
+   "delta_e": 8.2,
+   "lighter": 6.2
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#5e402e",
+   "delta_e": 10.0,
+   "lighter": -2.7
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#5e4137",
+   "delta_e": 7.8,
+   "lighter": -2.2
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#cfa781",
+   "delta_e": 11.6,
+   "lighter": 10.2
+  }
+ },
+ "pixel": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#e4b55e",
+   "delta_e": 10.5,
+   "lighter": 3.4
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#fdd3b3",
+   "delta_e": 6.7,
+   "lighter": 9.3
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#e3b393",
+   "delta_e": 13.0,
+   "lighter": 15.5
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#63331a",
+   "delta_e": 9.8,
+   "lighter": -5.7
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#59352c",
+   "delta_e": 6.8,
+   "lighter": -6.4
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e3a97e",
+   "delta_e": 11.4,
+   "lighter": 12.7
+  }
+ },
+ "flat": {
+  "odalys": {
+   "skin": "#e4a672",
+   "painted": "#efb12a",
+   "delta_e": 13.9,
+   "lighter": 3.2
+  },
+  "lachlan": {
+   "skin": "#e8b796",
+   "painted": "#ffdbb5",
+   "delta_e": 9.3,
+   "lighter": 11.5
+  },
+  "ingrid": {
+   "skin": "#c28569",
+   "painted": "#e4ae85",
+   "delta_e": 12.4,
+   "lighter": 14.1
+  },
+  "henrietta": {
+   "skin": "#733e39",
+   "painted": "#663012",
+   "delta_e": 11.1,
+   "lighter": -6.0
+  },
+  "kofi": {
+   "skin": "#733e39",
+   "painted": "#6d3c2d",
+   "delta_e": 4.7,
+   "lighter": -1.6
+  },
+  "priya": {
+   "skin": "#c28569",
+   "painted": "#e7aa74",
+   "delta_e": 13.1,
+   "lighter": 13.2
+  }
+ }
+}

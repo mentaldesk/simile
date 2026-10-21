@@ -1,0 +1,244 @@
+{"at": 1792532277, "event": "load", "mode": "text", "seconds": 0.8}
+{"at": 1792532311, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 33.9}
+{"at": 1792532347, "event": "paint", "key": "references/papercraft/interior", "kind": "reference", "seconds": 35.9}
+{"at": 1792532383, "event": "paint", "key": "references/papercraft/residents", "kind": "reference", "seconds": 36.4}
+{"at": 1792532420, "event": "paint", "key": "references/papercraft/signage", "kind": "reference", "seconds": 36.8}
+{"at": 1792532457, "event": "paint", "key": "references/cartoon/street", "kind": "reference", "seconds": 36.5}
+{"at": 1792532488, "event": "paint", "key": "references/cartoon/interior", "kind": "reference", "seconds": 30.9}
+{"at": 1792532519, "event": "paint", "key": "references/cartoon/residents", "kind": "reference", "seconds": 31.0}
+{"at": 1792532551, "event": "paint", "key": "references/cartoon/signage", "kind": "reference", "seconds": 31.8}
+{"at": 1792532625, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792532660, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 34.9}
+{"at": 1792532695, "event": "paint", "key": "references/papercraft/interior", "kind": "reference", "seconds": 34.5}
+{"at": 1792532727, "event": "paint", "key": "references/papercraft/residents", "kind": "reference", "seconds": 32.5}
+{"at": 1792532760, "event": "paint", "key": "references/papercraft/signage", "kind": "reference", "seconds": 32.3}
+{"at": 1792532792, "event": "paint", "key": "references/cartoon/street", "kind": "reference", "seconds": 32.4}
+{"at": 1792532825, "event": "paint", "key": "references/cartoon/interior", "kind": "reference", "seconds": 32.6}
+{"at": 1792532854, "event": "paint", "key": "references/cartoon/residents", "kind": "reference", "seconds": 29.6}
+{"at": 1792532883, "event": "paint", "key": "references/cartoon/signage", "kind": "reference", "seconds": 28.6}
+{"at": 1792532921, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792532948, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 26.9}
+{"at": 1792532976, "event": "paint", "key": "references/papercraft/signage", "kind": "reference", "seconds": 28.0}
+{"at": 1792533005, "event": "paint", "key": "references/cartoon/street", "kind": "reference", "seconds": 28.7}
+{"at": 1792533033, "event": "paint", "key": "references/cartoon/interior", "kind": "reference", "seconds": 28.2}
+{"at": 1792533048, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792533074, "event": "paint", "key": "references/cartoon/street", "kind": "reference", "seconds": 26.6}
+{"at": 1792533091, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792533118, "event": "paint", "key": "references/cartoon/street", "kind": "reference", "seconds": 26.7}
+{"at": 1792533345, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792533444, "event": "load", "mode": "edit", "seconds": 2.5}
+{"at": 1792533548, "event": "load", "mode": "edit", "seconds": 2.2}
+{"at": 1792535011, "event": "load", "mode": "edit", "seconds": 2.6}
+{"at": 1792536648, "event": "load", "mode": "edit", "seconds": 2.5}
+{"at": 1792536672, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792536696, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792536822, "event": "paint", "key": "dolls/papercraft/odalys/side", "kind": "doll sheet", "seconds": 59.5}
+{"at": 1792536822, "event": "paint", "key": "dolls/papercraft/odalys/front_back", "kind": "doll sheet", "seconds": 60.4}
+{"at": 1792536825, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792536949, "event": "paint", "key": "dolls/cartoon/odalys/side", "kind": "doll sheet", "seconds": 60.1}
+{"at": 1792536949, "event": "paint", "key": "dolls/cartoon/odalys/front_back", "kind": "doll sheet", "seconds": 57.9}
+{"at": 1792536998, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792537122, "event": "paint", "key": "dolls/papercraft/lachlan/side", "kind": "doll sheet", "seconds": 59.8}
+{"at": 1792537122, "event": "paint", "key": "dolls/papercraft/lachlan/front_back", "kind": "doll sheet", "seconds": 58.5}
+{"at": 1792537249, "event": "paint", "key": "dolls/papercraft/ingrid/side", "kind": "doll sheet", "seconds": 54.9}
+{"at": 1792537249, "event": "paint", "key": "dolls/papercraft/ingrid/front_back", "kind": "doll sheet", "seconds": 62.8}
+{"at": 1792537384, "event": "paint", "key": "dolls/papercraft/henrietta/side", "kind": "doll sheet", "seconds": 63.2}
+{"at": 1792537384, "event": "paint", "key": "dolls/papercraft/henrietta/front_back", "kind": "doll sheet", "seconds": 62.4}
+{"at": 1792537512, "event": "paint", "key": "dolls/papercraft/kofi/side", "kind": "doll sheet", "seconds": 57.8}
+{"at": 1792537512, "event": "paint", "key": "dolls/papercraft/kofi/front_back", "kind": "doll sheet", "seconds": 61.1}
+{"at": 1792537638, "event": "paint", "key": "dolls/papercraft/priya/side", "kind": "doll sheet", "seconds": 60.8}
+{"at": 1792537638, "event": "paint", "key": "dolls/papercraft/priya/front_back", "kind": "doll sheet", "seconds": 56.3}
+{"at": 1792537644, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792537704, "event": "paint", "key": "dolls/cartoon/odalys/front_back", "kind": "doll sheet", "seconds": 57.7}
+{"at": 1792537825, "event": "paint", "key": "dolls/cartoon/lachlan/side", "kind": "doll sheet", "seconds": 55.2}
+{"at": 1792537825, "event": "paint", "key": "dolls/cartoon/lachlan/front_back", "kind": "doll sheet", "seconds": 57.4}
+{"at": 1792537952, "event": "paint", "key": "dolls/cartoon/ingrid/side", "kind": "doll sheet", "seconds": 57.4}
+{"at": 1792537952, "event": "paint", "key": "dolls/cartoon/ingrid/front_back", "kind": "doll sheet", "seconds": 61.6}
+{"at": 1792538089, "event": "paint", "key": "dolls/cartoon/henrietta/side", "kind": "doll sheet", "seconds": 63.0}
+{"at": 1792538089, "event": "paint", "key": "dolls/cartoon/henrietta/front_back", "kind": "doll sheet", "seconds": 65.7}
+{"at": 1792538216, "event": "paint", "key": "dolls/cartoon/kofi/side", "kind": "doll sheet", "seconds": 61.5}
+{"at": 1792538216, "event": "paint", "key": "dolls/cartoon/kofi/front_back", "kind": "doll sheet", "seconds": 57.5}
+{"at": 1792538336, "event": "paint", "key": "dolls/cartoon/priya/side", "kind": "doll sheet", "seconds": 55.6}
+{"at": 1792538336, "event": "paint", "key": "dolls/cartoon/priya/front_back", "kind": "doll sheet", "seconds": 57.4}
+{"at": 1792538370, "event": "load", "mode": "edit", "seconds": 2.5}
+{"at": 1792538432, "event": "paint", "key": "dolls/cartoon/odalys/front_back", "kind": "doll sheet", "seconds": 59.8}
+{"at": 1792538499, "event": "paint", "key": "dolls/cartoon/lachlan/front_back", "kind": "doll sheet", "seconds": 58.4}
+{"at": 1792538566, "event": "paint", "key": "dolls/cartoon/ingrid/front_back", "kind": "doll sheet", "seconds": 59.0}
+{"at": 1792538635, "event": "paint", "key": "dolls/cartoon/henrietta/front_back", "kind": "doll sheet", "seconds": 61.1}
+{"at": 1792538704, "event": "paint", "key": "dolls/cartoon/kofi/front_back", "kind": "doll sheet", "seconds": 61.4}
+{"at": 1792538769, "event": "paint", "key": "dolls/cartoon/priya/front_back", "kind": "doll sheet", "seconds": 57.3}
+{"at": 1792538798, "event": "load", "mode": "edit", "seconds": 2.9}
+{"at": 1792538862, "event": "paint", "key": "dolls/cartoon/odalys/front_back", "kind": "doll sheet", "seconds": 61.9}
+{"at": 1792538902, "event": "load", "mode": "edit", "seconds": 2.6}
+{"at": 1792539156, "event": "load", "mode": "edit", "seconds": 2.2}
+{"at": 1792539706, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792539878, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792539920, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792543170, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543201, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 30.1}
+{"at": 1792543223, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543256, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 33.1}
+{"at": 1792543267, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543301, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 34.5}
+{"at": 1792543313, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792543346, "event": "paint", "key": "references/papercraft/street", "kind": "reference", "seconds": 32.2}
+{"at": 1792543368, "event": "load", "mode": "edit", "seconds": 2.1}
+{"at": 1792544284, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792544352, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792560184, "event": "load", "mode": "edit", "bits": 8, "seconds": 5.8, "memory": 8559746382}
+{"at": 1792560223, "event": "sharpness", "bits": 8, "size": [1536, 640], "seconds": 38.7, "peak": 18025352630}
+{"at": 1792560298, "event": "sharpness", "bits": 8, "size": [848, 1408], "seconds": 75.3, "peak": 20067388890}
+{"at": 1792560323, "event": "sharpness", "bits": 8, "size": [768, 512], "seconds": 24.3, "peak": 12368381438}
+{"at": 1792560346, "event": "sharpness", "bits": 8, "size": [512, 768], "seconds": 23.5, "peak": 12368381474}
+{"at": 1792560374, "event": "load", "mode": "edit", "bits": 8, "seconds": 2.8, "memory": 8559746382}
+{"at": 1792560398, "event": "sharpness", "bits": 8, "size": [768, 512], "seconds": 23.1, "peak": 12368381366}
+{"at": 1792560422, "event": "sharpness", "bits": 8, "size": [512, 768], "seconds": 24.8, "peak": 12368381402}
+{"at": 1792560427, "event": "load", "mode": "edit", "bits": null, "seconds": 1.1, "memory": 15964118350}
+{"at": 1792560461, "event": "sharpness", "bits": null, "size": [1536, 640], "seconds": 34.1, "peak": 25429724598}
+{"at": 1792560534, "event": "sharpness", "bits": null, "size": [848, 1408], "seconds": 73.4, "peak": 27471760858}
+{"at": 1792560554, "event": "sharpness", "bits": null, "size": [768, 512], "seconds": 19.6, "peak": 19772753406}
+{"at": 1792560572, "event": "sharpness", "bits": null, "size": [512, 768], "seconds": 17.6, "peak": 19772753442}
+{"at": 1792560582, "event": "load", "mode": "edit", "bits": null, "seconds": 2.8, "memory": 15964118350}
+{"at": 1792560599, "event": "sharpness", "bits": null, "size": [768, 512], "seconds": 17.0, "peak": 19772753334}
+{"at": 1792560616, "event": "sharpness", "bits": null, "size": [512, 768], "seconds": 16.9, "peak": 19772753370}
+{"at": 1792560620, "event": "load", "mode": "edit", "bits": 8, "seconds": 1.0, "memory": 8559746382}
+{"at": 1792560707, "event": "sharpness", "bits": 8, "size": [2304, 960], "seconds": 87.5, "peak": 29796191670}
+{"at": 1792560772, "event": "sharpness", "bits": 8, "size": [848, 1408], "seconds": 65.0, "peak": 20067388890}
+{"at": 1792560805, "event": "sharpness", "bits": 8, "size": [1152, 768], "seconds": 32.8, "peak": 17069379070}
+{"at": 1792560838, "event": "sharpness", "bits": 8, "size": [768, 1152], "seconds": 33.0, "peak": 17069379106}
+{"at": 1792560850, "event": "load", "mode": "edit", "bits": 8, "seconds": 2.8, "memory": 8559746382}
+{"at": 1792560882, "event": "sharpness", "bits": 8, "size": [1152, 768], "seconds": 31.6, "peak": 17069378998}
+{"at": 1792560915, "event": "sharpness", "bits": 8, "size": [768, 1152], "seconds": 32.9, "peak": 17069379034}
+{"at": 1792560919, "event": "load", "mode": "text", "seconds": 0.5}
+{"at": 1792560930, "event": "sharpness", "bits": 8, "text": true, "size": [768, 512], "seconds": 11.3, "peak": 12367660470}
+{"at": 1792560942, "event": "sharpness", "bits": 8, "text": true, "size": [512, 768], "seconds": 11.6, "peak": 12367660506}
+{"at": 1792560945, "event": "load", "mode": "text", "seconds": 0.4}
+{"at": 1792560957, "event": "sharpness", "bits": 8, "text": true, "size": [768, 512], "seconds": 11.5, "peak": 12367660470}
+{"at": 1792560969, "event": "sharpness", "bits": 8, "text": true, "size": [512, 768], "seconds": 11.6, "peak": 12367660506}
+{"at": 1792560984, "event": "load", "mode": "edit", "bits": 8, "seconds": 3.1, "memory": 8559746382}
+{"at": 1792561122, "event": "sharpness", "bits": 8, "size": [1280, 2112], "seconds": 138.2, "peak": 34546060726}
+{"at": 1792561131, "event": "load", "mode": "edit", "bits": 8, "seconds": 2.8, "memory": 8559746382}
+{"at": 1792561183, "event": "sharpness", "bits": 8, "size": [1024, 768], "seconds": 52.5, "peak": 16134688182}
+{"at": 1792561240, "event": "sharpness", "bits": 8, "size": [1024, 768], "seconds": 53.5, "peak": 16134688182}
+{"at": 1792561246, "event": "load", "mode": "edit", "bits": null, "seconds": 1.0, "memory": 15964118350}
+{"at": 1792561288, "event": "sharpness", "bits": null, "size": [1024, 768], "seconds": 41.7, "peak": 23539041718}
+{"at": 1792561333, "event": "sharpness", "bits": null, "size": [1024, 768], "seconds": 41.6, "peak": 23539041718}
+{"at": 1792561462, "event": "load", "mode": "edit", "bits": 8, "seconds": 2.8, "memory": 8559746382}
+{"at": 1792561527, "event": "sharpness", "bits": 8, "size": [896, 1344], "seconds": 64.9, "peak": 20157304246}
+{"at": 1792561594, "event": "sharpness", "bits": 8, "size": [896, 1344], "seconds": 67.0, "peak": 20157304282}
+{"at": 1792561661, "event": "sharpness", "bits": 8, "size": [896, 1344], "seconds": 66.8, "peak": 20157304318}
+{"at": 1792561669, "event": "load", "mode": "edit", "bits": null, "seconds": 1.5, "memory": 15964118350}
+{"at": 1792561722, "event": "sharpness", "bits": null, "size": [896, 1344], "seconds": 53.2, "peak": 27561676214}
+{"at": 1792561776, "event": "sharpness", "bits": null, "size": [896, 1344], "seconds": 53.1, "peak": 27561676250}
+{"at": 1792561829, "event": "sharpness", "bits": null, "size": [896, 1344], "seconds": 52.7, "peak": 27561676286}
+{"at": 1792561838, "event": "load", "mode": "edit", "bits": 8, "seconds": 1.5, "memory": 8559746382}
+{"at": 1792561977, "event": "sharpness", "bits": 8, "size": [1344, 2016], "seconds": 138.6, "peak": 34569358774}
+{"at": 1792562118, "event": "sharpness", "bits": 8, "size": [1344, 2016], "seconds": 140.8, "peak": 34569358810}
+{"at": 1792562258, "event": "sharpness", "bits": 8, "size": [1344, 2016], "seconds": 139.2, "peak": 34569358846}
+{"at": 1792562287, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792562318, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 31.2}
+{"at": 1792562348, "event": "paint", "key": "references/grimy/interior", "kind": "reference", "seconds": 30.3}
+{"at": 1792562377, "event": "paint", "key": "references/grimy/residents", "kind": "reference", "seconds": 28.5}
+{"at": 1792562405, "event": "paint", "key": "references/grimy/signage", "kind": "reference", "seconds": 28.3}
+{"at": 1792562434, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 28.4}
+{"at": 1792562462, "event": "paint", "key": "references/pixel/interior", "kind": "reference", "seconds": 27.9}
+{"at": 1792562491, "event": "paint", "key": "references/pixel/residents", "kind": "reference", "seconds": 28.6}
+{"at": 1792562520, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 28.9}
+{"at": 1792562549, "event": "paint", "key": "references/flat/street", "kind": "reference", "seconds": 29.1}
+{"at": 1792562578, "event": "paint", "key": "references/flat/interior", "kind": "reference", "seconds": 28.9}
+{"at": 1792562607, "event": "paint", "key": "references/flat/residents", "kind": "reference", "seconds": 28.8}
+{"at": 1792562635, "event": "paint", "key": "references/flat/signage", "kind": "reference", "seconds": 28.6}
+{"at": 1792562687, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792562716, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 29.5}
+{"at": 1792562745, "event": "paint", "key": "references/grimy/interior", "kind": "reference", "seconds": 28.2}
+{"at": 1792562773, "event": "paint", "key": "references/grimy/signage", "kind": "reference", "seconds": 28.3}
+{"at": 1792562803, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 30.4}
+{"at": 1792562834, "event": "paint", "key": "references/pixel/interior", "kind": "reference", "seconds": 30.9}
+{"at": 1792562865, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 30.8}
+{"at": 1792562896, "event": "paint", "key": "references/flat/street", "kind": "reference", "seconds": 30.8}
+{"at": 1792562927, "event": "paint", "key": "references/flat/signage", "kind": "reference", "seconds": 30.6}
+{"at": 1792562965, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792562995, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 29.4}
+{"at": 1792563025, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 30.2}
+{"at": 1792563056, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 30.8}
+{"at": 1792563085, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792563115, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 29.8}
+{"at": 1792563146, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 30.6}
+{"at": 1792563177, "event": "paint", "key": "references/grimy/street", "kind": "reference", "seconds": 31.1}
+{"at": 1792563207, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 30.0}
+{"at": 1792563237, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 29.5}
+{"at": 1792563267, "event": "paint", "key": "references/pixel/street", "kind": "reference", "seconds": 30.8}
+{"at": 1792563319, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792563349, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 29.7}
+{"at": 1792563380, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 30.7}
+{"at": 1792563396, "event": "load", "mode": "text", "seconds": 0.7}
+{"at": 1792563425, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 29.1}
+{"at": 1792563454, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 28.7}
+{"at": 1792563482, "event": "paint", "key": "references/pixel/signage", "kind": "reference", "seconds": 28.3}
+{"at": 1792563575, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792565043, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792567011, "event": "load", "mode": "edit", "seconds": 3.0}
+{"at": 1792568856, "event": "load", "mode": "edit", "seconds": 3.0}
+{"at": 1792569030, "event": "paint", "key": "dolls/grimy/odalys/side", "kind": "doll sheet", "seconds": 85.7}
+{"at": 1792569030, "event": "paint", "key": "dolls/grimy/odalys/front_back", "kind": "doll sheet", "seconds": 82.4}
+{"at": 1792569197, "event": "paint", "key": "dolls/grimy/lachlan/side", "kind": "doll sheet", "seconds": 82.1}
+{"at": 1792569197, "event": "paint", "key": "dolls/grimy/lachlan/front_back", "kind": "doll sheet", "seconds": 76.9}
+{"at": 1792569347, "event": "paint", "key": "dolls/grimy/ingrid/side", "kind": "doll sheet", "seconds": 70.5}
+{"at": 1792569347, "event": "paint", "key": "dolls/grimy/ingrid/front_back", "kind": "doll sheet", "seconds": 71.4}
+{"at": 1792569495, "event": "paint", "key": "dolls/grimy/henrietta/side", "kind": "doll sheet", "seconds": 70.9}
+{"at": 1792569495, "event": "paint", "key": "dolls/grimy/henrietta/front_back", "kind": "doll sheet", "seconds": 68.9}
+{"at": 1792569639, "event": "paint", "key": "dolls/grimy/kofi/side", "kind": "doll sheet", "seconds": 68.1}
+{"at": 1792569639, "event": "paint", "key": "dolls/grimy/kofi/front_back", "kind": "doll sheet", "seconds": 68.6}
+{"at": 1792569782, "event": "paint", "key": "dolls/grimy/priya/side", "kind": "doll sheet", "seconds": 69.1}
+{"at": 1792569782, "event": "paint", "key": "dolls/grimy/priya/front_back", "kind": "doll sheet", "seconds": 65.8}
+{"at": 1792569786, "event": "load", "mode": "edit", "seconds": 2.4}
+{"at": 1792569926, "event": "paint", "key": "dolls/grimy-plain/odalys/side", "kind": "doll sheet", "seconds": 68.3}
+{"at": 1792569926, "event": "paint", "key": "dolls/grimy-plain/odalys/front_back", "kind": "doll sheet", "seconds": 65.6}
+{"at": 1792570065, "event": "paint", "key": "dolls/grimy-plain/lachlan/side", "kind": "doll sheet", "seconds": 65.7}
+{"at": 1792570065, "event": "paint", "key": "dolls/grimy-plain/lachlan/front_back", "kind": "doll sheet", "seconds": 65.5}
+{"at": 1792570068, "event": "load", "mode": "edit", "seconds": 2.1}
+{"at": 1792570208, "event": "paint", "key": "dolls/flat/odalys/side", "kind": "doll sheet", "seconds": 68.2}
+{"at": 1792570208, "event": "paint", "key": "dolls/flat/odalys/front_back", "kind": "doll sheet", "seconds": 65.7}
+{"at": 1792571555, "event": "load", "mode": "edit", "seconds": 2.4}
+{"at": 1792571678, "event": "paint", "key": "dolls/pixel/odalys/side", "kind": "doll sheet", "seconds": 1321.8}
+{"at": 1792571678, "event": "paint", "key": "dolls/pixel/odalys/front_back", "kind": "doll sheet", "seconds": 57.3}
+{"at": 1792571795, "event": "paint", "key": "dolls/pixel/lachlan/side", "kind": "doll sheet", "seconds": 55.0}
+{"at": 1792571795, "event": "paint", "key": "dolls/pixel/lachlan/front_back", "kind": "doll sheet", "seconds": 54.4}
+{"at": 1792571912, "event": "paint", "key": "dolls/pixel/ingrid/side", "kind": "doll sheet", "seconds": 53.6}
+{"at": 1792571912, "event": "paint", "key": "dolls/pixel/ingrid/front_back", "kind": "doll sheet", "seconds": 54.7}
+{"at": 1792572034, "event": "paint", "key": "dolls/pixel/henrietta/side", "kind": "doll sheet", "seconds": 57.7}
+{"at": 1792572034, "event": "paint", "key": "dolls/pixel/henrietta/front_back", "kind": "doll sheet", "seconds": 56.3}
+{"at": 1792572156, "event": "paint", "key": "dolls/pixel/kofi/side", "kind": "doll sheet", "seconds": 57.1}
+{"at": 1792572156, "event": "paint", "key": "dolls/pixel/kofi/front_back", "kind": "doll sheet", "seconds": 56.8}
+{"at": 1792572278, "event": "paint", "key": "dolls/pixel/priya/side", "kind": "doll sheet", "seconds": 57.4}
+{"at": 1792572278, "event": "paint", "key": "dolls/pixel/priya/front_back", "kind": "doll sheet", "seconds": 56.6}
+{"at": 1792572287, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792572349, "event": "paint", "key": "dolls/flat/lachlan/front_back", "kind": "doll sheet", "seconds": 60.1}
+{"at": 1792572473, "event": "paint", "key": "dolls/flat/ingrid/side", "kind": "doll sheet", "seconds": 56.9}
+{"at": 1792572473, "event": "paint", "key": "dolls/flat/ingrid/front_back", "kind": "doll sheet", "seconds": 58.7}
+{"at": 1792572598, "event": "paint", "key": "dolls/flat/henrietta/side", "kind": "doll sheet", "seconds": 59.8}
+{"at": 1792572598, "event": "paint", "key": "dolls/flat/henrietta/front_back", "kind": "doll sheet", "seconds": 56.7}
+{"at": 1792572721, "event": "paint", "key": "dolls/flat/kofi/side", "kind": "doll sheet", "seconds": 57.0}
+{"at": 1792572721, "event": "paint", "key": "dolls/flat/kofi/front_back", "kind": "doll sheet", "seconds": 57.9}
+{"at": 1792572843, "event": "paint", "key": "dolls/flat/priya/side", "kind": "doll sheet", "seconds": 57.5}
+{"at": 1792572843, "event": "paint", "key": "dolls/flat/priya/front_back", "kind": "doll sheet", "seconds": 56.7}
+{"at": 1792572848, "event": "load", "mode": "edit", "seconds": 2.0}
+{"at": 1792573150, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792573402, "event": "load", "mode": "edit", "seconds": 2.3}
+{"at": 1792573654, "event": "load", "mode": "edit", "seconds": 2.4}
+{"at": 1792573775, "event": "paint", "key": "dolls/grimy-plain/ingrid/side", "kind": "doll sheet", "seconds": 60.7}
+{"at": 1792573775, "event": "paint", "key": "dolls/grimy-plain/ingrid/front_back", "kind": "doll sheet", "seconds": 54.3}
+{"at": 1792573891, "event": "paint", "key": "dolls/grimy-plain/henrietta/side", "kind": "doll sheet", "seconds": 54.7}
+{"at": 1792573891, "event": "paint", "key": "dolls/grimy-plain/henrietta/front_back", "kind": "doll sheet", "seconds": 53.6}
+{"at": 1792574006, "event": "paint", "key": "dolls/grimy-plain/kofi/side", "kind": "doll sheet", "seconds": 54.0}
+{"at": 1792574006, "event": "paint", "key": "dolls/grimy-plain/kofi/front_back", "kind": "doll sheet", "seconds": 53.4}
+{"at": 1792574121, "event": "paint", "key": "dolls/grimy-plain/priya/side", "kind": "doll sheet", "seconds": 52.8}
+{"at": 1792574121, "event": "paint", "key": "dolls/grimy-plain/priya/front_back", "kind": "doll sheet", "seconds": 53.8}
+{"at": 1792574127, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792574185, "event": "paint", "key": "dolls/grimy/odalys/front_back", "kind": "doll sheet", "seconds": 55.1}
+{"at": 1792574245, "event": "paint", "key": "dolls/grimy/kofi/front_back", "kind": "doll sheet", "seconds": 52.9}
+{"at": 1792574307, "event": "paint", "key": "dolls/grimy/lachlan/front_back", "kind": "doll sheet", "seconds": 53.6}
+{"at": 1792574325, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792574358, "event": "load", "mode": "edit", "seconds": 1.9}
+{"at": 1792576204, "event": "load", "mode": "edit", "seconds": 2.6}
+{"at": 1792576252, "event": "load", "mode": "edit", "seconds": 1.9}

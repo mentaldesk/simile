@@ -1,0 +1,56 @@
+{
+ "now": {
+  "mean": 18.1,
+  "odalys": 8.6,
+  "lachlan": 13.5,
+  "ingrid": 20.2,
+  "kofi": 21.9,
+  "henrietta": 25.6,
+  "priya": 18.8
+ },
+ "papercraft": {
+  "mean": 18.8,
+  "odalys": 10.4,
+  "lachlan": 14.7,
+  "ingrid": 18.4,
+  "kofi": 27.7,
+  "henrietta": 27.9,
+  "priya": 14.0
+ },
+ "cartoon": {
+  "mean": 40.9,
+  "odalys": 33.7,
+  "lachlan": 40.2,
+  "ingrid": 48.0,
+  "kofi": 44.6,
+  "henrietta": 40.5,
+  "priya": 38.3
+ },
+ "grimy": {
+  "mean": 25.9,
+  "odalys": 27.3,
+  "lachlan": 30.7,
+  "ingrid": 23.6,
+  "kofi": 21.0,
+  "henrietta": 27.9,
+  "priya": 24.9
+ },
+ "pixel": {
+  "mean": 45.4,
+  "odalys": 33.0,
+  "lachlan": 38.5,
+  "ingrid": 59.4,
+  "kofi": 41.4,
+  "henrietta": 47.5,
+  "priya": 52.6
+ },
+ "flat": {
+  "mean": 22.6,
+  "odalys": 14.6,
+  "lachlan": 26.0,
+  "ingrid": 22.0,
+  "kofi": 24.0,
+  "henrietta": 26.9,
+  "priya": 21.8
+ }
+}
