@@ -1,7 +1,8 @@
 """Residents in each style: #310's doll pipeline with this study's references, and the client's
 rig (`client/src/dolls/rig.ts`) ported to Python to pose them.
 
-`python dolls.py <style> [who …]` paints the dolls into out/<style>/dolls/.
+`python dolls.py <style> [who …]` paints the dolls into out/<style>/dolls/, and
+`python dolls.py grimy-plain [who …]` the grimy cartoon's with no outline painted on.
 """
 
 import json
@@ -9,12 +10,13 @@ import math
 import sys
 import tempfile
 import time
+import zlib
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
-from common import CARTOON, OUT, REFS, STYLES, Style, log, styled, wait_for_gpu
+from common import CARTOON, GRIMY, OUT, REFS, STYLES, Style, log, styled, wait_for_gpu
 from PIL import Image, ImageFilter
 
 from simile.dolls import build as dolls
@@ -27,38 +29,82 @@ WHO = ("odalys", "lachlan", "ingrid", "henrietta", "kofi", "priya")
 """Six residents across the `Appearance`s' skins, hair styles and accessories: #295's walkers
 and dollhouse residents, and Priya."""
 CHUNKY = 1.15
-"""The cartoon's bodies are this much wider than #310's, through `Look.width`."""
+"""The cartoons' bodies are this much wider than #310's, through `Look.width`."""
 HEAD = 1.22
-"""The cartoon's heads are drawn this much bigger, about the neck."""
+"""#326's cartoon heads are drawn this much bigger, about the neck."""
 INK = (46, 32, 28)
 OUTLINE = 0.9
-"""The cartoon's outline, in units: drawn round each piece in the rig, as the scenery's are
+"""#326's cartoon outline, in units: drawn round each piece in the rig, as the scenery's are
 painted."""
-REROLLS = {"cartoon/odalys/front_back": 1}
+REROLLS = {
+    "cartoon/odalys/front_back": 1,
+    "grimy/odalys/front_back": 1,
+    "grimy/kofi/front_back": 1,
+    "grimy/lachlan/front_back": 1,
+}
 """`<style>/<who>/<sheet>` to a reroll, for a painting that came out off-model."""
+PLAIN = "grimy-plain"
+"""The grimy cartoon's dolls painted with no outline, for the rig to draw one."""
+
+SHEETS = {
+    "cartoon": (
+        "the separate body parts of a cartoon game character",
+        "four separate flat pieces of a cartoon cut-out puppet, laid apart",
+        "hand-drawn in the cartoon style of the residents in image 2: a thick dark brown outline "
+        "round every piece, flat colours with simple soft shading",
+    ),
+    "grimy": (
+        "the separate body parts of a cartoon game character",
+        "four separate flat pieces of a cartoon cut-out puppet, laid apart",
+        "hand-drawn in the scratchy, grimy cartoon style of the residents in image 2: a thick "
+        "scratchy, uneven dark brown ink outline round every piece, flat colours with simple "
+        "soft shading and a few smudges",
+    ),
+    PLAIN: (
+        "the separate body parts of a cartoon game character",
+        "four separate flat pieces of a cartoon cut-out puppet, laid apart",
+        "hand-drawn in the grimy cartoon style of the residents in image 2, with no outline "
+        "round any piece: flat colours with simple soft shading and a few smudges",
+    ),
+    "pixel": (
+        "the separate body parts of a pixel art game character",
+        "four separate flat pieces of a pixel art cut-out puppet, laid apart",
+        "drawn as crisp pixel art in the style of the residents in image 2: big square pixels, "
+        "a limited palette of flat colours, no anti-aliasing",
+    ),
+    "flat": (
+        "the separate body parts of a flat illustrated game character",
+        "four separate flat pieces of a cut-out puppet in flat illustration, laid apart",
+        "drawn as a flat modern illustration in the style of the residents in image 2: bold flat "
+        "colours, simple geometric shapes, clean edges, no outlines and no texture",
+    ),
+}
+"""#310's prompt in each style's words: the side sheet's subject, the front and back sheet's,
+and how they're drawn. Papercraft keeps #310's own."""
 
 
-def cartoon_prompt(sheet: str, appearance, who: str | None) -> str:
-    """#310's prompt, in the cartoon style."""
-    if sheet == "side":
-        what = "the separate body parts of a cartoon game character"
-        layout = "a face drawn on the head in profile."
-    else:
-        what = "four separate flat pieces of a cartoon cut-out puppet, laid apart"
-        layout = (
-            "the head on the left faces the viewer with the face drawn on it, the head on the "
-            f"right is the back of the same head, {back_of_head(appearance)}, and between them "
-            "are two flat torso pieces, the front and the back, each a plain shape with no "
-            "head, arms or legs on it."
+def sheet_prompt(variant: str, style: Style):
+    side, front_back, how = SHEETS[variant]
+
+    def prompt(sheet: str, appearance, who: str | None) -> str:
+        if sheet == "side":
+            what, layout = side, "a face drawn on the head in profile."
+        else:
+            what = front_back
+            layout = (
+                "the head on the left faces the viewer with the face drawn on it, the head on "
+                f"the right is the back of the same head, {back_of_head(appearance)}, and "
+                "between them are two flat torso pieces, the front and the back, each a plain "
+                "shape with no head, arms or legs on it."
+            )
+        return styled(
+            f"Redraw image 1 as {what}, {how}, {layout} {person(appearance, who)} Keep every "
+            "piece exactly where it is, with the same outline and the same colours, and add "
+            "nothing to it, on a plain light grey background.",
+            style,
         )
-    return styled(
-        f"Redraw image 1 as {what}, hand-drawn in "
-        "the cartoon style of the residents in image 2: a thick dark brown outline round every "
-        f"piece, flat colours with simple soft shading, {layout} {person(appearance, who)} Keep "
-        "every piece exactly where it is, with the same outline and the same colours, and add "
-        "nothing to it, on a plain light grey background.",
-        CARTOON,
-    )
+
+    return prompt
 
 
 class TimedPainter(EditPainter):
@@ -72,37 +118,62 @@ class TimedPainter(EditPainter):
         return out
 
 
+def style_of(variant: str) -> Style:
+    return GRIMY if variant == PLAIN else STYLES[variant]
+
+
 @contextmanager
-def styled_pipeline(style: Style):
+def styled_pipeline(variant: str):
     """#310's `paint()` reading this style's residents reference, with its prompt, rerolls and
-    proportions. Restores the module attributes it swaps."""
-    saved = (painting.REFERENCES, dolls.reference, dolls.prompt, dolls.REROLLS, looks.BUILD)
+    proportions, and for #329's styles without `rimmed()`'s light card edge. Restores the module
+    attributes it swaps."""
+    from simile.dolls import doll as atlases
+
+    style = style_of(variant)
+    saved = (
+        painting.REFERENCES,
+        dolls.reference,
+        dolls.prompt,
+        dolls.REROLLS,
+        looks.BUILD,
+        atlases.rimmed,
+    )
     painting.REFERENCES = REFS / style.name
     dolls.reference = lambda name, width=768: painting.reference("residents", width)
     dolls.REROLLS = {
-        k.split("/", 1)[1]: v for k, v in REROLLS.items() if k.startswith(f"{style.name}/")
+        k.split("/", 1)[1]: v for k, v in REROLLS.items() if k.startswith(f"{variant}/")
     }
-    if style is CARTOON:
-        dolls.prompt = cartoon_prompt
+    if variant in SHEETS:
+        dolls.prompt = sheet_prompt(variant, style)
+    if style.name in (CARTOON.name, GRIMY.name):
         looks.BUILD = {k: v * CHUNKY for k, v in looks.BUILD.items()}
+    if style.name not in ("papercraft", CARTOON.name):
+        atlases.rimmed = lambda piece: piece
     try:
         yield
     finally:
-        painting.REFERENCES, dolls.reference, dolls.prompt, dolls.REROLLS, looks.BUILD = saved
+        (
+            painting.REFERENCES,
+            dolls.reference,
+            dolls.prompt,
+            dolls.REROLLS,
+            looks.BUILD,
+            atlases.rimmed,
+        ) = saved
 
 
-def paint(style: Style, who: list[str]) -> None:
+def paint(variant: str, who: list[str]) -> None:
     everyone = dolls.people()
-    folder = OUT / style.name / "dolls"
+    folder = OUT / variant / "dolls"
     model = dolls.Lazy(TimedPainter)
-    with styled_pipeline(style), model.stack, tempfile.TemporaryDirectory() as scratch:
+    with styled_pipeline(variant), model.stack, tempfile.TemporaryDirectory() as scratch:
         for name in who:
             painted = dolls.paint(name, everyone[name], model, Path(scratch), folder / "paintings")
             filled = matched(painted.doll)
             appearance = everyone[name].model_dump(mode="json")
             dolls.write(folder, dolls.files(name, painted.doll, appearance=appearance))
             for sheet, seconds in painted.seconds.items():
-                key = f"dolls/{style.name}/{name}/{sheet}"
+                key = f"dolls/{variant}/{name}/{sheet}"
                 log({"event": "paint", "key": key, "kind": "doll sheet", "seconds": seconds})
             moved = {k: round(v, 3) for k, v in painted.misplaced.items() if v > 0.02}
             added = {k: round(v, 3) for k, v in painted.patches.items() if v > 0.05}
@@ -113,9 +184,10 @@ def paint(style: Style, who: list[str]) -> None:
                 image.save(sheets / f"{name}-{sheet}.png")
 
 
-OFF = 6.0
+OFF = 4.5
 """CIEDE2000 a painted colour region may stay from its flat colour, in the atlas, before it's
-filled."""
+filled: under the check's 6, since saving the atlas as lossy WebP moves a small region by
+up to 2. #326's dolls were filled at 6."""
 LUMA = np.array([0.299, 0.587, 0.114])
 
 
@@ -302,33 +374,77 @@ def posed(p: dict, pose: str, facing: str, phase: float = 0.0) -> tuple[list[Par
     return parts, facing == "west"
 
 
+@dataclass(frozen=True)
+class Drawn:
+    """How a look's residents are drawn from their atlases."""
+
+    folder: str
+    """out/<folder>/dolls/, or `now` for the game's."""
+    outline: float = 0.0
+    """Ink drawn round each piece, in units."""
+    head: float = 1.0
+    """Heads drawn this much bigger, about the neck."""
+    neck: float = 0.0
+    """How far the neck joint rises, as a share of what a bigger head grows below it: 1 keeps
+    the chin where it was, and below 0 sinks the head into the shoulders."""
+    shoulder: float = 0.0
+    """Units the shoulder joints drop, to clear a bigger head."""
+    rough: bool = False
+    """The drawn ink varies in width, as a scratchy pen's does."""
+    pixels: str | None = None
+    """Pixel art: `baked`, the smooth rig with each frame pixelated, or the rig drawn at the art's
+    own size with `nearest` turns or `rotsprite` turns."""
+
+
+KLEI_NECK, KLEI_SHOULDER = -1.0, 2.0
+KLEI = {"neck": KLEI_NECK, "shoulder": KLEI_SHOULDER}
+INKED = {"outline": OUTLINE, "rough": True}
+DRAWN = {
+    "now": Drawn("now"),
+    "papercraft": Drawn("papercraft"),
+    "cartoon": Drawn("cartoon", outline=OUTLINE, head=HEAD),
+    "grimy": Drawn(PLAIN, head=1.6, **KLEI, **INKED),
+    "grimy-1.8": Drawn(PLAIN, head=1.8, **KLEI, **INKED),
+    "grimy-painted": Drawn("grimy", head=1.6, **KLEI),
+    "pixel": Drawn("pixel", pixels="nearest"),
+    "flat": Drawn("flat"),
+}
+"""Each look's residents. The revised cartoon's are painted with no outline and drawn with one,
+about as wide as its furniture's painted lines, at two head sizes; `grimy-painted` keeps the
+painted outline alone instead."""
+
+
 @dataclass
 class Doll:
     manifest: dict
     atlas: Image.Image
-    outline: float = 0.0
-    """Ink round each piece, in units."""
-    head: float = 1.0
+    flat: Image.Image
+    drawn: Drawn = field(default_factory=lambda: Drawn("now"))
     sprites: dict = field(default_factory=dict, repr=False)
 
     @classmethod
-    def load(cls, folder: Path, who: str, painted: bool = True, cartoon: bool = False) -> "Doll":
+    def load(cls, folder: Path, who: str, drawn: Drawn, painted: bool = True) -> "Doll":
         manifest = json.loads((folder / f"{who}.json").read_text())
         atlas = Image.open(folder / manifest["painted" if painted else "flat"]).convert("RGBA")
-        return cls(manifest, atlas, OUTLINE if cartoon else 0.0, HEAD if cartoon else 1.0)
+        flat = Image.open(folder / manifest["flat"]).convert("RGBA")
+        return cls(adjusted(manifest, drawn), atlas, flat, drawn)
 
     @property
     def pieces(self) -> dict:
         return self.manifest["pieces"]
 
+    @property
+    def outline(self) -> float:
+        return self.drawn.outline
+
     def standing_height(self) -> float:
         """Atlas px from the ground to the top of the head, hats included, as the client's."""
         parts, _ = posed(self.pieces, "standing", "south")
         head = next(p for p in parts if p.piece == "head_front")
-        return -(head.y - self.pieces["head_front"]["pivot"][1] * self.head)
+        return -(head.y - self.pieces["head_front"]["pivot"][1] * self.drawn.head)
 
     def sprite(self, name: str) -> tuple[Image.Image, tuple[float, float]]:
-        """A piece and its pivot, the cartoon's with its head scaled and its outline drawn."""
+        """A piece and its pivot, its head scaled and its outline drawn."""
         if name not in self.sprites:
             self.sprites[name] = self._sprite(name)
         return self.sprites[name]
@@ -337,23 +453,16 @@ class Doll:
         x, y, w, h = self.pieces[name]["frame"]
         image = self.atlas.crop((x, y, x + w, y + h))
         pivot = tuple(self.pieces[name]["pivot"])
-        if self.head != 1.0 and name.startswith("head"):
-            image = image.resize((round(w * self.head), round(h * self.head)), Image.LANCZOS)
-            pivot = (pivot[0] * self.head, pivot[1] * self.head)
+        head = self.drawn.head
+        if head != 1.0 and name.startswith("head"):
+            image = image.resize((round(w * head), round(h * head)), Image.LANCZOS)
+            pivot = (pivot[0] * head, pivot[1] * head)
         if self.outline:
-            pad = math.ceil(self.outline * self.manifest["unit"]) + 2
-            grown = Image.new("RGBA", (image.width + 2 * pad, image.height + 2 * pad))
-            grown.paste(image, (pad, pad))
-            alpha = grown.getchannel("A").filter(ImageFilter.MaxFilter(2 * (pad - 2) + 1))
-            alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
-            ink = Image.new("RGBA", grown.size, (*INK, 255))
-            ink.putalpha(alpha)
-            ink.alpha_composite(grown)
-            image, pivot = ink, (pivot[0] + pad, pivot[1] + pad)
+            image, pivot = inked(image, pivot, self.outline * self.manifest["unit"], self.drawn)
         return image, pivot
 
-    def draw(self, pose: str, facing: str, phase: float, height: float) -> tuple[Image.Image, Px]:
-        """The posed doll `height` px tall, with the point under its hips at the ground."""
+    def canvas(self, pose: str, facing: str, phase: float, shadows: bool = True):
+        """The posed doll at atlas size, mirrored if it faces west, and its ground origin."""
         parts, flip = posed(self.pieces, pose, facing, phase)
         unit = self.manifest["unit"]
         size = round(self.standing_height() * 1.6)
@@ -366,20 +475,142 @@ class Doll:
                 image = image.resize((image.width, max(1, round(image.height * part.scale_y))))
                 pivot = (pivot[0], pivot[1] * part.scale_y)
             at = (origin[0] + part.x, origin[1] + part.y)
-            if i > 0:
+            if i > 0 and shadows:
                 shadow = Image.new("RGBA", image.size, (20, 14, 10, 0))
                 shadow.putalpha(image.getchannel("A").point(lambda v: round(v * 0.3)))
                 _paste(canvas, shadow, pivot, (at[0] + nudge, at[1] + nudge * 1.4), part.angle)
             if part.shade != 1.0:
-                a = np.asarray(image, dtype=np.float32).copy()
-                a[..., :3] *= part.shade
-                image = Image.fromarray(a.astype(np.uint8), "RGBA")
+                image = shaded(image, part.shade)
             _paste(canvas, image, pivot, at, part.angle)
         if flip:
             canvas = canvas.transpose(Image.FLIP_LEFT_RIGHT)
+        return canvas, origin
+
+    def draw(self, pose: str, facing: str, phase: float, height: float) -> tuple[Image.Image, Px]:
+        """The posed doll `height` px tall, with the point under its hips at the ground."""
+        canvas, origin = self.canvas(pose, facing, phase)
         scale = height / self.standing_height()
+        size = canvas.width
         small = canvas.resize((round(size * scale), round(size * scale)), Image.LANCZOS)
         return small, (small.width / 2, origin[1] * scale)
+
+    def native(self, pose: str, facing: str, phase: float, height: float, mode=None):
+        """The posed doll as pixel art `height` art pixels tall, and its ground origin there."""
+        import pixel
+
+        mode = mode or self.drawn.pixels
+        colours = self._palette()
+        scale = self.standing_height() / height
+        if mode == "baked":
+            canvas, origin = self.canvas(pose, facing, phase, shadows=False)
+            plain = replace(self, atlas=self.flat, sprites={})
+            flat, _ = plain.canvas(pose, facing, phase, shadows=False)
+            size = (round(canvas.width / scale), round(canvas.height / scale))
+            image = pixel.region_pixels(canvas, flat, size)
+            return image, (image.width / 2, origin[1] * size[1] / canvas.height)
+        parts, flip = posed(self.pieces, pose, facing, phase)
+        size = round(self.standing_height() * 1.6 / scale)
+        canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        origin = (size / 2, round(size * 0.92))
+        for part in parts:
+            image, pivot = self._native_piece(part.piece, scale, colours)
+            if part.scale_y != 1.0:
+                image = image.resize(
+                    (image.width, max(1, round(image.height * part.scale_y))), Image.NEAREST
+                )
+                pivot = (pivot[0], pivot[1] * part.scale_y)
+            if part.shade != 1.0:
+                image = pixel_shaded(image, part.shade, colours)
+            turned, centre = pixel.rotate_nearest(image, part.angle, pivot, mode == "rotsprite")
+            at = (origin[0] + part.x / scale, origin[1] + part.y / scale)
+            over(canvas, turned, round(at[0] - centre[0]), round(at[1] - centre[1]))
+        if flip:
+            canvas = canvas.transpose(Image.FLIP_LEFT_RIGHT)
+        return canvas, (canvas.width / 2, origin[1])
+
+    def _native_piece(self, name: str, scale: float, colours):
+        key = ("native", name, round(scale, 3))
+        if key not in self.sprites:
+            import pixel
+
+            image, pivot = self.sprite(name)
+            x, y, w, h = self.pieces[name]["frame"]
+            flat = self.flat.crop((x, y, x + w, y + h)).resize(image.size, Image.NEAREST)
+            size = (max(1, round(image.width / scale)), max(1, round(image.height / scale)))
+            small = pixel.region_pixels(image, flat, size)
+            fx, fy = size[0] / image.width, size[1] / image.height
+            self.sprites[key] = (small, (pivot[0] * fx, pivot[1] * fy))
+        return self.sprites[key]
+
+    def _palette(self):
+        if "palette" not in self.sprites:
+            import pixel
+
+            self.sprites["palette"] = pixel.doll_palette(self)
+        return self.sprites["palette"]
+
+
+def adjusted(manifest: dict, drawn: Drawn) -> dict:
+    """The manifest with its neck joints raised and its shoulders dropped for a bigger head."""
+    if not (drawn.neck or drawn.shoulder):
+        return manifest
+    out = json.loads(json.dumps(manifest))
+    pieces, unit = out["pieces"], out["unit"]
+    for torso, head in (
+        ("torso", "head"),
+        ("torso_front", "head_front"),
+        ("torso_back", "head_back"),
+    ):
+        _, _, _, h = pieces[head]["frame"]
+        below = h - pieces[head]["pivot"][1]
+        joints = pieces[torso]["joints"]
+        joints["neck"][1] -= (drawn.head - 1) * below * drawn.neck
+        for name in joints:
+            if name.startswith("shoulder"):
+                joints[name][1] += drawn.shoulder * unit
+    return out
+
+
+def shaded(image: Image.Image, shade: float) -> Image.Image:
+    a = np.asarray(image, dtype=np.float32).copy()
+    a[..., :3] *= shade
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
+
+
+def pixel_shaded(image: Image.Image, shade: float, colours) -> Image.Image:
+    import pixel
+
+    a = np.asarray(shaded(image, shade))
+    rgb = pixel.quantise(a[..., :3].astype(np.float32), colours)
+    return Image.fromarray(np.dstack([rgb, a[..., 3]]), "RGBA")
+
+
+def inked(image: Image.Image, pivot, width: float, drawn: Drawn):
+    """`image` with an ink outline `width` px wide round it, varying in width if `rough`."""
+    pad = math.ceil(width * (1.4 if drawn.rough else 1.0)) + 2
+    grown = Image.new("RGBA", (image.width + 2 * pad, image.height + 2 * pad))
+    grown.paste(image, (pad, pad))
+    alpha = grown.getchannel("A")
+    if drawn.rough:
+        thin = np.asarray(alpha.filter(ImageFilter.MaxFilter(2 * round(width * 0.5) + 1)), float)
+        thick = np.asarray(alpha.filter(ImageFilter.MaxFilter(2 * round(width * 1.4) + 1)), float)
+        rng = np.random.default_rng(zlib.crc32(image.tobytes()))
+        noise = rng.random((max(2, grown.height // 9), max(2, grown.width // 9)))
+        mix = (
+            np.asarray(
+                Image.fromarray((noise * 255).astype(np.uint8)).resize(grown.size, Image.BICUBIC),
+                float,
+            )
+            / 255
+        )
+        alpha = Image.fromarray(np.clip(thin + (thick - thin) * mix, 0, 255).astype(np.uint8))
+    else:
+        alpha = alpha.filter(ImageFilter.MaxFilter(2 * (pad - 2) + 1))
+    alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
+    ink = Image.new("RGBA", grown.size, (*INK, 255))
+    ink.putalpha(alpha)
+    ink.alpha_composite(grown)
+    return ink, (pivot[0] + pad, pivot[1] + pad)
 
 
 def _paste(canvas: Image.Image, image: Image.Image, pivot, at, angle: float) -> None:
@@ -400,18 +631,19 @@ def over(canvas: Image.Image, image: Image.Image, x: int, y: int) -> None:
         canvas.alpha_composite(image.crop((left, top, right, bottom)), (x + left, y + top))
 
 
-def folder(style: str) -> Path:
-    """Where a style's dolls are: `now` for the game's committed ones."""
-    return REPO / "content" / "dolls" if style == "now" else OUT / style / "dolls"
+def folder(look: str) -> Path:
+    """Where a look's dolls are: `now` for the game's committed ones."""
+    name = DRAWN[look].folder if look in DRAWN else look
+    return REPO / "content" / "dolls" if name == "now" else OUT / name / "dolls"
 
 
-def doll(style: str, who: str) -> Doll:
-    return Doll.load(folder(style), who, cartoon=style == CARTOON.name)
+def doll(look: str, who: str, **changes) -> Doll:
+    drawn = replace(DRAWN[look], **changes) if changes else DRAWN[look]
+    return Doll.load(folder(look), who, drawn)
 
 
 def main(args: list[str]) -> None:
-    style = STYLES[args[0]]
-    paint(style, args[1:] or list(WHO))
+    paint(args[0], args[1:] or list(WHO))
 
 
 if __name__ == "__main__":

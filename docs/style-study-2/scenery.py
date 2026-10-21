@@ -2,7 +2,8 @@
 `Build`, with this study's references, prompts and front plans.
 
 `python scenery.py <style> [glob …]` builds out/<style>/papercraft/ and its manifest, under the
-game's keys, so `simile.papercraft.preview` composes it unchanged.
+game's keys, so `simile.papercraft.preview` composes it unchanged. Pixel art goes to
+out/pixel/smooth/, for `pixel.py` to snap to its grid.
 """
 
 import dataclasses
@@ -21,7 +22,7 @@ from simile.papercraft import painter as painting
 from simile.papercraft.build import Build, digest
 from simile.papercraft.catalogue import NOTHING_BUT_PLANTS, SIDE_SPRITE, SPRITE, STRIP, Item
 from simile.papercraft.catalogue import Painting as Piece
-from simile.papercraft.fronts import GREY, Front, Plan, backdrop, unit_plans, units
+from simile.papercraft.fronts import GREY, Front, Plan, backdrop, draw, plan_ppm, unit_plans, units
 from simile.papercraft.layout import load_layout
 from simile.papercraft.painter import EditPainter
 from simile.papercraft.sketches import SKETCHES
@@ -33,8 +34,35 @@ PLAN = 1
 """Bump when `modernised` changes, to repaint the fronts."""
 FRONT_REFS: tuple[str, ...] = ()
 """Style images for the fronts. #309 paints them from the plan alone."""
-RESEEDS = {"cartoon/fronts/coffee_shop": 2}
-"""`<style>/<key>` to a reseed, for a front painted again after a look."""
+RESEEDS = {
+    "cartoon/fronts/coffee_shop": 2,
+    "grimy/furniture/bookshelf": 2,
+    "grimy/layers/sky": 1,
+    "flat/fronts/coffee_shop": 1,
+    "flat/furniture/bookshelf": 1,
+    "pixel/fronts/coffee_shop": 1,
+    "pixel/furniture/bookshelf": 4,
+    "pixel/layers/ground-plaza": 1,
+}
+"""`<style>/<key>` to a reseed, for a piece painted again after a look."""
+ON_GREY = {
+    "grimy/furniture/bar_counter",
+    "grimy/furniture/espresso_machine",
+    "grimy/furniture/kitchen",
+    "grimy/furniture/news_terminal",
+    "pixel/furniture/bed",
+    "pixel/furniture/kitchen",
+    "pixel/furniture/news_terminal",
+    "pixel/furniture/plant",
+    "pixel/furniture/table",
+    "flat/furniture/kitchen",
+    "flat/furniture/news_terminal",
+    "flat/furniture/plant",
+    "flat/furniture/table",
+}
+"""`<style>/<key>` painted on grey, since their white parts went with a white backdrop."""
+FRONT_PIXELS = 1.0
+"""How many times #309's pixels a metre to paint the fronts at."""
 
 DARK = (52, 56, 62)
 GLASS = (120, 150, 170)
@@ -105,9 +133,14 @@ COLOURS = {
 }
 
 
+CALLED = {"grimy": "grimy cartoon", "pixel": "pixel art", "flat": "flat illustration"}
+"""What the prompts call a style, if not its name."""
+
+
 def leads(style: Style) -> dict[str, str]:
+    called = CALLED.get(style.name, style.name)
     return {
-        "lead": f"Make a new picture in exactly the {style.name} style of the reference picture: ",
+        "lead": f"Make a new picture in exactly the {called} style of the reference picture: ",
         "redraw": (
             "Redraw image 1 as {subject}, " + style.made + " of image 2: " + style.finish + ". "
             "Keep every shape exactly where it is, with the same outlines and colours, seen "
@@ -115,7 +148,7 @@ def leads(style: Style) -> dict[str, str]:
             "shadow on the background."
         ),
         "paper": (
-            f"Make a flat texture in the colours and {style.name} style of the reference "
+            f"Make a flat texture in the colours and {called} style of the reference "
             "picture, showing none of its objects: "
         ),
     }
@@ -130,6 +163,19 @@ TEXTURE = {
     "cartoon": (
         "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with dark "
         "outlines and flat colours, even light, no objects, no edges."
+    ),
+    "grimy": (
+        "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with "
+        "scratchy dark ink lines and flat colours, a few smudges and scuffs, even light, no "
+        "objects, no edges."
+    ),
+    "pixel": (
+        "A flat pixel art texture that fills the whole frame edge to edge: {}. Big square "
+        "pixels in a few flat colours, no anti-aliasing, even light, no objects, no edges."
+    ),
+    "flat": (
+        "A flat vector texture that fills the whole frame edge to edge: {}. Bold flat colours "
+        "and clean geometric shapes, no outlines, no grain, even light, no objects, no edges."
     ),
 }
 
@@ -201,6 +247,10 @@ PAPERS = {
 SLAB = {
     "papercraft": "the cut edge of thick corrugated brown cardboard, a long band",
     "cartoon": "the cut edge of a pale grey concrete floor slab, a long band with a dark outline",
+    "grimy": "the cut edge of a scuffed grey concrete floor slab, a long band with a scratchy "
+    "dark outline",
+    "pixel": "the cut edge of a grey concrete floor slab, a long band",
+    "flat": "the cut edge of a pale grey concrete floor slab, a long plain band",
 }
 
 INTERIOR, SIGNAGE, STREET_REF = "interior", "signage", "street"
@@ -344,7 +394,8 @@ def layer(key: str, kind, subject: str, size, height: float, style: Style) -> Pi
     if key.startswith(("near-", "front-")):
         subject += NOTHING_BUT_PLANTS
     prompt = styled(leads(style)["lead"] + subject, style)
-    return Piece(f"layers/{key}", kind, prompt, size, (STREET_REF,), height)
+    reseed = RESEEDS.get(f"{style.name}/layers/{key}", 0)
+    return Piece(f"layers/{key}", kind, prompt, size, (STREET_REF,), height, reseed=reseed)
 
 
 def paper(key: str, pattern: str, style: Style, size=(768, 512), **kw) -> Piece:
@@ -363,11 +414,18 @@ def item(name: str, spec: Item, style: Style) -> Piece:
         )
     ref = INTERIOR if spec.ref == "furniture" else spec.ref
     backdrop_text = SIDE_SPRITE if spec.side else SPRITE
-    if spec.grey:
+    if spec.grey or f"{style.name}/{key}" in ON_GREY:
         backdrop_text = backdrop_text.replace("plain flat white", "plain flat medium grey")
     prompt = styled(leads(style)["lead"] + f"2D game asset: {spec.subject}. {backdrop_text}", style)
     return Piece(
-        key, "sprite", prompt, spec.size, (ref,), spec.height, reseed=spec.reseed, cut=spec.cut
+        key,
+        "sprite",
+        prompt,
+        spec.size,
+        (ref,),
+        spec.height,
+        reseed=RESEEDS.get(f"{style.name}/{key}", spec.reseed),
+        cut=spec.cut,
     )
 
 
@@ -503,13 +561,16 @@ class StudyBuild(Build):
         building = piece.building or ""
         return front(self.layout.facades[building], LOOKS[building])
 
+    front_pixels = 1.0
+    """How many times #309's pixels a metre the fronts are painted at."""
+
     def units(self, piece: Piece) -> tuple[tuple[float, Plan], ...]:
-        f = self.front(piece)
-        parts = [unit for _, unit in units(f)]
-        return tuple(
-            (x, modernised(plan, unit))
-            for (x, plan), unit in zip(unit_plans(f), parts, strict=True)
-        )
+        parts = units(self.front(piece))
+        ppm = min(plan_ppm(unit) for _, unit in parts) * self.front_pixels
+        return tuple((x, modernised(draw(unit, ppm), unit)) for x, unit in parts)
+
+    def plan(self, piece: Piece) -> Plan:
+        return draw(self.front(piece), self.units(piece)[0][1].ppm)
 
     def paint_hash(self, piece: Piece, unit: int | None = None) -> str:
         base = super().paint_hash(piece, unit)
@@ -634,12 +695,15 @@ def drift(layout) -> list[Piece]:
 def builder(style: Style) -> StudyBuild:
     """#309's `Build` reading this style's references and writing under out/<style>/."""
     pipeline.REFERENCES = painting.REFERENCES = REFS / style.name
-    return StudyBuild(
+    content = "smooth" if style.name == "pixel" else "papercraft"
+    build = StudyBuild(
         pieces(style),
-        content=OUT / style.name / "papercraft",
+        content=OUT / style.name / content,
         cache_dir=OUT / style.name / "cache",
         painter=TimedPainter,
     )
+    build.front_pixels = FRONT_PIXELS
+    return build
 
 
 def main(args: list[str]) -> None:
