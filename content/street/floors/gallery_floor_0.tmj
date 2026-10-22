@@ -509,7 +509,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -527,7 +527,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,

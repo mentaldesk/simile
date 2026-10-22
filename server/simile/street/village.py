@@ -26,7 +26,7 @@ FLOOR_ROW = STOREY - 2
 STOOL_M = 0.25
 """How much higher a stool's seat is than a chair's."""
 
-N, S, E, W = Facing.NORTH, Facing.SOUTH, Facing.EAST, Facing.WEST
+N, E, W = Facing.NORTH, Facing.EAST, Facing.WEST
 SEAT, BAR, DESK, VIEWING = SpotKind.SEAT, SpotKind.BAR, SpotKind.DESK, SpotKind.VIEWING
 FRAMES = [(3, 0), (7, 0), (11, 0), (15, 0), (19, 0), (23, 0), (27, 0)]
 FRAMES += [(5, 9), (8, 9), (11, 9), (19, 9), (22, 9), (25, 9)]
@@ -165,10 +165,18 @@ def terminal(
     street.piece("news_terminal", x, row - 1, 1, 2)
 
 
-def bench(plan: Plan, x: int, row: int, facing: Facing, *spot_ids: str) -> None:
+def bench(plan: Plan, x: int, row: int, facings: Sequence[Facing], *spot_ids: str) -> None:
+    """Two seats, each facing what its sitter looks at."""
     plan.piece("bench", x, row, 2, 1)
-    for i, spot_id in enumerate(spot_ids):
+    for i, (spot_id, facing) in enumerate(zip(spot_ids, facings, strict=True)):
         plan.spot(spot_id, SEAT, x + i, row, facing)
+
+
+def stools(plan: Plan, x: int, kind: SpotKind, facing: Facing, *spot_ids: str) -> None:
+    """A stool on each cell from `x` east, facing where the counter's served from."""
+    for i, spot_id in enumerate(spot_ids):
+        plan.piece("stool", x + i, FLOOR_ROW)
+        plan.spot(spot_id, kind, x + i, FLOOR_ROW, facing, dz=STOOL_M)
 
 
 def table(plan: Plan, name: str, x: int, old: tuple[int, int]) -> None:
@@ -253,9 +261,7 @@ def noodle_bar(street: Plan, x: int) -> list[Plan]:
     for at, old in ((4, (4, 8)), (6, (4, 11))):
         table(ground, "noodle_table", at, old)
     ground.piece("noodle_counter", 8, FLOOR_ROW, 5, 1)
-    for i, old_x in enumerate(range(3, 13, 2)):
-        ground.piece("stool", 8 + i, FLOOR_ROW)
-        ground.spot(f"seat-{old_x}-5", SEAT, 8 + i, FLOOR_ROW, N, dz=STOOL_M)
+    stools(ground, 8, SEAT, E, *(f"seat-{old_x}-5" for old_x in range(3, 13, 2)))
     ground.piece("kitchen_counter", 13, FLOOR_ROW)
     ground.piece("stove", 14, FLOOR_ROW - 1, 2, 2)
     upstairs = [(1, (8, 8)), (3, (8, 11)), (5, (12, 8)), (8, (12, 11)), (10, (16, 8))]
@@ -266,7 +272,7 @@ def noodle_bar(street: Plan, x: int) -> list[Plan]:
 
 
 def coffee_shop(street: Plan, x: int) -> list[Plan]:
-    """The counter, the queue and a standing bar downstairs, tables upstairs, and the barista's
+    """The counter, the queue and a bar with stools downstairs, tables upstairs, and the barista's
     flat on top. Behind the counter, west to east: the grinder, the espresso machine, the till
     and the hand-over, then on the customers' side the pickup and the queue, running east."""
     kind = LocationKind.COFFEE_SHOP
@@ -312,8 +318,7 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
     ground.piece("menu_board", 2, 0, 3, 1)
     ground.piece("bar_counter", 10, FLOOR_ROW, 5, 1)
     ground.piece("plant", 17, FLOOR_ROW)
-    for at, spot_id in enumerate(("bar-2-6", "bar-3-6", "bar-10-3", "bar-10-4", "bar-10-5"), 10):
-        ground.spot(spot_id, BAR, at, FLOOR_ROW, N)
+    stools(ground, 10, BAR, W, "bar-2-6", "bar-3-6", "bar-10-3", "bar-10-4", "bar-10-5")
     tables = [(1, (2, 8)), (3, (2, 11)), (5, (12, 3)), (7, (15, 3)), (9, (12, 7))]
     tables += [(12, (15, 7)), (14, (12, 10)), (16, (15, 10))]
     for at, old in tables:
@@ -367,16 +372,16 @@ def gallery(street: Plan, x: int) -> list[Plan]:
         plan.piece("lift", 15, 0, 2, FLOOR_ROW + 1)
     for number, at in ((1, 4), (2, 7), (3, 10)):
         painting(ground, number, at)
-    bench(ground, 12, FLOOR_ROW, N, "seat-8-4", "seat-9-4")
+    bench(ground, 12, FLOOR_ROW, (W, W), "seat-8-4", "seat-9-4")
     for at in (6, 9):
         ground.piece("plinth", at, FLOOR_ROW)
     for number, at in ((4, 1), (5, 3), (6, 7), (7, 9), (8, 13)):
         painting(first, number, at)
-    bench(first, 5, FLOOR_ROW, N, "seat-22-4", "seat-23-4")
-    bench(first, 11, FLOOR_ROW, N, "seat-8-13", "seat-9-13")
+    bench(first, 5, FLOOR_ROW, (W, E), "seat-22-4", "seat-23-4")
+    bench(first, 11, FLOOR_ROW, (W, E), "seat-8-13", "seat-9-13")
     for number, at in ((9, 1), (10, 3), (11, 5), (12, 9), (13, 11)):
         painting(top, number, at)
-    bench(top, 7, FLOOR_ROW, N, "seat-22-13", "seat-23-13")
+    bench(top, 7, FLOOR_ROW, (W, E), "seat-22-13", "seat-23-13")
     top.piece("plinth", 13, FLOOR_ROW)
     return building.floors
 
@@ -430,10 +435,10 @@ def square(plan: Plan) -> None:
     plan.piece("fountain", 55, GROUND - 1, 2, 2)
     for at in (47, 63):
         plan.piece("lamp", at, GROUND - 2, 1, 3)
-    bench(plan, 48, GROUND, S, "seat-27-19", "seat-28-19")
-    bench(plan, 52, GROUND, S, "seat-27-21", "seat-28-21")
-    bench(plan, 58, GROUND, S, "seat-34-19", "seat-35-19")
-    bench(plan, 61, GROUND, S, "seat-34-21", "seat-35-21")
+    bench(plan, 48, GROUND, (E, E), "seat-27-19", "seat-28-19")
+    bench(plan, 52, GROUND, (E, E), "seat-27-21", "seat-28-21")
+    bench(plan, 58, GROUND, (W, W), "seat-34-19", "seat-35-19")
+    bench(plan, 61, GROUND, (W, W), "seat-34-21", "seat-35-21")
     standing = [("standing-26-20", 47, E), ("standing-30-20", 54, E)]
     standing += [("standing-31-18", 55, N), ("standing-32-21", 56, N)]
     standing += [("standing-33-19", 57, W), ("standing-37-20", 63, W)]
@@ -461,8 +466,8 @@ def lychee_lane() -> tuple[Plan, list[Plan]]:
             entry=Tile(x=37, y=GROUND),
         )
     )
-    bench(plan, 39, GROUND, S, "seat-49-27", "seat-50-27")
-    bench(plan, 53, GROUND, S, "seat-59-18", "seat-60-18")
+    bench(plan, 39, GROUND, (E, E), "seat-49-27", "seat-50-27")
+    bench(plan, 53, GROUND, (W, W), "seat-59-18", "seat-60-18")
     plan.ladder((45, GROUND), 3)
     plan.fill(46, GROUND - 2, 3, 1)
     for at in (42, 49, 57):
