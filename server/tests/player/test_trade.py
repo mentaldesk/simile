@@ -9,7 +9,7 @@ from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE
-from simile.player.trade import Trade
+from simile.player.trade import Trade, counted
 from simile.protocol import Buyer
 from simile.schema import PLAYER_ID, Item, ItemKind, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
@@ -140,3 +140,8 @@ def test_nothing_sells_that_the_buyer_does_not_buy_or_they_do_not_carry(item: st
     assert platform.player.items == [lamp(), BUN, ODD]
     assert platform.player.money == 3
     assert platform.economy.ledger.entries == []
+
+
+def test_what_they_sold_is_said_once_a_kind() -> None:
+    assert counted([WIRE, BOARD, WIRE]) == "Copper wire ×2, Circuit board"
+    assert counted([STEEL]) == "Scrap steel"

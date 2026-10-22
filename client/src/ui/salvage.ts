@@ -12,6 +12,13 @@ export function listed(parts: readonly string[]): string {
   return parts.length < 2 ? (parts[0] ?? '') : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}`;
 }
 
+/** Each kind once, with how many: "copper wire ×2". */
+export function counted(items: readonly Item[]): string[] {
+  const counts = new Map<string, number>();
+  for (const { name } of items) counts.set(lowerFirst(name), (counts.get(lowerFirst(name)) ?? 0) + 1);
+  return [...counts].map(([name, n]) => (n > 1 ? `${name} ×${n}` : name));
+}
+
 /** What of a pile fits under their carry limit, in order, as the server takes it. */
 export function fitting(pile: Pile, player: Player): { taken: Item[]; kept: Item[] } {
   let room = player.carry_limit - player.items.reduce((load, item) => load + item.weight, 0);
@@ -31,7 +38,7 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
   const theirs = player.left?.includes(pile) ?? false;
   const { taken, kept } = fitting(pile, player);
   const money = pile.money ?? 0;
-  const names = (items: Item[]) => items.map(({ name }) => `the ${lowerFirst(name)}`);
+  const names = (items: Item[]) => counted(items).map((name) => `the ${name}`);
   if (!taken.length && !money) {
     if (theirs) return "You can't carry any more of what you left here.";
     const are = kept.length > 1 ? 'are' : 'is';
@@ -48,6 +55,7 @@ export function sellPrompt(buyer: Buyer, player: Player): string {
   const sold = player.items.filter(({ id }) => id in buyer.prices);
   if (!sold.length) return `${buyer.name} buys salvage. You have ${amount(player.money)}.`;
   const total = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
-  const what = sold.length > 2 ? 'your salvage' : `your ${listed(sold.map(({ name }) => lowerFirst(name)))}`;
+  const kinds = counted(sold);
+  const what = kinds.length > 2 ? 'your salvage' : `your ${listed(kinds)}`;
   return `Press ${E} to sell ${what} at ${lowerFirst(buyer.name)} for ${amount(total)}.`;
 }

@@ -37,8 +37,9 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 `Pickups` has what lies in the world for the player to pick up:
 
 - **Salvage** lies at the maps' `salvage` pickups (`TownMap.pickups`, from each map's `pickups`
-  layer): `PlayerConfig.salvage` says what lies at each, by pickup id, and how long after it's
-  taken another lies there, its `respawn` (24 sim hours each for now). The metro has six (S3):
+  layer). A pickup names its item in the map, as a secret does, so generated levels such as S9's
+  sewers can say what lies where. The metro's six (S3) don't, so `PlayerConfig.salvage` says what
+  lies at each, by pickup id:
 
   | Pickup | Where | Salvage | kg |
   |---|---|---|--:|
@@ -58,9 +59,10 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   `found`. Taking from a pickup records when, by its id, in `Player.taken`, which is saved, and
   whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any that don't fit of
   one of theirs stay in it.
-- **Salvage comes back; secrets don't.** A salvage pickup has another lying there once its
-  `respawn` has passed since it was last taken, so the tunnels keep paying, at the economy's
-  prices, for someone who goes back. A secret stays taken for good.
+- **Salvage comes back; secrets don't.** A salvage pickup has another lying there once
+  `PlayerConfig.respawn` (24 sim hours) has passed since it was last taken, or its own `respawn`
+  in `PlayerConfig.salvage`. So the tunnels keep paying, at the economy's prices, for someone who
+  goes back. A secret stays taken for good.
 
 ## Selling
 

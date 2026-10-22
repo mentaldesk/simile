@@ -25,8 +25,7 @@ class Found(NamedTuple):
 
 
 class Pickups:
-    """What lies in the world for the player to pick up, and picking it up: what they left, the
-    maps' secrets until they take them, and their salvage, which comes back a while after."""
+    """What lies in the world for the player to pick up, and picking it up."""
 
     def __init__(
         self,
@@ -56,8 +55,7 @@ class Pickups:
         return [pile for pickup, pile in self.lying.items() if self._there(pickup)]
 
     def pick_up(self) -> bool:
-        """Takes the money and what still fits from the nearest pile in reach. Whether they took
-        anything."""
+        """Takes the money and what fits from the nearest pile in reach. Whether they took any."""
         found = self._nearest()
         if found is None:
             return False
@@ -112,11 +110,14 @@ class Pickups:
         at = MapTile(map=pickup.map, x=pickup.x, y=pickup.y)
         if pickup.kind is PickupKind.SALVAGE:
             salvage = self.config.salvage.get(pickup.id)
-            if salvage is None:
+            item = pickup.item if pickup.item is not None else salvage.item if salvage else None
+            if item is None:
                 logger.warning("Nothing is set to lie at the salvage pickup %s", pickup.id)
                 return None
-            self.respawn[pickup.id] = timedelta(hours=salvage.respawn)
-            return Pile(at=at, items=[salvage.item])
+            own = salvage.respawn if salvage else None
+            hours = own if own is not None else self.config.respawn
+            self.respawn[pickup.id] = timedelta(hours=hours)
+            return Pile(at=at, items=[item])
         items = [] if pickup.item is None else [pickup.item]
         if not items and not pickup.money:
             logger.warning("The secret %s holds nothing", pickup.id)

@@ -89,7 +89,7 @@ def test_picking_up_salvage_takes_it_and_says_when() -> None:
 def test_salvage_lies_there_again_a_day_after_it_was_taken() -> None:
     tunnels = Tunnels()
     tunnels.stand(20)
-    assert SALVAGE["metro_salvage_1"].respawn == 24
+    assert (SALVAGE["metro_salvage_1"].respawn, DEFAULT_CONFIG.respawn) == (None, 24)
     assert tunnels.pickups.pick_up()
 
     tunnels.clock.now = NOW + DAY - timedelta(seconds=1)
@@ -257,6 +257,24 @@ def test_salvage_nothing_is_set_to_lie_at_is_left_out() -> None:
 
     assert "metro_salvage_9" not in pickups.lying
     assert len(pickups.piles()) == len(LYING)
+
+
+def test_salvage_the_map_names_lies_there_and_comes_back_after_the_usual_while() -> None:
+    sewer = (
+        Pickup("sewer_salvage_1", PickupKind.SALVAGE, "kapok_walk", 10, 15, item=SERVO),
+        Pickup("metro_salvage_2", PickupKind.SALVAGE, "kapok_walk", 30, 15, item=SERVO),
+    )
+    maps = WITH_PICKUPS | {"kapok_walk": replace(MAPS["kapok_walk"], pickups=sewer)}
+    config = DEFAULT_CONFIG.model_copy(update={"respawn": 6.0})
+    tunnels = Tunnels(maps=maps)
+    pickups = Pickups(tunnels.player, tunnels.movement, tunnels.economy, tunnels.clock, config)
+
+    assert pickups.piles() == [at(10, SERVO), at(30, SERVO)]
+    tunnels.stand(10)
+    assert pickups.pick_up()
+    assert tunnels.player.items == [lamp(), SERVO]
+    tunnels.clock.now = NOW + timedelta(hours=6)
+    assert at(10, SERVO) in pickups.piles()
 
 
 def piles(*at: tuple[str, int]) -> list[Pile]:

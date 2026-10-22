@@ -371,3 +371,19 @@ def test_the_player_must_join_before_their_money_moves() -> None:
     with pytest.raises(RuntimeError, match="hasn't joined"):
         economy.sell("scrap_stall", WIRE)
     assert economy.ledger.entries == []
+
+
+@pytest.mark.parametrize("payee", ["ana", OUTSIDE])
+def test_the_player_cannot_pay_more_than_they_hold(payee: str) -> None:
+    economy = Town([resident("ana")]).economy
+    economy.player = Player(money=9.5)
+
+    with pytest.raises(ValueError, match="can't pay 10"):
+        economy.pay(PLAYER, payee, 10, Kind.PURCHASE, "noodle_bar")
+
+    assert economy.player.money == 9.5
+    assert economy.money == {"ana": 200.0}
+    assert economy.ledger.entries == []
+    economy.pay(PLAYER, payee, 9.5, Kind.PURCHASE, "noodle_bar")
+    assert economy.player.money == 0
+    assert economy.ledger.net(PLAYER) == -9.5

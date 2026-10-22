@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Buyer, Item, Pile, Player } from '../net';
-import { fitting, listed, pickUpPrompt, sellPrompt } from './salvage';
+import { counted, fitting, listed, pickUpPrompt, sellPrompt } from './salvage';
 
 const salvage = (id: string, name: string, weight: number): Item => ({ id, kind: 'salvage', name, weight, charge: null, on: null });
 const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 1, on: false };
@@ -29,6 +29,13 @@ describe('listed', () => {
   });
 });
 
+describe('counted', () => {
+  it('says each kind once, with how many', () => {
+    expect(counted([WIRE, BOARD, WIRE])).toEqual(['copper wire ×2', 'circuit board']);
+    expect(counted([])).toEqual([]);
+  });
+});
+
 describe('fitting', () => {
   it('takes each item that still fits, in order, as the server does', () => {
     const full = player([LAMP, SERVO, SERVO, WIRE]);
@@ -47,7 +54,7 @@ describe('pickUpPrompt', () => {
     const laden = player([LAMP, SERVO, SERVO, WIRE]);
     expect(pickUpPrompt(pile([SERVO, BOARD]), laden)).toBe("Press E to pick up the circuit board. The servo motor won't fit.");
     expect(pickUpPrompt(pile([SERVO]), laden)).toBe('The servo motor is too heavy to carry with what you have.');
-    expect(pickUpPrompt(pile([SERVO, SERVO]), laden)).toBe('The servo motor and the servo motor are too heavy to carry with what you have.');
+    expect(pickUpPrompt(pile([SERVO, SERVO]), laden)).toBe('The servo motor ×2 are too heavy to carry with what you have.');
     expect(pickUpPrompt(pile([SERVO], 40), laden)).toBe("Press E to pick up 40 in cash. The servo motor won't fit.");
   });
 
@@ -66,6 +73,10 @@ describe('sellPrompt', () => {
     expect(sellPrompt(TRADER, player([LAMP, WIRE, RATION]))).toBe("Press E to sell your copper wire at the scrap trader's stall for 6.");
     expect(sellPrompt(TRADER, player([WIRE, BOARD]))).toBe("Press E to sell your copper wire and circuit board at the scrap trader's stall for 14.");
     expect(sellPrompt(TRADER, player([WIRE, BOARD, SERVO, WIRE]))).toBe("Press E to sell your salvage at the scrap trader's stall for 38.");
+    expect(sellPrompt(TRADER, player([WIRE, BOARD, WIRE]))).toBe(
+      "Press E to sell your copper wire ×2 and circuit board at the scrap trader's stall for 20.",
+    );
+    expect(sellPrompt(TRADER, player([WIRE, WIRE]))).toBe("Press E to sell your copper wire ×2 at the scrap trader's stall for 12.");
   });
 
   it('with nothing to sell, says the buyer buys salvage and what they have', () => {

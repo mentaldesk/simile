@@ -38,10 +38,7 @@ class Turn:
 
 
 class Economy:
-    """Every resident's money, and the ledger every movement of it goes through: wages,
-    pensions, rent, groceries, and paying at the shops. The player's money goes through it too,
-    once they've joined. Also what there is to eat: which shops are staffed, their batches, and
-    every home's fridge. Tick it on the sim loop."""
+    """Everyone's money, its ledger, and what there is to eat. Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -188,10 +185,11 @@ class Economy:
             )
 
     def pay(self, payer: Id, payee: Id, amount: float, kind: Kind, place: Id | None = None) -> None:
-        """Move money through the ledger. Residents can go below nothing, as for rent they can't
-        cover, but the player can't: check they can pay first."""
+        """Move money through the ledger. Residents can go below nothing, but not the player."""
         if amount <= 0:
             return
+        if payer == PLAYER and amount > self._player().money + 1e-9:
+            raise ValueError(f"the player can't pay {amount}: they have {self._player().money}")
         entry = Entry(
             at=self.clock.now, kind=kind, amount=amount, payer=payer, payee=payee, place=place
         )
@@ -204,8 +202,7 @@ class Economy:
         self.ledger.record(entry)
 
     def offer(self, place: Id, items: Iterable[Item]) -> dict[Id, float] | None:
-        """What a buyer at `place` pays for one of each of `items` it buys, by id, or None if
-        nobody buys there."""
+        """What the buyer at `place` pays for each of `items` it buys, by id, or None."""
         if place not in self.config.buyers:
             return None
         prices = self.config.salvage

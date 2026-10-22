@@ -1,9 +1,10 @@
 import logging
+from collections import Counter
 from typing import TYPE_CHECKING
 
 from simile.player.where import here, location
 from simile.protocol import Buyer
-from simile.schema import Id, Player
+from simile.schema import Id, Item, Player
 from simile.sim import Clock
 from simile.world.movement import Movement, inside
 
@@ -39,8 +40,7 @@ class Trade:
         return None
 
     def sell(self, item: Id | None) -> bool:
-        """Sells one carried item by id, or with None everything the buyer here buys. Whether
-        they sold anything."""
+        """Sells one carried item by id, or with None all the buyer buys. Whether they sold any."""
         buyer = self.buyer()
         if buyer is None:
             return False
@@ -54,10 +54,11 @@ class Trade:
         if len(kept) == len(self.player.items):
             return False
         self.player.items = kept
-        logger.info(
-            "%s  The player sells %s to %s",
-            self.clock,
-            ", ".join(thing.name for thing in sold),
-            buyer.name,
-        )
+        logger.info("%s  The player sells %s to %s", self.clock, counted(sold), buyer.name)
         return True
+
+
+def counted(items: list[Item]) -> str:
+    """Each kind once, with how many: "Copper wire ×2, Circuit board"."""
+    counts = Counter(item.name for item in items)
+    return ", ".join(name if n == 1 else f"{name} ×{n}" for name, n in counts.items())

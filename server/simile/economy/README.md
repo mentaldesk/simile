@@ -48,7 +48,8 @@ to the residents' books they're outside the village, and what they pay a keeper 
 movement of their money is in the ledger, so `ledger.net(PLAYER)` is always what they've gained
 since it opened. Their money is `Player.money` (`simile.player`), which joins the economy as
 `Economy.player` once the server is running, and `pay` moves it for `PLAYER`. Unlike a resident's,
-it never goes below nothing, so their side checks they can pay first.
+it never goes below nothing: `pay` raises `ValueError` and records nothing for more than they hold,
+so check they can pay first.
 
 - **Meals.** `buy(PLAYER, shop, price)`, as for a resident: the keeper takes it and pays the
   supplies.

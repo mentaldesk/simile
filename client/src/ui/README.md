@@ -137,10 +137,11 @@ focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input 
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's), a mural, a pile, or a buyer they can sell to. The world scene takes a door
-on E only when none is, so one press never does two things, and then up takes the door. With
-neither, E opens the chat to the ringed NPC, as Enter does, and their name tag says so: "E: talk to
-Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
+a terminal, the counter, a painting (the gallery panel's), a mural, a pile, or a buyer they can sell
+to. The world scene takes a door on E only when none is, so one press never does two things, and
+then up takes the door. With neither, E opens the chat to the ringed NPC, as Enter does, and their
+name tag says so: "E: talk to Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the
+lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
 takes from where the player stands names the keys and what it does: "E: go in", "↑: upstairs",
 "↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). With
 something in reach the door's tag says "↑: go in". The world scene words them and says where they go

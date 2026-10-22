@@ -4,13 +4,16 @@ from simile.schema import Id, Item, ItemKind
 
 
 class Salvage(BaseModel):
-    """What lies at a salvage pickup, and how long after it's taken another lies there."""
+    """What lies at a salvage pickup whose map doesn't say, and how soon another lies there."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     item: Item
-    respawn: float = Field(
-        default=24.0, gt=0, description="Sim hours after it's taken that another lies there."
+    respawn: float | None = Field(
+        default=None,
+        gt=0,
+        description="Sim hours after it's taken that another lies there, in place of "
+        "`PlayerConfig.respawn`.",
     )
 
 
@@ -59,8 +62,14 @@ class PlayerConfig(BaseModel):
     )
     salvage: dict[Id, Salvage] = Field(
         default=SALVAGE,
-        description="What lies at each of the maps' salvage pickups, by pickup id, and how long "
-        "after they take it another lies there. The economy prices it by item id.",
+        description="What lies at the maps' salvage pickups that don't name an item, as the "
+        "metro's don't, by pickup id. The economy prices salvage by item id.",
+    )
+    respawn: float = Field(
+        default=24.0,
+        gt=0,
+        description="Sim hours after salvage is taken that another lies at its pickup, unless "
+        "`salvage` gives the pickup its own.",
     )
     step: float = Field(
         default=0.01,

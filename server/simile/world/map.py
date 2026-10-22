@@ -114,8 +114,7 @@ class PickupKind(StrEnum):
 
 @dataclass(frozen=True)
 class Pickup:
-    """A standing cell where something lies for the player to pick up: `salvage`, which the
-    player module says what it is, or a `secret` holding `money`, an `item` or both."""
+    """A cell where the player can pick up `salvage` or a `secret`: its `money`, `item` or both."""
 
     id: str
     kind: PickupKind
@@ -195,9 +194,8 @@ class TownMap:
 
 def load_map(path: Path) -> TownMap:
     """Read a Tiled map: walls from its collision layer, climbable cells from its climbable
-    layer, places, mural walls, doors, interactables, spots and pickups from its objects, and its
-    properties. Its id is the file's name. Raises ValueError if two of its links share an end
-    tile."""
+    layer, places, mural walls, doors, interactables and pickups from its objects, and its
+    properties. Its id is the file's name. Raises ValueError if two links share an end tile."""
     data = json.loads(path.read_text())
     map_id, width, height, size = path.stem, data["width"], data["height"], data["tilewidth"]
     layers = {layer["name"]: layer for layer in data["layers"]}

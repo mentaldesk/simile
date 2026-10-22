@@ -45,8 +45,7 @@ class Entry(Model):
 
 
 class Ledger:
-    """Every movement of money since the opening balances: the residents', whose balances it
-    opens on, and the player's."""
+    """Every movement of money since the opening balances."""
 
     def __init__(self, opening: Mapping[Id, float], entries: Iterable[Entry] = ()) -> None:
         self.opening = dict(opening)
