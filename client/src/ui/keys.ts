@@ -1,13 +1,15 @@
 import type { Reachable, WayPrompt } from '../world/reach';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
-import { EAT_KEY, NEWS_KEY } from './tuning';
+import type { JournalPanel } from './journal-panel';
+import { EAT_KEY, JOURNAL_KEY, NEWS_KEY } from './tuning';
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
   use: () => void;
   eat: () => void;
   help: Pick<HelpPanel, 'toggle' | 'close'>;
+  journal: Pick<JournalPanel, 'toggle' | 'close'>;
 };
 
 export type EUse = { kind: 'reach'; reachable: Reachable } | { kind: 'door' } | { kind: 'talk'; npcId: string };
@@ -26,7 +28,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, use, eat, help }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, use, eat, help, journal }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -37,8 +39,10 @@ export function onGameKey({ chat, use, eat, help }: GameKeys): (event: KeyboardE
     } else if (key === 'Escape') {
       chat.clear();
       help.close();
+      journal.close();
     } else if (key === HELP_KEY && !event.repeat) {
       event.preventDefault();
+      journal.close();
       help.toggle();
     } else if (key === 'Tab') {
       event.preventDefault();
@@ -49,6 +53,10 @@ export function onGameKey({ chat, use, eat, help }: GameKeys): (event: KeyboardE
     } else if (pressed(event, EAT_KEY)) {
       event.preventDefault();
       eat();
+    } else if (pressed(event, JOURNAL_KEY)) {
+      event.preventDefault();
+      help.close();
+      journal.toggle();
     }
   };
 }

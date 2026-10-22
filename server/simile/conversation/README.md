@@ -263,6 +263,10 @@ tells the model what the lie is (`temptation.py`).
   and a scene's direction has it in the third person. Without a roll nothing is added. The lies
   stay within *Rough edges*' bounds: about the resident, what they did and what they'll do. Each
   direction ends "Use that cover story and nothing else: no days, times, places or other people."
+- **Who voices them.** Once a resident is set up to lie to the player, about the incident or
+  anything above, their replies use `PlayerConfig.suspect_model`. It's Haiku 4.5, like everyone
+  else's, unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b` (see S14 in the
+  [evaluation README](../evaluation/README.md#who-voices-the-suspects)). Scenes keep B2's model.
 - **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
   was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
   lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a

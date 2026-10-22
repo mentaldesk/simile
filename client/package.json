@@ -13,7 +13,8 @@
     "lint": "eslint . && tsc"
   },
   "dependencies": {
-    "phaser": "^3.90.0"
+    "phaser": "^3.90.0",
+    "smol-toml": "^1.9.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

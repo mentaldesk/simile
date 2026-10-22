@@ -1,0 +1,111 @@
+.journal-hint {
+  position: absolute;
+  right: 4px;
+  top: 40px;
+  opacity: 0.75;
+  text-shadow: 0 1px 0 #000;
+}
+
+.journal-hint-new {
+  opacity: 1;
+  color: #e8b04a;
+}
+
+.journal-hint kbd {
+  min-width: 6px;
+  padding: 0 2px;
+  border: 1px solid currentcolor;
+  border-radius: 2px;
+  font: inherit;
+  font-weight: bold;
+  text-align: center;
+}
+
+.journal {
+  position: absolute;
+  right: 4px;
+  top: 16px;
+  width: 300px;
+  max-height: calc(100% - 40px);
+  display: flex;
+  flex-direction: column;
+  padding: 3px 6px 4px;
+  border: 1px solid #c9a46a;
+  border-radius: 3px;
+  background: rgb(17 17 17 / 92%);
+  pointer-events: auto;
+}
+
+.journal header {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #555;
+  color: #c9a46a;
+}
+
+.journal header span {
+  opacity: 0.7;
+  font-size: 7px;
+}
+
+.journal > div {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.journal-leads {
+  margin: 4px 0 2px;
+  padding: 2px 4px;
+  border-left: 2px solid #7fc8a9;
+}
+
+.journal-leads b {
+  color: #7fc8a9;
+}
+
+.journal-leads ul {
+  margin: 1px 0 0;
+  padding-left: 9px;
+}
+
+.journal-empty {
+  margin: 4px 0 0;
+  opacity: 0.7;
+}
+
+.journal-entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journal-entries li {
+  margin-top: 4px;
+  padding: 0 4px;
+  border-left: 2px solid #555;
+}
+
+.journal-entries p {
+  margin: 0;
+}
+
+.journal-entries small {
+  font-size: 7px;
+  color: #b9b2a0;
+}
+
+.journal-entries li.journal-flushed {
+  border-left-color: #e0605a;
+}
+
+.journal-flush {
+  margin-left: 4px;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #e0605a;
+  color: #111;
+  font-weight: bold;
+}
