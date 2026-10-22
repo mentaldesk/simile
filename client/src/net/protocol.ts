@@ -352,8 +352,9 @@ export interface Painting {
  * On a side-view map the position can be mid-air, jumping or falling. The server keeps one in
  * open air over somewhere to land if it's within the farthest, highest jump the player can make
  * from somewhere to stand (a run jump with Space held, taking off as late as coyote time
- * allows), or if it's lower than the last position it kept on that map, as in a fall from any
- * height. It ignores a position nobody could be at.
+ * allows), or if it's lower than the last position it kept on that map and within that jump's
+ * reach of it along the row, as in a fall from any height. It ignores a position nobody could
+ * be at.
  */
 export interface PlayerMoveMessage {
   type: 'player_move';
