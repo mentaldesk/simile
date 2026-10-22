@@ -160,7 +160,7 @@ def test_overhears_npcs_only_within_earshot(app: Starlette, qwen: FakeSynthesise
         talk = client.portal.call(conversations_of(app).start, "kofi", "priya")
         near = next_spoken(talk.id)
         wait_for(lambda: any(c.last for c in sent if isinstance(c, AudioChunk)))
-        move_player(kofi.x + 100, kofi.y, kofi.map)
+        move_player(20, 15, "high_street")
         far = next_spoken(talk.id)
 
     assert near.voiced

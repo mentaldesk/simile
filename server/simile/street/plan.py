@@ -11,6 +11,7 @@ from simile.world.map import (
     INTERACTABLES_LAYER,
     LOCATIONS_LAYER,
     MURALS_LAYER,
+    SOLID_LAYER,
     SPOTS_LAYER,
     MapKind,
     MuralWall,
@@ -21,7 +22,6 @@ from simile.world.map import (
 type Cell = tuple[int, int]
 
 TILE_SIZE = 16
-SOLID_LAYER = "solid"
 BUILDINGS_LAYER = "buildings"
 FURNITURE_LAYER = "furniture"
 MARKERS = ("blocked", "solid", "stairs", "ladder")

@@ -13,7 +13,7 @@ import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { DEPTH } from './depths';
-import { readControls, type Held } from './input';
+import { readControls, RunToggle, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt } from './light';
 import type { Link, Village } from './maps';
@@ -31,7 +31,7 @@ export const SIDE_SCENE = 'side-world';
 
 /** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
-const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D,SHIFT';
+const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D,SPACE';
 /** Above the end of a way, where its prompt sits: under a room's ceiling, or over a street's signposts. */
 const PROMPT_M = { floor: 2.75, street: 3.35 };
 /** Half a sim minute. */
@@ -41,8 +41,12 @@ const CONTACT_M = 0.9;
 const BUBBLE_GAP_M = 0.15;
 /** Room for the target's name, so a speech bubble sits over it. */
 const NAME_M = 0.45;
+/** Metres up at which a jumping figure's shadow on the ground has faded away. */
+const SHADOW_FADE_M = 6;
 
-type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D' | 'SHIFT', Phaser.Input.Keyboard.Key>;
+const contactAlpha = (up: number) => Math.max(0, 1 - up / SHADOW_FADE_M);
+
+type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
 type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x: number; feet: number; shown: boolean };
 
 const harness = import.meta.env.DEV && new URLSearchParams(globalThis.location?.search ?? '').get('harness') === 'side';
@@ -67,6 +71,8 @@ export class SideScene extends Phaser.Scene {
   private readonly sent = { x: NaN, y: NaN, map: '' };
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+  private readonly running = new RunToggle();
+  private jumped = false;
   private passing = false;
   private worksChanged = true;
   private snap = true;
@@ -86,6 +92,9 @@ export class SideScene extends Phaser.Scene {
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
+    keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
+    keyboard.on('keydown', (event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat));
+    keyboard.on('keyup', (event: KeyboardEvent) => this.running.keyUp(event.key));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
     for (const key of ['DOWN', 'S']) keyboard.on(`keydown-${key}`, () => (this.tapped.down = true));
     const cleanups = [
@@ -187,9 +196,11 @@ export class SideScene extends Phaser.Scene {
     held.down = keys.DOWN.isDown || keys.S.isDown || tapped.down;
     held.left = keys.LEFT.isDown || keys.A.isDown;
     held.right = keys.RIGHT.isDown || keys.D.isDown;
-    held.run = keys.SHIFT.isDown;
+    held.run = this.running.on;
+    held.jump = this.jumped;
+    held.hold = keys.SPACE.isDown;
     readControls(held, this.used, player.mapPosition, this.controls);
-    this.used = tapped.up = tapped.down = false;
+    this.used = this.jumped = tapped.up = tapped.down = false;
     return this.controls;
   }
 
@@ -211,12 +222,12 @@ export class SideScene extends Phaser.Scene {
     const camera = this.cameras.main;
     const zoom = sideZoom(camera);
     if (zoom !== camera.zoom) camera.setZoom(zoom);
-    const { at } = this.player!;
+    const { steady } = this.player!;
     const { size, feet } = this;
     size.width = camera.width / zoom;
     size.height = camera.height / zoom;
-    feet.x = xOf(at.x);
-    feet.y = feetOf(at.y);
+    feet.x = xOf(steady.x);
+    feet.y = feetOf(steady.y);
     viewCentre(feet, street.feet, street.width, size, this.target);
     if (this.snap) {
       this.centre.x = this.target.x;
@@ -279,7 +290,7 @@ export class SideScene extends Phaser.Scene {
     }
     const { player } = this;
     if (player) {
-      this.drawFigure(PLAYER_ID, player.drawnMap, player.at, player.drawn, village, street);
+      this.drawFigure(PLAYER_ID, player.drawnMap, player.at, player.drawn, village, street, player.ground);
       const crossing = player.riding;
       if (crossing) this.ride(crossing, player.at, street, player.drawnMap);
     }
@@ -311,6 +322,7 @@ export class SideScene extends Phaser.Scene {
     drawn: Drawn,
     village: Village,
     street: StreetView,
+    ground = at.y,
   ): void {
     const figure = this.figure(id);
     if (!figure) return;
@@ -331,7 +343,8 @@ export class SideScene extends Phaser.Scene {
     figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
     const seat = map ? seatHeight(map, at.x - map.offset.x, at.y - map.offset.y) : 0;
     figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat);
-    figure.contact.setPosition(figure.x, figure.feet);
+    const below = feetOf(ground);
+    figure.contact.setPosition(figure.x, below).setAlpha(contactAlpha((below - figure.feet) / PPM));
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
   }
 

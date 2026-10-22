@@ -17,6 +17,7 @@ def side_view(*rows: str, map_id: str = "street") -> TownMap:
 
     blocked = tuple(tuple(not walkable(x, y) for x in range(width)) for y in range(height))
     climbable = tuple(tuple(CLIMBABLE.get(cell) for cell in row) for row in rows)
+    solids = tuple(tuple(cell == "#" for cell in row) for row in rows)
     return TownMap(
         map_id,
         width,
@@ -25,4 +26,5 @@ def side_view(*rows: str, map_id: str = "street") -> TownMap:
         (),
         kind=MapKind.STREET,
         climbable=climbable,
+        solids=solids,
     )

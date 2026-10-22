@@ -12,9 +12,11 @@ cd server && uv run simile street
 
 Output is deterministic, and `tests/street` fails if a file drifts from the builder.
 
-- `<street>.tmj`: the four streets.
+- `<street>.tmj`: the five streets.
 - `floors/<building>_floor_<n>.tmj`: each floor of each building, `0` for the ground floor.
 - `markers.png`: the tiny tileset the tile layers use, so Tiled shows them.
+- `jump.json`: the player's jump (#331), from `server/simile/street/jump.py`. The client plays it
+  and the server checks the player's positions and paths by it (below).
 - [`preview.png`](preview.png): every street with its buildings' floors drawn in place. Ground is
   brown, walls and floors grey, cells you can stand on cream, stairs yellow, ladders orange. Green
   squares are doors, yellow and orange lines stairs and ladders between floors, pink lines the
@@ -48,7 +50,7 @@ Every map has every layer, bottom to top:
 
 | Layer | |
 |---|---|
-| `solid` | Tiles. The `solid` marker on ground, floors, walls and ledges. Nothing reads it yet: it keeps open air known for when jumping comes. |
+| `solid` | Tiles. The `solid` marker on ground, floors, walls, ledges, flat roofs and bridges: what a jump lands on and bumps into. `TownMap.solid(x, y)` reads it. |
 | `climbable` | Tiles. The `stairs` or `ladder` marker on each climbable cell. Its kind is the marker tile's `name` property, a `DoorKind`. |
 | `collision` | Tiles, hidden. The `blocked` marker on every cell that isn't walkable. |
 | `buildings` | Objects, on streets. One rectangle per building front, named by its building: a location id, or `corner_shop`, `tower` or `garden_flats` for the three with no way in. It covers the building's storeys down to the street's standing row. Properties: `label`, `storeys`, and `interior`, whether it has floor maps. |
@@ -59,11 +61,13 @@ Every map has every layer, bottom to top:
 | `interactables` | Objects, as today, on floors. |
 | `spots` | Objects, as today. |
 
-The furniture names are `bar_counter`, `bed`, `bench`, `bookshelf`, `bush`, `cafe_table`,
-`counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`, `lamp`,
-`laser_cutter`, `lift`, `loom`, `menu_board`, `news_terminal`, `noodle_counter`, `noodle_table`,
-`pegboard`, `plant`, `plinth`, `printer_3d`, `sewing_machine`, `shelf`, `sofa`, `stool`, `stove`,
-`table`, `tree`, `wardrobe` and `workbench`. A table is drawn with a chair either side.
+The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
+`cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
+`lamp`, `laser_cutter`, `lift`, `loom`, `menu_board`, `news_terminal`, `noodle_counter`,
+`noodle_table`, `palm_tree`, `pegboard`, `plant`, `plinth`, `printer_3d`, `rope_bridge`,
+`sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`.
+A table is drawn with a chair either side. A `rope_bridge` stands on the solid row under it, its
+deck.
 
 ## Map properties
 
@@ -110,16 +114,17 @@ As in [`content/map/`](../map/README.md), with these additions.
 
 ## The village
 
-Four streets. Kapok Walk and Lychee Lane lead off the square on the High Street, and steps go
-down to Banyan Row off its east end. The farthest two places are about 70 s' walk apart, against
-today's 47 s.
+Five streets. Kapok Walk and Lychee Lane lead off the square on the High Street, and steps go
+down to Banyan Row off its east end. The Rooftops are behind Kapok Walk, through a lane at its
+west end. The farthest two places are about 70 s' walk apart, against today's 47 s.
 
 | Street | Width | West to east (x) |
 |---|--:|---|
 | `high_street` High Street | 84 | `maker_space` (2–17), `corner_shop` (19–24, a mural), `coffee_shop` (25–44, a mural) with `cafe_terrace` in front, `square` (45–64) with the fountain at 55–56, `terminal_1` at 60 and the doors to Kapok Walk (46), Lychee Lane (50) and Banyan Row (64), `noodle_bar` (65–81) |
 | `lychee_lane` Lychee Lane | 68 | `house_1` (2–8), `house_2` (9–15), the door to the High Street (17), `house_3` (19–25), `house_4` (26–32), `terminal_2` at the park gate (34), `park` (36–59) with a lookout up a ladder at 45, `tower` (61–66, a mural) |
-| `kapok_walk` Kapok Walk | 34 | a garden (1–8), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
+| `kapok_walk` Kapok Walk | 34 | a garden (1–8) with the lane to the Rooftops (2), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
 | `banyan_row` Banyan Row | 68 | `house_8` (2–8), `house_9` (9–15), `house_10` (16–22, a mural), the door to the High Street (24), `gallery` (26–43), `garden_flats` (45–50, a mural), then two stairs down from 53 to the river's promenade, row 18, with `terminal_3` at 60 |
+| `rooftops` The Rooftops | 60 | The door to Kapok Walk (1) on a back lane, a ladder (3) up onto the `bakery`'s roof (4–9, row 12), a gap, walkways up the alley (11–14, rows 12 and 10), the roofs of the `print_works` (15–21), the `tea_house` (24–30) and the `laundry` (34–39), all row 8, with gaps of two and three cells between them, a `palm_tree` in the second, a `rope_bridge` (40–47) to a balcony (48–49), and a ladder (49) up to the `clock_house`'s roof (50–56, row 4) |
 
 | Building | Street | Width | Floors | Links between floors |
 |---|---|--:|---|---|
@@ -151,6 +156,12 @@ today's 47 s.
 - **The Gallery**: the mat (2), the entry (3), paintings 1 to 3 and a bench on the ground floor,
   4 to 8 and two benches on the first, 9 to 13 and a bench on the second. The lift is at the east
   end: on each floor, x 15 and 16 go to the other two floors.
+- **The Rooftops** are for jumping, so only the player gets all over them (`JUMPING` in
+  `simile.street.village`). Its five buildings have no way in, and a flat roof along their top row
+  to stand on. It has no locations or spots, so no resident has anywhere to go there, and its only
+  door leads back to Kapok Walk, so no resident's way anywhere else passes through it. A fall
+  anywhere lands in the lane, which runs under everything back to the door and the first
+  ladder.
 
 ## Ids
 
@@ -185,8 +196,27 @@ follow it:
 
 A ladder is climbed from the standing cell under it and stepped off sideways at the top, onto the
 ledge beside its top rung. Stairs run between the standing cells diagonally beyond each end. A
-resident can stop on any cell of a run. A move comes with its cost, so a jump of a set reach can
-join the rule later.
+resident can stop on any cell of a run. A move comes with its cost.
+
+**Jumps are the player's alone.** `moves(town, cell, jumps=True)`, and `jumps=True` on
+`simile.world.paths`' `steps`, `nearby` and `find_route`, add a run jump from a standing cell to
+another up to `cells` (4) along the row and `rows` (2) up, or down any way, through open air: up
+from where it takes off, along over the higher end with room for the head, and down onto where it
+lands. Residents never jump, so their paths are as they were.
+
+**The player's position.** `simile.street.moves.possible(town, x, y, last)` is the server's check
+on a `player_move` (`docs/protocol.md`): somewhere to stand or climb, or mid-step, or in open air
+over somewhere to land, either within the farthest jump from somewhere to stand, or lower than
+`last`, the last position kept on that map, and within that jump's reach of it along the row.
+
+`jump.json` is the jump both sides share. `rise` is how many tiles the feet rise with Space held,
+in `rise_seconds`; `fall_gravity` how much stronger gravity is falling or once Space is let go;
+`cut` how much of its speed up a jump keeps when Space is let go early; `coyote_seconds` and
+`buffer_seconds` the grace after walking off a ledge and before landing; `foot` and `body` the
+player's half-width and height; `cells` and `rows` the jump in the neighbour rule; and `reach` the
+farthest jump's reach in tiles from the middle of the cell it takes off from: a run jump with
+Space held, taking off as late as coyote time allows, at the client's longest step
+(`frame_seconds`).
 
 ## Loading them
 
@@ -196,9 +226,11 @@ join the rule later.
   and then every floor, by map id. `load_maps(ISO_DIR)` still reads today's `content/map/` until
   #315.
 - `TownMap` has, after its old fields, `side_view`, `kind` (`MapKind.STREET` or `FLOOR`, `None` on
-  today's maps), `building` and `floor` (on floors), and `climbable`, rows of `DoorKind` or `None`
-  (empty on today's maps). `climb(x, y)` is the climbable kind on a cell and `standing(x, y)`
-  whether it's a standing cell.
+  today's maps), `building` and `floor` (on floors), `climbable`, rows of `DoorKind` or `None`
+  (empty on today's maps), and `solids`, rows of the `solid` layer (empty without one).
+  `climb(x, y)` is the climbable kind on a cell, `standing(x, y)` whether it's a standing cell, and
+  `solid(x, y)` whether it's solid: off the map always, and on a map without the layer anywhere
+  nobody can walk.
 - `with_every_location(maps)` carries every map's locations, doors and mural walls. Without a
   village it's on the first street, `banyan_row`.
 - `movement.inside(location, where)` counts a location's floors, and a walk to a location looks for

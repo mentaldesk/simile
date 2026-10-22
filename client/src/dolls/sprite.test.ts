@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Facing } from '../net/protocol';
 import { dolls } from './assets';
-import type { FigureManifest, SpritePose } from './manifest';
+import type { FigureManifest, PaintedPose, SpritePose } from './manifest';
 import type { DollPose, PoseOptions } from './rig';
-import { placed, shown, spritePose, WALK_BOB } from './sprite';
+import { LANDING_SQUASH, leap, placed, shown, spritePose, WALK_BOB } from './sprite';
 
 const frame = (x: number, feet: [number, number]) => ({ frame: [x, 0, 60, 170] as [number, number, number, number], feet });
 
@@ -162,10 +162,53 @@ describe('the committed figures', () => {
 
   it('play every pose from frames they have', () => {
     for (const doll of Object.values(dolls)) {
-      for (const pose of ['stand', 'walk', 'run', 'sit', 'climb'] as SpritePose[]) {
+      for (const pose of ['stand', 'walk', 'run', 'sit', 'climb'] as PaintedPose[]) {
         expect(doll.poses[pose].length, `${doll.id} ${pose}`).toBeGreaterThan(0);
         for (const name of doll.poses[pose]) expect(doll.frames[name], `${doll.id} ${name}`).toBeDefined();
       }
     }
+  });
+});
+
+describe('a jump and a landing', () => {
+  const leaping: FigureManifest = { ...figure, frames: { ...figure.frames, run_pass: frame(248, [28, 196]) } };
+  const bottom = (doll: FigureManifest, name: string) => {
+    const { originY, y } = placed(doll, shown(doll, 'jumping', 'east'));
+    return y + (1 - originY) * doll.frames[name].frame[3];
+  };
+
+  it('leaps in the run frame furthest off the ground, its lowest point on the ground line', () => {
+    expect(spritePose('jumping', 'east')).toBe('jump');
+    expect(leap(leaping)).toBe('run_pass');
+    expect(shown(leaping, 'jumping', 'west', 0.7)).toMatchObject({ pose: 'jump', frame: 'run_pass', flip: true });
+    expect(bottom(leaping, 'run_pass')).toBeCloseTo(0, 6);
+  });
+
+  it("leaps with every committed figure's run frame furthest in the air", () => {
+    const off = (doll: FigureManifest, name: string) => doll.frames[name].feet[1] - doll.frames[name].frame[3];
+    for (const doll of Object.values(dolls)) {
+      const name = shown(doll, 'jumping', 'east').frame;
+      expect(doll.poses.run, doll.id).toContain(name);
+      expect(off(doll, name), doll.id).toBe(Math.max(...doll.poses.run.map((run) => off(doll, run))));
+      expect(bottom(doll, name), doll.id).toBeCloseTo(0, 6);
+    }
+  });
+
+  it('lands standing, squashed by LANDING_SQUASH and springing back by the end', () => {
+    expect(spritePose('landing', 'east')).toBe('land');
+    expect(shown(figure, 'landing', 'east', 0)).toMatchObject({ pose: 'land', frame: 'stand', squash: LANDING_SQUASH });
+    expect(shown(figure, 'landing', 'east', 0.5).squash).toBeCloseTo(LANDING_SQUASH / 2, 6);
+    expect(shown(figure, 'landing', 'east', 0.999).squash).toBeCloseTo(0, 3);
+  });
+
+  it('plays painted jump and landing frames as they are', () => {
+    const painted: FigureManifest = {
+      ...figure,
+      frames: { ...figure.frames, hop: frame(434, [30, 170]) },
+      poses: { ...figure.poses, jump: ['hop'], land: ['stand'] },
+    };
+    expect(shown(painted, 'jumping', 'east').frame).toBe('hop');
+    expect(shown(painted, 'jumping', 'east').bob).toBeCloseTo(0, 6);
+    expect(shown(painted, 'landing', 'east', 0)).toMatchObject({ frame: 'stand', squash: 0 });
   });
 });

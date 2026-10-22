@@ -32,7 +32,7 @@ if await walk is Outcome.ARRIVED:
 | `intend(entity, purpose)` | What they're at their next place for, which says which spots suit them (see *Spots*). `None` for nothing in particular. |
 | `posture(entity)` | Their `(Pose, Facing)`. |
 | `on_spot(entity)` | The `Spot` they've stopped on, or `None`. |
-| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position and map on every `player_move`, so `position("player")` raises `KeyError` until the first one. It logs and drops a move onto a map that isn't loaded. |
+| `track(entity, point)` | Records where something the client moves is. The lifespan calls it with the player's position and map on every `player_move`, so `position("player")` raises `KeyError` until the first one. It logs and drops a move onto a map that isn't loaded, and on a side-view map one to where nobody could be, by `simile.street.moves.possible`: a jump or a fall in open air is kept where it is (`docs/protocol.md`). |
 | `town` | The first street's `TownMap`, carrying every map's locations, doors and mural walls, so `town.location(id)` finds any of them. |
 | `maps` | Every `TownMap` by id. `TownMap.street` says whether one is outdoors. |
 | `crossings` | Each end of every link, its `DoorKind` and how long crossing it takes, in tiles of walking. |
@@ -70,7 +70,8 @@ A target is a location id, a `MapTile`, or a `Tile`, which is on `home`, the fir
   every map it crosses, so it takes `walk.distance / WALKING_SPEED` sim seconds.
 - Entities walk at `simile.world.map.WALKING_SPEED`, 1.3 tiles per sim second, at any sim speed.
 - Paths are A\* on each map's grid by its neighbour rule, `simile.street.moves`: left and right
-  along a row, and up and down only along stairs and ladders.
+  along a row, and up and down only along stairs and ladders. `jumps=True` on `steps`, `nearby`
+  and `find_route` adds the player's jumps; residents never jump.
 - Each link is an edge between its two tiles. Going through a door takes as long as a step
   (`simile.world.paths.DOOR`, 1 tile). Stairs, a ladder or a lift to another floor take as long as
   the climb or ride, at `CROSSING_SPEED` (1.3, 1 and 2.4 tiles a second) with the floors stacked,

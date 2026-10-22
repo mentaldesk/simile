@@ -22,8 +22,8 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
   loaded. Its origin is on the ground under the middle of its head, and `height` is how many
   pixels the standing figure is.
 - **`SpriteFigure.setPose(pose, facing, phase, options)`** is `PaperDoll`'s: `pose` is the sim's
-  `Pose` or `'jumping'`, and `phase` how far through its cycle it is, any number. Each pose plays
-  its painted frames by phase (`sprite.ts`):
+  `Pose`, or the player's `'jumping'` or `'landing'`, and `phase` how far through its cycle it is,
+  any number. Each pose plays its painted frames by phase (`sprite.ts`):
   - `walking` plays the walk, a stride and a passing step, bobbing and swaying a little, and the
     run once `options.run` is past a half, its frame in the air lifted so the head stays level;
   - `sitting` sits, and so do `reading` and `working` when `options.seated`; they, `looking` and
@@ -32,7 +32,12 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
     the furniture under the resident (`side/poses.ts`'s `seatHeight`): the front edge of the
     seat of the stool, bench or table's chair there, measured from its art, or a chair's;
   - `climbing` walks up stairs and climbs a ladder from behind, turning from side to side, by
-    `options.on`, which defaults to stairs from the side and a ladder facing north or south.
+    `options.on`, which defaults to stairs from the side and a ladder facing north or south;
+  - `jumping` plays a figure's `jump` frames, and without any, the run's frame furthest off the
+    ground (`leap`), lowered so its toes are on the ground line, where a jump starts and lands. No
+    figure has a jump painted yet, so every one, a creator's character too, leaps in its run;
+  - `landing` plays `land` frames, and without any, stands squashed by `LANDING_SQUASH` of its
+    height as `phase` starts, springing back by its end.
 
   Westward facings mirror the frames, sitting included, so a resident faces the way their seat
   does. North and south show the three-quarter figure, as Paper Mario does.

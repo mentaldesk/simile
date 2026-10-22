@@ -13,6 +13,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.protocol import PlayerMoveMessage, hub_of
     from simile.schema import PLAYER_ID, Id
     from simile.sim import world_of
+    from simile.street.moves import possible
     from simile.world.movement import Point, movement_of
     from simile.world.spots import indifferent, purpose_of
 
@@ -20,8 +21,14 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     def on_player_move(message: PlayerMoveMessage) -> None:
         position = message.position
-        if position.map not in movement.maps:
+        town = movement.maps.get(position.map)
+        if town is None:
             logger.warning("Ignored a player_move onto an unknown map: %s", position)
+            return
+        last = movement.entities().get(PLAYER_ID)
+        kept = (last.x, last.y) if last is not None and last.map == position.map else None
+        if town.kind is not None and not possible(town, position.x, position.y, kept):
+            logger.warning("Ignored a player_move to where nobody could be: %s", position)
             return
         movement.track(PLAYER_ID, Point(position.x, position.y, position.map))
 

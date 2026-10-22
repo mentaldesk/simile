@@ -119,6 +119,14 @@
    "near": "layers/near-gardens",
    "ground": "layers/ground-street",
    "foreground": "layers/front-plants"
+  },
+  "rooftops": {
+   "sky": "layers/sky",
+   "far": "layers/far-hills",
+   "mid": "layers/mid-rooftops",
+   "near": "layers/near-walls",
+   "ground": "layers/ground-street",
+   "foreground": "layers/front-plants"
   }
  },
  "grounds": {
@@ -127,6 +135,18 @@
   "riverside": "layers/ground-promenade"
  },
  "buildings": {
+  "bakery": {
+   "street": "rooftops",
+   "front": "fronts/bakery",
+   "glow": "glow/bakery",
+   "floors": []
+  },
+  "clock_house": {
+   "street": "rooftops",
+   "front": "fronts/clock_house",
+   "glow": "glow/clock_house",
+   "floors": []
+  },
   "coffee_shop": {
    "street": "high_street",
    "front": "fronts/coffee_shop",
@@ -249,6 +269,12 @@
     "papers/bedroom-lilac"
    ]
   },
+  "laundry": {
+   "street": "rooftops",
+   "front": "fronts/laundry",
+   "glow": "glow/laundry",
+   "floors": []
+  },
   "maker_space": {
    "street": "high_street",
    "front": "fronts/maker_space",
@@ -267,6 +293,18 @@
     "papers/brick",
     "papers/dining-red"
    ]
+  },
+  "print_works": {
+   "street": "rooftops",
+   "front": "fronts/print_works",
+   "glow": "glow/print_works",
+   "floors": []
+  },
+  "tea_house": {
+   "street": "rooftops",
+   "front": "fronts/tea_house",
+   "glow": "glow/tea_house",
+   "floors": []
   },
   "tower": {
    "street": "lychee_lane",
@@ -361,6 +399,10 @@
    "piece": "furniture/workbench",
    "stretch": true
   },
+  "rope_bridge": {
+   "piece": "platforms/rope_bridge",
+   "stretch": true
+  },
   "pegboard": {
    "piece": "furniture/pegboard",
    "stretch": true
@@ -434,6 +476,7 @@
   }
  },
  "platforms": {
+  "rope_bridge": "platforms/rope_bridge",
   "lift": "platforms/lift",
   "stairs": "platforms/stairs",
   "ladder": "platforms/ladder",
@@ -445,6 +488,38 @@
  },
  "slab": "papers/slab",
  "pieces": {
+  "fronts/bakery": {
+   "file": "fronts/bakery.webp",
+   "size": [
+    936,
+    512
+   ],
+   "height": 4.267,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9719
+   ],
+   "width": 6.6,
+   "eaves": 3.3,
+   "hash": "2401bf6e1ceb5eb08eb1"
+  },
+  "fronts/clock_house": {
+   "file": "fronts/clock_house.webp",
+   "size": [
+    1067,
+    1568
+   ],
+   "height": 13.067,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9908
+   ],
+   "width": 7.7,
+   "eaves": 12.1,
+   "hash": "0b0ade4a4fa59f5d3c37"
+  },
   "fronts/coffee_shop": {
    "file": "fronts/coffee_shop.webp",
    "size": [
@@ -669,6 +744,22 @@
    "eaves": 7.7,
    "hash": "03b9383272829fa250c2"
   },
+  "fronts/laundry": {
+   "file": "fronts/laundry.webp",
+   "size": [
+    937,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 6.6,
+   "eaves": 7.7,
+   "hash": "2751664abf13ac675e2a"
+  },
   "fronts/maker_space": {
    "file": "fronts/maker_space.webp",
    "size": [
@@ -700,6 +791,38 @@
    "width": 18.7,
    "eaves": 7.7,
    "hash": "b899faf82170b7ab07cd"
+  },
+  "fronts/print_works": {
+   "file": "fronts/print_works.webp",
+   "size": [
+    1068,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 7.7,
+   "eaves": 7.7,
+   "hash": "cdcb5f306bc64158418d"
+  },
+  "fronts/tea_house": {
+   "file": "fronts/tea_house.webp",
+   "size": [
+    1068,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 7.7,
+   "eaves": 7.7,
+   "hash": "c9c2eb01fca2a693d09c"
   },
   "fronts/tower": {
    "file": "fronts/tower.webp",
@@ -1431,6 +1554,38 @@
    ],
    "hash": "e351cc5c74fb0e772412"
   },
+  "glow/bakery": {
+   "file": "glow/bakery.webp",
+   "size": [
+    936,
+    512
+   ],
+   "height": 4.267,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9719
+   ],
+   "width": 6.6,
+   "eaves": 3.3,
+   "hash": "5d3d5ca5a160e01b32d6"
+  },
+  "glow/clock_house": {
+   "file": "glow/clock_house.webp",
+   "size": [
+    1067,
+    1568
+   ],
+   "height": 13.067,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9908
+   ],
+   "width": 7.7,
+   "eaves": 12.1,
+   "hash": "6e42beb39002af5118ac"
+  },
   "glow/coffee_shop": {
    "file": "glow/coffee_shop.webp",
    "size": [
@@ -1655,6 +1810,22 @@
    "eaves": 7.7,
    "hash": "fbb789878e9329690d02"
   },
+  "glow/laundry": {
+   "file": "glow/laundry.webp",
+   "size": [
+    937,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 6.6,
+   "eaves": 7.7,
+   "hash": "3b68f3ed82b57f47d2f6"
+  },
   "glow/maker_space": {
    "file": "glow/maker_space.webp",
    "size": [
@@ -1686,6 +1857,38 @@
    "width": 18.7,
    "eaves": 7.7,
    "hash": "76ecc6df5a25b354775e"
+  },
+  "glow/print_works": {
+   "file": "glow/print_works.webp",
+   "size": [
+    1068,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 7.7,
+   "eaves": 7.7,
+   "hash": "aad9fb43206c3ce75a99"
+  },
+  "glow/tea_house": {
+   "file": "glow/tea_house.webp",
+   "size": [
+    1068,
+    1040
+   ],
+   "height": 8.667,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9862
+   ],
+   "width": 7.7,
+   "eaves": 7.7,
+   "hash": "ba23ae3f11899b18aa01"
   },
   "glow/tower": {
    "file": "glow/tower.webp",
@@ -2082,6 +2285,20 @@
     1.0
    ],
    "hash": "f8bc7376ccfcb21c3067"
+  },
+  "platforms/rope_bridge": {
+   "file": "platforms/rope_bridge.webp",
+   "size": [
+    387,
+    150
+   ],
+   "height": 1.25,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "0971e1fa9d7c824b2015"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",

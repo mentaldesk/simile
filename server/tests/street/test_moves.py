@@ -1,13 +1,16 @@
+import json
 import math
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
 from simile.schema import DoorKind, MapTile
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.moves import CLIMB, STAIR, WALK, moves
+from simile.street.jump import JUMP
+from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
 from simile.world import Movement, Outcome
-from simile.world.map import WALKING_SPEED, TownMap
+from simile.world.map import STREET_DIR, WALKING_SPEED, TownMap, load_maps
 from simile.world.paths import find_path, nearby, steps
 
 from .conftest import side_view
@@ -162,3 +165,150 @@ def test_paths_follow_the_rule() -> None:
 
     assert dict(steps(field, (1, 1))) == {(0, 1): WALK, (2, 1): WALK}
     assert [cell for cell, _ in nearby(field, (0, 1))] == [(0, 1), (1, 1), (2, 1), (3, 1)]
+
+
+ROOFS = side_view(
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "#####.#####..#####...###....##",
+    "..............................",
+    "..............................",
+    "..............................",
+    "##############################",
+)
+"""Rooftops on row 5 with gaps of one, two, three and four cells, over a lane on row 8."""
+LEDGES = side_view(
+    "..........",
+    "..........",
+    "..........",
+    "......####",
+    "..........",
+    "...###....",
+    "..........",
+    "##########",
+)
+"""A ledge two rows up from the ground, and another two rows above that."""
+
+
+def jumps(town: TownMap, cell: tuple[int, int]) -> set[tuple[int, int]]:
+    return set(dict(moves(town, cell, jumps=True))) - set(neighbours(town, cell))
+
+
+def test_jumps_only_for_the_player() -> None:
+    assert (6, 4) not in neighbours(ROOFS, (4, 4))
+    assert (6, 4) in jumps(ROOFS, (4, 4))
+
+
+def test_jumps_gaps_of_up_to_three_cells_along_a_row_and_no_more() -> None:
+    assert JUMP.cells == 4
+    assert (6, 4) in jumps(ROOFS, (4, 4))
+    assert (13, 4) in jumps(ROOFS, (10, 4))
+    assert (21, 4) in jumps(ROOFS, (17, 4))
+    assert (28, 4) not in jumps(ROOFS, (23, 4))
+
+
+def test_jumps_up_to_two_rows_up_and_down_any_way() -> None:
+    assert (3, 4) in jumps(LEDGES, (2, 6))
+    assert (6, 2) in jumps(LEDGES, (5, 4))
+    assert (6, 2) not in jumps(LEDGES, (4, 6))
+    assert {(1, 6), (5, 4), (2, 6)} <= jumps(LEDGES, (5, 4)) | jumps(LEDGES, (6, 2))
+    assert (6, 6) not in jumps(LEDGES, (5, 4)), "its head hits the ledge above"
+
+
+def test_jumps_through_open_air_only() -> None:
+    walled = side_view(
+        "........",
+        "........",
+        "........",
+        "...#....",
+        "...#....",
+        "##.#.###",
+        "########",
+    )
+    assert (5, 4) not in jumps(walled, (1, 4))
+    assert jumps(walled, (2, 5)) == {(0, 4), (1, 4)}
+
+
+def test_paths_jump_for_the_player_only() -> None:
+    assert find_path(ROOFS, (2, 4), (14, 4)) is None
+    assert (14, 4) not in dict(nearby(ROOFS, (2, 4)))
+    assert (14, 4) in dict(nearby(ROOFS, (2, 4), jumps=True))
+
+
+@pytest.mark.parametrize(
+    ("x", "y"),
+    [(2, 4), (2.4, 4), (5, 4), (5.6, 2.1), (5, 4 - JUMP.rise + 0.05), (8, 2.5), (13.2, 6.7)],
+)
+def test_the_player_can_be_on_the_roofs_or_in_the_air_within_a_jump(x: float, y: float) -> None:
+    assert possible(ROOFS, x, y, None)
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "why"),
+    [
+        (2, 5, "in a roof"),
+        (2, 9, "in the ground"),
+        (-1, 4, "off the map"),
+        (40, 4, "off the map"),
+        (5, 4 - JUMP.rise - 0.6, "higher than any jump"),
+        (5, -1, "above the map"),
+    ],
+)
+def test_the_player_cant_be_where_nobody_could_be(x: float, y: float, why: str) -> None:
+    assert not possible(ROOFS, x, y, None), why
+
+
+def test_a_fall_from_higher_than_a_jump_is_kept_as_it_comes_down() -> None:
+    tower = side_view(
+        "...............",
+        "###............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "...............",
+        "###############",
+    )
+    last = (2.0, 0.0)
+    for x, y in [(3.6, 0.4), (5.0, 1.8), (7.0, 4.2), (9.0, 7.5), (10.4, 9)]:
+        assert possible(tower, x, y, last), (x, y)
+        last = (x, y)
+    assert not possible(tower, 9.0, 5.0, None)
+    assert not possible(tower, 9.0, 5.0, (9.0, 6.0))
+
+
+def test_a_fall_is_kept_only_within_a_jump_of_the_last_position_along_the_row() -> None:
+    tower = side_view(
+        "........................",
+        "###.....................",
+        *["........................"] * 8,
+        "########################",
+    )
+    assert possible(tower, 8.0, 5.0, (3.0, 4.0))
+    assert not possible(tower, 20.0, 5.0, (3.0, 4.0))
+    assert not possible(tower, 3.0 + JUMP.reach + 0.1, 5.0, (3.0, 4.0))
+
+
+POSITIONS = json.loads((Path(__file__).parent / "positions.json").read_text())
+"""The client's sends on several maps, and places nobody could be: `jump.test.ts` checks it too."""
+STREETS = load_maps(STREET_DIR)
+
+
+@pytest.mark.parametrize("case", POSITIONS, ids=lambda c: f"{c['why']} at {c['x']}, {c['y']}")
+def test_keeps_the_clients_sends_and_ignores_where_nobody_could_be(case: dict) -> None:
+    last = tuple(case["last"]) if case["last"] else None
+    assert possible(STREETS[case["map"]], case["x"], case["y"], last) is case["kept"]
+
+
+def test_keeps_a_climb_up_or_down_stairs_all_the_way() -> None:
+    banyan = STREETS["banyan_row"]
+    for i in range(61):
+        t = i / 20
+        assert possible(banyan, 53 + t, 15 + t, None), (53 + t, 15 + t)
+        assert possible(banyan, 53 + t + 0.01, 15 + t, None), (53 + t + 0.01, 15 + t)

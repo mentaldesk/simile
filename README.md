@@ -22,7 +22,9 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 
 | Keys | What they do |
 |---|---|
-| ← → (or A D) | Walk. Hold **Shift** to run. |
+| ← → (or A D) | Walk, or run once Shift is on. In the air, steer. |
+| Shift | Switch between walking and running. You keep running, stopped or on stairs and ladders, until you press it again. |
+| Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
 | E | Read the news at a terminal, look at a mural or a painting, or order at a counter. Otherwise go through a door, or talk to the ringed resident. |

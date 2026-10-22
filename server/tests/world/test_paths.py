@@ -190,4 +190,5 @@ def test_only_the_streets_are_outdoors() -> None:
         "high_street",
         "kapok_walk",
         "lychee_lane",
+        "rooftops",
     }

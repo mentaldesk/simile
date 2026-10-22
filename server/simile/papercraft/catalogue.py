@@ -442,6 +442,16 @@ FURNITURE: dict[str, Item] = {
         (1280, 352),
         stretch=True,
     ),
+    "rope_bridge": Item(
+        "a rope bridge: a deck of wooden planks hung from two rope handrails, with a sturdy "
+        "wooden post at each end",
+        1.25,
+        ref="rooftops",
+        sketch="rope_bridge",
+        folder="platforms",
+        stretch=True,
+        cut=("outline", "shadows", "gaps"),
+    ),
     "pegboard": Item(
         "a wide pegboard panel hung on a wall, with hammers, saws, pliers and screwdrivers "
         "hanging on it",
@@ -669,7 +679,7 @@ def used(layout: Layout) -> dict[str, Item]:
 def items(layout: Layout) -> list[Painting]:
     """Every item's painting: the maps' furniture, the extras and the platform pieces, then
     their colour variants."""
-    unknown = sorted(set(layout.furniture) - set(FURNITURE))
+    unknown = sorted(set(layout.furniture) - set(FURNITURE) - set(EXTRAS))
     if unknown:
         raise KeyError(f"no painting for the maps' furniture: {', '.join(unknown)}")
     specs = {**used(layout), **EXTRAS, **PLATFORMS}

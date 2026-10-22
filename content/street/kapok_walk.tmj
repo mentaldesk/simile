@@ -448,6 +448,44 @@
           "width": 16,
           "x": 512,
           "y": 240
+        },
+        {
+          "height": 16,
+          "id": 13,
+          "name": "kapok_walk_to_rooftops",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "rooftops"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 1
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 32,
+          "y": 240
         }
       ],
       "opacity": 1,
@@ -480,7 +518,7 @@
     }
   ],
   "nextlayerid": 11,
-  "nextobjectid": 13,
+  "nextobjectid": 14,
   "orientation": "orthogonal",
   "properties": [
     {

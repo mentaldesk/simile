@@ -1,6 +1,8 @@
+import json
 from collections.abc import Callable
 
 import pytest
+from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
@@ -62,6 +64,65 @@ def test_ignores_a_player_move_onto_an_unknown_map_or_none(
 
         assert movement_of(app).position(PLAYER_ID) == Point(14, 15, "high_street")
     assert "Ignored a player_move onto an unknown map" in caplog.text
+
+
+def send_moves(app: Starlette, *positions: tuple[float, float, str]) -> None:
+    for x, y, map_id in positions:
+        position = json.dumps({"x": x, "y": y, "map": map_id})
+        hub_of(app).receive(f'{{"type": "player_move", "position": {position}}}')
+
+
+def test_keeps_a_jump_and_a_fall_where_they_are(make_package: MakePackage) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        movement = movement_of(app)
+        send_moves(app, (47, 12, "lychee_lane"), (47.5, 12, "lychee_lane"))
+        for x, y in [(48.6, 11.2), (49.9, 10.4), (51.2, 10.9), (52.3, 12.6), (53.1, 14.4)]:
+            send_moves(app, (x, y, "lychee_lane"))
+            world_of(app).loop.tick()
+            assert movement.position(PLAYER_ID) == Point(x, y, "lychee_lane")
+        send_moves(app, (20, 13.1, "high_street"))
+        assert movement.position(PLAYER_ID) == Point(20, 13.1, "high_street")
+
+
+@pytest.mark.parametrize(
+    ("place", "where"),
+    [
+        ((20, 17, "high_street"), "in the ground"),
+        ((20, 4, "high_street"), "high above any jump"),
+        ((-3, 15, "high_street"), "off the map"),
+        ((0, 1, "house_1_floor_0"), "in a wall"),
+    ],
+    ids=lambda value: value if isinstance(value, str) else "",
+)
+def test_ignores_a_player_move_to_where_nobody_could_be(
+    make_package: MakePackage,
+    caplog: pytest.LogCaptureFixture,
+    place: tuple[float, float, str],
+    where: str,
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+    start = (3, 2, place[2]) if place[2].endswith("floor_0") else (20, 15, place[2])
+
+    with TestClient(app):
+        send_moves(app, start, place)
+
+        assert movement_of(app).position(PLAYER_ID) == Point(*start), where
+    assert "Ignored a player_move to where nobody could be" in caplog.text
+
+
+def test_keeps_a_fall_from_the_clock_house_roof_but_not_a_sideways_jump_out_of_it(
+    make_package: MakePackage, caplog: pytest.LogCaptureFixture
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        falling = [(56, 4, "rooftops"), (57.4, 4.6, "rooftops"), (58.2, 6.5, "rooftops")]
+        send_moves(app, *falling, (44, 11, "rooftops"))
+
+        assert movement_of(app).position(PLAYER_ID) == Point(58.2, 6.5, "rooftops")
+    assert "Ignored a player_move to where nobody could be" in caplog.text
 
 
 def test_stops_on_shutdown(make_package: MakePackage) -> None:

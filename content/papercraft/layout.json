@@ -1,5 +1,27 @@
 {
  "facades": {
+  "bakery": {
+   "door": null,
+   "height": 3,
+   "id": "bakery",
+   "interior": false,
+   "murals": [],
+   "storeys": 1,
+   "street": "rooftops",
+   "width": 6,
+   "x": 4
+  },
+  "clock_house": {
+   "door": null,
+   "height": 11,
+   "id": "clock_house",
+   "interior": false,
+   "murals": [],
+   "storeys": 3,
+   "street": "rooftops",
+   "width": 7,
+   "x": 50
+  },
   "coffee_shop": {
    "door": 18,
    "height": 11,
@@ -182,6 +204,17 @@
    "width": 7,
    "x": 9
   },
+  "laundry": {
+   "door": null,
+   "height": 7,
+   "id": "laundry",
+   "interior": false,
+   "murals": [],
+   "storeys": 2,
+   "street": "rooftops",
+   "width": 6,
+   "x": 34
+  },
   "maker_space": {
    "door": 14,
    "height": 11,
@@ -203,6 +236,28 @@
    "street": "high_street",
    "width": 17,
    "x": 65
+  },
+  "print_works": {
+   "door": null,
+   "height": 7,
+   "id": "print_works",
+   "interior": false,
+   "murals": [],
+   "storeys": 2,
+   "street": "rooftops",
+   "width": 7,
+   "x": 15
+  },
+  "tea_house": {
+   "door": null,
+   "height": 7,
+   "id": "tea_house",
+   "interior": false,
+   "murals": [],
+   "storeys": 2,
+   "street": "rooftops",
+   "width": 7,
+   "x": 24
   },
   "tower": {
    "door": null,
@@ -234,6 +289,14 @@
   ],
   "bench": [
    2,
+   1
+  ],
+  "bicycle": [
+   1,
+   1
+  ],
+  "bin": [
+   1,
    1
   ],
   "bookshelf": [
@@ -304,6 +367,10 @@
    2,
    1
   ],
+  "palm_tree": [
+   2,
+   7
+  ],
   "pegboard": [
    4,
    1
@@ -319,6 +386,10 @@
   "printer_3d": [
    1,
    2
+  ],
+  "rope_bridge": [
+   8,
+   1
   ],
   "sewing_machine": [
    1,
@@ -427,6 +498,7 @@
   "banyan_row": 68,
   "high_street": 84,
   "kapok_walk": 34,
-  "lychee_lane": 68
+  "lychee_lane": 68,
+  "rooftops": 60
  }
 }

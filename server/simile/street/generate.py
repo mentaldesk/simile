@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from simile.street.jump import JUMP_FILE
+from simile.street.jump import dumps as jump_json
 from simile.street.plan import MARKERS_IMAGE, dumps, tmj
 from simile.street.preview import markers, render
 from simile.street.village import village
@@ -23,5 +25,6 @@ def generate(out: Path) -> list[Path]:
         path = folder / f"{plan.id}.tmj"
         path.write_text(dumps(tmj(plan, Path(os.path.relpath(tileset, folder)).as_posix())))
         written.append(path)
+    (out / JUMP_FILE).write_text(jump_json())
     render(plans).save(out / PREVIEW)
-    return [*written, out / PREVIEW]
+    return [*written, out / JUMP_FILE, out / PREVIEW]

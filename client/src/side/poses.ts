@@ -10,7 +10,7 @@ export { facesLeft };
 /** Steps a cycle is cut into. */
 export const STEPS = 48;
 
-const KINDS: readonly SpritePose[] = ['stand', 'walk', 'run', 'sit', 'climb'];
+const KINDS: readonly SpritePose[] = ['stand', 'walk', 'run', 'sit', 'climb', 'jump', 'land'];
 const KIND_INDEX = Object.fromEntries(KINDS.map((kind, i) => [kind, i])) as Record<SpritePose, number>;
 /** A pose and options each kind is drawn for. */
 const AS: Record<SpritePose, [DollPose, PoseOptions]> = {
@@ -19,6 +19,8 @@ const AS: Record<SpritePose, [DollPose, PoseOptions]> = {
   run: ['walking', { run: 1 }],
   sit: ['sitting', {}],
   climb: ['climbing', { on: 'ladder' }],
+  jump: ['jumping', {}],
+  land: ['landing', {}],
 };
 
 /** Allocates nothing once each step of a pose has been drawn. */

@@ -5,8 +5,9 @@ export const HELP_KEY = '?';
 
 /** The game's keys and what they do, as the help lists them: each key, or either. */
 export const CONTROLS: readonly (readonly [keys: readonly string[], what: string])[] = [
-  [['← →', 'A D'], 'walk'],
-  [['Shift'], 'hold to run'],
+  [['← →', 'A D'], 'walk, or steer in the air'],
+  [['Shift'], 'switch between walking and running, until pressed again'],
+  [['Space'], 'jump, higher while held and further running'],
   [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up'],
   [['↓', 'S'], 'downstairs or down a ladder from beside its top, or the lift down'],
   [['E'], 'read the news at a terminal, look at a mural or a painting, order at a counter, go through a door, or talk to the ringed resident'],

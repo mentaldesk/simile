@@ -26,6 +26,7 @@ MAP_DIR = STREET_DIR
 FLOORS = "floors"
 COLLISION_LAYER = "collision"
 CLIMBABLE_LAYER = "climbable"
+SOLID_LAYER = "solid"
 LOCATIONS_LAYER = "locations"
 MURALS_LAYER = "murals"
 DOORS_LAYER = "doors"
@@ -124,6 +125,8 @@ class TownMap:
     """A floor's number, 0 for the ground floor."""
     climbable: tuple[tuple[DoorKind | None, ...], ...] = ()
     """climbable[y][x] is `stairs` or `ladder` on a climbable cell, or None. Empty without any."""
+    solids: tuple[tuple[bool, ...], ...] = ()
+    """solids[y][x] is True on ground, floors, walls and ledges. Empty without a solid layer."""
 
     def walkable(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and not self.blocked[y][x]
@@ -133,6 +136,12 @@ class TownMap:
         if not self.climbable or not (0 <= x < self.width and 0 <= y < self.height):
             return None
         return self.climbable[y][x]
+
+    def solid(self, x: int, y: int) -> bool:
+        """Solid, or off the map; without a solid layer, anywhere nobody can walk."""
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return True
+        return self.solids[y][x] if self.solids else self.blocked[y][x]
 
     def standing(self, x: int, y: int) -> bool:
         """Walkable and not partway up stairs or a ladder."""
@@ -183,6 +192,7 @@ def load_map(path: Path) -> TownMap:
     if CLIMBABLE_LAYER in layers:
         names = _tile_names(data)
         climbable = rows(CLIMBABLE_LAYER, lambda gid: DoorKind(names[gid]) if gid else None)
+    solids = rows(SOLID_LAYER, lambda gid: gid != 0) if SOLID_LAYER in layers else ()
     doors = tuple(_door(o, size, map_id) for o in objects(DOORS_LAYER))
     _one_link_per_end(doors)
     return TownMap(
@@ -199,6 +209,7 @@ def load_map(path: Path) -> TownMap:
         building=props.get("building"),
         floor=props.get("floor"),
         climbable=climbable,
+        solids=solids,
     )
 
 

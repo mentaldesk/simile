@@ -29,7 +29,7 @@ describe('HelpPanel', () => {
     ]);
     expect(rows).toEqual(CONTROLS.map(([keys, what]) => [keys, what]));
     expect(rows.map(([keys]) => (keys as string[]).join(' '))).toEqual(
-      expect.arrayContaining(['← → A D', 'Shift', '↑ W', '↓ S', 'E', 'Enter', 'Tab', 'Esc', '?']),
+      expect.arrayContaining(['← → A D', 'Shift', 'Space', '↑ W', '↓ S', 'E', 'Enter', 'Tab', 'Esc', '?']),
     );
   });
 
@@ -39,7 +39,8 @@ describe('HelpPanel', () => {
     expect(what['↑']).toMatch(/upstairs.*ladder.*lift up/);
     expect(what['↓']).toMatch(/downstairs.*ladder.*lift down/);
     expect(what['↑']).not.toMatch(/door/);
-    expect(what.Shift).toMatch(/run/);
+    expect(what.Shift).toMatch(/switch between walking and running/);
+    expect(what.Space).toMatch(/jump/);
   });
 
   it('says voices are off unless turned on, and that greetings play either way', () => {
