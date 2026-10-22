@@ -302,8 +302,8 @@ class PlayerStateMessage(Model):
 
 
 class PlayerCollapsedMessage(Model):
-    """The player starved and collapsed. They wake at home, at `position`, still hungry, and
-    what they carried stays where they fell, in `player_state`'s `left`."""
+    """The player starved and collapsed. They wake at home, at `position`, still hungry, with
+    their lamp. Everything else they carried stays where they fell, in `player_state`'s `left`."""
 
     type: Literal["player_collapsed"] = "player_collapsed"
     position: Position
@@ -373,8 +373,8 @@ class EatMessage(Model):
 
 
 class PickUpMessage(Model):
-    """Picks up what the player left where they collapsed, if it's within reach, as much as
-    their carry limit allows."""
+    """Picks up, from the nearest pile within reach of the player, each item that still fits
+    under their carry limit, in order. Any that don't fit stay in the pile."""
 
     type: Literal["pick_up"] = "pick_up"
 

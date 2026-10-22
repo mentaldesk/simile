@@ -211,7 +211,9 @@ def test_load_is_what_everything_carried_weighs() -> None:
     assert Player(items=[]).load == 0
 
 
-def changes(model: Player | Item | Body | Pile, field: str, value: Any, match: str) -> None:
+def changes(
+    model: Player | Item | Body | Pile | MapTile, field: str, value: Any, match: str
+) -> None:
     before = model.model_dump()
     with pytest.raises(ValidationError, match=match):
         setattr(model, field, value)
@@ -267,10 +269,10 @@ def test_a_valid_change_is_kept() -> None:
 def test_what_they_left_where_they_collapsed_is_kept_in_piles() -> None:
     player = Player.model_validate(COLLAPSED)
 
-    assert player.items == []
-    assert player.load == 0
+    assert [item.id for item in player.items] == ["lamp"]
+    assert player.load == 1
     assert [pile.at for pile in player.left] == [MapTile(map="kapok_walk", x=12, y=15)]
-    assert [item.id for item in player.left[0].items] == ["lamp", "copper_wire"]
+    assert [item.id for item in player.left[0].items] == ["copper_wire", "servo_motor"]
 
 
 def test_a_player_who_left_nothing_dumps_without_piles() -> None:
@@ -295,3 +297,14 @@ def test_rejects_an_empty_pile_left_on_a_player() -> None:
     player = Player.model_validate(COLLAPSED)
 
     changes(player.left[0], "items", [], "at least 1 item")
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [("x", -1, "greater than or equal to 0"), ("y", 1.5, "valid integer"), ("map", "", "at least")],
+)
+def test_rejects_moving_a_pile_off_its_map(field: str, value: Any, match: str) -> None:
+    player = Player.model_validate(COLLAPSED)
+
+    changes(player.left[0].at, field, value, match)
+    assert Player.model_validate_json(player.model_dump_json()) == player

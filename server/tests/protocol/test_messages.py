@@ -185,11 +185,11 @@ DELVING = PlayerStateMessage(
 
 NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
 AT_THE_NOODLE_BAR = DELVING.model_copy(update={"meal": NOODLES})
+WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 WOKEN = PlayerStateMessage(
     player=Player(
-        items=[],
         hunger=0.75,
-        left=[Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[lamp()])],
+        left=[Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE])],
     ),
     meal=Meal(place="maker_space", name="home", price=0),
 )
@@ -700,11 +700,11 @@ def test_player_state_without_a_meal_or_piles_dumps_as_before(message: PlayerSta
 def test_player_state_has_what_they_left_where_they_collapsed() -> None:
     player = json.loads(WOKEN.model_dump_json())["player"]
 
-    assert player["items"] == []
+    assert player["items"] == [json.loads(lamp().model_dump_json())]
     assert player["left"] == [
         {
             "at": {"map": "kapok_walk", "x": 12, "y": 15},
-            "items": [json.loads(lamp().model_dump_json())],
+            "items": [json.loads(WIRE.model_dump_json())],
         }
     ]
 

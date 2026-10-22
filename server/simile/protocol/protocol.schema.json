@@ -992,7 +992,7 @@
     },
     "PickUpMessage": {
       "additionalProperties": false,
-      "description": "Picks up what the player left where they collapsed, if it's within reach, as much as\ntheir carry limit allows.",
+      "description": "Picks up, from the nearest pile within reach of the player, each item that still fits\nunder their carry limit, in order. Any that don't fit stay in the pile.",
       "properties": {
         "type": {
           "const": "pick_up",
@@ -1008,7 +1008,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "What the player carried when they collapsed, left where they fell for them to go back\nfor. It lies `at` the cell they fell on, or the ground below it.",
+      "description": "Items lying `at` a tile in the world for the player to pick up, such as what they left\nwhen they collapsed.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -1063,7 +1063,7 @@
         },
         "left": {
           "default": [],
-          "description": "What they've left where they collapsed, oldest first. Left out while there's none.",
+          "description": "What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Pile"
           },
@@ -1082,7 +1082,7 @@
     },
     "PlayerCollapsedMessage": {
       "additionalProperties": false,
-      "description": "The player starved and collapsed. They wake at home, at `position`, still hungry, and\nwhat they carried stays where they fell, in `player_state`'s `left`.",
+      "description": "The player starved and collapsed. They wake at home, at `position`, still hungry, with\ntheir lamp. Everything else they carried stays where they fell, in `player_state`'s `left`.",
       "properties": {
         "type": {
           "const": "player_collapsed",
