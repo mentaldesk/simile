@@ -1,0 +1,78 @@
+{
+  "$defs": {
+    "ItemKind": {
+      "description": "What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.",
+      "enum": [
+        "salvage",
+        "food",
+        "lamp"
+      ],
+      "title": "ItemKind",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Something the player carries.",
+  "properties": {
+    "id": {
+      "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "$ref": "#/$defs/ItemKind"
+    },
+    "name": {
+      "description": "What the player sees, e.g. \"Copper wire\".",
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "weight": {
+      "description": "In kg, counted against the carry limit.",
+      "minimum": 0,
+      "title": "Weight",
+      "type": "number"
+    },
+    "charge": {
+      "anyOf": [
+        {
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.",
+      "title": "Charge"
+    },
+    "on": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Whether a lamp is switched on, running its battery down. Null for anything else.",
+      "title": "On"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "name",
+    "weight",
+    "charge",
+    "on"
+  ],
+  "title": "Item",
+  "type": "object"
+}

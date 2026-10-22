@@ -31,6 +31,17 @@ from simile.schema.npc import (
     Voice,
     Weekday,
 )
+from simile.schema.player import (
+    CARRY_LIMIT,
+    PRESENT,
+    SOLD,
+    Bionic,
+    Body,
+    Item,
+    ItemKind,
+    Player,
+    lamp,
+)
 from simile.schema.social import (
     Aspect,
     Baseline,
@@ -82,17 +93,24 @@ MODELS: tuple[type[Model], ...] = (
     Interactable,
     Conversation,
     Line,
+    Player,
+    Item,
 )
 
 __all__ = [
+    "CARRY_LIMIT",
     "MODELS",
     "PLAYER_ID",
+    "PRESENT",
+    "SOLD",
     "VILLAGE_MAP",
     "Accessory",
     "Appearance",
     "Arrival",
     "Aspect",
     "Baseline",
+    "Bionic",
+    "Body",
     "Build",
     "Character",
     "CharacterSource",
@@ -119,6 +137,8 @@ __all__ = [
     "Interactable",
     "InteractableKind",
     "InteractionEvent",
+    "Item",
+    "ItemKind",
     "Key",
     "Line",
     "Location",
@@ -134,6 +154,7 @@ __all__ = [
     "PastMemory",
     "Pay",
     "PayKind",
+    "Player",
     "Pose",
     "Relationship",
     "Shift",
@@ -146,4 +167,5 @@ __all__ = [
     "Voice",
     "Weekday",
     "Work",
+    "lamp",
 ]

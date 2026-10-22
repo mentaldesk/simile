@@ -2,12 +2,23 @@ from collections.abc import Mapping
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
+from starlette.applications import Starlette
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.economy import Batch
 from simile.persistence.old_cells import moved
-from simile.schema import VILLAGE_MAP, Id, Intention, Key, MapTile, Model, Tile, Timestamp
+from simile.schema import (
+    VILLAGE_MAP,
+    Id,
+    Intention,
+    Key,
+    MapTile,
+    Model,
+    Player,
+    Tile,
+    Timestamp,
+)
 from simile.world.movement import Movement, Point, cell_of
 
 if TYPE_CHECKING:
@@ -54,6 +65,8 @@ class SavedWorld(Model):
     economy: SavedEconomy | None = None
     intentions: list[Intention] = []
     """Everyone's open intentions. A save from before intentions has none."""
+    player: Player = Field(default_factory=Player)
+    """The player. A save from before the player has the starting player."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -61,7 +74,10 @@ def tile_of(point: Point) -> Tile:
     return Tile(x=x, y=y)
 
 
-def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorld:
+def capture(
+    behaviour: Behaviour, economy: "Economy | None" = None, player: Player | None = None
+) -> SavedWorld:
+    """The world as it is now, with `player`, or the starting player without one."""
     now, movement = behaviour.clock.now, behaviour.movement
     return SavedWorld(
         now=now,
@@ -87,12 +103,19 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
             for npc, mind in behaviour.minds.items()
         },
         intentions=behaviour.intentions(),
+        player=Player() if player is None else player.model_copy(deep=True),
     )
 
 
-def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
+def restore(
+    world: SavedWorld,
+    behaviour: Behaviour,
+    economy: "Economy | None" = None,
+    player: Player | None = None,
+) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
-    money they had, what was in their fridges and what they'd said they'd do. Anyone saved on
+    money they had, what was in their fridges and what they'd said they'd do, and set `player`
+    to the saved player in place, so anyone holding it already has them. Anyone saved on
     one of the iso maps goes to the matching place on the side-view maps (`old_cells`). Anyone
     who was walking or talking decides again on the next think. NPCs who weren't saved carry on
     from their first start, a save from before money opens the ledger on everyone's starting
@@ -130,6 +153,9 @@ def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" =
             economy.restore({}, world.now.date())
         else:
             economy.restore(saved.money, saved.settled, saved.fridges, saved.batches)
+    if player is not None:
+        for field in Player.model_fields:
+            setattr(player, field, getattr(world.player, field))
 
 
 def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
@@ -156,3 +182,10 @@ def _put(movement: Movement, npc: Id, state: SavedNpc) -> None:
     x, y = state.position.x, state.position.y
     if movement.position(npc) != Point(x, y, state.map):
         movement.place(npc, MapTile(map=state.map, x=x, y=y))
+
+
+def player_of(app: Starlette) -> Player:
+    """The player, made on first use. Persistence restores the save into it in place."""
+    if not hasattr(app.state, "player"):
+        app.state.player = Player()
+    return app.state.player
