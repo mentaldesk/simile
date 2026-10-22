@@ -71,7 +71,7 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     return this.draw(shown(this.figure, pose, facing, phase, options));
   }
 
-  /** Does nothing unless the frame, its flip, bob or sway changed. */
+  /** Does nothing unless the frame, its flip, bob, sway or seat changed. */
   draw(next: Shown): this {
     const last = this.drawn;
     if (
@@ -79,7 +79,8 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
       last.frame === next.frame &&
       last.flip === next.flip &&
       last.bob === next.bob &&
-      last.sway === next.sway
+      last.sway === next.sway &&
+      last.seat === next.seat
     ) {
       return this;
     }

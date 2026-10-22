@@ -18,7 +18,7 @@ const figure: FigureManifest = {
     pass: frame(124, [31, 165]),
     run: frame(186, [22, 160]),
     run_pass: frame(248, [28, 166]),
-    sit: frame(310, [33, 120]),
+    sit: { ...frame(310, [33, 120]), seat: [33, 90] },
     climb: frame(372, [30, 168]),
   },
   poses: {
@@ -92,7 +92,7 @@ describe('where a frame is drawn', () => {
     for (const [name, { frame: box, feet }] of Object.entries(figure.frames)) {
       const [, , w, h] = box;
       for (const flip of [false, true]) {
-        const { originX, originY } = placed(figure, { pose: 'stand', frame: name, flip, bob: 0, sway: 0 });
+        const { originX, originY } = placed(figure, { pose: 'stand', frame: name, flip, bob: 0, sway: 0, seat: 0 });
         const drawnFeet = flip ? w - feet[0] : feet[0];
         expect(originX * w).toBeCloseTo(drawnFeet);
         expect(originY * h).toBeCloseTo(feet[1]);
@@ -101,23 +101,53 @@ describe('where a frame is drawn', () => {
   });
 
   it('turns the other way when mirrored', () => {
-    const east = placed(figure, { pose: 'walk', frame: 'stride', flip: false, bob: 0.01, sway: 1.5 });
-    const west = placed(figure, { pose: 'walk', frame: 'stride', flip: true, bob: 0.01, sway: 1.5 });
+    const east = placed(figure, { pose: 'walk', frame: 'stride', flip: false, bob: 0.01, sway: 1.5, seat: 0 });
+    const west = placed(figure, { pose: 'walk', frame: 'stride', flip: true, bob: 0.01, sway: 1.5, seat: 0 });
     expect(west.angle).toBe(-east.angle);
     expect(east.y).toBeCloseTo(-0.01 * figure.height);
   });
 });
 
+describe('sitting', () => {
+  it('faces the way its seat does, mirrored for a west-facing one', () => {
+    expect(shown(figure, 'sitting', 'west', 0, { seat: 0.45 })).toMatchObject({ frame: 'sit', flip: true, seat: 0.45 });
+    expect(shown(figure, 'working', 'west', 0, { seated: true, seat: 0.7 })).toMatchObject({ frame: 'sit', flip: true });
+    expect(shown(figure, 'sitting', 'east', 0, { seat: 0.45 }).flip).toBe(false);
+  });
+
+  it('sits on the seat, where it sits over the seat and that high', () => {
+    const [, , w, h] = figure.frames.sit.frame;
+    for (const flip of [false, true]) {
+      const at = placed(figure, { pose: 'sit', frame: 'sit', flip, bob: 0, sway: 0, seat: 0.45 });
+      expect(at.originX * w).toBeCloseTo(flip ? w - 33 : 33);
+      expect(at.originY * h).toBeCloseTo(90);
+      expect(at.y).toBeCloseTo(-0.45 * figure.ppm);
+    }
+    const floor = placed(figure, { pose: 'sit', frame: 'sit', flip: false, bob: 0, sway: 0, seat: 0 });
+    expect(floor.originY * h).toBeCloseTo(120);
+  });
+});
+
 describe('the committed figures', () => {
-  it('stand each frame on its feet, at the bottom of the frame under the head', () => {
+  it('stand each frame on its feet, at the bottom of the frame or under it in the air, under the head', () => {
     for (const doll of Object.values(dolls)) {
       for (const [name, { frame: box, feet }] of Object.entries(doll.frames)) {
         const [, , w, h] = box;
         expect(feet[1], `${doll.id} ${name}`).toBeGreaterThan(h - 8);
-        expect(feet[1], `${doll.id} ${name}`).toBeLessThanOrEqual(h);
+        expect(feet[1], `${doll.id} ${name}`).toBeLessThanOrEqual(h + 0.3 * doll.height);
         expect(feet[0], `${doll.id} ${name}`).toBeGreaterThan(w * 0.15);
         expect(feet[0], `${doll.id} ${name}`).toBeLessThan(w * 0.85);
       }
+    }
+  });
+
+  it('sit on their thighs, with their feet hanging below the seat', () => {
+    for (const doll of Object.values(dolls)) {
+      const { frame: box, seat } = doll.frames.sit;
+      expect(seat, doll.id).toBeDefined();
+      const below = box[3] - seat![1];
+      expect(below / doll.height, doll.id).toBeGreaterThan(0.1);
+      expect(below / doll.height, doll.id).toBeLessThan(0.35);
     }
   });
 

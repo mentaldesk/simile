@@ -19,6 +19,9 @@ QUALITY = 85
 PAD = 2
 ATLAS_WIDTH = 1024
 SOLID = 128
+CLEAR = 8
+EDGE = 3
+"""How far in from the clear around it an edge stays soft."""
 GAP = 12
 """How far from the background's colour, the most any channel differs, a clear patch inside the
 outline must be, typically, to be the figure's own: pale hair is about 18, a gap 6 to 8."""
@@ -29,6 +32,10 @@ CROWN = 0.6
 """The share of the head measured for its width: above the ears, where raised arms stay clear."""
 FIT = (0.6, 1.6)
 """How far a frame is rescaled to match the standing figure."""
+SOLES = 0.08
+"""The share of a sitting figure's height measured up from its lowest row as its feet."""
+CALF = 0.03
+"""How far a calf may bulge behind the heel, of a sitting figure's height."""
 
 
 @dataclass
@@ -36,6 +43,9 @@ class Frame:
     image: Image.Image
     feet: tuple[float, float]
     """The ground under the middle of the head, from the frame's top-left in pixels."""
+    seat: tuple[float, float] | None = None
+    """Where a sitting figure sits, under the middle of its head: the bottom of what's behind
+    its calves."""
 
 
 def solid(image: Image.Image) -> NDArray[np.bool_]:
@@ -45,8 +55,9 @@ def solid(image: Image.Image) -> NDArray[np.bool_]:
 def cut_out(painting: Image.Image) -> Image.Image:
     """The figure off its plain background, with #309's IS-Net and key, and without the shadow
     FLUX paints on the floor: shadow-grey reached from outside, not grey inside the outline.
-    Pale hair close to the background's grey is kept wherever the outline encloses it, and only
-    the background itself shows through a gap, such as between an arm and the body."""
+    Pale hair close to the background's grey is kept wherever the outline encloses it, only the
+    background itself shows through a gap, such as between an arm and the body, and nothing is
+    see-through but the antialiased edge."""
     import cv2
 
     from simile.papercraft.cutout import background, hybrid, shadows, unmix
@@ -57,6 +68,8 @@ def cut_out(painting: Image.Image) -> Image.Image:
     for i in range(1, count):
         if np.median(plain[labels == i]) >= GAP:
             mask[labels == i] = 255
+    edge = cv2.dilate((mask < CLEAR).astype(np.uint8), np.ones((2 * EDGE + 1,) * 2, np.uint8))
+    mask[(mask >= CLEAR) & (edge == 0)] = 255
     shade = shadows(painting)
     rows = np.flatnonzero((mask >= SOLID).any(axis=1))
     if len(rows):
@@ -152,10 +165,16 @@ def scale(figure: Image.Image, stand: Image.Image, hands_up: bool = False) -> fl
 
 
 def frames(
-    figures: Mapping[str, Image.Image], standing: str = "stand", hands_up: Iterable[str] = ()
+    figures: Mapping[str, Image.Image],
+    standing: str = "stand",
+    hands_up: Iterable[str] = (),
+    lifted: Mapping[str, str] | None = None,
+    seated: Iterable[str] = (),
 ) -> dict[str, Frame]:
     """Every cut-out figure at `PPM`: the standing one `HEIGHT_M` tall, and each other one by
-    the same factor over its `scale`, since FLUX may redraw a pose a little bigger or smaller."""
+    the same factor over its `scale`, since FLUX may redraw a pose a little bigger or smaller.
+    A frame `lifted` to another is in the air: its feet go below its lowest row, so its head is
+    as high as the other's. A `seated` frame says where it sits."""
     stand = trimmed(figures[standing])
     factor = HEIGHT_M * PPM / height(stand)
     depth = HEAD * height(stand)
@@ -165,7 +184,30 @@ def frames(
         fit = float(np.clip(1 / scale(figure, stand, up), *FIT))
         small = trimmed(scaled(trimmed(figure), factor * fit))
         out[name] = Frame(small, feet(small, depth * factor * fit, up))
+        if name in seated:
+            out[name].seat = seat(small, out[name].feet[0])
+    for name, other in (lifted or {}).items():
+        x, y = out[name].feet
+        lift = max(0.0, crown(out[other]) - crown(out[name]))
+        out[name] = Frame(out[name].image, (x, y + lift))
     return out
+
+
+def seat(image: Image.Image, middle: float) -> tuple[float, float]:
+    """Under the middle of the head, on the lowest row behind the calves: a figure turned to the
+    right sits with its feet under or in front of its knees, wherever its head is."""
+    a = solid(image)
+    rows = np.flatnonzero(a.any(axis=1))
+    tall = int(rows[-1] - rows[0] + 1)
+    low = a[rows[-1] + 1 - max(1, round(SOLES * tall)) :]
+    calves = int(np.flatnonzero(low.any(axis=0))[0]) - round(CALF * tall)
+    behind = a[:, : max(1, calves)]
+    return middle, float(np.flatnonzero(behind.any(axis=1))[-1] + 1)
+
+
+def crown(frame: Frame) -> float:
+    """How high the top of the head is over the feet, in pixels."""
+    return frame.feet[1] - float(np.flatnonzero(solid(frame.image).any(axis=1))[0])
 
 
 def pack(images: Mapping[str, Image.Image]) -> tuple[tuple[int, int], dict[str, tuple]]:
@@ -212,6 +254,11 @@ def manifest(
             name: {
                 "frame": list(places[name]),
                 "feet": [round(made[name].feet[0], 1), round(made[name].feet[1], 1)],
+                **(
+                    {"seat": [round(made[name].seat[0], 1), round(made[name].seat[1], 1)]}
+                    if made[name].seat
+                    else {}
+                ),
             }
             for name in sorted(made)
         },

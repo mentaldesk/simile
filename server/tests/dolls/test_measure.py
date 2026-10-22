@@ -7,11 +7,14 @@ from simile.dolls.flux import figure
 from simile.dolls.measure import (
     CLOSE,
     MARKS,
-    anchors,
+    STRAYS,
     face_marks,
+    follow,
     hidden,
+    identify,
     matched,
     pulled,
+    strays,
     swatches,
     worst,
 )
@@ -44,7 +47,7 @@ def test_a_colour_painted_off_is_measured_and_pulled_back_keeping_the_rest() -> 
     off = painted(skin=skin)
     before = swatches(off, PLAYER)
 
-    fixed = matched(off, anchors(off, PLAYER))
+    fixed = pulled(off, PLAYER)
 
     after = swatches(fixed, PLAYER)
     assert before["skin"].delta_e > CLOSE
@@ -59,7 +62,7 @@ def test_a_colour_painted_off_is_measured_and_pulled_back_keeping_the_rest() -> 
 def test_another_colour_altogether_isnt_pulled_back() -> None:
     blue = painted(top="#a22633")
 
-    fixed = matched(blue, anchors(blue, PLAYER))
+    fixed = pulled(blue, PLAYER)
 
     assert swatches(fixed, PLAYER)["top"].delta_e > CLOSE
 
@@ -77,7 +80,7 @@ def test_hair_a_cap_hides_isnt_pulled_onto_the_face() -> None:
     )
     face = keyed(figure((300, 400), COLOURS | {"skin": "#ead4aa", "hair": "#7a3cc0"}))
 
-    assert "hair" not in anchors(face, capped)
+    assert "hair" not in identify(face, capped)
     assert face_marks(pulled(face, capped), capped) == 0
 
 
@@ -87,3 +90,25 @@ def test_a_clean_face_has_no_marks_and_a_patch_painted_on_it_does() -> None:
 
     assert face_marks(painted(), PLAYER) == 0
     assert face_marks(keyed(marked), PLAYER) > MARKS
+
+
+def test_a_pose_moves_each_garment_as_the_standing_figure_was_painted() -> None:
+    skin = "#e09b47"
+    stand = painted(skin=skin)
+    pose = figure((300, 400), COLOURS | {"skin": skin})
+    ImageDraw.Draw(pose).rectangle((105, 150, 135, 260), "#f8c800")
+    pose = keyed(pose)
+    colours = {name: got for name, (got, _) in identify(stand, PLAYER).items()}
+
+    fixed = matched(pose, follow(pose, colours, PLAYER, "upright"))
+
+    pixels = np.asarray(fixed.convert("RGB"))
+    assert delta_e(pixels[200, 120], rgb("#f8c800")) < 2
+    assert swatches(fixed, PLAYER)["skin"].delta_e < 1
+
+
+def test_a_pose_painted_in_colours_the_standing_figure_hasnt_got_is_off() -> None:
+    stand = painted()
+
+    assert strays(painted(), stand) == 0
+    assert strays(painted(top="#5b2bc4"), stand) > STRAYS

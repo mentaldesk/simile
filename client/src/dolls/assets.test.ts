@@ -68,4 +68,11 @@ describe('loadDoll', () => {
     expect(found.painted).toBe('http://localhost/api/jobs/files/doll/new_face.webp');
     expect(isFigure(found)).toBe(true);
   });
+
+  it('refuses a paper doll painted before figures, so the look is painted again', async () => {
+    const old = { unit: 5, height: 100, flat: 'old-flat.webp', painted: 'old-painted.webp', pieces: {} };
+    const fetcher = vi.fn(async () => Response.json(old));
+
+    await expect(loadDoll('http://localhost/api/jobs/files/doll/old.json', fetcher)).rejects.toThrow('paper doll');
+  });
 });

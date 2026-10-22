@@ -12,6 +12,8 @@ export type PoseOptions = {
   on?: 'ladder' | 'stairs';
   /** How far `walking` has turned into a run, 0 to 1. */
   run?: number;
+  /** Metres up the seat a sitting figure sits on is, over the point it's placed by. */
+  seat?: number;
 };
 
 export type Placement = {

@@ -1,4 +1,4 @@
-import type { DollManifest, FigureManifest, FlatDoll } from './manifest';
+import { isFigure, type DollManifest, type FigureManifest, type FlatDoll } from './manifest';
 
 const manifests = import.meta.glob<FigureManifest>('../../../content/dolls/*.json', {
   eager: true,
@@ -36,11 +36,13 @@ export async function flatDoll(
   return (await response.json()) as FlatDoll;
 }
 
-/** A figure a job painted, its atlas's URL resolved against its manifest's. */
+/** A figure a job painted, its atlas's URL resolved against its manifest's. A paper doll painted
+ * before figures is refused, so the creator paints the look again. */
 export async function loadDoll(url: string, fetcher: typeof fetch = fetch): Promise<DollManifest> {
   const response = await fetcher(url);
   if (!response.ok) throw new Error(`No doll at ${url}: ${response.status}`);
   const doll = (await response.json()) as DollManifest;
+  if (!isFigure(doll)) throw new Error(`${url} is a paper doll, painted before figures`);
   const base = new URL(url, globalThis.location?.href);
   const resolve = (name?: string) => (name ? new URL(name, base).href : undefined);
   return { ...doll, painted: resolve(doll.painted) };

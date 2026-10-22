@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { dolls } from '../dolls/assets';
 import { shown } from '../dolls/sprite';
-import { facesLeft, PoseCache, STEPS } from './poses';
+import type { Placed } from './maps';
+import { facesLeft, hiddenInFront, PoseCache, seatHeight, STEPS } from './poses';
 
 describe('the pose cache', () => {
   const figure = dolls.kofi;
@@ -39,5 +40,31 @@ describe('the pose cache', () => {
     expect(figure.poses.walk).toContain(cache.get('walking', 'east', 0.1, false, undefined, 0.4).frame);
     expect(figure.poses.run).toContain(cache.get('walking', 'east', 0.1, false, undefined, 0.6).frame);
     expect(cache.get('standing', 'east', 0, false, undefined, 1)).toBe(cache.get('standing', 'east', 0));
+  });
+});
+
+describe('a seat', () => {
+  const placed = (type: string, x: number, w = 1): Placed => ({ name: type, type, x, y: 2, w, h: 1, props: {} });
+  const map = {
+    spots: [placed('seat', 1), placed('seat', 4), placed('bar', 6), placed('standing', 8)],
+    furniture: [placed('cafe_table', 1, 2), placed('stool', 4)],
+  };
+
+  it('is a chair’s height, a stool’s or the bar’s higher, and nothing off a seat', () => {
+    expect(seatHeight(map, 1, 2)).toBe(0.45);
+    expect(seatHeight(map, 4, 2)).toBe(0.7);
+    expect(seatHeight(map, 6, 2)).toBe(0.7);
+    expect(seatHeight(map, 8, 2)).toBe(0);
+    expect(seatHeight(map, 3, 2)).toBe(0);
+  });
+});
+
+describe('a figure in front of an open dollhouse', () => {
+  it('is left out rather than drawn see-through, unless it’s inside or the player', () => {
+    expect(hiddenInFront(false, false, 0.35)).toBe(true);
+    expect(hiddenInFront(false, false, 0.9)).toBe(true);
+    expect(hiddenInFront(false, false, 1)).toBe(false);
+    expect(hiddenInFront(true, false, 0.35)).toBe(false);
+    expect(hiddenInFront(false, true, 0.35)).toBe(false);
   });
 });

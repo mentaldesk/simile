@@ -21,6 +21,7 @@ import type { Drawn } from './motion';
 import type { Crossing } from './runs';
 import { SidePlayer, type Controls, type MapPosition } from './player';
 import { sideResidents } from './residents';
+import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
 import { SideTextures } from './textures';
@@ -315,18 +316,22 @@ export class SideScene extends Phaser.Scene {
     if (!figure) return;
     const map = village.map(mapId);
     const inside = map?.kind === 'floor';
-    const shown = map?.street === street.map.id && (!inside || street.isOpen(map.building));
+    const x = xOf(at.x);
+    const shown =
+      map?.street === street.map.id &&
+      (!inside || street.isOpen(map.building)) &&
+      !hiddenInFront(inside, id === PLAYER_ID, street.ghost(x));
     figure.shown = shown;
     figure.doll.setVisible(shown);
     figure.contact.setVisible(shown && drawn.on !== 'ladder' && drawn.pose !== 'riding');
     if (!shown) return;
-    figure.x = xOf(at.x);
+    figure.x = x;
     figure.feet = feetOf(at.y);
     const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
-    const alpha = inside ? 1 : street.ghost(figure.x);
-    figure.doll.setPosition(figure.x, figure.feet).setDepth(depth).setAlpha(alpha);
-    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground']);
-    figure.contact.setPosition(figure.x, figure.feet).setAlpha(alpha);
+    figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
+    const seat = map ? seatHeight(map, at.x - map.offset.x, at.y - map.offset.y) : 0;
+    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat);
+    figure.contact.setPosition(figure.x, figure.feet);
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
   }
 

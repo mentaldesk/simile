@@ -37,6 +37,8 @@ For each resident and `player`:
   "painted": "odalys.webp",
   "frames": {
     "stand": {"frame": [0, 0, 74, 168], "feet": [37.5, 166.0]},
+    "run": {"frame": [76, 0, 88, 142], "feet": [44.0, 158.6]},
+    "sit": {"frame": [166, 0, 80, 148], "feet": [36.5, 146.0], "seat": [36.5, 118.0]},
     "...": {}
   },
   "poses": {
@@ -53,7 +55,10 @@ For each resident and `player`:
   standing figure's height in atlas pixels, sole to crown: 2.04 m, the street's resident.
 - **`frames`**: each painting's place in the atlas (x, y, width, height) and its **`feet`**: the
   ground under the middle of its head, from the frame's top-left. The client puts that point
-  where the resident stands, so the head doesn't jump as the legs change.
+  where the resident stands, so the head doesn't jump as the legs change. The run's frame in the
+  air has its feet below the frame, so its head is as high as the other run frame's. Sitting has
+  a **`seat`** too, the bottom of its thighs (the lowest row behind its calves), which the
+  client puts on the seat.
 - **`poses`**: the frames each pose plays through its cycle. Every frame faces right in
   three-quarter view but the climb, seen from behind; the client mirrors them to face west.
 - **`hash`** is what the figure was painted from: the pipeline's `version`, the `Appearance`, who
@@ -69,21 +74,29 @@ For each resident and `player`:
    hair, accessories, clothes and build, each colour named precisely: FLUX follows a colour's
    name, not its hex code.
 2. **Every other pose is an edit of that painting:** a stride; a passing step, painted over a
-   rough drawing of its legs (`legs_guide`), since FLUX draws a stride whenever a passing step is
-   asked for in words; a run; a second running frame, an edit of the passing step with the arms
-   pumping; sitting in mid-air; and climbing, seen from behind.
+   rough drawing of its legs (`legs_guide`, which leaves an apron over them as it was), since FLUX
+   draws a stride whenever a passing step is asked for in words; a run; a second running frame,
+   an edit of the passing step with the arms pumping; sitting in mid-air; and climbing, seen from
+   behind.
 3. **Cut out** with #309's IS-Net and key, without the shadow FLUX paints on the floor, keeping
-   pale hair the key would take for the background wherever the outline encloses it
-   (`sprites.cut_out`).
-4. **Colours** (`measure.py`): a whole painting has no map of its regions, so each of the
-   `Appearance`'s colours is looked for in its band of the figure (hair at the top, shoes at the
-   bottom): what's painted nearer it than any other colour asked for, or failing that the
-   nearest of the band's main colours, is moved to it, shading and all, a few times over, since
-   one colour painted near another comes right once the other has moved. Hair a cap hides isn't looked for, or the
-   face would be moved towards it.
+   pale hair the key would take for the background wherever the outline encloses it, and opaque
+   everywhere but its antialiased edge and real gaps (`sprites.cut_out`).
+4. **Colours** (`measure.py`): a whole painting has no map of its regions.
+   - **Standing,** each of the `Appearance`'s colours is found in the middle of its band (the
+     crown, the face, the chest, the shins, the shoes): of the main colours there, the biggest
+     of those nearly as near the colour asked for as the nearest. Hair a cap hides isn't looked
+     for, or the face would be taken for it.
+   - **Every other pose follows the standing figure:** each garment is what's painted near its
+     colour as the standing figure was painted, so a shirt FLUX paints nearer the trousers' colour
+     than the shirt's is still the shirt, and every pose moves it the same way.
+   - Each is moved to the colour asked for, shading and all. The figure's other main colours, a
+     backpack's or an apron's, stay put.
 5. **Checks.** A frame is painted again with another seed, a few times at most (`build.TRIES`),
    and the best kept, if:
-   - a colour still misses by more than ΔE 6, or was painted another colour altogether;
+   - a colour still misses by more than ΔE 6 once matched, or the standing figure painted it
+     another colour altogether (ΔE 20);
+   - a pose loses one of the standing figure's colours, or is painted over 5% in colours the
+     standing figure hasn't got, over ΔE 12 from all of its (`measure.strays`);
    - its face is painted over (`measure.face_marks`): more than 5% of the front of the face in
      patches more than ΔE 16 from the skin that aren't ink, eyes or brows;
    - it's drawn more than a quarter bigger or smaller than the standing figure

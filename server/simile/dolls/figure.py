@@ -34,6 +34,11 @@ SAME = (
     "same three-quarter view turned to the right, now "
 )
 INK = (58, 36, 28)
+APRON = 0.6
+"""Where an apron is, down the figure, under the middle of the hips."""
+APRON_NEAR = 15.0
+APRON_EDGE = 4
+"""Pixels round the apron kept with it, for its outline."""
 
 
 @dataclass(frozen=True)
@@ -47,6 +52,11 @@ class Pose:
     """Painted over `base` with its legs redrawn roughly in this `LEGS` pose: FLUX draws a
     stride for every passing step it's asked for in words."""
     face: bool = True
+    seated: bool = False
+    """Sits on a seat: the client puts it there by where it sits."""
+    lifted: str | None = None
+    """In the air, as high as this frame's head: FLUX draws a running figure's knees up, so
+    standing on its lowest foot would drop its head."""
 
 
 Leg = tuple[tuple[float, float], ...]
@@ -76,7 +86,8 @@ EDITS = {
     "run": Pose(
         SAME + "running fast to the right, leaning forward: the left knee driven high in front, "
         "the right leg pushing off behind, both feet off the ground, the elbows bent and the "
-        "arms pumping."
+        "arms pumping.",
+        lifted="run_pass",
     ),
     "run_pass": Pose(
         "Redraw image 1 with the same character, unchanged in every detail and the same size, in "
@@ -86,7 +97,8 @@ EDITS = {
     ),
     "sit": Pose(
         SAME + "sitting with the knees bent forward and the hands resting on the knees, sitting "
-        "in mid-air with nothing under them: no chair, no box, no seat."
+        "in mid-air with nothing under them: no chair, no box, no seat.",
+        seated=True,
     ),
     "climb": Pose(
         "Redraw image 1 with the same character, unchanged in every detail and the same size, "
@@ -181,7 +193,26 @@ def legs_guide(
             outline=INK,
             width=3,
         )
+    if any(a.value == "apron" for a in appearance.accessories):
+        keep = apron(painting, solid, round(middle), top + round(APRON * tall))
+        pixels = np.asarray(out).copy()
+        pixels[keep] = np.asarray(painting.convert("RGB"))[keep]
+        out = Image.fromarray(pixels)
     return out
+
+
+def apron(painting: Image.Image, solid: NDArray[np.bool_], x: int, y: int) -> NDArray[np.bool_]:
+    """The apron hanging over the legs, with its outline: the patch painted like it at (x, y)."""
+    import cv2
+
+    from simile.dolls.colour import cielab, delta_e_lab
+
+    lab = cielab(np.asarray(painting.convert("RGB"), dtype=np.float64))
+    like = (solid & (delta_e_lab(lab, lab[y, x]) < APRON_NEAR)).astype(np.uint8)
+    _, labels = cv2.connectedComponents(like, connectivity=8)
+    patch = (labels == labels[y, x]).astype(np.uint8)
+    edge = np.ones((2 * APRON_EDGE + 1, 2 * APRON_EDGE + 1), np.uint8)
+    return (cv2.dilate(patch, edge) > 0) & solid
 
 
 def run_through(row: NDArray[np.bool_], x: int) -> tuple[int, int]:

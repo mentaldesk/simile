@@ -9,8 +9,8 @@ export const WALK_SWAY = 2;
 export const LADDER_BOB = 0.015;
 
 /** A frame of a figure as drawn: mirrored to face left, raised by `bob` of its height and turned
- * `sway` degrees clockwise about its feet. */
-export type Shown = { pose: SpritePose; frame: string; flip: boolean; bob: number; sway: number };
+ * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up. */
+export type Shown = { pose: SpritePose; frame: string; flip: boolean; bob: number; sway: number; seat: number };
 
 export const facesLeft = (facing: Facing): boolean => facing.endsWith('west');
 
@@ -36,15 +36,17 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
   }
 }
 
-/** Where a frame is drawn: its origin, as fractions of the frame, at the feet as drawn, mirrored
- * or not, `y` up by the bob in the figure's pixels, and turned `angle` degrees clockwise. */
-export function placed(figure: FigureManifest, { frame, flip, bob, sway }: Shown) {
-  const { frame: box, feet } = figure.frames[frame];
+/** Where a frame is drawn: its origin, as fractions of the frame, at the feet as drawn, or on a
+ * seat where it sits, mirrored or not; `y` up by the bob or the seat, in the figure's pixels;
+ * and turned `angle` degrees clockwise. */
+export function placed(figure: FigureManifest, { frame, flip, bob, sway, seat }: Shown) {
+  const { frame: box, feet, seat: sits } = figure.frames[frame];
   const [, , w, h] = box;
+  const [x, y] = seat > 0 && sits ? sits : feet;
   return {
-    originX: (flip ? w - feet[0] : feet[0]) / w,
-    originY: feet[1] / h,
-    y: -bob * figure.height,
+    originX: (flip ? w - x : x) / w,
+    originY: y / h,
+    y: -bob * figure.height - (seat > 0 && sits ? seat * figure.ppm : 0),
     angle: flip ? -sway : sway,
   };
 }
@@ -70,10 +72,13 @@ export function shown(
         flip: facesLeft(facing),
         bob: (WALK_BOB * (1 - Math.cos(2 * (turn - Math.PI / 4)))) / 2,
         sway: WALK_SWAY * Math.sin(turn),
+        seat: 0,
       };
     case 'climb':
-      return { pose: kind, frame, flip: cycle >= 0.5, bob: LADDER_BOB * Math.abs(Math.sin(turn)), sway: 0 };
+      return { pose: kind, frame, flip: cycle >= 0.5, bob: LADDER_BOB * Math.abs(Math.sin(turn)), sway: 0, seat: 0 };
+    case 'sit':
+      return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: options.seat ?? 0 };
     default:
-      return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0 };
+      return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: 0 };
   }
 }

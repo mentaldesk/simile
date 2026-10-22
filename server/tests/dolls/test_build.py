@@ -7,7 +7,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from simile.dolls import build
-from simile.dolls.figure import EDITS, FRAMES, POSES
+from simile.dolls.figure import FRAMES, POSES
 from simile.dolls.flux import FakePainter, figure
 from simile.dolls.measure import MARKS
 
@@ -164,7 +164,7 @@ def test_a_painting_in_the_wrong_colours_is_painted_again_a_few_times_at_most(
     kept = done[0].tries["stand"][-1]
     assert kept.raw["top"].delta_e > build.WRONG
     assert len(done[0].tries["stand"]) == build.TRIES["stand"]
-    assert all(len(done[0].tries[frame]) == build.TRIES["edit"] for frame in EDITS)
+    assert all(len(done[0].tries[frame]) == 1 for frame in ("stride", "run", "sit", "climb"))
 
 
 def test_a_pose_drawn_at_another_size_is_painted_again_then_scaled_to_the_rest(

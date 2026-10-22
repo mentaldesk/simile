@@ -28,10 +28,16 @@ from simile.dolls.flux import Painter
 from simile.dolls.measure import (
     CLOSE,
     MARKS,
+    STRAYS,
     Swatch,
     face_marks,
+    follow,
     hidden,
+    identify,
+    kept,
+    matched,
     pulled,
+    strays,
     swatches,
     worst,
 )
@@ -54,8 +60,11 @@ WRONG = 20.0
 shade of it: rather than pulled back, the painting is made again."""
 REROLLS: dict[str, int] = {}
 """`<id>/<frame>` to a reroll number, for a painting that came out off-model by eye."""
-MISSES: dict[tuple[str, str], str] = {}
-"""(id, colour) still over `CLOSE` from the `Appearance` in the standing figure, and why."""
+MISSES: dict[tuple[str, str, str], str] = {
+    ("henrietta", "climb", "shoe"): "ΔE 7.8: near-black shoes, seen from behind, among the outline",
+    ("raymond", "run_pass", "shoe"): "ΔE 6.1: near-black shoes, mid-stride, among the outline",
+}
+"""(id, frame, colour) still over `CLOSE` from the `Appearance` once matched, and why."""
 
 Cut = Callable[[Image.Image], Image.Image]
 
@@ -104,11 +113,20 @@ class Try:
     """The share of the face painted over: `measure.face_marks`."""
     scale: float = 1.0
     """How much bigger it's drawn than the standing figure: `sprites.scale`."""
+    lost: list[str] = field(default_factory=list)
+    """Colours of the standing figure it doesn't show as painted there: `measure.follow`."""
+    strays: float = 0.0
+    """The share of it in colours the standing figure hasn't got: `measure.strays`."""
+    followed: bool = False
+    """Matched as the standing figure was painted, so a colour painted far off is the standing
+    figure's, already accepted, rather than another colour."""
 
 
 @dataclass
 class Painted:
     who: str
+    colours: dict[str, Any] = field(default_factory=dict)
+    """Each colour the standing figure shows, in CIELAB as FLUX painted it."""
     figures: dict[str, Image.Image] = field(default_factory=dict)
     paintings: dict[str, Image.Image] = field(default_factory=dict)
     tries: dict[str, list[Try]] = field(default_factory=dict)
@@ -158,30 +176,44 @@ def attempt(
     appearance: Appearance,
     cut: Cut,
     pose: Pose,
-    standing: Image.Image | None,
+    standing: Painted | None,
 ) -> tuple[Try, Image.Image, Image.Image]:
-    """One painting cut out, its colours pulled back to the `Appearance`, how far off they were
-    before and after, how much of the face is painted over, and how big it's drawn."""
+    """One painting cut out and its colours pulled back to the `Appearance`, following how the
+    `standing` figure was painted, if this isn't it. With how far off they were before and after,
+    how much of the face is painted over, how big it's drawn, which of the standing figure's
+    colours it lost and how much of it is painted in others."""
     painting, seconds = painter.paint(prompt, seed, images)
     figure = cut(painting)
     raw = swatches(figure, appearance, pose.bands)
-    fixed = pulled(figure, appearance, pose.bands)
-    tried = Try(seed, raw, swatches(fixed, appearance, pose.bands), seconds)
+    if standing is None:
+        fixed = pulled(figure, appearance, pose.bands)
+        tried = Try(seed, raw, swatches(fixed, appearance, pose.bands), seconds)
+    else:
+        found = follow(figure, standing.colours, appearance, pose.bands)
+        fixed = matched(figure, found, pose.bands)
+        after = kept(figure, fixed, standing.colours, appearance, pose.bands)
+        tried = Try(seed, raw, after, seconds, followed=True)
+        tried.lost = sorted(set(standing.colours) - set(found))
+        stand = standing.figures["stand"]
+        tried.scale = round(scale(fixed, stand, pose.bands == "climb"), 3)
+        tried.strays = strays(fixed, stand)
     if pose.face:
         tried.marks = round(face_marks(fixed, appearance), 3)
-    if standing is not None:
-        tried.scale = round(scale(fixed, standing, pose.bands == "climb"), 3)
     return tried, painting, fixed
 
 
 def misses(tried: Try, appearance: Appearance) -> tuple[bool, float, float, float]:
     """Sorts tries best first: matched within `CLOSE`, with nothing painted another colour, a
-    clean face and drawn to scale; then the least marked and off scale; then the closest."""
+    clean face, drawn to scale and painted like the standing figure; then the least marked, off
+    scale and unlike it; then the closest."""
     shown = hidden(appearance)
     after, before = worst(tried.matched, shown), worst(tried.raw, shown)
     off_scale = abs(np.log(tried.scale)) > np.log(SCALE)
-    bad = after > CLOSE or before > WRONG or tried.marks > MARKS or off_scale
-    return bad, tried.marks + abs(np.log(tried.scale)), after, before
+    unlike = bool(tried.lost) or tried.strays > STRAYS
+    wrong = before > WRONG and not tried.followed
+    bad = after > CLOSE or wrong or tried.marks > MARKS or off_scale or unlike
+    odd = tried.marks + abs(np.log(tried.scale)) + tried.strays + len(tried.lost)
+    return bad, odd, after, before
 
 
 def paint_frame(
@@ -197,7 +229,7 @@ def paint_frame(
 ) -> None:
     """Paints `frame` until it matches, at most `tries` times, keeping the best."""
     first = REROLLS.get(f"{painted.who}/{frame}", 0)
-    standing = painted.figures.get("stand")
+    standing = painted if painted.figures.get("stand") else None
     made = []
     for n in range(first, first + tries):
         number = seed(painted.who, frame, n)
@@ -222,6 +254,8 @@ def paint(
     painted = Painted(who)
     stand = stand_prompt(appearance, who, said)
     paint_frame(painter, painted, "stand", stand, [], appearance, cut, STANDING, TRIES["stand"])
+    found = identify(cut(painted.paintings["stand"]), appearance)
+    painted.colours = {name: got for name, (got, _) in found.items()}
     log(f"{who} stand: {summary(painted.tries['stand'][-1])}")
     for frame, pose in EDITS.items():
         figure = painted.figures[pose.base]
@@ -240,9 +274,10 @@ def summary(tried: Try) -> str:
 
 def files(who: str, painted: Painted, **extra: Any) -> dict[str, bytes]:
     """The manifest and the atlas, by file name."""
-    made = frames(
-        painted.figures, hands_up=[f for f, pose in EDITS.items() if pose.bands == "climb"]
-    )
+    climbs = [f for f, pose in EDITS.items() if pose.bands == "climb"]
+    lifted = {f: pose.lifted for f, pose in EDITS.items() if pose.lifted}
+    seated = [f for f, pose in EDITS.items() if pose.seated]
+    made = frames(painted.figures, hands_up=climbs, lifted=lifted, seated=seated)
     data, places = atlas(made)
     name = f"{who}.webp"
     body = manifest(made, places, POSES, name, id=who, **extra)

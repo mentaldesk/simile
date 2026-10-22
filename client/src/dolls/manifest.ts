@@ -32,6 +32,8 @@ export type SpriteFrame = {
   frame: [number, number, number, number];
   /** The ground under the middle of the head, from the frame's top-left. */
   feet: Point;
+  /** Where a sitting figure sits, under the middle of its head. */
+  seat?: Point;
 };
 
 /** What a figure is painted doing; every `DollPose` is drawn as one of them. */

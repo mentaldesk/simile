@@ -2,7 +2,7 @@ import type { Facing } from '../net';
 import type { FigureManifest, SpritePose } from '../dolls/manifest';
 import type { DollPose, PoseOptions } from '../dolls/rig';
 import { facesLeft, shown, spritePose, type Shown } from '../dolls/sprite';
-import type { ClimbKind } from './maps';
+import type { ClimbKind, SideMap } from './maps';
 
 export { facesLeft };
 
@@ -48,4 +48,25 @@ export class PoseCache {
   get size(): number {
     return this.shown.filter(Boolean).length;
   }
+}
+
+/** Whether a figure is left out: a resident on the street in front of a dollhouse that's open,
+ * or opening, where the street's props fade (`StreetView.ghost`). No one is drawn see-through,
+ * and the player is always drawn. */
+export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): boolean =>
+  !inside && !player && ghost < 1;
+
+/** Metres up a seat is: a stool's or a bar's, or a chair's, bench's or desk chair's. */
+const SEAT_M = { high: 0.7, low: 0.45 };
+const SEATS = new Set(['seat', 'desk', 'bar']);
+const HIGH_SEATS = new Set(['stool', 'bar_stool']);
+
+/** The seat at a map cell, by its spot and the furniture on it, or 0 where there's none. */
+export function seatHeight(map: Pick<SideMap, 'spots' | 'furniture'>, x: number, y: number): number {
+  const cx = Math.round(x);
+  const cy = Math.round(y);
+  const spot = map.spots.find((s) => s.x === cx && s.y === cy && SEATS.has(s.type));
+  if (!spot) return 0;
+  const under = map.furniture.find((f) => cx >= f.x && cx < f.x + Math.max(1, f.w) && cy >= f.y && cy < f.y + Math.max(1, f.h));
+  return spot.type === 'bar' || (under && HIGH_SEATS.has(under.type)) ? SEAT_M.high : SEAT_M.low;
 }

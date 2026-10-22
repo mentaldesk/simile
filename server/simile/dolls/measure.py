@@ -38,8 +38,31 @@ FIELDS = {
     "bottom": "bottom_colour",
     "shoe": "shoe_colour",
 }
+CORES = {
+    "hair": (0.0, 0.15),
+    "skin": (0.12, 0.33),
+    "top": (0.36, 0.6),
+    "bottom": (0.75, 0.9),
+    "shoe": (0.93, 1.0),
+}
+"""Where each colour is found in a standing figure, its band's middle, clear of the others: the
+crown, the face, the chest, the shins and the shoes."""
 LEAST = 0.04
 """The share of its band a colour must cover to be found there."""
+NEAR_BEST = 6.0
+"""How much further from the colour asked for than the nearest main colour a bigger one may be
+and still be taken for it, as the lit side of a face beside its shadow is."""
+FOLLOW = 12.0
+"""How far a pose's colour may be from the standing figure's, CIEDE2000, and be the same thing."""
+LOST = 0.003
+"""The share of a pose a colour of the standing figure must cover to be found in it."""
+NEUTRAL = 12.0
+"""Main colours further than this from every one asked for, such as a backpack's, stay put."""
+STRAY = 12.0
+"""How far a main colour of a pose may be from every one of the standing figure's."""
+STRAY_LEAST = 0.02
+STRAYS = 0.05
+"""The share of a pose in such colours that counts as off the standing figure."""
 WITHIN = 32.0
 """Further than this from the colour asked for, what was found is something else."""
 FADE = (8.0, 18.0)
@@ -47,10 +70,10 @@ FADE = (8.0, 18.0)
 CLOSE = 6.0
 """What counts as matching the `Appearance`."""
 KINDS = 6
-"""The main colours a band is sorted into."""
+"""The main colours a band is sorted into, and twice as many for a whole figure."""
 SAMPLE = 20000
 ROUNDS = 8
-PASSES = 3
+PASSES = 2
 FACE_SKIN = 14.0
 """Within this of the skin asked for, CIEDE2000, a pixel is skin."""
 FACE_DEPTH = 0.38
@@ -100,28 +123,6 @@ def bands(figure: Image.Image, layout: str) -> dict[str, NDArray[np.float64]]:
     return out
 
 
-def typical(
-    lab: NDArray[np.float64], target: NDArray[np.float64], others: list[NDArray[np.float64]]
-) -> tuple[NDArray, float]:
-    """The colour painted for `target`: the middle of the colours nearer it than any of the
-    `others` wanted, lit and shaded alike, if they cover `LEAST` of `lab`; or else, of the main
-    colours in `lab`, the nearest. And its share of `lab`."""
-    if not len(lab):
-        return np.full(3, np.nan), 0.0
-    distance = delta_e_lab(lab, target)
-    mine = distance <= WITHIN
-    for other in others:
-        mine &= distance <= delta_e_lab(lab, other)
-    if mine.mean() >= LEAST:
-        return np.median(lab[mine], axis=0), float(mine.mean())
-    centres, shares = main_colours(lab)
-    found = shares >= LEAST
-    if not found.any():
-        found = shares > 0
-    best = int(np.argmin(np.where(found, delta_e_lab(centres, target), np.inf)))
-    return centres[best], float(shares[best])
-
-
 def main_colours(lab: NDArray[np.float64], k: int = KINDS) -> tuple[NDArray, NDArray]:
     """`lab`'s colours in `k` clusters, k-means from the most different: their middles and
     shares."""
@@ -150,34 +151,70 @@ def wanted(appearance: Appearance) -> dict[str, NDArray[np.float64]]:
     }
 
 
-def anchors(figure: Image.Image, appearance: Appearance, layout: str = "upright") -> Anchors:
-    """Each of the `Appearance`'s colours the figure shows, and what was painted for it in its
-    band."""
-    lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
+def core(figure: Image.Image, name: str) -> NDArray[np.bool_]:
     solid = opaque(figure)
-    rows = bands(figure, layout)
+    rows = np.flatnonzero(solid.any(axis=1))
+    top, height = rows[0], rows[-1] - rows[0] + 1
+    start, end = CORES[name]
+    out = np.zeros_like(solid)
+    out[top + int(start * height) : top + int(np.ceil(end * height))] = True
+    return out & solid
+
+
+def chosen(lab: NDArray[np.float64], target: NDArray[np.float64]) -> tuple[NDArray, float]:
+    """Of `lab`'s main colours covering at least `LEAST` of it and within `WITHIN` of `target`,
+    the biggest of those nearly as near it as the nearest; and its share. NaN if none."""
+    if len(lab) < 20:
+        return np.full(3, np.nan), 0.0
+    centres, shares = main_colours(lab)
+    far = np.where(shares >= LEAST, delta_e_lab(centres, target), np.inf)
+    if far.min() > WITHIN:
+        return np.full(3, np.nan), 0.0
+    pick = int(np.argmax(np.where(far <= far.min() + NEAR_BEST, shares, -1)))
+    return centres[pick], float(shares[pick])
+
+
+def identify(figure: Image.Image, appearance: Appearance) -> Anchors:
+    """Each colour a standing figure shows, as painted, from the middle of its band, and the
+    colour asked for. Hair a cap hides isn't looked for, or the face would be taken for it."""
+    lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     out = {}
-    colours = wanted(appearance)
-    for name, target in colours.items():
+    for name, target in wanted(appearance).items():
         if name in hidden(appearance):
             continue
-        others = [c for n, c in colours.items() if n != name]
-        got, _ = typical(lab[solid & (rows[name] >= 1)], target, others)
-        if not np.isnan(got).any() and delta_e_lab(got, target) <= WITHIN:
+        got, _ = chosen(lab[core(figure, name)], target)
+        if not np.isnan(got).any():
             out[name] = (got, target)
     return out
 
 
-def swatches(figure: Image.Image, appearance: Appearance, layout: str = "upright") -> dict:
-    """Each colour as wanted, as painted, and how far apart they are, CIEDE2000."""
+def follow(
+    figure: Image.Image, painted: dict[str, NDArray], appearance: Appearance, layout: str
+) -> Anchors:
+    """Each colour as the standing figure was `painted`, found again in a pose: the middle of
+    what's within `FOLLOW` of it in its band, if there's enough of it."""
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     solid = opaque(figure)
     rows = bands(figure, layout)
-    out = {}
     colours = wanted(appearance)
-    for name, target in colours.items():
-        others = [c for n, c in colours.items() if n != name]
-        got, share = typical(lab[solid & (rows[name] >= 1)], target, others)
+    out = {}
+    for name, colour in painted.items():
+        here = lab[solid & (rows[name] > 0)]
+        near = delta_e_lab(here, colour) < FOLLOW
+        if near.sum() >= LOST * solid.sum():
+            out[name] = (np.median(here[near], axis=0), colours[name])
+    return out
+
+
+def swatches(figure: Image.Image, appearance: Appearance, layout: str = "upright") -> dict:
+    """Each colour as wanted, as painted, and how far apart they are, CIEDE2000: in a standing
+    figure from the middle of its band, in another pose from all of it."""
+    lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
+    rows = bands(figure, layout)
+    out = {}
+    for name, target in wanted(appearance).items():
+        where = core(figure, name) if layout == "upright" else opaque(figure) & (rows[name] >= 1)
+        got, share = chosen(lab[where], target)
         want = hex_of(from_cielab(target))
         if np.isnan(got).any():
             out[name] = Swatch(want, "", float("inf"), 0.0)
@@ -185,6 +222,46 @@ def swatches(figure: Image.Image, appearance: Appearance, layout: str = "upright
             far = round(float(delta_e_lab(got, target)), 1)
             out[name] = Swatch(want, hex_of(from_cielab(got)), far, round(share, 3))
     return out
+
+
+def kept(
+    figure: Image.Image,
+    fixed: Image.Image,
+    painted: dict[str, NDArray],
+    appearance: Appearance,
+    layout: str,
+) -> dict:
+    """Each colour as `follow` found it in a pose `figure`, as painted, against the same pixels
+    once `fixed`: how far each garment is from the colour asked for after matching."""
+    before = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
+    after = cielab(np.asarray(fixed.convert("RGB"), dtype=np.float64))
+    solid = opaque(figure)
+    rows = bands(figure, layout)
+    out = {}
+    for name, colour in painted.items():
+        target = wanted(appearance)[name]
+        want = hex_of(from_cielab(target))
+        mine = solid & (rows[name] > 0) & (delta_e_lab(before, colour) < FOLLOW)
+        if mine.sum() < LOST * solid.sum():
+            out[name] = Swatch(want, "", float("inf"), 0.0)
+            continue
+        got = np.median(after[mine], axis=0)
+        far = round(float(delta_e_lab(got, target)), 1)
+        out[name] = Swatch(want, hex_of(from_cielab(got)), far, round(float(mine.mean()), 3))
+    return out
+
+
+def strays(figure: Image.Image, standing: Image.Image) -> float:
+    """The share of `figure` painted in main colours the standing figure hasn't got, each over
+    `STRAY` from all of its: a garment or a limb that came out, or was pulled, another colour."""
+    mine = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64)[opaque(figure)])
+    theirs = cielab(np.asarray(standing.convert("RGB"), dtype=np.float64)[opaque(standing)])
+    if not len(mine) or not len(theirs):
+        return 0.0
+    centres, shares = main_colours(mine, 2 * KINDS)
+    known, _ = main_colours(theirs, 2 * KINDS)
+    far = np.array([delta_e_lab(known, c).min() for c in centres])
+    return round(float(shares[(far > STRAY) & (shares >= STRAY_LEAST)].sum()), 3)
 
 
 def worst(found: dict[str, Swatch], hidden: frozenset[str] = frozenset()) -> float:
@@ -202,33 +279,44 @@ def hidden(appearance: Appearance) -> frozenset[str]:
 def matched(figure: Image.Image, found: Anchors, layout: str = "upright") -> Image.Image:
     """The figure with each painted colour moved to the wanted one, by one shift in CIELAB, so
     its shading stays. A pixel moves with the painted colour nearest it, among those whose band
-    it's in, and less the further it is from it."""
+    it's in and the figure's other main colours, which stay put, and less the further it is."""
     pixels = np.asarray(figure.convert("RGBA"), dtype=np.float64)
     lab = cielab(pixels[..., :3])
+    solid = opaque(figure)
     rows = bands(figure, layout)
     names = list(found)
-    if not names:
+    if not names or not solid.any():
         return figure.copy()
-    distance = np.stack([delta_e_lab(lab, found[n][0]) for n in names])
-    distance[np.stack([rows[n] <= 0 for n in names])] = np.inf
+    gots = np.array([found[n][0] for n in names])
+    others, _ = main_colours(lab[solid], 2 * KINDS)
+    others = [c for c in others if delta_e_lab(gots, c).min() > NEUTRAL]
+    distance = np.stack([delta_e_lab(lab, g) for g in gots] + [delta_e_lab(lab, c) for c in others])
+    distance[: len(names)][np.stack([rows[n] <= 0 for n in names])] = np.inf
     nearest = distance.argmin(axis=0)
     shift = np.zeros_like(lab)
     low, high = FADE
     for i, name in enumerate(names):
         got, target = found[name]
-        mine = nearest == i
-        weight = np.clip((high - distance[i]) / (high - low), 0, 1) * rows[name] * mine
+        weight = np.clip((high - distance[i]) / (high - low), 0, 1) * rows[name] * (nearest == i)
         shift += (target - got) * weight[..., None]
     out = pixels.copy()
     out[..., :3] = np.clip(from_cielab(lab + shift), 0, 255)
     return Image.fromarray(np.round(out).astype(np.uint8), "RGBA")
 
 
-def pulled(figure: Image.Image, appearance: Appearance, layout: str = "upright") -> Image.Image:
-    """The figure `matched` to the `Appearance` a few times over: a colour FLUX painted nearer
-    another one asked for is first measured with it, and comes right once that one has moved."""
+def pulled(
+    figure: Image.Image,
+    appearance: Appearance,
+    layout: str = "upright",
+    painted: dict[str, NDArray] | None = None,
+) -> Image.Image:
+    """The figure `matched` to the `Appearance`: a standing figure's colours found in the middle
+    of their bands, twice over, and another pose's by following how the standing figure was
+    `painted`, so every pose moves the same garment the same way."""
+    if painted is not None:
+        return matched(figure, follow(figure, painted, appearance, layout), layout)
     for _ in range(PASSES):
-        figure = matched(figure, anchors(figure, appearance, layout), layout)
+        figure = matched(figure, identify(figure, appearance), layout)
     return figure
 
 

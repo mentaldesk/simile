@@ -9,11 +9,13 @@ from simile.dolls.sprites import (
     PPM,
     atlas,
     climber,
+    enclosed,
     feet,
     frames,
     head,
     manifest,
     pack,
+    seat,
 )
 
 
@@ -113,3 +115,56 @@ def test_the_manifest_has_each_frame_its_feet_and_each_pose() -> None:
         x, y, w, h = entry["frame"]
         assert x + w <= sheet.width and y + h <= sheet.height
         assert entry["feet"] == [round(made[name].feet[0], 1), round(made[name].feet[1], 1)]
+
+
+def test_a_frame_in_the_air_is_lifted_so_its_head_is_as_high_as_the_other() -> None:
+    crouched = person().transform(person().size, Image.Transform.AFFINE, (1, 0, 0, 0, 1, -60))
+
+    made = frames({"stand": person(), "run": crouched, "land": person()}, lifted={"run": "land"})
+
+    def top(name: str) -> float:
+        frame = made[name]
+        rows = np.flatnonzero(np.asarray(frame.image.getchannel("A")).any(axis=1))
+        return frame.feet[1] - rows[0]
+
+    assert top("run") == pytest.approx(top("land"), abs=1)
+    assert made["run"].feet[1] > made["run"].image.height
+
+
+def sitter(shins: int) -> Image.Image:
+    """Facing right, its head's middle at 150 and the bottom of its thighs on row 210, its shins
+    hanging from `shins`."""
+    sitting = Image.new("RGBA", (300, 320), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(sitting)
+    draw.ellipse((100, 0, 200, 100), (230, 170, 120, 255))
+    draw.rectangle((60, 100, 140, 200), (40, 90, 200, 255))
+    draw.rectangle((60, 180, shins + 30, 210), (60, 60, 90, 255))
+    draw.rectangle((shins, 180, shins + 30, 300), (60, 60, 90, 255))
+    return sitting
+
+
+@pytest.mark.parametrize("shins", [130, 230])
+def test_a_seated_figure_sits_on_its_thighs_with_its_shins_under_its_head_or_ahead(
+    shins: int,
+) -> None:
+    assert seat(sitter(shins), 150) == (150, 211)
+
+
+def test_a_seated_frame_sits_under_the_middle_of_its_head_above_its_feet() -> None:
+    made = frames({"stand": person(), "sit": sitter(130)}, seated=["sit"])
+
+    x, y = made["sit"].seat
+    assert x == pytest.approx(made["sit"].feet[0])
+    assert y < made["sit"].feet[1] - 20
+
+
+def test_only_clear_patches_the_outline_shuts_in_are_enclosed() -> None:
+    pytest.importorskip("cv2")
+    clear = np.ones((60, 60), dtype=bool)
+    clear[10:50, 10:50] = False
+    clear[20:30, 20:30] = True
+    clear[35:60, 40:45] = True
+
+    inside = enclosed(clear)
+
+    assert inside[25, 25] and not inside[0, 0] and not inside[45, 42]
