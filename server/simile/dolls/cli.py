@@ -18,14 +18,16 @@ def register(app: typer.Typer) -> None:
         ] = None,
     ) -> None:
         """Paint the figures in content/dolls/ whose Appearance changed, with FLUX on Apple
-        Silicon (`uv sync --extra images`)."""
+        Silicon (`uv sync --extra images`), waiting while another image model runs."""
+        from functools import partial
+
         from simile.dolls.build import build
-        from simile.dolls.flux import Flux
+        from simile.dolls.flux import Flux, wait_for_gpu
         from simile.dolls.measure import CLOSE
         from simile.dolls.paint import NoPainter
 
         try:
-            done = build(Flux, only=who or (), force=force)
+            done = build(partial(Flux, wait_for_gpu), only=who or (), force=force)
         except (KeyError, NoPainter) as error:
             typer.echo(error.args[0], err=True)
             raise typer.Exit(1) from None

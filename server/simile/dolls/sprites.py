@@ -170,12 +170,14 @@ def frames(
     hands_up: Iterable[str] = (),
     lifted: Mapping[str, str] | None = None,
     seated: Iterable[str] = (),
+    reference: Image.Image | None = None,
 ) -> dict[str, Frame]:
     """Every cut-out figure at `PPM`: the standing one `HEIGHT_M` tall, and each other one by
     the same factor over its `scale`, since FLUX may redraw a pose a little bigger or smaller.
+    Given a `reference`, every frame is scaled as against it instead of the standing one.
     A frame `lifted` to another is in the air: its feet go below its lowest row, so its head is
     as high as the other's. A `seated` frame says where it sits."""
-    stand = trimmed(figures[standing])
+    stand = trimmed(figures[standing] if reference is None else reference)
     factor = HEIGHT_M * PPM / height(stand)
     depth = HEAD * height(stand)
     out = {}

@@ -9,14 +9,18 @@ The client swaps, flips, bobs and sways the painted frames (`client/src/dolls/`)
 uv sync --extra images
 uv run simile dolls paint            # every figure whose Appearance or pipeline changed
 uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, saving its paintings
+uv run simile dolls paint player     # the player, and with each combination of bionics
 uv run simile dolls seats            # measure every seat again from the atlases, painting nothing
 ```
 
-Don't edit them by hand. CI never paints; the tests check what's committed.
+Don't edit them by hand. CI never paints; the tests check what's committed. Painting waits
+while another image model, a `simile papercraft` or `simile dolls` run, or an Ollama model is
+using the GPU.
 
 ## Files
 
-For each resident and `player`:
+For each resident, `player`, and the player with each combination of bionics (`player_legs`,
+`player_datajack_eye`, `player_legs_datajack_eye` and so on, below):
 
 | File | What it is |
 |---|---|
@@ -112,6 +116,37 @@ For each resident and `player`:
 Each painting is cached in `server/data/dolls/paintings/` by everything it was painted from, so
 cutting and matching can be retuned without painting again. A painting that comes out off-model
 gets a reroll in `build.REROLLS` (`"<id>/<frame>": n`), which repaints that frame with another seed.
+
+## The player with bionics
+
+Seven more figures, one for each combination of the hydraulic legs, the datajack and the
+infrared eye (`server/simile/dolls/bionics.py`), with the player's frames and poses. Their
+manifests say what's `fitted`, and their `hash` is the whole player's with each part's prompts
+and rerolls, and `bionics.VERSION`.
+
+1. **Each part is painted once on every frame that shows it,** as an edit of the whole player's
+   same frame: 20 paintings. The eye isn't seen from behind, so no climb has it.
+   - The legs are steel hydraulic shins below shorts, in the same sneakers.
+   - The datajack is a chrome port with a green light. FLUX paints it on a band round the neck
+     however it's asked not to, so that's how it looks, the same in every frame.
+   - The eye is a red lens in a chrome rim.
+2. **Each part is checked as the residents' poses are,** against the whole player's standing
+   figure. It must also show (`bionics.missing`): steel over 6% of the legs, the green light, or
+   one red lens, not two. The face check spares the lens and its rim (`bionics.spared`), and a
+   frame may show the parts' steel, red and green (`bionics.PALETTE`) without their counting as
+   strays.
+3. **Laid over the whole player** (`bionics.changed`, `bionics.laid`): each part is what its edit
+   changed of the whole player's frame, near the part (anything else FLUX redrew, a backpack a
+   shade lighter, is left out), grown by its outline and feathered. Each combination is the whole
+   player's frames with its parts laid over them, so the player is the same in every combination
+   but for the parts, and each part is the same in every combination it's in.
+4. **Scaled as the whole player is,** so fitting a part doesn't change the player's size.
+
+The eye is painted where it shows, nearer the ear, whichever socket the sim fits it in. Both eyes
+show in three-quarter view, and the client mirrors a figure to face west, so the eye swaps sockets
+as the player turns, as every figure's hair parting and leading leg do. Painting the far socket
+too would take another painting of the eye on every frame, and would show it as a red speck by the
+nose whenever the player faced away from it.
 
 ## The flat-doll route
 

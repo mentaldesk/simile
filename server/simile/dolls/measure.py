@@ -151,11 +151,13 @@ def wanted(appearance: Appearance) -> dict[str, NDArray[np.float64]]:
     }
 
 
-def core(figure: Image.Image, name: str) -> NDArray[np.bool_]:
+def core(
+    figure: Image.Image, name: str, cores: dict[str, tuple[float, float]] = CORES
+) -> NDArray[np.bool_]:
     solid = opaque(figure)
     rows = np.flatnonzero(solid.any(axis=1))
     top, height = rows[0], rows[-1] - rows[0] + 1
-    start, end = CORES[name]
+    start, end = cores[name]
     out = np.zeros_like(solid)
     out[top + int(start * height) : top + int(np.ceil(end * height))] = True
     return out & solid
@@ -206,14 +208,20 @@ def follow(
     return out
 
 
-def swatches(figure: Image.Image, appearance: Appearance, layout: str = "upright") -> dict:
+def swatches(
+    figure: Image.Image,
+    appearance: Appearance,
+    layout: str = "upright",
+    cores: dict[str, tuple[float, float]] = CORES,
+) -> dict:
     """Each colour as wanted, as painted, and how far apart they are, CIEDE2000: in a standing
-    figure from the middle of its band, in another pose from all of it."""
+    figure from the middle of its band, its `cores`, in another pose from all of it."""
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     rows = bands(figure, layout)
     out = {}
     for name, target in wanted(appearance).items():
-        where = core(figure, name) if layout == "upright" else opaque(figure) & (rows[name] >= 1)
+        upright = layout == "upright"
+        where = core(figure, name, cores) if upright else opaque(figure) & (rows[name] >= 1)
         got, share = chosen(lab[where], target)
         want = hex_of(from_cielab(target))
         if np.isnan(got).any():
@@ -251,15 +259,20 @@ def kept(
     return out
 
 
-def strays(figure: Image.Image, standing: Image.Image) -> float:
+def strays(
+    figure: Image.Image, standing: Image.Image, also: NDArray[np.float64] | None = None
+) -> float:
     """The share of `figure` painted in main colours the standing figure hasn't got, each over
-    `STRAY` from all of its: a garment or a limb that came out, or was pulled, another colour."""
+    `STRAY` from all of its and from any it may `also` show: a garment or a limb that came out,
+    or was pulled, another colour."""
     mine = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64)[opaque(figure)])
     theirs = cielab(np.asarray(standing.convert("RGB"), dtype=np.float64)[opaque(standing)])
     if not len(mine) or not len(theirs):
         return 0.0
     centres, shares = main_colours(mine, 2 * KINDS)
     known, _ = main_colours(theirs, 2 * KINDS)
+    if also is not None:
+        known = np.vstack([known, also])
     far = np.array([delta_e_lab(known, c).min() for c in centres])
     return round(float(shares[(far > STRAY) & (shares >= STRAY_LEAST)].sum()), 3)
 
@@ -320,10 +333,12 @@ def pulled(
     return figure
 
 
-def face_marks(figure: Image.Image, appearance: Appearance) -> float:
-    """The share of the face painted in patches far from the skin that aren't ink: the face is
-    the front of the thick of the skin in the top of the figure, and lines and specks thinner
-    than a hundredth of its height don't count."""
+def face_marks(
+    figure: Image.Image, appearance: Appearance, spared: NDArray[np.bool_] | None = None
+) -> float:
+    """The share of the face painted in patches far from the skin that aren't ink or `spared`:
+    the face is the front of the thick of the skin in the top of the figure, and lines and
+    specks thinner than a hundredth of its height don't count."""
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     solid = opaque(figure)
     rows = np.flatnonzero(solid.any(axis=1))
@@ -343,6 +358,8 @@ def face_marks(figure: Image.Image, appearance: Appearance) -> float:
         x + int(FACE[0][0] * w) : x + int(FACE[0][1] * w),
     ] = True
     odd = box & solid & (far >= FACE_FAR) & (lab[..., 0] >= INK)
+    if spared is not None:
+        odd &= ~spared
     return float(opened(odd, max(1, round(0.01 * (bottom - top)))).sum() / max(box.sum(), 1))
 
 
