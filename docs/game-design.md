@@ -16,13 +16,11 @@ little less human, and the village notices.
 
 ## The world
 
-- **The village.** Warm, low-tech, ordinary people. These are Simile's NPCs: each has core values,
-  relationships and memories, and they gossip. It should feel like the pixel village we already have.
-- **The city.** Glass and steel, built on biotech money. Apex Biotech grows and sells replacement
+- **The village.** Warm, comparable to current day or near future tech level, ordinary people. These are Simile's NPCs: each has core values,
+  relationships and memories, and they gossip. It should feel like the cleantidy village we already have.
+- **The city.** Tall glass towers visible on the horizon from the village, built on biotech money. Apex Biotech grows and sells replacement
   organs that keep the rich young. It's legal, respected, and has saved lives in the village too.
-- **The tunnels.** Where the poor live, and where the dungeon is. Clinics, salvage, scrap markets,
-  and the bodies of everyone who went down before you. Deeper levels are older, stranger and more
-  dangerous.
+- **The tunnels.** Where the poor live, and where the dungeon is. Clinics, salvage, scrap markets, and the bodies of everyone who went down before you. Deeper levels are older, stranger and more dangerous.
 
 ## The hook is optional
 
@@ -42,15 +40,15 @@ deeper for players who want one.
 
 **Every upgrade opens one kind of door and closes another.**
 
-- An eye that reads wiring opens the maintenance hatch, and the baker gets nervous around you.
-- An implant that reads emotions talks you past a guard, and people sense they're being read.
-- A stomach that runs on a power cell means you never need to eat, and you never share a meal again.
+- An eye that reads wiring let's you open maintenance hatches, but some people in the village get nervous around you.
+- An implant that reads emotions talks you past certain NPCs, but some people sense they're being read and start to be pretty cagey around you
+- A stomach that runs on a power cell means you never need to eat, but you never share a meal again or bond with people that way
 
 Physical access goes up and social access goes down. Most of what you need to know is held by
 people, so every upgrade is a real decision. This is Shadowrun's Essence idea, expressed through the
 relationship model rather than a stat: NPCs' like, trust and respect for you shift with what you've
 become, weighted by their values. Tradition and Security distrust it; Ambition and Adventure admire
-it.
+it or are curious about it.
 
 ## Characters and advancement
 
@@ -68,16 +66,13 @@ Starting points, not restrictions. A character can mix them, at the cost of bein
 | Tracker | Thermal and low-light eyes, enhanced hearing | Following trails, finding hidden routes, spotting traps |
 | Rigger | Control rig, drones | Scouting ahead, reaching places a body can't |
 
-The Face is the interesting one: the parts that make you better at people also make people trust you
+The Face is a bit of a contradiction: the parts that make you better at people also make people trust you
 less.
 
 ### Two kinds of advancement
 
-- **Body: bionics.** Bought with money, fitted at a clinic. Each one replaces something human and
-  gives an ability. Bionics are the main way the world opens up.
-- **Mind: skills.** Improved by use and by spending what you earn from runs (Shadowrun's karma).
-  Hacking, climbing, haggling, first aid, tunnel lore. Many skills need a bionic to use: you can know
-  how to deck, but not without a datajack.
+- **Body: bionics.** Bought with money, fitted at a clinic. May require certain key ingredients that need to be found/acquired in the game world. Each one replaces something human and gives an ability. Bionics are the main way the world opens up. 
+- **Mind: skills.** Improved by use and by spending what you earn from runs (Shadowrun's karma). Hacking, climbing, haggling, first aid, tunnel lore. Many skills need a bionic to use: you can know how to deck, but not without a datajack. 
 
 The split matters because of death (below): **the mind comes back, the body doesn't.**
 
@@ -125,44 +120,16 @@ sell your first organ.
 
 The search goes on for months, and each step costs another part of you. Back in the village, people
 start to step back when your joints hiss. Eventually your eyes pick up a biometric trail in Apex's
-security logs and follow it up into the spires.
+security logs and follow it down deep into the sewers and then back up again into the spires of the Apex glass towers.
 
-### The twist
+### The game ending
 
-She's sitting in a penthouse, drinking tea, young again. And she's wearing your parts: your eyes look
+When you eventually track down what happened to hew, she's sitting in a penthouse, drinking tea, young again. And she's wearing your parts: your eyes look
 back at you, your hand holds the cup, she speaks with your voice. Whatever you sold, she has.
 
-- **It wasn't her plan.** She disappeared first. Apex rebuilt her from the best organs on the grey
-  market, and yours were among them. The trail warmed up because she was wearing your parts, and the
-  biometrics you were tracking were your own. She may not have known whose they were until you walked
-  in.
-- **It explains your comebacks.** Bodies can be grown and minds moved between them. That's how Apex
-  sells immortality, and it's why you wake up whole. Who has been paying for your returns, and where
-  your bodies are grown, is the last thing to uncover.
-- **It reflects your build.** The more you sold, the more of you is sitting across from you. The
-  scene must include at least one visible part, so the route to her requires the eyes.
+Why she left and how she got your parts remains a mystery for the player to speculate on.
 
-### The ending
-
-The game ends when you find her, and it doesn't always end well.
-
-Her reaction comes from three things, so it changes from game to game:
-
-- **Her values,** generated like any other NPC's. Sometimes she's crushed and deeply sorry; sometimes
-  she laughs at you.
-- **Her history with you:** her relationship scores and memories from before she left, plus whatever
-  word of you reached her since.
-- **What you've become:** how much you sold, and what you did to get here.
-
-Then you choose. Walk away and wish her well. Expose her. Accept the offer she might make: a fresh
-human body, everything you sold given back. Kill her. Or drag her down to a back-alley clinic and
-take your parts back.
-
-It's the biggest conversation in the game, and it's a real one. Talking shifts her disposition
-within limits; the simulation decides what she does.
-
-Because her values are randomised, the village matters on the way: the people who owed her can tell
-you who she was, which tells you which Dr Aris you'll meet.
+The game ends when you find her.
 
 ## Design rules
 
@@ -172,7 +139,7 @@ you who she was, which tells you which Dr Aris you'll meet.
 - **No talking your way to a win.** The LLM turns what the player says into bounded effects on
   relationship scores. NPCs act on those scores, not on whatever the player types.
 - **The tunnels are where you get the means; the village is where the game happens.** If the tunnels
-  stop needing the village, the dungeon has become a separate game and Simile's core is wasted.
+  stop needing the village, the dungeon has become a separate game and Simile's core is wasted. There are key items we need for upgrades that can only be obtained in the village... and key pieces of information for the quest that can only be obtained from people in the village or the Apex towers.
 
 ## Build order
 
@@ -181,17 +148,17 @@ Each stage should be fun before the next starts.
 1. **The loop.** One village, one tunnel level, one clinic, three or four bionics, and one missing
    person. Go down, come back changed, the village reacts. No combat, no companions, no stash.
    Danger comes from hazards and being seen, not fights.
-2. **Death.** Waking at home, corpses that stay, salvaging your own body, the house stash.
-3. **Depth.** More tunnel levels, skills, the full archetype spread, and one recruitable companion
-   whose values decide how far they'll follow you.
+2. **Death.** Combat, death, waking at home.
+3. **Salvage.** The house stash, corpses that stay, salvaging your own body
+4. **Companion.** One recruitable companion whose values decide how far they'll follow you
+3. **Depth.** More tunnel levels, puzzles, skills, the full archetype spread.
 4. **The city and the ending.** Apex, the trail into the spires, Dr Aris and the endings.
 
-Left for later, if the game still needs them: combat beyond the basics, full parties, crafting
-machines in the house.
+Left for later, if the game still needs them: combat beyond the basics.
 
 ## Open questions
 
-- What does danger look like in the tunnels before there's combat?
-- How fast should humanity loss show up in NPC reactions, and can it ever be won back short of dying?
-- Does the village population change over a long game (people move, die, go missing too)?
-- How much of the map is generated each game, and how much is authored around Dr Aris's trail?
+- What does danger look like in the tunnels before there's combat? This could come from the platform nature of the game... getting crushed by trains in the metro, getting sucked into sewer pipes etc. Those are situations where you wouldn't be able to recover your corpse so you reall don't want to die that way.
+- How fast should humanity loss show up in NPC reactions, and can it ever be won back short of dying? I think we have to experiment with this to find the right rate.
+- Does the village population change over a long game (people move, die, go missing too)? We could have a new person join the village every now and then but if you take them all into the dungeons and get them killed, ultimately the village population starts to look a bit sparse. 
+- How much of the map is generated each game, and how much is authored around Dr Aris's trail? I'd favour a roguelike where most of it is fresh/generated but there are some things that every may must have (to support the core game story). 
