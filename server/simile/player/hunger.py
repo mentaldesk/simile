@@ -24,8 +24,8 @@ type Supply = Callable[[Goal, Need], float]
 
 class Hunger:
     """The player's hunger. It rises while someone's playing, a meal or food they carry relieves
-    it, and at 1 they collapse: they wake at home, still hungry, with what they carried left where
-    they fell, for them to go back for. Tick it on the sim loop."""
+    it, and at 1 they collapse: they wake at home, still hungry, with their lamp, and what else
+    they carried is left where they fell for them to go back for. Tick it on the sim loop."""
 
     def __init__(
         self,
