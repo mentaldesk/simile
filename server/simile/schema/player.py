@@ -36,7 +36,7 @@ class Item(Model):
     charge: Unit | None = Field(
         default=None,
         description="A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is "
-        "on and charges while the player stands at a plug. Null for anything else.",
+        "on, and at a plug it charges, on or off. Null for anything else.",
     )
     on: bool | None = Field(
         default=None,
