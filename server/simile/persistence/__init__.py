@@ -5,6 +5,7 @@ from simile.persistence.state import (
     SavedNpc,
     SavedWorld,
     capture,
+    investigation_of,
     player_of,
     restore,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "Saver",
     "WorldStore",
     "capture",
+    "investigation_of",
     "player_of",
     "restore",
 ]

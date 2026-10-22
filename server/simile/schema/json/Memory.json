@@ -117,6 +117,21 @@
       ],
       "default": null,
       "title": "Work Id"
+    },
+    "fact_id": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The incident's `Fact` it holds, for a memory seeded from one. A memory passed on from it keeps it. Left out when there isn't one.",
+      "title": "Fact Id"
     }
   },
   "required": [

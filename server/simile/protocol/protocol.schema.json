@@ -433,7 +433,108 @@
       "title": "ItemKind",
       "type": "string"
     },
+    "JournalEntry": {
+      "additionalProperties": false,
+      "description": "Something the player learned about the incident: a fact, or a lie told about one.",
+      "properties": {
+        "fact_id": {
+          "description": "The fact it's about. Several entries can be about one fact.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "text": {
+          "description": "What they learned, as the journal puts it. A lie is written as it was told.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "source": {
+          "$ref": "#/$defs/Source",
+          "description": "Who told them, or the clue they found it in."
+        },
+        "learned": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "type": "string"
+        },
+        "flushed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Whether the infrared eye saw the resident flush as they told it, which it shows exactly on a lie. Null if the player had no infrared eye then, and for a clue."
+        },
+        "leads": {
+          "default": [],
+          "description": "The leads it opened that are still open: its fact's leads, and none for a lie. Each closes once any entry is about its fact, a lie included.",
+          "items": {
+            "$ref": "#/$defs/Lead"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "fact_id",
+        "text",
+        "source",
+        "learned",
+        "flushed",
+        "leads"
+      ],
+      "title": "JournalEntry",
+      "type": "object"
+    },
+    "JournalMessage": {
+      "additionalProperties": false,
+      "description": "What the player has learned about the incident, in the order they learned it, with the\nleads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead\nis followed.",
+      "properties": {
+        "type": {
+          "const": "journal",
+          "default": "journal",
+          "type": "string"
+        },
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/JournalEntry"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "type",
+        "entries"
+      ],
+      "title": "JournalMessage",
+      "type": "object"
+    },
     "JsonValue": {},
+    "Lead": {
+      "additionalProperties": false,
+      "description": "Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It\ncloses once the journal has any entry about that fact, a lie included.",
+      "properties": {
+        "fact_id": {
+          "description": "The fact following it turns up.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "text": {
+          "description": "For the journal, e.g. \"Kofi paints in the lane at night. Ask him what he saw.\"",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "fact_id",
+        "text"
+      ],
+      "title": "Lead",
+      "type": "object"
+    },
     "Line": {
       "additionalProperties": false,
       "properties": {
@@ -489,6 +590,11 @@
         },
         "voiced": {
           "description": "Whether audio_chunk frames will follow for this line.",
+          "type": "boolean"
+        },
+        "flushed": {
+          "default": false,
+          "description": "Whether the client shows a flush on the speaker: the line is a lie, as code decides it, and the player has the infrared eye. Left out unless true.",
           "type": "boolean"
         }
       },
@@ -991,6 +1097,7 @@
           "conversation_ended": "#/$defs/ConversationEndedMessage",
           "conversation_started": "#/$defs/ConversationStartedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
+          "journal": "#/$defs/JournalMessage",
           "line": "#/$defs/LineMessage",
           "murals": "#/$defs/MuralsMessage",
           "news": "#/$defs/NewsMessage",
@@ -1038,6 +1145,9 @@
         },
         {
           "$ref": "#/$defs/PlayerStateMessage"
+        },
+        {
+          "$ref": "#/$defs/JournalMessage"
         }
       ]
     },
@@ -1083,6 +1193,42 @@
       ],
       "title": "SnapshotMessage",
       "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "description": "Who told the player something, or the clue they found it in.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/SourceKind"
+        },
+        "id": {
+          "description": "The resident's id, or the clue's interactable's.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "name": {
+          "description": "As the journal names them, e.g. \"Kofi\" or \"Aris's notes\".",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "name"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "SourceKind": {
+      "description": "Where the player learned something: a `resident` told them, or they found a `clue`, such\nas Aris's notes or a terminal.",
+      "enum": [
+        "resident",
+        "clue"
+      ],
+      "title": "SourceKind",
+      "type": "string"
     },
     "Wall": {
       "additionalProperties": false,

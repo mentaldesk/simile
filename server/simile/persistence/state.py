@@ -12,6 +12,7 @@ from simile.schema import (
     VILLAGE_MAP,
     Id,
     Intention,
+    Investigation,
     Key,
     MapTile,
     Model,
@@ -67,6 +68,8 @@ class SavedWorld(Model):
     """Everyone's open intentions. A save from before intentions has none."""
     player: Player = Field(default_factory=Player)
     """The player. A save from before the player has the starting player."""
+    investigation: Investigation = Field(default_factory=Investigation)
+    """The incident and the journal. A save from before them has neither."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -75,9 +78,13 @@ def tile_of(point: Point) -> Tile:
 
 
 def capture(
-    behaviour: Behaviour, economy: "Economy | None" = None, player: Player | None = None
+    behaviour: Behaviour,
+    economy: "Economy | None" = None,
+    player: Player | None = None,
+    investigation: Investigation | None = None,
 ) -> SavedWorld:
-    """The world as it is now, with `player`, or the starting player without one."""
+    """The world as it is now, with copies of `player` and `investigation`, or the starting
+    player and an empty investigation without them."""
     now, movement = behaviour.clock.now, behaviour.movement
     return SavedWorld(
         now=now,
@@ -104,6 +111,9 @@ def capture(
         },
         intentions=behaviour.intentions(),
         player=Player() if player is None else player.model_copy(deep=True),
+        investigation=Investigation()
+        if investigation is None
+        else investigation.model_copy(deep=True),
     )
 
 
@@ -112,14 +122,15 @@ def restore(
     behaviour: Behaviour,
     economy: "Economy | None" = None,
     player: Player | None = None,
+    investigation: Investigation | None = None,
 ) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
     money they had, what was in their fridges and what they'd said they'd do, and set `player`
-    to the saved player in place, so anyone holding it already has them. Anyone saved on
-    one of the iso maps goes to the matching place on the side-view maps (`old_cells`). Anyone
-    who was walking or talking decides again on the next think. NPCs who weren't saved carry on
-    from their first start, a save from before money opens the ledger on everyone's starting
-    money, and one from before fridges stocks them as at the start."""
+    and `investigation` to the saved ones in place, so anyone holding them already has them.
+    Anyone saved on one of the iso maps goes to the matching place on the side-view maps
+    (`old_cells`). Anyone who was walking or talking decides again on the next think. NPCs who
+    weren't saved carry on from their first start, a save from before money opens the ledger on
+    everyone's starting money, and one from before fridges stocks them as at the start."""
     movement = behaviour.movement
     saved = {npc: world.npcs[npc] for npc in behaviour.minds if npc in world.npcs}
     for npc in saved:
@@ -156,6 +167,10 @@ def restore(
     if player is not None:
         for field in Player.model_fields:
             setattr(player, field, getattr(world.player, field))
+    if investigation is not None:
+        restored = world.investigation.model_copy(deep=True)
+        for field in Investigation.model_fields:
+            setattr(investigation, field, getattr(restored, field))
 
 
 def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
@@ -189,3 +204,11 @@ def player_of(app: Starlette) -> Player:
     if not hasattr(app.state, "player"):
         app.state.player = Player()
     return app.state.player
+
+
+def investigation_of(app: Starlette) -> Investigation:
+    """The incident and the journal, empty on first use. Persistence restores the save into it
+    in place."""
+    if not hasattr(app.state, "investigation"):
+        app.state.investigation = Investigation()
+    return app.state.investigation

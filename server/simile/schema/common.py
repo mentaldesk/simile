@@ -13,5 +13,9 @@ Colour = Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
 Timestamp = Annotated[AwareDatetime, AfterValidator(lambda value: value.astimezone(UTC))]
 
 
+# Checks across fields are mode="before", so a rejected assignment leaves the model unchanged.
+CHECKED = ConfigDict(validate_assignment=True)
+
+
 class Model(BaseModel):
     model_config = ConfigDict(extra="forbid", json_schema_serialization_defaults_required=True)

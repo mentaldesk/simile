@@ -1,16 +1,13 @@
 from enum import StrEnum
 from typing import Any, Final, Literal
 
-from pydantic import ConfigDict, Field, model_validator
+from pydantic import Field, model_validator
 
-from simile.schema.common import Id, Model, Unit
+from simile.schema.common import CHECKED, Id, Model, Unit
 
 CARRY_LIMIT = 10.0
 PRESENT: Final = "present"
 SOLD: Final = "sold"
-
-# Checks across fields are mode="before", so a rejected assignment leaves the model unchanged.
-_CHECKED = ConfigDict(validate_assignment=True)
 
 
 class ItemKind(StrEnum):
@@ -24,7 +21,7 @@ class ItemKind(StrEnum):
 class Item(Model):
     """Something the player carries."""
 
-    model_config = _CHECKED
+    model_config = CHECKED
 
     id: Id = Field(
         description='What it is, the same for every one of its kind, e.g. "copper_wire" or '
@@ -93,7 +90,7 @@ class Body(Model):
     """Each part of the player's body that can be sold or replaced: still `present`, `sold`, or
     the bionic fitted in its place. A whole body has every part present."""
 
-    model_config = _CHECKED
+    model_config = CHECKED
 
     legs: PartState = PRESENT
     vertebra: PartState = PRESENT
@@ -124,7 +121,7 @@ class Player(Model):
     a save from before the player loads with a whole body, no money and a charged lamp. Their
     humanity is derived from the bionics fitted and isn't a field, so the client never sees it."""
 
-    model_config = _CHECKED
+    model_config = CHECKED
 
     money: float = Field(
         default=0.0,

@@ -15,6 +15,7 @@ from simile.protocol import (
     EntityMovedMessage,
     Face,
     Frame,
+    JournalMessage,
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
@@ -41,7 +42,20 @@ from simile.protocol import (
 from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
 from simile.protocol.messages import client_messages, server_messages
-from simile.schema import Bionic, Body, Facing, Item, ItemKind, Player, Pose, lamp
+from simile.schema import (
+    Bionic,
+    Body,
+    Facing,
+    Item,
+    ItemKind,
+    JournalEntry,
+    Lead,
+    Player,
+    Pose,
+    Source,
+    SourceKind,
+    lamp,
+)
 
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
@@ -163,6 +177,23 @@ DELVING = PlayerStateMessage(
     )
 )
 
+FROM_THE_NOTES = JournalEntry(
+    fact_id="notes",
+    text="Aris wrote that R. came about the machines again, and said he'd make her regret it.",
+    source=Source(kind=SourceKind.CLUE, id="aris_notes", name="Aris's notes"),
+    learned=datetime(2026, 3, 14, 10, 5, tzinfo=UTC),
+    flushed=None,
+    leads=[Lead(fact_id="motive", text="Who's R.? Mirela knows everyone's business.")],
+)
+FROM_RAYMOND = JournalEntry(
+    fact_id="attack",
+    text="Raymond says he was at home going over the accounts all night.",
+    source=Source(kind=SourceKind.RESIDENT, id="raymond", name="Raymond"),
+    learned=datetime(2026, 3, 17, 14, tzinfo=UTC),
+    flushed=True,
+)
+JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
+
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
@@ -177,6 +208,7 @@ SERVER = [
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
     ),
     LineMessage(line=CONVERSATION.lines[-1], voiced=True),
+    LineMessage(line=CONVERSATION.lines[-1], voiced=False, flushed=True),
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
     NewsMessage(
         articles=[
@@ -192,6 +224,8 @@ SERVER = [
     PAINTINGS,
     STARTING,
     DELVING,
+    JournalMessage(entries=[]),
+    JOURNAL,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -620,6 +654,97 @@ def test_rejects_a_player_state_with_humanity() -> None:
 
     assert not validator().is_valid(data)
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        server_messages.validate_python(data)
+
+
+def test_a_flushed_line_says_so() -> None:
+    message = LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=True)
+
+    assert json.loads(message.model_dump_json()) == {
+        "type": "line",
+        "line": json.loads(CONVERSATION.lines[-1].model_dump_json()),
+        "voiced": True,
+        "flushed": True,
+    }
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        LineMessage(line=CONVERSATION.lines[-1], voiced=True),
+        LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=False),
+    ],
+    ids=["unset", "false"],
+)
+def test_a_line_without_a_flush_dumps_as_before(message: LineMessage) -> None:
+    assert json.loads(message.model_dump_json()) == {
+        "type": "line",
+        "line": json.loads(CONVERSATION.lines[-1].model_dump_json()),
+        "voiced": True,
+    }
+
+
+def test_a_line_message_without_flushed_is_no_flush() -> None:
+    line = json.loads(CONVERSATION.lines[-1].model_dump_json())
+    data = {"type": "line", "line": line, "voiced": False}
+
+    validator().validate(data)
+    assert server_messages.validate_python(data).flushed is False
+
+
+def test_the_exported_line_message_has_flushed_but_does_not_require_it() -> None:
+    message = json.loads(SCHEMA_FILE.read_text())["$defs"]["LineMessage"]
+
+    assert message["properties"]["flushed"]["type"] == "boolean"
+    assert "flushed" not in message["required"]
+
+
+def test_the_journal_has_every_entry_in_the_order_learned_with_its_open_leads() -> None:
+    assert json.loads(JOURNAL.model_dump_json()) == {
+        "type": "journal",
+        "entries": [
+            {
+                "fact_id": "notes",
+                "text": "Aris wrote that R. came about the machines again, and said he'd make her "
+                "regret it.",
+                "source": {"kind": "clue", "id": "aris_notes", "name": "Aris's notes"},
+                "learned": "2026-03-14T10:05:00Z",
+                "flushed": None,
+                "leads": [
+                    {"fact_id": "motive", "text": "Who's R.? Mirela knows everyone's business."}
+                ],
+            },
+            {
+                "fact_id": "attack",
+                "text": "Raymond says he was at home going over the accounts all night.",
+                "source": {"kind": "resident", "id": "raymond", "name": "Raymond"},
+                "learned": "2026-03-17T14:00:00Z",
+                "flushed": True,
+                "leads": [],
+            },
+        ],
+    }
+
+
+def test_the_journal_goes_only_from_server_to_client() -> None:
+    data = json.loads(JOURNAL.model_dump_json())
+
+    assert server_messages.validate_python(data) == JOURNAL
+    with pytest.raises(ValidationError):
+        client_messages.validate_python(data)
+
+
+def test_the_exported_journal_entry_requires_every_field() -> None:
+    entry = json.loads(SCHEMA_FILE.read_text())["$defs"]["JournalEntry"]
+
+    assert entry["required"] == ["fact_id", "text", "source", "learned", "flushed", "leads"]
+
+
+def test_rejects_a_flush_on_a_clue_in_the_journal() -> None:
+    data = json.loads(JOURNAL.model_dump_json())
+    data["entries"][0]["flushed"] = False
+
+    with pytest.raises(ValidationError, match="only a resident can flush"):
         server_messages.validate_python(data)
 
 

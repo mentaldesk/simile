@@ -14,7 +14,8 @@ export type ServerMessage =
   | WorksMessage
   | MuralsMessage
   | PaintingsMessage
-  | PlayerStateMessage;
+  | PlayerStateMessage
+  | JournalMessage;
 export type EntityKind = 'npc' | 'player';
 /**
  * What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
@@ -44,6 +45,11 @@ export type ItemKind = 'salvage' | 'food' | 'lamp';
  * the datajack takes a vertebra, and the one infrared eye takes either eye.
  */
 export type Bionic = 'hydraulic_legs' | 'datajack' | 'infrared_eye';
+/**
+ * Where the player learned something: a `resident` told them, or they found a `clue`, such
+ * as Aris's notes or a terminal.
+ */
+export type SourceKind = 'resident' | 'clue';
 export type ClientMessage =
   | PlayerMoveMessage
   | PlayerSayMessage
@@ -169,6 +175,10 @@ export interface LineMessage {
    * Whether audio_chunk frames will follow for this line.
    */
   voiced: boolean;
+  /**
+   * Whether the client shows a flush on the speaker: the line is a lie, as code decides it, and the player has the infrared eye. Left out unless true.
+   */
+  flushed?: boolean;
 }
 /**
  * Debug state for the overlay. The fields in `state` are up to the modules that send them.
@@ -424,6 +434,69 @@ export interface Body {
   right_eye: ('present' | 'sold') | Bionic;
   left_kidney: ('present' | 'sold') | Bionic;
   right_kidney: ('present' | 'sold') | Bionic;
+}
+/**
+ * What the player has learned about the incident, in the order they learned it, with the
+ * leads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead
+ * is followed.
+ */
+export interface JournalMessage {
+  type: 'journal';
+  entries: JournalEntry[];
+}
+/**
+ * Something the player learned about the incident: a fact, or a lie told about one.
+ */
+export interface JournalEntry {
+  /**
+   * The fact it's about. Several entries can be about one fact.
+   */
+  fact_id: string;
+  /**
+   * What they learned, as the journal puts it. A lie is written as it was told.
+   */
+  text: string;
+  source: Source;
+  /**
+   * Sim time.
+   */
+  learned: string;
+  /**
+   * Whether the infrared eye saw the resident flush as they told it, which it shows exactly on a lie. Null if the player had no infrared eye then, and for a clue.
+   */
+  flushed: boolean | null;
+  /**
+   * The leads it opened that are still open: its fact's leads, and none for a lie. Each closes once any entry is about its fact, a lie included.
+   */
+  leads: Lead[];
+}
+/**
+ * Who told them, or the clue they found it in.
+ */
+export interface Source {
+  kind: SourceKind;
+  /**
+   * The resident's id, or the clue's interactable's.
+   */
+  id: string;
+  /**
+   * As the journal names them, e.g. "Kofi" or "Aris's notes".
+   */
+  name: string;
+}
+/**
+ * Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It
+ * closes once the journal has any entry about that fact, a lie included.
+ */
+export interface Lead {
+  /**
+   * The fact following it turns up.
+   */
+  fact_id: string;
+  /**
+   * For the journal, e.g. "Kofi paints in the lane at night. Ask him what he saw."
+   */
+  text: string;
 }
 /**
  * A position without `map` is on the village. Side-view maps have no village, so there the

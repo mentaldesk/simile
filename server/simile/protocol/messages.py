@@ -9,6 +9,7 @@ from simile.schema import (
     Conversation,
     Facing,
     Id,
+    JournalEntry,
     Key,
     Line,
     Model,
@@ -119,6 +120,12 @@ class LineMessage(Model):
     type: Literal["line"] = "line"
     line: Line
     voiced: bool = Field(description="Whether audio_chunk frames will follow for this line.")
+    flushed: bool = Field(
+        default=False,
+        exclude_if=lambda flushed: not flushed,
+        description="Whether the client shows a flush on the speaker: the line is a lie, as code "
+        "decides it, and the player has the infrared eye. Left out unless true.",
+    )
 
 
 class NpcStateMessage(Model):
@@ -275,6 +282,15 @@ class PlayerStateMessage(Model):
     player: Player
 
 
+class JournalMessage(Model):
+    """What the player has learned about the incident, in the order they learned it, with the
+    leads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead
+    is followed."""
+
+    type: Literal["journal"] = "journal"
+    entries: list[JournalEntry]
+
+
 class PlayerMoveMessage(Model):
     """A position without `map` is on the village. Side-view maps have no village, so there the
     server ignores it, as it ignores any unknown map.
@@ -331,7 +347,8 @@ type ServerMessage = Annotated[
     | WorksMessage
     | MuralsMessage
     | PaintingsMessage
-    | PlayerStateMessage,
+    | PlayerStateMessage
+    | JournalMessage,
     Field(discriminator="type"),
 ]
 
