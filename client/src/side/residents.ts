@@ -143,3 +143,5 @@ export class Residents {
 export const sideResidents = new Residents();
 server.on('snapshot', ({ entities, map_id }) => sideResidents.reset(entities, map_id));
 server.on('entity_moved', (message) => sideResidents.move(message));
+// So a tab that wasn't in the game when the player collapsed starts them at home.
+server.on('player_collapsed', ({ position: { x, y, map = '' } }) => (sideResidents.start = { x, y, map }));

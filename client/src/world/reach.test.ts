@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { server, type Wall } from '../net';
+import { server, type Pile, type Wall } from '../net';
 import { muralWalls, setMuralView } from './murals';
-import { inReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
+import { inReach, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -81,6 +81,39 @@ describe('inReach', () => {
       ['terminal', 0.5],
     ]);
     expect(kinds(28, 26)).toEqual([['mural', 0.5]]);
+  });
+});
+
+describe('a pile the player left', () => {
+  const lamp = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.2, on: true } as const;
+  const pile = (map: string, x: number, y = 15): Pile => ({ at: { map, x, y }, items: [lamp] });
+  const left = [pile('kapok_walk', 12), pile('kapok_walk', 20), pile('rooftops', 12, 8)];
+  const withPiles: Reachables = { ...reachables, piles: () => left };
+
+  it('is in reach within a tile on its map, nearest first', () => {
+    const near = pileInReach(at('kapok_walk', 12.6), left);
+    expect(near?.pile).toBe(left[0]);
+    expect(near?.tiles).toBeCloseTo(0.6);
+    expect(pileInReach(at('kapok_walk', 19.5, 14.5), left)?.pile).toBe(left[1]);
+    expect(pileInReach(at('kapok_walk', 13.1), left)).toBeUndefined();
+    expect(pileInReach(at('high_street', 12), left)).toBeUndefined();
+    expect(pileInReach(at('rooftops', 12, 7.2), left)?.pile).toBe(left[2]);
+  });
+
+  it('is what E picks up', () => {
+    expect(inReach(at('kapok_walk', 11.5), withPiles)).toEqual([{ kind: 'pile', tiles: 0.5, pile: left[0] }]);
+  });
+
+  it('comes from the last player_state', () => {
+    expect(reachables.piles()).toEqual([]);
+    const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
+    const player = { money: 0, items: [], carry_limit: 10, body, hunger: 0.75, left };
+    server.dispatch(JSON.stringify({ type: 'player_state', player }));
+
+    expect(reachables.piles()).toEqual(left);
+    expect(usedByE(at('kapok_walk', 20))).toMatchObject({ kind: 'pile', pile: left[1] });
+    server.dispatch(JSON.stringify({ type: 'player_state', player: { ...player, left: undefined } }));
+    expect(reachables.piles()).toEqual([]);
   });
 });
 
