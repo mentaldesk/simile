@@ -1,5 +1,5 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -8,7 +8,7 @@ from simile.economy import OUTSIDE, PLAYER, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.player.config import SALVAGE
+from simile.player.config import DEFAULT_CONFIG, SALVAGE, Salvage
 from simile.player.pickups import Pickups
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
@@ -17,8 +17,9 @@ from simile.world.map import Pickup, PickupKind, load_maps
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
-WIRE = SALVAGE["metro_salvage_1"]
-STEEL = SALVAGE["metro_salvage_2"]
+WIRE = SALVAGE["metro_salvage_1"].item
+STEEL = SALVAGE["metro_salvage_2"].item
+DAY = timedelta(hours=24)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3.0)
 RATION = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 LYING = (
@@ -39,6 +40,7 @@ def at(x: int, *items: Item, money: float = 0) -> Pile:
 class Tunnels:
     def __init__(self, player: Player | None = None) -> None:
         world = World(Clock(NOW), FakeWallClock())
+        self.clock = world.clock
         self.movement = Movement(WITH_PICKUPS, world.bus)
         npcs = load_npcs()[:2]
         behaviour = Behaviour(
@@ -47,7 +49,7 @@ class Tunnels:
         self.player = player or Player()
         self.start = self.player.money
         self.economy = Economy(world.clock, behaviour, player=self.player)
-        self.pickups = Pickups(self.player, self.movement, self.economy)
+        self.pickups = Pickups(self.player, self.movement, self.economy, world.clock)
 
     def stand(self, x: float, map: str = "kapok_walk") -> None:
         self.movement.track(PLAYER_ID, Point(x, 15, map))
@@ -68,17 +70,57 @@ def test_the_maps_salvage_and_secrets_lie_at_their_pickups() -> None:
     ]
 
 
-def test_picking_up_salvage_takes_it_for_good() -> None:
+def test_picking_up_salvage_takes_it_and_says_when() -> None:
     tunnels = Tunnels()
     tunnels.stand(20.4)
 
     assert tunnels.pickups.pick_up()
 
     assert tunnels.player.items == [lamp(), WIRE]
-    assert tunnels.player.taken == ["metro_salvage_1"]
+    assert tunnels.player.taken == {"metro_salvage_1": NOW}
     assert at(20, WIRE) not in tunnels.pickups.piles()
     assert not tunnels.pickups.pick_up()
     assert tunnels.player.items == [lamp(), WIRE]
+
+
+def test_salvage_lies_there_again_a_day_after_it_was_taken() -> None:
+    tunnels = Tunnels()
+    tunnels.stand(20)
+    assert SALVAGE["metro_salvage_1"].respawn == 24
+    assert tunnels.pickups.pick_up()
+
+    tunnels.clock.now = NOW + DAY - timedelta(seconds=1)
+    assert at(20, WIRE) not in tunnels.pickups.piles()
+    assert not tunnels.pickups.pick_up()
+    tunnels.clock.now = NOW + DAY
+    assert at(20, WIRE) in tunnels.pickups.piles()
+    assert tunnels.pickups.pick_up()
+
+    assert tunnels.player.items == [lamp(), WIRE, WIRE]
+    assert tunnels.player.taken == {"metro_salvage_1": NOW + DAY}
+    assert at(20, WIRE) not in tunnels.pickups.piles()
+
+
+def test_each_salvage_pickup_comes_back_after_its_own_delay() -> None:
+    config = DEFAULT_CONFIG.model_copy(
+        update={"salvage": SALVAGE | {"metro_salvage_2": Salvage(item=STEEL, respawn=2)}}
+    )
+    tunnels = Tunnels(Player(taken={"metro_salvage_1": NOW, "metro_salvage_2": NOW}))
+    pickups = Pickups(tunnels.player, tunnels.movement, tunnels.economy, tunnels.clock, config)
+
+    tunnels.clock.now = NOW + timedelta(hours=2)
+
+    assert at(20, WIRE) not in pickups.piles()
+    assert at(30, STEEL) in pickups.piles()
+
+
+def test_a_secret_never_comes_back() -> None:
+    taken = {"metro_secret_stairwell": NOW, "metro_secret_alcove": NOW}
+    tunnels = Tunnels(Player(taken=taken))
+
+    tunnels.clock.now = NOW + 365 * DAY
+
+    assert tunnels.pickups.piles() == [at(20, WIRE), at(30, STEEL), at(60, RATION, money=40)]
 
 
 def test_salvage_they_cannot_carry_stays_where_it_lies() -> None:
@@ -87,7 +129,7 @@ def test_salvage_they_cannot_carry_stays_where_it_lies() -> None:
 
     assert not tunnels.pickups.pick_up()
 
-    assert tunnels.player.taken == []
+    assert tunnels.player.taken == {}
     assert at(30, STEEL) in tunnels.pickups.piles()
 
 
@@ -98,7 +140,7 @@ def test_a_secrets_cash_is_found_through_the_ledger_however_much_they_carry() ->
     assert tunnels.pickups.pick_up()
 
     assert tunnels.player.money == 37
-    assert tunnels.player.taken == ["metro_secret_stairwell"]
+    assert tunnels.player.taken == {"metro_secret_stairwell": NOW}
     found = tunnels.economy.ledger.entries[-1]
     assert (found.kind, found.payer, found.payee) == (Kind.FOUND, OUTSIDE, PLAYER)
     assert (found.amount, found.place) == (25, "metro_secret_stairwell")
@@ -122,7 +164,7 @@ def test_what_does_not_fit_of_a_pickup_is_left_there_as_theirs() -> None:
     assert tunnels.pickups.pick_up()
 
     assert tunnels.player.money == 40
-    assert tunnels.player.taken == ["metro_secret_cache"]
+    assert tunnels.player.taken == {"metro_secret_cache": NOW}
     assert tunnels.player.left == [at(60, RATION)]
     assert at(60, RATION, money=40) not in tunnels.pickups.piles()
     tunnels.player.items = [lamp()]
@@ -133,7 +175,7 @@ def test_what_does_not_fit_of_a_pickup_is_left_there_as_theirs() -> None:
 
 
 def test_pickups_they_have_taken_stay_taken_after_a_restart() -> None:
-    tunnels = Tunnels(Player(taken=["metro_salvage_1", "metro_secret_stairwell"]))
+    tunnels = Tunnels(Player(taken={"metro_salvage_1": NOW, "metro_secret_stairwell": NOW}))
     tunnels.stand(20)
 
     assert tunnels.pickups.piles() == [at(30, STEEL), at(50, RATION), at(60, RATION, money=40)]
@@ -147,7 +189,7 @@ def test_the_nearest_pile_in_reach_is_picked_up_first() -> None:
     assert tunnels.pickups.pick_up()
 
     assert tunnels.player.items == [lamp(), BUN]
-    assert tunnels.player.taken == []
+    assert tunnels.player.taken == {}
     assert tunnels.pickups.pick_up()
     assert tunnels.player.items == [lamp(), BUN, WIRE]
 
@@ -157,7 +199,8 @@ def test_salvage_nothing_is_set_to_lie_at_is_left_out() -> None:
     maps = WITH_PICKUPS | {"kapok_walk": replace(MAPS["kapok_walk"], pickups=(*LYING, lost))}
     tunnels = Tunnels()
 
-    pickups = Pickups(tunnels.player, Movement(maps, World(Clock(NOW)).bus), tunnels.economy)
+    movement = Movement(maps, World(Clock(NOW)).bus)
+    pickups = Pickups(tunnels.player, movement, tunnels.economy, tunnels.clock)
 
     assert "metro_salvage_9" not in pickups.lying
     assert len(pickups.piles()) == len(LYING)

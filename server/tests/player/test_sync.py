@@ -92,7 +92,7 @@ def test_a_lamps_charge_alone_waits_too() -> None:
             player, "left", [Pile(at=MapTile(map="kapok_walk", x=1, y=15), items=[BUN])]
         ),
         lambda player, sent: setattr(sent, "meal", HOME),
-        lambda player, sent: setattr(player, "taken", ["metro_salvage_1"]),
+        lambda player, sent: setattr(player, "taken", {"metro_salvage_1": "2026-01-01T12:00:00Z"}),
         lambda player, sent: setattr(sent, "buyer", TRADER),
         lambda player, sent: setattr(
             sent, "piles", [Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)]

@@ -44,7 +44,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         playing=lambda: bool(in_game),
         collapsed=collapsed,
     )
-    pickups = Pickups(player, movement, economy)
+    pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock)
     sync = PlayerSync(player, hunger.meal, hub.broadcast, buyer=trade.buyer, piles=pickups.piles)
 

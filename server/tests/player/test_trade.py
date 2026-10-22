@@ -28,7 +28,7 @@ from simile.world import Movement, Point
 from simile.world.map import load_maps
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
-WIRE, STEEL, BOARD = (SALVAGE[f"metro_salvage_{n}"] for n in (1, 2, 3))
+WIRE, STEEL, BOARD = (SALVAGE[f"metro_salvage_{n}"].item for n in (1, 2, 3))
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
 ODD = Item(id="odd_bolt", kind=ItemKind.SALVAGE, name="Odd bolt", weight=0.1)
 
@@ -78,8 +78,9 @@ class Platform:
 
 
 def test_every_salvage_lying_about_has_a_price() -> None:
-    assert {item.id for item in DEFAULT_CONFIG.salvage.values()} <= set(ECONOMY.salvage)
-    assert all(item.kind is ItemKind.SALVAGE for item in DEFAULT_CONFIG.salvage.values())
+    items = [salvage.item for salvage in DEFAULT_CONFIG.salvage.values()]
+    assert {item.id for item in items} <= set(ECONOMY.salvage)
+    assert all(item.kind is ItemKind.SALVAGE for item in items)
 
 
 def test_the_scrap_trader_offers_the_economys_price_for_the_salvage_they_carry() -> None:

@@ -183,7 +183,7 @@ def test_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
 ) -> None:
     app = make_app(make_package)
     with_salvage_and_a_stall(app)
-    wire = SALVAGE["metro_salvage_1"].model_dump(mode="json")
+    wire = SALVAGE["metro_salvage_1"].item.model_dump(mode="json")
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         greeted = next_of(ws, "player_state")
@@ -206,7 +206,7 @@ def test_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
         {"at": {"map": "kapok_walk", "x": 30, "y": 15}, "items": [], "money": 25.0},
     ]
     assert salvaged["player"]["items"][1:] == [wire]
-    assert salvaged["player"]["taken"] == ["metro_salvage_1"]
+    assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
     assert len(salvaged["piles"]) == 1
     assert found["player"]["money"] == 25
     assert "piles" not in found
