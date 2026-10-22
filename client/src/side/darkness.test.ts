@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Item, PlayerStateMessage } from '../net';
 import { village } from './content';
 import {
@@ -17,6 +17,10 @@ import {
   Sight,
 } from './darkness';
 import { lampOf, LOW, shining, switchLamp } from './lamp';
+import { DEPTH } from './depths';
+import { pileMarks } from './piles';
+
+vi.mock('phaser', () => ({ default: {} }));
 
 const metro = village.map('metro')!;
 const lamp = (charge: number, on: boolean): Item => ({ id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge, on });
@@ -86,6 +90,15 @@ describe('Sight', () => {
     expect(shining(flat)).toBe(false);
     expect(sight.see(glowAround(TUNNEL, flat))).toBe(false);
     expect(sight.darkness(TUNNEL.x + 3, TUNNEL.y, glowAround(TUNNEL, flat))).toBe(DARK);
+  });
+});
+
+describe('things to pick up in the dark', () => {
+  it('glint under the darkness, so it takes the lamp to find them', () => {
+    const marks = pileMarks(village, 'metro', [{ at: { map: 'metro', x: 63, y: 15 }, items: [WIRE] }]);
+
+    expect(isLit(metro, 63, 15)).toBe(false);
+    expect(marks.map(({ depth }) => depth < DEPTH.dark)).toEqual([true]);
   });
 });
 
