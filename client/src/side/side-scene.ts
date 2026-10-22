@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
-import { addAtlas } from '../dolls/paper-doll';
+import { addFigureAtlas } from '../dolls/sprite-figure';
 import { server, type Position } from '../net';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
@@ -21,6 +21,7 @@ import type { Drawn } from './motion';
 import type { Crossing } from './runs';
 import { SidePlayer, type Controls, type MapPosition } from './player';
 import { sideResidents } from './residents';
+import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
 import { SideTextures } from './textures';
@@ -315,18 +316,22 @@ export class SideScene extends Phaser.Scene {
     if (!figure) return;
     const map = village.map(mapId);
     const inside = map?.kind === 'floor';
-    const shown = map?.street === street.map.id && (!inside || street.isOpen(map.building));
+    const x = xOf(at.x);
+    const shown =
+      map?.street === street.map.id &&
+      (!inside || street.isOpen(map.building)) &&
+      !hiddenInFront(inside, id === PLAYER_ID, street.ghost(x));
     figure.shown = shown;
     figure.doll.setVisible(shown);
     figure.contact.setVisible(shown && drawn.on !== 'ladder' && drawn.pose !== 'riding');
     if (!shown) return;
-    figure.x = xOf(at.x);
+    figure.x = x;
     figure.feet = feetOf(at.y);
     const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
-    const alpha = inside ? 1 : street.ghost(figure.x);
-    figure.doll.setPosition(figure.x, figure.feet).setDepth(depth).setAlpha(alpha);
-    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground']);
-    figure.contact.setPosition(figure.x, figure.feet).setAlpha(alpha);
+    figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
+    const seat = map ? seatHeight(map, at.x - map.offset.x, at.y - map.offset.y) : 0;
+    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat);
+    figure.contact.setPosition(figure.x, figure.feet);
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
   }
 
@@ -334,22 +339,19 @@ export class SideScene extends Phaser.Scene {
     const known = this.figures.get(id);
     if (known || this.loadingDolls.has(id)) return known;
     this.loadingDolls.add(id);
-    const doll = dollFor(id);
-    const flat = `doll-${id}-flat`;
-    void addAtlas(this, flat, doll.flat, doll).then(() => {
-      if (!this.sys.isActive()) return;
-      const sideDoll = new SideDoll(this, doll, flat);
-      this.add.existing(sideDoll);
-      const contact = this.add.image(0, 0, this.pictures.contact()).setOrigin(0.5, 0.5);
-      contact.setDisplaySize(CONTACT_M * PPM, CONTACT_M * PPM * 0.25);
-      this.figures.set(id, { id, doll: sideDoll, contact, x: 0, feet: 0, shown: false });
-      if (!doll.painted) return;
-      const painted = `doll-${id}-painted`;
-      addAtlas(this, painted, doll.painted, doll).then(
-        () => sideDoll.paint(painted),
-        (error: unknown) => console.warn(error),
-      );
-    });
+    const figure = dollFor(id);
+    const key = `figure-${figure.id ?? id}`;
+    void addFigureAtlas(this, key, figure).then(
+      () => {
+        if (!this.sys.isActive()) return;
+        const sideDoll = new SideDoll(this, figure, key);
+        this.add.existing(sideDoll);
+        const contact = this.add.image(0, 0, this.pictures.contact()).setOrigin(0.5, 0.5);
+        contact.setDisplaySize(CONTACT_M * PPM, CONTACT_M * PPM * 0.25);
+        this.figures.set(id, { id, doll: sideDoll, contact, x: 0, feet: 0, shown: false });
+      },
+      (error: unknown) => console.warn(error),
+    );
     return undefined;
   }
 

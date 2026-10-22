@@ -603,7 +603,8 @@ pick), and the drawn outline alone.** Keep #309's and #310's pipelines, the maps
 | `compose.py` | Every other picture and number above. `python compose.py [step …]` |
 | `followup-issue.md` | The draft follow-up issue for the re-render, for whichever style the user picks |
 
-To make it all again, from `server/` with nothing else loaded:
+To make it all again, from `server/` with nothing else loaded, at `ab3a4c5`: `dolls.py` and
+`sharpness.py` call #310's paper-doll build, which #337 replaced with painted figures.
 
 ```bash
 uv sync --extra images

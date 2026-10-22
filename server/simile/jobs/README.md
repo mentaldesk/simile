@@ -24,12 +24,11 @@ A job looks like this. `state` is `queued`, `running`, `succeeded`, `failed` or 
   "kind": "doll",
   "state": "succeeded",
   "progress": 1.0,
-  "message": "Painted",
+  "message": "Painted in 642 s",
   "error": null,
   "result": {
     "doll": "/api/jobs/files/doll/new_face.json",
-    "flat": "/api/jobs/files/doll/new_face-flat.webp",
-    "painted": "/api/jobs/files/doll/new_face-painted.webp"
+    "painted": "/api/jobs/files/doll/new_face.webp"
   },
   "created": "2026-10-18T09:30:00Z",
   "started": "2026-10-18T09:30:00Z",
@@ -56,9 +55,9 @@ A job whose kind needs something missing fails as soon as it's submitted, with t
 ## Doll jobs
 
 `{"kind": "doll", "params": {"character": "new_face", "appearance": {...}}}` paints the character's
-paper doll from its `Appearance`, as [`content/dolls/`](../../../content/dolls/README.md#the-doll-job)
+figure from its `Appearance`, as [`content/dolls/`](../../../content/dolls/README.md#the-doll-job)
 describes. It needs Apple Silicon and the `images` extra. Painting a character again replaces its
-doll. A character id that has a doll or an NPC file in `content/` is refused, except `player`: the
+figure. A character id that has a doll or an NPC file in `content/` is refused, except `player`: the
 creator paints the player's chosen look as `doll/player.json`, beside the built-in one in `content/`.
 
 ## Where jobs write

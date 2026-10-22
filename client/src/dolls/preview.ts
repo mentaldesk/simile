@@ -1,10 +1,13 @@
-// A dev page drawing the dolls with the real rig: /src/dolls/preview.html?show=lineup|poses|walk|run|climb|flat
+// A dev page drawing the figures as the game does, and the flat doll with the rig: /src/dolls/preview.html?show=lineup|poses|walk|run|climb|flat
 import Phaser from 'phaser';
 import type { Facing } from '../net/protocol';
 import { dolls, flatDoll } from './assets';
-import type { DollManifest } from './manifest';
-import { addAtlas, PaperDoll } from './paper-doll';
+import { isFigure, type DollManifest } from './manifest';
+import { makeDoll } from './paper-doll';
 import type { DollPose, PoseOptions } from './rig';
+import { makeFigure } from './sprite-figure';
+
+type Posable = { setPose(pose: DollPose, facing: Facing, phase?: number, options?: PoseOptions): unknown };
 
 type Cell = {
   id: string;
@@ -27,7 +30,6 @@ const show = params.get('show') ?? 'lineup';
 const named = params.get('who')?.split(',');
 const who = named?.[0] ?? 'player';
 const height = Number(params.get('height') ?? 245);
-const flat = params.has('flat');
 const fixed = params.has('phase') ? Number(params.get('phase')) : undefined;
 const frames = Number(params.get('frames') ?? 8);
 const cellWidth = height * 0.62;
@@ -140,7 +142,7 @@ function shifted(ms: number): number {
 }
 
 class Preview extends Phaser.Scene {
-  private readonly posed: [PaperDoll, Cell, { phase: number }][] = [];
+  private readonly posed: [Posable, Cell, { phase: number }][] = [];
   private readonly found: Record<string, DollManifest>;
   private readonly rows: Cell[][];
 
@@ -151,28 +153,21 @@ class Preview extends Phaser.Scene {
   }
 
   async create(): Promise<void> {
-    const ids = [...new Set(this.rows.flat().map((cell) => cell.id))];
-    await Promise.all(
-      ids.flatMap((id) => {
-        const doll = this.found[id];
-        const loads = [addAtlas(this, `${id}-flat`, doll.flat, doll)];
-        if (doll.painted && !flat) loads.push(addAtlas(this, `${id}-painted`, doll.painted, doll));
-        return loads;
-      }),
-    );
     const ground = this.add.graphics().lineStyle(1, 0xc9bca4);
-    this.rows.forEach((row, r) => {
+    const made = this.rows.flatMap((row, r) => {
       const y = (r + 1) * cellHeight - height * 0.12;
       ground.lineBetween(0, y, row.length * cellWidth, y);
-      row.forEach((cell, c) => {
+      return row.map(async (cell, c) => {
         const doll = this.found[cell.id];
-        const key = doll.painted && !flat ? `${cell.id}-painted` : `${cell.id}-flat`;
-        const paper = new PaperDoll(this, (c + 0.5) * cellWidth, y, doll, key, height);
-        this.add.existing(paper);
-        paper.setPose(cell.pose, cell.facing, cell.phase ?? fixed ?? 0, cell.options);
-        this.posed.push([paper, cell, { phase: 0 }]);
+        const x = (c + 0.5) * cellWidth;
+        const figure = isFigure(doll)
+          ? await makeFigure(this, x, y, cell.id, doll, height)
+          : await makeDoll(this, x, y, cell.id, doll, height);
+        figure.setPose(cell.pose, cell.facing, cell.phase ?? fixed ?? 0, cell.options);
+        this.posed.push([figure, cell, { phase: 0 }]);
       });
     });
+    await Promise.all(made);
     (window as unknown as { dollsReady: boolean }).dollsReady = true;
   }
 

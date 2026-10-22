@@ -102,6 +102,14 @@ def cielab(colours: ArrayLike) -> NDArray[np.float64]:
     )
 
 
+def from_cielab(lab: ArrayLike) -> NDArray[np.float64]:
+    lab = np.asarray(lab, dtype=np.float64)
+    fy = (lab[..., 0] + 16) / 116
+    f = np.stack([fy + lab[..., 1] / 500, fy, fy - lab[..., 2] / 200], axis=-1)
+    xyz = np.where(f**3 > 216 / 24389, f**3, (116 * f - 16) / (24389 / 27)) * _WHITE
+    return _encoded(xyz @ np.linalg.inv(_TO_XYZ).T)
+
+
 def delta_e(a: ArrayLike, b: ArrayLike) -> NDArray[np.float64]:
     """CIEDE2000 between sRGB colours: about 2 is just noticeable, 10 a clear difference."""
     return delta_e_lab(cielab(a), cielab(b))

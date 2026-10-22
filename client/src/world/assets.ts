@@ -1,5 +1,5 @@
 import { dolls } from '../dolls/assets';
-import type { DollManifest } from '../dolls/manifest';
+import type { FigureManifest } from '../dolls/manifest';
 import type { TiledMap } from './map';
 
 const files = import.meta.glob<string>(
@@ -29,6 +29,6 @@ function fnv1a(text: string): number {
 }
 
 /** Its own doll, or a resident's picked by its id, the same one every time. */
-export function dollFor(id: string): DollManifest {
+export function dollFor(id: string): FigureManifest {
   return dolls[id] ?? dolls[residentDolls[fnv1a(id) % residentDolls.length]];
 }

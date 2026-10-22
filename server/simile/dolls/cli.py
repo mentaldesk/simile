@@ -5,7 +5,7 @@ import typer
 
 
 def register(app: typer.Typer) -> None:
-    dolls = typer.Typer(help="The residents' paper dolls.", no_args_is_help=True)
+    dolls = typer.Typer(help="The residents' painted figures.", no_args_is_help=True)
 
     @dolls.command("paint")
     def paint(
@@ -14,29 +14,31 @@ def register(app: typer.Typer) -> None:
         ] = None,
         force: Annotated[bool, typer.Option(help="Repaint even if nothing changed.")] = False,
         paintings: Annotated[
-            Path | None, typer.Option(help="Also save each sheet and painting here, to look at.")
+            Path | None, typer.Option(help="Also save each painting and cut-out here.")
         ] = None,
     ) -> None:
-        """Paint the dolls in content/dolls/ whose Appearance changed, with part 3's FLUX painter
-        on Apple Silicon (`uv sync --extra images`)."""
+        """Paint the figures in content/dolls/ whose Appearance changed, with FLUX on Apple
+        Silicon (`uv sync --extra images`)."""
         from simile.dolls.build import build
-        from simile.dolls.paint import EditPainter, NoPainter
+        from simile.dolls.flux import Flux
+        from simile.dolls.measure import CLOSE
+        from simile.dolls.paint import NoPainter
 
         try:
-            done = build(EditPainter, only=who or (), force=force)
+            done = build(Flux, only=who or (), force=force)
         except (KeyError, NoPainter) as error:
             typer.echo(error.args[0], err=True)
             raise typer.Exit(1) from None
         for painted in done:
             if paintings is not None:
                 paintings.mkdir(parents=True, exist_ok=True)
-                for sheet, image in painted.paintings.items():
-                    image.save(paintings / f"{painted.who}-{sheet}.png")
-            moved = {k: round(v, 3) for k, v in painted.misplaced.items() if v > 0.02}
-            added = {k: round(v, 3) for k, v in painted.patches.items() if v > 0.05}
-            if moved:
-                typer.echo(f"{painted.who}: pieces the painter moved or dropped: {moved}")
-            if added:
-                typer.echo(f"{painted.who}: pieces the painter added to: {added}")
+                for frame, image in painted.paintings.items():
+                    image.save(paintings / f"{painted.who}-{frame}.png")
+                    painted.figures[frame].save(paintings / f"{painted.who}-{frame}-cut.png")
+            for frame, tries in painted.tries.items():
+                kept = tries[-1].matched
+                off = {k: s.delta_e for k, s in kept.items() if s.delta_e > CLOSE}
+                if off:
+                    typer.echo(f"{painted.who} {frame}: still off by {off}")
 
     app.add_typer(dolls, name="dolls")
