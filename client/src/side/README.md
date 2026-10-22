@@ -114,7 +114,9 @@ each prompt on the way. Before each arrow it presses E where nothing else takes 
 player didn't move. It takes doors and lifts from their cell, and stairs and ladders from 1.4 tiles
 off their end, near the edge of the reach. Then it runs along the High Street from a press of Shift,
 checking the speed and the blend, jumps the rooftops' one-, two- and three-cell gaps, the last
-running, checking it lands on the far roof, walks off the clock house's roof into the lane, opens
+running, checking it lands on the far roof, and the metro's jumps up to its secrets, walks off the
+clock house's roof into the lane, walks down into the metro, through it into the clinic and back up
+to Banyan Row, checks a run jump at the metro's high ledge falls short, opens
 the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 

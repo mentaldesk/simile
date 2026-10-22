@@ -223,15 +223,22 @@ async function runLeg(page: Page, api: Api, index: number): Promise<void> {
   }
 }
 
-/** Over a gap on the rooftops: from `from`, right until past `takeOff`, then Space, landing on row `y` past `land`. */
-type Jump = { name: string; from: Place; takeOff: number; land: number; run: boolean };
+/** Over a gap: from `from`, right until past `takeOff`, then Space, landing past `land` on row `onto`, or else `from`'s. */
+type Jump = { name: string; from: Place; takeOff: number; land: number; run: boolean; onto?: number };
 
 const roof = (x: number, y: number): Place => ({ map: 'rooftops', x, y });
+const metro = (x: number, y: number): Place => ({ map: 'metro', x, y });
 const JUMPS: Jump[] = [
   { name: 'over the one-cell gap from the bakery', from: roof(6, 12), takeOff: 9.4, land: 10.75, run: false },
   { name: 'over the two-cell gap to the tea house', from: roof(18, 8), takeOff: 21.6, land: 23.25, run: false },
   { name: 'over the three-cell gap to the laundry, running', from: roof(26, 8), takeOff: 30.3, land: 33.25, run: true },
+  { name: 'from the landing onto the catwalk over the stairwell', from: metro(1, 9), takeOff: 4, land: 6.5, onto: 7, run: true },
+  { name: "from the train's roof onto the catwalk in the vault", from: metro(38, 12), takeOff: 42.3, land: 44.75, onto: 10, run: true },
+  { name: 'up the tunnel wall from the pipe ledge', from: metro(76, 12), takeOff: 78.3, land: 80.75, onto: 10, run: true },
+  { name: 'up the tunnel wall to the alcove', from: metro(81, 10), takeOff: 82.3, land: 84.75, onto: 8, run: true },
 ];
+/** A run jump at the metro's high ledge, a row higher than the jump, falls back to the floor. */
+const SHORT: Jump = { name: 'at the high ledge, short of it', from: metro(101, 15), takeOff: 105, land: 104, onto: 15, run: true };
 
 /** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
 async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise<void> {
@@ -252,9 +259,57 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   if (jump.run) await page.keyboard.press('Shift');
   await run(page, 100);
   const landed = (await api.state())!;
-  if (landed.y !== jump.from.y || landed.x < jump.land) {
-    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${jump.from.y} past ${jump.land}`);
+  const row = jump.onto ?? jump.from.y;
+  if (landed.map !== jump.from.map || landed.y !== row || landed.x < jump.land) {
+    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${row} past ${jump.land}`);
   }
+}
+
+/** Walks along the row, running, to within `reach` of `x`. */
+async function walkTo(page: Page, api: Api, x: number, reach: number, what: string): Promise<void> {
+  const from = (await api.state())!.x;
+  if (Math.abs(from - x) <= reach) return;
+  const key = x > from ? 'ArrowRight' : 'ArrowLeft';
+  await page.keyboard.down(key);
+  await until(page, async () => Math.abs((await api.state())!.x - x) <= reach, 40, `${what}: walking to ${x}`, FRAME_MS);
+  await page.keyboard.up(key);
+  await run(page, 200);
+}
+
+/** Presses E, or holds up or down, until the player is at `arrive`. */
+async function take(page: Page, api: Api, key: 'e' | Hold, arrive: Place, what: string): Promise<void> {
+  if (key === 'e') await page.keyboard.press('e');
+  else await page.keyboard.down(key);
+  await until(page, async () => near(await api.state(), arrive), SECONDS_TO_ARRIVE, `${what}: arriving at ${JSON.stringify(arrive)}`);
+  if (key !== 'e') await page.keyboard.up(key);
+  await run(page, 300);
+}
+
+/** Down the stairway from Banyan Row's promenade, both flights, along the platform and the tunnel into the clinic, and
+ * all the way back up, by the keys alone. */
+async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
+  const name = 'through the metro and back';
+  await teleport(page, walk, { map: 'banyan_row', x: 59, y: 18 }, name);
+  await run(page, 300);
+  await page.keyboard.press('Shift');
+  await walkTo(page, walk, 62, REACH.cell, name);
+  await take(page, walk, 'e', metro(2, 9), `${name}, down the stairway`);
+  await shot(page, index, 'into the metro');
+  await walkTo(page, walk, 4, REACH.edge, name);
+  await take(page, walk, 'ArrowDown', metro(7, 12), `${name}, down to the ticket hall`);
+  await walkTo(page, walk, 19, REACH.edge, name);
+  await take(page, walk, 'ArrowDown', metro(22, 15), `${name}, down to the platform`);
+  await walkTo(page, walk, 89, REACH.cell, name);
+  await shot(page, index, 'at the clinic');
+  await take(page, walk, 'e', { map: 'clinic_floor_0', x: 1, y: 2 }, `${name}, into the clinic`);
+  await take(page, walk, 'e', metro(89, 15), `${name}, out of the clinic`);
+  await walkTo(page, walk, 22, REACH.edge, name);
+  await take(page, walk, 'ArrowUp', metro(19, 12), `${name}, up to the ticket hall`);
+  await walkTo(page, walk, 7, REACH.edge, name);
+  await take(page, walk, 'ArrowUp', metro(4, 9), `${name}, up to the landing`);
+  await walkTo(page, walk, 2, REACH.cell, name);
+  await take(page, walk, 'e', { map: 'banyan_row', x: 62, y: 18 }, `${name}, up to Banyan Row`);
+  await page.keyboard.press('Shift');
 }
 
 /** Walks off the clock house's roof and lands in the lane, a fall of eleven rows. */
@@ -356,6 +411,8 @@ try {
     ['running with Shift', (i) => runLeg(page, api, i)],
     ...JUMPS.map((jump): [string, (index: number) => Promise<string | void>] => [`jumping ${jump.name}`, (i) => jumpLeg(page, api, jump, i)]),
     ["falling off the clock house's roof", (i) => fallLeg(page, api, i)],
+    ['through the metro and back', (i) => metroLeg(page, api, i)],
+    [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
       `E at the terminal on ${at.map}`,
       (i) => terminalLeg(page, api, at, i),
