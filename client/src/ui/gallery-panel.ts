@@ -2,6 +2,7 @@ import type { Frame, Painting, Position } from '../net';
 import type { Interactable } from '../world/interactables';
 import type { GalleryFrames } from '../world/paintings';
 import { mapOf } from '../world/map';
+import { callCue } from './call-cue';
 import './gallery-panel.css';
 import { pressedNewsKey } from './keys';
 import { NEWS_KEY } from './tuning';
@@ -35,6 +36,7 @@ export class GalleryPanel {
     this.panel.tabIndex = -1;
     this.panel.hidden = true;
     this.panel.ariaLabel = 'Painting';
+    callCue.slot(this.panel);
     const header = this.panel.appendChild(document.createElement('header'));
     this.title = header.appendChild(document.createElement('b'));
     header.appendChild(document.createElement('span')).textContent = `Esc or ${KEY} close`;

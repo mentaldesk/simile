@@ -1,0 +1,10 @@
+.call-cue {
+  flex: none;
+  margin: 0 0 3px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: #e8b04a;
+  color: #1d2b26;
+  font-weight: bold;
+  text-align: center;
+}

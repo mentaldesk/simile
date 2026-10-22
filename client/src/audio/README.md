@@ -25,6 +25,19 @@ from where the speaker stands.
 - Browsers keep audio suspended until the page gets a key press or click. Chunks that arrive before
   then are dropped.
 
+## Greetings
+
+When a resident starts talking to the player (`dialogue.onInvitation`: a `conversation_started`
+with the player that they opened, by walking up, calling out or speaking first), `Greeter` in
+[`greetings.ts`](greetings.ts) plays one of their recorded greetings, picked at random, at the
+partner's level and panned towards them as `partnerMix` does. It plays whatever panel is open, and
+whether or not the server is voiced. It asks the server for a resident's greetings once
+(`GET /api/greetings/{id}`, see [`voicing`](../../../server/simile/voicing/README.md#greetings)),
+fetches and decodes each file once, and plays nothing for someone without any.
+
+The same resident doesn't greet again within `GREETING_COOLDOWN_S` (60 s), however many times they
+start talking. A greeting that can't play because the audio is still suspended doesn't count.
+
 ## Positions
 
 The world (C1) tells audio where the speakers and the listener are, in float tiles:

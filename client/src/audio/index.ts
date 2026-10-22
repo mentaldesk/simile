@@ -1,4 +1,6 @@
 import { SAMPLE_RATE, server } from '../net';
+import { dialogue } from '../ui/dialogue';
+import { fetchGreetings, Greeter, WebGreetings } from './greetings';
 import { listen, VoicePlayer } from './player';
 import { positions } from './positions';
 import { resumeOnFirstGesture, WebAudioOutput } from './webaudio';
@@ -10,6 +12,10 @@ if (import.meta.env.MODE !== 'test') {
   const player = new VoicePlayer(new WebAudioOutput(context), positions);
   listen(server, player, () => context.state === 'running');
   resumeOnFirstGesture(context);
+  const greeter = new Greeter(new WebGreetings(context), positions, fetchGreetings, {
+    canPlay: () => context.state === 'running',
+  });
+  dialogue.onInvitation((npcId) => void greeter.greet(npcId));
   const everyFrame = () => {
     player.update();
     requestAnimationFrame(everyFrame);

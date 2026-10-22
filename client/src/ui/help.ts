@@ -1,3 +1,5 @@
+import { callCue } from './call-cue';
+
 /** Shows and hides the controls. */
 export const HELP_KEY = '?';
 
@@ -16,6 +18,10 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
 
 const NOTE = 'A tag over each door, flight, ladder and lift names its keys. Where E is used for something else, ↑ takes the door.';
 
+/** What the help says about voices, as the top-level README does. */
+export const VOICES =
+  'Residents talk in speech bubbles unless the village was started with SIMILE_VOICE=1 ./run.sh, on a Mac with Apple Silicon. Either way, each greets you out loud when they start talking to you.';
+
 const kbd = (key: string) => Object.assign(document.createElement('kbd'), { textContent: key });
 
 /** "? controls" in a corner, and the controls themselves while it's open. */
@@ -31,6 +37,7 @@ export class HelpPanel {
     this.panel.className = 'help';
     this.panel.ariaLabel = 'Controls';
     this.panel.hidden = true;
+    callCue.slot(this.panel);
     this.panel.appendChild(document.createElement('b')).textContent = 'Controls';
     const list = this.panel.appendChild(document.createElement('dl'));
     for (const [keys, what] of CONTROLS) {
@@ -38,6 +45,7 @@ export class HelpPanel {
       list.appendChild(document.createElement('dd')).textContent = what;
     }
     this.panel.appendChild(document.createElement('p')).textContent = NOTE;
+    this.panel.appendChild(document.createElement('p')).textContent = VOICES;
   }
 
   get isOpen(): boolean {

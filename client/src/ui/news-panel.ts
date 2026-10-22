@@ -1,4 +1,5 @@
 import type { ClientMessage, NewsArticle, Notice, WrittenWork, server } from '../net';
+import { callCue } from './call-cue';
 import { pressedNewsKey } from './keys';
 import { NEWS_KEY } from './tuning';
 
@@ -185,6 +186,7 @@ export class NewsPanel {
     this.panel.tabIndex = -1;
     this.panel.hidden = true;
     this.panel.ariaLabel = 'News terminal';
+    callCue.slot(this.panel);
     const header = this.panel.appendChild(document.createElement('header'));
     this.title = header.appendChild(document.createElement('b'));
     header.appendChild(document.createElement('span')).textContent =

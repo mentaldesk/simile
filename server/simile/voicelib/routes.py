@@ -15,7 +15,7 @@ from simile.library import Library, NotFound, ReadOnly, Refused, library_of
 from simile.library.archive import reasons
 from simile.schema import Character, Id, Model
 from simile.voice.service import voice_of
-from simile.voicelib import kinds, uploads, voices
+from simile.voicelib import greetings, kinds, uploads, voices
 from simile.voicelib.speech import speaker_of
 
 MAX_JSON = 4 * 1024
@@ -162,6 +162,7 @@ async def pick(request: Request) -> Response:
     await run_in_threadpool(own, library, id)
     clip, line = await run_in_threadpool(chosen, jobs, choice)
     character = await run_in_threadpool(set_voice, library, id, clip, line)
+    await greetings.regreet(jobs, library, id, choice.library)
     return JSONResponse(character.model_dump(mode="json"))
 
 

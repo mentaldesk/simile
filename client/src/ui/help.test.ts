@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { CONTROLS, HelpPanel } from './help';
+import { CONTROLS, HelpPanel, VOICES } from './help';
 
 const visible = (root: HTMLElement, selector: string) => !root.querySelector<HTMLElement>(selector)!.hidden;
 
@@ -40,5 +40,15 @@ describe('HelpPanel', () => {
     expect(what['↓']).toMatch(/downstairs.*ladder.*lift down/);
     expect(what['↑']).not.toMatch(/door/);
     expect(what.Shift).toMatch(/run/);
+  });
+
+  it('says voices are off unless turned on, and that greetings play either way', () => {
+    const root = document.createElement('div');
+    new HelpPanel(root);
+    const notes = [...root.querySelectorAll('.help p')].map((note) => note.textContent);
+
+    expect(notes).toContain(VOICES);
+    expect(VOICES).toMatch(/speech bubbles unless .*SIMILE_VOICE=1 \.\/run\.sh/);
+    expect(VOICES).toMatch(/Either way, each greets you out loud/);
   });
 });

@@ -63,6 +63,37 @@ an M2 Max, then follows the bus and ticks on the sim loop.
 
 Every constant is in `VoicingConfig`.
 
+## Greetings
+
+Each resident has three or four greetings recorded once in their own voice, which the client plays
+when they start talking to the player, whether or not the server is voiced (C3's
+[`greetings.ts`](../../../client/src/audio/greetings.ts)). They're in
+[`content/voices/greetings/`](../../../content/voices/greetings/): `lines.json` has what each
+resident says, written by hand in their way of talking and without anyone's name, and `<id>_<n>.m4a`
+is line *n*, AAC at 32 kb/s, about 10 KB each and 450 KB in all.
+
+```bash
+cd server && uv run --extra voice simile greetings [npc ...] [--force]
+```
+
+- `simile greetings` says each line with V1's model and seed, cloning the resident's clip as V1
+  does, so a rerun gives the same audio. A line's `take` picks another seed, for when one comes out
+  wrong. It trims the silence around each greeting and encodes it with macOS's `afconvert`. Each
+  takes about a second once the model has loaded.
+- It makes only the greetings that are missing or out of date, unless `--force`. `made.json` keeps
+  a digest of the clip, transcript and lines each resident's were made from, and of
+  `greetings.SYNTHESIS`, which `speak.py` changes bump. `make test` fails while any are out of date.
+- It waits while mflux, a papercraft or doll build, or an Ollama model is loaded (`gpu.py`), so two
+  models never share the GPU's memory.
+- `speak.py` imports nothing from simile, so the creator's greetings job can run it in voice-lab's
+  MLX virtualenv ([voicelib](../voicelib/README.md#greetings)).
+
+`GET /api/greetings/{id}` lists a resident's greetings, `{"greetings": ["/api/greetings/kofi/kofi_1.m4a",
+...]}`, and an empty list for anyone without. A player character's come from the library's
+`greetings/` folder, and only once they're newer than its clip, so a new voice never greets in the
+old one. `GET /api/greetings/{id}/{name}` serves one as `audio/mp4`.
+
 ## Tests
 
 `server/tests/voicing/` drives `Voicing` with V1's `FakeSynthesiser`, so it runs in CI without MLX.
+The test that says a greeting with the real model is `@pytest.mark.mlx`.
