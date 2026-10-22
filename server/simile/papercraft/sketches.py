@@ -16,6 +16,7 @@ BRASS: Rgb = (200, 164, 84)
 WHITE: Rgb = (244, 242, 236)
 MINT: Rgb = (186, 226, 204)
 STONE: Rgb = (196, 188, 172)
+ROPE: Rgb = (176, 148, 104)
 MARGIN = 0.25
 
 
@@ -125,6 +126,28 @@ def ledge(length: float = 3.0, height: float = 0.6) -> Image.Image:
     return s.image
 
 
+def rope_bridge(length: float = 3.3, height: float = 1.25) -> Image.Image:
+    """A deck of planks under a rope handrail, with rope netting between them and a post at
+    each end, seen from the side. Its middle repeats to stretch it across a gap."""
+    s = Sheet(length, height, 200)
+    deck, rail, mesh, thread = 0.12, 1.0, 0.3, 0.012
+    for x in np.arange(0.0, length - 0.01, 0.2):
+        s.rect(x + 0.01, 0.0, min(x + 0.19, length), deck, WOOD, DARK_WOOD)
+    rise = rail - deck
+    for x in np.arange(-rise, length, mesh):
+        for a, b in ((x, x + rise), (x + rise, x)):
+            s.polygon(
+                [(a - thread, deck), (a + thread, deck), (b + thread, rail), (b - thread, rail)],
+                ROPE,
+            )
+    s.rect(0.0, rail - 0.03, length, rail + 0.03, ROPE)
+    for x in (0.0, length - 0.1):
+        s.rect(x, 0.0, x + 0.1, height, DARK_WOOD)
+    s.image.paste((255, 255, 255), (0, 0, round(s.x0), s.image.height))
+    s.image.paste((255, 255, 255), (round(s.x0 + length * s.ppm), 0, s.image.width, s.image.height))
+    return s.image
+
+
 def steps(rise: float = 2.2, run: float = 2.2, count: int = 8) -> Image.Image:
     """Stone steps rising to the right, from the river path up to the street."""
     s = Sheet(run + 0.3, rise, 200)
@@ -174,6 +197,7 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "lift_shaft": lift_shaft,
     "steps": steps,
     "ledge": ledge,
+    "rope_bridge": rope_bridge,
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,

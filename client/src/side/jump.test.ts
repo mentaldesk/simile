@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { TiledMap } from '../world/map';
 import { village } from './content';
-import { BUFFER_SECONDS, COYOTE_SECONDS, JUMP_REACH, JUMP_RISE, JUMP_UP, landingRow } from './jump';
+import { BUFFER_SECONDS, COYOTE_SECONDS, JUMP_REACH, JUMP_RISE, JUMP_TABLE, JUMP_UP, landingRow } from './jump';
 import { CLIMB_KINDS, Village, type SideMap } from './maps';
-import { SidePlayer, type Controls } from './player';
+import { RUN_PACE, SidePlayer, type Controls } from './player';
+import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 
 const DT = 1 / 60;
 const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
@@ -109,6 +110,33 @@ describe('jumping', () => {
     for (let t = 0; t < 2 && climber.airborne; t += DT) climber.update(press({ x: 1, hold: true }), DT);
     expect(climber.position.y).toBe(5 - JUMP_UP);
     expect(JUMP_RISE).toBeGreaterThan(JUMP_UP);
+  });
+
+  it("reaches as far as the server's table says the farthest jump does, and no further", () => {
+    const ledge = sketch([...Array<string>(6).fill('.'.repeat(30)), `${'#'.repeat(6)}${'.'.repeat(24)}`, ...Array<string>(3).fill('.'.repeat(30)), '#'.repeat(30)]);
+    const player = on(ledge, 0, 5);
+    while (!player.airborne) player.update(press({ x: 1, run: true }), DT);
+    for (let t = DT; t < COYOTE_SECONDS - DT / 2; t += DT) player.update(press({ x: 1, run: true }), DT);
+    player.update(press({ x: 1, run: true, jump: true, hold: true }), DT);
+    let farthest = 0;
+    let highest = 5;
+    while (player.position.y <= 5.5) {
+      farthest = player.position.x;
+      highest = Math.min(highest, player.position.y);
+      player.update(press({ x: 1, run: true, hold: true }), DT);
+    }
+    expect(farthest - 5).toBeLessThanOrEqual(JUMP_TABLE.reach);
+    expect(farthest - 5).toBeGreaterThan(JUMP_TABLE.reach - RUN_PACE * PLAYER_SPEED * MAX_FRAME_SECONDS - 0.1);
+    expect(JUMP_TABLE.frame_seconds).toBe(MAX_FRAME_SECONDS);
+    expect(5 - highest).toBeLessThanOrEqual(JUMP_TABLE.rise);
+  });
+
+  it('falls from where a snapshot puts it in the air', () => {
+    const player = on(village.map('high_street')!, 20, 11.4);
+    player.update(idle, DT);
+    expect(player.airborne).toBe(true);
+    for (let t = 0; t < 2 && player.airborne; t += DT) player.update(idle, DT);
+    expect(player.position).toEqual({ x: 20, y: 15 });
   });
 
   it('goes further running than walking', () => {

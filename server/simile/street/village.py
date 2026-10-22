@@ -516,16 +516,56 @@ def banyan_row() -> tuple[Plan, list[Plan]]:
     return plan, floors
 
 
+def rooftop(plan: Plan, building_id: str, label: str, x: int, width: int, storeys: int) -> int:
+    """A building with a flat roof to walk on, along its top row. Returns the roof's standing
+    row."""
+    scenery(plan, building_id, label, x, width, storeys)
+    top = front(x, width, storeys).y
+    plan.fill(x, top, width, 1)
+    return top - 1
+
+
+def rooftops() -> Plan:
+    """A lane behind Kapok Walk, and the roofs over it to jump across: up a ladder onto the
+    bakery, over a gap onto walkways up the alley to the print works, across two- and three-cell
+    gaps to the tea house and the laundry, over a rope bridge to the clock house's balcony, and
+    up its ladder to the roof. A fall lands in the lane."""
+    plan = street("rooftops", "The Rooftops", 60)
+    plan.ladder((3, GROUND), 3)
+    bakery = rooftop(plan, "bakery", "The bakery", 4, 6, 1)
+    plan.fill(11, bakery + 1, 2, 1)
+    plan.fill(13, bakery - 1, 2, 1)
+    roofs = rooftop(plan, "print_works", "The print works", 15, 7, 2)
+    rooftop(plan, "tea_house", "The tea house", 24, 7, 2)
+    rooftop(plan, "laundry", "The laundry", 34, 6, 2)
+    plan.fill(40, roofs + 1, 8, 1)
+    plan.piece("rope_bridge", 40, roofs, 8, 1)
+    top = rooftop(plan, "clock_house", "The clock house", 48, 7, 3)
+    plan.clear(50, top + 1, 1, 1)
+    plan.fill(48, roofs + 1, 3, 1)
+    plan.ladder((50, roofs), roofs - top)
+    plan.piece("palm_tree", 12, GROUND - 6, 2, 7)
+    plan.piece("bench", 52, top, 2, 1)
+    plan.piece("plant", 49, top)
+    plan.piece("bicycle", 22, GROUND)
+    plan.piece("bin", 32, GROUND)
+    for at in (8, 45, 57):
+        plan.piece("lamp", at, GROUND - 2, 1, 3)
+    return plan
+
+
 def village() -> list[Plan]:
     """Every street, then every floor, with the streets joined."""
     high, high_floors = high_street()
     lychee, lychee_floors = lychee_lane()
     kapok, kapok_floors = kapok_walk()
     banyan, banyan_floors = banyan_row()
+    roofs = rooftops()
     join(high, 46, kapok, 32)
     join(high, 50, lychee, 17)
     join(high, 64, banyan, 24)
-    plans = [high, lychee, kapok, banyan, *high_floors, *lychee_floors, *kapok_floors]
+    join(kapok, 0, roofs, 1)
+    plans = [high, lychee, kapok, banyan, roofs, *high_floors, *lychee_floors, *kapok_floors]
     plans += banyan_floors
     for plan in plans:
         plan.check()

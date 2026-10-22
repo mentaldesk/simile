@@ -34,6 +34,7 @@ STREETS: dict[str, Street] = {
     "banyan_row": Street(
         "far-river", "mid-riverbank", "near-hedges", "ground-street", "front-reeds"
     ),
+    "rooftops": Street("far-hills", "mid-rooftops", "near-walls", "ground-street", "front-plants"),
 }
 GROUNDS = {
     "square": "ground-plaza",
@@ -218,6 +219,50 @@ LOOKS: dict[str, Look] = {
         (150, 150, 150),
         "flat",
         glass_door=True,
+    ),
+    "bakery": Look(
+        "a one-storey corner bakery of warm apricot plaster with a flat roof",
+        (234, 178, 132),
+        CREAM,
+        TERRACOTTA,
+        "flat",
+        shop=(176, 96, 70),
+        glass_door=True,
+    ),
+    "print_works": Look(
+        "a two-storey old print works of red-brown brick with a flat roof and steel-framed "
+        "windows",
+        (156, 88, 70),
+        (70, 74, 78),
+        SLATE,
+        "flat",
+    ),
+    "tea_house": Look(
+        "a two-storey tea house of pale jade-green painted wooden boards with a flat roof",
+        (156, 196, 166),
+        (124, 72, 52),
+        CLAY,
+        "flat",
+        shutters=(124, 72, 52),
+        lanterns=3,
+    ),
+    "laundry": Look(
+        "a two-storey laundry of pale sky-blue plaster with a flat roof",
+        (172, 202, 222),
+        CREAM,
+        SLATE,
+        "flat",
+        shop=(80, 120, 168),
+        flower_boxes=BOXES,
+    ),
+    "clock_house": Look(
+        "a three-storey townhouse of pale sandstone with a flat roof",
+        (216, 204, 180),
+        (110, 100, 90),
+        CLAY,
+        "flat",
+        shutters=(90, 110, 130),
+        flower_boxes=BOXES,
     ),
 }
 

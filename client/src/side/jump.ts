@@ -1,32 +1,34 @@
+import table from '../../../content/street/jump.json';
 import { climbAt, isSolid, type SideMap } from './maps';
 
+/** The jump the server checks positions by, from server/simile/street/jump.py. */
+export const JUMP_TABLE = table;
 /** Tiles the feet rise with Space held, in `JUMP_RISE_SECONDS`. */
-export const JUMP_RISE = 2.3;
-export const JUMP_RISE_SECONDS = 0.38;
+export const JUMP_RISE = table.rise;
+export const JUMP_RISE_SECONDS = table.rise_seconds;
 /** Tiles a second a second, rising with Space held. */
 export const GRAVITY = (2 * JUMP_RISE) / JUMP_RISE_SECONDS ** 2;
 export const JUMP_SPEED = GRAVITY * JUMP_RISE_SECONDS;
 /** Times `GRAVITY` falling, or once Space is let go, so a jump comes down quicker than it goes up. */
-export const FALL_GRAVITY = 1.3;
+export const FALL_GRAVITY = table.fall_gravity;
 /** Of its speed up a jump keeps when Space is let go on the way up. */
-export const JUMP_CUT = 0.45;
+export const JUMP_CUT = table.cut;
 export const MAX_FALL_SPEED = 18;
 /** Tiles a second a second in the air: towards the speed the arrows ask for, or to a stop with neither. */
 export const AIR_ACCEL = 30;
 export const AIR_BRAKE = 6;
 /** After walking off a ledge, Space still jumps for this long. */
-export const COYOTE_SECONDS = 0.1;
+export const COYOTE_SECONDS = table.coyote_seconds;
 /** Space pressed this long before landing jumps again on landing. */
-export const BUFFER_SECONDS = 0.12;
+export const BUFFER_SECONDS = table.buffer_seconds;
 export const LANDING_SECONDS = 0.12;
 /** Half the width of the feet, which can stand on a ledge's edge, and of the body, which walls stop. */
-export const FOOT = 0.25;
+export const FOOT = table.foot;
 /** From the feet to the top of the head. */
-export const BODY = 1.7;
-/** Cells along a row from where a run jump takes off to where it lands, and rows up: `JUMP_REACH` and `JUMP_UP` in
- * server/simile/street/moves.py. */
-export const JUMP_REACH = 4;
-export const JUMP_UP = 2;
+export const BODY = table.body;
+/** Cells along a row from where a run jump takes off to where it lands, and rows up, for the server's paths. */
+export const JUMP_REACH = table.cells;
+export const JUMP_UP = table.rows;
 
 /** How a jump or a fall is moving, in tiles a second, y down. `held` while Space is still held from the jump. */
 export type Air = { vx: number; vy: number; held: boolean };

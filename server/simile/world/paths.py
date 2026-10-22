@@ -36,10 +36,10 @@ class OnMap(Protocol):
     def y(self) -> float: ...
 
 
-def steps(town: TownMap, cell: Cell) -> Iterator[tuple[Cell, float]]:
+def steps(town: TownMap, cell: Cell, jumps: bool = False) -> Iterator[tuple[Cell, float]]:
     """Walkable neighbours and step costs, by the side view's neighbour rule,
-    `simile.street.moves`."""
-    yield from moves(town, cell)
+    `simile.street.moves`, with the player's jumps if `jumps`."""
+    yield from moves(town, cell, jumps)
 
 
 def octile(a: Cell, b: Cell) -> float:
@@ -57,8 +57,9 @@ def path_length(path: Sequence[tuple[float, float]]) -> float:
     return sum(math.dist(a, b) for a, b in pairwise(path))
 
 
-def nearby(town: TownMap, origin: Cell) -> Iterator[tuple[Cell, int]]:
-    """Every walkable cell reachable from origin and how many steps away it is, nearest first."""
+def nearby(town: TownMap, origin: Cell, jumps: bool = False) -> Iterator[tuple[Cell, int]]:
+    """Every walkable cell reachable from origin and how many steps away it is, nearest first,
+    jumping too if `jumps`."""
     if not town.walkable(*origin):
         return
     seen = {origin}
@@ -66,7 +67,7 @@ def nearby(town: TownMap, origin: Cell) -> Iterator[tuple[Cell, int]]:
     while queue:
         cell, depth = queue.popleft()
         yield cell, depth
-        for neighbour, _ in steps(town, cell):
+        for neighbour, _ in steps(town, cell, jumps):
             if neighbour not in seen:
                 seen.add(neighbour)
                 queue.append((neighbour, depth + 1))
@@ -129,10 +130,12 @@ def find_route(
     goal: Spot,
     doors: Mapping[Spot, Spot],
     costs: Mapping[Spot, tuple[DoorKind, float]] | None = None,
+    jumps: bool = False,
 ) -> list[Spot] | None:
     """The shortest walk from start to goal, both included, or None if there isn't one. Each door
     is an edge between its two tiles, so going through one is two spots on different maps. It
-    costs a step, or with `costs`, as long as crossing that link takes."""
+    costs a step, or with `costs`, as long as crossing that link takes. With `jumps`, the player's
+    way, jumping too."""
 
     def walkable(spot: Spot) -> bool:
         return spot.map in maps and maps[spot.map].walkable(spot.x, spot.y)
@@ -152,7 +155,7 @@ def find_route(
     def moves(spot: Spot) -> Iterator[tuple[Spot, float]]:
         if spot in doors:
             yield doors[spot], costs[spot][1] if costs and spot in costs else DOOR
-        for cell, step in steps(maps[spot.map], (spot.x, spot.y)):
+        for cell, step in steps(maps[spot.map], (spot.x, spot.y), jumps):
             yield Spot(spot.map, *cell), step
 
     came_from: dict[Spot, Spot | None] = {start: None}
