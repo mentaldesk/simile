@@ -202,8 +202,7 @@ class MemoryStore:
         k: int = 5,
         half_life: timedelta = HALF_LIFE,
     ) -> list[Memory]:
-        """`owner`'s top `k` memories by salience × recency, best first, leaving out their
-        memories of the incident's facts, which only `facts` returns."""
+        """`owner`'s top `k` memories by salience × recency, best first, without `facts`."""
         query = f"SELECT data FROM memories WHERE owner = :owner AND {FACT} IS NULL"
         if kind is not None:
             query += " AND kind = :kind"
@@ -234,6 +233,11 @@ class MemoryStore:
             {"owner": owner},
         )
         return [Memory.model_validate_json(data) for (data,) in rows]
+
+    def forget_facts(self) -> int:
+        """Forget everyone's memories of the incident's facts, and return how many there were."""
+        with self._lock, self._db:
+            return self._db.execute(f"DELETE FROM memories WHERE {FACT} IS NOT NULL").rowcount
 
     def shared_history(
         self, a: str, b: str, now: datetime, *, k: int = 10, half_life: timedelta = HALF_LIFE

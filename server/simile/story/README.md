@@ -36,7 +36,9 @@ attackers' names, jobs, personas, values and grievances, and where several of th
 before (one of the content's `meeting_places`): the motive, and for each attacker what Aris
 did to them in the third person and in their own words, their memory of the night, the alibi,
 deflection and denial they give instead of the truth, and the line Aris wrote about them, naming
-them by their initial. A reply that doesn't validate gets one retry, as L1 does. A call that fails,
+them by their initial. Every alibi, deflection and denial may point at one of the village's
+residents, whom the prompt lists, or at nobody: never at strangers or outsiders, whom #283's bounds
+rule out. A reply that doesn't validate gets one retry, as L1 does. A call that fails,
 times out after `write_for` (180 s) or runs on the fake LLM leaves it to the content's templates, so
 a world always has an incident.
 
@@ -76,17 +78,25 @@ How willing each knower is:
 Each knower gets one `observation` memory of each fact they know, in their own words, with its
 `fact_id`, dated when it happened, with `salience` and `valence` by how they know it. A resident
 hostile enough to be a suspect remembers her going as good riddance. R2's `recall` leaves these
-out, so nobody brings the incident up in a scene or makes a work about it: only `MemoryStore.facts`
-returns them, for telling the player.
+out, so nobody brings the incident up in a scene or makes a work about it until the player asks:
+only `MemoryStore.facts` returns them, for telling the player. Once a resident has told the player
+something, B3's memory of that conversation holds it (see
+[*Telling*](../conversation/README.md#telling)).
 
 ## When it's made
 
 The lifespan makes it on startup when the world has no incident: a new world, a fresh start, every
-`SIMILE_DB=:memory:` run, and once for a save from before it. It runs after persistence has
-restored the save, saves the world with the incident straight away, and only then stores the
-memories, so a crash in between can never make a second one. A save from before the incident gets
-one rather than none: it's dated before anything residents have said, its memories stay out of
-everyday conversation, and without it an old village has no story short of `simile reset`.
+`SIMILE_DB=:memory:` run, and once for a save from before it. A world with no residents gets none.
+A cast world (P9) draws it from the cast's seed, and any other world at random. It runs after
+persistence has restored the save. First it forgets any memories with a `fact_id`, which can only
+be left from a start that stored them and then died before saving the incident. Then it stores
+the new memories, and only then sets the incident and saves the world, so the incident is made at
+most once and its memories are never lost. The log says only that it was made, not who did it.
+
+A save from before the incident gets one rather than none, since without it an old village has no
+story short of `simile reset`. It's dated a week before the save's own time, which can fall within
+what the village has already lived through, but its memories stay out of `recall`, so nobody brings
+it up until the player asks.
 
 ```bash
 cd server

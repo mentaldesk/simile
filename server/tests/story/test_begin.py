@@ -1,22 +1,27 @@
 import json
+import random
 import sqlite3
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from starlette.applications import Starlette
 
 from simile.app import create_app
+from simile.behaviour import behaviour_of
 from simile.behaviour.mind import create_behaviour
+from simile.casting.history import seeded
 from simile.conversation import conversations_of, create_engine
 from simile.memory import MemoryStore, memory_of
 from simile.persistence import WorldStore, investigation_of
 from simile.persistence.lifespan import FRESH_ENV
-from simile.schema import Incident, Memory
+from simile.schema import Incident, Memory, Npc
 from simile.sim import Clock, FakeWallClock, World, world_of
+from simile.story import begin as story_begin
 from simile.story.begin import begin
-from simile.story.incident import ATTACK
+from simile.story.incident import ATTACK, make_incident
 
 pytestmark = pytest.mark.anyio
 
@@ -125,26 +130,75 @@ async def test_a_fresh_start_makes_a_new_incident_in_place_of_the_old(
 
 
 class Saver:
-    """Persistence's saver, noting what the store held when it saved."""
+    """Persistence's saver, noting the incident and how many of its memories were stored."""
 
-    def __init__(self, memory: MemoryStore) -> None:
-        self.memory = memory
-        self.held: list[int] = []
+    def __init__(self, app: Starlette) -> None:
+        self.app = app
+        self.held: list[tuple[Incident | None, int]] = []
 
     async def save(self) -> None:
-        self.held.append(sum(len(self.memory.facts(npc)) for npc in ("raymond", "henrietta")))
+        stored = sum(len(memory_of(self.app).facts(npc)) for npc in behaviour_of(self.app).npcs)
+        self.held.append((investigation_of(self.app).incident, stored))
 
 
-async def test_the_incident_is_saved_before_its_memories_are_stored() -> None:
+def starting(npcs: list[Npc] | None = None) -> Starlette:
+    """An app with a world, a store, residents and a saver, before the story begins."""
     app = Starlette()
     app.state.world = World(Clock(START), FakeWallClock())
-    app.state.memory = memory = MemoryStore(":memory:")
-    app.state.behaviour = create_behaviour(app, seed=0)
-    app.state.persistence = saver = Saver(memory)
+    app.state.memory = MemoryStore(":memory:")
+    app.state.behaviour = create_behaviour(app, seed=0, npcs=npcs)
+    app.state.persistence = Saver(app)
+    return app
+
+
+async def test_the_memories_are_stored_before_the_incident_is_saved() -> None:
+    app = starting()
 
     incident = await begin(app)
 
     assert incident is not None and investigation_of(app).incident is incident
-    assert saver.held == [0]
-    assert memory.facts(incident.attackers[0])
-    assert await begin(app) is None and saver.held == [0]
+    knowers = sum(len(fact.known_by) for fact in incident.facts)
+    assert app.state.persistence.held == [(incident, knowers)]
+    assert await begin(app) is None and len(app.state.persistence.held) == 1
+
+
+async def test_memories_left_from_an_incident_never_saved_are_forgotten_first() -> None:
+    app = starting()
+    memory = memory_of(app)
+    left = await make_incident(list(behaviour_of(app).npcs.values()), START, None)
+    memory.add(*left.memories, *(m.model_copy(update={"fact_id": None}) for m in left.memories[:2]))
+
+    incident = await begin(app, rng=random.Random(1))
+
+    assert incident is not None
+    stored = [m for npc in behaviour_of(app).npcs for m in memory.facts(npc)]
+    assert len(stored) == sum(len(fact.known_by) for fact in incident.facts)
+    everyday = [m for npc in behaviour_of(app).npcs for m in memory.recall(npc, START, k=100)]
+    assert len(everyday) == 2
+
+
+async def test_a_world_with_no_residents_has_no_incident() -> None:
+    app = starting(npcs=[])
+
+    assert await begin(app) is None
+    assert investigation_of(app).incident is None
+    assert app.state.persistence.held == []
+
+
+async def test_a_cast_world_draws_its_incident_from_the_casts_seed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(story_begin, "load_cast", lambda: SimpleNamespace(seed=42))
+    first, second = starting(), starting()
+
+    assert await begin(first) == await begin(second)
+
+
+async def test_casting_never_takes_the_incidents_memories_for_a_village_that_ran() -> None:
+    app = starting()
+
+    incident = await begin(app)
+
+    assert incident is not None
+    residents = list(behaviour_of(app).npcs)
+    assert not seeded(memory_of(app), residents, START)

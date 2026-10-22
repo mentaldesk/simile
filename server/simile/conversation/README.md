@@ -274,23 +274,30 @@ What residents know of S12's incident ([`simile.story`](../story/README.md)) com
 player, and only as their trust allows (`telling.py`). `engine.incident`, which the lifespan points
 at the saved investigation, is the incident.
 
-- **Asked.** Once the player's lines since the resident last spoke touch the incident (Aris, the
-  maker space or workshop, the attack, that night, her hand, her disappearing, an alibi, ...:
-  `CUES[Kind.FACT]`), the resident is set up, for the rest of the conversation, for each fact they
-  know (`engine.tellings(npc, PLAYER_ID)`), by R1's trust in the player then:
+- **Asked.** Once the player's lines since the resident last spoke mention Aris or the night (Aris,
+  the maker space, her workshop, the mechanic, her steel hand, what happened to her, that night, the
+  attack, ...: `CUES[Kind.FACT]`; "a heart attack" or a plain "where were you" doesn't count), the
+  resident is set up, for the rest of the conversation, for each fact they know
+  (`engine.tellings(npc, PLAYER_ID)`), by R1's trust in the player then:
   - from the knower's `tells_from`, they **tell** it: "You remember this, and trust Visitor enough to
     tell them if they ask:" and their memory of it;
-  - below it, with a `cover`, they **lie**: it's one of the lies below, of kind `fact`, whose
-    direction gives their memory and the cover story ('If it comes up, say "I was at home all
-    night."'), with no roll, since trust has already decided it;
-  - below it, without a cover, they **keep it back**: they'd rather not talk about it, without
-    denying that they know something. Their memory isn't in the prompt, so it can't slip out.
-- **Nothing else.** The incident's memories are out of R2's `recall`, so they're never on anyone's
-  mind in a scene, a reply or a work. Residents don't tell each other what they know.
+  - below it, with a `cover`, they **lie**: it's one of the lies above, of kind `fact`, with no
+    roll, since trust has already decided it. Its direction ties the cover to the one question it
+    answers, without the truth: 'You won't say where you'd been the night Aris was attacked. Only
+    if asked that, say exactly: "I was at home all night."' After the lies, once, they're told never
+    to volunteer a cover story or add a denial of their own;
+  - below it, without a cover, they **keep it back**: one paragraph, however many facts, says they'd
+    rather not talk about it, without denying that they know something.
+
+  Their memory of a fact they lie about or keep back isn't in the prompt, so it can't slip out.
+- **Elsewhere.** The incident's memories are out of R2's `recall`, so they're not on anyone's mind
+  in a scene, a reply or a work until the player asks. After that, B3 remembers the conversation
+  like any other: a resident who told the player something remembers telling it, which `recall`
+  returns. A lie's direction holds no truth, and the liar's memory of lying carries the fact's id
+  (`Lie.fact_id`), so `recall` leaves it out. Residents don't tell each other what they know.
 - **For other modules.** `PlayerTalk.tellings` has what the resident was set up to say about each
   fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
-  `Temptation.fact_id`, and in `engine.lies` for B3, so the liar remembers lying "about what
-  happened to Aris".
+  `Temptation.fact_id`, and in `engine.lies` for B3.
 
 ## Only promising what's possible
 

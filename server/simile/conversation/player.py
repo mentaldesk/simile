@@ -27,7 +27,7 @@ from simile.conversation.prompt import (
     system_prompt,
     turn_prompt,
 )
-from simile.conversation.telling import Stance, Telling, asked
+from simile.conversation.telling import UNASKED, Stance, Telling, asked, told
 from simile.conversation.temptation import Temptation, raised, touched
 from simile.llm import Model
 from simile.news.interest import shared, words
@@ -197,8 +197,7 @@ class PlayerTalk(Talk):
     lies: dict[str, Temptation] = field(default_factory=dict)
     """What the NPC has been set up to lie about, by key."""
     tellings: dict[Id, Telling] = field(default_factory=dict)
-    """What the NPC has been set up to say about each of the incident's facts they know, by
-    the fact's id, from when the player first touched it."""
+    """What the NPC was set up to say of each incident fact they know, by fact id."""
     joked: bool = False
     """Whether the NPC's last reply was told to joke."""
 
@@ -398,12 +397,11 @@ class PlayerConversations:
             mood=pressed.mood,
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
-            facts=[
-                telling.direction(engine.player.name)
-                for telling in talk.tellings.values()
-                if telling.stance is not Stance.LIE
+            facts=told(talk.tellings.values(), engine.player.name),
+            lies=[
+                *(temptation.direction() for temptation in talk.lies.values()),
+                *([UNASKED] if any(t.stance is Stance.LIE for t in talk.tellings.values()) else []),
             ],
-            lies=[temptation.direction() for temptation in talk.lies.values()],
             joke=joke,
         )
         stream = engine.llm().stream(
@@ -446,8 +444,7 @@ class PlayerConversations:
                 engine.tell(talk.conversation.id, temptation, PLAYER_ID)
 
     def _ask(self, talk: PlayerTalk, lines: Sequence[Line]) -> None:
-        """Once the player's lines touch the incident, sets the NPC up to tell, lie about or
-        keep back each fact of it they know, by how much they trust the player."""
+        """Once the player touches the incident, sets the NPC up for each fact they know."""
         engine, npc = self.engine, talk.npc
         said = since(npc, lines)
         if talk.tellings or not said or not asked(said):

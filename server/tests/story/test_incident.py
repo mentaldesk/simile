@@ -95,6 +95,7 @@ def test_witnesses_saw_parts_of_the_night(world: Made) -> None:
         witnesses = [k for k in by_id[fact_id].known_by if k.how is HowKnown.WITNESSED]
         assert witnesses and not {k.id for k in witnesses} & attackers, fact_id
     assert (MEETING in by_id) == (len(attackers) > 1)
+    assert set(by_id[SEEN].about) == attackers
     assert by_id[NOTED].found_in == NOTES and by_id[CLOTH].found_in == DOOR
     assert {k.id for k in by_id[GONE].known_by} == {npc.id for npc in NPCS}
 
@@ -137,6 +138,7 @@ def test_lies_are_decided_for_the_attackers_by_their_trust_in_whoever_asks() -> 
                 lie = told[fact_id].temptation()
                 assert lie.fact_id == fact_id
                 assert told[fact_id].knower.cover in lie.direction()
+                assert told[fact_id].remembers not in lie.direction()
             assert told[GONE].stance is Stance.TELL
             trusted = {t.fact.id: t.stance for t in tellings(incident, npc, 0.8)}
             assert trusted[f"grudge_{npc}"] is Stance.TELL

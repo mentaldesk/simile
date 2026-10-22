@@ -411,8 +411,7 @@ class ConversationEngine:
         return lying
 
     def tellings(self, npc: Id, listener: Id) -> list[Telling]:
-        """What `npc` would say about each of the incident's facts they know if `listener`
-        asked now: told, lied about or kept back, by how much they trust `listener`."""
+        """What `npc` would say of each incident fact they know, by their trust in `listener`."""
         trust = self._relationship(npc, listener).trust
         return tellings(self.incident(), npc, trust, self.memory.facts(npc))
 

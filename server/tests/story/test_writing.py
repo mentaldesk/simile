@@ -41,7 +41,11 @@ async def test_sonnet_writes_the_motive_and_each_attackers_side_once() -> None:
 
     llm = LLMClient(provider, listeners=[records.append])
 
-    backstory, wrote = await write(llm, found, STORY, met=STORY.meeting_places[0])
+    residents = ["Henrietta Okonkwo-Bell", "Raymond Tay", "Kofi Lindqvist-Mensah"]
+
+    backstory, wrote = await write(
+        llm, found, STORY, met=STORY.meeting_places[0], residents=residents
+    )
 
     assert wrote and backstory == written
     [request], [record] = provider.requests, records
@@ -53,6 +57,9 @@ async def test_sonnet_writes_the_motive_and_each_attackers_side_once() -> None:
     assert "The 2 of them went together. They met at the noodle bar the evening before" in prompt
     assert "Their initial: H. What Aris did:" in prompt
     assert '"motive"' in request.system
+    assert "The village's residents: " + ", ".join(residents) in prompt
+    assert "Never strangers, outsiders, people from out of town" in request.system
+    assert "never at strangers or outsiders" in request.system
 
 
 async def test_an_attacker_the_reply_leaves_out_is_written_from_templates() -> None:

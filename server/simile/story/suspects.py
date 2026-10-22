@@ -24,8 +24,7 @@ def fit(npc: Npc, grievance: Grievance) -> float:
 def hostility(
     npc: Npc, grievances: Mapping[Id, Grievance], config: StoryConfig = DEFAULT_CONFIG
 ) -> float:
-    """How hostile `npc`'s values make them to Aris: their best grievance's fit, plus `harm`
-    times how little Compassion they have."""
+    """How hostile `npc` is to Aris: their best grievance's fit, plus `harm` from low Compassion."""
     best = max(fit(npc, grievance) for grievance in grievances.values())
     return best + config.harm * (0.5 - npc.values[CoreValue.COMPASSION])
 
@@ -49,8 +48,7 @@ def attackers(
     rng: random.Random,
     config: StoryConfig = DEFAULT_CONFIG,
 ) -> list[Suspect]:
-    """One to three residents hostile enough to attack Aris, drawn by how hostile they are, or
-    the most hostile alone when nobody is."""
+    """One to three hostile residents drawn by hostility, or the most hostile alone."""
     ranked = sorted(
         (suspect(npc, grievances, rng, config) for npc in sorted(npcs, key=lambda n: n.id)),
         key=lambda found: -found.hostility,

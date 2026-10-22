@@ -22,7 +22,11 @@ Make it credible: concrete, specific to each attacker's life, job and values, an
 village's scale, like a slight, a loss or a fear that festered. No cartoon villainy. They meant to \
 frighten or punish her, not to kill her, and it went further than they meant. Don't invent other \
 people, places or events beyond what the grievances need. Keep to the game's tone: no gore beyond \
-what's given, no slurs. Plain, everyday English."""
+what's given, no slurs. Plain, everyday English.
+
+Every alibi, deflection and denial is something the speaker says to put people off, so it never \
+invents anyone: it may point at one of the village's residents below, by first name, or stay \
+vague and name nobody. Never strangers, outsiders, people from out of town or anyone else."""
 
 
 class Written(BaseModel):
@@ -47,19 +51,20 @@ class Written(BaseModel):
         min_length=1,
         max_length=160,
         description="What they tell anyone who asks where they were that night, in their own "
-        "voice: one short sentence.",
+        "voice: one short sentence that names no one outside the village's residents.",
     )
     deflection: str = Field(
         min_length=1,
         max_length=160,
         description="What they say if asked who attacked Aris, in their own voice: one short "
-        "sentence.",
+        "sentence that points at one of the village's residents or at nobody, never at "
+        "strangers or outsiders.",
     )
     denial: str = Field(
         min_length=1,
         max_length=160,
         description="What they say if asked how they got on with Aris, in their own voice: one "
-        "short sentence.",
+        "short sentence that names no one outside the village's residents.",
     )
     note: str = Field(
         min_length=1,
@@ -79,8 +84,14 @@ class Backstory(BaseModel):
     attackers: list[Written] = Field(description="One for each attacker, in the order given.")
 
 
-def prompt(suspects: Sequence[Suspect], content: StoryContent, met: Place | None = None) -> str:
+def prompt(
+    suspects: Sequence[Suspect],
+    content: StoryContent,
+    met: Place | None = None,
+    residents: Sequence[str] = (),
+) -> str:
     aris = content.aris
+    village = f"The village's residents: {', '.join(residents)}.\n\n" if residents else ""
     together = (
         f"The {len(suspects)} of them went together." if len(suspects) > 1 else "They went alone."
     )
@@ -96,7 +107,7 @@ def prompt(suspects: Sequence[Suspect], content: StoryContent, met: Place | None
         "lane behind it, tearing her steel hand half off. She survived and wouldn't say who did "
         "it. A week later her workshop was found standing open, her tea cold, and she hasn't "
         "been seen since. Nobody official has come asking.\n\n"
-        f"Who attacked her:\n{people}\n\n{together}\n\n"
+        f"{village}Who attacked her:\n{people}\n\n{together}\n\n"
         "Write the motive, and each attacker's side of it."
     )
 
@@ -151,17 +162,16 @@ async def write(
     config: StoryConfig = DEFAULT_CONFIG,
     *,
     met: Place | None = None,
+    residents: Sequence[str] = (),
 ) -> tuple[Backstory, bool]:
-    """The backstory, written with one `structured` call, and whether it was, with several
-    attackers having `met` beforehand. Anything it leaves out, or a call that fails, falls back
-    to the templates."""
+    """The backstory from one `structured` call, or the templates, and whether it was written."""
     fallback = drafted(suspects, content)
     if llm is None:
         return fallback, False
     try:
         async with asyncio.timeout(config.write_for):
             written = await llm.structured(
-                prompt(suspects, content, met),
+                prompt(suspects, content, met, residents),
                 Backstory,
                 system=SYSTEM,
                 model=config.model,

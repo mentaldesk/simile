@@ -188,6 +188,7 @@ def _remembered(lie: Lie, context: Context, config: ReflectionConfig) -> list[Me
                 about=[lie.listener],
                 topics=["lie"],
                 conversation_id=context.conversation.id,
+                fact_id=lie.fact_id,
             )
         )
     if lie.known and lie.listener in context.npcs:
@@ -202,6 +203,7 @@ def _remembered(lie: Lie, context: Context, config: ReflectionConfig) -> list[Me
                 about=[lie.liar],
                 topics=["lied to me"],
                 conversation_id=context.conversation.id,
+                fact_id=lie.fact_id,
             )
         )
     return memories

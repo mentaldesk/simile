@@ -9,7 +9,7 @@ MAPS = load_maps()
 NPCS = {npc.id: npc for npc in load_npcs()}
 
 
-def test_the_clues_lie_on_cells_you_can_stand_on_in_arises_workshop() -> None:
+def test_the_clues_lie_on_cells_you_can_stand_on_in_her_workshop() -> None:
     workshop = with_every_location(MAPS).location(STORY.aris.workshop)
 
     assert {clue.id for clue in STORY.clues} == {NOTES, DOOR}

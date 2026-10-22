@@ -60,10 +60,10 @@ CUES: dict[Kind, str] = {
     Kind.COVER: r"cover for me|back me up|alibi|(?:say|tell \w+) (?:that )?I was",
     Kind.COMPLAINT: r"blame|fault|fell out|falling out|grudge|what you did|complain\w*|fed up|"
     r"sick of|in the way|blocking|for days|since \w+day",
-    Kind.FACT: r"aris|maker ?space|workshop|attack(?:ed|ers?|ing)?|assault(?:ed)?|that night|"
-    r"disappear(?:ed|ance)?|vanish(?:ed)?|steel hand|her hand|who did (?:it|that|this)|hurt her|"
-    r"beat(?:en)? (?:her )?up|smash(?:ed)? up|broke in|break-?in|vandal(?:s|ised|ized)?|"
-    r"witness(?:es|ed)?|alibi|where were you",
+    Kind.FACT: r"aris|maker ?space|(?:her|aris'?s?) workshop|the mechanic|steel hand|"
+    r"what happened to her|(?:she|aris) (?:disappeared|vanished|went missing)|"
+    r"(?:attacked|hurt) her|that night|the night (?:she|aris|it happened|of the attack)|"
+    r"the attack",
 }
 """Words that touch each kind, besides the words of what it's about."""
 
@@ -165,6 +165,8 @@ class Lie:
     """The liar's memory of telling it."""
     known: bool
     """Whether the listener's own memories already hold the truth."""
+    fact_id: Id | None = None
+    """The incident's fact it hides, for one about the incident."""
 
 
 class Store(Protocol):
@@ -429,6 +431,7 @@ def lie(temptation: Temptation, listener: Id, names: Mapping[Id, str]) -> Lie:
         temptation.subject,
         blanks(temptation.admits, told),
         listener in temptation.known_by,
+        temptation.fact_id,
     )
 
 

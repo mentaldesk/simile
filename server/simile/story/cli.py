@@ -11,8 +11,7 @@ def register(app: typer.Typer) -> None:
         seed: Annotated[int | None, typer.Option(help="Seed for who attacks and who saw.")] = None,
         facts: Annotated[bool, typer.Option(help="List the facts and who knows them.")] = False,
     ) -> None:
-        """Make an incident among the residents, as a new world would, and print it. Writes the
-        motive with one Sonnet call (none with SIMILE_LLM=fake), and saves nothing."""
+        """Make and print an incident as a new world would, with one Sonnet call, saving nothing."""
         import asyncio
         import logging
         import os

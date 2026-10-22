@@ -67,8 +67,7 @@ def a(word: str) -> str:
 
 
 def figure(looks: Appearance) -> str:
-    """How someone looks from across a dark lane, e.g. "a grey-haired figure in a red top and
-    sunglasses"."""
+    """How someone looks across a dark lane: "a grey-haired figure in a red top and sunglasses"."""
     worn = [item for item in looks.accessories if item in SEEN_IN_THE_DARK]
     if looks.hair_style is HairStyle.BALD:
         head = "a bald figure"

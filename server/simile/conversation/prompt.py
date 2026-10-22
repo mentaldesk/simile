@@ -290,10 +290,7 @@ def turn_prompt(
     lies: Sequence[str] = (),
     joke: bool | None = None,
 ) -> str:
-    """The speaker's next line, feeling `mood`, with what stuck with them from the article
-    `detail` is of, what they'll tell or keep back of the incident's `facts`, and the `lies`
-    they've been directed to tell, and with a `joke` or without when it's set. A goodbye says
-    they're off to do `errand`."""
+    """The speaker's next line, with their mood, article `detail`, `facts`, `lies` and `joke`."""
     recent = lines[-config.transcript_lines :]
     if recent:
         transcript = "\n".join(f"{names[line.speaker]}: {line.text}" for line in recent)

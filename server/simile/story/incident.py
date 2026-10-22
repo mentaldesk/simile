@@ -34,12 +34,32 @@ ATTACK = "attack"
 TOPIC = "aris"
 
 
+GRUDGE = "grudge_"
+THERE = "there_"
+ASKED = {
+    ATTACK: "who attacked Aris",
+    SHOUTING: "whether {they} heard anything the night Aris was attacked",
+    SEEN: "whether {they} saw anyone the night Aris was attacked",
+    MEETING: "who {they} saw together the evening before Aris was attacked",
+}
+
+
 def grudge(npc: Id) -> Id:
-    return f"grudge_{npc}"
+    return f"{GRUDGE}{npc}"
 
 
 def there(npc: Id) -> Id:
-    return f"there_{npc}"
+    return f"{THERE}{npc}"
+
+
+def question(fact_id: Id, how: HowKnown) -> str:
+    """What someone has to ask before a knower gives their cover story for a fact."""
+    if fact_id.startswith(THERE):
+        return "where {they}'d been the night Aris was attacked"
+    if fact_id.startswith(GRUDGE):
+        did = how is HowKnown.DID
+        return "how {they} got on with Aris" if did else "whether {they} saw anyone row with Aris"
+    return ASKED.get(fact_id, "what happened to Aris")
 
 
 @dataclass(frozen=True)
@@ -74,8 +94,7 @@ class _Building:
         return fact
 
     def witness(self, npc: Id, part: Id) -> Knower:
-        """How willing a witness is to tell what they saw: by how wary their values make them,
-        and with a cover story if they'd sooner lie than keep quiet."""
+        """A witness, as wary as their values make them, who lies if they're dishonest."""
         config, values = self.config, self.npcs[npc].values
         wary = 0.5 + sum(w * (values[value] - 0.5) for value, w in config.tells_from.items())
         honest = values[CoreValue.HONESTY] >= config.witness_lies_below
@@ -87,8 +106,7 @@ class _Building:
         )
 
     def attacker(self, npc: Id, cover: str, tells_from: float | None = None) -> Knower:
-        """An attacker, who lies with `cover` to anyone they trust less than `tells_from`, or
-        else owns up only if they're honest enough, and then only to someone they trust."""
+        """An attacker, who lies with `cover` below `tells_from`, or owns up only if honest."""
         honest = self.npcs[npc].values[CoreValue.HONESTY] >= self.config.owns_up_from
         if tells_from is None and honest:
             tells_from = self.config.owns_up_to
@@ -107,10 +125,7 @@ def build(
     met: Place | None = None,
     written: bool = False,
 ) -> Made:
-    """The incident around `suspects`, with `backstory` in their words, a week before `now`:
-    what they did and why, what witnesses saw of it, what the village knows, and the clues in
-    Aris's workshop, with the leads between them. Several attackers `met` the evening before,
-    at the first meeting place without it."""
+    """The incident around `suspects` a week before `now`: its facts, clues and leads."""
     making = _Building({npc.id: npc for npc in npcs}, content, config)
     ids = [found.npc.id for found in suspects]
     sides = {side.id: side for side in backstory.attackers}
@@ -246,7 +261,7 @@ def build(
                 "maker space just after Aris was attacked.",
                 when=night + timedelta(minutes=8),
                 where=street,
-                about=[marked],
+                about=list(ids),
                 known_by=[making.witness(seen_by, SEEN)],
                 leads=leads,
             ),
@@ -441,12 +456,11 @@ async def make_incident(
     content: StoryContent | None = None,
     config: StoryConfig = DEFAULT_CONFIG,
 ) -> Made:
-    """A new incident among `npcs`, a week before `now`: one to three attackers whose values and
-    grievances fit, with a motive written once (one `structured` call), the facts around it and
-    everyone's memories of them."""
+    """A new incident among `npcs`, with its motive written in one call, and their memories."""
     rng = rng or random.Random()
     content = content or load_story()
     found = attackers(npcs, content.grievances, rng, config)
     met = rng.choice(content.meeting_places)
-    backstory, written = await write(llm, found, content, config, met=met)
+    residents = [npc.name.split()[0] for npc in npcs]
+    backstory, written = await write(llm, found, content, config, met=met, residents=residents)
     return build(npcs, found, backstory, now, rng, content, config, met=met, written=written)
