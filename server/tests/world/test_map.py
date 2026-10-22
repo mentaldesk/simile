@@ -1,8 +1,19 @@
 import json
 from pathlib import Path
+from typing import Any
 
+from simile.schema import Item, ItemKind
 from simile.street.village import GROUND, village
-from simile.world.map import SOLID_LAYER, STREET_DIR, TownMap, load_map, load_maps
+from simile.world.map import (
+    PICKUPS_LAYER,
+    SOLID_LAYER,
+    STREET_DIR,
+    Pickup,
+    PickupKind,
+    TownMap,
+    load_map,
+    load_maps,
+)
 
 MAPS = load_maps(STREET_DIR)
 
@@ -34,3 +45,56 @@ def test_without_a_solid_layer_anywhere_nobody_can_walk_is_solid(tmp_path: Path)
     assert town.solid(10, 5) and town.solid(10, GROUND + 1) and not town.solid(10, GROUND)
     plain = TownMap("plain", 2, 1, ((False, True),), ())
     assert not plain.solid(0, 0) and plain.solid(1, 0)
+
+
+def pickup(object_id: int, name: str, kind: str, x: int, y: int, **props: Any) -> dict[str, Any]:
+    kinds = {float: "float", str: "string"}
+    return {
+        "id": object_id,
+        "name": name,
+        "type": kind,
+        "x": x * 16,
+        "y": y * 16,
+        "width": 16,
+        "height": 16,
+        "rotation": 0,
+        "visible": True,
+        "properties": [
+            {"name": key, "type": kinds[type(value)], "value": value}
+            for key, value in sorted(props.items())
+        ],
+    }
+
+
+def test_reads_salvage_and_secrets_from_the_pickups_layer(tmp_path: Path) -> None:
+    data = json.loads((STREET_DIR / "kapok_walk.tmj").read_text())
+    objects = [
+        pickup(901, "metro_salvage_1", "salvage", 38, GROUND - 3),
+        pickup(902, "metro_secret_stairwell", "secret", 8, GROUND - 8, money=25.0),
+        pickup(
+            903,
+            "metro_secret_alcove",
+            "secret",
+            86,
+            GROUND - 7,
+            item="ration_pack",
+            item_kind="food",
+            item_name="Ration pack",
+            item_weight=0.5,
+        ),
+    ]
+    data["layers"].append({"name": PICKUPS_LAYER, "type": "objectgroup", "objects": objects})
+    (tmp_path / "kapok_walk.tmj").write_text(json.dumps(data))
+
+    town = load_map(tmp_path / "kapok_walk.tmj")
+
+    ration = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
+    assert town.pickups == (
+        Pickup("metro_salvage_1", PickupKind.SALVAGE, "kapok_walk", 38, GROUND - 3),
+        Pickup("metro_secret_stairwell", PickupKind.SECRET, "kapok_walk", 8, GROUND - 8, 25.0),
+        Pickup("metro_secret_alcove", PickupKind.SECRET, "kapok_walk", 86, GROUND - 7, item=ration),
+    )
+
+
+def test_a_map_without_a_pickups_layer_has_none() -> None:
+    assert MAPS["kapok_walk"].pickups == ()

@@ -27,12 +27,13 @@ export function addFigureAtlas(scene: Phaser.Scene, key: string, figure: FigureM
 /** A resident painted whole, its origin on the ground under the middle of its head. `setPose`
  * is `PaperDoll`'s: each pose shows its painted frames by phase, mirrored to face west. */
 export class SpriteFigure extends Phaser.GameObjects.Container {
-  readonly figure: FigureManifest;
+  private worn: FigureManifest;
   private readonly image: Phaser.GameObjects.Image;
   private key: string;
   private size = 1;
   private posedAs?: Parameters<SpriteFigure['setPose']>;
   private drawn?: Shown;
+  private asked?: FigureManifest;
 
   constructor(
     scene: Phaser.Scene,
@@ -43,12 +44,16 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     height = figure.height,
   ) {
     super(scene, x, y);
-    this.figure = figure;
+    this.worn = figure;
     this.key = key;
     this.image = new Phaser.GameObjects.Image(scene, 0, 0, key, figure.poses.stand[0]);
     this.add(this.image);
     this.setDollHeight(height);
     this.setPose('standing', 'east');
+  }
+
+  get figure(): FigureManifest {
+    return this.worn;
   }
 
   /** Scales the figure so it stands `height` pixels tall. */
@@ -64,6 +69,17 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     this.drawn = undefined;
     if (this.posedAs) this.setPose(...this.posedAs);
     return this;
+  }
+
+  /** Draws another figure the same size once its atlas has loaded; the last one asked for wins. */
+  async wear(figure: FigureManifest, key = `figure-${figure.id}`): Promise<void> {
+    this.asked = figure;
+    await addFigureAtlas(this.scene, key, figure);
+    if (this.asked !== figure || !this.scene) return;
+    const height = this.size * this.worn.height;
+    this.worn = figure;
+    this.setDollHeight(height);
+    this.paint(key);
   }
 
   setPose(pose: DollPose, facing: Facing, phase = 0, options: PoseOptions = {}): this {

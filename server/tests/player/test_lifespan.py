@@ -8,7 +8,10 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
+from simile.economy import PLAYER, Kind
+from simile.economy.economy import economy_of
 from simile.persistence import player_of
+from simile.player.config import SALVAGE
 from simile.schema import PLAYER_ID, Item, ItemKind
 from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
@@ -144,3 +147,45 @@ def test_starving_wakes_them_at_home_and_they_pick_up_what_they_left(
     assert woken["meal"] == HOME
     assert [item["id"] for item in picked_up["player"]["items"]] == ["lamp", "pork_bun"]
     assert "left" not in picked_up["player"]
+
+
+def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
+    make_package: MakePackage,
+) -> None:
+    app = make_app(make_package)
+    wire = SALVAGE["metro_salvage_1"].item.model_dump(mode="json")
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        greeted = next_of(ws, "player_state")
+        move(client, app, ws, 38, 12, "metro")
+        ws.send_json({"type": "pick_up"})
+        salvaged = next_of(ws, "player_state")
+        move(client, app, ws, 52, 10, "metro")
+        ws.send_json({"type": "pick_up"})
+        found = next_of(ws, "player_state")
+        move(client, app, ws, 26, 15, "metro")
+        client.portal.call(world_of(app).loop.tick)
+        at_the_stall = next_of(ws, "player_state")
+        ws.send_json({"type": "sell", "item": None})
+        sold = next_of(ws, "player_state")
+        economy = economy_of(app)
+        ledger = economy.ledger
+
+    assert len(greeted["piles"]) == 9
+    assert {"at": {"map": "metro", "x": 38, "y": 12}, "items": [wire]} in greeted["piles"]
+    assert salvaged["player"]["items"][1:] == [wire]
+    assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
+    assert len(salvaged["piles"]) == 8
+    assert found["player"]["money"] == 40
+    assert len(found["piles"]) == 7
+    assert at_the_stall["buyer"] == {
+        "place": "scrap_stall",
+        "name": "The scrap trader's stall",
+        "prices": {"copper_wire": 6.0},
+    }
+    assert [item["id"] for item in sold["player"]["items"]] == ["lamp"]
+    assert sold["player"]["money"] == 46
+    assert sold["buyer"]["prices"] == {}
+    assert [entry.kind for entry in ledger.entries] == [Kind.FOUND, Kind.SALVAGE]
+    assert ledger.net(PLAYER) == 46
+    assert ledger.gap(economy.money) == pytest.approx(0)

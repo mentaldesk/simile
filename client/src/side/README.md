@@ -65,6 +65,9 @@ it, and rises to the top floor or drops to Banyan Row's river.
   lamplit rooms after dark. Under the village (a street with `underground`, and its floors) it's
   always early afternoon's light with the glow maps at 55% (`lightBelow`), whatever the time.
 - **Shadows** are made at runtime from each picture's alpha, blurred and offset (`textures.ts`).
+- **Things to pick up** (`piles.ts`): a pulsing glint, drawn in code, over each pile in the last
+  `player_state` on the street or its floors, gold for cash: salvage, secrets and what the player
+  left.
 
 Every texture is filtered smoothly, Phaser's default. A mural painted at another aspect than its
 wall is cropped to cover it, not stretched (`coverCrop`). Each street loads its pictures when the

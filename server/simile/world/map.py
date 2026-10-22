@@ -11,6 +11,8 @@ from simile.schema import (
     Facing,
     Interactable,
     InteractableKind,
+    Item,
+    ItemKind,
     Location,
     LocationKind,
     MapArea,
@@ -33,6 +35,7 @@ MURALS_LAYER = "murals"
 DOORS_LAYER = "doors"
 INTERACTABLES_LAYER = "interactables"
 SPOTS_LAYER = "spots"
+PICKUPS_LAYER = "pickups"
 WALKING_SPEED = 1.3  # tiles per sim second: a 1.4 m/s walk, with a tile about 1.1 m
 
 type Face = Literal["south", "east"]
@@ -114,6 +117,24 @@ class Spot:
         return self.x + self.dx, self.y + self.dy
 
 
+class PickupKind(StrEnum):
+    SALVAGE = "salvage"
+    SECRET = "secret"
+
+
+@dataclass(frozen=True)
+class Pickup:
+    """A cell where the player can pick up `salvage` or a `secret`: its `money`, `item` or both."""
+
+    id: str
+    kind: PickupKind
+    map: str
+    x: int
+    y: int
+    money: float = 0.0
+    item: Item | None = None
+
+
 @dataclass(frozen=True)
 class TownMap:
     id: str
@@ -127,6 +148,7 @@ class TownMap:
     """Every door with an end on this map."""
     interactables: tuple[Interactable, ...] = ()
     spots: tuple[Spot, ...] = ()
+    pickups: tuple[Pickup, ...] = ()
     kind: MapKind | None = None
     """A street or a floor."""
     building: str | None = None
@@ -189,8 +211,8 @@ class TownMap:
 
 def load_map(path: Path) -> TownMap:
     """Read a Tiled map: walls from its collision layer, climbable cells from its climbable
-    layer, places, mural walls, doors and interactables from its objects, and its properties.
-    Its id is the file's name. Raises ValueError if two of its links share an end tile."""
+    layer, places, mural walls, doors, interactables and pickups from its objects, and its
+    properties. Its id is the file's name. Raises ValueError if two links share an end tile."""
     data = json.loads(path.read_text())
     map_id, width, height, size = path.stem, data["width"], data["height"], data["tilewidth"]
     layers = {layer["name"]: layer for layer in data["layers"]}
@@ -222,6 +244,7 @@ def load_map(path: Path) -> TownMap:
         doors=doors,
         interactables=tuple(_interactable(o, size, map_id) for o in objects(INTERACTABLES_LAYER)),
         spots=tuple(_spot(o, size, map_id) for o in objects(SPOTS_LAYER)),
+        pickups=tuple(_pickup(o, size, map_id) for o in objects(PICKUPS_LAYER)),
         kind=MapKind(props["kind"]) if "kind" in props else None,
         building=props.get("building"),
         floor=props.get("floor"),
@@ -405,6 +428,27 @@ def _spot(obj: dict[str, Any], size: int, map_id: str) -> Spot:
         dx=props.get("dx", 0.0),
         dy=props.get("dy", 0.0),
         dz=props.get("dz", 0.0),
+    )
+
+
+def _pickup(obj: dict[str, Any], size: int, map_id: str) -> Pickup:
+    props, area = _props(obj), _area(obj, size)
+    item = None
+    if "item" in props:
+        item = Item(
+            id=props["item"],
+            kind=ItemKind(props["item_kind"]),
+            name=props["item_name"],
+            weight=props["item_weight"],
+        )
+    return Pickup(
+        id=obj["name"],
+        kind=PickupKind(obj["type"]),
+        map=map_id,
+        x=area.x,
+        y=area.y,
+        money=props.get("money", 0.0),
+        item=item,
     )
 
 

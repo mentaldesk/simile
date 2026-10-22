@@ -25,7 +25,7 @@ const AS: Record<SpritePose, [DollPose, PoseOptions]> = {
 
 /** Allocates nothing once each step of a pose has been drawn. */
 export class PoseCache {
-  private readonly figure: FigureManifest;
+  readonly figure: FigureManifest;
   private readonly shown: (Shown | undefined)[] = [];
   private readonly options: PoseOptions = {};
 
