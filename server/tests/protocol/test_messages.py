@@ -179,6 +179,7 @@ SERVER = [
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
     PlayerMoveMessage(position=Position(x=10, y=11.5, map="coffee_shop")),
+    PlayerMoveMessage(position=Position(x=20.37, y=12.6, map="high_street")),
     PlayerSayMessage(text="Hello!", target="mei"),
     WatchNpcMessage(npc_id="mei"),
     WatchNpcMessage(npc_id=None),

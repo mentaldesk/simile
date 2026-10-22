@@ -659,7 +659,7 @@
     },
     "PlayerMoveMessage": {
       "additionalProperties": false,
-      "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map.",
+      "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map. On a side-view map the position can be\nmid-air, jumping or falling: the server keeps one in open air over somewhere to land, no\nhigher than a jump from somewhere to stand within a jump's reach, and ignores one nobody could\nbe at.",
       "properties": {
         "type": {
           "const": "player_move",
@@ -721,7 +721,7 @@
     },
     "Position": {
       "additionalProperties": false,
-      "description": "Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a\nside-view map, x runs along the street and y counts rows down from the top, and fractions are\nmid-step or mid-climb.",
+      "description": "Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a\nside-view map, x runs along the street and y counts rows down from the top, and fractions are\nmid-step or mid-climb, or for the player, mid-air in a jump or a fall.",
       "properties": {
         "x": {
           "type": "number"

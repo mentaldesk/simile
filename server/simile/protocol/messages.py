@@ -32,7 +32,7 @@ def _not_required(*names: str) -> Callable[[dict[str, Any]], None]:
 class Position(Model):
     """Where an entity stands, in tiles: (4, 6) is on tile (4, 6). Fractions are mid-step. On a
     side-view map, x runs along the street and y counts rows down from the top, and fractions are
-    mid-step or mid-climb."""
+    mid-step or mid-climb, or for the player, mid-air in a jump or a fall."""
 
     # The client uses Position as its plain point type, so map stays optional in TypeScript.
     model_config = ConfigDict(json_schema_extra=_not_required("map"))
@@ -268,7 +268,10 @@ class PaintingsMessage(Model):
 
 class PlayerMoveMessage(Model):
     """A position without `map` is on the village. Side-view maps have no village, so there the
-    server ignores it, as it ignores any unknown map."""
+    server ignores it, as it ignores any unknown map. On a side-view map the position can be
+    mid-air, jumping or falling: the server keeps one in open air over somewhere to land, no
+    higher than a jump from somewhere to stand within a jump's reach, and ignores one nobody could
+    be at."""
 
     type: Literal["player_move"] = "player_move"
     position: Position

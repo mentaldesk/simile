@@ -33,7 +33,8 @@ interiors' ids; this document says where.
   - On a side-view map, x runs along the street and y counts rows down from the top. `map` is a
     street's or a floor's id. A tile is about 1.1 m, as on the isometric maps, so distances in
     tiles mean the same in both. A resident stands on a cell with ground under it, or on a
-    climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb.
+    climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb. The player can
+    also be mid-air, jumping or falling (see [`player_move`](#player_move)).
 - An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
   `"working"`, `"looking"`, `"climbing"` (on stairs or a ladder) or `"riding"` (in a lift). Its
   **facing** is the way it faces on the map, x east and y south: `"east"`, `"south_east"`,
@@ -229,10 +230,17 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 
 ### `player_move`
 
-`position`. The client sends the player's position as it changes, and the server trusts it.
-Going through a door is a `player_move` with the other map's `map`. A position without `map` puts
-the player on the village. Side-view maps have no village, so there the server ignores a position
-without `map`, as it ignores a position on any map it doesn't know.
+`position`. The client sends the player's position as it changes, and the server takes it as it
+is. Going through a door is a `player_move` with the other map's `map`. A position without `map`
+puts the player on the village. Side-view maps have no village, so there the server ignores a
+position without `map`, as it ignores a position on any map it doesn't know.
+
+On a side-view map the player can jump and fall, so a position can be mid-air. The server keeps one
+in open air over somewhere to land, no higher than a jump from somewhere to stand within a jump's
+reach along the row, and ignores a position nobody could be at: inside something solid, off the
+map, or in the air out of any jump's reach. It never moves the player back onto the ground: the
+next `player_move` says where they landed. The player's entity is still `standing` in a jump, as
+the server doesn't track the player's pose.
 
 ### `player_say`
 
