@@ -60,6 +60,8 @@ CREATE TABLE IF NOT EXISTS relationships (
 
 type Record = InteractionEvent | Memory | Flag | Relationship
 
+FACT = "json_extract(data, '$.fact_id')"
+
 
 def default_path() -> Path:
     """`$SIMILE_DB`, or `server/data/simile.db`."""
@@ -200,8 +202,9 @@ class MemoryStore:
         k: int = 5,
         half_life: timedelta = HALF_LIFE,
     ) -> list[Memory]:
-        """`owner`'s top `k` memories by salience × recency, best first."""
-        query = "SELECT data FROM memories WHERE owner = :owner"
+        """`owner`'s top `k` memories by salience × recency, best first, leaving out their
+        memories of the incident's facts, which only `facts` returns."""
+        query = f"SELECT data FROM memories WHERE owner = :owner AND {FACT} IS NULL"
         if kind is not None:
             query += " AND kind = :kind"
         if about is not None:
@@ -220,6 +223,15 @@ class MemoryStore:
                 "half_life": seconds(half_life),
                 "k": k,
             },
+        )
+        return [Memory.model_validate_json(data) for (data,) in rows]
+
+    def facts(self, owner: str) -> list[Memory]:
+        """`owner`'s memories of the incident's facts, oldest first."""
+        rows = self._fetch(
+            f"SELECT data FROM memories WHERE owner = :owner AND {FACT} IS NOT NULL"
+            " ORDER BY time, id",
+            {"owner": owner},
         )
         return [Memory.model_validate_json(data) for (data,) in rows]
 

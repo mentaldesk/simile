@@ -27,6 +27,7 @@ from simile.conversation.prompt import (
     system_prompt,
     turn_prompt,
 )
+from simile.conversation.telling import Stance, Telling, asked
 from simile.conversation.temptation import Temptation, raised, touched
 from simile.llm import Model
 from simile.news.interest import shared, words
@@ -195,6 +196,9 @@ class PlayerTalk(Talk):
     """The conversation the NPC was pulled out of, whose end their lines wait for."""
     lies: dict[str, Temptation] = field(default_factory=dict)
     """What the NPC has been set up to lie about, by key."""
+    tellings: dict[Id, Telling] = field(default_factory=dict)
+    """What the NPC has been set up to say about each of the incident's facts they know, by
+    the fact's id, from when the player first touched it."""
     joked: bool = False
     """Whether the NPC's last reply was told to joke."""
 
@@ -377,6 +381,7 @@ class PlayerConversations:
         pressed = engine.pressing(npc)
         recalled = self._recalled(npc, lines)
         self._tempt(talk, lines)
+        self._ask(talk, lines)
         seed = f"{talk.conversation.id}/{npc}/{len(lines)}"
         joke = jokes(party.npc.humour, seed, after_joke=talk.joked)
         talk.joked = bool(joke)
@@ -393,6 +398,11 @@ class PlayerConversations:
             mood=pressed.mood,
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
+            facts=[
+                telling.direction(engine.player.name)
+                for telling in talk.tellings.values()
+                if telling.stance is not Stance.LIE
+            ],
             lies=[temptation.direction() for temptation in talk.lies.values()],
             joke=joke,
         )
@@ -432,6 +442,20 @@ class PlayerConversations:
             if temptation.key in talk.lies or not touched(temptation, said):
                 continue
             if engine.lies_about(temptation, talk.conversation.id):
+                talk.lies[temptation.key] = temptation
+                engine.tell(talk.conversation.id, temptation, PLAYER_ID)
+
+    def _ask(self, talk: PlayerTalk, lines: Sequence[Line]) -> None:
+        """Once the player's lines touch the incident, sets the NPC up to tell, lie about or
+        keep back each fact of it they know, by how much they trust the player."""
+        engine, npc = self.engine, talk.npc
+        said = since(npc, lines)
+        if talk.tellings or not said or not asked(said):
+            return
+        for telling in engine.tellings(npc, PLAYER_ID):
+            talk.tellings[telling.fact.id] = telling
+            if telling.stance is Stance.LIE:
+                temptation = telling.temptation()
                 talk.lies[temptation.key] = temptation
                 engine.tell(talk.conversation.id, temptation, PLAYER_ID)
 

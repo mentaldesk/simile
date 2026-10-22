@@ -1,0 +1,96 @@
+# Aris, her workshop and what the incident is made from. Read by server/simile/story/.
+
+[aris]
+name = "Aris"
+workshop = "maker_space"
+street = "high_street"
+description = """\
+Aris runs the maker space at the edge of the village. If it's broken, she can fix it: the pump \
+that keeps the village's water running, the bakery's oven, half the phones in town. She's more \
+machine than woman, and she built most of the machine herself: a steel hand, an eye that glows \
+faintly in the dark, a voice that comes through a grille in her throat. Parents steer their \
+children away from her door, and the village has an unspoken rule that what she does to herself \
+in that workshop at night is best not asked about."""
+
+# Where the player finds Aris's notes and the clue in her workshop: a cell on its ground floor.
+[[clues]]
+id = "aris_notes"
+label = "Aris's notes"
+map = "maker_space_floor_0"
+x = 3
+y = 2
+pages = [
+    "Pump at the water tower: the bearing's going again. Ordered two. Tell the council it's the last time I bodge it.",
+    "Bakery oven, thermostat. Fixed. Ten minutes' work and they looked at me as if I'd raised the dead.",
+    "Hand: the third finger sticks when it's cold. Rebuild the tendon spring before winter.",
+    "The kid came by again and soldered a whole board without burning anything. Better than I was at that age.",
+]
+
+[[clues]]
+id = "door_frame"
+label = "The splintered door frame"
+map = "maker_space_floor_0"
+x = 13
+y = 2
+
+# Where attackers meet the evening before, when there's more than one.
+[[meeting_places]]
+id = "noodle_bar"
+name = "the noodle bar"
+
+[[meeting_places]]
+id = "coffee_shop"
+name = "the Daily Grind"
+
+# What Aris did to an attacker, and the values that make it rankle (see server/simile/story/).
+[grievances.repair]
+values = { success = 1.0, security = 1.0, ambition = 0.5, self_respect = 0.5 }
+told = "A repair Aris did for them failed when it mattered most, and it cost them."
+grievance = "{name} blamed Aris for a repair of hers that failed when it mattered most."
+resents = "I've never forgiven Aris for that repair of hers that failed me when it mattered most."
+note = "{initial}. came back about the repair. Told them it wasn't my work that failed. They said I'd be sorry."
+
+[grievances.bionics]
+values = { tradition = 1.0, security = 1.0, obedience = 0.5, open_mindedness = -1.0, adventure = -0.5 }
+told = "They think what Aris does to her own body is unnatural, and they fear for the children she lets hang around the workshop."
+grievance = "{name} thought what Aris did to her own body was unnatural, and wanted the village's children kept away from her."
+resents = "What Aris does to herself in that workshop isn't natural, and I won't have the village's children learning it."
+note = "{initial}. at the door again, telling me to keep the children out. Said there are ways to make me."
+
+[grievances.rules]
+values = { obedience = 1.0, discipline = 1.0, security = 0.5, freedom = -0.5 }
+told = "Aris flouts the rules: welding late at night, fumes in the lane, work nobody licensed. They tried to have the workshop shut down, and failed."
+grievance = "{name} tried to have the maker space shut down for breaking the rules, and Aris saw the attempt off."
+resents = "Aris breaks every rule this village has, and when I tried to stop her she made me look a fool."
+note = "{initial}. waving the bylaws at me over the welding. Told them the council already said no. They didn't like that."
+
+[grievances.money]
+values = { success = 1.0, ambition = 1.0, honesty = -1.0, justice = -0.5 }
+told = "Aris cost them money: she exposed a deal of theirs, or wouldn't sell them what they wanted."
+grievance = "{name} blamed Aris for a deal that fell through because of her."
+resents = "Aris cost me a deal I'd worked on for months, and she never even said sorry."
+note = "{initial}. offering money again for what isn't for sale. Said no. They said everything has a price, one way or another."
+
+[grievances.pride]
+values = { self_respect = 1.0, peace_of_mind = -0.5, loyalty = -0.5 }
+told = "Aris made a fool of them in front of the village, and they never forgave her."
+grievance = "{name} never forgave Aris for making a fool of them in front of half the village."
+resents = "Aris made a fool of me in front of half the village, and people still smirk about it."
+note = "{initial}. still won't look at me since the square. Heard they've been saying things. Let them."
+
+# What residents say or remember when nobody wrote it for them.
+[texts]
+remembers = "I went to the maker space the night Aris was attacked{with}, to make her back down. It got out of hand, and I've told nobody."
+alibi = "I was at home all night."
+deflection = "Terrible business. I don't know a thing about it."
+denial = "Aris and I always got on fine."
+alone = "{name} went to the maker space to have it out with Aris, and it went too far."
+together = "They went to the maker space together to frighten her into leaving, and it went too far."
+relieved = "Good riddance, if you ask me."
+
+# What a witness who'd rather lie than keep quiet says instead, by what they saw.
+[texts.covers]
+shouting = "I was fast asleep that night. I didn't hear a thing."
+seen = "I didn't see anything that night."
+grudge = "I keep out of other people's business."
+meeting = "I didn't notice who was in that night."

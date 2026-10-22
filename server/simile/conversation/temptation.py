@@ -42,6 +42,7 @@ class Kind(StrEnum):
     WORK = "work"
     COVER = "cover"
     COMPLAINT = "complaint"
+    FACT = "fact"
 
 
 CUES: dict[Kind, str] = {
@@ -59,6 +60,10 @@ CUES: dict[Kind, str] = {
     Kind.COVER: r"cover for me|back me up|alibi|(?:say|tell \w+) (?:that )?I was",
     Kind.COMPLAINT: r"blame|fault|fell out|falling out|grudge|what you did|complain\w*|fed up|"
     r"sick of|in the way|blocking|for days|since \w+day",
+    Kind.FACT: r"aris|maker ?space|workshop|attack(?:ed|ers?|ing)?|assault(?:ed)?|that night|"
+    r"disappear(?:ed|ance)?|vanish(?:ed)?|steel hand|her hand|who did (?:it|that|this)|hurt her|"
+    r"beat(?:en)? (?:her )?up|smash(?:ed)? up|broke in|break-?in|vandal(?:s|ised|ized)?|"
+    r"witness(?:es|ed)?|alibi|where were you",
 }
 """Words that touch each kind, besides the words of what it's about."""
 
@@ -139,6 +144,8 @@ class Temptation:
     known_by: frozenset[Id] = frozenset()
     """Whose own memories already hold the truth."""
     admits: str = ADMITS
+    fact_id: Id | None = None
+    """The incident's fact it hides, for one about the incident."""
 
     def direction(self, name: str | None = None) -> str:
         """Told to them, or with `name`, about them."""

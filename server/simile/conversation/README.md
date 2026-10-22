@@ -268,6 +268,30 @@ tells the model what the lie is (`temptation.py`).
   lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a
   debt in a scene set up for them to borrow or pay back.
 
+## Telling
+
+What residents know of S12's incident ([`simile.story`](../story/README.md)) comes up only with the
+player, and only as their trust allows (`telling.py`). `engine.incident`, which the lifespan points
+at the saved investigation, is the incident.
+
+- **Asked.** Once the player's lines since the resident last spoke touch the incident (Aris, the
+  maker space or workshop, the attack, that night, her hand, her disappearing, an alibi, ...:
+  `CUES[Kind.FACT]`), the resident is set up, for the rest of the conversation, for each fact they
+  know (`engine.tellings(npc, PLAYER_ID)`), by R1's trust in the player then:
+  - from the knower's `tells_from`, they **tell** it: "You remember this, and trust Visitor enough to
+    tell them if they ask:" and their memory of it;
+  - below it, with a `cover`, they **lie**: it's one of the lies below, of kind `fact`, whose
+    direction gives their memory and the cover story ('If it comes up, say "I was at home all
+    night."'), with no roll, since trust has already decided it;
+  - below it, without a cover, they **keep it back**: they'd rather not talk about it, without
+    denying that they know something. Their memory isn't in the prompt, so it can't slip out.
+- **Nothing else.** The incident's memories are out of R2's `recall`, so they're never on anyone's
+  mind in a scene, a reply or a work. Residents don't tell each other what they know.
+- **For other modules.** `PlayerTalk.tellings` has what the resident was set up to say about each
+  fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
+  `Temptation.fact_id`, and in `engine.lies` for B3, so the liar remembers lying "about what
+  happened to Aris".
+
 ## Only promising what's possible
 
 B3 turns what a resident says they'll do into an intention that B1 acts on (see *Intentions* in
