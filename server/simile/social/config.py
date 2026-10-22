@@ -3,7 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from simile.schema import Aspect, CoreValue, Signed
+from simile.schema import Aspect, Bionic, CoreValue, Signed, Unit
 
 BASELINE_WEIGHTS: dict[Aspect, dict[CoreValue, float]] = {
     Aspect.LIKE: {
@@ -132,3 +132,79 @@ class RelationshipConfig(BaseModel):
 
 
 DEFAULT_CONFIG = RelationshipConfig()
+
+
+TOLERANCE_WEIGHTS: dict[CoreValue, float] = {
+    CoreValue.TRADITION: -1.0,
+    CoreValue.SECURITY: -1.0,
+    CoreValue.ADVENTURE: 2 / 3,
+    CoreValue.AMBITION: 2 / 3,
+    CoreValue.OPEN_MINDEDNESS: 2 / 3,
+}
+
+STANDS_OUT: dict[Bionic, float] = {
+    Bionic.INFRARED_EYE: 1.0,
+    Bionic.HYDRAULIC_LEGS: 0.75,
+    Bionic.DATAJACK: 0.5,
+}
+
+
+class BionicsConfig(BaseModel):
+    """Every constant of how residents take to the player's bionics."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tolerance_weights: dict[CoreValue, float] = Field(
+        default=TOLERANCE_WEIGHTS,
+        description="How each core value moves a resident's tolerance for bionics: "
+        "sum(weight * (value - 0.5)), clamped to [-1, 1]. The two against weigh 2 in all, as do "
+        "the three for.",
+    )
+    mildly: float = Field(
+        default=0.15, gt=0, lt=1, description="How far from 0 a tolerance is against or for."
+    )
+    strongly: float = Field(
+        default=0.5, gt=0, le=1, description="How far from 0 a tolerance is strongly so."
+    )
+    stands_out: dict[Bionic, Unit] = Field(
+        default=STANDS_OUT,
+        description="How much each bionic catches the eye: the eye most, the datajack least.",
+    )
+    sighting: float = Field(
+        default=0.3,
+        gt=0,
+        le=1,
+        description="The magnitude of R1's event for seeing a bionic that stands out fully. Its "
+        "valence is the resident's tolerance, and it moves like, trust and respect.",
+    )
+    salience: float = Field(
+        default=0.3, ge=0, le=1, description="The salience of the memory of a sighting."
+    )
+    salience_feeling: float = Field(
+        default=0.6,
+        ge=0,
+        le=1,
+        description="Salience added per unit of |tolerance| times how much the most eye-catching "
+        "bionic seen stands out, so strong feelings get talked about.",
+    )
+    sight: float = Field(
+        default=6.0, gt=0, description="How far a resident sees the player from, in tiles."
+    )
+    look_every: float = Field(
+        default=5, gt=0, description="Sim seconds between looks for residents who can see them."
+    )
+    new_for: timedelta = Field(
+        default=timedelta(hours=1),
+        ge=timedelta(0),
+        description="How long after first seeing a bionic a resident's prompt calls it new.",
+    )
+    player_name: str = Field(default="Visitor", min_length=1)
+
+    @model_validator(mode="after")
+    def _ordered(self) -> Self:
+        if self.strongly <= self.mildly:
+            raise ValueError("strongly must be more than mildly")
+        return self
+
+
+DEFAULT_BIONICS = BionicsConfig()
