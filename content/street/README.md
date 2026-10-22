@@ -101,10 +101,12 @@ As in [`content/map/`](../map/README.md), with these additions.
   on the street in front, and its rectangle is the `width` cells along the street from there. Its
   painter's `stand` is the cell in front of its middle. `bottom` and `top` are in storeys above the
   street, as today, and keep today's values.
-- **Spots** face `north` at terminals, desks, the bar, paintings and murals (their backs to the
-  camera), `east` or `west` at tables, facing each other, and `south` on the street's benches
-  (their fronts to the camera). The gallery's benches and the noodle bar's stools face `north`.
-  `dx` and `dy` are always 0. The stools keep `dz` 0.25.
+- **Spots** face `north` at terminals, desks, paintings and murals (their backs to the camera).
+  Every seat faces `east` or `west`, as the side view draws a sitter: at tables, facing each
+  other; on a counter's stools, the way it's served from (the Daily Grind's bar west to its
+  counter, the noodle bar's east to its kitchen); and on a bench, at what its sitters look at (the
+  square's at the fountain, the park's at the lookout, and in the gallery each at the nearest
+  painting, so two can sit back to back). `dx` and `dy` are always 0. The stools keep `dz` 0.25.
 
 ## The village
 
@@ -136,10 +138,10 @@ today's 47 s.
 - **The Daily Grind**, ground floor, west to east: behind the counter the grinder (1), the espresso
   machine (2), the till (3, `coffee_shop_staff`'s entry) and the hand-over (4); then on the
   customers' side the pickup (5), the queue from its front (6, the café's entry and the counter's
-  stand) running east to 9 (`coffee_shop_queue`), the standing bar (10–14), the foot of the stairs
-  (15), rising east to 18 upstairs, just inside the door (17) and the mat (18). Its eight tables are
-  upstairs, with the foot of the flat's stairs between them (11), rising east to 14. The barista's
-  flat is the top floor.
+  stand) running east to 9 (`coffee_shop_queue`), the bar and its five stools (10–14), the foot of
+  the stairs (15), rising east to 18 upstairs, just inside the door (17) and the mat (18). Its
+  eight tables are upstairs, with the foot of the flat's stairs between them (11), rising east to
+  14. The barista's flat is the top floor.
 - **Golden Bowl Noodles**: the entry (1), the mat (2), the foot of the stairs (3), rising east to 7
   upstairs, two tables, the five stools at the counter (8–12) and the kitchen behind it (13–15).
   Seven tables upstairs.

@@ -141,6 +141,66 @@
           "width": 16,
           "x": 272,
           "y": 32
+        },
+        {
+          "height": 16,
+          "id": 7,
+          "name": "stool",
+          "properties": [],
+          "rotation": 0,
+          "type": "stool",
+          "visible": true,
+          "width": 16,
+          "x": 160,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 8,
+          "name": "stool",
+          "properties": [],
+          "rotation": 0,
+          "type": "stool",
+          "visible": true,
+          "width": 16,
+          "x": 176,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 9,
+          "name": "stool",
+          "properties": [],
+          "rotation": 0,
+          "type": "stool",
+          "visible": true,
+          "width": 16,
+          "x": 192,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 10,
+          "name": "stool",
+          "properties": [],
+          "rotation": 0,
+          "type": "stool",
+          "visible": true,
+          "width": 16,
+          "x": 208,
+          "y": 32
+        },
+        {
+          "height": 16,
+          "id": 11,
+          "name": "stool",
+          "properties": [],
+          "rotation": 0,
+          "type": "stool",
+          "visible": true,
+          "width": 16,
+          "x": 224,
+          "y": 32
         }
       ],
       "opacity": 1,
@@ -156,7 +216,7 @@
       "objects": [
         {
           "height": 48,
-          "id": 7,
+          "id": 12,
           "name": "coffee_shop",
           "properties": [
             {
@@ -189,7 +249,7 @@
         },
         {
           "height": 48,
-          "id": 8,
+          "id": 13,
           "name": "coffee_shop_staff",
           "properties": [
             {
@@ -217,7 +277,7 @@
         },
         {
           "height": 48,
-          "id": 9,
+          "id": 14,
           "name": "coffee_shop_queue",
           "properties": [
             {
@@ -268,7 +328,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 10,
+          "id": 15,
           "name": "coffee_shop",
           "properties": [
             {
@@ -306,7 +366,7 @@
         },
         {
           "height": 16,
-          "id": 11,
+          "id": 16,
           "name": "coffee_shop_stairs",
           "properties": [
             {
@@ -356,7 +416,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 12,
+          "id": 17,
           "name": "coffee_shop_counter",
           "properties": [
             {
@@ -391,13 +451,18 @@
       "objects": [
         {
           "height": 16,
-          "id": 13,
+          "id": 18,
           "name": "bar-2-6",
           "properties": [
             {
+              "name": "dz",
+              "type": "float",
+              "value": 0.25
+            },
+            {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -409,13 +474,18 @@
         },
         {
           "height": 16,
-          "id": 14,
+          "id": 19,
           "name": "bar-3-6",
           "properties": [
             {
+              "name": "dz",
+              "type": "float",
+              "value": 0.25
+            },
+            {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -427,13 +497,18 @@
         },
         {
           "height": 16,
-          "id": 15,
+          "id": 20,
           "name": "bar-10-3",
           "properties": [
             {
+              "name": "dz",
+              "type": "float",
+              "value": 0.25
+            },
+            {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -445,13 +520,18 @@
         },
         {
           "height": 16,
-          "id": 16,
+          "id": 21,
           "name": "bar-10-4",
           "properties": [
             {
+              "name": "dz",
+              "type": "float",
+              "value": 0.25
+            },
+            {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -463,13 +543,18 @@
         },
         {
           "height": 16,
-          "id": 17,
+          "id": 22,
           "name": "bar-10-5",
           "properties": [
             {
+              "name": "dz",
+              "type": "float",
+              "value": 0.25
+            },
+            {
               "name": "facing",
               "type": "string",
-              "value": "north"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -488,7 +573,7 @@
     }
   ],
   "nextlayerid": 11,
-  "nextobjectid": 18,
+  "nextobjectid": 23,
   "orientation": "orthogonal",
   "properties": [
     {

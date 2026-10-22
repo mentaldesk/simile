@@ -908,7 +908,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "east"
             }
           ],
           "rotation": 0,
@@ -926,7 +926,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "east"
             }
           ],
           "rotation": 0,
@@ -944,7 +944,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "east"
             }
           ],
           "rotation": 0,
@@ -962,7 +962,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "east"
             }
           ],
           "rotation": 0,
@@ -980,7 +980,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -998,7 +998,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -1016,7 +1016,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "west"
             }
           ],
           "rotation": 0,
@@ -1034,7 +1034,7 @@
             {
               "name": "facing",
               "type": "string",
-              "value": "south"
+              "value": "west"
             }
           ],
           "rotation": 0,

@@ -34,8 +34,8 @@ FIT = (0.6, 1.6)
 """How far a frame is rescaled to match the standing figure."""
 SOLES = 0.08
 """The share of a sitting figure's height measured up from its lowest row as its feet."""
-CALF = 0.03
-"""How far a calf may bulge behind the heel, of a sitting figure's height."""
+CLIMB = 3
+"""Columns looked back along the backs of the calves, so a short flat step doesn't end them."""
 
 
 @dataclass
@@ -194,15 +194,27 @@ def frames(
 
 
 def seat(image: Image.Image, middle: float) -> tuple[float, float]:
-    """Under the middle of the head, on the lowest row behind the calves: a figure turned to the
-    right sits with its feet under or in front of its knees, wherever its head is."""
+    """Under the middle of the head, at the bottom of the thighs, up the calves from the heels."""
     a = solid(image)
     rows = np.flatnonzero(a.any(axis=1))
     tall = int(rows[-1] - rows[0] + 1)
     low = a[rows[-1] + 1 - max(1, round(SOLES * tall)) :]
-    calves = int(np.flatnonzero(low.any(axis=0))[0]) - round(CALF * tall)
-    behind = a[:, : max(1, calves)]
-    return middle, float(np.flatnonzero(behind.any(axis=1))[-1] + 1)
+    knee = int(np.flatnonzero(low.any(axis=0))[0])
+    edge = lower_edge(a)
+    while knee > 0 and climbs(edge[max(0, knee - CLIMB) : knee], edge[knee]):
+        knee -= 1
+    return middle, float(edge[: knee + 1].max() + 1)
+
+
+def climbs(back: NDArray[np.int_], here: int) -> bool:
+    found = back[back >= 0]
+    return bool(found.size) and int(found.min()) < here
+
+
+def lower_edge(a: NDArray[np.bool_]) -> NDArray[np.int_]:
+    """Each column's lowest opaque row, or -1 where it has none."""
+    lowest = a.shape[0] - 1 - np.argmax(a[::-1], axis=0)
+    return np.where(a.any(axis=0), lowest, -1)
 
 
 def crown(frame: Frame) -> float:

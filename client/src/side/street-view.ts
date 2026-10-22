@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Frame, Wall } from '../net';
 import { LAYER_PLACES, layerCopies, streetCentreY, type Copies, type Point } from './camera';
 import { DEPTH } from './depths';
-import { dropShadow, furnitureKey, placeDerived, SHADOW_ALPHA, tileAlong, Tints, type TintGroup } from './draw';
+import { dropShadow, furnitureKey, placeDerived, tileAlong, Tints, type TintGroup } from './draw';
 import { House } from './house';
 import {
   coverCrop,
@@ -42,8 +42,6 @@ const BLOOM = 0.8;
 const LADDER_ABOVE_M = 0.6;
 /** World px a px of a signpost's texture. */
 const SIGN_SCALE = 0.6;
-/** In front of an open dollhouse. */
-export const GHOST_ALPHA = 0.35;
 
 type Image = Phaser.GameObjects.Image;
 
@@ -144,15 +142,13 @@ export class StreetView {
     return !!name && (this.byName.get(name)?.open ?? 0) > 0;
   }
 
-  /** Faint in front of an open dollhouse. */
+  /** How far on the front over `x` is: below 1, what's in front of it is left out. */
   ghost(x: number): number {
-    let alpha = 1;
+    let on = 1;
     for (const { building, open } of this.fronts) {
-      if (open > 0 && x >= building.x * TILE && x <= (building.x + building.w) * TILE) {
-        alpha = Math.min(alpha, 1 - (1 - GHOST_ALPHA) * open);
-      }
+      if (open > 0 && x >= building.x * TILE && x <= (building.x + building.w) * TILE) on = Math.min(on, 1 - open);
     }
-    return alpha;
+    return on;
   }
 
   ride(building: string, x: number, feet: number, from: number, to: number): void {
@@ -190,9 +186,9 @@ export class StreetView {
     }
     if (moved) {
       for (const { x, image, shadow } of this.props) {
-        const alpha = this.ghost(x);
-        image.setAlpha(alpha);
-        shadow.setAlpha(SHADOW_ALPHA * alpha);
+        const shown = this.ghost(x) === 1;
+        image.setVisible(shown);
+        shadow.setVisible(shown);
       }
     }
   }

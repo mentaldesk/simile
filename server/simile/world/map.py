@@ -70,7 +70,7 @@ class SpotKind(StrEnum):
 
 POSES = {
     SpotKind.SEAT: Pose.SITTING,
-    SpotKind.BAR: Pose.STANDING,
+    SpotKind.BAR: Pose.SITTING,
     SpotKind.DESK: Pose.WORKING,
     SpotKind.TERMINAL: Pose.READING,
     SpotKind.VIEWING: Pose.LOOKING,

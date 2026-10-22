@@ -49,8 +49,8 @@ it, and rises to the top floor or drops to Banyan Row's river.
   front, each from its own map: the back wall in its room paper, windows, picture frames with their
   paintings, furniture, stairs, ladders, the lift shaft and cars, and the slabs. The front door is
   drawn from inside too, on the back wall over its mat, with a lit EXIT sign. Entering a building
-  lifts its front off; the street's props in front of it go faint, and residents there aren't
-  drawn, so no one is ever see-through.
+  lifts its front off; the street's props and residents in front of it aren't drawn until it's
+  back on, so nothing is ever see-through.
 - **Signposts** (`street-view.ts`): a fingerpost at each way to another street names it. The sign and
   the posts are drawn in code (`textures.ts`).
 - **Residents and the player** (`side-doll.ts`) are drawn as their painted figures, each step of a

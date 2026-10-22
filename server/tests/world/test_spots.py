@@ -126,8 +126,9 @@ def test_the_paintings_are_viewed_from_their_stand_tiles() -> None:
 
 def test_only_the_stools_raise_a_sitter() -> None:
     raised = [spot for spot in everywhere() if spot.dz]
-    assert raised and all(spot.map == "noodle_bar_floor_0" for spot in raised)
-    assert {(spot.kind, spot.facing) for spot in raised} == {(SpotKind.SEAT, Facing.NORTH)}
+    assert {spot.map for spot in raised} == {"noodle_bar_floor_0", "coffee_shop_floor_0"}
+    assert {spot.pose for spot in raised} == {Pose.SITTING}
+    assert {spot.facing for spot in raised} == {Facing.EAST, Facing.WEST}
 
 
 @pytest.mark.parametrize(

@@ -41,4 +41,12 @@ def register(app: typer.Typer) -> None:
                 if off:
                     typer.echo(f"{painted.who} {frame}: still off by {off}")
 
+    @dolls.command("seats")
+    def seats() -> None:
+        """Measure each figure's seat in content/dolls/ again from its atlas, without painting."""
+        from simile.dolls.build import reseat
+
+        for path in reseat():
+            typer.echo(f"wrote {path.name}")
+
     app.add_typer(dolls, name="dolls")

@@ -9,6 +9,7 @@ The client swaps, flips, bobs and sways the painted frames (`client/src/dolls/`)
 uv sync --extra images
 uv run simile dolls paint            # every figure whose Appearance or pipeline changed
 uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, saving its paintings
+uv run simile dolls seats            # measure every seat again from the atlases, painting nothing
 ```
 
 Don't edit them by hand. CI never paints; the tests check what's committed.
@@ -57,8 +58,9 @@ For each resident and `player`:
   ground under the middle of its head, from the frame's top-left. The client puts that point
   where the resident stands, so the head doesn't jump as the legs change. The run's frame in the
   air has its feet below the frame, so its head is as high as the other run frame's. Sitting has
-  a **`seat`** too, the bottom of its thighs (the lowest row behind its calves), which the
-  client puts on the seat.
+  a **`seat`** too, the bottom of its thighs, which the client puts on the seat: the lowest row
+  behind its calves, found by following its lower edge back from its heels up the backs of its
+  calves, however far its shins slant.
 - **`poses`**: the frames each pose plays through its cycle. Every frame faces right in
   three-quarter view but the climb, seen from behind; the client mirrors them to face west.
 - **`hash`** is what the figure was painted from: the pipeline's `version`, the `Appearance`, who

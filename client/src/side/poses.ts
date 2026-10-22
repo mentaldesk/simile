@@ -2,6 +2,7 @@ import type { Facing } from '../net';
 import type { FigureManifest, SpritePose } from '../dolls/manifest';
 import type { DollPose, PoseOptions } from '../dolls/rig';
 import { facesLeft, shown, spritePose, type Shown } from '../dolls/sprite';
+import { FURNITURE_DROP_M } from './layout';
 import type { ClimbKind, SideMap } from './maps';
 
 export { facesLeft };
@@ -50,23 +51,21 @@ export class PoseCache {
   }
 }
 
-/** Whether a figure is left out: a resident on the street in front of a dollhouse that's open,
- * or opening, where the street's props fade (`StreetView.ghost`). No one is drawn see-through,
- * and the player is always drawn. */
+/** A resident on the street in front of an open dollhouse is left out; the player never is. */
 export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): boolean =>
   !inside && !player && ghost < 1;
 
-/** Metres up a seat is: a stool's or a bar's, or a chair's, bench's or desk chair's. */
-const SEAT_M = { high: 0.7, low: 0.45 };
-const SEATS = new Set(['seat', 'desk', 'bar']);
-const HIGH_SEATS = new Set(['stool', 'bar_stool']);
+/** Metres up the front edge of each piece's seat, measured from its art. */
+export const SEAT_M: Record<string, number> = { stool: 0.567, bench: 0.392, cafe_table: 0.442, noodle_table: 0.483 };
+const SEATS = new Set(['seat', 'bar', 'desk']);
 
-/** The seat at a map cell, by its spot and the furniture on it, or 0 where there's none. */
+/** Metres up the seat at a map cell as drawn: its piece's, a chair's without one, or 0 off a seat. */
 export function seatHeight(map: Pick<SideMap, 'spots' | 'furniture'>, x: number, y: number): number {
   const cx = Math.round(x);
   const cy = Math.round(y);
-  const spot = map.spots.find((s) => s.x === cx && s.y === cy && SEATS.has(s.type));
-  if (!spot) return 0;
-  const under = map.furniture.find((f) => cx >= f.x && cx < f.x + Math.max(1, f.w) && cy >= f.y && cy < f.y + Math.max(1, f.h));
-  return spot.type === 'bar' || (under && HIGH_SEATS.has(under.type)) ? SEAT_M.high : SEAT_M.low;
+  if (!map.spots.some((s) => s.x === cx && s.y === cy && SEATS.has(s.type))) return 0;
+  const piece = map.furniture.find(
+    (f) => f.type in SEAT_M && cx >= f.x && cx < f.x + Math.max(1, f.w) && cy >= f.y && cy < f.y + Math.max(1, f.h),
+  );
+  return SEAT_M[piece?.type ?? 'cafe_table'] - FURNITURE_DROP_M;
 }

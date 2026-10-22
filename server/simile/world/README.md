@@ -90,7 +90,7 @@ face, in the maps' `spots` layer ([`content/street/README.md`](../../../content/
 | Kind | Pose | Where |
 |---|---|---|
 | `seat` | `sitting` | Beside each café and noodle-bar table, on the noodle bar's stools, on the benches on the square, in the park and in the gallery |
-| `bar` | `standing` | Along the Daily Grind's counter |
+| `bar` | `sitting` | On the stools along the Daily Grind's bar |
 | `desk` | `working` | Both sides of the maker space's workbenches, and in front of its machines |
 | `terminal` | `reading` | In front of each news terminal's screen |
 | `viewing` | `looking` | In front of each painting in the gallery and each mural wall |

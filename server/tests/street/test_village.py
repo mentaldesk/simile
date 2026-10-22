@@ -10,10 +10,10 @@ from PIL import Image
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
-from simile.schema import DoorKind, Facing, MapTile
+from simile.schema import DoorKind, Facing, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER
-from simile.street.village import FLOOR_ROW, GROUND, STOREY, village
+from simile.street.village import FLOOR_ROW, GROUND, STOOL_M, STOREY, village
 from simile.world import Movement, Outcome, Walk
 from simile.world.map import (
     STREET_DIR,
@@ -24,6 +24,7 @@ from simile.world.map import (
     load_maps,
     with_every_location,
 )
+from simile.world.map import Spot as MapSpot
 from simile.world.movement import Point, inside
 from simile.world.paths import Spot, door_ends, find_path, find_route, route_length, steps
 from simile.world.spots import Purpose
@@ -265,15 +266,91 @@ def test_every_mural_wall_is_on_a_street_facing_the_camera() -> None:
 def test_spots_face_to_suit_the_side_view() -> None:
     for town in MAPS.values():
         for spot in town.spots:
-            if spot.kind in (SpotKind.TERMINAL, SpotKind.DESK, SpotKind.VIEWING, SpotKind.BAR):
+            if spot.kind in (SpotKind.TERMINAL, SpotKind.DESK, SpotKind.VIEWING):
                 assert spot.facing is Facing.NORTH, spot.id
             assert spot.dx == spot.dy == 0, spot.id
-            assert spot.facing in (Facing.NORTH, Facing.SOUTH, Facing.EAST, Facing.WEST)
-    seats = [s for town in FLOORS for s in town.spots if s.kind is SpotKind.SEAT and not s.dz]
-    tables = [s for s in seats if s.map.startswith(("coffee_shop", "noodle_bar"))]
-    assert {s.facing for s in tables} == {Facing.EAST, Facing.WEST}
-    benches = [s for town in STREETS for s in town.spots if s.kind is SpotKind.SEAT]
-    assert {s.facing for s in benches} == {Facing.SOUTH}
+            assert spot.facing in (Facing.NORTH, Facing.EAST, Facing.WEST) or (
+                spot.kind is SpotKind.STANDING and spot.facing is Facing.SOUTH
+            ), spot.id
+
+
+SEATS = {"stool", "bench", "cafe_table", "noodle_table"}
+"""What there is to sit on: a table's piece has its chairs."""
+PLANS = {plan.id: plan for plan in village()}
+
+
+def pieces_at(x: int, y: int, plan_id: str) -> set[str]:
+    plan = PLANS[plan_id]
+    return {
+        piece.name
+        for piece in plan.furniture
+        if piece.area.x <= x < piece.area.x + piece.area.width
+        and piece.area.y <= y < piece.area.y + piece.area.height
+    }
+
+
+def test_every_seat_faces_east_or_west_on_something_to_sit_on() -> None:
+    kinds = (SpotKind.SEAT, SpotKind.BAR)
+    seats = [spot for town in MAPS.values() for spot in town.spots if spot.kind in kinds]
+
+    assert len(seats) == 64
+    for seat in seats:
+        assert seat.facing in (Facing.EAST, Facing.WEST), seat.id
+        assert pieces_at(seat.x, seat.y, seat.map) & SEATS, seat.id
+    benches = [seat for seat in seats if MAPS[seat.map].kind is MapKind.STREET]
+    assert {seat.facing for seat in benches} == {Facing.EAST, Facing.WEST}
+
+
+def stools_at(map_id: str) -> list[MapSpot]:
+    return [s for s in MAPS[map_id].spots if "stool" in pieces_at(s.x, s.y, map_id)]
+
+
+def test_the_daily_grinds_bar_has_a_stool_at_each_of_its_old_spots_facing_the_counter() -> None:
+    bar = stools_at("coffee_shop_floor_0")
+    counter = TOWN.location("coffee_shop_staff")
+
+    assert sorted(s.id for s in bar) == ["bar-10-3", "bar-10-4", "bar-10-5", "bar-2-6", "bar-3-6"]
+    stools = {(x, SpotKind.BAR, STOOL_M) for x in range(10, 15)}
+    assert {(s.x, s.kind, s.dz) for s in bar} == stools
+    assert {s.facing for s in bar} == {Facing.WEST}
+    assert all(counter.entry.x < s.x for s in bar)
+    assert pieces_at(10, FLOOR_ROW, "coffee_shop_floor_0") == {"bar_counter", "stool"}
+
+
+def test_the_noodle_bars_stools_face_the_kitchen() -> None:
+    stools = stools_at("noodle_bar_floor_0")
+    kitchen = min(x for x in range(17) if "stove" in pieces_at(x, FLOOR_ROW, "noodle_bar_floor_0"))
+
+    assert len(stools) == 5 and {s.facing for s in stools} == {Facing.EAST}
+    assert all(s.x < kitchen for s in stools)
+
+
+def facing_towards(x: int, there: float) -> Facing:
+    return Facing.EAST if there > x else Facing.WEST
+
+
+def test_the_squares_benches_face_the_fountain_and_the_gallerys_the_nearest_painting() -> None:
+    square = [s for s in MAPS["high_street"].spots if s.kind is SpotKind.SEAT]
+    [fountain] = [p for p in PLANS["high_street"].furniture if p.name == "fountain"]
+    middle = fountain.area.x + fountain.area.width / 2
+
+    assert len(square) == 8
+    assert all(s.facing is facing_towards(s.x, middle) for s in square)
+    for floor in floors_of("gallery"):
+        paintings = [x for item in floor.interactables for x in (item.area.x, item.area.x + 1)]
+        for seat in (s for s in floor.spots if s.kind is SpotKind.SEAT):
+            nearest = min(paintings, key=lambda x: abs(x - seat.x))
+            assert seat.facing is facing_towards(seat.x, nearest), seat.id
+
+
+def test_someone_on_a_stool_at_the_daily_grinds_bar_sits_facing_the_counter() -> None:
+    village = Village()
+    [stool] = [s for s in MAPS["coffee_shop_floor_0"].spots if s.id == "bar-10-4"]
+    village.movement.place("mei", MapTile(map=stool.map, x=stool.x, y=stool.y))
+    village.world.loop.tick()
+
+    assert village.movement.on_spot("mei") == stool
+    assert village.movement.posture("mei") == (Pose.SITTING, Facing.WEST)
 
 
 def test_streets_have_a_flight_of_stairs_and_a_ladder() -> None:

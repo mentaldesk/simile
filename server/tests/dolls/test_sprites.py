@@ -150,6 +150,16 @@ def test_a_seated_figure_sits_on_its_thighs_with_its_shins_under_its_head_or_ahe
     assert seat(sitter(shins), 150) == (150, 211)
 
 
+def test_a_seated_figure_whose_shins_slant_forward_still_sits_on_its_thighs() -> None:
+    sitting = sitter(130)
+    draw = ImageDraw.Draw(sitting)
+    draw.rectangle((130, 180, 290, 320), (0, 0, 0, 0))
+    draw.rectangle((60, 180, 160, 210), (60, 60, 90, 255))
+    draw.polygon([(130, 195), (165, 195), (250, 300), (215, 300)], (60, 60, 90, 255))
+
+    assert seat(sitting, 150) == (150, 211)
+
+
 def test_a_seated_frame_sits_under_the_middle_of_its_head_above_its_feet() -> None:
     made = frames({"stand": person(), "sit": sitter(130)}, seated=["sit"])
 
