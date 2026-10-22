@@ -12,7 +12,7 @@ cd server && uv run simile street
 
 Output is deterministic, and `tests/street` fails if a file drifts from the builder.
 
-- `<street>.tmj`: the five streets.
+- `<street>.tmj`: the five streets, and the metro under them.
 - `floors/<building>_floor_<n>.tmj`: each floor of each building, `0` for the ground floor.
 - `markers.png`: the tiny tileset the tile layers use, so Tiled shows them.
 - `jump.json`: the player's jump (#331), from `server/simile/street/jump.py`. The client plays it
@@ -22,7 +22,8 @@ Output is deterministic, and `tests/street` fails if a file drifts from the buil
   squares are doors, yellow and orange lines stairs and ladders between floors, pink lines the
   lift. Violet dots are spots, with a tick the way they face (up for `north`, down for `south`).
   Yellow squares are entries, teal boxes locations, orange boxes things to use, cyan boxes mural
-  walls from `bottom` to `top`, and thin grey boxes furniture. Mural walls and doors to other
+  walls from `bottom` to `top`, and thin grey boxes furniture. Dark stretches are shaded navy,
+  places salvage can lie are green diamonds and secrets pink ones. Mural walls and doors to other
   streets are named in the ground under them.
 
 ## The grid
@@ -60,14 +61,21 @@ Every map has every layer, bottom to top:
 | `doors` | Objects. One tile per link with an end on this map (below). |
 | `interactables` | Objects, as today, on floors. |
 | `spots` | Objects, as today. |
+| `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. Only the metro has any yet, and every cell of it is in one. |
+| `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
 `cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
 `lamp`, `laser_cutter`, `lift`, `loom`, `menu_board`, `news_terminal`, `noodle_counter`,
 `noodle_table`, `palm_tree`, `pegboard`, `plant`, `plinth`, `printer_3d`, `rope_bridge`,
-`sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`.
-A table is drawn with a chair either side. A `rope_bridge` stands on the solid row under it, its
-deck.
+`sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`,
+and in the metro `bedroll`, `breaker_box`, `catwalk`, `crates`, `dead_terminal`, `freight_lift`,
+`metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`, `ticket_machine`, `train_carriage`,
+`tunnel_arch` and `turnstile`, with `metro_entrance` beside the stairway down on Banyan Row. A table
+is drawn with a chair either side. A `rope_bridge` stands on the solid row under it, its deck. A
+`catwalk` covers its solid row and the row above it, its deck on the solid row's top, and the
+`train_carriage` its roof's solid row and everything under it. `metro_steps` covers a flight of stairs
+and the cells at its ends, over the street's own steps.
 
 ## Map properties
 
@@ -78,7 +86,7 @@ deck.
 | `label` | Streets | Its name, e.g. `High Street`. |
 | `building` | Floors | Its building's location id. |
 | `floor` | Floors | Its number, `0` for the ground floor. |
-| `room` | Floors | What the room is, for its papers: `living_room`, `bedroom`, `cafe`, `cafe_upstairs`, `flat`, `noodle_bar`, `dining_room`, `workshop`, `loft` or `gallery`. |
+| `room` | Floors | What the room is, for its papers: `living_room`, `bedroom`, `cafe`, `cafe_upstairs`, `flat`, `noodle_bar`, `dining_room`, `workshop`, `loft`, `gallery` or `clinic`. |
 | `street`, `street_x`, `street_y` | Floors | The street its building stands on, and the street cell under the floor map's top-left cell, so its dollhouse is drawn in place. |
 
 ## Objects
@@ -123,7 +131,7 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
 | `high_street` High Street | 84 | `maker_space` (2–17), `corner_shop` (19–24, a mural), `coffee_shop` (25–44, a mural) with `cafe_terrace` in front, `square` (45–64) with the fountain at 55–56, `terminal_1` at 60 and the doors to Kapok Walk (46), Lychee Lane (50) and Banyan Row (64), `noodle_bar` (65–81) |
 | `lychee_lane` Lychee Lane | 68 | `house_1` (2–8), `house_2` (9–15), the door to the High Street (17), `house_3` (19–25), `house_4` (26–32), `terminal_2` at the park gate (34), `park` (36–59) with a lookout up a ladder at 45, `tower` (61–66, a mural) |
 | `kapok_walk` Kapok Walk | 34 | a garden (1–8) with the lane to the Rooftops (2), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
-| `banyan_row` Banyan Row | 68 | `house_8` (2–8), `house_9` (9–15), `house_10` (16–22, a mural), the door to the High Street (24), `gallery` (26–43), `garden_flats` (45–50, a mural), then two stairs down from 53 to the river's promenade, row 18, with `terminal_3` at 60 |
+| `banyan_row` Banyan Row | 68 | `house_8` (2–8), `house_9` (9–15), `house_10` (16–22, a mural), the door to the High Street (24), `gallery` (26–43), `garden_flats` (45–50, a mural), then two stairs down from 53 to the river's promenade, row 18, with `terminal_3` at 60 and the stairway down to the metro at 62 |
 | `rooftops` The Rooftops | 60 | The door to Kapok Walk (1) on a back lane, a ladder (3) up onto the `bakery`'s roof (4–9, row 12), a gap, walkways up the alley (11–14, rows 12 and 10), the roofs of the `print_works` (15–21), the `tea_house` (24–30) and the `laundry` (34–39), all row 8, with gaps of two and three cells between them, a `palm_tree` in the second, a `rope_bridge` (40–47) to a balcony (48–49), and a ladder (49) up to the `clock_house`'s roof (50–56, row 4) |
 
 | Building | Street | Width | Floors | Links between floors |
@@ -162,6 +170,45 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
   door leads back to Kapok Walk, so no resident's way anywhere else passes through it. A fall
   anywhere lands in the lane, which runs under everything back to the door and the first
   ladder.
+
+## The metro
+
+`metro`, the Old Metro (#350), is an abandoned station under the village, 110 wide. Its stairway
+down is a door like any other, `banyan_row_to_metro`, from Banyan Row's river promenade (62, row
+18) to a landing at the top of the stairs (2, row 9). Like the Rooftops it's for the player alone
+(`JUMPING`), and it's in `UNDERGROUND`, the streets under the village. Its locations, the clinic
+and the scrap trader's stall (`scrap_stall`), are `amenity`s no resident's activity names, and its
+only doors are the stairway and the clinic's, so no resident has anywhere to go there and no route
+passes through it.
+
+| x | |
+|---|---|
+| 0–19 | The landing (row 9), a flight down to the ticket hall (row 12) with the `turnstile` and `ticket_machine`, and a flight down to the platform (row 15). A catwalk over the first flight, at row 7, is a run jump from the landing. |
+| 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–52, row 10) is a jump from the roof's east end. |
+| 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) and an alcove (85–86, row 8) go on up the wall, each a jump from the last. |
+| 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12) against the east wall. |
+
+**What later tasks build on.** Each has an id that stays put; `simile.street.metro` names them.
+
+| Task | Hook | Id, and where |
+|---|---|---|
+| S4 | Dark stretches, in `light` | `metro_vault` (19–57, rows 0–11), `metro_tunnel_west` (58–70), `metro_tunnel_east` (74–86). The rest is lit: `metro_entrance`, `metro_platform`, `metro_maintenance` and `metro_depot`. |
+| S4 | The maintenance plug, a `machine` | `metro_plug`, stood at from (72, 15), in the lit alcove between the tunnel's two dark halves. |
+| S6 | Places salvage can lie, in `pickups` | `metro_salvage_1` on the train's roof (38, 12), `_2` (63, 15) and `_3` (68, 15) in the west tunnel, `_4` on the pipe ledge (77, 12), `_5` (83, 15), and `_6` on the high ledge (108, 12). |
+| S6 | The scrap trader's stall, and its spot | The location `scrap_stall` (24–28, rows 13–15, entry 28). The spot is `metro_scrap_trader`, `standing` at (26, 15) facing `south`, at the `scrap_stall` piece. |
+| S7 | The clinic, and the doctor's stall spot | `clinic`, an `amenity` on `clinic_floor_0` (room `clinic`, 10 wide), its door at (89, 15). The doctor's spot is `clinic_doctor`, `standing` at (6, 2) facing `south`. The room is bare for S7 to furnish. |
+| S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of today's jump, two rows up (`rise` 2.3 tiles), and in reach of the legs if they jump three. Salvage waits on it. |
+| S8 | The dead terminal, a `machine` | `metro_terminal`, stood at from (104, 15). |
+| S8, S9 | The lift down to the sewers, a `machine` | `metro_lift`, stood at from (100, 15) and (101, 15). Its foot on the metro, where a link to the sewers would end, is (100, 15) (`LIFT_FOOT`). No link leads from it yet. |
+
+**Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach:
+`metro_secret_stairwell` (8, 7, 25 money), `metro_secret_catwalk` (52, 10, 40 money) and
+`metro_secret_alcove` (86, 8, a `ration_pack`, food, 0.5 kg).
+
+**Drawing it** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's front and
+room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are furniture over
+their solid rows, which hides the street's wooden ledge under them, and the train's roof is its
+picture's top edge.
 
 ## Ids
 

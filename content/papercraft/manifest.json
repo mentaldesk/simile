@@ -120,6 +120,14 @@
    "ground": "layers/ground-street",
    "foreground": "layers/front-plants"
   },
+  "metro": {
+   "sky": "layers/metro-vault",
+   "far": "layers/far-metro",
+   "mid": "layers/mid-metro",
+   "near": "layers/near-metro",
+   "ground": "layers/ground-metro",
+   "foreground": "layers/front-metro"
+  },
   "rooftops": {
    "sky": "layers/sky",
    "far": "layers/far-hills",
@@ -140,6 +148,14 @@
    "front": "fronts/bakery",
    "glow": "glow/bakery",
    "floors": []
+  },
+  "clinic": {
+   "street": "metro",
+   "front": "fronts/clinic",
+   "glow": "glow/clinic",
+   "floors": [
+    "papers/clinic-tiles"
+   ]
   },
   "clock_house": {
    "street": "rooftops",
@@ -434,6 +450,56 @@
   "lift": {
    "piece": "platforms/lift"
   },
+  "metro_entrance": {
+   "piece": "furniture/metro_entrance"
+  },
+  "train_carriage": {
+   "piece": "furniture/train_carriage"
+  },
+  "catwalk": {
+   "piece": "platforms/catwalk",
+   "stretch": true
+  },
+  "metro_steps": {
+   "piece": "furniture/metro_steps"
+  },
+  "freight_lift": {
+   "piece": "furniture/freight_lift"
+  },
+  "scrap_stall": {
+   "piece": "furniture/scrap_stall"
+  },
+  "turnstile": {
+   "piece": "furniture/turnstile"
+  },
+  "ticket_machine": {
+   "piece": "furniture/ticket_machine"
+  },
+  "metro_bench": {
+   "piece": "furniture/metro_bench"
+  },
+  "dead_terminal": {
+   "piece": "furniture/dead_terminal"
+  },
+  "breaker_box": {
+   "piece": "furniture/breaker_box"
+  },
+  "crates": {
+   "piece": "furniture/crates"
+  },
+  "rubble": {
+   "piece": "furniture/rubble"
+  },
+  "bedroll": {
+   "piece": "furniture/bedroll"
+  },
+  "pipes": {
+   "piece": "furniture/pipes",
+   "stretch": true
+  },
+  "tunnel_arch": {
+   "piece": "furniture/tunnel_arch"
+  },
   "armchair": {
    "piece": "furniture/armchair",
    "variants": {
@@ -478,6 +544,7 @@
  "platforms": {
   "rope_bridge": "platforms/rope_bridge",
   "lift": "platforms/lift",
+  "catwalk": "platforms/catwalk",
   "stairs": "platforms/stairs",
   "ladder": "platforms/ladder",
   "steps": "platforms/steps",
@@ -503,6 +570,22 @@
    "width": 6.6,
    "eaves": 3.3,
    "hash": "2401bf6e1ceb5eb08eb1"
+  },
+  "fronts/clinic": {
+   "file": "fronts/clinic.webp",
+   "size": [
+    1464,
+    512
+   ],
+   "height": 4.267,
+   "kind": "front",
+   "anchor": [
+    0.5,
+    0.9719
+   ],
+   "width": 11.0,
+   "eaves": 3.3,
+   "hash": "1ad4b803349fe5760384"
   },
   "fronts/clock_house": {
    "file": "fronts/clock_house.webp",
@@ -952,6 +1035,20 @@
    ],
    "hash": "0f42e4e51ed89dcb692c"
   },
+  "furniture/bedroll": {
+   "file": "furniture/bedroll.webp",
+   "size": [
+    208,
+    54
+   ],
+   "height": 0.45,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "95dd1505a49df6c89e43"
+  },
   "furniture/bedside_table": {
    "file": "furniture/bedside_table.webp",
    "size": [
@@ -1022,6 +1119,20 @@
    ],
    "hash": "f33ddefbb753f008f071"
   },
+  "furniture/breaker_box": {
+   "file": "furniture/breaker_box.webp",
+   "size": [
+    78,
+    168
+   ],
+   "height": 1.4,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "c331890130c19dc84d24"
+  },
   "furniture/bush": {
    "file": "furniture/bush.webp",
    "size": [
@@ -1064,6 +1175,34 @@
    ],
    "hash": "1dd42126d7f2956f9438"
   },
+  "furniture/crates": {
+   "file": "furniture/crates.webp",
+   "size": [
+    128,
+    120
+   ],
+   "height": 1.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "fd73e48116d9e02cf73a"
+  },
+  "furniture/dead_terminal": {
+   "file": "furniture/dead_terminal.webp",
+   "size": [
+    113,
+    180
+   ],
+   "height": 1.5,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "85598dbe2d0c5fc776cd"
+  },
   "furniture/espresso_machine": {
    "file": "furniture/espresso_machine.webp",
    "size": [
@@ -1105,6 +1244,20 @@
     1.0
    ],
    "hash": "8b89ab3a5fb3b7465fc6"
+  },
+  "furniture/freight_lift": {
+   "file": "furniture/freight_lift.webp",
+   "size": [
+    281,
+    528
+   ],
+   "height": 4.4,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "04d76636a39e0f4d23df"
   },
   "furniture/fridge": {
    "file": "furniture/fridge.webp",
@@ -1232,6 +1385,48 @@
    ],
    "hash": "ca013f27686914c5b9cc"
   },
+  "furniture/metro_bench": {
+   "file": "furniture/metro_bench.webp",
+   "size": [
+    205,
+    108
+   ],
+   "height": 0.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "fea1192a44a8dc674c8d"
+  },
+  "furniture/metro_entrance": {
+   "file": "furniture/metro_entrance.webp",
+   "size": [
+    191,
+    276
+   ],
+   "height": 2.3,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "b4e4743385530a3809ef"
+  },
+  "furniture/metro_steps": {
+   "file": "furniture/metro_steps.webp",
+   "size": [
+    395,
+    403
+   ],
+   "height": 3.36,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "0f04a6431f174e124e29"
+  },
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
    "size": [
@@ -1316,6 +1511,20 @@
    ],
    "hash": "308c9957cc07e41a5139"
   },
+  "furniture/pipes": {
+   "file": "furniture/pipes.webp",
+   "size": [
+    221,
+    96
+   ],
+   "height": 0.8,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "ba0b8ea15ae6308862ca"
+  },
   "furniture/plant": {
    "file": "furniture/plant.webp",
    "size": [
@@ -1357,6 +1566,34 @@
     1.0
    ],
    "hash": "59f20f5d645ada037b12"
+  },
+  "furniture/rubble": {
+   "file": "furniture/rubble.webp",
+   "size": [
+    186,
+    84
+   ],
+   "height": 0.7,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "8d1612c61127eb44cd00"
+  },
+  "furniture/scrap_stall": {
+   "file": "furniture/scrap_stall.webp",
+   "size": [
+    284,
+    264
+   ],
+   "height": 2.2,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "7a04ad93737175fdb250"
   },
   "furniture/sewing_machine": {
    "file": "furniture/sewing_machine.webp",
@@ -1498,6 +1735,34 @@
    ],
    "hash": "401a7b89d86675aafc93"
   },
+  "furniture/ticket_machine": {
+   "file": "furniture/ticket_machine.webp",
+   "size": [
+    107,
+    228
+   ],
+   "height": 1.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "da9640f38f7599ce31f3"
+  },
+  "furniture/train_carriage": {
+   "file": "furniture/train_carriage.webp",
+   "size": [
+    1293,
+    403
+   ],
+   "height": 3.36,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "5014d1ee651d3b238a7a"
+  },
   "furniture/tree": {
    "file": "furniture/tree.webp",
    "size": [
@@ -1511,6 +1776,34 @@
     1.0
    ],
    "hash": "ed8504e13697dc6cfada"
+  },
+  "furniture/tunnel_arch": {
+   "file": "furniture/tunnel_arch.webp",
+   "size": [
+    919,
+    1056
+   ],
+   "height": 8.8,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "fb96f3eab7fd963722c5"
+  },
+  "furniture/turnstile": {
+   "file": "furniture/turnstile.webp",
+   "size": [
+    187,
+    132
+   ],
+   "height": 1.1,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "ea6fc04803b8ea09d76d"
   },
   "furniture/wardrobe": {
    "file": "furniture/wardrobe.webp",
@@ -1569,6 +1862,22 @@
    "width": 6.6,
    "eaves": 3.3,
    "hash": "5d3d5ca5a160e01b32d6"
+  },
+  "glow/clinic": {
+   "file": "glow/clinic.webp",
+   "size": [
+    1464,
+    512
+   ],
+   "height": 4.267,
+   "kind": "glow",
+   "anchor": [
+    0.5,
+    0.9719
+   ],
+   "width": 11.0,
+   "eaves": 3.3,
+   "hash": "62bdb57987439ab833bd"
   },
   "glow/clock_house": {
    "file": "glow/clock_house.webp",
@@ -1916,6 +2225,16 @@
    "kind": "layer",
    "hash": "49fda8e4ed22b6a338e6"
   },
+  "layers/far-metro": {
+   "file": "layers/far-metro.webp",
+   "size": [
+    1304,
+    239
+   ],
+   "height": 5.0,
+   "kind": "layer",
+   "hash": "1dc9ec12a11fc536830b"
+  },
   "layers/far-river": {
    "file": "layers/far-river.webp",
    "size": [
@@ -1925,6 +2244,16 @@
    "height": 4.0,
    "kind": "layer",
    "hash": "ebd2607209dcac26ba4f"
+  },
+  "layers/front-metro": {
+   "file": "layers/front-metro.webp",
+   "size": [
+    1204,
+    137
+   ],
+   "height": 2.0,
+   "kind": "strip",
+   "hash": "7eb0d2b5f1b277cf6cfc"
   },
   "layers/front-plants": {
    "file": "layers/front-plants.webp",
@@ -1945,6 +2274,16 @@
    "height": 2.0,
    "kind": "strip",
    "hash": "0fa02b1bf85dbc5a276b"
+  },
+  "layers/ground-metro": {
+   "file": "layers/ground-metro.webp",
+   "size": [
+    1272,
+    142
+   ],
+   "height": 2.6,
+   "kind": "ground",
+   "hash": "40d8f1dd76c876618a67"
   },
   "layers/ground-park": {
    "file": "layers/ground-park.webp",
@@ -1986,6 +2325,16 @@
    "kind": "ground",
    "hash": "7e7c800bc23d43310793"
   },
+  "layers/metro-vault": {
+   "file": "layers/metro-vault.webp",
+   "size": [
+    1284,
+    696
+   ],
+   "height": 12.0,
+   "kind": "paper",
+   "hash": "b669d10d4853127e9c65"
+  },
   "layers/mid-homes": {
    "file": "layers/mid-homes.webp",
    "size": [
@@ -1995,6 +2344,16 @@
    "height": 8.0,
    "kind": "strip",
    "hash": "afa7456de86c7ddb8ce2"
+  },
+  "layers/mid-metro": {
+   "file": "layers/mid-metro.webp",
+   "size": [
+    1000,
+    352
+   ],
+   "height": 9.0,
+   "kind": "strip",
+   "hash": "037fdebfdbc4158b8ae0"
   },
   "layers/mid-riverbank": {
    "file": "layers/mid-riverbank.webp",
@@ -2045,6 +2404,16 @@
    "height": 2.6,
    "kind": "strip",
    "hash": "06435d046c00c7d5b416"
+  },
+  "layers/near-metro": {
+   "file": "layers/near-metro.webp",
+   "size": [
+    1020,
+    452
+   ],
+   "height": 4.6,
+   "kind": "ground",
+   "hash": "b19f36fab01212e05ba4"
   },
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
@@ -2136,6 +2505,16 @@
    "kind": "paper",
    "hash": "0c093b37b40a4e6cbdc8"
   },
+  "papers/clinic-tiles": {
+   "file": "papers/clinic-tiles.webp",
+   "size": [
+    592,
+    392
+   ],
+   "height": 3.267,
+   "kind": "paper",
+   "hash": "d894de3c5830044b01db"
+  },
   "papers/dining-red": {
    "file": "papers/dining-red.webp",
    "size": [
@@ -2215,6 +2594,20 @@
    "height": 0.3,
    "kind": "paper",
    "hash": "9417c99e48e217d9df2f"
+  },
+  "platforms/catwalk": {
+   "file": "platforms/catwalk.webp",
+   "size": [
+    397,
+    259
+   ],
+   "height": 2.16,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "c149f83495895f7043ab"
   },
   "platforms/door": {
    "file": "platforms/door.webp",

@@ -74,6 +74,8 @@ class Front:
     one_shop: bool = False
     """In a terrace, only the unit with the door has shop windows, and the others windows
     with awnings: FLUX boards up the middle of a shop window with no door near it."""
+    unit: float = UNIT
+    """The widest it's painted in one go."""
 
     @property
     def rise(self) -> float:
@@ -233,7 +235,7 @@ def canvas_size(front: Front, ppm: float | None = None) -> tuple[int, int]:
 def units(front: Front) -> list[tuple[float, Front]]:
     """`front` as a terrace of units no wider than `UNIT`, each a whole front of its own with
     its own roof, and where each starts. The cuts keep clear of the door, its lamp and murals."""
-    count = int(np.ceil(front.width / UNIT))
+    count = int(np.ceil(front.width / front.unit))
     keep = [b for b in (front.door_box, front.lamp_box(), *front.murals) if b]
     cuts = [0.0]
     for i in range(1, count):

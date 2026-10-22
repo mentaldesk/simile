@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from itertools import count
 from typing import Any
 
-from simile.schema import Door, DoorKind, Facing, Interactable, Location, TileArea
+from simile.schema import Door, DoorKind, Facing, Interactable, Item, Location, TileArea
 from simile.world.map import (
     CLIMBABLE_LAYER,
     COLLISION_LAYER,
@@ -24,6 +24,8 @@ type Cell = tuple[int, int]
 TILE_SIZE = 16
 BUILDINGS_LAYER = "buildings"
 FURNITURE_LAYER = "furniture"
+LIGHT_LAYER = "light"
+PICKUPS_LAYER = "pickups"
 MARKERS = ("blocked", "solid", "stairs", "ladder")
 """The marker tiles, in tile id order, that the tile layers use."""
 MARKERS_IMAGE = "markers.png"
@@ -40,6 +42,27 @@ class Piece:
 
     name: str
     area: TileArea
+
+
+@dataclass(frozen=True)
+class Light:
+    """A stretch of a map that's lit, or dark without a lamp."""
+
+    id: str
+    area: TileArea
+    lit: bool
+
+
+@dataclass(frozen=True)
+class Pickup:
+    """A standing cell where `salvage` can lie, or a `secret` holding money or an item."""
+
+    id: str
+    kind: str
+    x: int
+    y: int
+    money: float = 0.0
+    item: Item | None = None
 
 
 @dataclass(frozen=True)
@@ -69,6 +92,8 @@ class Plan:
         self.doors: list[Door] = []
         self.interactables: list[Interactable] = []
         self.spots: list[Spot] = []
+        self.light: list[Light] = []
+        self.pickups: list[Pickup] = []
 
     def fill(self, x: int, y: int, width: int, height: int) -> None:
         for cell in ((cx, cy) for cy in range(y, y + height) for cx in range(x, x + width)):
@@ -117,6 +142,7 @@ class Plan:
             for tile in item.stand
         ]
         stops += [(f"{wall.id}'s stand", wall.stand.x, wall.stand.y) for wall in self.murals]
+        stops += [(f"pickup {p.id}", p.x, p.y) for p in self.pickups]
         stops += [
             (f"{door.id}'s end", end.x, end.y)
             for door in self.doors
@@ -129,6 +155,9 @@ class Plan:
         ids = [spot.id for spot in self.spots]
         if len(ids) != len(set(ids)):
             raise ValueError(f"{self.id} has two spots with one id")
+        for area in (light.area for light in self.light):
+            self._bounds(area.x, area.y)
+            self._bounds(area.x + area.width - 1, area.y + area.height - 1)
 
     def _climbable(self, x: int, y: int, kind: DoorKind) -> None:
         self._bounds(x, y)
@@ -163,6 +192,8 @@ def tmj(plan: Plan, markers: str) -> dict[str, Any]:
         DOORS_LAYER: [_door(next(ids), door, plan.id) for door in plan.doors],
         INTERACTABLES_LAYER: [_interactable(next(ids), item) for item in plan.interactables],
         SPOTS_LAYER: [_spot(next(ids), spot) for spot in plan.spots],
+        LIGHT_LAYER: [_light(next(ids), light) for light in plan.light],
+        PICKUPS_LAYER: [_pickup(next(ids), pickup) for pickup in plan.pickups],
     }
     for name, group in objects.items():
         layers.append(_object_layer(len(layers) + 1, name, group))
@@ -342,3 +373,18 @@ def _wall(object_id: int, wall: MuralWall) -> dict[str, Any]:
     }
     area = TileArea(x=wall.x, y=wall.y, width=wall.width, height=1)
     return _rectangle(object_id, wall.id, "mural_wall", area, props)
+
+
+def _light(object_id: int, light: Light) -> dict[str, Any]:
+    return _rectangle(object_id, light.id, "light", light.area, {"lit": light.lit})
+
+
+def _pickup(object_id: int, pickup: Pickup) -> dict[str, Any]:
+    props: dict[str, Any] = {}
+    if pickup.money:
+        props["money"] = pickup.money
+    if pickup.item is not None:
+        item = pickup.item
+        props |= {"item": item.id, "item_kind": item.kind.value, "item_name": item.name}
+        props["item_weight"] = item.weight
+    return _rectangle(object_id, pickup.id, pickup.kind, _tile(pickup.x, pickup.y), props)

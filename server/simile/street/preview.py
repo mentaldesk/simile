@@ -29,6 +29,9 @@ COLOURS = {
     "ink": (30, 30, 40, 255),
     "blocked": (220, 60, 60, 120),
     "furniture": (150, 140, 128, 255),
+    "dark": (20, 24, 60, 90),
+    "salvage": (64, 196, 120, 255),
+    "secret": (255, 64, 160, 255),
 }
 COLOURS["solid"] = COLOURS["ground"]
 LINKS = {DoorKind.STAIRS: "stairs", DoorKind.LADDER: "ladder", DoorKind.LIFT: "lift"}
@@ -180,6 +183,16 @@ class Panel:
                     self.outline(TileArea(x=end.x, y=end.y, width=1, height=1), colour, dx, dy)
         for location in plan.locations:
             self.cell(location.entry.x + dx, location.entry.y + dy, "entry", inset=5)
+        for area in (light.area for light in plan.light if not light.lit):
+            box = self.box(area.x + dx, area.y + dy, area.width, area.height)
+            x0, y0, x1, y1 = (round(v) for v in box)
+            shade = Image.new("RGBA", (x1 - x0 + 1, y1 - y0 + 1), COLOURS["dark"])
+            self.image.alpha_composite(shade, (x0, y0))
+        for pickup in plan.pickups:
+            cx, cy = self.middle(pickup.x, pickup.y, dx, dy)
+            r = SCALE * 0.3
+            diamond = [(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)]
+            self.draw.polygon(diamond, fill=COLOURS[pickup.kind], outline=COLOURS["ink"])
         for spot in plan.spots:
             cx, cy = self.middle(spot.x, spot.y, dx, dy)
             tx, ty = TICKS[spot.facing]
