@@ -86,5 +86,37 @@
         ]
       }
     ]
+    },
+  {
+    "money": 25.0,
+    "items": [
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.6, "on": true},
+      {"id": "scrap_steel", "kind": "salvage", "name": "Scrap steel", "weight": 4.0, "charge": null, "on": null},
+      {"id": "servo_motor", "kind": "salvage", "name": "Servo motor", "weight": 3.0, "charge": null, "on": null}
+    ],
+    "carry_limit": 10.0,
+    "body": {
+      "legs": "hydraulic_legs",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "sold",
+      "right_kidney": "present"
+    },
+    "hunger": 0.4,
+    "left": [
+      {
+        "at": {"map": "metro", "x": 77, "y": 12},
+        "items": [
+          {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null, "on": null},
+          {"id": "brass_valve", "kind": "salvage", "name": "Brass valve", "weight": 2.0, "charge": null, "on": null}
+        ]
+      }
+    ],
+    "taken": {
+      "metro_secret_stairwell": "2026-03-14T09:40:00Z",
+      "metro_salvage_2": "2026-03-14T10:05:30Z",
+      "metro_salvage_4": "2026-03-14T10:12:00Z"
+    }
   }
 ]

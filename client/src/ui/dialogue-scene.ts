@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { server, type Position } from '../net';
+import { playerState, server, type Position } from '../net';
 import { maps } from '../world/assets';
 import type { Interactable } from '../world/interactables';
 import { muralWalls } from '../world/murals';
@@ -11,6 +11,7 @@ import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
 import { HelpPanel } from './help';
+import { HungerHint, toEat } from './hunger';
 import { eUse, onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -34,6 +35,7 @@ export class DialogueScene extends Phaser.Scene {
   private ways!: WayPromptLayer;
   private murals!: MuralPanel;
   private counter!: CounterPrompt;
+  private hunger!: HungerHint;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -63,8 +65,10 @@ export class DialogueScene extends Phaser.Scene {
     this.ways = new WayPromptLayer(this.root);
     this.murals = new MuralPanel(this.root, muralWalls);
     this.counter = new CounterPrompt(this.root);
+    const hunger = (this.hunger = new HungerHint(this.root));
+    const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
     const help = new HelpPanel(this.root);
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), help });
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -76,6 +80,7 @@ export class DialogueScene extends Phaser.Scene {
       window.removeEventListener('keydown', onKeyDown);
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       stopInvitations();
+      stopCollapses();
       this.news.stop();
       this.murals.stop();
       log.stop();
@@ -100,6 +105,7 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
+    this.hunger.update(playerState.latest, used?.kind === 'pile');
     const panelOpen = this.news.isOpen || this.murals.isOpen;
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
@@ -122,6 +128,13 @@ export class DialogueScene extends Phaser.Scene {
       this.murals.close();
       this.news.open(used.terminal.label);
     } else if (used?.kind === 'mural') this.murals.look(this.player());
+    else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+  }
+
+  /** F has the meal on offer here if they can pay, else eats something they carry. */
+  private eat(): void {
+    const eat = toEat(playerState.latest);
+    if (eat) server.send({ type: 'eat', item: eat.kind === 'item' ? eat.item.id : null });
   }
 
   /** At a counter, E opens the chat to whoever is serving behind it. */

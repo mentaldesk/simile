@@ -27,7 +27,8 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
-| E | Read the news at a terminal, look at a mural or a painting, or order at a counter. Otherwise go through a door, or talk to the ringed resident. |
+| E | Read the news at a terminal, look at a mural or a painting, order at a counter, or pick up what you left when you collapsed. Otherwise go through a door, or talk to the ringed resident. |
+| F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and if it runs out you collapse. |
 | Enter | Talk to the ringed resident, then send what you typed. |
 | Tab | Choose who to talk to. Clicking a resident does too. |
 | Esc | Close the chat or a panel. |

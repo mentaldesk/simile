@@ -113,35 +113,40 @@ async def test_an_investigation_taken_before_startup_is_the_one_restored_and_sav
 
 
 @pytest.mark.anyio
-async def test_a_save_from_before_the_investigation_starts_without_one(database: Path) -> None:
+async def test_a_save_from_before_the_investigation_starts_with_an_empty_journal(
+    database: Path,
+) -> None:
     save_from_before_the_player(database)
 
     async def empty(app: Starlette) -> None:
-        assert investigation_of(app) == Investigation()
+        assert investigation_of(app).journal == []
 
     await run_village(timedelta(minutes=1), before=empty)
-    assert saved(database).investigation == Investigation()
+    assert saved(database).investigation.journal == []
 
 
 @pytest.mark.anyio
-async def test_a_fresh_start_has_no_investigation(
+async def test_a_fresh_start_forgets_the_investigation(
     database: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     await run_village(timedelta(minutes=1), after=investigate)
     assert saved(database).investigation == UNDERWAY
     monkeypatch.setenv(FRESH_ENV, "1")
 
-    async def empty(app: Starlette) -> None:
-        assert investigation_of(app) == Investigation()
+    async def forgotten(app: Starlette) -> None:
+        investigation = investigation_of(app)
+        assert investigation.journal == [] and investigation.incident != INCIDENT
 
-    await run_village(timedelta(minutes=1), before=empty)
-    assert saved(database).investigation == Investigation()
+    await run_village(timedelta(minutes=1), before=forgotten)
+    assert saved(database).investigation.journal == []
+    assert saved(database).investigation.incident != INCIDENT
 
 
 @pytest.mark.anyio
-async def test_with_an_in_memory_database_the_investigation_is_empty_and_unsaved() -> None:
+async def test_with_an_in_memory_database_the_investigation_starts_afresh_and_unsaved() -> None:
     async def check(app: Starlette) -> None:
         assert not hasattr(app.state, "persistence")
-        assert investigation_of(app) is investigation_of(app) == Investigation()
+        assert investigation_of(app) is investigation_of(app)
+        assert investigation_of(app).journal == []
 
     await run_village(timedelta(minutes=1), before=check)
