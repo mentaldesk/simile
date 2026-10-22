@@ -659,7 +659,7 @@
     },
     "PlayerMoveMessage": {
       "additionalProperties": false,
-      "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map. On a side-view map the position can be\nmid-air, jumping or falling: the server keeps one in open air over somewhere to land, no\nhigher than a jump from somewhere to stand within a jump's reach, and ignores one nobody could\nbe at.",
+      "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map.\n\nOn a side-view map the position can be mid-air, jumping or falling. The server keeps one in\nopen air over somewhere to land if it's within the farthest, highest jump the player can make\nfrom somewhere to stand (a run jump with Space held, taking off as late as coyote time\nallows), or if it's lower than the last position it kept on that map, as in a fall from any\nheight. It ignores a position nobody could be at.",
       "properties": {
         "type": {
           "const": "player_move",
