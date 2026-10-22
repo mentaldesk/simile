@@ -3,7 +3,8 @@ import type { Entity, EntityMovedMessage, Facing, Pose, Position } from '../net'
 import { WALKING_SPEED } from '../world/tuning';
 import { village } from './content';
 import { CLIMB_SPEED, RIDE_SPEED, Walker, WALK_CYCLE_M } from './motion';
-import { Residents } from './residents';
+import { server } from '../net';
+import { Residents, sideResidents } from './residents';
 
 const odalys: Entity = {
   id: 'odalys',
@@ -198,5 +199,17 @@ describe('crossing between floors', () => {
     all.move(moved({ x: 16, y: 2, map: 'gallery_floor_0' }, 'climbing', 'south'));
     run(all, 1);
     expect(all.all.get('odalys')!.under).toBeUndefined();
+  });
+});
+
+describe('the player', () => {
+  it('starts where the snapshot says, or at home once they collapse', () => {
+    const player = { id: 'player', kind: 'player', name: 'You', position: { x: 51, y: 15, map: 'high_street' } };
+    server.dispatch(JSON.stringify({ type: 'snapshot', time: '2026-03-14T09:10:03Z', map_id: 'high_street', entities: [player], conversations: [] }));
+    expect(sideResidents.start).toEqual({ x: 51, y: 15, map: 'high_street' });
+
+    server.dispatch(JSON.stringify({ type: 'player_collapsed', position: { x: 13, y: 2, map: 'maker_space_floor_0' } }));
+
+    expect(sideResidents.start).toEqual({ x: 13, y: 2, map: 'maker_space_floor_0' });
   });
 });

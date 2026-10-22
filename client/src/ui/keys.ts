@@ -1,11 +1,12 @@
 import type { Reachable, WayPrompt } from '../world/reach';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
-import { NEWS_KEY } from './tuning';
+import { EAT_KEY, NEWS_KEY } from './tuning';
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
   use: () => void;
+  eat: () => void;
   help: Pick<HelpPanel, 'toggle' | 'close'>;
 };
 
@@ -25,7 +26,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, use, help }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, use, eat, help }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -45,10 +46,17 @@ export function onGameKey({ chat, use, help }: GameKeys): (event: KeyboardEvent)
     } else if (pressedNewsKey(event)) {
       event.preventDefault();
       use();
+    } else if (pressed(event, EAT_KEY)) {
+      event.preventDefault();
+      eat();
     }
   };
 }
 
-export function pressedNewsKey({ key, repeat, ctrlKey, metaKey, altKey }: KeyboardEvent): boolean {
-  return key.toLowerCase() === NEWS_KEY && !repeat && !(ctrlKey || metaKey || altKey);
+export function pressedNewsKey(event: KeyboardEvent): boolean {
+  return pressed(event, NEWS_KEY);
+}
+
+function pressed({ key, repeat, ctrlKey, metaKey, altKey }: KeyboardEvent, letter: string): boolean {
+  return key.toLowerCase() === letter && !repeat && !(ctrlKey || metaKey || altKey);
 }

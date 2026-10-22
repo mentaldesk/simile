@@ -170,7 +170,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "Items lying `at` a tile in the world for the player to pick up, such as what they left\nwhen they collapsed.",
+      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -179,9 +179,15 @@
           "items": {
             "$ref": "#/$defs/Item"
           },
-          "minItems": 1,
           "title": "Items",
           "type": "array"
+        },
+        "money": {
+          "default": 0.0,
+          "description": "Cash lying there, which weighs nothing. Left out while there's none.",
+          "minimum": 0,
+          "title": "Money",
+          "type": "number"
         }
       },
       "required": [
@@ -230,12 +236,25 @@
     },
     "left": {
       "default": [],
-      "description": "What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.",
+      "description": "What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
       "items": {
         "$ref": "#/$defs/Pile"
       },
       "title": "Left",
       "type": "array"
+    },
+    "taken": {
+      "additionalProperties": {
+        "format": "date-time",
+        "type": "string"
+      },
+      "default": {},
+      "description": "When they last took from each pickup in the world, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.",
+      "propertyNames": {
+        "minLength": 1
+      },
+      "title": "Taken",
+      "type": "object"
     }
   },
   "required": [

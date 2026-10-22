@@ -9,6 +9,7 @@ from pydantic.json_schema import JsonSchemaMode
 
 from simile.protocol import (
     Artist,
+    Buyer,
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
@@ -38,6 +39,7 @@ from simile.protocol import (
     Position,
     ReadNewsMessage,
     ReadWorkMessage,
+    SellMessage,
     Wall,
     WatchNpcMessage,
     WorksMessage,
@@ -194,6 +196,19 @@ WOKEN = PlayerStateMessage(
     meal=Meal(place="maker_space", name="home", price=0),
 )
 COLLAPSED = PlayerCollapsedMessage(position=Position(x=13, y=2, map="maker_space_floor_0"))
+SCRAP_TRADER = Buyer(place="scrap_stall", name="The scrap trader", prices={"copper_wire": 6})
+AT_THE_SCRAP_STALL = DELVING.model_copy(update={"buyer": SCRAP_TRADER})
+SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
+RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
+IN_THE_METRO = STARTING.model_copy(
+    update={
+        "piles": [
+            Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25),
+            Pile(at=MapTile(map="metro", x=108, y=12), items=[SERVO]),
+            Pile(at=MapTile(map="metro", x=86, y=8), items=[RATION_PACK]),
+        ]
+    }
+)
 
 FROM_THE_NOTES = JournalEntry(
     fact_id="notes",
@@ -244,6 +259,8 @@ SERVER = [
     DELVING,
     AT_THE_NOODLE_BAR,
     WOKEN,
+    AT_THE_SCRAP_STALL,
+    IN_THE_METRO,
     JournalMessage(entries=[]),
     JOURNAL,
     COLLAPSED,
@@ -262,6 +279,8 @@ CLIENT = [
     EatMessage(item="noodles"),
     EatMessage(item=None),
     PickUpMessage(),
+    SellMessage(item="copper_wire"),
+    SellMessage(item=None),
 ]
 
 
@@ -690,7 +709,9 @@ def test_player_state_says_what_meal_is_on_offer_where_they_stand() -> None:
 
 
 @pytest.mark.parametrize("message", [STARTING, DELVING], ids=["starting", "delving"])
-def test_player_state_without_a_meal_or_piles_dumps_as_before(message: PlayerStateMessage) -> None:
+def test_player_state_without_a_meal_buyer_or_piles_dumps_as_before(
+    message: PlayerStateMessage,
+) -> None:
     data = json.loads(message.model_dump_json())
 
     assert set(data) == {"type", "player"}
@@ -709,13 +730,69 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
     ]
 
 
-def test_the_exported_player_state_has_a_meal_and_piles_but_does_not_require_them() -> None:
+@pytest.mark.parametrize(
+    ("model", "field"),
+    [
+        ("PlayerStateMessage", "meal"),
+        ("PlayerStateMessage", "buyer"),
+        ("PlayerStateMessage", "piles"),
+        ("Player", "left"),
+        ("Player", "taken"),
+        ("Pile", "money"),
+    ],
+)
+def test_the_exported_protocol_has_fields_it_does_not_require(model: str, field: str) -> None:
     defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
 
-    assert "meal" in defs["PlayerStateMessage"]["properties"]
-    assert "meal" not in defs["PlayerStateMessage"]["required"]
-    assert "left" in defs["Player"]["properties"]
-    assert "left" not in defs["Player"]["required"]
+    assert field in defs[model]["properties"]
+    assert field not in defs[model]["required"]
+
+
+def test_player_state_says_who_buys_where_they_stand_and_for_what() -> None:
+    data = json.loads(AT_THE_SCRAP_STALL.model_dump_json())
+
+    assert data == json.loads(DELVING.model_dump_json()) | {
+        "buyer": {
+            "place": "scrap_stall",
+            "name": "The scrap trader",
+            "prices": {"copper_wire": 6.0},
+        }
+    }
+
+
+def test_a_buyer_can_buy_nothing_they_carry() -> None:
+    buyer = SCRAP_TRADER.model_copy(update={"prices": {}})
+
+    assert json.loads(buyer.model_dump_json())["prices"] == {}
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"prices": {"copper_wire": -1}}, "greater than or equal to 0"),
+        ({"prices": {"copper_wire": float("inf")}}, "finite number"),
+        ({"prices": {"": 6}}, "at least 1 character"),
+        ({"name": ""}, "at least 1 character"),
+        ({"place": "Scrap stall"}, "String should match pattern"),
+    ],
+)
+def test_rejects_invalid_buyers(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Buyer.model_validate(SCRAP_TRADER.model_dump() | update)
+
+
+def test_player_state_has_what_lies_in_the_world_to_pick_up() -> None:
+    data = json.loads(IN_THE_METRO.model_dump_json())
+
+    assert set(data) == {"type", "player", "piles"}
+    assert data["piles"] == [
+        {"at": {"map": "metro", "x": 8, "y": 7}, "items": [], "money": 25.0},
+        {"at": {"map": "metro", "x": 108, "y": 12}, "items": [json.loads(SERVO.model_dump_json())]},
+        {
+            "at": {"map": "metro", "x": 86, "y": 8},
+            "items": [json.loads(RATION_PACK.model_dump_json())],
+        },
+    ]
 
 
 @pytest.mark.parametrize(
@@ -745,10 +822,14 @@ def test_a_collapse_says_where_they_wake() -> None:
         (EatMessage(item="noodles"), {"type": "eat", "item": "noodles"}),
         (EatMessage(item=None), {"type": "eat", "item": None}),
         (PickUpMessage(), {"type": "pick_up"}),
+        (SellMessage(item="copper_wire"), {"type": "sell", "item": "copper_wire"}),
+        (SellMessage(item=None), {"type": "sell", "item": None}),
     ],
-    ids=["item", "meal", "pick_up"],
+    ids=["item", "meal", "pick_up", "sell_one", "sell_all"],
 )
-def test_eating_and_picking_up_go_from_client_to_server(message: Any, data: dict[str, Any]) -> None:
+def test_eating_picking_up_and_selling_go_from_client_to_server(
+    message: Any, data: dict[str, Any]
+) -> None:
     assert json.loads(message.model_dump_json()) == data
     assert client_messages.validate_python(data) == message
     with pytest.raises(ValidationError):
@@ -880,6 +961,9 @@ def test_timestamps_are_utc() -> None:
         {"type": "eat"},
         {"type": "eat", "item": "Noodles"},
         {"type": "pick_up", "item": "lamp"},
+        {"type": "sell"},
+        {"type": "sell", "item": "Copper wire"},
+        {"type": "sell", "item": "copper_wire", "price": 6},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

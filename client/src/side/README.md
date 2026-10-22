@@ -100,6 +100,10 @@ The Phaser-free halves are tested under vitest.
   lands with a squash over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with
   height. The camera stays at the height the jump left from, following only a fall below it
   (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
+- When the player collapses from hunger, `player_collapsed` puts them at home, as through a door,
+  once the street is shown and any door they're going through is done. It's also where the scene
+  starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed. After every `snapshot` the
+  scene sends the player's position again, so a restarted server knows where they are.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`). `server/tests/street/positions.json` is a
   table of the client's sends and places nobody could be that the server's tests and

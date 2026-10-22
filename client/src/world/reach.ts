@@ -1,4 +1,4 @@
-import type { Position, Wall } from '../net';
+import { playerState, type Pile, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { interactableAt, type Interactable } from './interactables';
 import { mapOf } from './map';
@@ -9,12 +9,14 @@ import { terminalAt, terminalsOn, type Terminal } from './terminals';
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
   | { kind: 'counter' | 'painting'; tiles: number; interactable: Interactable }
-  | { kind: 'mural'; tiles: number; wall: Wall };
+  | { kind: 'mural'; tiles: number; wall: Wall }
+  | { kind: 'pile'; tiles: number; pile: Pile };
 
 export type Reachables = {
   terminals: readonly Terminal[];
   walls(): readonly Wall[];
   interactableAt(map: string, position: Position): Interactable | undefined;
+  piles(): readonly Pile[];
 };
 
 /** Murals only count while a scene draws them, as for the mural panel. */
@@ -22,7 +24,22 @@ export const reachables: Reachables = {
   terminals: terminalsOn(maps),
   walls: () => (muralView() ? muralWalls.walls : []),
   interactableAt,
+  piles: () => playerState.latest?.player.left ?? [],
 };
+
+/** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
+export const PICK_UP_TILES = 1;
+
+/** The nearest pile the player left on this map, within reach of where they stand. */
+export function pileInReach(position: Position, piles: readonly Pile[]): { pile: Pile; tiles: number } | undefined {
+  let best: { pile: Pile; tiles: number } | undefined;
+  for (const pile of piles) {
+    if (pile.at.map !== mapOf(position)) continue;
+    const tiles = Math.hypot(pile.at.x - position.x, pile.at.y - position.y);
+    if (tiles <= PICK_UP_TILES && (!best || tiles < best.tiles)) best = { pile, tiles };
+  }
+  return best;
+}
 
 const isUsed = (kind: string): kind is 'counter' | 'painting' => kind === 'counter' || kind === 'painting';
 
@@ -43,6 +60,8 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   }
   const wall = wallNear(from.walls(), position);
   if (wall) found.push({ kind: 'mural', tiles: tilesToWall(wall, position), wall });
+  const pile = pileInReach(position, from.piles());
+  if (pile) found.push({ kind: 'pile', ...pile });
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 

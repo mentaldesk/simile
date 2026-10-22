@@ -156,6 +156,7 @@ def test_clients_receive_events_published_on_the_bus() -> None:
         assert ws.receive_json()["type"] == "clock"
         assert ws.receive_json()["type"] == "paintings"
         assert ws.receive_json()["type"] == "murals"
+        assert ws.receive_json()["type"] == "player_state"
 
         client.portal.call(world_of(app).bus.publish, EntityMoved("suki", 18, 15, "high_street"))
 

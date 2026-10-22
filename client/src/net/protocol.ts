@@ -60,7 +60,8 @@ export type ClientMessage =
   | ListWorksMessage
   | ReadWorkMessage
   | EatMessage
-  | PickUpMessage;
+  | PickUpMessage
+  | SellMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -370,8 +371,8 @@ export interface Painting {
 }
 /**
  * The player's money, what they carry, their body and their hunger, but never their humanity,
- * and the meal on offer where they stand. Sent after the snapshot on connect, and whenever any of
- * it changes.
+ * with the meal on offer and the buyer where they stand, and what's lying in the world for them
+ * to pick up. Sent after the snapshot on connect, and whenever any of it changes.
  */
 export interface PlayerStateMessage {
   type: 'player_state';
@@ -380,6 +381,14 @@ export interface PlayerStateMessage {
    * The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none.
    */
   meal?: Meal | null;
+  /**
+   * Who buys where they stand, such as the scrap trader at their stall. Left out where there's none.
+   */
+  buyer?: Buyer | null;
+  /**
+   * What's lying in the world for them to pick up, on every map, besides what they left (`player.left`): salvage and secrets. Left out while there's none.
+   */
+  piles?: Pile[];
 }
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
@@ -405,9 +414,15 @@ export interface Player {
    */
   hunger: number;
   /**
-   * What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.
+   * What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
    */
   left?: Pile[];
+  /**
+   * When they last took from each pickup in the world, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.
+   */
+  taken?: {
+    [k: string]: string;
+  };
 }
 /**
  * Something the player carries.
@@ -448,15 +463,16 @@ export interface Body {
   right_kidney: ('present' | 'sold') | Bionic;
 }
 /**
- * Items lying `at` a tile in the world for the player to pick up, such as what they left
- * when they collapsed.
+ * Items, money or both lying `at` a tile in the world for the player to pick up, such as
+ * salvage, a secret's cash, or what they left when they collapsed.
  */
 export interface Pile {
   at: MapTile;
+  items: Item[];
   /**
-   * @minItems 1
+   * Cash lying there, which weighs nothing. Left out while there's none.
    */
-  items: [Item, ...Item[]];
+  money?: number;
 }
 /**
  * A tile on a given map: the village or an interior, or in side view a street or a floor.
@@ -482,6 +498,26 @@ export interface Meal {
    * What it costs. Nothing at home.
    */
   price: number;
+}
+/**
+ * Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
+ * place.
+ */
+export interface Buyer {
+  /**
+   * Where: a location id, e.g. "scrap_stall" or "clinic".
+   */
+  place: string;
+  /**
+   * The buyer as the player sees it, e.g. "The scrap trader".
+   */
+  name: string;
+  /**
+   * What it pays for one of each thing they carry that it buys, by item `id`. Empty when they carry nothing it buys.
+   */
+  prices: {
+    [k: string]: number;
+  };
 }
 /**
  * What the player has learned about the incident, in the order they learned it, with the
@@ -615,9 +651,20 @@ export interface EatMessage {
   item: string | null;
 }
 /**
- * Picks up, from the nearest pile within reach of the player, each item that still fits
- * under their carry limit, in order. Any that don't fit stay in the pile.
+ * Picks up, from the nearest pile within reach of the player, its money and each item that
+ * still fits under their carry limit, in order. Any that don't fit stay in the pile.
  */
 export interface PickUpMessage {
   type: 'pick_up';
+}
+/**
+ * Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The
+ * server ignores it if there's no buyer, or they carry nothing it buys.
+ */
+export interface SellMessage {
+  type: 'sell';
+  /**
+   * One thing they carry, by its `id`, or null for everything they carry that the buyer buys.
+   */
+  item: string | null;
 }
