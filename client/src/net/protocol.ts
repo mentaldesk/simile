@@ -418,9 +418,11 @@ export interface Player {
    */
   left?: Pile[];
   /**
-   * The pickups in the world they've taken from, by id, which stay taken. Left out while there's none.
+   * When they last took from each pickup in the world, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.
    */
-  taken?: string[];
+  taken?: {
+    [k: string]: string;
+  };
 }
 /**
  * Something the player carries.
