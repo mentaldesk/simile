@@ -9,10 +9,12 @@ from simile.world.map import (
     COLLISION_LAYER,
     DOORS_LAYER,
     INTERACTABLES_LAYER,
+    LIGHT_LAYER,
     LOCATIONS_LAYER,
     MURALS_LAYER,
     SOLID_LAYER,
     SPOTS_LAYER,
+    Light,
     MapKind,
     MuralWall,
     Spot,
@@ -24,7 +26,6 @@ type Cell = tuple[int, int]
 TILE_SIZE = 16
 BUILDINGS_LAYER = "buildings"
 FURNITURE_LAYER = "furniture"
-LIGHT_LAYER = "light"
 PICKUPS_LAYER = "pickups"
 MARKERS = ("blocked", "solid", "stairs", "ladder")
 """The marker tiles, in tile id order, that the tile layers use."""
@@ -42,15 +43,6 @@ class Piece:
 
     name: str
     area: TileArea
-
-
-@dataclass(frozen=True)
-class Light:
-    """A stretch of a map that's lit, or dark without a lamp."""
-
-    id: str
-    area: TileArea
-    lit: bool
 
 
 @dataclass(frozen=True)

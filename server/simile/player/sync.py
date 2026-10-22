@@ -48,7 +48,7 @@ class PlayerSync:
         if _steady(old) != _steady(new):
             return True
         moved = zip(_moving(old), _moving(new), strict=True)
-        return any(abs(a - b) >= self.step - 1e-9 for a, b in moved)
+        return any(abs(a - b) >= self.step - 1e-9 or (a != b and b in (0, 1)) for a, b in moved)
 
 
 def _moving(message: PlayerStateMessage) -> list[float]:

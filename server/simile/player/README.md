@@ -83,6 +83,24 @@ the piles lying at pickups they haven't taken, to every client:
   body, a pile, a pickup taken, or the meal on offer or the buyer as they walk in or out of
   somewhere to eat or sell;
 - and for hunger or a lamp's charge alone, once one of them has moved by `step` (0.01) since the
-  last one sent. That's every 2.4 sim minutes of hunger.
+  last one sent, or reached 0 or 1, so a full or flat battery is never shown a step short. That's
+  every 2.4 sim minutes of hunger.
 
 Every constant is in `PlayerConfig`.
+
+## The lamp
+
+`Lamp` (`lamp.py`) runs the lamp the player carries, on the sim loop too, and only while a client is
+in the game, like hunger:
+
+- **It drains** by `drain` (3) a sim hour while it's on: a full battery lasts twenty minutes. When
+  it runs flat it goes off by itself.
+- **It charges** by `charge` (60) a sim hour while the player stands on a plug's stand tile (a
+  `plug` interactable: at home, the café, the noodle bar and the metro's maintenance alcove), on or
+  off, from flat to full in a minute. Plugged in, it doesn't drain.
+- **A collapse switches it off,** so it doesn't run down at home while they recover.
+- **The client's `lamp`** switches it on or off (`docs/protocol.md`). Switching on a flat one, or
+  to how it already is, does nothing. A switch goes out in `player_state` at once, and the charge
+  alone at `step`, as above.
+
+Its rates are in `LampConfig`, beside it.

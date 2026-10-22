@@ -59,9 +59,9 @@ Every map has every layer, bottom to top:
 | `locations` | Objects, as today. A building's location is on its ground floor (below). |
 | `murals` | Objects, on streets only (below). |
 | `doors` | Objects. One tile per link with an end on this map (below). |
-| `interactables` | Objects, as today, on floors. |
+| `interactables` | Objects, as today, on floors, and the metro's on its street. A `plug` charges the player's lamp while they stand on its stand tile (below). |
 | `spots` | Objects, as today. |
-| `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. Only the metro has any yet, and every cell of it is in one. |
+| `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. A cell is dark where a dark stretch covers it and no lit one does, and lit everywhere else, so a map without any is lit all over. Only the metro has any yet, and every cell of it is in one. |
 | `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
@@ -88,6 +88,7 @@ and the cells at its ends, over the street's own steps.
 | `floor` | Floors | Its number, `0` for the ground floor. |
 | `room` | Floors | What the room is, for its papers: `living_room`, `bedroom`, `cafe`, `cafe_upstairs`, `flat`, `noodle_bar`, `dining_room`, `workshop`, `loft`, `gallery` or `clinic`. |
 | `street`, `street_x`, `street_y` | Floors | The street its building stands on, and the street cell under the floor map's top-left cell, so its dollhouse is drawn in place. |
+| `underground` | Streets under the village (`UNDERGROUND`) | `true`. Lit by its own lights, never the sky, so the time of day doesn't tint it. Left out elsewhere. |
 
 ## Objects
 
@@ -154,13 +155,14 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
   stand) running east to 9 (`coffee_shop_queue`), the bar and its five stools (10–14), the foot of
   the stairs (15), rising east to 18 upstairs, just inside the door (17) and the mat (18). Its
   eight tables are upstairs, with the foot of the flat's stairs between them (11), rising east to
-  14. The barista's flat is the top floor.
+  14. The barista's flat is the top floor. A plug, `coffee_shop_plug`, is on the wall at 16.
 - **Golden Bowl Noodles**: the entry (1), the mat (2), the foot of the stairs (3), rising east to 7
   upstairs, two tables, the five stools at the counter (8–12) and the kitchen behind it (13–15).
-  Seven tables upstairs.
+  Seven tables upstairs. A plug, `noodle_bar_plug`, is on the wall by the entry.
 - **Spark Maker Space**: the foot of the stairs (2), a workbench, the laser cutter, 3D printer, loom
   and sewing machine (7–12), the entry (13) and the mat (14). Three workbenches on the first floor,
-  two in the loft up the ladder from x 6.
+  two in the loft up the ladder from x 6. A plug, `maker_space_plug`, is on the wall at the entry,
+  where the player wakes after collapsing (`simile.player`), since it's their home.
 - **The Gallery**: the mat (2), the entry (3), paintings 1 to 3 and a bench on the ground floor,
   4 to 8 and two benches on the first, 9 to 13 and a bench on the second. The lift is at the east
   end: on each floor, x 15 and 16 go to the other two floors.
@@ -193,7 +195,7 @@ passes through it.
 | Task | Hook | Id, and where |
 |---|---|---|
 | S4 | Dark stretches, in `light` | `metro_vault` (19–57, rows 0–11), `metro_tunnel_west` (58–70), `metro_tunnel_east` (74–86). The rest is lit: `metro_entrance`, `metro_platform`, `metro_maintenance` and `metro_depot`. |
-| S4 | The maintenance plug, a `machine` | `metro_plug`, stood at from (72, 15), in the lit alcove between the tunnel's two dark halves. |
+| S4 | The maintenance plug, a `plug` | `metro_plug`, stood at from (72, 15), in the lit alcove between the tunnel's two dark halves. The `breaker_box` there draws it. |
 | S6 | Places salvage can lie, in `pickups` | `metro_salvage_1` on the train's roof (38, 12), `_2` (63, 15) and `_3` (68, 15) in the west tunnel, `_4` on the pipe ledge (77, 12), `_5` (83, 15), and `_6` on the high ledge (108, 12). |
 | S6 | The scrap trader's stall, and its spot | The location `scrap_stall` (24–28, rows 13–15, entry 28). The spot is `metro_scrap_trader`, `standing` at (26, 15) facing `south`, at the `scrap_stall` piece. |
 | S7 | The clinic, and the doctor's stall spot | `clinic`, an `amenity` on `clinic_floor_0` (room `clinic`, 10 wide), its door at (89, 15). The doctor's spot is `clinic_doctor`, `standing` at (6, 2) facing `south`. The room is bare for S7 to furnish. |
@@ -277,7 +279,8 @@ Space held, taking off as late as coyote time allows, at the client's longest st
   (empty on today's maps), and `solids`, rows of the `solid` layer (empty without one).
   `climb(x, y)` is the climbable kind on a cell, `standing(x, y)` whether it's a standing cell, and
   `solid(x, y)` whether it's solid: off the map always, and on a map without the layer anywhere
-  nobody can walk.
+  nobody can walk. `light` is its `light` layer, each a `Light` (`id`, `area`, `lit`), and
+  `lit(x, y)` whether a cell is lit, by the rule above.
 - `with_every_location(maps)` carries every map's locations, doors and mural walls. Without a
   village it's on the first street, `banyan_row`.
 - `movement.inside(location, where)` counts a location's floors, and a walk to a location looks for
