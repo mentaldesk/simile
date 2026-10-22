@@ -12,8 +12,10 @@ from simile.dolls.figure import (
     edit_prompt,
     legs_guide,
     stand_prompt,
+    touching,
 )
 from simile.dolls.flux import FakePainter
+from simile.schema.npc import Accessory
 
 from .keyed import keyed
 
@@ -57,3 +59,26 @@ def test_the_passing_step_is_painted_over_its_legs_redrawn() -> None:
     trousers = np.all(guide == rgb(PLAYER.bottom_colour), axis=2)
     assert trousers[rows[0] + (rows[-1] - rows[0]) * 3 // 4 :].sum() > 200
     assert not np.array_equal(guide, before)
+
+
+def test_an_apron_over_the_legs_is_kept_as_painted() -> None:
+    painting = FakePainter().paint("", (300, 400), 1)
+    alpha = np.asarray(keyed(painting).getchannel("A"))
+    aproned = PLAYER.model_copy(update={"accessories": [Accessory.APRON]})
+
+    plain = np.asarray(legs_guide(painting, alpha, PLAYER, "pass"))
+    kept = np.asarray(legs_guide(painting, alpha, aproned, "pass"))
+
+    changed = np.any(kept != plain, axis=2)
+    assert changed.sum() > 100
+    assert np.array_equal(kept[changed], np.asarray(painting.convert("RGB"))[changed])
+
+
+def test_a_patch_is_every_pixel_joined_to_it_corners_included() -> None:
+    mask = np.zeros((6, 6), dtype=bool)
+    mask[1, 1] = mask[2, 2] = mask[3, 2] = mask[5, 5] = True
+
+    patch = touching(mask, 1, 1)
+
+    assert patch.sum() == 3 and not patch[5, 5]
+    assert not touching(mask, 0, 0).any()

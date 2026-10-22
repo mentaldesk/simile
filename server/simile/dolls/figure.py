@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 from simile.dolls.words import described
 from simile.papercraft.painter import NO_TEXT
@@ -203,16 +203,32 @@ def legs_guide(
 
 def apron(painting: Image.Image, solid: NDArray[np.bool_], x: int, y: int) -> NDArray[np.bool_]:
     """The apron hanging over the legs, with its outline: the patch painted like it at (x, y)."""
-    import cv2
-
     from simile.dolls.colour import cielab, delta_e_lab
 
     lab = cielab(np.asarray(painting.convert("RGB"), dtype=np.float64))
-    like = (solid & (delta_e_lab(lab, lab[y, x]) < APRON_NEAR)).astype(np.uint8)
-    _, labels = cv2.connectedComponents(like, connectivity=8)
-    patch = (labels == labels[y, x]).astype(np.uint8)
-    edge = np.ones((2 * APRON_EDGE + 1, 2 * APRON_EDGE + 1), np.uint8)
-    return (cv2.dilate(patch, edge) > 0) & solid
+    patch = touching(solid & (delta_e_lab(lab, lab[y, x]) < APRON_NEAR), x, y)
+    grown = Image.fromarray(patch.astype(np.uint8) * 255).filter(
+        ImageFilter.MaxFilter(2 * APRON_EDGE + 1)
+    )
+    return (np.asarray(grown) > 0) & solid
+
+
+def touching(mask: NDArray[np.bool_], x: int, y: int) -> NDArray[np.bool_]:
+    """The pixels of `mask` joined to (x, y), corners included."""
+    patch = np.zeros_like(mask)
+    if not mask[y, x]:
+        return patch
+    patch[y, x] = True
+    todo = [(y, x)]
+    height, width = mask.shape
+    while todo:
+        cy, cx = todo.pop()
+        for ny in range(max(0, cy - 1), min(height, cy + 2)):
+            for nx in range(max(0, cx - 1), min(width, cx + 2)):
+                if mask[ny, nx] and not patch[ny, nx]:
+                    patch[ny, nx] = True
+                    todo.append((ny, nx))
+    return patch
 
 
 def run_through(row: NDArray[np.bool_], x: int) -> tuple[int, int]:
