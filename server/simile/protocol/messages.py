@@ -407,6 +407,14 @@ class PickUpMessage(Model):
     type: Literal["pick_up"] = "pick_up"
 
 
+class LampMessage(Model):
+    """Switches the lamp the player carries on or off. The server ignores it if they carry no
+    lamp, and for switching on a flat one."""
+
+    type: Literal["lamp"] = "lamp"
+    on: bool
+
+
 class SellMessage(Model):
     """Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The
     server ignores it if there's no buyer, or they carry nothing it buys."""
@@ -446,7 +454,8 @@ type ClientMessage = Annotated[
     | ReadWorkMessage
     | EatMessage
     | PickUpMessage
-    | SellMessage,
+    | SellMessage
+    | LampMessage,
     Field(discriminator="type"),
 ]
 

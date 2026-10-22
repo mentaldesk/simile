@@ -333,6 +333,11 @@ class BehaviourConfig(BaseModel):
         ge=0,
         description="Score per unit of negative affinity for each person at a place.",
     )
+    unease_weight: float = Field(
+        default=1.0,
+        ge=0,
+        description="Affinity for the player lost per unit of the `unease` their bionics cause.",
+    )
     crowd_weight: float = Field(
         default=0.2, description="Score per person at a place, per unit of `connection - 0.5`."
     )

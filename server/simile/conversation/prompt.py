@@ -33,6 +33,7 @@ class Cue(StrEnum):
     REPLY = "reply"
     GOODBYE = "goodbye"
     FAREWELL = "farewell"
+    REFUSE = "refuse"
 
 
 SETTING_OFF = "If you've said you'll go and do something now, say where you're off to."
@@ -43,7 +44,12 @@ CUES: dict[Cue, str] = {
     Cue.GOODBYE: "You've had enough of this conversation. Wrap it up now with a brief, natural "
     f"goodbye to {{other}}. {SETTING_OFF}",
     Cue.FAREWELL: f"{{other}} is leaving. Say a brief goodbye back. {SETTING_OFF}",
+    Cue.REFUSE: "You'd rather not talk to {other}. Turn them down in a few words, and leave it "
+    "there.",
 }
+BLUNT = "Tell them why in one curt line: you don't hold with bionics."
+POLITE = "Keep it polite, and keep your reason to yourself."
+COVERED = "If they asked what one of your cover stories answers, give it as you turn them down."
 JOKE = "Work a joke into this line, in your own humour."
 PLAIN = "No joke in this line: say it plainly."
 OFF_TO = (
@@ -239,6 +245,8 @@ def background(
     place: str | None,
     now: datetime,
     plans: str = "",
+    *,
+    looks: str | None = None,
 ) -> str:
     """What the speaker knows going in: the other person, their history, what they could plan
     to do and have said they will, and what's on their mind."""
@@ -249,7 +257,8 @@ def background(
         if isinstance(other, Player)
         else f"{other.name}, aged {other.age}, {other.occupation}"
     )
-    parts = [f"It's {now:%H:%M}, {where}. You're with {name} ({who}).", describe(rel, name)]
+    meeting = f"It's {now:%H:%M}, {where}. You're with {name} ({who})."
+    parts = [f"{meeting} {looks}" if looks else meeting, describe(rel, name)]
     events = [
         f"- {ago(event.timestamp, now)}, {'you' if event.actor == speaker.id else name}: "
         f"{event.action}"
@@ -289,6 +298,7 @@ def turn_prompt(
     facts: Sequence[str] = (),
     lies: Sequence[str] = (),
     joke: bool | None = None,
+    blunt: bool = False,
 ) -> str:
     """The speaker's next line, with their mood, article `detail`, `facts`, `lies` and `joke`."""
     recent = lines[-config.transcript_lines :]
@@ -318,8 +328,11 @@ def turn_prompt(
     if joke is not None:
         parts.append(JOKE if joke else PLAIN)
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
-    off_to = cue is Cue.GOODBYE and errand
-    asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
+    asked = CUES[cue].format(other=other)
+    if cue is Cue.GOODBYE and errand:
+        asked = OFF_TO.format(errand=errand, other=other)
+    elif cue is Cue.REFUSE:
+        asked = " ".join([asked, BLUNT if blunt else POLITE, *([COVERED] if lies else [])])
     return "\n\n".join([*parts, asked])
 
 

@@ -152,9 +152,12 @@ class Door(Model):
 
 
 class InteractableKind(StrEnum):
+    """What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles."""
+
     COUNTER = "counter"
     PAINTING = "painting"
     MACHINE = "machine"
+    PLUG = "plug"
 
 
 class Interactable(Model):
