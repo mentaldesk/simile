@@ -1,14 +1,18 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import type { Item, Meal, PlayerStateMessage } from '../net';
-import { COLLAPSED, eatPrompt, feeling, HungerHint, PICK_UP, toEat } from './hunger';
+import type { Buyer, Item, Meal, Pile, PlayerStateMessage } from '../net';
+import { COLLAPSED, eatPrompt, feeling, HungerHint, toEat } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
 const BUN: Item = { id: 'pork_bun', kind: 'food', name: 'Pork bun', weight: 0.2, charge: null, on: null };
 const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 1, on: false };
+const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
+const TRADER: Buyer = { place: 'scrap_stall', name: "The scrap trader's stall", prices: { copper_wire: 6 } };
 
-function state(hunger: number, { money = 0, items = [LAMP], meal }: { money?: number; items?: Item[]; meal?: Meal } = {}): PlayerStateMessage {
+type Options = { money?: number; items?: Item[]; meal?: Meal; left?: Pile[]; buyer?: Buyer };
+
+function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer }: Options = {}): PlayerStateMessage {
   const body = {
     legs: 'present',
     vertebra: 'present',
@@ -17,7 +21,8 @@ function state(hunger: number, { money = 0, items = [LAMP], meal }: { money?: nu
     left_kidney: 'present',
     right_kidney: 'present',
   } as const;
-  return { type: 'player_state', player: { money, items, carry_limit: 10, body, hunger }, ...(meal && { meal }) };
+  const player = { money, items, carry_limit: 10, body, hunger, ...(left && { left }) };
+  return { type: 'player_state', player, ...(meal && { meal }), ...(buyer && { buyer }) };
 }
 
 describe('feeling', () => {
@@ -66,18 +71,22 @@ describe('HungerHint', () => {
   const shown = (root: HTMLElement) =>
     [...root.querySelectorAll<HTMLElement>('.hunger-hint div')].filter((line) => !line.hidden).map((line) => line.textContent);
 
-  it('shows how hungry they are, what to eat and what they left in reach', () => {
+  it('shows how hungry they are, what to eat, what they left in reach and what they can sell', () => {
     const root = document.createElement('div');
     const hint = new HungerHint(root);
+    const left: Pile = { at: { map: 'kapok_walk', x: 12, y: 15 }, items: [BUN] };
 
-    hint.update(undefined, false);
+    hint.update(undefined, undefined);
     expect(shown(root)).toEqual([]);
 
-    hint.update(state(0.2), false);
+    hint.update(state(0.2), undefined);
     expect(shown(root)).toEqual([]);
 
-    hint.update(state(0.75, { meal: HOME }), true);
-    expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', PICK_UP]);
+    hint.update(state(0.75, { meal: HOME, left: [left] }), left);
+    expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', 'Press E to pick up what you left here.']);
+
+    hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), undefined);
+    expect(shown(root)).toEqual(["Press E to sell your copper wire at the scrap trader's stall for 6."]);
   });
 
   it('says they collapsed for a few seconds after it', () => {
@@ -85,9 +94,9 @@ describe('HungerHint', () => {
     const hint = new HungerHint(root);
 
     hint.collapsed(1000);
-    hint.update(state(0.75), false, 6999);
+    hint.update(state(0.75), undefined, 6999);
     expect(shown(root)[0]).toBe(COLLAPSED);
-    hint.update(state(0.75), false, 7000);
+    hint.update(state(0.75), undefined, 7000);
     expect(shown(root)).not.toContain(COLLAPSED);
   });
 });

@@ -117,6 +117,42 @@ describe('a pile the player left', () => {
   });
 });
 
+describe('salvage, secrets and buyers', () => {
+  const wire = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null } as const;
+  const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' };
+  const theirs: Pile = { at: { map: 'metro', x: 30, y: 15 }, items: [wire] };
+  const lying: Pile[] = [
+    { at: { map: 'metro', x: 38, y: 12 }, items: [wire] },
+    { at: { map: 'metro', x: 8, y: 7 }, items: [], money: 25 },
+  ];
+  const trader = { place: 'scrap_stall', name: "The scrap trader's stall", prices: { copper_wire: 6 } };
+  const state = (extra: object) =>
+    server.dispatch(
+      JSON.stringify({
+        type: 'player_state',
+        player: { money: 0, items: [wire], carry_limit: 10, body, hunger: 0, left: [theirs] },
+        ...extra,
+      }),
+    );
+
+  afterEach(() => state({}));
+
+  it('picks up what lies about as well as what they left', () => {
+    state({ piles: lying });
+
+    expect(reachables.piles()).toEqual([theirs, ...lying]);
+    expect(usedByE(at('metro', 8.4, 7))).toMatchObject({ kind: 'pile', pile: lying[1] });
+  });
+
+  it('sells to the buyer where they stand while they carry something it buys', () => {
+    state({ buyer: trader });
+    expect(usedByE(at('metro', 26))).toEqual({ kind: 'buyer', tiles: 0, buyer: trader });
+
+    state({ buyer: { ...trader, prices: {} } });
+    expect(usedByE(at('metro', 26))).toBeUndefined();
+  });
+});
+
 describe('wayPrompts', () => {
   const lift = { keys: ['E'], action: 'lift to the first floor', x: 10, y: 20 };
 

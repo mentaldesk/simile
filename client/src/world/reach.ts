@@ -1,4 +1,4 @@
-import { playerState, type Pile, type Position, type Wall } from '../net';
+import { playerState, type Buyer, type Pile, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { interactableAt, type Interactable } from './interactables';
 import { mapOf } from './map';
@@ -10,13 +10,15 @@ export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
   | { kind: 'counter' | 'painting'; tiles: number; interactable: Interactable }
   | { kind: 'mural'; tiles: number; wall: Wall }
-  | { kind: 'pile'; tiles: number; pile: Pile };
+  | { kind: 'pile'; tiles: number; pile: Pile }
+  | { kind: 'buyer'; tiles: number; buyer: Buyer };
 
 export type Reachables = {
   terminals: readonly Terminal[];
   walls(): readonly Wall[];
   interactableAt(map: string, position: Position): Interactable | undefined;
   piles(): readonly Pile[];
+  buyer(): Buyer | undefined;
 };
 
 /** Murals only count while a scene draws them, as for the mural panel. */
@@ -24,13 +26,14 @@ export const reachables: Reachables = {
   terminals: terminalsOn(maps),
   walls: () => (muralView() ? muralWalls.walls : []),
   interactableAt,
-  piles: () => playerState.latest?.player.left ?? [],
+  piles: () => [...(playerState.latest?.player.left ?? []), ...(playerState.latest?.piles ?? [])],
+  buyer: () => playerState.latest?.buyer ?? undefined,
 };
 
 /** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
 export const PICK_UP_TILES = 1;
 
-/** The nearest pile the player left on this map, within reach of where they stand. */
+/** The nearest pile on this map within reach of where they stand: one they left, or one lying about. */
 export function pileInReach(position: Position, piles: readonly Pile[]): { pile: Pile; tiles: number } | undefined {
   let best: { pile: Pile; tiles: number } | undefined;
   for (const pile of piles) {
@@ -62,6 +65,8 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   if (wall) found.push({ kind: 'mural', tiles: tilesToWall(wall, position), wall });
   const pile = pileInReach(position, from.piles());
   if (pile) found.push({ kind: 'pile', ...pile });
+  const buyer = from.buyer();
+  if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 

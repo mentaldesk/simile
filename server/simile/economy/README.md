@@ -2,12 +2,13 @@
 
 E3: the village's money. Every resident has some, and every movement of it goes through a ledger.
 E4: what there is to eat, which shops are staffed, their batches and every home's fridge.
+S6: the player's money goes through the ledger too, and what salvage sells for.
 `economy_of(app)` returns the server's `Economy`, which the lifespan ticks on the sim loop and plugs
 into B1's `money`, `price`, `earnings` and `supply` hooks.
 
 ## Where the money goes
 
-Money moves between residents and `OUTSIDE`, the world beyond the village:
+Money moves between residents, the player (`PLAYER`) and `OUTSIDE`, the world beyond the village:
 
 | | What | When |
 |---|---|---|
@@ -18,6 +19,9 @@ Money moves between residents and `OUTSIDE`, the world beyond the village:
 | Out | Supplies | A shop's `supplies` share of whatever it takes, paid by its keeper |
 | Between residents | Paying at a shop | A meal at the noodle bar or the Daily Grind when they start eating. A drink whenever the café serves them (its `Served` event), and at the noodle bar when they come in while it's staffed, at most once every 90 minutes there |
 | Between residents | Loans and repaying them | When B3 finds one in a conversation B2 set up for it (E6) |
+| In, from the player | Paying at a shop | A meal at the noodle bar or the Daily Grind (S5) |
+| To the player | Salvage (`salvage`) | When they sell it to a buyer (S6) |
+| To the player | Money they find (`found`) | When they pick up a secret's cash (S6) |
 
 A shop is run by whoever works there on `takings`: Mirela at the Daily Grind and Odalys at the noodle
 bar. They take what customers pay and pay the supplies out of it, so they earn their takings less
@@ -36,6 +40,35 @@ nothing and returns False. B3 decides when and how much: see *Loans* in its READ
 The `Ledger` keeps every `Entry` (when, kind, amount, payer, payee and the shop) from the opening
 balances on, so money in less money out is always the change in what residents hold (`gap` is 0).
 I3 saves each entry as it's made, and D1's report shows where the money went during a run.
+
+## The player
+
+The player isn't a resident, so their money isn't in `money`, B1's hooks or what residents hold:
+to the residents' books they're outside the village, and what they pay a keeper comes in. But every
+movement of their money is in the ledger, so `ledger.net(PLAYER)` is always what they've gained
+since it opened. Their money is `Player.money` (`simile.player`), which joins the economy as
+`Economy.player` once the server is running, and `pay` moves it for `PLAYER`. Unlike a resident's,
+it never goes below nothing: `pay` raises `ValueError` and records nothing for more than they hold,
+so check they can pay first.
+
+- **Meals.** `buy(PLAYER, shop, price)`, as for a resident: the keeper takes it and pays the
+  supplies.
+- **Salvage.** `EconomyConfig.salvage` prices each kind by item id, and the `buyers`, the scrap
+  trader's stall (`scrap_stall`) and the clinic, pay it. `offer(place, items)` is what the buyer at
+  a place pays for one of each of the items it buys, and `sell(place, item)` pays them for one, as
+  `salvage` from `OUTSIDE`. Neither buyer is a resident.
+- **Money they find.** `find(amount, pickup)`, as `found` from `OUTSIDE`.
+
+| Salvage | Price |
+|---|--:|
+| Copper wire | 6 |
+| Scrap steel | 5 |
+| Circuit board | 8 |
+| Brass valve | 7 |
+| Signal relay | 6 |
+| Servo motor | 18 |
+
+The prices are facts of the sim: whoever buys only voices them.
 
 ## Work
 
