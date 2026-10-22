@@ -11,11 +11,13 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.persistence import player_of
     from simile.player.clients import InGame
     from simile.player.hunger import Hunger
+    from simile.player.lamp import Lamp
     from simile.player.pickups import Pickups
     from simile.player.sync import PlayerSync
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
         EatMessage,
+        LampMessage,
         PickUpMessage,
         PlayerCollapsedMessage,
         PlayerMoveMessage,
@@ -33,6 +35,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     in_game = InGame()
 
     def collapsed(home: MapTile) -> None:
+        lamp.switch(False)
         hub.broadcast(PlayerCollapsedMessage(position=Position(x=home.x, y=home.y, map=home.map)))
 
     hunger = Hunger(
@@ -47,6 +50,11 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))
     sync = PlayerSync(player, hunger.meal, hub.broadcast, buyer=trade.buyer, piles=pickups.piles)
+    lamp = Lamp(player, movement, world.clock, playing=lambda: bool(in_game))
+
+    def on_lamp(message: LampMessage) -> None:
+        if lamp.switch(message.on):
+            sync.update()
 
     def on_eat(message: EatMessage) -> None:
         if hunger.eat(message.item):
@@ -62,11 +70,13 @@ async def running(app: Starlette) -> AsyncIterator[None]:
 
     stops = [
         world.loop.register(hunger),
+        world.loop.register(lamp),
         world.loop.register(sync),
         hub.subscribe(PlayerMoveMessage, in_game.moved),
         hub.subscribe(EatMessage, on_eat),
         hub.subscribe(PickUpMessage, on_pick_up),
         hub.subscribe(SellMessage, on_sell),
+        hub.subscribe(LampMessage, on_lamp),
         hub.greet(sync.message),
     ]
     yield

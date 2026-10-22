@@ -14,6 +14,7 @@ import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { eUse, onGameKey } from './keys';
+import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
@@ -38,6 +39,7 @@ export class DialogueScene extends Phaser.Scene {
   private clinic!: ClinicPanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
+  private lamp!: LampGauge;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -73,6 +75,7 @@ export class DialogueScene extends Phaser.Scene {
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
+    this.lamp = new LampGauge(this.root);
     const help = new HelpPanel(this.root);
     const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
@@ -114,6 +117,7 @@ export class DialogueScene extends Phaser.Scene {
     this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper());
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
+    this.lamp.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);

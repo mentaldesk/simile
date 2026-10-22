@@ -16,6 +16,7 @@ type State = Place & {
   used: string | null;
   prompts: string[];
   talk: string | null;
+  lamp: { dark: boolean; plug: boolean; on: boolean; gloom: number; hint: string | null };
 };
 type SideWalk = {
   state(): State | undefined;
@@ -311,6 +312,30 @@ async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   await page.keyboard.press('Shift');
 }
 
+/** Into the metro's dark west tunnel, the lamp on with L, and on to the plug, where it charges. */
+async function lampLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'through the dark with the lamp';
+  const lamp = async () => (await api.state())!.lamp;
+  const fail = async (what: string) => new Error(`${name}: ${what}, ${JSON.stringify(await lamp())}`);
+  await teleport(page, api, metro(55, 15), name);
+  await run(page, 300);
+  if ((await lamp()).dark) throw await fail('dark on the platform');
+  await walkTo(page, api, 61, REACH.cell, name);
+  const dark = await lamp();
+  if (!dark.dark || dark.on || dark.gloom < 0.5 || !dark.hint?.includes('Press L')) throw await fail('not dark in the tunnel');
+  await page.keyboard.press('l');
+  await run(page, 300);
+  const lit = await lamp();
+  if (!lit.on || lit.gloom > 0 || lit.hint) throw await fail("L didn't light the lamp");
+  await shot(page, index, name);
+  await walkTo(page, api, 72, REACH.cell, name);
+  const plug = await lamp();
+  if (!plug.plug || plug.dark || plug.hint !== 'Charging your lamp.') throw await fail('not charging at the plug');
+  await page.keyboard.press('l');
+  await run(page, 300);
+  if ((await lamp()).on) throw await fail("L didn't switch the lamp off");
+}
+
 /** Walks off the clock house's roof and lands in the lane, a fall of eleven rows. */
 async function fallLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = "off the clock house's roof";
@@ -411,6 +436,7 @@ try {
     ...JUMPS.map((jump): [string, (index: number) => Promise<string | void>] => [`jumping ${jump.name}`, (i) => jumpLeg(page, api, jump, i)]),
     ["falling off the clock house's roof", (i) => fallLeg(page, api, i)],
     ['through the metro and back', (i) => metroLeg(page, api, i)],
+    ['through the dark with the lamp', (i) => lampLeg(page, api, i)],
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
       `E at the terminal on ${at.map}`,

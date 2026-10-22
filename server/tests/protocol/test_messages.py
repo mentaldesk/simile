@@ -830,7 +830,12 @@ def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
     ("update", "match"),
     [
         ({"parts": []}, "at least 1 item"),
-        ({"parts": ["tail"]}, "hydraulic_legs can't replace tail"),
+        ({"parts": ["tail"]}, "Input should be 'legs'"),
+        ({"parts": ("left_kidney",)}, "hydraulic_legs can't replace left_kidney"),
+        (
+            {"bionic": "infrared_eye", "parts": ("left_eye", "left_eye")},
+            "a fitting names each part once",
+        ),
         ({"bionic": "steel_hand"}, "Input should be 'hydraulic_legs'"),
         ({"price": -1}, "greater than or equal to 0"),
         ({"price": float("nan")}, "finite number"),

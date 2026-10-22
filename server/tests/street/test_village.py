@@ -10,7 +10,7 @@ from PIL import Image
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
-from simile.schema import DoorKind, Facing, MapTile, Pose
+from simile.schema import DoorKind, Facing, InteractableKind, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.street.metro import HIGH_LEDGE, METRO
 from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER, LIGHT_LAYER, PICKUPS_LAYER
@@ -400,6 +400,32 @@ def test_streets_have_a_flight_of_stairs_and_a_ladder() -> None:
         ("metro", DoorKind.STAIRS),
         ("metro", DoorKind.LADDER),
     }
+
+
+def test_the_cafe_the_noodle_bar_and_home_have_a_plug_downstairs() -> None:
+    plugs = {
+        item.id: item
+        for town in MAPS.values()
+        for item in town.interactables
+        if item.kind is InteractableKind.PLUG
+    }
+
+    assert set(plugs) == {"coffee_shop_plug", "maker_space_plug", "noodle_bar_plug", "metro_plug"}
+    for building in ("coffee_shop", "maker_space", "noodle_bar"):
+        item = plugs[f"{building}_plug"]
+        [stand] = item.stand
+        assert item.map == f"{building}_floor_0" and item.label == "Plug"
+        assert MAPS[item.map].standing(stand.x, stand.y) and MAPS[item.map].lit(stand.x, stand.y)
+    home = TOWN.location("maker_space")
+    assert plugs["maker_space_plug"].stand == [home.entry], "they wake on it after collapsing"
+
+
+def test_only_the_streets_under_the_village_are_underground_or_dark() -> None:
+    for plan in village():
+        dark = [light.id for light in plan.light if not light.lit]
+        below = plan.id in UNDERGROUND or plan.properties.get("street") in UNDERGROUND
+        assert plan.properties.get("underground", False) is (plan.id in UNDERGROUND), plan.id
+        assert below or not dark, plan.id
 
 
 def test_the_readme_names_every_street_building_room_and_piece_of_furniture() -> None:

@@ -38,7 +38,8 @@ FRAMES += [(5, 9), (8, 9), (11, 9), (19, 9), (22, 9), (25, 9)]
 
 
 def street(map_id: str, label: str, width: int) -> Plan:
-    plan = Plan(map_id, width, STREET_HEIGHT, MapKind.STREET, label=label)
+    below = {"underground": True} if map_id in UNDERGROUND else {}
+    plan = Plan(map_id, width, STREET_HEIGHT, MapKind.STREET, label=label, **below)
     plan.fill(0, GROUND + 1, width, STREET_HEIGHT - GROUND - 1)
     return plan
 
@@ -214,6 +215,21 @@ def machine(plan: Plan, item_id: str, label: str, x: int, width: int, *desk_ids:
         plan.spot(spot_id, DESK, tile.x, tile.y, N)
 
 
+def plug(plan: Plan, item_id: str, label: str, area: TileArea, stand: Tile) -> None:
+    """A socket that charges the player's lamp while they stand at it."""
+    kind = InteractableKind.PLUG
+    plan.interactables.append(
+        Interactable(id=item_id, label=label, kind=kind, map=plan.id, area=area, stand=[stand])
+    )
+
+
+def wall_plug(plan: Plan, item_id: str, x: int) -> None:
+    """A plug on a room's back wall, stood at from the cell in front of it."""
+    plug(
+        plan, item_id, "Plug", TileArea(x=x, y=FLOOR_ROW, width=1, height=1), Tile(x=x, y=FLOOR_ROW)
+    )
+
+
 def painting(plan: Plan, number: int, x: int) -> None:
     """A frame at head height over the two cells it's looked at from."""
     area = TileArea(x=x, y=FLOOR_ROW - 1, width=2, height=1)
@@ -268,6 +284,7 @@ def noodle_bar(street: Plan, x: int) -> list[Plan]:
     stools(ground, 8, SEAT, E, *(f"seat-{old_x}-5" for old_x in range(3, 13, 2)))
     ground.piece("kitchen_counter", 13, FLOOR_ROW)
     ground.piece("stove", 14, FLOOR_ROW - 1, 2, 2)
+    wall_plug(ground, "noodle_bar_plug", 1)
     upstairs = [(1, (8, 8)), (3, (8, 11)), (5, (12, 8)), (8, (12, 11)), (10, (16, 8))]
     upstairs += [(12, (16, 11)), (14, (16, 3))]
     for at, old in upstairs:
@@ -322,6 +339,7 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
     ground.piece("menu_board", 2, 0, 3, 1)
     ground.piece("bar_counter", 10, FLOOR_ROW, 5, 1)
     ground.piece("plant", 17, FLOOR_ROW)
+    wall_plug(ground, "coffee_shop_plug", 16)
     stools(ground, 10, BAR, W, "bar-2-6", "bar-3-6", "bar-10-3", "bar-10-4", "bar-10-5")
     tables = [(1, (2, 8)), (3, (2, 11)), (5, (12, 3)), (7, (15, 3)), (9, (12, 7))]
     tables += [(12, (15, 7)), (14, (12, 10)), (16, (15, 10))]
@@ -353,6 +371,7 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     machine(ground, "printer_3d", "3D printer", 9, 1, "desk-6-3")
     machine(ground, "loom", "Loom", 10, 2, "desk-10-3", "desk-11-3")
     machine(ground, "sewing_machine", "Sewing machine", 12, 1, "desk-15-3")
+    wall_plug(ground, "maker_space_plug", 13)
     for at, old in ((1, (3, 9)), (7, (8, 6)), (11, (8, 9))):
         workbench(first, at, old)
     for at, old in ((1, (13, 6)), (7, (13, 9))):

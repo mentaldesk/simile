@@ -13,9 +13,9 @@ from simile.schema import (
     Tile,
     TileArea,
 )
-from simile.street.plan import Light, Pickup, Plan
-from simile.street.village import GROUND, Building, street
-from simile.world.map import SpotKind
+from simile.street.plan import Pickup, Plan
+from simile.street.village import GROUND, Building, plug, street
+from simile.world.map import Light, SpotKind
 
 METRO = "metro"
 WIDTH = 110
@@ -130,7 +130,7 @@ def tunnel(plan: Plan) -> None:
     salvage(plan, 3, 68, GROUND)
     plan.piece("breaker_box", 72, GROUND - 1, 1, 2)
     area = TileArea(x=72, y=GROUND - 1, width=1, height=2)
-    machine(plan, PLUG, "Maintenance plug", area, [Tile(x=72, y=GROUND)])
+    plug(plan, PLUG, "Maintenance plug", area, Tile(x=72, y=GROUND))
     ledge = GROUND - 3
     plan.ladder((75, GROUND), GROUND - ledge)
     catwalk(plan, 76, ledge, 3)

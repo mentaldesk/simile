@@ -43,6 +43,11 @@ describe('HelpPanel', () => {
     expect(what.Space).toMatch(/jump/);
   });
 
+  it('gives the lamp to L', () => {
+    const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
+    expect(what.L).toMatch(/lamp on or off.*plug to charge it/);
+  });
+
   it('says voices are off unless turned on, and that greetings play either way', () => {
     const root = document.createElement('div');
     new HelpPanel(root);
