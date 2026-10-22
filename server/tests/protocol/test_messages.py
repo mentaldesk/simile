@@ -810,6 +810,16 @@ def test_player_state_says_what_the_clinic_buys_of_their_body_and_fits() -> None
     }
 
 
+def test_the_exported_buyer_buys_only_parts_of_the_body() -> None:
+    parts = json.loads(SCHEMA_FILE.read_text())["$defs"]["Buyer"]["properties"]["parts"]
+
+    assert parts["propertyNames"] == {"$ref": "#/$defs/BodyPart"}
+    assert not validator().is_valid(
+        json.loads(AT_THE_CLINIC.model_dump_json())
+        | {"buyer": DOCTOR.model_dump(mode="json") | {"parts": {"tail": 100}}}
+    )
+
+
 def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
     buyer = DOCTOR.model_copy(update={"parts": {}, "fittings": []})
 
@@ -820,11 +830,21 @@ def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
     ("update", "match"),
     [
         ({"parts": []}, "at least 1 item"),
-        ({"parts": ["tail"]}, "Input should be 'legs'"),
+        ({"parts": ["tail"]}, "hydraulic_legs can't replace tail"),
         ({"bionic": "steel_hand"}, "Input should be 'hydraulic_legs'"),
         ({"price": -1}, "greater than or equal to 0"),
         ({"price": float("nan")}, "finite number"),
         ({"name": ""}, "at least 1 character"),
+        ({"parts": ["left_kidney"]}, "hydraulic_legs can't replace left_kidney"),
+        ({"parts": ["legs", "legs"]}, "a fitting names each part once"),
+        (
+            {"bionic": "infrared_eye", "parts": ["right_eye", "right_eye"]},
+            "a fitting names each part once",
+        ),
+        (
+            {"bionic": "datajack", "parts": ["vertebra", "left_eye"]},
+            "datajack can't replace left_eye",
+        ),
     ],
 )
 def test_rejects_invalid_fittings(update: dict[str, Any], match: str) -> None:
@@ -860,7 +880,8 @@ def test_a_buyer_can_buy_nothing_they_carry() -> None:
         ({"prices": {"copper_wire": -1}}, "greater than or equal to 0"),
         ({"prices": {"copper_wire": float("inf")}}, "finite number"),
         ({"parts": {"left_kidney": -1}}, "greater than or equal to 0"),
-        ({"parts": {"": 100}}, "at least 1 character"),
+        ({"parts": {"tail": 100}}, "Input should be 'legs'"),
+        ({"fittings": [LEGS.model_dump(), LEGS.model_dump()]}, "a buyer offers each bionic once"),
         ({"prices": {"": 6}}, "at least 1 character"),
         ({"name": ""}, "at least 1 character"),
         ({"place": "Scrap stall"}, "String should match pattern"),

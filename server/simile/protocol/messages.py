@@ -303,10 +303,22 @@ class Fitting(Model):
         'up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.',
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def _parts_it_replaces(cls, data: Any) -> Any:
+        if isinstance(data, dict) and isinstance(parts := data.get("parts"), list):
+            named = [part for part in parts if isinstance(part, str)]
+            if len(set(named)) != len(named):
+                raise ValueError("a fitting names each part once")
+            bionic = data.get("bionic")
+            fits = Bionic(bionic).replaces if isinstance(bionic, str) and bionic in Bionic else None
+            if fits is not None and (wrong := [part for part in named if part not in fits]):
+                raise ValueError(f"{bionic} can't replace {', '.join(wrong)}")
+        return data
+
 
 class Buyer(Model):
-    """Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
-    place."""
+    """Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`."""
 
     place: Id = Field(description='Where: a location id, e.g. "scrap_stall" or "clinic".')
     name: str = Field(
@@ -317,18 +329,26 @@ class Buyer(Model):
         description="What it pays for one of each thing they carry that it buys, by item `id`. "
         "Empty when they carry nothing it buys."
     )
-    parts: dict[Key, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
+    parts: dict[BodyPart, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
         default={},
         exclude_if=lambda parts: not parts,
         description="What it pays for each part of their body it would buy now, by `sell_part`, "
-        'by `Body` field, e.g. `{"left_kidney": 100}`. Left out while it would buy none.',
+        'by `Body` field, e.g. `{"left_kidney": 100}`. The clinic\'s doctor buys one kidney, '
+        "never the second. Left out while it would buy none.",
     )
     fittings: list[Fitting] = Field(
         default=[],
         exclude_if=lambda fittings: not fittings,
-        description="The bionics it would fit now, by `fit`, whether or not they can pay. Left "
-        "out while there are none.",
+        description="The bionics it would fit now, by `fit`, whether or not they can pay, each "
+        "once. Left out while there are none.",
     )
+
+    @model_validator(mode="after")
+    def _each_bionic_once(self) -> Self:
+        bionics = [fitting.bionic for fitting in self.fittings]
+        if len(set(bionics)) != len(bionics):
+            raise ValueError("a buyer offers each bionic once")
+        return self
 
 
 class PlayerStateMessage(Model):

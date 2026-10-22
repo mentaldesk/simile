@@ -505,8 +505,7 @@ export interface Meal {
   price: number;
 }
 /**
- * Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
- * place.
+ * Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`.
  */
 export interface Buyer {
   /**
@@ -524,13 +523,13 @@ export interface Buyer {
     [k: string]: number;
   };
   /**
-   * What it pays for each part of their body it would buy now, by `sell_part`, by `Body` field, e.g. `{"left_kidney": 100}`. Left out while it would buy none.
+   * What it pays for each part of their body it would buy now, by `sell_part`, by `Body` field, e.g. `{"left_kidney": 100}`. The clinic's doctor buys one kidney, never the second. Left out while it would buy none.
    */
   parts?: {
     [k: string]: number;
   };
   /**
-   * The bionics it would fit now, by `fit`, whether or not they can pay. Left out while there are none.
+   * The bionics it would fit now, by `fit`, whether or not they can pay, each once. Left out while there are none.
    */
   fittings?: Fitting[];
 }

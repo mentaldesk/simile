@@ -249,14 +249,16 @@ buyer or away from one.
 
 A keeper such as the clinic's doctor may also buy parts of the player's body and fit bionics:
 
-- `parts`: what it pays for each part of their body it would buy now, by `Body` field, which they
-  sell with [`sell_part`](#sell_part): `{"left_kidney": 100}`. It's left out while it would buy
-  none, as at the scrap trader's stall, or at the clinic once they've sold a kidney.
-- `fittings`: the bionics it would fit now, whether or not they can pay, which they have fitted
-  with [`fit`](#fit). It's left out while there are none. A `Fitting` has its `bionic`; its
+- `parts`: what it pays for each part of their body it would buy now, keyed by `BodyPart`, which
+  they sell with [`sell_part`](#sell_part): `{"left_kidney": 100}`. The clinic's doctor buys one
+  kidney, never the second. It's left out while it would buy none, as at the scrap trader's stall,
+  or at the clinic once they've sold a kidney.
+- `fittings`: the bionics it would fit now, whether or not they can pay, each once, which they have
+  fitted with [`fit`](#fit). It's left out while there are none. A `Fitting` has its `bionic`; its
   `name`, as the player sees it, such as `"Hydraulic legs"`; its `price`; and its `parts`, the parts
   of their body it can go in place of, any one of which they give up for it: `["legs"]`, or
-  `["left_eye", "right_eye"]` for the infrared eye.
+  `["left_eye", "right_eye"]` for the infrared eye. Each part is named once, and only a part the
+  bionic can replace.
 
 Like `prices`, both are the server's, and so is the stock: what the keeper would buy or fit now is
 already in them. The keeper only voices them, and talking can't change them.
