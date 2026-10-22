@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
-from simile.economy import OUTSIDE, Batch, Kind
+from simile.economy import PLAYER, Batch, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -27,7 +27,6 @@ ODALYS = load_npcs()[0].model_copy(
 )
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
 WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
-SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3.0)
 HOME = Point(13, 2, "maker_space_floor_0")
 NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
 
@@ -44,11 +43,11 @@ class Village:
             MemoryStore(":memory:"),
             seed=0,
         )
-        self.economy = Economy(self.world.clock, behaviour)
+        self.player = player or Player()
+        self.economy = Economy(self.world.clock, behaviour, player=self.player)
         self.open: set[str] = {"noodle_bar", "coffee_shop"}
         self.playing = True
         self.woke: list[MapTile] = []
-        self.player = player or Player()
         self.hunger = Hunger(
             self.player,
             self.movement,
@@ -115,9 +114,10 @@ def test_a_meal_at_the_noodle_bar_is_paid_to_its_keeper_and_taken_from_the_batch
     assert village.player.money == 15
     assert economy.money["odalys"] == 100 + 10 - 3
     purchase = economy.ledger.entries[-2]
-    assert (purchase.kind, purchase.payer, purchase.payee) == (Kind.PURCHASE, OUTSIDE, "odalys")
+    assert (purchase.kind, purchase.payer, purchase.payee) == (Kind.PURCHASE, PLAYER, "odalys")
     assert (purchase.amount, purchase.place) == (10, "noodle_bar")
     assert economy.ledger.gap(economy.money) == 0
+    assert economy.ledger.net(PLAYER) == village.player.money - 25
     batch = economy.batches["noodle_bar"]
     assert (batch.left, batch.sold_out) == (0, NOW)
 
@@ -282,50 +282,3 @@ def test_a_collapse_before_the_server_knows_where_they_are_keeps_what_they_carry
     assert village.player.items == [lamp(), WIRE]
     assert village.player.left == []
     assert village.here() == HOME
-
-
-def piles(*at: tuple[str, int]) -> list[Pile]:
-    return [Pile(at=MapTile(map=map, x=x, y=15), items=[BUN, WIRE]) for map, x in at]
-
-
-def test_picking_up_takes_the_nearest_pile_in_reach() -> None:
-    village = Village(Player(left=piles(("kapok_walk", 12), ("kapok_walk", 14))))
-    village.stand(13.2, 15, "kapok_walk")
-
-    assert village.hunger.pick_up()
-
-    assert village.player.items == [lamp(), BUN, WIRE]
-    assert village.player.left == piles(("kapok_walk", 12))
-
-
-def test_picking_up_leaves_what_they_cannot_carry() -> None:
-    heavy = [Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[SERVO, WIRE, BUN])]
-    village = Village(Player(items=[lamp(), SERVO, SERVO], carry_limit=9, left=heavy))
-    village.stand(12, 15, "kapok_walk")
-
-    assert village.hunger.pick_up()
-
-    assert village.player.items == [lamp(), SERVO, SERVO, WIRE, BUN]
-    assert village.player.load == pytest.approx(8.7)
-    assert village.player.left == [heavy[0].model_copy(update={"items": [SERVO]})]
-
-
-def test_nothing_is_picked_up_with_no_room_for_any_of_it() -> None:
-    heavy = [Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[SERVO])]
-    village = Village(Player(items=[lamp(), SERVO, SERVO], carry_limit=8, left=heavy))
-    village.stand(12, 15, "kapok_walk")
-
-    assert not village.hunger.pick_up()
-    assert village.player.left == heavy
-
-
-@pytest.mark.parametrize(
-    ("x", "map"), [(13.6, "kapok_walk"), (12, "high_street")], ids=["too_far", "another_map"]
-)
-def test_nothing_is_picked_up_out_of_reach(x: float, map: str) -> None:
-    village = Village(Player(items=[], left=piles(("kapok_walk", 12))))
-    village.stand(x, 15, map)
-
-    assert not village.hunger.pick_up()
-    assert village.player.items == []
-    assert village.player.left == piles(("kapok_walk", 12))

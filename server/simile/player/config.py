@@ -1,10 +1,24 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.schema import Id
+from simile.schema import Id, Item, ItemKind
+
+
+def salvage(id: Id, name: str, weight: float) -> Item:
+    return Item(id=id, kind=ItemKind.SALVAGE, name=name, weight=weight)
+
+
+SALVAGE: dict[Id, Item] = {
+    "metro_salvage_1": salvage("copper_wire", "Copper wire", 1.5),
+    "metro_salvage_2": salvage("scrap_steel", "Scrap steel", 4.5),
+    "metro_salvage_3": salvage("circuit_board", "Circuit board", 0.5),
+    "metro_salvage_4": salvage("brass_valve", "Brass valve", 2.0),
+    "metro_salvage_5": salvage("signal_relay", "Signal relay", 1.0),
+    "metro_salvage_6": salvage("servo_motor", "Servo motor", 3.0),
+}
 
 
 class PlayerConfig(BaseModel):
-    """How the player gets hungry, eats and collapses."""
+    """How the player gets hungry, eats and collapses, and what lies about for them to pick up."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -31,6 +45,11 @@ class PlayerConfig(BaseModel):
     food: float = Field(default=0.4, gt=0, description="How much a food item they carry relieves.")
     reach: float = Field(
         default=1.5, gt=0, description="How far from a pile, in tiles, they can pick it up."
+    )
+    salvage: dict[Id, Item] = Field(
+        default=SALVAGE,
+        description="What lies at each of the maps' salvage pickups, by pickup id, until they "
+        "take it. The economy prices it by item id.",
     )
     step: float = Field(
         default=0.01,

@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from simile.economy import OUTSIDE, Entry, Kind, Ledger
+from simile.economy import OUTSIDE, PLAYER, Entry, Kind, Ledger
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 
@@ -44,3 +44,21 @@ def test_an_entry_moves_some_money() -> None:
     with pytest.raises(ValueError, match="greater than 0"):
         entry(Kind.RENT, 0, "ana", OUTSIDE)
     assert Entry.model_validate_json(entry(Kind.RENT, 30, "ana", OUTSIDE).model_dump_json())
+
+
+def test_the_players_money_is_in_the_ledger_but_not_in_what_residents_hold() -> None:
+    ledger = Ledger({"ana": 100.0})
+    for item in (
+        entry(Kind.SALVAGE, 23, OUTSIDE, PLAYER, "scrap_stall"),
+        entry(Kind.FOUND, 25, OUTSIDE, PLAYER, "metro_secret_stairwell"),
+        entry(Kind.PURCHASE, 10, PLAYER, "ana", "noodle_bar"),
+        entry(Kind.SUPPLIES, 3, "ana", OUTSIDE, "noodle_bar"),
+    ):
+        ledger.record(item)
+
+    assert ledger.held() == {"ana": 107.0}
+    assert (ledger.came_in(), ledger.went_out()) == (10, 3)
+    assert ledger.gap({"ana": 107.0}) == pytest.approx(0)
+    assert ledger.net(PLAYER) == 38
+    assert ledger.net("ana") == 7
+    assert ledger.by_kind()[Kind.SALVAGE] == 23

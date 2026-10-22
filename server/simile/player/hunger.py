@@ -1,13 +1,13 @@
 import logging
-import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from simile.behaviour import Activity, Goal, Need
-from simile.economy import OUTSIDE
+from simile.economy import PLAYER
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
+from simile.player.where import here, location
 from simile.protocol import Meal
-from simile.schema import PLAYER_ID, Id, ItemKind, Location, MapTile, Pile, Player
+from simile.schema import PLAYER_ID, Id, ItemKind, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.movement import Movement, Point, cell_of, inside
 
@@ -23,7 +23,7 @@ type Supply = Callable[[Goal, Need], float]
 
 
 class Hunger:
-    """The player's hunger, eating, collapsing and picking up. Tick it on the sim loop."""
+    """The player's hunger, eating and collapsing. Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -43,6 +43,7 @@ class Hunger:
         self.supply = supply
         """B1's supply hook: whether a shop would feed a resident now."""
         self.economy = economy
+        """Its `player` is this one, so meals are paid through its ledger."""
         self.playing = playing
         self.collapsed = collapsed
         """Told where they wake after collapsing."""
@@ -59,15 +60,15 @@ class Hunger:
 
     def meal(self) -> Meal | None:
         """The meal on offer where they stand, if any."""
-        here = self._here()
-        if here is None:
+        at = here(self.movement)
+        if at is None:
             return None
-        home = self._location(self.config.home)
-        if home is not None and inside(home, here):
+        home = location(self.movement, self.config.home)
+        if home is not None and inside(home, at):
             return Meal(place=home.id, name=HOME, price=0)
         for place in self.config.meals:
-            shop, price = self._location(place), self._price(place)
-            if shop is None or price is None or not inside(shop, here):
+            shop, price = location(self.movement, place), self._price(place)
+            if shop is None or price is None or not inside(shop, at):
                 continue
             return Meal(place=place, name=shop.name, price=price) if self._serving(place) else None
         return None
@@ -78,52 +79,19 @@ class Hunger:
 
     def collapse(self) -> None:
         """Leaves all but the lamp where they are, and wakes them at home still hungry."""
-        here = self._here()
+        at = here(self.movement)
         kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
         dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
-        if here is not None and dropped:
-            pile = Pile(at=ground(self.movement, here), items=dropped)
+        if at is not None and dropped:
+            pile = Pile(at=ground(self.movement, at), items=dropped)
             self.player.left = [*self.player.left, pile]
             self.player.items = kept
-        location = self.movement.town.location(self.config.home)
-        home = MapTile(map=location.map, x=location.entry.x, y=location.entry.y)
+        house = self.movement.town.location(self.config.home)
+        home = MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
         self.movement.track(PLAYER_ID, Point(home.x, home.y, home.map))
         self.player.hunger = self.config.waking
         logger.info("%s  The player collapses from hunger and wakes at home", self.clock)
         self.collapsed(home)
-
-    def pick_up(self) -> bool:
-        """Takes what still fits from the nearest pile in reach. Whether they took anything."""
-        here = self._here()
-        if here is None:
-            return False
-        near = [
-            (distance, index)
-            for index, pile in enumerate(self.player.left)
-            if pile.at.map == here.map
-            and (distance := math.dist(here, (pile.at.x, pile.at.y))) <= self.config.reach
-        ]
-        if not near:
-            return False
-        _, index = min(near)
-        pile, room = self.player.left[index], self.player.carry_limit - self.player.load
-        taken, kept = [], []
-        for item in pile.items:
-            if item.weight <= room + 1e-9:
-                taken.append(item)
-                room -= item.weight
-            else:
-                kept.append(item)
-        if not taken:
-            return False
-        left = list(self.player.left)
-        if kept:
-            left[index] = Pile(at=pile.at, items=kept)
-        else:
-            del left[index]
-        self.player.items = [*self.player.items, *taken]
-        self.player.left = left
-        return True
 
     def _eat_meal(self) -> bool:
         meal = self.meal()
@@ -149,10 +117,9 @@ class Hunger:
         return True
 
     def _pay(self, meal: Meal) -> None:
-        """Pays the keeper through the ledger, as from outside, and takes one from the batch."""
+        """Pays the keeper through the ledger and takes one from the batch."""
         assert self.economy is not None
-        self.player.money = max(self.player.money - meal.price, 0.0)
-        self.economy.buy(OUTSIDE, meal.place, meal.price)
+        self.economy.buy(PLAYER, meal.place, meal.price)
         shop, batch = self.economy.config.shops[meal.place], self.economy.batches.get(meal.place)
         if shop.batch is not None and batch is not None and batch.left > 0:
             batch.left -= 1
@@ -172,15 +139,6 @@ class Hunger:
     def _price(self, place: Id) -> float | None:
         shop = self.economy.config.shops.get(place) if self.economy is not None else None
         return None if shop is None else shop.meal
-
-    def _location(self, place: Id) -> Location | None:
-        try:
-            return self.movement.town.location(place)
-        except KeyError:
-            return None
-
-    def _here(self) -> Point | None:
-        return self.movement.entities().get(PLAYER_ID)
 
 
 def ground(movement: Movement, here: Point) -> MapTile:

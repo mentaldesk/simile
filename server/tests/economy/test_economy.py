@@ -6,11 +6,22 @@ import pytest
 from simile.behaviour import DEFAULT_CONFIG, Activity, Behaviour, BehaviourConfig, Goal, Need
 from simile.cafe.events import Served
 from simile.economy import DEFAULT_CONFIG as ECONOMY
-from simile.economy import OUTSIDE, Kind
+from simile.economy import OUTSIDE, PLAYER, Kind
 from simile.economy.economy import Economy, Turn
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.schema import CoreValue, Npc, Pay, PayKind, Shift, Weekday
+from simile.schema import (
+    CoreValue,
+    Item,
+    ItemKind,
+    Npc,
+    Pay,
+    PayKind,
+    Player,
+    Shift,
+    Weekday,
+    lamp,
+)
 from simile.sim import STEP, Clock, FakeWallClock, World
 from simile.world import Movement
 from simile.world.map import load_maps
@@ -317,3 +328,46 @@ def test_restoring_puts_back_saved_money_and_opens_the_ledger_on_it() -> None:
     assert town.economy.money == {"ana": 80.0, "bea": 200.0}
     assert town.economy.ledger.entries == []
     assert town.economy.ledger.opening == {"ana": 80.0, "bea": 200.0}
+
+
+WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
+
+
+def test_the_buyers_pay_the_salvage_prices_for_salvage_alone() -> None:
+    economy = Town([resident("ana")]).economy
+    bun = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
+    odd = Item(id="odd_bolt", kind=ItemKind.SALVAGE, name="Odd bolt", weight=0.1)
+
+    for place in ("scrap_stall", "clinic"):
+        assert economy.offer(place, [lamp(), WIRE, bun, odd, WIRE]) == {"copper_wire": 6}
+    assert economy.offer("noodle_bar", [WIRE]) is None
+    assert ECONOMY.salvage["servo_motor"] == 18
+
+
+def test_the_player_sells_and_finds_money_through_the_ledger() -> None:
+    town = Town([resident("ana")])
+    economy = town.economy
+    economy.player = Player(money=2)
+
+    assert economy.sell("scrap_stall", WIRE)
+    assert not economy.sell("noodle_bar", WIRE)
+    economy.find(25, "metro_secret_stairwell")
+    economy.buy(PLAYER, "coffee_shop", 5)
+
+    assert economy.player.money == 2 + 6 + 25 - 5
+    assert [(e.kind, e.payer, e.payee, e.place) for e in economy.ledger.entries] == [
+        (Kind.SALVAGE, OUTSIDE, PLAYER, "scrap_stall"),
+        (Kind.FOUND, OUTSIDE, PLAYER, "metro_secret_stairwell"),
+        (Kind.PURCHASE, PLAYER, OUTSIDE, "coffee_shop"),
+    ]
+    assert economy.ledger.net(PLAYER) == economy.player.money - 2
+    assert economy.ledger.gap(economy.money) == 0
+    assert economy.money == {"ana": 200.0}
+
+
+def test_the_player_must_join_before_their_money_moves() -> None:
+    economy = Town([resident("ana")]).economy
+
+    with pytest.raises(RuntimeError, match="hasn't joined"):
+        economy.sell("scrap_stall", WIRE)
+    assert economy.ledger.entries == []

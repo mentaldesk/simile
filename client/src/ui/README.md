@@ -16,7 +16,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   marked "→ You".
 - the news and residents' writing at a terminal (see *Reading the news*);
 - a mural up close (see *Looking at a mural*);
-- how hungry the player is and what they can eat (see *Hunger*).
+- how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
+  (see *Picking up and selling*).
 
 ## Choosing who to talk to
 
@@ -109,10 +110,25 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
-- "Press E to pick up what you left here." within a tile of a pile they left when they collapsed
-  (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), where E sends `pick_up`.
 - "You collapsed from hunger and woke at home." for six seconds after `player_collapsed`. The world
   scene puts the player at home.
+
+## Picking up and selling
+
+The same corner says what E picks up or sells where the player stands, in
+[`salvage.ts`](salvage.ts):
+
+- Within a tile of a pile (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), one they left
+  or one in `player_state`'s `piles`, what of it fits under their carry limit, as the server takes
+  it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash.", "Press E to pick up
+  what you left here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
+  too heavy to carry with what you have." E sends `pick_up`.
+- At a buyer (`player_state`'s `buyer`), what E sells and for how much: "Press E to sell your copper
+  wire at the scrap trader's stall for 6.", or "your salvage" for three things or more. E sends
+  `sell` with `null`, selling everything it buys. With nothing it buys, the line says it buys
+  salvage and what they have, and E does what it would without it.
+- The world scene draws a glint over each pile on the street shown and its floors, gold for cash
+  (`side/piles.ts`).
 
 ## Keys
 
@@ -121,7 +137,7 @@ focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input 
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's), a mural or a pile the player left. The world scene takes a door
+a terminal, the counter, a painting (the gallery panel's), a mural, a pile, or a buyer they can sell to. The world scene takes a door
 on E only when none is, so one press never does two things, and then up takes the door. With
 neither, E opens the chat to the ringed NPC, as Enter does, and their name tag says so: "E: talk to
 Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key

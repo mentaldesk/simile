@@ -1,5 +1,6 @@
-import type { Item, Meal, PlayerStateMessage } from '../net';
-import { EAT_KEY, NEWS_KEY } from './tuning';
+import type { Item, Meal, Pile, PlayerStateMessage } from '../net';
+import { amount, pickUpPrompt, sellPrompt } from './salvage';
+import { EAT_KEY } from './tuning';
 
 /** Hunger from which F eats. */
 export const PECKISH = 0.3;
@@ -10,7 +11,6 @@ const COLLAPSED_MS = 6000;
 
 export type Eat = { kind: 'meal'; meal: Meal } | { kind: 'item'; item: Item };
 
-const amount = (money: number) => String(Number(money.toFixed(2)));
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 const key = (name: string) => name.toUpperCase();
 
@@ -44,11 +44,10 @@ export function eatPrompt(state: PlayerStateMessage): string | undefined {
 }
 
 export const COLLAPSED = 'You collapsed from hunger and woke at home.';
-export const PICK_UP = `Press ${key(NEWS_KEY)} to pick up what you left here.`;
 
-type Line = 'collapsed' | 'feeling' | 'eat' | 'pile';
+type Line = 'collapsed' | 'feeling' | 'eat' | 'pile' | 'sell';
 
-/** How hungry the player is and what they can eat, in a corner, and where they can pick up what they left. */
+/** How hungry the player is and what they can eat, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
   private readonly lines = new Map<Line, HTMLElement>();
   private collapsedUntil = 0;
@@ -56,7 +55,7 @@ export class HungerHint {
   constructor(parent: HTMLElement) {
     const root = parent.appendChild(document.createElement('div'));
     root.className = 'hunger-hint';
-    for (const line of ['collapsed', 'feeling', 'eat', 'pile'] as const) {
+    for (const line of ['collapsed', 'feeling', 'eat', 'pile', 'sell'] as const) {
       const element = root.appendChild(document.createElement('div'));
       element.hidden = true;
       this.lines.set(line, element);
@@ -67,11 +66,13 @@ export class HungerHint {
     this.collapsedUntil = now + COLLAPSED_MS;
   }
 
-  update(state: PlayerStateMessage | undefined, pile: boolean, now = Date.now()): void {
+  /** `pile` is the one E picks up from, if any. */
+  update(state: PlayerStateMessage | undefined, pile: Pile | undefined, now = Date.now()): void {
     this.show('collapsed', now < this.collapsedUntil ? COLLAPSED : undefined);
     this.show('feeling', state && feeling(state.player.hunger));
     this.show('eat', state && eatPrompt(state));
-    this.show('pile', pile ? PICK_UP : undefined);
+    this.show('pile', state && pile && pickUpPrompt(pile, state.player));
+    this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);
   }
 
   private show(line: Line, text: string | undefined): void {

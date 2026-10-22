@@ -4,10 +4,13 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from simile.schema import Id, Model, Timestamp
+from simile.schema import PLAYER_ID, Id, Model, Timestamp
 
 OUTSIDE = "outside"
 """The world beyond the village: it pays wages and pensions, and takes rent and supplies."""
+PLAYER = PLAYER_ID
+"""The player, who isn't a resident: their money is in the ledger but not in what residents hold."""
+_NOT_RESIDENTS = frozenset({OUTSIDE, PLAYER})
 
 
 class Kind(StrEnum):
@@ -22,6 +25,10 @@ class Kind(StrEnum):
     """One resident lending another money."""
     REPAYMENT = "repayment"
     """Paying a loan back."""
+    SALVAGE = "salvage"
+    """The player selling salvage to a buyer in the tunnels."""
+    FOUND = "found"
+    """Money the player picks up, such as a secret's cash."""
 
 
 class Entry(Model):
@@ -30,11 +37,16 @@ class Entry(Model):
     amount: float = Field(gt=0, allow_inf_nan=False)
     payer: Id
     payee: Id
-    place: Id | None = Field(default=None, description="The shop, for purchases and supplies.")
+    place: Id | None = Field(
+        default=None,
+        description="The shop, for purchases and supplies; the buyer, for salvage; and the "
+        "pickup, for money found.",
+    )
 
 
 class Ledger:
-    """Every movement of money since the opening balances."""
+    """Every movement of money since the opening balances: the residents', whose balances it
+    opens on, and the player's."""
 
     def __init__(self, opening: Mapping[Id, float], entries: Iterable[Entry] = ()) -> None:
         self.opening = dict(opening)
@@ -44,10 +56,28 @@ class Ledger:
         self.entries.append(entry)
 
     def came_in(self) -> float:
-        return sum(entry.amount for entry in self.entries if entry.payer == OUTSIDE)
+        """Money into residents' hands from outside the village or from the player."""
+        return sum(
+            entry.amount
+            for entry in self.entries
+            if entry.payer in _NOT_RESIDENTS and entry.payee not in _NOT_RESIDENTS
+        )
 
     def went_out(self) -> float:
-        return sum(entry.amount for entry in self.entries if entry.payee == OUTSIDE)
+        """Money out of residents' hands to outside the village or to the player."""
+        return sum(
+            entry.amount
+            for entry in self.entries
+            if entry.payer not in _NOT_RESIDENTS and entry.payee in _NOT_RESIDENTS
+        )
+
+    def net(self, party: Id) -> float:
+        """What `party` has been paid since the opening balances, less what they've paid."""
+        return sum(
+            entry.amount if entry.payee == party else -entry.amount
+            for entry in self.entries
+            if party in (entry.payer, entry.payee)
+        )
 
     def by_kind(self) -> Counter[Kind]:
         totals: Counter[Kind] = Counter()
@@ -59,9 +89,9 @@ class Ledger:
         """What each resident holds by the ledger: their opening balance plus everything since."""
         held = dict(self.opening)
         for entry in self.entries:
-            if entry.payer != OUTSIDE:
+            if entry.payer not in _NOT_RESIDENTS:
                 held[entry.payer] = held.get(entry.payer, 0.0) - entry.amount
-            if entry.payee != OUTSIDE:
+            if entry.payee not in _NOT_RESIDENTS:
                 held[entry.payee] = held.get(entry.payee, 0.0) + entry.amount
         return held
 

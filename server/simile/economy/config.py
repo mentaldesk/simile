@@ -1,4 +1,4 @@
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -35,6 +35,14 @@ SHOPS: dict[Id, Shop] = {
     "coffee_shop": Shop(drink=3.0, meal=5.0, supplies=0.6),
     "noodle_bar": Shop(drink=3.0, meal=10.0, supplies=0.3, batch=6),
 }
+SALVAGE: dict[Id, float] = {
+    "copper_wire": 6.0,
+    "scrap_steel": 5.0,
+    "circuit_board": 8.0,
+    "brass_valve": 7.0,
+    "signal_relay": 6.0,
+    "servo_motor": 18.0,
+}
 
 
 class EconomyConfig(BaseModel):
@@ -54,6 +62,15 @@ class EconomyConfig(BaseModel):
         description="Meals left in a fridge at which someone at home orders groceries to fill it.",
     )
     shops: dict[Id, Shop] = Field(default=SHOPS, description="By location id.")
+    salvage: dict[Id, Annotated[float, Field(ge=0)]] = Field(
+        default=SALVAGE,
+        description="What a buyer pays the player for one of each kind of salvage, by item id.",
+    )
+    buyers: tuple[Id, ...] = Field(
+        default=("scrap_stall", "clinic"),
+        description="Where salvage sells, by location id: the scrap trader's stall on the metro's "
+        "platform and the clinic.",
+    )
     takings: float = Field(
         default=10.0,
         ge=0,

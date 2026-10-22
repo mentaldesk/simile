@@ -7,7 +7,7 @@ import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
 import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
-import { setWayPrompts, type WayPrompt } from '../world/reach';
+import { reachables, setWayPrompts, type WayPrompt } from '../world/reach';
 import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
@@ -21,6 +21,7 @@ import type { Drawn } from './motion';
 import type { Crossing } from './runs';
 import { SidePlayer, type Controls, type MapPosition } from './player';
 import { sideResidents } from './residents';
+import { PileGlints } from './piles';
 import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
@@ -55,6 +56,7 @@ const harness = import.meta.env.DEV && new URLSearchParams(globalThis.location?.
 export class SideScene extends Phaser.Scene {
   private content?: Content;
   private pictures!: SideTextures;
+  private glints!: PileGlints;
   private street?: StreetView;
   private player?: SidePlayer;
   private keys!: Keys;
@@ -89,6 +91,7 @@ export class SideScene extends Phaser.Scene {
   create(): void {
     this.scene.sendToBack();
     this.pictures = new SideTextures(this);
+    this.glints = new PileGlints(this);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
     const keyboard = this.input.keyboard!;
@@ -121,6 +124,7 @@ export class SideScene extends Phaser.Scene {
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
       () => this.street?.destroy(),
+      () => this.glints.destroy(),
       () => this.pictures.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
@@ -179,6 +183,7 @@ export class SideScene extends Phaser.Scene {
       street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
+    this.glints.update(content.village, street.map.id, reachables.piles(), time / 1000);
     this.report(player.mapPosition, time / 1000);
   }
 
