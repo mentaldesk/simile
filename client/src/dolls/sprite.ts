@@ -7,10 +7,21 @@ export const WALK_BOB = 0.012;
 /** Degrees each way, once a cycle. */
 export const WALK_SWAY = 2;
 export const LADDER_BOB = 0.015;
+/** Of its height a landing figure is squashed at first, springing back over the landing. */
+export const LANDING_SQUASH = 0.1;
 
 /** A frame of a figure as drawn: mirrored to face left, raised by `bob` of its height and turned
- * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up. */
-export type Shown = { pose: SpritePose; frame: string; flip: boolean; bob: number; sway: number; seat: number };
+ * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up, and squashed by `squash` of its
+ * height. */
+export type Shown = {
+  pose: SpritePose;
+  frame: string;
+  flip: boolean;
+  bob: number;
+  sway: number;
+  seat: number;
+  squash?: number;
+};
 
 export const facesLeft = (facing: Facing): boolean => facing.endsWith('west');
 
@@ -23,7 +34,9 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
     case 'walking':
       return (options.run ?? 0) >= 0.5 ? 'run' : 'walk';
     case 'jumping':
-      return 'run';
+      return 'jump';
+    case 'landing':
+      return 'land';
     case 'sitting':
       return 'sit';
     case 'reading':
@@ -60,7 +73,7 @@ export function shown(
   options: PoseOptions = {},
 ): Shown {
   const kind = spritePose(pose, facing, options);
-  const frames = figure.poses[kind]?.length ? figure.poses[kind] : figure.poses.stand;
+  const frames = framesOf(figure, kind);
   const cycle = phase - Math.floor(phase);
   const frame = frames[Math.min(frames.length - 1, Math.floor(cycle * frames.length))];
   const turn = 2 * Math.PI * cycle;
@@ -78,7 +91,32 @@ export function shown(
       return { pose: kind, frame, flip: cycle >= 0.5, bob: LADDER_BOB * Math.abs(Math.sin(turn)), sway: 0, seat: 0 };
     case 'sit':
       return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: options.seat ?? 0 };
+    case 'jump':
+      return { pose: kind, frame, flip: facesLeft(facing), bob: lift(figure, frame), sway: 0, seat: 0 };
+    case 'land': {
+      const squash = figure.poses.land?.length ? 0 : LANDING_SQUASH * (1 - cycle);
+      return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: 0, squash };
+    }
     default:
       return { pose: kind, frame, flip: facesLeft(facing), bob: 0, sway: 0, seat: 0 };
   }
+}
+
+/** A pose's painted frames: a jump without its own is the run's leap, and anything else missing stands. */
+function framesOf(figure: FigureManifest, kind: SpritePose): readonly string[] {
+  const painted = figure.poses[kind];
+  if (painted?.length) return painted;
+  return kind === 'jump' ? [leap(figure)] : figure.poses.stand;
+}
+
+/** The run's frame furthest off the ground. */
+export function leap(figure: FigureManifest): string {
+  const off = (name: string) => lift(figure, name);
+  return figure.poses.run.reduce((best, name) => (off(name) < off(best) ? name : best), figure.poses.run[0]);
+}
+
+/** How far to raise a frame so its lowest point is on the ground: below 0 for a frame drawn in the air. */
+function lift(figure: FigureManifest, frame: string): number {
+  const { frame: box, feet } = figure.frames[frame];
+  return (feet[1] - box[3]) / -figure.height;
 }

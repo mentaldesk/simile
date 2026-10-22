@@ -357,7 +357,7 @@ describe('stairs and ladders on a street', () => {
     expect(player.position.x).toBeGreaterThan(57);
   });
 
-  it('climbs the park ladder and steps off onto the lookout', () => {
+  it('climbs the park ladder, steps off onto the lookout and walks off its end to the path', () => {
     const player = at({ x: 45, y: 15, map: 'lychee_lane' });
     hold(player, press({ y: -1 }), 1);
     expect(player.position.x).toBe(45);
@@ -366,8 +366,12 @@ describe('stairs and ladders on a street', () => {
     expect(player.position).toEqual({ x: 46, y: 12 });
     expect(player.climbing).toBeUndefined();
     expect(player.drawn.pose).toBe('standing');
+    hold(player, press({ x: 1 }), 0.7);
+    expect(player.position.y).toBe(12);
+    expect(player.position.x).toBeGreaterThan(47.5);
     hold(player, press({ x: 1 }), 1);
-    expect(player.position.x).toBe(48);
+    expect(player.position.y).toBe(15);
+    expect(player.airborne).toBe(false);
   });
 
   it('gets back on the ladder from the lookout on down', () => {

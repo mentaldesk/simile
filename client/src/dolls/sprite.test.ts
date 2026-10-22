@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Facing } from '../net/protocol';
 import { dolls } from './assets';
-import type { FigureManifest, SpritePose } from './manifest';
+import type { FigureManifest, PaintedPose, SpritePose } from './manifest';
 import type { DollPose, PoseOptions } from './rig';
 import { placed, shown, spritePose, WALK_BOB } from './sprite';
 
@@ -162,7 +162,7 @@ describe('the committed figures', () => {
 
   it('play every pose from frames they have', () => {
     for (const doll of Object.values(dolls)) {
-      for (const pose of ['stand', 'walk', 'run', 'sit', 'climb'] as SpritePose[]) {
+      for (const pose of ['stand', 'walk', 'run', 'sit', 'climb'] as PaintedPose[]) {
         expect(doll.poses[pose].length, `${doll.id} ${pose}`).toBeGreaterThan(0);
         for (const name of doll.poses[pose]) expect(doll.frames[name], `${doll.id} ${name}`).toBeDefined();
       }

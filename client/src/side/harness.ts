@@ -23,7 +23,7 @@ const works = worksJson as { id: string; artist: string; medium: string; title: 
 const params = new URLSearchParams(location.search);
 const START_HOUR = Number(params.get('hour') ?? 10);
 const SPEED = Number(params.get('speed') ?? 60);
-const STREETS = ['high_street', 'lychee_lane', 'kapok_walk', 'banyan_row'];
+const STREETS = ['high_street', 'lychee_lane', 'kapok_walk', 'banyan_row', 'rooftops'];
 
 const sleep = (seconds: number) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 const dispatch = (message: object) => server.dispatch(JSON.stringify(message));
@@ -265,9 +265,9 @@ function showPanel(): void {
   const panel = document.body.appendChild(document.createElement('section'));
   panel.className = 'side-harness';
   panel.innerHTML = `<b>Side-view harness</b>
-    <p>Left and right walk, and Shift runs. E takes a door, or uses what's in reach. Up climbs stairs
-    or a ladder from the tile beside its foot, and down from beside its top; up and down ride the lift.
-    [ and ] move the clock an hour; 1 to 4 go to each street.</p>`;
+    <p>Left and right walk, Shift switches to running and back, and Space jumps. E takes a door, or uses
+    what's in reach. Up climbs stairs or a ladder from the tile beside its foot, and down from beside its
+    top; up and down ride the lift. [ and ] move the clock an hour; 1 to 5 go to each street.</p>`;
 }
 
 /** Work from each step's start to the end of its render, and the gaps between frames. */

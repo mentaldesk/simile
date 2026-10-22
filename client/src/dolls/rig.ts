@@ -2,8 +2,8 @@ import type { Facing, Pose } from '../net/protocol';
 import type { FlatDoll, PieceName, PieceSpec } from './manifest';
 
 export type View = 'side' | 'front' | 'back';
-/** The sim's poses, and a jump that nothing uses yet. */
-export type DollPose = Pose | 'jumping';
+/** The sim's poses, and the player's jump and landing. */
+export type DollPose = Pose | 'jumping' | 'landing';
 
 export type PoseOptions = {
   /** At a desk: `working` and `reading` sit instead of standing. */
