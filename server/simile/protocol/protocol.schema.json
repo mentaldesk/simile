@@ -70,6 +70,41 @@
       "title": "Body",
       "type": "object"
     },
+    "Buyer": {
+      "additionalProperties": false,
+      "description": "Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their\nplace.",
+      "properties": {
+        "place": {
+          "description": "Where: a location id, e.g. \"scrap_stall\" or \"clinic\".",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "name": {
+          "description": "The buyer as the player sees it, e.g. \"The scrap trader\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "prices": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "description": "What it pays for one of each thing they carry that it buys, by item `id`. Empty when they carry nothing it buys.",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "type": "object"
+        }
+      },
+      "required": [
+        "place",
+        "name",
+        "prices"
+      ],
+      "title": "Buyer",
+      "type": "object"
+    },
     "ClientMessage": {
       "discriminator": {
         "mapping": {
@@ -81,6 +116,7 @@
           "player_say": "#/$defs/PlayerSayMessage",
           "read_news": "#/$defs/ReadNewsMessage",
           "read_work": "#/$defs/ReadWorkMessage",
+          "sell": "#/$defs/SellMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -112,6 +148,9 @@
         },
         {
           "$ref": "#/$defs/PickUpMessage"
+        },
+        {
+          "$ref": "#/$defs/SellMessage"
         }
       ]
     },
@@ -992,7 +1031,7 @@
     },
     "PickUpMessage": {
       "additionalProperties": false,
-      "description": "Picks up, from the nearest pile within reach of the player, each item that still fits\nunder their carry limit, in order. Any that don't fit stay in the pile.",
+      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile.",
       "properties": {
         "type": {
           "const": "pick_up",
@@ -1008,7 +1047,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "Items lying `at` a tile in the world for the player to pick up, such as what they left\nwhen they collapsed.",
+      "description": "Items, money or both lying `at` a tile in the world for the player to pick up, such as\nsalvage, a secret's cash, or what they left when they collapsed.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -1017,8 +1056,13 @@
           "items": {
             "$ref": "#/$defs/Item"
           },
-          "minItems": 1,
           "type": "array"
+        },
+        "money": {
+          "default": 0.0,
+          "description": "Cash lying there, which weighs nothing. Left out while there's none.",
+          "minimum": 0,
+          "type": "number"
         }
       },
       "required": [
@@ -1063,9 +1107,19 @@
         },
         "left": {
           "default": [],
-          "description": "What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.",
+          "description": "What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Pile"
+          },
+          "type": "array"
+        },
+        "taken": {
+          "default": [],
+          "description": "The pickups in the world they've taken from, by id, which stay taken. Left out while there's none.",
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
           },
           "type": "array"
         }
@@ -1149,7 +1203,7 @@
     },
     "PlayerStateMessage": {
       "additionalProperties": false,
-      "description": "The player's money, what they carry, their body and their hunger, but never their humanity,\nand the meal on offer where they stand. Sent after the snapshot on connect, and whenever any of\nit changes.",
+      "description": "The player's money, what they carry, their body and their hunger, but never their humanity,\nwith the meal on offer and the buyer where they stand, and what's lying in the world for them\nto pick up. Sent after the snapshot on connect, and whenever any of it changes.",
       "properties": {
         "type": {
           "const": "player_state",
@@ -1170,6 +1224,26 @@
           ],
           "default": null,
           "description": "The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none."
+        },
+        "buyer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Buyer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Who buys where they stand, such as the scrap trader at their stall. Left out where there's none."
+        },
+        "piles": {
+          "default": [],
+          "description": "What's lying in the world for them to pick up, on every map, besides what they left (`player.left`): salvage and secrets. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Pile"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -1258,6 +1332,36 @@
         "work_id"
       ],
       "title": "ReadWorkMessage",
+      "type": "object"
+    },
+    "SellMessage": {
+      "additionalProperties": false,
+      "description": "Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The\nserver ignores it if there's no buyer, or they carry nothing it buys.",
+      "properties": {
+        "type": {
+          "const": "sell",
+          "default": "sell",
+          "type": "string"
+        },
+        "item": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "One thing they carry, by its `id`, or null for everything they carry that the buyer buys."
+        }
+      },
+      "required": [
+        "type",
+        "item"
+      ],
+      "title": "SellMessage",
       "type": "object"
     },
     "ServerMessage": {

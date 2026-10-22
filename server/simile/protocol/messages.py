@@ -13,6 +13,7 @@ from simile.schema import (
     Key,
     Line,
     Model,
+    Pile,
     Player,
     Pose,
     Timestamp,
@@ -286,10 +287,25 @@ class Meal(Model):
     price: float = Field(ge=0, allow_inf_nan=False, description="What it costs. Nothing at home.")
 
 
+class Buyer(Model):
+    """Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
+    place."""
+
+    place: Id = Field(description='Where: a location id, e.g. "scrap_stall" or "clinic".')
+    name: str = Field(
+        min_length=1,
+        description='The buyer as the player sees it, e.g. "The scrap trader".',
+    )
+    prices: dict[Key, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
+        description="What it pays for one of each thing they carry that it buys, by item `id`. "
+        "Empty when they carry nothing it buys."
+    )
+
+
 class PlayerStateMessage(Model):
     """The player's money, what they carry, their body and their hunger, but never their humanity,
-    and the meal on offer where they stand. Sent after the snapshot on connect, and whenever any of
-    it changes."""
+    with the meal on offer and the buyer where they stand, and what's lying in the world for them
+    to pick up. Sent after the snapshot on connect, and whenever any of it changes."""
 
     type: Literal["player_state"] = "player_state"
     player: Player
@@ -298,6 +314,18 @@ class PlayerStateMessage(Model):
         exclude_if=lambda meal: meal is None,
         description="The meal on offer where they stand: at home, or at a shop that's serving. "
         "Left out where there's none.",
+    )
+    buyer: Buyer | None = Field(
+        default=None,
+        exclude_if=lambda buyer: buyer is None,
+        description="Who buys where they stand, such as the scrap trader at their stall. Left out "
+        "where there's none.",
+    )
+    piles: list[Pile] = Field(
+        default=[],
+        exclude_if=lambda piles: not piles,
+        description="What's lying in the world for them to pick up, on every map, besides what "
+        "they left (`player.left`): salvage and secrets. Left out while there's none.",
     )
 
 
@@ -373,10 +401,21 @@ class EatMessage(Model):
 
 
 class PickUpMessage(Model):
-    """Picks up, from the nearest pile within reach of the player, each item that still fits
-    under their carry limit, in order. Any that don't fit stay in the pile."""
+    """Picks up, from the nearest pile within reach of the player, its money and each item that
+    still fits under their carry limit, in order. Any that don't fit stay in the pile."""
 
     type: Literal["pick_up"] = "pick_up"
+
+
+class SellMessage(Model):
+    """Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The
+    server ignores it if there's no buyer, or they carry nothing it buys."""
+
+    type: Literal["sell"] = "sell"
+    item: Id | None = Field(
+        description="One thing they carry, by its `id`, or null for everything they carry that "
+        "the buyer buys."
+    )
 
 
 type ServerMessage = Annotated[
@@ -406,7 +445,8 @@ type ClientMessage = Annotated[
     | ListWorksMessage
     | ReadWorkMessage
     | EatMessage
-    | PickUpMessage,
+    | PickUpMessage
+    | SellMessage,
     Field(discriminator="type"),
 ]
 

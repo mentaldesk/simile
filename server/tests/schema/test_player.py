@@ -23,7 +23,7 @@ from simile.schema import (
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED = PLAYERS
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING = PLAYERS
 SALVAGE = DELVING["items"][1]
 
 
@@ -37,7 +37,7 @@ def rejects(model: type[Player | Item | Body | Pile], data: dict[str, Any], matc
 
 
 @pytest.mark.parametrize(
-    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed"]
+    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed", "salvaging"]
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
     parsed = Player.model_validate_json(json.dumps(data))
@@ -280,10 +280,49 @@ def test_a_player_who_left_nothing_dumps_without_piles() -> None:
     assert "left" not in schema("Player").schema["required"]
 
 
+def test_the_pickups_they_have_taken_from_are_kept_by_id() -> None:
+    player = Player.model_validate(SALVAGING)
+
+    assert player.taken == ["metro_secret_stairwell", "metro_salvage_2", "metro_salvage_4"]
+    assert [item.id for item in player.left[0].items] == ["copper_wire", "brass_valve"]
+
+
+def test_a_player_who_took_nothing_dumps_without_taken() -> None:
+    assert Player.model_validate(COLLAPSED).taken == []
+    assert "taken" not in json.loads(Player(taken=[]).model_dump_json())
+    assert "taken" not in schema("Player").schema["required"]
+
+
+def test_rejects_a_pickup_that_is_not_an_id() -> None:
+    rejects(Player, SALVAGING | {"taken": ["Metro salvage"]}, "String should match pattern")
+
+
+def test_a_pile_can_hold_money_and_no_items() -> None:
+    cash = Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)
+
+    assert json.loads(cash.model_dump_json()) == {
+        "at": {"map": "metro", "x": 8, "y": 7},
+        "items": [],
+        "money": 25.0,
+    }
+    assert Player(left=[cash]).left[0].money == 25
+
+
+def test_a_pile_without_money_dumps_without_it() -> None:
+    pile = Pile.model_validate(COLLAPSED["left"][0])
+
+    assert pile.money == 0
+    assert "money" not in json.loads(pile.model_dump_json())
+    assert "money" not in schema("Player").schema["$defs"]["Pile"]["required"]
+
+
 @pytest.mark.parametrize(
     ("update", "match"),
     [
-        ({"items": []}, "at least 1 item"),
+        ({"items": []}, "at least one item or some money"),
+        ({"items": [], "money": 0}, "at least one item or some money"),
+        ({"money": -1}, "greater than or equal to 0"),
+        ({"money": float("inf")}, "finite number"),
         ({"at": {"map": "kapok_walk", "x": -1, "y": 15}}, "greater than or equal to 0"),
         ({"at": None}, "at"),
         ({"weight": 3}, "Extra inputs are not permitted"),
@@ -296,7 +335,13 @@ def test_rejects_invalid_piles(update: dict[str, Any], match: str) -> None:
 def test_rejects_an_empty_pile_left_on_a_player() -> None:
     player = Player.model_validate(COLLAPSED)
 
-    changes(player.left[0], "items", [], "at least 1 item")
+    changes(player.left[0], "items", [], "at least one item or some money")
+
+
+def test_rejects_taking_the_money_from_a_pile_of_only_money() -> None:
+    cash = Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)
+
+    changes(cash, "money", 0, "at least one item or some money")
 
 
 @pytest.mark.parametrize(

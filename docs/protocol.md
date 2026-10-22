@@ -22,7 +22,8 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, and a player's `left` and `player_state`'s `meal`, below.
+  `long_summary`, a wall's `map`, a player's `left` and `taken`, a pile's `money`, and
+  `player_state`'s `meal`, `buyer` and `piles`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -224,7 +225,8 @@ it ignore it.
 | `carry_limit` | number | The most they can carry, in kg. Picking things up keeps the items' total `weight` within it. |
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
 | `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
-| `left` | `Pile[]` | What they left where they collapsed, oldest first. Left out while there's none. |
+| `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
+| `taken` | `string[]` | The pickups in the world they've taken from, by id, which stay taken. Left out while there's none. |
 
 Beside `player`, the message has `meal`: the meal on offer where the player stands, which they can
 have by sending [`eat`](#eat) without an item. It's left out where there's none. A `Meal` has its
@@ -233,15 +235,30 @@ the shop's name, such as `"Golden Bowl Noodles"`; and its `price`, 0 at home. A 
 while it's serving, as it would feed a resident. The server sends a new `player_state` when the
 player walks into or out of a place with a meal.
 
+It also has `buyer`: who buys things where the player stands, which they sell to with
+[`sell`](#sell). It's left out where there's none. A `Buyer` is a stall, such as the scrap trader's,
+or a keeper at their place, such as the clinic's doctor. It has its `place`, a location id such as
+`"scrap_stall"`; its `name`, as the player sees it, such as `"The scrap trader"`; and its `prices`,
+what it pays for one of each thing the player carries that it buys, by item `id`:
+`{"copper_wire": 6}`. That's empty when they carry nothing it buys. The prices are the server's, and
+a resident only voices them. The server sends a new `player_state` when the player walks up to a
+buyer or away from one.
+
+And it has `piles`: what's lying in the world for the player to pick up besides what they left,
+such as salvage and secrets, as `Pile`s on every map. It's left out while there's none. A pile in
+`piles` that they take everything from is gone from the next `player_state`, and one they take only
+some of is in their `left` from then on, with what didn't fit.
+
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
 which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
 it; its `weight` in kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a
 lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else.
 
-A `Pile` is items lying on a tile in the world for the player to pick up with
-[`pick_up`](#pick_up): its `items`, at least one, and `at`, a `MapTile` (`map`, `x` and `y`, whole
-tiles). What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
-the ground below it.
+A `Pile` is things lying on a tile in the world for the player to pick up with
+[`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
+`x` and `y`, whole tiles). It holds at least one item or some money, and `money` is left out while
+it's 0. What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
+the ground below it. Salvage and secrets, in `piles`, are another.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
 `right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
@@ -249,7 +266,8 @@ A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`,
 the other, never both.
 
 The player's state is saved with the world. A save from before it loads with the starting player:
-a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere. Their
+a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere and
+nothing taken. Their
 humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
 never sent: the player sees it only in how residents treat them.
 
@@ -363,10 +381,18 @@ none on offer or that they can't pay for.
 ### `pick_up`
 
 No fields. Picks up from the nearest `Pile` on the map the player is on, within a tile and a half of
-where they stand, such as one in their `left`. It takes each item, in order, that still fits under
-their carry limit, and skips any that doesn't, which stays in the pile with anything else left. The
-server sends the [`player_state`](#player_state) that follows, and ignores a `pick_up` with nothing
-in reach or nothing that fits.
+where they stand, one of their `left` or of `player_state`'s `piles`. It takes its money, and each
+item, in order, that still fits under their carry limit, and skips any that doesn't, which stays in
+the pile with anything else left. The server sends the [`player_state`](#player_state) that follows,
+and ignores a `pick_up` with nothing in reach, or with only items that don't fit.
+
+### `sell`
+
+`item`: one thing the player carries, by its `id`, or `null` for everything they carry that the
+buyer where they stand buys, `player_state`'s [`buyer`](#player_state). Each is sold for the
+buyer's price in `prices`, which goes to their `money`. The server sends the
+[`player_state`](#player_state) that follows. It ignores a `sell` where there's no buyer, and one
+for an item they don't carry or the buyer doesn't buy.
 
 ### `watch_npc`
 

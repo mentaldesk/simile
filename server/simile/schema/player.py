@@ -60,13 +60,27 @@ def lamp() -> Item:
 
 
 class Pile(Model):
-    """Items lying `at` a tile in the world for the player to pick up, such as what they left
-    when they collapsed."""
+    """Items, money or both lying `at` a tile in the world for the player to pick up, such as
+    salvage, a secret's cash, or what they left when they collapsed."""
 
     model_config = CHECKED
 
     at: MapTile
-    items: list[Item] = Field(min_length=1)
+    items: list[Item]
+    money: float = Field(
+        default=0.0,
+        ge=0,
+        allow_inf_nan=False,
+        exclude_if=lambda money: not money,
+        description="Cash lying there, which weighs nothing. Left out while there's none.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _something_lies_there(cls, data: Any) -> Any:
+        if isinstance(data, dict) and not data.get("items") and not data.get("money"):
+            raise ValueError("a pile holds at least one item or some money")
+        return data
 
 
 class Bionic(StrEnum):
@@ -152,8 +166,15 @@ class Player(Model):
     left: list[Pile] = Field(
         default=[],
         exclude_if=lambda left: not left,
-        description="What they left when they collapsed, oldest first, each on the tile they fell "
-        "on or the ground below it. Left out while there's none.",
+        description="What they left lying in the world, oldest first: what they carried when they "
+        "collapsed, on the tile they fell on or the ground below it, and anything of a pickup that "
+        "didn't fit when they took from it. Left out while there's none.",
+    )
+    taken: list[Id] = Field(
+        default=[],
+        exclude_if=lambda taken: not taken,
+        description="The pickups in the world they've taken from, by id, which stay taken. Left "
+        "out while there's none.",
     )
 
     @property
