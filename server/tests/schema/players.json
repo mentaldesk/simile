@@ -63,5 +63,28 @@
       "right_kidney": "present"
     },
     "hunger": 0.9
+  },
+  {
+    "money": 12.0,
+    "items": [],
+    "carry_limit": 10.0,
+    "body": {
+      "legs": "hydraulic_legs",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "sold",
+      "right_kidney": "present"
+    },
+    "hunger": 0.75,
+    "left": [
+      {
+        "at": {"map": "kapok_walk", "x": 12, "y": 15},
+        "items": [
+          {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.1, "on": true},
+          {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null, "on": null}
+        ]
+      }
+    ]
   }
 ]

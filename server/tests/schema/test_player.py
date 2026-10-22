@@ -6,11 +6,24 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
-from simile.schema import MODELS, PRESENT, SOLD, Bionic, Body, Item, ItemKind, Player, export, lamp
+from simile.schema import (
+    MODELS,
+    PRESENT,
+    SOLD,
+    Bionic,
+    Body,
+    Item,
+    ItemKind,
+    MapTile,
+    Pile,
+    Player,
+    export,
+    lamp,
+)
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED = PLAYERS
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED = PLAYERS
 SALVAGE = DELVING["items"][1]
 
 
@@ -18,12 +31,14 @@ def schema(name: str) -> Draft202012Validator:
     return Draft202012Validator(json.loads((export.JSON_DIR / f"{name}.json").read_text()))
 
 
-def rejects(model: type[Player | Item | Body], data: dict[str, Any], match: str) -> None:
+def rejects(model: type[Player | Item | Body | Pile], data: dict[str, Any], match: str) -> None:
     with pytest.raises(ValidationError, match=match):
         model.model_validate(data)
 
 
-@pytest.mark.parametrize("data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted"])
+@pytest.mark.parametrize(
+    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed"]
+)
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
     parsed = Player.model_validate_json(json.dumps(data))
     dumped = parsed.model_dump_json()
@@ -49,12 +64,14 @@ def test_the_starting_player_is_whole_with_no_money_and_a_charged_lamp() -> None
     assert all(state == PRESENT for _, state in player.body)
     assert player.body.bionics == []
     assert player.hunger == 0
+    assert player.left == []
     assert player.humanity == 1
     assert json.loads(player.model_dump_json()) == STARTING
 
 
 def test_anything_left_out_is_the_starting_players() -> None:
     assert Player.model_validate({}) == Player()
+    assert Player.model_validate(FITTED).left == []
     assert Player.model_validate({"money": 40}).items == [lamp()]
     assert Body.model_validate({"legs": "hydraulic_legs"}).left_kidney == PRESENT
 
@@ -194,7 +211,7 @@ def test_load_is_what_everything_carried_weighs() -> None:
     assert Player(items=[]).load == 0
 
 
-def changes(model: Player | Item | Body, field: str, value: Any, match: str) -> None:
+def changes(model: Player | Item | Body | Pile, field: str, value: Any, match: str) -> None:
     before = model.model_dump()
     with pytest.raises(ValidationError, match=match):
         setattr(model, field, value)
@@ -245,3 +262,36 @@ def test_a_valid_change_is_kept() -> None:
     player.body.left_kidney = SOLD
 
     assert (player.hunger, player.items[0].on, player.body.left_kidney) == (0.4, True, SOLD)
+
+
+def test_what_they_left_where_they_collapsed_is_kept_in_piles() -> None:
+    player = Player.model_validate(COLLAPSED)
+
+    assert player.items == []
+    assert player.load == 0
+    assert [pile.at for pile in player.left] == [MapTile(map="kapok_walk", x=12, y=15)]
+    assert [item.id for item in player.left[0].items] == ["lamp", "copper_wire"]
+
+
+def test_a_player_who_left_nothing_dumps_without_piles() -> None:
+    assert "left" not in json.loads(Player(left=[]).model_dump_json())
+    assert "left" not in schema("Player").schema["required"]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"items": []}, "at least 1 item"),
+        ({"at": {"map": "kapok_walk", "x": -1, "y": 15}}, "greater than or equal to 0"),
+        ({"at": None}, "at"),
+        ({"weight": 3}, "Extra inputs are not permitted"),
+    ],
+)
+def test_rejects_invalid_piles(update: dict[str, Any], match: str) -> None:
+    rejects(Pile, COLLAPSED["left"][0] | update, match)
+
+
+def test_rejects_an_empty_pile_left_on_a_player() -> None:
+    player = Player.model_validate(COLLAPSED)
+
+    changes(player.left[0], "items", [], "at least 1 item")

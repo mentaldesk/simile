@@ -274,12 +274,39 @@ class PaintingsMessage(Model):
     frames: list[Frame]
 
 
+class Meal(Model):
+    """A meal the player can have where they stand, by sending `eat` without an item."""
+
+    place: Id = Field(description="Where: their home's location id, or a shop's.")
+    name: str = Field(
+        min_length=1,
+        description='The place as the player sees it: "home", or a shop\'s name, e.g. "Golden '
+        'Bowl Noodles".',
+    )
+    price: float = Field(ge=0, allow_inf_nan=False, description="What it costs. Nothing at home.")
+
+
 class PlayerStateMessage(Model):
-    """The player's money, what they carry, their body and their hunger, but never their humanity.
-    Sent after the snapshot on connect, and whenever any of it changes."""
+    """The player's money, what they carry, their body and their hunger, but never their humanity,
+    and the meal on offer where they stand. Sent after the snapshot on connect, and whenever any of
+    it changes."""
 
     type: Literal["player_state"] = "player_state"
     player: Player
+    meal: Meal | None = Field(
+        default=None,
+        exclude_if=lambda meal: meal is None,
+        description="The meal on offer where they stand: at home, or at a shop that's serving. "
+        "Left out where there's none.",
+    )
+
+
+class PlayerCollapsedMessage(Model):
+    """The player starved and collapsed. They wake at home, at `position`, still hungry, and
+    what they carried stays where they fell, in `player_state`'s `left`."""
+
+    type: Literal["player_collapsed"] = "player_collapsed"
+    position: Position
 
 
 class JournalMessage(Model):
@@ -335,6 +362,23 @@ class WatchNpcMessage(Model):
     npc_id: Id | None = Field(description="The NPC to send npc_state for, or null to stop.")
 
 
+class EatMessage(Model):
+    """The server ignores it if there's nothing to eat, or they can't pay."""
+
+    type: Literal["eat"] = "eat"
+    item: Id | None = Field(
+        description="A food item they carry, by its `id`, or null for the meal on offer where "
+        "they stand, `player_state`'s `meal`."
+    )
+
+
+class PickUpMessage(Model):
+    """Picks up what the player left where they collapsed, if it's within reach, as much as
+    their carry limit allows."""
+
+    type: Literal["pick_up"] = "pick_up"
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
@@ -348,7 +392,8 @@ type ServerMessage = Annotated[
     | MuralsMessage
     | PaintingsMessage
     | PlayerStateMessage
-    | JournalMessage,
+    | JournalMessage
+    | PlayerCollapsedMessage,
     Field(discriminator="type"),
 ]
 
@@ -359,7 +404,9 @@ type ClientMessage = Annotated[
     | ListNewsMessage
     | ReadNewsMessage
     | ListWorksMessage
-    | ReadWorkMessage,
+    | ReadWorkMessage
+    | EatMessage
+    | PickUpMessage,
     Field(discriminator="type"),
 ]
 
