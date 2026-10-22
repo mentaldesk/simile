@@ -23,9 +23,7 @@ type Supply = Callable[[Goal, Need], float]
 
 
 class Hunger:
-    """The player's hunger. It rises while someone's playing, a meal or food they carry relieves
-    it, and at 1 they collapse: they wake at home, still hungry, with their lamp, and what else
-    they carried is left where they fell for them to go back for. Tick it on the sim loop."""
+    """The player's hunger, eating, collapsing and picking up. Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -60,8 +58,7 @@ class Hunger:
             self.player.hunger = hunger
 
     def meal(self) -> Meal | None:
-        """The meal on offer where they stand: at home for nothing, or at a shop that's serving,
-        at its meal price."""
+        """The meal on offer where they stand, if any."""
         here = self._here()
         if here is None:
             return None
@@ -76,13 +73,11 @@ class Hunger:
         return None
 
     def eat(self, item: Id | None) -> bool:
-        """Eats a food item they carry, by its id, or with None the meal on offer where they
-        stand, paying for it. Whether they ate."""
+        """Eats a carried food item by id, or with None the meal on offer. Whether they ate."""
         return self._eat_meal() if item is None else self._eat_item(item)
 
     def collapse(self) -> None:
-        """Leaves what they carry where they are, but for the lamp, and puts them at home, still
-        hungry."""
+        """Leaves all but the lamp where they are, and wakes them at home still hungry."""
         here = self._here()
         kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
         dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
@@ -98,8 +93,7 @@ class Hunger:
         self.collapsed(home)
 
     def pick_up(self) -> bool:
-        """Picks up, from the nearest pile they left within reach, each item that still fits under
-        their carry limit, in order. Whether they picked anything up."""
+        """Takes what still fits from the nearest pile in reach. Whether they took anything."""
         here = self._here()
         if here is None:
             return False
@@ -155,8 +149,7 @@ class Hunger:
         return True
 
     def _pay(self, meal: Meal) -> None:
-        """To the shop's keeper through the ledger, as from outside the village, and from its
-        batch."""
+        """Pays the keeper through the ledger, as from outside, and takes one from the batch."""
         assert self.economy is not None
         self.player.money = max(self.player.money - meal.price, 0.0)
         self.economy.buy(OUTSIDE, meal.place, meal.price)
@@ -191,8 +184,7 @@ class Hunger:
 
 
 def ground(movement: Movement, here: Point) -> MapTile:
-    """The cell they're on, or if that's mid-air or partway up stairs or a ladder, the first one
-    below it to stand on."""
+    """The cell they're on, or the first one below it to stand on."""
     x, y = (max(n, 0) for n in cell_of(here))
     town = movement.maps.get(here.map)
     if town is not None:

@@ -3,6 +3,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
+import pytest
 from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
@@ -55,6 +56,32 @@ def test_new_clients_get_the_players_state_after_the_snapshot_and_clock(
     assert [message["type"] for message in greeted] == ["snapshot", "clock", "player_state"]
     assert greeted[2]["player"]["hunger"] == 0
     assert "meal" not in greeted[2]
+
+
+def test_hunger_rises_only_while_a_client_is_in_the_game(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+
+    with TestClient(app) as client:
+        player = player_of(app)
+
+        def rise() -> float:
+            before = player.hunger
+            for _ in range(10):
+                client.portal.call(world_of(app).loop.tick)
+            return player.hunger - before
+
+        with client.websocket_connect("/ws") as menu:
+            next_of(menu, "player_state")
+            on_the_menu = rise()
+            with client.websocket_connect("/ws") as game:
+                next_of(game, "player_state")
+                connected = rise()
+                move(client, app, game, 12, 15, "kapok_walk")
+                playing = rise()
+            left = rise()
+
+    assert on_the_menu == connected == left == 0
+    assert playing == pytest.approx(0.25 / 3600)
 
 
 def test_the_player_eats_at_home_and_from_what_they_carry(make_package: MakePackage) -> None:

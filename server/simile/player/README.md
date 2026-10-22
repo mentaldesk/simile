@@ -7,8 +7,9 @@ with the world. This module changes it at runtime and tells the client: its `run
 ## Hunger
 
 - **It rises** by `rise` (0.25) a sim hour, from fed (0) to collapsing (1) in four hours, but only
-  while a client is connected: nobody starves while the game is closed, and `simile headless` and
-  `simile behaviour simulate` never change the player.
+  while a client is in the game: one that has sent a player position since it connected
+  (`InGame`). Nobody starves while the game is closed or on the menu or the character creator, and
+  `simile headless` and `simile behaviour simulate` never change the player.
 - **Eating** is the client's `eat` (`docs/protocol.md`):
   - **At home**, anywhere in the building, a meal is free and relieves `home_meal` (all of it).
   - **At a shop** in `meals`, the café or the noodle bar, anywhere in the building, a meal costs

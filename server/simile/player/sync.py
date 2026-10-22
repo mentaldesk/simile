@@ -6,10 +6,7 @@ from simile.schema import Player
 
 
 class PlayerSync:
-    """Sends `player_state` whenever the player or the meal on offer changes; greet new clients
-    with `message`. Hunger and a lamp's charge change every tick, so a change to them alone waits
-    until one of them has moved by `step`. Tick it on the sim loop after whatever changes the
-    player."""
+    """Sends `player_state` on each change, and on hunger or charge alone once moved by `step`."""
 
     def __init__(
         self,
