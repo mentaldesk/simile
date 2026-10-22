@@ -48,7 +48,7 @@
         }
       ],
       "default": null,
-      "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.",
+      "description": "A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.",
       "title": "Charge"
     },
     "on": {
@@ -61,7 +61,7 @@
         }
       ],
       "default": null,
-      "description": "Whether a lamp is switched on, running its battery down. Null for anything else.",
+      "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.",
       "title": "On"
     }
   },
