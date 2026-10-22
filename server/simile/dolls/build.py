@@ -14,8 +14,11 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
+from simile.dolls import bionics
+from simile.dolls.bionics import COMBINATIONS, Combination, figure_id
 from simile.dolls.figure import (
     EDITS,
+    FRAMES,
     POSES,
     SIZE,
     STANDING,
@@ -44,13 +47,14 @@ from simile.dolls.measure import (
 from simile.dolls.sprites import VERSION, atlas, cut_out, frames, manifest, scale, seat
 from simile.dolls.words import gender_in, persona
 from simile.schema import PLAYER_ID, Appearance
+from simile.schema.player import Bionic
 
 REPO = Path(__file__).resolve().parents[3]
 CONTENT = REPO / "content" / "dolls"
 PAINTINGS = REPO / "server" / "data" / "dolls" / "paintings"
 """Every painting as FLUX returned it, by what it was painted from, so cutting and matching can
 be retuned without painting again. Ignored by git."""
-TRIES = {"stand": 3, "edit": 2}
+TRIES = {"stand": 3, "edit": 2, "fitted": 3}
 """How many times a painting is made, at most, while its colours can't be matched."""
 SCALE = 1.25
 """How much bigger or smaller than the standing figure FLUX may draw another pose before it's
@@ -58,7 +62,12 @@ painted again."""
 WRONG = 20.0
 """A colour painted further than this from the `Appearance`, CIEDE2000, is another colour, not a
 shade of it: rather than pulled back, the painting is made again."""
-REROLLS: dict[str, int] = {}
+REROLLS: dict[str, int] = {
+    "player_datajack/stride": 1,
+    "player_eye/stand": 3,
+    "player_eye/pass": 2,
+    "player_eye/sit": 8,
+}
 """`<id>/<frame>` to a reroll number, for a painting that came out off-model by eye."""
 MISSES: dict[tuple[str, str, str], str] = {
     ("henrietta", "climb", "shoe"): "ΔE 7.8: near-black shoes, seen from behind, among the outline",
@@ -99,6 +108,18 @@ def fingerprint(who: str, appearance: Appearance, said: str = "") -> str:
     return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
 
 
+def fitted_fingerprint(combination: Combination, player: str, appearance: Appearance) -> str:
+    """What the player with bionics is made from: the player's, its parts' prompts and rerolls."""
+    ids = {figure_id((b,)) for b in combination}
+    inputs = {
+        "player": player,
+        "version": bionics.VERSION,
+        "prompts": [bionics.edit_prompt(f, b, appearance) for b in combination for f in FRAMES],
+        "rerolls": {k: v for k, v in REROLLS.items() if k.split("/")[0] in ids},
+    }
+    return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
+
+
 def seed(who: str, frame: str, reroll: int = 0) -> int:
     return zlib.crc32(f"{who}/{frame}/{reroll}".encode()) % 2**31
 
@@ -120,6 +141,8 @@ class Try:
     followed: bool = False
     """Matched as the standing figure was painted, so a colour painted far off is the standing
     figure's, already accepted, rather than another colour."""
+    missing: list[str] = field(default_factory=list)
+    """Bionics it should show but doesn't: `bionics.missing`."""
 
 
 @dataclass
@@ -177,6 +200,8 @@ def attempt(
     cut: Cut,
     pose: Pose,
     standing: Painted | None,
+    fitted: Combination = (),
+    frame: str = "stand",
 ) -> tuple[Try, Image.Image, Image.Image]:
     """One painting cut out and its colours pulled back to the `Appearance`, following how the
     `standing` figure was painted, if this isn't it. With how far off they were before and after,
@@ -196,9 +221,11 @@ def attempt(
         tried.lost = sorted(set(standing.colours) - set(found))
         stand = standing.figures["stand"]
         tried.scale = round(scale(fixed, stand, pose.bands == "climb"), 3)
-        tried.strays = strays(fixed, stand)
+        tried.strays = strays(fixed, stand, bionics.PALETTE if fitted else None)
     if pose.face:
-        tried.marks = round(face_marks(fixed, appearance), 3)
+        eye = bionics.spared(fixed) if Bionic.INFRARED_EYE in fitted else None
+        tried.marks = round(face_marks(fixed, appearance, eye), 3)
+    tried.missing = bionics.missing(fixed, fitted, frame)
     return tried, painting, fixed
 
 
@@ -211,9 +238,9 @@ def misses(tried: Try, appearance: Appearance) -> tuple[bool, float, float, floa
     off_scale = abs(np.log(tried.scale)) > np.log(SCALE)
     unlike = bool(tried.lost) or tried.strays > STRAYS
     wrong = before > WRONG and not tried.followed
-    bad = after > CLOSE or wrong or tried.marks > MARKS or off_scale or unlike
-    odd = tried.marks + abs(np.log(tried.scale)) + tried.strays + len(tried.lost)
-    return bad, odd, after, before
+    bad = after > CLOSE or wrong or tried.marks > MARKS or off_scale or unlike or tried.missing
+    odd = tried.marks + abs(np.log(tried.scale)) + tried.strays + len(tried.lost + tried.missing)
+    return bool(bad), odd, after, before
 
 
 def paint_frame(
@@ -226,14 +253,17 @@ def paint_frame(
     cut: Cut,
     pose: Pose,
     tries: int,
+    standing: Painted | None = None,
+    fitted: Combination = (),
 ) -> None:
     """Paints `frame` until it matches, at most `tries` times, keeping the best."""
     first = REROLLS.get(f"{painted.who}/{frame}", 0)
-    standing = painted if painted.figures.get("stand") else None
+    standing = standing or (painted if painted.figures.get("stand") else None)
     made = []
     for n in range(first, first + tries):
         number = seed(painted.who, frame, n)
-        made.append(attempt(painter, prompt, number, images, appearance, cut, pose, standing))
+        args = (painter, prompt, number, images, appearance, cut, pose, standing, fitted, frame)
+        made.append(attempt(*args))
         if not misses(made[-1][0], appearance)[0]:
             break
     best = min(made, key=lambda m: misses(m[0], appearance))
@@ -268,16 +298,61 @@ def paint(
     return painted
 
 
+def paint_parts(
+    player: Painted,
+    appearance: Appearance,
+    painter: Cached,
+    cut: Cut = cut_out,
+    log: Callable[[str], None] = print,
+) -> dict[Bionic, Painted]:
+    """Each bionic on every frame that shows it, as an edit of the `player`'s same frame."""
+    found = {}
+    for bionic in bionics.FITTED:
+        painted = Painted(figure_id((bionic,)), colours=player.colours)
+        for frame in FRAMES:
+            if not bionics.shows(bionic, frame):
+                continue
+            pose = STANDING if frame == "stand" else EDITS[frame]
+            prompt = bionics.edit_prompt(frame, bionic, appearance)
+            images, tries = [player.paintings[frame]], TRIES["fitted"]
+            args = (painter, painted, frame, prompt, images, appearance, cut, pose, tries)
+            paint_frame(*args, standing=player, fitted=(bionic,))
+            log(f"{painted.who} {frame}: {summary(painted.tries[frame][-1])}")
+        found[bionic] = painted
+    return found
+
+
+def fit(player: Painted, parts: dict[Bionic, Painted]) -> dict[Combination, dict]:
+    """Each combination's frames: the `player`'s, with its `parts` laid over them."""
+    layers = {
+        (bionic, frame): (figure, bionics.changed(player.figures[frame], figure, bionic))
+        for bionic, painted in parts.items()
+        for frame, figure in painted.figures.items()
+    }
+    return {
+        combination: {
+            frame: bionics.laid(
+                whole, [layers[b, frame] for b in combination if (b, frame) in layers]
+            )
+            for frame, whole in player.figures.items()
+        }
+        for combination in COMBINATIONS
+    }
+
+
 def summary(tried: Try) -> str:
-    return ", ".join(f"{k} {s.delta_e:g}" for k, s in tried.matched.items())
+    missing = f", missing {', '.join(tried.missing)}" if tried.missing else ""
+    return ", ".join(f"{k} {s.delta_e:g}" for k, s in tried.matched.items()) + missing
 
 
-def files(who: str, painted: Painted, **extra: Any) -> dict[str, bytes]:
+def files(
+    who: str, painted: Painted, standing: Image.Image | None = None, **extra: Any
+) -> dict[str, bytes]:
     """The manifest and the atlas, by file name."""
     climbs = [f for f, pose in EDITS.items() if pose.bands == "climb"]
     lifted = {f: pose.lifted for f, pose in EDITS.items() if pose.lifted}
     seated = [f for f, pose in EDITS.items() if pose.seated]
-    made = frames(painted.figures, hands_up=climbs, lifted=lifted, seated=seated)
+    made = frames(painted.figures, "stand", climbs, lifted, seated, standing)
     data, places = atlas(made)
     name = f"{who}.webp"
     body = manifest(made, places, POSES, name, id=who, **extra)
@@ -322,12 +397,48 @@ def current(directory: Path, who: str, hash: str) -> bool:
 
 
 def stale(directory: Path, keep: Iterable[str]) -> list[Path]:
-    """Files in `directory` that belong to no one in `keep`: #310's atlases, or a resident's
-    who's gone."""
+    """Files in `directory` that belong to no one in `keep` nor the player with bionics: #310's
+    atlases, or a resident's who's gone."""
+    keep = [*keep, *(figure_id(c) for c in COMBINATIONS)]
     wanted = {name for who in keep for name in (f"{who}.json", f"{who}.webp")}
     return [
         p for p in directory.glob("*") if p.suffix in (".json", ".webp") and p.name not in wanted
     ]
+
+
+def build_fitted(
+    model: Cached,
+    directory: Path,
+    appearance: Appearance,
+    player: str,
+    whole: Painted | None,
+    force: bool = False,
+    cut: Cut = cut_out,
+    log: Callable[[str], None] = print,
+) -> list[Painted]:
+    """Paints the bionics over the `whole` player and lays them in every combination."""
+    hashes = {figure_id(c): fitted_fingerprint(c, player, appearance) for c in COMBINATIONS}
+    if not force and all(current(directory, who, h) for who, h in hashes.items()):
+        log("the player with bionics: up to date")
+        return []
+    whole = whole or paint(PLAYER_ID, appearance, model, cut=cut, log=lambda _: None)
+    parts = paint_parts(whole, appearance, model, cut, log)
+    dumped = appearance.model_dump(mode="json")
+    for combination, figures in fit(whole, parts).items():
+        who = figure_id(combination)
+        for frame, figure in figures.items():
+            if lost := bionics.missing(figure, combination, frame):
+                log(f"{who} {frame}: missing {', '.join(lost)}")
+        extra = {
+            "hash": hashes[who],
+            "appearance": dumped,
+            "fitted": [b.value for b in combination],
+        }
+        changed = write(
+            directory, files(who, Painted(who, figures=figures), whole.figures["stand"], **extra)
+        )
+        log(f"{who}: wrote {len(changed)} files")
+    return list(parts.values())
 
 
 def build(
@@ -340,7 +451,7 @@ def build(
     log: Callable[[str], None] = print,
 ) -> list[Painted]:
     """Paints each figure whose fingerprint changed, loading the painter only if a painting
-    isn't in `cache`."""
+    isn't in `cache`. The player comes with every combination of bionics."""
     everyone = people()
     said = personas()
     wanted = list(only) or list(everyone)
@@ -360,6 +471,10 @@ def build(
             changed = write(directory, files(who, painted, hash=hashes[who], appearance=appearance))
             log(f"{who}: painted in {painted.seconds:.0f} s of FLUX, wrote {len(changed)} files")
             done.append(painted)
+        if PLAYER_ID in wanted:
+            whole = next((p for p in done if p.who == PLAYER_ID), None)
+            player = (everyone[PLAYER_ID], hashes[PLAYER_ID], whole)
+            done += build_fitted(model, directory, *player, force=force, cut=cut, log=log)
     if not only:
         for path in stale(directory, everyone):
             path.unlink()

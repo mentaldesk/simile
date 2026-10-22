@@ -1,5 +1,7 @@
 import { dolls } from '../dolls/assets';
+import { isPlayerFigure, PLAYER_FIGURE, PlayerBody } from '../dolls/bionics';
 import type { FigureManifest } from '../dolls/manifest';
+import { server } from '../net';
 import type { TiledMap } from './map';
 
 const files = import.meta.glob<string>(
@@ -17,10 +19,13 @@ export const mapIds: readonly string[] = Object.keys(maps);
 
 export { dolls };
 
-const PLAYER = 'player';
 const residentDolls = Object.keys(dolls)
-  .filter((id) => id !== PLAYER)
+  .filter((id) => !isPlayerFigure(id))
   .sort();
+
+/** What the player has fitted, from `player_state`. */
+export const playerBody = new PlayerBody();
+server.on('player_state', ({ player }) => playerBody.set(player.body));
 
 function fnv1a(text: string): number {
   let hash = 0x811c9dc5;
@@ -28,7 +33,8 @@ function fnv1a(text: string): number {
   return hash >>> 0;
 }
 
-/** Its own doll, or a resident's picked by its id, the same one every time. */
-export function dollFor(id: string): FigureManifest {
+/** Its own doll, the player's for `body`, or a resident's picked by its id, the same every time. */
+export function dollFor(id: string, body: PlayerBody = playerBody): FigureManifest {
+  if (id === PLAYER_FIGURE) return dolls[body.figure] ?? dolls[PLAYER_FIGURE];
   return dolls[id] ?? dolls[residentDolls[fnv1a(id) % residentDolls.length]];
 }

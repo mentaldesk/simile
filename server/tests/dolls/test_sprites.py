@@ -85,6 +85,17 @@ def test_frames_are_scaled_to_the_street_and_keep_the_head_one_size() -> None:
         assert frame.feet[0] == pytest.approx(head(frame.image, 0.25 * HEIGHT_M * PPM)[0])
 
 
+def test_frames_scaled_against_another_figure_keep_its_head_size() -> None:
+    whole = frames({"stand": person()})
+    made = frames({"stand": person(scale=1.2), "stride": person(lean=0.15)}, reference=person())
+
+    depth = 0.25 * HEIGHT_M * PPM
+    for frame in made.values():
+        assert head(frame.image, depth)[1] == pytest.approx(
+            head(whole["stand"].image, depth)[1], abs=2
+        )
+
+
 def test_packs_every_frame_apart_into_one_atlas() -> None:
     images = {
         f"f{i}": Image.new("RGBA", (90 + 7 * i, 160 - 9 * i), (9, 9, 9, 255)) for i in range(12)

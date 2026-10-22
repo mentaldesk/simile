@@ -2,7 +2,10 @@
 alone or, given pictures, in edit mode. Never imports MLX until it loads."""
 
 import gc
+import os
+import subprocess
 import tempfile
+import time
 from collections.abc import Callable, Sequence
 from importlib.util import find_spec
 from pathlib import Path
@@ -11,6 +14,45 @@ from typing import Protocol, Self
 from PIL import Image
 
 from simile.dolls.paint import NoPainter
+
+OTHERS = ("mflux", "simile (papercraft|dolls)")
+"""Command lines of other image models, or builds that run them."""
+SHELLS = {"sh", "bash", "zsh", "fish", "sleep", "pgrep", "grep"}
+"""Programs whose command lines may name one without running it."""
+WAIT_S = 60
+
+
+def ours() -> set[str]:
+    """This process and those that started it, such as `uv run`."""
+    found, pid = set(), os.getpid()
+    while pid > 1 and str(pid) not in found:
+        found.add(str(pid))
+        parent = subprocess.run(["ps", "-o", "ppid=", "-p", str(pid)], capture_output=True)
+        pid = int(parent.stdout.strip() or 0)
+    return found
+
+
+def busy() -> list[str]:
+    """Other image models running on this Mac, and Ollama's: they share its memory."""
+    found, mine = [], ours()
+    for pattern in OTHERS:
+        run = subprocess.run(["pgrep", "-fl", pattern], capture_output=True, text=True)
+        for line in run.stdout.splitlines():
+            pid, _, command = line.partition(" ")
+            if pid not in mine and Path(command.split(" ", 1)[0]).name not in SHELLS:
+                found.append(line)
+    try:
+        ollama = subprocess.run(["ollama", "ps"], capture_output=True, text=True).stdout
+    except FileNotFoundError:
+        ollama = ""
+    return found + [f"ollama: {line}" for line in ollama.splitlines()[1:] if line.strip()]
+
+
+def wait_for_gpu(log: Callable[[str], None] = print) -> None:
+    """Waits until nothing else is using the model memory."""
+    while others := busy():
+        log(f"Waiting for {others}")
+        time.sleep(WAIT_S)
 
 
 class Painter(Protocol):
@@ -98,7 +140,7 @@ class Flux:
 
 class FakePainter:
     """Draws a figure in the colours the prompt names, without a model: for tests and dry runs.
-    An edit redraws `images[0]` a little darker."""
+    An edit redraws the figure in `images[0]` a little darker, with any bionic it asks for."""
 
     BACKGROUND = (214, 214, 216)
 
@@ -119,8 +161,35 @@ class FakePainter:
         self.calls.append((prompt, seed, len(images)))
         if images:
             base = np.asarray(images[0].convert("RGB").resize(size), dtype=np.float64)
-            return Image.fromarray(np.clip(base * 0.98, 0, 255).astype(np.uint8))
+            figure_only = np.where(np.all(base == self.BACKGROUND, axis=2), 1.0, 0.98)
+            darker = np.clip(base * figure_only[..., None], 0, 255).astype(np.uint8)
+            return fitted(Image.fromarray(darker), prompt)
         return figure(size, named_colours(prompt))
+
+
+def fitted(painting: Image.Image, prompt: str) -> Image.Image:
+    """`painting` of `figure` with each bionic `prompt` asks for."""
+    from PIL import ImageDraw
+
+    from simile.dolls.bionics import WORDS
+    from simile.schema.player import Bionic
+
+    w, h = painting.size
+    top, tall, x = 0.08 * h, 0.84 * h, w / 2
+
+    def box(left: float, upper: float, right: float, lower: float) -> tuple[float, ...]:
+        return (x + left * tall, top + upper * tall, x + right * tall, top + lower * tall)
+
+    draw = ImageDraw.Draw(painting)
+    if WORDS[Bionic.HYDRAULIC_LEGS] in prompt:
+        for side in (-1, 1):
+            legs = sorted((side * 0.01, side * 0.1))
+            draw.rectangle(box(legs[0], 0.72, legs[1], 0.93), (150, 152, 158), (40, 26, 20), 3)
+    if WORDS[Bionic.DATAJACK] in prompt:
+        draw.ellipse(box(-0.13, 0.3, -0.09, 0.34), (60, 220, 60))
+    if WORDS[Bionic.INFRARED_EYE] in prompt:
+        draw.ellipse(box(0.04, 0.16, 0.08, 0.2), (222, 30, 30))
+    return painting
 
 
 def named_colours(prompt: str) -> dict[str, str]:

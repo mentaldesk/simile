@@ -12,7 +12,8 @@ Run it with `make dev` and open http://localhost:5173. The residents go about th
 `assets.ts` bundles every street and floor map in [`content/street/`](../../../content/street/README.md):
 `maps` has them all by id, and `mapIds` their ids. `maps` is one object that's never replaced, since
 `ui/side-view.ts` tells side views by it. The dolls are part 4's (`dolls`, from `dolls/assets.ts`), and
-someone without one of their own gets a resident's, the same one every time (`dollFor`).
+someone without one of their own gets a resident's, the same one every time (`dollFor`). The
+player's is the one for the bionics `player_state` last said were fitted (`playerBody`).
 
 ## Maps
 

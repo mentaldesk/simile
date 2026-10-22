@@ -6,10 +6,12 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageDraw
 
-from simile.dolls import build
+from simile.dolls import bionics, build
+from simile.dolls.bionics import COMBINATIONS, WORDS, figure_id
 from simile.dolls.figure import FRAMES, POSES
 from simile.dolls.flux import FakePainter, figure
 from simile.dolls.measure import MARKS
+from simile.schema.player import Bionic
 
 from .keyed import keyed
 
@@ -54,6 +56,15 @@ class Bigger(FakePainter):
         return crop.resize(size)
 
 
+class OneEyed(FakePainter):
+    """Never paints the bionic eye."""
+
+    def paint(
+        self, prompt: str, size: tuple[int, int], seed: int, images: Sequence[Image.Image] = ()
+    ) -> Image.Image:
+        return super().paint(prompt.replace(WORDS[Bionic.INFRARED_EYE], ""), size, seed, images)
+
+
 class FacePaint(FakePainter):
     """Paints a blue-grey patch on the cheek of every pose."""
 
@@ -74,13 +85,31 @@ def stamps(directory: Path) -> dict[str, int]:
     return {path.name: path.stat().st_mtime_ns for path in directory.iterdir()}
 
 
+LEGS, DATAJACK, EYE = bionics.FITTED
+
+
 @pytest.fixture
-def two(monkeypatch: pytest.MonkeyPatch) -> dict:
+def every(monkeypatch: pytest.MonkeyPatch) -> dict:
+    """Odalys and the player, with every combination of bionics."""
     monkeypatch.setattr(build, "SIZE", (192, 256))
     everyone = build.people()
     chosen = {who: everyone[who] for who in ("odalys", "player")}
     monkeypatch.setattr(build, "people", lambda: dict(chosen))
     return chosen
+
+
+@pytest.fixture
+def fitted(every: dict, monkeypatch: pytest.MonkeyPatch) -> dict:
+    """Odalys and the player, with the datajack, and with the eye too."""
+    monkeypatch.setattr(build, "COMBINATIONS", ((DATAJACK,), (DATAJACK, EYE)))
+    return every
+
+
+@pytest.fixture
+def two(every: dict, monkeypatch: pytest.MonkeyPatch) -> dict:
+    """Odalys and the player, without bionics."""
+    monkeypatch.setattr(build, "COMBINATIONS", ())
+    return every
 
 
 def test_paints_each_figure_and_a_rerun_rewrites_nothing(tmp_path: Path, two: dict) -> None:
@@ -232,3 +261,76 @@ def test_seats_are_measured_again_from_the_atlas_without_painting(
     assert sorted(p.name for p in rewritten) == ["odalys.json", "player.json"]
     assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == built
     assert build.reseat(tmp_path) == []
+
+
+def test_paints_the_player_with_each_combination_of_bionics(tmp_path: Path, every: dict) -> None:
+    painters = Painters()
+
+    done = made(painters, tmp_path, only=["player"], cache=None)
+
+    assert [p.who for p in done] == ["player", "player_legs", "player_datajack", "player_eye"]
+    parts = sum(bionics.shows(b, frame) for b in bionics.FITTED for frame in FRAMES)
+    assert len(painters.fake.calls) == len(FRAMES) + parts
+    player = build.fingerprint("player", every["player"])
+    for combination in COMBINATIONS:
+        who = figure_id(combination)
+        manifest = json.loads((tmp_path / f"{who}.json").read_text())
+        assert manifest["fitted"] == [b.value for b in combination]
+        assert manifest["appearance"] == every["player"].model_dump(mode="json")
+        assert manifest["poses"] == POSES and set(manifest["frames"]) == set(FRAMES)
+        assert manifest["painted"] == f"{who}.webp"
+        assert manifest["hash"] == build.fitted_fingerprint(combination, player, every["player"])
+    for painted in done[1:]:
+        assert all(not tries[-1].missing for tries in painted.tries.values()), painted.who
+
+
+def test_each_part_is_painted_once_over_the_player_and_laid_over_it(
+    tmp_path: Path, fitted: dict
+) -> None:
+    painters = Painters()
+
+    made(painters, tmp_path, only=["player"], cache=None)
+
+    edits = [prompt for prompt, _, images in painters.fake.calls if images]
+    eye = [prompt for prompt in edits if WORDS[EYE] in prompt]
+    assert len(eye) == len(FRAMES) - 1
+    assert not any(WORDS[DATAJACK] in prompt for prompt in eye)
+    both = json.loads((tmp_path / "player_datajack_eye.json").read_text())
+    datajack = json.loads((tmp_path / "player_datajack.json").read_text())
+    climb, without_eye = (m["frames"]["climb"] for m in (both, datajack))
+    assert climb["feet"] == without_eye["feet"]
+    assert climb["frame"][2:] == without_eye["frame"][2:]
+
+
+def test_the_player_with_bionics_is_painted_again_only_when_it_changes(
+    tmp_path: Path, fitted: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    painters = Painters()
+    made(painters, tmp_path, only=["player"], cache=None)
+    before, calls = stamps(tmp_path), len(painters.fake.calls)
+
+    made(painters, tmp_path, only=["player"], cache=None)
+    assert len(painters.fake.calls) == calls and stamps(tmp_path) == before
+
+    monkeypatch.setitem(build.REROLLS, "player_datajack/stand", 1)
+    made(painters, tmp_path, only=["player"], cache=None)
+
+    changed = {name for name, stamp in stamps(tmp_path).items() if stamp != before[name]}
+    assert {"player_datajack.json", "player_datajack_eye.json"} <= changed
+    assert not changed & {"player.json", "player.webp", "odalys.json"}
+
+
+def test_a_bionic_that_isnt_painted_is_painted_again(tmp_path: Path, fitted: dict) -> None:
+    done = made(Painters(OneEyed()), tmp_path, only=["player"], cache=None)
+
+    eye = next(p for p in done if p.who == "player_eye")
+    assert len(eye.tries["stand"]) == build.TRIES["fitted"]
+    assert eye.tries["stand"][-1].missing == ["eye"]
+    assert "climb" not in eye.tries
+
+
+def test_the_player_with_bionics_is_kept_with_the_player(tmp_path: Path, fitted: dict) -> None:
+    made(Painters(), tmp_path, cache=None)
+
+    names = {p.name for p in tmp_path.iterdir()}
+    assert {f"{figure_id(c)}.webp" for c in build.COMBINATIONS} <= names
