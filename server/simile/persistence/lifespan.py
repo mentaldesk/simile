@@ -17,7 +17,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import behaviour_of
     from simile.memory import memory_of
     from simile.persistence.saver import Saver
-    from simile.persistence.state import player_of, restore
+    from simile.persistence.state import investigation_of, player_of, restore
     from simile.persistence.store import WorldStore
 
     memory = memory_of(app)
@@ -31,10 +31,14 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             store.clear()
             logger.info("%s  Starting a fresh village in %s", behaviour.clock, store.path)
         elif (world := store.load()) is not None:
-            restore(world, behaviour, economy, player_of(app))
+            restore(world, behaviour, economy, player_of(app), investigation_of(app))
             logger.info("%s  Resumed the village from %s", behaviour.clock, store.path)
         app.state.persistence = Saver(
-            store, behaviour, economy=economy, player=lambda: player_of(app)
+            store,
+            behaviour,
+            economy=economy,
+            player=lambda: player_of(app),
+            investigation=lambda: investigation_of(app),
         )
         yield
 

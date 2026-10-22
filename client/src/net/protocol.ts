@@ -175,6 +175,10 @@ export interface LineMessage {
    * Whether audio_chunk frames will follow for this line.
    */
   voiced: boolean;
+  /**
+   * Whether the client shows a flush on the speaker: the line is a lie, as code decides it, and the player has the infrared eye. Left out unless true.
+   */
+  flushed?: boolean;
 }
 /**
  * Debug state for the overlay. The fields in `state` are up to the modules that send them.

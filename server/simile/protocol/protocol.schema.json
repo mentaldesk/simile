@@ -591,6 +591,11 @@
         "voiced": {
           "description": "Whether audio_chunk frames will follow for this line.",
           "type": "boolean"
+        },
+        "flushed": {
+          "default": false,
+          "description": "Whether the client shows a flush on the speaker: the line is a lie, as code decides it, and the player has the infrared eye. Left out unless true.",
+          "type": "boolean"
         }
       },
       "required": [

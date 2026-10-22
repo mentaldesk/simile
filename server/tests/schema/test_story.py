@@ -7,12 +7,14 @@ import pytest
 from jsonschema import Draft202012Validator
 from pydantic import TypeAdapter, ValidationError
 
+from simile.protocol.export import SCHEMA_FILE as PROTOCOL_SCHEMA
 from simile.schema import (
     ARIS,
     MODELS,
     Fact,
     HowKnown,
     Incident,
+    Investigation,
     JournalEntry,
     Knower,
     Lead,
@@ -30,7 +32,7 @@ ONE_ATTACKER, THREE_ATTACKERS = INCIDENTS
 ATTACK, MOTIVE, SHOUTING, LANE, NOTES = ONE_ATTACKER["facts"]
 FROM_NOTES, FROM_TOBIAS, FROM_KOFI, FROM_RAYMOND = JOURNAL
 
-type Story = Incident | Fact | Knower | Lead | Source | JournalEntry
+type Story = Incident | Fact | Knower | Lead | Source | JournalEntry | Investigation
 
 
 def schema(name: str) -> Draft202012Validator:
@@ -65,7 +67,8 @@ def test_fixture_round_trips_through_json(model: type[Story], data: dict[str, An
 
 
 def test_they_are_exported_and_the_schema_accepts_the_fixtures() -> None:
-    assert {Incident, Fact, JournalEntry} <= set(MODELS)
+    assert {Incident, Fact, JournalEntry, Investigation} <= set(MODELS)
+    schema("Investigation").validate({"incident": ONE_ATTACKER, "journal": JOURNAL})
     for incident in INCIDENTS:
         schema("Incident").validate(incident)
         for fact in incident["facts"]:
@@ -290,3 +293,36 @@ def test_any_other_memory_dumps_without_a_fact_id() -> None:
 
     assert "fact_id" not in json.loads(memory.model_dump_json())
     assert "fact_id" not in json.loads((export.JSON_DIR / "Memory.json").read_text())["required"]
+
+
+def test_an_investigation_starts_with_no_incident_and_an_empty_journal() -> None:
+    investigation = Investigation()
+
+    assert (investigation.incident, investigation.journal) == (None, [])
+    assert json.loads(investigation.model_dump_json()) == {"incident": None, "journal": []}
+    assert Investigation.model_validate({}) == investigation
+
+
+def test_an_investigation_round_trips_through_json() -> None:
+    data = {"incident": THREE_ATTACKERS, "journal": JOURNAL}
+    investigation = Investigation.model_validate(data)
+
+    assert json.loads(investigation.model_dump_json()) == data
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("incident", ONE_ATTACKER | {"attackers": []}, "at least 1 item"),
+        ("journal", [FROM_NOTES | {"flushed": True}], "only a resident can flush"),
+    ],
+)
+def test_rejects_invalid_changes_to_the_investigation(field: str, value: Any, match: str) -> None:
+    changes(Investigation(incident=Incident.model_validate(ONE_ATTACKER)), field, value, match)
+
+
+def test_the_incident_and_its_facts_are_never_sent() -> None:
+    defs = json.loads(PROTOCOL_SCHEMA.read_text())["$defs"]
+
+    assert "JournalEntry" in defs
+    assert not {"Investigation", "Incident", "Fact", "Knower"} & defs.keys()

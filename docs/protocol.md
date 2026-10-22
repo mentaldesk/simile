@@ -20,8 +20,8 @@ interiors' ids; this document says where.
 
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
-  position's `map`, an entity's `pose` and `facing`, an article's `long_summary` and a wall's
-  `map`, below.
+  position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
+  `long_summary` and a wall's `map`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -130,6 +130,13 @@ On a side-view map:
 `line`: an F2 `Line` (`id`, `conversation_id`, `speaker`, `text`, `timestamp`, and `duration`, the
 estimated seconds to say it). `voiced`: whether `audio_chunk` frames will follow for `line.id`.
 When it's `false`, show the text for `duration` seconds.
+
+`flushed`: `true` when the client shows a flush on the speaker as they say the line, which the
+player sees through the infrared eye. The server sets it exactly when the line is a lie, as the
+code decides it, and the player has the eye fitted, so the client draws it as given and never
+guesses. It's left out unless it's `true`, so a client that predates it, and every line without a
+flush, look as before: read it as `message.flushed ?? false`. A flush the player sees on a line
+that tells them something about the incident is also marked in the [`journal`](#journal).
 
 ### `npc_state`
 

@@ -198,3 +198,17 @@ class JournalEntry(Model):
             if data.get("fact_id") in _fields(data.get("leads"), "fact_id"):
                 raise ValueError("an entry's leads go to other facts")
         return data
+
+
+class Investigation(Model):
+    """The incident and the player's journal of it, saved with the world. One object holds both,
+    so it can be restored in place before the world has made an incident."""
+
+    model_config = CHECKED
+
+    incident: Incident | None = Field(
+        default=None, description="Null until the world makes it, as in a save from before it."
+    )
+    journal: list[JournalEntry] = Field(
+        default=[], description="What the player has learned, in the order they learned it."
+    )

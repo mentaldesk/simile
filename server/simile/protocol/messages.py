@@ -120,6 +120,12 @@ class LineMessage(Model):
     type: Literal["line"] = "line"
     line: Line
     voiced: bool = Field(description="Whether audio_chunk frames will follow for this line.")
+    flushed: bool = Field(
+        default=False,
+        exclude_if=lambda flushed: not flushed,
+        description="Whether the client shows a flush on the speaker: the line is a lie, as code "
+        "decides it, and the player has the infrared eye. Left out unless true.",
+    )
 
 
 class NpcStateMessage(Model):

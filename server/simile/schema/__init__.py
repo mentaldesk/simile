@@ -57,6 +57,7 @@ from simile.schema.story import (
     Fact,
     HowKnown,
     Incident,
+    Investigation,
     JournalEntry,
     Knower,
     Lead,
@@ -109,6 +110,7 @@ MODELS: tuple[type[Model], ...] = (
     Incident,
     Fact,
     JournalEntry,
+    Investigation,
 )
 
 __all__ = [
@@ -155,6 +157,7 @@ __all__ = [
     "Interactable",
     "InteractableKind",
     "InteractionEvent",
+    "Investigation",
     "Item",
     "ItemKind",
     "JournalEntry",

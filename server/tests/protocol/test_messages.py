@@ -208,6 +208,7 @@ SERVER = [
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
     ),
     LineMessage(line=CONVERSATION.lines[-1], voiced=True),
+    LineMessage(line=CONVERSATION.lines[-1], voiced=False, flushed=True),
     NpcStateMessage(npc_id="mei", state={"goal": "coffee_shop", "values": {"connection": 0.92}}),
     NewsMessage(
         articles=[
@@ -654,6 +655,48 @@ def test_rejects_a_player_state_with_humanity() -> None:
     assert not validator().is_valid(data)
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         server_messages.validate_python(data)
+
+
+def test_a_flushed_line_says_so() -> None:
+    message = LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=True)
+
+    assert json.loads(message.model_dump_json()) == {
+        "type": "line",
+        "line": json.loads(CONVERSATION.lines[-1].model_dump_json()),
+        "voiced": True,
+        "flushed": True,
+    }
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        LineMessage(line=CONVERSATION.lines[-1], voiced=True),
+        LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=False),
+    ],
+    ids=["unset", "false"],
+)
+def test_a_line_without_a_flush_dumps_as_before(message: LineMessage) -> None:
+    assert json.loads(message.model_dump_json()) == {
+        "type": "line",
+        "line": json.loads(CONVERSATION.lines[-1].model_dump_json()),
+        "voiced": True,
+    }
+
+
+def test_a_line_message_without_flushed_is_no_flush() -> None:
+    line = json.loads(CONVERSATION.lines[-1].model_dump_json())
+    data = {"type": "line", "line": line, "voiced": False}
+
+    validator().validate(data)
+    assert server_messages.validate_python(data).flushed is False
+
+
+def test_the_exported_line_message_has_flushed_but_does_not_require_it() -> None:
+    message = json.loads(SCHEMA_FILE.read_text())["$defs"]["LineMessage"]
+
+    assert message["properties"]["flushed"]["type"] == "boolean"
+    assert "flushed" not in message["required"]
 
 
 def test_the_journal_has_every_entry_in_the_order_learned_with_its_open_leads() -> None:
