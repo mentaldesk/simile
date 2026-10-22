@@ -83,10 +83,10 @@ class StoryConfig(BaseModel):
     )
     relieved: float = Field(default=0.2, description="How a hostile resident feels she's gone.")
     clue_reach: float = Field(
-        default=1.5,
+        default=1.0,
         gt=0,
-        description="How far from a clue's cell, in tiles, the player can pick it up, as for a "
-        "pile.",
+        description="How far from a clue's cell, in tiles, the player can pick it up: past the "
+        "half a tile the client offers it from.",
     )
 
 

@@ -44,7 +44,7 @@ either end. Every wall faces the camera. The scene drawing the murals registers 
 
 **E** (`reach.ts`): `inReach(position)` lists what E can use where the player stands, nearest first
 along the street: a terminal, a counter, a painting's frame, a painted wall while murals are
-drawn, or a clue from `content/story/story.toml` within a tile (`clues.ts`). `usedByE` is the
+drawn, or a clue from `content/story/story.toml` on the player's cell (`clues.ts`). `usedByE` is the
 first. The dialogue UI, the gallery panel and the side scene all ask it, so one press does one
 thing: E uses that, and takes a door only when nothing is in reach, when up takes
 the door instead. Stairs, ladders and the lift are the arrows'. The side scene says what each key

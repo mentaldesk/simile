@@ -19,10 +19,10 @@ export function cluesOf(toml: string): Clue[] {
 /** The clues in content/story/story.toml. */
 export const clues: readonly Clue[] = Object.values(story).flatMap(cluesOf);
 
-/** Inside the server's `clue_reach` of a tile and a half, as for a pile. */
-export const CLUE_TILES = 1;
+/** On its cell, inside the server's `clue_reach` of a tile, so the door beside the door frame keeps E. */
+export const CLUE_TILES = 0.5;
 
-/** The nearest clue on this map within reach of where the player stands. */
+/** The clue on the cell the player stands on. */
 export function clueInReach(position: Position, from: readonly Clue[]): { clue: Clue; tiles: number } | undefined {
   let best: { clue: Clue; tiles: number } | undefined;
   for (const clue of from) {

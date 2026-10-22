@@ -125,7 +125,7 @@ red mark. Until there's anything, it says to ask around. While it's closed, its 
 the top-right corner counts what's come in since it was last open. It and the controls take turns:
 opening one closes the other. The player can walk with it open.
 
-On a clue's cell or beside it (`clueInReach` in [`world/clues.ts`](../world/clues.ts), from
+On a clue's cell (`clueInReach` in [`world/clues.ts`](../world/clues.ts), from
 `content/story/story.toml`), a hint says "Press E to look at Aris's notes.", and E sends `pick_up`
 and opens the journal. The server writes what the clue holds into the journal and sends it.
 

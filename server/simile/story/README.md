@@ -114,8 +114,9 @@ the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), 
   they tell, as it really happened (`what`), with its leads. A fact they lie about is written as
   their cover, in quotes, with no leads. One they keep back isn't written. Nothing in the
   conversation calls it: the recorder hears `LineSpoken` and reads the player's talk.
-- **Found.** A `pick_up` (E) within `clue_reach` (1.5 tiles) of a clue's cell, from
-  `load_story().clues`, writes each fact found in it (`found_in`), with its leads.
+- **Found.** A `pick_up` (E) within `clue_reach` (a tile) of a clue's cell, from
+  `load_story().clues`, writes each fact found in it (`found_in`), with its leads. The client
+  offers E only on the clue's cell, so the workshop's door beside the door frame keeps E.
 - **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`,
   from the stance the code decided (`flushed`), as the eye's flush on a line will be. Without the
   eye, and for a clue, it's `null`.

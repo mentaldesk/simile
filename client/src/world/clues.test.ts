@@ -13,15 +13,17 @@ describe('clues', () => {
     expect(cluesOf('[aris]\nname = "Aris"\n')).toEqual([]);
   });
 
-  it('are in reach within a tile on their map, nearest first', () => {
-    expect(clueInReach(at('maker_space_floor_0', 3.6), clues)).toMatchObject({ clue: { id: 'aris_notes' } });
-    expect(clueInReach(at('maker_space_floor_0', 12.2), clues)?.tiles).toBeCloseTo(0.8);
+  it('are in reach from their own cell on their map', () => {
+    expect(clueInReach(at('maker_space_floor_0', 3.4), clues)).toMatchObject({ clue: { id: 'aris_notes' } });
+    expect(clueInReach(at('maker_space_floor_0', 12.6), clues)?.tiles).toBeCloseTo(0.4);
+    expect(clueInReach(at('maker_space_floor_0', 3.6), clues)).toBeUndefined();
     expect(clueInReach(at('maker_space_floor_0', 8), clues)).toBeUndefined();
     expect(clueInReach(at('maker_space_floor_1', 3), clues)).toBeUndefined();
   });
 
-  it('are what E uses, rather than the workshop’s door beside the door frame', () => {
+  it('are what E uses on their cell, leaving the workshop’s door beside the door frame to E', () => {
     expect(usedByE(at('maker_space_floor_0', 3))).toMatchObject({ kind: 'clue', tiles: 0, clue: { id: 'aris_notes' } });
-    expect(usedByE(at('maker_space_floor_0', 13.5))).toMatchObject({ kind: 'clue', clue: { id: 'door_frame' } });
+    expect(usedByE(at('maker_space_floor_0', 13.4))).toMatchObject({ kind: 'clue', clue: { id: 'door_frame' } });
+    expect(usedByE(at('maker_space_floor_0', 13.6))).toBeUndefined();
   });
 });

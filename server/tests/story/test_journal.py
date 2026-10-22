@@ -262,9 +262,9 @@ async def test_an_attacker_lies_and_the_eye_sees_them_flush() -> None:
 
 @pytest.mark.parametrize(
     ("dx", "map", "found"),
-    [(0, None, True), (1, None, True), (2, None, False), (0, "maker_space_floor_1", False)],
+    [(0, None, True), (1, None, True), (1.5, None, False), (0, "maker_space_floor_1", False)],
 )
-def test_e_finds_a_clue_from_its_cell_or_beside_it(dx: int, map: str | None, found: bool) -> None:
+def test_e_finds_a_clue_within_a_tile(dx: float, map: str | None, found: bool) -> None:
     notes, notebook, changed = load_story().clue(NOTES), Notebook(), []
     here = Point(notes.x + dx, notes.y, map or notes.map)
     recorder = Recorder(
