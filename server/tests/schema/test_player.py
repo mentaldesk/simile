@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,7 @@ from simile.schema import (
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED = PLAYERS
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING = PLAYERS
 SALVAGE = DELVING["items"][1]
 
 
@@ -37,7 +38,7 @@ def rejects(model: type[Player | Item | Body | Pile], data: dict[str, Any], matc
 
 
 @pytest.mark.parametrize(
-    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed"]
+    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed", "salvaging"]
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
     parsed = Player.model_validate_json(json.dumps(data))
@@ -280,10 +281,73 @@ def test_a_player_who_left_nothing_dumps_without_piles() -> None:
     assert "left" not in schema("Player").schema["required"]
 
 
+def test_when_they_took_from_each_pickup_is_kept_by_its_id() -> None:
+    player = Player.model_validate(SALVAGING)
+
+    assert player.taken == {
+        "metro_secret_stairwell": datetime(2026, 3, 14, 9, 40, tzinfo=UTC),
+        "metro_salvage_2": datetime(2026, 3, 14, 10, 5, 30, tzinfo=UTC),
+        "metro_salvage_4": datetime(2026, 3, 14, 10, 12, tzinfo=UTC),
+    }
+    assert [item.id for item in player.left[0].items] == ["copper_wire", "brass_valve"]
+
+
+def test_a_player_who_took_nothing_dumps_without_taken() -> None:
+    assert Player.model_validate(COLLAPSED).taken == {}
+    assert "taken" not in json.loads(Player(taken={}).model_dump_json())
+    assert "taken" not in schema("Player").schema["required"]
+
+
+@pytest.mark.parametrize(
+    ("taken", "match"),
+    [
+        ({"metro_salvage_1": "2026-03-14T10:05:30"}, "timezone"),
+        ({"metro_salvage_1": "yesterday"}, "valid datetime"),
+        ({"": "2026-03-14T10:05:30Z"}, "at least 1 character"),
+        (["metro_salvage_1"], "valid dictionary"),
+    ],
+    ids=["naive", "not_a_time", "no_id", "a_list"],
+)
+def test_rejects_an_invalid_time_taken(taken: Any, match: str) -> None:
+    rejects(Player, SALVAGING | {"taken": taken}, match)
+
+
+def test_times_taken_are_utc() -> None:
+    later = SALVAGING | {"taken": {"metro_salvage_1": "2026-03-14T21:05:30+11:00"}}
+
+    dumped = json.loads(Player.model_validate(later).model_dump_json())
+
+    assert dumped["taken"] == {"metro_salvage_1": "2026-03-14T10:05:30Z"}
+
+
+def test_a_pile_can_hold_money_and_no_items() -> None:
+    cash = Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)
+
+    assert json.loads(cash.model_dump_json()) == {
+        "at": {"map": "metro", "x": 8, "y": 7},
+        "items": [],
+        "money": 25.0,
+    }
+    assert Player(left=[cash]).left[0].money == 25
+
+
+def test_a_pile_without_money_dumps_without_it() -> None:
+    pile = Pile.model_validate(COLLAPSED["left"][0])
+
+    assert pile.money == 0
+    assert "money" not in json.loads(pile.model_dump_json())
+    assert "money" not in schema("Player").schema["$defs"]["Pile"]["required"]
+
+
 @pytest.mark.parametrize(
     ("update", "match"),
     [
-        ({"items": []}, "at least 1 item"),
+        ({"items": []}, "at least one item or some money"),
+        ({"items": [], "money": 0}, "at least one item or some money"),
+        ({"money": -1}, "greater than or equal to 0"),
+        ({"money": float("inf")}, "finite number"),
+        ({"items": [], "money": "0"}, "valid number"),
+        ({"items": [], "money": "25"}, "valid number"),
         ({"at": {"map": "kapok_walk", "x": -1, "y": 15}}, "greater than or equal to 0"),
         ({"at": None}, "at"),
         ({"weight": 3}, "Extra inputs are not permitted"),
@@ -296,7 +360,14 @@ def test_rejects_invalid_piles(update: dict[str, Any], match: str) -> None:
 def test_rejects_an_empty_pile_left_on_a_player() -> None:
     player = Player.model_validate(COLLAPSED)
 
-    changes(player.left[0], "items", [], "at least 1 item")
+    changes(player.left[0], "items", [], "at least one item or some money")
+
+
+@pytest.mark.parametrize("money", [0, "0", "25"])
+def test_rejects_taking_the_money_from_a_pile_of_only_money(money: Any) -> None:
+    cash = Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)
+
+    changes(cash, "money", money, "at least one item or some money|valid number")
 
 
 @pytest.mark.parametrize(

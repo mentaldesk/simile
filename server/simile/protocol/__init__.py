@@ -2,6 +2,7 @@ from simile.protocol.audio import SAMPLE_RATE, AudioChunk
 from simile.protocol.hub import Connection, Hub, hub_of
 from simile.protocol.messages import (
     Artist,
+    Buyer,
     ClientMessage,
     ClockMessage,
     ConversationEndedMessage,
@@ -34,6 +35,7 @@ from simile.protocol.messages import (
     Position,
     ReadNewsMessage,
     ReadWorkMessage,
+    SellMessage,
     ServerMessage,
     SnapshotMessage,
     Wall,
@@ -46,6 +48,7 @@ __all__ = [
     "SAMPLE_RATE",
     "Artist",
     "AudioChunk",
+    "Buyer",
     "ClientMessage",
     "ClockMessage",
     "Connection",
@@ -80,6 +83,7 @@ __all__ = [
     "Position",
     "ReadNewsMessage",
     "ReadWorkMessage",
+    "SellMessage",
     "ServerMessage",
     "SnapshotMessage",
     "Wall",
