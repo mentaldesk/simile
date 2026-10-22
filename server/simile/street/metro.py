@@ -83,8 +83,7 @@ def flight(plan: Plan, foot: tuple[int, int], rows: int) -> None:
 
 
 def entrance(plan: Plan) -> None:
-    """A landing at the top of a stairway down to the ticket hall, and another flight down to the
-    platform. A ledge over the stairwell is a run jump from the landing."""
+    """A landing, two flights down to the platform, and a catwalk over the first."""
     plan.fill(0, HALL + 1, 20, GROUND - HALL)
     plan.fill(0, LANDING + 1, 5, HALL - LANDING)
     flight(plan, (7, HALL), HALL - LANDING)
@@ -96,8 +95,7 @@ def entrance(plan: Plan) -> None:
 
 
 def platform(plan: Plan) -> None:
-    """The scrap trader's stall, benches, and a dead train with a ladder up its end. Above it a
-    catwalk runs along the vault, a jump from the train's roof."""
+    """The scrap stall, and a dead train with a catwalk a jump above its roof."""
     plan.piece("scrap_stall", 25, GROUND - 1, 3, 2)
     plan.spot(SCRAP_TRADER, SpotKind.STANDING, 26, GROUND, Facing.SOUTH)
     plan.locations.append(
@@ -124,9 +122,7 @@ def platform(plan: Plan) -> None:
 
 
 def tunnel(plan: Plan) -> None:
-    """Dark either side of a lit maintenance alcove with the plug. In the east stretch, a ladder
-    climbs to a pipe ledge, and a catwalk and an alcove go on up the wall, each a jump up from
-    the last."""
+    """The plug's alcove between dark stretches, and a climb up the wall to the alcove."""
     plan.piece("pipes", 59, GROUND - 3, 12, 1)
     plan.piece("rubble", 60, GROUND, 2, 1)
     salvage(plan, 2, 63, GROUND)
@@ -147,8 +143,7 @@ def tunnel(plan: Plan) -> None:
 
 
 def depot(plan: Plan) -> list[Plan]:
-    """The clinic, the lift down to the sewers, a dead terminal, and a ledge one row higher
-    than today's jump."""
+    """The clinic, the lift, the dead terminal and the high ledge."""
     clinic = Building(plan, CLINIC, "The Clinic", LocationKind.AMENITY, 88, 10, ("clinic",))
     clinic.door(1)
     clinic.place(entry=3)
@@ -171,8 +166,7 @@ def depot(plan: Plan) -> list[Plan]:
 
 
 def lighting(plan: Plan) -> None:
-    """Every cell in one stretch: the vault over the platform and both halves of the service
-    tunnel are dark."""
+    """Every cell in one stretch, lit or dark."""
     height = plan.height
     light(plan, "metro_entrance", 0, 0, 19, height, lit=True)
     light(plan, "metro_vault", 19, 0, 39, GROUND - 3, lit=False)
@@ -194,5 +188,5 @@ def metro(village: Plan) -> list[Plan]:
     door = Door(id=f"{village.id}_to_{METRO}", outside=ENTRANCE, inside=ARRIVAL)
     village.doors.append(door)
     plan.doors.append(door)
-    village.piece("metro_entrance", ENTRANCE.x - 1, ENTRANCE.y - 2, 2, 3)
+    village.piece("metro_entrance", ENTRANCE.x - 1, ENTRANCE.y - 2, 1, 3)
     return [plan, *floors]

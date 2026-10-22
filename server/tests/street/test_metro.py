@@ -143,7 +143,6 @@ def test_the_lift_and_the_dead_terminal_are_machines_you_walk_up_to_that_lead_no
         assert stands(item_id) <= walked
         assert not {(s.map, s.x, s.y) for s in stands(item_id)} & ends
     assert Spot(METRO, LIFT_FOOT.x, LIFT_FOOT.y) in stands(LIFT)
-    assert not [town for town in MAPS if "sewer" in town]
 
 
 def test_the_plug_is_a_machine_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:

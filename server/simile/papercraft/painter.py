@@ -41,9 +41,7 @@ def cartoon(subject: str) -> str:
 
 
 def reference(name: str, width: int = REFERENCE_WIDTH) -> Image.Image:
-    """A reference picture (`street`, `house`, `rooftops`, `furniture` or `characters`, or the
-    tunnels' `cartoon/street` or `cartoon/interior`) scaled to `width`, so conditioning on it
-    stays cheap."""
+    """A reference picture from `references/`, scaled to `width` to keep conditioning cheap."""
     image = Image.open(REFERENCES / f"{name}.jpg").convert("RGB")
     height = round(image.height * width / image.width / 16) * 16
     return image.resize((width, height), Image.Resampling.LANCZOS)

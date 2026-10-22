@@ -55,8 +55,7 @@ class Light:
 
 @dataclass(frozen=True)
 class Pickup:
-    """A standing cell where something lies to pick up: `salvage`, or a `secret` holding money
-    or an item."""
+    """A standing cell where `salvage` can lie, or a `secret` holding money or an item."""
 
     id: str
     kind: str

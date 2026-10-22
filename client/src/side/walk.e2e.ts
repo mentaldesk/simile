@@ -285,8 +285,7 @@ async function take(page: Page, api: Api, key: 'e' | Hold, arrive: Place, what: 
   await run(page, 300);
 }
 
-/** Down the stairway from Banyan Row's promenade, both flights, along the platform and the tunnel into the clinic, and
- * all the way back up, by the keys alone. */
+/** From Banyan Row down through the metro into the clinic and back, by the keys alone. */
 async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   const name = 'through the metro and back';
   await teleport(page, walk, { map: 'banyan_row', x: 59, y: 18 }, name);

@@ -575,9 +575,9 @@
    "file": "fronts/clinic.webp",
    "size": [
     1464,
-    513
+    512
    ],
-   "height": 4.275,
+   "height": 4.267,
    "kind": "front",
    "anchor": [
     0.5,
@@ -585,7 +585,7 @@
    ],
    "width": 11.0,
    "eaves": 3.3,
-   "hash": "d6d4b49bf72f39dca108"
+   "hash": "1ad4b803349fe5760384"
   },
   "fronts/clock_house": {
    "file": "fronts/clock_house.webp",
@@ -1257,7 +1257,7 @@
     0.5,
     1.0
    ],
-   "hash": "6355bf8d62d2703f97b4"
+   "hash": "04d76636a39e0f4d23df"
   },
   "furniture/fridge": {
    "file": "furniture/fridge.webp",
@@ -1402,16 +1402,16 @@
   "furniture/metro_entrance": {
    "file": "furniture/metro_entrance.webp",
    "size": [
-    233,
-    336
+    191,
+    276
    ],
-   "height": 2.8,
+   "height": 2.3,
    "kind": "sprite",
    "anchor": [
     0.5,
     1.0
    ],
-   "hash": "c1954bbd039dcc916aa5"
+   "hash": "b4e4743385530a3809ef"
   },
   "furniture/metro_steps": {
    "file": "furniture/metro_steps.webp",
@@ -1425,7 +1425,7 @@
     0.5,
     1.0
    ],
-   "hash": "bd0ad7acd516125e606a"
+   "hash": "0f04a6431f174e124e29"
   },
   "furniture/news_terminal": {
    "file": "furniture/news_terminal.webp",
@@ -1867,9 +1867,9 @@
    "file": "glow/clinic.webp",
    "size": [
     1464,
-    513
+    512
    ],
-   "height": 4.275,
+   "height": 4.267,
    "kind": "glow",
    "anchor": [
     0.5,
@@ -1877,7 +1877,7 @@
    ],
    "width": 11.0,
    "eaves": 3.3,
-   "hash": "dd269782f58389a2e4f6"
+   "hash": "62bdb57987439ab833bd"
   },
   "glow/clock_house": {
    "file": "glow/clock_house.webp",
@@ -2348,12 +2348,12 @@
   "layers/mid-metro": {
    "file": "layers/mid-metro.webp",
    "size": [
-    1076,
-    403
+    1000,
+    352
    ],
    "height": 9.0,
    "kind": "strip",
-   "hash": "b770f05629d9bbfdf04c"
+   "hash": "037fdebfdbc4158b8ae0"
   },
   "layers/mid-riverbank": {
    "file": "layers/mid-riverbank.webp",
@@ -2408,12 +2408,12 @@
   "layers/near-metro": {
    "file": "layers/near-metro.webp",
    "size": [
-    1296,
-    386
+    1020,
+    452
    ],
-   "height": 2.2,
-   "kind": "strip",
-   "hash": "c25e21afa501431c6f4c"
+   "height": 4.6,
+   "kind": "ground",
+   "hash": "b19f36fab01212e05ba4"
   },
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
@@ -2607,7 +2607,7 @@
     0.5,
     1.0
    ],
-   "hash": "c8b51931384249b603e2"
+   "hash": "c149f83495895f7043ab"
   },
   "platforms/door": {
    "file": "platforms/door.webp",

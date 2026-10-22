@@ -327,7 +327,7 @@
           "rotation": 0,
           "type": "metro_entrance",
           "visible": true,
-          "width": 32,
+          "width": 16,
           "x": 976,
           "y": 256
         }

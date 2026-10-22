@@ -191,8 +191,7 @@ def train_carriage(length: float = 11.0, height: float = 3.36) -> Image.Image:
 
 
 def catwalk(length: float = 3.3, height: float = 2.16, deck: float = 1.16) -> Image.Image:
-    """A steel deck on a plate girder, railed above, braced at each end, to stretch: its deck
-    stands `deck` up from the bottom, where the map's solid row starts."""
+    """A railed steel deck on a girder, to stretch, its deck `deck` up from the bottom."""
     s = Sheet(length, height, 200)
     s.rect(0.0, deck - 0.6, length, deck - 0.08, STEEL, DARK_STEEL)
     for x in np.arange(0.2, length, 0.55):
@@ -213,8 +212,7 @@ def catwalk(length: float = 3.3, height: float = 2.16, deck: float = 1.16) -> Im
 
 
 def metro_steps(run: float = 3.3, rise: float = 3.36, count: int = 12) -> Image.Image:
-    """A flight of tiled steps rising to the left, solid under its treads, a little fuller than
-    the street's steps so it covers them."""
+    """Tiled steps rising to the left, a little fuller than the street's, to cover them."""
     s = Sheet(run, rise, 150)
     h, d = rise / count, (run - 0.3) / count
     profile = [(run, 0.0)]
@@ -231,8 +229,7 @@ def metro_steps(run: float = 3.3, rise: float = 3.36, count: int = 12) -> Image.
 
 
 def freight_lift(width: float = 2.2, height: float = 4.4) -> Image.Image:
-    """A dead freight lift: its car behind a folding grille gate, in a steel frame, under the
-    winding gear."""
+    """A dead freight lift's car behind a grille gate, under its winding gear."""
     s = Sheet(width, height, 180)
     s.rect(0.15, 0.0, width - 0.15, 3.5, (44, 48, 52))
     s.rect(0.25, 0.1, width - 0.25, 2.5, (92, 86, 74), DARK_STEEL)

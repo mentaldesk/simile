@@ -99,7 +99,8 @@ class Painting:
     reseed: int = 0
     """Added to the seed, to paint a rejected painting again from the same prompt."""
     cut: tuple[str, ...] = ()
-    """For a sprite, what else to cut away: `shadows` and `gaps` (see `cutout.tidy`)."""
+    """For a sprite, what else to cut away: `shadows` and `gaps` (see `cutout.tidy`). For a
+    ground piece, `above`: key out its top row's colour, as its sides aren't backdrop."""
 
     @property
     def seed(self) -> int:
@@ -125,12 +126,11 @@ def cartoon_paper(key: str, pattern: str, size: tuple[int, int] = (768, 512)) ->
 
 
 def tunnel_layer(
-    key: str, kind: Kind, subject: str, size: tuple[int, int], height: float
+    key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw
 ) -> Painting:
-    """A layer of the tunnels, kept to what it names, since edit mode copies the reference's
-    buildings, trees and people otherwise."""
+    """A layer of the tunnels, in the cartoon."""
     prompt = cartoon(CARTOON_LEAD + subject)
-    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height)
+    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height, **kw)
 
 
 SKY = Painting(
@@ -295,6 +295,8 @@ LAYERS = [
     ),
 ]
 NO_STREET = " No people, no trains, no trees, no sky, no buildings."
+NEAR_WALL = 4.6
+"""Metres: tall enough to hide the foot of the mid layer, which the client puts 2.75 m up."""
 TUNNEL_LAYERS = [
     tunnel_layer(
         "metro-vault",
@@ -318,24 +320,26 @@ TUNNEL_LAYERS = [
     tunnel_layer(
         "mid-metro",
         "strip",
-        "A long run of the tiled back wall of an old metro station seen straight from the front, "
-        "across the tracks: a wall of dim cream tiles with a dark teal band, a row of tall round "
-        "arches, empty frames where posters once hung, old pipes and dead lamps, all standing on "
-        "one straight baseline, on a plain flat white background with white space above it. "
-        "No signs." + NO_STREET,
+        "A long run of the tiled back wall of an old metro station seen straight from the front: "
+        "a wall of dim cream tiles with a dark teal band, a row of tall round arches, empty "
+        "frames where posters once hung, old pipes and dead lamps, all standing on one straight "
+        "baseline, on a plain flat white background with white space above it. No signs, no "
+        "tracks, no rails." + NO_STREET,
         (1536, 640),
         9.0,
     ),
     tunnel_layer(
         "near-metro",
-        "strip",
-        "A long low run of clutter along the foot of an old metro station's tiled wall, seen "
-        "straight from the front: old pipes, cable trays, a few sacks, crates and tarps, "
-        + STRIP
-        + " Only pipes, cables and junk."
-        + NO_STREET,
-        (1536, 512),
-        2.2,
+        "ground",
+        "A long run of the lower back wall of an old metro platform seen straight from the front: "
+        "a solid wall of grimy cream tiles from the ground up to a dark teal band along its "
+        "straight top edge, with old pipes and cable trays running along it, and sacks, crates "
+        "and tarps piled at its foot, running from the left edge of the frame to the right edge, "
+        "on a plain flat white background with white space above it. Only the wall, pipes and "
+        "junk." + NO_STREET,
+        (1536, 768),
+        NEAR_WALL,
+        cut=("above",),
     ),
     tunnel_layer(
         "ground-metro",
@@ -614,12 +618,12 @@ FURNITURE: dict[str, Item] = {
         folder="platforms",
     ),
     "metro_entrance": Item(
-        "a small old metro station entrance seen straight from the front: an arched canopy of "
-        "dark green painted iron and glass on two slim iron posts, over a dark doorway where a "
-        "stairway goes down, with a small round glowing sign showing a simple train pictogram "
-        "on top of the canopy",
-        2.8,
-        (640, 832),
+        "a small narrow old metro station entrance seen straight from the front: a low arched "
+        "canopy of dark green painted iron and glass on two slim iron posts, over a dark doorway "
+        "where a stairway goes down, with a small round glowing sign showing a simple train "
+        "pictogram on top of the canopy",
+        2.3,
+        (512, 896),
         ref=STREET,
     ),
     "train_carriage": Item(

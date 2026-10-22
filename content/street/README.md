@@ -71,7 +71,7 @@ The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `booksh
 `sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`,
 and in the metro `bedroll`, `breaker_box`, `catwalk`, `crates`, `dead_terminal`, `freight_lift`,
 `metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`, `ticket_machine`, `train_carriage`,
-`tunnel_arch` and `turnstile`, with `metro_entrance` over the stairway down on Banyan Row. A table
+`tunnel_arch` and `turnstile`, with `metro_entrance` beside the stairway down on Banyan Row. A table
 is drawn with a chair either side. A `rope_bridge` stands on the solid row under it, its deck. A
 `catwalk` covers its solid row and the row above it, its deck on the solid row's top, and the
 `train_carriage` its roof's solid row and everything under it. `metro_steps` covers a flight of stairs

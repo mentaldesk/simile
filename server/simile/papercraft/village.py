@@ -3,7 +3,7 @@ Where things are and how big comes from the maps, through `layout.py`."""
 
 from dataclasses import dataclass
 
-from simile.papercraft.fronts import WINDOW, Box, Front, Rgb, Roof
+from simile.papercraft.fronts import UNIT, WINDOW, Box, Front, Rgb, Roof
 from simile.papercraft.layout import Facade, Layout
 
 TILE = 1.1
@@ -72,6 +72,8 @@ class Look:
     """Painted in the tunnels' cartoon rather than papercraft."""
     plants: bool = True
     """A potted plant each side of the door."""
+    whole: bool = False
+    """Painted in one go however wide, for a front that isn't a terrace."""
 
 
 WOOD: Rgb = (126, 88, 60)
@@ -272,6 +274,8 @@ LOOKS: dict[str, Look] = {
         window=(1.3, 1.1),
         cartoon=True,
         plants=False,
+        whole=True,
+        reseed=1,
     ),
     "clock_house": Look(
         "a three-storey townhouse of pale sandstone with a flat roof",
@@ -375,6 +379,7 @@ def front(facade: Facade, look: Look) -> Front:
         plants=look.plants,
         window=look.window,
         one_shop=look.one_shop,
+        unit=width if look.whole else UNIT,
     )
 
 

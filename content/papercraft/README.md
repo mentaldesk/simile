@@ -144,5 +144,11 @@ The metro under the village (`content/street/README.md`'s *The metro*) is painte
 cartoon, kept a little dirty: its layers (`TUNNEL_LAYERS`), the furniture marked `cartoon`, the
 clinic's front (its `Look` is `cartoon`) and its room paper (`CARTOON_PAPERS`). Their prompts end in
 `painter.CARTOON` rather than the papercraft style, and they're painted from the cartoon references.
-The rest of the pipeline is the same. The metro's catwalks and steps are furniture drawn over the
-street's own ledges and steps, which stay papercraft.
+The rest of the pipeline is the same, with three additions:
+
+- `near-metro` is a solid tiled wall 4.6 m tall, so it hides the foot of `mid-metro`, which the
+  client draws 2.75 m up. It's cut as a `ground` piece, keyed on its top row's colour (`cut`
+  `above`), since the wall fills its sides.
+- The clinic's `Look` is `whole`: one painting however wide, with no seam where units would meet.
+- The metro's catwalks and steps are furniture drawn over the street's own ledges and steps, which
+  stay papercraft.
