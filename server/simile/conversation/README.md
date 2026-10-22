@@ -114,7 +114,7 @@ as in *Works* above. Nothing the player has read or seen reaches an NPC's prompt
 with the player as `player_relief` (half) of one with a resident towards their social need.
 
 - **Starting.** `player_say` to an NPC within `say_range` (4 tiles) starts a conversation, unless
-  they're asleep. One talking to another resident is pulled out of it (see *Interruptions*) and
+  they're asleep. One put off by the player's bionics turns them down (see *The player's bionics*). One talking to another resident is pulled out of it (see *Interruptions*) and
   answers once that conversation has ended and their goodbye's audio has played. From then on, the player's lines reach the NPC for as long as the
   conversation lasts. Saying something to a different NPC who is awake ends the one going on: the
   old partner says a short canned goodbye, and the new resident's first line waits until it ends.
@@ -301,6 +301,31 @@ at the saved investigation, is the incident.
 - **For other modules.** `PlayerTalk.tellings` has what the resident was set up to say about each
   fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
   `Temptation.fact_id`, and in `engine.lies` for B3.
+
+## The player's bionics
+
+S11 ([`simile.social`](../social/README.md#bionics)) decides how residents take to the player's
+bionics. The lifespan points `engine.looks` at its sightings.
+
+- **What they see.** The first paragraph of each reply's background ends with what the resident
+  can see of the player: each bionic fitted, which are new to them, and how they feel about
+  bionics ("Visitor has an infrared eye that glows faintly red in place of one of their own. The
+  infrared eye is new since you last saw them. Bionics make you uneasy."). A whole player gets
+  nothing, and the prompt is as it was. Scenes between residents have no player to see: word of a
+  sighting reaches them through the memory it leaves, on the sighter's mind like any other.
+- **Keeping their distance.** B1's `unease` comes off the accept score for the player,
+  `accept_unease` (2) times it, so an uneasy resident doesn't greet them. One the player talks to
+  turns them down when that score declines, as it would an NPC's request: their one reply is cued
+  "You'd rather not talk to Visitor. Turn them down in a few words, and leave it there.", and the
+  conversation ends as after a goodbye. Someone strongly against bionics is told to say why in one
+  curt line, and anyone else to stay polite and keep their reason to themselves. Only someone
+  uneasy turns the player down, never at work, and someone talking with another resident doesn't
+  break off to do it: the player gets no answer.
+- **Lies in a refusal.** Turning the player down sets up the lies of #285 and of the incident as
+  usual, but tells nothing: a resident asked about the incident who'd lie about a fact still gets
+  its cover (*Telling* above), and the cue adds "If they asked what one of your cover stories
+  answers, give it as you turn them down." So the lie is in `talk.lies` and `engine.lies` for the
+  eye to read. A lower trust from a sighting also makes them tell less of the incident.
 
 ## Only promising what's possible
 

@@ -1,9 +1,9 @@
 # simile.social
 
 R1's relationship model: how one NPC feels about another, as pure functions over the
-`Relationship` in `simile.schema.social`. Nothing here stores anything or calls Claude. R2 keeps
-the relationships, B3 applies each conversation's events, B1 and B2 read the scores, and B2's
-prompts describe them.
+`Relationship` in `simile.schema.social`. R2 keeps the relationships, B3 applies each
+conversation's events, B1 and B2 read the scores, and B2's prompts describe them. Nothing here
+calls Claude, and only S11's sightings (*Bionics* below) store anything, through R2.
 
 Each direction is its own `Relationship`: `like`, `trust` and `respect` from 0 to 1 with neutral at
 0.5, `familiarity` from 0 (strangers) to 1, the `baseline` the scores drift back to, and `flags`.
@@ -84,3 +84,47 @@ after "but". You "barely know" them below `barely_known` (0.2) familiarity, "kno
 `well_known` (0.6), and "a little" in between. Each open flag gets a sentence, oldest first.
 
 Every constant is in `RelationshipConfig`, passed as `config=` to the functions that use them.
+
+## Bionics
+
+S11: the village reacts to the player's bionics (`bionics.py`, `sightings.py`). Every constant is in
+`BionicsConfig`.
+
+- **Tolerance.** `tolerance(values)` is how a resident takes to bionics, from -1 to 1:
+  `sum(weight * (value - 0.5))`, clamped. Tradition and Security weigh -1, and Adventure, Ambition
+  and Open-mindedness 2/3 each, so the two sides weigh the same. From `mildly` (0.15) away from 0
+  a resident is against or for, and from `strongly` (0.5) strongly so. In today's village Tobias
+  (-1) and Henrietta (-0.62) are strongly against, Mirela and Raymond against, Marguerite for, and
+  Ingrid and Kofi strongly for. The rest barely mind.
+- **Standing out.** The infrared eye catches the eye most (`stands_out` 1), then the legs (0.75)
+  and the datajack (0.5). All three are visible.
+- **Sightings.** `Sightings` looks every `look_every` (5 sim s) for residents who are awake, on
+  the player's map and within `sight` (6 tiles along the street), and has each see each bionic
+  once. A sighting is one R1 event per bionic new to them, from the player, on like, trust and
+  respect, with valence their tolerance and magnitude `sighting` (0.3) times how much it stands
+  out, applied as one encounter. So Tobias seeing the eye takes his like from 0.52 to 0.29, Mirela
+  seeing the legs takes hers from 0.5 to 0.43, and Kofi's rises a little. The events move how they
+  feel but aren't stored, so they stay out of the history B2's prompts list. It also leaves an
+  `observation` memory about the player, "I saw that Visitor has hydraulic legs where their own
+  legs were. It made me uneasy.", with topics `bionics` and each bionic's name, salience from
+  `salience` (0.3) plus `salience_feeling` (0.6) times the strength of their feeling and how much
+  the bionic stands out, and valence their tolerance. That memory is the record of what they've
+  seen, read back from R2 once per resident, so it's saved with the world and counts once across
+  restarts.
+- **Unease.** `unease` is B1's hook: how much the bionics a resident has seen on the player, or
+  can see now, put them off. It's how far their tolerance is below `-mildly`, as a share of the
+  rest of the way to -1, times how much those bionics stand out together, up to 1: none for anyone
+  who barely minds, 0.35 for Mirela and 1 for Tobias seeing the eye. Counting what's in sight now
+  means it's there before the next look records the sighting. B1 keeps them away and B2 has them
+  decline (see their READMEs).
+- **What they see.** `looks(npc)` is the line B5's prompt starts with, or nothing for a whole
+  player: what's fitted, which is new to them (seen in the last `new_for`, an hour, or not yet), and
+  how they feel about bionics: "Visitor has hydraulic legs where their own legs were and an
+  infrared eye that glows faintly red in place of one of their own. The infrared eye is new since
+  you last saw them. Bionics on a person repel you: it isn't natural, and you'd rather keep your
+  distance."
+- **Gossip.** Nothing more: the sighting's memory is on their mind in scenes with other residents
+  like any other salient memory, and B3 remembers what was said.
+
+`sightings_of(app)` is the server's `Sightings`, which the lifespan ticks and plugs into B1, and
+B2's lifespan points `engine.looks` at.

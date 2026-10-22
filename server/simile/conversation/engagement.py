@@ -17,11 +17,14 @@ def acceptance(
     config: ConversationConfig = DEFAULT_CONFIG,
     *,
     urgent: bool = False,
+    unease: float = 0.0,
 ) -> float:
     """How keen `rel.owner` is to talk when `rel.about` walks up: positive to accept. Someone
     with an `urgent` need declines."""
     weights = config.accept_weights
     score = config.accept_base - (config.accept_urgent if urgent else 0.0)
+    if unease:
+        score -= config.accept_unease * unease
     score += sum(weights.get(aspect, 0.0) * (getattr(rel, aspect) - 0.5) for aspect in ASPECTS)
     score += weights.get("familiarity", 0.0) * rel.familiarity
     score += sum(w * (values[value] - 0.5) for value, w in config.accept_values.items())

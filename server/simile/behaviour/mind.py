@@ -88,6 +88,7 @@ type WorkMaker = Callable[[Npc, Id | None, Intention | None], None]
 type WallPicker = Callable[[Npc], MuralSpot | None]
 type Purse = Callable[[Npc], float | None]
 type Pricing = Callable[[Npc, Goal], float]
+type Unease = Callable[[Npc], float]
 
 NEUTRAL = Traits()
 AT_HOME = (Activity.HOME, Activity.SLEEP)
@@ -143,6 +144,10 @@ def nothing(npc: Npc, goal: Goal) -> float:
     return 0.0
 
 
+def at_ease(npc: Npc) -> float:
+    return 0.0
+
+
 class Hooks:
     """The interfaces other modules implement, stubbed until they do. See the README."""
 
@@ -157,6 +162,7 @@ class Hooks:
         self.money: Purse = no_money
         self.price: Pricing = nothing
         self.earnings: Pricing = nothing
+        self.unease: Unease = at_ease
 
     def set(
         self,
@@ -171,6 +177,7 @@ class Hooks:
         money: Purse | None = None,
         price: Pricing | None = None,
         earnings: Pricing | None = None,
+        unease: Unease | None = None,
     ) -> Callable[[], None]:
         """Plug in the hooks given and return a function that puts back what they replaced."""
         given = {
@@ -184,6 +191,7 @@ class Hooks:
             "money": money,
             "price": price,
             "earnings": earnings,
+            "unease": unease,
         }
         hooks = {name: hook for name, hook in given.items() if hook is not None}
         previous = {name: getattr(self, name) for name in hooks}
@@ -598,6 +606,11 @@ class Behaviour:
     def savings(self, npc: Id) -> float:
         """Their savings target, in money."""
         return savings(self.npcs[npc].values, self.config)
+
+    def unease(self, npc: Id) -> float:
+        """How much the player's bionics put them off, 0 to 1, from the `unease` hook."""
+        level = self._call(self.hooks.unease, self.npcs[npc])
+        return _clamp(level) if isinstance(level, int | float) else 0.0
 
     def goal(self, npc: Id) -> Goal:
         return self.minds[npc].goal
@@ -1016,13 +1029,18 @@ class Behaviour:
             if other == npc.id or (other not in self.minds and other != PLAYER_ID):
                 continue
             rel = as_of(known.get(other) or meet(npc, other), now, traits=self.traits_of(npc.id))
+            fondness = affinity(rel, self.config)
+            uneasy = self.unease(npc.id) if other == PLAYER_ID else 0.0
+            if uneasy:
+                fondness -= self.config.unease_weight * uneasy
             others.append(
                 Other(
                     other,
                     position,
-                    affinity(rel, self.config),
+                    fondness,
                     self._place_of(other, position),
                     self._available(mind, other),
+                    shunned=bool(uneasy),
                 )
             )
         news = self._call(self.hooks.news_interest, npc)

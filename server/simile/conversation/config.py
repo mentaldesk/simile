@@ -65,6 +65,11 @@ class ConversationConfig(BaseModel):
         description="Taken off the accept score while one of the target's needs is at or past "
         "B1's critical level for it: enough to decline even a friend they were looking for.",
     )
+    accept_unease: float = Field(
+        default=2.0,
+        ge=0,
+        description="Taken off the accept score per unit of B1's `unease` at the player's bionics.",
+    )
     accept_temperature: float = Field(
         default=0.1,
         ge=0,
