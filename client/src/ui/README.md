@@ -9,7 +9,9 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the
   conversation ends;
 - a hint when an NPC starts a conversation with the player: "Mei wants to talk. Press Enter to
-  reply.";
+  reply.", and "Mei wants to talk. Esc, then Enter to reply." at the top of any panel that's open
+  (the news, a mural, a painting or the controls) while they're the player's partner (`callCue` in
+  [`call-cue.ts`](call-cue.ts)), as audio plays their greeting;
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
 - the news and residents' writing at a terminal (see *Reading the news*);
@@ -112,7 +114,9 @@ something in reach the door's tag says "↑: go in". The world scene words them 
 (`wayPrompts`); tags that would overlap move apart.
 
 `?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in
-the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README.
+the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README, and say
+as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
+greet the player out loud either way.
 
 ## What the world scene provides
 

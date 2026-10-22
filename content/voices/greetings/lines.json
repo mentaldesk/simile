@@ -1,0 +1,68 @@
+{
+  "desmond": [
+    {"text": "Kia orana!", "take": 2},
+    {"text": "Hey there, got a minute?", "take": 2},
+    {"text": "Kia orana, how are you keeping?", "take": 1},
+    {"text": "Right, so, have you got a moment?"}
+  ],
+  "henrietta": [
+    {"text": "Excuse me. A word, please.", "take": 2},
+    {"text": "You there. A moment."},
+    {"text": "Excuse me!", "take": 1},
+    {"text": "I need a quick word."}
+  ],
+  "ingrid": [
+    {"text": "Hey, come and look at this!", "take": 1},
+    {"text": "Ja, you! Got a second?"},
+    {"text": "So, quick question.", "take": 1},
+    {"text": "Over here, quick!", "take": 1}
+  ],
+  "kofi": [
+    {"text": "Chale! Come, come!", "take": 2},
+    {"text": "Hey, my friend!", "take": 1},
+    {"text": "Yo, check this out!", "take": 1},
+    {"text": "Chale, over here!"}
+  ],
+  "lachlan": [
+    {"text": "Kia ora! How's it going?"},
+    {"text": "Oi, over here!"},
+    {"text": "G'day! Got a sec?", "take": 2},
+    {"text": "Good to see you!", "take": 1}
+  ],
+  "marguerite": [
+    {"text": "Bonjour. A moment?"},
+    {"text": "Ah, there you are. Two minutes?", "take": 1},
+    {"text": "Bon. Can we talk?", "take": 1},
+    {"text": "Excuse me, a quick word."}
+  ],
+  "mirela": [
+    {"text": "Hello, how was your day?", "take": 1},
+    {"text": "Hey, how are you, really?", "take": 1},
+    {"text": "Hi there. Got a moment?"},
+    {"text": "How's your week been?", "take": 1}
+  ],
+  "odalys": [
+    {"text": "Olá! Come, sit!", "take": 1},
+    {"text": "Hey, you! Over here!"},
+    {"text": "Have you eaten today?"},
+    {"text": "Come on, come, come!", "take": 1}
+  ],
+  "priya": [
+    {"text": "Darling! Over here!"},
+    {"text": "Yaar, you have to hear this!"},
+    {"text": "Hello, gorgeous!", "take": 2},
+    {"text": "One minute, darling?", "take": 2}
+  ],
+  "raymond": [
+    {"text": "Hello! A quick word?", "take": 2},
+    {"text": "Excuse me, got a minute?"},
+    {"text": "Hello, hello! Can talk or not?"},
+    {"text": "Got a minute? Good opportunity."}
+  ],
+  "tobias": [
+    {"text": "Hello there."},
+    {"text": "Excuse me, have you a moment?", "take": 2},
+    {"text": "Ah, there you are now.", "take": 1},
+    {"text": "A word, if you would."}
+  ]
+}

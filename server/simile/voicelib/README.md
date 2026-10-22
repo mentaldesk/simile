@@ -128,9 +128,25 @@ transcripts and `imported.json` stay as they are, and picking one copies the cli
  "reference_line": "...", "clip": "/api/voices/henrietta/clip"}
 ```
 
+## Greetings
+
+Once a character's voice is set, `pick` drops its old greetings and starts a `voice_greetings` job
+(`{"character": "<id>"}`), which needs Apple Silicon and voice-lab's MLX virtualenv. It runs
+[`voicing/speak.py`](../voicing/speak.py) there, which says four greetings in the new voice with V1's
+model, a second or so each once the model has loaded, and moves them into the library's `greetings/`
+folder as `<id>_<n>.m4a`, where `GET /api/greetings/{id}` finds them. The result lists them with
+their `lines` and `seconds`. A job for a clip that changed while it ran keeps nothing (`"stale":
+true`).
+
+The greetings come from `lines_for` in [`voicing/greetings.py`](../voicing/greetings.py), with no LLM
+call: three in the tone the character's values lean to most (formal, warm, brisk or playful), and a
+fourth in their next tone, or a hello their speaking style quotes ("Kia ora!"). Where the job can't
+run, a voice picked from the library brings that resident's own greetings, and any other voice has
+none until it can.
+
 ## Where it writes
 
-Nothing here writes to `content/`. Uploads wait in `<jobs>/voice_check/uploads/` until their job
+Nothing here writes to `content/`. Greetings go in the library's `greetings/` folder. Uploads wait in `<jobs>/voice_check/uploads/` until their job
 moves them into its work directory. One whose job is cancelled or fails first is deleted when the
 job ends, and the server cancels its waiting check jobs when it stops. It also deletes any upload a
 day old when it starts, which only a killed server leaves. Each kind keeps the files of its latest

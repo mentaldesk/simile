@@ -1,0 +1,101 @@
+{
+  "desmond": {
+    "digest": "8ea38c505aa84f51db3bd444c75328a6bfd90d73fb75f469c5e439b1a9445dda",
+    "seconds": [
+      0.63,
+      1.11,
+      1.35,
+      1.83
+    ]
+  },
+  "henrietta": {
+    "digest": "d80be35371ccf24a24a779d779430339050f30cee5780f14b84bc54eb28b1367",
+    "seconds": [
+      1.41,
+      1.22,
+      0.95,
+      1.01
+    ]
+  },
+  "ingrid": {
+    "digest": "2c291010b806376af8197ff1597a6bddebcaff4a087f93904375354c2a2a11d6",
+    "seconds": [
+      1.58,
+      1.49,
+      1.68,
+      1.17
+    ]
+  },
+  "kofi": {
+    "digest": "9d84a233092b34ff5eacf0fc4c7a87d6026116990d4cb02ac675846d3fe6deaa",
+    "seconds": [
+      1.43,
+      0.97,
+      1.34,
+      1.28
+    ]
+  },
+  "lachlan": {
+    "digest": "e84b4915a2c970ec06fe247b81bc378d2d8ca7701edea8807ef1861fe348de9b",
+    "seconds": [
+      1.4,
+      1.01,
+      0.84,
+      0.68
+    ]
+  },
+  "marguerite": {
+    "digest": "6520b8ef8fa04990f37916837ab4dc4e27766483b36e069fbc2183517617d87a",
+    "seconds": [
+      1.68,
+      2.21,
+      1.3,
+      1.41
+    ]
+  },
+  "mirela": {
+    "digest": "fa566dacbf2355c5cfe6bd4cc301fbced7b08386dd7060a546db6963f5cf2063",
+    "seconds": [
+      1.78,
+      1.49,
+      1.96,
+      1.16
+    ]
+  },
+  "odalys": {
+    "digest": "65483787d5cfe01f822866dc3688ab159d72dcd565db87f3a7e3c64bcfa72801",
+    "seconds": [
+      1.33,
+      1.37,
+      1.16,
+      1.59
+    ]
+  },
+  "priya": {
+    "digest": "311a64c2560c8fbcf47769572a3fb18731f781b263a99de1f98a4b4047b0482b",
+    "seconds": [
+      1.19,
+      2.07,
+      1.2,
+      1.24
+    ]
+  },
+  "raymond": {
+    "digest": "cbd939ad89c3651d0fcc5bcf56791d462c6d4f849a3a176c7f1cda1182ecacae",
+    "seconds": [
+      1.35,
+      1.43,
+      1.73,
+      2.02
+    ]
+  },
+  "tobias": {
+    "digest": "5bbeb910a2d71c96549230e54cf79d5c34349d5fb8e1e455ec2eaaab50d4e297",
+    "seconds": [
+      0.87,
+      2.02,
+      1.74,
+      1.13
+    ]
+  }
+}

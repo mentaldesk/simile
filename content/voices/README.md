@@ -18,3 +18,7 @@ it, and `design_npcs.py` and `import_voices.py` run that for each voice they mak
 
 Each resident's accent was set by hand (N2b, #70) in their `backstory`, `speaking_style` and
 `voice.description`. Rerunning `simile generate-npcs` replaces those along with everything else.
+
+`greetings/` has three or four short greetings in each resident's voice, which the client plays when
+they start talking to the player. `greetings/lines.json` is what they say, and `uv run --extra voice
+simile greetings` records them ([how](../../server/simile/voicing/README.md#greetings)).

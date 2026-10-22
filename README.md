@@ -11,9 +11,12 @@ login, so there's no API key.
 It installs what the village needs, starts it and opens the title menu at http://localhost:5173
 (http://localhost:5173/?play goes straight into the village). Ctrl-C stops it.
 
-On a Mac with Apple Silicon the NPCs speak out loud. The first voiced run downloads the voice model,
-about 3 GB, and the model needs about 3 GB of memory. `SIMILE_VOICE=0 ./run.sh` turns voices off,
-and everywhere else the village runs with speech bubbles only.
+Voices are off: the residents talk in speech bubbles, and each one greets you out loud, in their own
+voice, when they start talking to you. On a Mac with Apple Silicon, `SIMILE_VOICE=1 ./run.sh` turns
+their voices on. The first voiced run downloads the voice model, about 3 GB, and the model needs
+about 3 GB of memory. The greetings play either way, on any machine. Where voice-lab is set up,
+picking a character's voice in the creator records their greetings with the same model in
+voice-lab's virtualenv, which loads it, and the first time downloads it, even with voices off.
 
 ## Controls
 
@@ -113,6 +116,8 @@ If they read something that triggers them (either it really aligns with one of t
 ## Voices
 
 Every NPC speaks out loud in their own voice. Speech is generated locally on the player's machine with [Qwen3-TTS](https://github.com/QwenLM/Qwen3-TTS), so there's no cloud voice service and no cost per line.
+
+For now the voices are off unless you turn them on (see *Running it*), since the intonation is hard to get right, and each resident only greets you out loud with a line recorded once in their voice.
 
 ### Creating an NPC's voice
 

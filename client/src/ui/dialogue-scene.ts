@@ -5,6 +5,7 @@ import type { Interactable } from '../world/interactables';
 import { muralWalls } from '../world/murals';
 import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
+import { callCue } from './call-cue';
 import { ChatBox } from './chat-box';
 import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
@@ -50,7 +51,10 @@ export class DialogueScene extends Phaser.Scene {
     this.bubbles = new BubbleLayer(this.root);
     const log = new LogPanel(this.root, dialogue.log);
     const chat = (this.chat = new ChatBox(this.root, dialogue, this.targets));
-    const stopInvitations = dialogue.onInvitation((npcId) => chat.invite(npcId));
+    const stopInvitations = dialogue.onInvitation((npcId) => {
+      chat.invite(npcId);
+      callCue.show(npcId, dialogue.nameOf(npcId));
+    });
 
     this.news = new NewsPanel(this.root, server);
     this.newsHint = this.root.appendChild(document.createElement('div'));
@@ -88,6 +92,7 @@ export class DialogueScene extends Phaser.Scene {
     this.fitToCanvas();
     const view = inOverlay(worldView(), this.fromGame);
     this.bubbles.render(dialogue.bubbles.current(), view);
+    callCue.update(dialogue.partner());
     const player = this.player();
     const used = usedByE(player);
     const atTerminal = used?.kind === 'terminal';

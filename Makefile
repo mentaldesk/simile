@@ -1,6 +1,7 @@
 .PHONY: test lint format dev server-test server-lint client-test client-lint dev-server dev-client
 
 CLIENT_DEPS := client/node_modules/.package-lock.json
+SIMILE_VOICE ?= 0
 
 test: server-test client-test
 
@@ -26,7 +27,7 @@ client-lint: $(CLIENT_DEPS)
 	cd client && npm run lint
 
 dev-server:
-	cd server && uv run simile serve --reload
+	cd server && SIMILE_VOICE=$(SIMILE_VOICE) uv run simile serve --reload
 
 dev-client: $(CLIENT_DEPS)
 	cd client && npm run dev

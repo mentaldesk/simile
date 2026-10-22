@@ -39,16 +39,15 @@ for port in "$server_port" "$client_port"; do
   fi
 done
 
-if $apple_silicon; then
-  export SIMILE_VOICE="${SIMILE_VOICE:-1}"
+export SIMILE_VOICE="${SIMILE_VOICE:-0}"
+extras=()
+if [[ $SIMILE_VOICE == 1 ]] && $apple_silicon; then
   extras=(--extra voice)
-else
-  export SIMILE_VOICE="${SIMILE_VOICE:-0}"
-  extras=()
 fi
 
 make -s -C "$root" client/node_modules/.package-lock.json
-(cd "$root/server" && uv sync ${extras[@]+"${extras[@]}"})
+# --inexact keeps the voice extra installed while voices are off, for SIMILE_VOICE=1 make dev.
+(cd "$root/server" && uv sync --inexact ${extras[@]+"${extras[@]}"})
 
 server=""
 client=""
@@ -66,10 +65,12 @@ server=$!
 (cd "$root/client" && exec node_modules/.bin/vite --port "$client_port" --strictPort --clearScreen false </dev/null) &
 client=$!
 
-if [[ $SIMILE_VOICE == 1 ]]; then
+if [[ $SIMILE_VOICE == 1 ]] && $apple_silicon; then
   echo "Starting the village with voices. The first time, that downloads the voice model (about 3 GB)."
+elif [[ $SIMILE_VOICE == 1 ]]; then
+  echo "Voices need a Mac with Apple Silicon, so starting the village without them."
 else
-  echo "Starting the village without voices."
+  echo "Starting the village without voices: residents only greet you out loud. SIMILE_VOICE=1 ./run.sh turns them on."
 fi
 until curl -sf "http://127.0.0.1:$server_port/api/health" >/dev/null && curl -sf "$url" >/dev/null; do
   kill -0 "$server" 2>/dev/null && kill -0 "$client" 2>/dev/null || exit 1

@@ -1,6 +1,7 @@
 import type { Position, Wall } from '../net';
 import { muralView, wallNear, type MuralView, type MuralWalls } from '../world/murals';
 import type { Point } from '../world/view';
+import { callCue } from './call-cue';
 import { pressedNewsKey } from './keys';
 import './mural-panel.css';
 import { tilesApart } from './side-view';
@@ -39,6 +40,7 @@ export class MuralPanel {
     this.panel.tabIndex = -1;
     this.panel.hidden = true;
     this.panel.ariaLabel = 'Mural';
+    callCue.slot(this.panel);
     const header = this.panel.appendChild(document.createElement('header'));
     this.title = header.appendChild(document.createElement('b'));
     header.appendChild(document.createElement('span')).textContent = `Esc or ${KEY} close`;
