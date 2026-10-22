@@ -4,10 +4,11 @@ import { DEPTH } from './depths';
 import { feetOf, PPM, xOf } from './layout';
 import type { Village } from './maps';
 
-const RADIUS_M = 0.16;
-const LIFT_M = 0.22;
+const RADIUS_M = 0.4;
+const LIFT_M = 0.3;
 const PULSE_S = 1.8;
-const COLOUR = { cash: 0xffd75e, things: 0xdff6ff } as const;
+const COLOUR = { cash: 0xffcf3a, things: 0x9fe8ff } as const;
+const OUTLINE = 0x1b2430;
 
 export type PileMark = { x: number; y: number; depth: number; cash: boolean };
 
@@ -51,13 +52,17 @@ export class PileGlints {
 
   private glint({ x, y, depth, cash }: PileMark): Phaser.GameObjects.Graphics {
     const r = RADIUS_M * PPM;
-    const star = [0, -r, r * 0.25, -r * 0.25, r, 0, r * 0.25, r * 0.25, 0, r, -r * 0.25, r * 0.25, -r, 0, -r * 0.25, -r * 0.25];
+    const star = [0, -r, r / 4, -r / 4, r, 0, r / 4, r / 4, 0, r, -r / 4, r / 4, -r, 0, -r / 4, -r / 4];
     const points = Array.from({ length: star.length / 2 }, (_, i) => new Phaser.Math.Vector2(star[i * 2], star[i * 2 + 1]));
+    const colour = COLOUR[cash ? 'cash' : 'things'];
     return this.scene.add
       .graphics({ x, y })
-      .fillStyle(COLOUR[cash ? 'cash' : 'things'], 1)
+      .fillStyle(colour, 0.3)
+      .fillCircle(0, 0, r * 0.7)
+      .fillStyle(colour, 1)
       .fillPoints(points, true)
-      .setBlendMode(Phaser.BlendModes.ADD)
+      .lineStyle(r / 10, OUTLINE, 0.8)
+      .strokePoints(points, true)
       .setDepth(depth);
   }
 }

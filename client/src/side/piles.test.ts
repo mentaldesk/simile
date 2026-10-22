@@ -21,8 +21,8 @@ describe('pileMarks', () => {
     const marks = pileMarks(village, 'high_street', piles);
 
     expect(marks).toEqual([
-      { x: xOf(20), y: expect.closeTo(feetOf(15) - 0.22 * PPM), depth: DEPTH.streetFurniture + 0.5, cash: false },
-      { x: xOf(2 + 5), y: expect.closeTo(feetOf(13 + 2) - 0.22 * PPM), depth: DEPTH.furniture + 0.25, cash: true },
+      { x: xOf(20), y: expect.closeTo(feetOf(15) - 0.3 * PPM), depth: DEPTH.streetFurniture + 0.5, cash: false },
+      { x: xOf(2 + 5), y: expect.closeTo(feetOf(13 + 2) - 0.3 * PPM), depth: DEPTH.furniture + 0.25, cash: true },
     ]);
   });
 
