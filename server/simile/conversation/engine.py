@@ -38,6 +38,7 @@ from simile.conversation.script import (
     scene_prompt,
     script_system,
 )
+from simile.conversation.telling import Telling, tellings
 from simile.conversation.temptation import (
     Kind,
     Lie,
@@ -60,6 +61,7 @@ from simile.schema import (
     CoreValue,
     FlagKind,
     Id,
+    Incident,
     Line,
     Memory,
     MemoryKind,
@@ -113,6 +115,8 @@ class Memories(Protocol):
     ) -> list[Memory]: ...
 
     def shared_history(self, a: str, b: str, now: datetime, *, k: int = 10) -> SharedHistory: ...
+
+    def facts(self, owner: str) -> list[Memory]: ...
 
 
 class Audio(Protocol):
@@ -230,6 +234,8 @@ class ConversationEngine:
         """A work by id, for the works residents might bring up."""
         self.missed: Callable[[Id], list[Missed]] = lambda _: []
         """E3's shifts a resident skipped or was late to."""
+        self.incident: Callable[[], Incident | None] = lambda: None
+        """S12's incident, for what residents know of it."""
         self._talks: dict[str, Talk] = {}
         self._loans: dict[str, Loan] = {}
         self._lies: dict[str, list[Lie]] = {}
@@ -403,6 +409,11 @@ class ConversationEngine:
         lying = lie(temptation, listener, names)
         self._lies.setdefault(conversation_id, []).append(lying)
         return lying
+
+    def tellings(self, npc: Id, listener: Id) -> list[Telling]:
+        """What `npc` would say of each incident fact they know, by their trust in `listener`."""
+        trust = self._relationship(npc, listener).trust
+        return tellings(self.incident(), npc, trust, self.memory.facts(npc))
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):
