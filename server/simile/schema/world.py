@@ -3,7 +3,7 @@ from typing import Self
 
 from pydantic import Field, model_validator
 
-from simile.schema.common import Id, Key, Model
+from simile.schema.common import CHECKED, Id, Key, Model
 
 VILLAGE_MAP = "village"
 
@@ -19,6 +19,8 @@ class Tile(Model):
 
 class MapTile(Model):
     """A tile on a given map: the village or an interior, or in side view a street or a floor."""
+
+    model_config = CHECKED
 
     map: Key
     x: int = Field(ge=0)
