@@ -33,8 +33,7 @@ function fnv1a(text: string): number {
   return hash >>> 0;
 }
 
-/** Its own doll, the player's with whatever bionics `body` has fitted, or a resident's picked by
- * its id, the same one every time. */
+/** Its own doll, the player's for `body`, or a resident's picked by its id, the same every time. */
 export function dollFor(id: string, body: PlayerBody = playerBody): FigureManifest {
   if (id === PLAYER_FIGURE) return dolls[body.figure] ?? dolls[PLAYER_FIGURE];
   return dolls[id] ?? dolls[residentDolls[fnv1a(id) % residentDolls.length]];

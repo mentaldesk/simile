@@ -1,7 +1,4 @@
-"""The player with bionics fitted, in every combination of the hydraulic legs, the datajack and the
-infrared eye. Each part is painted on every frame as an edit of the whole player's same frame,
-and laid over the whole player's frames where it changed them, so the player is the same in every
-combination but for the parts, and each part the same in every combination it's in."""
+"""The player with each combination of bionics: each part painted once over the player's frames."""
 
 from collections.abc import Iterable
 from itertools import combinations
@@ -12,6 +9,7 @@ from PIL import Image, ImageFilter
 
 from simile.dolls.colour import cielab, delta_e_lab
 from simile.dolls.figure import EDITS, FACE, styled, touching
+from simile.dolls.sprites import head
 from simile.dolls.words import described
 from simile.schema import PLAYER_ID, Appearance
 from simile.schema.player import Bionic
@@ -19,6 +17,7 @@ from simile.schema.player import Bionic
 VERSION = 1
 """How the parts are laid over the whole player: a new one lays them again."""
 FITTED = (Bionic.HYDRAULIC_LEGS, Bionic.DATAJACK, Bionic.INFRARED_EYE)
+EYE = Bionic.INFRARED_EYE
 NAMES = {Bionic.HYDRAULIC_LEGS: "legs", Bionic.DATAJACK: "datajack", Bionic.INFRARED_EYE: "eye"}
 type Combination = tuple[Bionic, ...]
 COMBINATIONS: tuple[Combination, ...] = tuple(
@@ -52,14 +51,15 @@ METAL = (12.0, 40.0, 88.0)
 LEGS = 0.6
 """Where the legs start, down the figure."""
 SHORTS = (0.62, 0.7)
-"""Where the shorts are, down a standing figure with the hydraulic legs: the bottom colour's
-`measure.CORES`, since the shins are steel."""
+"""The bottom colour's `measure.CORES` with the hydraulic legs, whose shins are steel."""
 LENS = (40.0, 15.0)
 """The red lens: a* above the first and lightness above the second, in the top half."""
 LIGHT = (-30.0, 15.0)
 """The datajack's green light: a* below the first, b* above the second."""
-LEAST = {Bionic.HYDRAULIC_LEGS: 0.06, Bionic.DATAJACK: 0.001, Bionic.INFRARED_EYE: 0.002}
+LEAST = {Bionic.HYDRAULIC_LEGS: 0.12, Bionic.DATAJACK: 0.001, Bionic.INFRARED_EYE: 0.002}
 """The share of a frame, or of its legs for the legs, a part must cover to be there."""
+LENS_WIDE = 0.17
+"""The widest the lens may be, as a share of the head's width: the walk's is about 0.15."""
 OTHER_EYE = 0.25
 """A second red patch this big against the first is the other eye painted red."""
 RIM = 0.012
@@ -68,15 +68,13 @@ PALETTE = np.array(
     [[lightness, 0.0, 0.0] for lightness in range(35, 95, 10)]
     + [[48.0, 70.0, 55.0], [80.0, -70.0, 65.0]]
 )
-"""The parts' colours in CIELAB, steel greys, the lens and the light, which a frame may show
-although the whole player's standing figure doesn't."""
+"""The parts' colours in CIELAB, which a frame may show although the whole player doesn't."""
 CHANGED = 10.0
 """How far a pixel of a part's frame is from the whole player's, CIEDE2000, to be changed."""
 SHORTS_FROM = 0.5
 """How far down the figure the legs' changes start: the shorts' hem is above the knees."""
 REACH = {Bionic.DATAJACK: 0.06, Bionic.INFRARED_EYE: 0.03}
-"""How far from its light or lens, in the figure's heights, the datajack's or the eye's changes
-are its own: further away, FLUX redrew something else."""
+"""How far from its light or lens, in the figure's heights, a part's changes are its own."""
 GROW = 6
 """Pixels round what changed laid with it, for its outline."""
 FEATHER = 2.0
@@ -154,8 +152,7 @@ def patches(mask: NDArray[np.bool_]) -> list[NDArray[np.bool_]]:
 def missing(
     figure: Image.Image, combination: Combination, frame: str, least: float = 1.0
 ) -> list[str]:
-    """The parts `frame` should show but doesn't, covering less than `least` of their `LEAST`,
-    and `two eyes` if both are painted red."""
+    """What's wrong with the parts `frame` shows: one missing, two eyes, or an outsize eye."""
     found = parts(figure)
     solid, down = regions(figure)
     out = []
@@ -166,10 +163,18 @@ def missing(
         if found[bionic].sum() < least * LEAST[bionic] * whole.sum():
             out.append(NAMES[bionic])
         elif bionic == Bionic.INFRARED_EYE:
-            sizes = [int(p.sum()) for p in patches(found[bionic])]
-            if len(sizes) > 1 and sizes[1] >= OTHER_EYE * sizes[0]:
+            lenses = patches(found[bionic])
+            if len(lenses) > 1 and lenses[1].sum() >= OTHER_EYE * lenses[0].sum():
                 out.append("two eyes")
+            if lens_width(figure, lenses[0]) > LENS_WIDE / least:
+                out.append("eye too big")
     return out
+
+
+def lens_width(figure: Image.Image, lens: NDArray[np.bool_]) -> float:
+    """How wide `lens` is, as a share of the head's width."""
+    columns = np.flatnonzero(lens.any(axis=0))
+    return (columns[-1] - columns[0] + 1) / max(head(figure)[1], 1)
 
 
 def grown(mask: NDArray[np.bool_], by: int) -> NDArray[np.bool_]:
@@ -185,8 +190,7 @@ def spared(figure: Image.Image) -> NDArray[np.bool_]:
 
 
 def changed(whole: Image.Image, edit: Image.Image, bionic: Bionic) -> NDArray[np.bool_]:
-    """Where the `edit` of the `whole` player's frame painted `bionic`: what it changed near
-    the part, joined to the part's own colours and grown to take in their outline."""
+    """Where the `edit` of the `whole` player's frame painted `bionic`, with its outline."""
     a, b = np.asarray(whole.convert("RGBA")), np.asarray(edit.convert("RGBA"))
     solid, down = regions(edit)
     both = (a[..., 3] > 128) & (b[..., 3] > 128)
@@ -207,8 +211,7 @@ def changed(whole: Image.Image, edit: Image.Image, bionic: Bionic) -> NDArray[np
 
 
 def laid(whole: Image.Image, layers: list[tuple[Image.Image, NDArray[np.bool_]]]) -> Image.Image:
-    """The `whole` player's frame with each layer's frame in its place where the layer says,
-    its edge feathered."""
+    """The `whole` player's frame with each layer's frame where it says, feathered."""
     out = np.asarray(whole.convert("RGBA")).astype(np.float64)
     for edit, where in layers:
         soft = Image.fromarray(where.astype(np.uint8) * 255).filter(

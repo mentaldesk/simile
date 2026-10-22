@@ -215,7 +215,7 @@ def swatches(
     cores: dict[str, tuple[float, float]] = CORES,
 ) -> dict:
     """Each colour as wanted, as painted, and how far apart they are, CIEDE2000: in a standing
-    figure from the middle of its band, its `cores`, in another pose from all of it."""
+    figure from the middle of its band, in another pose from all of it."""
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     rows = bands(figure, layout)
     out = {}
@@ -263,8 +263,7 @@ def strays(
     figure: Image.Image, standing: Image.Image, also: NDArray[np.float64] | None = None
 ) -> float:
     """The share of `figure` painted in main colours the standing figure hasn't got, each over
-    `STRAY` from all of its and from any it may `also` show: a garment or a limb that came out,
-    or was pulled, another colour."""
+    `STRAY` from all of its: a garment or a limb that came out, or was pulled, another colour."""
     mine = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64)[opaque(figure)])
     theirs = cielab(np.asarray(standing.convert("RGB"), dtype=np.float64)[opaque(standing)])
     if not len(mine) or not len(theirs):
@@ -336,9 +335,9 @@ def pulled(
 def face_marks(
     figure: Image.Image, appearance: Appearance, spared: NDArray[np.bool_] | None = None
 ) -> float:
-    """The share of the face painted in patches far from the skin that aren't ink or `spared`:
-    the face is the front of the thick of the skin in the top of the figure, and lines and
-    specks thinner than a hundredth of its height don't count."""
+    """The share of the face painted in patches far from the skin that aren't ink: the face is
+    the front of the thick of the skin in the top of the figure, and lines and specks thinner
+    than a hundredth of its height don't count."""
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     solid = opaque(figure)
     rows = np.flatnonzero(solid.any(axis=1))

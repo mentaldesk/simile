@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from simile.dolls import bionics
 from simile.dolls.bionics import COMBINATIONS, SHORTS, figure_id, missing, spared
 from simile.dolls.build import (
     CONTENT,
@@ -39,6 +40,8 @@ SAME_SIZE = 0.03
 """How much bigger or smaller the player's head may be drawn with bionics, once scaled."""
 SHOWN = 0.7
 """The share of `bionics.LEAST` a part must cover once the atlas has shrunk it, lossily."""
+EYE_SIZES = 2
+"""How many atlas pixels wider the eye's lens may be in one frame than another."""
 FEET_PX = 2.5
 """How far a frame's feet may be from under the middle of its head and its lowest row, after
 the atlas's lossy WebP."""
@@ -147,6 +150,24 @@ def test_the_player_has_a_current_figure_for_each_combination_of_bionics(who: st
 def test_every_frame_shows_the_bionics_fitted(who: str) -> None:
     for name in FRAMES:
         assert missing(frame(who, name), FITTED[who], name, SHOWN) == [], name
+
+
+def test_the_whole_player_shows_no_bionics() -> None:
+    for name in FRAMES:
+        found = missing(frame(PLAYER_ID, name), bionics.FITTED, name, SHOWN)
+
+        assert found == [bionics.NAMES[b] for b in bionics.FITTED if bionics.shows(b, name)], name
+
+
+@pytest.mark.parametrize("who", [who for who, parts in FITTED.items() if bionics.EYE in parts])
+def test_the_eye_is_one_size_in_every_frame(who: str) -> None:
+    def width(name: str) -> int:
+        lens = bionics.patches(bionics.parts(frame(who, name))[bionics.EYE])[0]
+        return int(np.ptp(np.flatnonzero(lens.any(axis=0)))) + 1
+
+    widths = {name: width(name) for name in FRAMES if bionics.shows(bionics.EYE, name)}
+
+    assert max(widths.values()) - min(widths.values()) <= EYE_SIZES, widths
 
 
 @pytest.mark.parametrize("who", FITTED)

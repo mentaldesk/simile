@@ -64,8 +64,9 @@ WRONG = 20.0
 shade of it: rather than pulled back, the painting is made again."""
 REROLLS: dict[str, int] = {
     "player_datajack/stride": 1,
+    "player_eye/stand": 3,
     "player_eye/pass": 2,
-    "player_eye/sit": 2,
+    "player_eye/sit": 8,
 }
 """`<id>/<frame>` to a reroll number, for a painting that came out off-model by eye."""
 MISSES: dict[tuple[str, str, str], str] = {
@@ -108,8 +109,7 @@ def fingerprint(who: str, appearance: Appearance, said: str = "") -> str:
 
 
 def fitted_fingerprint(combination: Combination, player: str, appearance: Appearance) -> str:
-    """What the player with bionics fitted is made from: the whole player's `fingerprint`, how
-    the parts are laid over it, and each part's prompts and rerolls."""
+    """What the player with bionics is made from: the player's, its parts' prompts and rerolls."""
     ids = {figure_id((b,)) for b in combination}
     inputs = {
         "player": player,
@@ -206,8 +206,7 @@ def attempt(
     """One painting cut out and its colours pulled back to the `Appearance`, following how the
     `standing` figure was painted, if this isn't it. With how far off they were before and after,
     how much of the face is painted over, how big it's drawn, which of the standing figure's
-    colours it lost, how much of it is painted in others, and which bionics `fitted` it doesn't
-    show."""
+    colours it lost and how much of it is painted in others."""
     painting, seconds = painter.paint(prompt, seed, images)
     figure = cut(painting)
     raw = swatches(figure, appearance, pose.bands)
@@ -257,8 +256,7 @@ def paint_frame(
     standing: Painted | None = None,
     fitted: Combination = (),
 ) -> None:
-    """Paints `frame` until it matches, at most `tries` times, keeping the best. It follows the
-    `standing` figure, by default `painted`'s own once that's painted."""
+    """Paints `frame` until it matches, at most `tries` times, keeping the best."""
     first = REROLLS.get(f"{painted.who}/{frame}", 0)
     standing = standing or (painted if painted.figures.get("stand") else None)
     made = []
@@ -307,8 +305,7 @@ def paint_parts(
     cut: Cut = cut_out,
     log: Callable[[str], None] = print,
 ) -> dict[Bionic, Painted]:
-    """Each bionic on every frame that shows it, as an edit of the `player`'s same frame,
-    checked against the player's standing figure."""
+    """Each bionic on every frame that shows it, as an edit of the `player`'s same frame."""
     found = {}
     for bionic in bionics.FITTED:
         painted = Painted(figure_id((bionic,)), colours=player.colours)
@@ -326,8 +323,7 @@ def paint_parts(
 
 
 def fit(player: Painted, parts: dict[Bionic, Painted]) -> dict[Combination, dict]:
-    """Each combination's frames: the `player`'s, with each of its `parts` laid over them where
-    painting it changed them."""
+    """Each combination's frames: the `player`'s, with its `parts` laid over them."""
     layers = {
         (bionic, frame): (figure, bionics.changed(player.figures[frame], figure, bionic))
         for bionic, painted in parts.items()
@@ -352,8 +348,7 @@ def summary(tried: Try) -> str:
 def files(
     who: str, painted: Painted, standing: Image.Image | None = None, **extra: Any
 ) -> dict[str, bytes]:
-    """The manifest and the atlas, by file name, scaled as `standing` would be, by default its
-    own standing figure: the whole player's for the player with bionics, so it's the same size."""
+    """The manifest and the atlas, by file name."""
     climbs = [f for f, pose in EDITS.items() if pose.bands == "climb"]
     lifted = {f: pose.lifted for f, pose in EDITS.items() if pose.lifted}
     seated = [f for f, pose in EDITS.items() if pose.seated]
@@ -421,9 +416,7 @@ def build_fitted(
     cut: Cut = cut_out,
     log: Callable[[str], None] = print,
 ) -> list[Painted]:
-    """Paints the bionics over the player and lays them over it in every combination, unless
-    they're all up to date, from the `whole` player as just painted, or else as cached. `player`
-    is the whole player's fingerprint. Returns the parts as painted."""
+    """Paints the bionics over the `whole` player and lays them in every combination."""
     hashes = {figure_id(c): fitted_fingerprint(c, player, appearance) for c in COMBINATIONS}
     if not force and all(current(directory, who, h) for who, h in hashes.items()):
         log("the player with bionics: up to date")

@@ -168,8 +168,7 @@ class FakePainter:
 
 
 def fitted(painting: Image.Image, prompt: str) -> Image.Image:
-    """`painting` of `figure` with each bionic `prompt` asks for: steel shins, a green light at
-    the neck or a red eye."""
+    """`painting` of `figure` with each bionic `prompt` asks for."""
     from PIL import ImageDraw
 
     from simile.dolls.bionics import WORDS

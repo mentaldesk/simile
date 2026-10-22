@@ -97,6 +97,15 @@ def test_both_eyes_painted_red_is_one_too_many() -> None:
     assert missing(painting, (EYE,), "stand") == ["two eyes"]
 
 
+def test_an_eye_wider_than_the_walks_is_too_big() -> None:
+    painting = with_parts(EYE)
+    w, h = SIZE
+    ImageDraw.Draw(painting).ellipse((0.5 * w, 0.15 * h, 0.62 * w, 0.24 * h), (222, 30, 30))
+
+    assert missing(with_parts(EYE), (EYE,), "stand") == []
+    assert missing(painting, (EYE,), "stand") == ["eye too big"]
+
+
 def test_the_face_check_spares_the_eye_and_nothing_else() -> None:
     eyed = with_parts(EYE)
     w, h = SIZE

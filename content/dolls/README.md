@@ -131,16 +131,23 @@ and rerolls, and `bionics.VERSION`.
      however it's asked not to, so that's how it looks, the same in every frame.
    - The eye is a red lens in a chrome rim.
 2. **Each part is checked as the residents' poses are,** against the whole player's standing
-   figure. It must also show (`bionics.missing`): steel over 6% of the legs, the green light, or
-   one red lens, not two. The face check spares the lens and its rim (`bionics.spared`), and a
-   frame may show the parts' steel, red and green (`bionics.PALETTE`) without their counting as
-   strays.
+   figure, and painted again if it doesn't show (`bionics.missing`):
+   - steel over 12% of the legs, which the grey shading of the whole player's sneakers stays
+     under (about 6%), while hydraulic legs are 13 to 23%;
+   - the green light;
+   - one red lens, not two, no wider than 17% of the head, as the walk's lenses are (about
+     15%), so it doesn't grow when the player stops.
+
+   The face check spares the lens and its rim (`bionics.spared`). A frame may show the parts'
+   steel, red and green (`bionics.PALETTE`) without their counting as strays. With the legs, the
+   standing colour check looks for the bottom colour in the shorts (`bionics.SHORTS`).
 3. **Laid over the whole player** (`bionics.changed`, `bionics.laid`): each part is what its edit
    changed of the whole player's frame, near the part (anything else FLUX redrew, a backpack a
    shade lighter, is left out), grown by its outline and feathered. Each combination is the whole
    player's frames with its parts laid over them, so the player is the same in every combination
    but for the parts, and each part is the same in every combination it's in.
-4. **Scaled as the whole player is,** so fitting a part doesn't change the player's size.
+4. **Scaled as the whole player is** (`sprites.frames`' `reference`), so fitting a part doesn't
+   change the player's size.
 
 The eye is painted where it shows, nearer the ear, whichever socket the sim fits it in. Both eyes
 show in three-quarter view, and the client mirrors a figure to face west, so the eye swaps sockets

@@ -71,8 +71,7 @@ export class SpriteFigure extends Phaser.GameObjects.Container {
     return this;
   }
 
-  /** Draws another figure the same size, once its atlas has loaded as `key`, such as the player's
-   * with a bionic fitted. Of several asked for while loading, the last wins. */
+  /** Draws another figure the same size once its atlas has loaded; the last one asked for wins. */
   async wear(figure: FigureManifest, key = `figure-${figure.id}`): Promise<void> {
     this.asked = figure;
     await addFigureAtlas(this.scene, key, figure);

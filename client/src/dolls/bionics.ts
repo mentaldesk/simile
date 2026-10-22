@@ -11,8 +11,7 @@ export function fitted(body?: Body): Bionic[] {
   return FITTED.filter((bionic) => parts.has(bionic));
 }
 
-/** The player's figure for a body: `player` with nothing fitted, `player_legs_eye` and so on.
- * The eye is painted where it shows, so either socket is the same figure. */
+/** The player's figure for a body: `player` with nothing fitted, `player_legs_eye` and so on. */
 export const playerFigureId = (body?: Body): string =>
   [PLAYER_FIGURE, ...fitted(body).map((bionic) => NAMES[bionic])].join('_');
 

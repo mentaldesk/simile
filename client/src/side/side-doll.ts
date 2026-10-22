@@ -19,9 +19,14 @@ export class SideDoll extends SpriteFigure {
     super(scene, 0, 0, figure, key, height);
     this.cache = new PoseCache(figure);
     if (isPlayerFigure(figure.id)) {
-      const stop = playerBody.onChange(() => void this.wear(dollFor(PLAYER_FIGURE)));
-      this.once(Phaser.GameObjects.Events.DESTROY, stop);
+      this.once(Phaser.GameObjects.Events.DESTROY, playerBody.onChange(() => this.follow()));
+      if (dollFor(PLAYER_FIGURE) !== figure) this.follow();
     }
+  }
+
+  /** Wears the player's figure for what's fitted now. */
+  private follow(): void {
+    this.wear(dollFor(PLAYER_FIGURE)).catch((error: unknown) => console.warn(error));
   }
 
   /** Does nothing unless its frame, facing, seat or tint changed. `seat` is how many metres up
