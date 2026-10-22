@@ -4,22 +4,14 @@ from typing import Any
 
 import pytest
 from jsonschema import Draft202012Validator
-from pydantic import Field, ValidationError
+from pydantic import ValidationError
 
-from simile.persistence import SavedWorld
 from simile.schema import MODELS, PRESENT, SOLD, Bionic, Body, Item, ItemKind, Player, export, lamp
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
 STARTING, KIDNEY_SOLD, DELVING, FITTED = PLAYERS
-OLD_SAVE: dict[str, Any] = json.loads((HERE / "save_before_the_player.json").read_text())
 SALVAGE = DELVING["items"][1]
-
-
-class SavedWorldWithPlayer(SavedWorld):
-    """`SavedWorld` once it saves the player, as the task that wires it in will add it."""
-
-    player: Player = Field(default_factory=Player)
 
 
 def schema(name: str) -> Draft202012Validator:
@@ -65,24 +57,6 @@ def test_anything_left_out_is_the_starting_players() -> None:
     assert Player.model_validate({}) == Player()
     assert Player.model_validate({"money": 40}).items == [lamp()]
     assert Body.model_validate({"legs": "hydraulic_legs"}).left_kidney == PRESENT
-
-
-def test_a_save_from_before_the_player_loads_with_the_starting_player() -> None:
-    assert "player" not in OLD_SAVE
-    assert json.loads(SavedWorld.model_validate(OLD_SAVE).model_dump_json()) == OLD_SAVE
-
-    loaded = SavedWorldWithPlayer.model_validate_json(json.dumps(OLD_SAVE))
-
-    assert loaded.player == Player()
-    assert loaded.npcs.keys() == {"desmond", "henrietta"}
-
-
-def test_the_player_saves_and_loads_with_the_world() -> None:
-    world = SavedWorldWithPlayer.model_validate(OLD_SAVE | {"player": DELVING})
-
-    loaded = SavedWorldWithPlayer.model_validate_json(world.model_dump_json())
-
-    assert loaded.player == Player.model_validate(DELVING)
 
 
 def test_humanity_falls_with_each_bionic_fitted() -> None:

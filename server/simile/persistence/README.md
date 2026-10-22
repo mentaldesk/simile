@@ -8,7 +8,9 @@ needs, when they chose the goal and will next decide, and whom they're avoiding,
 open intentions (what they've said they'll do). E3's money goes
 there too: what each resident holds and the last day rent was paid for, with E4's fridges and each
 shop's latest batch. Each entry in E3's ledger is added to a `saved_ledger` table at the first save
-after it's made.
+after it's made. The player's F2 `Player` (money, items, body and hunger) is saved with the world,
+and modules get it with `player_of(app)`: the player as saved, or the starting player on a fresh
+start, from a save from before the player, or unsaved with `SIMILE_DB=:memory:`.
 
 ## Saving
 

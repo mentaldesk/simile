@@ -2,12 +2,23 @@ from collections.abc import Mapping
 from datetime import date
 from typing import TYPE_CHECKING
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
+from starlette.applications import Starlette
 
 from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.economy import Batch
 from simile.persistence.old_cells import moved
-from simile.schema import VILLAGE_MAP, Id, Intention, Key, MapTile, Model, Tile, Timestamp
+from simile.schema import (
+    VILLAGE_MAP,
+    Id,
+    Intention,
+    Key,
+    MapTile,
+    Model,
+    Player,
+    Tile,
+    Timestamp,
+)
 from simile.world.movement import Movement, Point, cell_of
 
 if TYPE_CHECKING:
@@ -54,6 +65,9 @@ class SavedWorld(Model):
     economy: SavedEconomy | None = None
     intentions: list[Intention] = []
     """Everyone's open intentions. A save from before intentions has none."""
+    player: Player = Field(default_factory=Player)
+    """The player's money, items, body and hunger. A save from before the player has the
+    starting player: a whole body, no money and a charged lamp."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -61,7 +75,10 @@ def tile_of(point: Point) -> Tile:
     return Tile(x=x, y=y)
 
 
-def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorld:
+def capture(
+    behaviour: Behaviour, economy: "Economy | None" = None, player: Player | None = None
+) -> SavedWorld:
+    """The world as it is now, with `player`, or the starting player without one."""
     now, movement = behaviour.clock.now, behaviour.movement
     return SavedWorld(
         now=now,
@@ -87,6 +104,7 @@ def capture(behaviour: Behaviour, economy: "Economy | None" = None) -> SavedWorl
             for npc, mind in behaviour.minds.items()
         },
         intentions=behaviour.intentions(),
+        player=Player() if player is None else player.model_copy(deep=True),
     )
 
 
@@ -156,3 +174,10 @@ def _put(movement: Movement, npc: Id, state: SavedNpc) -> None:
     x, y = state.position.x, state.position.y
     if movement.position(npc) != Point(x, y, state.map):
         movement.place(npc, MapTile(map=state.map, x=x, y=y))
+
+
+def player_of(app: Starlette) -> Player:
+    """The player on `app.state.player`: as saved with the world, or the starting player."""
+    if not hasattr(app.state, "player"):
+        app.state.player = Player()
+    return app.state.player

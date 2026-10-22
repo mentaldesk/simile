@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from simile.behaviour import Behaviour
@@ -8,6 +9,7 @@ from simile.persistence.config import DEFAULT_CONFIG, PersistenceConfig
 from simile.persistence.state import SavedWorld, capture
 from simile.persistence.store import WorldStore
 from simile.reflection import Reflector
+from simile.schema import Player
 
 if TYPE_CHECKING:
     from simile.economy.economy import Economy
@@ -26,17 +28,20 @@ class Saver:
         config: PersistenceConfig = DEFAULT_CONFIG,
         *,
         economy: "Economy | None" = None,
+        player: Callable[[], Player] = Player,
     ) -> None:
         self.store = store
         self.behaviour = behaviour
         self.config = config
         self.economy = economy
+        self.player = player
+        """The player as they are now, looked up at each save."""
         self._stopping = asyncio.Event()
         self._ledgered = 0
         """How many of the ledger's entries are saved."""
 
     async def save(self) -> SavedWorld:
-        world = capture(self.behaviour, self.economy)
+        world = capture(self.behaviour, self.economy, self.player())
         entries = self.economy.ledger.entries[self._ledgered :] if self.economy else []
         await asyncio.to_thread(self.store.save, world, entries)
         self._ledgered += len(entries)
