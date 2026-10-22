@@ -133,6 +133,12 @@ class PlayerConfig(BaseModel):
         "Haiku 5.5, which can't turn thinking off and thinks for over a second before its first "
         "word.",
     )
+    suspect_model: str = Field(
+        default=Model.HAIKU_4_5,
+        description="The model that writes a reply once the NPC is set up to lie, about the "
+        "incident or anything else, such as ollama:gemma4:26b. `SIMILE_SUSPECT_MODEL` sets it. "
+        "See S14 in the evaluation README.",
+    )
     say_range: float = Field(
         default=4.0,
         gt=0,
@@ -173,6 +179,7 @@ class PlayerConfig(BaseModel):
 
 
 DEFAULT_PLAYER_CONFIG = PlayerConfig()
+SUSPECT_ENV = "SIMILE_SUSPECT_MODEL"
 
 type Writer = Callable[[Cue, Sequence[Line]], Awaitable[str | None]]
 """Writes an NPC's reply to the player from the cue and the lines so far, or None for B5's own."""
@@ -418,7 +425,7 @@ class PlayerConversations:
         stream = engine.llm().stream(
             prompt,
             system=party.system,
-            model=self.config.model,
+            model=self._model(talk),
             purpose="player-reply",
             priority=1,
         )
@@ -571,7 +578,10 @@ class PlayerConversations:
             talk.closing, talk.ends = True, talk.free_at + timedelta(seconds=wait)
         else:
             talk.speaker = PLAYER_ID
-            engine.llm().warm(system=party.system, model=self.config.model)
+            engine.llm().warm(system=party.system, model=self._model(talk))
+
+    def _model(self, talk: PlayerTalk) -> str:
+        return self.config.suspect_model if talk.lies else self.config.model
 
     def _pulled_away(self, talk: PlayerTalk) -> bool:
         """Whether the NPC is still saying goodbye in the conversation they were pulled out of,

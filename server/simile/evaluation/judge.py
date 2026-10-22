@@ -1,4 +1,5 @@
-from collections.abc import Sequence
+import random
+from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
 from pydantic import BaseModel, create_model
@@ -103,3 +104,67 @@ async def label(
         )
         for n, reply in enumerate(replies, 1)
     ]
+
+
+RATE_PURPOSE = "evaluation-character"
+RATE_SYSTEM = (
+    "You judge how in character the lines of a village game are. Each case gives a resident: who "
+    "they are, how they speak and what they're hiding. Then what a visitor said to them, and "
+    "several replies, each from a different writer. Score each reply from 1 to 5 for how much it "
+    "sounds like that resident: 5, unmistakably them, in their own voice, manner and attitude; 4, "
+    "clearly them; 3, plausible, but anyone could have said it; 2, a poor fit; 1, out of "
+    "character: the wrong voice or attitude, or stilted, as if read from a script. A cover story "
+    "they were told to give is in character when they say it the way they would. Judge the "
+    "voice, not whether the reply is honest, kind or wise."
+)
+SCORES = (1, 2, 3, 4, 5)
+
+
+def rate_prompt(
+    scenarios: Sequence[Scenario], who: Mapping[str, str], replies: Sequence[Reply]
+) -> str:
+    """Each case with who the resident is, and its replies numbered r1, r2, ... in order."""
+    numbers = {reply.key: f"r{n}" for n, reply in enumerate(replies, 1)}
+    parts = []
+    for scenario in scenarios:
+        theirs = [reply for reply in replies if reply.scenario == scenario.id]
+        if not theirs:
+            continue
+        said = "\n".join(
+            f'- {numbers[reply.key]}: "{reply.text or "(says nothing)"}"' for reply in theirs
+        )
+        parts.append(
+            f"## {scenario.title}\n{who[scenario.id]}\n\n{scenario.situation}\n"
+            f'{scenario.name} says: "{scenario.line}"\n\nReplies:\n{said}'
+        )
+    return "\n\n".join(parts)
+
+
+async def rate(
+    llm: LLMClient,
+    scenarios: Sequence[Scenario],
+    who: Mapping[str, str],
+    replies: Sequence[Reply],
+    *,
+    model: str,
+    seed: int = 0,
+) -> dict[str, int]:
+    """How in character each reply is, 1 to 5 by key, in one call, each case's replies shuffled."""
+    if not replies:
+        return {}
+    rng = random.Random(seed)
+    shuffled = []
+    for scenario in scenarios:
+        theirs = [reply for reply in replies if reply.scenario == scenario.id]
+        rng.shuffle(theirs)
+        shuffled += theirs
+    fields: dict[str, Any] = {f"r{n}": (Literal[SCORES], ...) for n in range(1, len(shuffled) + 1)}
+    found = await llm.structured(
+        rate_prompt(scenarios, who, shuffled),
+        create_model("Scores", **fields),
+        system=RATE_SYSTEM,
+        model=model,
+        purpose=RATE_PURPOSE,
+    )
+    scores = found.model_dump()
+    return {reply.key: scores[f"r{n}"] for n, reply in enumerate(shuffled, 1)}

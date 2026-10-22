@@ -146,3 +146,41 @@ def test_no_humour_leaves_it_out_of_the_prompts_but_not_the_report(tmp_path: Pat
     assert "The prompts gave each character their humour." in (tmp_path / "b" / REPORT).read_text(
         encoding="utf-8"
     )
+
+
+def suspects(*args: str) -> Result:
+    return runner.invoke(create_cli(), ["evaluate", "suspects", *args])
+
+
+def test_suspects_without_claude_compare_stock_replies_on_stdout() -> None:
+    before = snapshot()
+
+    result = suspects("--seeds", "7")
+
+    assert result.exit_code == 0, result.output
+    assert result.stdout.startswith("# Who voices the suspects")
+    assert "Stock replies and labels stood in for every model and the judge." in result.stdout
+    assert "| | stock/claude-haiku-4-5 | stock/ollama:gemma4:26b |" in result.stdout
+    assert "### 7/raymond/there" in result.stdout
+    assert snapshot() == before
+
+
+def test_suspects_out_gets_the_report_and_the_replies(tmp_path: Path) -> None:
+    result = suspects("--seeds", "7", "--models", "a,b", "--out", str(tmp_path))
+
+    assert result.exit_code == 0, result.output
+    report = (tmp_path / REPORT).read_text(encoding="utf-8")
+    assert "Replies from stock/a and stock/b, one call at a time." in report
+    assert (tmp_path / REPLIES).exists()
+    assert not result.stdout
+
+
+def test_suspects_refuse_content_and_bad_seeds() -> None:
+    before = snapshot()
+
+    content = suspects("--seeds", "7", "--out", str(CONTENT_DIR / "evaluation"))
+    seeds = suspects("--seeds", "seven")
+
+    assert content.exit_code != 0 and "won't write in" in said(content)
+    assert seeds.exit_code != 0 and "not a list of seeds" in said(seeds)
+    assert snapshot() == before

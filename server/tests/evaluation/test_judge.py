@@ -1,12 +1,13 @@
 import json
+import re
 
 import pytest
 from pydantic import ValidationError
 
-from simile.evaluation.judge import SYSTEM, judge_prompt, label, stance_schema
+from simile.evaluation.judge import SYSTEM, judge_prompt, label, rate, stance_schema
 from simile.evaluation.play import Bound, Reply
 from simile.evaluation.scenarios import SCENARIOS
-from simile.llm import FakeProvider, LLMClient
+from simile.llm import FakeProvider, LLMClient, Request
 
 pytestmark = pytest.mark.anyio
 
@@ -194,4 +195,44 @@ async def test_no_replies_makes_no_call() -> None:
     fake = FakeProvider()
 
     assert await label(LLMClient(fake), SCENARIOS, [], model="judge") == []
+    assert fake.requests == []
+
+
+WHO = {"favour": "Ann, who speaks in clipped sentences.", "promise": "Bob, all charm."}
+
+
+def score_each(request: Request) -> str:
+    """Scores each reply by its length, so a test can tell which score went to which reply."""
+    said = re.findall(r'- (r\d+): "([^"]*)"', request.messages[-1].content)
+    return json.dumps({number: min(max(len(text) // 6, 1), 5) for number, text in said})
+
+
+async def test_rate_scores_each_reply_by_key_in_one_call_with_who_they_are() -> None:
+    fake = FakeProvider([score_each])
+
+    scores = await rate(LLMClient(fake), SCENARIOS, WHO, REPLIES, model="judge")
+
+    [asked] = fake.requests
+    text = asked.messages[-1].content
+    assert "Ann, who speaks in clipped sentences." in text and "Bob, all charm." in text
+    assert "from 1 to 5" in asked.system and asked.model == "judge"
+    shown = {r.text or "(says nothing)": r for r in REPLIES}
+    assert scores == {shown[t].key: min(max(len(t) // 6, 1), 5) for t in shown}
+
+
+async def test_rate_shuffles_each_cases_replies_by_its_seed() -> None:
+    orders = []
+    for seed in range(6):
+        fake = FakeProvider([score_each])
+        await rate(LLMClient(fake), SCENARIOS, WHO, REPLIES, model="judge", seed=seed)
+        orders.append(re.findall(r'- r\d+: "([^"]*)"', fake.requests[0].messages[-1].content))
+
+    assert len({tuple(order) for order in orders}) > 1
+    assert all(order.index("Push it yourself.") < 2 for order in orders)
+
+
+async def test_rate_without_replies_makes_no_call() -> None:
+    fake = FakeProvider()
+
+    assert await rate(LLMClient(fake), SCENARIOS, WHO, [], model="judge") == {}
     assert fake.requests == []
