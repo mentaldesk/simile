@@ -28,7 +28,15 @@ export const RUN_BLEND_SECONDS = 0.25;
 
 /** y negative up; `use` is E pressed since the last frame, `eTaken` E used by something in reach, `run` running
  * (Shift toggles it), `jump` Space pressed since the last frame and `hold` Space held. */
-export type Controls = { x: number; y: number; use: boolean; eTaken: boolean; run: boolean; jump?: boolean; hold?: boolean };
+export type Controls = {
+  x: number;
+  y: number;
+  use: boolean;
+  eTaken: boolean;
+  run: boolean;
+  jump?: boolean;
+  hold?: boolean;
+};
 
 export type MapPosition = Position & { map: string };
 

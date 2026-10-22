@@ -105,12 +105,21 @@ export function groundRuns(map: SideMap, manifest: SceneryManifest): GroundRun[]
 
 export type Ledge = { x0: number; x1: number; row: number };
 
+/** Drawn as a picture of their own: a building's flat roof, or the deck of a rope bridge. */
+const PICTURED_DECKS = new Set(['rope_bridge']);
+
+const under = (item: Placed, x: number, row: number) => x >= item.x && x < item.x + item.w && row === item.y + item.h;
+
+/** Solid cells above the street that aren't ground, roofs or bridges, in runs along their rows. */
 export function ledges(map: SideMap): Ledge[] {
   const below = streetRow(map);
+  const decks = map.furniture.filter(({ name }) => PICTURED_DECKS.has(name));
+  const roofed = (x: number, row: number) =>
+    map.buildings.some((b) => x >= b.x && x < b.x + b.w && row === b.y) || decks.some((d) => under(d, x, row));
   const found: Ledge[] = [];
   for (let row = 0; row < below; row++) {
     for (let x = 0; x < map.width; x++) {
-      if (!isSolid(map, x, row) || row >= groundRow(map, x)) continue;
+      if (!isSolid(map, x, row) || row >= groundRow(map, x) || roofed(x, row)) continue;
       const last = found.at(-1);
       if (last && last.row === row && last.x1 === x) last.x1 = x + 1;
       else found.push({ x0: x, x1: x + 1, row });

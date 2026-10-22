@@ -1,6 +1,7 @@
-// The player's walk through the side view in Chromium, by the keys (#325, #330): into every building and out of every
-// exit on E, up and down every flight, ladder and lift on the arrows alone, a run along a street with Shift, and E at
-// a terminal, the café counter and a resident. It serves the client itself and drives the `?harness=side` scene.
+// The player's walk through the side view in Chromium, by the keys (#325, #330, #331): into every building and out of
+// every exit on E, up and down every flight, ladder and lift on the arrows alone, a run along a street with Shift, jumps
+// over the rooftops' gaps with Space, and E at a terminal, the café counter and a resident. It serves the client itself
+// and drives the `?harness=side` scene.
 // Run `npx playwright install chromium` once, then `node src/side/walk.e2e.ts [--screens <dir>] [--real-time]`.
 import { chromium, type Page } from 'playwright';
 import { createServer } from 'vite';
@@ -12,7 +13,14 @@ type Place = Cell & { map: string };
 type Link = Place & { id: string; kind: 'door' | 'stairs' | 'ladder' | 'lift'; side: 'inside' | 'outside'; to: Place };
 type Run = { map: string; kind: string; foot: Cell; head: Cell };
 type Counter = Place & { behind: number };
-type State = Place & { climbing: string | null; run: number; used: string | null; prompts: string[]; talk: string | null };
+type State = Place & {
+  climbing: string | null;
+  run: number;
+  airborne: boolean;
+  used: string | null;
+  prompts: string[];
+  talk: string | null;
+};
 type SideWalk = {
   state(): State | undefined;
   links(): Link[];
@@ -192,7 +200,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
   if (leg.key !== 'e' && eFree) return 'E first did nothing';
 }
 
-/** Along the High Street, walking, then holding Shift, then letting go. */
+/** Along the High Street, walking, then running from a press of Shift, then walking from another. */
 async function runLeg(page: Page, api: Api, index: number): Promise<void> {
   await teleport(page, api, { map: 'high_street', x: 2, y: 15 }, 'running');
   await page.keyboard.down('ArrowRight');
@@ -202,12 +210,12 @@ async function runLeg(page: Page, api: Api, index: number): Promise<void> {
     return (await api.state())!.x - from;
   };
   const walked = await along(1000);
-  await page.keyboard.down('Shift');
+  await page.keyboard.press('Shift');
   await run(page, 400);
   const ran = await along(1000);
   const { run: running } = (await api.state())!;
   await shot(page, index, 'running on the High Street');
-  await page.keyboard.up('Shift');
+  await page.keyboard.press('Shift');
   await run(page, 400);
   const after = await along(1000);
   await page.keyboard.up('ArrowRight');
@@ -217,6 +225,52 @@ async function runLeg(page: Page, api: Api, index: number): Promise<void> {
   if (Math.abs(ran - RUN_PACE * WALK_SPEED) > 0.25 || running !== 1 || walking !== 0) {
     throw new Error(`running: ${speeds}, blend ${running} running and ${walking} after`);
   }
+}
+
+/** Over a gap on the rooftops: from `from`, right until past `takeOff`, then Space, landing on row `y` past `land`. */
+type Jump = { name: string; from: Place; takeOff: number; land: number; run: boolean };
+
+const roof = (x: number, y: number): Place => ({ map: 'rooftops', x, y });
+const JUMPS: Jump[] = [
+  { name: 'over the one-cell gap from the bakery', from: roof(6, 12), takeOff: 9.4, land: 10.75, run: false },
+  { name: 'over the two-cell gap to the tea house', from: roof(18, 8), takeOff: 21.6, land: 23.25, run: false },
+  { name: 'over the three-cell gap to the laundry, running', from: roof(26, 8), takeOff: 30.3, land: 33.25, run: true },
+];
+
+/** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
+async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise<void> {
+  await teleport(page, api, jump.from, jump.name);
+  await run(page, 200);
+  if (jump.run) await page.keyboard.press('Shift');
+  await page.keyboard.down('ArrowRight');
+  const atEdge = async () => (await api.state())!.x >= jump.takeOff;
+  await until(page, atEdge, 5, `${jump.name}: running up to ${jump.takeOff}`, FRAME_MS);
+  await page.keyboard.down(' ');
+  await until(page, async () => (await api.state())!.airborne, 1, `${jump.name}: taking off`, FRAME_MS);
+  await run(page, 200);
+  await shot(page, index, jump.name);
+  await until(page, async () => !(await api.state())!.airborne, 3, `${jump.name}: landing`, FRAME_MS);
+  await page.keyboard.up(' ');
+  await page.keyboard.up('ArrowRight');
+  if (jump.run) await page.keyboard.press('Shift');
+  const landed = (await api.state())!;
+  if (landed.y !== jump.from.y || landed.x < jump.land) {
+    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${jump.from.y} past ${jump.land}`);
+  }
+}
+
+/** Walks off the clock house's roof and lands in the lane, a fall of eleven rows. */
+async function fallLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = "off the clock house's roof";
+  await teleport(page, api, { map: 'rooftops', x: 52, y: 4 }, name);
+  await page.keyboard.down('ArrowRight');
+  await until(page, async () => (await api.state())!.airborne, 3, `${name}: walking off`, FRAME_MS);
+  await page.keyboard.up('ArrowRight');
+  await run(page, 300);
+  await shot(page, index, name);
+  await until(page, async () => !(await api.state())!.airborne, 3, `${name}: landing`, FRAME_MS);
+  const landed = (await api.state())!;
+  if (landed.y !== 15) throw new Error(`${name}: landed on row ${landed.y}, not the lane`);
 }
 
 const shown = (page: Page, selector: string) =>
@@ -302,6 +356,8 @@ try {
   const all: [string, (index: number) => Promise<string | void>][] = [
     ...(await legs(api)).map((leg): [string, (index: number) => Promise<string | void>] => [leg.name, (i) => walkLeg(page, api, leg, i)]),
     ['running with Shift', (i) => runLeg(page, api, i)],
+    ...JUMPS.map((jump): [string, (index: number) => Promise<string | void>] => [`jumping ${jump.name}`, (i) => jumpLeg(page, api, jump, i)]),
+    ["falling off the clock house's roof", (i) => fallLeg(page, api, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
       `E at the terminal on ${at.map}`,
       (i) => terminalLeg(page, api, at, i),

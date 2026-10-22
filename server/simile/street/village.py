@@ -25,6 +25,8 @@ FLOOR_ROW = STOREY - 2
 """A floor's standing row."""
 STOOL_M = 0.25
 """How much higher a stool's seat is than a chair's."""
+JUMPING = frozenset({"rooftops"})
+"""Streets only the player gets all over, by jumping. Nobody else has anywhere to go there."""
 
 N, E, W = Facing.NORTH, Facing.EAST, Facing.WEST
 SEAT, BAR, DESK, VIEWING = SpotKind.SEAT, SpotKind.BAR, SpotKind.DESK, SpotKind.VIEWING
@@ -541,15 +543,15 @@ def rooftops() -> Plan:
     plan.fill(40, roofs + 1, 8, 1)
     plan.piece("rope_bridge", 40, roofs, 8, 1)
     top = rooftop(plan, "clock_house", "The clock house", 48, 7, 3)
-    plan.clear(50, top + 1, 1, 1)
-    plan.fill(48, roofs + 1, 3, 1)
-    plan.ladder((50, roofs), roofs - top)
+    plan.clear(48, top + 1, 1, 1)
+    plan.fill(48, roofs + 1, 2, 1)
+    plan.ladder((48, roofs), roofs - top)
     plan.piece("palm_tree", 12, GROUND - 6, 2, 7)
-    plan.piece("bench", 52, top, 2, 1)
-    plan.piece("plant", 49, top)
+    plan.piece("bench", 51, top, 2, 1)
+    plan.piece("plant", 54, top)
     plan.piece("bicycle", 22, GROUND)
-    plan.piece("bin", 32, GROUND)
-    for at in (8, 45, 57):
+    plan.piece("bin", 31, GROUND)
+    for at in (33, 45, 57):
         plan.piece("lamp", at, GROUND - 2, 1, 3)
     return plan
 

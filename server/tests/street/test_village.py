@@ -13,7 +13,7 @@ from simile.cli import create_cli
 from simile.schema import DoorKind, Facing, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER
-from simile.street.village import FLOOR_ROW, GROUND, STOOL_M, STOREY, village
+from simile.street.village import FLOOR_ROW, GROUND, JUMPING, STOOL_M, STOREY, village
 from simile.world import Movement, Outcome, Walk
 from simile.world.map import (
     STREET_DIR,
@@ -72,6 +72,7 @@ def test_every_map_is_a_side_view_street_or_floor() -> None:
         "high_street",
         "kapok_walk",
         "lychee_lane",
+        "rooftops",
     ]
     assert len(FLOORS) == 31
     assert len(STREETS) + len(FLOORS) == len(MAPS)
@@ -113,12 +114,13 @@ def test_every_entry_and_spot_is_in_its_place() -> None:
                 assert all(inside(location, Point(s.x, s.y, s.map)) for s in spots)
 
 
-def reachable(start: Spot) -> set[Spot]:
+def reachable(start: Spot, jumps: bool = False) -> set[Spot]:
     doors = door_ends(MAPS)
     seen, queue = {start}, deque([start])
     while queue:
         here = queue.popleft()
-        nexts = [Spot(here.map, *cell) for cell, _ in steps(MAPS[here.map], (here.x, here.y))]
+        cells = steps(MAPS[here.map], (here.x, here.y), jumps)
+        nexts = [Spot(here.map, *cell) for cell, _ in cells]
         if here in doors:
             nexts.append(doors[here])
         for there in nexts:
@@ -136,9 +138,13 @@ def test_every_cell_of_every_map_is_reachable_from_every_street() -> None:
         for x in range(town.width)
         if town.walkable(x, y)
     }
+    jumped = {cell for cell in every_cell if cell.map in JUMPING}
     for street in STREETS:
         start = next(Spot(street.id, x, GROUND) for x in range(street.width))
-        assert reachable(start) == every_cell, street.id
+        assert reachable(start, jumps=True) == every_cell, street.id
+        walked = reachable(start)
+        assert every_cell - jumped <= walked, street.id
+        assert jumped - walked, f"{street.id}: nothing on the rooftops needs a jump"
 
 
 def test_every_stair_and_ladder_end_is_reachable_from_its_floor() -> None:
@@ -159,8 +165,12 @@ def test_every_stair_and_ladder_end_is_reachable_from_its_floor() -> None:
         cells = [
             (x, y) for y in range(town.height) for x in range(town.width) if town.standing(x, y)
         ]
+        jumps = map_id in JUMPING
         for cell in cells:
-            assert find_path(town, cell, end) is not None, f"{what} from {cell} on {map_id}"
+            route = find_route(
+                {map_id: town}, Spot(map_id, *cell), Spot(map_id, *end), {}, jumps=jumps
+            )
+            assert route is not None, f"{what} from {cell} on {map_id}"
 
 
 def test_no_flight_or_ladder_starts_against_an_outer_wall() -> None:
@@ -185,6 +195,7 @@ def test_streets_join_through_doors_outside_on_the_first_street() -> None:
         "banyan_row_to_high_street": ("banyan_row", "high_street"),
         "high_street_to_kapok_walk": ("high_street", "kapok_walk"),
         "high_street_to_lychee_lane": ("high_street", "lychee_lane"),
+        "kapok_walk_to_rooftops": ("kapok_walk", "rooftops"),
     }
     assert {door.kind for door in TOWN.doors if door.id in joins} == {DoorKind.DOOR}
 
@@ -362,7 +373,11 @@ def test_streets_have_a_flight_of_stairs_and_a_ladder() -> None:
         if town.climb(x, y)
     }
 
-    assert climbable == {("banyan_row", DoorKind.STAIRS), ("lychee_lane", DoorKind.LADDER)}
+    assert climbable == {
+        ("banyan_row", DoorKind.STAIRS),
+        ("lychee_lane", DoorKind.LADDER),
+        ("rooftops", DoorKind.LADDER),
+    }
 
 
 def test_the_readme_names_every_street_building_room_and_piece_of_furniture() -> None:

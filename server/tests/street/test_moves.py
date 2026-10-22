@@ -279,3 +279,15 @@ def test_a_fall_from_higher_than_a_jump_is_kept_as_it_comes_down() -> None:
         last = (x, y)
     assert not possible(tower, 9.0, 5.0, None)
     assert not possible(tower, 9.0, 5.0, (9.0, 6.0))
+
+
+def test_a_fall_is_kept_only_within_a_jump_of_the_last_position_along_the_row() -> None:
+    tower = side_view(
+        "........................",
+        "###.....................",
+        *["........................"] * 8,
+        "########################",
+    )
+    assert possible(tower, 8.0, 5.0, (3.0, 4.0))
+    assert not possible(tower, 20.0, 5.0, (3.0, 4.0))
+    assert not possible(tower, 3.0 + JUMP.reach + 0.1, 5.0, (3.0, 4.0))

@@ -112,6 +112,19 @@ def test_ignores_a_player_move_to_where_nobody_could_be(
     assert "Ignored a player_move to where nobody could be" in caplog.text
 
 
+def test_keeps_a_fall_from_the_clock_house_roof_but_not_a_sideways_jump_out_of_it(
+    make_package: MakePackage, caplog: pytest.LogCaptureFixture
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        falling = [(54, 4, "rooftops"), (55.4, 4.6, "rooftops"), (56.2, 6.5, "rooftops")]
+        send_moves(app, *falling, (44, 11, "rooftops"))
+
+        assert movement_of(app).position(PLAYER_ID) == Point(56.2, 6.5, "rooftops")
+    assert "Ignored a player_move to where nobody could be" in caplog.text
+
+
 def test_stops_on_shutdown(make_package: MakePackage) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
     start = MapTile(map="lychee_lane", x=3, y=15)

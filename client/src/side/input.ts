@@ -4,7 +4,15 @@ import type { Controls } from './player';
 
 /** Which arrow (or WASD) keys are down, whether running is on, and Space: `jump` pressed since the last frame,
  * `hold` down. */
-export type Held = { up: boolean; down: boolean; left: boolean; right: boolean; run: boolean; jump?: boolean; hold?: boolean };
+export type Held = {
+  up: boolean;
+  down: boolean;
+  left: boolean;
+  right: boolean;
+  run: boolean;
+  jump?: boolean;
+  hold?: boolean;
+};
 
 /** Shift on its own switches between walking and running, once let go, so Shift+Tab and ? don't. Nothing else
  * switches it. */

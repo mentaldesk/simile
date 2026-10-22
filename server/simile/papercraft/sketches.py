@@ -130,7 +130,7 @@ def rope_bridge(length: float = 3.3, height: float = 1.25) -> Image.Image:
     """A deck of planks under a rope handrail, with rope netting between them and a post at
     each end, seen from the side. Its middle repeats to stretch it across a gap."""
     s = Sheet(length, height, 200)
-    deck, rail, mesh, thread = 0.12, 1.0, 0.3, 0.012
+    deck, rail, mesh, thread = 0.12, 1.0, 0.42, 0.028
     for x in np.arange(0.0, length - 0.01, 0.2):
         s.rect(x + 0.01, 0.0, min(x + 0.19, length), deck, WOOD, DARK_WOOD)
     rise = rail - deck
@@ -140,7 +140,7 @@ def rope_bridge(length: float = 3.3, height: float = 1.25) -> Image.Image:
                 [(a - thread, deck), (a + thread, deck), (b + thread, rail), (b - thread, rail)],
                 ROPE,
             )
-    s.rect(0.0, rail - 0.03, length, rail + 0.03, ROPE)
+    s.rect(0.0, rail - 0.045, length, rail + 0.045, ROPE)
     for x in (0.0, length - 0.1):
         s.rect(x, 0.0, x + 0.1, height, DARK_WOOD)
     s.image.paste((255, 255, 255), (0, 0, round(s.x0), s.image.height))

@@ -98,14 +98,16 @@ def _clear(town: "TownMap", start: Cell, end: Cell) -> bool:
 
 def possible(town: "TownMap", x: float, y: float, last: tuple[float, float] | None) -> bool:
     """Whether the player can be at (x, y): somewhere to stand or climb, or mid-step, or mid-air
-    in open air over somewhere to land, within the farthest jump from somewhere to stand or lower
-    than `last`, the last position kept on this map, as in a fall from any height."""
+    in open air over somewhere to land, within the farthest jump from somewhere to stand, or
+    lower than `last`, the last position kept on this map, and within the jump's reach of it
+    along the row, as in a fall from any height."""
     cx, cy = math.floor(x + 0.5), math.ceil(round(y, 6))
     if town.walkable(cx, cy):
         return True
     if town.solid(cx, cy) or not _lands(town, cx, cy):
         return False
-    return (last is not None and y > last[1]) or _within_a_jump(town, x, y)
+    falling = last is not None and y > last[1] and abs(x - last[0]) <= JUMP.reach
+    return falling or _within_a_jump(town, x, y)
 
 
 def _lands(town: "TownMap", x: int, y: int) -> bool:

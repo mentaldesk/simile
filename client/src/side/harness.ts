@@ -308,9 +308,9 @@ function exposeWalk(scene: SideScene, village: Village): void {
       state: () => {
         const player = scene.playing;
         if (!player) return undefined;
-        const { map, position, climbing, drawn } = player;
+        const { map, position, climbing, drawn, airborne } = player;
         const used = usedByE(player.mapPosition)?.kind ?? null;
-        const state = { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, used };
+        const state = { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, airborne, used };
         return { ...state, prompts: prompts(), talk: talk() };
       },
       links: () => [...village.maps.values()].flatMap(({ links }) => links),

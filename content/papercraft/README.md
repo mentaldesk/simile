@@ -39,9 +39,9 @@ door repaints only that front, and a test fails if the maps and `layout.json` di
     units without one get windows rather than a shop window, which it boards up. And it fills a
     big blank wall with windows, so the tower's and Garden Flats' prompts ask outright for their
     mural walls to stay empty.
-  - Stairs, the ladder, the ledge, the lift and the white bathroom fittings and fridge are
-    redrawn from flat sketches the same way (`sketches.py`), so they fit their cells and come out
-    as card.
+  - Stairs, the ladder, the ledge, the rope bridge, the lift and the white bathroom fittings and
+    fridge are redrawn from flat sketches the same way (`sketches.py`), so they fit their cells and
+    come out as card.
   - A night picture is an edit of its day front, and a colour variant an edit of its item.
 - **Cut out** with IS-Net plus a colour key on the plain backdrop (`cutout.py`). White things are
   painted on grey. Some items also have painted shadow, or backdrop showing between their legs,
@@ -117,8 +117,10 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
   blank, from its `bottom` to its `top` in the building's storeys (4.4 m each), up to the eaves.
 - **`furniture`**, by the name the maps' `furniture` objects use: its piece, any colour
   variants, and `stretch` for runs like kitchens, counters and workbenches, to draw as wide as
-  their cells by repeating their middle and keeping their ends. Also some pieces the maps don't
-  use yet, for dressing rooms and streets, and `picture_frame` for the gallery's paintings.
+  their cells by repeating their middle and keeping their ends, the rooftops' `rope_bridge` among
+  them, its deck on the solid row under it. Also some pieces the maps don't use yet, for dressing
+  rooms and streets, and `picture_frame` for the gallery's paintings. A map can use one of those
+  extras too, as the rooftops use the palm tree, the bicycle and the bin.
 - **`platforms`**: `stairs` (one storey, rising to the right: mirror it for a flight to the left),
   `ladder`, `steps` (stone steps rising to the right), `ledge` (stretch it by repeating its
   middle), `lift` (the car), `lift_shaft` (one storey of it, to stack), and an inside `window`

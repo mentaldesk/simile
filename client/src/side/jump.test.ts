@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { TiledMap } from '../world/map';
 import { village } from './content';
 import { BUFFER_SECONDS, COYOTE_SECONDS, JUMP_REACH, JUMP_RISE, JUMP_TABLE, JUMP_UP, landingRow } from './jump';
-import { CLIMB_KINDS, Village, type SideMap } from './maps';
+import { CLIMB_KINDS, isSolid, isStanding, isWalkable, Village, type SideMap } from './maps';
 import { RUN_PACE, SidePlayer, type Controls } from './player';
 import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 
@@ -113,7 +113,8 @@ describe('jumping', () => {
   });
 
   it("reaches as far as the server's table says the farthest jump does, and no further", () => {
-    const ledge = sketch([...Array<string>(6).fill('.'.repeat(30)), `${'#'.repeat(6)}${'.'.repeat(24)}`, ...Array<string>(3).fill('.'.repeat(30)), '#'.repeat(30)]);
+    const open = '.'.repeat(30);
+    const ledge = sketch([...Array<string>(6).fill(open), '######'.padEnd(30, '.'), open, open, open, '#'.repeat(30)]);
     const player = on(ledge, 0, 5);
     while (!player.airborne) player.update(press({ x: 1, run: true }), DT);
     for (let t = DT; t < COYOTE_SECONDS - DT / 2; t += DT) player.update(press({ x: 1, run: true }), DT);
@@ -214,7 +215,9 @@ describe('jumping', () => {
       const player = on(ROOFS, 2, ROOF);
       const pressAt = frames - Math.round(early / DT);
       player.update(press({ jump: true, hold: true }), DT);
-      for (let frame = 1; frame < frames + 2; frame++) player.update(press({ jump: frame === pressAt, hold: true }), DT);
+      for (let frame = 1; frame < frames + 2; frame++) {
+        player.update(press({ jump: frame === pressAt, hold: true }), DT);
+      }
       return player.airborne;
     };
     expect(again(BUFFER_SECONDS - 2 * DT)).toBe(true);
@@ -251,5 +254,51 @@ describe('jumping', () => {
     expect(player.steady.y).toBe(ROOF);
     expect(player.ground).toBe(ROOF);
     expect(landingRow(ROOFS, { x: 5, y: 1.5 })).toBe(LANE);
+  });
+});
+
+/** server/simile/street/moves.py's `possible`: where the server keeps the player. */
+function possible(map: SideMap, x: number, y: number, last?: { x: number; y: number }): boolean {
+  const [cx, cy] = [Math.floor(x + 0.5), Math.ceil(Math.round(y * 1e6) / 1e6)];
+  if (isWalkable(map, cx, cy)) return true;
+  if (isSolid(map, cx, cy)) return false;
+  let row = cy;
+  while (row < map.height - 1 && !isSolid(map, cx, row + 1)) row++;
+  if (!isStanding(map, cx, row)) return false;
+  if (last && y > last.y && Math.abs(x - last.x) <= JUMP_TABLE.reach) return true;
+  for (let sy = Math.ceil(y - 0.5); sy <= Math.floor(y + JUMP_TABLE.rise); sy++) {
+    for (let sx = Math.floor(x - JUMP_TABLE.reach); sx <= Math.ceil(x + JUMP_TABLE.reach); sx++) {
+      if (isStanding(map, sx, sy) && Math.abs(sx - x) <= JUMP_TABLE.reach) return true;
+    }
+  }
+  return false;
+}
+
+describe('on the rooftops', () => {
+  const rooftops = village.map('rooftops')!;
+
+  it.each([
+    ['running and jumping along the roofs', { x: 5, y: 12 }, 1],
+    ['jumping back the other way', { x: 38, y: 8 }, -1],
+    ["walking off the clock house's roof", { x: 52, y: 4 }, 1],
+  ])('sends the server only positions it keeps, %s', (_, start, way) => {
+    for (const every of [1, 12]) {
+      const player = on(rooftops, start.x, start.y);
+      let last: { x: number; y: number } = { ...start };
+      for (let frame = 0; frame < 60 * 10; frame++) {
+        const jump = frame % 40 === 0;
+        player.update(press({ x: way, run: way > 0 && start.y < 10, jump, hold: frame % 40 < 20 }), DT);
+        if (frame % every) continue;
+        const { x, y } = player.position;
+        const where = `${x.toFixed(2)}, ${y.toFixed(2)} after ${last.x}, ${last.y}`;
+        expect(possible(rooftops, x, y, last), where).toBe(true);
+        last = { x, y };
+      }
+    }
+  });
+
+  it('sends nothing the server keeps from a sideways jump out of a fall', () => {
+    expect(possible(rooftops, 56.2, 6.5, { x: 55.4, y: 4.6 })).toBe(true);
+    expect(possible(rooftops, 44, 11, { x: 56.2, y: 6.5 })).toBe(false);
   });
 });

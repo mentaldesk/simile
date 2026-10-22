@@ -20,7 +20,8 @@ the protocol, through `server.dispatch`.
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
 
-Left and right (or A and D) walk, and holding Shift runs. E takes a door you're on, and never climbs
+Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
+jumps (`jump.ts`, below). E takes a door you're on, and never climbs
 or rides; with no door, E talks to the ringed resident (`ui/`). Up climbs stairs or a ladder from
 its foot, and down from its top, from anywhere in the tile either side of the end (`CLIMB_REACH`,
 1.5 tiles from its middle): the player steps onto it first, and where two are in reach each key
@@ -32,8 +33,10 @@ foot, as in the noodle bar, is E's and the stairs are up's; with E in use there 
 door from its own cell and the stairs from the next. A small tag over each way a key takes from
 where you stand names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift",
 `ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
-shorter than a frame still counts. Clicking a mural looks at it. In the harness, `[` and `]` move
-the clock an hour and 1 to 4 go to each street.
+shorter than a frame still counts, and so does a tap of Space. Shift switches running only when
+it's pressed and let go on its own (`RunToggle`), so Shift+Tab and ? leave it alone. Clicking a
+mural looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 5 go to each street,
+5 the rooftops.
 
 ## How it draws
 
@@ -72,18 +75,33 @@ The Phaser-free halves are tested under vitest.
 - `residents.ts`: residents from `snapshot` and `entity_moved`, walked between positions, climbing on
   a map's stairs or ladder by their cell's kind, and `climbing` or `riding` at a link's end played
   along the link (`runs.ts`'s `crossing`) until the server moves them onto the other floor.
-- `player.ts`: the player's walking, running, doors, climbs and rides, by #311's choices, #325's and
-  #330's: what the keys take is `ways.ts`'s `waysNear` and `chosen`. Walking stops at stairs and
-  ladders on a map, which are taken with up or down. While crossing between floors the player's
-  position stays at the end they left from, as the protocol holds residents.
-- Running: Shift turns the walk into a run over `RUN_BLEND_SECONDS` and back when it's let go, at up
-  to `RUN_PACE` (2) times `PLAYER_SPEED` along streets and floors. Stairs, ladders and the lift go at
-  their own speeds. The figure turns from its walk to its run halfway through the blend (`Drawn.run`),
-  and its phase steps by `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
-  The server tracks whatever position `player_move` sends (`simile.world`'s lifespan), with no
-  speed check to raise.
-- Jumping isn't here. Positions are floats, so an arc through open air, drawn with the figure's
-  `jumping` pose, can come later as another mode beside walking and climbing.
+- `player.ts`: the player's walking, running, jumping, doors, climbs and rides, by #311's choices,
+  #325's, #330's and #331's: what the keys take is `ways.ts`'s `waysNear` and `chosen`. Walking
+  stops at walls, stairs and ladders on a map, which are taken with up or down, and walks off a
+  ledge. While crossing between floors the player's position stays at the end they left from, as
+  the protocol holds residents.
+- Running: a press of Shift turns the walk into a run over `RUN_BLEND_SECONDS`, and another turns it
+  back, at up to `RUN_PACE` (2) times `PLAYER_SPEED` along streets and floors and through the air.
+  Stopping, stairs, ladders and the lift leave it on; they go at their own speeds. The figure turns
+  from its walk to its run halfway through the blend (`Drawn.run`), and its phase steps by
+  `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
+- Jumping (`jump.ts`), arcade style, from `content/street/jump.json`, the table the server checks
+  positions by. Space jumps from anywhere the player stands, the feet rising `rise` (2.3) tiles in
+  `rise_seconds` (0.38) with Space held; letting go early keeps `cut` of the speed up, so a tap
+  hops. Coming down, or once let go, gravity is `fall_gravity` (1.3) times stronger, so it's
+  snappy. In the air the arrows steer, towards walking or running speed at `AIR_ACCEL`, and
+  braking at `AIR_BRAKE` with neither, so a run jump goes about twice as far: a walking jump clears
+  two cells, a run three. Walking off a ledge falls, and Space still jumps for `coyote_seconds`
+  (0.1); Space pressed up to `buffer_seconds` (0.12) before landing jumps again on landing. The
+  player is `foot` (0.25) tiles wide either side and `body` (1.7) tall: their feet stand on a
+  ledge's edge, walls stop them, a ceiling bumps their head, and they land on top of whatever is
+  solid under them, from any height, with no harm. The figure leaps with its run's frame in the air
+  (`dolls/sprite.ts`'s `leap`), placed so its toes are on the feet line, and lands with a squash
+  over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with height. The camera
+  stays at the height the jump left from, following only a fall below it (`steady`). A snapshot
+  that puts the player in the air lets them fall.
+- The server keeps every position a jump or a fall sends, and ignores one nobody could be at
+  (`simile.street.moves.possible`, `docs/protocol.md`).
 
 ## The walk
 
@@ -92,9 +110,10 @@ every building, out of every exit and along every street door on E, up and down 
 ladder on the arrows alone, and a floor up and down on the lift from each of its cells, checking
 each prompt on the way. Before each arrow it presses E where nothing else takes it, and checks the
 player didn't move. It takes doors and lifts from their cell, and stairs and ladders from 1.4 tiles
-off their end, near the edge of the reach. Then it runs along the High Street with Shift, checking
-the speed and the blend, opens the news at every terminal on E, orders at the café's counter on E,
-and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
+off their end, near the edge of the reach. Then it runs along the High Street from a press of Shift,
+checking the speed and the blend, jumps the rooftops' one-, two- and three-cell gaps, the last
+running, checking it lands on the far roof, walks off the clock house's roof into the lane, opens
+the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 
 ```bash
