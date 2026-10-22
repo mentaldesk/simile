@@ -12,6 +12,7 @@ import { dialogue } from './dialogue';
 import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
+import { JournalPanel } from './journal-panel';
 import { eUse, onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -36,6 +37,7 @@ export class DialogueScene extends Phaser.Scene {
   private murals!: MuralPanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
+  private journal!: JournalPanel;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -67,8 +69,9 @@ export class DialogueScene extends Phaser.Scene {
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
+    const journal = (this.journal = new JournalPanel(this.root));
     const help = new HelpPanel(this.root);
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help });
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -83,6 +86,7 @@ export class DialogueScene extends Phaser.Scene {
       stopCollapses();
       this.news.stop();
       this.murals.stop();
+      journal.stop();
       log.stop();
       this.root.remove();
     });
@@ -107,6 +111,7 @@ export class DialogueScene extends Phaser.Scene {
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
     this.hunger.update(playerState.latest, used?.kind === 'pile');
     const panelOpen = this.news.isOpen || this.murals.isOpen;
+    this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
     const target = this.targets.current();
@@ -129,6 +134,10 @@ export class DialogueScene extends Phaser.Scene {
       this.news.open(used.terminal.label);
     } else if (used?.kind === 'mural') this.murals.look(this.player());
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+    else if (used?.kind === 'clue') {
+      server.send({ type: 'pick_up' });
+      this.journal.open();
+    }
   }
 
   /** F has the meal on offer here if they can pay, else eats something they carry. */

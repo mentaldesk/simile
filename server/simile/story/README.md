@@ -103,4 +103,28 @@ cd server
 uv run simile story incident --seed 3 --facts   # one Sonnet call, saves nothing
 ```
 
+## The journal
+
+S13: what reaches the player goes into S2's journal (`investigation_of(app).journal`), saved with
+the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), which the module's
+`running` hook starts, says when:
+
+- **Told.** Once a resident is set up for what they know (`PlayerTalk.tellings`, see
+  [*Telling*](../conversation/README.md#telling)), their next line to the player writes each fact
+  they tell, as it really happened (`what`), with its leads. A fact they lie about is written as
+  their cover, in quotes, with no leads. One they keep back isn't written. Nothing in the
+  conversation calls it: the recorder hears `LineSpoken` and reads the player's talk.
+- **Found.** A `pick_up` (E) within `clue_reach` (1.5 tiles) of a clue's cell, from
+  `load_story().clues`, writes each fact found in it (`found_in`), with its leads.
+- **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`,
+  from the stance the code decided (`flushed`), as the eye's flush on a line will be. Without the
+  eye, and for a clue, it's `null`.
+- **Leads.** An entry opens its fact's leads, less those to facts the journal already has, and
+  closes every lead to its own fact, a lie included.
+- **Once.** A truth already in the journal isn't written again, whoever tells it, nor a lie the same
+  resident already told, unless the eye now catches the flush it couldn't see before: then the lie
+  moves to the end, flushed.
+
+The `journal` message goes to each client on connect and to all of them whenever it changes.
+
 Every constant is in `StoryConfig`.

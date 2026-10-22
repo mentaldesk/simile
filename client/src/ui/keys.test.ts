@@ -7,7 +7,8 @@ const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
 const use = vi.fn();
 const eat = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, use, eat, help });
+const journal = { toggle: vi.fn(), close: vi.fn() };
+const handler = onGameKey({ chat, use, eat, help, journal });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -44,6 +45,20 @@ describe('with nothing focused', () => {
     expect(help.close).toHaveBeenCalledOnce();
   });
 
+  it('J shows or hides the journal in place of the controls, and Esc hides it', () => {
+    expect(press(document.body, 'j').defaultPrevented).toBe(true);
+    press(document.body, 'J', { shiftKey: true });
+    press(document.body, 'j', { repeat: true });
+    press(document.body, 'j', { metaKey: true });
+    expect(journal.toggle).toHaveBeenCalledTimes(2);
+    expect(help.close).toHaveBeenCalledTimes(2);
+
+    press(document.body, '?', { shiftKey: true });
+    press(document.body, 'Escape');
+    expect(journal.close).toHaveBeenCalledTimes(2);
+    expect(use).not.toHaveBeenCalled();
+  });
+
   it('E uses what is here, but not held down or with a modifier', () => {
     press(document.body, 'e');
     press(document.body, 'E', { shiftKey: true });
@@ -73,6 +88,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   press(element, 'Escape');
   press(element, 'e');
   press(element, 'f');
+  press(element, 'j');
   press(element, '?');
 
   expect(enter.defaultPrevented).toBe(false);
@@ -83,6 +99,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(use).not.toHaveBeenCalled();
   expect(eat).not.toHaveBeenCalled();
   expect(help.toggle).not.toHaveBeenCalled();
+  expect(journal.toggle).not.toHaveBeenCalled();
 });
 
 describe('what E does', () => {
