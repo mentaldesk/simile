@@ -74,6 +74,8 @@ export class SideScene extends Phaser.Scene {
   private readonly running = new RunToggle();
   private jumped = false;
   private passing = false;
+  /** Where to put the player once the door they're going through is done. */
+  private waking?: MapPosition;
   private worksChanged = true;
   private snap = true;
   /** A tap shorter than a frame still counts. */
@@ -104,6 +106,7 @@ export class SideScene extends Phaser.Scene {
         listenerPosition: () => this.positionOf(PLAYER_ID),
       }),
       server.on('snapshot', () => this.throttle.forget()),
+      server.on('player_collapsed', ({ position: { x, y, map } }) => this.wake({ x, y, map: map ?? '' })),
       setMuralView({
         wallAt: ({ x, y }) => {
           const point = this.cameras.main.getWorldPoint(x, y);
@@ -238,6 +241,12 @@ export class SideScene extends Phaser.Scene {
     this.view.setTo(this.centre.x - size.width / 2, this.centre.y - size.height / 2, size.width, size.height);
   }
 
+  /** The server moved them home after they collapsed. */
+  private wake(at: MapPosition): void {
+    if (this.passing) this.waking = at;
+    else this.takeDoorTo(at);
+  }
+
   private takeDoor(door: Link): void {
     this.takeDoorTo({ x: door.to.x, y: door.to.y, map: door.to.map });
   }
@@ -261,6 +270,9 @@ export class SideScene extends Phaser.Scene {
       } finally {
         this.passing = false;
         camera.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
+        const waking = this.waking;
+        this.waking = undefined;
+        if (waking) this.takeDoorTo(waking);
       }
     });
   }

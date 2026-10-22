@@ -1,0 +1,42 @@
+from pydantic import BaseModel, ConfigDict, Field
+
+from simile.schema import Id
+
+
+class PlayerConfig(BaseModel):
+    """How the player gets hungry, eats and collapses."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    home: Id = Field(
+        default="maker_space",
+        description="Where they live: a meal there is free, and they wake there after "
+        "collapsing. The village has no house for them, so it's Aris's workshop.",
+    )
+    rise: float = Field(
+        default=0.25,
+        gt=0,
+        description="How much hungrier they get each sim hour while someone's playing: from fed "
+        "to collapsing in four hours.",
+    )
+    waking: float = Field(
+        default=0.75, ge=0, lt=1, description="Their hunger when they wake after collapsing."
+    )
+    home_meal: float = Field(default=1.0, gt=0, description="How much a meal at home relieves.")
+    meals: dict[Id, float] = Field(
+        default={"coffee_shop": 0.5, "noodle_bar": 1.0},
+        description="How much a meal at each shop relieves, by location id. Only these shops "
+        "feed the player, at the economy's meal price, and only while they'd feed a resident.",
+    )
+    food: float = Field(default=0.4, gt=0, description="How much a food item they carry relieves.")
+    reach: float = Field(
+        default=1.5, gt=0, description="How far from a pile, in tiles, they can pick it up."
+    )
+    step: float = Field(
+        default=0.01,
+        gt=0,
+        description="How far hunger or a lamp's charge moves before a change to it alone is sent.",
+    )
+
+
+DEFAULT_CONFIG = PlayerConfig()

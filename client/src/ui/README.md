@@ -15,7 +15,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
   marked "→ You".
 - the news and residents' writing at a terminal (see *Reading the news*);
-- a mural up close (see *Looking at a mural*).
+- a mural up close (see *Looking at a mural*);
+- how hungry the player is and what they can eat (see *Hunger*).
 
 ## Choosing who to talk to
 
@@ -97,14 +98,30 @@ player as they step up and takes the order over `player_say` like any conversati
 ([`simile.cafe`](../../../server/simile/cafe/README.md)). Other kinds of interactable get their own
 prompts from their own tasks.
 
+## Hunger
+
+The top-left corner shows the player's hunger from the last `player_state` (`playerState` in
+[`net/`](../net/index.ts)), in [`hunger.ts`](hunger.ts):
+
+- "You're hungry." from 0.5, and "You're starving. Eat soon, or you'll collapse." from 0.85. The
+  server collapses them at 1.
+- From 0.3, what F eats: the meal on offer where they stand if they can pay ("Press F to eat at
+  home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
+  to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
+  nothing F can eat, it says where they could, or what the meal here costs against what they have.
+- "Press E to pick up what you left here." within a tile of a pile they left when they collapsed
+  (`pileInReach` in [`world/reach.ts`](../world/reach.ts)), where E sends `pick_up`.
+- "You collapsed from hunger and woke at home." for six seconds after `player_collapsed`. The world
+  scene puts the player at home.
+
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, ?) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, F, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's) or a mural. The world scene takes a door
+a terminal, the counter, a painting (the gallery panel's), a mural or a pile the player left. The world scene takes a door
 on E only when none is, so one press never does two things, and then up takes the door. With
 neither, E opens the chat to the ringed NPC, as Enter does, and their name tag says so: "E: talk to
 Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key

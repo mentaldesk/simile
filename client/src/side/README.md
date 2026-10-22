@@ -100,6 +100,8 @@ The Phaser-free halves are tested under vitest.
   lands with a squash over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with
   height. The camera stays at the height the jump left from, following only a fall below it
   (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
+- When the player collapses from hunger, `player_collapsed` puts them at home, as through a door,
+  once any door they're going through is done.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`). `server/tests/street/positions.json` is a
   table of the client's sends and places nobody could be that the server's tests and
