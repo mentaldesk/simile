@@ -35,6 +35,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     in_game = InGame()
 
     def collapsed(home: MapTile) -> None:
+        lamp.switch(False)
         hub.broadcast(PlayerCollapsedMessage(position=Position(x=home.x, y=home.y, map=home.map)))
 
     hunger = Hunger(

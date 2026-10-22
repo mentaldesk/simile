@@ -33,8 +33,7 @@ DEFAULT_LAMP = LampConfig()
 
 
 class Lamp:
-    """The player's lamp, which runs down while it's on, charges while they stand at a plug, and
-    goes out when it's flat. Tick it on the sim loop."""
+    """The player's lamp: drains while on, charges at a plug, and goes out when flat."""
 
     def __init__(
         self,

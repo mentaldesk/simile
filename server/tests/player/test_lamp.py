@@ -10,6 +10,8 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.persistence import player_of
 from simile.player.lamp import Lamp, LampConfig
+from simile.player.sync import PlayerSync
+from simile.protocol import PlayerStateMessage
 from simile.schema import PLAYER_ID, Item, ItemKind, Player, lamp
 from simile.sim import Clock, EventBus, World, world_of
 from simile.world import Movement, Point, movement_of
@@ -166,6 +168,24 @@ def test_without_a_lamp_there_is_nothing_to_switch_or_drain() -> None:
     assert down.player.items == [WIRE]
 
 
+@pytest.mark.parametrize(
+    ("start", "on", "at", "end"), [(0.6234, False, METRO_PLUG, 1.0), (0.0034, True, TUNNEL, 0.0)]
+)
+def test_a_charge_that_reaches_full_or_flat_is_sent_off_the_step(
+    start: float, on: bool, at: Point, end: float
+) -> None:
+    down = Underground(with_lamp(charge=start, on=on), at=at)
+    sent: list[PlayerStateMessage] = []
+    sync = PlayerSync(down.player, lambda: None, sent.append)
+
+    for _ in range(round(MINUTE / 0.1)):
+        down.lamp.tick(0.1)
+        sync.tick(0.1)
+
+    [last] = [item for item in sent[-1].player.items if item.kind is ItemKind.LAMP]
+    assert last.charge == end
+
+
 def make_app(make_package: MakePackage) -> Starlette:
     lifespans = ("behaviour", "economy", "memory", "protocol", "world")
     files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in lifespans}
@@ -206,6 +226,37 @@ def test_the_client_switches_the_lamp_and_hears_it_run_down_and_charge(
         client.portal.call(lambda: setattr(player_of(app), "items", with_lamp(0.5, True).items))
         client.portal.call(tick)
         drained = next_of(ws, "player_state")
+        ws.send_json({"type": "player_move", "position": {"x": 72, "y": 15, "map": "metro"}})
+        deadline = time.monotonic() + 2
+        while client.portal.call(movement_of(app).entities).get(PLAYER_ID) != METRO_PLUG:
+            assert time.monotonic() < deadline, "the server never had the player at the plug"
+            time.sleep(0.001)
+        client.portal.call(lambda: [tick() for _ in range(400)])
+        ws.send_json({"type": "lamp", "on": False})
+        charged = [next_of(ws, "player_state")]
+        while lamp_of(charged[-1])["on"]:
+            charged.append(next_of(ws, "player_state"))
 
     assert lamp_of(switched)["on"] is True and lamp_of(switched)["charge"] == 1
     assert lamp_of(drained)["charge"] < 0.5
+    rising = [lamp_of(message)["charge"] for message in charged[:-1]]
+    assert rising == sorted(rising) and rising[0] > lamp_of(drained)["charge"]
+    assert rising[-1] == 1, "the full charge is sent before the switch"
+
+
+def test_a_collapse_switches_the_lamp_off(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        player = player_of(app)
+        next_of(ws, "player_state")
+        ws.send_json({"type": "player_move", "position": {"x": 65, "y": 15, "map": "metro"}})
+        ws.send_json({"type": "lamp", "on": True})
+        switched = next_of(ws, "player_state")
+        client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
+        client.portal.call(world_of(app).loop.tick)
+        next_of(ws, "player_collapsed")
+        woken = next_of(ws, "player_state")
+
+    assert lamp_of(switched)["on"] is True
+    assert lamp_of(woken)["on"] is False
