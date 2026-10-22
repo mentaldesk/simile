@@ -11,6 +11,17 @@
    "width": 6,
    "x": 4
   },
+  "clinic": {
+   "door": 1,
+   "height": 3,
+   "id": "clinic",
+   "interior": true,
+   "murals": [],
+   "storeys": 1,
+   "street": "metro",
+   "width": 10,
+   "x": 88
+  },
   "clock_house": {
    "door": null,
    "height": 11,
@@ -287,6 +298,10 @@
    2,
    1
   ],
+  "bedroll": [
+   2,
+   1
+  ],
   "bench": [
    2,
    1
@@ -303,6 +318,10 @@
    1,
    2
   ],
+  "breaker_box": [
+   1,
+   2
+  ],
   "bush": [
    1,
    1
@@ -311,9 +330,21 @@
    2,
    1
   ],
+  "catwalk": [
+   8,
+   2
+  ],
   "counter": [
    3,
    1
+  ],
+  "crates": [
+   1,
+   1
+  ],
+  "dead_terminal": [
+   1,
+   2
   ],
   "espresso_machine": [
    1,
@@ -322,6 +353,10 @@
   "fountain": [
    2,
    2
+  ],
+  "freight_lift": [
+   2,
+   4
   ],
   "grinder": [
    1,
@@ -355,6 +390,18 @@
    3,
    1
   ],
+  "metro_bench": [
+   2,
+   1
+  ],
+  "metro_entrance": [
+   2,
+   3
+  ],
+  "metro_steps": [
+   4,
+   4
+  ],
   "news_terminal": [
    1,
    2
@@ -375,6 +422,10 @@
    4,
    1
   ],
+  "pipes": [
+   12,
+   1
+  ],
   "plant": [
    1,
    1
@@ -390,6 +441,14 @@
   "rope_bridge": [
    8,
    1
+  ],
+  "rubble": [
+   2,
+   1
+  ],
+  "scrap_stall": [
+   3,
+   2
   ],
   "sewing_machine": [
    1,
@@ -415,9 +474,25 @@
    2,
    1
   ],
+  "ticket_machine": [
+   1,
+   2
+  ],
+  "train_carriage": [
+   10,
+   3
+  ],
   "tree": [
    2,
    4
+  ],
+  "tunnel_arch": [
+   3,
+   8
+  ],
+  "turnstile": [
+   2,
+   1
   ],
   "wardrobe": [
    1,
@@ -434,6 +509,9 @@
   "stairs"
  ],
  "rooms": {
+  "clinic": [
+   "clinic"
+  ],
   "coffee_shop": [
    "cafe",
    "cafe_upstairs",
@@ -499,6 +577,7 @@
   "high_street": 84,
   "kapok_walk": 34,
   "lychee_lane": 68,
+  "metro": 110,
   "rooftops": 60
  }
 }

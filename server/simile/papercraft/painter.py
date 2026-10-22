@@ -19,6 +19,13 @@ STYLE = (
     "papercraft diorama made of cut coloured paper and cardboard layers, visible paper edges and "
     "fibres, soft drop shadows between layers, handmade crafty look"
 )
+CARTOON = (
+    "hand-drawn 2D cartoon game art: thick dark brown ink outlines that are scratchy, uneven and "
+    "slightly broken, as if drawn with a worn dip pen, flat colour fills with simple soft "
+    "shading, a little worn and dirty with a few smudges, scuffs and stains, a slightly muted "
+    "palette, chunky rounded simplified shapes, bold readable silhouettes"
+)
+"""#329's revised cartoon, a little dirty: the tunnels' style."""
 NO_TEXT = " No text, no lettering, no logos, no words on signs."
 REFERENCE_WIDTH = 768
 
@@ -28,9 +35,15 @@ def styled(subject: str) -> str:
     return f"{subject} Art style: {STYLE}.{NO_TEXT}"
 
 
+def cartoon(subject: str) -> str:
+    """`subject` in the tunnels' cartoon, with the ban on lettering."""
+    return f"{subject} Art style: {CARTOON}.{NO_TEXT}"
+
+
 def reference(name: str, width: int = REFERENCE_WIDTH) -> Image.Image:
-    """A reference picture (`street`, `house`, `rooftops`, `furniture` or `characters`) scaled to
-    `width`, so conditioning on it stays cheap."""
+    """A reference picture (`street`, `house`, `rooftops`, `furniture` or `characters`, or the
+    tunnels' `cartoon/street` or `cartoon/interior`) scaled to `width`, so conditioning on it
+    stays cheap."""
     image = Image.open(REFERENCES / f"{name}.jpg").convert("RGB")
     height = round(image.height * width / image.width / 16) * 16
     return image.resize((width, height), Image.Resampling.LANCZOS)
