@@ -19,6 +19,8 @@ STAIR = math.sqrt(2)
 RISES = ((1, -1), (-1, -1))
 """The diagonals a flight of stairs can run along: up to the east, and up to the west."""
 DIAGONALS = (*RISES, (-1, 1), (1, 1))
+ON_THE_WAY = 0.02
+"""Tiles off the line between two cells a position mid-step can be, as the client rounds it."""
 
 
 class Move(NamedTuple):
@@ -29,8 +31,7 @@ class Move(NamedTuple):
 def moves(town: "TownMap", cell: Cell, jumps: bool = False) -> Iterator[Move]:
     """The side-view neighbour rule: left and right between walkable cells on one row, and up and
     down only along a climbable run, straight on a ladder and diagonally on stairs, to the cells
-    at its ends. A resident can stop on any cell of a run. With `jumps`, for the player, a jump
-    from a standing cell too."""
+    at its ends. A resident can stop on any cell of a run."""
     x, y = cell
     if jumps:
         yield from _jumps(town, cell)
@@ -69,9 +70,7 @@ def _flights(town: "TownMap", x: int, y: int) -> tuple[Cell, ...]:
 
 
 def _jumps(town: "TownMap", cell: Cell) -> Iterator[Move]:
-    """A run jump to a standing cell up to `JUMP.cells` along the row and `JUMP.rows` up, or down
-    any way, through open air: up from where it takes off, along over the higher end with room
-    for the head, and down onto where it lands."""
+    """A run jump through open air to a standing cell `JUMP.cells` along and `JUMP.rows` up."""
     x, y = cell
     if not town.standing(x, y):
         return
@@ -97,12 +96,9 @@ def _clear(town: "TownMap", start: Cell, end: Cell) -> bool:
 
 
 def possible(town: "TownMap", x: float, y: float, last: tuple[float, float] | None) -> bool:
-    """Whether the player can be at (x, y): somewhere to stand or climb, or mid-step, or mid-air
-    in open air over somewhere to land, within the farthest jump from somewhere to stand, or
-    lower than `last`, the last position kept on this map, and within the jump's reach of it
-    along the row, as in a fall from any height."""
+    """Whether a `player_move` to (x, y) is kept, after `last`: docs/protocol.md's rule."""
     cx, cy = math.floor(x + 0.5), math.ceil(round(y, 6))
-    if town.walkable(cx, cy):
+    if town.walkable(cx, cy) or _between(town, x, y):
         return True
     if town.solid(cx, cy) or not _lands(town, cx, cy):
         return False
@@ -110,16 +106,28 @@ def possible(town: "TownMap", x: float, y: float, last: tuple[float, float] | No
     return falling or _within_a_jump(town, x, y)
 
 
+def _between(town: "TownMap", x: float, y: float) -> bool:
+    """On the way from one cell to the next by a step or a climb."""
+    corners = {(math.floor(x), math.floor(y)), (math.ceil(x), math.ceil(y))}
+    corners |= {(math.floor(x), math.ceil(y)), (math.ceil(x), math.floor(y))}
+    for a in corners:
+        for (bx, by), _ in moves(town, a) if town.walkable(*a) else ():
+            dx, dy = bx - a[0], by - a[1]
+            t = min(max(((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy), 0), 1)
+            if math.dist((x, y), (a[0] + t * dx, a[1] + t * dy)) <= ON_THE_WAY:
+                return True
+    return False
+
+
 def _lands(town: "TownMap", x: int, y: int) -> bool:
-    """Falling straight down from (x, y) comes to somewhere to stand, inside the map."""
+    """Falling straight down from (x, y) comes to somewhere to stand."""
     while y < town.height - 1 and not town.solid(x, y + 1):
         y += 1
     return town.standing(x, y)
 
 
 def _within_a_jump(town: "TownMap", x: float, y: float) -> bool:
-    """No higher than `JUMP.rise` above a standing cell within `JUMP.reach` along the row, and not
-    below it by more than half a row, where coyote time can start a jump."""
+    """Up to `JUMP.rise` above a standing cell within `JUMP.reach`, or half a row below it."""
     reach = math.floor(JUMP.reach)
     rows = range(math.ceil(y - 0.5), math.floor(y + JUMP.rise) + 1)
     return any(

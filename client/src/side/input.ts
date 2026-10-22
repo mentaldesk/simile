@@ -2,8 +2,7 @@ import type { Position } from '../net';
 import { usedByE } from '../world/reach';
 import type { Controls } from './player';
 
-/** Which arrow (or WASD) keys are down, whether running is on, and Space: `jump` pressed since the last frame,
- * `hold` down. */
+/** Which arrow (or WASD) keys are down, whether running is on, and Space pressed (`jump`) or down (`hold`). */
 export type Held = {
   up: boolean;
   down: boolean;
@@ -14,8 +13,7 @@ export type Held = {
   hold?: boolean;
 };
 
-/** Shift on its own switches between walking and running, once let go, so Shift+Tab and ? don't. Nothing else
- * switches it. */
+/** Shift pressed and let go on its own switches running, so Shift+Tab and ? don't. */
 export class RunToggle {
   on = false;
   private alone = false;

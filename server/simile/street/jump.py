@@ -1,5 +1,4 @@
-"""The player's jump: the client plays it from `content/street/jump.json`, which `simile street`
-writes from here, and the server checks the player's positions and paths by it."""
+"""The player's jump, which `simile street` writes to content/street/jump.json for the client."""
 
 import json
 import math
@@ -7,8 +6,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 RUN_SPEED = 5.2
-"""Tiles a second, running: the client's `PLAYER_SPEED` times `RUN_PACE`, four times
-`simile.world.map.WALKING_SPEED`."""
+"""Tiles a second running: the client's `PLAYER_SPEED` times `RUN_PACE`."""
 JUMP_FILE = "jump.json"
 
 
@@ -34,8 +32,7 @@ class Jump:
     rows: int = 2
     """Up from a standing cell to the one a jump lands on, for paths."""
     frame_seconds: float = 0.1
-    """The longest step the client takes, its `MAX_FRAME_SECONDS`: a jump can run on that long
-    past where it would have taken off."""
+    """The client's longest step, `MAX_FRAME_SECONDS`, which a jump can overrun its take-off by."""
 
     @property
     def gravity(self) -> float:
@@ -44,9 +41,7 @@ class Jump:
 
     @property
     def reach(self) -> float:
-        """Tiles along the row from the middle of the cell the farthest jump takes off from to
-        the farthest it gets before it's back down to where it took off: a run jump with Space
-        held, as late as coyote time allows, at the client's longest step."""
+        """Tiles along the row the farthest jump gets from the middle of its take-off cell."""
         down = math.sqrt(2 * self.rise / (self.gravity * self.fall_gravity))
         airborne = self.frame_seconds + self.coyote_seconds + self.rise_seconds + down
         return 0.5 + self.foot + RUN_SPEED * airborne

@@ -1,0 +1,2913 @@
+[
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 5.05,
+  "y": 12,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 5.83,
+  "y": 10.22,
+  "last": [
+   5.05,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 6.86,
+  "y": 9.83,
+  "last": [
+   5.83,
+   10.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 7.9,
+  "y": 11.17,
+  "last": [
+   6.86,
+   9.83
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 8.9,
+  "y": 10.8,
+  "last": [
+   7.9,
+   11.17
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 9.94,
+  "y": 9.79,
+  "last": [
+   8.9,
+   10.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 10.98,
+  "y": 10.53,
+  "last": [
+   9.94,
+   9.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 11.98,
+  "y": 11.43,
+  "last": [
+   10.98,
+   10.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 12.25,
+  "y": 9.97,
+  "last": [
+   11.98,
+   11.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 12.88,
+  "y": 10,
+  "last": [
+   12.25,
+   9.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 13.92,
+  "y": 10,
+  "last": [
+   12.88,
+   10
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 14.25,
+  "y": 8.22,
+  "last": [
+   13.92,
+   10
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 14.62,
+  "y": 7.83,
+  "last": [
+   14.25,
+   8.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 15.66,
+  "y": 8,
+  "last": [
+   14.62,
+   7.83
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 16.7,
+  "y": 6.67,
+  "last": [
+   15.66,
+   8
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 17.74,
+  "y": 5.75,
+  "last": [
+   16.7,
+   6.67
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 18.78,
+  "y": 6.54,
+  "last": [
+   17.74,
+   5.75
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 19.78,
+  "y": 7.43,
+  "last": [
+   18.78,
+   6.54
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 20.82,
+  "y": 5.97,
+  "last": [
+   19.78,
+   7.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 21.86,
+  "y": 6.1,
+  "last": [
+   20.82,
+   5.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 22.9,
+  "y": 7.94,
+  "last": [
+   21.86,
+   6.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 23.26,
+  "y": 11.28,
+  "last": [
+   22.9,
+   7.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 23.97,
+  "y": 14.88,
+  "last": [
+   23.26,
+   11.28
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 24.96,
+  "y": 15,
+  "last": [
+   23.97,
+   14.88
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 26,
+  "y": 13.67,
+  "last": [
+   24.96,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 27.04,
+  "y": 12.75,
+  "last": [
+   26,
+   13.67
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 28.08,
+  "y": 13.54,
+  "last": [
+   27.04,
+   12.75
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 29.08,
+  "y": 14.43,
+  "last": [
+   28.08,
+   13.54
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 30.12,
+  "y": 12.97,
+  "last": [
+   29.08,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 31.16,
+  "y": 13.1,
+  "last": [
+   30.12,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 32.2,
+  "y": 14.94,
+  "last": [
+   31.16,
+   13.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 33.2,
+  "y": 13.32,
+  "last": [
+   32.2,
+   14.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 34.24,
+  "y": 12.85,
+  "last": [
+   33.2,
+   13.32
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 35.28,
+  "y": 14.14,
+  "last": [
+   34.24,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 36.27,
+  "y": 13.8,
+  "last": [
+   35.28,
+   14.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 37.31,
+  "y": 12.79,
+  "last": [
+   36.27,
+   13.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 38.35,
+  "y": 13.53,
+  "last": [
+   37.31,
+   12.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 39.35,
+  "y": 14.43,
+  "last": [
+   38.35,
+   13.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 40.39,
+  "y": 12.97,
+  "last": [
+   39.35,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 41.43,
+  "y": 13.1,
+  "last": [
+   40.39,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 42.47,
+  "y": 14.94,
+  "last": [
+   41.43,
+   13.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 43.47,
+  "y": 13.32,
+  "last": [
+   42.47,
+   14.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 44.51,
+  "y": 12.85,
+  "last": [
+   43.47,
+   13.32
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 45.55,
+  "y": 14.14,
+  "last": [
+   44.51,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 46.54,
+  "y": 13.8,
+  "last": [
+   45.55,
+   14.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 47.58,
+  "y": 12.79,
+  "last": [
+   46.54,
+   13.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 48.62,
+  "y": 13.53,
+  "last": [
+   47.58,
+   12.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 49.62,
+  "y": 14.43,
+  "last": [
+   48.62,
+   13.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 50.66,
+  "y": 12.97,
+  "last": [
+   49.62,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "running and jumping along the rooftops",
+  "map": "rooftops",
+  "x": 51.7,
+  "y": 13.1,
+  "last": [
+   50.66,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 37.96,
+  "y": 8,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 37.44,
+  "y": 6.22,
+  "last": [
+   37.96,
+   8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 36.92,
+  "y": 5.83,
+  "last": [
+   37.44,
+   6.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 36.4,
+  "y": 7.17,
+  "last": [
+   36.92,
+   5.83
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 35.9,
+  "y": 6.8,
+  "last": [
+   36.4,
+   7.17
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 35.38,
+  "y": 5.79,
+  "last": [
+   35.9,
+   6.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 34.86,
+  "y": 6.53,
+  "last": [
+   35.38,
+   5.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 34.36,
+  "y": 7.43,
+  "last": [
+   34.86,
+   6.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 33.84,
+  "y": 5.97,
+  "last": [
+   34.36,
+   7.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 33.32,
+  "y": 6.1,
+  "last": [
+   33.84,
+   5.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 32.8,
+  "y": 7.94,
+  "last": [
+   33.32,
+   6.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 32.28,
+  "y": 11.28,
+  "last": [
+   32.8,
+   7.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 31.76,
+  "y": 14.88,
+  "last": [
+   32.28,
+   11.28
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 31.26,
+  "y": 15,
+  "last": [
+   31.76,
+   14.88
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 30.74,
+  "y": 13.67,
+  "last": [
+   31.26,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 30.22,
+  "y": 12.75,
+  "last": [
+   30.74,
+   13.67
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 29.7,
+  "y": 13.54,
+  "last": [
+   30.22,
+   12.75
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 29.2,
+  "y": 14.43,
+  "last": [
+   29.7,
+   13.54
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 28.68,
+  "y": 12.97,
+  "last": [
+   29.2,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 28.16,
+  "y": 13.1,
+  "last": [
+   28.68,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 27.64,
+  "y": 14.94,
+  "last": [
+   28.16,
+   13.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 27.14,
+  "y": 13.32,
+  "last": [
+   27.64,
+   14.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 26.62,
+  "y": 12.85,
+  "last": [
+   27.14,
+   13.32
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 26.1,
+  "y": 14.14,
+  "last": [
+   26.62,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 25.61,
+  "y": 13.8,
+  "last": [
+   26.1,
+   14.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 25.09,
+  "y": 12.79,
+  "last": [
+   25.61,
+   13.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 24.57,
+  "y": 13.53,
+  "last": [
+   25.09,
+   12.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 24.07,
+  "y": 14.43,
+  "last": [
+   24.57,
+   13.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 23.55,
+  "y": 12.97,
+  "last": [
+   24.07,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 23.03,
+  "y": 13.1,
+  "last": [
+   23.55,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 22.51,
+  "y": 14.94,
+  "last": [
+   23.03,
+   13.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 22.01,
+  "y": 13.32,
+  "last": [
+   22.51,
+   14.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 21.49,
+  "y": 12.85,
+  "last": [
+   22.01,
+   13.32
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 20.97,
+  "y": 14.14,
+  "last": [
+   21.49,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 20.47,
+  "y": 13.8,
+  "last": [
+   20.97,
+   14.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 19.95,
+  "y": 12.79,
+  "last": [
+   20.47,
+   13.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 19.43,
+  "y": 13.53,
+  "last": [
+   19.95,
+   12.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 18.93,
+  "y": 14.43,
+  "last": [
+   19.43,
+   13.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 18.41,
+  "y": 12.97,
+  "last": [
+   18.93,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 17.89,
+  "y": 13.1,
+  "last": [
+   18.41,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 17.37,
+  "y": 14.94,
+  "last": [
+   17.89,
+   13.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 16.87,
+  "y": 13.32,
+  "last": [
+   17.37,
+   14.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 16.35,
+  "y": 12.85,
+  "last": [
+   16.87,
+   13.32
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 15.83,
+  "y": 14.14,
+  "last": [
+   16.35,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 15.34,
+  "y": 13.8,
+  "last": [
+   15.83,
+   14.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 14.82,
+  "y": 12.79,
+  "last": [
+   15.34,
+   13.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 14.3,
+  "y": 13.53,
+  "last": [
+   14.82,
+   12.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 13.8,
+  "y": 14.43,
+  "last": [
+   14.3,
+   13.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 13.28,
+  "y": 12.97,
+  "last": [
+   13.8,
+   14.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping back along the rooftops",
+  "map": "rooftops",
+  "x": 12.76,
+  "y": 13.1,
+  "last": [
+   13.28,
+   12.97
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 53.04,
+  "y": 4,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 53.56,
+  "y": 4,
+  "last": [
+   53.04,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 54.08,
+  "y": 4,
+  "last": [
+   53.56,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 54.6,
+  "y": 4,
+  "last": [
+   54.08,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 55.12,
+  "y": 4,
+  "last": [
+   54.6,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 55.64,
+  "y": 4,
+  "last": [
+   55.12,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 56.16,
+  "y": 4,
+  "last": [
+   55.64,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 56.68,
+  "y": 4,
+  "last": [
+   56.16,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 57.2,
+  "y": 4.58,
+  "last": [
+   56.68,
+   4
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 57.72,
+  "y": 6.78,
+  "last": [
+   57.2,
+   4.58
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 58.24,
+  "y": 10.29,
+  "last": [
+   57.72,
+   6.78
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 58.76,
+  "y": 13.89,
+  "last": [
+   58.24,
+   10.29
+  ],
+  "kept": true
+ },
+ {
+  "why": "walking off the clock house's roof",
+  "map": "rooftops",
+  "x": 59,
+  "y": 15,
+  "last": [
+   58.76,
+   13.89
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52,
+  "y": 15,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.04,
+  "y": 15,
+  "last": [
+   52,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.17,
+  "y": 15,
+  "last": [
+   52.04,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.3,
+  "y": 15,
+  "last": [
+   52.17,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.43,
+  "y": 15,
+  "last": [
+   52.3,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.56,
+  "y": 15,
+  "last": [
+   52.43,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.69,
+  "y": 15,
+  "last": [
+   52.56,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.82,
+  "y": 15,
+  "last": [
+   52.69,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 52.95,
+  "y": 15,
+  "last": [
+   52.82,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.02,
+  "y": 15.02,
+  "last": [
+   52.95,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.09,
+  "y": 15.09,
+  "last": [
+   53.02,
+   15.02
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.16,
+  "y": 15.16,
+  "last": [
+   53.09,
+   15.09
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.24,
+  "y": 15.24,
+  "last": [
+   53.16,
+   15.16
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.31,
+  "y": 15.31,
+  "last": [
+   53.24,
+   15.24
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.38,
+  "y": 15.38,
+  "last": [
+   53.31,
+   15.31
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.45,
+  "y": 15.45,
+  "last": [
+   53.38,
+   15.38
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.52,
+  "y": 15.52,
+  "last": [
+   53.45,
+   15.45
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.59,
+  "y": 15.59,
+  "last": [
+   53.52,
+   15.52
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.66,
+  "y": 15.66,
+  "last": [
+   53.59,
+   15.59
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.73,
+  "y": 15.73,
+  "last": [
+   53.66,
+   15.66
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.8,
+  "y": 15.8,
+  "last": [
+   53.73,
+   15.73
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.87,
+  "y": 15.87,
+  "last": [
+   53.8,
+   15.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.94,
+  "y": 15.94,
+  "last": [
+   53.87,
+   15.87
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.01,
+  "y": 16.01,
+  "last": [
+   53.94,
+   15.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.08,
+  "y": 16.08,
+  "last": [
+   54.01,
+   16.01
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.15,
+  "y": 16.15,
+  "last": [
+   54.08,
+   16.08
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.23,
+  "y": 16.23,
+  "last": [
+   54.15,
+   16.15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.3,
+  "y": 16.3,
+  "last": [
+   54.23,
+   16.23
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.37,
+  "y": 16.37,
+  "last": [
+   54.3,
+   16.3
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.44,
+  "y": 16.44,
+  "last": [
+   54.37,
+   16.37
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.51,
+  "y": 16.51,
+  "last": [
+   54.44,
+   16.44
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.58,
+  "y": 16.58,
+  "last": [
+   54.51,
+   16.51
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.65,
+  "y": 16.65,
+  "last": [
+   54.58,
+   16.58
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.72,
+  "y": 16.72,
+  "last": [
+   54.65,
+   16.65
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.79,
+  "y": 16.79,
+  "last": [
+   54.72,
+   16.72
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.86,
+  "y": 16.86,
+  "last": [
+   54.79,
+   16.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.93,
+  "y": 16.93,
+  "last": [
+   54.86,
+   16.86
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55,
+  "y": 17,
+  "last": [
+   54.93,
+   16.93
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.07,
+  "y": 17.07,
+  "last": [
+   55,
+   17
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.14,
+  "y": 17.14,
+  "last": [
+   55.07,
+   17.07
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.22,
+  "y": 17.22,
+  "last": [
+   55.14,
+   17.14
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.29,
+  "y": 17.29,
+  "last": [
+   55.22,
+   17.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.36,
+  "y": 17.36,
+  "last": [
+   55.29,
+   17.29
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.43,
+  "y": 17.43,
+  "last": [
+   55.36,
+   17.36
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.5,
+  "y": 17.5,
+  "last": [
+   55.43,
+   17.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.57,
+  "y": 17.57,
+  "last": [
+   55.5,
+   17.5
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.64,
+  "y": 17.64,
+  "last": [
+   55.57,
+   17.57
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.71,
+  "y": 17.71,
+  "last": [
+   55.64,
+   17.64
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.78,
+  "y": 17.78,
+  "last": [
+   55.71,
+   17.71
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.85,
+  "y": 17.85,
+  "last": [
+   55.78,
+   17.78
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.92,
+  "y": 17.92,
+  "last": [
+   55.85,
+   17.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.99,
+  "y": 17.99,
+  "last": [
+   55.92,
+   17.92
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 56,
+  "y": 18,
+  "last": [
+   55.99,
+   17.99
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.93,
+  "y": 17.93,
+  "last": [
+   56,
+   18
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.86,
+  "y": 17.86,
+  "last": [
+   55.93,
+   17.93
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.79,
+  "y": 17.79,
+  "last": [
+   55.86,
+   17.86
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.72,
+  "y": 17.72,
+  "last": [
+   55.79,
+   17.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.65,
+  "y": 17.65,
+  "last": [
+   55.72,
+   17.72
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.58,
+  "y": 17.58,
+  "last": [
+   55.65,
+   17.65
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.51,
+  "y": 17.51,
+  "last": [
+   55.58,
+   17.58
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.43,
+  "y": 17.43,
+  "last": [
+   55.51,
+   17.51
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.36,
+  "y": 17.36,
+  "last": [
+   55.43,
+   17.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.29,
+  "y": 17.29,
+  "last": [
+   55.36,
+   17.36
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.22,
+  "y": 17.22,
+  "last": [
+   55.29,
+   17.29
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.15,
+  "y": 17.15,
+  "last": [
+   55.22,
+   17.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.08,
+  "y": 17.08,
+  "last": [
+   55.15,
+   17.15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 55.01,
+  "y": 17.01,
+  "last": [
+   55.08,
+   17.08
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.94,
+  "y": 16.94,
+  "last": [
+   55.01,
+   17.01
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.87,
+  "y": 16.87,
+  "last": [
+   54.94,
+   16.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.8,
+  "y": 16.8,
+  "last": [
+   54.87,
+   16.87
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.73,
+  "y": 16.73,
+  "last": [
+   54.8,
+   16.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.66,
+  "y": 16.66,
+  "last": [
+   54.73,
+   16.73
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.59,
+  "y": 16.59,
+  "last": [
+   54.66,
+   16.66
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.52,
+  "y": 16.52,
+  "last": [
+   54.59,
+   16.59
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.44,
+  "y": 16.44,
+  "last": [
+   54.52,
+   16.52
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.37,
+  "y": 16.37,
+  "last": [
+   54.44,
+   16.44
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.3,
+  "y": 16.3,
+  "last": [
+   54.37,
+   16.37
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.23,
+  "y": 16.23,
+  "last": [
+   54.3,
+   16.3
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.16,
+  "y": 16.16,
+  "last": [
+   54.23,
+   16.23
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.09,
+  "y": 16.09,
+  "last": [
+   54.16,
+   16.16
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 54.02,
+  "y": 16.02,
+  "last": [
+   54.09,
+   16.09
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.95,
+  "y": 15.95,
+  "last": [
+   54.02,
+   16.02
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.88,
+  "y": 15.88,
+  "last": [
+   53.95,
+   15.95
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.81,
+  "y": 15.81,
+  "last": [
+   53.88,
+   15.88
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.74,
+  "y": 15.74,
+  "last": [
+   53.81,
+   15.81
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.67,
+  "y": 15.67,
+  "last": [
+   53.74,
+   15.74
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.6,
+  "y": 15.6,
+  "last": [
+   53.67,
+   15.67
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.53,
+  "y": 15.53,
+  "last": [
+   53.6,
+   15.6
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.45,
+  "y": 15.45,
+  "last": [
+   53.53,
+   15.53
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.38,
+  "y": 15.38,
+  "last": [
+   53.45,
+   15.45
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.31,
+  "y": 15.31,
+  "last": [
+   53.38,
+   15.38
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.24,
+  "y": 15.24,
+  "last": [
+   53.31,
+   15.31
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.17,
+  "y": 15.17,
+  "last": [
+   53.24,
+   15.24
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.1,
+  "y": 15.1,
+  "last": [
+   53.17,
+   15.17
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53.03,
+  "y": 15.03,
+  "last": [
+   53.1,
+   15.1
+  ],
+  "kept": true
+ },
+ {
+  "why": "down and up Banyan Row's steps",
+  "map": "banyan_row",
+  "x": 53,
+  "y": 15,
+  "last": [
+   53.03,
+   15.03
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 47.04,
+  "y": 12,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 47.56,
+  "y": 12,
+  "last": [
+   47.04,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 48.08,
+  "y": 12,
+  "last": [
+   47.56,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 48.6,
+  "y": 12,
+  "last": [
+   48.08,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 49.12,
+  "y": 12.37,
+  "last": [
+   48.6,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 49.64,
+  "y": 14.3,
+  "last": [
+   49.12,
+   12.37
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 50.16,
+  "y": 15,
+  "last": [
+   49.64,
+   14.3
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 50.68,
+  "y": 15,
+  "last": [
+   50.16,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 51.2,
+  "y": 15,
+  "last": [
+   50.68,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 51.72,
+  "y": 15,
+  "last": [
+   51.2,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 52.24,
+  "y": 15,
+  "last": [
+   51.72,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 52.76,
+  "y": 15,
+  "last": [
+   52.24,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the end of Lychee Lane's lookout",
+  "map": "lychee_lane",
+  "x": 53.28,
+  "y": 15,
+  "last": [
+   52.76,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 6.04,
+  "y": 2,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 6.56,
+  "y": 0.82,
+  "last": [
+   6.04,
+   2
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 7.08,
+  "y": 2,
+  "last": [
+   6.56,
+   0.82
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 7.6,
+  "y": 0.95,
+  "last": [
+   7.08,
+   2
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 8.12,
+  "y": 1.33,
+  "last": [
+   7.6,
+   0.95
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 8.64,
+  "y": 2,
+  "last": [
+   8.12,
+   1.33
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 9.16,
+  "y": 0.82,
+  "last": [
+   8.64,
+   2
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 9.68,
+  "y": 2,
+  "last": [
+   9.16,
+   0.82
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 10.2,
+  "y": 0.95,
+  "last": [
+   9.68,
+   2
+  ],
+  "kept": true
+ },
+ {
+  "why": "hopping in the caf\u00e9 upstairs",
+  "map": "coffee_shop_floor_1",
+  "x": 10.72,
+  "y": 1.33,
+  "last": [
+   10.2,
+   0.95
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 10.05,
+  "y": 15,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 10.83,
+  "y": 13.22,
+  "last": [
+   10.05,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 11.86,
+  "y": 12.71,
+  "last": [
+   10.83,
+   13.22
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 12.9,
+  "y": 13.7,
+  "last": [
+   11.86,
+   12.71
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 13.94,
+  "y": 15,
+  "last": [
+   12.9,
+   13.7
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 14.98,
+  "y": 13.42,
+  "last": [
+   13.94,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 16.02,
+  "y": 12.7,
+  "last": [
+   14.98,
+   13.42
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 17.06,
+  "y": 13.42,
+  "last": [
+   16.02,
+   12.7
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 18.1,
+  "y": 15,
+  "last": [
+   17.06,
+   13.42
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 19.14,
+  "y": 13.67,
+  "last": [
+   18.1,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 20.18,
+  "y": 12.73,
+  "last": [
+   19.14,
+   13.67
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 21.22,
+  "y": 13.18,
+  "last": [
+   20.18,
+   12.73
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 22.26,
+  "y": 15,
+  "last": [
+   21.22,
+   13.18
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 23.3,
+  "y": 13.95,
+  "last": [
+   22.26,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 24.34,
+  "y": 12.8,
+  "last": [
+   23.3,
+   13.95
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 25.38,
+  "y": 12.99,
+  "last": [
+   24.34,
+   12.8
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 26.42,
+  "y": 14.81,
+  "last": [
+   25.38,
+   12.99
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 27.46,
+  "y": 14.26,
+  "last": [
+   26.42,
+   14.81
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 28.5,
+  "y": 12.9,
+  "last": [
+   27.46,
+   14.26
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 29.54,
+  "y": 12.85,
+  "last": [
+   28.5,
+   12.9
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 30.58,
+  "y": 14.39,
+  "last": [
+   29.54,
+   12.85
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 31.62,
+  "y": 14.61,
+  "last": [
+   30.58,
+   14.39
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 32.66,
+  "y": 13.04,
+  "last": [
+   31.62,
+   14.61
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 33.7,
+  "y": 12.76,
+  "last": [
+   32.66,
+   13.04
+  ],
+  "kept": true
+ },
+ {
+  "why": "jumping along the High Street",
+  "map": "high_street",
+  "x": 34.74,
+  "y": 14.02,
+  "last": [
+   33.7,
+   12.76
+  ],
+  "kept": true
+ },
+ {
+  "why": "in the ground",
+  "map": "high_street",
+  "x": 20,
+  "y": 17,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "high above any jump",
+  "map": "high_street",
+  "x": 20,
+  "y": 4,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "high above any jump, rising from the street",
+  "map": "high_street",
+  "x": 20,
+  "y": 4,
+  "last": [
+   20,
+   15
+  ],
+  "kept": false
+ },
+ {
+  "why": "off the map",
+  "map": "high_street",
+  "x": -3,
+  "y": 15,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "off the map",
+  "map": "house_6_floor_0",
+  "x": 103,
+  "y": 2,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in a wall",
+  "map": "house_1_floor_0",
+  "x": 0,
+  "y": 1,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in a roof",
+  "map": "rooftops",
+  "x": 52,
+  "y": 4.6,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in the bridge's deck",
+  "map": "rooftops",
+  "x": 44,
+  "y": 9,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in the ground beside Banyan Row's top step",
+  "map": "banyan_row",
+  "x": 52.6,
+  "y": 15.8,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "a sideways jump out of a fall",
+  "map": "rooftops",
+  "x": 44,
+  "y": 11,
+  "last": [
+   58.2,
+   6.5
+  ],
+  "kept": false
+ },
+ {
+  "why": "a fall too far along from the last position",
+  "map": "rooftops",
+  "x": 25,
+  "y": 11,
+  "last": [
+   31,
+   10
+  ],
+  "kept": false
+ },
+ {
+  "why": "over nothing, past the map's end",
+  "map": "rooftops",
+  "x": 60.2,
+  "y": 10,
+  "last": null,
+  "kept": false
+ }
+]

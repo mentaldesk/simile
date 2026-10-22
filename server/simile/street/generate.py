@@ -13,7 +13,7 @@ PREVIEW = "preview.png"
 
 def generate(out: Path) -> list[Path]:
     """Write every street to out/, every floor to out/floors/, the marker tileset their tile
-    layers use, the player's jump, and a preview of the whole village."""
+    layers use, and a preview of the whole village."""
     plans = village()
     out.mkdir(parents=True, exist_ok=True)
     tileset = out / MARKERS_IMAGE

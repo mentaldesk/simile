@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { TiledMap } from '../world/map';
 import { village } from './content';
 import { BUFFER_SECONDS, COYOTE_SECONDS, JUMP_REACH, JUMP_RISE, JUMP_TABLE, JUMP_UP, landingRow } from './jump';
+import positions from '../../../server/tests/street/positions.json';
 import { CLIMB_KINDS, isSolid, isStanding, isWalkable, Village, type SideMap } from './maps';
 import { RUN_PACE, SidePlayer, type Controls } from './player';
+import { climbRuns, distanceTo, pointAlong } from './runs';
 import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 
 const DT = 1 / 60;
+/** server/simile/street/moves.py's `ON_THE_WAY`. */
+const ON_THE_WAY = 0.02;
 const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
 const press = (controls: Partial<Controls>): Controls => ({ ...idle, ...controls });
 
@@ -132,12 +136,12 @@ describe('jumping', () => {
     expect(5 - highest).toBeLessThanOrEqual(JUMP_TABLE.rise);
   });
 
-  it('falls from where a snapshot puts it in the air', () => {
-    const player = on(village.map('high_street')!, 20, 11.4);
-    player.update(idle, DT);
+  it.each([11.4, 14.6, 14.95])('falls from where a snapshot puts it in the air, %s rows down', (y) => {
+    const player = on(village.map('high_street')!, 20, y);
+    player.update(press({ x: 1 }), DT);
     expect(player.airborne).toBe(true);
     for (let t = 0; t < 2 && player.airborne; t += DT) player.update(idle, DT);
-    expect(player.position).toEqual({ x: 20, y: 15 });
+    expect(player.position.y).toBe(15);
   });
 
   it('goes further running than walking', () => {
@@ -257,10 +261,23 @@ describe('jumping', () => {
   });
 });
 
-/** server/simile/street/moves.py's `possible`: where the server keeps the player. */
-function possible(map: SideMap, x: number, y: number, last?: { x: number; y: number }): boolean {
+/** On the way from a cell to the next along a row, or up or down a flight or a ladder. */
+function between(map: SideMap, x: number, y: number): boolean {
+  const row = Math.round(y);
+  if (Math.abs(y - row) <= ON_THE_WAY && isWalkable(map, Math.floor(x), row) && isWalkable(map, Math.ceil(x), row)) {
+    return true;
+  }
+  const at = { x: 0, y: 0 };
+  return climbRuns(map).some(({ path }) => {
+    pointAlong(path, distanceTo(path, { x, y }), at);
+    return Math.hypot(at.x - x, at.y - y) <= ON_THE_WAY;
+  });
+}
+
+/** A copy of server/simile/street/moves.py's `possible`, checked against the same table of cases. */
+function possible(map: SideMap, x: number, y: number, last?: { x: number; y: number } | null): boolean {
   const [cx, cy] = [Math.floor(x + 0.5), Math.ceil(Math.round(y * 1e6) / 1e6)];
-  if (isWalkable(map, cx, cy)) return true;
+  if (isWalkable(map, cx, cy) || between(map, x, y)) return true;
   if (isSolid(map, cx, cy)) return false;
   let row = cy;
   while (row < map.height - 1 && !isSolid(map, cx, row + 1)) row++;
@@ -273,6 +290,15 @@ function possible(map: SideMap, x: number, y: number, last?: { x: number; y: num
   }
   return false;
 }
+
+describe("the server's rule", () => {
+  it.each(positions.map((c) => [c.why, c.map, c.x, c.y, c.last, c.kept] as const))(
+    '%s: %s at %s, %s after %o is kept: %s',
+    (_, map, x, y, last, kept) => {
+      expect(possible(village.map(map)!, x, y, last && { x: last[0], y: last[1] })).toBe(kept);
+    },
+  );
+});
 
 describe('on the rooftops', () => {
   const rooftops = village.map('rooftops')!;

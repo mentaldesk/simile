@@ -519,8 +519,7 @@ def banyan_row() -> tuple[Plan, list[Plan]]:
 
 
 def rooftop(plan: Plan, building_id: str, label: str, x: int, width: int, storeys: int) -> int:
-    """A building with a flat roof to walk on, along its top row. Returns the roof's standing
-    row."""
+    """A building with a flat roof to stand on along its top row; returns the row stood on."""
     scenery(plan, building_id, label, x, width, storeys)
     top = front(x, width, storeys).y
     plan.fill(x, top, width, 1)
@@ -528,10 +527,7 @@ def rooftop(plan: Plan, building_id: str, label: str, x: int, width: int, storey
 
 
 def rooftops() -> Plan:
-    """A lane behind Kapok Walk, and the roofs over it to jump across: up a ladder onto the
-    bakery, over a gap onto walkways up the alley to the print works, across two- and three-cell
-    gaps to the tea house and the laundry, over a rope bridge to the clock house's balcony, and
-    up its ladder to the roof. A fall lands in the lane."""
+    """A lane behind Kapok Walk, and roofs over it to jump across: content/street/README.md."""
     plan = street("rooftops", "The Rooftops", 60)
     plan.ladder((3, GROUND), 3)
     bakery = rooftop(plan, "bakery", "The bakery", 4, 6, 1)
@@ -542,16 +538,15 @@ def rooftops() -> Plan:
     rooftop(plan, "laundry", "The laundry", 34, 6, 2)
     plan.fill(40, roofs + 1, 8, 1)
     plan.piece("rope_bridge", 40, roofs, 8, 1)
-    top = rooftop(plan, "clock_house", "The clock house", 48, 7, 3)
-    plan.clear(48, top + 1, 1, 1)
     plan.fill(48, roofs + 1, 2, 1)
-    plan.ladder((48, roofs), roofs - top)
-    plan.piece("palm_tree", 12, GROUND - 6, 2, 7)
-    plan.piece("bench", 51, top, 2, 1)
-    plan.piece("plant", 54, top)
+    top = rooftop(plan, "clock_house", "The clock house", 50, 7, 3)
+    plan.ladder((49, roofs), roofs - top)
+    plan.piece("palm_tree", 31, GROUND - 6, 2, 7)
+    plan.piece("bench", 52, top, 2, 1)
+    plan.piece("plant", 56, top)
     plan.piece("bicycle", 22, GROUND)
-    plan.piece("bin", 31, GROUND)
-    for at in (33, 45, 57):
+    plan.piece("bin", 13, GROUND)
+    for at in (45, 58):
         plan.piece("lamp", at, GROUND - 2, 1, 3)
     return plan
 
@@ -566,7 +561,7 @@ def village() -> list[Plan]:
     join(high, 46, kapok, 32)
     join(high, 50, lychee, 17)
     join(high, 64, banyan, 24)
-    join(kapok, 0, roofs, 1)
+    join(kapok, 2, roofs, 1)
     plans = [high, lychee, kapok, banyan, roofs, *high_floors, *lychee_floors, *kapok_floors]
     plans += banyan_floors
     for plan in plans:

@@ -122,9 +122,9 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
 |---|--:|---|
 | `high_street` High Street | 84 | `maker_space` (2–17), `corner_shop` (19–24, a mural), `coffee_shop` (25–44, a mural) with `cafe_terrace` in front, `square` (45–64) with the fountain at 55–56, `terminal_1` at 60 and the doors to Kapok Walk (46), Lychee Lane (50) and Banyan Row (64), `noodle_bar` (65–81) |
 | `lychee_lane` Lychee Lane | 68 | `house_1` (2–8), `house_2` (9–15), the door to the High Street (17), `house_3` (19–25), `house_4` (26–32), `terminal_2` at the park gate (34), `park` (36–59) with a lookout up a ladder at 45, `tower` (61–66, a mural) |
-| `kapok_walk` Kapok Walk | 34 | a garden (1–8), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
+| `kapok_walk` Kapok Walk | 34 | a garden (1–8) with the lane to the Rooftops (2), `house_5` (9–15), `house_6` (16–22), `house_7` (23–29), the door to the High Street (32) |
 | `banyan_row` Banyan Row | 68 | `house_8` (2–8), `house_9` (9–15), `house_10` (16–22, a mural), the door to the High Street (24), `gallery` (26–43), `garden_flats` (45–50, a mural), then two stairs down from 53 to the river's promenade, row 18, with `terminal_3` at 60 |
-| `rooftops` The Rooftops | 60 | The door to Kapok Walk (1) on a back lane, a ladder (3) up onto the `bakery`'s roof (4–9, row 12), a gap, walkways up the alley (11–14, rows 12 and 10) in front of a `palm_tree`, the roofs of the `print_works` (15–21), the `tea_house` (24–30) and the `laundry` (34–39), all row 8, with gaps of two and three cells between them, a `rope_bridge` (40–47) to the `clock_house`'s balcony (48–49), and its ladder up to the roof (49–54, row 4) |
+| `rooftops` The Rooftops | 60 | The door to Kapok Walk (1) on a back lane, a ladder (3) up onto the `bakery`'s roof (4–9, row 12), a gap, walkways up the alley (11–14, rows 12 and 10), the roofs of the `print_works` (15–21), the `tea_house` (24–30) and the `laundry` (34–39), all row 8, with gaps of two and three cells between them, a `palm_tree` in the second, a `rope_bridge` (40–47) to a balcony (48–49), and a ladder (49) up to the `clock_house`'s roof (50–56, row 4) |
 
 | Building | Street | Width | Floors | Links between floors |
 |---|---|--:|---|---|

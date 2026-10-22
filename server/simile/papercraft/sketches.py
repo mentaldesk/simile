@@ -127,8 +127,7 @@ def ledge(length: float = 3.0, height: float = 0.6) -> Image.Image:
 
 
 def rope_bridge(length: float = 3.3, height: float = 1.25) -> Image.Image:
-    """A deck of planks under a rope handrail, with rope netting between them and a post at
-    each end, seen from the side. Its middle repeats to stretch it across a gap."""
+    """A plank deck under a rope handrail, netted, with a post at each end, to stretch."""
     s = Sheet(length, height, 200)
     deck, rail, mesh, thread = 0.12, 1.0, 0.42, 0.028
     for x in np.arange(0.0, length - 0.01, 0.2):

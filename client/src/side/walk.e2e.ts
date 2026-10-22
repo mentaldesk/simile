@@ -1,8 +1,4 @@
-// The player's walk through the side view in Chromium, by the keys (#325, #330, #331): into every building and out of
-// every exit on E, up and down every flight, ladder and lift on the arrows alone, a run along a street with Shift, jumps
-// over the rooftops' gaps with Space, and E at a terminal, the café counter and a resident. It serves the client itself
-// and drives the `?harness=side` scene.
-// Run `npx playwright install chromium` once, then `node src/side/walk.e2e.ts [--screens <dir>] [--real-time]`.
+// The player's walk through the side view in Chromium, by the keys: README.md's "The walk" says what and how to run it.
 import { chromium, type Page } from 'playwright';
 import { createServer } from 'vite';
 

@@ -53,13 +53,15 @@ def test_the_committed_maps_are_up_to_date(tmp_path: Path) -> None:
     assert generated(STREET_DIR) == names, stale
     for name in sorted(names):
         new, old = tmp_path / name, STREET_DIR / name
-        if new.suffix == ".tmj":
+        if new.suffix in (".tmj", ".json"):
             assert new.read_bytes() == old.read_bytes(), f"{name}: {stale}"
         elif new.suffix == ".png":
             with Image.open(new) as a, Image.open(old) as b:
                 assert (
                     a.size == b.size and a.convert("RGBA").tobytes() == b.convert("RGBA").tobytes()
                 ), f"{name}: {stale}"
+        elif new.is_file():
+            raise AssertionError(f"{name}: nothing compares it")
 
 
 def test_no_map_id_is_one_of_the_iso_villages() -> None:

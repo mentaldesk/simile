@@ -95,13 +95,15 @@ The Phaser-free halves are tested under vitest.
   (0.1); Space pressed up to `buffer_seconds` (0.12) before landing jumps again on landing. The
   player is `foot` (0.25) tiles wide either side and `body` (1.7) tall: their feet stand on a
   ledge's edge, walls stop them, a ceiling bumps their head, and they land on top of whatever is
-  solid under them, from any height, with no harm. The figure leaps with its run's frame in the air
-  (`dolls/sprite.ts`'s `leap`), placed so its toes are on the feet line, and lands with a squash
-  over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with height. The camera
-  stays at the height the jump left from, following only a fall below it (`steady`). A snapshot
-  that puts the player in the air lets them fall.
+  solid under them, from any height, with no harm. The figure leaps in its run frame furthest off
+  the ground (`dolls/sprite.ts`'s `leap`), placed so its lowest point is on the feet line, and
+  lands with a squash over `LANDING_SECONDS`; its shadow stays on the ground under it, fading with
+  height. The camera stays at the height the jump left from, following only a fall below it
+  (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
-  (`simile.street.moves.possible`, `docs/protocol.md`).
+  (`simile.street.moves.possible`, `docs/protocol.md`). `server/tests/street/positions.json` is a
+  table of the client's sends and places nobody could be that the server's tests and
+  `jump.test.ts`'s copy of the rule both check.
 
 ## The walk
 

@@ -26,8 +26,7 @@ export const RUN_PACE = 2;
 /** From a walk to a run, or back. */
 export const RUN_BLEND_SECONDS = 0.25;
 
-/** y negative up; `use` is E pressed since the last frame, `eTaken` E used by something in reach, `run` running
- * (Shift toggles it), `jump` Space pressed since the last frame and `hold` Space held. */
+/** y negative up; `use` and `jump` are E and Space pressed since the last frame, `hold` Space down. */
 export type Controls = {
   x: number;
   y: number;
@@ -155,11 +154,15 @@ export class SidePlayer {
     return PLAYER_SPEED * (1 + (RUN_PACE - 1) * this.run);
   }
 
-  /** E takes a door; up or down, once let go since arriving, the lift or the nearest flight or ladder that way; Space
-   * jumps. Walking stops at walls, stairs and ladders, and walks off a ledge. */
+  /** E takes a door; up or down, once let go since arriving, the lift or the nearest flight or ladder that way. */
   private walk(controls: Controls, dt: number): Link | undefined {
     const map = this.village.map(this.map);
     if (!map) return undefined;
+    if (Math.abs(this.position.y - Math.round(this.position.y)) > EPSILON) {
+      this.air = { vx: controls.x * this.speed, vy: 0, held: false };
+      this.walking = false;
+      return undefined;
+    }
     const ways = this.ways();
     const vertical: Press | undefined = this.armed && controls.y !== 0 ? (controls.y < 0 ? 'up' : 'down') : undefined;
     const way = (controls.use ? chosen(ways, 'use') : undefined) ?? (vertical && chosen(ways, vertical, controls.eTaken));

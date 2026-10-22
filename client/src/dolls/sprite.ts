@@ -11,8 +11,7 @@ export const LADDER_BOB = 0.015;
 export const LANDING_SQUASH = 0.1;
 
 /** A frame of a figure as drawn: mirrored to face left, raised by `bob` of its height and turned
- * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up, and squashed by `squash` of its
- * height. */
+ * `sway` degrees clockwise about its feet, or sitting on a seat `seat` metres up. */
 export type Shown = {
   pose: SpritePose;
   frame: string;
@@ -20,6 +19,7 @@ export type Shown = {
   bob: number;
   sway: number;
   seat: number;
+  /** Of its height, landing. */
   squash?: number;
 };
 

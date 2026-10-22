@@ -126,8 +126,7 @@ class TownMap:
     climbable: tuple[tuple[DoorKind | None, ...], ...] = ()
     """climbable[y][x] is `stairs` or `ladder` on a climbable cell, or None. Empty without any."""
     solids: tuple[tuple[bool, ...], ...] = ()
-    """solids[y][x] is True on ground, floors, walls and ledges. Empty on a map without a solid
-    layer."""
+    """solids[y][x] is True on ground, floors, walls and ledges. Empty without a solid layer."""
 
     def walkable(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and not self.blocked[y][x]
@@ -139,8 +138,7 @@ class TownMap:
         return self.climbable[y][x]
 
     def solid(self, x: int, y: int) -> bool:
-        """Ground, a floor, a wall or a ledge, or off the map. On a map without a solid layer,
-        anywhere nobody can walk."""
+        """Solid, or off the map; without a solid layer, anywhere nobody can walk."""
         if not (0 <= x < self.width and 0 <= y < self.height):
             return True
         return self.solids[y][x] if self.solids else self.blocked[y][x]

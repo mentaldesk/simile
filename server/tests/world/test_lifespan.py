@@ -118,10 +118,10 @@ def test_keeps_a_fall_from_the_clock_house_roof_but_not_a_sideways_jump_out_of_i
     app = create_app(make_package(WORLD_LIFESPAN))
 
     with TestClient(app):
-        falling = [(54, 4, "rooftops"), (55.4, 4.6, "rooftops"), (56.2, 6.5, "rooftops")]
+        falling = [(56, 4, "rooftops"), (57.4, 4.6, "rooftops"), (58.2, 6.5, "rooftops")]
         send_moves(app, *falling, (44, 11, "rooftops"))
 
-        assert movement_of(app).position(PLAYER_ID) == Point(56.2, 6.5, "rooftops")
+        assert movement_of(app).position(PLAYER_ID) == Point(58.2, 6.5, "rooftops")
     assert "Ignored a player_move to where nobody could be" in caplog.text
 
 

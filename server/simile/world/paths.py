@@ -38,7 +38,7 @@ class OnMap(Protocol):
 
 def steps(town: TownMap, cell: Cell, jumps: bool = False) -> Iterator[tuple[Cell, float]]:
     """Walkable neighbours and step costs, by the side view's neighbour rule,
-    `simile.street.moves`, with the player's jumps if `jumps`."""
+    `simile.street.moves`."""
     yield from moves(town, cell, jumps)
 
 
@@ -58,8 +58,7 @@ def path_length(path: Sequence[tuple[float, float]]) -> float:
 
 
 def nearby(town: TownMap, origin: Cell, jumps: bool = False) -> Iterator[tuple[Cell, int]]:
-    """Every walkable cell reachable from origin and how many steps away it is, nearest first,
-    jumping too if `jumps`."""
+    """Every walkable cell reachable from origin and how many steps away it is, nearest first."""
     if not town.walkable(*origin):
         return
     seen = {origin}
@@ -134,8 +133,7 @@ def find_route(
 ) -> list[Spot] | None:
     """The shortest walk from start to goal, both included, or None if there isn't one. Each door
     is an edge between its two tiles, so going through one is two spots on different maps. It
-    costs a step, or with `costs`, as long as crossing that link takes. With `jumps`, the player's
-    way, jumping too."""
+    costs a step, or with `costs`, as long as crossing that link takes."""
 
     def walkable(spot: Spot) -> bool:
         return spot.map in maps and maps[spot.map].walkable(spot.x, spot.y)

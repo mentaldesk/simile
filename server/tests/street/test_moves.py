@@ -1,5 +1,7 @@
+import json
 import math
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -8,7 +10,7 @@ from simile.sim import Clock, FakeWallClock, World
 from simile.street.jump import JUMP
 from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
 from simile.world import Movement, Outcome
-from simile.world.map import WALKING_SPEED, TownMap
+from simile.world.map import STREET_DIR, WALKING_SPEED, TownMap, load_maps
 from simile.world.paths import find_path, nearby, steps
 
 from .conftest import side_view
@@ -291,3 +293,22 @@ def test_a_fall_is_kept_only_within_a_jump_of_the_last_position_along_the_row() 
     assert possible(tower, 8.0, 5.0, (3.0, 4.0))
     assert not possible(tower, 20.0, 5.0, (3.0, 4.0))
     assert not possible(tower, 3.0 + JUMP.reach + 0.1, 5.0, (3.0, 4.0))
+
+
+POSITIONS = json.loads((Path(__file__).parent / "positions.json").read_text())
+"""The client's sends on several maps, and places nobody could be: `jump.test.ts` checks it too."""
+STREETS = load_maps(STREET_DIR)
+
+
+@pytest.mark.parametrize("case", POSITIONS, ids=lambda c: f"{c['why']} at {c['x']}, {c['y']}")
+def test_keeps_the_clients_sends_and_ignores_where_nobody_could_be(case: dict) -> None:
+    last = tuple(case["last"]) if case["last"] else None
+    assert possible(STREETS[case["map"]], case["x"], case["y"], last) is case["kept"]
+
+
+def test_keeps_a_climb_up_or_down_stairs_all_the_way() -> None:
+    banyan = STREETS["banyan_row"]
+    for i in range(61):
+        t = i / 20
+        assert possible(banyan, 53 + t, 15 + t, None), (53 + t, 15 + t)
+        assert possible(banyan, 53 + t + 0.01, 15 + t, None), (53 + t + 0.01, 15 + t)
