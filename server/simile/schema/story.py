@@ -35,7 +35,9 @@ class HowKnown(StrEnum):
 
 
 class Knower(Model):
-    """A resident who knows a fact, how they know it, and how willing they are to tell it."""
+    """A resident who knows a fact, how they know it, and how willing they are to tell it.
+    Whoever passes a fact on, by telling or gossip, sets the new knower's `tells_from` and
+    `cover`."""
 
     model_config = CHECKED
 
@@ -54,7 +56,8 @@ class Knower(Model):
 
 
 class Lead(Model):
-    """Where the trail goes next: someone to ask or somewhere to look, which turns up a fact."""
+    """Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It
+    closes once the journal has any entry about that fact, a lie included."""
 
     model_config = CHECKED
 
@@ -85,14 +88,19 @@ class Fact(Model):
     about: list[Id] = Field(
         description="Who it's about, even if those who know it couldn't name them."
     )
-    known_by: list[Knower] = Field(description="The residents who know it, each listed once.")
+    known_by: list[Knower] = Field(
+        description="The residents who know it, each listed once: the only record of who does. "
+        "Whoever passes it on adds a `told` knower with `learned_by`."
+    )
     found_in: Id | None = Field(
         default=None,
         description="The clue the player can find it in instead of being told, such as Aris's "
         "notes: the interactable's id. Null if only residents can tell it.",
     )
     leads: list[Lead] = Field(
-        default=[], description="Where learning it points the player next, never back to itself."
+        default=[],
+        description="Where learning it points the player next, never back to itself. Hearing a "
+        "lie about it opens none.",
     )
 
     @model_validator(mode="before")
@@ -104,6 +112,10 @@ class Fact(Model):
             if data.get("id") in _fields(data.get("leads"), "fact_id"):
                 raise ValueError("a fact doesn't lead to itself")
         return data
+
+    def learned_by(self, knower: Knower) -> None:
+        """Add `knower`, by assignment so the once-each check runs. Raises if they know it."""
+        self.known_by = [*self.known_by, knower]
 
 
 class Incident(Model):
@@ -123,7 +135,7 @@ class Incident(Model):
     night: Timestamp = Field(description="When they attacked her, in sim time.")
     facts: list[Fact] = Field(
         description="Who did it, why, who saw what and who knows what. Each has its own id, and "
-        "their leads go to one another."
+        "their leads go to one another. Their knowers grow as residents pass them on."
     )
 
     @model_validator(mode="before")
@@ -184,8 +196,8 @@ class JournalEntry(Model):
     )
     leads: list[Lead] = Field(
         default=[],
-        description="The leads it opened that are still open. Each stays until the player learns "
-        "its fact, from anyone.",
+        description="The leads it opened that are still open: its fact's leads, and none for a "
+        "lie. Each closes once any entry is about its fact, a lie included.",
     )
 
     @model_validator(mode="before")

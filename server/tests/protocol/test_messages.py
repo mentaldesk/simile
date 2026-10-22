@@ -183,7 +183,7 @@ FROM_THE_NOTES = JournalEntry(
     source=Source(kind=SourceKind.CLUE, id="aris_notes", name="Aris's notes"),
     learned=datetime(2026, 3, 14, 10, 5, tzinfo=UTC),
     flushed=None,
-    leads=[Lead(fact_id="motive", text="Who's R.? Marguerite knows everyone's business.")],
+    leads=[Lead(fact_id="motive", text="Who's R.? Mirela knows everyone's business.")],
 )
 FROM_RAYMOND = JournalEntry(
     fact_id="attack",
@@ -711,7 +711,7 @@ def test_the_journal_has_every_entry_in_the_order_learned_with_its_open_leads() 
                 "learned": "2026-03-14T10:05:00Z",
                 "flushed": None,
                 "leads": [
-                    {"fact_id": "motive", "text": "Who's R.? Marguerite knows everyone's business."}
+                    {"fact_id": "motive", "text": "Who's R.? Mirela knows everyone's business."}
                 ],
             },
             {

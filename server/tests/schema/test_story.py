@@ -108,9 +108,17 @@ def test_the_journal_follows_the_trail_of_the_one_attacker_incident() -> None:
         else:
             knower = next(knower for knower in fact.known_by if knower.id == entry.source.id)
             assert knower.cover if entry.flushed else knower.tells_from is not None
-        assert all(lead in fact.leads for lead in entry.leads)
-        for lead in fact.leads:
-            assert (lead in entry.leads) is not (lead.fact_id in learned)
+        still_open = [lead for lead in fact.leads if lead.fact_id not in learned]
+        assert entry.leads == ([] if entry.flushed else still_open)
+
+
+def test_a_lie_opens_no_leads_but_closes_those_to_its_fact() -> None:
+    motive = Fact.model_validate(MOTIVE)
+
+    assert (FROM_RAYMOND["fact_id"], FROM_RAYMOND["flushed"]) == ("motive", True)
+    assert motive.leads and FROM_RAYMOND["leads"] == []
+    assert [lead["fact_id"] for lead in NOTES["leads"]] == ["motive", "shouting"]
+    assert FROM_NOTES["leads"] == []
 
 
 def test_a_clue_never_flushes_and_a_resident_without_the_eye_is_unread() -> None:
@@ -234,6 +242,28 @@ def test_rejects_invalid_changes_to_a_fact(field: str, value: Any, match: str) -
     changes(Fact.model_validate(LANE), field, value, match)
 
 
+def test_a_resident_told_a_fact_is_added_as_a_knower_of_it() -> None:
+    fact = Fact.model_validate(LANE)
+    seeded = fact.known_by
+    told = Knower(id="mirela", how=HowKnown.TOLD, tells_from=0.6, cover=None)
+
+    fact.learned_by(told)
+
+    assert [knower.id for knower in fact.known_by] == ["kofi", "mirela"]
+    assert fact.known_by[-1] == told
+    assert fact.known_by is not seeded and len(seeded) == 1
+
+
+def test_a_resident_who_already_knows_it_is_rejected_and_the_fact_is_unchanged() -> None:
+    fact = Fact.model_validate(LANE)
+    before = fact.model_dump()
+
+    with pytest.raises(ValidationError, match="each resident knows it once"):
+        fact.learned_by(Knower(id="kofi", how=HowKnown.TOLD, tells_from=0, cover=None))
+
+    assert fact.model_dump() == before
+
+
 def test_rejects_invalid_changes_to_a_knower() -> None:
     changes(Knower.model_validate(LANE["known_by"][0]), "tells_from", 1.5, "less than or equal")
 
@@ -243,7 +273,7 @@ def test_rejects_invalid_changes_to_a_knower() -> None:
     [
         (FROM_NOTES, "flushed", True, "only a resident can flush"),
         (FROM_KOFI, "source", FROM_NOTES["source"], "only a resident can flush"),
-        (FROM_NOTES, "fact_id", "motive", "go to other facts"),
+        (FROM_KOFI, "fact_id", "attack", "go to other facts"),
         (FROM_KOFI, "text", "", "at least 1 character"),
     ],
 )
@@ -254,7 +284,7 @@ def test_rejects_invalid_changes_to_a_journal_entry(
 
 
 def test_a_valid_change_is_kept() -> None:
-    entry = JournalEntry.model_validate(FROM_NOTES)
+    entry = JournalEntry.model_validate(FROM_KOFI)
     entry.leads = []
     incident = Incident.model_validate(THREE_ATTACKERS)
     incident.attackers = ["henrietta", "priya"]
@@ -271,7 +301,7 @@ def test_a_valid_change_is_kept() -> None:
 SEEDED = Memory(
     owner="kofi",
     kind=MemoryKind.OBSERVATION,
-    content="I was painting in the lane when a big man in a long coat ran past, holding his arm.",
+    content="I was painting in the lane when a man in a red top and sunglasses ran past.",
     salience=0.8,
     valence=-0.6,
     timestamp=datetime(2026, 3, 6, 23, 50, tzinfo=UTC),

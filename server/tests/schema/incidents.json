@@ -25,7 +25,7 @@
         "about": ["raymond", "aris"],
         "known_by": [
           {"id": "raymond", "how": "did", "tells_from": null, "cover": "Aris and I always got on fine."},
-          {"id": "marguerite", "how": "told", "tells_from": 0.5, "cover": null}
+          {"id": "mirela", "how": "witnessed", "tells_from": 0.5, "cover": null}
         ],
         "found_in": null,
         "leads": [
@@ -44,14 +44,14 @@
       },
       {
         "id": "lane",
-        "what": "Kofi was painting the wall at the end of the lane and saw a big man in a long coat run from the maker space, holding his arm.",
+        "what": "Kofi was painting the wall at the end of the lane and saw a grey-haired man in a red top and sunglasses run from the maker space, holding his arm.",
         "when": "2026-03-06T23:50:00Z",
         "where": "high_street",
         "about": ["raymond"],
         "known_by": [{"id": "kofi", "how": "witnessed", "tells_from": 0.3, "cover": null}],
         "found_in": null,
         "leads": [
-          {"fact_id": "attack", "text": "A big man in a long coat, holding his arm. Raymond wears a coat like that: ask him where he was."}
+          {"fact_id": "attack", "text": "Grey hair, a red top and sunglasses at midnight. Raymond dresses like that: ask him where he was."}
         ]
       },
       {
@@ -63,7 +63,7 @@
         "known_by": [],
         "found_in": "aris_notes",
         "leads": [
-          {"fact_id": "motive", "text": "Who's R., and which machines? Marguerite knows everyone's business: ask her."},
+          {"fact_id": "motive", "text": "Who's R., and which machines? Mirela knows everyone's business: ask her at the Daily Grind."},
           {"fact_id": "shouting", "text": "Tobias walks the high street late. Ask him about that night."}
         ]
       }
@@ -82,8 +82,44 @@
         "where": "maker_space",
         "about": ["aris", "henrietta", "raymond", "priya"],
         "known_by": [
-          {"id": "henrietta", "how": "did", "tells_from": null, "cover": "I was in bed by ten, as I always am."},
-          {"id": "raymond", "how": "did", "tells_from": null, "cover": "I was at home going over the accounts all night."},
+          {"id": "henrietta", "how": "did", "tells_from": null, "cover": "Vandals from the city, I expect. It's always them."},
+          {"id": "raymond", "how": "did", "tells_from": null, "cover": "Terrible business. I don't know a thing about it."},
+          {"id": "priya", "how": "did", "tells_from": 0.9, "cover": "Nothing to do with me, love."}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "henrietta_there",
+        "what": "Henrietta was in the lane behind the maker space when Aris was attacked, not at home in bed.",
+        "when": "2026-03-06T23:30:00Z",
+        "where": "maker_space",
+        "about": ["henrietta", "aris"],
+        "known_by": [
+          {"id": "henrietta", "how": "did", "tells_from": null, "cover": "I was in bed by ten, as I always am."}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "raymond_there",
+        "what": "Raymond was in the lane behind the maker space when Aris was attacked, not at home with his accounts.",
+        "when": "2026-03-06T23:30:00Z",
+        "where": "maker_space",
+        "about": ["raymond", "aris"],
+        "known_by": [
+          {"id": "raymond", "how": "did", "tells_from": null, "cover": "I was at home going over the accounts all night."}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "priya_there",
+        "what": "Priya was in the lane behind the maker space when Aris was attacked, not behind her bar.",
+        "when": "2026-03-06T23:30:00Z",
+        "where": "maker_space",
+        "about": ["priya", "aris"],
+        "known_by": [
           {"id": "priya", "how": "did", "tells_from": 0.9, "cover": "I was behind the bar till two. Ask anyone."}
         ],
         "found_in": null,
@@ -98,7 +134,9 @@
         "known_by": [{"id": "lachlan", "how": "witnessed", "tells_from": 0.6, "cover": null}],
         "found_in": null,
         "leads": [
-          {"fact_id": "attack", "text": "Henrietta, Raymond and Priya were planning something. Ask each of them where they were that night."}
+          {"fact_id": "henrietta_there", "text": "Henrietta was at the meeting. Ask her where she was that night."},
+          {"fact_id": "raymond_there", "text": "Raymond was at the meeting. Ask him where he was that night."},
+          {"fact_id": "priya_there", "text": "Priya was at the meeting. Ask her where she was that night."}
         ]
       },
       {
@@ -124,7 +162,7 @@
           {"id": "mirela", "how": "told", "tells_from": 0.7, "cover": null}
         ],
         "found_in": null,
-        "leads": [{"fact_id": "attack", "text": "Priya cut her hand that night. Ask her how."}]
+        "leads": [{"fact_id": "priya_there", "text": "Priya cut her hand that night. Ask her where she was."}]
       }
     ]
   }

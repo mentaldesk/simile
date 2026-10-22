@@ -252,7 +252,7 @@ opens the journal. Clients that predate it ignore it.
 | `source` | `Source` | Who told them, or the clue they found it in. |
 | `learned` | string | When, in sim time. |
 | `flushed` | boolean or `null` | Whether the infrared eye saw the resident flush as they told it. The eye shows a flush exactly on a lie, as the code decides it, so `true` is a lie it caught and `false` the truth. `null` if the player had no infrared eye then, and always for a clue. |
-| `leads` | `Lead[]` | The leads it opened that are still open. Each goes once the player learns its fact, from anyone. |
+| `leads` | `Lead[]` | The leads it opened that are still open: its fact's leads, and none for a lie. |
 
 A `Source` has its `kind`, `"resident"` if a resident told them or `"clue"` if they found it (in
 Aris's notes, at a terminal or in the sewers); its `id`, the resident's or the clue's
@@ -260,6 +260,14 @@ interactable's; and its `name`, as the journal shows it.
 
 A `Lead` has its `fact_id`, the fact that following it turns up, and its `text`, what to follow up:
 "Kofi paints in the lane at night. Ask him what he saw."
+
+Two rules decide which leads are open:
+
+- **A lie opens no leads.** Its entry is about the fact it hides, and that fact's leads would give
+  the truth away.
+- **Any entry about a fact closes the leads to it, a lie included.** Asking Raymond where he was
+  follows the lead whatever he says. The journal doesn't record which entries are lies (`flushed`
+  shows only what the eye saw), so this is the only rule the server can apply after a restart.
 
 The incident and its facts (F2's `Incident` and `Fact`) stay on the server: who did it, why, who
 knows what and who lies about it are never sent. The client sees only what the player has learned.

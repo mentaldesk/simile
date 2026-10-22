@@ -59,7 +59,7 @@ def test_capture_takes_a_copy_of_the_investigation() -> None:
     assert investigation.incident is not None
 
     investigation.incident.attackers.append("priya")
-    investigation.journal[0].leads.clear()
+    investigation.journal[2].leads.clear()
     investigation.journal.clear()
 
     assert world.investigation == UNDERWAY
@@ -106,10 +106,10 @@ async def test_an_investigation_taken_before_startup_is_the_one_restored_and_sav
     async def follow_a_lead(app: Starlette) -> None:
         assert investigation_of(app) is early
         assert early == UNDERWAY
-        early.journal[0].leads = []
+        early.journal[2].leads = []
 
     await run_village(timedelta(minutes=1), app=app, after=follow_a_lead)
-    assert saved(database).investigation.journal[0].leads == []
+    assert saved(database).investigation.journal[2].leads == []
 
 
 @pytest.mark.anyio

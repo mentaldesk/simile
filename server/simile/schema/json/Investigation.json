@@ -39,7 +39,7 @@
           "type": "array"
         },
         "known_by": {
-          "description": "The residents who know it, each listed once.",
+          "description": "The residents who know it, each listed once: the only record of who does. Whoever passes it on adds a `told` knower with `learned_by`.",
           "items": {
             "$ref": "#/$defs/Knower"
           },
@@ -63,7 +63,7 @@
         },
         "leads": {
           "default": [],
-          "description": "Where learning it points the player next, never back to itself.",
+          "description": "Where learning it points the player next, never back to itself. Hearing a lie about it opens none.",
           "items": {
             "$ref": "#/$defs/Lead"
           },
@@ -131,7 +131,7 @@
           "type": "string"
         },
         "facts": {
-          "description": "Who did it, why, who saw what and who knows what. Each has its own id, and their leads go to one another.",
+          "description": "Who did it, why, who saw what and who knows what. Each has its own id, and their leads go to one another. Their knowers grow as residents pass them on.",
           "items": {
             "$ref": "#/$defs/Fact"
           },
@@ -190,7 +190,7 @@
         },
         "leads": {
           "default": [],
-          "description": "The leads it opened that are still open. Each stays until the player learns its fact, from anyone.",
+          "description": "The leads it opened that are still open: its fact's leads, and none for a lie. Each closes once any entry is about its fact, a lie included.",
           "items": {
             "$ref": "#/$defs/Lead"
           },
@@ -211,7 +211,7 @@
     },
     "Knower": {
       "additionalProperties": false,
-      "description": "A resident who knows a fact, how they know it, and how willing they are to tell it.",
+      "description": "A resident who knows a fact, how they know it, and how willing they are to tell it.\nWhoever passes a fact on, by telling or gossip, sets the new knower's `tells_from` and\n`cover`.",
       "properties": {
         "id": {
           "description": "The resident.",
@@ -262,7 +262,7 @@
     },
     "Lead": {
       "additionalProperties": false,
-      "description": "Where the trail goes next: someone to ask or somewhere to look, which turns up a fact.",
+      "description": "Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It\ncloses once the journal has any entry about that fact, a lie included.",
       "properties": {
         "fact_id": {
           "description": "The fact following it turns up.",

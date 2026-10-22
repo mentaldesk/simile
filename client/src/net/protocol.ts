@@ -466,7 +466,7 @@ export interface JournalEntry {
    */
   flushed: boolean | null;
   /**
-   * The leads it opened that are still open. Each stays until the player learns its fact, from anyone.
+   * The leads it opened that are still open: its fact's leads, and none for a lie. Each closes once any entry is about its fact, a lie included.
    */
   leads: Lead[];
 }
@@ -485,7 +485,8 @@ export interface Source {
   name: string;
 }
 /**
- * Where the trail goes next: someone to ask or somewhere to look, which turns up a fact.
+ * Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It
+ * closes once the journal has any entry about that fact, a lie included.
  */
 export interface Lead {
   /**
