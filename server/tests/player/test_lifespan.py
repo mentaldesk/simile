@@ -1,6 +1,5 @@
 import time
 from collections.abc import Callable
-from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -13,18 +12,9 @@ from simile.economy import PLAYER, Kind
 from simile.economy.economy import economy_of
 from simile.persistence import player_of
 from simile.player.config import SALVAGE
-from simile.schema import (
-    PLAYER_ID,
-    Item,
-    ItemKind,
-    Location,
-    LocationKind,
-    Tile,
-    TileArea,
-)
+from simile.schema import PLAYER_ID, Item, ItemKind
 from simile.sim import Clock, World, world_of
-from simile.world import Movement, Point, movement_of
-from simile.world.map import Pickup, PickupKind, load_maps
+from simile.world import Point, movement_of
 
 MakePackage = Callable[[dict[str, str]], str]
 
@@ -159,41 +149,21 @@ def test_starving_wakes_them_at_home_and_they_pick_up_what_they_left(
     assert "left" not in picked_up["player"]
 
 
-def with_salvage_and_a_stall(app: Starlette) -> None:
-    maps = load_maps()
-    street = maps["kapok_walk"]
-    stall = Location(
-        id="scrap_stall",
-        name="The scrap trader's stall",
-        kind=LocationKind.AMENITY,
-        map="kapok_walk",
-        area=TileArea(x=14, y=13, width=5, height=3),
-        entry=Tile(x=18, y=15),
-    )
-    lying = (
-        Pickup("metro_salvage_1", PickupKind.SALVAGE, "kapok_walk", 26, 15),
-        Pickup("metro_secret_stairwell", PickupKind.SECRET, "kapok_walk", 30, 15, money=25),
-    )
-    street = replace(street, locations=(*street.locations, stall), pickups=lying)
-    app.state.movement = Movement(maps | {"kapok_walk": street}, world_of(app).bus)
-
-
-def test_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
+def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
-    with_salvage_and_a_stall(app)
     wire = SALVAGE["metro_salvage_1"].item.model_dump(mode="json")
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         greeted = next_of(ws, "player_state")
-        move(client, app, ws, 26, 15, "kapok_walk")
+        move(client, app, ws, 38, 12, "metro")
         ws.send_json({"type": "pick_up"})
         salvaged = next_of(ws, "player_state")
-        move(client, app, ws, 30, 15, "kapok_walk")
+        move(client, app, ws, 52, 10, "metro")
         ws.send_json({"type": "pick_up"})
         found = next_of(ws, "player_state")
-        move(client, app, ws, 16, 15, "kapok_walk")
+        move(client, app, ws, 26, 15, "metro")
         client.portal.call(world_of(app).loop.tick)
         at_the_stall = next_of(ws, "player_state")
         ws.send_json({"type": "sell", "item": None})
@@ -201,23 +171,21 @@ def test_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_stall(
         economy = economy_of(app)
         ledger = economy.ledger
 
-    assert greeted["piles"] == [
-        {"at": {"map": "kapok_walk", "x": 26, "y": 15}, "items": [wire]},
-        {"at": {"map": "kapok_walk", "x": 30, "y": 15}, "items": [], "money": 25.0},
-    ]
+    assert len(greeted["piles"]) == 9
+    assert {"at": {"map": "metro", "x": 38, "y": 12}, "items": [wire]} in greeted["piles"]
     assert salvaged["player"]["items"][1:] == [wire]
     assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
-    assert len(salvaged["piles"]) == 1
-    assert found["player"]["money"] == 25
-    assert "piles" not in found
+    assert len(salvaged["piles"]) == 8
+    assert found["player"]["money"] == 40
+    assert len(found["piles"]) == 7
     assert at_the_stall["buyer"] == {
         "place": "scrap_stall",
         "name": "The scrap trader's stall",
         "prices": {"copper_wire": 6.0},
     }
     assert [item["id"] for item in sold["player"]["items"]] == ["lamp"]
-    assert sold["player"]["money"] == 31
+    assert sold["player"]["money"] == 46
     assert sold["buyer"]["prices"] == {}
     assert [entry.kind for entry in ledger.entries] == [Kind.FOUND, Kind.SALVAGE]
-    assert ledger.net(PLAYER) == 31
+    assert ledger.net(PLAYER) == 46
     assert ledger.gap(economy.money) == pytest.approx(0)

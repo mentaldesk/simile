@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
@@ -13,7 +14,7 @@ from simile.player.pickups import Pickups
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
-from simile.world.map import Pickup, PickupKind, load_maps
+from simile.world.map import Pickup, PickupKind, TownMap, load_maps
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
@@ -30,7 +31,9 @@ LYING = (
     Pickup("metro_secret_cache", PickupKind.SECRET, "kapok_walk", 60, 15, 40, RATION),
 )
 MAPS = load_maps()
-WITH_PICKUPS = MAPS | {"kapok_walk": replace(MAPS["kapok_walk"], pickups=LYING)}
+WITH_PICKUPS = {
+    id: replace(town, pickups=LYING if id == "kapok_walk" else ()) for id, town in MAPS.items()
+}
 
 
 def at(x: int, *items: Item, money: float = 0) -> Pile:
@@ -38,10 +41,10 @@ def at(x: int, *items: Item, money: float = 0) -> Pile:
 
 
 class Tunnels:
-    def __init__(self, player: Player | None = None) -> None:
+    def __init__(self, player: Player | None = None, maps: Mapping[str, TownMap] = WITH_PICKUPS):
         world = World(Clock(NOW), FakeWallClock())
         self.clock = world.clock
-        self.movement = Movement(WITH_PICKUPS, world.bus)
+        self.movement = Movement(maps, world.bus)
         npcs = load_npcs()[:2]
         behaviour = Behaviour(
             world.clock, world.bus, self.movement, npcs, MemoryStore(":memory:"), seed=0
@@ -51,8 +54,8 @@ class Tunnels:
         self.economy = Economy(world.clock, behaviour, player=self.player)
         self.pickups = Pickups(self.player, self.movement, self.economy, world.clock)
 
-    def stand(self, x: float, map: str = "kapok_walk") -> None:
-        self.movement.track(PLAYER_ID, Point(x, 15, map))
+    def stand(self, x: float, map: str = "kapok_walk", y: float = 15) -> None:
+        self.movement.track(PLAYER_ID, Point(x, y, map))
 
     def balanced(self) -> bool:
         ledger = self.economy.ledger
@@ -192,6 +195,56 @@ def test_the_nearest_pile_in_reach_is_picked_up_first() -> None:
     assert tunnels.player.taken == {}
     assert tunnels.pickups.pick_up()
     assert tunnels.player.items == [lamp(), BUN, WIRE]
+
+
+def test_every_salvage_pickup_on_the_maps_has_something_set_to_lie_there() -> None:
+    on_maps = {
+        pickup.id
+        for town in MAPS.values()
+        for pickup in town.pickups
+        if pickup.kind is PickupKind.SALVAGE
+    }
+
+    assert on_maps == set(SALVAGE)
+
+
+def test_the_metros_salvage_and_secrets_lie_where_s3_put_them() -> None:
+    lying = {(pile.at.x, pile.at.y): pile for pile in Tunnels(maps=MAPS).pickups.piles()}
+
+    assert {pile.at.map for pile in lying.values()} == {"metro"}
+    assert sorted(lying) == [
+        (8, 7),
+        (38, 12),
+        (52, 10),
+        (63, 15),
+        (68, 15),
+        (77, 12),
+        (83, 15),
+        (86, 8),
+        (108, 12),
+    ]
+    salvage = [
+        lying[cell].items for cell in ((38, 12), (63, 15), (68, 15), (77, 12), (83, 15), (108, 12))
+    ]
+    assert salvage == [[SALVAGE[f"metro_salvage_{n}"].item] for n in range(1, 7)]
+    assert sum(item.weight for items in salvage for item in items) == 12.5
+    assert (lying[8, 7].money, lying[52, 10].money) == (25, 40)
+    assert lying[86, 8].items == [RATION]
+
+
+def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_catwalk() -> None:
+    tunnels = Tunnels(maps=MAPS)
+
+    tunnels.stand(38.3, "metro", 12)
+    assert tunnels.pickups.pick_up()
+    tunnels.stand(52, "metro", 10)
+    assert tunnels.pickups.pick_up()
+
+    assert tunnels.player.items == [lamp(), WIRE]
+    assert tunnels.player.money == 40
+    assert tunnels.player.taken == {"metro_salvage_1": NOW, "metro_secret_catwalk": NOW}
+    assert len(tunnels.pickups.piles()) == 7
+    assert tunnels.balanced()
 
 
 def test_salvage_nothing_is_set_to_lie_at_is_left_out() -> None:

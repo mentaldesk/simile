@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -12,17 +11,7 @@ from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE
 from simile.player.trade import Trade
 from simile.protocol import Buyer
-from simile.schema import (
-    PLAYER_ID,
-    Item,
-    ItemKind,
-    Location,
-    LocationKind,
-    Player,
-    Tile,
-    TileArea,
-    lamp,
-)
+from simile.schema import PLAYER_ID, Item, ItemKind, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -33,28 +22,17 @@ BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
 ODD = Item(id="odd_bolt", kind=ItemKind.SALVAGE, name="Odd bolt", weight=0.1)
 
 
-def place(id: str, name: str, x: int) -> Location:
-    area = TileArea(x=x, y=13, width=5, height=3)
-    return Location(
-        id=id,
-        name=name,
-        kind=LocationKind.AMENITY,
-        map="kapok_walk",
-        area=area,
-        entry=Tile(x=x, y=15),
-    )
-
-
 MAPS = load_maps()
-STREET = MAPS["kapok_walk"]
-STALLS = (place("scrap_stall", "The scrap trader's stall", 20), place("clinic", "The Clinic", 40))
-WITH_STALLS = MAPS | {"kapok_walk": replace(STREET, locations=(*STREET.locations, *STALLS))}
+STALL = Point(26, 15, "metro")
+"""The scrap trader's spot, by their stall on the metro's platform."""
+CLINIC = Point(6, 2, "clinic_floor_0")
+"""The doctor's spot in the clinic."""
 
 
 class Platform:
     def __init__(self, player: Player) -> None:
         world = World(Clock(NOW), FakeWallClock())
-        self.movement = Movement(WITH_STALLS, world.bus)
+        self.movement = Movement(MAPS, world.bus)
         behaviour = Behaviour(
             world.clock,
             world.bus,
@@ -68,8 +46,8 @@ class Platform:
         self.economy = Economy(world.clock, behaviour, player=player)
         self.trade = Trade(player, self.movement, self.economy, world.clock)
 
-    def stand(self, x: float) -> None:
-        self.movement.track(PLAYER_ID, Point(x, 15, "kapok_walk"))
+    def stand(self, at: Point) -> None:
+        self.movement.track(PLAYER_ID, at)
 
     def balanced(self) -> bool:
         ledger = self.economy.ledger
@@ -85,7 +63,7 @@ def test_every_salvage_lying_about_has_a_price() -> None:
 
 def test_the_scrap_trader_offers_the_economys_price_for_the_salvage_they_carry() -> None:
     platform = Platform(Player(items=[lamp(), WIRE, BUN, STEEL, WIRE, ODD]))
-    platform.stand(22)
+    platform.stand(STALL)
 
     assert platform.trade.buyer() == Buyer(
         place="scrap_stall",
@@ -96,7 +74,7 @@ def test_the_scrap_trader_offers_the_economys_price_for_the_salvage_they_carry()
 
 def test_a_buyer_with_nothing_to_buy_still_says_it_buys() -> None:
     platform = Platform(Player())
-    platform.stand(42)
+    platform.stand(CLINIC)
 
     assert platform.trade.buyer() == Buyer(place="clinic", name="The Clinic", prices={})
 
@@ -105,18 +83,24 @@ def test_no_buyer_anywhere_else() -> None:
     platform = Platform(Player(items=[WIRE]))
 
     assert platform.trade.buyer() is None
-    platform.stand(30)
+    platform.stand(Point(40, 15, "metro"))
+    assert platform.trade.buyer() is None
+    platform.stand(Point(12, 15, "kapok_walk"))
     assert platform.trade.buyer() is None
     assert not platform.trade.sell(None)
     assert platform.player.items == [WIRE]
 
 
-@pytest.mark.parametrize("x", [21, 41], ids=["scrap_stall", "clinic"])
-def test_selling_everything_it_buys_pays_its_prices_through_the_ledger(x: float) -> None:
+@pytest.mark.parametrize(
+    ("at", "place"),
+    [(STALL, "scrap_stall"), (Point(24, 15, "metro"), "scrap_stall"), (CLINIC, "clinic")],
+    ids=["by_the_stall", "at_its_end", "clinic"],
+)
+def test_selling_everything_it_buys_pays_its_prices_through_the_ledger(
+    at: Point, place: str
+) -> None:
     platform = Platform(Player(money=3, items=[lamp(), WIRE, BUN, STEEL, BOARD, ODD]))
-    platform.stand(x)
-    buyer = platform.trade.buyer()
-    assert buyer is not None
+    platform.stand(at)
 
     assert platform.trade.sell(None)
 
@@ -124,7 +108,7 @@ def test_selling_everything_it_buys_pays_its_prices_through_the_ledger(x: float)
     assert platform.player.money == 3 + 6 + 5 + 8
     sales = platform.economy.ledger.entries
     assert [(sale.kind, sale.payer, sale.payee, sale.place) for sale in sales] == [
-        (Kind.SALVAGE, OUTSIDE, PLAYER, buyer.place)
+        (Kind.SALVAGE, OUTSIDE, PLAYER, place)
     ] * 3
     assert [sale.amount for sale in sales] == [6, 5, 8]
     assert platform.balanced()
@@ -132,7 +116,7 @@ def test_selling_everything_it_buys_pays_its_prices_through_the_ledger(x: float)
 
 def test_selling_one_by_id_sells_only_one() -> None:
     platform = Platform(Player(items=[WIRE, STEEL, WIRE]))
-    platform.stand(22)
+    platform.stand(STALL)
 
     assert platform.trade.sell("copper_wire")
 
@@ -149,7 +133,7 @@ def test_selling_one_by_id_sells_only_one() -> None:
 @pytest.mark.parametrize("item", ["lamp", "pork_bun", "odd_bolt", "servo_motor", None])
 def test_nothing_sells_that_the_buyer_does_not_buy_or_they_do_not_carry(item: str | None) -> None:
     platform = Platform(Player(money=3, items=[lamp(), BUN, ODD]))
-    platform.stand(22)
+    platform.stand(STALL)
 
     assert not platform.trade.sell(item)
 
