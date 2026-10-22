@@ -99,8 +99,7 @@ class Painting:
     reseed: int = 0
     """Added to the seed, to paint a rejected painting again from the same prompt."""
     cut: tuple[str, ...] = ()
-    """For a sprite, what else to cut away: `shadows` and `gaps` (see `cutout.tidy`). For a
-    ground piece, `above`: key out its top row's colour, as its sides aren't backdrop."""
+    """What else to cut: a sprite's `shadows` and `gaps`, or `above` a ground piece's top row."""
 
     @property
     def seed(self) -> int:
