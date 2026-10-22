@@ -241,12 +241,12 @@ position in open air, over somewhere to land, if either:
 - it's within the farthest and highest jump the player can make from somewhere to stand: a run
   jump with Space held, taking off as late as coyote time allows. Its reach along the row and its
   height are set in one place, which the client's jump and the server's check both read; or
-- it's lower than the last position the server kept on that map, as in a fall from any height,
-  which lands safely.
+- it's lower than the last position the server kept on that map, and within that jump's reach of
+  it along the row, as in a fall from any height, which lands safely.
 
 It ignores a position nobody could be at: inside something solid, off the map, over nothing to
-land on, or higher in the air than any jump. It never moves the player back onto the ground: the
-next `player_move` says where they landed. The player's entity is still `standing` in a jump, as
+land on, or higher than any jump without being a fall within reach of the last position kept. It
+never moves the player back onto the ground: the next `player_move` says where they landed. The player's entity is still `standing` in a jump, as
 the server doesn't track the player's pose.
 
 The server keeps the last position it was sent, so a [`snapshot`](#snapshot), after a reload or a
