@@ -6,6 +6,8 @@ from pydantic import ConfigDict, Field, JsonValue, TypeAdapter, model_validator
 
 from simile.schema import (
     VILLAGE_MAP,
+    Bionic,
+    BodyPart,
     Conversation,
     Facing,
     Id,
@@ -287,9 +289,31 @@ class Meal(Model):
     price: float = Field(ge=0, allow_inf_nan=False, description="What it costs. Nothing at home.")
 
 
+class Fitting(Model):
+    """A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`."""
+
+    bionic: Bionic
+    name: str = Field(
+        min_length=1, description='The bionic as the player sees it, e.g. "Hydraulic legs".'
+    )
+    price: float = Field(ge=0, allow_inf_nan=False)
+    parts: list[BodyPart] = Field(
+        min_length=1,
+        description="The parts of their body it can go in place of, any one of which they give "
+        'up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.',
+    )
+
+    @model_validator(mode="after")
+    def _parts_it_replaces(self) -> Self:
+        if len(set(self.parts)) != len(self.parts):
+            raise ValueError("a fitting names each part once")
+        if wrong := [part for part in self.parts if part not in self.bionic.replaces]:
+            raise ValueError(f"{self.bionic} can't replace {', '.join(wrong)}")
+        return self
+
+
 class Buyer(Model):
-    """Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
-    place."""
+    """Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`."""
 
     place: Id = Field(description='Where: a location id, e.g. "scrap_stall" or "clinic".')
     name: str = Field(
@@ -300,6 +324,26 @@ class Buyer(Model):
         description="What it pays for one of each thing they carry that it buys, by item `id`. "
         "Empty when they carry nothing it buys."
     )
+    parts: dict[BodyPart, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
+        default={},
+        exclude_if=lambda parts: not parts,
+        description="What it pays for each part of their body it would buy now, by `sell_part`, "
+        'by `Body` field, e.g. `{"left_kidney": 100}`. The clinic\'s doctor buys one kidney, '
+        "never the second. Left out while it would buy none.",
+    )
+    fittings: list[Fitting] = Field(
+        default=[],
+        exclude_if=lambda fittings: not fittings,
+        description="The bionics it would fit now, by `fit`, whether or not they can pay, each "
+        "once. Left out while there are none.",
+    )
+
+    @model_validator(mode="after")
+    def _each_bionic_once(self) -> Self:
+        bionics = [fitting.bionic for fitting in self.fittings]
+        if len(set(bionics)) != len(bionics):
+            raise ValueError("a buyer offers each bionic once")
+        return self
 
 
 class PlayerStateMessage(Model):
@@ -426,6 +470,21 @@ class SellMessage(Model):
     )
 
 
+class SellPartMessage(Model):
+    """Sells a part of their body to the buyer where they stand, at its `buyer.parts` price."""
+
+    type: Literal["sell_part"] = "sell_part"
+    part: BodyPart
+
+
+class FitMessage(Model):
+    """Has the buyer where they stand fit a bionic in place of `part`, for its `fittings` price."""
+
+    type: Literal["fit"] = "fit"
+    bionic: Bionic
+    part: BodyPart
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
@@ -455,7 +514,9 @@ type ClientMessage = Annotated[
     | EatMessage
     | PickUpMessage
     | SellMessage
-    | LampMessage,
+    | LampMessage
+    | SellPartMessage
+    | FitMessage,
     Field(discriminator="type"),
 ]
 

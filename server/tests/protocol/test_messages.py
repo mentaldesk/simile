@@ -16,6 +16,8 @@ from simile.protocol import (
     EatMessage,
     EntityMovedMessage,
     Face,
+    FitMessage,
+    Fitting,
     Frame,
     JournalMessage,
     LampMessage,
@@ -41,6 +43,7 @@ from simile.protocol import (
     ReadNewsMessage,
     ReadWorkMessage,
     SellMessage,
+    SellPartMessage,
     Wall,
     WatchNpcMessage,
     WorksMessage,
@@ -199,6 +202,18 @@ WOKEN = PlayerStateMessage(
 COLLAPSED = PlayerCollapsedMessage(position=Position(x=13, y=2, map="maker_space_floor_0"))
 SCRAP_TRADER = Buyer(place="scrap_stall", name="The scrap trader", prices={"copper_wire": 6})
 AT_THE_SCRAP_STALL = DELVING.model_copy(update={"buyer": SCRAP_TRADER})
+LEGS = Fitting(bionic=Bionic.HYDRAULIC_LEGS, name="Hydraulic legs", price=80, parts=["legs"])
+EYE = Fitting(
+    bionic=Bionic.INFRARED_EYE, name="Infrared eye", price=200, parts=["left_eye", "right_eye"]
+)
+DOCTOR = Buyer(
+    place="clinic",
+    name="The Clinic",
+    prices={},
+    parts={"left_kidney": 100},
+    fittings=[LEGS, EYE],
+)
+AT_THE_CLINIC = STARTING.model_copy(update={"buyer": DOCTOR})
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 IN_THE_METRO = STARTING.model_copy(
@@ -261,6 +276,7 @@ SERVER = [
     AT_THE_NOODLE_BAR,
     WOKEN,
     AT_THE_SCRAP_STALL,
+    AT_THE_CLINIC,
     IN_THE_METRO,
     JournalMessage(entries=[]),
     JOURNAL,
@@ -284,6 +300,8 @@ CLIENT = [
     SellMessage(item=None),
     LampMessage(on=True),
     LampMessage(on=False),
+    SellPartMessage(part="left_kidney"),
+    FitMessage(bionic=Bionic.INFRARED_EYE, part="right_eye"),
 ]
 
 
@@ -739,6 +757,8 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("PlayerStateMessage", "meal"),
         ("PlayerStateMessage", "buyer"),
         ("PlayerStateMessage", "piles"),
+        ("Buyer", "parts"),
+        ("Buyer", "fittings"),
         ("Player", "left"),
         ("Player", "taken"),
         ("Pile", "money"),
@@ -763,6 +783,96 @@ def test_player_state_says_who_buys_where_they_stand_and_for_what() -> None:
     }
 
 
+def test_player_state_says_what_the_clinic_buys_of_their_body_and_fits() -> None:
+    data = json.loads(AT_THE_CLINIC.model_dump_json())
+
+    assert data == json.loads(STARTING.model_dump_json()) | {
+        "buyer": {
+            "place": "clinic",
+            "name": "The Clinic",
+            "prices": {},
+            "parts": {"left_kidney": 100.0},
+            "fittings": [
+                {
+                    "bionic": "hydraulic_legs",
+                    "name": "Hydraulic legs",
+                    "price": 80.0,
+                    "parts": ["legs"],
+                },
+                {
+                    "bionic": "infrared_eye",
+                    "name": "Infrared eye",
+                    "price": 200.0,
+                    "parts": ["left_eye", "right_eye"],
+                },
+            ],
+        }
+    }
+
+
+def test_the_exported_buyer_buys_only_parts_of_the_body() -> None:
+    parts = json.loads(SCHEMA_FILE.read_text())["$defs"]["Buyer"]["properties"]["parts"]
+
+    assert parts["propertyNames"] == {"$ref": "#/$defs/BodyPart"}
+    assert not validator().is_valid(
+        json.loads(AT_THE_CLINIC.model_dump_json())
+        | {"buyer": DOCTOR.model_dump(mode="json") | {"parts": {"tail": 100}}}
+    )
+
+
+def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
+    buyer = DOCTOR.model_copy(update={"parts": {}, "fittings": []})
+
+    assert set(json.loads(buyer.model_dump_json())) == {"place", "name", "prices"}
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"parts": []}, "at least 1 item"),
+        ({"parts": ["tail"]}, "Input should be 'legs'"),
+        ({"parts": ("left_kidney",)}, "hydraulic_legs can't replace left_kidney"),
+        (
+            {"bionic": "infrared_eye", "parts": ("left_eye", "left_eye")},
+            "a fitting names each part once",
+        ),
+        ({"bionic": "steel_hand"}, "Input should be 'hydraulic_legs'"),
+        ({"price": -1}, "greater than or equal to 0"),
+        ({"price": float("nan")}, "finite number"),
+        ({"name": ""}, "at least 1 character"),
+        ({"parts": ["left_kidney"]}, "hydraulic_legs can't replace left_kidney"),
+        ({"parts": ["legs", "legs"]}, "a fitting names each part once"),
+        (
+            {"bionic": "infrared_eye", "parts": ["right_eye", "right_eye"]},
+            "a fitting names each part once",
+        ),
+        (
+            {"bionic": "datajack", "parts": ["vertebra", "left_eye"]},
+            "datajack can't replace left_eye",
+        ),
+    ],
+)
+def test_rejects_invalid_fittings(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Fitting.model_validate(LEGS.model_dump() | update)
+
+
+@pytest.mark.parametrize(
+    ("data", "match"),
+    [
+        ({"type": "sell_part", "part": "tail"}, "Input should be 'legs'"),
+        ({"type": "sell_part"}, "Field required"),
+        ({"type": "fit", "bionic": "datajack"}, "Field required"),
+        ({"type": "fit", "bionic": "steel_hand", "part": "legs"}, "Input should be"),
+    ],
+)
+def test_rejects_parts_and_fittings_that_are_not_the_bodys(
+    data: dict[str, Any], match: str
+) -> None:
+    with pytest.raises(ValidationError, match=match):
+        client_messages.validate_python(data)
+
+
 def test_a_buyer_can_buy_nothing_they_carry() -> None:
     buyer = SCRAP_TRADER.model_copy(update={"prices": {}})
 
@@ -774,6 +884,9 @@ def test_a_buyer_can_buy_nothing_they_carry() -> None:
     [
         ({"prices": {"copper_wire": -1}}, "greater than or equal to 0"),
         ({"prices": {"copper_wire": float("inf")}}, "finite number"),
+        ({"parts": {"left_kidney": -1}}, "greater than or equal to 0"),
+        ({"parts": {"tail": 100}}, "Input should be 'legs'"),
+        ({"fittings": [LEGS.model_dump(), LEGS.model_dump()]}, "a buyer offers each bionic once"),
         ({"prices": {"": 6}}, "at least 1 character"),
         ({"name": ""}, "at least 1 character"),
         ({"place": "Scrap stall"}, "String should match pattern"),
@@ -829,8 +942,23 @@ def test_a_collapse_says_where_they_wake() -> None:
         (SellMessage(item=None), {"type": "sell", "item": None}),
         (LampMessage(on=True), {"type": "lamp", "on": True}),
         (LampMessage(on=False), {"type": "lamp", "on": False}),
+        (SellPartMessage(part="left_kidney"), {"type": "sell_part", "part": "left_kidney"}),
+        (
+            FitMessage(bionic=Bionic.DATAJACK, part="vertebra"),
+            {"type": "fit", "bionic": "datajack", "part": "vertebra"},
+        ),
     ],
-    ids=["item", "meal", "pick_up", "sell_one", "sell_all", "lamp_on", "lamp_off"],
+    ids=[
+        "item",
+        "meal",
+        "pick_up",
+        "sell_one",
+        "sell_all",
+        "lamp_on",
+        "lamp_off",
+        "sell_part",
+        "fit",
+    ],
 )
 def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
     message: Any, data: dict[str, Any]

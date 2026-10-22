@@ -1,7 +1,7 @@
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -13,6 +13,7 @@ from simile.schema import (
     SOLD,
     Bionic,
     Body,
+    BodyPart,
     Item,
     ItemKind,
     MapTile,
@@ -120,6 +121,11 @@ def test_each_bionic_fits_only_in_place_of_its_part(bionic: Bionic, parts: set[s
             assert Body.model_validate({part: bionic.value}).bionics == [bionic]
         else:
             rejects(Body, {part: bionic.value}, f"{bionic} can't replace {part}")
+
+
+def test_a_body_part_names_each_part_of_the_body() -> None:
+    assert get_args(BodyPart.__value__) == tuple(Body.model_fields)
+    assert all(bionic.replaces <= set(Body.model_fields) for bionic in Bionic)
 
 
 @pytest.mark.parametrize("eye", ["left_eye", "right_eye"])
