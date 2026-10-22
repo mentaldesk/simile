@@ -6,13 +6,14 @@ from starlette.applications import Starlette
 from simile.conversation.player import PlayerConversations
 from simile.conversation.telling import Stance
 from simile.persistence import investigation_of, player_of
-from simile.protocol import JournalMessage, PickUpMessage, hub_of
+from simile.player.pickups import Claim, claimers_of
+from simile.protocol import JournalMessage, hub_of
 from simile.schema import PLAYER_ID
 from simile.sim import LineSpoken, world_of
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
 from simile.story.content import Clue, load_story
 from simile.story.journal import Journal
-from simile.world import Point, movement_of
+from simile.world import Point
 
 
 class Recorder:
@@ -22,7 +23,6 @@ class Recorder:
         self,
         journal: Journal,
         players: Callable[[], PlayerConversations | None],
-        here: Callable[[], Point | None],
         changed: Callable[[], None],
         *,
         clues: Sequence[Clue] = (),
@@ -30,7 +30,6 @@ class Recorder:
     ) -> None:
         self.journal = journal
         self.players = players
-        self.here = here
         self.changed = changed
         self.clues = clues
         self.config = config
@@ -50,26 +49,27 @@ class Recorder:
         if any(told):
             self.changed()
 
-    def on_pick_up(self, message: PickUpMessage) -> None:
-        if (clue := self.clue_in_reach()) and self.journal.found(clue.id, clue.label):
-            self.changed()
-
-    def clue_in_reach(self) -> Clue | None:
-        here = self.here()
-        if here is None:
-            return None
+    def claim(self, here: Point) -> Claim | None:
+        """The clue in reach, for `pick_up` to find unless a pile is nearer."""
         near = [
             (distance, clue.id, clue)
             for clue in self.clues
             if clue.map == here.map
             and (distance := math.dist(here, (clue.x, clue.y))) <= self.config.clue_reach
         ]
-        return min(near)[2] if near else None
+        if not near:
+            return None
+        distance, _, clue = min(near)
+        return Claim(distance, lambda: self.find(clue))
+
+    def find(self, clue: Clue) -> None:
+        if self.journal.found(clue.id, clue.label):
+            self.changed()
 
 
 def record(app: Starlette, config: StoryConfig = DEFAULT_CONFIG) -> Callable[[], None]:
     """Keeps the journal and sends it on connect and each change, until the returned stop."""
-    world, hub, movement = world_of(app), hub_of(app), movement_of(app)
+    world, hub, claimers = world_of(app), hub_of(app), claimers_of(app)
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player_of(app))
 
@@ -79,18 +79,15 @@ def record(app: Starlette, config: StoryConfig = DEFAULT_CONFIG) -> Callable[[],
     recorder = Recorder(
         journal,
         lambda: getattr(app.state, "players", None),
-        lambda: movement.entities().get(PLAYER_ID),
         lambda: hub.broadcast(message()),
         clues=load_story().clues,
         config=config,
     )
-    stops = [
-        world.bus.subscribe(LineSpoken, recorder.on_spoken),
-        hub.subscribe(PickUpMessage, recorder.on_pick_up),
-        hub.greet(message),
-    ]
+    claimers.append(recorder.claim)
+    stops = [world.bus.subscribe(LineSpoken, recorder.on_spoken), hub.greet(message)]
 
     def stop() -> None:
+        claimers.remove(recorder.claim)
         for each in reversed(stops):
             each()
 

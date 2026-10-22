@@ -1,8 +1,8 @@
 from collections.abc import Callable
 
 from simile.player.config import DEFAULT_CONFIG
-from simile.protocol import Meal, PlayerStateMessage
-from simile.schema import Player
+from simile.protocol import Buyer, Meal, PlayerStateMessage
+from simile.schema import Pile, Player
 
 
 class PlayerSync:
@@ -14,15 +14,25 @@ class PlayerSync:
         meal: Callable[[], Meal | None],
         send: Callable[[PlayerStateMessage], None],
         step: float = DEFAULT_CONFIG.step,
+        *,
+        buyer: Callable[[], Buyer | None] = lambda: None,
+        piles: Callable[[], list[Pile]] = list,
     ) -> None:
         self.player = player
         self.meal = meal
         self.send = send
         self.step = step
+        self.buyer = buyer
+        self.piles = piles
         self.sent = self.message()
 
     def message(self) -> PlayerStateMessage:
-        return PlayerStateMessage(player=self.player.model_copy(deep=True), meal=self.meal())
+        return PlayerStateMessage(
+            player=self.player.model_copy(deep=True),
+            meal=self.meal(),
+            buyer=self.buyer(),
+            piles=self.piles(),
+        )
 
     def tick(self, dt: float) -> None:
         self.update()

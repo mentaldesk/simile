@@ -20,7 +20,14 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
   a job painted. `isFigure` tells the two apart.
 - **`makeFigure(scene, x, y, id, figure, height?)`** draws a `SpriteFigure` once its atlas has
   loaded. Its origin is on the ground under the middle of its head, and `height` is how many
-  pixels the standing figure is.
+  pixels the standing figure is. **`wear(figure)`** draws another figure the same size once its
+  atlas has loaded.
+- **The player with bionics** (`bionics.ts`): `playerFigureId(body)` is the player's figure for
+  what a `Body` has fitted, `player` with nothing and `player_legs_datajack_eye` with everything.
+  The eye is painted where it shows, so either socket is the same figure. `PlayerBody` keeps the
+  last body and says when its figure changes: `world/assets.ts` feeds one from `player_state`,
+  `dollFor('player')` picks the player's figure by it, and the side view's player wears the new
+  figure when a bionic is fitted.
 - **`SpriteFigure.setPose(pose, facing, phase, options)`** is `PaperDoll`'s: `pose` is the sim's
   `Pose`, or the player's `'jumping'` or `'landing'`, and `phase` how far through its cycle it is,
   any number. Each pose plays its painted frames by phase (`sprite.ts`):

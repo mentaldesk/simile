@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { Pile } from '../net';
 import { clueInReach, clues, cluesOf } from './clues';
-import { usedByE } from './reach';
+import { reachables, usedByE } from './reach';
 
 const at = (map: string, x: number, y = 2) => ({ x, y, map });
 
@@ -25,5 +26,13 @@ describe('clues', () => {
     expect(usedByE(at('maker_space_floor_0', 3))).toMatchObject({ kind: 'clue', tiles: 0, clue: { id: 'aris_notes' } });
     expect(usedByE(at('maker_space_floor_0', 13.4))).toMatchObject({ kind: 'clue', clue: { id: 'door_frame' } });
     expect(usedByE(at('maker_space_floor_0', 13.6))).toBeUndefined();
+  });
+
+  it('give way to a pile as near or nearer, as the server does', () => {
+    const bun = { id: 'pork_bun', kind: 'food', name: 'Pork bun', weight: 0.2, charge: null, on: null } as const;
+    const pile: Pile = { at: { map: 'maker_space_floor_0', x: 4, y: 2 }, items: [bun] };
+    const used = (x: number) => usedByE(at('maker_space_floor_0', x), { ...reachables, piles: () => [pile] })?.kind;
+
+    expect([3.4, 3.5, 3.6].map(used)).toEqual(['clue', 'pile', 'pile']);
   });
 });

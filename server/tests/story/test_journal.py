@@ -8,7 +8,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.persistence import investigation_of
+from simile.persistence import investigation_of, player_of
 from simile.protocol import PickUpMessage, hub_of
 from simile.schema import (
     PLAYER_ID,
@@ -18,9 +18,13 @@ from simile.schema import (
     HowKnown,
     Incident,
     Investigation,
+    Item,
+    ItemKind,
     JournalEntry,
     Knower,
     Lead,
+    MapTile,
+    Pile,
     Player,
     Source,
     SourceKind,
@@ -209,9 +213,7 @@ class Listening:
         self.village = investigating(incident=INCIDENT, config=LONG_AGO)
         self.notebook = Notebook(player)
         self.changes = 0
-        self.recorder = Recorder(
-            self.notebook.journal, lambda: self.village.players, lambda: None, self.changed
-        )
+        self.recorder = Recorder(self.notebook.journal, lambda: self.village.players, self.changed)
         self.village.world.bus.subscribe(LineSpoken, self.recorder.on_spoken)
 
     def changed(self) -> None:
@@ -262,22 +264,33 @@ async def test_an_attacker_lies_and_the_eye_sees_them_flush() -> None:
 
 @pytest.mark.parametrize(
     ("dx", "map", "found"),
-    [(0, None, True), (1, None, True), (1.5, None, False), (0, "maker_space_floor_1", False)],
+    [(0, None, True), (0.5, None, True), (0.6, None, False), (0, "maker_space_floor_1", False)],
 )
-def test_e_finds_a_clue_within_a_tile(dx: float, map: str | None, found: bool) -> None:
+def test_e_finds_a_clue_from_its_cell(dx: float, map: str | None, found: bool) -> None:
     notes, notebook, changed = load_story().clue(NOTES), Notebook(), []
-    here = Point(notes.x + dx, notes.y, map or notes.map)
-    recorder = Recorder(
-        notebook.journal, lambda: None, lambda: here, lambda: changed.append(1), clues=[notes]
-    )
+    recorder = Recorder(notebook.journal, lambda: None, lambda: changed.append(1), clues=[notes])
 
-    recorder.on_pick_up(PickUpMessage())
+    claim = recorder.claim(Point(notes.x + dx, notes.y, map or notes.map))
+    if claim is not None:
+        assert claim.distance == dx
+        claim.take()
 
     assert [entry.fact_id for entry in notebook.entries] == (["notes"] if found else [])
     assert changed == ([1] if found else [])
 
 
 LIFESPANS = ("behaviour", "economy", "memory", "protocol", "world")
+BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
+
+
+def make_app(make_package: Callable[[dict[str, str]], str]) -> Starlette:
+    files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in LIFESPANS}
+    files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
+    files["player/lifespan.py"] = "from simile.player.lifespan import running\n"
+    files["story/lifespan.py"] = "from simile.story.lifespan import lifespan, running\n"
+    app = create_app(make_package(files))
+    app.state.world = World(Clock(START))
+    return app
 
 
 def next_of(ws: Any, type: str) -> dict[str, Any]:
@@ -290,25 +303,49 @@ def next_of(ws: Any, type: str) -> dict[str, Any]:
 def test_the_journal_comes_on_connect_and_again_when_a_clue_is_found(
     make_package: Callable[[dict[str, str]], str],
 ) -> None:
-    files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in LIFESPANS}
-    files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
-    files["story/lifespan.py"] = "from simile.story.lifespan import lifespan, running\n"
-    app = create_app(make_package(files))
-    app.state.world = World(Clock(START))
+    app = make_app(make_package)
     notes = load_story().clue(NOTES)
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        greeted = [ws.receive_json() for _ in range(3)]
+        greeted = [ws.receive_json() for _ in range(4)]
         client.portal.call(movement_of(app).track, PLAYER_ID, Point(notes.x, notes.y, notes.map))
         ws.send_json({"type": "pick_up"})
         found = next_of(ws, "journal")
 
-    assert [message["type"] for message in greeted] == ["snapshot", "clock", "journal"]
-    assert greeted[2]["entries"] == []
+    assert [m["type"] for m in greeted] == ["snapshot", "clock", "player_state", "journal"]
+    assert greeted[3]["entries"] == []
     [entry] = found["entries"]
     assert entry["fact_id"] == "notes"
     assert entry["source"] == {"kind": "clue", "id": NOTES, "name": "Aris's notes"}
     assert entry["flushed"] is None and entry["leads"]
+
+
+@pytest.mark.parametrize(
+    ("x", "took"),
+    [(3.4, "the notes"), (3.5, "the bun"), (3.6, "the bun")],
+)
+def test_e_takes_the_nearer_of_a_clue_and_a_pile_and_the_pile_on_a_tie(
+    make_package: Callable[[dict[str, str]], str], x: float, took: str
+) -> None:
+    app = make_app(make_package)
+    notes = load_story().clue(NOTES)
+    pile = Pile(at=MapTile(map=notes.map, x=notes.x + 1, y=notes.y), items=[BUN])
+
+    with TestClient(app) as client:
+        player = player_of(app)
+
+        def stand() -> None:
+            player.left = [pile]
+            movement_of(app).track(PLAYER_ID, Point(x, notes.y, notes.map))
+            hub_of(app).receive(PickUpMessage().model_dump_json())
+
+        client.portal.call(stand)
+        journal = [entry.fact_id for entry in investigation_of(app).journal]
+
+    if took == "the notes":
+        assert (journal, BUN in player.items, player.left) == (["notes"], False, [pile])
+    else:
+        assert (journal, BUN in player.items, player.left) == ([], True, [])
 
 
 @pytest.fixture

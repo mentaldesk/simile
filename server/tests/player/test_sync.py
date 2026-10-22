@@ -3,10 +3,11 @@ from collections.abc import Callable
 import pytest
 
 from simile.player.sync import PlayerSync
-from simile.protocol import Meal, PlayerStateMessage
+from simile.protocol import Buyer, Meal, PlayerStateMessage
 from simile.schema import SOLD, Item, ItemKind, MapTile, Pile, Player, lamp
 
 HOME = Meal(place="maker_space", name="home", price=0)
+TRADER = Buyer(place="scrap_stall", name="The scrap trader's stall", prices={})
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
 
 
@@ -14,7 +15,15 @@ class Sent:
     def __init__(self, player: Player) -> None:
         self.messages: list[PlayerStateMessage] = []
         self.meal: Meal | None = None
-        self.sync = PlayerSync(player, lambda: self.meal, self.messages.append)
+        self.buyer: Buyer | None = None
+        self.piles: list[Pile] = []
+        self.sync = PlayerSync(
+            player,
+            lambda: self.meal,
+            self.messages.append,
+            buyer=lambda: self.buyer,
+            piles=lambda: list(self.piles),
+        )
 
     def after(self, change: Callable[[], object]) -> list[PlayerStateMessage]:
         change()
@@ -83,8 +92,24 @@ def test_a_lamps_charge_alone_waits_too() -> None:
             player, "left", [Pile(at=MapTile(map="kapok_walk", x=1, y=15), items=[BUN])]
         ),
         lambda player, sent: setattr(sent, "meal", HOME),
+        lambda player, sent: setattr(player, "taken", {"metro_salvage_1": "2026-01-01T12:00:00Z"}),
+        lambda player, sent: setattr(sent, "buyer", TRADER),
+        lambda player, sent: setattr(
+            sent, "piles", [Pile(at=MapTile(map="metro", x=8, y=7), items=[], money=25)]
+        ),
     ],
-    ids=["money", "an_item", "dropping_everything", "a_switch", "the_body", "a_pile", "a_meal"],
+    ids=[
+        "money",
+        "an_item",
+        "dropping_everything",
+        "a_switch",
+        "the_body",
+        "a_pile",
+        "a_meal",
+        "taking_a_pickup",
+        "a_buyer",
+        "the_worlds_piles",
+    ],
 )
 def test_any_other_change_is_sent_at_once(change: Callable[[Player, Sent], None]) -> None:
     player = Player(hunger=0.5)
@@ -92,7 +117,9 @@ def test_any_other_change_is_sent_at_once(change: Callable[[Player, Sent], None]
 
     [message] = sent.after(lambda: change(player, sent))
 
-    assert message == PlayerStateMessage(player=player, meal=sent.meal)
+    assert message == PlayerStateMessage(
+        player=player, meal=sent.meal, buyer=sent.buyer, piles=sent.piles
+    )
 
 
 def test_with_a_change_it_sends_hunger_as_it_is() -> None:

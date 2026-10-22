@@ -109,7 +109,7 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
-    this.hunger.update(playerState.latest, used?.kind === 'pile');
+    this.hunger.update(playerState.latest, used?.kind === 'pile' ? used.pile : undefined);
     const panelOpen = this.news.isOpen || this.murals.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
@@ -134,6 +134,7 @@ export class DialogueScene extends Phaser.Scene {
       this.news.open(used.terminal.label);
     } else if (used?.kind === 'mural') this.murals.look(this.player());
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+    else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') {
       server.send({ type: 'pick_up' });
       this.journal.open();

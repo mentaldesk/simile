@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 
@@ -9,9 +9,9 @@ from simile.behaviour import Activity, Behaviour, Goal, Need
 from simile.cafe.config import DEFAULT_CONFIG as CAFE
 from simile.cafe.events import Served
 from simile.economy.config import DEFAULT_CONFIG, EconomyConfig, Shop
-from simile.economy.ledger import OUTSIDE, Entry, Kind, Ledger
+from simile.economy.ledger import OUTSIDE, PLAYER, Entry, Kind, Ledger
 from simile.economy.stock import Batch, stocked
-from simile.schema import Id, Npc, PayKind
+from simile.schema import Id, Item, ItemKind, Npc, PayKind, Player
 from simile.sim import Clock
 
 logger = logging.getLogger(__name__)
@@ -38,16 +38,21 @@ class Turn:
 
 
 class Economy:
-    """Every resident's money, and the ledger every movement of it goes through: wages,
-    pensions, rent, groceries, and paying at the shops. Also what there is to eat: which shops
-    are staffed, their batches, and every home's fridge. Tick it on the sim loop."""
+    """Everyone's money, its ledger, and what there is to eat. Tick it on the sim loop."""
 
     def __init__(
-        self, clock: Clock, behaviour: Behaviour, *, config: EconomyConfig = DEFAULT_CONFIG
+        self,
+        clock: Clock,
+        behaviour: Behaviour,
+        *,
+        config: EconomyConfig = DEFAULT_CONFIG,
+        player: Player | None = None,
     ) -> None:
         self.clock = clock
         self.behaviour = behaviour
         self.config = config
+        self.player = player
+        """The player, whose money `pay` moves for `PLAYER`."""
         npcs = behaviour.npcs.values()
         self.money: dict[Id, float] = {npc.id: npc.money for npc in npcs}
         self.ledger = Ledger(self.money)
@@ -180,18 +185,44 @@ class Economy:
             )
 
     def pay(self, payer: Id, payee: Id, amount: float, kind: Kind, place: Id | None = None) -> None:
-        """Move money through the ledger. Residents can go below nothing, as for rent they can't
-        cover."""
+        """Move money through the ledger. Residents can go below nothing, but not the player."""
         if amount <= 0:
             return
+        if payer == PLAYER and amount > self._player().money + 1e-9:
+            raise ValueError(f"the player can't pay {amount}: they have {self._player().money}")
         entry = Entry(
             at=self.clock.now, kind=kind, amount=amount, payer=payer, payee=payee, place=place
         )
-        if payer != OUTSIDE:
-            self.money[payer] -= amount
-        if payee != OUTSIDE:
-            self.money[payee] += amount
+        for party, change in ((payer, -amount), (payee, amount)):
+            if party == PLAYER:
+                player = self._player()
+                player.money = max(player.money + change, 0.0)
+            elif party != OUTSIDE:
+                self.money[party] += change
         self.ledger.record(entry)
+
+    def offer(self, place: Id, items: Iterable[Item]) -> dict[Id, float] | None:
+        """What the buyer at `place` pays for each of `items` it buys, by id, or None."""
+        if place not in self.config.buyers:
+            return None
+        prices = self.config.salvage
+        return {
+            item.id: prices[item.id]
+            for item in items
+            if item.kind is ItemKind.SALVAGE and item.id in prices
+        }
+
+    def sell(self, place: Id, item: Item) -> bool:
+        """The player sells an item to the buyer at `place` for its price, if it buys it there."""
+        price = (self.offer(place, [item]) or {}).get(item.id)
+        if price is None:
+            return False
+        self.pay(OUTSIDE, PLAYER, price, Kind.SALVAGE, place)
+        return True
+
+    def find(self, amount: float, pickup: Id) -> None:
+        """The player picks up money lying at a pickup."""
+        self.pay(OUTSIDE, PLAYER, amount, Kind.FOUND, pickup)
 
     def tick(self, dt: float) -> None:
         self._elapsed += dt
@@ -314,6 +345,11 @@ class Economy:
                     self.cooked.append(batch)
             elif batch is not None and batch.left and not self.staffed(place):
                 batch.gone_off, batch.left = batch.left, 0
+
+    def _player(self) -> Player:
+        if self.player is None:
+            raise RuntimeError("the player hasn't joined the economy")
+        return self.player
 
     def _shop(self, goal: Goal) -> Shop | None:
         if goal.target is None or goal.activity.value != goal.target:
