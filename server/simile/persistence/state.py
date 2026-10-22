@@ -11,7 +11,9 @@ from simile.persistence.old_cells import moved
 from simile.schema import (
     VILLAGE_MAP,
     Id,
+    Incident,
     Intention,
+    JournalEntry,
     Key,
     MapTile,
     Model,
@@ -67,6 +69,10 @@ class SavedWorld(Model):
     """Everyone's open intentions. A save from before intentions has none."""
     player: Player = Field(default_factory=Player)
     """The player. A save from before the player has the starting player."""
+    incident: Incident | None = None
+    """The incident, made once at world creation. A save from before it has none."""
+    journal: list[JournalEntry] = []
+    """What the player has learned about it. A save from before the journal has none."""
 
 
 def tile_of(point: Point) -> Tile:

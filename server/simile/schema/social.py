@@ -124,3 +124,9 @@ class Memory(Model):
     conversation_id: Key | None = None
     news_id: Key | None = None
     work_id: Key | None = None
+    fact_id: Id | None = Field(
+        default=None,
+        exclude_if=lambda fact_id: fact_id is None,
+        description="The incident's `Fact` it holds, for a memory seeded from one. Left out when "
+        "there isn't one.",
+    )

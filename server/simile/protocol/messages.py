@@ -9,6 +9,7 @@ from simile.schema import (
     Conversation,
     Facing,
     Id,
+    JournalEntry,
     Key,
     Line,
     Model,
@@ -275,6 +276,15 @@ class PlayerStateMessage(Model):
     player: Player
 
 
+class JournalMessage(Model):
+    """What the player has learned about the incident, in the order they learned it, with the
+    leads still open. Sent after the snapshot on connect, and whenever an entry is added or a lead
+    is followed."""
+
+    type: Literal["journal"] = "journal"
+    entries: list[JournalEntry]
+
+
 class PlayerMoveMessage(Model):
     """A position without `map` is on the village. Side-view maps have no village, so there the
     server ignores it, as it ignores any unknown map.
@@ -331,7 +341,8 @@ type ServerMessage = Annotated[
     | WorksMessage
     | MuralsMessage
     | PaintingsMessage
-    | PlayerStateMessage,
+    | PlayerStateMessage
+    | JournalMessage,
     Field(discriminator="type"),
 ]
 

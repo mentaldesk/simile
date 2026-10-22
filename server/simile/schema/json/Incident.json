@@ -1,0 +1,227 @@
+{
+  "$defs": {
+    "Fact": {
+      "additionalProperties": false,
+      "description": "Something that happened, kept in the sim. Residents only voice it: code decides who tells\nit to whom, and who lies about it.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "what": {
+          "description": "What happened, in the third person, as it really did. Each knower's memory of it is in their own words.",
+          "minLength": 1,
+          "title": "What",
+          "type": "string"
+        },
+        "when": {
+          "description": "Sim time.",
+          "format": "date-time",
+          "title": "When",
+          "type": "string"
+        },
+        "where": {
+          "description": "A location's id, such as \"maker_space\", or a map's, such as \"high_street\".",
+          "minLength": 1,
+          "title": "Where",
+          "type": "string"
+        },
+        "about": {
+          "description": "Who it's about, even if those who know it couldn't name them.",
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          },
+          "title": "About",
+          "type": "array"
+        },
+        "known_by": {
+          "description": "The residents who know it, each listed once.",
+          "items": {
+            "$ref": "#/$defs/Knower"
+          },
+          "title": "Known By",
+          "type": "array"
+        },
+        "found_in": {
+          "anyOf": [
+            {
+              "maxLength": 64,
+              "pattern": "^[a-z][a-z0-9_]*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The clue the player can find it in instead of being told, such as Aris's notes: the interactable's id. Null if only residents can tell it.",
+          "title": "Found In"
+        },
+        "leads": {
+          "default": [],
+          "description": "Where learning it points the player next, never back to itself.",
+          "items": {
+            "$ref": "#/$defs/Lead"
+          },
+          "title": "Leads",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "what",
+        "when",
+        "where",
+        "about",
+        "known_by",
+        "found_in",
+        "leads"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "HowKnown": {
+      "description": "How a resident knows a fact: they `did` it, `witnessed` it (saw or heard it happen), or\nwere `told` it by someone.",
+      "enum": [
+        "did",
+        "witnessed",
+        "told"
+      ],
+      "title": "HowKnown",
+      "type": "string"
+    },
+    "Knower": {
+      "additionalProperties": false,
+      "description": "A resident who knows a fact, how they know it, and how willing they are to tell it.",
+      "properties": {
+        "id": {
+          "description": "The resident.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "how": {
+          "$ref": "#/$defs/HowKnown"
+        },
+        "tells_from": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The least trust they need in whoever asks before they tell it: 0 tells anyone. Null if they never tell it.",
+          "title": "Tells From"
+        },
+        "cover": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What they say instead of telling it, when they lie, e.g. \"I was home all night.\" Code decides when they lie, as for other lies, so the infrared eye reads it exactly. Null if they keep quiet rather than lie.",
+          "title": "Cover"
+        }
+      },
+      "required": [
+        "id",
+        "how",
+        "tells_from",
+        "cover"
+      ],
+      "title": "Knower",
+      "type": "object"
+    },
+    "Lead": {
+      "additionalProperties": false,
+      "description": "Where the trail goes next: someone to ask or somewhere to look, which turns up a fact.",
+      "properties": {
+        "fact_id": {
+          "description": "The fact following it turns up.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Fact Id",
+          "type": "string"
+        },
+        "text": {
+          "description": "For the journal, e.g. \"Kofi paints in the lane at night. Ask him what he saw.\"",
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "fact_id",
+        "text"
+      ],
+      "title": "Lead",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The night Aris was attacked, made once at world creation: who attacked her, why, and the\nfacts around it.",
+  "properties": {
+    "victim": {
+      "default": "aris",
+      "description": "Aris, who has been missing since.",
+      "maxLength": 64,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "title": "Victim",
+      "type": "string"
+    },
+    "attackers": {
+      "description": "The residents who attacked her, one to three.",
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "maxItems": 3,
+      "minItems": 1,
+      "title": "Attackers",
+      "type": "array"
+    },
+    "motive": {
+      "description": "Why they did it, written once at world creation and never rewritten.",
+      "minLength": 1,
+      "title": "Motive",
+      "type": "string"
+    },
+    "night": {
+      "description": "When they attacked her, in sim time.",
+      "format": "date-time",
+      "title": "Night",
+      "type": "string"
+    },
+    "facts": {
+      "description": "Who did it, why, who saw what and who knows what. Each has its own id, and their leads go to one another.",
+      "items": {
+        "$ref": "#/$defs/Fact"
+      },
+      "title": "Facts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "victim",
+    "attackers",
+    "motive",
+    "night",
+    "facts"
+  ],
+  "title": "Incident",
+  "type": "object"
+}

@@ -52,6 +52,17 @@ from simile.schema.social import (
     MemoryKind,
     Relationship,
 )
+from simile.schema.story import (
+    ARIS,
+    Fact,
+    HowKnown,
+    Incident,
+    JournalEntry,
+    Knower,
+    Lead,
+    Source,
+    SourceKind,
+)
 from simile.schema.works import Work
 from simile.schema.world import (
     VILLAGE_MAP,
@@ -95,9 +106,13 @@ MODELS: tuple[type[Model], ...] = (
     Line,
     Player,
     Item,
+    Incident,
+    Fact,
+    JournalEntry,
 )
 
 __all__ = [
+    "ARIS",
     "CARRY_LIMIT",
     "MODELS",
     "PLAYER_ID",
@@ -122,6 +137,7 @@ __all__ = [
     "Door",
     "DoorKind",
     "Facing",
+    "Fact",
     "Flag",
     "FlagKind",
     "Gender",
@@ -129,9 +145,11 @@ __all__ = [
     "Hook",
     "HookKind",
     "HookSide",
+    "HowKnown",
     "Humour",
     "HumourStyle",
     "Id",
+    "Incident",
     "Intention",
     "IntentionKind",
     "Interactable",
@@ -139,7 +157,10 @@ __all__ = [
     "InteractionEvent",
     "Item",
     "ItemKind",
+    "JournalEntry",
     "Key",
+    "Knower",
+    "Lead",
     "Line",
     "Location",
     "LocationKind",
@@ -159,6 +180,8 @@ __all__ = [
     "Relationship",
     "Shift",
     "Signed",
+    "Source",
+    "SourceKind",
     "Tile",
     "TileArea",
     "Timestamp",

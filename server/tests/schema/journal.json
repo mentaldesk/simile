@@ -1,0 +1,36 @@
+[
+  {
+    "fact_id": "notes",
+    "text": "Aris wrote that R. came about the machines again. She told him no, and he said she'd regret it.",
+    "source": {"kind": "clue", "id": "aris_notes", "name": "Aris's notes"},
+    "learned": "2026-03-14T10:05:00Z",
+    "flushed": null,
+    "leads": [
+      {"fact_id": "motive", "text": "Who's R., and which machines? Marguerite knows everyone's business: ask her."}
+    ]
+  },
+  {
+    "fact_id": "shouting",
+    "text": "Tobias heard shouting and breaking glass from the maker space just before midnight.",
+    "source": {"kind": "resident", "id": "tobias", "name": "Tobias"},
+    "learned": "2026-03-14T11:30:00Z",
+    "flushed": null,
+    "leads": []
+  },
+  {
+    "fact_id": "lane",
+    "text": "Kofi saw a big man in a long coat run from the maker space, holding his arm.",
+    "source": {"kind": "resident", "id": "kofi", "name": "Kofi"},
+    "learned": "2026-03-17T09:10:00Z",
+    "flushed": false,
+    "leads": []
+  },
+  {
+    "fact_id": "attack",
+    "text": "Raymond says he was at home going over the accounts all night.",
+    "source": {"kind": "resident", "id": "raymond", "name": "Raymond"},
+    "learned": "2026-03-17T14:00:00Z",
+    "flushed": true,
+    "leads": []
+  }
+]

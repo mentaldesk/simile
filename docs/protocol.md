@@ -230,6 +230,33 @@ a whole body, no money and a fully charged lamp, switched off. Their humanity is
 server, derived from the bionics fitted (`Player.humanity`), but it's never sent: the player sees
 it only in how residents treat them.
 
+### `journal`
+
+`entries`: what the player has learned about the incident, in the order they learned it, each an
+F2 `JournalEntry` (`server/simile/schema/story.py`). The server sends it after the `snapshot` and
+`clock` on connect, and again whenever an entry is added or a lead is followed, and the client
+replaces what it had. There's no request for it: the client keeps the last one for when the player
+opens the journal. Clients that predate it ignore it.
+
+| Field | Type | |
+|---|---|---|
+| `fact_id` | string | The fact it's about. Several entries can be about one fact: two witnesses, or a lie and then the truth. |
+| `text` | string | What the player learned, as the journal puts it. A lie is written as it was told: "Raymond says he was at home all night." |
+| `source` | `Source` | Who told them, or the clue they found it in. |
+| `learned` | string | When, in sim time. |
+| `flushed` | boolean or `null` | Whether the infrared eye saw the resident flush as they told it. The eye shows a flush exactly on a lie, as the code decides it, so `true` is a lie it caught and `false` the truth. `null` if the player had no infrared eye then, and always for a clue. |
+| `leads` | `Lead[]` | The leads it opened that are still open. Each goes once the player learns its fact, from anyone. |
+
+A `Source` has its `kind`, `"resident"` if a resident told them or `"clue"` if they found it (in
+Aris's notes, at a terminal or in the sewers); its `id`, the resident's or the clue's
+interactable's; and its `name`, as the journal shows it.
+
+A `Lead` has its `fact_id`, the fact that following it turns up, and its `text`, what to follow up:
+"Kofi paints in the lane at night. Ask him what he saw."
+
+The incident and its facts (F2's `Incident` and `Fact`) stay on the server: who did it, why, who
+knows what and who lies about it are never sent. The client sees only what the player has learned.
+
 ### `audio_chunk`
 
 A binary frame: part of a line's audio, as Qwen3-TTS produces it. A 12-byte header, then the
