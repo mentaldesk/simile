@@ -12,6 +12,7 @@ from simile.schema import (
     Key,
     Line,
     Model,
+    Player,
     Pose,
     Timestamp,
 )
@@ -266,6 +267,14 @@ class PaintingsMessage(Model):
     frames: list[Frame]
 
 
+class PlayerStateMessage(Model):
+    """The player's money, what they carry, their body and their hunger, but never their humanity.
+    Sent after the snapshot on connect, and whenever any of it changes."""
+
+    type: Literal["player_state"] = "player_state"
+    player: Player
+
+
 class PlayerMoveMessage(Model):
     """A position without `map` is on the village. Side-view maps have no village, so there the
     server ignores it, as it ignores any unknown map.
@@ -321,7 +330,8 @@ type ServerMessage = Annotated[
     | NewsMessage
     | WorksMessage
     | MuralsMessage
-    | PaintingsMessage,
+    | PaintingsMessage
+    | PlayerStateMessage,
     Field(discriminator="type"),
 ]
 

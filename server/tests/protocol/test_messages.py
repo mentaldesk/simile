@@ -29,6 +29,7 @@ from simile.protocol import (
     PaintingsMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
+    PlayerStateMessage,
     Position,
     ReadNewsMessage,
     ReadWorkMessage,
@@ -40,7 +41,7 @@ from simile.protocol import (
 from simile.protocol.export import SCHEMA_FILE
 from simile.protocol.fixtures import fixture_snapshot
 from simile.protocol.messages import client_messages, server_messages
-from simile.schema import Facing, Pose
+from simile.schema import Bionic, Body, Facing, Item, ItemKind, Player, Pose, lamp
 
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
@@ -148,6 +149,20 @@ RIDING = EntityMovedMessage(
     facing=Facing.SOUTH,
 )
 
+STARTING = PlayerStateMessage(player=Player())
+DELVING = PlayerStateMessage(
+    player=Player(
+        money=120,
+        items=[
+            lamp().model_copy(update={"charge": 0.35}),
+            Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5),
+            Item(id="noodles", kind=ItemKind.FOOD, name="Noodles", weight=0.5),
+        ],
+        body=Body(legs=Bionic.HYDRAULIC_LEGS, right_eye=Bionic.INFRARED_EYE, left_kidney="sold"),
+        hunger=0.55,
+    )
+)
+
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
 SERVER = [
     SNAPSHOT,
@@ -175,6 +190,8 @@ SERVER = [
     MURALS,
     STREET_MURALS,
     PAINTINGS,
+    STARTING,
+    DELVING,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -528,6 +545,67 @@ def test_an_empty_frame_says_so_with_null() -> None:
 
     with pytest.raises(ValidationError, match="painting\n  Field required"):
         Frame.model_validate(frame)
+
+
+def test_player_state_has_their_money_items_body_and_hunger() -> None:
+    assert json.loads(DELVING.model_dump_json()) == {
+        "type": "player_state",
+        "player": {
+            "money": 120.0,
+            "items": [
+                {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.35},
+                {
+                    "id": "copper_wire",
+                    "kind": "salvage",
+                    "name": "Copper wire",
+                    "weight": 1.5,
+                    "charge": None,
+                },
+                {"id": "noodles", "kind": "food", "name": "Noodles", "weight": 0.5, "charge": None},
+            ],
+            "carry_limit": 10.0,
+            "body": {
+                "legs": "hydraulic_legs",
+                "vertebra": "present",
+                "left_eye": "present",
+                "right_eye": "infrared_eye",
+                "left_kidney": "sold",
+                "right_kidney": "present",
+            },
+            "hunger": 0.55,
+        },
+    }
+
+
+def keys(value: Any) -> set[str]:
+    if isinstance(value, dict):
+        return set(value) | {key for item in value.values() for key in keys(item)}
+    if isinstance(value, list):
+        return {key for item in value for key in keys(item)}
+    return set()
+
+
+@pytest.mark.parametrize("message", [STARTING, DELVING], ids=["starting", "delving"])
+def test_player_state_never_carries_humanity(message: PlayerStateMessage) -> None:
+    assert 0 < message.player.humanity <= 1
+    assert "humanity" not in keys(json.loads(message.model_dump_json()))
+
+
+def test_the_exported_protocol_has_no_humanity() -> None:
+    schema = json.loads(SCHEMA_FILE.read_text())
+
+    assert "humanity" not in {
+        name for model in schema["$defs"].values() for name in model.get("properties", {})
+    }
+
+
+def test_rejects_a_player_state_with_humanity() -> None:
+    data = json.loads(STARTING.model_dump_json())
+    data["player"]["humanity"] = 1.0
+
+    assert not validator().is_valid(data)
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        server_messages.validate_python(data)
 
 
 def test_timestamps_are_utc() -> None:

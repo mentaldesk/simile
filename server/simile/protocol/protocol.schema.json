@@ -20,6 +20,56 @@
       "title": "Artist",
       "type": "object"
     },
+    "Bionic": {
+      "description": "A part fitted in place of one of the player's own. The hydraulic legs replace their legs,\nthe datajack takes a vertebra, and the infrared eye takes either eye.",
+      "enum": [
+        "hydraulic_legs",
+        "datajack",
+        "infrared_eye"
+      ],
+      "title": "Bionic",
+      "type": "string"
+    },
+    "Body": {
+      "additionalProperties": false,
+      "description": "Each part of the player's body that can be sold or replaced: still `present`, `sold`, or\nthe bionic fitted in its place. A whole body has every part present.",
+      "properties": {
+        "legs": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        },
+        "vertebra": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        },
+        "left_eye": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        },
+        "right_eye": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        },
+        "left_kidney": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        },
+        "right_kidney": {
+          "$ref": "#/$defs/PartState",
+          "default": "present"
+        }
+      },
+      "required": [
+        "legs",
+        "vertebra",
+        "left_eye",
+        "right_eye",
+        "left_kidney",
+        "right_kidney"
+      ],
+      "title": "Body",
+      "type": "object"
+    },
     "ClientMessage": {
       "discriminator": {
         "mapping": {
@@ -311,6 +361,64 @@
       ],
       "title": "Frame",
       "type": "object"
+    },
+    "Item": {
+      "additionalProperties": false,
+      "description": "Something the player carries.",
+      "properties": {
+        "id": {
+          "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "name": {
+          "description": "What the player sees, e.g. \"Copper wire\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "weight": {
+          "description": "In kg, counted against the carry limit.",
+          "minimum": 0,
+          "type": "number"
+        },
+        "charge": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else."
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "weight",
+        "charge"
+      ],
+      "title": "Item",
+      "type": "object"
+    },
+    "ItemKind": {
+      "description": "What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.",
+      "enum": [
+        "salvage",
+        "food",
+        "lamp"
+      ],
+      "title": "ItemKind",
+      "type": "string"
     },
     "JsonValue": {},
     "Line": {
@@ -657,6 +765,64 @@
       "title": "PaintingsMessage",
       "type": "object"
     },
+    "PartState": {
+      "anyOf": [
+        {
+          "enum": [
+            "present",
+            "sold"
+          ],
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/Bionic"
+        }
+      ]
+    },
+    "Player": {
+      "additionalProperties": false,
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money and a charged lamp. Their\nhumanity is derived from the bionics fitted and isn't a field, so the client never sees it.",
+      "properties": {
+        "money": {
+          "default": 0.0,
+          "description": "In the same units as the residents' money.",
+          "minimum": 0,
+          "type": "number"
+        },
+        "items": {
+          "description": "What they carry. Picking things up keeps their weight within `carry_limit`.",
+          "items": {
+            "$ref": "#/$defs/Item"
+          },
+          "type": "array"
+        },
+        "carry_limit": {
+          "default": 10.0,
+          "description": "The most they carry, in kg.",
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        "body": {
+          "$ref": "#/$defs/Body"
+        },
+        "hunger": {
+          "default": 0.0,
+          "description": "0 is fed and 1 is starving: they collapse.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "money",
+        "items",
+        "carry_limit",
+        "body",
+        "hunger"
+      ],
+      "title": "Player",
+      "type": "object"
+    },
     "PlayerMoveMessage": {
       "additionalProperties": false,
       "description": "A position without `map` is on the village. Side-view maps have no village, so there the\nserver ignores it, as it ignores any unknown map.\n\nOn a side-view map the position can be mid-air, jumping or falling. The server keeps one in\nopen air over somewhere to land if it's within the farthest, highest jump the player can make\nfrom somewhere to stand (a run jump with Space held, taking off as late as coyote time\nallows), or if it's lower than the last position it kept on that map and within that jump's\nreach of it along the row, as in a fall from any height. It ignores a position nobody could\nbe at.",
@@ -702,6 +868,26 @@
         "target"
       ],
       "title": "PlayerSayMessage",
+      "type": "object"
+    },
+    "PlayerStateMessage": {
+      "additionalProperties": false,
+      "description": "The player's money, what they carry, their body and their hunger, but never their humanity.\nSent after the snapshot on connect, and whenever any of it changes.",
+      "properties": {
+        "type": {
+          "const": "player_state",
+          "default": "player_state",
+          "type": "string"
+        },
+        "player": {
+          "$ref": "#/$defs/Player"
+        }
+      },
+      "required": [
+        "type",
+        "player"
+      ],
+      "title": "PlayerStateMessage",
       "type": "object"
     },
     "Pose": {
@@ -797,6 +983,7 @@
           "news": "#/$defs/NewsMessage",
           "npc_state": "#/$defs/NpcStateMessage",
           "paintings": "#/$defs/PaintingsMessage",
+          "player_state": "#/$defs/PlayerStateMessage",
           "snapshot": "#/$defs/SnapshotMessage",
           "works": "#/$defs/WorksMessage"
         },
@@ -835,6 +1022,9 @@
         },
         {
           "$ref": "#/$defs/PaintingsMessage"
+        },
+        {
+          "$ref": "#/$defs/PlayerStateMessage"
         }
       ]
     },

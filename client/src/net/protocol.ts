@@ -13,7 +13,8 @@ export type ServerMessage =
   | NewsMessage
   | WorksMessage
   | MuralsMessage
-  | PaintingsMessage;
+  | PaintingsMessage
+  | PlayerStateMessage;
 export type EntityKind = 'npc' | 'player';
 /**
  * What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
@@ -34,6 +35,15 @@ export type JsonValue = unknown;
  * has only south faces, towards the camera.
  */
 export type Face = 'south' | 'east';
+/**
+ * What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.
+ */
+export type ItemKind = 'salvage' | 'food' | 'lamp';
+/**
+ * A part fitted in place of one of the player's own. The hydraulic legs replace their legs,
+ * the datajack takes a vertebra, and the infrared eye takes either eye.
+ */
+export type Bionic = 'hydraulic_legs' | 'datajack' | 'infrared_eye';
 export type ClientMessage =
   | PlayerMoveMessage
   | PlayerSayMessage
@@ -344,6 +354,72 @@ export interface Painting {
    * The URL of the painting's image. Each work has its own.
    */
   image: string;
+}
+/**
+ * The player's money, what they carry, their body and their hunger, but never their humanity.
+ * Sent after the snapshot on connect, and whenever any of it changes.
+ */
+export interface PlayerStateMessage {
+  type: 'player_state';
+  player: Player;
+}
+/**
+ * The player's state, saved with the world. Each field defaults to the starting player's, so
+ * a save from before the player loads with a whole body, no money and a charged lamp. Their
+ * humanity is derived from the bionics fitted and isn't a field, so the client never sees it.
+ */
+export interface Player {
+  /**
+   * In the same units as the residents' money.
+   */
+  money: number;
+  /**
+   * What they carry. Picking things up keeps their weight within `carry_limit`.
+   */
+  items: Item[];
+  /**
+   * The most they carry, in kg.
+   */
+  carry_limit: number;
+  body: Body;
+  /**
+   * 0 is fed and 1 is starving: they collapse.
+   */
+  hunger: number;
+}
+/**
+ * Something the player carries.
+ */
+export interface Item {
+  /**
+   * What it is, the same for every one of its kind, e.g. "copper_wire" or "lamp". Salvage is priced by it.
+   */
+  id: string;
+  kind: ItemKind;
+  /**
+   * What the player sees, e.g. "Copper wire".
+   */
+  name: string;
+  /**
+   * In kg, counted against the carry limit.
+   */
+  weight: number;
+  /**
+   * A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.
+   */
+  charge: number | null;
+}
+/**
+ * Each part of the player's body that can be sold or replaced: still `present`, `sold`, or
+ * the bionic fitted in its place. A whole body has every part present.
+ */
+export interface Body {
+  legs: ('present' | 'sold') | Bionic;
+  vertebra: ('present' | 'sold') | Bionic;
+  left_eye: ('present' | 'sold') | Bionic;
+  right_eye: ('present' | 'sold') | Bionic;
+  left_kidney: ('present' | 'sold') | Bionic;
+  right_kidney: ('present' | 'sold') | Bionic;
 }
 /**
  * A position without `map` is on the village. Side-view maps have no village, so there the

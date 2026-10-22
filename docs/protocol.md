@@ -200,6 +200,35 @@ and `name`), `statement`, and `image`, the URL of its picture on the sim server.
 `image` as given. Each work has its own URL, so it changes when a new painting replaces one. A
 painting's F2 `Work` has no `wall` and doesn't say where it hangs.
 
+### `player_state`
+
+`player`: the player's money, what they carry, their body and their hunger, an F2 `Player`
+(`server/simile/schema/player.py`). The server sends it after the `snapshot` and `clock` on
+connect, and again whenever any of it changes, and the client replaces what it had. Clients that
+predate it ignore it.
+
+| Field | Type | |
+|---|---|---|
+| `money` | number | At least 0, in the same units as the residents' money. |
+| `items` | `Item[]` | What they carry. A new player carries only the lamp. |
+| `carry_limit` | number | The most they can carry, in kg. Picking things up keeps the items' total `weight` within it. |
+| `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
+| `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
+
+An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
+which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
+it; its `weight` in kg; and `charge`, a lamp's battery from 0 (flat) to 1 (full), or `null` for
+anything else.
+
+A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
+`right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
+`"hydraulic_legs"` in the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in either eye.
+
+The player's state is saved with the world. A save from before it loads with the starting player:
+a whole body, no money and a fully charged lamp. Their humanity is part of it on the server, derived
+from the bionics fitted (`Player.humanity`), but it's never sent: the player sees it only in how
+residents treat them.
+
 ### `audio_chunk`
 
 A binary frame: part of a line's audio, as Qwen3-TTS produces it. A 12-byte header, then the

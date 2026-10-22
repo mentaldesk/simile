@@ -1,0 +1,76 @@
+{
+  "now": "2026-01-03T08:30:00Z",
+  "npcs": {
+    "desmond": {
+      "position": {"x": 8, "y": 2},
+      "map": "coffee_shop_floor_0",
+      "activity": "coffee_shop",
+      "target": "coffee_shop",
+      "needs": {
+        "social": 0.84,
+        "curiosity": 0.35,
+        "rest": 0.04,
+        "news": 0.4,
+        "inspiration": 0.54,
+        "hunger": 0.44,
+        "boredom": 0.0,
+        "relaxation": 0.01,
+        "exercise": 0.33,
+        "finances": 0.0
+      },
+      "since": "2026-01-03T08:02:20Z",
+      "until": "2026-01-03T08:47:47Z",
+      "cooldowns": {}
+    },
+    "henrietta": {
+      "position": {"x": 3, "y": 2},
+      "map": "house_4_floor_0",
+      "activity": "create",
+      "target": "house_4",
+      "needs": {
+        "social": 0.62,
+        "curiosity": 0.22,
+        "rest": 0.1,
+        "news": 0.22,
+        "inspiration": 0.65,
+        "hunger": 0.54,
+        "boredom": 0.0,
+        "relaxation": 0.52,
+        "exercise": 0.53,
+        "finances": 0.0
+      },
+      "since": "2026-01-03T08:02:10Z",
+      "until": "2026-01-03T08:41:21Z",
+      "cooldowns": {"desmond": "2026-01-03T09:00:00Z"}
+    }
+  },
+  "economy": {
+    "money": {"desmond": 412.5, "henrietta": 260.0},
+    "settled": "2026-01-02",
+    "fridges": {"house_4": 5},
+    "batches": {
+      "noodle_bar": {
+        "shop": "noodle_bar",
+        "shift": "2026-01-03T06:00:00Z",
+        "cooked": 12,
+        "left": 9,
+        "sold_out": null,
+        "gone_off": 0
+      }
+    }
+  },
+  "intentions": [
+    {
+      "id": "conv_9/desmond/1",
+      "owner": "desmond",
+      "kind": "seek",
+      "target": "henrietta",
+      "description": "drop by Henrietta's and hear what she's writing",
+      "promised_to": ["henrietta"],
+      "created": "2026-01-03T08:10:00Z",
+      "due": "2026-01-03T12:00:00Z",
+      "expires": "2026-01-04T12:00:00Z",
+      "conversation_id": "conv_9"
+    }
+  ]
+}
