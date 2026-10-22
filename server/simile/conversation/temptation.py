@@ -42,6 +42,7 @@ class Kind(StrEnum):
     WORK = "work"
     COVER = "cover"
     COMPLAINT = "complaint"
+    FACT = "fact"
 
 
 CUES: dict[Kind, str] = {
@@ -59,6 +60,11 @@ CUES: dict[Kind, str] = {
     Kind.COVER: r"cover for me|back me up|alibi|(?:say|tell \w+) (?:that )?I was",
     Kind.COMPLAINT: r"blame|fault|fell out|falling out|grudge|what you did|complain\w*|fed up|"
     r"sick of|in the way|blocking|for days|since \w+day",
+    Kind.FACT: r"aris|the mechanic|steel hand|(?:her|aris'?s?) workshop|what happened to her|"
+    r"what happened (?:at|in) the (?:workshop|maker ?space)|"
+    r"(?:smash\w*|wreck\w*|trash\w*) (?:up )?the (?:workshop|maker ?space)|"
+    r"broke into the (?:workshop|maker ?space)|the break-?in|the attack|(?:attacked|hurt) her|"
+    r"she was attacked|(?:she|aris) (?:disappeared|vanished|went missing)",
 }
 """Words that touch each kind, besides the words of what it's about."""
 
@@ -139,6 +145,8 @@ class Temptation:
     known_by: frozenset[Id] = frozenset()
     """Whose own memories already hold the truth."""
     admits: str = ADMITS
+    fact_id: Id | None = None
+    """The incident's fact it hides, for one about the incident."""
 
     def direction(self, name: str | None = None) -> str:
         """Told to them, or with `name`, about them."""
@@ -158,6 +166,8 @@ class Lie:
     """The liar's memory of telling it."""
     known: bool
     """Whether the listener's own memories already hold the truth."""
+    fact_id: Id | None = None
+    """The incident's fact it hides, for one about the incident."""
 
 
 class Store(Protocol):
@@ -422,6 +432,7 @@ def lie(temptation: Temptation, listener: Id, names: Mapping[Id, str]) -> Lie:
         temptation.subject,
         blanks(temptation.admits, told),
         listener in temptation.known_by,
+        temptation.fact_id,
     )
 
 

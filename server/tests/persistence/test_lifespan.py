@@ -16,7 +16,7 @@ from simile.llm import FakeProvider, LLMClient, Request, Usage
 from simile.llm.fake import scene
 from simile.memory import MemoryStore, memory_of
 from simile.news import news_of
-from simile.persistence import SavedWorld, WorldStore, capture
+from simile.persistence import SavedWorld, WorldStore, capture, investigation_of
 from simile.persistence.lifespan import FRESH_ENV
 from simile.reflection import SYSTEM, Deed, Extraction, Reflection
 from simile.schema import (
@@ -91,7 +91,9 @@ async def test_restarting_keeps_the_clock_positions_goals_relationships_and_memo
     first = await run_village(timedelta(hours=1, minutes=10), after=remember)
     stopped = saved(database)
     assert stopped.now == START + timedelta(hours=1, minutes=10)
-    assert stopped == capture(behaviour_of(first), economy_of(first))
+    assert stopped == capture(
+        behaviour_of(first), economy_of(first), investigation=investigation_of(first)
+    )
 
     async def resumed(app: Starlette) -> None:
         assert world_of(app).clock.now == stopped.now

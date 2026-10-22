@@ -188,6 +188,7 @@ def _remembered(lie: Lie, context: Context, config: ReflectionConfig) -> list[Me
                 about=[lie.listener],
                 topics=["lie"],
                 conversation_id=context.conversation.id,
+                fact_id=lie.fact_id,
             )
         )
     if lie.known and lie.listener in context.npcs:
@@ -202,6 +203,7 @@ def _remembered(lie: Lie, context: Context, config: ReflectionConfig) -> list[Me
                 about=[lie.liar],
                 topics=["lied to me"],
                 conversation_id=context.conversation.id,
+                fact_id=lie.fact_id,
             )
         )
     return memories
@@ -271,4 +273,12 @@ def _memory(npc: Id, reflection: Reflection, context: Context, config: Reflectio
         about=context.others(npc),
         topics=list(dict.fromkeys(topics))[: config.topics],
         conversation_id=context.conversation.id,
+        fact_id=_hidden(npc, context),
+    )
+
+
+def _hidden(npc: Id, context: Context) -> Id | None:
+    """The incident fact `npc` was set up to lie about here, so their summary stays with it."""
+    return next(
+        (lie.fact_id for lie in context.lies.values() if lie.liar == npc and lie.fact_id), None
     )
