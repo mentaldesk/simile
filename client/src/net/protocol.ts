@@ -46,6 +46,8 @@ export type ItemKind = 'salvage' | 'food' | 'lamp';
  * the datajack takes a vertebra, and the one infrared eye takes either eye.
  */
 export type Bionic = 'hydraulic_legs' | 'datajack' | 'infrared_eye';
+export type BodyPart =
+  'legs' | 'vertebra' | 'left_eye' | 'right_eye' | 'left_kidney' | 'right_kidney';
 /**
  * Where the player learned something: a `resident` told them, or they found a `clue`, such
  * as Aris's notes or a terminal.
@@ -61,7 +63,9 @@ export type ClientMessage =
   | ReadWorkMessage
   | EatMessage
   | PickUpMessage
-  | SellMessage;
+  | SellMessage
+  | SellPartMessage
+  | FitMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -518,6 +522,33 @@ export interface Buyer {
   prices: {
     [k: string]: number;
   };
+  /**
+   * What it pays for each part of their body it would buy now, by `sell_part`, by `Body` field, e.g. `{"left_kidney": 100}`. Left out while it would buy none.
+   */
+  parts?: {
+    [k: string]: number;
+  };
+  /**
+   * The bionics it would fit now, by `fit`, whether or not they can pay. Left out while there are none.
+   */
+  fittings?: Fitting[];
+}
+/**
+ * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.
+ */
+export interface Fitting {
+  bionic: Bionic;
+  /**
+   * The bionic as the player sees it, e.g. "Hydraulic legs".
+   */
+  name: string;
+  price: number;
+  /**
+   * The parts of their body it can go in place of, any one of which they give up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.
+   *
+   * @minItems 1
+   */
+  parts: [BodyPart, ...BodyPart[]];
 }
 /**
  * What the player has learned about the incident, in the order they learned it, with the
@@ -667,4 +698,19 @@ export interface SellMessage {
    * One thing they carry, by its `id`, or null for everything they carry that the buyer buys.
    */
   item: string | null;
+}
+/**
+ * Sells a part of their body to the buyer where they stand, at its `buyer.parts` price.
+ */
+export interface SellPartMessage {
+  type: 'sell_part';
+  part: BodyPart;
+}
+/**
+ * Has the buyer where they stand fit a bionic in place of `part`, for its `fittings` price.
+ */
+export interface FitMessage {
+  type: 'fit';
+  bionic: Bionic;
+  part: BodyPart;
 }

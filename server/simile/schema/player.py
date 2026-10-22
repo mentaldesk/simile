@@ -111,6 +111,7 @@ _REPLACES = {
 _HUMANITY_COST = {Bionic.HYDRAULIC_LEGS: 0.15, Bionic.DATAJACK: 0.1, Bionic.INFRARED_EYE: 0.2}
 
 type PartState = Literal["present", "sold"] | Bionic
+type BodyPart = Literal["legs", "vertebra", "left_eye", "right_eye", "left_kidney", "right_kidney"]
 
 
 class Body(Model):

@@ -70,6 +70,17 @@
       "title": "Body",
       "type": "object"
     },
+    "BodyPart": {
+      "enum": [
+        "legs",
+        "vertebra",
+        "left_eye",
+        "right_eye",
+        "left_kidney",
+        "right_kidney"
+      ],
+      "type": "string"
+    },
     "Buyer": {
       "additionalProperties": false,
       "description": "Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their\nplace.",
@@ -95,6 +106,26 @@
             "minLength": 1
           },
           "type": "object"
+        },
+        "parts": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "default": {},
+          "description": "What it pays for each part of their body it would buy now, by `sell_part`, by `Body` field, e.g. `{\"left_kidney\": 100}`. Left out while it would buy none.",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "type": "object"
+        },
+        "fittings": {
+          "default": [],
+          "description": "The bionics it would fit now, by `fit`, whether or not they can pay. Left out while there are none.",
+          "items": {
+            "$ref": "#/$defs/Fitting"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -109,6 +140,7 @@
       "discriminator": {
         "mapping": {
           "eat": "#/$defs/EatMessage",
+          "fit": "#/$defs/FitMessage",
           "list_news": "#/$defs/ListNewsMessage",
           "list_works": "#/$defs/ListWorksMessage",
           "pick_up": "#/$defs/PickUpMessage",
@@ -117,6 +149,7 @@
           "read_news": "#/$defs/ReadNewsMessage",
           "read_work": "#/$defs/ReadWorkMessage",
           "sell": "#/$defs/SellMessage",
+          "sell_part": "#/$defs/SellPartMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -151,6 +184,12 @@
         },
         {
           "$ref": "#/$defs/SellMessage"
+        },
+        {
+          "$ref": "#/$defs/SellPartMessage"
+        },
+        {
+          "$ref": "#/$defs/FitMessage"
         }
       ]
     },
@@ -404,6 +443,64 @@
       ],
       "title": "Facing",
       "type": "string"
+    },
+    "FitMessage": {
+      "additionalProperties": false,
+      "description": "Has the buyer where they stand fit a bionic in place of `part`, for its `fittings` price.",
+      "properties": {
+        "type": {
+          "const": "fit",
+          "default": "fit",
+          "type": "string"
+        },
+        "bionic": {
+          "$ref": "#/$defs/Bionic"
+        },
+        "part": {
+          "$ref": "#/$defs/BodyPart"
+        }
+      },
+      "required": [
+        "type",
+        "bionic",
+        "part"
+      ],
+      "title": "FitMessage",
+      "type": "object"
+    },
+    "Fitting": {
+      "additionalProperties": false,
+      "description": "A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.",
+      "properties": {
+        "bionic": {
+          "$ref": "#/$defs/Bionic"
+        },
+        "name": {
+          "description": "The bionic as the player sees it, e.g. \"Hydraulic legs\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "price": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "parts": {
+          "description": "The parts of their body it can go in place of, any one of which they give up for it: `[\"legs\"]`, or `[\"left_eye\", \"right_eye\"]` for an eye.",
+          "items": {
+            "$ref": "#/$defs/BodyPart"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "bionic",
+        "name",
+        "price",
+        "parts"
+      ],
+      "title": "Fitting",
+      "type": "object"
     },
     "Frame": {
       "additionalProperties": false,
@@ -1364,6 +1461,26 @@
         "item"
       ],
       "title": "SellMessage",
+      "type": "object"
+    },
+    "SellPartMessage": {
+      "additionalProperties": false,
+      "description": "Sells a part of their body to the buyer where they stand, at its `buyer.parts` price.",
+      "properties": {
+        "type": {
+          "const": "sell_part",
+          "default": "sell_part",
+          "type": "string"
+        },
+        "part": {
+          "$ref": "#/$defs/BodyPart"
+        }
+      },
+      "required": [
+        "type",
+        "part"
+      ],
+      "title": "SellPartMessage",
       "type": "object"
     },
     "ServerMessage": {

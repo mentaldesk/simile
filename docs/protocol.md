@@ -22,8 +22,8 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `left` and `taken`, a pile's `money`, and
-  `player_state`'s `meal`, `buyer` and `piles`, below.
+  `long_summary`, a wall's `map`, a player's `left` and `taken`, a pile's `money`, a buyer's
+  `parts` and `fittings`, and `player_state`'s `meal`, `buyer` and `piles`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -244,6 +244,20 @@ what it pays for one of each thing the player carries that it buys, by item `id`
 a resident only voices them. The server sends a new `player_state` when the player walks up to a
 buyer or away from one.
 
+A keeper such as the clinic's doctor may also buy parts of the player's body and fit bionics:
+
+- `parts`: what it pays for each part of their body it would buy now, by `Body` field, which they
+  sell with [`sell_part`](#sell_part): `{"left_kidney": 100}`. It's left out while it would buy
+  none, as at the scrap trader's stall, or at the clinic once they've sold a kidney.
+- `fittings`: the bionics it would fit now, whether or not they can pay, which they have fitted
+  with [`fit`](#fit). It's left out while there are none. A `Fitting` has its `bionic`; its
+  `name`, as the player sees it, such as `"Hydraulic legs"`; its `price`; and its `parts`, the parts
+  of their body it can go in place of, any one of which they give up for it: `["legs"]`, or
+  `["left_eye", "right_eye"]` for the infrared eye.
+
+Like `prices`, both are the server's, and so is the stock: what the keeper would buy or fit now is
+already in them. The keeper only voices them, and talking can't change them.
+
 And it has `piles`: what's lying in the world for the player to pick up besides what they left,
 such as salvage and secrets, as `Pile`s on every map. It's left out while there's none. A pile in
 `piles` that they take everything from is gone from the next `player_state`, and one they take only
@@ -264,7 +278,7 @@ the ground below it. Salvage and secrets, in `piles`, are another.
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
 `right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
 `"hydraulic_legs"` in the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in one eye or
-the other, never both.
+the other, never both. A `BodyPart` is one of those six field names.
 
 The player's state is saved with the world. A save from before it loads with the starting player:
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere and
@@ -393,6 +407,23 @@ buyer where they stand buys, `player_state`'s [`buyer`](#player_state). Each is 
 buyer's price in `prices`, which goes to their `money`. The server sends the
 [`player_state`](#player_state) that follows. It ignores a `sell` where there's no buyer, and one
 for an item they don't carry or the buyer doesn't buy.
+
+### `sell_part`
+
+`part`: a part of the player's body, a `BodyPart` such as `"left_kidney"`, that the buyer where
+they stand buys, by `player_state`'s [`buyer`](#player_state)'s `parts`. It's sold for that price,
+which goes to their `money`, and the part is `"sold"` in their `body` from then on. The server sends
+the [`player_state`](#player_state) that follows. It ignores a `sell_part` where there's no buyer,
+and one for a part the buyer won't buy.
+
+### `fit`
+
+`bionic` and `part`: one of the bionics the buyer where they stand fits, by `player_state`'s
+[`buyer`](#player_state)'s `fittings`, and the part of their body it goes in place of, one of that
+fitting's `parts`. They pay its `price` from their `money`, and the bionic is in that part of their
+`body` from then on. The server sends the [`player_state`](#player_state) that follows. It ignores
+a `fit` where there's no buyer, for a bionic it doesn't fit, for a part the bionic can't go in
+place of, and one they can't pay for.
 
 ### `watch_npc`
 

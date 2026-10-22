@@ -6,6 +6,8 @@ from pydantic import ConfigDict, Field, JsonValue, TypeAdapter, model_validator
 
 from simile.schema import (
     VILLAGE_MAP,
+    Bionic,
+    BodyPart,
     Conversation,
     Facing,
     Id,
@@ -287,6 +289,21 @@ class Meal(Model):
     price: float = Field(ge=0, allow_inf_nan=False, description="What it costs. Nothing at home.")
 
 
+class Fitting(Model):
+    """A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`."""
+
+    bionic: Bionic
+    name: str = Field(
+        min_length=1, description='The bionic as the player sees it, e.g. "Hydraulic legs".'
+    )
+    price: float = Field(ge=0, allow_inf_nan=False)
+    parts: list[BodyPart] = Field(
+        min_length=1,
+        description="The parts of their body it can go in place of, any one of which they give "
+        'up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.',
+    )
+
+
 class Buyer(Model):
     """Who buys things where the player stands, by sending `sell`: a stall, or a keeper at their
     place."""
@@ -299,6 +316,18 @@ class Buyer(Model):
     prices: dict[Key, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
         description="What it pays for one of each thing they carry that it buys, by item `id`. "
         "Empty when they carry nothing it buys."
+    )
+    parts: dict[Key, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
+        default={},
+        exclude_if=lambda parts: not parts,
+        description="What it pays for each part of their body it would buy now, by `sell_part`, "
+        'by `Body` field, e.g. `{"left_kidney": 100}`. Left out while it would buy none.',
+    )
+    fittings: list[Fitting] = Field(
+        default=[],
+        exclude_if=lambda fittings: not fittings,
+        description="The bionics it would fit now, by `fit`, whether or not they can pay. Left "
+        "out while there are none.",
     )
 
 
@@ -418,6 +447,21 @@ class SellMessage(Model):
     )
 
 
+class SellPartMessage(Model):
+    """Sells a part of their body to the buyer where they stand, at its `buyer.parts` price."""
+
+    type: Literal["sell_part"] = "sell_part"
+    part: BodyPart
+
+
+class FitMessage(Model):
+    """Has the buyer where they stand fit a bionic in place of `part`, for its `fittings` price."""
+
+    type: Literal["fit"] = "fit"
+    bionic: Bionic
+    part: BodyPart
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
@@ -446,7 +490,9 @@ type ClientMessage = Annotated[
     | ReadWorkMessage
     | EatMessage
     | PickUpMessage
-    | SellMessage,
+    | SellMessage
+    | SellPartMessage
+    | FitMessage,
     Field(discriminator="type"),
 ]
 
