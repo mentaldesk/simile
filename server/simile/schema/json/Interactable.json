@@ -1,10 +1,12 @@
 {
   "$defs": {
     "InteractableKind": {
+      "description": "What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles.",
       "enum": [
         "counter",
         "painting",
-        "machine"
+        "machine",
+        "plug"
       ],
       "title": "InteractableKind",
       "type": "string"

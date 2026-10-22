@@ -35,12 +35,13 @@ class Item(Model):
     )
     charge: Unit | None = Field(
         default=None,
-        description="A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.",
+        description="A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is "
+        "on and charges while the player stands at a plug. Null for anything else.",
     )
     on: bool | None = Field(
         default=None,
-        description="Whether a lamp is switched on, running its battery down. Null for anything "
-        "else.",
+        description="Whether a lamp is switched on, running its battery down. The player switches "
+        "it, and it goes off by itself when it's flat. Null for anything else.",
     )
 
     @model_validator(mode="before")

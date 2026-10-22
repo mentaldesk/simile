@@ -58,6 +58,9 @@ interiors' ids; this document says where.
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
   you can use inside, and a `Location` says which map it's on. Interactable ids go over the wire
   only in [`paintings`](#paintings).
+  - An `Interactable`'s `kind` is `"counter"`, `"painting"`, `"machine"` or `"plug"`. A plug
+    charges the player's lamp while they stand on one of its `stand` tiles, so the client finds
+    the plugs, and whether the lamp is charging, from the maps.
   - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
     door. A door joins a street or the village (`outside`) and a building's ground floor
     (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
@@ -253,7 +256,9 @@ it's taken, in a later `player_state`, and a secret never does.
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
 which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
 it; its `weight` in kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a
-lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else.
+lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else. The
+player switches the lamp with [`lamp`](#lamp). It charges while they stand at a plug, and when its
+battery runs flat it goes off by itself.
 
 A `Pile` is things lying on a tile in the world for the player to pick up with
 [`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
@@ -393,6 +398,12 @@ buyer where they stand buys, `player_state`'s [`buyer`](#player_state). Each is 
 buyer's price in `prices`, which goes to their `money`. The server sends the
 [`player_state`](#player_state) that follows. It ignores a `sell` where there's no buyer, and one
 for an item they don't carry or the buyer doesn't buy.
+
+### `lamp`
+
+`on`: `true` to switch on the lamp the player carries, `false` to switch it off. The server sends
+the [`player_state`](#player_state) that follows. It ignores a `lamp` if they carry no lamp, if it's
+already on or off as asked, and for switching on a flat one.
 
 ### `watch_npc`
 
