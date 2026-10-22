@@ -1,0 +1,83 @@
+.clinic {
+  position: absolute;
+  left: 200px;
+  right: 4px;
+  top: 4px;
+  max-height: calc(100% - 28px);
+  display: flex;
+  flex-direction: column;
+  padding: 3px 4px;
+  border: 1px solid #e8b04a;
+  border-radius: 3px;
+  background: rgb(17 17 17 / 92%);
+  pointer-events: auto;
+  outline: none;
+}
+
+.clinic header {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #555;
+  color: #e8b04a;
+}
+
+.clinic footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 3px;
+  padding-top: 2px;
+  border-top: 1px solid #555;
+  font-size: 7px;
+}
+
+.clinic footer span {
+  flex-shrink: 0;
+  color: #e8b04a;
+  opacity: 0.7;
+}
+
+.clinic small {
+  padding-top: 3px;
+  font-size: 7px;
+  color: #7fc8a9;
+}
+
+.clinic ol {
+  min-height: 0;
+  margin: 3px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.clinic li {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 3px 4px;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+
+.clinic li.clinic-selected {
+  border-left-color: #e8b04a;
+  background: rgb(232 176 74 / 12%);
+}
+
+.clinic li.clinic-armed {
+  border-left-color: #e05a47;
+  background: rgb(224 90 71 / 16%);
+}
+
+.clinic li.clinic-short {
+  opacity: 0.5;
+}
+
+.clinic p {
+  margin: 0;
+  opacity: 0.85;
+}

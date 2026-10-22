@@ -1,0 +1,69 @@
+{
+  "id": "annelie",
+  "name": "Annelie Joubert",
+  "age": 58,
+  "occupation": "Tunnel surgeon",
+  "home": "clinic",
+  "values": {
+    "freedom": 0.72,
+    "independence": 0.88,
+    "self_respect": 0.7,
+    "self_actualization": 0.45,
+    "creativity": 0.55,
+    "honesty": 0.8,
+    "compassion": 0.3,
+    "loyalty": 0.22,
+    "justice": 0.28,
+    "responsibility": 0.74,
+    "security": 0.32,
+    "equality": 0.4,
+    "tradition": 0.05,
+    "obedience": 0.04,
+    "success": 0.62,
+    "ambition": 0.66,
+    "discipline": 0.86,
+    "knowledge": 0.9,
+    "open_mindedness": 0.82,
+    "peace_of_mind": 0.35,
+    "pleasure": 0.18,
+    "connection": 0.12,
+    "adventure": 0.42,
+    "optimism": 0.2
+  },
+  "backstory": "Annelie spent twenty years cutting for Apex Biotech up in the towers, fitting grown organs into people who could pay for them. She was struck off for fitting the same parts into people who couldn't, and when the money ran out she took her instruments down into the old metro. She has run the clinic in the depot office ever since, buying healthy organs that she sells on to the city's brokers and fitting cheap salvaged bionics to anyone who needs to get somewhere their body can't.",
+  "persona": "Annelie is a dry, exact surgeon who treats a body as a set of parts with prices, her own included, and sees nothing shameful in trading them. She tells people plainly what a procedure costs and what it will take from them, never haggles, and never pretends a part is better than it is. She is curious about what people become once they're fitted, admires anyone who changes themselves on purpose, and has no patience for sentiment, tradition or anyone who wants comforting.",
+  "speaking_style": "Short, flat sentences in a South African accent, clinical words used plainly, and prices said as facts. She calls people by the part she's looking at, asks blunt questions about their body, and lets a silence sit rather than fill it.",
+  "mannerisms": [
+    "names the price before anyone asks",
+    "talks about a body as parts and their prices"
+  ],
+  "humour": {
+    "style": "gallows",
+    "seriousness": 0.75
+  },
+  "interests": [
+    "surgery done cheaply and well",
+    "what salvaged parts can still do",
+    "people who chose to change themselves",
+    "how the towers price a body"
+  ],
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "bun",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#a8e6f0",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "slim",
+    "accessories": [
+      "glasses",
+      "apron"
+    ]
+  },
+  "voice": {
+    "description": "A heavy South African accent. A woman in her late fifties, dry, low and unhurried.",
+    "reference_line": "Sit on the table and roll up your shirt. This won't take long, and you'll walk out of here on your own two feet.",
+    "reference_clip": "content/voices/annelie.wav"
+  },
+  "craft": null
+}

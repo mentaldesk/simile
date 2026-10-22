@@ -46,7 +46,7 @@ from simile.dolls.measure import (
 )
 from simile.dolls.sprites import VERSION, atlas, cut_out, frames, manifest, scale, seat
 from simile.dolls.words import gender_in, persona
-from simile.schema import PLAYER_ID, Appearance
+from simile.schema import PLAYER_ID, Appearance, Npc
 from simile.schema.player import Bionic
 
 REPO = Path(__file__).resolve().parents[3]
@@ -78,21 +78,32 @@ MISSES: dict[tuple[str, str, str], str] = {
 Cut = Callable[[Image.Image], Image.Image]
 
 
-def people() -> dict[str, Appearance]:
-    """Every resident in `content/npcs/` and the player, by id."""
-    from simile.characters.palette import PLAYER
+def characters() -> list[Npc]:
+    """Every resident in `content/npcs/`, and the clinic's doctor."""
+    from simile.clinic.doctor import load_doctor
     from simile.npc.content import NPCS_DIR, load_npcs
 
-    return {npc.id: npc.appearance for npc in load_npcs(NPCS_DIR)} | {PLAYER_ID: PLAYER}
+    return [*load_npcs(NPCS_DIR), load_doctor()]
+
+
+def outsiders() -> set[str]:
+    """The characters who aren't residents, whose manifests say so: the clinic's doctor."""
+    from simile.clinic.doctor import DOCTOR
+
+    return {DOCTOR}
+
+
+def people() -> dict[str, Appearance]:
+    """Every character and the player, by id."""
+    from simile.characters.palette import PLAYER
+
+    return {npc.id: npc.appearance for npc in characters()} | {PLAYER_ID: PLAYER}
 
 
 def personas() -> dict[str, str]:
-    """Each resident's age, and whether a man or a woman, from their voice."""
-    from simile.npc.content import NPCS_DIR, load_npcs
-
+    """Each character's age, and whether a man or a woman, from their voice."""
     return {
-        npc.id: persona(npc.age, gender_in(npc.voice.description or ""))
-        for npc in load_npcs(NPCS_DIR)
+        npc.id: persona(npc.age, gender_in(npc.voice.description or "")) for npc in characters()
     }
 
 
@@ -467,8 +478,12 @@ def build(
     with model.stack:
         for who in todo:
             painted = paint(who, everyone[who], model, said.get(who, ""), cut, log)
-            appearance = everyone[who].model_dump(mode="json")
-            changed = write(directory, files(who, painted, hash=hashes[who], appearance=appearance))
+            extra = {
+                "hash": hashes[who],
+                "appearance": everyone[who].model_dump(mode="json"),
+                **({"resident": False} if who in outsiders() else {}),
+            }
+            changed = write(directory, files(who, painted, **extra))
             log(f"{who}: painted in {painted.seconds:.0f} s of FLUX, wrote {len(changed)} files")
             done.append(painted)
         if PLAYER_ID in wanted:

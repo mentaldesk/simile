@@ -74,7 +74,9 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 scrap trader's stall on the metro's platform and the clinic. `buyer()` names it, by its location's
 name, with the economy's price for each kind of salvage they carry. The client's `sell` sells one
 item by id, or everything the buyer buys, each through the ledger as `salvage`. The stall needs
-nobody behind it for now, and neither does the clinic until S7's doctor.
+nobody behind it for now. A keeper adds what else they trade to their place's buyer through
+`keepers_of(app)`, as the clinic's doctor (`simile.clinic`) adds the parts of the body they'd buy
+and the bionics they'd fit.
 
 ## `player_state`
 

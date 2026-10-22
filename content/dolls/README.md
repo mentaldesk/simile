@@ -19,8 +19,8 @@ using the GPU.
 
 ## Files
 
-For each resident, `player`, and the player with each combination of bionics (`player_legs`,
-`player_datajack_eye`, `player_legs_datajack_eye` and so on, below):
+For each resident, the clinic's doctor, `player`, and the player with each combination of bionics
+(`player_legs`, `player_datajack_eye`, `player_legs_datajack_eye` and so on, below):
 
 | File | What it is |
 |---|---|
@@ -67,6 +67,9 @@ For each resident, `player`, and the player with each combination of bionics (`p
   calves, however far its shins slant.
 - **`poses`**: the frames each pose plays through its cycle. Every frame faces right in
   three-quarter view but the climb, seen from behind; the client mirrors them to face west.
+- **`resident`** is `false` for someone who isn't a villager, the clinic's doctor
+  (`content/npcs/tunnels/`), so the client never lends her figure to anyone without one of their
+  own. It's left out for everyone else.
 - **`hash`** is what the figure was painted from: the pipeline's `version`, the `Appearance`, who
   they are (age, and a man or a woman, from their voice) and any reroll. A figure whose hash no
   longer matches is painted again; nothing else is.

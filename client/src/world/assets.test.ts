@@ -34,6 +34,12 @@ describe('dollFor', () => {
     expect(Object.values(dolls)).toContain(stranger);
   });
 
+  it('is the doctor’s only for the doctor, never a stranger’s', () => {
+    expect(dollFor('annelie')).toBe(dolls.annelie);
+    const strangers = Array.from({ length: 200 }, (_, n) => dollFor(`stranger_${n}`));
+    expect(strangers).not.toContain(dolls.annelie);
+  });
+
   it('is the player’s with whatever bionics are fitted', () => {
     const body = new PlayerBody();
     expect(dollFor('player', body)).toBe(dolls.player);

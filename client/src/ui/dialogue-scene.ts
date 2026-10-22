@@ -7,6 +7,7 @@ import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { callCue } from './call-cue';
 import { ChatBox } from './chat-box';
+import { ClinicPanel, type Keeper } from './clinic-panel';
 import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
@@ -36,6 +37,7 @@ export class DialogueScene extends Phaser.Scene {
   private newsHint!: HTMLElement;
   private ways!: WayPromptLayer;
   private murals!: MuralPanel;
+  private clinic!: ClinicPanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private lamp!: LampGauge;
@@ -69,6 +71,10 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.textContent = `Press ${NEWS_KEY.toUpperCase()} to read the news.`;
     this.ways = new WayPromptLayer(this.root);
     this.murals = new MuralPanel(this.root, muralWalls);
+    this.clinic = new ClinicPanel(this.root, (message) => server.send(message), (npcId) => {
+      chat.choose(npcId);
+      chat.open();
+    });
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
@@ -113,9 +119,11 @@ export class DialogueScene extends Phaser.Scene {
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
-    this.hunger.update(playerState.latest, used?.kind === 'pile' ? used.pile : undefined);
+    this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper());
+    const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
+    this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
-    const panelOpen = this.news.isOpen || this.murals.isOpen;
+    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
@@ -141,6 +149,17 @@ export class DialogueScene extends Phaser.Scene {
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
+    else if (used?.kind === 'clinic' && playerState.latest) {
+      this.murals.close();
+      this.news.close();
+      this.clinic.open(used.buyer, playerState.latest.player, this.keeper());
+    }
+  }
+
+  /** Whoever the player could talk to at the clinic: the doctor, once they're ringed. */
+  private keeper(): Keeper | undefined {
+    const id = this.targets.current();
+    return id === undefined ? undefined : { id, name: dialogue.nameOf(id) };
   }
 
   /** F has the meal on offer here if they can pay, else eats something they carry. */

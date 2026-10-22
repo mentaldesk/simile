@@ -22,6 +22,7 @@ def register(app: typer.Typer) -> None:
         import importlib.util
         import shutil
 
+        from simile.clinic.doctor import load_doctor
         from simile.npc import NPCS_DIR, load_npcs
         from simile.voicing import gpu
         from simile.voicing import greetings as recorded
@@ -34,7 +35,7 @@ def register(app: typer.Typer) -> None:
             save_made,
         )
 
-        residents = {npc.id: npc for npc in load_npcs(NPCS_DIR)}
+        residents = {npc.id: npc for npc in [*load_npcs(NPCS_DIR), load_doctor()]}
         if unknown := sorted(set(npcs or ()) - residents.keys()):
             raise typer.BadParameter(f"no such resident: {', '.join(unknown)}", param_hint="NPCS")
         lines = load_lines()

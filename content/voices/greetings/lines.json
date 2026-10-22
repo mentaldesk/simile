@@ -1,4 +1,10 @@
 {
+  "annelie": [
+    {"text": "Come in. Shut the door behind you."},
+    {"text": "Back again? Sit on the table."},
+    {"text": "What are you selling today?"},
+    {"text": "Mind the drain. What do you need?"}
+  ],
   "desmond": [
     {"text": "Kia orana!", "take": 2},
     {"text": "Hey there, got a minute?", "take": 2},

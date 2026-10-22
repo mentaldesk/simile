@@ -1,5 +1,6 @@
 import { playerState, type Buyer, type Pile, type Position, type Wall } from '../net';
 import { maps } from './assets';
+import { isClinic } from './buyers';
 import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
 import { mapOf } from './map';
@@ -13,6 +14,7 @@ export type Reachable =
   | { kind: 'mural'; tiles: number; wall: Wall }
   | { kind: 'pile'; tiles: number; pile: Pile }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
+  | { kind: 'clinic'; tiles: number; buyer: Buyer }
   | { kind: 'clue'; tiles: number; clue: Clue };
 
 export type Reachables = {
@@ -70,7 +72,8 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   const pile = pileInReach(position, from.piles());
   if (pile) found.push({ kind: 'pile', ...pile });
   const buyer = from.buyer();
-  if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
+  if (buyer && isClinic(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
+  else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
   const clue = clueInReach(position, from.clues);
   if (clue) found.push({ kind: 'clue', ...clue });
   return found.sort((a, b) => a.tiles - b.tiles);

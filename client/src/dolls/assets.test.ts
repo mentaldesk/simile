@@ -11,8 +11,9 @@ const figure = {
 };
 
 describe('the committed figures', () => {
-  it('load for every resident and the player, each with its atlas', () => {
+  it('load for every resident, the doctor and the player, each with its atlas', () => {
     expect(Object.keys(dolls).sort()).toEqual([
+      'annelie',
       'desmond',
       'henrietta',
       'ingrid',
@@ -40,6 +41,10 @@ describe('the committed figures', () => {
       expect(doll.ppm).toBe(80);
       expect(Object.keys(doll.frames).length).toBeGreaterThanOrEqual(5);
     }
+  });
+
+  it('say which is no villager’s: the doctor’s', () => {
+    expect(Object.keys(dolls).filter((id) => dolls[id]!.resident === false)).toEqual(['annelie']);
   });
 });
 
