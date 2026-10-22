@@ -33,7 +33,8 @@ interiors' ids; this document says where.
   - On a side-view map, x runs along the street and y counts rows down from the top. `map` is a
     street's or a floor's id. A tile is about 1.1 m, as on the isometric maps, so distances in
     tiles mean the same in both. A resident stands on a cell with ground under it, or on a
-    climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb.
+    climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb. The player can
+    also be mid-air, jumping or falling (see [`player_move`](#player_move)).
 - An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
   `"working"`, `"looking"`, `"climbing"` (on stairs or a ladder) or `"riding"` (in a lift). Its
   **facing** is the way it faces on the map, x east and y south: `"east"`, `"south_east"`,
@@ -82,7 +83,7 @@ client replaces whatever it had.
 |---|---|---|
 | `time` | timestamp | Sim time now. |
 | `map_id` | string | The map the player starts on, e.g. `"village"`, or on side-view maps a street's id. |
-| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. |
+| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. The player's can be mid-air, where a jump or a fall was when the server last heard (see [`player_move`](#player_move)). |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
@@ -229,10 +230,27 @@ Example: line 7, chunk 2, last, samples 1, -2, 32767:
 
 ### `player_move`
 
-`position`. The client sends the player's position as it changes, and the server trusts it.
-Going through a door is a `player_move` with the other map's `map`. A position without `map` puts
-the player on the village. Side-view maps have no village, so there the server ignores a position
-without `map`, as it ignores a position on any map it doesn't know.
+`position`. The client sends the player's position as it changes, and the server takes it as it
+is. Going through a door is a `player_move` with the other map's `map`. A position without `map`
+puts the player on the village. Side-view maps have no village, so there the server ignores a
+position without `map`, as it ignores a position on any map it doesn't know.
+
+On a side-view map the player can jump and fall, so a position can be mid-air. The server keeps a
+position in open air, over somewhere to land, if either:
+
+- it's within the farthest and highest jump the player can make from somewhere to stand: a run
+  jump with Space held, taking off as late as coyote time allows. Its reach along the row and its
+  height are set in one place, which the client's jump and the server's check both read; or
+- it's lower than the last position the server kept on that map, and within that jump's reach of
+  it along the row, as in a fall from any height, which lands safely.
+
+It ignores a position nobody could be at: inside something solid, off the map, over nothing to
+land on, or higher than any jump without being a fall within reach of the last position kept. It
+never moves the player back onto the ground: the next `player_move` says where they landed. The player's entity is still `standing` in a jump, as
+the server doesn't track the player's pose.
+
+The server keeps the last position it was sent, so a [`snapshot`](#snapshot), after a reload or a
+reconnection, can put the player mid-air. The client lets them fall from there.
 
 ### `player_say`
 
