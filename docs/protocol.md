@@ -226,7 +226,7 @@ it ignore it.
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
 | `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
-| `taken` | `string[]` | The pickups in the world they've taken from, by id, which stay taken. Left out while there's none. |
+| `taken` | object | When they last took from each pickup in the world, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 
 Beside `player`, the message has `meal`: the meal on offer where the player stands, which they can
 have by sending [`eat`](#eat) without an item. It's left out where there's none. A `Meal` has its
@@ -247,7 +247,8 @@ buyer or away from one.
 And it has `piles`: what's lying in the world for the player to pick up besides what they left,
 such as salvage and secrets, as `Pile`s on every map. It's left out while there's none. A pile in
 `piles` that they take everything from is gone from the next `player_state`, and one they take only
-some of is in their `left` from then on, with what didn't fit.
+some of is in their `left` from then on, with what didn't fit. Salvage comes back a while after
+it's taken, in a later `player_state`, and a secret never does.
 
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
 which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
@@ -267,9 +268,8 @@ the other, never both.
 
 The player's state is saved with the world. A save from before it loads with the starting player:
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere and
-nothing taken. Their
-humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
-never sent: the player sees it only in how residents treat them.
+nothing taken. Their humanity is part of it on the server, derived from the bionics fitted
+(`Player.humanity`), but it's never sent: the player sees it only in how residents treat them.
 
 ### `player_collapsed`
 

@@ -3,7 +3,7 @@ from typing import Any, Final, Literal
 
 from pydantic import Field, model_validator
 
-from simile.schema.common import CHECKED, Id, Model, Unit
+from simile.schema.common import CHECKED, Id, Key, Model, Timestamp, Unit
 from simile.schema.world import MapTile
 
 CARRY_LIMIT = 10.0
@@ -71,6 +71,7 @@ class Pile(Model):
         default=0.0,
         ge=0,
         allow_inf_nan=False,
+        strict=True,
         exclude_if=lambda money: not money,
         description="Cash lying there, which weighs nothing. Left out while there's none.",
     )
@@ -78,6 +79,7 @@ class Pile(Model):
     @model_validator(mode="before")
     @classmethod
     def _something_lies_there(cls, data: Any) -> Any:
+        # `money` is strict, so a string can't pass this as cash and turn into 0 after it.
         if isinstance(data, dict) and not data.get("items") and not data.get("money"):
             raise ValueError("a pile holds at least one item or some money")
         return data
@@ -170,11 +172,12 @@ class Player(Model):
         "collapsed, on the tile they fell on or the ground below it, and anything of a pickup that "
         "didn't fit when they took from it. Left out while there's none.",
     )
-    taken: list[Id] = Field(
-        default=[],
+    taken: dict[Key, Timestamp] = Field(
+        default={},
         exclude_if=lambda taken: not taken,
-        description="The pickups in the world they've taken from, by id, which stay taken. Left "
-        "out while there's none.",
+        description="When they last took from each pickup in the world, in sim time, by pickup "
+        "id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, "
+        "stays taken for good. Left out while there's none.",
     )
 
     @property
