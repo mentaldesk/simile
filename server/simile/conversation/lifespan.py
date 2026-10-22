@@ -6,11 +6,12 @@ from starlette.applications import Starlette
 
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
+    import os
     from datetime import timedelta
 
     from simile.behaviour import behaviour_of
     from simile.conversation.engine import conversations_of
-    from simile.conversation.player import PlayerConversations
+    from simile.conversation.player import SUSPECT_ENV, PlayerConfig, PlayerConversations
     from simile.conversation.temptation import Missed, missed_shifts
     from simile.news import news_of
     from simile.persistence import investigation_of
@@ -35,7 +36,11 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         grace = timedelta(minutes=economy.config.late)
         return missed_shifts(economy.turns, npc, economy.clock.now, grace)
 
-    players = PlayerConversations(engine, connected=lambda: bool(hub.connections), article=article)
+    suspect = os.environ.get(SUSPECT_ENV)
+    config = PlayerConfig(suspect_model=suspect) if suspect else PlayerConfig()
+    players = PlayerConversations(
+        engine, connected=lambda: bool(hub.connections), article=article, config=config
+    )
     engine.player_request, engine.article, engine.work = players.request, article, work
     engine.missed = missed
     engine.incident = lambda: investigation_of(app).incident

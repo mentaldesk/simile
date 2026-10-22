@@ -13,6 +13,7 @@ import { dialogue } from './dialogue';
 import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
+import { JournalPanel, lookAtClue } from './journal-panel';
 import { eUse, onGameKey } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
@@ -40,6 +41,8 @@ export class DialogueScene extends Phaser.Scene {
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private lamp!: LampGauge;
+  private journal!: JournalPanel;
+  private help!: HelpPanel;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -76,8 +79,9 @@ export class DialogueScene extends Phaser.Scene {
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
     this.lamp = new LampGauge(this.root);
-    const help = new HelpPanel(this.root);
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help });
+    const journal = (this.journal = new JournalPanel(this.root));
+    const help = (this.help = new HelpPanel(this.root));
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -92,6 +96,7 @@ export class DialogueScene extends Phaser.Scene {
       stopCollapses();
       this.news.stop();
       this.murals.stop();
+      journal.stop();
       log.stop();
       this.root.remove();
     });
@@ -119,6 +124,7 @@ export class DialogueScene extends Phaser.Scene {
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
+    this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
     const target = this.targets.current();
@@ -142,6 +148,7 @@ export class DialogueScene extends Phaser.Scene {
     } else if (used?.kind === 'mural') this.murals.look(this.player());
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
+    else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'clinic' && playerState.latest) {
       this.murals.close();
       this.news.close();

@@ -12,7 +12,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.clients import InGame
     from simile.player.hunger import Hunger
     from simile.player.lamp import Lamp
-    from simile.player.pickups import Pickups
+    from simile.player.pickups import Pickups, claimers_of
     from simile.player.sync import PlayerSync
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
@@ -61,7 +61,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
             sync.update()
 
     def on_pick_up(message: PickUpMessage) -> None:
-        if pickups.pick_up():
+        if pickups.pick_up(claimers_of(app)):
             sync.update()
 
     def on_sell(message: SellMessage) -> None:

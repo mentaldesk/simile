@@ -1,6 +1,7 @@
 import { playerState, type Buyer, type Pile, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { isClinic } from './buyers';
+import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
 import { mapOf } from './map';
 import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
@@ -13,7 +14,8 @@ export type Reachable =
   | { kind: 'mural'; tiles: number; wall: Wall }
   | { kind: 'pile'; tiles: number; pile: Pile }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
-  | { kind: 'clinic'; tiles: number; buyer: Buyer };
+  | { kind: 'clinic'; tiles: number; buyer: Buyer }
+  | { kind: 'clue'; tiles: number; clue: Clue };
 
 export type Reachables = {
   terminals: readonly Terminal[];
@@ -21,6 +23,7 @@ export type Reachables = {
   interactableAt(map: string, position: Position): Interactable | undefined;
   piles(): readonly Pile[];
   buyer(): Buyer | undefined;
+  clues: readonly Clue[];
 };
 
 /** Murals only count while a scene draws them, as for the mural panel. */
@@ -30,6 +33,7 @@ export const reachables: Reachables = {
   interactableAt,
   piles: () => [...(playerState.latest?.player.left ?? []), ...(playerState.latest?.piles ?? [])],
   buyer: () => playerState.latest?.buyer ?? undefined,
+  clues,
 };
 
 /** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
@@ -70,6 +74,8 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   const buyer = from.buyer();
   if (buyer && isClinic(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
   else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
+  const clue = clueInReach(position, from.clues);
+  if (clue) found.push({ kind: 'clue', ...clue });
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 
