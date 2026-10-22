@@ -62,7 +62,7 @@ def test_a_front_is_painted_as_units_of_a_size_flux_keeps_to(building: str) -> N
         width, height = plan.image.size
         assert width % 16 == 0 and height % 16 == 0 and max(width, height) <= 1536
         assert 0.8e6 < width * height < 1.4e6
-        assert unit.width <= UNIT
+        assert unit.width <= UNIT or len(parts) == 1
         assert unit.door is None or f.door == pytest.approx(x + unit.door)
     assert sum(unit.width for _, unit in units(f)) == pytest.approx(f.width)
     assert sum(unit.door is not None for _, unit in units(f)) == (f.door is not None)

@@ -2909,5 +2909,1012 @@
   "y": 10,
   "last": null,
   "kept": false
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 3.04,
+  "y": 9,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 3.58,
+  "y": 9,
+  "last": [
+   3.04,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 4,
+  "y": 9,
+  "last": [
+   3.58,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 4.29,
+  "y": 9.29,
+  "last": [
+   4,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 4.59,
+  "y": 9.59,
+  "last": [
+   4.29,
+   9.29
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 4.88,
+  "y": 9.88,
+  "last": [
+   4.59,
+   9.59
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 5.18,
+  "y": 10.18,
+  "last": [
+   4.88,
+   9.88
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 5.47,
+  "y": 10.47,
+  "last": [
+   5.18,
+   10.18
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 5.76,
+  "y": 10.76,
+  "last": [
+   5.47,
+   10.47
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 6.06,
+  "y": 11.06,
+  "last": [
+   5.76,
+   10.76
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 6.35,
+  "y": 11.35,
+  "last": [
+   6.06,
+   11.06
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 6.65,
+  "y": 11.65,
+  "last": [
+   6.35,
+   11.35
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 6.94,
+  "y": 11.94,
+  "last": [
+   6.65,
+   11.65
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 7,
+  "y": 12,
+  "last": [
+   6.94,
+   11.94
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 7.04,
+  "y": 12,
+  "last": [
+   7,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 7.58,
+  "y": 12,
+  "last": [
+   7.04,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 8.12,
+  "y": 12,
+  "last": [
+   7.58,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 8.66,
+  "y": 12,
+  "last": [
+   8.12,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 9.2,
+  "y": 12,
+  "last": [
+   8.66,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 9.75,
+  "y": 12,
+  "last": [
+   9.2,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 10.29,
+  "y": 12,
+  "last": [
+   9.75,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 10.83,
+  "y": 12,
+  "last": [
+   10.29,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 11.37,
+  "y": 12,
+  "last": [
+   10.83,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 11.91,
+  "y": 12,
+  "last": [
+   11.37,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 12.45,
+  "y": 12,
+  "last": [
+   11.91,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 12.99,
+  "y": 12,
+  "last": [
+   12.45,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 13.53,
+  "y": 12,
+  "last": [
+   12.99,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 14.07,
+  "y": 12,
+  "last": [
+   13.53,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 14.61,
+  "y": 12,
+  "last": [
+   14.07,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 15.15,
+  "y": 12,
+  "last": [
+   14.61,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 15.69,
+  "y": 12,
+  "last": [
+   15.15,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 16.24,
+  "y": 12,
+  "last": [
+   15.69,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 16.78,
+  "y": 12,
+  "last": [
+   16.24,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 17.32,
+  "y": 12,
+  "last": [
+   16.78,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 17.86,
+  "y": 12,
+  "last": [
+   17.32,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 18.4,
+  "y": 12,
+  "last": [
+   17.86,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 18.94,
+  "y": 12,
+  "last": [
+   18.4,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 19.25,
+  "y": 12.25,
+  "last": [
+   18.94,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 19.54,
+  "y": 12.54,
+  "last": [
+   19.25,
+   12.25
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 19.84,
+  "y": 12.84,
+  "last": [
+   19.54,
+   12.54
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 20.13,
+  "y": 13.13,
+  "last": [
+   19.84,
+   12.84
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 20.43,
+  "y": 13.43,
+  "last": [
+   20.13,
+   13.13
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 20.72,
+  "y": 13.72,
+  "last": [
+   20.43,
+   13.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 21.01,
+  "y": 14.01,
+  "last": [
+   20.72,
+   13.72
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 21.31,
+  "y": 14.31,
+  "last": [
+   21.01,
+   14.01
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 21.6,
+  "y": 14.6,
+  "last": [
+   21.31,
+   14.31
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 21.9,
+  "y": 14.9,
+  "last": [
+   21.6,
+   14.6
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 22,
+  "y": 15,
+  "last": [
+   21.9,
+   14.9
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 22.04,
+  "y": 15,
+  "last": [
+   22,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 22.58,
+  "y": 15,
+  "last": [
+   22.04,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 23.12,
+  "y": 15,
+  "last": [
+   22.58,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "down the metro's stairway to the platform",
+  "map": "metro",
+  "x": 23.62,
+  "y": 15,
+  "last": [
+   23.12,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 1.08,
+  "y": 9,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 2.16,
+  "y": 9,
+  "last": [
+   1.08,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 3.25,
+  "y": 9,
+  "last": [
+   2.16,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 4.33,
+  "y": 8.29,
+  "last": [
+   3.25,
+   9
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 5.41,
+  "y": 6.89,
+  "last": [
+   4.33,
+   8.29
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 6.49,
+  "y": 6.9,
+  "last": [
+   5.41,
+   6.89
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 7.57,
+  "y": 7,
+  "last": [
+   6.49,
+   6.9
+  ],
+  "kept": true
+ },
+ {
+  "why": "off the landing onto the catwalk over the stairwell",
+  "map": "metro",
+  "x": 7.66,
+  "y": 7,
+  "last": [
+   7.57,
+   7
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 38.08,
+  "y": 12,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 39.16,
+  "y": 12,
+  "last": [
+   38.08,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 40.25,
+  "y": 12,
+  "last": [
+   39.16,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 41.33,
+  "y": 12,
+  "last": [
+   40.25,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 42.41,
+  "y": 12,
+  "last": [
+   41.33,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 43.49,
+  "y": 10.36,
+  "last": [
+   42.41,
+   12
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 44.57,
+  "y": 9.7,
+  "last": [
+   43.49,
+   10.36
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 45.65,
+  "y": 10,
+  "last": [
+   44.57,
+   9.7
+  ],
+  "kept": true
+ },
+ {
+  "why": "from the train's roof onto the catwalk in the vault",
+  "map": "metro",
+  "x": 46.24,
+  "y": 10,
+  "last": [
+   45.65,
+   10
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 81.08,
+  "y": 10,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 82.16,
+  "y": 10,
+  "last": [
+   81.08,
+   10
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 83.25,
+  "y": 8.98,
+  "last": [
+   82.16,
+   10
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 84.33,
+  "y": 7.79,
+  "last": [
+   83.25,
+   8.98
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 85.41,
+  "y": 8,
+  "last": [
+   84.33,
+   7.79
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 86.41,
+  "y": 8,
+  "last": [
+   85.41,
+   8
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 86.49,
+  "y": 8,
+  "last": [
+   86.41,
+   8
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 87.57,
+  "y": 8.43,
+  "last": [
+   86.49,
+   8
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 88.65,
+  "y": 10.57,
+  "last": [
+   87.57,
+   8.43
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 89.74,
+  "y": 14.17,
+  "last": [
+   88.65,
+   10.57
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 90.82,
+  "y": 15,
+  "last": [
+   89.74,
+   14.17
+  ],
+  "kept": true
+ },
+ {
+  "why": "up the tunnel wall to the alcove, and down again",
+  "map": "metro",
+  "x": 91.32,
+  "y": 15,
+  "last": [
+   90.82,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 101.08,
+  "y": 15,
+  "last": null,
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 102.16,
+  "y": 15,
+  "last": [
+   101.08,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 103.25,
+  "y": 15,
+  "last": [
+   102.16,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 104.33,
+  "y": 15,
+  "last": [
+   103.25,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 105.41,
+  "y": 14.71,
+  "last": [
+   104.33,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 106.49,
+  "y": 15,
+  "last": [
+   105.41,
+   14.71
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 107.57,
+  "y": 15,
+  "last": [
+   106.49,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 108.65,
+  "y": 15,
+  "last": [
+   107.57,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "a run jump short of the high ledge",
+  "map": "metro",
+  "x": 109,
+  "y": 15,
+  "last": [
+   108.65,
+   15
+  ],
+  "kept": true
+ },
+ {
+  "why": "in the ticket hall's floor",
+  "map": "metro",
+  "x": 10,
+  "y": 14,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in the dead train's roof",
+  "map": "metro",
+  "x": 37.5,
+  "y": 13,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "in the high ledge's catwalk",
+  "map": "metro",
+  "x": 107,
+  "y": 13,
+  "last": null,
+  "kept": false
+ },
+ {
+  "why": "high above the platform, past any jump",
+  "map": "metro",
+  "x": 30,
+  "y": 4,
+  "last": null,
+  "kept": false
  }
 ]

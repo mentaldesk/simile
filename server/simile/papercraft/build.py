@@ -292,7 +292,10 @@ class Build:
                     image = band_rows(image)
                 height = piece.height or image.height / PPM
             elif piece.kind in ("layer", "strip", "ground"):
-                mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
+                if "above" in piece.cut:
+                    mask = cutout.clean(cutout.key(raw, bg=top_backdrop(raw)))
+                else:
+                    mask = self.key(raw) if piece.kind == "ground" else self.mask(raw)
                 if piece.kind != "strip":
                     mask = cutout.skyline(mask)
                 image = tileable(trim_rows(cutout.unmix(raw, mask)))

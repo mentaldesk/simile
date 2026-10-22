@@ -135,3 +135,20 @@ IS-Net's weights (`isnet-general-use.onnx`, 179 MB, rembg's release) download on
 
 [`references/`](references/) holds the five style references from #295's study (0.75 MB): street,
 house, rooftops, furniture and characters. The build reads them from here, never from `docs/`.
+[`references/cartoon/`](references/cartoon/) holds #329's revised cartoon references, street and
+interior (0.47 MB), for the tunnels.
+
+## The tunnels
+
+The metro under the village (`content/street/README.md`'s *The metro*) is painted in #329's revised
+cartoon, kept a little dirty: its layers (`TUNNEL_LAYERS`), the furniture marked `cartoon`, the
+clinic's front (its `Look` is `cartoon`) and its room paper (`CARTOON_PAPERS`). Their prompts end in
+`painter.CARTOON` rather than the papercraft style, and they're painted from the cartoon references.
+The rest of the pipeline is the same, with three additions:
+
+- `near-metro` is a solid tiled wall 4.6 m tall, so it hides the foot of `mid-metro`, which the
+  client draws 2.75 m up. It's cut as a `ground` piece, keyed on its top row's colour (`cut`
+  `above`), since the wall fills its sides.
+- The clinic's `Look` is `whole`: one painting however wide, with no seam where units would meet.
+- The metro's catwalks and steps are furniture drawn over the street's own ledges and steps, which
+  stay papercraft.
