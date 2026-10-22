@@ -6,9 +6,10 @@ from typing import Literal
 
 from simile.papercraft.fronts import GREY, Front, backdrop, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
-from simile.papercraft.painter import styled
+from simile.papercraft.painter import cartoon, styled
 from simile.papercraft.sketches import SKETCHES
 from simile.papercraft.village import (
+    CARTOON_PAPERS,
     CLAY,
     GROUNDS,
     LOOKS,
@@ -46,6 +47,24 @@ PAPER_LEAD = (
 )
 PAPER_CARD = "all matt paper and card, with visible paper fibres and cut edges, not glossy"
 NOTHING_BUT_PLANTS = " Only plants, fences and garden things: no houses, no buildings, no people."
+CARTOON_LEAD = "Make a new picture in exactly the cartoon style of the reference picture: "
+CARTOON_REDRAW = (
+    "Redraw image 1 as {subject}, hand-drawn in the cartoon style of image 2: thick scratchy dark "
+    "ink outlines around every shape, flat colours with simple soft shading, and a little wear. "
+    "Keep every shape exactly where it is, with the same outlines and colours, seen exactly from "
+    "the side with no perspective, on a plain {back} background, and no shadow on the background."
+)
+CARTOON_TEXTURE = (
+    "A flat hand-drawn texture that fills the whole frame edge to edge: {}. Drawn with scratchy "
+    "dark ink lines and flat colours, a few smudges and scuffs, even light, no objects, no edges."
+)
+CARTOON_PAPER_LEAD = (
+    "Make a flat texture in the colours and cartoon style of the reference picture, showing none "
+    "of its objects: "
+)
+TUNNELS = "cartoon/street"
+TUNNEL_ROOMS = "cartoon/interior"
+"""The tunnels' references, from #329's revised cartoon."""
 
 
 @dataclass(frozen=True)
@@ -80,7 +99,7 @@ class Painting:
     reseed: int = 0
     """Added to the seed, to paint a rejected painting again from the same prompt."""
     cut: tuple[str, ...] = ()
-    """For a sprite, what else to cut away: `shadows` and `gaps` (see `cutout.tidy`)."""
+    """What else to cut: a sprite's `shadows` and `gaps`, or `above` a ground piece's top row."""
 
     @property
     def seed(self) -> int:
@@ -98,6 +117,19 @@ def layer(key: str, kind: Kind, subject: str, size: tuple[int, int], height: flo
 def paper(key: str, pattern: str, size: tuple[int, int] = (768, 512), **kw) -> Painting:
     prompt = styled(PAPER_LEAD + TEXTURE.format(pattern))
     return Painting(f"papers/{key}", "paper", prompt, size, ("house",), **kw)
+
+
+def cartoon_paper(key: str, pattern: str, size: tuple[int, int] = (768, 512)) -> Painting:
+    prompt = cartoon(CARTOON_PAPER_LEAD + CARTOON_TEXTURE.format(pattern))
+    return Painting(f"papers/{key}", "paper", prompt, size, (TUNNEL_ROOMS,))
+
+
+def tunnel_layer(
+    key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw
+) -> Painting:
+    """A layer of the tunnels, in the cartoon."""
+    prompt = cartoon(CARTOON_LEAD + subject)
+    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height, **kw)
 
 
 SKY = Painting(
@@ -261,6 +293,75 @@ LAYERS = [
         2.0,
     ),
 ]
+NO_STREET = " No people, no trains, no trees, no sky, no buildings."
+NEAR_WALL = 4.6
+"""Metres: tall enough to hide the foot of the mid layer, which the client puts 2.75 m up."""
+TUNNEL_LAYERS = [
+    tunnel_layer(
+        "metro-vault",
+        "paper",
+        "A plain dark backdrop of the inside of a huge old underground metro hall: a curved "
+        "vault of dim cream tiles between heavy dark steel ribs, fading into deep shadow towards "
+        "the top, with a few hanging cables. Only the vault: no floor, no platform." + NO_STREET,
+        (1536, 768),
+        12.0,
+    ),
+    tunnel_layer(
+        "far-metro",
+        "layer",
+        "A long strip of the upper vault of an old metro hall seen from inside: a row of big "
+        "round tiled arches between dark steel ribs, with cable trays and dead lamps hanging "
+        "from them, in dim cream, grey and teal, lying on a plain flat white background with "
+        "white space above and below it." + NO_STREET,
+        (1536, 512),
+        5.0,
+    ),
+    tunnel_layer(
+        "mid-metro",
+        "strip",
+        "A long run of the tiled back wall of an old metro station seen straight from the front: "
+        "a wall of dim cream tiles with a dark teal band, a row of tall round arches, empty "
+        "frames where posters once hung, old pipes and dead lamps, all standing on one straight "
+        "baseline, on a plain flat white background with white space above it. No signs, no "
+        "tracks, no rails." + NO_STREET,
+        (1536, 640),
+        9.0,
+    ),
+    tunnel_layer(
+        "near-metro",
+        "ground",
+        "A long run of the lower back wall of an old metro platform seen straight from the front: "
+        "a solid wall of grimy cream tiles from the ground up to a dark teal band along its "
+        "straight top edge, with old pipes and cable trays running along it, and sacks, crates "
+        "and tarps piled at its foot, running from the left edge of the frame to the right edge, "
+        "on a plain flat white background with white space above it. Only the wall, pipes and "
+        "junk." + NO_STREET,
+        (1536, 768),
+        NEAR_WALL,
+        cut=("above",),
+    ),
+    tunnel_layer(
+        "ground-metro",
+        "ground",
+        "A long horizontal strip of an old metro platform's floor seen exactly from the side: "
+        "worn grey concrete paving on top with a faded yellow safety line along it, and a thick "
+        "band of dark grimy concrete below, running from the left edge of the frame to the right "
+        "edge, on a plain white background.",
+        (1536, 384),
+        2.6,
+    ),
+    tunnel_layer(
+        "front-metro",
+        "strip",
+        "A long low row of old metro rails on dark wooden sleepers with gravel, rubble and loose "
+        "cables, seen straight from the front, "
+        + STRIP
+        + " Only rails, rubble and cables."
+        + NO_STREET,
+        (1536, 512),
+        2.0,
+    ),
+]
 SLAB = paper(
     "slab", "the cut edge of thick corrugated brown cardboard, a long band", (1024, 256), height=0.3
 )
@@ -288,6 +389,8 @@ class Item:
     folder: str = "furniture"
     variants: dict[str, str] = field(default_factory=dict)
     """Colour variants: name, and what's recoloured to what."""
+    cartoon: bool = False
+    """Painted in the tunnels' cartoon rather than papercraft."""
 
 
 STREET = "street"
@@ -513,6 +616,146 @@ FURNITURE: dict[str, Item] = {
         sketch="lift",
         folder="platforms",
     ),
+    "metro_entrance": Item(
+        "a small narrow old metro station entrance seen straight from the front: a low arched "
+        "canopy of dark green painted iron and glass on two slim iron posts, over a dark doorway "
+        "where a stairway goes down, with a small round glowing sign showing a simple train "
+        "pictogram on top of the canopy",
+        2.3,
+        (512, 896),
+        ref=STREET,
+    ),
+    "train_carriage": Item(
+        "an abandoned old metro train carriage seen exactly from the side: a long boxy body of "
+        "faded cream painted steel with a teal stripe, a row of dark windows, two pairs of "
+        "closed sliding doors, a flat grey roof with low vents, and its bogies and wheels",
+        3.36,
+        ref=TUNNELS,
+        sketch="train_carriage",
+        cut=("outline",),
+        cartoon=True,
+    ),
+    "catwalk": Item(
+        "a steel maintenance catwalk seen exactly from the side: a deck of steel grating on a "
+        "riveted plate girder, a thin steel handrail on posts above it, and an angled steel "
+        "strut under each end",
+        2.16,
+        ref=TUNNELS,
+        sketch="catwalk",
+        folder="platforms",
+        stretch=True,
+        cut=("outline",),
+        cartoon=True,
+    ),
+    "metro_steps": Item(
+        "a flight of old metro station steps seen exactly from the side, rising to the left: "
+        "worn concrete treads with dark steel nosings, over a solid side wall of grimy cream "
+        "tiles",
+        3.36,
+        ref=TUNNELS,
+        sketch="metro_steps",
+        cut=("outline",),
+        cartoon=True,
+    ),
+    "freight_lift": Item(
+        "an old dead freight lift seen from the front: its car behind a folding steel grille "
+        "gate, in a riveted steel frame, under a winding wheel in a steel housing",
+        4.4,
+        ref=TUNNELS,
+        sketch="freight_lift",
+        cut=("outline",),
+        cartoon=True,
+    ),
+    "scrap_stall": Item(
+        "a scrap trader's stall: a battered trestle table piled with salvaged electronics, coils "
+        "of copper wire, gears and old circuit boards, under a patched canvas awning on two "
+        "poles, with a crate of parts beside it",
+        2.2,
+        (896, 768),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "turnstile": Item(
+        "a pair of old metro turnstiles side by side: two waist-high posts of scuffed stainless "
+        "steel, each with three rotating metal bars sticking out to one side and a little round "
+        "card reader on top, dead and dusty",
+        1.1,
+        (768, 512),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "ticket_machine": Item(
+        "an old metro ticket machine: a tall cabinet of scuffed steel and faded teal panels with "
+        "a dark dead screen, a coin slot and a little ticket tray",
+        1.9,
+        (512, 896),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "metro_bench": Item(
+        "an old metro platform bench seen straight from the front: a row of three moulded orange "
+        "plastic seats on a steel frame, scuffed and dusty",
+        0.9,
+        (896, 512),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "dead_terminal": Item(
+        "an old metro control console: a waist-high cabinet of grimy grey steel with a dark "
+        "cracked screen on top, a row of unlit buttons and a small round data port, dead",
+        1.5,
+        (512, 768),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "breaker_box": Item(
+        "a maintenance power point: a grey steel breaker box on a short steel post, with a "
+        "yellow and black hazard stripe, a big power socket, a coiled cable and a small "
+        "glowing green light",
+        1.4,
+        (512, 768),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "crates": Item(
+        "a stack of two battered wooden crates", 1.0, (640, 640), ref=TUNNELS, cartoon=True
+    ),
+    "rubble": Item(
+        "a low heap of broken concrete chunks, bricks and twisted rusty rebar, twice as wide as "
+        "it is tall",
+        0.7,
+        (768, 448),
+        ref=TUNNELS,
+        cartoon=True,
+    ),
+    "bedroll": Item(
+        "an abandoned sleeping spot on the floor seen from the side: a rolled-out stained "
+        "sleeping bag on flattened cardboard, with a tin mug and a candle stub",
+        0.45,
+        (768, 384),
+        side=True,
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "pipes": Item(
+        "a long run of three old pipes one above the other along a wall, of rusty iron and "
+        "faded green-painted steel, held by plain brackets, with no valves",
+        0.8,
+        (1280, 352),
+        stretch=True,
+        ref=TUNNELS,
+        cartoon=True,
+    ),
+    "tunnel_arch": Item(
+        "a tall archway at the mouth of an old metro tunnel, seen straight from the front: two "
+        "square pillars of grimy cream tiles joined by a round concrete arch, with cables and a "
+        "dead lamp on it, and nothing in the opening",
+        8.8,
+        (512, 1280),
+        ref=TUNNELS,
+        cut=("gaps",),
+        cartoon=True,
+    ),
 }
 EXTRAS: dict[str, Item] = {
     "armchair": Item(
@@ -637,10 +880,13 @@ PLATFORMS: dict[str, Item] = {
 
 def item(name: str, spec: Item, layout: Layout) -> Painting:
     key = f"{spec.folder}/{name}"
+    style, lead, redraw = (
+        (cartoon, CARTOON_LEAD, CARTOON_REDRAW) if spec.cartoon else (styled, LEAD, REDRAW)
+    )
     if spec.sketch:
         sketch = SKETCHES[spec.sketch]()
         back = "medium grey" if sketch.getpixel((0, 0)) == GREY else "white"
-        prompt = styled(REDRAW.format(subject=spec.subject, back=back))
+        prompt = style(redraw.format(subject=spec.subject, back=back))
         refs = (spec.ref,)
         size, height = sketch.size, spec.height
         return Painting(key, "sprite", prompt, size, refs, height, sketch=spec.sketch, cut=spec.cut)
@@ -648,7 +894,7 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
     backdrop_text = SIDE_SPRITE if spec.side else SPRITE
     if spec.grey:
         backdrop_text = backdrop_text.replace("plain flat white", "plain flat medium grey")
-    prompt = styled(LEAD + f"2D game asset: {spec.subject}. {backdrop_text}")
+    prompt = style(lead + f"2D game asset: {spec.subject}. {backdrop_text}")
     return Painting(
         key, "sprite", prompt, size, (spec.ref,), spec.height, reseed=spec.reseed, cut=spec.cut
     )
@@ -706,8 +952,27 @@ def _side(unit: Front) -> str:
     return "left" if middle < 0.4 else "right" if middle > 0.6 else "middle"
 
 
+def cartoon_front_prompt(look: Look, unit: Front) -> str:
+    """A front in the tunnels' cartoon, naming only what its plan has."""
+    extras = ["a flat roof", "small windows lit from inside"]
+    parts = ["the walls", "the roof", "every window"]
+    if unit.door is not None:
+        extras += ["a glass door", "a glowing neon medical cross pictogram over the door"]
+        parts += ["the glass door", "the small round wall light"]
+    ground = "grey" if backdrop(unit) == GREY else "white"
+    return cartoon(
+        f"Redraw image 1 as the front of {look.look}, with {', '.join(extras)}, hand-drawn in "
+        "the cartoon style: thick scratchy dark ink outlines around every shape, flat colours "
+        "with simple soft shading, and a little wear. Keep every shape exactly where it is, with "
+        f"the same outlines and colours: {', '.join(parts)}. Seen straight from the front, a "
+        f"flat elevation with no perspective, on a plain {ground} background. No people."
+    )
+
+
 def front_prompt(look: Look, unit: Front) -> str:
     """The prompt for one unit of a front, naming only what its plan has."""
+    if look.cartoon:
+        return cartoon_front_prompt(look, unit)
     roof = (
         "a flat roof with a low parapet"
         if look.roof_shape == "flat"
@@ -759,10 +1024,11 @@ def night_prompt(look: Look, unit: Front) -> str:
     if unit.lanterns:
         lit.append("the paper lanterns")
     ground = "grey" if backdrop(unit) == GREY else "white"
-    return styled(
-        f"The same picture at night: warm yellow light glows from {', '.join(lit)}, the paper "
-        f"walls are in deep blue shadow, and the background stays plain {ground}. Keep every "
-        "shape exactly where it is, and add nothing."
+    style, walls = (cartoon, "walls") if look.cartoon else (styled, "paper walls")
+    return style(
+        f"The same picture at night: warm yellow light glows from {', '.join(lit)}, the {walls} "
+        f"are in deep blue shadow, and the background stays plain {ground}. Keep every shape "
+        "exactly where it is, and add nothing."
     )
 
 
@@ -789,13 +1055,17 @@ def fronts(layout: Layout) -> list[Painting]:
 
 def room_papers(layout: Layout) -> list[Painting]:
     used = sorted({p for floors in papers(layout).values() for p in floors})
-    return [paper(key, PAPERS[key]) for key in used] + [SLAB]
+    made = [
+        cartoon_paper(key, PAPERS[key]) if key in CARTOON_PAPERS else paper(key, PAPERS[key])
+        for key in used
+    ]
+    return [*made, SLAB]
 
 
 def paintings(layout: Layout | None = None) -> list[Painting]:
     """Every painting, in the order they're painted: a redrawn painting after its base."""
     layout = layout or load_layout()
-    return [*LAYERS, *room_papers(layout), *fronts(layout), *items(layout)]
+    return [*LAYERS, *TUNNEL_LAYERS, *room_papers(layout), *fronts(layout), *items(layout)]
 
 
 PARALLAX = {"sky": 0.04, "far": 0.2, "mid": 0.45, "near": 0.85, "ground": 1.0, "foreground": 1.3}

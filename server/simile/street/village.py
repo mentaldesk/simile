@@ -25,8 +25,10 @@ FLOOR_ROW = STOREY - 2
 """A floor's standing row."""
 STOOL_M = 0.25
 """How much higher a stool's seat is than a chair's."""
-JUMPING = frozenset({"rooftops"})
-"""Streets only the player gets all over, by jumping. Nobody else has anywhere to go there."""
+JUMPING = frozenset({"rooftops", "metro"})
+"""Streets only the player gets all over, by jumping. No resident goes there."""
+UNDERGROUND = frozenset({"metro"})
+"""Streets under the village."""
 
 N, E, W = Facing.NORTH, Facing.EAST, Facing.WEST
 SEAT, BAR, DESK, VIEWING = SpotKind.SEAT, SpotKind.BAR, SpotKind.DESK, SpotKind.VIEWING
@@ -553,6 +555,8 @@ def rooftops() -> Plan:
 
 def village() -> list[Plan]:
     """Every street, then every floor, with the streets joined."""
+    from simile.street.metro import metro
+
     high, high_floors = high_street()
     lychee, lychee_floors = lychee_lane()
     kapok, kapok_floors = kapok_walk()
@@ -562,8 +566,9 @@ def village() -> list[Plan]:
     join(high, 50, lychee, 17)
     join(high, 64, banyan, 24)
     join(kapok, 2, roofs, 1)
-    plans = [high, lychee, kapok, banyan, roofs, *high_floors, *lychee_floors, *kapok_floors]
-    plans += banyan_floors
+    below, *below_floors = metro(banyan)
+    plans = [high, lychee, kapok, banyan, roofs, below, *high_floors, *lychee_floors]
+    plans += [*kapok_floors, *banyan_floors, *below_floors]
     for plan in plans:
         plan.check()
     return plans
