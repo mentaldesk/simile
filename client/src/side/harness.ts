@@ -1,15 +1,17 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type Entity, type Facing, type Frame, type Pose, type Position, type Wall } from '../net';
+import { server, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { usedByE } from '../world/reach';
 import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
 import './harness.css';
-import { isStanding, type Village } from './maps';
+import { glowAround, sightOf } from './darkness';
+import { lampHere } from './lamp';
+import { cellOf, isStanding, type Village } from './maps';
 import { CLIMB_SPEED, RIDE_SPEED } from './motion';
-import type { MapPosition } from './player';
+import type { MapPosition, SidePlayer } from './player';
 import { climbRuns, crossing, type Path } from './runs';
 import type { SideScene } from './side-scene';
 
@@ -23,7 +25,9 @@ const works = worksJson as { id: string; artist: string; medium: string; title: 
 const params = new URLSearchParams(location.search);
 const START_HOUR = Number(params.get('hour') ?? 10);
 const SPEED = Number(params.get('speed') ?? 60);
-const STREETS = ['high_street', 'lychee_lane', 'kapok_walk', 'banyan_row', 'rooftops'];
+const STREETS = ['high_street', 'lychee_lane', 'kapok_walk', 'banyan_row', 'rooftops', 'metro'];
+/** `lamp=on` and `charge=` set the player's lamp, which L switches as the server would. */
+const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: Number(params.get('charge') ?? 0.8), on: params.get('lamp') === 'on' };
 
 const sleep = (seconds: number) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 const dispatch = (message: object) => server.dispatch(JSON.stringify(message));
@@ -255,6 +259,24 @@ function frames(village: Village): Frame[] {
   );
 }
 
+function sendPlayerState(): void {
+  const body = {
+    legs: 'present',
+    vertebra: 'present',
+    left_eye: 'present',
+    right_eye: 'present',
+    left_kidney: 'present',
+    right_kidney: 'present',
+  } as const;
+  dispatch({ type: 'player_state', player: { money: 0, items: [LAMP], carry_limit: 10, body, hunger: 0 } });
+}
+
+function answer(message: ClientMessage): void {
+  if (message.type !== 'lamp' || (message.on && !LAMP.charge)) return;
+  LAMP.on = message.on;
+  sendPlayerState();
+}
+
 function clockAt(hour: number): string {
   const date = new Date(Date.UTC(2026, 9, 21, 0, 0, 0) + hour * 3_600_000);
   return date.toISOString();
@@ -267,7 +289,8 @@ function showPanel(): void {
   panel.innerHTML = `<b>Side-view harness</b>
     <p>Left and right walk, Shift switches to running and back, and Space jumps. E takes a door, or uses
     what's in reach. Up climbs stairs or a ladder from the tile beside its foot, and down from beside its
-    top; up and down ride the lift. [ and ] move the clock an hour; 1 to 5 go to each street.</p>`;
+    top; up and down ride the lift. L switches the lamp. [ and ] move the clock an hour; 1 to 6 go to each
+    street, 6 the metro.</p>`;
 }
 
 /** Work from each step's start to the end of its render, and the gaps between frames. */
@@ -295,6 +318,15 @@ function measure(scene: Phaser.Scene): void {
   });
 }
 
+/** The lamp, where the player stands, and the darkness drawn over their cell. */
+function lamp(player: SidePlayer, village: Village) {
+  const street = village.map(village.map(player.map)!.street)!;
+  const { x, y } = cellOf(player.at);
+  const gloom = sightOf(street).darkness(x, y, glowAround(player.at, LAMP));
+  const hint = document.querySelector<HTMLElement>('.lamp-hint');
+  return { ...lampHere, on: LAMP.on, gloom, hint: hint && !hint.hidden ? hint.textContent : null };
+}
+
 /** What `walk.e2e.ts` drives the player by and checks. */
 function exposeWalk(scene: SideScene, village: Village): void {
   const prompts = () =>
@@ -311,7 +343,7 @@ function exposeWalk(scene: SideScene, village: Village): void {
         const { map, position, climbing, drawn, airborne } = player;
         const used = usedByE(player.mapPosition)?.kind ?? null;
         const state = { map, x: position.x, y: position.y, climbing: climbing ?? null, run: drawn.run, airborne, used };
-        return { ...state, prompts: prompts(), talk: talk() };
+        return { ...state, prompts: prompts(), talk: talk(), lamp: lamp(player, village) };
       },
       links: () => [...village.maps.values()].flatMap(({ links }) => links),
       runs: () =>
@@ -349,6 +381,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   server.close();
   server.send = (message) => {
     console.info('Side harness: sent', message);
+    answer(message);
     return true;
   };
   const [map, x, y] = (params.get('at') ?? 'high_street:51:15').split(':');
@@ -371,6 +404,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   dispatch({ type: 'clock', time: clockAt(hour), speed: SPEED });
   if (params.get('murals') !== '0') dispatch({ type: 'murals', walls: walls(village) });
   dispatch({ type: 'paintings', frames: frames(village) });
+  sendPlayerState();
   if (!params.has('still')) {
     direct(all, village);
     chat();

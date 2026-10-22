@@ -31,6 +31,7 @@ function sketch(rows: string[]): SideMap {
     height,
     floor: 0,
     street: 'test',
+    underground: false,
     offset: { x: 0, y: 0 },
     solid: cells((x, y) => at(x, y) === '#'),
     climbable,
@@ -42,6 +43,7 @@ function sketch(rows: string[]): SideMap {
     links: [],
     interactables: [],
     spots: [],
+    light: [],
     file: {} as TiledMap,
   };
 }

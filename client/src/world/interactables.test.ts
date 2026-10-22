@@ -17,6 +17,15 @@ describe('interactablesOf', () => {
         stand: [{ x: 6, y: 2 }],
         prompt: 'Order at the counter',
       },
+      {
+        id: 'coffee_shop_plug',
+        kind: 'plug',
+        label: 'Plug',
+        map: 'coffee_shop_floor_0',
+        area: { x: 16, y: 2, width: 1, height: 1 },
+        stand: [{ x: 16, y: 2 }],
+        prompt: 'Plug',
+      },
     ]);
   });
 
@@ -27,6 +36,7 @@ describe('interactablesOf', () => {
       'Use the 3D printer',
       'Use the loom',
       'Use the sewing machine',
+      'Plug',
     ]);
     expect(new Set(prompts('gallery_floor_1'))).toEqual(new Set(['Look at the painting']));
   });

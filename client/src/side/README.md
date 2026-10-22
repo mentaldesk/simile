@@ -19,6 +19,7 @@ the protocol, through `server.dispatch`.
 | `still` | The residents stay where they start. |
 | `murals=0` | Leaves the mural walls blank. |
 | `panel=0` | Hides the harness's help. |
+| `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
 jumps (`jump.ts`, below). E takes a door you're on, and never climbs
@@ -35,8 +36,8 @@ where you stand names the keys and what it does ("E: go out", "↑: upstairs", "
 `ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
 shorter than a frame still counts, and so does a tap of Space. Shift switches running only when
 it's pressed and let go on its own (`RunToggle`), so Shift+Tab and ? leave it alone. Clicking a
-mural looks at it. In the harness, `[` and `]` move the clock an hour and 1 to 5 go to each street,
-5 the rooftops.
+mural looks at it. L switches the lamp (below). In the harness, `[` and `]` move the clock an hour
+and 1 to 6 go to each street, 5 the rooftops and 6 the metro.
 
 ## How it draws
 
@@ -61,12 +62,34 @@ it, and rises to the top floor or drops to Banyan Row's river.
 - **Light** (`light.ts`): the manifest's four times of day, blended across each change, give a tint
   for each layer's depth (distant layers take some of the sky's colour, the foreground falls
   darker), haze on the far and mid layers, the glow maps added at night and 55% in the evening, and
-  lamplit rooms after dark.
+  lamplit rooms after dark. Under the village (a street with `underground`, and its floors) it's
+  always early afternoon's light with the glow maps at 55% (`lightBelow`), whatever the time.
 - **Shadows** are made at runtime from each picture's alpha, blurred and offset (`textures.ts`).
 
 Every texture is filtered smoothly, Phaser's default. A mural painted at another aspect than its
 wall is cropped to cover it, not stretched (`coverCrop`). Each street loads its pictures when the
 player first goes there and frees the last street's.
+
+## Darkness and the lamp
+
+Each street's `light` layer says where it's dark (`darkness.ts`, by the server's rule). On a street
+with dark stretches, `DarkView` (`dark-view.ts`) draws darkness over them, above everything in the
+world: a canvas of four px a cell, scaled up smoothly, so the edges of the dark are soft.
+
+- A dark cell is near black (`DARK`) until the lamp has lit it, and dimmed (`DIM`) from then on
+  while the lamp is elsewhere, so places seen are dimmed, not hidden. `Sight` keeps what's been seen
+  on each street while the page is open.
+- The lamp, held at chest height, lights a circle around the player (`LAMP_RADIUS`, 4.5 tiles),
+  fully within its inner `INNER` share and fading to its edge. Below `LOW` (20%) charge it draws in,
+  to `FADED` of its radius when flat. A flat lamp gives no light. Without it, a glimmer
+  (`GLIMMER`) is just enough to make out the player.
+- L sends `lamp`, switching the lamp the other way (`switchLamp` in `lamp.ts`). The lamp's state is
+  the last `player_state`'s, so it lights once the server says so.
+- The player charges their lamp by standing on a plug's stand tile, as the server reads it
+  (`atPlug`). `plugs.ts` draws a charging point in code at each plug no furniture draws: at home, the
+  café and the noodle bar. The metro's is its breaker box.
+- The gauge in the corner (`ui/lamp-gauge.ts`) reads `lampHere`, where the scene last drew the
+  player: in the dark, or at a plug.
 
 ## Movement
 
@@ -120,7 +143,8 @@ off their end, near the edge of the reach. Then it runs along the High Street fr
 checking the speed and the blend, jumps the rooftops' one-, two- and three-cell gaps, the last
 running, checking it lands on the far roof, and the metro's jumps up to its secrets, walks off the
 clock house's roof into the lane, walks down into the metro, through it into the clinic and back up
-to Banyan Row, checks a run jump at the metro's high ledge falls short, opens
+to Banyan Row, walks into the metro's dark west tunnel, lights the lamp with L and walks on to the
+plug, checking the darkness and the gauge's hints, checks a run jump at the metro's high ledge falls short, opens
 the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 

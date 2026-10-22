@@ -68,6 +68,15 @@ export function lightAt(hour: number, manifest: Pick<SceneryManifest, 'times'>, 
   return out;
 }
 
+/** Under the village it's always early afternoon by the sky, with the lamps lit. */
+export const UNDERGROUND = { hour: 13, glow: 0.55 };
+
+export function lightBelow(manifest: Pick<SceneryManifest, 'times'>, out = emptyLight()): Light {
+  lightAt(UNDERGROUND.hour, manifest, out);
+  out.glow = UNDERGROUND.glow;
+  return out;
+}
+
 export function layerTint(light: Light, layer: LayerName, out: Rgb): Rgb {
   if (layer === 'sky') return mix(light.sky, light.sky, 0, out);
   mix(light.tint, light.sky, SKY_SHARE[layer] ?? 0, out);

@@ -34,5 +34,6 @@ export const DEPTH = {
   contact: 54,
   doll: 55,
   foreground: 60,
+  dark: 70,
   fade: 100,
 } as const;

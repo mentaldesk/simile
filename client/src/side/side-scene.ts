@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
 import { addFigureAtlas } from '../dolls/sprite-figure';
-import { server, type Position } from '../net';
+import { playerState, server, type Position } from '../net';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
@@ -12,14 +12,18 @@ import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
+import { DarkView } from './dark-view';
+import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
+import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
 import { readControls, RunToggle, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
-import { emptyLight, lightAt } from './light';
-import type { Link, Village } from './maps';
+import { emptyLight, lightAt, lightBelow, UNDERGROUND } from './light';
+import { cellOf, type Link, type Village } from './maps';
 import type { Drawn } from './motion';
 import type { Crossing } from './runs';
 import { SidePlayer, type Controls, type MapPosition } from './player';
+import { drawSockets } from './plugs';
 import { sideResidents } from './residents';
 import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
@@ -56,6 +60,8 @@ export class SideScene extends Phaser.Scene {
   private content?: Content;
   private pictures!: SideTextures;
   private street?: StreetView;
+  private dark?: DarkView;
+  private sockets: Phaser.GameObjects.Graphics[] = [];
   private player?: SidePlayer;
   private keys!: Keys;
   private readonly figures = new Map<string, Figure>();
@@ -95,6 +101,7 @@ export class SideScene extends Phaser.Scene {
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
     keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
+    keyboard.on('keydown-L', (event: KeyboardEvent) => !event.repeat && this.switchLamp());
     keyboard.on('keydown', (event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat));
     keyboard.on('keyup', (event: KeyboardEvent) => this.running.keyUp(event.key));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
@@ -121,6 +128,7 @@ export class SideScene extends Phaser.Scene {
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
       () => this.street?.destroy(),
+      () => this.dark?.destroy(),
       () => this.pictures.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
@@ -163,15 +171,21 @@ export class SideScene extends Phaser.Scene {
     }
     interactables.update(player.mapPosition);
     sideResidents.update(dt);
-    const hour = sideClock.hour();
+    const below = street.map.underground;
+    const hour = below ? UNDERGROUND.hour : sideClock.hour();
     const lightChanged = !(Math.abs(hour - this.lightHour) < LIGHT_STEP_HOURS);
     if (lightChanged) {
-      lightAt(hour, content.scenery, this.light);
+      if (below) lightBelow(content.scenery, this.light);
+      else lightAt(hour, content.scenery, this.light);
       this.lightHour = hour;
     }
     const open = content.village.map(player.drawnMap);
     this.frame(dt, street);
     street.update(this.view, this.light, lightChanged, open?.kind === 'floor' ? open.building : undefined, dt);
+    this.dark?.update(glowAround(player.at, lampOf(playerState.latest)));
+    const cell = cellOf(player.at);
+    lampHere.dark = !!this.dark && !isLit(street.map, cell.x, cell.y);
+    lampHere.plug = atPlug(player.mapPosition);
     if (this.worksChanged) {
       this.worksChanged = false;
       const load = (url: string) => this.pictures.load(`work:${url}`, url);
@@ -191,6 +205,11 @@ export class SideScene extends Phaser.Scene {
     sent.x = position.x;
     sent.y = position.y;
     sent.map = position.map;
+  }
+
+  private switchLamp(): void {
+    const message = switchLamp(lampOf(playerState.latest));
+    if (message) server.send(message);
   }
 
   private startPosition(village: Village): MapPosition {
@@ -298,6 +317,10 @@ export class SideScene extends Phaser.Scene {
       for (const key of StreetView.pieces(content, old.map)) if (!kept.has(key)) this.pictures.unload(key);
     }
     this.street = new StreetView(this, this.pictures, content, map);
+    this.dark?.destroy();
+    this.dark = hasDark(map) ? new DarkView(this, sightOf(map)) : undefined;
+    for (const socket of this.sockets) socket.destroy();
+    this.sockets = drawSockets(this, content.village, map);
     this.lightHour = NaN;
     this.worksChanged = true;
     this.snap = true;

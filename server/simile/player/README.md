@@ -46,3 +46,19 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   last one sent. That's every 2.4 sim minutes of hunger.
 
 Every constant is in `PlayerConfig`.
+
+## The lamp
+
+`Lamp` (`lamp.py`) runs the lamp the player carries, on the sim loop too, and only while a client is
+in the game, like hunger:
+
+- **It drains** by `drain` (3) a sim hour while it's on: a full battery lasts twenty minutes. When
+  it runs flat it goes off by itself.
+- **It charges** by `charge` (60) a sim hour while the player stands on a plug's stand tile (a
+  `plug` interactable: at home, the café, the noodle bar and the metro's maintenance alcove), on or
+  off, from flat to full in a minute. Plugged in, it doesn't drain.
+- **The client's `lamp`** switches it on or off (`docs/protocol.md`). Switching on a flat one, or
+  to how it already is, does nothing. A switch goes out in `player_state` at once, and the charge
+  alone at `step`, as above.
+
+Its rates are in `LampConfig`, beside it.

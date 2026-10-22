@@ -603,7 +603,7 @@
             }
           ],
           "rotation": 0,
-          "type": "machine",
+          "type": "plug",
           "visible": true,
           "width": 16,
           "x": 1152,
@@ -1020,6 +1020,11 @@
       "name": "label",
       "type": "string",
       "value": "The Old Metro"
+    },
+    {
+      "name": "underground",
+      "type": "bool",
+      "value": true
     },
     {
       "name": "view",

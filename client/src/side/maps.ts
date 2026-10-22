@@ -32,6 +32,8 @@ export type SideMap = {
   room?: string;
   /** Itself for a street. */
   street: string;
+  /** Under the village: lit by its own lights, never the sky. */
+  underground: boolean;
   /** The street cell under its top-left cell. */
   offset: Cell;
   solid: Uint8Array;
@@ -45,6 +47,8 @@ export type SideMap = {
   links: Link[];
   interactables: Placed[];
   spots: Placed[];
+  /** Its lit and dark stretches, each with a `lit` property. Empty where it's lit all over. */
+  light: Placed[];
   file: TiledMap;
 };
 
@@ -108,6 +112,7 @@ export function readMap(id: string, file: TiledMap): SideMap {
     floor: Number(props.floor ?? 0),
     room: props.room as string | undefined,
     street: kind === 'floor' ? String(props.street) : id,
+    underground: props.underground === true,
     offset: kind === 'floor' ? { x: Number(props.street_x), y: Number(props.street_y) } : { x: 0, y: 0 },
     solid: tiles(file, 'solid', () => 1),
     climbable: tiles(file, 'climbable', climbCode),
@@ -119,6 +124,7 @@ export function readMap(id: string, file: TiledMap): SideMap {
     links,
     interactables: objects(file, 'interactables'),
     spots: objects(file, 'spots'),
+    light: objects(file, 'light'),
     file,
   };
 }

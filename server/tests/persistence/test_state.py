@@ -228,7 +228,9 @@ def test_a_save_on_todays_maps_puts_everyone_in_the_same_place_on_the_new_ones()
     )
     bench = MAPS["high_street"].spots
     [cafe_door] = [door for door in TOWN.doors if door.id == "coffee_shop"]
-    [counter] = MAPS["coffee_shop_floor_0"].interactables
+    [counter] = [
+        i for i in MAPS["coffee_shop_floor_0"].interactables if i.id == "coffee_shop_counter"
+    ]
     [painting] = [
         item for town in MAPS.values() for item in town.interactables if item.id == "painting_1"
     ]
