@@ -126,6 +126,12 @@ sets F3's snapshot to the NPCs' real positions.
   Connection. A place scores the affinity of everyone at or heading to it: friends attract,
   people they dislike repel, and a crowd draws high-Connection NPCs and puts off low ones. Nobody
   seeks someone asleep, at home, talking, out strolling or who refused them in the last 45 minutes.
+- **The player's bionics.** The `unease` hook (S11's sightings) says how much what a resident has
+  seen of the player's bionics puts them off, 0 to 1. It takes `unease_weight` (1) times that off
+  their affinity for the player, so they stay away from where the player is, leave when the player
+  arrives, and don't seek them out. An uneasy resident also won't go into a place the player is in
+  to seek someone else there: that seek loses `avoid_weight` times their affinity for the player,
+  as the place would. Without bionics it's 0, and nothing changes.
 - **Intentions.** What a resident said they'd do (an `Intention`, which B3 extracts from
   conversations) is one of these options: make something (`create`), go to a place (`go`), look
   someone up (`seek`) or read the news (`news`). From when it's due until it's done or expires,
@@ -234,6 +240,7 @@ restore()
 | `money(npc)` | With the `Npc` every think: what they hold, or `None` | `None`, so finances stay at 0 |
 | `price(npc, goal)` | With the `Npc` for each option: what it would cost them | 0 |
 | `earnings(npc, goal)` | With the `Npc` for staying on at work: what an hour pays | 0 |
+| `unease(npc)` | With the `Npc` at each decision while the player's in the world: how much the player's bionics put them off, 0 to 1 | 0 |
 
 Hooks run inside a tick, so they mustn't block. One that raises is logged and counts as a decline.
 
@@ -253,6 +260,7 @@ conversation engine calls `resume` on each. Otherwise the seeker hangs around fo
 | `at_home(npc)` | Whether they're at or heading home, to rest, sleep or make something there. |
 | `working(npc)` | Whether they're at their workplace working: there for work, or held there with a goal at it. |
 | `savings(npc)` | Their savings target, in money. |
+| `unease(npc)` | The `unease` hook's answer, clamped to 0 to 1, or 0 if it fails. B2 reads it too. |
 | `restore(npc, goal, needs, since, until, cooldowns)` | Puts back a saved NPC (I3) after the clock is set: stops their walk and publishes one `GoalChosen`. With no `until` they decide on the next think. Everyone's needs rise from now. |
 | `goal(npc)` | Their `Goal`: `activity` and `target`, a location, entity or, for a mural, wall id. |
 | `needs(npc)` | `{Need: 0-1}`. |

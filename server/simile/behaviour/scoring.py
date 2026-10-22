@@ -150,6 +150,8 @@ class Other:
     """The location they're at or heading for."""
     available: bool = True
     """Whether they can be sought out: not asleep, at home, talking or recently refused."""
+    shunned: bool = False
+    """Whether the owner keeps away from wherever they are, even to seek someone there."""
 
 
 @dataclass(frozen=True)
@@ -335,6 +337,12 @@ def pull(goal: Goal, situation: Situation, places: Places, config: BehaviourConf
     if activity is Activity.SEEK:
         other = next(o for o in situation.others if o.id == goal.target)
         total += config.seek_weight * sociability(values, config) * other.affinity
+        if other.place is not None:
+            total += config.avoid_weight * sum(
+                min(o.affinity, 0.0)
+                for o in situation.others
+                if o.shunned and o is not other and o.place == other.place
+            )
     elif at_a_place(goal, situation):
         assert goal.target is not None
         location = places.location(goal.target)

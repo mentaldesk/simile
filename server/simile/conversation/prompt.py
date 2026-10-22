@@ -33,6 +33,7 @@ class Cue(StrEnum):
     REPLY = "reply"
     GOODBYE = "goodbye"
     FAREWELL = "farewell"
+    REFUSE = "refuse"
 
 
 SETTING_OFF = "If you've said you'll go and do something now, say where you're off to."
@@ -43,6 +44,8 @@ CUES: dict[Cue, str] = {
     Cue.GOODBYE: "You've had enough of this conversation. Wrap it up now with a brief, natural "
     f"goodbye to {{other}}. {SETTING_OFF}",
     Cue.FAREWELL: f"{{other}} is leaving. Say a brief goodbye back. {SETTING_OFF}",
+    Cue.REFUSE: "You'd rather not talk to {other}. Turn them down in a few words, and leave it "
+    "there.",
 }
 JOKE = "Work a joke into this line, in your own humour."
 PLAIN = "No joke in this line: say it plainly."
@@ -239,6 +242,8 @@ def background(
     place: str | None,
     now: datetime,
     plans: str = "",
+    *,
+    looks: str | None = None,
 ) -> str:
     """What the speaker knows going in: the other person, their history, what they could plan
     to do and have said they will, and what's on their mind."""
@@ -249,7 +254,8 @@ def background(
         if isinstance(other, Player)
         else f"{other.name}, aged {other.age}, {other.occupation}"
     )
-    parts = [f"It's {now:%H:%M}, {where}. You're with {name} ({who}).", describe(rel, name)]
+    meeting = f"It's {now:%H:%M}, {where}. You're with {name} ({who})."
+    parts = [f"{meeting} {looks}" if looks else meeting, describe(rel, name)]
     events = [
         f"- {ago(event.timestamp, now)}, {'you' if event.actor == speaker.id else name}: "
         f"{event.action}"

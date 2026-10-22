@@ -236,6 +236,8 @@ class ConversationEngine:
         """E3's shifts a resident skipped or was late to."""
         self.incident: Callable[[], Incident | None] = lambda: None
         """S12's incident, for what residents know of it."""
+        self.looks: Callable[[Id], str | None] = lambda _: None
+        """S11's line on what a resident can see of the player, or None for nothing to see."""
         self._talks: dict[str, Talk] = {}
         self._loans: dict[str, Loan] = {}
         self._lies: dict[str, list[Lie]] = {}
@@ -270,6 +272,7 @@ class ConversationEngine:
             self.behaviour.needs(b)[Need.SOCIAL],
             self.config,
             urgent=self.pressing(b).urgent,
+            unease=self.behaviour.unease(b) if a == PLAYER_ID else 0.0,
         )
 
     def pressing(self, npc: Id) -> Pressing:
@@ -723,6 +726,7 @@ class ConversationEngine:
                 location.name if location else None,
                 now,
                 self._plans(npc),
+                looks=self.looks(npc) if other == PLAYER_ID else None,
             ),
             works=works,
             topics=topics,

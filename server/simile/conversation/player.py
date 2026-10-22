@@ -11,8 +11,8 @@ from itertools import takewhile
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.behaviour import Activity, Need
-from simile.conversation.engagement import acceptance, accepts, engage, leaving
+from simile.behaviour import Activity
+from simile.conversation.engagement import accepts, engage, leaving
 from simile.conversation.engine import PLAYER, ConversationEngine, Talk, facing
 from simile.conversation.events import Direction, Facing, LineDrafted
 from simile.conversation.prompt import (
@@ -200,6 +200,8 @@ class PlayerTalk(Talk):
     """What the NPC was set up to say of each incident fact they know, by fact id."""
     joked: bool = False
     """Whether the NPC's last reply was told to joke."""
+    refusing: bool = False
+    """Whether the NPC turns the player down, put off by their bionics."""
 
     @property
     def npc(self) -> Id:
@@ -258,12 +260,17 @@ class PlayerConversations:
             if not self._free(target, interrupting=True):
                 self.engine._log("%s is busy, so the player gets no answer", target)
                 return None
+            refusing = self._refuses(target)
+            if refusing and self.engine.talking(target):
+                self.engine._log("%s won't break off to talk to the player", target)
+                return None
             left = self.engine._talk_of(target)
             goodbyes = [
                 self._turned_away(talk, target) if talk is not None else None,
                 self.engine.cut(target, PLAYER),
             ]
             joined = self._start(target, opener=PLAYER_ID)
+            joined.refusing = refusing
             joined.quiet_until = max([joined.quiet_until, *filter(None, goodbyes)])
             if left is not None and left.conversation.id in self.engine._talks:
                 joined.pulled_from = left.conversation.id
@@ -342,6 +349,8 @@ class PlayerConversations:
         talk.turns += 1
         if says_goodbye(text):
             self._write(talk, Cue.FAREWELL)
+        elif talk.refusing:
+            self._write(talk, Cue.REFUSE)
         elif leaving(party.engagement, talk.turns, engine.config):
             engine._log(
                 "%s is leaving %s (engagement %.2f)",
@@ -379,8 +388,9 @@ class PlayerConversations:
                 return sentences.draft
         pressed = engine.pressing(npc)
         recalled = self._recalled(npc, lines)
-        self._tempt(talk, lines)
-        self._ask(talk, lines)
+        if not talk.refusing:
+            self._tempt(talk, lines)
+            self._ask(talk, lines)
         seed = f"{talk.conversation.id}/{npc}/{len(lines)}"
         joke = jokes(party.npc.humour, seed, after_joke=talk.joked)
         talk.joked = bool(joke)
@@ -553,8 +563,8 @@ class PlayerConversations:
             party.engagement, party.npc.values, party.like, talk.topics, engine.config, drain=drain
         )
         talk.turns += 1
-        if talk.cue in (Cue.GOODBYE, Cue.FAREWELL):
-            wait = self.config.farewell_wait if talk.cue is Cue.GOODBYE else 0
+        if talk.cue in (Cue.GOODBYE, Cue.FAREWELL, Cue.REFUSE):
+            wait = self.config.farewell_wait if talk.cue is not Cue.FAREWELL else 0
             talk.closing, talk.ends = True, talk.free_at + timedelta(seconds=wait)
         else:
             talk.speaker = PLAYER_ID
@@ -621,17 +631,17 @@ class PlayerConversations:
         if max(self._considered.get(npc, now), mind.cooldowns.get(PLAYER_ID, now)) > now:
             return False
         self._considered[npc] = now + timedelta(minutes=self.config.greet_cooldown)
-        score = acceptance(
-            mind.npc.values,
-            engine._relationship(npc, PLAYER_ID),
-            mind.goal,
-            mind.needs[Need.SOCIAL],
-            engine.config,
-            urgent=engine.pressing(npc).urgent,
-        )
+        score = engine.accept_score(PLAYER_ID, npc)
         greets = accepts(score - self.config.greet_bar, self.rng, engine.config)
         engine._log("%s %s the player (score %.2f)", npc, "greets" if greets else "ignores", score)
         return greets
+
+    def _refuses(self, npc: Id) -> bool:
+        """Whether the player's bionics put `npc` off talking: only the uneasy, and not at work."""
+        behaviour = self.engine.behaviour
+        if not behaviour.unease(npc) or behaviour.working(npc):
+            return False
+        return not accepts(self.engine.accept_score(PLAYER_ID, npc), self.rng, self.engine.config)
 
     def _player_free(self) -> bool:
         return self.connected() and self._distance_known() and not self.engine.talking(PLAYER_ID)
