@@ -11,9 +11,11 @@ export type FlatDoll = {
   pieces: Record<PieceName, PieceSpec>;
 };
 
-/** A resident painted whole, as `content/dolls/<id>.json` and the doll job describe it. */
+/** A character painted whole, as `content/dolls/<id>.json` and the doll job describe it. */
 export type FigureManifest = {
   id?: string;
+  /** False for someone who isn't a villager, like the clinic's doctor. */
+  resident?: boolean;
   /** Atlas pixels a metre; a standing figure is `height` pixels from sole to crown. */
   ppm: number;
   height: number;

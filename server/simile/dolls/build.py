@@ -86,6 +86,13 @@ def characters() -> list[Npc]:
     return [*load_npcs(NPCS_DIR), load_doctor()]
 
 
+def outsiders() -> set[str]:
+    """The characters who aren't residents, whose manifests say so: the clinic's doctor."""
+    from simile.clinic.doctor import DOCTOR
+
+    return {DOCTOR}
+
+
 def people() -> dict[str, Appearance]:
     """Every character and the player, by id."""
     from simile.characters.palette import PLAYER
@@ -471,8 +478,12 @@ def build(
     with model.stack:
         for who in todo:
             painted = paint(who, everyone[who], model, said.get(who, ""), cut, log)
-            appearance = everyone[who].model_dump(mode="json")
-            changed = write(directory, files(who, painted, hash=hashes[who], appearance=appearance))
+            extra = {
+                "hash": hashes[who],
+                "appearance": everyone[who].model_dump(mode="json"),
+                **({"resident": False} if who in outsiders() else {}),
+            }
+            changed = write(directory, files(who, painted, **extra))
             log(f"{who}: painted in {painted.seconds:.0f} s of FLUX, wrote {len(changed)} files")
             done.append(painted)
         if PLAYER_ID in wanted:

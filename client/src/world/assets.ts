@@ -20,7 +20,7 @@ export const mapIds: readonly string[] = Object.keys(maps);
 export { dolls };
 
 const residentDolls = Object.keys(dolls)
-  .filter((id) => !isPlayerFigure(id))
+  .filter((id) => !isPlayerFigure(id) && dolls[id]!.resident !== false)
   .sort();
 
 /** What the player has fitted, from `player_state`. */

@@ -13,7 +13,7 @@ const atlases = import.meta.glob<string>('../../../content/dolls/*.webp', {
 const folder = (path: string) => path.slice(0, path.lastIndexOf('/') + 1);
 const stem = (path: string) => path.slice(path.lastIndexOf('/') + 1, path.lastIndexOf('.'));
 
-/** The residents' and the player's figures in `content/dolls/`, by id, with their atlases' URLs. */
+/** The residents', the doctor's and the player's figures in `content/dolls/`, by id, with their atlases' URLs. */
 export const dolls: Record<string, FigureManifest> = Object.fromEntries(
   Object.entries(manifests).map(([path, figure]) => [
     figure.id ?? stem(path),
