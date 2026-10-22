@@ -4,6 +4,7 @@ from typing import Any, Final, Literal
 from pydantic import Field, model_validator
 
 from simile.schema.common import CHECKED, Id, Model, Unit
+from simile.schema.world import MapTile
 
 CARRY_LIMIT = 10.0
 PRESENT: Final = "present"
@@ -56,6 +57,16 @@ class Item(Model):
 def lamp() -> Item:
     """The lamp the player starts with, fully charged and switched off."""
     return Item(id="lamp", kind=ItemKind.LAMP, name="Lamp", weight=1.0, charge=1.0, on=False)
+
+
+class Pile(Model):
+    """Items lying `at` a tile in the world for the player to pick up, such as what they left
+    when they collapsed."""
+
+    model_config = CHECKED
+
+    at: MapTile
+    items: list[Item] = Field(min_length=1)
 
 
 class Bionic(StrEnum):
@@ -138,6 +149,12 @@ class Player(Model):
     )
     body: Body = Field(default_factory=Body)
     hunger: Unit = Field(default=0.0, description="0 is fed and 1 is starving: they collapse.")
+    left: list[Pile] = Field(
+        default=[],
+        exclude_if=lambda left: not left,
+        description="What they left when they collapsed, oldest first, each on the tile they fell "
+        "on or the ground below it. Left out while there's none.",
+    )
 
     @property
     def humanity(self) -> float:
