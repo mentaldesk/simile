@@ -303,18 +303,13 @@ class Fitting(Model):
         'up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.',
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def _parts_it_replaces(cls, data: Any) -> Any:
-        if isinstance(data, dict) and isinstance(parts := data.get("parts"), list):
-            named = [part for part in parts if isinstance(part, str)]
-            if len(set(named)) != len(named):
-                raise ValueError("a fitting names each part once")
-            bionic = data.get("bionic")
-            fits = Bionic(bionic).replaces if isinstance(bionic, str) and bionic in Bionic else None
-            if fits is not None and (wrong := [part for part in named if part not in fits]):
-                raise ValueError(f"{bionic} can't replace {', '.join(wrong)}")
-        return data
+    @model_validator(mode="after")
+    def _parts_it_replaces(self) -> Self:
+        if len(set(self.parts)) != len(self.parts):
+            raise ValueError("a fitting names each part once")
+        if wrong := [part for part in self.parts if part not in self.bionic.replaces]:
+            raise ValueError(f"{self.bionic} can't replace {', '.join(wrong)}")
+        return self
 
 
 class Buyer(Model):
