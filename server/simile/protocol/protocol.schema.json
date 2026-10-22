@@ -141,6 +141,7 @@
         "mapping": {
           "eat": "#/$defs/EatMessage",
           "fit": "#/$defs/FitMessage",
+          "lamp": "#/$defs/LampMessage",
           "list_news": "#/$defs/ListNewsMessage",
           "list_works": "#/$defs/ListWorksMessage",
           "pick_up": "#/$defs/PickUpMessage",
@@ -184,6 +185,9 @@
         },
         {
           "$ref": "#/$defs/SellMessage"
+        },
+        {
+          "$ref": "#/$defs/LampMessage"
         },
         {
           "$ref": "#/$defs/SellPartMessage"
@@ -571,7 +575,7 @@
             }
           ],
           "default": null,
-          "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else."
+          "description": "A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else."
         },
         "on": {
           "anyOf": [
@@ -583,7 +587,7 @@
             }
           ],
           "default": null,
-          "description": "Whether a lamp is switched on, running its battery down. Null for anything else."
+          "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else."
         }
       },
       "required": [
@@ -686,6 +690,26 @@
       "type": "object"
     },
     "JsonValue": {},
+    "LampMessage": {
+      "additionalProperties": false,
+      "description": "Switches the lamp the player carries on or off. The server ignores it if they carry no\nlamp, and for switching on a flat one.",
+      "properties": {
+        "type": {
+          "const": "lamp",
+          "default": "lamp",
+          "type": "string"
+        },
+        "on": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "on"
+      ],
+      "title": "LampMessage",
+      "type": "object"
+    },
     "Lead": {
       "additionalProperties": false,
       "description": "Where the trail goes next: someone to ask or somewhere to look, which turns up a fact. It\ncloses once the journal has any entry about that fact, a lie included.",

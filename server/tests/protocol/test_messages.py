@@ -20,6 +20,7 @@ from simile.protocol import (
     Fitting,
     Frame,
     JournalMessage,
+    LampMessage,
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
@@ -297,6 +298,8 @@ CLIENT = [
     PickUpMessage(),
     SellMessage(item="copper_wire"),
     SellMessage(item=None),
+    LampMessage(on=True),
+    LampMessage(on=False),
     SellPartMessage(part="left_kidney"),
     FitMessage(bionic=Bionic.INFRARED_EYE, part="right_eye"),
 ]
@@ -911,15 +914,27 @@ def test_a_collapse_says_where_they_wake() -> None:
         (PickUpMessage(), {"type": "pick_up"}),
         (SellMessage(item="copper_wire"), {"type": "sell", "item": "copper_wire"}),
         (SellMessage(item=None), {"type": "sell", "item": None}),
+        (LampMessage(on=True), {"type": "lamp", "on": True}),
+        (LampMessage(on=False), {"type": "lamp", "on": False}),
         (SellPartMessage(part="left_kidney"), {"type": "sell_part", "part": "left_kidney"}),
         (
             FitMessage(bionic=Bionic.DATAJACK, part="vertebra"),
             {"type": "fit", "bionic": "datajack", "part": "vertebra"},
         ),
     ],
-    ids=["item", "meal", "pick_up", "sell_one", "sell_all", "sell_part", "fit"],
+    ids=[
+        "item",
+        "meal",
+        "pick_up",
+        "sell_one",
+        "sell_all",
+        "lamp_on",
+        "lamp_off",
+        "sell_part",
+        "fit",
+    ],
 )
-def test_eating_picking_up_and_selling_go_from_client_to_server(
+def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
     message: Any, data: dict[str, Any]
 ) -> None:
     assert json.loads(message.model_dump_json()) == data
@@ -1056,6 +1071,10 @@ def test_timestamps_are_utc() -> None:
         {"type": "sell"},
         {"type": "sell", "item": "Copper wire"},
         {"type": "sell", "item": "copper_wire", "price": 6},
+        {"type": "lamp"},
+        {"type": "lamp", "on": None},
+        {"type": "lamp", "on": "maybe"},
+        {"type": "lamp", "on": True, "charge": 1},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

@@ -64,6 +64,7 @@ export type ClientMessage =
   | EatMessage
   | PickUpMessage
   | SellMessage
+  | LampMessage
   | SellPartMessage
   | FitMessage;
 
@@ -446,11 +447,11 @@ export interface Item {
    */
   weight: number;
   /**
-   * A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.
+   * A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.
    */
   charge: number | null;
   /**
-   * Whether a lamp is switched on, running its battery down. Null for anything else.
+   * Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.
    */
   on: boolean | null;
 }
@@ -698,6 +699,14 @@ export interface SellMessage {
    * One thing they carry, by its `id`, or null for everything they carry that the buyer buys.
    */
   item: string | null;
+}
+/**
+ * Switches the lamp the player carries on or off. The server ignores it if they carry no
+ * lamp, and for switching on a flat one.
+ */
+export interface LampMessage {
+  type: 'lamp';
+  on: boolean;
 }
 /**
  * Sells a part of their body to the buyer where they stand, at its `buyer.parts` price.
