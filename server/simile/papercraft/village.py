@@ -3,7 +3,7 @@ Where things are and how big comes from the maps, through `layout.py`."""
 
 from dataclasses import dataclass
 
-from simile.papercraft.fronts import WINDOW, Box, Front, Rgb, Roof
+from simile.papercraft.fronts import UNIT, WINDOW, Box, Front, Rgb, Roof
 from simile.papercraft.layout import Facade, Layout
 
 TILE = 1.1
@@ -35,6 +35,9 @@ STREETS: dict[str, Street] = {
         "far-river", "mid-riverbank", "near-hedges", "ground-street", "front-reeds"
     ),
     "rooftops": Street("far-hills", "mid-rooftops", "near-walls", "ground-street", "front-plants"),
+    "metro": Street(
+        "far-metro", "mid-metro", "near-metro", "ground-metro", "front-metro", sky="metro-vault"
+    ),
 }
 GROUNDS = {
     "square": "ground-plaza",
@@ -65,6 +68,12 @@ class Look:
     """Ask outright for the mural wall to stay empty, where FLUX fills it otherwise."""
     reseed: int = 0
     """Added to the seed, to paint a rejected front again."""
+    cartoon: bool = False
+    """Painted in the tunnels' cartoon rather than papercraft."""
+    plants: bool = True
+    """A potted plant each side of the door."""
+    whole: bool = False
+    """Painted in one go however wide, for a front that isn't a terrace."""
 
 
 WOOD: Rgb = (126, 88, 60)
@@ -254,6 +263,20 @@ LOOKS: dict[str, Look] = {
         shop=(80, 120, 168),
         flower_boxes=BOXES,
     ),
+    "clinic": Look(
+        "a small back-alley clinic built into an old metro station office of cracked pale "
+        "green tiles",
+        (178, 204, 186),
+        (60, 84, 82),
+        (88, 92, 96),
+        "flat",
+        glass_door=True,
+        window=(1.3, 1.1),
+        cartoon=True,
+        plants=False,
+        whole=True,
+        reseed=1,
+    ),
     "clock_house": Look(
         "a three-storey townhouse of pale sandstone with a flat roof",
         (216, 204, 180),
@@ -283,7 +306,11 @@ PAPERS = {
     "loft-boards": "strips of pale pine-coloured card laid across like boards, with a few "
     "knots drawn in brown pencil",
     "plaster-white": "plain warm white plaster with a faint soft texture",
+    "clinic-tiles": "pale green-white wall tiles in a neat grid with dark grout, a few chipped "
+    "tiles and faint stains",
 }
+CARTOON_PAPERS = frozenset({"clinic-tiles"})
+"""Papers painted in the tunnels' cartoon."""
 ROOMS: dict[str, tuple[str, ...]] = {
     "living_room": ("living-ochre", "living-blue", "living-green"),
     "bedroom": ("bedroom-rose", "bedroom-sage", "bedroom-lilac"),
@@ -295,6 +322,7 @@ ROOMS: dict[str, tuple[str, ...]] = {
     "workshop": ("block-grey",),
     "loft": ("loft-boards",),
     "gallery": ("plaster-white",),
+    "clinic": ("clinic-tiles",),
 }
 """Each kind of room's papers. Rooms of one kind take turns, by their building's place in the
 village, so neighbours differ."""
@@ -348,8 +376,10 @@ def front(facade: Facade, look: Look) -> Front:
         flower_boxes=look.flower_boxes,
         murals=tuple(murals),
         glass_door=look.glass_door,
+        plants=look.plants,
         window=look.window,
         one_shop=look.one_shop,
+        unit=width if look.whole else UNIT,
     )
 
 

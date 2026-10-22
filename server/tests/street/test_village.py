@@ -12,8 +12,17 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.schema import DoorKind, Facing, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
-from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER
-from simile.street.village import FLOOR_ROW, GROUND, JUMPING, STOOL_M, STOREY, village
+from simile.street.metro import HIGH_LEDGE, METRO
+from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER, LIGHT_LAYER, PICKUPS_LAYER
+from simile.street.village import (
+    FLOOR_ROW,
+    GROUND,
+    JUMPING,
+    STOOL_M,
+    STOREY,
+    UNDERGROUND,
+    village,
+)
 from simile.world import Movement, Outcome, Walk
 from simile.world.map import (
     STREET_DIR,
@@ -74,9 +83,10 @@ def test_every_map_is_a_side_view_street_or_floor() -> None:
         "high_street",
         "kapok_walk",
         "lychee_lane",
+        "metro",
         "rooftops",
     ]
-    assert len(FLOORS) == 31
+    assert len(FLOORS) == 32
     assert len(STREETS) + len(FLOORS) == len(MAPS)
     for floor in FLOORS:
         assert floor.id == f"{floor.building}_floor_{floor.floor}"
@@ -132,17 +142,24 @@ def reachable(start: Spot, jumps: bool = False) -> set[Spot]:
     return seen
 
 
-def test_every_cell_of_every_map_is_reachable_from_every_street() -> None:
+[LEDGE] = [item for item in MAPS[METRO].interactables if item.id == HIGH_LEDGE]
+LOCKED = {Spot(METRO, t.x, t.y) for t in LEDGE.stand}
+"""Out of reach until a bionic opens them."""
+
+
+def test_every_cell_of_every_map_but_the_locked_ones_is_reachable_from_every_street() -> None:
     every_cell = {
         Spot(town.id, x, y)
         for town in MAPS.values()
         for y in range(town.height)
         for x in range(town.width)
         if town.walkable(x, y)
-    }
+    } - LOCKED
     jumped = {cell for cell in every_cell if cell.map in JUMPING}
     for street in STREETS:
-        start = next(Spot(street.id, x, GROUND) for x in range(street.width))
+        start = next(
+            Spot(street.id, x, GROUND) for x in range(street.width) if street.standing(x, GROUND)
+        )
         assert reachable(start, jumps=True) == every_cell, street.id
         walked = reachable(start)
         assert every_cell - jumped <= walked, street.id
@@ -198,6 +215,7 @@ def test_streets_join_through_doors_outside_on_the_first_street() -> None:
         "high_street_to_kapok_walk": ("high_street", "kapok_walk"),
         "high_street_to_lychee_lane": ("high_street", "lychee_lane"),
         "kapok_walk_to_rooftops": ("kapok_walk", "rooftops"),
+        "banyan_row_to_metro": ("banyan_row", "metro"),
     }
     assert {door.kind for door in TOWN.doors if door.id in joins} == {DoorKind.DOOR}
 
@@ -379,6 +397,8 @@ def test_streets_have_a_flight_of_stairs_and_a_ladder() -> None:
         ("banyan_row", DoorKind.STAIRS),
         ("lychee_lane", DoorKind.LADDER),
         ("rooftops", DoorKind.LADDER),
+        ("metro", DoorKind.STAIRS),
+        ("metro", DoorKind.LADDER),
     }
 
 
@@ -396,7 +416,7 @@ def test_the_readme_names_every_street_building_room_and_piece_of_furniture() ->
 
 def test_every_map_has_the_layers_and_furniture_has_names() -> None:
     names = ["solid", "climbable", "collision", BUILDINGS_LAYER, FURNITURE_LAYER, "locations"]
-    names += ["murals", "doors", "interactables", "spots"]
+    names += ["murals", "doors", "interactables", "spots", LIGHT_LAYER, PICKUPS_LAYER]
     furniture = set()
     for path in [*STREET_DIR.glob("*.tmj"), *(STREET_DIR / "floors").glob("*.tmj")]:
         data = json.loads(path.read_text())
@@ -408,9 +428,14 @@ def test_every_map_has_the_layers_and_furniture_has_names() -> None:
     assert {"cafe_table", "bench", "bed", "workbench", "fountain", "news_terminal"} <= furniture
 
 
-def test_the_farthest_two_places_are_less_than_a_minute_and_a_half_apart() -> None:
+def test_the_villages_farthest_two_places_are_less_than_a_minute_and_a_half_apart() -> None:
+    below = {plan.id for plan in PLANS.values() if plan.properties.get("street") in UNDERGROUND}
     doors = door_ends(MAPS)
-    entries = [Spot(loc.map, loc.entry.x, loc.entry.y) for loc in TOWN.locations]
+    entries = [
+        Spot(loc.map, loc.entry.x, loc.entry.y)
+        for loc in TOWN.locations
+        if loc.map not in below | UNDERGROUND
+    ]
     routes = [find_route(MAPS, a, b, doors) for a, b in itertools.combinations(entries, 2)]
     longest = max(route_length(route) for route in routes if route is not None)
 

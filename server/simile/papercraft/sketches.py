@@ -158,6 +158,98 @@ def steps(rise: float = 2.2, run: float = 2.2, count: int = 8) -> Image.Image:
     return s.image
 
 
+STEEL: Rgb = (112, 122, 120)
+DARK_STEEL: Rgb = (64, 70, 72)
+CREAM: Rgb = (222, 214, 186)
+TEAL: Rgb = (58, 132, 130)
+WINDOW: Rgb = (58, 68, 82)
+HAZARD: Rgb = (232, 188, 52)
+
+
+def train_carriage(length: float = 11.0, height: float = 3.36) -> Image.Image:
+    """A metro carriage's side on its bogies, its flat roof along the top edge to stand on."""
+    s = Sheet(length, height, 120)
+    for x in (1.6, length - 1.6):
+        s.rect(x - 1.0, 0.3, x + 1.0, 0.5, DARK_STEEL)
+        for wheel in (x - 0.6, x + 0.6):
+            s.ellipse(wheel - 0.38, 0.0, wheel + 0.38, 0.76, IRON)
+    s.rect(0.05, 0.45, length - 0.05, height - 0.2, CREAM, DARK_STEEL)
+    s.rect(0.05, 1.05, length - 0.05, 1.3, TEAL)
+    s.rect(0.0, height - 0.2, length, height, STEEL, DARK_STEEL)
+    for x in np.arange(0.9, length - 0.5, 1.2):
+        s.rect(x, height - 0.17, x + 0.5, height - 0.05, DARK_STEEL)
+    doors = (length * 0.27, length * 0.73)
+    for x in np.arange(0.5, length - 0.6, 1.05):
+        if all(abs(x + 0.35 - d) > 1.0 for d in doors):
+            s.rect(x, 1.6, x + 0.75, 2.6, WINDOW, DARK_STEEL)
+    for d in doors:
+        for side in (-1, 1):
+            x0, x1 = sorted((d, d + side * 0.62))
+            s.rect(x0, 0.5, x1, 2.75, CREAM, DARK_STEEL)
+            s.rect(x0 + 0.12, 1.6, x1 - 0.12, 2.55, WINDOW)
+    return s.image
+
+
+def catwalk(length: float = 3.3, height: float = 2.16, deck: float = 1.16) -> Image.Image:
+    """A railed steel deck on a girder, to stretch, its deck `deck` up from the bottom."""
+    s = Sheet(length, height, 200)
+    s.rect(0.0, deck - 0.6, length, deck - 0.08, STEEL, DARK_STEEL)
+    for x in np.arange(0.2, length, 0.55):
+        s.rect(x - 0.025, deck - 0.6, x + 0.025, deck - 0.08, DARK_STEEL)
+    s.rect(0.0, deck - 0.08, length, deck, DARK_STEEL)
+    for x in np.arange(0.05, length, 1.1):
+        s.rect(x, deck, x + 0.06, height - 0.04, DARK_STEEL)
+    for y in (deck + 0.5, height - 0.06):
+        s.rect(0.0, y, length, y + 0.05, STEEL, DARK_STEEL)
+    for x, out in ((0.12, 0.3), (length - 0.12, -0.3)):
+        s.polygon(
+            [(x, deck - 0.6), (x + out * 0.3, deck - 0.6), (x + out, 0.0), (x + out * 0.8, 0.0)],
+            DARK_STEEL,
+        )
+    s.image.paste((255, 255, 255), (0, 0, round(s.x0), s.image.height))
+    s.image.paste((255, 255, 255), (round(s.x0 + length * s.ppm), 0, s.image.width, s.image.height))
+    return s.image
+
+
+def metro_steps(run: float = 3.3, rise: float = 3.36, count: int = 12) -> Image.Image:
+    """Tiled steps rising to the left, a little fuller than the street's, to cover them."""
+    s = Sheet(run, rise, 150)
+    h, d = rise / count, (run - 0.3) / count
+    profile = [(run, 0.0)]
+    for i in range(count):
+        x = run - i * d
+        profile += [(x, (i + 1) * h), (x - d, (i + 1) * h)]
+    s.polygon([*profile, (0.0, rise), (0.0, 0.0)], CREAM, DARK_STEEL)
+    for i in range(count):
+        x = run - i * d
+        s.rect(x - d, (i + 1) * h - 0.07, x, (i + 1) * h, DARK_STEEL)
+    for y in np.arange(0.42, rise - 0.3, 0.42):
+        s.rect(0.0, y - 0.015, run - (y // h) * d - 0.05, y + 0.015, (196, 188, 160))
+    return s.image
+
+
+def freight_lift(width: float = 2.2, height: float = 4.4) -> Image.Image:
+    """A dead freight lift's car behind a grille gate, under its winding gear."""
+    s = Sheet(width, height, 180)
+    s.rect(0.15, 0.0, width - 0.15, 3.5, (44, 48, 52))
+    s.rect(0.25, 0.1, width - 0.25, 2.5, (92, 86, 74), DARK_STEEL)
+    s.rect(0.25, 0.0, width - 0.25, 0.12, HAZARD)
+    for x in np.arange(0.3, width - 0.4, 0.3):
+        s.rect(x - 0.02, 0.12, x + 0.02, 2.5, STEEL)
+        for y in np.arange(0.12, 2.4, 0.6):
+            s.polygon([(x, y), (x + 0.05, y), (x + 0.3, y + 0.6), (x + 0.25, y + 0.6)], STEEL)
+            s.polygon([(x + 0.3, y), (x + 0.25, y), (x, y + 0.6), (x + 0.05, y + 0.6)], STEEL)
+    for x in (width / 2 - 0.25, width / 2 + 0.25):
+        s.rect(x - 0.015, 2.5, x + 0.015, 3.7, IRON)
+    s.rect(0.0, 0.0, 0.15, 3.6, STEEL, DARK_STEEL)
+    s.rect(width - 0.15, 0.0, width, 3.6, STEEL, DARK_STEEL)
+    s.rect(-0.05, 3.5, width + 0.05, 3.62, DARK_STEEL)
+    s.rect(0.2, 3.62, width - 0.2, height - 0.05, STEEL, DARK_STEEL)
+    s.ellipse(width / 2 - 0.35, 3.7, width / 2 + 0.35, 4.3, IRON)
+    s.ellipse(width / 2 - 0.12, 3.88, width / 2 + 0.12, 4.12, STEEL)
+    return s.image
+
+
 def bathtub() -> Image.Image:
     s = Sheet(1.7, 0.75, 400, GREY)
     s.polygon([(0.0, 0.62), (1.7, 0.62), (1.6, 0.2), (0.1, 0.2)], WHITE, (200, 196, 188))
@@ -197,6 +289,10 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "steps": steps,
     "ledge": ledge,
     "rope_bridge": rope_bridge,
+    "train_carriage": train_carriage,
+    "catwalk": catwalk,
+    "metro_steps": metro_steps,
+    "freight_lift": freight_lift,
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,

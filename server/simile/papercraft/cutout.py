@@ -64,12 +64,14 @@ def background(image: Image.Image) -> np.ndarray:
     return np.median(border, axis=0)
 
 
-def key(image: Image.Image, lo: float = 10, hi: float = 34) -> Image.Image:
+def key(
+    image: Image.Image, lo: float = 10, hi: float = 34, bg: np.ndarray | None = None
+) -> Image.Image:
     """A colour key: the background is whatever near-background colour touches the border."""
     import cv2
 
     a = np.asarray(image.convert("RGB"), dtype=np.float32)
-    d = np.abs(a - background(image)).max(axis=2)
+    d = np.abs(a - (background(image) if bg is None else bg)).max(axis=2)
     near = (d < hi).astype(np.uint8)
     _, labels = cv2.connectedComponents(near, connectivity=4)
     edge = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
