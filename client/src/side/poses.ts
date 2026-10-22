@@ -51,19 +51,15 @@ export class PoseCache {
   }
 }
 
-/** Whether a figure is left out: a resident on the street in front of a dollhouse that's open,
- * or opening, where the street's props are left out too (`StreetView.ghost`). No one is drawn
- * see-through, and the player is always drawn. */
+/** A resident on the street in front of an open dollhouse is left out; the player never is. */
 export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): boolean =>
   !inside && !player && ghost < 1;
 
-/** Metres up the front edge of each piece's seat is in its art: a stool's, a bench's plank, and a
- * cafe or noodle table's chairs. */
+/** Metres up the front edge of each piece's seat, measured from its art. */
 export const SEAT_M: Record<string, number> = { stool: 0.567, bench: 0.392, cafe_table: 0.442, noodle_table: 0.483 };
 const SEATS = new Set(['seat', 'bar', 'desk']);
 
-/** The seat at a map cell, on the piece under its spot as drawn, or a chair's where there's no
- * piece, or 0 off a seat. */
+/** Metres up the seat at a map cell as drawn: its piece's, a chair's without one, or 0 off a seat. */
 export function seatHeight(map: Pick<SideMap, 'spots' | 'furniture'>, x: number, y: number): number {
   const cx = Math.round(x);
   const cy = Math.round(y);

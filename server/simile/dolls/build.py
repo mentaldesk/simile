@@ -285,9 +285,7 @@ def files(who: str, painted: Painted, **extra: Any) -> dict[str, bytes]:
 
 
 def reseat(directory: Path = CONTENT) -> list[Path]:
-    """Measures each figure's seats again from its atlas, as `files` does from its cut-outs,
-    without painting: the atlas keeps every cut-out's outline exactly. Rewrites the manifests
-    whose seats changed."""
+    """Measures each figure's seats again from its atlas, without painting."""
     seated = [f for f, pose in EDITS.items() if pose.seated]
     named = {}
     for path in sorted(directory.glob("*.json")):

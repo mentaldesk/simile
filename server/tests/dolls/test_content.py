@@ -131,8 +131,7 @@ def test_sitting_sits_on_its_thighs_with_its_feet_below(who: str) -> None:
 
 
 def thigh_line(solid: np.ndarray) -> int:
-    """The row under the longest stretch of the lower edge behind the heels that stays within
-    `ON_SEAT` either way: the bottom of the thighs, however the shins slant."""
+    """The bottom of the longest flat stretch of the lower edge behind the heels."""
     rows = np.flatnonzero(solid.any(axis=1))
     soles = solid[rows[-1] + 1 - round(SOLES * (rows[-1] - rows[0] + 1)) :]
     heel = int(np.flatnonzero(soles.any(axis=0))[0])

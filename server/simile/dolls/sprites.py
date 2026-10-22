@@ -194,10 +194,7 @@ def frames(
 
 
 def seat(image: Image.Image, middle: float) -> tuple[float, float]:
-    """Under the middle of the head, on the lowest row behind the calves: a figure turned to the
-    right sits with its feet under or in front of its knees, wherever its head is. Its lower
-    edge, followed back from the heels, climbs the backs of the calves to where the thighs
-    begin, however far the shins slant."""
+    """Under the middle of the head, at the bottom of the thighs, up the calves from the heels."""
     a = solid(image)
     rows = np.flatnonzero(a.any(axis=1))
     tall = int(rows[-1] - rows[0] + 1)

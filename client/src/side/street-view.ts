@@ -142,8 +142,7 @@ export class StreetView {
     return !!name && (this.byName.get(name)?.open ?? 0) > 0;
   }
 
-  /** How far on the front over `x` is: 1 unless it's open, opening or closing, when the street's
-   * props and residents in front of it are left out. */
+  /** How far on the front over `x` is: below 1, what's in front of it is left out. */
   ghost(x: number): number {
     let on = 1;
     for (const { building, open } of this.fronts) {
