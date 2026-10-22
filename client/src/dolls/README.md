@@ -29,8 +29,8 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
   - `sitting` sits, and so do `reading` and `working` when `options.seated`; they, `looking` and
     `riding` otherwise stand. With `options.seat`, metres up its seat is, it sits on the seat
     rather than standing its feet on the ground: the side scene finds the seat from the spot and
-    the furniture under the resident (`side/poses.ts`'s `seatHeight`): a stool or the bar
-    0.7 m up, a chair, a bench or a desk's chair 0.45 m;
+    the furniture under the resident (`side/poses.ts`'s `seatHeight`): the front edge of the
+    seat of the stool, bench or table's chair there, measured from its art, or a chair's;
   - `climbing` walks up stairs and climbs a ladder from behind, turning from side to side, by
     `options.on`, which defaults to stairs from the side and a ladder facing north or south.
 

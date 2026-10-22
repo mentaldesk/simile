@@ -52,8 +52,8 @@ export class PoseCache {
 }
 
 /** Whether a figure is left out: a resident on the street in front of a dollhouse that's open,
- * or opening, where the street's props fade (`StreetView.ghost`). No one is drawn see-through,
- * and the player is always drawn. */
+ * or opening, where the street's props are left out too (`StreetView.ghost`). No one is drawn
+ * see-through, and the player is always drawn. */
 export const hiddenInFront = (inside: boolean, player: boolean, ghost: number): boolean =>
   !inside && !player && ghost < 1;
 
