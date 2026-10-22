@@ -13,11 +13,12 @@ from simile.sim import LineSpoken, world_of
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
 from simile.story.content import Clue, load_story
 from simile.story.journal import Journal
+from simile.story.saying import says
 from simile.world import Point
 
 
 class Recorder:
-    """Journals what a resident tells the player or lies about as they speak, and clues found."""
+    """Journals what a resident tells the player, a cover once they've said it, and clues found."""
 
     def __init__(
         self,
@@ -41,10 +42,14 @@ class Recorder:
         if talk is None or talk.conversation.id != line.conversation_id:
             return
         name = talk.names.get(line.speaker, line.speaker)
+        said = " ".join(
+            each.text for each in talk.conversation.lines if each.speaker == line.speaker
+        )
         told = [
             self.journal.told(telling.fact, telling.knower, name, lie=telling.stance is Stance.LIE)
             for telling in talk.tellings.values()
-            if telling.stance is not Stance.KEEP
+            if telling.stance is Stance.TELL
+            or (telling.stance is Stance.LIE and says(said, telling.knower.cover or ""))
         ]
         if any(told):
             self.changed()

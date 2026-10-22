@@ -8,6 +8,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
+from simile.llm import FakeProvider
 from simile.persistence import investigation_of, player_of
 from simile.protocol import PickUpMessage, hub_of
 from simile.schema import (
@@ -30,18 +31,20 @@ from simile.schema import (
     SourceKind,
 )
 from simile.sim import Clock, LineSpoken, World
-from simile.story import NOTES, load_story
+from simile.story import NOTES, load_story, says
 from simile.story.journal import Journal
 from simile.story.recording import Recorder
 from simile.world import Point, movement_of
 
-from ..conversation.test_player import START
+from ..conversation.test_bionics import watched
+from ..conversation.test_player import START, make_npc
 from ..conversation.test_telling import LONG_AGO, investigating
 from .test_begin import run_village
 
 NIGHT = START - timedelta(days=8)
 ALIBI = "I was at home all night."
 DEFLECTION = "No idea, I'm afraid."
+ASLEEP = "I was fast asleep that night. I didn't hear a thing."
 EYE = Player(body=Body(left_eye=Bionic.INFRARED_EYE))
 
 
@@ -71,14 +74,15 @@ def did(cover: str) -> Knower:
 GONE = fact("gone", saw("ana", 0.0), saw("ben", 0.0), leads=("notes", "seen"))
 FOUND = fact("notes", found_in=NOTES, leads=("there_ben", "seen"))
 SEEN = fact("seen", saw("ana", 0.3), leads=("there_ben",))
-SHOUTING = fact("shouting", saw("ana", 0.9))
+SHOUTING = fact("shouting", saw("ana", 0.9, ASLEEP))
+MEETING = fact("meeting", saw("ana", 0.9))
 ATTACK = fact("attack", did(DEFLECTION))
 THERE = fact("there_ben", did(ALIBI))
 INCIDENT = Incident(
     attackers=["ben"],
     motive="Ben blamed Aris for a deal that fell through.",
     night=NIGHT,
-    facts=[GONE, FOUND, SEEN, SHOUTING, ATTACK, THERE],
+    facts=[GONE, FOUND, SEEN, SHOUTING, MEETING, ATTACK, THERE],
 )
 ANA, BEN = GONE.known_by
 
@@ -207,10 +211,12 @@ def test_a_clue_holds_only_its_own_facts() -> None:
 
 
 class Listening:
-    """A recorder on the conversation tests' village."""
+    """A recorder on the conversation tests' village, whose residents say `replies` if given."""
 
-    def __init__(self, player: Player | None = None) -> None:
-        self.village = investigating(incident=INCIDENT, config=LONG_AGO)
+    def __init__(self, player: Player | None = None, *replies: str, **village: Any) -> None:
+        if replies:
+            village["provider"] = FakeProvider([f"{reply} [values: honesty]" for reply in replies])
+        self.village = investigating(incident=INCIDENT, config=LONG_AGO, **village)
         self.notebook = Notebook(player)
         self.changes = 0
         self.recorder = Recorder(self.notebook.journal, lambda: self.village.players, self.changed)
@@ -228,7 +234,7 @@ class Listening:
 
 
 @pytest.mark.anyio
-async def test_what_a_resident_tells_is_written_as_they_speak_and_what_they_keep_is_not() -> None:
+async def test_what_a_resident_tells_is_written_as_they_speak_but_not_what_they_keep_back() -> None:
     listening = Listening()
 
     await listening.say("Lovely morning, isn't it?", "ana")
@@ -244,22 +250,64 @@ async def test_what_a_resident_tells_is_written_as_they_speak_and_what_they_keep
 
 
 @pytest.mark.anyio
-async def test_an_attacker_lies_and_the_eye_sees_them_flush() -> None:
-    listening = Listening(EYE)
+async def test_an_attacker_s_lie_is_written_once_said_and_the_eye_sees_them_flush() -> None:
+    listening = Listening(EYE, f"Me? {ALIBI} Why do you ask?")
     listening.village.walk_to("ben", 1)
 
     await listening.say("Where were you the night Aris was attacked?", "ben")
 
     assert listening.learned() == [
         ("gone", "Ben", "What happened: gone.", False),
-        ("attack", "Ben", f"“{DEFLECTION}”", True),
         ("there_ben", "Ben", f"“{ALIBI}”", True),
     ]
-    assert listening.notebook.open_leads() == {
-        "gone": ["notes", "seen"],
-        "attack": [],
-        "there_ben": [],
-    }
+    assert listening.notebook.open_leads() == {"gone": ["notes", "seen"], "there_ben": []}
+
+
+@pytest.mark.anyio
+async def test_a_cover_of_two_sentences_is_written_once_on_the_second() -> None:
+    listening = Listening(None, "I was fast asleep that night. I didn’t hear a THING!")
+    after: list[list[str]] = []
+
+    def spoken(event: LineSpoken) -> None:
+        if event.line.speaker == "ana":
+            after.append([entry.fact_id for entry in listening.notebook.entries])
+
+    listening.village.world.bus.subscribe(LineSpoken, spoken)
+    await listening.say("Did you hear anything the night Aris was attacked?", "ana")
+
+    assert after == [["gone", "seen"], ["gone", "seen", "shouting"]]
+    assert listening.notebook.entries[-1].text == f"“{ASLEEP}”"
+
+
+@pytest.mark.anyio
+async def test_turned_down_the_player_is_told_only_the_cover_said() -> None:
+    attacker = make_npc("ben", "house_2", tradition=1.0, security=1.0)
+    listening = Listening(None, f"{ALIBI} Now leave me be.", npcs=(attacker,))
+    watched(listening.village, npcs=(attacker,))
+    await listening.village.run()
+
+    await listening.say("Where were you the night Aris was attacked?", "ben")
+
+    talk = listening.village.players.talk()
+    assert talk is not None and talk.refusing
+    assert listening.learned() == [("there_ben", "Ben", f"“{ALIBI}”", None)]
+
+
+@pytest.mark.parametrize(
+    ("said", "words", "says_it"),
+    [
+        ("“I wasn’t there,” she said.", "I wasn't there.", True),
+        ("I WAS AT HOME — all night!", "I was at home all night.", True),
+        ("I was at home\nall night long, honestly.", "I was at home all night.", True),
+        ("I was home all night.", "I was at home all night.", False),
+        ("Nowhere near.", "where", False),
+        ("Anything.", "...", False),
+    ],
+)
+def test_says_holds_words_whatever_their_case_quotes_and_punctuation(
+    said: str, words: str, says_it: bool
+) -> None:
+    assert says(said, words) is says_it
 
 
 @pytest.mark.parametrize(

@@ -1,6 +1,7 @@
-import { server, type JournalEntry, type JournalMessage, type Lead } from '../net';
+import { server, type ClientMessage, type JournalEntry, type JournalMessage, type Lead } from '../net';
 import type { Clue } from '../world/clues';
 import { callCue } from './call-cue';
+import type { HelpPanel } from './help';
 import './journal-panel.css';
 import { JOURNAL_KEY, NEWS_KEY } from './tuning';
 
@@ -36,6 +37,17 @@ export function openLeads(entries: readonly JournalEntry[]): Lead[] {
 /** "Press E to look at Aris's notes." */
 export function cluePrompt(clue: Clue): string {
   return `Press ${NEWS_KEY.toUpperCase()} to look at ${clue.label.replace(/^The /, 'the ')}.`;
+}
+
+/** E at a clue: the server finds it, and the journal opens in place of the controls, as J does. */
+export function lookAtClue(
+  send: (message: ClientMessage) => unknown,
+  journal: Pick<JournalPanel, 'open'>,
+  help: Pick<HelpPanel, 'close'>,
+): void {
+  send({ type: 'pick_up' });
+  help.close();
+  journal.open();
 }
 
 /** The player's journal of the incident, opened with J: the open leads, then what they learned, newest first. */

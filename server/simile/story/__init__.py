@@ -2,6 +2,7 @@ from simile.story.config import DEFAULT_CONFIG, StoryConfig
 from simile.story.content import DOOR, NOTES, Clue, StoryContent, load_story
 from simile.story.incident import Made, make_incident
 from simile.story.journal import Journal, flushed
+from simile.story.saying import says
 
 __all__ = [
     "DEFAULT_CONFIG",
@@ -15,4 +16,5 @@ __all__ = [
     "flushed",
     "load_story",
     "make_incident",
+    "says",
 ]

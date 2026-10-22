@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { server, type JournalEntry } from '../net';
 import type { Clue } from '../world/clues';
-import { EMPTY, JournalPanel, cluePrompt, journal, openLeads } from './journal-panel';
+import { HelpPanel } from './help';
+import { EMPTY, JournalPanel, cluePrompt, journal, lookAtClue, openLeads } from './journal-panel';
 
 const entry = (fact_id: string, name: string, learned: string, extra: Partial<JournalEntry> = {}): JournalEntry => ({
   fact_id,
@@ -152,4 +153,18 @@ it('words a clue with its label', () => {
 
 it('lists each open lead once', () => {
   expect(openLeads([NOTES, TOBIAS]).map(({ fact_id }) => fact_id)).toEqual(['grudge_raymond', 'shouting']);
+});
+
+it('E at a clue picks it up and opens the journal in place of the controls', () => {
+  const root = document.body.appendChild(document.createElement('div'));
+  const panel = new JournalPanel(root);
+  const help = new HelpPanel(root);
+  const send = vi.fn();
+  help.toggle();
+
+  lookAtClue(send, panel, help);
+
+  expect(send.mock.calls).toEqual([[{ type: 'pick_up' }]]);
+  expect([panel.isOpen, help.isOpen]).toEqual([true, false]);
+  panel.stop();
 });

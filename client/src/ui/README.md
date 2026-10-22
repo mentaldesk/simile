@@ -138,13 +138,15 @@ closes it. It shows the last `journal` the server sent: the leads still open, ea
 the player has learned, newest first, each with who told them or the clue they found it in, and
 when in sim time. An entry the infrared eye caught a resident flushing on (`flushed: true`) has a
 red mark. Until there's anything, it says to ask around. While it's closed, its "J journal" hint in
-the top-right corner counts what's come in since it was last open. It and the controls take turns:
-opening one closes the other. The player can walk with it open.
+the top-right corner, below where the lamp's gauge and its line go, counts what's come in since it
+was last open. It and the controls take turns: opening one closes the other. The player can walk
+with it open.
 
 On a clue's cell (`clueInReach` in [`world/clues.ts`](../world/clues.ts), from
 `content/story/story.toml`), a hint says "Press E to look at Aris's notes.", and E sends `pick_up`
-and opens the journal. The server writes what the clue holds into the journal and sends it. Where
-a pile is in reach too, E takes whichever is nearer, the pile on a tie, as the server does.
+and opens the journal in place of the controls (`lookAtClue`). The server writes what the clue
+holds into the journal and sends it. Where a pile is in reach too, E takes whichever is nearer, the
+pile on a tie, as the server does.
 
 ## Keys
 

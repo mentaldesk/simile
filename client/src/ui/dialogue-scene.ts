@@ -12,7 +12,7 @@ import { dialogue } from './dialogue';
 import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
-import { JournalPanel } from './journal-panel';
+import { JournalPanel, lookAtClue } from './journal-panel';
 import { eUse, onGameKey } from './keys';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -38,6 +38,7 @@ export class DialogueScene extends Phaser.Scene {
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private journal!: JournalPanel;
+  private help!: HelpPanel;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -70,7 +71,7 @@ export class DialogueScene extends Phaser.Scene {
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
     const journal = (this.journal = new JournalPanel(this.root));
-    const help = new HelpPanel(this.root);
+    const help = (this.help = new HelpPanel(this.root));
     const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
@@ -135,10 +136,7 @@ export class DialogueScene extends Phaser.Scene {
     } else if (used?.kind === 'mural') this.murals.look(this.player());
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
-    else if (used?.kind === 'clue') {
-      server.send({ type: 'pick_up' });
-      this.journal.open();
-    }
+    else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
   }
 
   /** F has the meal on offer here if they can pay, else eats something they carry. */

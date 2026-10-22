@@ -111,17 +111,23 @@ the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), 
 
 - **Told.** Once a resident is set up for what they know (`PlayerTalk.tellings`, see
   [*Telling*](../conversation/README.md#telling)), their next line to the player writes each fact
-  they tell, as it really happened (`what`), with its leads. A fact they lie about is written as
-  their cover, in quotes, with no leads. One they keep back isn't written. Nothing in the
-  conversation calls it: the recorder hears `LineSpoken` and reads the player's talk.
+  they tell, as it really happened (`what`), with its leads. A truth goes by the stance alone,
+  whatever the model makes of it: a check on its words would miss a paraphrase, and never pass
+  on the fake LLM.
+- **Lied to.** A fact they lie about is written as their cover, in quotes, with no leads, once
+  their lines in the conversation, joined, hold it word for word (`says`, in `saying.py`, which
+  ignores case, quotes, apostrophes, punctuation and spacing). Joined, because a cover of two
+  sentences comes as two lines. A cover they're set up with but never asked for, and so never
+  give, isn't written, and neither is anything they keep back. Nothing in the conversation calls
+  the recorder: it hears `LineSpoken` and reads the player's talk.
 - **Found.** A `pick_up` (E) within `clue_reach` (half a tile) of a clue's cell, from
   `load_story().clues`, writes each fact found in it (`found_in`), with its leads. The clue is a
   claim on `pick_up` (`claimers_of` in [`simile.player`](../player/README.md)), so a pile as near
   or nearer is picked up instead, as the client shows. The reach is the client's, so they agree,
   and it keeps the workshop's door, beside the door frame, on E.
-- **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`,
-  from the stance the code decided (`flushed`), as the eye's flush on a line will be. Without the
-  eye, and for a clue, it's `null`.
+- **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`
+  (`flushed`). Without the eye, and for a clue, it's `null`. S8's flush on a line can use `says`
+  the same way, so the face and the journal agree.
 - **Leads.** An entry opens its fact's leads, less those to facts the journal already has, and
   closes every lead to its own fact, a lie included.
 - **Once.** A truth already in the journal isn't written again, whoever tells it, nor a lie the same
