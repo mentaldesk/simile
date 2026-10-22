@@ -214,3 +214,21 @@ def test_files_nobody_owns_are_removed(tmp_path: Path, two: dict) -> None:
 def test_unknown_people_are_refused(tmp_path: Path) -> None:
     with pytest.raises(KeyError, match="nobody"):
         made(Painters(), tmp_path, only=["nobody"], cache=None)
+
+
+def test_seats_are_measured_again_from_the_atlas_without_painting(
+    tmp_path: Path, two: dict
+) -> None:
+    made(Painters(), tmp_path, cache=None)
+    built = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    for who in two:
+        path = tmp_path / f"{who}.json"
+        body = json.loads(path.read_text())
+        body["frames"]["sit"]["seat"] = [0.0, 0.0]
+        path.write_text(json.dumps(body, indent=2) + "\n")
+
+    rewritten = build.reseat(tmp_path)
+
+    assert sorted(p.name for p in rewritten) == ["odalys.json", "player.json"]
+    assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == built
+    assert build.reseat(tmp_path) == []

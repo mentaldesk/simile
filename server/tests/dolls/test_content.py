@@ -8,7 +8,17 @@ from PIL import Image
 from simile.dolls.build import CONTENT, MISSES, fingerprint, people, personas
 from simile.dolls.figure import EDITS, FRAMES, POSES
 from simile.dolls.measure import CLOSE, MARKS, face_marks, hidden, swatches
-from simile.dolls.sprites import HEAD, HEIGHT_M, PPM, climber, head, scale
+from simile.dolls.sprites import (
+    HEAD,
+    HEIGHT_M,
+    PPM,
+    SOLES,
+    climber,
+    head,
+    lower_edge,
+    scale,
+    seat,
+)
 
 BUDGET = 3 * 1024 * 1024
 EVERYONE = people()
@@ -21,6 +31,8 @@ SCALE_OFF = 0.1
 """How far a frame may be drawn bigger or smaller than the standing figure, once scaled."""
 FROM_APPEARANCE = CLOSE + 1.5
 """The build matches within `CLOSE`; the atlas is smaller and lossy."""
+ON_SEAT = 0.03
+"""Metres a sitting figure's seat may be from the bottom of its thighs as painted."""
 
 
 def manifest(who: str) -> dict:
@@ -116,6 +128,35 @@ def test_sitting_sits_on_its_thighs_with_its_feet_below(who: str) -> None:
             feet = manifest(who)["frames"][name]["feet"]
             assert x == feet[0]
             assert 0.1 < (feet[1] - y) / (HEIGHT_M * PPM) < 0.35, name
+
+
+def thigh_line(solid: np.ndarray) -> int:
+    """The row under the longest stretch of the lower edge behind the heels that stays within
+    `ON_SEAT` either way: the bottom of the thighs, however the shins slant."""
+    rows = np.flatnonzero(solid.any(axis=1))
+    soles = solid[rows[-1] + 1 - round(SOLES * (rows[-1] - rows[0] + 1)) :]
+    heel = int(np.flatnonzero(soles.any(axis=0))[0])
+    edge = lower_edge(solid)[:heel]
+    span, best = 2 * ON_SEAT * PPM, (0, 0)
+    for start in range(len(edge)):
+        end = start
+        while end < len(edge) and edge[end] >= 0 and np.ptp(edge[start : end + 1]) <= span:
+            end += 1
+        if end - start > best[1] - best[0]:
+            best = (start, end)
+    return int(edge[best[0] : best[1]].max() + 1)
+
+
+@pytest.mark.parametrize("who", EVERYONE)
+def test_sitting_sits_on_the_bottom_of_its_thighs_as_painted(who: str) -> None:
+    for name, pose in EDITS.items():
+        if pose.seated:
+            entry = manifest(who)["frames"][name]
+            picture = frame(who, name)
+            solid = np.asarray(picture.getchannel("A")) >= 128
+            measured = list(seat(picture, entry["feet"][0]))
+            assert entry["seat"] == measured, "run `uv run simile dolls seats`"
+            assert abs(entry["seat"][1] - thigh_line(solid)) / PPM <= ON_SEAT, name
 
 
 @pytest.mark.parametrize("who", EVERYONE)

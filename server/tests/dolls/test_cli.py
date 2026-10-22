@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 import typer
 from typer.testing import CliRunner
@@ -52,3 +54,14 @@ def test_refuses_someone_who_isnt_there(app: typer.Typer) -> None:
 
     assert result.exit_code == 1
     assert "No resident or player called nobody" in result.output
+
+
+def test_measures_the_seats_again_and_names_what_it_wrote(
+    app: typer.Typer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(build, "reseat", lambda: [Path("desmond.json")])
+
+    result = CliRunner().invoke(app, ["dolls", "seats"])
+
+    assert result.exit_code == 0
+    assert result.output == "wrote desmond.json\n"

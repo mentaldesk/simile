@@ -41,7 +41,7 @@ from simile.dolls.measure import (
     swatches,
     worst,
 )
-from simile.dolls.sprites import VERSION, atlas, cut_out, frames, manifest, scale
+from simile.dolls.sprites import VERSION, atlas, cut_out, frames, manifest, scale, seat
 from simile.dolls.words import gender_in, persona
 from simile.schema import PLAYER_ID, Appearance
 
@@ -282,6 +282,25 @@ def files(who: str, painted: Painted, **extra: Any) -> dict[str, bytes]:
     name = f"{who}.webp"
     body = manifest(made, places, POSES, name, id=who, **extra)
     return {name: data, f"{who}.json": (json.dumps(body, indent=2) + "\n").encode()}
+
+
+def reseat(directory: Path = CONTENT) -> list[Path]:
+    """Measures each figure's seats again from its atlas, as `files` does from its cut-outs,
+    without painting: the atlas keeps every cut-out's outline exactly. Rewrites the manifests
+    whose seats changed."""
+    seated = [f for f, pose in EDITS.items() if pose.seated]
+    named = {}
+    for path in sorted(directory.glob("*.json")):
+        body = json.loads(path.read_text())
+        with Image.open(directory / body["painted"]) as painted:
+            sheet = painted.convert("RGBA")
+        for name in seated:
+            entry = body["frames"][name]
+            x, y, w, h = entry["frame"]
+            at = seat(sheet.crop((x, y, x + w, y + h)), entry["feet"][0])
+            entry["seat"] = [round(at[0], 1), round(at[1], 1)]
+        named[path.name] = (json.dumps(body, indent=2) + "\n").encode()
+    return write(directory, named)
 
 
 def write(directory: Path, named: dict[str, bytes]) -> list[Path]:
