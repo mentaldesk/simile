@@ -82,10 +82,13 @@ def asked(said: str) -> bool:
 def tellings(
     incident: Incident | None, npc: Id, trust: float, memories: Sequence[Memory] = ()
 ) -> list[Telling]:
-    """What `npc` would say of each fact they know to someone they trust `trust`."""
+    """What `npc` would say of each fact they know, in their first memory of it, at `trust`."""
     if incident is None:
         return []
-    remembered = {memory.fact_id: memory.content for memory in memories if memory.fact_id}
+    remembered: dict[Id, str] = {}
+    for memory in sorted(memories, key=lambda memory: memory.timestamp):
+        if memory.fact_id:
+            remembered.setdefault(memory.fact_id, memory.content)
     return [
         Telling(fact, knower, stance(knower, trust), remembered.get(fact.id, fact.what))
         for fact in incident.facts

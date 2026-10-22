@@ -101,10 +101,13 @@ def started(village: Village) -> str:
     return village.of(ConversationStarted)[0].conversation.id
 
 
-def test_the_incident_is_touched_by_a_mention_of_aris_or_that_night() -> None:
+def test_the_incident_is_touched_by_a_mention_of_aris_or_the_attack() -> None:
     for said in (
         "Did you know Aris?",
-        "Where were you that night?",
+        "Where were you the night Aris was attacked?",
+        "Who smashed up the workshop?",
+        "What happened at the workshop?",
+        "Did you hear about the break-in?",
         "Who smashed up her workshop?",
         "What happened to her?",
         "Have you seen the mechanic lately?",
@@ -115,7 +118,10 @@ def test_the_incident_is_touched_by_a_mention_of_aris_or_that_night() -> None:
         "Lovely morning, isn't it?",
         "My uncle had a heart attack last year.",
         "Where were you yesterday?",
+        "Where were you that night?",
+        "That night at the pub was a laugh.",
         "I'm off to the workshop.",
+        "Ingrid's at the maker space all day.",
     ):
         assert not asked(said), said
 
@@ -221,21 +227,35 @@ async def test_what_they_know_never_comes_up_in_a_scene_or_on_their_mind() -> No
             assert remembered not in prompt
 
 
-async def test_b3_never_sees_the_truth_and_files_the_lie_under_its_fact() -> None:
-    reflected = Extraction(
-        reflections=[
-            Reflection(
-                npc="ben",
-                summary="Visitor asked where I was that night, and I said I was home.",
-                valence=-0.1,
-                salience=0.4,
-            )
-        ],
-        lies=["L1", "L2"],
+ADMITTED = "I told Visitor I was home all night, though I wasn't."
+RESENTS = "She cost me the best deal I ever had."
+DENIAL = "We got on fine."
+NOTICED = "I didn't notice who was in."
+GRUDGES = Incident(
+    attackers=["ben"],
+    motive="Ben blamed Aris for a deal that fell through.",
+    night=NIGHT,
+    facts=[
+        fact("grudge_ben", Knower(id="ben", how=HowKnown.DID, tells_from=0.75, cover=DENIAL)),
+        fact("meeting", knower("ana", 0.9, NOTICED)),
+    ],
+)
+
+
+def remembered(owner: str, fact_id: str, content: str) -> Memory:
+    return Memory(
+        owner=owner,
+        kind=MemoryKind.OBSERVATION,
+        content=content,
+        salience=0.9,
+        valence=-0.5,
+        timestamp=NIGHT,
+        about=["aris"],
+        fact_id=fact_id,
     )
-    provider = FakeProvider([f"{ALIBI} [values: honesty]", "Bye now!", reflected])
-    village = investigating(provider=provider, config=LONG_AGO)
-    village.walk_to("ben", 1)
+
+
+def reflecting(village: Village) -> Reflector:
     reflector = Reflector(
         village.store,
         lambda: village.behaviour.npcs,
@@ -243,20 +263,61 @@ async def test_b3_never_sees_the_truth_and_files_the_lie_under_its_fact() -> Non
         lies=village.engine.lies,
     )
     village.world.bus.subscribe(ConversationEnded, reflector.on_ended)
+    return reflector
 
-    village.players.say("Where were you the night Aris was attacked?", "ben")
+
+async def ask_and_leave(village: Village, reflector: Reflector, npc: str, said: str) -> None:
+    village.players.say(said, npc)
     await village.run(4)
-    village.players.say("Bye!", "ben")
+    village.players.say("Bye!", npc)
     await village.run(4)
     await asyncio.gather(*reflector.tasks)
 
+
+def admits(npc: str, summary: str) -> Extraction:
+    return Extraction(
+        reflections=[Reflection(npc=npc, summary=summary, valence=-0.1, salience=0.4)],
+        lies=["L1", "L2"],
+    )
+
+
+async def test_b3_never_sees_the_truth_and_files_the_lie_and_its_summary_under_the_fact() -> None:
+    provider = FakeProvider([f"{ALIBI} [values: honesty]", "Bye now!", admits("ben", ADMITTED)])
+    village = investigating(provider=provider, config=LONG_AGO)
+    village.walk_to("ben", 1)
+    reflector = reflecting(village)
+
+    await ask_and_leave(village, reflector, "ben", "Where were you the night Aris was attacked?")
+
     b3 = provider.requests[2].messages[-1].content
     assert ALIBI in b3 and not any(secret in b3 for secret in SECRETS)
-    everyday = village.store.recall("ben", village.clock.now, k=100)
-    assert everyday and all(m.fact_id is None for m in everyday)
-    for memory in everyday:
-        assert "lied" not in memory.content
-        assert not any(secret in memory.content for secret in SECRETS)
-    lied = [m for m in village.store.facts("ben") if "lie" in m.topics]
-    assert {m.fact_id for m in lied} == {"attack", "there_ben"}
-    assert {m.content for m in lied} == {"I lied to Visitor about what happened to Aris."}
+    assert village.store.recall("ben", village.clock.now, k=100) == []
+    filed = {m.content: m.fact_id for m in village.store.facts("ben") if m.timestamp > NIGHT}
+    assert filed[ADMITTED] in {"attack", "there_ben"}
+    assert filed["I lied to Visitor about what happened to Aris."] in {"attack", "there_ben"}
+
+
+@pytest.mark.parametrize(
+    ("npc", "remembers", "cover"),
+    [("ben", RESENTS, DENIAL), ("ana", MET, NOTICED)],
+)
+async def test_someone_who_lied_tells_what_they_remember_once_they_trust_the_player(
+    npc: str, remembers: str, cover: str
+) -> None:
+    provider = FakeProvider(
+        [f"{cover} [values: honesty]", "Bye now!", admits(npc, "I put Visitor off."), "Well."]
+    )
+    village = investigating(incident=GRUDGES, provider=provider, config=LONG_AGO)
+    village.store.add(remembered("ben", "grudge_ben", RESENTS))
+    village.walk_to(npc, 1)
+    reflector = reflecting(village)
+    await ask_and_leave(village, reflector, npc, "Did Aris have words with anyone?")
+    assert f'say exactly: "{cover}"' in provider.requests[0].messages[-1].content
+    village.store.add(feeling(ANA if npc == "ana" else BEN, PLAYER_ID, trust=0.95))
+
+    village.players.say("What happened to Aris?", npc)
+    await village.run()
+
+    prompt = provider.requests[-1].messages[-1].content
+    assert f'trust Visitor enough to tell them if they ask: "{remembers}"' in prompt
+    assert "I lied to Visitor" not in prompt and "I put Visitor off." not in prompt

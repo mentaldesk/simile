@@ -36,9 +36,9 @@ attackers' names, jobs, personas, values and grievances, and where several of th
 before (one of the content's `meeting_places`): the motive, and for each attacker what Aris
 did to them in the third person and in their own words, their memory of the night, the alibi,
 deflection and denial they give instead of the truth, and the line Aris wrote about them, naming
-them by their initial. Every alibi, deflection and denial may point at one of the village's
-residents, whom the prompt lists, or at nobody: never at strangers or outsiders, whom #283's bounds
-rule out. A reply that doesn't validate gets one retry, as L1 does. A call that fails,
+them by their initial. Every alibi, deflection and denial stays vague and points at nobody, neither
+a resident nor a stranger, since #283's bounds rule out making up facts about people. A reply that
+doesn't validate gets one retry, as L1 does. A call that fails,
 times out after `write_for` (180 s) or runs on the fake LLM leaves it to the content's templates, so
 a world always has an incident.
 

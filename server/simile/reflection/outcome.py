@@ -273,4 +273,12 @@ def _memory(npc: Id, reflection: Reflection, context: Context, config: Reflectio
         about=context.others(npc),
         topics=list(dict.fromkeys(topics))[: config.topics],
         conversation_id=context.conversation.id,
+        fact_id=_hidden(npc, context),
+    )
+
+
+def _hidden(npc: Id, context: Context) -> Id | None:
+    """The incident fact `npc` was set up to lie about here, so their summary stays with it."""
+    return next(
+        (lie.fact_id for lie in context.lies.values() if lie.liar == npc and lie.fact_id), None
     )

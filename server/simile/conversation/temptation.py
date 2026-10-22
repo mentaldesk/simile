@@ -60,10 +60,11 @@ CUES: dict[Kind, str] = {
     Kind.COVER: r"cover for me|back me up|alibi|(?:say|tell \w+) (?:that )?I was",
     Kind.COMPLAINT: r"blame|fault|fell out|falling out|grudge|what you did|complain\w*|fed up|"
     r"sick of|in the way|blocking|for days|since \w+day",
-    Kind.FACT: r"aris|maker ?space|(?:her|aris'?s?) workshop|the mechanic|steel hand|"
-    r"what happened to her|(?:she|aris) (?:disappeared|vanished|went missing)|"
-    r"(?:attacked|hurt) her|that night|the night (?:she|aris|it happened|of the attack)|"
-    r"the attack",
+    Kind.FACT: r"aris|the mechanic|steel hand|(?:her|aris'?s?) workshop|what happened to her|"
+    r"what happened (?:at|in) the (?:workshop|maker ?space)|"
+    r"(?:smash\w*|wreck\w*|trash\w*) (?:up )?the (?:workshop|maker ?space)|"
+    r"broke into the (?:workshop|maker ?space)|the break-?in|the attack|(?:attacked|hurt) her|"
+    r"she was attacked|(?:she|aris) (?:disappeared|vanished|went missing)",
 }
 """Words that touch each kind, besides the words of what it's about."""
 

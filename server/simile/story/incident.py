@@ -461,6 +461,5 @@ async def make_incident(
     content = content or load_story()
     found = attackers(npcs, content.grievances, rng, config)
     met = rng.choice(content.meeting_places)
-    residents = [npc.name.split()[0] for npc in npcs]
-    backstory, written = await write(llm, found, content, config, met=met, residents=residents)
+    backstory, written = await write(llm, found, content, config, met=met)
     return build(npcs, found, backstory, now, rng, content, config, met=met, written=written)
