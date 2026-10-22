@@ -13,6 +13,7 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['E'], 'read the news at a terminal, look at a mural or a painting, order at a counter, pick something up, sell salvage, look at a clue, go through a door, or talk to the ringed resident'],
   [['F'], 'eat: a meal at home, at the café or the noodle bar, or food you carry'],
   [['J'], 'open or close your journal: what you have learned about Aris, and the leads still open'],
+  [['L'], 'switch your lamp on or off, to see in the dark; stand at a plug to charge it'],
   [['Enter'], 'talk to the ringed resident, then send'],
   [['Tab'], 'choose who to talk to'],
   [['Esc'], 'close the chat or a panel'],

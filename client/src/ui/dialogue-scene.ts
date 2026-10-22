@@ -14,6 +14,7 @@ import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
 import { eUse, onGameKey } from './keys';
+import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
@@ -37,6 +38,7 @@ export class DialogueScene extends Phaser.Scene {
   private murals!: MuralPanel;
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
+  private lamp!: LampGauge;
   private journal!: JournalPanel;
   private help!: HelpPanel;
   private chat!: ChatBox;
@@ -70,6 +72,7 @@ export class DialogueScene extends Phaser.Scene {
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
+    this.lamp = new LampGauge(this.root);
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
     const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal });
@@ -111,6 +114,7 @@ export class DialogueScene extends Phaser.Scene {
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
     this.hunger.update(playerState.latest, used?.kind === 'pile' ? used.pile : undefined);
+    this.lamp.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
