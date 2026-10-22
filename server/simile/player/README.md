@@ -21,13 +21,14 @@ with the world. This module changes it at runtime and tells the client: its `run
   - **Food they carry** relieves `food` (0.4) an item.
   - `meal()` is the meal on offer where they stand, which goes to the client in `player_state` so
     its hint can offer it. Ordering a drink at the café's counter is unchanged and free.
-- **Collapsing.** At 1 they collapse. Everything they carry is left in a `Pile` where they fell, on
-  the ground below if they were mid-air or partway up stairs or a ladder, at the end of
-  `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
-  client gets `player_collapsed` to put them there. Their money stays with them.
-- **Picking up.** The client's `pick_up` takes the nearest pile within `reach` (1.5 tiles) on the
-  map they're on, item by item in order, skipping anything that would take them over their carry
-  limit. What's left stays in the pile.
+- **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
+  they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
+  of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
+  client gets `player_collapsed` to put them there. The lamp and their money stay with them, so
+  they can see to go back for the rest.
+- **Picking up.** The client's `pick_up` takes from the nearest pile they left within `reach` (1.5
+  tiles) on the map they're on, each item that still fits under their carry limit, in order. Any
+  that don't fit stay in the pile.
 
 Home is `PlayerConfig.home`, the maker space: the village has no house for the player, and every
 house is someone's. Aris's workshop is the place the story makes theirs until one is added.

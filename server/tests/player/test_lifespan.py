@@ -96,6 +96,7 @@ def test_starving_wakes_them_at_home_and_they_pick_up_what_they_left(
         tick = world_of(app).loop.tick
         player = player_of(app)
         move(client, app, ws, 12, 15, "kapok_walk")
+        client.portal.call(lambda: setattr(player, "items", [*player.items, BUN]))
         client.portal.call(lambda: setattr(player, "hunger", 1 - 1e-9))
         client.portal.call(tick)
         collapsed = next_of(ws, "player_collapsed")
@@ -109,10 +110,10 @@ def test_starving_wakes_them_at_home_and_they_pick_up_what_they_left(
     assert collapsed["position"] == {"x": 13, "y": 2, "map": "maker_space_floor_0"}
     assert home == Point(13, 2, "maker_space_floor_0")
     assert woken["player"]["hunger"] == 0.75
-    assert woken["player"]["items"] == []
+    assert [item["id"] for item in woken["player"]["items"]] == ["lamp"]
     assert woken["player"]["left"] == [
-        {"at": {"map": "kapok_walk", "x": 12, "y": 15}, "items": [picked_up["player"]["items"][0]]}
+        {"at": {"map": "kapok_walk", "x": 12, "y": 15}, "items": [BUN.model_dump(mode="json")]}
     ]
     assert woken["meal"] == HOME
-    assert picked_up["player"]["items"][0]["id"] == "lamp"
+    assert [item["id"] for item in picked_up["player"]["items"]] == ["lamp", "pork_bun"]
     assert "left" not in picked_up["player"]

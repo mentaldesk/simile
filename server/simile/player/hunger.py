@@ -81,12 +81,15 @@ class Hunger:
         return self._eat_meal() if item is None else self._eat_item(item)
 
     def collapse(self) -> None:
-        """Leaves what they carry where they are, and puts them at home, still hungry."""
+        """Leaves what they carry where they are, but for the lamp, and puts them at home, still
+        hungry."""
         here = self._here()
-        if here is not None and self.player.items:
-            pile = Pile(at=ground(self.movement, here), items=self.player.items)
+        kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
+        dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
+        if here is not None and dropped:
+            pile = Pile(at=ground(self.movement, here), items=dropped)
             self.player.left = [*self.player.left, pile]
-            self.player.items = []
+            self.player.items = kept
         location = self.movement.town.location(self.config.home)
         home = MapTile(map=location.map, x=location.entry.x, y=location.entry.y)
         self.movement.track(PLAYER_ID, Point(home.x, home.y, home.map))
@@ -95,8 +98,8 @@ class Hunger:
         self.collapsed(home)
 
     def pick_up(self) -> bool:
-        """Picks up the nearest pile they left within reach, as much as they can carry. Whether
-        they picked anything up."""
+        """Picks up, from the nearest pile they left within reach, each item that still fits under
+        their carry limit, in order. Whether they picked anything up."""
         here = self._here()
         if here is None:
             return False

@@ -215,15 +215,16 @@ def test_eating_never_takes_hunger_below_nothing() -> None:
 
 
 def test_starving_collapses_them_at_home_with_what_they_carried_left_where_they_fell() -> None:
-    village = Village(Player(items=[lamp(), WIRE], hunger=0.999))
+    lit = lamp().model_copy(update={"charge": 0.3, "on": True})
+    village = Village(Player(items=[WIRE, lit, BUN], hunger=0.999))
     village.stand(12.3, 15, "kapok_walk")
 
     village.hunger.tick(60)
 
     assert village.player.hunger == 0.75
-    assert village.player.items == []
+    assert village.player.items == [lit]
     assert village.player.left == [
-        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[lamp(), WIRE])
+        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE, BUN])
     ]
     assert village.here() == HOME
     assert village.woke == [MapTile(map="maker_space_floor_0", x=13, y=2)]
@@ -237,30 +238,32 @@ def test_starving_collapses_them_at_home_with_what_they_carried_left_where_they_
 def test_what_they_carried_falls_to_the_ground_below(
     x: float, y: float, ground: tuple[int, int]
 ) -> None:
-    village = Village(Player(hunger=1 - 1e-9))
+    village = Village(Player(items=[lamp(), WIRE], hunger=1 - 1e-9))
     village.stand(x, y, "rooftops")
 
     village.hunger.tick(1)
 
     fell = MapTile(map="rooftops", x=ground[0], y=ground[1])
-    assert village.player.left == [Pile(at=fell, items=[lamp()])]
+    assert village.player.left == [Pile(at=fell, items=[WIRE])]
 
 
-def test_collapsing_with_nothing_on_them_leaves_nothing() -> None:
-    village = Village(Player(items=[], hunger=0.9999))
+@pytest.mark.parametrize("items", [[], [lamp()]], ids=["nothing", "only_the_lamp"])
+def test_collapsing_with_nothing_but_the_lamp_leaves_nothing(items: list[Item]) -> None:
+    village = Village(Player(items=items, hunger=0.9999))
     village.stand(70, 15, "high_street")
 
     village.hunger.collapse()
 
+    assert village.player.items == items
     assert village.player.left == []
     assert village.here() == HOME
 
 
 def test_each_collapse_leaves_another_pile_after_the_last() -> None:
-    village = Village()
+    village = Village(Player(items=[lamp(), WIRE]))
     village.stand(70, 15, "high_street")
     village.hunger.collapse()
-    village.player.items = [BUN]
+    village.player.items = [*village.player.items, BUN]
     village.stand(30, 15, "lychee_lane")
 
     village.hunger.collapse()
@@ -272,26 +275,26 @@ def test_each_collapse_leaves_another_pile_after_the_last() -> None:
 
 
 def test_a_collapse_before_the_server_knows_where_they_are_keeps_what_they_carry() -> None:
-    village = Village()
+    village = Village(Player(items=[lamp(), WIRE]))
 
     village.hunger.collapse()
 
-    assert village.player.items == [lamp()]
+    assert village.player.items == [lamp(), WIRE]
     assert village.player.left == []
     assert village.here() == HOME
 
 
 def piles(*at: tuple[str, int]) -> list[Pile]:
-    return [Pile(at=MapTile(map=map, x=x, y=15), items=[lamp(), WIRE]) for map, x in at]
+    return [Pile(at=MapTile(map=map, x=x, y=15), items=[BUN, WIRE]) for map, x in at]
 
 
 def test_picking_up_takes_the_nearest_pile_in_reach() -> None:
-    village = Village(Player(items=[], left=piles(("kapok_walk", 12), ("kapok_walk", 14))))
+    village = Village(Player(left=piles(("kapok_walk", 12), ("kapok_walk", 14))))
     village.stand(13.2, 15, "kapok_walk")
 
     assert village.hunger.pick_up()
 
-    assert village.player.items == [lamp(), WIRE]
+    assert village.player.items == [lamp(), BUN, WIRE]
     assert village.player.left == piles(("kapok_walk", 12))
 
 
