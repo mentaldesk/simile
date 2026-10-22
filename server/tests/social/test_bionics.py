@@ -100,8 +100,21 @@ def test_a_sighting_is_one_event_per_bionic_and_one_memory_that_records_them() -
 def test_unease_is_for_the_intolerant_and_grows_with_what_they_have_seen() -> None:
     assert unease(0.8, [EYE]) == 0
     assert unease(-0.5, []) == 0
-    assert unease(-0.5, [JACK]) < unease(-0.5, [EYE]) == unease(-0.5, [EYE, LEGS]) == 0.5
+    assert unease(-0.5, [JACK]) < unease(-0.5, [EYE]) == unease(-0.5, [EYE, LEGS])
+    assert unease(-0.575, [EYE]) == pytest.approx(0.5)
     assert unease(-1, [LEGS, JACK]) == 1
+
+
+def test_nobody_who_barely_minds_is_uneasy() -> None:
+    assert unease(-0.15, [EYE]) == 0
+    assert unease(-0.16, [EYE]) > 0
+    village = {npc.id: unease(tolerance(npc.values), [EYE]) for npc in load_npcs()}
+    assert {id for id, level in village.items() if level} == {
+        "tobias",
+        "henrietta",
+        "mirela",
+        "raymond",
+    }
 
 
 def test_what_they_see_names_each_bionic_what_is_new_and_how_they_feel() -> None:

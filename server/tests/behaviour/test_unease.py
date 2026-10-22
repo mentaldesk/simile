@@ -92,8 +92,7 @@ def test_unease_changes_nobody_else() -> None:
 
 
 async def day(body: Body) -> tuple[Counter[str], set[str]]:
-    """Six hours of the village from noon with the player in the coffee shop: the minutes each
-    resident spends near them, and who saw them."""
+    """Minutes each resident spends near the player in the coffee shop, and who saw them."""
     from simile.behaviour.lifespan import lifespan as behaviour
     from simile.economy.lifespan import lifespan as economy
     from simile.memory.lifespan import lifespan as memory

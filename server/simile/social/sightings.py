@@ -10,7 +10,6 @@ from simile.schema import (
     Bionic,
     Body,
     Id,
-    InteractionEvent,
     Memory,
     MemoryKind,
     Npc,
@@ -37,7 +36,7 @@ class Store(Protocol):
         k: int = 5,
     ) -> list[Memory]: ...
 
-    def add(self, *records: InteractionEvent | Memory | Relationship) -> None: ...
+    def add(self, *records: Memory | Relationship) -> None: ...
 
 
 class Sightings:
@@ -73,16 +72,21 @@ class Sightings:
     def look(self) -> None:
         """Each resident awake within sight of the player sees the bionics new to them."""
         fitted = self.body().bionics
-        entities = self.movement.entities()
-        if not fitted or PLAYER_ID not in entities:
+        if not fitted:
             return
-        player = entities[PLAYER_ID]
         for npc in self.npcs:
-            here = entities.get(npc)
-            if here is None or apart(here, player) > self.config.sight or not self.awake(npc):
+            if not self.in_sight(npc):
                 continue
             if new := [bionic for bionic in fitted if bionic not in self.seen(npc)]:
                 self.see(npc, new)
+
+    def in_sight(self, npc: Id) -> bool:
+        """Whether `npc` is awake and can see the player now."""
+        try:
+            here, player = self.movement.position(npc), self.movement.position(PLAYER_ID)
+        except KeyError:
+            return False
+        return apart(here, player) <= self.config.sight and self.awake(npc)
 
     def see(self, npc: Id, bionics: Sequence[Bionic]) -> Relationship:
         """`npc` sees `bionics` for the first time, and returns how they now feel about them."""
@@ -91,7 +95,7 @@ class Sightings:
         stored = self.store.relationship(npc, PLAYER_ID)
         before = as_of(stored, now) if stored else meet(resident, PLAYER_ID)
         after = apply_events(before, events, now)
-        self.store.add(*events, memory, after)
+        self.store.add(memory, after)
         self.seen(npc).update(dict.fromkeys(bionics, now))
         return after
 
@@ -109,13 +113,16 @@ class Sightings:
         return self._seen[npc]
 
     def unease(self, npc: Npc) -> float:
-        """B1's `unease` hook: how much the bionics `npc` has seen on the player put them off."""
+        """B1's `unease` hook: how much the bionics `npc` has seen or sees now put them off."""
         fitted = self.body().bionics
         if not fitted:
             return 0.0
-        seen = self.seen(npc.id)
+        feeling = tolerance(npc.values, self.config)
+        if not unease(feeling, fitted, self.config):
+            return 0.0
+        seen = fitted if self.in_sight(npc.id) else self.seen(npc.id)
         known = [bionic for bionic in fitted if bionic in seen]
-        return unease(tolerance(npc.values, self.config), known, self.config)
+        return unease(feeling, known, self.config)
 
     def looks(self, npc: Id) -> str | None:
         """What `npc` can see of the player face to face, for a prompt, or None without bionics."""

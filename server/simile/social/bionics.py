@@ -69,8 +69,9 @@ def stands_out(bionics: Sequence[Bionic], config: BionicsConfig = DEFAULT_BIONIC
 def unease(
     tolerance: float, seen: Sequence[Bionic], config: BionicsConfig = DEFAULT_BIONICS
 ) -> float:
-    """How much the bionics they've seen on the player put them off, 0 to 1."""
-    return max(-tolerance, 0.0) * stands_out(seen, config)
+    """How much the bionics they've seen put them off: none within `mildly` of 0, then up to 1."""
+    against = max(-tolerance - config.mildly, 0.0) / (1 - config.mildly)
+    return against * stands_out(seen, config)
 
 
 def looks(

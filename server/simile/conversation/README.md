@@ -317,9 +317,15 @@ bionics. The lifespan points `engine.looks` at its sightings.
   `accept_unease` (2) times it, so an uneasy resident doesn't greet them. One the player talks to
   turns them down when that score declines, as it would an NPC's request: their one reply is cued
   "You'd rather not talk to Visitor. Turn them down in a few words, and leave it there.", and the
-  conversation ends as after a goodbye. Only someone uneasy turns the player down, never at work,
-  and someone talking with another resident doesn't break off to do it: the player gets no answer.
-  A lower trust from a sighting also makes them tell less of the incident (*Telling* above).
+  conversation ends as after a goodbye. Someone strongly against bionics is told to say why in one
+  curt line, and anyone else to stay polite and keep their reason to themselves. Only someone
+  uneasy turns the player down, never at work, and someone talking with another resident doesn't
+  break off to do it: the player gets no answer.
+- **Lies in a refusal.** Turning the player down sets up the lies of #285 and of the incident as
+  usual, but tells nothing: a resident asked about the incident who'd lie about a fact still gets
+  its cover (*Telling* above), and the cue adds "If they asked what one of your cover stories
+  answers, give it as you turn them down." So the lie is in `talk.lies` and `engine.lies` for the
+  eye to read. A lower trust from a sighting also makes them tell less of the incident.
 
 ## Only promising what's possible
 

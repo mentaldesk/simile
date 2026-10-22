@@ -103,16 +103,20 @@ S11: the village reacts to the player's bionics (`bionics.py`, `sightings.py`). 
   once. A sighting is one R1 event per bionic new to them, from the player, on like, trust and
   respect, with valence their tolerance and magnitude `sighting` (0.3) times how much it stands
   out, applied as one encounter. So Tobias seeing the eye takes his like from 0.52 to 0.29, Mirela
-  seeing the legs takes hers from 0.5 to 0.43, and Kofi's rises a little. It also leaves an
+  seeing the legs takes hers from 0.5 to 0.43, and Kofi's rises a little. The events move how they
+  feel but aren't stored, so they stay out of the history B2's prompts list. It also leaves an
   `observation` memory about the player, "I saw that Visitor has hydraulic legs where their own
   legs were. It made me uneasy.", with topics `bionics` and each bionic's name, salience from
   `salience` (0.3) plus `salience_feeling` (0.6) times the strength of their feeling and how much
   the bionic stands out, and valence their tolerance. That memory is the record of what they've
   seen, read back from R2 once per resident, so it's saved with the world and counts once across
   restarts.
-- **Unease.** `unease` is B1's hook: how much the bionics a resident has seen on the player put
-  them off, `max(-tolerance, 0)` times how much those still fitted stand out together, up to 1.
-  B1 keeps them away and B2 has them decline (see their READMEs).
+- **Unease.** `unease` is B1's hook: how much the bionics a resident has seen on the player, or
+  can see now, put them off. It's how far their tolerance is below `-mildly`, as a share of the
+  rest of the way to -1, times how much those bionics stand out together, up to 1: none for anyone
+  who barely minds, 0.35 for Mirela and 1 for Tobias seeing the eye. Counting what's in sight now
+  means it's there before the next look records the sighting. B1 keeps them away and B2 has them
+  decline (see their READMEs).
 - **What they see.** `looks(npc)` is the line B5's prompt starts with, or nothing for a whole
   player: what's fitted, which is new to them (seen in the last `new_for`, an hour, or not yet), and
   how they feel about bionics: "Visitor has hydraulic legs where their own legs were and an

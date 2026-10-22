@@ -34,6 +34,7 @@ from simile.news.interest import shared, words
 from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
+from simile.social import strongly_against
 from simile.voice import speaking_rate
 from simile.voicing.distance import between
 
@@ -388,9 +389,8 @@ class PlayerConversations:
                 return sentences.draft
         pressed = engine.pressing(npc)
         recalled = self._recalled(npc, lines)
-        if not talk.refusing:
-            self._tempt(talk, lines)
-            self._ask(talk, lines)
+        self._tempt(talk, lines)
+        self._ask(talk, lines, lies_only=talk.refusing)
         seed = f"{talk.conversation.id}/{npc}/{len(lines)}"
         joke = jokes(party.npc.humour, seed, after_joke=talk.joked)
         talk.joked = bool(joke)
@@ -413,6 +413,7 @@ class PlayerConversations:
                 *([UNASKED] if any(t.stance is Stance.LIE for t in talk.tellings.values()) else []),
             ],
             joke=joke,
+            blunt=talk.refusing and strongly_against(party.npc),
         )
         stream = engine.llm().stream(
             prompt,
@@ -453,13 +454,15 @@ class PlayerConversations:
                 talk.lies[temptation.key] = temptation
                 engine.tell(talk.conversation.id, temptation, PLAYER_ID)
 
-    def _ask(self, talk: PlayerTalk, lines: Sequence[Line]) -> None:
+    def _ask(self, talk: PlayerTalk, lines: Sequence[Line], *, lies_only: bool = False) -> None:
         """Once the player touches the incident, sets the NPC up for each fact they know."""
         engine, npc = self.engine, talk.npc
         said = since(npc, lines)
         if talk.tellings or not said or not asked(said):
             return
         for telling in engine.tellings(npc, PLAYER_ID):
+            if lies_only and telling.stance is not Stance.LIE:
+                continue
             talk.tellings[telling.fact.id] = telling
             if telling.stance is Stance.LIE:
                 temptation = telling.temptation()

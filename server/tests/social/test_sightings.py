@@ -71,8 +71,7 @@ def test_a_resident_in_sight_sees_each_bionic_once() -> None:
     assert set(street.sightings.seen("ana")) == {LEGS}
     rel = street.store.relationship("ana", PLAYER_ID)
     assert rel is not None and rel.like < 0.5
-    events = street.store.shared_history("ana", PLAYER_ID, START).events
-    assert [event.action for event in events] == ["turned up with hydraulic legs"]
+    assert street.store.shared_history("ana", PLAYER_ID, START).events == []
 
 
 def test_a_new_bionic_is_seen_on_its_own() -> None:
@@ -125,13 +124,18 @@ def test_what_they_have_seen_outlasts_a_restart(tmp_path: Path) -> None:
         assert street.sightings.seen("ana") == {LEGS: START}
 
 
-def test_unease_is_what_an_intolerant_resident_has_seen() -> None:
+def test_unease_is_what_an_intolerant_resident_has_seen_or_sees_now() -> None:
     street = Street(body=Body(legs=LEGS, left_eye=EYE))
+    street.player_at("ana", street.sightings.config.sight + 1)
     assert street.sightings.unease(ANA) == 0
 
-    street.look()
-
+    street.player_at("ana", 1)
     assert street.sightings.unease(ANA) == -tolerance(ANA.values) == 1
+    assert street.sightings.seen("ana") == {}
+
+    street.look()
+    street.player_at("ana", street.sightings.config.sight + 1)
+    assert street.sightings.unease(ANA) == 1
     assert street.sightings.unease(BEN) == 0
     street.body = Body()
     assert street.sightings.unease(ANA) == 0

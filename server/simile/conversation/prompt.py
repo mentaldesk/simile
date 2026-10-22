@@ -47,6 +47,9 @@ CUES: dict[Cue, str] = {
     Cue.REFUSE: "You'd rather not talk to {other}. Turn them down in a few words, and leave it "
     "there.",
 }
+BLUNT = "Tell them why in one curt line: you don't hold with bionics."
+POLITE = "Keep it polite, and keep your reason to yourself."
+COVERED = "If they asked what one of your cover stories answers, give it as you turn them down."
 JOKE = "Work a joke into this line, in your own humour."
 PLAIN = "No joke in this line: say it plainly."
 OFF_TO = (
@@ -295,6 +298,7 @@ def turn_prompt(
     facts: Sequence[str] = (),
     lies: Sequence[str] = (),
     joke: bool | None = None,
+    blunt: bool = False,
 ) -> str:
     """The speaker's next line, with their mood, article `detail`, `facts`, `lies` and `joke`."""
     recent = lines[-config.transcript_lines :]
@@ -324,8 +328,11 @@ def turn_prompt(
     if joke is not None:
         parts.append(JOKE if joke else PLAIN)
     parts.append(f"Say one or two sentences, at most {config.max_words} words.")
-    off_to = cue is Cue.GOODBYE and errand
-    asked = OFF_TO.format(errand=errand, other=other) if off_to else CUES[cue].format(other=other)
+    asked = CUES[cue].format(other=other)
+    if cue is Cue.GOODBYE and errand:
+        asked = OFF_TO.format(errand=errand, other=other)
+    elif cue is Cue.REFUSE:
+        asked = " ".join([asked, BLUNT if blunt else POLITE, *([COVERED] if lies else [])])
     return "\n\n".join([*parts, asked])
 
 
