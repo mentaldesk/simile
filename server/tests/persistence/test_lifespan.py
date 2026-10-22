@@ -42,11 +42,15 @@ async def nothing(app: Starlette) -> None:
 
 
 async def run_village(
-    duration: timedelta, *, before: Step = nothing, after: Step = nothing
+    duration: timedelta,
+    *,
+    before: Step = nothing,
+    after: Step = nothing,
+    app: Starlette | None = None,
 ) -> Starlette:
     """Start every module on the database in `SIMILE_DB`, run the village for `duration` from
     wherever it resumes, and shut down."""
-    app = create_app()
+    app = app or create_app()
     world = World(Clock(START), FakeWallClock())
     app.state.world = world
     app.state.headless = True

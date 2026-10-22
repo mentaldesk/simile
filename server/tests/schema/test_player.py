@@ -78,15 +78,8 @@ def test_the_eye_costs_the_most_humanity() -> None:
     assert all(0 < cost < 1 for cost in costs.values())
 
 
-def test_every_bionic_there_is_room_for_still_leaves_some_humanity() -> None:
-    everything = Body(
-        legs=Bionic.HYDRAULIC_LEGS,
-        vertebra=Bionic.DATAJACK,
-        left_eye=Bionic.INFRARED_EYE,
-        right_eye=Bionic.INFRARED_EYE,
-    )
-
-    assert 0 < Player(body=everything).humanity < Player.model_validate(FITTED).humanity
+def test_all_three_bionics_still_leave_some_humanity() -> None:
+    assert Player.model_validate(FITTED).humanity == pytest.approx(0.55)
 
 
 def test_humanity_is_never_saved() -> None:
@@ -109,6 +102,19 @@ def test_each_bionic_fits_only_in_place_of_its_part(bionic: Bionic, parts: set[s
             assert Body.model_validate({part: bionic.value}).bionics == [bionic]
         else:
             rejects(Body, {part: bionic.value}, f"{bionic} can't replace {part}")
+
+
+@pytest.mark.parametrize("eye", ["left_eye", "right_eye"])
+def test_the_infrared_eye_goes_in_either_eye(eye: str) -> None:
+    assert Body.model_validate({eye: "infrared_eye"}).bionics == [Bionic.INFRARED_EYE]
+
+
+def test_there_is_only_one_infrared_eye() -> None:
+    rejects(
+        Body,
+        {"left_eye": "infrared_eye", "right_eye": "infrared_eye"},
+        "there's only one infrared eye",
+    )
 
 
 def test_any_part_can_be_sold() -> None:
@@ -137,9 +143,16 @@ def test_rejects_invalid_bodies(data: dict[str, Any], match: str) -> None:
     rejects(Body, data, match)
 
 
-def test_only_a_lamp_has_a_charge() -> None:
-    rejects(Item, lamp().model_dump() | {"charge": None}, "a lamp has a charge")
-    rejects(Item, SALVAGE | {"charge": 0.5}, "nothing else does")
+def test_the_starting_lamp_is_charged_and_switched_off() -> None:
+    assert (lamp().charge, lamp().on) == (1, False)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "what"), [("charge", 0.5, "charge"), ("on", True, "switch")]
+)
+def test_only_a_lamp_has_a_charge_and_a_switch(field: str, value: Any, what: str) -> None:
+    rejects(Item, lamp().model_dump() | {field: None}, f"a lamp has a {what},")
+    rejects(Item, SALVAGE | {field: value}, f"a lamp has a {what}, and nothing else has one")
     assert Item.model_validate(SALVAGE).kind is ItemKind.SALVAGE
 
 
@@ -153,6 +166,7 @@ def test_only_a_lamp_has_a_charge() -> None:
         ({"name": ""}, "at least 1 character"),
         ({"id": "Lamp"}, "String should match pattern"),
         ({"kind": "torch"}, "kind"),
+        ({"on": "dim"}, "valid boolean"),
     ],
 )
 def test_rejects_invalid_items(update: dict[str, Any], match: str) -> None:
@@ -178,3 +192,56 @@ def test_load_is_what_everything_carried_weighs() -> None:
     assert Player().load == 1
     assert Player.model_validate(DELVING).load == 7.5
     assert Player(items=[]).load == 0
+
+
+def changes(model: Player | Item | Body, field: str, value: Any, match: str) -> None:
+    before = model.model_dump()
+    with pytest.raises(ValidationError, match=match):
+        setattr(model, field, value)
+    assert model.model_dump() == before
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("hunger", 1.02, "less than or equal to 1"),
+        ("money", -5, "greater than or equal to 0"),
+        ("carry_limit", 0, "greater than 0"),
+    ],
+)
+def test_rejects_invalid_changes_to_the_player(field: str, value: Any, match: str) -> None:
+    changes(Player(), field, value, match)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("charge", -0.01, "greater than or equal to 0"),
+        ("charge", None, "a lamp has a charge"),
+        ("on", None, "a lamp has a switch"),
+        ("kind", "salvage", "nothing else has one"),
+    ],
+)
+def test_rejects_invalid_changes_to_the_lamp(field: str, value: Any, match: str) -> None:
+    changes(lamp(), field, value, match)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        ("legs", Bionic.DATAJACK, "datajack can't replace legs"),
+        ("right_eye", Bionic.INFRARED_EYE, "there's only one infrared eye"),
+        ("vertebra", "gone", "vertebra"),
+    ],
+)
+def test_rejects_invalid_changes_to_the_body(field: str, value: Any, match: str) -> None:
+    changes(Body(left_eye=Bionic.INFRARED_EYE), field, value, match)
+
+
+def test_a_valid_change_is_kept() -> None:
+    player = Player()
+    player.hunger = 0.4
+    player.items[0].on = True
+    player.body.left_kidney = SOLD
+
+    assert (player.hunger, player.items[0].on, player.body.left_kidney) == (0.4, True, SOLD)

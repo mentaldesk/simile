@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from starlette.applications import Starlette
 
+from simile.app import create_app
 from simile.memory import MemoryStore
 from simile.persistence import WorldStore, capture, player_of
 from simile.persistence.lifespan import FRESH_ENV
@@ -84,16 +85,16 @@ def test_capture_takes_a_copy_of_the_player() -> None:
     assert world.player == DELVING
 
 
+async def delve(app: Starlette) -> None:
+    player = player_of(app)
+    player.money = DELVING.money
+    player.items = DELVING.model_copy(deep=True).items
+    player.body = DELVING.body.model_copy()
+    player.hunger = DELVING.hunger
+
+
 @pytest.mark.anyio
 async def test_a_saved_player_survives_a_restart(database: Path) -> None:
-    async def delve(app: Starlette) -> None:
-        player = player_of(app)
-        assert player == Player()
-        player.money = DELVING.money
-        player.items = DELVING.model_copy(deep=True).items
-        player.body = DELVING.body.model_copy()
-        player.hunger = DELVING.hunger
-
     await run_village(timedelta(minutes=5), after=delve)
     assert saved(database).player == DELVING
 
@@ -102,6 +103,23 @@ async def test_a_saved_player_survives_a_restart(database: Path) -> None:
 
     await run_village(timedelta(minutes=5), before=resumed)
     assert saved(database).player == DELVING
+
+
+@pytest.mark.anyio
+async def test_a_player_taken_before_startup_is_the_one_restored_and_saved(
+    database: Path,
+) -> None:
+    await run_village(timedelta(minutes=1), after=delve)
+    app = create_app()
+    early = player_of(app)
+
+    async def spend(app: Starlette) -> None:
+        assert player_of(app) is early
+        assert early == DELVING
+        early.money = 7.5
+
+    await run_village(timedelta(minutes=1), app=app, after=spend)
+    assert saved(database).player.money == 7.5
 
 
 @pytest.mark.anyio
@@ -120,9 +138,6 @@ async def test_a_save_from_before_the_player_starts_them_afresh(database: Path) 
 async def test_a_fresh_start_has_the_starting_player(
     database: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    async def delve(app: Starlette) -> None:
-        app.state.player = DELVING.model_copy(deep=True)
-
     await run_village(timedelta(minutes=1), after=delve)
     assert saved(database).player == DELVING
     monkeypatch.setenv(FRESH_ENV, "1")

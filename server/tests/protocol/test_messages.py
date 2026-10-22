@@ -154,7 +154,7 @@ DELVING = PlayerStateMessage(
     player=Player(
         money=120,
         items=[
-            lamp().model_copy(update={"charge": 0.35}),
+            lamp().model_copy(update={"charge": 0.35, "on": True}),
             Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5),
             Item(id="noodles", kind=ItemKind.FOOD, name="Noodles", weight=0.5),
         ],
@@ -553,15 +553,30 @@ def test_player_state_has_their_money_items_body_and_hunger() -> None:
         "player": {
             "money": 120.0,
             "items": [
-                {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.35},
+                {
+                    "id": "lamp",
+                    "kind": "lamp",
+                    "name": "Lamp",
+                    "weight": 1.0,
+                    "charge": 0.35,
+                    "on": True,
+                },
                 {
                     "id": "copper_wire",
                     "kind": "salvage",
                     "name": "Copper wire",
                     "weight": 1.5,
                     "charge": None,
+                    "on": None,
                 },
-                {"id": "noodles", "kind": "food", "name": "Noodles", "weight": 0.5, "charge": None},
+                {
+                    "id": "noodles",
+                    "kind": "food",
+                    "name": "Noodles",
+                    "weight": 0.5,
+                    "charge": None,
+                    "on": None,
+                },
             ],
             "carry_limit": 10.0,
             "body": {

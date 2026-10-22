@@ -1,7 +1,7 @@
 {
   "$defs": {
     "Bionic": {
-      "description": "A part fitted in place of one of the player's own. The hydraulic legs replace their legs,\nthe datajack takes a vertebra, and the infrared eye takes either eye.",
+      "description": "A part fitted in place of one of the player's own. The hydraulic legs replace their legs,\nthe datajack takes a vertebra, and the one infrared eye takes either eye.",
       "enum": [
         "hydraulic_legs",
         "datajack",
@@ -90,6 +90,19 @@
           "default": null,
           "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.",
           "title": "Charge"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether a lamp is switched on, running its battery down. Null for anything else.",
+          "title": "On"
         }
       },
       "required": [
@@ -97,7 +110,8 @@
         "kind",
         "name",
         "weight",
-        "charge"
+        "charge",
+        "on"
       ],
       "title": "Item",
       "type": "object"

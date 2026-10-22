@@ -217,17 +217,18 @@ predate it ignore it.
 
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
 which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
-it; its `weight` in kg; and `charge`, a lamp's battery from 0 (flat) to 1 (full), or `null` for
-anything else.
+it; its `weight` in kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a
+lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
 `right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
-`"hydraulic_legs"` in the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in either eye.
+`"hydraulic_legs"` in the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in one eye or
+the other, never both.
 
 The player's state is saved with the world. A save from before it loads with the starting player:
-a whole body, no money and a fully charged lamp. Their humanity is part of it on the server, derived
-from the bionics fitted (`Player.humanity`), but it's never sent: the player sees it only in how
-residents treat them.
+a whole body, no money and a fully charged lamp, switched off. Their humanity is part of it on the
+server, derived from the bionics fitted (`Player.humanity`), but it's never sent: the player sees
+it only in how residents treat them.
 
 ### `audio_chunk`
 

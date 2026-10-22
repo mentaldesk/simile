@@ -50,6 +50,19 @@
       "default": null,
       "description": "A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.",
       "title": "Charge"
+    },
+    "on": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Whether a lamp is switched on, running its battery down. Null for anything else.",
+      "title": "On"
     }
   },
   "required": [
@@ -57,7 +70,8 @@
     "kind",
     "name",
     "weight",
-    "charge"
+    "charge",
+    "on"
   ],
   "title": "Item",
   "type": "object"

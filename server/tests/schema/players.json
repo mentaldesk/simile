@@ -1,7 +1,7 @@
 [
   {
     "money": 0.0,
-    "items": [{"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 1.0}],
+    "items": [{"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 1.0, "on": false}],
     "carry_limit": 10.0,
     "body": {
       "legs": "present",
@@ -16,8 +16,8 @@
   {
     "money": 1500.0,
     "items": [
-      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.8},
-      {"id": "noodles", "kind": "food", "name": "Noodles", "weight": 0.5, "charge": null}
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.8, "on": false},
+      {"id": "noodles", "kind": "food", "name": "Noodles", "weight": 0.5, "charge": null, "on": null}
     ],
     "carry_limit": 10.0,
     "body": {
@@ -33,11 +33,11 @@
   {
     "money": 120.0,
     "items": [
-      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.35},
-      {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null},
-      {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null},
-      {"id": "servo_motor", "kind": "salvage", "name": "Servo motor", "weight": 3.0, "charge": null},
-      {"id": "circuit_board", "kind": "salvage", "name": "Circuit board", "weight": 0.5, "charge": null}
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.35, "on": true},
+      {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null, "on": null},
+      {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null, "on": null},
+      {"id": "servo_motor", "kind": "salvage", "name": "Servo motor", "weight": 3.0, "charge": null, "on": null},
+      {"id": "circuit_board", "kind": "salvage", "name": "Circuit board", "weight": 0.5, "charge": null, "on": null}
     ],
     "carry_limit": 10.0,
     "body": {
@@ -52,7 +52,7 @@
   },
   {
     "money": 35.5,
-    "items": [{"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.0}],
+    "items": [{"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.0, "on": false}],
     "carry_limit": 10.0,
     "body": {
       "legs": "hydraulic_legs",

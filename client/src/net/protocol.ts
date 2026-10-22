@@ -41,7 +41,7 @@ export type Face = 'south' | 'east';
 export type ItemKind = 'salvage' | 'food' | 'lamp';
 /**
  * A part fitted in place of one of the player's own. The hydraulic legs replace their legs,
- * the datajack takes a vertebra, and the infrared eye takes either eye.
+ * the datajack takes a vertebra, and the one infrared eye takes either eye.
  */
 export type Bionic = 'hydraulic_legs' | 'datajack' | 'infrared_eye';
 export type ClientMessage =
@@ -408,6 +408,10 @@ export interface Item {
    * A lamp's battery, from 0 (flat) to 1 (full). Null for anything else.
    */
   charge: number | null;
+  /**
+   * Whether a lamp is switched on, running its battery down. Null for anything else.
+   */
+  on: boolean | null;
 }
 /**
  * Each part of the player's body that can be sold or replaced: still `present`, `sold`, or

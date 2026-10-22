@@ -66,8 +66,7 @@ class SavedWorld(Model):
     intentions: list[Intention] = []
     """Everyone's open intentions. A save from before intentions has none."""
     player: Player = Field(default_factory=Player)
-    """The player's money, items, body and hunger. A save from before the player has the
-    starting player: a whole body, no money and a charged lamp."""
+    """The player. A save from before the player has the starting player."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -108,9 +107,15 @@ def capture(
     )
 
 
-def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" = None) -> None:
+def restore(
+    world: SavedWorld,
+    behaviour: Behaviour,
+    economy: "Economy | None" = None,
+    player: Player | None = None,
+) -> None:
     """Set the clock and put each NPC back where they were, doing what they were doing, with the
-    money they had, what was in their fridges and what they'd said they'd do. Anyone saved on
+    money they had, what was in their fridges and what they'd said they'd do, and set `player`
+    to the saved player in place, so anyone holding it already has them. Anyone saved on
     one of the iso maps goes to the matching place on the side-view maps (`old_cells`). Anyone
     who was walking or talking decides again on the next think. NPCs who weren't saved carry on
     from their first start, a save from before money opens the ledger on everyone's starting
@@ -148,6 +153,9 @@ def restore(world: SavedWorld, behaviour: Behaviour, economy: "Economy | None" =
             economy.restore({}, world.now.date())
         else:
             economy.restore(saved.money, saved.settled, saved.fridges, saved.batches)
+    if player is not None:
+        for field in Player.model_fields:
+            setattr(player, field, getattr(world.player, field))
 
 
 def _on_maps(state: SavedNpc, maps: Mapping[str, object]) -> SavedNpc | None:
@@ -177,7 +185,7 @@ def _put(movement: Movement, npc: Id, state: SavedNpc) -> None:
 
 
 def player_of(app: Starlette) -> Player:
-    """The player on `app.state.player`: as saved with the world, or the starting player."""
+    """The player, made on first use. Persistence restores the save into it in place."""
     if not hasattr(app.state, "player"):
         app.state.player = Player()
     return app.state.player
