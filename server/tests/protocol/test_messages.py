@@ -12,6 +12,7 @@ from simile.protocol import (
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
+    EatMessage,
     EntityMovedMessage,
     Face,
     Frame,
@@ -19,6 +20,7 @@ from simile.protocol import (
     LineMessage,
     ListNewsMessage,
     ListWorksMessage,
+    Meal,
     Message,
     Mural,
     MuralsMessage,
@@ -28,6 +30,8 @@ from simile.protocol import (
     NpcStateMessage,
     Painting,
     PaintingsMessage,
+    PickUpMessage,
+    PlayerCollapsedMessage,
     PlayerMoveMessage,
     PlayerSayMessage,
     PlayerStateMessage,
@@ -50,6 +54,8 @@ from simile.schema import (
     ItemKind,
     JournalEntry,
     Lead,
+    MapTile,
+    Pile,
     Player,
     Pose,
     Source,
@@ -177,6 +183,18 @@ DELVING = PlayerStateMessage(
     )
 )
 
+NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
+AT_THE_NOODLE_BAR = DELVING.model_copy(update={"meal": NOODLES})
+WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
+WOKEN = PlayerStateMessage(
+    player=Player(
+        hunger=0.75,
+        left=[Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE])],
+    ),
+    meal=Meal(place="maker_space", name="home", price=0),
+)
+COLLAPSED = PlayerCollapsedMessage(position=Position(x=13, y=2, map="maker_space_floor_0"))
+
 FROM_THE_NOTES = JournalEntry(
     fact_id="notes",
     text="Aris wrote that R. came about the machines again, and said he'd make her regret it.",
@@ -224,8 +242,11 @@ SERVER = [
     PAINTINGS,
     STARTING,
     DELVING,
+    AT_THE_NOODLE_BAR,
+    WOKEN,
     JournalMessage(entries=[]),
     JOURNAL,
+    COLLAPSED,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -238,6 +259,9 @@ CLIENT = [
     ReadNewsMessage(news_id=ARTICLE.news_id),
     ListWorksMessage(),
     ReadWorkMessage(work_id=POEM.work_id),
+    EatMessage(item="noodles"),
+    EatMessage(item=None),
+    PickUpMessage(),
 ]
 
 
@@ -657,6 +681,88 @@ def test_rejects_a_player_state_with_humanity() -> None:
         server_messages.validate_python(data)
 
 
+def test_player_state_says_what_meal_is_on_offer_where_they_stand() -> None:
+    data = json.loads(AT_THE_NOODLE_BAR.model_dump_json())
+
+    assert data == json.loads(DELVING.model_dump_json()) | {
+        "meal": {"place": "noodle_bar", "name": "Golden Bowl Noodles", "price": 10.0}
+    }
+
+
+@pytest.mark.parametrize("message", [STARTING, DELVING], ids=["starting", "delving"])
+def test_player_state_without_a_meal_or_piles_dumps_as_before(message: PlayerStateMessage) -> None:
+    data = json.loads(message.model_dump_json())
+
+    assert set(data) == {"type", "player"}
+    assert set(data["player"]) == {"money", "items", "carry_limit", "body", "hunger"}
+
+
+def test_player_state_has_what_they_left_where_they_collapsed() -> None:
+    player = json.loads(WOKEN.model_dump_json())["player"]
+
+    assert player["items"] == [json.loads(lamp().model_dump_json())]
+    assert player["left"] == [
+        {
+            "at": {"map": "kapok_walk", "x": 12, "y": 15},
+            "items": [json.loads(WIRE.model_dump_json())],
+        }
+    ]
+
+
+def test_the_exported_player_state_has_a_meal_and_piles_but_does_not_require_them() -> None:
+    defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
+
+    assert "meal" in defs["PlayerStateMessage"]["properties"]
+    assert "meal" not in defs["PlayerStateMessage"]["required"]
+    assert "left" in defs["Player"]["properties"]
+    assert "left" not in defs["Player"]["required"]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"price": -1}, "greater than or equal to 0"),
+        ({"price": float("inf")}, "finite number"),
+        ({"name": ""}, "at least 1 character"),
+        ({"place": "Noodle bar"}, "String should match pattern"),
+    ],
+)
+def test_rejects_invalid_meals(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Meal.model_validate(NOODLES.model_dump() | update)
+
+
+def test_a_collapse_says_where_they_wake() -> None:
+    assert json.loads(COLLAPSED.model_dump_json()) == {
+        "type": "player_collapsed",
+        "position": {"x": 13.0, "y": 2.0, "map": "maker_space_floor_0"},
+    }
+
+
+@pytest.mark.parametrize(
+    ("message", "data"),
+    [
+        (EatMessage(item="noodles"), {"type": "eat", "item": "noodles"}),
+        (EatMessage(item=None), {"type": "eat", "item": None}),
+        (PickUpMessage(), {"type": "pick_up"}),
+    ],
+    ids=["item", "meal", "pick_up"],
+)
+def test_eating_and_picking_up_go_from_client_to_server(message: Any, data: dict[str, Any]) -> None:
+    assert json.loads(message.model_dump_json()) == data
+    assert client_messages.validate_python(data) == message
+    with pytest.raises(ValidationError):
+        server_messages.validate_python(data)
+
+
+def test_a_collapse_goes_only_from_server_to_client() -> None:
+    data = json.loads(COLLAPSED.model_dump_json())
+
+    assert server_messages.validate_python(data) == COLLAPSED
+    with pytest.raises(ValidationError):
+        client_messages.validate_python(data)
+
+
 def test_a_flushed_line_says_so() -> None:
     message = LineMessage(line=CONVERSATION.lines[-1], voiced=True, flushed=True)
 
@@ -771,6 +877,9 @@ def test_timestamps_are_utc() -> None:
         {"type": "list_works", "work_id": "work_1"},
         {"type": "read_work"},
         {"type": "read_work", "work_id": ""},
+        {"type": "eat"},
+        {"type": "eat", "item": "Noodles"},
+        {"type": "pick_up", "item": "lamp"},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

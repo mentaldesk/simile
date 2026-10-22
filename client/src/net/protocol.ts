@@ -15,7 +15,8 @@ export type ServerMessage =
   | MuralsMessage
   | PaintingsMessage
   | PlayerStateMessage
-  | JournalMessage;
+  | JournalMessage
+  | PlayerCollapsedMessage;
 export type EntityKind = 'npc' | 'player';
 /**
  * What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
@@ -57,7 +58,9 @@ export type ClientMessage =
   | ListNewsMessage
   | ReadNewsMessage
   | ListWorksMessage
-  | ReadWorkMessage;
+  | ReadWorkMessage
+  | EatMessage
+  | PickUpMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -366,12 +369,17 @@ export interface Painting {
   image: string;
 }
 /**
- * The player's money, what they carry, their body and their hunger, but never their humanity.
- * Sent after the snapshot on connect, and whenever any of it changes.
+ * The player's money, what they carry, their body and their hunger, but never their humanity,
+ * and the meal on offer where they stand. Sent after the snapshot on connect, and whenever any of
+ * it changes.
  */
 export interface PlayerStateMessage {
   type: 'player_state';
   player: Player;
+  /**
+   * The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none.
+   */
+  meal?: Meal | null;
 }
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
@@ -396,6 +404,10 @@ export interface Player {
    * 0 is fed and 1 is starving: they collapse.
    */
   hunger: number;
+  /**
+   * What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.
+   */
+  left?: Pile[];
 }
 /**
  * Something the player carries.
@@ -434,6 +446,42 @@ export interface Body {
   right_eye: ('present' | 'sold') | Bionic;
   left_kidney: ('present' | 'sold') | Bionic;
   right_kidney: ('present' | 'sold') | Bionic;
+}
+/**
+ * Items lying `at` a tile in the world for the player to pick up, such as what they left
+ * when they collapsed.
+ */
+export interface Pile {
+  at: MapTile;
+  /**
+   * @minItems 1
+   */
+  items: [Item, ...Item[]];
+}
+/**
+ * A tile on a given map: the village or an interior, or in side view a street or a floor.
+ */
+export interface MapTile {
+  map: string;
+  x: number;
+  y: number;
+}
+/**
+ * A meal the player can have where they stand, by sending `eat` without an item.
+ */
+export interface Meal {
+  /**
+   * Where: their home's location id, or a shop's.
+   */
+  place: string;
+  /**
+   * The place as the player sees it: "home", or a shop's name, e.g. "Golden Bowl Noodles".
+   */
+  name: string;
+  /**
+   * What it costs. Nothing at home.
+   */
+  price: number;
 }
 /**
  * What the player has learned about the incident, in the order they learned it, with the
@@ -499,6 +547,14 @@ export interface Lead {
   text: string;
 }
 /**
+ * The player starved and collapsed. They wake at home, at `position`, still hungry, with
+ * their lamp. Everything else they carried stays where they fell, in `player_state`'s `left`.
+ */
+export interface PlayerCollapsedMessage {
+  type: 'player_collapsed';
+  position: Position;
+}
+/**
  * A position without `map` is on the village. Side-view maps have no village, so there the
  * server ignores it, as it ignores any unknown map.
  *
@@ -547,4 +603,21 @@ export interface ReadWorkMessage {
    * The work the player reads.
    */
   work_id: string;
+}
+/**
+ * The server ignores it if there's nothing to eat, or they can't pay.
+ */
+export interface EatMessage {
+  type: 'eat';
+  /**
+   * A food item they carry, by its `id`, or null for the meal on offer where they stand, `player_state`'s `meal`.
+   */
+  item: string | null;
+}
+/**
+ * Picks up, from the nearest pile within reach of the player, each item that still fits
+ * under their carry limit, in order. Any that don't fit stay in the pile.
+ */
+export interface PickUpMessage {
+  type: 'pick_up';
 }

@@ -126,6 +126,34 @@
       "title": "ItemKind",
       "type": "string"
     },
+    "MapTile": {
+      "additionalProperties": false,
+      "description": "A tile on a given map: the village or an interior, or in side view a street or a floor.",
+      "properties": {
+        "map": {
+          "minLength": 1,
+          "title": "Map",
+          "type": "string"
+        },
+        "x": {
+          "minimum": 0,
+          "title": "X",
+          "type": "integer"
+        },
+        "y": {
+          "minimum": 0,
+          "title": "Y",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "map",
+        "x",
+        "y"
+      ],
+      "title": "MapTile",
+      "type": "object"
+    },
     "PartState": {
       "anyOf": [
         {
@@ -139,6 +167,29 @@
           "$ref": "#/$defs/Bionic"
         }
       ]
+    },
+    "Pile": {
+      "additionalProperties": false,
+      "description": "Items lying `at` a tile in the world for the player to pick up, such as what they left\nwhen they collapsed.",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/MapTile"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Item"
+          },
+          "minItems": 1,
+          "title": "Items",
+          "type": "array"
+        }
+      },
+      "required": [
+        "at",
+        "items"
+      ],
+      "title": "Pile",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -176,6 +227,15 @@
       "minimum": 0,
       "title": "Hunger",
       "type": "number"
+    },
+    "left": {
+      "default": [],
+      "description": "What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.",
+      "items": {
+        "$ref": "#/$defs/Pile"
+      },
+      "title": "Left",
+      "type": "array"
     }
   },
   "required": [

@@ -39,6 +39,7 @@ from simile.schema.player import (
     Body,
     Item,
     ItemKind,
+    Pile,
     Player,
     lamp,
 )
@@ -178,6 +179,7 @@ __all__ = [
     "PastMemory",
     "Pay",
     "PayKind",
+    "Pile",
     "Player",
     "Pose",
     "Relationship",
