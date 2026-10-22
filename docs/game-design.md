@@ -43,6 +43,14 @@ deeper for players who want one.
 4. Come back up changed, and see how the village reacts.
 5. Use what you've become to get somewhere you couldn't before.
 
+## Seeing what you can't reach yet
+
+Like Ori and Dead Cells, the tunnels show you places before you can get to them: a ledge too high to
+jump to, a door with no handle, a terminal with no way to plug in. You don't know what's behind
+them yet, only that something is. Each bionic you install turns some of those into routes, so the
+map you've already walked keeps opening up. Hard-to-reach corners hold secrets, such as cash, parts
+or a clue, for players who look.
+
 ## The central tension
 
 **Every upgrade opens one kind of door and closes another.**
