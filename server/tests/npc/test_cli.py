@@ -65,7 +65,7 @@ def test_a_rich_brief_never_writes_to_content(
 ) -> None:
     fake = FakeProvider()
     monkeypatch.setattr(LLMClient, "provider", property(lambda client: fake))
-    before = {path: path.read_bytes() for path in NPCS_DIR.iterdir()}
+    before = {path: path.read_bytes() for path in NPCS_DIR.rglob("*") if path.is_file()}
 
     result = runner.invoke(
         create_cli(), ["generate-npcs", "--rich-brief", *(["--out", str(out)] if out else [])]
@@ -74,5 +74,5 @@ def test_a_rich_brief_never_writes_to_content(
     assert result.exit_code != 0
     assert "outside content/" in result.output
     assert not fake.requests
-    assert {path: path.read_bytes() for path in NPCS_DIR.iterdir()} == before
+    assert {path: path.read_bytes() for path in NPCS_DIR.rglob("*") if path.is_file()} == before
     assert not (NPCS_DIR.parent / "elsewhere").exists()

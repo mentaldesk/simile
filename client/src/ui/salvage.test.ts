@@ -82,4 +82,9 @@ describe('sellPrompt', () => {
   it('with nothing to sell, says the buyer buys salvage and what they have', () => {
     expect(sellPrompt({ ...TRADER, prices: {} }, player([LAMP, RATION]))).toBe("The scrap trader's stall buys salvage. You have 12.");
   });
+
+  it('at the clinic, says E shows what the doctor buys and fits', () => {
+    const clinic: Buyer = { place: 'clinic', name: 'The Clinic', prices: { copper_wire: 6 }, parts: { left_kidney: 100 } };
+    expect(sellPrompt(clinic, player([WIRE]))).toBe('Press E to see what the Clinic buys and fits.');
+  });
 });

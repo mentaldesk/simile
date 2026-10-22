@@ -12,6 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from simile.cli import create_cli
+from simile.clinic.doctor import load_doctor
 from simile.npc import NPCS_DIR, load_npcs
 from simile.schema import Character, CoreValue
 from simile.voicing import gpu, greetings, speak
@@ -32,7 +33,7 @@ from simile.voicing.greetings import (
 
 BUDGET = 1024 * 1024
 POOL = REPO_ROOT / "content" / "characters" / "pool"
-residents = load_npcs(NPCS_DIR)
+residents = [*load_npcs(NPCS_DIR), load_doctor()]
 voiced = [npc for npc in residents if npc.voice.reference_clip]
 
 

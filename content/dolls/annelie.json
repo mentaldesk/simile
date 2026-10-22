@@ -1,0 +1,134 @@
+{
+  "id": "annelie",
+  "hash": "45905f2ce4507749",
+  "appearance": {
+    "skin": "#e8b796",
+    "hair_style": "bun",
+    "hair_colour": "#c0cbdc",
+    "top_colour": "#a8e6f0",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "slim",
+    "accessories": [
+      "glasses",
+      "apron"
+    ]
+  },
+  "version": 3,
+  "ppm": 80,
+  "height": 163.2,
+  "painted": "annelie.webp",
+  "frames": {
+    "climb": {
+      "frame": [
+        0,
+        0,
+        74,
+        169
+      ],
+      "feet": [
+        40.8,
+        166.0
+      ]
+    },
+    "pass": {
+      "frame": [
+        76,
+        0,
+        51,
+        167
+      ],
+      "feet": [
+        24.0,
+        165.0
+      ]
+    },
+    "run": {
+      "frame": [
+        268,
+        0,
+        101,
+        156
+      ],
+      "feet": [
+        49.0,
+        154.0
+      ]
+    },
+    "run_pass": {
+      "frame": [
+        452,
+        0,
+        78,
+        149
+      ],
+      "feet": [
+        36.0,
+        147.0
+      ]
+    },
+    "sit": {
+      "frame": [
+        371,
+        0,
+        79,
+        150
+      ],
+      "feet": [
+        33.0,
+        148.0
+      ],
+      "seat": [
+        33.0,
+        115.0
+      ]
+    },
+    "stand": {
+      "frame": [
+        129,
+        0,
+        52,
+        166
+      ],
+      "feet": [
+        24.5,
+        164.0
+      ]
+    },
+    "stride": {
+      "frame": [
+        183,
+        0,
+        83,
+        159
+      ],
+      "feet": [
+        38.5,
+        157.0
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "stride",
+      "pass",
+      "stride",
+      "pass"
+    ],
+    "run": [
+      "run",
+      "run_pass",
+      "run",
+      "run_pass"
+    ],
+    "sit": [
+      "sit"
+    ],
+    "climb": [
+      "climb"
+    ]
+  }
+}

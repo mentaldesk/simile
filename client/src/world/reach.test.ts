@@ -151,6 +151,21 @@ describe('salvage, secrets and buyers', () => {
     state({ buyer: { ...trader, prices: {} } });
     expect(usedByE(at('metro', 26))).toBeUndefined();
   });
+
+  it('opens the clinic while the doctor buys a part of them or fits something, and else sells', () => {
+    const legs = { bionic: 'hydraulic_legs', name: 'Hydraulic legs', price: 80, parts: ['legs'] };
+    const clinic = { place: 'clinic', name: 'The Clinic', prices: {}, parts: { left_kidney: 100 }, fittings: [legs] };
+    state({ buyer: clinic });
+    expect(usedByE(at('clinic_floor_0', 4, 2))).toEqual({ kind: 'clinic', tiles: 0, buyer: clinic });
+
+    const fitted = { ...clinic, parts: undefined };
+    state({ buyer: fitted });
+    expect(usedByE(at('clinic_floor_0', 4, 2))).toMatchObject({ kind: 'clinic' });
+
+    const salvage = { place: 'clinic', name: 'The Clinic', prices: { copper_wire: 6 } };
+    state({ buyer: salvage });
+    expect(usedByE(at('clinic_floor_0', 4, 2))).toEqual({ kind: 'buyer', tiles: 0, buyer: salvage });
+  });
 });
 
 describe('wayPrompts', () => {

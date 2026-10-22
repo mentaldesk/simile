@@ -17,8 +17,13 @@ SAMPLE_LINES = [
 ]
 
 
+def npc_files() -> dict[str, Path]:
+    """Each NPC's file by id: the residents, and the people of the tunnels, like the doctor."""
+    return {path.stem: path for path in sorted([*NPCS.glob("*.json"), *(NPCS / "tunnels").glob("*.json")])}
+
+
 def load_npcs(ids: list[str] | None = None) -> dict[str, dict]:
-    npcs = {path.stem: json.loads(path.read_text(encoding="utf-8")) for path in sorted(NPCS.glob("*.json"))}
+    npcs = {npc_id: json.loads(path.read_text(encoding="utf-8")) for npc_id, path in npc_files().items()}
     if unknown := set(ids or []) - set(npcs):
         raise SystemExit(f"no such NPC: {', '.join(sorted(unknown))}")
     return {npc_id: npcs[npc_id] for npc_id in ids} if ids else npcs
@@ -38,7 +43,7 @@ def sample_paths(npc_id: str) -> list[Path]:
 
 
 def set_reference_clip(npc_id: str, clip: Path, reference_line: str | None = None) -> None:
-    path = NPCS / f"{npc_id}.json"
+    path = npc_files()[npc_id]
     npc = json.loads(path.read_text(encoding="utf-8"))
     npc["voice"]["reference_clip"] = clip.relative_to(REPO_ROOT).as_posix()
     if reference_line is not None:

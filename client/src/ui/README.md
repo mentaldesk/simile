@@ -130,6 +130,24 @@ The same corner says what E picks up or sells where the player stands, in
 - The world scene draws a glint over each pile on the street shown and its floors, gold for cash
   (`side/piles.ts`).
 
+## At the clinic
+
+While the clinic's doctor would buy a part of the player or fit a bionic (`buyer.parts` or
+`buyer.fittings`), the corner says "Press E to see what the Clinic buys and fits.", and E opens the
+clinic panel ([`clinic-panel.ts`](clinic-panel.ts)) instead of selling. It lists, from the latest
+`player_state`:
+
+- "Talk to Annelie Joubert", while she's ringed: Enter closes the panel and opens the chat to her;
+- the salvage they carry that the clinic buys, and for how much, sold at once with `sell`;
+- a kidney, for `buyer.parts`' price, sold with `sell_part`;
+- each fitting in each part it can go in place of, with its price, fitted with `fit`. One they
+  can't afford is dimmed, and says what it costs against what they have.
+
+↑ and ↓ choose, and Enter or a click goes ahead. Selling a part or a fitting can't be undone, so it
+takes a second Enter or click, and moving the choice forgets the first. Esc or E closes the panel,
+and so does walking out of the clinic. Once she'd buy and fit nothing more, E sells salvage there
+as at the stall, or else talks to her.
+
 ## Keys
 
 The game's keys (Enter, Tab, Esc, E, F, ?) are handled on `window` only when nothing on the page has
@@ -137,8 +155,8 @@ focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input 
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's), a mural, a pile, or a buyer they can sell
-to. The world scene takes a door on E only when none is, so one press never does two things, and
+a terminal, the counter, a painting (the gallery panel's), a mural, a pile, the clinic, or a buyer
+they can sell to. The world scene takes a door on E only when none is, so one press never does two things, and
 then up takes the door. With neither, E opens the chat to the ringed NPC, as Enter does, and their
 name tag says so: "E: talk to Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the
 lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
