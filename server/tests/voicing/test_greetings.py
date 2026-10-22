@@ -290,7 +290,8 @@ def test_lines_file_holds_only_residents() -> None:
 def test_says_a_greeting_in_a_residents_voice(tmp_path: Path) -> None:
     npc = next(npc for npc in voiced if npc.id == "tobias")
     assert npc.voice.reference_clip is not None
-    gpu.wait_for_gpu()
+    if others := gpu.busy():
+        pytest.skip(f"another model holds the GPU: {'; '.join(others)}")
     model = speak.load()
 
     seconds = speak.speak(

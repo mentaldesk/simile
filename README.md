@@ -14,7 +14,9 @@ It installs what the village needs, starts it and opens the title menu at http:/
 Voices are off: the residents talk in speech bubbles, and each one greets you out loud, in their own
 voice, when they start talking to you. On a Mac with Apple Silicon, `SIMILE_VOICE=1 ./run.sh` turns
 their voices on. The first voiced run downloads the voice model, about 3 GB, and the model needs
-about 3 GB of memory. The greetings play either way, on any machine.
+about 3 GB of memory. The greetings play either way, on any machine. Where voice-lab is set up,
+picking a character's voice in the creator records their greetings with the same model in
+voice-lab's virtualenv, which loads it, and the first time downloads it, even with voices off.
 
 ## Controls
 

@@ -46,7 +46,8 @@ if [[ $SIMILE_VOICE == 1 ]] && $apple_silicon; then
 fi
 
 make -s -C "$root" client/node_modules/.package-lock.json
-(cd "$root/server" && uv sync ${extras[@]+"${extras[@]}"})
+# --inexact keeps the voice extra installed while voices are off, for SIMILE_VOICE=1 make dev.
+(cd "$root/server" && uv sync --inexact ${extras[@]+"${extras[@]}"})
 
 server=""
 client=""
