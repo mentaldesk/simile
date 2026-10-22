@@ -17,7 +17,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - the news and residents' writing at a terminal (see *Reading the news*);
 - a mural up close (see *Looking at a mural*);
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
-  (see *Picking up and selling*).
+  (see *Picking up and selling*);
+- the player's journal of what happened to Aris (see *The journal*).
 
 ## Choosing who to talk to
 
@@ -130,15 +131,32 @@ The same corner says what E picks up or sells where the player stands, in
 - The world scene draws a glint over each pile on the street shown and its floors, gold for cash
   (`side/piles.ts`).
 
+## The journal
+
+J opens the journal (`JournalPanel` in [`journal-panel.ts`](journal-panel.ts)), and J or Esc
+closes it. It shows the last `journal` the server sent: the leads still open, each once, then what
+the player has learned, newest first, each with who told them or the clue they found it in, and
+when in sim time. An entry the infrared eye caught a resident flushing on (`flushed: true`) has a
+red mark. Until there's anything, it says to ask around. While it's closed, its "J journal" hint in
+the top-right corner, below where the lamp's gauge and its line go, counts what's come in since it
+was last open. It and the controls take turns: opening one closes the other. The player can walk
+with it open.
+
+On a clue's cell (`clueInReach` in [`world/clues.ts`](../world/clues.ts), from
+`content/story/story.toml`), a hint says "Press E to look at Aris's notes.", and E sends `pick_up`
+and opens the journal in place of the controls (`lookAtClue`). The server writes what the clue
+holds into the journal and sends it. Where a pile is in reach too, E takes whichever is nearer, the
+pile on a tie, as the server does.
+
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, F, ?) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, F, J, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's), a mural, a pile, or a buyer they can sell
-to. The world scene takes a door on E only when none is, so one press never does two things, and
+a terminal, the counter, a painting (the gallery panel's), a mural, a pile, a buyer they can sell
+to, or a clue. The world scene takes a door on E only when none is, so one press never does two things, and
 then up takes the door. With neither, E opens the chat to the ringed NPC, as Enter does, and their
 name tag says so: "E: talk to Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the
 lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key

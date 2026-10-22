@@ -10,3 +10,12 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     await begin(app)
     yield
+
+
+@asynccontextmanager
+async def running(app: Starlette) -> AsyncIterator[None]:
+    from simile.story.recording import record
+
+    stop = record(app)
+    yield
+    stop()

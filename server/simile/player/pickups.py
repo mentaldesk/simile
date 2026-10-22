@@ -1,14 +1,17 @@
 import logging
 import math
+from collections.abc import Callable, Sequence
 from datetime import timedelta
 from typing import TYPE_CHECKING, NamedTuple
+
+from starlette.applications import Starlette
 
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
 from simile.player.where import here
 from simile.schema import Id, Item, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.map import Pickup, PickupKind
-from simile.world.movement import Movement
+from simile.world.movement import Movement, Point
 
 if TYPE_CHECKING:
     from simile.economy.economy import Economy
@@ -22,6 +25,23 @@ class Found(NamedTuple):
     pile: Pile
     index: int = -1
     pickup: Id | None = None
+
+
+class Claim(NamedTuple):
+    """Something besides a pile that `pick_up` takes, `distance` tiles from the player."""
+
+    distance: float
+    take: Callable[[], object]
+
+
+type Claimer = Callable[[Point], Claim | None]
+
+
+def claimers_of(app: Starlette) -> list[Claimer]:
+    """What else `pick_up` can take where the player stands. Other modules add to it."""
+    if not hasattr(app.state, "claimers"):
+        app.state.claimers = []
+    return app.state.claimers
 
 
 class Pickups:
@@ -54,11 +74,17 @@ class Pickups:
         """What lies at the pickups now."""
         return [pile for pickup, pile in self.lying.items() if self._there(pickup)]
 
-    def pick_up(self) -> bool:
-        """Takes the money and what fits from the nearest pile in reach. Whether they took any."""
-        found = self._nearest()
-        if found is None:
+    def pick_up(self, others: Sequence[Claimer] = ()) -> bool:
+        """Takes a nearer claim, or the nearest pile's money and what fits. Whether a pile gave."""
+        at, nearest = here(self.movement), self._nearest()
+        claims = [claim for claimer in others if at and (claim := claimer(at))]
+        other = min(claims, key=lambda claim: claim.distance, default=None)
+        if other is not None and (nearest is None or other.distance < nearest[0]):
+            other.take()
             return False
+        if nearest is None:
+            return False
+        found = nearest[1]
         room = self.player.carry_limit - self.player.load
         taken: list[Item] = []
         kept: list[Item] = []
@@ -90,7 +116,7 @@ class Pickups:
         respawn = self.respawn.get(pickup)
         return respawn is not None and self.clock.now - taken >= respawn
 
-    def _nearest(self) -> Found | None:
+    def _nearest(self) -> tuple[float, Found] | None:
         at = here(self.movement)
         if at is None:
             return None
@@ -104,7 +130,10 @@ class Pickups:
             if found.pile.at.map == at.map
             and (distance := math.dist(at, (found.pile.at.x, found.pile.at.y))) <= self.config.reach
         ]
-        return piles[min(near)[1]] if near else None
+        if not near:
+            return None
+        distance, order = min(near)
+        return distance, piles[order]
 
     def _pile(self, pickup: Pickup) -> Pile | None:
         at = MapTile(map=pickup.map, x=pickup.x, y=pickup.y)

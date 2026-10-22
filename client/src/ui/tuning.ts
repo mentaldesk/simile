@@ -15,3 +15,5 @@ export const LOG_LIMIT = 200;
 /** Opens the news at a terminal, and closes it. */
 export const NEWS_KEY = 'e';
 export const EAT_KEY = 'f';
+/** Opens the journal, and closes it. */
+export const JOURNAL_KEY = 'j';

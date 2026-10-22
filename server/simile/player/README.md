@@ -59,6 +59,10 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   `found`. Taking from a pickup records when, by its id, in `Player.taken`, which is saved, and
   whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any that don't fit of
   one of theirs stay in it.
+- **One thing per press.** Other modules add what else `pick_up` can take to `claimers_of(app)`,
+  such as S13's clues, each a `Claim` with its distance from the player. `pick_up` takes the
+  nearest claim if it's nearer than any pile in reach, and the pile otherwise, a tie included.
+  Never both.
 - **Salvage comes back; secrets don't.** A salvage pickup has another lying there once
   `PlayerConfig.respawn` (24 sim hours) has passed since it was last taken, or its own `respawn`
   in `PlayerConfig.salvage`. So the tunnels keep paying, at the economy's prices, for someone who
