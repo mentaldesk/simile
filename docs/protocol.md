@@ -83,7 +83,7 @@ client replaces whatever it had.
 |---|---|---|
 | `time` | timestamp | Sim time now. |
 | `map_id` | string | The map the player starts on, e.g. `"village"`, or on side-view maps a street's id. |
-| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. |
+| `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. The player's can be mid-air, where a jump or a fall was when the server last heard (see [`player_move`](#player_move)). |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
@@ -235,12 +235,22 @@ is. Going through a door is a `player_move` with the other map's `map`. A positi
 puts the player on the village. Side-view maps have no village, so there the server ignores a
 position without `map`, as it ignores a position on any map it doesn't know.
 
-On a side-view map the player can jump and fall, so a position can be mid-air. The server keeps one
-in open air over somewhere to land, no higher than a jump from somewhere to stand within a jump's
-reach along the row, and ignores a position nobody could be at: inside something solid, off the
-map, or in the air out of any jump's reach. It never moves the player back onto the ground: the
+On a side-view map the player can jump and fall, so a position can be mid-air. The server keeps a
+position in open air, over somewhere to land, if either:
+
+- it's within the farthest and highest jump the player can make from somewhere to stand: a run
+  jump with Space held, taking off as late as coyote time allows. Its reach along the row and its
+  height are set in one place, which the client's jump and the server's check both read; or
+- it's lower than the last position the server kept on that map, as in a fall from any height,
+  which lands safely.
+
+It ignores a position nobody could be at: inside something solid, off the map, over nothing to
+land on, or higher in the air than any jump. It never moves the player back onto the ground: the
 next `player_move` says where they landed. The player's entity is still `standing` in a jump, as
 the server doesn't track the player's pose.
+
+The server keeps the last position it was sent, so a [`snapshot`](#snapshot), after a reload or a
+reconnection, can put the player mid-air. The client lets them fall from there.
 
 ### `player_say`
 
