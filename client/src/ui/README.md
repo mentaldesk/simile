@@ -152,6 +152,15 @@ the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-l
 as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
 greet the player out loud either way.
 
+## The lamp
+
+Under "? controls", the lamp's gauge (`LampGauge` in [`lamp-gauge.ts`](lamp-gauge.ts)) shows L, its
+battery from the last `player_state`, green, then amber from 50% and red from 20%, and whether it's
+on, off, or charging (⚡) at a plug. A line under it says "It's dark. Press L for your lamp." in the
+dark with it off, "Your lamp is running low." from 20% with it on, "Your lamp is flat. Charge it at
+a plug." when it's flat, and "Charging your lamp." at a plug. The world scene handles L
+([`side/`](../side/README.md)).
+
 ## What the world scene provides
 
 The UI needs four things from the world scene (C1). Implement `WorldView` and register it when the

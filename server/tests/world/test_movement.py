@@ -18,7 +18,7 @@ HOUSES = [location for location in TOWN.locations if location.kind is LocationKi
 START = datetime(2026, 1, 1, 8, tzinfo=UTC)
 [CAFE_DOOR] = [door for door in TOWN.doors if door.id == "coffee_shop"]
 CAFE = CAFE_DOOR.inside.map
-[COUNTER] = MAPS[CAFE].interactables
+[COUNTER] = [item for item in MAPS[CAFE].interactables if item.id == "coffee_shop_counter"]
 FRONT = MapTile(map=CAFE, x=COUNTER.stand[0].x, y=COUNTER.stand[0].y)
 STREET = CAFE_DOOR.outside.map
 

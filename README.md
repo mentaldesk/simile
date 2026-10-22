@@ -29,6 +29,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
 | E | Read the news at a terminal, look at a mural or a painting, order at a counter, or pick up what you left when you collapsed. Otherwise go through a door, or talk to the ringed resident. |
 | F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and if it runs out you collapse. |
+| L | Switch your lamp on or off. Parts of the tunnels are dark, and only the lamp lights them. Its battery runs down while it's on: the gauge under the controls shows what's left, and standing at a plug charges it, at home, at the café or the noodle bar, or in the tunnels. |
 | Enter | Talk to the ringed resident, then send what you typed. |
 | Tab | Choose who to talk to. Clicking a resident does too. |
 | Esc | Close the chat or a panel. |

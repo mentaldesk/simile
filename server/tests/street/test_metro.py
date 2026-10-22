@@ -145,15 +145,28 @@ def test_the_lift_and_the_dead_terminal_are_machines_you_walk_up_to_that_lead_no
     assert Spot(METRO, LIFT_FOOT.x, LIFT_FOOT.y) in stands(LIFT)
 
 
-def test_the_plug_is_a_machine_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:
+def test_the_plug_is_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:
     [plug] = stands(PLUG)
     lights = {o["name"]: (cell(o), o["width"] // 16, props(o)["lit"]) for o in objects(LIGHT_LAYER)}
     (x0, _), width, lit = lights["metro_maintenance"]
 
-    assert machine(PLUG).kind is InteractableKind.MACHINE
+    assert machine(PLUG).kind is InteractableKind.PLUG
     assert plug in reachable(jumps=False)
     assert lit and x0 <= plug.x < x0 + width
     assert not lights["metro_tunnel_west"][2] and not lights["metro_tunnel_east"][2]
+    assert not METRO_MAP.lit(plug.x - 2, plug.y) and not METRO_MAP.lit(plug.x + 2, plug.y)
+    assert METRO_MAP.lit(plug.x, plug.y)
+
+
+def test_the_metro_is_underground_and_lit_by_its_own_lights() -> None:
+    data = json.loads((STREET_DIR / f"{METRO}.tmj").read_text())
+
+    assert props(data)["underground"] is True
+    assert {light.id for light in METRO_MAP.light if not light.lit} == {
+        "metro_vault",
+        "metro_tunnel_west",
+        "metro_tunnel_east",
+    }
 
 
 def test_the_light_areas_cover_every_cell_of_the_metro_once() -> None:

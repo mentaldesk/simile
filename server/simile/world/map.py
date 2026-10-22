@@ -29,6 +29,7 @@ FLOORS = "floors"
 COLLISION_LAYER = "collision"
 CLIMBABLE_LAYER = "climbable"
 SOLID_LAYER = "solid"
+LIGHT_LAYER = "light"
 LOCATIONS_LAYER = "locations"
 MURALS_LAYER = "murals"
 DOORS_LAYER = "doors"
@@ -61,6 +62,15 @@ class MapKind(StrEnum):
 
     STREET = "street"
     FLOOR = "floor"
+
+
+@dataclass(frozen=True)
+class Light:
+    """A stretch of a map that's lit, or dark without a lamp."""
+
+    id: str
+    area: TileArea
+    lit: bool
 
 
 class SpotKind(StrEnum):
@@ -149,6 +159,8 @@ class TownMap:
     """climbable[y][x] is `stairs` or `ladder` on a climbable cell, or None. Empty without any."""
     solids: tuple[tuple[bool, ...], ...] = ()
     """solids[y][x] is True on ground, floors, walls and ledges. Empty without a solid layer."""
+    light: tuple[Light, ...] = ()
+    """Its lit and dark stretches. Empty on a map that's lit all over."""
 
     def walkable(self, x: int, y: int) -> bool:
         return 0 <= x < self.width and 0 <= y < self.height and not self.blocked[y][x]
@@ -168,6 +180,11 @@ class TownMap:
     def standing(self, x: int, y: int) -> bool:
         """Walkable and not partway up stairs or a ladder."""
         return self.walkable(x, y) and self.climb(x, y) is None
+
+    def lit(self, x: int, y: int) -> bool:
+        """Lit, unless a dark stretch covers the cell and no lit one does."""
+        covering = [light.lit for light in self.light if _covers(light.area, x, y)]
+        return any(covering) or not covering
 
     @property
     def street(self) -> bool:
@@ -233,6 +250,7 @@ def load_map(path: Path) -> TownMap:
         floor=props.get("floor"),
         climbable=climbable,
         solids=solids,
+        light=tuple(_light(o, size) for o in objects(LIGHT_LAYER)),
     )
 
 
@@ -447,3 +465,11 @@ def _mural(obj: dict[str, Any], size: int, map_id: str) -> MuralWall:
         stand=Tile(x=props["stand_x"], y=props["stand_y"]),
         map=map_id,
     )
+
+
+def _light(obj: dict[str, Any], size: int) -> Light:
+    return Light(id=obj["name"], area=_area(obj, size), lit=_props(obj)["lit"])
+
+
+def _covers(area: TileArea, x: int, y: int) -> bool:
+    return area.x <= x < area.x + area.width and area.y <= y < area.y + area.height

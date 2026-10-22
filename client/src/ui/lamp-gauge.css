@@ -1,0 +1,66 @@
+.lamp-gauge {
+  position: absolute;
+  right: 4px;
+  top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.85;
+  text-shadow: 0 1px 0 #000;
+}
+
+.lamp-gauge kbd {
+  min-width: 6px;
+  padding: 0 2px;
+  border: 1px solid #f4ecd8;
+  border-radius: 2px;
+  font: inherit;
+  font-weight: bold;
+  text-align: center;
+}
+
+.lamp-battery {
+  position: relative;
+  width: 18px;
+  height: 7px;
+  margin-right: 2px;
+  border: 1px solid #f4ecd8;
+  border-radius: 1px;
+  box-shadow: 0 1px 0 #000;
+}
+
+.lamp-battery::after {
+  position: absolute;
+  top: 1px;
+  right: -3px;
+  width: 2px;
+  height: 3px;
+  background: #f4ecd8;
+  content: '';
+}
+
+.lamp-battery > span {
+  display: block;
+  height: 100%;
+}
+
+.lamp-level-full {
+  background: #7fd06a;
+}
+
+.lamp-level-half {
+  background: #e8b84a;
+}
+
+.lamp-level-low {
+  background: #e0604a;
+}
+
+.lamp-hint {
+  position: absolute;
+  right: 4px;
+  top: 28px;
+  max-width: 200px;
+  text-align: right;
+  text-shadow: 0 1px 0 #000;
+}
