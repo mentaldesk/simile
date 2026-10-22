@@ -318,6 +318,18 @@
           "width": 16,
           "x": 1056,
           "y": 256
+        },
+        {
+          "height": 48,
+          "id": 11,
+          "name": "metro_entrance",
+          "properties": [],
+          "rotation": 0,
+          "type": "metro_entrance",
+          "visible": true,
+          "width": 32,
+          "x": 976,
+          "y": 256
         }
       ],
       "opacity": 1,
@@ -333,7 +345,7 @@
       "objects": [
         {
           "height": 48,
-          "id": 11,
+          "id": 12,
           "name": "terminal_3",
           "properties": [
             {
@@ -373,7 +385,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 12,
+          "id": 13,
           "name": "banyan_row",
           "properties": [
             {
@@ -411,7 +423,7 @@
         },
         {
           "height": 16,
-          "id": 13,
+          "id": 14,
           "name": "garden_flats",
           "properties": [
             {
@@ -461,7 +473,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 14,
+          "id": 15,
           "name": "house_8",
           "properties": [
             {
@@ -499,7 +511,7 @@
         },
         {
           "height": 16,
-          "id": 15,
+          "id": 16,
           "name": "house_9",
           "properties": [
             {
@@ -537,7 +549,7 @@
         },
         {
           "height": 16,
-          "id": 16,
+          "id": 17,
           "name": "house_10",
           "properties": [
             {
@@ -575,7 +587,7 @@
         },
         {
           "height": 16,
-          "id": 17,
+          "id": 18,
           "name": "gallery",
           "properties": [
             {
@@ -613,7 +625,7 @@
         },
         {
           "height": 16,
-          "id": 18,
+          "id": 19,
           "name": "banyan_row_to_high_street",
           "properties": [
             {
@@ -648,6 +660,44 @@
           "width": 16,
           "x": 384,
           "y": 240
+        },
+        {
+          "height": 16,
+          "id": 20,
+          "name": "banyan_row_to_metro",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "metro"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 9
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 992,
+          "y": 288
         }
       ],
       "opacity": 1,
@@ -674,7 +724,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 19,
+          "id": 21,
           "name": "viewing-18-32",
           "properties": [
             {
@@ -692,7 +742,7 @@
         },
         {
           "height": 16,
-          "id": 20,
+          "id": 22,
           "name": "viewing-34-31",
           "properties": [
             {
@@ -710,7 +760,7 @@
         },
         {
           "height": 16,
-          "id": 21,
+          "id": 23,
           "name": "terminal-46-37",
           "properties": [
             {
@@ -732,10 +782,32 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 11,
+      "name": "light",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 12,
+      "name": "pickups",
+      "objects": [],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 11,
-  "nextobjectid": 22,
+  "nextlayerid": 13,
+  "nextobjectid": 24,
   "orientation": "orthogonal",
   "properties": [
     {
