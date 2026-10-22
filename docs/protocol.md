@@ -238,9 +238,10 @@ which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`,
 it; its `weight` in kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a
 lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else.
 
-A `Pile` is what they carried when they collapsed: its `items`, at least one, and `at`, a `MapTile`
-(`map`, `x` and `y`, whole tiles) where they fell, or the ground below it. They pick it up with
-[`pick_up`](#pick_up).
+A `Pile` is items lying on a tile in the world for the player to pick up with
+[`pick_up`](#pick_up): its `items`, at least one, and `at`, a `MapTile` (`map`, `x` and `y`, whole
+tiles). What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
+the ground below it.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
 `right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
@@ -256,8 +257,9 @@ never sent: the player sees it only in how residents treat them.
 
 `position`: where the player wakes, at home. They starved and collapsed: the client puts them at
 `position`, snapping there as through a door, and can say what happened. They're still hungry, and
-anything they carried stays where they fell: the [`player_state`](#player_state) that follows has
-it in a new `Pile` at the end of `left`. Clients that predate it ignore it.
+they wake with their lamp, so they can see to go back. Everything else they carried stays where they
+fell: the [`player_state`](#player_state) that follows has it in a new `Pile` at the end of `left`.
+With nothing but the lamp, they leave no pile. Clients that predate it ignore it.
 
 ### `journal`
 
@@ -360,10 +362,11 @@ none on offer or that they can't pay for.
 
 ### `pick_up`
 
-No fields. Picks up what the player left where they collapsed: the nearest `Pile` on the map they're
-on within a tile and a half of where they stand, as much of it as their carry limit allows, in
-order. Anything left over stays there. The server sends the [`player_state`](#player_state) that
-follows, and ignores a `pick_up` with nothing in reach.
+No fields. Picks up from the nearest `Pile` on the map the player is on, within a tile and a half of
+where they stand, such as one in their `left`. It takes each item, in order, that still fits under
+their carry limit, and skips any that doesn't, which stays in the pile with anything else left. The
+server sends the [`player_state`](#player_state) that follows, and ignores a `pick_up` with nothing
+in reach or nothing that fits.
 
 ### `watch_npc`
 

@@ -60,8 +60,8 @@ def lamp() -> Item:
 
 
 class Pile(Model):
-    """What the player carried when they collapsed, left where they fell for them to go back
-    for. It lies `at` the cell they fell on, or the ground below it."""
+    """Items lying `at` a tile in the world for the player to pick up, such as what they left
+    when they collapsed."""
 
     model_config = CHECKED
 
@@ -152,8 +152,8 @@ class Player(Model):
     left: list[Pile] = Field(
         default=[],
         exclude_if=lambda left: not left,
-        description="What they've left where they collapsed, oldest first. Left out while there's "
-        "none.",
+        description="What they left when they collapsed, oldest first, each on the tile they fell "
+        "on or the ground below it. Left out while there's none.",
     )
 
     @property

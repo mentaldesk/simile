@@ -405,7 +405,7 @@ export interface Player {
    */
   hunger: number;
   /**
-   * What they've left where they collapsed, oldest first. Left out while there's none.
+   * What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.
    */
   left?: Pile[];
 }
@@ -448,8 +448,8 @@ export interface Body {
   right_kidney: ('present' | 'sold') | Bionic;
 }
 /**
- * What the player carried when they collapsed, left where they fell for them to go back
- * for. It lies `at` the cell they fell on, or the ground below it.
+ * Items lying `at` a tile in the world for the player to pick up, such as what they left
+ * when they collapsed.
  */
 export interface Pile {
   at: MapTile;
@@ -547,8 +547,8 @@ export interface Lead {
   text: string;
 }
 /**
- * The player starved and collapsed. They wake at home, at `position`, still hungry, and
- * what they carried stays where they fell, in `player_state`'s `left`.
+ * The player starved and collapsed. They wake at home, at `position`, still hungry, with
+ * their lamp. Everything else they carried stays where they fell, in `player_state`'s `left`.
  */
 export interface PlayerCollapsedMessage {
   type: 'player_collapsed';
@@ -615,8 +615,8 @@ export interface EatMessage {
   item: string | null;
 }
 /**
- * Picks up what the player left where they collapsed, if it's within reach, as much as
- * their carry limit allows.
+ * Picks up, from the nearest pile within reach of the player, each item that still fits
+ * under their carry limit, in order. Any that don't fit stay in the pile.
  */
 export interface PickUpMessage {
   type: 'pick_up';

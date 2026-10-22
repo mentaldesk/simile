@@ -170,7 +170,7 @@
     },
     "Pile": {
       "additionalProperties": false,
-      "description": "What the player carried when they collapsed, left where they fell for them to go back\nfor. It lies `at` the cell they fell on, or the ground below it.",
+      "description": "Items lying `at` a tile in the world for the player to pick up, such as what they left\nwhen they collapsed.",
       "properties": {
         "at": {
           "$ref": "#/$defs/MapTile"
@@ -230,7 +230,7 @@
     },
     "left": {
       "default": [],
-      "description": "What they've left where they collapsed, oldest first. Left out while there's none.",
+      "description": "What they left when they collapsed, oldest first, each on the tile they fell on or the ground below it. Left out while there's none.",
       "items": {
         "$ref": "#/$defs/Pile"
       },
