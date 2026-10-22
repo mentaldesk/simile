@@ -26,7 +26,7 @@ from simile.world.map import (
 )
 from simile.world.map import Spot as MapSpot
 from simile.world.movement import Point, inside
-from simile.world.paths import Spot, door_ends, find_path, find_route, route_length, steps
+from simile.world.paths import Spot, door_ends, find_route, route_length, steps
 from simile.world.spots import Purpose
 
 MAPS = load_maps(STREET_DIR)

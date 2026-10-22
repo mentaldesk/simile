@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from simile.street.village import GROUND, village
-from simile.world.map import STREET_DIR, SOLID_LAYER, TownMap, load_map, load_maps
+from simile.world.map import SOLID_LAYER, STREET_DIR, TownMap, load_map, load_maps
 
 MAPS = load_maps(STREET_DIR)
 

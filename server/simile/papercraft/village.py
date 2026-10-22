@@ -230,8 +230,7 @@ LOOKS: dict[str, Look] = {
         glass_door=True,
     ),
     "print_works": Look(
-        "a two-storey old print works of red-brown brick with a flat roof and steel-framed "
-        "windows",
+        "a two-storey old print works of red-brown brick with a flat roof and steel-framed windows",
         (156, 88, 70),
         (70, 74, 78),
         SLATE,

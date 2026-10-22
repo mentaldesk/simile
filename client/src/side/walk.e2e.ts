@@ -242,6 +242,7 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   await teleport(page, api, jump.from, jump.name);
   await run(page, 200);
   if (jump.run) await page.keyboard.press('Shift');
+  await run(page, 100);
   await page.keyboard.down('ArrowRight');
   const atEdge = async () => (await api.state())!.x >= jump.takeOff;
   await until(page, atEdge, 5, `${jump.name}: running up to ${jump.takeOff}`, FRAME_MS);
@@ -253,6 +254,7 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   await page.keyboard.up(' ');
   await page.keyboard.up('ArrowRight');
   if (jump.run) await page.keyboard.press('Shift');
+  await run(page, 100);
   const landed = (await api.state())!;
   if (landed.y !== jump.from.y || landed.x < jump.land) {
     throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${jump.from.y} past ${jump.land}`);
