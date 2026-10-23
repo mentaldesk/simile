@@ -615,7 +615,8 @@ export interface Lead {
 }
 /**
  * The player starved and collapsed. They wake at home, at `position`, still hungry, with
- * their lamp. Everything else they carried stays where they fell, in `player_state`'s `left`.
+ * their lamp, switched off. Everything else they carried stays where they fell, in
+ * `player_state`'s `left`.
  */
 export interface PlayerCollapsedMessage {
   type: 'player_collapsed';
@@ -683,7 +684,8 @@ export interface EatMessage {
 }
 /**
  * Picks up, from the nearest pile within reach of the player, its money and each item that
- * still fits under their carry limit, in order. Any that don't fit stay in the pile.
+ * still fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer
+ * clue is found instead, and so is a clue in the jack they stand at, with the datajack.
  */
 export interface PickUpMessage {
   type: 'pick_up';

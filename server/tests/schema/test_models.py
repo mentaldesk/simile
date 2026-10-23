@@ -448,8 +448,8 @@ def test_an_interactable_round_trips() -> None:
     assert Interactable.model_validate_json(counter.model_dump_json()) == counter
 
 
-@pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug"])
-def test_interactables_are_counters_paintings_machines_or_plugs(kind: str) -> None:
+@pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug", "jack"])
+def test_interactables_are_counters_paintings_machines_plugs_or_jacks(kind: str) -> None:
     assert Interactable.model_validate(COUNTER | {"kind": kind}).kind == InteractableKind(kind)
 
 

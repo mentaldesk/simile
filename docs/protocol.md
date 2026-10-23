@@ -58,9 +58,14 @@ interiors' ids; this document says where.
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
   you can use inside, and a `Location` says which map it's on. Interactable ids go over the wire
   only in [`paintings`](#paintings).
-  - An `Interactable`'s `kind` is `"counter"`, `"painting"`, `"machine"` or `"plug"`. A plug
-    charges the player's lamp, on or off, while they stand on one of its `stand` tiles, so the
+  - An `Interactable`'s `kind` is `"counter"`, `"painting"`, `"machine"`, `"plug"` or `"jack"`. A
+    plug charges the player's lamp, on or off, while they stand on one of its `stand` tiles, so the
     client finds the plugs, and whether the lamp is charging, from the maps.
+  - A jack is a machine only the datajack works, such as the metro's dead terminal and its
+    maintenance lift. With the datajack fitted (`player_state`'s `body`), E at one sends
+    [`pick_up`](#pick_up), which finds the clue it holds, if any. A link ending on one of its
+    `stand` tiles, like the lift's down to the sewers, is taken only with the datajack. Without
+    one the jack is dead: the client says so, and offers no link from it.
   - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
     door. A door joins a street or the village (`outside`) and a building's ground floor
     (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
@@ -296,7 +301,7 @@ nothing taken. Their humanity is part of it on the server, derived from the bion
 
 `position`: where the player wakes, at home. They starved and collapsed: the client puts them at
 `position`, snapping there as through a door, and can say what happened. They're still hungry, and
-they wake with their lamp, so they can see to go back. Everything else they carried stays where they
+they wake with their lamp, switched off, so they can see to go back once they switch it on. Everything else they carried stays where they
 fell: the [`player_state`](#player_state) that follows has it in a new `Pile` at the end of `left`.
 With nothing but the lamp, they leave no pile. Clients that predate it ignore it.
 
@@ -375,7 +380,8 @@ position in open air, over somewhere to land, if either:
 
 - it's within the farthest and highest jump the player can make from somewhere to stand: a run
   jump with Space held, taking off as late as coyote time allows. Its reach along the row and its
-  height are set in one place, which the client's jump and the server's check both read; or
+  height are set in one place, which the client's jump and the server's check both read, and
+  they're the player's own: higher with the hydraulic legs fitted (`player_state`'s `body`); or
 - it's lower than the last position the server kept on that map, and within that jump's reach of
   it along the row, as in a fall from any height, which lands safely.
 
@@ -406,6 +412,11 @@ where they stand, one of their `left` or of `player_state`'s `piles`. It takes i
 item, in order, that still fits under their carry limit, and skips any that doesn't, which stays in
 the pile with anything else left. The server sends the [`player_state`](#player_state) that follows,
 and ignores a `pick_up` with nothing in reach, or with only items that don't fit.
+
+It also reaches clues (S13): a clue whose cell is within half a tile of the player, and the clue
+in a jack whose `stand` tile they're on, with the datajack fitted. The nearer of a clue and a pile
+is taken, the pile if they're as near. A clue found writes each fact in it to the journal, and the
+server sends the [`journal`](#journal) that follows rather than a `player_state`.
 
 ### `sell`
 

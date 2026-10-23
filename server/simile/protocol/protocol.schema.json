@@ -1152,7 +1152,7 @@
     },
     "PickUpMessage": {
       "additionalProperties": false,
-      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile.",
+      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer\nclue is found instead, and so is a clue in the jack they stand at, with the datajack.",
       "properties": {
         "type": {
           "const": "pick_up",
@@ -1259,7 +1259,7 @@
     },
     "PlayerCollapsedMessage": {
       "additionalProperties": false,
-      "description": "The player starved and collapsed. They wake at home, at `position`, still hungry, with\ntheir lamp. Everything else they carried stays where they fell, in `player_state`'s `left`.",
+      "description": "The player starved and collapsed. They wake at home, at `position`, still hungry, with\ntheir lamp, switched off. Everything else they carried stays where they fell, in\n`player_state`'s `left`.",
       "properties": {
         "type": {
           "const": "player_collapsed",

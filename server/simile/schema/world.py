@@ -152,12 +152,15 @@ class Door(Model):
 
 
 class InteractableKind(StrEnum):
-    """What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles."""
+    """What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles.
+    A `jack` is a machine only the datajack works, such as the metro's dead terminal and its lift:
+    without one it's dead, and a link ending on one of its stand tiles can't be taken."""
 
     COUNTER = "counter"
     PAINTING = "painting"
     MACHINE = "machine"
     PLUG = "plug"
+    JACK = "jack"
 
 
 class Interactable(Model):
