@@ -8,7 +8,7 @@ from simile.conversation.telling import Stance
 from simile.persistence import investigation_of, player_of
 from simile.player.pickups import Claim, claimers_of
 from simile.protocol import JournalMessage, hub_of
-from simile.schema import PLAYER_ID
+from simile.schema import PLAYER_ID, HowKnown, Knower
 from simile.sim import LineSpoken, world_of
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
 from simile.story.content import Clue, load_story
@@ -50,6 +50,12 @@ class Recorder:
             for telling in talk.tellings.values()
             if telling.stance is Stance.TELL
             or (telling.stance is Stance.LIE and says(said, telling.knower.cover or ""))
+        ]
+        teller = Knower(id=line.speaker, how=HowKnown.TOLD, tells_from=0.0, cover=None)
+        told += [
+            self.journal.told(fact.fact(knowing, self.journal.now()), teller, name, lie=False)
+            for place in talk.places.values()
+            for fact, knowing in place.told()
         ]
         if any(told):
             self.changed()

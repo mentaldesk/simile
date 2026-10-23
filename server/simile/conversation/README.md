@@ -306,6 +306,18 @@ at the saved investigation, is the incident.
   fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
   `Temptation.fact_id`, and in `engine.lies` for B3.
 
+## Places
+
+What a resident knows of the village (#384, [`simile.story.town`](../story/README.md#the-town))
+comes up when the player asks about a place (`places.py`). Once the player's lines since the
+resident last spoke name one (the metro, the clinic, the scrap trader, the café, the noodle bar, the
+maker space, the gallery, the news terminals, the park, the square or the river: `PLACES`), the
+resident is set up, for the rest of the conversation, with a block for that place: each of its
+facts they know, each they've only heard as a rumour and say so, and for each they don't, that they
+don't know it. The block ends by telling them to give no other directions and to say they've no
+idea rather than guess. A resident turning the player down gets none. `PlayerTalk.places` has them,
+by the place's name, and the lifespan seeds `players.town_seed` from the cast.
+
 ## The flush
 
 S8: the infrared eye shows a flush on a resident's line that gives one of their cover stories for

@@ -15,6 +15,7 @@ from simile.behaviour import Activity
 from simile.conversation.engagement import accepts, engage, leaving
 from simile.conversation.engine import PLAYER, ConversationEngine, Talk, facing
 from simile.conversation.events import Direction, Facing, LineDrafted
+from simile.conversation.places import Asked, directions
 from simile.conversation.prompt import (
     Cue,
     Draft,
@@ -35,6 +36,7 @@ from simile.news.reactions import mentioned
 from simile.schema import PLAYER_ID, Conversation, CoreValue, Id, Line, Memory, NewsItem
 from simile.sim import ConversationStarted, LineSpoken
 from simile.social import strongly_against
+from simile.story.town import asked_about, known
 from simile.voice import speaking_rate
 from simile.voicing.distance import between
 
@@ -206,6 +208,8 @@ class PlayerTalk(Talk):
     """What the NPC has been set up to lie about, by key."""
     tellings: dict[Id, Telling] = field(default_factory=dict)
     """What the NPC was set up to say of each incident fact they know, by fact id."""
+    places: dict[str, Asked] = field(default_factory=dict)
+    """The places the player has asked the NPC about, by name."""
     joked: bool = False
     """Whether the NPC's last reply was told to joke."""
     refusing: bool = False
@@ -230,8 +234,10 @@ class PlayerConversations:
         article: Callable[[str], NewsItem | None] = lambda _: None,
         config: PlayerConfig = DEFAULT_PLAYER_CONFIG,
         seed: int | None = None,
+        town_seed: int = 0,
     ) -> None:
         self.engine = engine
+        self.town_seed = town_seed
         self.connected = connected
         self.article = article
         self.config = config
@@ -398,6 +404,7 @@ class PlayerConversations:
         recalled = self._recalled(npc, lines)
         self._tempt(talk, lines)
         self._ask(talk, lines, lies_only=talk.refusing)
+        self._places(talk, lines)
         seed = f"{talk.conversation.id}/{npc}/{len(lines)}"
         joke = jokes(party.npc.humour, seed, after_joke=talk.joked)
         talk.joked = bool(joke)
@@ -414,7 +421,10 @@ class PlayerConversations:
             mood=pressed.mood,
             errand=pressed.errand,
             detail=detailed(recalled, party.topics),
-            facts=told(talk.tellings.values(), engine.player.name),
+            facts=[
+                *told(talk.tellings.values(), engine.player.name),
+                *directions(talk.places.values(), engine.player.name),
+            ],
             lies=[
                 *(temptation.direction() for temptation in talk.lies.values()),
                 *([UNASKED] if any(t.stance is Stance.LIE for t in talk.tellings.values()) else []),
@@ -475,6 +485,15 @@ class PlayerConversations:
                 temptation = telling.temptation()
                 talk.lies[temptation.key] = temptation
                 engine.tell(talk.conversation.id, temptation, PLAYER_ID)
+
+    def _places(self, talk: PlayerTalk, lines: Sequence[Line]) -> None:
+        """Sets the NPC up with what they know of each place the player's latest lines name."""
+        said = since(talk.npc, lines)
+        if talk.refusing or not said:
+            return
+        knows = known(talk.parties[talk.npc].npc, self.town_seed)
+        for place in asked_about(said):
+            talk.places.setdefault(place.name, Asked(place, knows))
 
     def _recalled(self, npc: Id, lines: Sequence[Line]) -> list[Memory]:
         """What `npc` read about the articles the player has mentioned since `npc` last spoke."""

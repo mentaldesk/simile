@@ -138,4 +138,32 @@ the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), 
 
 The `journal` message goes to each client on connect and to all of them whenever it changes.
 
+- **Places.** What a resident tells the player of the old metro, the way down, the clinic or the
+  scrap trader, as they know it or as a rumour, is written as told, by the same rule as a truth
+  (see [*The town*](#the-town)). The metro's entry opens a lead to the way down.
+
 Every constant is in `StoryConfig`.
+
+## The town
+
+#384: what residents know of the village, in `town.py`. Each `TownFact` is something about a place
+and what it's for: the café, the noodle bar, the maker space, the gallery, the news terminals, the
+park, the square and the river promenade, then the old metro under the promenade, the stairway down
+to it, and the clinic and scrap trader below. Their ids start `town_`, so none is ever an
+incident's.
+
+Who knows what is drawn from the world's seed (the cast's, or 0 for the village in `content/`) and
+each resident, so it's the same on every start and nothing is saved. Each resident gets a time in
+the village, from none up to their adult years, and for each fact a roll against its chance of
+knowing it (`knows`) or only having heard it (`heard`), moved by:
+
+- **Time here** (`tenure`): an old hand is likelier to know it than a newcomer.
+- **Values**: Adventure, Open-mindedness and Connection make the metro's details likelier, Security
+  less likely. Connection helps with everything.
+- **Job, interests and street** (`words`, `near`): salvage, repair or the river, or living or
+  working on Banyan Row, make the metro likelier; whoever lives or works at a place knows it.
+
+Anyone who knows what's down there knows of the metro. Over many seeds most residents know every
+amenity, nearly all at least have heard of the metro, and a quarter or fewer know the way down, the
+clinic or the scrap trader, mostly as rumour.
+
