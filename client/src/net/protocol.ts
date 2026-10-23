@@ -38,14 +38,23 @@ export type JsonValue = unknown;
  */
 export type Face = 'south' | 'east';
 /**
- * What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.
+ * What a carried thing is for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a
+ * `part` for the doctor to fit with a bionic, found and never sold.
  */
-export type ItemKind = 'salvage' | 'food' | 'lamp';
+export type ItemKind = 'salvage' | 'food' | 'lamp' | 'part';
 /**
- * A part fitted in place of one of the player's own. The hydraulic legs replace their legs,
- * the datajack takes a vertebra, and the one infrared eye takes either eye.
+ * A part fitted in place of one of the player's own. Legs replace their legs, in grades: the
+ * hydraulic then spring legs jump higher, the sprint then blade legs run faster, and premium
+ * legs do both. The datajack takes a vertebra, and the one infrared eye takes either eye.
  */
-export type Bionic = 'hydraulic_legs' | 'datajack' | 'infrared_eye';
+export type Bionic =
+  | 'hydraulic_legs'
+  | 'datajack'
+  | 'infrared_eye'
+  | 'spring_legs'
+  | 'sprint_legs'
+  | 'blade_legs'
+  | 'premium_legs';
 export type BodyPart =
   'legs' | 'vertebra' | 'left_eye' | 'right_eye' | 'left_kidney' | 'right_kidney';
 /**

@@ -33,6 +33,7 @@ from simile.schema.npc import (
 )
 from simile.schema.player import (
     CARRY_LIMIT,
+    LEGS,
     PRESENT,
     SOLD,
     Bionic,
@@ -118,6 +119,7 @@ MODELS: tuple[type[Model], ...] = (
 __all__ = [
     "ARIS",
     "CARRY_LIMIT",
+    "LEGS",
     "MODELS",
     "PLAYER_ID",
     "PRESENT",

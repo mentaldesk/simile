@@ -8,6 +8,7 @@ from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from simile.schema import (
+    LEGS,
     MODELS,
     PRESENT,
     SOLD,
@@ -109,7 +110,7 @@ def test_humanity_is_never_saved() -> None:
 @pytest.mark.parametrize(
     ("bionic", "parts"),
     [
-        (Bionic.HYDRAULIC_LEGS, {"legs"}),
+        *((legs, {"legs"}) for legs in LEGS),
         (Bionic.DATAJACK, {"vertebra"}),
         (Bionic.INFRARED_EYE, {"left_eye", "right_eye"}),
     ],
@@ -121,6 +122,21 @@ def test_each_bionic_fits_only_in_place_of_its_part(bionic: Bionic, parts: set[s
             assert Body.model_validate({part: bionic.value}).bionics == [bionic]
         else:
             rejects(Body, {part: bionic.value}, f"{bionic} can't replace {part}")
+
+
+def test_every_grade_of_legs_is_a_bionic_that_takes_the_legs() -> None:
+    assert LEGS[0] is Bionic.HYDRAULIC_LEGS, "today's legs are the first grade, so saves keep them"
+    assert {bionic for bionic in Bionic if bionic.replaces == {"legs"}} == set(LEGS)
+    assert len({legs.humanity_cost for legs in LEGS}) == 1
+    assert Body.model_validate({"legs": "spring_legs"}).bionics == [Bionic.SPRING_LEGS]
+
+
+def test_a_part_is_an_item_found_for_the_doctor_to_fit() -> None:
+    part = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator", weight=2.0)
+
+    assert Item.model_validate(part.model_dump()) == part
+    assert part.charge is None and part.on is None
+    schema("Item").validate(part.model_dump(mode="json"))
 
 
 def test_a_body_part_names_each_part_of_the_body() -> None:

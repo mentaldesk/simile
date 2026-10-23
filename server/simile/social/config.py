@@ -3,7 +3,7 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from simile.schema import Aspect, Bionic, CoreValue, Signed, Unit
+from simile.schema import LEGS, Aspect, Bionic, CoreValue, Signed, Unit
 
 BASELINE_WEIGHTS: dict[Aspect, dict[CoreValue, float]] = {
     Aspect.LIKE: {
@@ -144,7 +144,7 @@ TOLERANCE_WEIGHTS: dict[CoreValue, float] = {
 
 STANDS_OUT: dict[Bionic, float] = {
     Bionic.INFRARED_EYE: 1.0,
-    Bionic.HYDRAULIC_LEGS: 0.75,
+    **dict.fromkeys(LEGS, 0.75),
     Bionic.DATAJACK: 0.5,
 }
 

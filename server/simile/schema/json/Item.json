@@ -1,11 +1,12 @@
 {
   "$defs": {
     "ItemKind": {
-      "description": "What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.",
+      "description": "What a carried thing is for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a\n`part` for the doctor to fit with a bionic, found and never sold.",
       "enum": [
         "salvage",
         "food",
-        "lamp"
+        "lamp",
+        "part"
       ],
       "title": "ItemKind",
       "type": "string"
