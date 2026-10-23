@@ -1,6 +1,7 @@
 """The abandoned metro station under the village: content/street/README.md's *The metro*."""
 
 from simile.schema import (
+    Bionic,
     Door,
     Facing,
     Interactable,
@@ -13,6 +14,7 @@ from simile.schema import (
     Tile,
     TileArea,
 )
+from simile.street.jump import OWN_JUMP
 from simile.street.plan import Pickup, Plan
 from simile.street.village import GROUND, Building, plug, street
 from simile.world.map import Light, SpotKind
@@ -40,8 +42,12 @@ HIGH_LEDGE = "metro_high_ledge"
 LIFT_FOOT = MapTile(map=METRO, x=100, y=GROUND)
 """Where the lift down to the sewers stops on the metro."""
 LEGS_ROWS = 3
-"""Rows up the high ledge assumes the hydraulic legs jump: one more than today's."""
+"""Rows up the high ledge is: out of the player's own jump, and in the hydraulic legs'."""
 LEDGE_SECRET = "metro_secret_ledge"
+ALCOVE_SECRET = "metro_secret_alcove"
+GANTRY = GROUND - 7
+"""The row the gantry over the west tunnel stands on, with three rows of room under its roof."""
+GANTRY_SECRET = "metro_secret_gantry"
 
 SALVAGE = "salvage"
 SECRET = "secret"
@@ -72,14 +78,20 @@ def light(plan: Plan, light_id: str, x: int, y: int, width: int, height: int, li
     plan.light.append(Light(light_id, area, lit))
 
 
-def salvage(plan: Plan, number: int, x: int, y: int) -> None:
-    plan.pickups.append(Pickup(f"metro_salvage_{number}", SALVAGE, x, y))
+def salvage(plan: Plan, number: int, x: int, y: int, needs: str | None = None) -> None:
+    plan.pickups.append(Pickup(f"metro_salvage_{number}", SALVAGE, x, y, needs=needs))
 
 
 def secret(
-    plan: Plan, secret_id: str, x: int, y: int, money: float = 0.0, item: Item | None = None
+    plan: Plan,
+    secret_id: str,
+    x: int,
+    y: int,
+    needs: str,
+    money: float = 0.0,
+    item: Item | None = None,
 ) -> None:
-    plan.pickups.append(Pickup(secret_id, SECRET, x, y, money, item))
+    plan.pickups.append(Pickup(secret_id, SECRET, x, y, money, item, needs))
 
 
 def flight(plan: Plan, foot: tuple[int, int], rows: int) -> None:
@@ -96,7 +108,7 @@ def entrance(plan: Plan) -> None:
     flight(plan, (7, HALL), HALL - LANDING)
     flight(plan, (22, GROUND), GROUND - HALL)
     catwalk(plan, 7, LANDING - 2, 2)
-    secret(plan, "metro_secret_stairwell", 8, LANDING - 2, money=25.0)
+    secret(plan, "metro_secret_stairwell", 8, LANDING - 2, OWN_JUMP, money=25.0)
     plan.piece("turnstile", 11, HALL, 2, 1)
     plan.piece("ticket_machine", 15, HALL - 1, 1, 2)
 
@@ -122,14 +134,15 @@ def platform(plan: Plan) -> None:
     plan.ladder((32, GROUND), GROUND - roof)
     salvage(plan, 1, 38, roof)
     catwalk(plan, 45, roof - 2, 8)
-    secret(plan, "metro_secret_catwalk", 52, roof - 2, money=40.0)
+    secret(plan, "metro_secret_catwalk", 52, roof - 2, OWN_JUMP, money=40.0)
     plan.piece("crates", 44, GROUND, 1, 1)
     plan.piece("metro_bench", 49, GROUND, 2, 1)
     plan.piece("tunnel_arch", 55, GROUND - 7, 3, 8)
 
 
 def tunnel(plan: Plan) -> None:
-    """The plug's alcove between dark stretches, and a climb up the wall to the alcove."""
+    """The gantry, the plug's alcove between dark stretches, and a climb up the wall."""
+    gantry(plan)
     plan.piece("pipes", 59, GROUND - 3, 12, 1)
     plan.piece("rubble", 60, GROUND, 2, 1)
     salvage(plan, 2, 63, GROUND)
@@ -141,12 +154,24 @@ def tunnel(plan: Plan) -> None:
     ledge = GROUND - 3
     plan.ladder((75, GROUND), GROUND - ledge)
     catwalk(plan, 76, ledge, 3)
-    salvage(plan, 4, 77, ledge)
     catwalk(plan, 81, ledge - 2, 2)
-    catwalk(plan, 85, ledge - 4, 2)
-    secret(plan, "metro_secret_alcove", 86, ledge - 4, item=RATION_PACK)
+    alcove = ledge - 7
+    catwalk(plan, 85, alcove, 2)
+    salvage(plan, 4, 85, alcove, needs=Bionic.SPRING_LEGS)
+    secret(plan, ALCOVE_SECRET, 86, alcove, Bionic.SPRING_LEGS, item=RATION_PACK)
     plan.piece("rubble", 79, GROUND, 2, 1)
     salvage(plan, 5, 83, GROUND)
+
+
+def gantry(plan: Plan) -> None:
+    """A gantry under a roof too low for a spring jump, over a gap only a sprint clears."""
+    catwalk(plan, 73, GANTRY + 2, 2)
+    catwalk(plan, 69, GANTRY, 4)
+    catwalk(plan, 61, GANTRY, 3)
+    plan.fill(58, GANTRY - 4, 16, 1)
+    for x in (58, 66):
+        plan.piece("pipes", x, GANTRY - 4, 8, 1)
+    secret(plan, GANTRY_SECRET, 61, GANTRY, Bionic.SPRINT_LEGS, money=60.0)
 
 
 def depot(plan: Plan) -> list[Plan]:
@@ -169,8 +194,8 @@ def depot(plan: Plan) -> list[Plan]:
     area = TileArea(x=106, y=ledge, width=4, height=1)
     machine(plan, HIGH_LEDGE, "High ledge", area, [Tile(x=x, y=ledge) for x in range(106, 110)])
     plan.piece("crates", 108, ledge, 1, 1)
-    salvage(plan, 6, 108, ledge)
-    secret(plan, LEDGE_SECRET, 106, ledge, money=60.0)
+    salvage(plan, 6, 108, ledge, needs=Bionic.HYDRAULIC_LEGS)
+    secret(plan, LEDGE_SECRET, 106, ledge, Bionic.HYDRAULIC_LEGS, money=60.0)
     return clinic.floors
 
 
@@ -180,7 +205,8 @@ def lighting(plan: Plan) -> None:
     light(plan, "metro_entrance", 0, 0, 19, height, lit=True)
     light(plan, "metro_vault", 19, 0, 39, GROUND - 3, lit=False)
     light(plan, "metro_platform", 19, GROUND - 3, 39, height - GROUND + 3, lit=True)
-    light(plan, "metro_tunnel_west", 58, 0, 13, height, lit=False)
+    light(plan, "metro_gantry", 58, 0, 13, GANTRY + 2, lit=True)
+    light(plan, "metro_tunnel_west", 58, GANTRY + 2, 13, height - GANTRY - 2, lit=False)
     light(plan, "metro_maintenance", 71, 0, 3, height, lit=True)
     light(plan, "metro_tunnel_east", 74, 0, 13, height, lit=False)
     light(plan, "metro_depot", 87, 0, WIDTH - 87, height, lit=True)

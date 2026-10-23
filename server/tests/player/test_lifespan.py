@@ -175,13 +175,13 @@ def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_
         economy = economy_of(app)
         ledger = economy.ledger
 
-    assert len(greeted["piles"]) == 10
+    assert len(greeted["piles"]) == 11
     assert {"at": {"map": "metro", "x": 38, "y": 12}, "items": [wire]} in greeted["piles"]
     assert salvaged["player"]["items"][1:] == [wire]
     assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
-    assert len(salvaged["piles"]) == 9
+    assert len(salvaged["piles"]) == 10
     assert found["player"]["money"] == 40
-    assert len(found["piles"]) == 8
+    assert len(found["piles"]) == 9
     assert at_the_stall["buyer"] == {
         "place": "scrap_stall",
         "name": "The scrap trader's stall",

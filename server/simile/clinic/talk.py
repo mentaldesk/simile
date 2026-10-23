@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from simile.clinic.clinic import Clinic
-from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig
+from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig, Offer
 from simile.conversation import duration, parse_reply
 from simile.llm import LLMClient, LLMError
-from simile.schema import PLAYER_ID, SOLD, Bionic, Conversation, CoreValue, Id, Line, Npc
+from simile.schema import LEGS, PLAYER_ID, SOLD, Bionic, Conversation, CoreValue, Id, Line, Npc
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social.bionics import LOOKS
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 PLAYER_NAME = "Visitor"
 SENTENCE = re.compile(r"(?<=[.!?…])\s+(?=[A-Z\"“])")
 REPLACES: dict[Bionic, str] = {
-    Bionic.HYDRAULIC_LEGS: "their own legs",
+    **dict.fromkeys(LEGS, "their own legs"),
     Bionic.DATAJACK: "a vertebra",
     Bionic.INFRARED_EYE: "one of their eyes",
 }
@@ -190,7 +190,8 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
     most, least = _values(ranked[:3]), _values(ranked[-3:])
     habits = f"Your habits: {_listed(doctor.mannerisms)}." if doctor.mannerisms else ""
     fits = [
-        f"- {offer.name}, {_money(offer.price)}, in place of {REPLACES[bionic]}: they {offer.does}."
+        f"- {offer.name}, {_money(offer.price)}, in place of {_in_place_of(bionic, offer, config)}:"
+        f" they {offer.does}."
         for bionic, offer in config.offers.items()
     ]
     bought = ", ".join(f"{id.replace('_', ' ')} {_money(price)}" for id, price in salvage.items())
@@ -220,6 +221,14 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "short sentences, with no name label and no stage directions.",
         ]
     )
+
+
+def _in_place_of(bionic: Bionic, offer: Offer, config: ClinicConfig) -> str:
+    if not offer.after:
+        return REPLACES[bionic]
+    legs = " or ".join(config.offers[before].name.lower() for before in offer.after)
+    brought = f", and only with an {offer.needs.name} they bring" if offer.needs else ""
+    return f"their {legs}, which you take back{brought}"
 
 
 def turn_prompt(doctor: Npc, clinic: Clinic, lines: Sequence[Line], cue: Cue) -> str:

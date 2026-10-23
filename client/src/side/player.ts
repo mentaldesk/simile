@@ -82,8 +82,10 @@ export class SidePlayer {
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
 
-  /** Tiles the feet rise with Space held: higher on the hydraulic legs. */
+  /** Tiles the feet rise with Space held: higher on the spring legs. */
   rise = JUMP_RISE;
+  /** Tiles a second running: faster on the sprint legs. */
+  runSpeed = RUN_PACE * PLAYER_SPEED;
   /** With the datajack fitted, a link from a jack, the lift's, can be taken. */
   datajack = false;
 
@@ -159,7 +161,7 @@ export class SidePlayer {
 
   /** Tiles a second along a street or a floor. */
   get speed(): number {
-    return PLAYER_SPEED * (1 + (RUN_PACE - 1) * this.run);
+    return PLAYER_SPEED + (this.runSpeed - PLAYER_SPEED) * this.run;
   }
 
   /** E takes a door; up or down, once let go since arriving, the lift or the nearest flight or ladder that way. */

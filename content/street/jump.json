@@ -1,20 +1,49 @@
 {
   "rise": 2.3,
   "rise_seconds": 0.38,
+  "run": 5.2,
   "fall_gravity": 1.3,
   "cut": 0.45,
   "coyote_seconds": 0.1,
   "buffer_seconds": 0.12,
   "foot": 0.25,
   "body": 1.7,
-  "cells": 4,
-  "rows": 2,
   "frame_seconds": 0.1,
+  "rows": 2,
+  "cells": 4,
   "reach": 5.499,
   "legs": {
-    "rise": 3.3,
-    "rise_seconds": 0.45517316341767355,
-    "rows": 3,
-    "reach": 6.233
+    "hydraulic_legs": {
+      "rise": 4.3,
+      "rise_seconds": 0.5195817716118459,
+      "rows": 4,
+      "cells": 5,
+      "reach": 6.861
+    },
+    "spring_legs": {
+      "rise": 6.3,
+      "rise_seconds": 0.6289121041788023,
+      "rows": 6,
+      "cells": 6,
+      "reach": 7.929
+    },
+    "sprint_legs": {
+      "run": 7.8,
+      "cells": 6,
+      "reach": 7.874
+    },
+    "blade_legs": {
+      "run": 10.4,
+      "cells": 8,
+      "reach": 10.248
+    },
+    "premium_legs": {
+      "rise": 6.3,
+      "rise_seconds": 0.6289121041788023,
+      "run": 10.4,
+      "rows": 6,
+      "cells": 13,
+      "reach": 15.107
+    }
   }
 }

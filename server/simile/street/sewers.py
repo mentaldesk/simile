@@ -1,6 +1,6 @@
 """A landing at the foot of the metro's maintenance lift, a placeholder until S9's sewers."""
 
-from simile.schema import Door, MapTile, TileArea
+from simile.schema import Door, Item, ItemKind, MapTile, TileArea
 from simile.street.metro import LIFT_FOOT, METRO
 from simile.street.plan import Plan
 from simile.street.village import GROUND, street
@@ -10,6 +10,8 @@ SEWERS = "sewers"
 WIDTH = 12
 LANDING = MapTile(map=SEWERS, x=2, y=GROUND)
 """Where the lift from the metro stops."""
+APEX_ACTUATOR = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator", weight=2.0)
+"""The part premium legs need, from Apex's own stock: S9 places it in a secret here."""
 
 
 def sewers(metro: Plan) -> Plan:

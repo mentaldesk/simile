@@ -47,14 +47,17 @@ class Clinic:
         return {KIDNEYS[0]: self.config.kidney}
 
     def fittings(self) -> list[Fitting]:
-        """The bionics the doctor has in stock and could fit in place of a part still present."""
+        """The bionics in stock the doctor could fit now, in place of a part or the legs before."""
         body, offers = self.player.body, self.config.offers
+        carried = {item.id for item in self.player.items}
         fittings = []
         for bionic, offer in offers.items():
             fitted = bionic in body.bionics
+            takes = offer.after or (PRESENT,)
             parts = [part for part in PARTS if part in bionic.replaces]
-            free = [part for part in parts if getattr(body, part) == PRESENT]
-            if fitted or not free or self.config.stock.get(bionic, 0) < 1:
+            free = [part for part in parts if getattr(body, part) in takes]
+            short = offer.needs is not None and offer.needs.id not in carried
+            if fitted or short or not free or self.config.stock.get(bionic, 0) < 1:
                 continue
             fittings.append(Fitting(bionic=bionic, name=offer.name, price=offer.price, parts=free))
         return fittings
@@ -81,6 +84,10 @@ class Clinic:
         if fitting.price > self.player.money + 1e-9:
             return False
         self.economy.pay(PLAYER, OUTSIDE, fitting.price, Kind.PURCHASE, self.config.place)
+        if needs := self.config.offers[bionic].needs:
+            items = list(self.player.items)
+            items.remove(next(item for item in items if item.id == needs.id))
+            self.player.items = items
         self._change(part, bionic)
         logger.info("%s  The doctor fits %s in place of the player's %s", self.clock, bionic, part)
         return True

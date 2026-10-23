@@ -88,6 +88,7 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_legs(make_package: Mak
     assert at_the_clinic["buyer"]["parts"] == {"left_kidney": 100.0}
     assert [f["bionic"] for f in at_the_clinic["buyer"]["fittings"]] == [
         "hydraulic_legs",
+        "sprint_legs",
         "datajack",
         "infrared_eye",
     ]
@@ -95,7 +96,11 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_legs(make_package: Mak
     assert "parts" not in sold["buyer"]
     assert fitted["player"]["body"]["legs"] == "hydraulic_legs"
     assert fitted["player"]["money"] == 20
-    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == ["datajack", "infrared_eye"]
+    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == [
+        "spring_legs",
+        "datajack",
+        "infrared_eye",
+    ]
     entries = [(e.kind, e.payer, e.payee, e.amount) for e in economy.ledger.entries]
     assert entries == [
         (Kind.SALVAGE, OUTSIDE, PLAYER, 100),

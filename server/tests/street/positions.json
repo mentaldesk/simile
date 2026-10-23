@@ -3924,7 +3924,7 @@
   "y": 15,
   "last": null,
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3936,7 +3936,7 @@
    15
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3948,7 +3948,7 @@
    15
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3960,7 +3960,7 @@
    13.35
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3972,7 +3972,7 @@
    12.37
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3984,7 +3984,7 @@
    11.88
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -3996,7 +3996,7 @@
    11.7
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a run jump onto the high ledge on the hydraulic legs",
@@ -4008,7 +4008,7 @@
    11.95
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4017,7 +4017,7 @@
   "y": 15,
   "last": null,
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4029,7 +4029,7 @@
    15
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4041,7 +4041,7 @@
    13.35
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4053,7 +4053,7 @@
    12.37
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4065,7 +4065,7 @@
    11.88
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4077,7 +4077,7 @@
    11.7
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4089,7 +4089,7 @@
    11.95
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4101,7 +4101,7 @@
    12.62
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
  },
  {
   "why": "a jump straight up by the lift on the hydraulic legs",
@@ -4113,7 +4113,1018 @@
    13.7
   ],
   "kept": true,
-  "legs": true
+  "legs": "hydraulic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 71.95,
+  "y": 8,
+  "last": null,
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 71.62,
+  "y": 8,
+  "last": [
+   71.95,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 71.14,
+  "y": 8,
+  "last": [
+   71.62,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 70.53,
+  "y": 8,
+  "last": [
+   71.14,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 69.88,
+  "y": 8,
+  "last": [
+   70.53,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 69.23,
+  "y": 8,
+  "last": [
+   69.88,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 68.58,
+  "y": 8,
+  "last": [
+   69.23,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 67.93,
+  "y": 7.26,
+  "last": [
+   68.58,
+   8
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 67.28,
+  "y": 6.54,
+  "last": [
+   67.93,
+   7.26
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 66.63,
+  "y": 6.04,
+  "last": [
+   67.28,
+   6.54
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 65.98,
+  "y": 5.76,
+  "last": [
+   66.63,
+   6.04
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 65.33,
+  "y": 5.71,
+  "last": [
+   65.98,
+   5.76
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 64.68,
+  "y": 5.92,
+  "last": [
+   65.33,
+   5.71
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 64.03,
+  "y": 6.42,
+  "last": [
+   64.68,
+   5.92
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 63.38,
+  "y": 7.2,
+  "last": [
+   64.03,
+   6.42
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the sprint legs",
+  "map": "metro",
+  "x": 62.86,
+  "y": 8,
+  "last": [
+   63.38,
+   7.2
+  ],
+  "kept": true,
+  "legs": "sprint_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 71.95,
+  "y": 8,
+  "last": null,
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 71.56,
+  "y": 8,
+  "last": [
+   71.95,
+   8
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 70.95,
+  "y": 8,
+  "last": [
+   71.56,
+   8
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 70.14,
+  "y": 8,
+  "last": [
+   70.95,
+   8
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 69.27,
+  "y": 8,
+  "last": [
+   70.14,
+   8
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 68.4,
+  "y": 7.1,
+  "last": [
+   69.27,
+   8
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 67.54,
+  "y": 6.42,
+  "last": [
+   68.4,
+   7.1
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 66.67,
+  "y": 5.97,
+  "last": [
+   67.54,
+   6.42
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 65.8,
+  "y": 5.73,
+  "last": [
+   66.67,
+   5.97
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 64.94,
+  "y": 5.73,
+  "last": [
+   65.8,
+   5.73
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 64.07,
+  "y": 5.99,
+  "last": [
+   64.94,
+   5.73
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 63.2,
+  "y": 6.55,
+  "last": [
+   64.07,
+   5.99
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 62.34,
+  "y": 7.39,
+  "last": [
+   63.2,
+   6.55
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the blade legs",
+  "map": "metro",
+  "x": 61.82,
+  "y": 8,
+  "last": [
+   62.34,
+   7.39
+  ],
+  "kept": true,
+  "legs": "blade_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 71.95,
+  "y": 8,
+  "last": null,
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 71.56,
+  "y": 8,
+  "last": [
+   71.95,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 70.95,
+  "y": 8,
+  "last": [
+   71.56,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 70.14,
+  "y": 8,
+  "last": [
+   70.95,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 69.27,
+  "y": 8,
+  "last": [
+   70.14,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 68.4,
+  "y": 8,
+  "last": [
+   69.27,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 67.54,
+  "y": 6.91,
+  "last": [
+   68.4,
+   8
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 66.67,
+  "y": 6.42,
+  "last": [
+   67.54,
+   6.91
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 65.8,
+  "y": 6.21,
+  "last": [
+   66.67,
+   6.42
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 64.94,
+  "y": 6.3,
+  "last": [
+   65.8,
+   6.21
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 64.07,
+  "y": 6.67,
+  "last": [
+   64.94,
+   6.3
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 63.2,
+  "y": 7.33,
+  "last": [
+   64.07,
+   6.67
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "a tapped jump across the gantry's gap on the premium legs",
+  "map": "metro",
+  "x": 62.51,
+  "y": 8,
+  "last": [
+   63.2,
+   7.33
+  ],
+  "kept": true,
+  "legs": "premium_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 81.04,
+  "y": 10,
+  "last": null,
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 81.26,
+  "y": 10,
+  "last": [
+   81.04,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 81.48,
+  "y": 10,
+  "last": [
+   81.26,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 81.69,
+  "y": 10,
+  "last": [
+   81.48,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 81.91,
+  "y": 10,
+  "last": [
+   81.69,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 82.13,
+  "y": 10,
+  "last": [
+   81.91,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 82.34,
+  "y": 10,
+  "last": [
+   82.13,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 82.56,
+  "y": 10,
+  "last": [
+   82.34,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 82.78,
+  "y": 8.44,
+  "last": [
+   82.56,
+   10
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 82.99,
+  "y": 7.1,
+  "last": [
+   82.78,
+   8.44
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 83.21,
+  "y": 5.99,
+  "last": [
+   82.99,
+   7.1
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 83.43,
+  "y": 5.09,
+  "last": [
+   83.21,
+   5.99
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 83.64,
+  "y": 4.42,
+  "last": [
+   83.43,
+   5.09
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 83.86,
+  "y": 3.96,
+  "last": [
+   83.64,
+   4.42
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 84.08,
+  "y": 3.73,
+  "last": [
+   83.86,
+   3.96
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 84.29,
+  "y": 3.73,
+  "last": [
+   84.08,
+   3.73
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 84.51,
+  "y": 4,
+  "last": [
+   84.29,
+   3.73
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 84.73,
+  "y": 4.56,
+  "last": [
+   84.51,
+   4
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "up the tunnel wall to the alcove on the spring legs",
+  "map": "metro",
+  "x": 84.86,
+  "y": 5,
+  "last": [
+   84.73,
+   4.56
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 100.05,
+  "y": 15,
+  "last": null,
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 100.32,
+  "y": 15,
+  "last": [
+   100.05,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 100.67,
+  "y": 15,
+  "last": [
+   100.32,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 101.08,
+  "y": 15,
+  "last": [
+   100.67,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 101.52,
+  "y": 15,
+  "last": [
+   101.08,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 101.95,
+  "y": 15,
+  "last": [
+   101.52,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 102.38,
+  "y": 15,
+  "last": [
+   101.95,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 102.82,
+  "y": 15,
+  "last": [
+   102.38,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 103.25,
+  "y": 14.67,
+  "last": [
+   102.82,
+   15
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 103.68,
+  "y": 13.16,
+  "last": [
+   103.25,
+   14.67
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 104.12,
+  "y": 11.86,
+  "last": [
+   103.68,
+   13.16
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 104.55,
+  "y": 10.79,
+  "last": [
+   104.12,
+   11.86
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 104.98,
+  "y": 9.94,
+  "last": [
+   104.55,
+   10.79
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 105.42,
+  "y": 9.31,
+  "last": [
+   104.98,
+   9.94
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 105.85,
+  "y": 8.9,
+  "last": [
+   105.42,
+   9.31
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 106.28,
+  "y": 8.71,
+  "last": [
+   105.85,
+   8.9
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 106.72,
+  "y": 8.76,
+  "last": [
+   106.28,
+   8.71
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 107.15,
+  "y": 9.09,
+  "last": [
+   106.72,
+   8.76
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 107.58,
+  "y": 9.7,
+  "last": [
+   107.15,
+   9.09
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 108.02,
+  "y": 10.61,
+  "last": [
+   107.58,
+   9.7
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 108.45,
+  "y": 11.8,
+  "last": [
+   108.02,
+   10.61
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring legs",
+  "map": "metro",
+  "x": 108.54,
+  "y": 12,
+  "last": [
+   108.45,
+   11.8
+  ],
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "a jump straight up by the clinic on the spring legs",
+  "map": "metro",
+  "x": 92,
+  "y": 9.0,
+  "last": null,
+  "kept": true,
+  "legs": "spring_legs"
+ },
+ {
+  "why": "as high by the clinic on the hydraulic legs",
+  "map": "metro",
+  "x": 92,
+  "y": 9.0,
+  "last": null,
+  "kept": false,
+  "legs": "hydraulic_legs"
  },
  {
   "why": "as high by the lift without the hydraulic legs",
