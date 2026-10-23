@@ -3,6 +3,7 @@ import { maps } from './assets';
 import { isClinic } from './buyers';
 import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
+import { jacked, leadsAway } from './jacks';
 import { mapOf } from './map';
 import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
@@ -10,7 +11,7 @@ import { terminalAt, terminalsOn, type Terminal } from './terminals';
 /** Something E uses, `tiles` along the street from the player. */
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
-  | { kind: 'counter' | 'painting'; tiles: number; interactable: Interactable }
+  | { kind: 'counter' | 'painting' | 'jack'; tiles: number; interactable: Interactable }
   | { kind: 'mural'; tiles: number; wall: Wall }
   | { kind: 'pile'; tiles: number; pile: Pile }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
@@ -24,6 +25,10 @@ export type Reachables = {
   piles(): readonly Pile[];
   buyer(): Buyer | undefined;
   clues: readonly Clue[];
+  /** Whether the datajack is fitted. */
+  jacked?: () => boolean;
+  /** Whether a link leaves from the jack's stand tile, for E to take once it works. */
+  leadsAway?: (jack: Interactable) => boolean;
 };
 
 /** Murals only count while a scene draws them, as for the mural panel. */
@@ -34,6 +39,8 @@ export const reachables: Reachables = {
   piles: () => [...(playerState.latest?.player.left ?? []), ...(playerState.latest?.piles ?? [])],
   buyer: () => playerState.latest?.buyer ?? undefined,
   clues,
+  jacked: () => jacked(playerState.latest?.player.body),
+  leadsAway,
 };
 
 /** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
@@ -50,7 +57,11 @@ export function pileInReach(position: Position, piles: readonly Pile[]): { pile:
   return best;
 }
 
-const isUsed = (kind: string): kind is 'counter' | 'painting' => kind === 'counter' || kind === 'painting';
+const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
+  kind === 'counter' || kind === 'painting' || kind === 'jack';
+
+/** A jack is used with E, unless it works and a link leaves from it, which E takes instead. */
+const opens = (from: Reachables, jack: Interactable) => !!from.jacked?.() && !!from.leadsAway?.(jack);
 
 /** What E can use where the player stands, nearest first. */
 export function inReach(position: Position | undefined, from: Reachables = reachables): Reachable[] {
@@ -63,7 +74,7 @@ export function inReach(position: Position | undefined, from: Reachables = reach
     found.push({ kind: 'terminal', tiles, terminal });
   }
   const interactable = from.interactableAt(mapOf(position), position);
-  if (interactable && isUsed(interactable.kind)) {
+  if (interactable && isUsed(interactable.kind) && !(interactable.kind === 'jack' && opens(from, interactable))) {
     const tiles = Math.min(...interactable.stand.map(({ x }) => Math.abs(x + 0.5 - along)));
     found.push({ kind: interactable.kind, tiles, interactable });
   }

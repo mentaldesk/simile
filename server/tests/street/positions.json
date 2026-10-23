@@ -3916,5 +3916,236 @@
   "y": 4,
   "last": null,
   "kept": false
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 101,
+  "y": 15,
+  "last": null,
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 103.04,
+  "y": 15,
+  "last": [
+   101,
+   15
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 103.82,
+  "y": 13.35,
+  "last": [
+   103.04,
+   15
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 104.42,
+  "y": 12.37,
+  "last": [
+   103.82,
+   13.35
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 104.94,
+  "y": 11.88,
+  "last": [
+   104.42,
+   12.37
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 105.55,
+  "y": 11.7,
+  "last": [
+   104.94,
+   11.88
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 106.07,
+  "y": 11.95,
+  "last": [
+   105.55,
+   11.7
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a run jump onto the high ledge on the hydraulic legs",
+  "map": "metro",
+  "x": 106.16,
+  "y": 12,
+  "last": [
+   106.07,
+   11.95
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 15,
+  "last": null,
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 13.35,
+  "last": [
+   99,
+   15
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 12.37,
+  "last": [
+   99,
+   13.35
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.88,
+  "last": [
+   99,
+   12.37
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.7,
+  "last": [
+   99,
+   11.88
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.95,
+  "last": [
+   99,
+   11.7
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 12.62,
+  "last": [
+   99,
+   11.95
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 13.7,
+  "last": [
+   99,
+   12.62
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "a jump straight up by the lift on the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 15,
+  "last": [
+   99,
+   13.7
+  ],
+  "kept": true,
+  "legs": true
+ },
+ {
+  "why": "as high by the lift without the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.88,
+  "last": [
+   99,
+   15
+  ],
+  "kept": false
+ },
+ {
+  "why": "as high by the lift without the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.7,
+  "last": [
+   99,
+   15
+  ],
+  "kept": false
+ },
+ {
+  "why": "as high by the lift without the hydraulic legs",
+  "map": "metro",
+  "x": 99,
+  "y": 11.95,
+  "last": [
+   99,
+   15
+  ],
+  "kept": false
  }
 ]

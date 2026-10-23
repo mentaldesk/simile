@@ -10,9 +10,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour.events import GoalChosen
+    from simile.persistence import player_of
     from simile.protocol import PlayerMoveMessage, hub_of
     from simile.schema import PLAYER_ID, Id
     from simile.sim import world_of
+    from simile.street.jump import jump_of
     from simile.street.moves import possible
     from simile.world.movement import Point, movement_of
     from simile.world.spots import indifferent, purpose_of
@@ -27,7 +29,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
             return
         last = movement.entities().get(PLAYER_ID)
         kept = (last.x, last.y) if last is not None and last.map == position.map else None
-        if town.kind is not None and not possible(town, position.x, position.y, kept):
+        jump = jump_of(player_of(app).body)
+        if town.kind is not None and not possible(town, position.x, position.y, kept, jump):
             logger.warning("Ignored a player_move to where nobody could be: %s", position)
             return
         movement.track(PLAYER_ID, Point(position.x, position.y, position.map))

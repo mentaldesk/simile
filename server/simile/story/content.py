@@ -76,6 +76,8 @@ NOTES = "aris_notes"
 """The clue that holds Aris's notes."""
 DOOR = "door_frame"
 """The clue the attackers left behind."""
+TERMINAL = "metro_terminal"
+"""The metro's dead terminal, a clue only the datajack reads."""
 
 
 @cache

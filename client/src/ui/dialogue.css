@@ -33,6 +33,17 @@
   color: #1d2b26;
 }
 
+/* The infrared eye's flush: warm cheeks on the speaker's line. */
+.dialogue-bubble-flushed {
+  border-color: #b8322a;
+  box-shadow: 0 0 6px 1px rgba(232, 72, 56, 0.75);
+}
+
+.dialogue-bubble-flushed::before {
+  content: '◉ ';
+  color: #e04a3a;
+}
+
 .dialogue-bubble-thinking {
   animation: dialogue-thinking 0.8s ease-in-out infinite alternate;
 }

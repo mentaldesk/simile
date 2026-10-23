@@ -50,7 +50,13 @@ function liftWays(village: Village, map: SideMap, cell: number, row: number, x: 
 
 /** What the player can take from `position` on `map`: a door and the lift from the cell they're on, then stairs and
  * ladders with an end within `CLIMB_REACH` along the row, nearest first. */
-export function waysNear(village: Village, map: SideMap, runs: readonly Run[], position: Cell): Way[] {
+export function waysNear(
+  village: Village,
+  map: SideMap,
+  runs: readonly Run[],
+  position: Cell,
+  locked: (link: Link) => boolean = () => false,
+): Way[] {
   const cell = Math.floor(position.x + 0.5);
   const row = Math.round(position.y);
   const onCell: Way[] = [];
@@ -60,6 +66,7 @@ export function waysNear(village: Village, map: SideMap, runs: readonly Run[], p
     return at.y === row && tiles < CLIMB_REACH && walkableBetween(map, cell, at.x, row) ? tiles : undefined;
   };
   for (const link of map.links) {
+    if (locked(link)) continue;
     const at = { x: link.x, y: link.y };
     if (link.kind === 'door') {
       if (link.x === cell && link.y === row) onCell.push({ kind: 'door', link, at, tiles: Math.abs(position.x - link.x) });

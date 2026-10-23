@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { playerState, server, type Position } from '../net';
 import { maps } from '../world/assets';
 import type { Interactable } from '../world/interactables';
+import { deadJack, jacked } from '../world/jacks';
 import { muralWalls } from '../world/murals';
 import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
@@ -118,7 +119,8 @@ export class DialogueScene extends Phaser.Scene {
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
-    this.counter.update(used?.kind === 'counter' ? used.interactable : undefined, !this.chat.isOpen);
+    const counter = used?.kind === 'counter' || used?.kind === 'jack' ? used.interactable : undefined;
+    this.counter.update(counter, !this.chat.isOpen);
     this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper());
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
@@ -149,11 +151,18 @@ export class DialogueScene extends Phaser.Scene {
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
+    else if (used?.kind === 'jack') this.useJack(used.interactable);
     else if (used?.kind === 'clinic' && playerState.latest) {
       this.murals.close();
       this.news.close();
       this.clinic.open(used.buyer, playerState.latest.player, this.keeper());
     }
+  }
+
+  /** With the datajack, E at a jack finds the clue in it, as at a clue; without, it's dead. */
+  private useJack(jack: Interactable): void {
+    if (!jacked(playerState.latest?.player.body)) this.counter.flash(deadJack(jack));
+    else lookAtClue((message) => server.send(message), this.journal, this.help);
   }
 
   /** Whoever the player could talk to at the clinic: the doctor, once they're ringed. */

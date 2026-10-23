@@ -1,14 +1,23 @@
 import table from '../../../content/street/jump.json';
+import { fitted } from '../dolls/bionics';
+import type { Body } from '../net';
 import { climbAt, isSolid, type SideMap } from './maps';
 
 /** The jump the server checks positions by, from server/simile/street/jump.py. */
 export const JUMP_TABLE = table;
+/** The hydraulic legs' jump, a row higher under the same gravity. */
+export const LEGS_TABLE = { ...table, ...table.legs };
+export type JumpTable = typeof JUMP_TABLE | typeof LEGS_TABLE;
 /** Tiles the feet rise with Space held, in `JUMP_RISE_SECONDS`. */
 export const JUMP_RISE = table.rise;
 export const JUMP_RISE_SECONDS = table.rise_seconds;
 /** Tiles a second a second, rising with Space held. */
 export const GRAVITY = (2 * JUMP_RISE) / JUMP_RISE_SECONDS ** 2;
-export const JUMP_SPEED = GRAVITY * JUMP_RISE_SECONDS;
+/** The jump the player makes on their own legs, or on the hydraulic legs once fitted. */
+export const jumpOf = (body?: Body): JumpTable => (fitted(body).includes('hydraulic_legs') ? LEGS_TABLE : JUMP_TABLE);
+
+/** Tiles a second up at take-off, to rise `rise` tiles with Space held. */
+export const jumpSpeed = (rise: number): number => Math.sqrt(2 * GRAVITY * rise);
 /** Times `GRAVITY` falling, or once Space is let go, so a jump comes down quicker than it goes up. */
 export const FALL_GRAVITY = table.fall_gravity;
 /** Of its speed up a jump keeps when Space is let go on the way up. */

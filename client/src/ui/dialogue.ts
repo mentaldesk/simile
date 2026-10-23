@@ -40,7 +40,7 @@ export class Dialogue {
       }),
       this.server.on('conversation_started', ({ conversation }) => this.started(conversation)),
       this.server.on('conversation_ended', ({ conversation_id }) => this.ended(conversation_id)),
-      this.server.on('line', ({ line }) => this.hear(line)),
+      this.server.on('line', ({ line, flushed }) => this.hear(line, flushed ?? false)),
     ];
     return () => unsubscribes.forEach((unsubscribe) => unsubscribe());
   }
@@ -67,7 +67,7 @@ export class Dialogue {
     return entityId === PLAYER_ID ? 'You' : (this.names.get(entityId) ?? entityId);
   }
 
-  hear(line: Line): boolean {
+  hear(line: Line, flushed = false): boolean {
     const conversation = line.conversation_id;
     const before = this.latest.get(conversation);
     const held = this.held.get(conversation);
@@ -82,7 +82,7 @@ export class Dialogue {
     if (!heard) return false;
     const text = continues ? joined(before.text, line.text) : line.text;
     this.latest.set(conversation, { speaker: line.speaker, text });
-    this.bubbles.show(line.speaker, text, line.duration, partner);
+    this.bubbles.show(line.speaker, text, line.duration, partner, Date.now(), flushed);
     const entry = {
       speaker: line.speaker,
       name: this.nameOf(line.speaker),

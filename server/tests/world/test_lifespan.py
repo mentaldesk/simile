@@ -9,8 +9,9 @@ from simile.app import create_app
 from simile.behaviour import GoalChosen
 from simile.memory import memory_of
 from simile.npc import load_npcs
+from simile.persistence import player_of
 from simile.protocol import hub_of
-from simile.schema import PLAYER_ID, MapTile
+from simile.schema import PLAYER_ID, Bionic, Body, MapTile
 from simile.sim import world_of
 from simile.social import meet
 from simile.world import Point, movement_of
@@ -84,6 +85,20 @@ def test_keeps_a_jump_and_a_fall_where_they_are(make_package: MakePackage) -> No
             assert movement.position(PLAYER_ID) == Point(x, y, "lychee_lane")
         send_moves(app, (20, 13.1, "high_street"))
         assert movement.position(PLAYER_ID) == Point(20, 13.1, "high_street")
+
+
+@pytest.mark.parametrize("legs", [False, True], ids=["own legs", "hydraulic legs"])
+def test_keeps_a_jump_a_row_higher_only_with_the_hydraulic_legs(
+    make_package: MakePackage, legs: bool
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        if legs:
+            player_of(app).body = Body(legs=Bionic.HYDRAULIC_LEGS)
+        send_moves(app, (100, 15, "metro"), (100, 11.9, "metro"))
+
+        assert (movement_of(app).position(PLAYER_ID) == Point(100, 11.9, "metro")) is legs
 
 
 @pytest.mark.parametrize(

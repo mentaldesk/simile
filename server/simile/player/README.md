@@ -51,8 +51,8 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   | `metro_salvage_6` | The high ledge, for the legs | Servo motor | 3 |
 
   That's 12.5 kg, and with the lamp they carry 9 kg more, so it takes more than one trip.
-- **Secrets** are `secret` pickups holding money, an item or both, as the map says: 25 and 40
-  money and a ration pack in the metro.
+- **Secrets** are `secret` pickups holding money, an item or both, as the map says: 25, 40 and 60
+  money and a ration pack in the metro, the 60 on the high ledge only the hydraulic legs reach.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
   fits under their carry limit, in order. Money weighs nothing, and goes through the ledger as
@@ -63,6 +63,11 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
   such as S13's clues, each a `Claim` with its distance from the player. `pick_up` takes the
   nearest claim if it's nearer than any pile in reach, and the pile otherwise, a tie included.
   Never both.
+- **The jacks** (`machines.py`, S8) are the machines only the datajack works: the metro's dead
+  terminal and its lift. With the datajack fitted, standing on a jack's stand tile is a claim on
+  `pick_up` that writes each fact found in it to the journal, as a clue does, and sends `journal`.
+  The terminal holds the incident's `lift_log`. Without the datajack it claims nothing. The lift's
+  link to the sewers is the client's to lock, as the server doesn't check doors.
 - **Salvage comes back; secrets don't.** A salvage pickup has another lying there once
   `PlayerConfig.respawn` (24 sim hours) has passed since it was last taken, or its own `respawn`
   in `PlayerConfig.salvage`. So the tunnels keep paying, at the economy's prices, for someone who

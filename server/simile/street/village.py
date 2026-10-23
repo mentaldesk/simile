@@ -27,7 +27,7 @@ STOOL_M = 0.25
 """How much higher a stool's seat is than a chair's."""
 JUMPING = frozenset({"rooftops", "metro"})
 """Streets only the player gets all over, by jumping. No resident goes there."""
-UNDERGROUND = frozenset({"metro"})
+UNDERGROUND = frozenset({"metro", "sewers"})
 """Streets under the village."""
 
 N, E, W = Facing.NORTH, Facing.EAST, Facing.WEST
@@ -575,6 +575,7 @@ def rooftops() -> Plan:
 def village() -> list[Plan]:
     """Every street, then every floor, with the streets joined."""
     from simile.street.metro import metro
+    from simile.street.sewers import sewers
 
     high, high_floors = high_street()
     lychee, lychee_floors = lychee_lane()
@@ -586,7 +587,8 @@ def village() -> list[Plan]:
     join(high, 64, banyan, 24)
     join(kapok, 2, roofs, 1)
     below, *below_floors = metro(banyan)
-    plans = [high, lychee, kapok, banyan, roofs, below, *high_floors, *lychee_floors]
+    landing = sewers(below)
+    plans = [high, lychee, kapok, banyan, roofs, below, landing, *high_floors, *lychee_floors]
     plans += [*kapok_floors, *banyan_floors, *below_floors]
     for plan in plans:
         plan.check()

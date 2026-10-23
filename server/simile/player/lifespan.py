@@ -8,15 +8,17 @@ from starlette.applications import Starlette
 async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.behaviour import behaviour_of
     from simile.economy.economy import economy_of
-    from simile.persistence import player_of
+    from simile.persistence import investigation_of, player_of
     from simile.player.clients import InGame
     from simile.player.hunger import Hunger
     from simile.player.lamp import Lamp
+    from simile.player.machines import Machines
     from simile.player.pickups import Pickups, claimers_of
     from simile.player.sync import PlayerSync
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
         EatMessage,
+        JournalMessage,
         LampMessage,
         PickUpMessage,
         PlayerCollapsedMessage,
@@ -25,8 +27,9 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         SellMessage,
         hub_of,
     )
-    from simile.schema import MapTile
+    from simile.schema import Interactable, MapTile
     from simile.sim import world_of
+    from simile.story import Journal
     from simile.world import movement_of
 
     world, hub, behaviour = world_of(app), hub_of(app), behaviour_of(app)
@@ -51,6 +54,15 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))
     sync = PlayerSync(player, hunger.meal, hub.broadcast, buyer=trade.buyer, piles=pickups.piles)
     lamp = Lamp(player, movement, world.clock, playing=lambda: bool(in_game))
+    investigation = investigation_of(app)
+    journal = Journal(investigation, lambda: world.clock.now, lambda: player)
+
+    def found(jack: Interactable) -> None:
+        if journal.found(jack.id, jack.label):
+            hub.broadcast(JournalMessage(entries=investigation.journal))
+
+    machines = Machines(player, movement, found)
+    claimers_of(app).append(machines.claim)
 
     def on_lamp(message: LampMessage) -> None:
         if lamp.switch(message.on):
@@ -82,4 +94,5 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     yield
     for stop in reversed(stops):
         stop()
+    claimers_of(app).remove(machines.claim)
     economy.player = None

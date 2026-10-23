@@ -199,13 +199,20 @@ passes through it.
 | S6 | Places salvage can lie, in `pickups` | `metro_salvage_1` on the train's roof (38, 12), `_2` (63, 15) and `_3` (68, 15) in the west tunnel, `_4` on the pipe ledge (77, 12), `_5` (83, 15), and `_6` on the high ledge (108, 12). |
 | S6 | The scrap trader's stall, and its spot | The location `scrap_stall` (24–28, rows 13–15, entry 28). The spot is `metro_scrap_trader`, `standing` at (26, 15) facing `south`, at the `scrap_stall` piece. |
 | S7 | The clinic, and the doctor's stall spot | `clinic`, an `amenity` on `clinic_floor_0` (room `clinic`, 10 wide), its door at (89, 15). The doctor's spot is `clinic_doctor`, `standing` at (6, 2) facing `south`. The room is bare for S7 to furnish. |
-| S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of today's jump, two rows up (`rise` 2.3 tiles), and in reach of the legs if they jump three. Salvage waits on it. |
-| S8 | The dead terminal, a `machine` | `metro_terminal`, stood at from (104, 15). |
-| S8, S9 | The lift down to the sewers, a `machine` | `metro_lift`, stood at from (100, 15) and (101, 15). Its foot on the metro, where a link to the sewers would end, is (100, 15) (`LIFT_FOOT`). No link leads from it yet. |
+| S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and in reach of the hydraulic legs', three rows up (`legs` in `jump.json`, `rise` 3.3). Salvage and a secret wait on it. |
+| S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
+| S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach:
 `metro_secret_stairwell` (8, 7, 25 money), `metro_secret_catwalk` (52, 10, 40 money) and
-`metro_secret_alcove` (86, 8, a `ration_pack`, food, 0.5 kg).
+`metro_secret_alcove` (86, 8, a `ration_pack`, food, 0.5 kg). `metro_secret_ledge` (106, 12, 60
+money) is on the high ledge, which only the hydraulic legs reach.
+
+## The sewers
+
+`sewers`, the Sewers, is a placeholder until S9 generates them: a landing 12 wide, under the metro
+(`UNDERGROUND`) and lit all over (`sewers_landing`), with a `freight_lift` at (2, row 15),
+`LANDING`, where the door from the metro's lift arrives. It isn't painted yet.
 
 **Drawing it** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's front and
 room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are furniture over

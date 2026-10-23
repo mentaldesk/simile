@@ -573,6 +573,44 @@
           "width": 16,
           "x": 32,
           "y": 144
+        },
+        {
+          "height": 16,
+          "id": 29,
+          "name": "metro_to_sewers",
+          "properties": [
+            {
+              "name": "kind",
+              "type": "string",
+              "value": "door"
+            },
+            {
+              "name": "side",
+              "type": "string",
+              "value": "outside"
+            },
+            {
+              "name": "to_map",
+              "type": "string",
+              "value": "sewers"
+            },
+            {
+              "name": "to_x",
+              "type": "int",
+              "value": 2
+            },
+            {
+              "name": "to_y",
+              "type": "int",
+              "value": 15
+            }
+          ],
+          "rotation": 0,
+          "type": "door",
+          "visible": true,
+          "width": 16,
+          "x": 1600,
+          "y": 240
         }
       ],
       "opacity": 1,
@@ -588,7 +626,7 @@
       "objects": [
         {
           "height": 32,
-          "id": 29,
+          "id": 30,
           "name": "metro_plug",
           "properties": [
             {
@@ -611,7 +649,7 @@
         },
         {
           "height": 64,
-          "id": 30,
+          "id": 31,
           "name": "metro_lift",
           "properties": [
             {
@@ -622,11 +660,11 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "100,15 101,15"
+              "value": "100,15"
             }
           ],
           "rotation": 0,
-          "type": "machine",
+          "type": "jack",
           "visible": true,
           "width": 32,
           "x": 1600,
@@ -634,7 +672,7 @@
         },
         {
           "height": 32,
-          "id": 31,
+          "id": 32,
           "name": "metro_terminal",
           "properties": [
             {
@@ -649,7 +687,7 @@
             }
           ],
           "rotation": 0,
-          "type": "machine",
+          "type": "jack",
           "visible": true,
           "width": 16,
           "x": 1664,
@@ -657,7 +695,7 @@
         },
         {
           "height": 16,
-          "id": 32,
+          "id": 33,
           "name": "metro_high_ledge",
           "properties": [
             {
@@ -692,7 +730,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 33,
+          "id": 34,
           "name": "metro_scrap_trader",
           "properties": [
             {
@@ -722,7 +760,7 @@
       "objects": [
         {
           "height": 320,
-          "id": 34,
+          "id": 35,
           "name": "metro_entrance",
           "properties": [
             {
@@ -740,7 +778,7 @@
         },
         {
           "height": 192,
-          "id": 35,
+          "id": 36,
           "name": "metro_vault",
           "properties": [
             {
@@ -758,7 +796,7 @@
         },
         {
           "height": 128,
-          "id": 36,
+          "id": 37,
           "name": "metro_platform",
           "properties": [
             {
@@ -776,7 +814,7 @@
         },
         {
           "height": 320,
-          "id": 37,
+          "id": 38,
           "name": "metro_tunnel_west",
           "properties": [
             {
@@ -794,7 +832,7 @@
         },
         {
           "height": 320,
-          "id": 38,
+          "id": 39,
           "name": "metro_maintenance",
           "properties": [
             {
@@ -812,7 +850,7 @@
         },
         {
           "height": 320,
-          "id": 39,
+          "id": 40,
           "name": "metro_tunnel_east",
           "properties": [
             {
@@ -830,7 +868,7 @@
         },
         {
           "height": 320,
-          "id": 40,
+          "id": 41,
           "name": "metro_depot",
           "properties": [
             {
@@ -860,7 +898,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 41,
+          "id": 42,
           "name": "metro_secret_stairwell",
           "properties": [
             {
@@ -878,7 +916,7 @@
         },
         {
           "height": 16,
-          "id": 42,
+          "id": 43,
           "name": "metro_salvage_1",
           "properties": [],
           "rotation": 0,
@@ -890,7 +928,7 @@
         },
         {
           "height": 16,
-          "id": 43,
+          "id": 44,
           "name": "metro_secret_catwalk",
           "properties": [
             {
@@ -908,7 +946,7 @@
         },
         {
           "height": 16,
-          "id": 44,
+          "id": 45,
           "name": "metro_salvage_2",
           "properties": [],
           "rotation": 0,
@@ -920,7 +958,7 @@
         },
         {
           "height": 16,
-          "id": 45,
+          "id": 46,
           "name": "metro_salvage_3",
           "properties": [],
           "rotation": 0,
@@ -932,7 +970,7 @@
         },
         {
           "height": 16,
-          "id": 46,
+          "id": 47,
           "name": "metro_salvage_4",
           "properties": [],
           "rotation": 0,
@@ -944,7 +982,7 @@
         },
         {
           "height": 16,
-          "id": 47,
+          "id": 48,
           "name": "metro_secret_alcove",
           "properties": [
             {
@@ -977,7 +1015,7 @@
         },
         {
           "height": 16,
-          "id": 48,
+          "id": 49,
           "name": "metro_salvage_5",
           "properties": [],
           "rotation": 0,
@@ -989,7 +1027,7 @@
         },
         {
           "height": 16,
-          "id": 49,
+          "id": 50,
           "name": "metro_salvage_6",
           "properties": [],
           "rotation": 0,
@@ -997,6 +1035,24 @@
           "visible": true,
           "width": 16,
           "x": 1728,
+          "y": 192
+        },
+        {
+          "height": 16,
+          "id": 51,
+          "name": "metro_secret_ledge",
+          "properties": [
+            {
+              "name": "money",
+              "type": "float",
+              "value": 60.0
+            }
+          ],
+          "rotation": 0,
+          "type": "secret",
+          "visible": true,
+          "width": 16,
+          "x": 1696,
           "y": 192
         }
       ],
@@ -1008,7 +1064,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 50,
+  "nextobjectid": 52,
   "orientation": "orthogonal",
   "properties": [
     {

@@ -306,6 +306,15 @@ at the saved investigation, is the incident.
   fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
   `Temptation.fact_id`, and in `engine.lies` for B3.
 
+## The flush
+
+S8: the infrared eye shows a flush on a resident's line that gives one of their cover stories for
+the incident, as the code decided them (`flush.py`). A line is a lie when it says a `Stance.LIE`
+telling's cover word for word (`simile.story.says`), or completes it, as the journal reads their
+lines joined. The lifespan sets `app.state.flushed`, which the protocol sends as `line.flushed`,
+true only with the eye fitted, by `simile.story.flushed`, so the bubble and the journal agree.
+The other lies, #285's temptations, have covers the model words for itself, so they never flush.
+
 ## The player's bionics
 
 S11 ([`simile.social`](../social/README.md#bionics)) decides how residents take to the player's

@@ -23,6 +23,7 @@ const PROMPTS: Record<string, (label: string) => string> = {
   counter: () => 'Order at the counter',
   painting: () => 'Look at the painting',
   machine: (label) => `Use the ${lowerFirst(label)}`,
+  jack: (label) => `Use the ${lowerFirst(label)}`,
 };
 
 const tiles = (stand: unknown): Tile[] =>

@@ -5,7 +5,7 @@ import { cellOf, climbAt, groundRow, isStanding, isWalkable } from './maps';
 const map = (id: string) => village.map(id)!;
 
 describe('the side-view maps', () => {
-  it('reads the five streets, the metro and every floor', () => {
+  it('reads the five streets, the metro, the sewers and every floor', () => {
     expect(village.streets.map(({ id }) => id).sort()).toEqual([
       'banyan_row',
       'high_street',
@@ -13,13 +13,14 @@ describe('the side-view maps', () => {
       'lychee_lane',
       'metro',
       'rooftops',
+      'sewers',
     ]);
     expect(village.floors('coffee_shop').map(({ id }) => id)).toEqual([
       'coffee_shop_floor_0',
       'coffee_shop_floor_1',
       'coffee_shop_floor_2',
     ]);
-    expect(village.maps.size).toBe(6 + 32);
+    expect(village.maps.size).toBe(7 + 32);
   });
 
   it('puts each floor on its street, four rows above the one below', () => {

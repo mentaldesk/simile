@@ -28,6 +28,8 @@ type SideWalk = {
   standing(map: string, x: number, y: number): boolean;
   teleport(to: Place): void;
   move(id: string, to: Place): void;
+  fit(part: string, bionic: string): void;
+  jacks(): Place[];
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -59,6 +61,9 @@ const walkApi = (page: Page) => ({
   teleport: (to: Place) => page.evaluate((to) => (window as unknown as Paged).sideWalk.teleport(to), to),
   move: (id: string, to: Place) =>
     page.evaluate(([id, to]) => (window as unknown as Paged).sideWalk.move(id, to), [id, to] as const),
+  fit: (part: string, bionic: string) =>
+    page.evaluate(([part, bionic]) => (window as unknown as Paged).sideWalk.fit(part, bionic), [part, bionic] as const),
+  jacks: () => page.evaluate(() => (window as unknown as Paged).sideWalk.jacks()),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -104,12 +109,13 @@ async function teleport(page: Page, api: Api, to: Place, what: string): Promise<
 }
 
 /** Doors on E; stairs and ladders up from their foot on up and down from their top on down; the lift a floor up on
- * up and a floor down on down, from each of its cells. */
+ * up and a floor down on down, from each of its cells. A link from a jack waits for the datajack, in `bionicsLeg`. */
 async function legs(api: Api): Promise<Leg[]> {
-  const [links, widths] = [await api.links(), await api.widths()];
+  const [links, widths, jacks] = [await api.links(), await api.widths(), await api.jacks()];
+  const jacked = (link: Link) => jacks.some(({ map, x, y }) => map === link.map && x === link.x && y === link.y);
   const far = (link: Link) => links.find(({ map, x, y }) => map === link.to.map && x === link.to.x && y === link.to.y)!;
   const found: Leg[] = [];
-  for (const link of links) {
+  for (const link of links.filter((link) => !jacked(link))) {
     const there = far(link);
     const arrive = { map: there.map, x: there.x, y: there.y };
     const start = await startFor(api, link, widths[link.map]);
@@ -240,6 +246,9 @@ const JUMPS: Jump[] = [
 ];
 /** A run jump at the metro's high ledge, a row higher than the jump, falls back to the floor. */
 const SHORT: Jump = { name: 'at the high ledge, short of it', from: metro(101, 15), takeOff: 105, land: 104, onto: 15, run: true };
+/** The same on the hydraulic legs lands on it. */
+const LEDGE: Jump = { name: 'onto the high ledge on the hydraulic legs', from: metro(101, 15), takeOff: 103, land: 106, onto: 12, run: true };
+const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
 
 /** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
 async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise<void> {
@@ -252,6 +261,7 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   await until(page, atEdge, 5, `${jump.name}: running up to ${jump.takeOff}`, FRAME_MS);
   await page.keyboard.down(' ');
   await until(page, async () => (await api.state())!.airborne, 1, `${jump.name}: taking off`, FRAME_MS);
+  const { x: tookOff, run: running } = (await api.state())!;
   await run(page, 200);
   await shot(page, index, jump.name);
   await until(page, async () => !(await api.state())!.airborne, 3, `${jump.name}: landing`, FRAME_MS);
@@ -262,7 +272,8 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   const landed = (await api.state())!;
   const row = jump.onto ?? jump.from.y;
   if (landed.map !== jump.from.map || landed.y !== row || landed.x < jump.land) {
-    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${row} past ${jump.land}`);
+    const from = `took off at ${tookOff.toFixed(2)} running ${running.toFixed(2)}`;
+    throw new Error(`${jump.name}: ${from}, landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${row} past ${jump.land}`);
   }
 }
 
@@ -348,6 +359,33 @@ async function fallLeg(page: Page, api: Api, index: number): Promise<void> {
   await until(page, async () => !(await api.state())!.airborne, 3, `${name}: landing`, FRAME_MS);
   const landed = (await api.state())!;
   if (landed.y !== 15) throw new Error(`${name}: landed on row ${landed.y}, not the lane`);
+}
+
+/** E at the metro's jacks: dead without the datajack. The legs, fitted, reach the high ledge, and the datajack takes the lift. */
+async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the bionics at the depot';
+  for (const [x, label] of [
+    [100, 'maintenance lift'],
+    [104, 'dead terminal'],
+  ] as const) {
+    await teleport(page, api, metro(x, 15), `${name}, at the ${label}`);
+    await run(page, 300);
+    const hint = await shown(page, '.counter-hint');
+    if (hint !== `Press E to use the ${label}.`) throw new Error(`${name}: at the ${label}, the hint is ${hint}`);
+    await pressingE(page, api, `${name}, E at the ${label}`);
+    const dead = await shown(page, '.counter-hint');
+    if (dead !== `Nothing happens: the ${label} needs a datajack.`) throw new Error(`${name}: E at the ${label} said ${dead}`);
+    await run(page, 2600);
+  }
+  await api.fit('legs', 'hydraulic_legs');
+  await jumpLeg(page, api, LEDGE, index);
+  await api.fit('vertebra', 'datajack');
+  await teleport(page, api, metro(98, 15), name);
+  await run(page, 300);
+  await walkTo(page, api, 100, REACH.cell, name);
+  await shot(page, index, 'at the lift with the datajack');
+  await take(page, api, 'e', SEWERS, `${name}, down the lift to the sewers`);
+  await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
 }
 
 const shown = (page: Page, selector: string) =>
@@ -438,6 +476,7 @@ try {
     ['through the metro and back', (i) => metroLeg(page, api, i)],
     ['through the dark with the lamp', (i) => lampLeg(page, api, i)],
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
+    ['the bionics at the depot', (i) => bionicsLeg(page, api, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
       `E at the terminal on ${at.map}`,
       (i) => terminalLeg(page, api, at, i),

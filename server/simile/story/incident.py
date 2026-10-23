@@ -18,7 +18,7 @@ from simile.schema import (
     Npc,
 )
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
-from simile.story.content import DOOR, NOTES, Place, StoryContent, load_story
+from simile.story.content import DOOR, NOTES, TERMINAL, Place, StoryContent, load_story
 from simile.story.looks import a, figure, top
 from simile.story.suspects import Suspect, attackers, hostility
 from simile.story.writing import Backstory, initial, write
@@ -31,6 +31,7 @@ SHOUTING = "shouting"
 SEEN = "seen"
 MEETING = "meeting"
 ATTACK = "attack"
+LIFT_LOG = "lift_log"
 TOPIC = "aris"
 
 
@@ -342,6 +343,21 @@ def build(
                 *(_ask_about_row(making, npc, witnesses[grudge(npc)]) for npc in noted),
                 *([_ask_about_night(making, heard_by)] if heard_by is not None else []),
             ],
+        ),
+        {},
+    )
+
+    making.add(
+        Fact(
+            id=LIFT_LOG,
+            what="The dead terminal in the old metro carries Aris's maker's mark: she rewired it. "
+            "Its last entry logs the maintenance lift going down to the sewers the night before "
+            "her workshop was found standing open.",
+            when=gone - timedelta(hours=20),
+            where="metro",
+            about=[ARIS],
+            known_by=[],
+            found_in=TERMINAL,
         ),
         {},
     )

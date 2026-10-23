@@ -15,6 +15,8 @@ export type Bubble = {
   seconds: number;
   thinking?: boolean;
   partner?: boolean;
+  /** The infrared eye saw the speaker flush: the line is a lie. */
+  flushed?: boolean;
 };
 
 export function speakingSeconds(text: string): number {
@@ -40,9 +42,9 @@ export function bubbleAlpha(bubble: Bubble, distance: number, now: number): numb
 export class SpeechBubbles {
   private readonly bySpeaker = new Map<string, Bubble>();
 
-  show(speaker: string, text: string, duration: number, partner = false, now = Date.now()): void {
+  show(speaker: string, text: string, duration: number, partner = false, now = Date.now(), flushed = false): void {
     const seconds = Math.max(duration, MIN_BUBBLE_SECONDS);
-    this.bySpeaker.set(speaker, { speaker, text, shownAt: now, seconds, partner });
+    this.bySpeaker.set(speaker, { speaker, text, shownAt: now, seconds, partner, flushed });
   }
 
   think(speaker: string, now = Date.now()): void {

@@ -9,7 +9,8 @@ import {
   footing,
   landingRow,
   JUMP_CUT,
-  JUMP_SPEED,
+  JUMP_RISE,
+  jumpSpeed,
   LANDING_SECONDS,
   steer,
   type Air,
@@ -17,6 +18,7 @@ import {
 import { drawnCrossing, emptyDrawn, RIDE_SPEED, RUN_CYCLE_M, sideways, WALK_CYCLE_M, type Drawn } from './motion';
 import { TILE_M } from './layout';
 import { climbRuns, pointAlong, type Crossing, type Path, type Run } from './runs';
+import { jackAt } from './jacks';
 import { chosen, waysNear, type Press, type Way } from './ways';
 
 /** Tiles a second. */
@@ -79,6 +81,11 @@ export class SidePlayer {
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
+
+  /** Tiles the feet rise with Space held: higher on the hydraulic legs. */
+  rise = JUMP_RISE;
+  /** With the datajack fitted, a link from a jack, the lift's, can be taken. */
+  datajack = false;
 
   constructor(village: Village, position: MapPosition) {
     this.village = village;
@@ -146,7 +153,8 @@ export class SidePlayer {
   ways(): Way[] {
     const map = this.village.map(this.map);
     if (!map || this.onRun || this.crossed || this.approaching || this.air) return [];
-    return waysNear(this.village, map, this.runsOf(map), this.position);
+    const locked = (link: Link) => !this.datajack && jackAt(map, link);
+    return waysNear(this.village, map, this.runsOf(map), this.position, locked);
   }
 
   /** Tiles a second along a street or a floor. */
@@ -202,7 +210,7 @@ export class SidePlayer {
   }
 
   private jump(along: number): void {
-    this.air = { vx: along * this.speed, vy: -JUMP_SPEED, held: true };
+    this.air = { vx: along * this.speed, vy: -jumpSpeed(this.rise), held: true };
     this.buffered = this.coyote = this.landing = 0;
     this.walking = false;
   }

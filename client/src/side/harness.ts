@@ -1,6 +1,6 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Wall } from '../net';
+import { server, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { usedByE } from '../world/reach';
@@ -259,15 +259,16 @@ function frames(village: Village): Frame[] {
   );
 }
 
+let body: Body = {
+  legs: 'present',
+  vertebra: 'present',
+  left_eye: 'present',
+  right_eye: 'present',
+  left_kidney: 'present',
+  right_kidney: 'present',
+};
+
 function sendPlayerState(): void {
-  const body = {
-    legs: 'present',
-    vertebra: 'present',
-    left_eye: 'present',
-    right_eye: 'present',
-    left_kidney: 'present',
-    right_kidney: 'present',
-  } as const;
   dispatch({ type: 'player_state', player: { money: 0, items: [LAMP], carry_limit: 10, body, hunger: 0 } });
 }
 
@@ -373,6 +374,21 @@ function exposeWalk(scene: SideScene, village: Village): void {
         return !!found && isStanding(found, x, y);
       },
       teleport: (to: MapPosition) => scene.teleport(to),
+      fit: (part: keyof Body, bionic: Body[keyof Body]) => {
+        body = { ...body, [part]: bionic };
+        sendPlayerState();
+      },
+      jacks: () =>
+        [...village.maps.values()].flatMap((map) =>
+          map.interactables
+            .filter(({ type }) => type === 'jack')
+            .flatMap(({ props }) =>
+              String(props.stand)
+                .split(' ')
+                .map((cell) => cell.split(',').map(Number))
+                .map(([x, y]) => ({ map: map.id, x, y })),
+            ),
+        ),
     },
   });
 }

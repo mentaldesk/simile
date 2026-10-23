@@ -130,8 +130,12 @@ The Phaser-free halves are tested under vitest.
   once the street is shown and any door they're going through is done. It's also where the scene
   starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed. After every `snapshot` the
   scene sends the player's position again, so a restarted server knows where they are.
+- The jump is the player's own: `content/street/jump.json`'s `legs` raise it a row once the
+  hydraulic legs are fitted (`jumpOf`), under the same gravity, so the metro's high ledge is in
+  reach. The scene reads the body from `player_state` each frame. With the datajack fitted, the link
+  from a jack's stand tile, the lift down to the sewers, is a way like any other; without, it isn't.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
-  (`simile.street.moves.possible`, `docs/protocol.md`). `server/tests/street/positions.json` is a
+  (`simile.street.moves.possible`, `docs/protocol.md`), by the same jump. `server/tests/street/positions.json` is a
   table of the client's sends and places nobody could be that the server's tests and
   `jump.test.ts`'s copy of the rule both check.
 

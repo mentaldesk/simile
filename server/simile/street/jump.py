@@ -2,8 +2,10 @@
 
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from typing import Any
+
+from simile.schema import Bionic, Body
 
 RUN_SPEED = 5.2
 """Tiles a second running: the client's `PLAYER_SPEED` times `RUN_PACE`."""
@@ -48,11 +50,21 @@ class Jump:
 
 
 JUMP = Jump()
+LEGS_RISE = 3.3
+LEGS = replace(JUMP, rise=LEGS_RISE, rise_seconds=math.sqrt(2 * LEGS_RISE / JUMP.gravity), rows=3)
+"""The hydraulic legs' jump: a row higher than the player's own, under the same gravity."""
 
 
-def jump_table(jump: Jump = JUMP) -> dict[str, Any]:
-    return {**asdict(jump), "reach": round(jump.reach, 3)}
+def jump_of(body: Body) -> Jump:
+    return LEGS if body.legs == Bionic.HYDRAULIC_LEGS else JUMP
 
 
-def dumps(jump: Jump = JUMP) -> str:
-    return json.dumps(jump_table(jump), indent=2) + "\n"
+def jump_table(jump: Jump = JUMP, legs: Jump = LEGS) -> dict[str, Any]:
+    """The player's jump, and under `legs` what the hydraulic legs change of it."""
+    table = {**asdict(jump), "reach": round(jump.reach, 3)}
+    changed = {key: value for key, value in asdict(legs).items() if value != table[key]}
+    return {**table, "legs": {**changed, "reach": round(legs.reach, 3)}}
+
+
+def dumps(jump: Jump = JUMP, legs: Jump = LEGS) -> str:
+    return json.dumps(jump_table(jump, legs), indent=2) + "\n"
