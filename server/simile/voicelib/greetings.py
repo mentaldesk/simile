@@ -77,7 +77,9 @@ class Allowance:
             return False
         self.path.parent.mkdir(parents=True, exist_ok=True)
         kept = {"day": today().isoformat(), "characters": spent + characters}
-        self.path.write_text(json.dumps(kept), encoding="utf-8")
+        written = self.path.with_name(f".{self.path.name}.{os.getpid()}")
+        written.write_text(json.dumps(kept), encoding="utf-8")
+        os.replace(written, self.path)
         return True
 
 

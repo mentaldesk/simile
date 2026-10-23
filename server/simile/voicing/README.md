@@ -81,9 +81,11 @@ cd server && uv run simile greetings [npc ...] [--audition] [--force] [--local]
   [`content/voices/elevenlabs.json`](../../../content/voices/elevenlabs.json) with the audio tags it
   says before each line (`"delivery": "[slowly]"`). That's how residents get their accents, which
   V1's model can't do. The key is `ELEVENLABS_API_KEY`, or the macOS Keychain item
-  `elevenlabs-api-key`; `eleven.py` reads it in code and never prints or logs it. Every line spends
-  ElevenLabs credits, about 12 for a greeting, and the command says how many it used. If ElevenLabs
-  refuses partway, it stops, says what it spent, and keeps what it said, so a rerun says the rest.
+  `elevenlabs-api-key`; `eleven.py` reads it in code and never prints or logs it. A key with
+  anything but visible ASCII in it, such as a line break, counts as no key, since an error could
+  quote it. Every line spends ElevenLabs credits, about 12 for a greeting, and the command says how
+  many it used. If ElevenLabs fails partway, it stops, says what it spent, and keeps what it said, so
+  a rerun says the rest. It reports a refusal's reason, and only the kind of any other error.
 - Without a key, or for a resident with no ElevenLabs voice, it says them with V1's model and seed,
   cloning the resident's clip as V1 does (`uv run --extra voice simile greetings`). It won't replace
   greetings made with ElevenLabs that way, whether their lines changed, `--force` asked or

@@ -513,7 +513,7 @@ def test_the_job_without_a_key_says_so(tmp_path: Path) -> None:
     asked = {"voice": "wren", "lines": ["Hi!"], "said": str(tmp_path / "said")}
     (tmp_path / "greetings.json").write_text(json.dumps(asked))
 
-    with pytest.raises(SystemExit, match="No ElevenLabs key"):
+    with pytest.raises(SystemExit, match="No usable ElevenLabs key"):
         eleven.main([str(tmp_path)])
 
 
@@ -536,3 +536,140 @@ def test_ci_never_reaches_elevenlabs() -> None:
     assert eleven.api_key() is None
     assert not eleven.configured()
     assert eleven.API == "http://elevenlabs.invalid"
+
+
+BAD_KEY = "sk_" + "a" * 20 + "\n" + "b" * 20
+
+
+def test_a_key_with_a_space_or_control_character_is_no_key(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setenv(eleven.ENV, BAD_KEY)
+
+    assert not eleven.configured()
+    assert eleven.api_key() is None
+
+    monkeypatch.delenv(eleven.ENV)
+    monkeypatch.setattr(
+        eleven,
+        "_keychain",
+        lambda *flags, **options: subprocess.CompletedProcess([], 0, stdout="sk_a b\n"),
+    )
+    assert eleven.api_key() is None
+    assert "has a space or control character, so it's unused" in caplog.text
+    assert "a" * 20 not in caplog.text and "sk_a b" not in caplog.text
+
+
+def test_the_command_takes_a_malformed_key_as_none(
+    here: Path,
+    fake: FakeElevenLabs,
+    v1: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv(eleven.ENV, BAD_KEY)
+
+    output = greet()
+
+    assert fake.said == []
+    assert len(v1) == 2
+    assert "No ElevenLabs key" in output
+    printed = capfd.readouterr()
+    assert all("a" * 20 not in text for text in (output, caplog.text, printed.out, printed.err))
+
+
+def test_the_job_takes_a_malformed_key_as_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    asked = {"voice": "wren", "lines": ["Hi!"], "said": str(tmp_path / "said")}
+    (tmp_path / "greetings.json").write_text(json.dumps(asked))
+    monkeypatch.setenv(eleven.ENV, BAD_KEY)
+
+    with pytest.raises(SystemExit, match="No usable ElevenLabs key") as stopped:
+        eleven.main([str(tmp_path)])
+
+    assert "a" * 20 not in str(stopped.value) and "a" * 20 not in caplog.text
+
+
+def test_an_error_quoting_the_key_is_reported_without_it() -> None:
+    key = "sk_" + secrets.token_hex(16)
+    quoted = httpx.LocalProtocolError(f"Illegal header value {key.encode()!r}")
+    echoed = Refused(f"ElevenLabs answered 401: bad key {key!r} ({key})")
+
+    assert eleven.safely(quoted, key) == "LocalProtocolError while talking to ElevenLabs"
+    assert eleven.safely(echoed, key) == "ElevenLabs answered 401: bad key '[key]' ([key])"
+    assert eleven.safely(Refused("ElevenLabs answered 500: oops"), None).endswith("oops")
+
+
+@pytest.fixture
+def leaky(monkeypatch: pytest.MonkeyPatch) -> str:
+    """A key, and an ElevenLabs whose every error quotes it."""
+    key = "sk_" + secrets.token_hex(16)
+    monkeypatch.setenv(eleven.ENV, key)
+
+    def leak(*args: Any, **kwargs: Any) -> Any:
+        raise httpx.LocalProtocolError(f"Illegal header value {key.encode()!r}")
+
+    fake = FakeElevenLabs(key, voices=VOICES)
+    monkeypatch.setattr(fake, "say", leak)
+    monkeypatch.setattr(eleven, "ElevenLabs", lambda key: fake)
+    return key
+
+
+def test_the_command_never_quotes_an_error_about_the_key(
+    here: Path, leaky: str, capfd: pytest.CaptureFixture[str]
+) -> None:
+    result = CliRunner().invoke(create_cli(), ["greetings", "tobias"])
+
+    assert result.exit_code == 1
+    assert "Stopped: LocalProtocolError while talking to ElevenLabs" in result.output
+    printed = capfd.readouterr()
+    assert all(leaky not in text for text in (result.output, printed.out, printed.err))
+
+
+def test_the_job_never_quotes_an_error_about_the_key(
+    tmp_path: Path, leaky: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    asked = {
+        "voice": "wren",
+        "lines": ["Hi!"],
+        "delivery": "",
+        "elevenlabs": {"voice_id": "alder", "name": "Alder"},
+        "said": str(tmp_path / "said"),
+    }
+    (tmp_path / "greetings.json").write_text(json.dumps(asked))
+
+    with pytest.raises(SystemExit) as stopped:
+        eleven.main([str(tmp_path)])
+
+    assert str(stopped.value) == "Stopped: LocalProtocolError while talking to ElevenLabs"
+    assert leaky not in capsys.readouterr().out
+    assert not (tmp_path / "said").exists()
+
+
+def test_what_was_said_is_kept_whole_or_not_at_all(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    made = [tmp_path / name for name in ("wren_1.m4a", "wren_2.m4a", "spoken.json")]
+    for path in made:
+        path.write_text(path.name)
+    said = tmp_path / "said" / "abc"
+    copy = shutil.copyfile
+    copied = []
+
+    def killed(source: Path, target: Path) -> Any:
+        if copied:
+            raise OSError("killed")
+        copied.append(source)
+        return copy(source, target)
+
+    monkeypatch.setattr(shutil, "copyfile", killed)
+    with pytest.raises(OSError, match="killed"):
+        eleven.keep(said, made)
+    monkeypatch.setattr(shutil, "copyfile", copy)
+
+    assert list((tmp_path / "said").iterdir()) == []
+    eleven.keep(said, made)
+    assert [path.name for path in (tmp_path / "said").iterdir()] == ["abc"]
+    assert sorted(path.name for path in said.iterdir()) == sorted(path.name for path in made)

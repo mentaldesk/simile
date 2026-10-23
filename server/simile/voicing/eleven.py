@@ -2,11 +2,13 @@
 
 import argparse
 import json
+import logging
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zlib
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
@@ -28,6 +30,9 @@ KEYCHAIN_TIMEOUT = 2.0
 """Seconds to wait for the Keychain, which may be stuck on a prompt nobody sees."""
 NARRATION = "narrative_story"
 SHORTLIST = 3
+VISIBLE = re.compile(r"[!-~]+")
+
+logger = logging.getLogger(__name__)
 
 
 class Refused(RuntimeError):
@@ -46,10 +51,20 @@ def _keychain(
         return None
 
 
+def _usable(key: str, where: str) -> str | None:
+    """The key, or None if it's anything but visible ASCII, which an error could then quote."""
+    if VISIBLE.fullmatch(key):
+        return key
+    logger.warning(
+        f"The ElevenLabs key in {where} has a space or control character, so it's unused"
+    )
+    return None
+
+
 def configured() -> bool:
     """Whether there's a key, without reading the Keychain's secret."""
-    if os.environ.get(ENV, "").strip():
-        return True
+    if key := os.environ.get(ENV, "").strip():
+        return _usable(key, ENV) is not None
     found = _keychain()
     return found is not None and found.returncode == 0
 
@@ -57,11 +72,22 @@ def configured() -> bool:
 def api_key(timeout: float = KEYCHAIN_TIMEOUT) -> str | None:
     """`ELEVENLABS_API_KEY`, or the Keychain item `elevenlabs-api-key`. Never print or log it."""
     if key := os.environ.get(ENV, "").strip():
-        return key
+        return _usable(key, ENV)
     found = _keychain("-w", timeout=timeout)
-    if found is None or found.returncode != 0:
+    if found is None or found.returncode != 0 or not found.stdout.strip():
         return None
-    return found.stdout.strip() or None
+    return _usable(found.stdout.strip(), f"the Keychain item {KEYCHAIN}")
+
+
+def safely(error: BaseException, key: str | None) -> str:
+    """What to say about an error: a refusal's reason without the key, or else only its type."""
+    if not isinstance(error, Refused):
+        return f"{type(error).__name__} while talking to ElevenLabs"
+    said = str(error)
+    if key:
+        for form in {key, repr(key)[1:-1], repr(key.encode())[2:-1]}:
+            said = said.replace(form, "[key]")
+    return said
 
 
 class ElevenLabs:
@@ -250,23 +276,37 @@ def main(argv: Iterable[str] | None = None) -> None:
         return
     key = api_key()
     if key is None:
-        sys.exit(f"No ElevenLabs key: set {ENV} or add the Keychain item {KEYCHAIN}")
+        sys.exit(f"No usable ElevenLabs key: set {ENV} or add the Keychain item {KEYCHAIN}")
     speak.report(0.0, "Choosing a voice")
-    with ElevenLabs(key) as eleven:
-        voice = asked["elevenlabs"] or eleven.choose(
-            id, asked["gender"], asked["age"], asked["places"]
-        )
-        if voice is None:
-            sys.exit("ElevenLabs has no voice for them")
-        seconds = say_all(
-            eleven, voice["voice_id"], id, asked["delivery"], asked["lines"], work, speak.report
-        )
+    try:
+        with ElevenLabs(key) as eleven:
+            voice = asked["elevenlabs"] or eleven.choose(
+                id, asked["gender"], asked["age"], asked["places"]
+            )
+            if voice is None:
+                sys.exit("ElevenLabs has no voice for them")
+            seconds = say_all(
+                eleven, voice["voice_id"], id, asked["delivery"], asked["lines"], work, speak.report
+            )
+    except Exception as error:
+        sys.exit(f"Stopped: {safely(error, key)}")
     spoken = {"seconds": seconds, "voice": voice["name"], "credits": eleven.credits}
     (work / "spoken.json").write_text(json.dumps(spoken), encoding="utf-8")
-    said.mkdir(parents=True, exist_ok=True)
-    for path in [*files(work, id), work / "spoken.json"]:
-        shutil.copyfile(path, said / path.name)
+    keep(said, [*files(work, id), work / "spoken.json"])
     speak.report(1.0, "Said")
+
+
+def keep(folder: Path, paths: Iterable[Path]) -> None:
+    """Copies the paths into `folder` all at once, so a killed job leaves it whole or absent."""
+    folder.parent.mkdir(parents=True, exist_ok=True)
+    scratch = Path(tempfile.mkdtemp(dir=folder.parent, prefix=f".{folder.name}."))
+    try:
+        for path in paths:
+            shutil.copyfile(path, scratch / path.name)
+        if not folder.exists():
+            os.replace(scratch, folder)
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 if __name__ == "__main__":

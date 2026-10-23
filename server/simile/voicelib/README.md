@@ -146,11 +146,16 @@ ElevenLabs `voice` that said them, if any. A job for a clip that changed while i
   gender and age band, and takes one of the three most used, narration first. It costs about 50
   credits a character.
   - Each voice is said once: the job keeps what ElevenLabs said in `<jobs>/voice_greetings/said/`,
-    by the clip, lines and voice, and another job for the same ones copies them from there.
+    by the clip, lines and voice, and another job for the same ones copies them from there. Each
+    folder there appears whole, so a killed job leaves none.
   - The jobs may send ElevenLabs at most `VoicelibConfig.elevenlabs_characters_a_day` characters a
-    day (300, about two characters' greetings), counted in `<jobs>/voice_greetings/allowance.json`
-    before each job runs. Past that, V1's model says them, as below, and the server logs why. A
-    machine without voice-lab's MLX virtualenv refuses the job instead.
+    day, 300 by default (about two characters' greetings), or `SIMILE_ELEVENLABS_DAILY` when the
+    server starts with it set (`SIMILE_ELEVENLABS_DAILY=0` stops them). They're counted in
+    `<jobs>/voice_greetings/allowance.json` before each job runs. Past that, V1's model says them,
+    as below, and the server logs why. A machine without voice-lab's MLX virtualenv refuses the job
+    instead.
+  - If ElevenLabs fails, the job reports only the kind of error, never its text, which could quote
+    the key.
 - **Without one**, it needs Apple Silicon and voice-lab's MLX virtualenv, and runs
   [`voicing/speak.py`](../voicing/speak.py) there, which says them in the character's own voice with
   V1's model, a second or so each once the model has loaded.

@@ -28,8 +28,6 @@ def register(app: typer.Typer) -> None:
         import shutil
         from contextlib import ExitStack
 
-        import httpx
-
         from simile.clinic.doctor import load_doctor
         from simile.npc import NPCS_DIR, load_npcs
         from simile.schema import Npc
@@ -97,7 +95,10 @@ def register(app: typer.Typer) -> None:
         with_elevenlabs = len(local_todo) < len(todo)
         key = eleven.api_key(timeout=KEY_PROMPT) if with_elevenlabs else None
         if with_elevenlabs and key is None:
-            typer.echo(f"Couldn't read the ElevenLabs key ({eleven.ENV})", err=True)
+            typer.echo(
+                f"No usable ElevenLabs key ({eleven.ENV} or the Keychain item {eleven.KEYCHAIN})",
+                err=True,
+            )
             raise typer.Exit(1)
         model = None
         if local_todo:
@@ -129,8 +130,10 @@ def register(app: typer.Typer) -> None:
                     )
                     for text, length in spoken:
                         typer.echo(f"{npc.id}: {text!r} {length:.2f} s")
-        except (eleven.Refused, httpx.HTTPError) as error:
-            typer.echo(f"Stopped: {error}", err=True)
+        except Exception as error:
+            if key is None:
+                raise
+            typer.echo(f"Stopped: {eleven.safely(error, key)}", err=True)
             typer.echo("The greetings said so far are kept, so a rerun says the rest.", err=True)
             if client is not None:
                 typer.echo(f"ElevenLabs credits used: {client.credits}", err=True)

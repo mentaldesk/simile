@@ -9,7 +9,7 @@ from starlette.testclient import TestClient
 from simile.jobs import Jobs
 from simile.library import Library
 from simile.voicelib import greetings
-from simile.voicelib.config import VoicelibConfig
+from simile.voicelib.config import DAILY, DEFAULT_CONFIG, VoicelibConfig, from_environment
 from simile.voicelib.greetings import GREET, Greet
 from simile.voicing import eleven
 from simile.voicing.greetings import (
@@ -259,6 +259,32 @@ def test_the_allowance_starts_again_each_day(
     monkeypatch.setattr(greetings, "today", lambda: date.today() + timedelta(days=1))
     assert allowance.spent() == 0
     assert allowance.take(100)
+
+
+def test_a_job_killed_while_counting_leaves_the_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    allowance = greetings.Allowance(tmp_path / "allowance.json", 100)
+    allowance.take(60)
+
+    with monkeypatch.context() as killed:
+        killed.setattr(greetings.os, "replace", lambda *paths: pytest.fail("killed"))
+        with pytest.raises(pytest.fail.Exception):
+            allowance.take(10)
+
+    assert allowance.spent() == 60
+    assert json.loads((tmp_path / "allowance.json").read_text())["characters"] == 60
+
+
+def test_the_daily_allowance_comes_from_the_environment() -> None:
+    assert from_environment({}) == DEFAULT_CONFIG
+    assert DEFAULT_CONFIG.elevenlabs_characters_a_day == 300
+    assert from_environment({DAILY: " 42 "}).elevenlabs_characters_a_day == 42
+    assert from_environment({DAILY: "0"}).elevenlabs_characters_a_day == 0
+    with pytest.raises(ValueError, match="whole number of characters"):
+        from_environment({DAILY: "lots"})
+    with pytest.raises(ValueError, match="whole number of characters"):
+        from_environment({DAILY: "-5"})
 
 
 def test_a_library_voice_brings_its_residents_elevenlabs_voice(
