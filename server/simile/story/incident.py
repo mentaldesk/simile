@@ -347,20 +347,7 @@ def build(
         {},
     )
 
-    making.add(
-        Fact(
-            id=LIFT_LOG,
-            what="The dead terminal in the old metro carries Aris's maker's mark: she rewired it. "
-            "Its last entry logs the maintenance lift going down to the sewers the night before "
-            "her workshop was found standing open.",
-            when=gone - timedelta(hours=20),
-            where="metro",
-            about=[ARIS],
-            known_by=[],
-            found_in=TERMINAL,
-        ),
-        {},
-    )
+    making.add(lift_log(gone), {})
 
     everyone = [npc.id for npc in npcs]
     relieved = {
@@ -403,6 +390,30 @@ def build(
         facts=making.facts[::-1],
     )
     return Made(incident, _memories(making, relieved), written)
+
+
+def lift_log(gone: datetime) -> Fact:
+    """The fact in the metro's dead terminal, dated from when Aris's workshop was found open."""
+    return Fact(
+        id=LIFT_LOG,
+        what="The dead terminal in the old metro carries Aris's maker's mark: she rewired it. Its "
+        "last entry logs the maintenance lift going down to the sewers the night before her "
+        "workshop was found standing open.",
+        when=gone - timedelta(hours=20),
+        where="metro",
+        about=[ARIS],
+        known_by=[],
+        found_in=TERMINAL,
+    )
+
+
+def logged(incident: Incident) -> bool:
+    """Adds the lift log to an incident made before S8. Whether it was missing."""
+    facts = {fact.id: fact for fact in incident.facts}
+    if LIFT_LOG in facts or GONE not in facts:
+        return False
+    incident.facts = [*incident.facts, lift_log(facts[GONE].when)]
+    return True
 
 
 def _ask_about_row(making: _Building, npc: Id, seen_by: Id | None) -> Lead:

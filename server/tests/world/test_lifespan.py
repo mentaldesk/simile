@@ -101,6 +101,23 @@ def test_keeps_a_jump_a_row_higher_only_with_the_hydraulic_legs(
         assert (movement_of(app).position(PLAYER_ID) == Point(100, 11.9, "metro")) is legs
 
 
+@pytest.mark.parametrize("datajack", [False, True], ids=["without", "with the datajack"])
+def test_keeps_a_move_into_the_sewers_only_with_the_datajack(
+    make_package: MakePackage, datajack: bool
+) -> None:
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        if datajack:
+            player_of(app).body = Body(vertebra=Bionic.DATAJACK)
+        send_moves(app, (100, 15, "metro"), (3, 15, "sewers"))
+        entered = movement_of(app).position(PLAYER_ID) == Point(3, 15, "sewers")
+        send_moves(app, (100, 15, "metro"))
+
+        assert entered is datajack
+        assert movement_of(app).position(PLAYER_ID) == Point(100, 15, "metro")
+
+
 @pytest.mark.parametrize(
     ("place", "where"),
     [

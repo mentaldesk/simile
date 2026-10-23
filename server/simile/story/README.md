@@ -94,7 +94,8 @@ be left from a start that stored them and then died before saving the incident. 
 the new memories, and only then sets the incident and saves the world, so the incident is made at
 most once and its memories are never lost. The log says only that it was made, not who did it.
 
-A save from before the incident gets one rather than none, since without it an old village has no
+A world whose incident predates S8 gains the fixed `lift_log` (`logged`) on its next start, dated
+20 hours before its `gone`, and is saved. A save from before the incident gets one rather than none, since without it an old village has no
 story short of `simile reset`. It's dated a week before the save's own time, which can fall within
 what the village has already lived through, but its memories stay out of `recall`, so nobody brings
 it up until the player asks.

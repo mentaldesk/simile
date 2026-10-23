@@ -10,7 +10,7 @@ from simile.persistence import investigation_of
 from simile.schema import Incident
 from simile.sim import world_of
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
-from simile.story.incident import make_incident
+from simile.story.incident import logged, make_incident
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,10 @@ async def begin(
 ) -> Incident | None:
     """Make the world's incident if it has none, storing its memories before saving it."""
     investigation = investigation_of(app)
+    saver = getattr(app.state, "persistence", None)
     if investigation.incident is not None:
+        if logged(investigation.incident) and saver is not None:
+            await saver.save()
         return None
     clock, memory = world_of(app).clock, memory_of(app)
     if left := memory.forget_facts():
@@ -35,7 +38,7 @@ async def begin(
     made = await make_incident(npcs, clock.now, llm, rng=rng, config=config)
     memory.add(*made.memories)
     investigation.incident = made.incident
-    if (saver := getattr(app.state, "persistence", None)) is not None:
+    if saver is not None:
         await saver.save()
     logger.info("%s  Made the incident%s", clock, "" if made.written else " from templates")
     return made.incident
