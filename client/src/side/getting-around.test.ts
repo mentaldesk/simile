@@ -144,13 +144,25 @@ describe('every lift', () => {
 
 describe('every door', () => {
   const doors = links.filter(({ kind }) => kind === 'door');
+  const jacked = (start: MapPosition) => Object.assign(new SidePlayer(village, start), { datajack: true });
 
   it('is taken on E from its cell, and on up there while E is used by something in reach', () => {
     for (const door of doors) {
       const start = { x: door.x, y: door.y, map: door.map };
-      expect(new SidePlayer(village, start).update({ ...idle, use: true }, 1 / 60), door.id).toBe(door);
-      expect(new SidePlayer(village, start).update({ ...idle, y: -1, eTaken: true }, 1 / 60), door.id).toBe(door);
+      expect(jacked(start).update({ ...idle, use: true }, 1 / 60), door.id).toBe(door);
+      expect(jacked(start).update({ ...idle, y: -1, eTaken: true }, 1 / 60), door.id).toBe(door);
     }
+  });
+
+  it("takes the lift down to the sewers only with the datajack, and back up without", () => {
+    const [down] = doors.filter(({ id, map }) => id === 'metro_to_sewers' && map === 'metro');
+    const [up] = doors.filter(({ id, map }) => id === 'metro_to_sewers' && map === 'sewers');
+    const at = (door: typeof down) => ({ x: door.x, y: door.y, map: door.map });
+
+    expect(new SidePlayer(village, at(down)).update({ ...idle, use: true }, 1 / 60)).toBeUndefined();
+    expect(new SidePlayer(village, at(down)).ways()).toEqual([]);
+    expect(jacked(at(down)).update({ ...idle, use: true }, 1 / 60)).toBe(down);
+    expect(new SidePlayer(village, at(up)).update({ ...idle, use: true }, 1 / 60)).toBe(up);
   });
 
   it("isn't taken on up or down while E is free", () => {

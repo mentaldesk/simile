@@ -38,10 +38,10 @@ describe('light on the maps', () => {
     expect(isLit(metro, 95, 15)).toBe(true);
   });
 
-  it('keeps the village lit, and only the metro underground', () => {
+  it('keeps the village lit, and only the metro and the sewers underground', () => {
     for (const map of village.maps.values()) {
       const below = village.map(map.street)!.underground;
-      expect(below, map.id).toBe(map.street === 'metro');
+      expect(below, map.id).toBe(map.street === 'metro' || map.street === 'sewers');
       if (map.id !== 'metro') expect(hasDark(map), map.id).toBe(false);
     }
     expect(hasDark(metro)).toBe(true);

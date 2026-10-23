@@ -85,6 +85,7 @@ def test_every_map_is_a_side_view_street_or_floor() -> None:
         "lychee_lane",
         "metro",
         "rooftops",
+        "sewers",
     ]
     assert len(FLOORS) == 32
     assert len(STREETS) + len(FLOORS) == len(MAPS)
@@ -216,6 +217,7 @@ def test_streets_join_through_doors_outside_on_the_first_street() -> None:
         "high_street_to_lychee_lane": ("high_street", "lychee_lane"),
         "kapok_walk_to_rooftops": ("kapok_walk", "rooftops"),
         "banyan_row_to_metro": ("banyan_row", "metro"),
+        "metro_to_sewers": ("metro", "sewers"),
     }
     assert {door.kind for door in TOWN.doors if door.id in joins} == {DoorKind.DOOR}
 

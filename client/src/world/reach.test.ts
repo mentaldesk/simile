@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { server, type Pile, type Wall } from '../net';
+import { interactableAt } from './interactables';
+import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
 import { inReach, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
@@ -81,6 +83,28 @@ describe('inReach', () => {
       ['terminal', 0.5],
     ]);
     expect(kinds(28, 26)).toEqual([['mural', 0.5]]);
+  });
+});
+
+describe('the jacks, the machines only the datajack works', () => {
+  const withDatajack = (jacked: boolean): Reachables => ({ ...reachables, jacked: () => jacked });
+  const used = (x: number, jacked: boolean) => {
+    const found = usedByE(at('metro', x), withDatajack(jacked));
+    return found?.kind === 'jack' ? found.interactable.id : found?.kind;
+  };
+
+  it('E uses the dead terminal, with the datajack or without', () => {
+    expect(used(104, false)).toBe('metro_terminal');
+    expect(used(104, true)).toBe('metro_terminal');
+    expect(deadJack(interactableAt('metro', at('metro', 104))!)).toBe('Nothing happens: the dead terminal needs a datajack.');
+  });
+
+  it('E at the lift says it is dead without the datajack, and leaves it to the door with it', () => {
+    const lift = interactableAt('metro', at('metro', 100))!;
+    expect(lift.prompt).toBe('Use the maintenance lift');
+    expect(leadsAway(lift)).toBe(true);
+    expect(used(100, false)).toBe('metro_lift');
+    expect(used(100, true)).toBeUndefined();
   });
 });
 

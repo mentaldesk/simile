@@ -10,5 +10,11 @@
   "cells": 4,
   "rows": 2,
   "frame_seconds": 0.1,
-  "reach": 5.499
+  "reach": 5.499,
+  "legs": {
+    "rise": 3.3,
+    "rise_seconds": 0.45517316341767355,
+    "rows": 3,
+    "reach": 6.233
+  }
 }

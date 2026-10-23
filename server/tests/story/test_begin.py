@@ -21,7 +21,9 @@ from simile.schema import Incident, Memory, Npc
 from simile.sim import Clock, FakeWallClock, World, world_of
 from simile.story import begin as story_begin
 from simile.story.begin import begin
-from simile.story.incident import ATTACK, make_incident
+from simile.story.content import TERMINAL
+from simile.story.incident import ATTACK, GONE, LIFT_LOG, lift_log, make_incident
+from simile.story.journal import Journal
 
 pytestmark = pytest.mark.anyio
 
@@ -202,3 +204,26 @@ async def test_casting_never_takes_the_incidents_memories_for_a_village_that_ran
     assert incident is not None
     residents = list(behaviour_of(app).npcs)
     assert not seeded(memory_of(app), residents, START)
+
+
+async def test_an_incident_from_before_s8_gains_the_lift_log_once_and_the_terminal_finds_it() -> (
+    None
+):
+    app = starting()
+    made = await begin(app)
+    assert made is not None
+    investigation = investigation_of(app)
+    investigation.incident = made.model_copy(
+        update={"facts": [fact for fact in made.facts if fact.id != LIFT_LOG]}
+    )
+    saves = len(app.state.persistence.held)
+
+    assert await begin(app) is None and await begin(app) is None
+
+    facts = {fact.id: fact for fact in investigation.incident.facts}
+    assert facts[LIFT_LOG] == lift_log(facts[GONE].when)
+    assert facts[LIFT_LOG].when == facts[GONE].when - timedelta(hours=20)
+    assert [fact.id for fact in investigation.incident.facts].count(LIFT_LOG) == 1
+    assert len(app.state.persistence.held) == saves + 1
+    assert Journal(investigation, lambda: START).found(TERMINAL, "Dead terminal")
+    assert [entry.fact_id for entry in investigation.journal] == [LIFT_LOG]

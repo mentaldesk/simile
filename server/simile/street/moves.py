@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, NamedTuple
 
 from simile.schema import DoorKind
-from simile.street.jump import JUMP
+from simile.street.jump import JUMP, Jump
 
 if TYPE_CHECKING:
     from simile.world.map import TownMap
@@ -95,15 +95,17 @@ def _clear(town: "TownMap", start: Cell, end: Cell) -> bool:
     return not any(town.solid(cx, r) for cx, r in path)
 
 
-def possible(town: "TownMap", x: float, y: float, last: tuple[float, float] | None) -> bool:
+def possible(
+    town: "TownMap", x: float, y: float, last: tuple[float, float] | None, jump: Jump = JUMP
+) -> bool:
     """Whether a `player_move` to (x, y) is kept, after `last`: docs/protocol.md's rule."""
     cx, cy = math.floor(x + 0.5), math.ceil(round(y, 6))
     if town.walkable(cx, cy) or _between(town, x, y):
         return True
     if town.solid(cx, cy) or not _lands(town, cx, cy):
         return False
-    falling = last is not None and y > last[1] and abs(x - last[0]) <= JUMP.reach
-    return falling or _within_a_jump(town, x, y)
+    falling = last is not None and y > last[1] and abs(x - last[0]) <= jump.reach
+    return falling or _within_a_jump(town, x, y, jump)
 
 
 def _between(town: "TownMap", x: float, y: float) -> bool:
@@ -126,12 +128,12 @@ def _lands(town: "TownMap", x: int, y: int) -> bool:
     return town.standing(x, y)
 
 
-def _within_a_jump(town: "TownMap", x: float, y: float) -> bool:
-    """Up to `JUMP.rise` above a standing cell within `JUMP.reach`, or half a row below it."""
-    reach = math.floor(JUMP.reach)
-    rows = range(math.ceil(y - 0.5), math.floor(y + JUMP.rise) + 1)
+def _within_a_jump(town: "TownMap", x: float, y: float, jump: Jump) -> bool:
+    """Up to `jump.rise` above a standing cell within `jump.reach`, or half a row below it."""
+    reach = math.floor(jump.reach)
+    rows = range(math.ceil(y - 0.5), math.floor(y + jump.rise) + 1)
     return any(
-        town.standing(sx, sy) and abs(sx - x) <= JUMP.reach
+        town.standing(sx, sy) and abs(sx - x) <= jump.reach
         for sx in range(math.floor(x) - reach, math.ceil(x) + reach + 1)
         for sy in rows
     )

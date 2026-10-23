@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { TiledMap } from '../world/map';
 import { village } from './content';
-import { BUFFER_SECONDS, COYOTE_SECONDS, JUMP_REACH, JUMP_RISE, JUMP_TABLE, JUMP_UP, landingRow } from './jump';
+import {
+  BUFFER_SECONDS,
+  COYOTE_SECONDS,
+  JUMP_REACH,
+  JUMP_RISE,
+  JUMP_TABLE,
+  JUMP_UP,
+  jumpOf,
+  landingRow,
+  LEGS_TABLE,
+  type JumpTable,
+} from './jump';
 import positions from '../../../server/tests/street/positions.json';
 import { CLIMB_KINDS, isSolid, isStanding, isWalkable, Village, type SideMap } from './maps';
 import { RUN_PACE, SidePlayer, type Controls } from './player';
@@ -277,29 +288,66 @@ function between(map: SideMap, x: number, y: number): boolean {
 }
 
 /** A copy of server/simile/street/moves.py's `possible`, checked against the same table of cases. */
-function possible(map: SideMap, x: number, y: number, last?: { x: number; y: number } | null): boolean {
+function possible(
+  map: SideMap,
+  x: number,
+  y: number,
+  last?: { x: number; y: number } | null,
+  table: JumpTable = JUMP_TABLE,
+): boolean {
   const [cx, cy] = [Math.floor(x + 0.5), Math.ceil(Math.round(y * 1e6) / 1e6)];
   if (isWalkable(map, cx, cy) || between(map, x, y)) return true;
   if (isSolid(map, cx, cy)) return false;
   let row = cy;
   while (row < map.height - 1 && !isSolid(map, cx, row + 1)) row++;
   if (!isStanding(map, cx, row)) return false;
-  if (last && y > last.y && Math.abs(x - last.x) <= JUMP_TABLE.reach) return true;
-  for (let sy = Math.ceil(y - 0.5); sy <= Math.floor(y + JUMP_TABLE.rise); sy++) {
-    for (let sx = Math.floor(x - JUMP_TABLE.reach); sx <= Math.ceil(x + JUMP_TABLE.reach); sx++) {
-      if (isStanding(map, sx, sy) && Math.abs(sx - x) <= JUMP_TABLE.reach) return true;
+  if (last && y > last.y && Math.abs(x - last.x) <= table.reach) return true;
+  for (let sy = Math.ceil(y - 0.5); sy <= Math.floor(y + table.rise); sy++) {
+    for (let sx = Math.floor(x - table.reach); sx <= Math.ceil(x + table.reach); sx++) {
+      if (isStanding(map, sx, sy) && Math.abs(sx - x) <= table.reach) return true;
     }
   }
   return false;
 }
 
 describe("the server's rule", () => {
-  it.each(positions.map((c) => [c.why, c.map, c.x, c.y, c.last, c.kept] as const))(
+  it.each(positions.map((c) => [c.why, c.map, c.x, c.y, c.last, c.kept, 'legs' in c && c.legs] as const))(
     '%s: %s at %s, %s after %o is kept: %s',
-    (_, map, x, y, last, kept) => {
-      expect(possible(village.map(map)!, x, y, last && { x: last[0], y: last[1] })).toBe(kept);
+    (_, map, x, y, last, kept, legs) => {
+      const table = legs ? LEGS_TABLE : JUMP_TABLE;
+      expect(possible(village.map(map)!, x, y, last && { x: last[0], y: last[1] }, table)).toBe(kept);
     },
   );
+});
+
+describe('on the hydraulic legs', () => {
+  const legs = { legs: 'hydraulic_legs' } as const;
+  const body = { vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' } as const;
+
+  it('jumps a row higher than on their own legs, under the same gravity', () => {
+    expect(jumpOf({ ...body, legs: 'present' })).toBe(JUMP_TABLE);
+    expect(jumpOf({ ...body, ...legs })).toBe(LEGS_TABLE);
+    expect(LEGS_TABLE.rows).toBe(JUMP_UP + 1);
+    expect(LEGS_TABLE.rise).toBeGreaterThan(LEGS_TABLE.rows);
+    expect((2 * LEGS_TABLE.rise) / LEGS_TABLE.rise_seconds ** 2).toBeCloseTo((2 * JUMP_RISE) / JUMP_TABLE.rise_seconds ** 2, 6);
+  });
+
+  it.each([
+    [JUMP_TABLE.rise, 15],
+    [LEGS_TABLE.rise, 12],
+  ])("runs and jumps onto the metro's high ledge only with the legs: rise %s lands on row %s", (rise, row) => {
+    const player = new SidePlayer(village, { x: 101, y: 15, map: 'metro' });
+    player.rise = rise;
+    for (let t = 0; t < 3 && player.position.x < 103; t += DT) player.update(press({ x: 1, run: true }), DT);
+    player.update(press({ x: 1, run: true, jump: true, hold: true }), DT);
+    let highest = 15;
+    for (let t = 0; t < 3 && player.airborne; t += DT) {
+      player.update(press({ x: 1, run: true, hold: true }), DT);
+      highest = Math.min(highest, player.position.y);
+    }
+    expect(player.position.y).toBe(row);
+    expect(15 - highest).toBeCloseTo(rise, 1);
+  });
 });
 
 describe('on the rooftops', () => {

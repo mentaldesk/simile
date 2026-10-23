@@ -58,6 +58,7 @@ open the day before it starts (`gone_before`):
 | `grudge_<id>`: the attacker rowed with Aris, and why | the attacker, and a witness | their `there_` |
 | `there_<id>`: the attacker was in the lane, not where they say | the attacker | |
 | `attack`: who did it | the attackers | |
+| `lift_log`: Aris rewired the metro's dead terminal, which logged the lift going down to the sewers the night before her workshop was found open | found in `metro_terminal`, with the datajack (S8) | |
 
 Every lead goes from what the player can find or ask about towards an attacker, so each attacker's
 `there_` can be reached from the notes, the cloth or `gone`. Witnesses are residents other than the
@@ -93,7 +94,8 @@ be left from a start that stored them and then died before saving the incident. 
 the new memories, and only then sets the incident and saves the world, so the incident is made at
 most once and its memories are never lost. The log says only that it was made, not who did it.
 
-A save from before the incident gets one rather than none, since without it an old village has no
+A world whose incident predates S8 gains the fixed `lift_log` (`logged`) on its next start, dated
+20 hours before its `gone`, and is saved. A save from before the incident gets one rather than none, since without it an old village has no
 story short of `simile reset`. It's dated a week before the save's own time, which can fall within
 what the village has already lived through, but its memories stay out of `recall`, so nobody brings
 it up until the player asks.
@@ -126,8 +128,8 @@ the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), 
   or nearer is picked up instead, as the client shows. The reach is the client's, so they agree,
   and it keeps the workshop's door, beside the door frame, on E.
 - **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`
-  (`flushed`). Without the eye, and for a clue, it's `null`. S8's flush on a line can use `says`
-  the same way, so the face and the journal agree.
+  (`flushed`). Without the eye, and for a clue, it's `null`. S8's flush on a line uses `says` and
+  `flushed` the same way (`simile.conversation.flush`), so the face and the journal agree.
 - **Leads.** An entry opens its fact's leads, less those to facts the journal already has, and
   closes every lead to its own fact, a lie included.
 - **Once.** A truth already in the journal isn't written again, whoever tells it, nor a lie the same

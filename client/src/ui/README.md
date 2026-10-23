@@ -90,6 +90,18 @@ nothing: the server notices a player near a mural itself.
 a click through `muralView()`, both in [`world/murals.ts`](../world/murals.ts). With no
 such scene, as in the dialogue harness, it never hints or opens.
 
+## The jacks
+
+On a jack's stand tile (`world/jacks.ts`), a hint says "Press E to use the dead terminal." Without
+the datajack, E says "Nothing happens: the dead terminal needs a datajack." With it, E at the
+terminal sends `pick_up` and opens the journal, as at a clue, and at the lift E takes the link down
+to the sewers instead.
+
+## The flush
+
+A `line` with `flushed` shows its bubble flushed red, with a mark before the text: the infrared eye
+saw the speaker flush, so the line is a lie.
+
 ## Ordering at a counter
 
 On a counter's stand tile (`interactables` in [`world/interactables.ts`](../world/interactables.ts)),

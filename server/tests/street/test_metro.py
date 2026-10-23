@@ -1,6 +1,5 @@
 import json
 from collections import deque
-from dataclasses import replace
 from typing import Any
 
 import pytest
@@ -8,7 +7,7 @@ import pytest
 from simile.behaviour.scoring import Places
 from simile.schema import DoorKind, Facing, InteractableKind, LocationKind
 from simile.street import moves
-from simile.street.jump import JUMP
+from simile.street.jump import JUMP, LEGS
 from simile.street.metro import (
     ARRIVAL,
     CLINIC,
@@ -16,6 +15,7 @@ from simile.street.metro import (
     DOCTOR,
     ENTRANCE,
     HIGH_LEDGE,
+    LEDGE_SECRET,
     LEGS_ROWS,
     LIFT,
     LIFT_FOOT,
@@ -25,6 +25,7 @@ from simile.street.metro import (
     SCRAP_TRADER,
 )
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
+from simile.street.sewers import LANDING, SEWERS
 from simile.street.village import GROUND, UNDERGROUND
 from simile.world.map import STREET_DIR, SpotKind, load_maps, with_every_location
 from simile.world.movement import Point, inside
@@ -34,7 +35,7 @@ MAPS = load_maps(STREET_DIR)
 TOWN = with_every_location(MAPS)
 METRO_MAP = MAPS[METRO]
 CLINIC_FLOOR = f"{CLINIC}_floor_0"
-BELOW = {METRO: METRO_MAP, CLINIC_FLOOR: MAPS[CLINIC_FLOOR]}
+BELOW = {METRO: METRO_MAP, CLINIC_FLOOR: MAPS[CLINIC_FLOOR], SEWERS: MAPS[SEWERS]}
 START = Spot(METRO, ARRIVAL.x, ARRIVAL.y)
 
 
@@ -88,7 +89,7 @@ def walkable() -> set[Spot]:
 
 
 def test_a_stairway_goes_down_through_a_door_on_banyan_rows_promenade() -> None:
-    [door] = [d for d in TOWN.doors if METRO in (d.outside.map, d.inside.map) and d.id != CLINIC]
+    [door] = [d for d in TOWN.doors if d.inside == ARRIVAL]
 
     assert door.id == "banyan_row_to_metro" and door.kind is DoorKind.DOOR
     assert (door.outside, door.inside) == (ENTRANCE, ARRIVAL)
@@ -96,7 +97,7 @@ def test_a_stairway_goes_down_through_a_door_on_banyan_rows_promenade() -> None:
     assert ARRIVAL.y < GROUND
     top = max(x for x in range(METRO_MAP.width) if METRO_MAP.standing(x, ARRIVAL.y))
     assert METRO_MAP.climb(top + 1, ARRIVAL.y + 1) is DoorKind.STAIRS
-    assert {METRO} == UNDERGROUND
+    assert {METRO, SEWERS} == UNDERGROUND
 
 
 def test_you_can_walk_down_through_the_metro_to_the_clinic_and_back() -> None:
@@ -130,19 +131,33 @@ def test_the_high_ledge_is_a_row_above_todays_jump_and_the_legs_reach_it(
 
     assert ledge.kind is InteractableKind.MACHINE
     assert floor - row == LEGS_ROWS > JUMP.rows and JUMP.rise < LEGS_ROWS
-    monkeypatch.setattr(moves, "JUMP", replace(JUMP, rows=LEGS_ROWS))
+    assert LEGS.rows == LEGS_ROWS < LEGS.rise and LEGS.gravity == pytest.approx(JUMP.gravity)
+    monkeypatch.setattr(moves, "JUMP", LEGS)
     assert stands(HIGH_LEDGE) <= reachable(jumps=True)
 
 
-def test_the_lift_and_the_dead_terminal_are_machines_you_walk_up_to_that_lead_nowhere_yet() -> None:
+def test_the_lift_and_the_dead_terminal_are_jacks_you_walk_up_to() -> None:
     walked = reachable(jumps=False)
     ends = {(end.map, end.x, end.y) for d in TOWN.doors for end in (d.outside, d.inside)}
 
     for item_id in (LIFT, DEAD_TERMINAL):
-        assert machine(item_id).kind is InteractableKind.MACHINE
+        assert machine(item_id).kind is InteractableKind.JACK
         assert stands(item_id) <= walked
-        assert not {(s.map, s.x, s.y) for s in stands(item_id)} & ends
-    assert Spot(METRO, LIFT_FOOT.x, LIFT_FOOT.y) in stands(LIFT)
+    assert not {(s.map, s.x, s.y) for s in stands(DEAD_TERMINAL)} & ends
+    assert stands(LIFT) == {Spot(METRO, LIFT_FOOT.x, LIFT_FOOT.y)}
+
+
+def test_the_lift_goes_down_to_a_landing_in_the_sewers_and_back() -> None:
+    [door] = [d for d in TOWN.doors if SEWERS in (d.outside.map, d.inside.map)]
+    sewers = MAPS[SEWERS]
+
+    data = json.loads((STREET_DIR / f"{SEWERS}.tmj").read_text())
+    cells = {Spot(SEWERS, x, y) for y in range(sewers.height) for x in range(sewers.width)}
+
+    assert (door.kind, door.outside, door.inside) == (DoorKind.DOOR, LIFT_FOOT, LANDING)
+    assert props(data)["underground"] is True
+    assert {cell for cell in cells if sewers.walkable(cell.x, cell.y)} <= reachable(jumps=False)
+    assert sewers.light and all(light.lit for light in sewers.light)
 
 
 def test_the_plug_is_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:
@@ -187,11 +202,14 @@ def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
     secrets = [o for o in objects(PICKUPS_LAYER) if o["type"] == "secret"]
     jumped, walked = reachable(jumps=True), reachable(jumps=False)
 
-    assert len(secrets) == 3
+    assert len(secrets) == 4
     for secret in secrets:
         here = Spot(METRO, *cell(secret))
         held = props(secret)
-        assert here in jumped and here not in walked, secret["name"]
+        if secret["name"] == LEDGE_SECRET:
+            assert here in stands(HIGH_LEDGE) and here not in jumped, secret["name"]
+        else:
+            assert here in jumped and here not in walked, secret["name"]
         assert ("money" in held) != ("item" in held), secret["name"]
         assert held.get("money", 1) > 0
 
@@ -234,7 +252,7 @@ def test_no_resident_has_anywhere_to_go_in_the_metro() -> None:
     assert {loc.id for loc in TOWN.locations if loc.map in BELOW} == {CLINIC, SCRAP_STALL}
     assert {loc.kind for loc in TOWN.locations if loc.map in BELOW} == {LocationKind.AMENITY}
     assert not placed & set(BELOW)
-    assert len(metro_ends) == 2, "the stairway and the clinic's door: a dead end"
+    assert len(metro_ends) == 3, "the stairway, the clinic's door and the lift: a dead end"
 
 
 def test_the_hooks_keep_their_ids_and_cells() -> None:
@@ -244,7 +262,7 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
 
     assert machines == {
         PLUG: [(72, 15)],
-        LIFT: [(100, 15), (101, 15)],
+        LIFT: [(100, 15)],
         DEAD_TERMINAL: [(104, 15)],
         HIGH_LEDGE: [(106, 12), (107, 12), (108, 12), (109, 12)],
     }
@@ -259,5 +277,6 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         "metro_secret_alcove": (86, 8),
         "metro_salvage_5": (83, 15),
         "metro_salvage_6": (108, 12),
+        LEDGE_SECRET: (106, 12),
     }
     assert (LIFT_FOOT.map, LIFT_FOOT.x, LIFT_FOOT.y) == (METRO, 100, 15)

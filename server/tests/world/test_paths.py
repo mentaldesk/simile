@@ -192,4 +192,5 @@ def test_only_the_streets_are_outdoors() -> None:
         "lychee_lane",
         "metro",
         "rooftops",
+        "sewers",
     }

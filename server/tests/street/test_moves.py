@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from simile.schema import DoorKind, MapTile
+from simile.schema import Bionic, Body, DoorKind, MapTile
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.jump import JUMP
+from simile.street.jump import JUMP, LEGS, jump_of, jump_table
 from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
 from simile.world import Movement, Outcome
 from simile.world.map import STREET_DIR, WALKING_SPEED, TownMap, load_maps
@@ -300,10 +300,25 @@ POSITIONS = json.loads((Path(__file__).parent / "positions.json").read_text())
 STREETS = load_maps(STREET_DIR)
 
 
+def test_the_hydraulic_legs_jump_a_row_higher_under_the_same_gravity() -> None:
+    metro = STREETS["metro"]
+
+    assert jump_of(Body()) is JUMP and jump_of(Body(legs=Bionic.HYDRAULIC_LEGS)) is LEGS
+    assert LEGS.rows == JUMP.rows + 1 and LEGS.gravity == pytest.approx(JUMP.gravity)
+    assert not possible(metro, 100, 11.9, None) and possible(metro, 100, 11.9, None, LEGS)
+    assert jump_table()["legs"] == {
+        "rise": LEGS.rise,
+        "rise_seconds": LEGS.rise_seconds,
+        "rows": LEGS.rows,
+        "reach": round(LEGS.reach, 3),
+    }
+
+
 @pytest.mark.parametrize("case", POSITIONS, ids=lambda c: f"{c['why']} at {c['x']}, {c['y']}")
 def test_keeps_the_clients_sends_and_ignores_where_nobody_could_be(case: dict) -> None:
     last = tuple(case["last"]) if case["last"] else None
-    assert possible(STREETS[case["map"]], case["x"], case["y"], last) is case["kept"]
+    jump = LEGS if case.get("legs") else JUMP
+    assert possible(STREETS[case["map"]], case["x"], case["y"], last, jump) is case["kept"]
 
 
 def test_keeps_a_climb_up_or_down_stairs_all_the_way() -> None:

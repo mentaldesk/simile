@@ -23,6 +23,8 @@ import { cellOf, type Link, type Village } from './maps';
 import type { Drawn } from './motion';
 import type { Crossing } from './runs';
 import { SidePlayer, type Controls, type MapPosition } from './player';
+import { jumpOf } from './jump';
+import { fitted } from '../dolls/bionics';
 import { drawSockets } from './plugs';
 import { sideResidents } from './residents';
 import { PileGlints } from './piles';
@@ -169,6 +171,9 @@ export class SideScene extends Phaser.Scene {
     const { content, player, street } = this;
     if (!content || !player || !street) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
+    const body = playerState.latest?.player.body;
+    player.rise = jumpOf(body).rise;
+    player.datajack = fitted(body).includes('datajack');
     if (!this.passing) {
       const door = player.update(this.read(player), dt);
       if (door) this.takeDoor(door);

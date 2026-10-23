@@ -41,6 +41,7 @@ LIFT_FOOT = MapTile(map=METRO, x=100, y=GROUND)
 """Where the lift down to the sewers stops on the metro."""
 LEGS_ROWS = 3
 """Rows up the high ledge assumes the hydraulic legs jump: one more than today's."""
+LEDGE_SECRET = "metro_secret_ledge"
 
 SALVAGE = "salvage"
 SECRET = "secret"
@@ -53,8 +54,14 @@ def catwalk(plan: Plan, x: int, row: int, width: int) -> None:
     plan.piece("catwalk", x, row, width, 2)
 
 
-def machine(plan: Plan, item_id: str, label: str, area: TileArea, stand: list[Tile]) -> None:
-    kind = InteractableKind.MACHINE
+def machine(
+    plan: Plan,
+    item_id: str,
+    label: str,
+    area: TileArea,
+    stand: list[Tile],
+    kind: InteractableKind = InteractableKind.MACHINE,
+) -> None:
     plan.interactables.append(
         Interactable(id=item_id, label=label, kind=kind, map=plan.id, area=area, stand=stand)
     )
@@ -151,17 +158,19 @@ def depot(plan: Plan) -> list[Plan]:
     room.spot(DOCTOR, SpotKind.STANDING, 6, 2, Facing.SOUTH)
     plan.piece("freight_lift", LIFT_FOOT.x, GROUND - 3, 2, 4)
     area = TileArea(x=LIFT_FOOT.x, y=GROUND - 3, width=2, height=4)
-    stand = [Tile(x=LIFT_FOOT.x, y=GROUND), Tile(x=LIFT_FOOT.x + 1, y=GROUND)]
-    machine(plan, LIFT, "Maintenance lift", area, stand)
+    stand = [Tile(x=LIFT_FOOT.x, y=LIFT_FOOT.y)]
+    machine(plan, LIFT, "Maintenance lift", area, stand, InteractableKind.JACK)
     plan.piece("dead_terminal", 104, GROUND - 1, 1, 2)
     area = TileArea(x=104, y=GROUND - 1, width=1, height=2)
-    machine(plan, DEAD_TERMINAL, "Dead terminal", area, [Tile(x=104, y=GROUND)])
+    stand = [Tile(x=104, y=GROUND)]
+    machine(plan, DEAD_TERMINAL, "Dead terminal", area, stand, InteractableKind.JACK)
     ledge = GROUND - LEGS_ROWS
     catwalk(plan, 106, ledge, 4)
     area = TileArea(x=106, y=ledge, width=4, height=1)
     machine(plan, HIGH_LEDGE, "High ledge", area, [Tile(x=x, y=ledge) for x in range(106, 110)])
     plan.piece("crates", 108, ledge, 1, 1)
     salvage(plan, 6, 108, ledge)
+    secret(plan, LEDGE_SECRET, 106, ledge, money=60.0)
     return clinic.floors
 
 

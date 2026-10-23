@@ -73,6 +73,16 @@ describe('Dialogue', () => {
     ]);
   });
 
+  it('shows a flush on the speaker exactly on a line the server says is flushed', () => {
+    deliver('mei', 'Morning!');
+    const [plain] = dialogue.bubbles.current();
+    const line = { id: 2, conversation_id: 'conv_1', speaker: 'suki', text: 'I was home.', timestamp: '2026-03-14T08:05:00Z', duration: 2 };
+    server.dispatch(JSON.stringify({ type: 'line', line, voiced: false, flushed: true }));
+
+    expect(plain.flushed).toBe(false);
+    expect(dialogue.bubbles.current().find(({ speaker }) => speaker === 'suki')?.flushed).toBe(true);
+  });
+
   it('ignores lines out of earshot', () => {
     deliver('tom', 'Can anyone hear me?');
 

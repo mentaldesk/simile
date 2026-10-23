@@ -1,3 +1,5 @@
+import asyncio
+import random
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -10,10 +12,12 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.economy import PLAYER, Kind
 from simile.economy.economy import economy_of
-from simile.persistence import player_of
+from simile.npc import load_npcs
+from simile.persistence import investigation_of, player_of
 from simile.player.config import SALVAGE
-from simile.schema import PLAYER_ID, Item, ItemKind
+from simile.schema import PLAYER_ID, Bionic, Body, Item, ItemKind
 from simile.sim import Clock, World, world_of
+from simile.story import make_incident
 from simile.world import Point, movement_of
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -171,13 +175,13 @@ def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_
         economy = economy_of(app)
         ledger = economy.ledger
 
-    assert len(greeted["piles"]) == 9
+    assert len(greeted["piles"]) == 10
     assert {"at": {"map": "metro", "x": 38, "y": 12}, "items": [wire]} in greeted["piles"]
     assert salvaged["player"]["items"][1:] == [wire]
     assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
-    assert len(salvaged["piles"]) == 8
+    assert len(salvaged["piles"]) == 9
     assert found["player"]["money"] == 40
-    assert len(found["piles"]) == 7
+    assert len(found["piles"]) == 8
     assert at_the_stall["buyer"] == {
         "place": "scrap_stall",
         "name": "The scrap trader's stall",
@@ -189,3 +193,29 @@ def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_
     assert [entry.kind for entry in ledger.entries] == [Kind.FOUND, Kind.SALVAGE]
     assert ledger.net(PLAYER) == 46
     assert ledger.gap(economy.money) == pytest.approx(0)
+
+
+@pytest.mark.parametrize("datajack", [False, True], ids=["without", "with the datajack"])
+def test_e_at_the_dead_terminal_finds_its_clue_only_with_the_datajack(
+    make_package: MakePackage, datajack: bool
+) -> None:
+    app = make_app(make_package)
+    made = asyncio.run(make_incident(load_npcs(), START, None, rng=random.Random(1)))
+    investigation_of(app).incident = made.incident
+    if datajack:
+        player_of(app).body = Body(vertebra=Bionic.DATAJACK)
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        move(client, app, ws, 104, 15, "metro")
+        ws.send_json({"type": "pick_up"})
+        journal = next_of(ws, "journal") if datajack else None
+        ws.send_json({"type": "lamp", "on": True})
+        next_of(ws, "player_state")
+        entries = investigation_of(app).journal
+
+    assert [entry.fact_id for entry in entries] == (["lift_log"] if datajack else [])
+    if journal is not None:
+        [entry] = journal["entries"]
+        assert entry["source"] == {"kind": "clue", "id": "metro_terminal", "name": "Dead terminal"}
+        assert "maker's mark" in entry["text"] and entry["flushed"] is None
