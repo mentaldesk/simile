@@ -24,6 +24,9 @@ LEAD_IN = 0.04
 TAIL = 0.12
 FADE = 0.015
 LONGEST = 3.0
+LOUDNESS = 10 ** (-20 / 20)
+"""The RMS `level` gives the speech: its 10 ms windows within 20 dB of the loudest."""
+CEILING = 10 ** (-1 / 20)
 
 type Progress = Callable[[float, str], None]
 
@@ -37,6 +40,18 @@ def load(model: str = MODEL) -> Any:
     from mlx_audio.tts.utils import load_model
 
     return load_model(model)
+
+
+def load_reference(model: Any, clip: Path) -> Any:
+    from mlx_audio.utils import load_audio
+
+    return load_audio(str(clip), sample_rate=model.sample_rate)
+
+
+def cloning(model: Any, clip: Path, transcript: str) -> Callable[[str, int], Any]:
+    """Says a text with a seed in the clip's voice."""
+    reference = load_reference(model, clip)
+    return lambda text, seed: say(model, reference, transcript, text, seed)
 
 
 def say(model: Any, reference: Any, transcript: str, text: str, seed: int) -> Any:
@@ -86,6 +101,22 @@ def trimmed(audio: Any) -> Any:
     return cut
 
 
+def level(audio: Any) -> Any:
+    """Scales the speech to `LOUDNESS`, or as near as it gets with its peak under `CEILING`."""
+    import numpy as np
+
+    windows = len(audio) // WINDOW
+    if not windows:
+        return audio
+    rms = np.sqrt((audio[: windows * WINDOW].reshape(windows, WINDOW) ** 2).mean(axis=1))
+    speech = rms[rms >= rms.max() / 10]
+    loudness = float(np.sqrt((speech**2).mean()))
+    peak = float(np.abs(audio).max())
+    if loudness <= 0 or peak <= 0:
+        return audio
+    return (audio * min(LOUDNESS / loudness, CEILING / peak)).astype(np.float32)
+
+
 def write_wav(audio: Any, path: Path) -> None:
     import numpy as np
 
@@ -121,9 +152,7 @@ def speak(
     progress: Progress | None = None,
 ) -> list[float]:
     """Writes `<voice>_<n>.m4a` in `out` for each (text, take), and returns their lengths."""
-    from mlx_audio.utils import load_audio
-
-    reference = load_audio(str(clip), sample_rate=model.sample_rate)
+    reference = load_reference(model, clip)
     seconds = []
     for n, (text, take) in enumerate(lines, 1):
         if progress:

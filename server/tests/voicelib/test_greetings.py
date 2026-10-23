@@ -9,7 +9,8 @@ from simile.jobs import Jobs
 from simile.library import Library
 from simile.voicelib import greetings
 from simile.voicelib.greetings import GREET, Greet
-from simile.voicing.greetings import GREETINGS, files, lines_for, players
+from simile.voicing import eleven
+from simile.voicing.greetings import GREETINGS, files, lines_for, load_chosen, players
 
 from .conftest import finished
 
@@ -19,10 +20,12 @@ PICK = "/api/characters/wren_abernethy/voice/pick"
 
 @pytest.fixture
 def job_here(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(greetings, "NEEDS", ())
-    monkeypatch.setattr(
-        greetings, "command", lambda params, work: [sys.executable, str(FAKE), str(work)]
-    )
+    def fake(params: Greet, work: Path) -> list[str]:
+        return [sys.executable, str(FAKE), str(work)]
+
+    for needs, command in (("NEEDS", "command"), ("ELEVENLABS_NEEDS", "elevenlabs_command")):
+        monkeypatch.setattr(greetings, needs, ())
+        monkeypatch.setattr(greetings, command, fake)
 
 
 def greeting_jobs(client: TestClient) -> list[dict]:
@@ -51,6 +54,7 @@ def test_setting_a_voice_records_the_characters_greetings(
         "lines": lines,
         "seconds": [1.0, 1.1, 1.2, 1.3],
         "stale": False,
+        "voice": None,
     }
 
 
@@ -128,3 +132,38 @@ def test_greetings_for_a_voice_changed_since_are_dropped(library: Library, tmp_p
     assert result["stale"] is True
     assert result["greetings"] == []
     assert files(players(library), "wren_abernethy") == []
+
+
+@pytest.fixture
+def keyed(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(eleven.ENV, "sk-test")
+
+
+def test_with_a_key_elevenlabs_says_them_on_any_mac(
+    keyed: None, library: Library, tmp_path: Path
+) -> None:
+    from .conftest import clip
+
+    library.save_clip("wren_abernethy", clip())
+    kind = greetings.kind(library)
+
+    command = kind.command(Greet(character="wren_abernethy"), tmp_path)
+
+    assert kind.requires == ("apple_silicon",)
+    assert command == [sys.executable, "-I", "-m", "simile.voicing.eleven", str(tmp_path)]
+    asked = json.loads((tmp_path / "greetings.json").read_text())
+    assert asked["lines"] == lines_for(library.get("wren_abernethy"))
+    assert asked["delivery"].startswith("[")
+    assert asked["elevenlabs"] is None
+    assert (asked["gender"], asked["age"]) == ("female", "middle_aged")
+    assert asked["places"] == ["Fife", "Scotland"]
+
+
+def test_a_library_voice_brings_its_residents_elevenlabs_voice(
+    keyed: None, job_here: None, client: TestClient, library: Library
+) -> None:
+    client.post(PICK, json={"library": "tobias"})
+
+    job = finished(client, greeting_jobs(client)[0]["id"])
+
+    assert job["result"]["voice"] == load_chosen()["tobias"].name

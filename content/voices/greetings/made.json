@@ -1,110 +1,182 @@
 {
   "annelie": {
-    "digest": "cbcaa4bcbe72d56f9348dd3b1da01c19558026b9a2a9af78a972a51bcad97d36",
+    "engine": "elevenlabs",
+    "digests": [
+      "fe5b2edb8077b9d22edc7806a221113e9e0c0cd77b356dcc0fe5bdd56803c6d4",
+      "10237a29f1f22ef7da6c5eb9dd7c1e2e62c10e05593b0876cc4b23f82934b506",
+      "ac61df803c443becfdcb240f29c8b2e2e9a8063316c02c90117461067d3193da",
+      "bfc4df28a9828a8079555dfa1255752b727813298aa949225a0cb4dae38f611a"
+    ],
     "seconds": [
-      2.1,
-      1.49,
-      1.33,
-      2.13
+      2.35,
+      2.52,
+      1.71,
+      2.53
     ]
   },
   "desmond": {
-    "digest": "8ea38c505aa84f51db3bd444c75328a6bfd90d73fb75f469c5e439b1a9445dda",
+    "engine": "elevenlabs",
+    "digests": [
+      "41a1f985a692364110acf1f110877ef05860203005515afd8e3a8ac6cfdacdcf",
+      "e4b1ff7097f1f643b6d6e1acd3677517f80d4b0385f2a7fa7285d5aa1ed184e8",
+      "ee0d7efdb79cd105d137836114589f5f1f10ad236645e03cf5c3c3bfc288c89f",
+      "0a235f0d45f8e2763e2d85dfb7edaac55af76bd713b9f59a06c9bb147e8054a9"
+    ],
     "seconds": [
-      0.63,
-      1.11,
-      1.35,
-      1.83
+      1.26,
+      1.72,
+      2.53,
+      2.75
     ]
   },
   "henrietta": {
-    "digest": "d80be35371ccf24a24a779d779430339050f30cee5780f14b84bc54eb28b1367",
+    "engine": "elevenlabs",
+    "digests": [
+      "623c02471de808ce6e58d43f163962eca526dd0dc0753c3d26627d9d255c327b",
+      "f57d9d0b46a50861e30a40033f180cc20283044c83ed90404aafafe4a7fa2c87",
+      "b9de37902546ff5f51409e87f1a2ac16fd848d842ba0cc53e3c8119f341e9a64",
+      "15e020f739740cb5e85a3a58db4c528fe032197a2dd7124beac68109b9c5d267"
+    ],
     "seconds": [
-      1.41,
-      1.22,
-      0.95,
-      1.01
+      2.19,
+      1.77,
+      1.18,
+      1.33
     ]
   },
   "ingrid": {
-    "digest": "2c291010b806376af8197ff1597a6bddebcaff4a087f93904375354c2a2a11d6",
+    "engine": "elevenlabs",
+    "digests": [
+      "ac78eb9b199d506ababdd208a74914d2bac4d700d4927b9b86a56a4eee767419",
+      "1956e1ed73193aebf8c080f2c0e87f8da8e9590c69864e740ee842906c1dcbc5",
+      "5945d538da507639395740cd4f677c796e774919601cf1078775796238cfddbe",
+      "8f214c147303b34b7d3349d3090ca10e0ea1d9312755916a22f5fffab9f60379"
+    ],
     "seconds": [
-      1.58,
-      1.49,
-      1.68,
-      1.17
-    ]
-  },
-  "kofi": {
-    "digest": "9d84a233092b34ff5eacf0fc4c7a87d6026116990d4cb02ac675846d3fe6deaa",
-    "seconds": [
-      1.43,
-      0.97,
-      1.34,
-      1.28
-    ]
-  },
-  "lachlan": {
-    "digest": "e84b4915a2c970ec06fe247b81bc378d2d8ca7701edea8807ef1861fe348de9b",
-    "seconds": [
-      1.4,
-      1.01,
-      0.84,
-      0.68
-    ]
-  },
-  "marguerite": {
-    "digest": "6520b8ef8fa04990f37916837ab4dc4e27766483b36e069fbc2183517617d87a",
-    "seconds": [
-      1.68,
-      2.21,
-      1.3,
+      1.77,
+      2.17,
+      1.59,
       1.41
     ]
   },
-  "mirela": {
-    "digest": "fa566dacbf2355c5cfe6bd4cc301fbced7b08386dd7060a546db6963f5cf2063",
+  "kofi": {
+    "engine": "elevenlabs",
+    "digests": [
+      "374ae855efef2b8d14da6fa8e00b66187356bcebf6776eef28d19586198594f3",
+      "8e3acb6a5f7aa34c8f321c20cc04b426a06ea30dc6de073a8f7cad6e87ef8f57",
+      "da9a607653ff63d81233f90e6d53c6c2e8e54b861c00d54344528a88584eedc4",
+      "befd379233a73de55477805c4bcd38b40df47ed5e94907dc9a12cf306faa6928"
+    ],
     "seconds": [
-      1.78,
+      2.24,
       1.49,
-      1.96,
-      1.16
+      1.92,
+      1.77
+    ]
+  },
+  "lachlan": {
+    "engine": "elevenlabs",
+    "digests": [
+      "9f084c9ae33fced51b6dcf9a3ece4a364bef9c97da535cfbd9183fce95f63e43",
+      "e10029167edae291fc23b444a145db044083de48945516b4daeeedc60d0a48f6",
+      "df0592630c48a391ba879a3216f61dae2206427b444a8cd609c7a59328f27951",
+      "a1ae782e06b242d317fec26fbeab93c06c656a2cb1969401a779179c754ad2a9"
+    ],
+    "seconds": [
+      1.98,
+      1.45,
+      1.56,
+      1.38
+    ]
+  },
+  "marguerite": {
+    "engine": "elevenlabs",
+    "digests": [
+      "1c6ac68e713de7104d17bfaa290bd8a6dce2c75f407a8cf35afd62fd78d2aba4",
+      "d2fa031a7f1f2d9ba72f0e5e55f3d0daf15b675679bc73c4daf0e2da3a442eca",
+      "c27d227bda964d5befa75aa857a3a25b3e89ab216c94953254f01f7a13584acc",
+      "8e6a5b9f9e2bd7831f773a87ce76fdbfac02fbbd08199582b433f9d5121f44ed"
+    ],
+    "seconds": [
+      1.68,
+      2.39,
+      1.76,
+      1.8
+    ]
+  },
+  "mirela": {
+    "engine": "elevenlabs",
+    "digests": [
+      "4defc1752920d9c4e662f5cfbb03b44a5ef876dd370b2f25beddaeb8a674e68f",
+      "2582984a9818cc952eed9efbc022b4ab4d20452065a11b8962ed22eee44f3f86",
+      "63cde28253215a79fa79f94473756ded0341603ce9a04a3b4cc47d3b949c4d78",
+      "3d772f583428c1fc3021ab6001d7de98281535732649bf34d8d167d49768d835"
+    ],
+    "seconds": [
+      2.14,
+      2.71,
+      2.07,
+      1.52
     ]
   },
   "odalys": {
-    "digest": "65483787d5cfe01f822866dc3688ab159d72dcd565db87f3a7e3c64bcfa72801",
+    "engine": "elevenlabs",
+    "digests": [
+      "1fae6f7cc54bf5f76caf8ac162d9ce1421da6541d8b13b83be2faeb4936500d3",
+      "a2990341db943a87a6e090e2c260d1f662ebdcc29966e1475bdb90b8d13ab0c1",
+      "5197510be7d30aceade8114ae15159fbd02b565dbcb19162bd49a3514b8aa04a",
+      "2e3d78bda382d0380cede28ea4431be994cf01f7eb44f84cc33075834ecbecc0"
+    ],
     "seconds": [
-      1.33,
-      1.37,
-      1.16,
-      1.59
+      2.15,
+      2.18,
+      1.62,
+      2.14
     ]
   },
   "priya": {
-    "digest": "311a64c2560c8fbcf47769572a3fb18731f781b263a99de1f98a4b4047b0482b",
+    "engine": "elevenlabs",
+    "digests": [
+      "b3f4691669e5336179e058d2d34acd40207392c98da673786b6b2de4796213b0",
+      "18bcad0b0219149b83464dd95e14fda4a3e82a9f1cad0971df69fa32950e8b4c",
+      "2cef4718dcc1b2f59ab3729ffb090606612f710831e0035706374f595bf76dbc",
+      "eb0fff1f5467da74179da49278fa85d8c90d830708be30f7d3be2882271f5988"
+    ],
     "seconds": [
-      1.19,
-      2.07,
-      1.2,
-      1.24
+      2.08,
+      2.47,
+      1.8,
+      1.6
     ]
   },
   "raymond": {
-    "digest": "cbd939ad89c3651d0fcc5bcf56791d462c6d4f849a3a176c7f1cda1182ecacae",
+    "engine": "elevenlabs",
+    "digests": [
+      "7d1001d59460d3aeba3072fc8311270d48ac4b0dfd0ad11b55c6f835c0bb2878",
+      "a6730e7b1eac2827345b25c62a2f87fd0871371c6f07bc417c57ff45577dd79c",
+      "01742fc5a96ae236b320d777c0e1b255f2bf17766d838eb7dc4c7a47ebd0a357",
+      "362ba960bdc122ff02500313899e0359878aba6c450c9c4cf442fa4126c62b8a"
+    ],
     "seconds": [
-      1.35,
-      1.43,
-      1.73,
-      2.02
+      1.55,
+      1.63,
+      1.99,
+      2.1
     ]
   },
   "tobias": {
-    "digest": "5bbeb910a2d71c96549230e54cf79d5c34349d5fb8e1e455ec2eaaab50d4e297",
+    "engine": "elevenlabs",
+    "digests": [
+      "d121b4c199861d30fcaaf25f116a144aff8d26e633310a289df082ff14da8877",
+      "9aaa64345914058cf1c3274fe55b7dff9547a20112b50fae4ca751927251aa21",
+      "157f177585af514998e6ef8caf2dca0df044f6e1a982e71d716688186a1f1962",
+      "752b784ec8fd371afc4463db1fee8a33048825c586afe3b88106e087f6318c6e"
+    ],
     "seconds": [
-      0.87,
-      2.02,
-      1.74,
-      1.13
+      1.71,
+      2.95,
+      2.87,
+      2.47
     ]
   }
 }

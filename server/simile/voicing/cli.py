@@ -12,65 +12,98 @@ def register(app: typer.Typer) -> None:
         force: Annotated[
             bool, typer.Option(help="Make greetings that are up to date too.")
         ] = False,
+        audition: Annotated[
+            bool, typer.Option(help="Say only each one's first line, to hear the voice first.")
+        ] = False,
     ) -> None:
-        """Record each resident's greetings into content/voices/greetings/.
-
-        Says each line in content/voices/greetings/lines.json in the resident's own voice, with
-        V1's model. Makes only the greetings that are missing or out of date, unless --force.
-        Needs the voice extra (`uv run --extra voice simile greetings`) and macOS's afconvert.
-        """
+        """Record each resident's greetings into content/voices/greetings/ (see its README)."""
         import importlib.util
         import shutil
+        from contextlib import ExitStack
 
         from simile.clinic.doctor import load_doctor
         from simile.npc import NPCS_DIR, load_npcs
-        from simile.voicing import gpu
+        from simile.schema import Npc
+        from simile.voicing import eleven, gpu, speak
         from simile.voicing import greetings as recorded
         from simile.voicing.greetings import (
-            Made,
-            digest,
+            Engine,
+            Say,
+            load_chosen,
             load_lines,
             load_made,
             outdated,
+            record,
             save_made,
         )
 
         residents = {npc.id: npc for npc in [*load_npcs(NPCS_DIR), load_doctor()]}
         if unknown := sorted(set(npcs or ()) - residents.keys()):
             raise typer.BadParameter(f"no such resident: {', '.join(unknown)}", param_hint="NPCS")
-        lines = load_lines()
+        lines, chosen = load_lines(), load_chosen()
         before = load_made()
         made = {id: entry for id, entry in before.items() if id in residents}
-        chosen = [residents[id] for id in npcs] if npcs else list(residents.values())
-        if missing := [npc.id for npc in chosen if npc.id not in lines]:
+        picked = [residents[id] for id in npcs] if npcs else list(residents.values())
+        if missing := [npc.id for npc in picked if npc.id not in lines]:
             typer.echo(f"No lines in {recorded.LINES.name}, so no greetings: {', '.join(missing)}")
-        voiced = [npc for npc in chosen if npc.voice.reference_clip and npc.id in lines]
-        todo = voiced if force else outdated(voiced, lines, made)
+        keyed = any(npc.id in chosen for npc in picked) and eleven.configured()
+
+        def engine(npc: Npc) -> Engine:
+            return Engine.ELEVENLABS if keyed and npc.id in chosen else Engine.LOCAL
+
+        voiced = [
+            npc
+            for npc in picked
+            if npc.id in lines and (npc.id in chosen or npc.voice.reference_clip)
+        ]
+        todo = voiced if force else outdated(voiced, lines, made, chosen, engine)
         if not todo:
             if made != before:
                 save_made(made)
             typer.echo("Every greeting is up to date. --force makes them again.")
             return
-        if importlib.util.find_spec("mlx_audio") is None:
+        if not keyed and any(npc.id in chosen for npc in todo):
+            typer.echo(f"No ElevenLabs key ({eleven.ENV}), so V1's model says them instead")
+        local = [npc for npc in todo if engine(npc) is Engine.LOCAL]
+        if local and importlib.util.find_spec("mlx_audio") is None:
             typer.echo("Making greetings needs the voice extra: uv sync --extra voice", err=True)
             raise typer.Exit(1)
         if shutil.which("afconvert") is None:
             typer.echo("Making greetings needs afconvert, which comes with macOS", err=True)
             raise typer.Exit(1)
-        from simile.voicing import speak
-
-        gpu.wait_for_gpu(typer.echo)
-        model = speak.load()
+        key = eleven.api_key() if len(local) < len(todo) else None
+        if len(local) < len(todo) and key is None:
+            typer.echo(f"Couldn't read the ElevenLabs key ({eleven.ENV})", err=True)
+            raise typer.Exit(1)
+        model = None
+        if local:
+            gpu.wait_for_gpu(typer.echo)
+            model = speak.load()
         folder = recorded.GREETINGS
-        for npc in todo:
-            assert npc.voice.reference_clip is not None
-            said = [(line.text, line.take) for line in lines[npc.id]]
-            recorded.remove(folder, npc.id)
-            clip = recorded.REPO_ROOT / npc.voice.reference_clip
-            seconds = speak.speak(model, npc.id, clip, npc.voice.reference_line, said, folder)
-            made[npc.id] = Made(digest=digest(npc.voice, lines[npc.id]), seconds=seconds)
-            save_made(made)
-            for (text, _), length in zip(said, seconds, strict=True):
-                typer.echo(f"{npc.id}: {text!r} {length:.2f} s")
+        with ExitStack() as stack:
+            client = stack.enter_context(eleven.ElevenLabs(key)) if key else None
+            for npc in todo:
+                say: Say
+                if client is not None and engine(npc) is Engine.ELEVENLABS:
+                    say = eleven.speaking(client, chosen[npc.id].voice)
+                else:
+                    assert npc.voice.reference_clip is not None
+                    clip = recorded.REPO_ROOT / npc.voice.reference_clip
+                    say = speak.cloning(model, clip, npc.voice.reference_line)
+                spoken = record(
+                    npc,
+                    lines[npc.id],
+                    made,
+                    engine(npc),
+                    chosen.get(npc.id),
+                    say,
+                    folder,
+                    force=force,
+                    audition=audition,
+                )
+                for text, length in spoken:
+                    typer.echo(f"{npc.id}: {text!r} {length:.2f} s")
         total = sum(path.stat().st_size for path in folder.glob("*.m4a"))
         typer.echo(f"Wrote content/voices/greetings/, {total / 1024:.0f} KB in all")
+        if client is not None:
+            typer.echo(f"ElevenLabs credits used: {client.credits}")

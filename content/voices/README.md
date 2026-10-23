@@ -19,6 +19,9 @@ it, and `design_npcs.py` and `import_voices.py` run that for each voice they mak
 Each resident's accent was set by hand (N2b, #70) in their `backstory`, `speaking_style` and
 `voice.description`. Rerunning `simile generate-npcs` replaces those along with everything else.
 
-`greetings/` has three or four short greetings in each resident's voice, which the client plays when
-they start talking to the player. `greetings/lines.json` is what they say, and `uv run --extra voice
-simile greetings` records them ([how](../../server/simile/voicing/README.md#greetings)).
+`greetings/` has three or four short greetings for each resident, which the client plays when they
+start talking to the player. `greetings/lines.json` is what they say, and `uv run simile greetings`
+records them ([how](../../server/simile/voicing/README.md#greetings)), with ElevenLabs when there's
+a key. `elevenlabs.json` is each resident's voice from the ElevenLabs library, which has their accent,
+and the audio tags said before each greeting. Those voices are only for prerecorded clips: everything
+else a resident says is cloned from their clip here.

@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import shutil
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -15,17 +16,29 @@ from simile.library import Library, Refused
 from simile.schema import Id, Model
 from simile.voicelib.kinds import MLX_PYTHON
 from simile.voicing import speak
-from simile.voicing.greetings import GREETINGS, files, lines_for, players, remove
+from simile.voicing.greetings import (
+    DELIVERIES,
+    GREETINGS,
+    files,
+    lines_for,
+    load_chosen,
+    players,
+    remove,
+    tones,
+)
 
 logger = logging.getLogger(__name__)
 
 GREET = "voice_greetings"
 NEEDS = ("apple_silicon", "voice_lab_mlx")
+ELEVENLABS_NEEDS = ("apple_silicon",)
 SCRIPT = Path(speak.__file__)
+ELEVENLABS = "simile.voicing.eleven"
 
 
 class Greet(Model):
     character: Id
+    library: Id | None = None
 
 
 def command(params: Greet, work: Path) -> Sequence[str]:
@@ -33,23 +46,39 @@ def command(params: Greet, work: Path) -> Sequence[str]:
     return [str(MLX_PYTHON), "-I", str(SCRIPT), str(work)]
 
 
+def elevenlabs_command(params: Greet, work: Path) -> Sequence[str]:
+    return [sys.executable, "-I", "-m", ELEVENLABS, str(work)]
+
+
 def kind(library: Library) -> Kind[Greet]:
-    """Says `lines_for` the character in its voice, into `players(library)`."""
+    """Says `lines_for` the character with ElevenLabs if there's a key, or in its own voice."""
+    from simile.voicing import eleven
+
+    with_elevenlabs = eleven.configured()
 
     def prepare(params: Greet, work: Path) -> Sequence[str]:
         character = library.get(params.character)
         clip = library.clip(character)
         if library.is_premade(character.id) or clip is None or not clip.is_file():
             raise Refused(f"{character.name} has no voice of their own yet")
-        asked = {
+        asked: dict[str, Any] = {
             "voice": character.id,
             "clip": str(clip),
             "clip_changed": clip.stat().st_mtime_ns,
             "transcript": character.voice.reference_line,
             "lines": lines_for(character),
         }
+        if with_elevenlabs:
+            resident = load_chosen().get(params.library or "")
+            asked |= {
+                "delivery": DELIVERIES[tones(character)[0]],
+                "elevenlabs": resident and {"voice_id": resident.voice, "name": resident.name},
+                "gender": eleven.GENDERS.get(character.gender),
+                "age": eleven.age_band(character.updated.year - character.birth_year),
+                "places": eleven.places(character.voice.description, character.origin),
+            }
         (work / "greetings.json").write_text(json.dumps(asked), encoding="utf-8")
-        return command(params, work)
+        return (elevenlabs_command if with_elevenlabs else command)(params, work)
 
     def publish(params: Greet, work: Path, out: Path) -> dict[str, Any]:
         asked = json.loads((work / "greetings.json").read_text(encoding="utf-8"))
@@ -68,9 +97,10 @@ def kind(library: Library) -> Kind[Greet]:
             "lines": asked["lines"],
             "seconds": spoken["seconds"],
             "stale": stale,
+            "voice": spoken.get("voice"),
         }
 
-    return Kind(GREET, Greet, prepare, publish, NEEDS)
+    return Kind(GREET, Greet, prepare, publish, ELEVENLABS_NEEDS if with_elevenlabs else NEEDS)
 
 
 def borrow(library: Library, id: str, voice: str) -> None:
@@ -86,7 +116,7 @@ async def regreet(jobs: Jobs, library: Library, id: str, voice: str | None = Non
     await run_in_threadpool(remove, players(library), id)
     if jobs.capabilities()["kinds"].get(GREET, {}).get("available", False):
         try:
-            jobs.submit(GREET, {"character": id})
+            jobs.submit(GREET, {"character": id, "library": voice})
         except Busy as error:
             logger.warning(f"No new greetings for {id}: {error}")
     elif voice is not None:

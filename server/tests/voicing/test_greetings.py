@@ -21,20 +21,23 @@ from simile.voicing.greetings import (
     LINES,
     REPO_ROOT,
     TONES,
+    Chosen,
+    Engine,
     Greeting,
-    digest,
+    current,
+    digests,
     files,
     lines_for,
+    load_chosen,
     load_lines,
     load_made,
-    outdated,
     remove,
 )
 
 BUDGET = 1024 * 1024
 POOL = REPO_ROOT / "content" / "characters" / "pool"
 residents = [*load_npcs(NPCS_DIR), load_doctor()]
-voiced = [npc for npc in residents if npc.voice.reference_clip]
+voiced = [npc for npc in residents if npc.voice.reference_clip or npc.id in load_chosen()]
 
 
 def test_every_voiced_resident_has_three_or_four_greetings() -> None:
@@ -49,9 +52,15 @@ def test_every_voiced_resident_has_three_or_four_greetings() -> None:
 
 
 def test_greetings_are_up_to_date_with_each_voice_and_line() -> None:
-    stale = [npc.id for npc in outdated(voiced, load_lines(), load_made())]
+    lines, made, chosen = load_lines(), load_made(), load_chosen()
 
-    assert stale == [], "run `uv run --extra voice simile greetings` on a Mac with Apple Silicon"
+    stale = [
+        npc.id
+        for npc in voiced
+        if not current(npc, lines[npc.id], made.get(npc.id), chosen.get(npc.id))
+    ]
+
+    assert stale == [], "run `uv run simile greetings` on a Mac (see simile/voicing/README.md)"
 
 
 def test_greetings_are_short_and_small() -> None:
@@ -62,7 +71,7 @@ def test_greetings_are_short_and_small() -> None:
     for path in recorded:
         assert path.read_bytes()[4:12] == b"ftypM4A ", path.name
     for npc in voiced:
-        assert all(0.5 <= seconds <= 2.5 for seconds in made[npc.id].seconds), npc.id
+        assert all(0.5 <= seconds <= speak.LONGEST for seconds in made[npc.id].seconds), npc.id
     assert {path.stem.rsplit("_", 1)[0] for path in recorded} == {npc.id for npc in voiced}
 
 
@@ -76,14 +85,27 @@ def test_greetings_fit_any_player() -> None:
             assert not words & {"morning", "evening", "night", "afternoon"}, (id, line.text)
 
 
-def test_digest_follows_the_lines_and_the_clip() -> None:
-    npc = voiced[0]
-    lines = [Greeting(text="Hello there.")]
+def test_each_lines_digest_follows_its_words_take_and_voice() -> None:
+    npc, other = voiced[0], voiced[1]
+    voice = Chosen(voice="alder", name="Alder", accent="Irish", delivery="[slowly]")
+    hello, word = Greeting(text="Hello there."), Greeting(text="A word.")
 
-    assert digest(npc.voice, lines) == digest(npc.voice, [Greeting(text="Hello there.", take=0)])
-    assert digest(npc.voice, lines) != digest(npc.voice, [Greeting(text="Hello there.", take=1)])
-    other = npc.voice.model_copy(update={"reference_clip": voiced[1].voice.reference_clip})
-    assert digest(npc.voice, lines) != digest(other, lines)
+    def one(line: Greeting, engine: Engine = Engine.ELEVENLABS, chosen: Chosen = voice) -> str:
+        return digests(npc, [line], engine, chosen)[0]
+
+    assert digests(npc, [hello, word], Engine.ELEVENLABS, voice) == [one(hello), one(word)]
+    assert one(hello) == one(Greeting(text="Hello there.", take=0))
+    assert one(hello) != one(Greeting(text="Hello there.", take=1))
+    assert one(hello) != one(hello, chosen=voice.model_copy(update={"voice": "paddy"}))
+    assert one(hello) != one(hello, chosen=voice.model_copy(update={"delivery": "[warmly]"}))
+    assert one(hello) == one(hello, chosen=voice.model_copy(update={"name": "Renamed"}))
+    assert one(hello) != one(hello, Engine.LOCAL)
+    moved = npc.model_copy(
+        update={
+            "voice": npc.voice.model_copy(update={"reference_clip": other.voice.reference_clip})
+        }
+    )
+    assert digests(npc, [hello], Engine.LOCAL, None) != digests(moved, [hello], Engine.LOCAL, None)
 
 
 def test_files_come_in_order(tmp_path: Path) -> None:
@@ -232,14 +254,16 @@ def test_the_command_refuses_an_unknown_resident() -> None:
     assert "no such resident: nobody" in result.output
 
 
-def test_the_command_says_the_out_of_date_greetings(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_without_a_key_v1s_model_says_them(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "lines.json").write_text(json.dumps({"tobias": [{"text": "Hello there."}]}))
+    (tmp_path / "elevenlabs.json").write_text(
+        json.dumps({"tobias": {"voice": "alder", "name": "Alder", "accent": "Irish"}})
+    )
     (tmp_path / "tobias_2.m4a").write_bytes(b"old")
     monkeypatch.setattr(greetings, "GREETINGS", tmp_path)
     monkeypatch.setattr(greetings, "LINES", tmp_path / "lines.json")
     monkeypatch.setattr(greetings, "MADE", tmp_path / "made.json")
+    monkeypatch.setattr(greetings, "CHOSEN", tmp_path / "elevenlabs.json")
     monkeypatch.setattr(gpu, "wait_for_gpu", lambda say: None)
     find_spec, which = importlib.util.find_spec, shutil.which
     monkeypatch.setattr(
@@ -251,22 +275,25 @@ def test_the_command_says_the_out_of_date_greetings(
         shutil, "which", lambda name: "afconvert" if name == "afconvert" else which(name)
     )
     monkeypatch.setattr(speak, "load", lambda: "model")
+    monkeypatch.setattr(speak, "encode", lambda audio, path: path.write_bytes(b"new"))
     asked = []
 
-    def said(model, voice, clip, transcript, lines, out):
-        asked.append((voice, clip.name, lines, out))
-        (out / f"{voice}_1.m4a").write_bytes(b"new")
-        return [0.87]
+    def cloning(model, clip, transcript):
+        return lambda text, seed: asked.append((model, clip.name, text, seed)) or np.ones(20880)
 
-    monkeypatch.setattr(speak, "speak", said)
+    monkeypatch.setattr(speak, "cloning", cloning)
 
     result = CliRunner().invoke(create_cli(), ["greetings"])
 
     assert result.exit_code == 0, result.output
-    assert asked == [("tobias", "tobias.wav", [("Hello there.", 0)], tmp_path)]
+    assert "No ElevenLabs key" in result.output
+    assert asked == [
+        ("model", "tobias.wav", "Hello there.", speak.seed(0, "tobias", "Hello there."))
+    ]
     assert "tobias: 'Hello there.' 0.87 s" in result.output
     assert [path.name for path in files(tmp_path, "tobias")] == ["tobias_1.m4a"]
-    assert load_made(tmp_path / "made.json")["tobias"].seconds == [0.87]
+    made = load_made(tmp_path / "made.json")["tobias"]
+    assert (made.engine, made.seconds) == (Engine.LOCAL, [0.87])
     again = CliRunner().invoke(create_cli(), ["greetings"])
     assert "Every greeting is up to date" in again.output
 
