@@ -37,7 +37,7 @@ class TownFact:
     what: str
     rumour: str
     unknown: str
-    """What they don't know, said as "You don't know..." when they don't."""
+    """The prompt's line for a resident who doesn't know it."""
     knows: float
     heard: float = 0.0
     """The chance on top of `knows` they've only heard it as a rumour."""
