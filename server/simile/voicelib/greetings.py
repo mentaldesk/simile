@@ -1,11 +1,13 @@
 """The greetings job, which records a player character's greetings once its voice is set."""
 
+import hashlib
 import json
 import logging
 import os
 import shutil
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +16,7 @@ from starlette.concurrency import run_in_threadpool
 from simile.jobs import Busy, Jobs, Kind
 from simile.library import Library, Refused
 from simile.schema import Id, Model
+from simile.voicelib.config import DEFAULT_CONFIG, VoicelibConfig
 from simile.voicelib.kinds import MLX_PYTHON
 from simile.voicing import speak
 from simile.voicing.greetings import (
@@ -50,7 +53,43 @@ def elevenlabs_command(params: Greet, work: Path) -> Sequence[str]:
     return [sys.executable, "-I", "-m", ELEVENLABS, str(work)]
 
 
-def kind(library: Library) -> Kind[Greet]:
+def today() -> date:
+    return date.today()
+
+
+class Allowance:
+    """The ElevenLabs characters the greetings jobs may still send today, kept in `path`."""
+
+    def __init__(self, path: Path, daily: int) -> None:
+        self.path, self.daily = path, daily
+
+    def spent(self) -> int:
+        try:
+            kept = json.loads(self.path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, ValueError):
+            return 0
+        return int(kept["characters"]) if kept.get("day") == today().isoformat() else 0
+
+    def take(self, characters: int) -> bool:
+        """Counts them against today's allowance, unless they'd go over it."""
+        spent = self.spent()
+        if spent + characters > self.daily:
+            return False
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        kept = {"day": today().isoformat(), "characters": spent + characters}
+        self.path.write_text(json.dumps(kept), encoding="utf-8")
+        return True
+
+
+def said_in(root: Path, clip: Path, asked: Mapping[str, Any]) -> Path:
+    """Where ElevenLabs' greetings for this voice and these lines are kept, to say them once."""
+    voice = {k: v for k, v in asked.items() if k not in ("clip", "clip_changed")}
+    voice["clip"] = hashlib.sha256(clip.read_bytes()).hexdigest()
+    digest = hashlib.sha256(json.dumps(voice, sort_keys=True).encode()).hexdigest()
+    return root / GREET / "said" / digest[:32]
+
+
+def kind(library: Library, config: VoicelibConfig = DEFAULT_CONFIG) -> Kind[Greet]:
     """Says `lines_for` the character with ElevenLabs if there's a key, or in its own voice."""
     from simile.voicing import eleven
 
@@ -68,6 +107,7 @@ def kind(library: Library) -> Kind[Greet]:
             "transcript": character.voice.reference_line,
             "lines": lines_for(character),
         }
+        run = command
         if with_elevenlabs:
             resident = load_chosen().get(params.library or "")
             asked |= {
@@ -77,8 +117,27 @@ def kind(library: Library) -> Kind[Greet]:
                 "age": eleven.age_band(character.updated.year - character.birth_year),
                 "places": eleven.places(character.voice.description, character.origin),
             }
+            root = work.parents[1]
+            said = said_in(root, clip, asked)
+            asked["said"] = str(said)
+            cost = sum(len(f"{asked['delivery']} {line}".strip()) for line in asked["lines"])
+            allowance = Allowance(
+                root / GREET / "allowance.json", config.elevenlabs_characters_a_day
+            )
+            if files(said, character.id) or allowance.take(cost):
+                run = elevenlabs_command
+            elif not MLX_PYTHON.exists():
+                raise Refused(
+                    f"Today's {allowance.daily} ElevenLabs characters are spent, and this machine "
+                    "can't say greetings with V1's model"
+                )
+            else:
+                logger.warning(
+                    f"Today's {allowance.daily} ElevenLabs characters are spent, so V1's model "
+                    f"says {character.name}'s greetings"
+                )
         (work / "greetings.json").write_text(json.dumps(asked), encoding="utf-8")
-        return (elevenlabs_command if with_elevenlabs else command)(params, work)
+        return run(params, work)
 
     def publish(params: Greet, work: Path, out: Path) -> dict[str, Any]:
         asked = json.loads((work / "greetings.json").read_text(encoding="utf-8"))

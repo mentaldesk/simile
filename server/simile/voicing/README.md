@@ -73,7 +73,7 @@ resident says, written by hand in their way of talking and without anyone's name
 is line *n*, AAC at 32 kb/s, about 12 KB each and 600 KB in all.
 
 ```bash
-cd server && uv run simile greetings [npc ...] [--audition] [--force]
+cd server && uv run simile greetings [npc ...] [--audition] [--force] [--local]
 ```
 
 - With an ElevenLabs key, `simile greetings` says each line with `eleven_v4` in the resident's voice
@@ -82,10 +82,12 @@ cd server && uv run simile greetings [npc ...] [--audition] [--force]
   says before each line (`"delivery": "[slowly]"`). That's how residents get their accents, which
   V1's model can't do. The key is `ELEVENLABS_API_KEY`, or the macOS Keychain item
   `elevenlabs-api-key`; `eleven.py` reads it in code and never prints or logs it. Every line spends
-  ElevenLabs credits, about 12 for a greeting, and the command says how many it used.
+  ElevenLabs credits, about 12 for a greeting, and the command says how many it used. If ElevenLabs
+  refuses partway, it stops, says what it spent, and keeps what it said, so a rerun says the rest.
 - Without a key, or for a resident with no ElevenLabs voice, it says them with V1's model and seed,
-  cloning the resident's clip as V1 does (`uv run --extra voice simile greetings`). Greetings already
-  made with ElevenLabs stay as they are until their lines change.
+  cloning the resident's clip as V1 does (`uv run --extra voice simile greetings`). It won't replace
+  greetings made with ElevenLabs that way, whether their lines changed, `--force` asked or
+  `SYNTHESIS` was bumped, unless `--local` asks. `--local` uses V1's model even with a key.
 - Both trim the silence around each greeting and encode it with macOS's `afconvert`. ElevenLabs'
   are levelled to the same loudness. A line's `take` picks another seed, for when one comes out
   wrong.

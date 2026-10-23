@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import logging
 import secrets
@@ -8,6 +9,7 @@ import traceback
 from collections.abc import Iterator
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 
 import httpx
 import numpy as np
@@ -17,11 +19,12 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.clinic.doctor import load_doctor
 from simile.npc import NPCS_DIR, load_npcs
-from simile.voicing import eleven, greetings, speak
+from simile.voicing import eleven, gpu, greetings, speak
 from simile.voicing.eleven import ElevenLabs, FakeElevenLabs, Refused
 from simile.voicing.greetings import Engine, files, load_chosen, load_made
 
 residents = [*load_npcs(NPCS_DIR), load_doctor()]
+KEYCHAIN = eleven._keychain
 TOBIAS = [{"text": "Hello there."}, {"text": "A word, if you would."}]
 ALDER = {"voice": "alder", "name": "Alder", "accent": "Irish", "delivery": "[slowly]"}
 
@@ -43,21 +46,38 @@ def test_the_key_comes_from_the_environment_or_the_keychain(
 ) -> None:
     asked = []
 
-    def keychain(*flags: str) -> subprocess.CompletedProcess[str]:
-        asked.append(flags)
+    def keychain(*flags: str, timeout: float = eleven.KEYCHAIN_TIMEOUT) -> Any:
+        asked.append((flags, timeout))
         return subprocess.CompletedProcess([], 0, stdout="sk-keychain\n" if flags else "")
 
     monkeypatch.setattr(eleven, "_keychain", keychain)
     assert eleven.configured()
-    assert asked == [()]
-    assert eleven.api_key() == "sk-keychain"
+    assert eleven.api_key(timeout=60) == "sk-keychain"
+    assert asked == [((), eleven.KEYCHAIN_TIMEOUT), (("-w",), 60)]
     monkeypatch.setenv(eleven.ENV, " sk-environment ")
     assert eleven.api_key() == "sk-environment"
     assert eleven.configured()
-    monkeypatch.setattr(eleven, "_keychain", lambda *flags: None)
+    monkeypatch.setattr(eleven, "_keychain", lambda *flags, **options: None)
     monkeypatch.delenv(eleven.ENV)
     assert eleven.api_key() is None
     assert not eleven.configured()
+
+
+def test_a_keychain_that_doesnt_answer_counts_as_no_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    waited = []
+
+    def stuck(command: list[str], **options: Any) -> None:
+        waited.append(options["timeout"])
+        raise subprocess.TimeoutExpired(command, options["timeout"])
+
+    monkeypatch.setattr(eleven, "_keychain", KEYCHAIN)
+    monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(subprocess, "run", stuck)
+
+    assert not eleven.configured()
+    assert eleven.api_key() is None
+    assert waited == [eleven.KEYCHAIN_TIMEOUT] * 2
+    assert eleven.KEYCHAIN_TIMEOUT <= 2
 
 
 def test_says_a_line_in_a_library_voice_with_v4() -> None:
@@ -178,6 +198,80 @@ def test_without_a_key_greetings_made_with_elevenlabs_stay(
     assert "Every greeting is up to date" in greet()
 
 
+@pytest.fixture
+def v1(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """V1's model, saying each greeting as ones and noting what it said."""
+    said: list[str] = []
+    find_spec = importlib.util.find_spec
+    monkeypatch.setattr(
+        importlib.util,
+        "find_spec",
+        lambda name, *a: object() if name == "mlx_audio" else find_spec(name, *a),
+    )
+    monkeypatch.setattr(gpu, "wait_for_gpu", lambda echo: None)
+    monkeypatch.setattr(speak, "load", lambda: "model")
+    monkeypatch.setattr(
+        speak,
+        "cloning",
+        lambda model, clip, transcript: lambda text, seed: said.append(text) or np.ones(24000),
+    )
+    return said
+
+
+def test_without_a_key_v1_replaces_elevenlabs_greetings_only_with_local(
+    here: Path, fake: FakeElevenLabs, v1: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    greet()
+    made = (here / "made.json").read_text()
+    monkeypatch.delenv(eleven.ENV)
+
+    forced = CliRunner().invoke(create_cli(), ["greetings", "tobias", "--force"])
+    monkeypatch.setattr(greetings, "SYNTHESIS", greetings.SYNTHESIS + 1)
+    bumped = CliRunner().invoke(create_cli(), ["greetings", "tobias"])
+
+    for refused in (forced, bumped):
+        assert refused.exit_code == 1
+        assert "would replace greetings made with ElevenLabs: tobias" in refused.output
+    assert (here / "made.json").read_text() == made
+    assert v1 == []
+
+    greet("--local")
+
+    assert v1 == ["Hello there.", "A word, if you would."]
+    assert load_made(here / "made.json")["tobias"].engine is Engine.LOCAL
+
+
+def test_local_says_them_with_v1_even_with_a_key(
+    here: Path, fake: FakeElevenLabs, v1: list[str]
+) -> None:
+    greet("--local")
+
+    assert fake.said == []
+    assert len(v1) == 2
+
+
+def test_a_refusal_partway_keeps_what_was_said_and_says_what_it_cost(
+    here: Path, fake: FakeElevenLabs, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    say = fake.say
+
+    def out_of_credits(voice: str, text: str, seed: int) -> Any:
+        if fake.said:
+            raise Refused("ElevenLabs answered 401: quota_exceeded")
+        return say(voice, text, seed)
+
+    monkeypatch.setattr(fake, "say", out_of_credits)
+
+    result = CliRunner().invoke(create_cli(), ["greetings", "tobias"])
+
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert "Stopped: ElevenLabs answered 401: quota_exceeded" in result.output
+    assert "ElevenLabs credits used: 7" in result.output
+    assert "Traceback" not in result.output
+    assert len(load_made(here / "made.json")["tobias"].digests) == 1
+
+
 def test_with_a_key_greetings_made_with_v1_are_said_again(here: Path, fake: FakeElevenLabs) -> None:
     tobias = next(npc for npc in residents if npc.id == "tobias")
     made = load_made(here / "made.json")
@@ -240,7 +334,8 @@ def test_the_key_never_reaches_a_log(
     refused = CliRunner().invoke(create_cli(), ["greetings", "tobias"])
 
     assert made.exit_code == 0, made.output
-    assert isinstance(refused.exception, Refused)
+    assert refused.exit_code == 1
+    assert "Stopped: ElevenLabs answered 404: voice_not_found" in refused.output
     assert api == [key] * 3
     printed = capfd.readouterr()
     everything = [
@@ -341,6 +436,7 @@ def test_the_job_says_the_lines_in_the_voice_it_chose(
         "gender": "female",
         "age": "middle_aged",
         "places": ["Fife", "Scotland"],
+        "said": str(tmp_path / "said"),
     }
     (tmp_path / "greetings.json").write_text(json.dumps(asked))
     fake = FakeElevenLabs(voices=VOICES)
@@ -364,6 +460,28 @@ def test_the_job_says_the_lines_in_the_voice_it_chose(
     }
     assert [path.name for path in files(tmp_path, "wren")] == ["wren_1.m4a", "wren_2.m4a"]
     assert '"progress": 0.5' in capsys.readouterr().out
+    assert [path.name for path in files(tmp_path / "said", "wren")] == ["wren_1.m4a", "wren_2.m4a"]
+    assert json.loads((tmp_path / "said" / "spoken.json").read_text()) == spoken
+
+
+def test_the_job_says_a_voice_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    said, work = tmp_path / "said", tmp_path / "work"
+    said.mkdir()
+    work.mkdir()
+    (said / "wren_1.m4a").write_bytes(b"said before")
+    (said / "spoken.json").write_text(json.dumps({"seconds": [1.2], "voice": "Isla", "credits": 7}))
+    (work / "greetings.json").write_text(
+        json.dumps({"voice": "wren", "lines": ["Hi!"], "said": str(said)})
+    )
+    fake = FakeElevenLabs()
+    monkeypatch.setattr(eleven, "ElevenLabs", lambda key: fake)
+
+    eleven.main([str(work)])
+
+    assert fake.said == []
+    assert (work / "wren_1.m4a").read_bytes() == b"said before"
+    spoken = json.loads((work / "spoken.json").read_text())
+    assert spoken == {"seconds": [1.2], "voice": "Isla", "credits": 0}
 
 
 def test_the_job_says_them_in_a_library_residents_voice(
@@ -377,6 +495,7 @@ def test_the_job_says_them_in_a_library_residents_voice(
         "gender": None,
         "age": "old",
         "places": [],
+        "said": str(tmp_path / "said"),
     }
     (tmp_path / "greetings.json").write_text(json.dumps(asked))
     fake = FakeElevenLabs()
@@ -391,7 +510,8 @@ def test_the_job_says_them_in_a_library_residents_voice(
 
 
 def test_the_job_without_a_key_says_so(tmp_path: Path) -> None:
-    (tmp_path / "greetings.json").write_text(json.dumps({"voice": "wren", "lines": ["Hi!"]}))
+    asked = {"voice": "wren", "lines": ["Hi!"], "said": str(tmp_path / "said")}
+    (tmp_path / "greetings.json").write_text(json.dumps(asked))
 
     with pytest.raises(SystemExit, match="No ElevenLabs key"):
         eleven.main([str(tmp_path)])

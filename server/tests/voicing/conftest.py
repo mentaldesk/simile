@@ -17,5 +17,5 @@ def synthesiser() -> Iterator[FakeSynthesiser]:
 def no_elevenlabs(monkeypatch: pytest.MonkeyPatch) -> None:
     """No test reads the real key or reaches ElevenLabs."""
     monkeypatch.delenv(eleven.ENV, raising=False)
-    monkeypatch.setattr(eleven, "_keychain", lambda *flags: None)
+    monkeypatch.setattr(eleven, "_keychain", lambda *flags, **options: None)
     monkeypatch.setattr(eleven, "API", "http://elevenlabs.invalid")

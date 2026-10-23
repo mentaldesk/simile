@@ -17,12 +17,15 @@ import httpx
 import numpy as np
 
 from simile.voicing import speak
+from simile.voicing.greetings import files
 
 API = "https://api.elevenlabs.io"
 MODEL = "eleven_v4"
 ENV = "ELEVENLABS_API_KEY"
 KEYCHAIN = "elevenlabs-api-key"
 TIMEOUT = 60.0
+KEYCHAIN_TIMEOUT = 2.0
+"""Seconds to wait for the Keychain, which may be stuck on a prompt nobody sees."""
 NARRATION = "narrative_story"
 SHORTLIST = 3
 
@@ -31,11 +34,16 @@ class Refused(RuntimeError):
     pass
 
 
-def _keychain(*flags: str) -> subprocess.CompletedProcess[str] | None:
-    if sys.platform != "darwin" or shutil.which("security") is None:
+def _keychain(
+    *flags: str, timeout: float = KEYCHAIN_TIMEOUT
+) -> subprocess.CompletedProcess[str] | None:
+    if shutil.which("security") is None:
         return None
     command = ["security", "find-generic-password", "-s", KEYCHAIN, *flags]
-    return subprocess.run(command, capture_output=True, text=True, check=False)
+    try:
+        return subprocess.run(command, capture_output=True, text=True, check=False, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return None
 
 
 def configured() -> bool:
@@ -46,11 +54,11 @@ def configured() -> bool:
     return found is not None and found.returncode == 0
 
 
-def api_key() -> str | None:
+def api_key(timeout: float = KEYCHAIN_TIMEOUT) -> str | None:
     """`ELEVENLABS_API_KEY`, or the Keychain item `elevenlabs-api-key`. Never print or log it."""
     if key := os.environ.get(ENV, "").strip():
         return key
-    found = _keychain("-w")
+    found = _keychain("-w", timeout=timeout)
     if found is None or found.returncode != 0:
         return None
     return found.stdout.strip() or None
@@ -232,27 +240,32 @@ def main(argv: Iterable[str] | None = None) -> None:
     parser.add_argument("work", type=Path)
     work = parser.parse_args(None if argv is None else list(argv)).work
     asked: Mapping[str, Any] = json.loads((work / "greetings.json").read_text(encoding="utf-8"))
+    id, said = asked["voice"], Path(asked["said"])
+    if before := files(said, id):
+        for path in before:
+            shutil.copyfile(path, work / path.name)
+        spoken = json.loads((said / "spoken.json").read_text(encoding="utf-8")) | {"credits": 0}
+        (work / "spoken.json").write_text(json.dumps(spoken), encoding="utf-8")
+        speak.report(1.0, "Said in this voice before")
+        return
     key = api_key()
     if key is None:
         sys.exit(f"No ElevenLabs key: set {ENV} or add the Keychain item {KEYCHAIN}")
     speak.report(0.0, "Choosing a voice")
     with ElevenLabs(key) as eleven:
         voice = asked["elevenlabs"] or eleven.choose(
-            asked["voice"], asked["gender"], asked["age"], asked["places"]
+            id, asked["gender"], asked["age"], asked["places"]
         )
         if voice is None:
             sys.exit("ElevenLabs has no voice for them")
         seconds = say_all(
-            eleven,
-            voice["voice_id"],
-            asked["voice"],
-            asked["delivery"],
-            asked["lines"],
-            work,
-            speak.report,
+            eleven, voice["voice_id"], id, asked["delivery"], asked["lines"], work, speak.report
         )
     spoken = {"seconds": seconds, "voice": voice["name"], "credits": eleven.credits}
     (work / "spoken.json").write_text(json.dumps(spoken), encoding="utf-8")
+    said.mkdir(parents=True, exist_ok=True)
+    for path in [*files(work, id), work / "spoken.json"]:
+        shutil.copyfile(path, said / path.name)
     speak.report(1.0, "Said")
 
 
