@@ -112,6 +112,22 @@ def test_forwards_sim_events_to_clients(event: Event, message: ServerMessage) ->
     assert forwarded(event) == [message]
 
 
+def test_a_line_is_flushed_as_the_flushed_hook_says() -> None:
+    app = Starlette()
+    world = app.state.world = World(Clock(NOW))
+    app.state.flushed = lambda line: line.id == LINE.id
+    sent: list[ServerMessage] = []
+    hub_of(app).broadcast = sent.append
+
+    async def run() -> None:
+        async with lifespan(app):
+            world.bus.publish(LineSpoken(LINE))
+
+    asyncio.run(run())
+
+    assert sent == [LineMessage(line=LINE, voiced=False, flushed=True)]
+
+
 def test_ignores_other_events() -> None:
     assert forwarded(Event()) == []
 

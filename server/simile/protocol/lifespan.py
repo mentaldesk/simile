@@ -33,7 +33,10 @@ def unvoiced(line: Line) -> bool:
 
 
 def message_for(
-    event: Event, now: datetime, voiced: Callable[[Line], bool] = unvoiced
+    event: Event,
+    now: datetime,
+    voiced: Callable[[Line], bool] = unvoiced,
+    flushed: Callable[[Line], bool] = unvoiced,
 ) -> ServerMessage:
     match event:
         case EntityMoved():
@@ -46,7 +49,9 @@ def message_for(
         case ConversationStarted():
             return ConversationStartedMessage(conversation=event.conversation)
         case LineSpoken():
-            return LineMessage(line=event.line, voiced=voiced(event.line))
+            return LineMessage(
+                line=event.line, voiced=voiced(event.line), flushed=flushed(event.line)
+            )
         case ConversationEnded():
             return ConversationEndedMessage(
                 conversation_id=event.conversation.id, ended=event.conversation.ended or now
@@ -78,7 +83,8 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     def forward(event: Event) -> None:
         voiced = getattr(app.state, "voiced", unvoiced)
-        hub.broadcast(message_for(event, world.clock.now, voiced))
+        flushed = getattr(app.state, "flushed", unvoiced)
+        hub.broadcast(message_for(event, world.clock.now, voiced, flushed))
 
     unsubscribes = [world.bus.subscribe(event_type, forward) for event_type in FORWARDED]
     sync = ClockSync(world.clock, hub)
