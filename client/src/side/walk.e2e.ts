@@ -246,8 +246,8 @@ const JUMPS: Jump[] = [
 ];
 /** A run jump at the metro's high ledge, a row higher than the jump, falls back to the floor. */
 const SHORT: Jump = { name: 'at the high ledge, short of it', from: metro(101, 15), takeOff: 105, land: 104, onto: 15, run: true };
-/** The same on the hydraulic legs lands on it. */
-const LEDGE: Jump = { name: 'onto the high ledge on the hydraulic legs', from: metro(101, 15), takeOff: 103, land: 106, onto: 12, run: true };
+/** The same on the hydraulic legs lands on it, from a run-up long enough to see it's running. */
+const LEDGE: Jump = { name: 'onto the high ledge on the hydraulic legs', from: metro(96, 15), takeOff: 103, land: 106, onto: 12, run: true };
 const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
 
 /** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
@@ -261,7 +261,6 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   await until(page, atEdge, 5, `${jump.name}: running up to ${jump.takeOff}`, FRAME_MS);
   await page.keyboard.down(' ');
   await until(page, async () => (await api.state())!.airborne, 1, `${jump.name}: taking off`, FRAME_MS);
-  const { x: tookOff, run: running } = (await api.state())!;
   await run(page, 200);
   await shot(page, index, jump.name);
   await until(page, async () => !(await api.state())!.airborne, 3, `${jump.name}: landing`, FRAME_MS);
@@ -272,8 +271,7 @@ async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise
   const landed = (await api.state())!;
   const row = jump.onto ?? jump.from.y;
   if (landed.map !== jump.from.map || landed.y !== row || landed.x < jump.land) {
-    const from = `took off at ${tookOff.toFixed(2)} running ${running.toFixed(2)}`;
-    throw new Error(`${jump.name}: ${from}, landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${row} past ${jump.land}`);
+    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${row} past ${jump.land}`);
   }
 }
 
@@ -378,7 +376,24 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
     await run(page, 2600);
   }
   await api.fit('legs', 'hydraulic_legs');
-  await jumpLeg(page, api, LEDGE, index);
+  await teleport(page, api, LEDGE.from, LEDGE.name);
+  await page.keyboard.down('ArrowRight');
+  await run(page, 500);
+  const walking = (await api.state())!.run < 0.5;
+  if (walking) await page.keyboard.press('Shift');
+  await until(page, async () => (await api.state())!.x >= LEDGE.takeOff, 5, `${LEDGE.name}: running up`, FRAME_MS);
+  await page.keyboard.down(' ');
+  await until(page, async () => (await api.state())!.airborne, 1, `${LEDGE.name}: taking off`, FRAME_MS);
+  await run(page, 200);
+  await shot(page, index, LEDGE.name);
+  await until(page, async () => !(await api.state())!.airborne, 3, `${LEDGE.name}: landing`, FRAME_MS);
+  await page.keyboard.up(' ');
+  await page.keyboard.up('ArrowRight');
+  if (walking) await page.keyboard.press('Shift');
+  const landed = (await api.state())!;
+  if (landed.y !== LEDGE.onto || landed.x < LEDGE.land) {
+    throw new Error(`${LEDGE.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on the ledge`);
+  }
   await api.fit('vertebra', 'datajack');
   await teleport(page, api, metro(98, 15), name);
   await run(page, 300);

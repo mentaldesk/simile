@@ -6,8 +6,7 @@ from simile.story.saying import says
 
 
 def lying(talk: PlayerTalk, line: Line) -> bool:
-    """Whether `line` gives a cover story the code decided its speaker lies with: it says the
-    cover, or completes it, as the journal reads their lines joined."""
+    """Whether `line` says or completes a code-decided cover story, as the journal reads it."""
     if line.speaker == PLAYER_ID or line.conversation_id != talk.conversation.id:
         return False
     lines = talk.conversation.lines

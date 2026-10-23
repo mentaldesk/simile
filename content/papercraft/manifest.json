@@ -135,6 +135,14 @@
    "near": "layers/near-walls",
    "ground": "layers/ground-street",
    "foreground": "layers/front-plants"
+  },
+  "sewers": {
+   "sky": "layers/metro-vault",
+   "far": "layers/far-metro",
+   "mid": "layers/mid-metro",
+   "near": "layers/near-metro",
+   "ground": "layers/ground-metro",
+   "foreground": "layers/front-metro"
   }
  },
  "grounds": {

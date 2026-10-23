@@ -98,8 +98,7 @@ def _clear(town: "TownMap", start: Cell, end: Cell) -> bool:
 def possible(
     town: "TownMap", x: float, y: float, last: tuple[float, float] | None, jump: Jump = JUMP
 ) -> bool:
-    """Whether a `player_move` to (x, y) is kept, after `last`, for the player's `jump`:
-    docs/protocol.md's rule."""
+    """Whether a `player_move` to (x, y) is kept, after `last`: docs/protocol.md's rule."""
     cx, cy = math.floor(x + 0.5), math.ceil(round(y, 6))
     if town.walkable(cx, cy) or _between(town, x, y):
         return True
