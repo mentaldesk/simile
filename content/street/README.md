@@ -309,7 +309,10 @@ Space held, taking off as late as coyote time allows, at the client's longest st
 `simile.world.map` reads them alongside today's maps.
 
 - `STREET_DIR` is this folder, and `MAP_DIR`. `load_maps()` returns every street (by file name)
-  and then every floor, by map id. `load_maps(ISO_DIR)` still reads today's `content/map/` until
+  and then every floor, by map id, and the maps of one generated level, `levels/<level>/`
+  (`load_maps(level=n)`, 0 by default). A world plays one level: `world_level()` picks it by the
+  cast's seed (`level_of`), 0 for today's village, the running server loads it, and the
+  `snapshot` tells the client which (`docs/protocol.md`). `load_maps(ISO_DIR)` still reads today's `content/map/` until
   #315.
 - `TownMap` has, after its old fields, `side_view`, `kind` (`MapKind.STREET` or `FLOOR`, `None` on
   today's maps), `building` and `floor` (on floors), `climbable`, rows of `DoorKind` or `None`

@@ -1,4 +1,5 @@
 import json
+import random
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from enum import StrEnum
@@ -26,6 +27,8 @@ CONTENT_DIR = Path(__file__).resolve().parents[3] / "content"
 STREET_DIR = CONTENT_DIR / "street"
 MAP_DIR = STREET_DIR
 FLOORS = "floors"
+LEVELS = "levels"
+"""Generated levels, each a folder `levels/<n>/` of maps: a world plays one of them."""
 COLLISION_LAYER = "collision"
 CLIMBABLE_LAYER = "climbable"
 SOLID_LAYER = "solid"
@@ -254,10 +257,12 @@ def load_map(path: Path) -> TownMap:
     )
 
 
-def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
-    """Every map in the directory, by map id: the streets and then every floor in floors/. Raises
-    ValueError if the maps break docs/protocol.md's rules for links and floors."""
+def load_maps(directory: Path = MAP_DIR, level: int = 0) -> dict[str, TownMap]:
+    """Every map in the directory, by map id: the streets, every floor in floors/ and the maps
+    of `level` in levels/. Raises ValueError if the maps break docs/protocol.md's rules for links
+    and floors."""
     paths = [*sorted(directory.glob("*.tmj")), *sorted((directory / FLOORS).glob("*.tmj"))]
+    paths += sorted((directory / LEVELS / str(level)).glob("*.tmj"))
     if not paths:
         raise FileNotFoundError(f"No maps in {directory}")
     maps = {town.id: town for town in map(load_map, paths)}
@@ -265,6 +270,24 @@ def load_maps(directory: Path = MAP_DIR) -> dict[str, TownMap]:
     _one_link_per_end(links)
     _check_maps(maps, links)
     return maps
+
+
+def level_count(directory: Path = MAP_DIR) -> int:
+    """How many generated levels there are, numbered from 0."""
+    folder = directory / LEVELS
+    return sum(1 for path in folder.iterdir() if path.is_dir()) if folder.is_dir() else 0
+
+
+def level_of(seed: int, count: int) -> int:
+    """The level a world plays, picked by its seed from `count`, or 0 without any."""
+    return random.Random(f"level/{seed}").randrange(count) if count else 0
+
+
+def world_level(directory: Path = MAP_DIR) -> int:
+    """The level the running world plays: the cast's seed picks it, as 0 does today's village."""
+    from simile.story.town import world_seed
+
+    return level_of(world_seed(), level_count(directory))
 
 
 def with_every_location(maps: Mapping[str, TownMap], home: str | None = None) -> TownMap:

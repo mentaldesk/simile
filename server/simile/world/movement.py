@@ -11,7 +11,14 @@ from starlette.applications import Starlette
 
 from simile.schema import DoorKind, Facing, Id, Location, MapArea, MapTile, Pose, Tile, TileArea
 from simile.sim import EntityMoved, EventBus, world_of
-from simile.world.map import WALKING_SPEED, TownMap, home_of, load_maps, with_every_location
+from simile.world.map import (
+    WALKING_SPEED,
+    TownMap,
+    home_of,
+    load_maps,
+    with_every_location,
+    world_level,
+)
 from simile.world.map import Spot as MapSpot
 from simile.world.paths import (
     DOOR,
@@ -565,5 +572,5 @@ class Movement:
 
 def movement_of(app: Starlette) -> Movement:
     if not hasattr(app.state, "movement"):
-        app.state.movement = Movement(load_maps(), world_of(app).bus)
+        app.state.movement = Movement(load_maps(level=world_level()), world_of(app).bus)
     return app.state.movement

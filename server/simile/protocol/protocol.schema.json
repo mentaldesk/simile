@@ -1579,7 +1579,7 @@
     },
     "SnapshotMessage": {
       "additionalProperties": false,
-      "description": "The whole world, sent on connect. Replaces anything the client had.",
+      "description": "The whole world, sent on connect. Replaces anything the client had. The server always\nsends `level`: missing, it's 0.",
       "properties": {
         "type": {
           "const": "snapshot",
@@ -1608,6 +1608,12 @@
             "$ref": "#/$defs/Conversation"
           },
           "type": "array"
+        },
+        "level": {
+          "default": 0,
+          "description": "Which of the generated levels in content/street/levels/ this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers.",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [

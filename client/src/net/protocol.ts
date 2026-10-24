@@ -75,7 +75,8 @@ export type ClientMessage =
   | FitMessage;
 
 /**
- * The whole world, sent on connect. Replaces anything the client had.
+ * The whole world, sent on connect. Replaces anything the client had. The server always
+ * sends `level`: missing, it's 0.
  */
 export interface SnapshotMessage {
   type: 'snapshot';
@@ -92,6 +93,10 @@ export interface SnapshotMessage {
    * Only those still going on.
    */
   conversations: Conversation[];
+  /**
+   * Which of the generated levels in content/street/levels/ this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers.
+   */
+  level?: number;
 }
 /**
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.

@@ -1,6 +1,6 @@
 import manifestJson from '../../../content/papercraft/manifest.json';
-import { maps } from '../world/assets';
-import { Village } from './maps';
+import { maps, onLevel } from '../world/assets';
+import { readMap, Village } from './maps';
 import type { SceneryManifest } from './scenery';
 
 const pictures = import.meta.glob<string>('../../../content/papercraft/*/*.webp', {
@@ -10,6 +10,7 @@ const pictures = import.meta.glob<string>('../../../content/papercraft/*/*.webp'
 });
 
 export const village = Village.read(maps);
+onLevel((ids) => ids.forEach((id) => village.replace(readMap(id, maps[id]!))));
 
 export const scenery = manifestJson as unknown as SceneryManifest;
 
