@@ -131,12 +131,34 @@ transcripts and `imported.json` stay as they are, and picking one copies the cli
 ## Greetings
 
 Once a character's voice is set, `pick` drops its old greetings and starts a `voice_greetings` job
-(`{"character": "<id>"}`), which needs Apple Silicon and voice-lab's MLX virtualenv. It runs
-[`voicing/speak.py`](../voicing/speak.py) there, which says four greetings in the new voice with V1's
-model, a second or so each once the model has loaded, and moves them into the library's `greetings/`
-folder as `<id>_<n>.m4a`, where `GET /api/greetings/{id}` finds them. The result lists them with
-their `lines` and `seconds`. A job for a clip that changed while it ran keeps nothing (`"stale":
-true`).
+(`{"character": "<id>", "library": "<resident>"}`, the second only for a library voice), which
+moves four greetings into the library's `greetings/` folder as `<id>_<n>.m4a`, where
+`GET /api/greetings/{id}` finds them. The result lists them with their `lines`, `seconds` and the
+ElevenLabs `voice` that said them, if any. A job for a clip that changed while it ran keeps nothing
+(`"stale": true`).
+
+- **With an ElevenLabs key** (`ELEVENLABS_API_KEY` or the Keychain item `elevenlabs-api-key`, looked
+  for when the server starts, for at most 2 s), the job needs only a Mac. It runs
+  [`voicing/eleven.py`](../voicing/eleven.py), which says them with `eleven_v4` in a voice from the
+  ElevenLabs library, with the audio tag for the character's leading tone (`[warmly]`). A voice
+  picked from the library brings its resident's ElevenLabs voice. Otherwise it searches the library
+  for the accent the voice description names ("A Fife accent"), then the character's origin, by
+  gender and age band, and takes one of the three most used, narration first. It costs about 50
+  credits a character.
+  - Each voice is said once: the job keeps what ElevenLabs said in `<jobs>/voice_greetings/said/`,
+    by the clip, lines and voice, and another job for the same ones copies them from there. Each
+    folder there appears whole, so a killed job leaves none.
+  - The jobs may send ElevenLabs at most `VoicelibConfig.elevenlabs_characters_a_day` characters a
+    day, 300 by default (about two characters' greetings), or `SIMILE_ELEVENLABS_DAILY` when the
+    server starts with it set (`SIMILE_ELEVENLABS_DAILY=0` stops them). They're counted in
+    `<jobs>/voice_greetings/allowance.json` before each job runs. Past that, V1's model says them,
+    as below, and the server logs why. A machine without voice-lab's MLX virtualenv refuses the job
+    instead.
+  - If ElevenLabs fails, the job reports only the kind of error, never its text, which could quote
+    the key.
+- **Without one**, it needs Apple Silicon and voice-lab's MLX virtualenv, and runs
+  [`voicing/speak.py`](../voicing/speak.py) there, which says them in the character's own voice with
+  V1's model, a second or so each once the model has loaded.
 
 The greetings come from `lines_for` in [`voicing/greetings.py`](../voicing/greetings.py), with no LLM
 call: three in the tone the character's values lean to most (formal, warm, brisk or playful), and a

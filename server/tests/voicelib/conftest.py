@@ -18,6 +18,7 @@ from simile.library import Library
 from simile.schema import CoreValue
 from simile.voicelib import kinds
 from simile.voicelib.kinds import VoiceCheck, VoiceDesign, uploads_dir
+from simile.voicing import eleven
 
 FAKE_VOICE_JOB = Path(__file__).with_name("fake_voice_job.py")
 LINE = "The early bus leaves at twenty to seven, and I like to be at the stop by half past."
@@ -128,6 +129,14 @@ class FakeVoiceLab:
 def roots(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SIMILE_JOBS", str(tmp_path / "data" / "jobs"))
     monkeypatch.setenv("SIMILE_LIBRARY", str(tmp_path / "data" / "library"))
+
+
+@pytest.fixture(autouse=True)
+def no_elevenlabs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads the real key or reaches ElevenLabs."""
+    monkeypatch.delenv(eleven.ENV, raising=False)
+    monkeypatch.setattr(eleven, "_keychain", lambda *flags, **options: None)
+    monkeypatch.setattr(eleven, "API", "http://elevenlabs.invalid")
 
 
 @pytest.fixture

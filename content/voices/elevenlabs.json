@@ -1,0 +1,14 @@
+{
+  "annelie": {"voice": "zx7xpccUD1nCkqUuxIGc", "name": "Adele - Warm, Sincere & Authoritative", "accent": "South African", "delivery": "[flatly]"},
+  "desmond": {"voice": "O81f3PIY2xWpV0viexkV", "name": "Papa TK", "accent": "Cook Islands", "delivery": "[warmly]"},
+  "henrietta": {"voice": "M6KCOw7VXEJAZwuYFLuz", "name": "Claire - Warm and Measured", "accent": "Scottish", "delivery": "[crisply]"},
+  "ingrid": {"voice": "5IcY6gY2gjO9I3l6caHq", "name": "Anette - English", "accent": "Danish", "delivery": "[eagerly]"},
+  "kofi": {"voice": "NWCYzEZIRjKG9C8z4tSK", "name": "Leonard", "accent": "Ghanaian", "delivery": "[cheerfully]"},
+  "lachlan": {"voice": "ocDS3nMDsIPV8dFsOOyf", "name": "Sean Buckley - Deep, Polished, and Warm", "accent": "New Zealand", "delivery": "[encouraging]"},
+  "marguerite": {"voice": "xNtG3W2oqJs0cJZuTyBc", "name": "Chloé - French accent, lively and expressive", "accent": "French", "delivery": "[crisply]"},
+  "mirela": {"voice": "54YYBuRuAG6KJooiOhFI", "name": "Alice - Soothing, Calm and Youthful", "accent": "Romanian", "delivery": "[softly]"},
+  "odalys": {"voice": "q7NOrgd2eHOIAq5elARC", "name": "Sonia - Cheerful, Bright, and Inviting", "accent": "Portuguese", "delivery": "[playfully]"},
+  "priya": {"voice": "DeqN6v802uC3TUe1LRsD", "name": "Riya Rao - Enthusiastic and Vibrant", "accent": "Indian", "delivery": "[bubbly]"},
+  "raymond": {"voice": "6EYhQ5gVgyv1Z20WprFH", "name": "Adam Faris", "accent": "Singaporean", "delivery": "[briskly]"},
+  "tobias": {"voice": "nTMUXLFSfbWmdKKy7nDC", "name": "Alder - Warm, Raspy and Comforting", "accent": "Irish", "delivery": "[slowly]"}
+}

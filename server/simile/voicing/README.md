@@ -65,28 +65,48 @@ Every constant is in `VoicingConfig`.
 
 ## Greetings
 
-Each resident has three or four greetings recorded once in their own voice, which the client plays
-when they start talking to the player, whether or not the server is voiced (C3's
+Each resident has three or four greetings recorded once, which the client plays when they start
+talking to the player, whether or not the server is voiced (C3's
 [`greetings.ts`](../../../client/src/audio/greetings.ts)). They're in
 [`content/voices/greetings/`](../../../content/voices/greetings/): `lines.json` has what each
 resident says, written by hand in their way of talking and without anyone's name, and `<id>_<n>.m4a`
-is line *n*, AAC at 32 kb/s, about 10 KB each and 450 KB in all.
+is line *n*, AAC at 32 kb/s, about 12 KB each and 600 KB in all.
 
 ```bash
-cd server && uv run --extra voice simile greetings [npc ...] [--force]
+cd server && uv run simile greetings [npc ...] [--audition] [--force] [--local]
 ```
 
-- `simile greetings` says each line with V1's model and seed, cloning the resident's clip as V1
-  does, so a rerun gives the same audio. A line's `take` picks another seed, for when one comes out
-  wrong. It trims the silence around each greeting and encodes it with macOS's `afconvert`. Each
-  takes about a second once the model has loaded.
-- It makes only the greetings that are missing or out of date, unless `--force`. `made.json` keeps
-  a digest of the clip, transcript and lines each resident's were made from, and of
-  `greetings.SYNTHESIS`, which `speak.py` changes bump. `make test` fails while any are out of date.
-- It waits while mflux, a papercraft or doll build, or an Ollama model is loaded (`gpu.py`), so two
-  models never share the GPU's memory.
+- With an ElevenLabs key, `simile greetings` says each line with `eleven_v4` in the resident's voice
+  from the ElevenLabs library, chosen in
+  [`content/voices/elevenlabs.json`](../../../content/voices/elevenlabs.json) with the audio tags it
+  says before each line (`"delivery": "[slowly]"`). That's how residents get their accents, which
+  V1's model can't do. The key is `ELEVENLABS_API_KEY`, or the macOS Keychain item
+  `elevenlabs-api-key`; `eleven.py` reads it in code and never prints or logs it. A key with
+  anything but visible ASCII in it, such as a line break, counts as no key, since an error could
+  quote it. Every line spends ElevenLabs credits, about 12 for a greeting, and the command says how
+  many it used. If ElevenLabs fails partway, it stops, says what it spent, and keeps what it said, so
+  a rerun says the rest. It reports a refusal's reason, and only the kind of any other error.
+- Without a key, or for a resident with no ElevenLabs voice, it says them with V1's model and seed,
+  cloning the resident's clip as V1 does (`uv run --extra voice simile greetings`). It won't replace
+  greetings made with ElevenLabs that way, whether their lines changed, `--force` asked or
+  `SYNTHESIS` was bumped, unless `--local` asks. `--local` uses V1's model even with a key.
+- Both trim the silence around each greeting and encode it with macOS's `afconvert`. ElevenLabs'
+  are levelled to the same loudness. A line's `take` picks another seed, for when one comes out
+  wrong.
+- It says only the lines that are missing or out of date, unless `--force`. `made.json` keeps which
+  engine made each resident's and a digest for each line: its words and take, and the ElevenLabs
+  voice and delivery or the clip and transcript. Bumping `greetings.SYNTHESIS` makes them all again.
+  `make test` fails while any are out of date.
+- `--audition` says only each resident's first line, to hear a new voice before paying for the rest.
+  The next run says the others.
+- For V1's model it waits while mflux, a papercraft or doll build, or an Ollama model is loaded
+  (`gpu.py`), so two models never share the GPU's memory.
 - `speak.py` imports nothing from simile, so the creator's greetings job can run it in voice-lab's
   MLX virtualenv ([voicelib](../voicelib/README.md#greetings)).
+
+To choose a resident's voice, search the library (`GET /v1/shared-voices`, which costs nothing) for
+their accent, gender and age, preferring voices tagged `narrative_story`, then audition it. Their
+previews are free to listen to.
 
 `GET /api/greetings/{id}` lists a resident's greetings, `{"greetings": ["/api/greetings/kofi/kofi_1.m4a",
 ...]}`, and an empty list for anyone without. A player character's come from the library's
@@ -96,4 +116,6 @@ old one. `GET /api/greetings/{id}/{name}` serves one as `audio/mp4`.
 ## Tests
 
 `server/tests/voicing/` drives `Voicing` with V1's `FakeSynthesiser`, so it runs in CI without MLX.
-The test that says a greeting with the real model is `@pytest.mark.mlx`.
+The test that says a greeting with the real model is `@pytest.mark.mlx`. Greetings tests use
+`eleven.FakeElevenLabs`, and a fixture keeps every test from reading the real key or reaching
+ElevenLabs.

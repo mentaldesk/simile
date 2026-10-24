@@ -1,5 +1,6 @@
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
@@ -8,8 +9,18 @@ from starlette.testclient import TestClient
 from simile.jobs import Jobs
 from simile.library import Library
 from simile.voicelib import greetings
+from simile.voicelib.config import DAILY, DEFAULT_CONFIG, VoicelibConfig, from_environment
 from simile.voicelib.greetings import GREET, Greet
-from simile.voicing.greetings import GREETINGS, files, lines_for, players
+from simile.voicing import eleven
+from simile.voicing.greetings import (
+    DELIVERIES,
+    GREETINGS,
+    files,
+    lines_for,
+    load_chosen,
+    players,
+    tones,
+)
 
 from .conftest import finished
 
@@ -19,10 +30,12 @@ PICK = "/api/characters/wren_abernethy/voice/pick"
 
 @pytest.fixture
 def job_here(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(greetings, "NEEDS", ())
-    monkeypatch.setattr(
-        greetings, "command", lambda params, work: [sys.executable, str(FAKE), str(work)]
-    )
+    def fake(params: Greet, work: Path) -> list[str]:
+        return [sys.executable, str(FAKE), str(work)]
+
+    for needs, command in (("NEEDS", "command"), ("ELEVENLABS_NEEDS", "elevenlabs_command")):
+        monkeypatch.setattr(greetings, needs, ())
+        monkeypatch.setattr(greetings, command, fake)
 
 
 def greeting_jobs(client: TestClient) -> list[dict]:
@@ -51,6 +64,7 @@ def test_setting_a_voice_records_the_characters_greetings(
         "lines": lines,
         "seconds": [1.0, 1.1, 1.2, 1.3],
         "stale": False,
+        "voice": None,
     }
 
 
@@ -128,3 +142,156 @@ def test_greetings_for_a_voice_changed_since_are_dropped(library: Library, tmp_p
     assert result["stale"] is True
     assert result["greetings"] == []
     assert files(players(library), "wren_abernethy") == []
+
+
+@pytest.fixture
+def keyed(monkeypatch: pytest.MonkeyPatch, library: Library) -> None:
+    from .conftest import clip
+
+    monkeypatch.setenv(eleven.ENV, "sk-test")
+    library.save_clip("wren_abernethy", clip())
+
+
+def work(tmp_path: Path, job: str = "0") -> Path:
+    """A job's work directory under `tmp_path/jobs`, as the jobs runner makes them."""
+    path = tmp_path / "jobs" / "work" / job
+    path.mkdir(parents=True)
+    return path
+
+
+def cost(library: Library) -> int:
+    character = library.get("wren_abernethy")
+    delivery = DELIVERIES[tones(character)[0]]
+    return sum(len(f"{delivery} {line}") for line in lines_for(character))
+
+
+def test_with_a_key_elevenlabs_says_them_on_any_mac(
+    keyed: None, library: Library, tmp_path: Path
+) -> None:
+    kind = greetings.kind(library)
+    here = work(tmp_path)
+
+    command = kind.command(Greet(character="wren_abernethy"), here)
+
+    assert kind.requires == ("apple_silicon",)
+    assert command == [sys.executable, "-I", "-m", "simile.voicing.eleven", str(here)]
+    asked = json.loads((here / "greetings.json").read_text())
+    assert asked["lines"] == lines_for(library.get("wren_abernethy"))
+    assert asked["delivery"].startswith("[")
+    assert asked["elevenlabs"] is None
+    assert (asked["gender"], asked["age"]) == ("female", "middle_aged")
+    assert asked["places"] == ["Fife", "Scotland"]
+    assert Path(asked["said"]).parent == tmp_path / "jobs" / GREET / "said"
+
+
+def test_past_the_daily_allowance_v1_says_them(
+    keyed: None,
+    library: Library,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from .conftest import clip
+
+    monkeypatch.setattr(greetings, "MLX_PYTHON", Path(sys.executable))
+    config = VoicelibConfig(elevenlabs_characters_a_day=cost(library) * 3 // 2)
+    kind = greetings.kind(library, config)
+    wren = Greet(character="wren_abernethy")
+
+    first = kind.command(wren, work(tmp_path, "1"))
+    library.save_clip("wren_abernethy", clip(sample=2))
+    second = kind.command(wren, work(tmp_path, "2"))
+
+    assert first[2:4] == ["-m", "simile.voicing.eleven"]
+    assert second[:3] == [sys.executable, "-I", str(greetings.SCRIPT)]
+    assert "ElevenLabs characters are spent, so V1's model says Wren Abernethy's" in caplog.text
+    assert "sk-test" not in caplog.text
+    allowance = greetings.Allowance(tmp_path / "jobs" / GREET / "allowance.json", 0)
+    assert allowance.spent() == cost(library)
+
+    tomorrow = date.today() + timedelta(days=1)
+    monkeypatch.setattr(greetings, "today", lambda: tomorrow)
+    library.save_clip("wren_abernethy", clip(sample=3))
+
+    assert kind.command(wren, work(tmp_path, "3"))[2:4] == ["-m", "simile.voicing.eleven"]
+
+
+def test_past_the_allowance_without_v1_there_are_none(
+    keyed: None, library: Library, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(greetings, "MLX_PYTHON", tmp_path / "no-python")
+    kind = greetings.kind(library, VoicelibConfig(elevenlabs_characters_a_day=10))
+
+    with pytest.raises(Exception, match="can't say greetings with V1's model"):
+        kind.command(Greet(character="wren_abernethy"), work(tmp_path))
+
+
+def test_a_voice_is_said_with_elevenlabs_once(
+    keyed: None, library: Library, tmp_path: Path
+) -> None:
+    wren = Greet(character="wren_abernethy")
+    kind = greetings.kind(library, VoicelibConfig(elevenlabs_characters_a_day=cost(library)))
+    first = work(tmp_path, "1")
+    kind.command(wren, first)
+    said = Path(json.loads((first / "greetings.json").read_text())["said"])
+    said.mkdir(parents=True)
+    for n in (1, 2, 3, 4):
+        (said / f"wren_abernethy_{n}.m4a").write_bytes(b"said")
+
+    again = work(tmp_path, "2")
+    command = kind.command(wren, again)
+
+    assert command[2:4] == ["-m", "simile.voicing.eleven"]
+    assert json.loads((again / "greetings.json").read_text())["said"] == str(said)
+    allowance = greetings.Allowance(tmp_path / "jobs" / GREET / "allowance.json", 0)
+    assert allowance.spent() == cost(library)
+
+
+def test_the_allowance_starts_again_each_day(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    allowance = greetings.Allowance(tmp_path / "allowance.json", 100)
+
+    assert allowance.take(60)
+    assert not allowance.take(41)
+    assert allowance.take(40)
+    assert allowance.spent() == 100
+    monkeypatch.setattr(greetings, "today", lambda: date.today() + timedelta(days=1))
+    assert allowance.spent() == 0
+    assert allowance.take(100)
+
+
+def test_a_job_killed_while_counting_leaves_the_count(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    allowance = greetings.Allowance(tmp_path / "allowance.json", 100)
+    allowance.take(60)
+
+    with monkeypatch.context() as killed:
+        killed.setattr(greetings.os, "replace", lambda *paths: pytest.fail("killed"))
+        with pytest.raises(pytest.fail.Exception):
+            allowance.take(10)
+
+    assert allowance.spent() == 60
+    assert json.loads((tmp_path / "allowance.json").read_text())["characters"] == 60
+
+
+def test_the_daily_allowance_comes_from_the_environment() -> None:
+    assert from_environment({}) == DEFAULT_CONFIG
+    assert DEFAULT_CONFIG.elevenlabs_characters_a_day == 300
+    assert from_environment({DAILY: " 42 "}).elevenlabs_characters_a_day == 42
+    assert from_environment({DAILY: "0"}).elevenlabs_characters_a_day == 0
+    with pytest.raises(ValueError, match="whole number of characters"):
+        from_environment({DAILY: "lots"})
+    with pytest.raises(ValueError, match="whole number of characters"):
+        from_environment({DAILY: "-5"})
+
+
+def test_a_library_voice_brings_its_residents_elevenlabs_voice(
+    keyed: None, job_here: None, client: TestClient, library: Library
+) -> None:
+    client.post(PICK, json={"library": "tobias"})
+
+    job = finished(client, greeting_jobs(client)[0]["id"])
+
+    assert job["result"]["voice"] == load_chosen()["tobias"].name
