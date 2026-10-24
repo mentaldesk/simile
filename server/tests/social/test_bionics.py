@@ -134,3 +134,14 @@ def test_every_bionic_reads_back_from_its_memory(bionics: list[Bionic]) -> None:
     _, memory = sighting(resident(), bionics, NOW)
 
     assert seen_in(memory) == bionics
+
+
+@pytest.mark.parametrize("legs", [b for b in Bionic if b.replaces == {"legs"}])
+def test_every_grade_of_legs_is_seen_as_legs_and_read_back(legs: Bionic) -> None:
+    events, memory = sighting(resident(tradition=1, security=1), [legs, JACK], NOW)
+    name = legs.value.replace("_", " ")
+
+    assert seen_in(memory) == [legs, JACK]
+    assert f"has {name} where their own legs were" in memory.content
+    assert events[0].magnitude == pytest.approx(events[1].magnitude * 0.75 / 0.5)
+    assert f"The {name} are new" in (looks("Visitor", [legs], -1, new=[legs]) or "")

@@ -12,11 +12,12 @@ SOLD: Final = "sold"
 
 
 class ItemKind(StrEnum):
-    """What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by."""
+    """What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit."""
 
     SALVAGE = "salvage"
     FOOD = "food"
     LAMP = "lamp"
+    PART = "part"
 
 
 class Item(Model):
@@ -87,12 +88,15 @@ class Pile(Model):
 
 
 class Bionic(StrEnum):
-    """A part fitted in place of one of the player's own. The hydraulic legs replace their legs,
-    the datajack takes a vertebra, and the one infrared eye takes either eye."""
+    """A part fitted in place of the player's own: a grade of legs, the datajack or the eye."""
 
     HYDRAULIC_LEGS = "hydraulic_legs"
     DATAJACK = "datajack"
     INFRARED_EYE = "infrared_eye"
+    SPRING_LEGS = "spring_legs"
+    SPRINT_LEGS = "sprint_legs"
+    BLADE_LEGS = "blade_legs"
+    PREMIUM_LEGS = "premium_legs"
 
     @property
     def replaces(self) -> frozenset[str]:
@@ -104,12 +108,20 @@ class Bionic(StrEnum):
         return _HUMANITY_COST[self]
 
 
+LEGS: Final = (
+    Bionic.HYDRAULIC_LEGS,
+    Bionic.SPRING_LEGS,
+    Bionic.SPRINT_LEGS,
+    Bionic.BLADE_LEGS,
+    Bionic.PREMIUM_LEGS,
+)
+"""Every grade of legs."""
 _REPLACES = {
-    Bionic.HYDRAULIC_LEGS: frozenset({"legs"}),
+    **dict.fromkeys(LEGS, frozenset({"legs"})),
     Bionic.DATAJACK: frozenset({"vertebra"}),
     Bionic.INFRARED_EYE: frozenset({"left_eye", "right_eye"}),
 }
-_HUMANITY_COST = {Bionic.HYDRAULIC_LEGS: 0.15, Bionic.DATAJACK: 0.1, Bionic.INFRARED_EYE: 0.2}
+_HUMANITY_COST = {**dict.fromkeys(LEGS, 0.15), Bionic.DATAJACK: 0.1, Bionic.INFRARED_EYE: 0.2}
 
 type PartState = Literal["present", "sold"] | Bionic
 type BodyPart = Literal["legs", "vertebra", "left_eye", "right_eye", "left_kidney", "right_kidney"]

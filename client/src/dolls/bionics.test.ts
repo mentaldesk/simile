@@ -17,6 +17,8 @@ describe('the player’s figure', () => {
     [{}, 'player'],
     [{ left_kidney: 'sold', right_eye: 'sold' }, 'player'],
     [{ legs: 'hydraulic_legs' }, 'player_legs'],
+    [{ legs: 'sprint_legs' }, 'player_legs'],
+    [{ legs: 'premium_legs', vertebra: 'datajack' }, 'player_legs_datajack'],
     [{ vertebra: 'datajack' }, 'player_datajack'],
     [{ left_eye: 'infrared_eye' }, 'player_eye'],
     [{ right_eye: 'infrared_eye', legs: 'hydraulic_legs' }, 'player_legs_eye'],

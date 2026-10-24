@@ -1,13 +1,16 @@
 import type { Bionic, Body } from '../net/protocol';
 
 export const PLAYER_FIGURE = 'player';
+type Shown = Extract<Bionic, 'hydraulic_legs' | 'datajack' | 'infrared_eye'>;
 /** In the order a figure's id names them. */
-export const FITTED: readonly Bionic[] = ['hydraulic_legs', 'datajack', 'infrared_eye'];
-const NAMES: Record<Bionic, string> = { hydraulic_legs: 'legs', datajack: 'datajack', infrared_eye: 'eye' };
+export const FITTED: readonly Shown[] = ['hydraulic_legs', 'datajack', 'infrared_eye'];
+const NAMES: Record<Shown, string> = { hydraulic_legs: 'legs', datajack: 'datajack', infrared_eye: 'eye' };
+/** Every grade of legs, which a figure shows alike. */
+export const LEGS: ReadonlySet<string> = new Set<Bionic>(['hydraulic_legs', 'spring_legs', 'sprint_legs', 'blade_legs', 'premium_legs']);
 
-/** The bionics a body has fitted, in `FITTED`'s order. */
-export function fitted(body?: Body): Bionic[] {
-  const parts = new Set<string>(body ? Object.values(body) : []);
+/** The bionics a body's figure shows, in `FITTED`'s order, any grade of legs as the hydraulic legs. */
+export function fitted(body?: Body): Shown[] {
+  const parts = new Set<string>(Object.values(body ?? {}).map((part: string) => (LEGS.has(part) ? 'hydraulic_legs' : part)));
   return FITTED.filter((bionic) => parts.has(bionic));
 }
 

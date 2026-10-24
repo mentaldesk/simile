@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 
 from simile.schema import (
+    LEGS,
     PLAYER_ID,
     Aspect,
     Bionic,
@@ -14,18 +15,19 @@ from simile.schema import (
 from simile.social.config import DEFAULT_BIONICS, BionicsConfig
 
 TOPIC = "bionics"
+LEG_NAMES: dict[Bionic, str] = {legs: legs.replace("_", " ") for legs in LEGS}
 NAMES: dict[Bionic, str] = {
-    Bionic.HYDRAULIC_LEGS: "hydraulic legs",
+    **LEG_NAMES,
     Bionic.DATAJACK: "datajack",
     Bionic.INFRARED_EYE: "infrared eye",
 }
 FITTED: dict[Bionic, str] = {
-    Bionic.HYDRAULIC_LEGS: "hydraulic legs",
+    **LEG_NAMES,
     Bionic.DATAJACK: "a datajack",
     Bionic.INFRARED_EYE: "an infrared eye",
 }
 LOOKS: dict[Bionic, str] = {
-    Bionic.HYDRAULIC_LEGS: "hydraulic legs where their own legs were",
+    **{legs: f"{name} where their own legs were" for legs, name in LEG_NAMES.items()},
     Bionic.DATAJACK: "a datajack socket in the back of their neck",
     Bionic.INFRARED_EYE: "an infrared eye that glows faintly red in place of one of their own",
 }
@@ -86,7 +88,7 @@ def looks(
         return None
     parts = [f"{name} has {_listed([LOOKS[bionic] for bionic in bionics])}."]
     if new := [bionic for bionic in bionics if bionic in new]:
-        are = "is" if len(new) == 1 and new[0] is not Bionic.HYDRAULIC_LEGS else "are"
+        are = "is" if len(new) == 1 and new[0] not in LEGS else "are"
         parts.append(f"The {_listed([NAMES[b] for b in new])} {are} new since you last saw them.")
     parts.append(FEELS[level(tolerance, config)])
     return " ".join(parts)

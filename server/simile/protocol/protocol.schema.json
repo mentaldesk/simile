@@ -21,11 +21,15 @@
       "type": "object"
     },
     "Bionic": {
-      "description": "A part fitted in place of one of the player's own. The hydraulic legs replace their legs,\nthe datajack takes a vertebra, and the one infrared eye takes either eye.",
+      "description": "A part fitted in place of the player's own: a grade of legs, the datajack or the eye.",
       "enum": [
         "hydraulic_legs",
         "datajack",
-        "infrared_eye"
+        "infrared_eye",
+        "spring_legs",
+        "sprint_legs",
+        "blade_legs",
+        "premium_legs"
       ],
       "title": "Bionic",
       "type": "string"
@@ -602,11 +606,12 @@
       "type": "object"
     },
     "ItemKind": {
-      "description": "What a carried thing is for: `salvage` to sell, `food` to eat, or the `lamp` to see by.",
+      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit.",
       "enum": [
         "salvage",
         "food",
-        "lamp"
+        "lamp",
+        "part"
       ],
       "title": "ItemKind",
       "type": "string"

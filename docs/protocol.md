@@ -263,7 +263,8 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
   `name`, as the player sees it, such as `"Hydraulic legs"`; its `price`; and its `parts`, the parts
   of their body it can go in place of, any one of which they give up for it: `["legs"]`, or
   `["left_eye", "right_eye"]` for the infrared eye. Each part is named once, and only a part the
-  bionic can replace.
+  bionic can replace. A grade of legs past the first goes in place of the legs before it, which
+  the doctor takes back.
 
 Like `prices`, both are the server's, and so is the stock: what the keeper would buy or fit now is
 already in them. The keeper only voices them, and talking can't change them.
@@ -275,11 +276,12 @@ some of is in their `left` from then on, with what didn't fit. Salvage comes bac
 it's taken, in a later `player_state`, and a secret never does.
 
 An `Item` has its `id`, what it is, the same for every one of its kind (`"copper_wire"`, `"lamp"`),
-which prices salvage; its `kind`, `"salvage"`, `"food"` or `"lamp"`; its `name`, as the player sees
-it; its `weight` in kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a
-lamp is switched on, running its battery down. `charge` and `on` are `null` for anything else. The
-player switches the lamp with [`lamp`](#lamp). It runs down while it's on, and while they stand at
-a plug it charges, on or off. When its battery runs flat it goes off by itself.
+which prices salvage; its `kind`, `"salvage"`, `"food"`, `"lamp"` or `"part"`, something found that
+the doctor fits with a bionic and nobody buys; its `name`, as the player sees it; its `weight` in
+kg; `charge`, a lamp's battery from 0 (flat) to 1 (full); and `on`, whether a lamp is switched on,
+running its battery down. `charge` and `on` are `null` for anything else. The player switches the
+lamp with [`lamp`](#lamp). It runs down while it's on, and while they stand at a plug it charges, on
+or off. When its battery runs flat it goes off by itself.
 
 A `Pile` is things lying on a tile in the world for the player to pick up with
 [`pick_up`](#pick_up): its `items`, `money`, cash that weighs nothing, and `at`, a `MapTile` (`map`,
@@ -288,9 +290,11 @@ it's 0. What they left when they collapsed is one kind, in `left`, each on the t
 the ground below it. Salvage and secrets, in `piles`, are another.
 
 A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
-`right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place:
-`"hydraulic_legs"` in the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in one eye or
-the other, never both. A `BodyPart` is one of those six field names.
+`right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place: a grade of legs in
+the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in one eye or the other, never both. A
+`BodyPart` is one of those six field names. The legs come in two branches and then premium:
+`"hydraulic_legs"` then `"spring_legs"` jump higher, `"sprint_legs"` then `"blade_legs"` run faster
+and jump further, and `"premium_legs"` do both.
 
 The player's state is saved with the world. A save from before it loads with the starting player:
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere and
@@ -381,7 +385,7 @@ position in open air, over somewhere to land, if either:
 - it's within the farthest and highest jump the player can make from somewhere to stand: a run
   jump with Space held, taking off as late as coyote time allows. Its reach along the row and its
   height are set in one place, which the client's jump and the server's check both read, and
-  they're the player's own: higher with the hydraulic legs fitted (`player_state`'s `body`); or
+  they're the player's own, by the legs fitted (`player_state`'s `body`); or
 - it's lower than the last position the server kept on that map, and within that jump's reach of
   it along the row, as in a fall from any height, which lands safely.
 
