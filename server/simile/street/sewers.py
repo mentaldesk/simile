@@ -246,29 +246,33 @@ def shelves(level: Level) -> list[tuple[Node, int]]:
 
 
 def place_holes(level: Level) -> None:
-    """Where each two-cell hole goes through its slab, apart, and ladders far enough apart."""
+    """Where each two-cell hole goes through its slab, apart, with floor past each ladder's top."""
     rng = level.rng
     for i, column in enumerate(level.columns):
-        reserved, used, climbs = level.reserved.get(i, set()), set(), set()
+        reserved, used = level.reserved.get(i, set()), set()
         for node in sorted(k for k in [*level.ladders, *level.drops] if k[0] == i):
             ladder = node in level.ladders
             spots = [
-                x
+                (x, side)
                 for x in range(column.x + 1, column.end - 2)
+                for side in ((0, 1) if ladder else (0,))
                 if not {x, x + 1} & reserved
-                and all(abs(x + d - u) >= 3 for d in (0, 1) for u in used)
-                and not (ladder and any(abs(x + d - u) < 4 for d in (0, 1) for u in climbs))
+                and all(abs(x + d - u) >= 4 for d in (0, 1) for u in used)
+                and not (ladder and room(column, x + side, side) < 3)
             ]
             if not spots:
                 raise ValueError(f"no room for a hole in column {i} of sewers level {level.seed}")
-            x = rng.choice(spots)
+            x, side = rng.choice(spots)
             used |= {x, x + 1}
             if ladder:
-                side = rng.randrange(2)
                 level.ladders[node], level.openings[node] = x + side, x + 1 - side
-                climbs.add(x + side)
             else:
                 level.drops[node] = x
+
+
+def room(column: Column, ladder: int, side: int) -> int:
+    """Cells of floor past a ladder's top, on the side away from its opening, to the wall."""
+    return column.end - 1 - ladder if side else ladder - column.x
 
 
 def carve(level: Level, plan: Plan) -> None:
