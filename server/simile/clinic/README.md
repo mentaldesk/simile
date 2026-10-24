@@ -24,6 +24,10 @@ nothing said to her changes them.
 |---|--:|---|
 | A kidney, bought | 100 | One, while they have both |
 | Hydraulic legs | 80 | Their legs |
+| Sprint legs | 80 | Their legs |
+| Spring legs | 240 | The hydraulic legs |
+| Blade legs | 240 | The sprint legs |
+| Premium legs | 600 | The spring or blade legs, and an Apex actuator |
 | Datajack | 150 | A vertebra |
 | Infrared eye | 200 | Either eye |
 
@@ -31,9 +35,17 @@ She has one of each bionic (`stock`), so once fitted it's gone. What's in stock 
 what the player has fitted, so nothing more is saved. She buys salvage too, at the economy's prices
 (`simile.player`'s *Selling*).
 
+**Legs come in grades** (#389), two branches and then premium, each a bionic in place of the legs.
+`street/jump.py` says what each does. The hydraulic and sprint legs go in place of the player's
+own. Each grade after them goes in place of the legs before it (`Offer.after`), which she takes
+back, so she stocks the next grade only once the one before is fitted and a branch, once chosen,
+is the way to premium. The premium legs also need a part they bring (`Offer.needs`), the Apex
+actuator, which only S9's sewers will hold (`simile.street.sewers.APEX_ACTUATOR`). She offers them
+only while they carry it, and the fitting uses it up.
+
 - `Clinic.keep` adds `parts` and `fittings` to the clinic's `player_state` buyer, through
   `simile.player`'s `keepers_of(app)`: what she'd buy of their body now, and each bionic she'd fit,
-  with the parts it can go in place of that are still theirs.
+  with the parts it can go in place of that are still theirs, or the legs an upgrade follows.
 - `sell_part` sells a kidney: the economy pays the player from `OUTSIDE` as `salvage` at the
   clinic, and the part is `sold`.
 - `fit` takes the price from the player to `OUTSIDE` as a `purchase` at the clinic, and the bionic
@@ -61,8 +73,15 @@ B2's `player_say` handler logs that it ignored a line to her, since she isn't a 
 
 ## Pricing
 
-The prices carry S15's loop: a kidney, then about 50 a round of the metro's salvage with daily
-respawns, and 65 in secrets, against meals at 5–10. The kidney buys the legs with 20 over. The
-secrets and two days' rounds with the legs, less a couple of café meals a day, buy the datajack.
-The eye then takes about four and a half days of the metro alone, which the sewers (S9) should
-shorten. `test_the_prices_carry_s15s_loop` checks it.
+The prices carry S15's loop: a kidney, then a round of the metro's salvage with daily respawns,
+and its secrets, against meals at 5–10. The kidney buys the hydraulic legs with 20 over. On them a
+round is worth 43, all but the valve up in the alcove, and the secrets they reach 125: the
+stairwell's, the catwalk's and the high ledge's. Those and two days' rounds, less two café meals a
+day, buy the datajack with 61 over. The eye then takes about four days of the metro alone, which
+the sewers (S9) should shorten. `test_the_prices_carry_s15s_loop` checks it.
+
+The upgrades rise steeply and wait for the loop. A grade 2 costs three times a grade 1 and more
+than the eye: about seven days of the metro's rounds, less meals, after the eye. Premium costs two
+and a half times that, about fifteen days of rounds on the spring legs, and the part from the
+sewers. The sprint branch reaches less of the metro's salvage, 25 a round, so it leans on the
+sewers more. `test_each_grade_of_legs_costs_steeply_more_than_the_one_before` checks the steps.

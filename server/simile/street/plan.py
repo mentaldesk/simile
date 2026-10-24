@@ -55,6 +55,8 @@ class Pickup:
     y: int
     money: float = 0.0
     item: Item | None = None
+    needs: str | None = None
+    """What reaching it takes, on `simile.street.jump.NEEDS`' scale, or None for a walk."""
 
 
 @dataclass(frozen=True)
@@ -379,4 +381,6 @@ def _pickup(object_id: int, pickup: Pickup) -> dict[str, Any]:
         item = pickup.item
         props |= {"item": item.id, "item_kind": item.kind.value, "item_name": item.name}
         props["item_weight"] = item.weight
+    if pickup.needs is not None:
+        props["needs"] = str(pickup.needs)
     return _rectangle(object_id, pickup.id, pickup.kind, _tile(pickup.x, pickup.y), props)

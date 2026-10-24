@@ -216,21 +216,23 @@ def test_the_metros_salvage_and_secrets_lie_where_s3_put_them() -> None:
         (8, 7),
         (38, 12),
         (52, 10),
+        (61, 8),
         (63, 15),
         (68, 15),
-        (77, 12),
         (83, 15),
-        (86, 8),
+        (85, 5),
+        (86, 5),
         (106, 12),
         (108, 12),
     ]
     salvage = [
-        lying[cell].items for cell in ((38, 12), (63, 15), (68, 15), (77, 12), (83, 15), (108, 12))
+        lying[cell].items for cell in ((38, 12), (63, 15), (68, 15), (85, 5), (83, 15), (108, 12))
     ]
     assert salvage == [[SALVAGE[f"metro_salvage_{n}"].item] for n in range(1, 7)]
     assert sum(item.weight for items in salvage for item in items) == 12.5
-    assert (lying[8, 7].money, lying[52, 10].money, lying[106, 12].money) == (25, 40, 60)
-    assert lying[86, 8].items == [RATION]
+    money = (lying[8, 7].money, lying[52, 10].money, lying[106, 12].money, lying[61, 8].money)
+    assert money == (25, 40, 60, 60)
+    assert lying[86, 5].items == [RATION]
 
 
 def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_catwalk() -> None:
@@ -244,7 +246,7 @@ def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_ca
     assert tunnels.player.items == [lamp(), WIRE]
     assert tunnels.player.money == 40
     assert tunnels.player.taken == {"metro_salvage_1": NOW, "metro_secret_catwalk": NOW}
-    assert len(tunnels.pickups.piles()) == 8
+    assert len(tunnels.pickups.piles()) == 9
     assert tunnels.balanced()
 
 

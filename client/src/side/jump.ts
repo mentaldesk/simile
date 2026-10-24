@@ -1,20 +1,21 @@
 import table from '../../../content/street/jump.json';
-import { fitted } from '../dolls/bionics';
 import type { Body } from '../net';
 import { climbAt, isSolid, type SideMap } from './maps';
 
-/** The jump the server checks positions by, from server/simile/street/jump.py. */
-export const JUMP_TABLE = table;
-/** The hydraulic legs' jump, a row higher under the same gravity. */
-export const LEGS_TABLE = { ...table, ...table.legs };
-export type JumpTable = typeof JUMP_TABLE | typeof LEGS_TABLE;
+export type JumpTable = Omit<typeof table, 'legs'>;
+/** The player's own jump, which the server checks positions by, from server/simile/street/jump.py. */
+export const JUMP_TABLE: JumpTable = table;
+/** Each grade of legs' jump, by the bionic: the spring legs rise higher and the sprint legs run faster, under the same gravity. */
+export const LEGS_TABLES: ReadonlyMap<string, JumpTable> = new Map(
+  Object.entries(table.legs).map(([legs, changed]) => [legs, { ...JUMP_TABLE, ...changed }]),
+);
 /** Tiles the feet rise with Space held, in `JUMP_RISE_SECONDS`. */
 export const JUMP_RISE = table.rise;
 export const JUMP_RISE_SECONDS = table.rise_seconds;
 /** Tiles a second a second, rising with Space held. */
 export const GRAVITY = (2 * JUMP_RISE) / JUMP_RISE_SECONDS ** 2;
-/** The jump the player makes on their own legs, or on the hydraulic legs once fitted. */
-export const jumpOf = (body?: Body): JumpTable => (fitted(body).includes('hydraulic_legs') ? LEGS_TABLE : JUMP_TABLE);
+/** The jump the player makes on the legs fitted, or their own. */
+export const jumpOf = (body?: Body): JumpTable => LEGS_TABLES.get(body?.legs ?? '') ?? JUMP_TABLE;
 
 /** Tiles a second up at take-off, to rise `rise` tiles with Space held. */
 export const jumpSpeed = (rise: number): number => Math.sqrt(2 * GRAVITY * rise);

@@ -7,7 +7,7 @@ import pytest
 
 from simile.schema import Bionic, Body, DoorKind, MapTile
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.jump import JUMP, LEGS, jump_of, jump_table
+from simile.street.jump import GRADES, JUMP, NEEDS, OWN_JUMP, jump_of, jump_table, meets
 from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
 from simile.world import Movement, Outcome
 from simile.world.map import STREET_DIR, WALKING_SPEED, TownMap, load_maps
@@ -300,24 +300,84 @@ POSITIONS = json.loads((Path(__file__).parent / "positions.json").read_text())
 STREETS = load_maps(STREET_DIR)
 
 
-def test_the_hydraulic_legs_jump_a_row_higher_under_the_same_gravity() -> None:
-    metro = STREETS["metro"]
+def test_the_hydraulic_legs_jump_two_rows_higher_by_the_lift() -> None:
+    metro, hydraulic = STREETS["metro"], GRADES[Bionic.HYDRAULIC_LEGS]
 
-    assert jump_of(Body()) is JUMP and jump_of(Body(legs=Bionic.HYDRAULIC_LEGS)) is LEGS
-    assert LEGS.rows == JUMP.rows + 1 and LEGS.gravity == pytest.approx(JUMP.gravity)
-    assert not possible(metro, 100, 11.9, None) and possible(metro, 100, 11.9, None, LEGS)
-    assert jump_table()["legs"] == {
-        "rise": LEGS.rise,
-        "rise_seconds": LEGS.rise_seconds,
-        "rows": LEGS.rows,
-        "reach": round(LEGS.reach, 3),
-    }
+    assert jump_of(Body()) is JUMP and jump_of(Body(legs=Bionic.HYDRAULIC_LEGS)) is hydraulic
+    assert not possible(metro, 100, 11.9, None) and possible(metro, 100, 11.9, None, hydraulic)
+
+
+@pytest.mark.parametrize(
+    ("legs", "rows", "run", "cells"),
+    [
+        (None, 2, 5.2, 4),
+        (Bionic.HYDRAULIC_LEGS, 4, 5.2, 5),
+        (Bionic.SPRING_LEGS, 6, 5.2, 6),
+        (Bionic.SPRINT_LEGS, 2, 7.8, 6),
+        (Bionic.BLADE_LEGS, 2, 10.4, 8),
+        (Bionic.PREMIUM_LEGS, 6, 10.4, 13),
+    ],
+)
+def test_each_grade_jumps_as_high_and_as_far_and_runs_as_fast_as_its_table_says(
+    legs: Bionic | None, rows: int, run: float, cells: int
+) -> None:
+    jump = jump_of(Body(legs=legs or "present"))
+    table = jump_table()
+    row = table | table["legs"].get(legs, {}) if legs else table
+
+    assert (jump.rows, jump.run, jump.cells) == (rows, run, cells)
+    assert rows < jump.rise < rows + 1 and jump.gravity == pytest.approx(JUMP.gravity)
+    assert jump.reach == pytest.approx(row["reach"], abs=1e-3)
+    assert (row["rise"], row["rows"], row["run"], row["cells"]) == (jump.rise, rows, run, cells)
+
+
+def test_the_spring_legs_jump_at_least_two_rows_higher_and_the_sprint_legs_run_faster() -> None:
+    hydraulic, spring = GRADES[Bionic.HYDRAULIC_LEGS], GRADES[Bionic.SPRING_LEGS]
+    sprint, blade = GRADES[Bionic.SPRINT_LEGS], GRADES[Bionic.BLADE_LEGS]
+
+    assert hydraulic.rows >= JUMP.rows + 2 and spring.rows >= hydraulic.rows + 2
+    assert JUMP.run < sprint.run < blade.run == 2 * JUMP.run
+    assert sprint.rise == blade.rise == JUMP.rise and sprint.reach > hydraulic.reach
+    premium = GRADES[Bionic.PREMIUM_LEGS]
+    assert (premium.rise, premium.run) == (spring.rise, blade.run)
+
+
+def test_a_place_is_in_reach_of_the_legs_that_rise_as_high_and_run_as_fast_as_it_needs() -> None:
+    assert all(meets(jump, OWN_JUMP) for jump in NEEDS.values())
+    assert all(meets(GRADES[Bionic.PREMIUM_LEGS], needs) for needs in NEEDS)
+    assert meets(GRADES[Bionic.SPRING_LEGS], Bionic.HYDRAULIC_LEGS)
+    assert meets(GRADES[Bionic.BLADE_LEGS], Bionic.SPRINT_LEGS)
+    assert not meets(GRADES[Bionic.SPRING_LEGS], Bionic.SPRINT_LEGS)
+    assert not meets(GRADES[Bionic.BLADE_LEGS], Bionic.HYDRAULIC_LEGS)
+    assert not meets(JUMP, Bionic.HYDRAULIC_LEGS)
+
+
+GAP = (
+    "................",
+    "................",
+    "................",
+    "................",
+    "####.....#######",
+    "................",
+    "################",
+)
+"""A five-cell gap between two ledges, over a floor."""
+
+
+def test_a_roof_low_over_a_gap_leaves_only_the_faster_legs_across() -> None:
+    roofed, open_air = side_view("#" * 16, *GAP), side_view(*["." * 16] * 4, *GAP)
+
+    for grade, jump in GRADES.items():
+        across = (9, 4) in dict(moves(roofed, (3, 4), jump))
+        assert across is (jump.run > JUMP.run), grade
+    assert (9, 4) not in dict(moves(roofed, (3, 4), True))
+    assert (9, 7) in dict(moves(open_air, (3, 7), GRADES[Bionic.SPRING_LEGS]))
 
 
 @pytest.mark.parametrize("case", POSITIONS, ids=lambda c: f"{c['why']} at {c['x']}, {c['y']}")
 def test_keeps_the_clients_sends_and_ignores_where_nobody_could_be(case: dict) -> None:
     last = tuple(case["last"]) if case["last"] else None
-    jump = LEGS if case.get("legs") else JUMP
+    jump = GRADES[Bionic(case["legs"])] if "legs" in case else JUMP
     assert possible(STREETS[case["map"]], case["x"], case["y"], last, jump) is case["kept"]
 
 

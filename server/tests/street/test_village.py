@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.schema import DoorKind, Facing, InteractableKind, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
-from simile.street.metro import HIGH_LEDGE, METRO
+from simile.street.metro import GANTRY, HIGH_LEDGE, METRO
 from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER, LIGHT_LAYER, PICKUPS_LAYER
 from simile.street.village import (
     FLOOR_ROW,
@@ -144,8 +144,13 @@ def reachable(start: Spot, jumps: bool = False) -> set[Spot]:
 
 
 [LEDGE] = [item for item in MAPS[METRO].interactables if item.id == HIGH_LEDGE]
-LOCKED = {Spot(METRO, t.x, t.y) for t in LEDGE.stand}
-"""Out of reach until a bionic opens them."""
+LOCKED = (
+    {Spot(METRO, t.x, t.y) for t in LEDGE.stand}
+    | {Spot(METRO, x, 5) for x in (85, 86)}
+    | {Spot(METRO, x, GANTRY) for x in (61, 62, 63)}
+    | {Spot(METRO, x, GANTRY - 5) for x in range(58, 74)}
+)
+"""Out of reach until legs open them, and the gantry's roof, which nobody reaches."""
 
 
 def test_every_cell_of_every_map_but_the_locked_ones_is_reachable_from_every_street() -> None:

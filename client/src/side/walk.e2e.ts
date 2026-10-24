@@ -242,12 +242,14 @@ const JUMPS: Jump[] = [
   { name: 'from the landing onto the catwalk over the stairwell', from: metro(1, 9), takeOff: 4, land: 6.5, onto: 7, run: true },
   { name: "from the train's roof onto the catwalk in the vault", from: metro(38, 12), takeOff: 42.3, land: 44.75, onto: 10, run: true },
   { name: 'up the tunnel wall from the pipe ledge', from: metro(76, 12), takeOff: 78.3, land: 80.75, onto: 10, run: true },
-  { name: 'up the tunnel wall to the alcove', from: metro(81, 10), takeOff: 82.3, land: 84.75, onto: 8, run: true },
 ];
 /** A run jump at the metro's high ledge, a row higher than the jump, falls back to the floor. */
 const SHORT: Jump = { name: 'at the high ledge, short of it', from: metro(101, 15), takeOff: 105, land: 104, onto: 15, run: true };
-/** The same on the hydraulic legs lands on it, from a run-up long enough to see it's running. */
+/** The same on the hydraulic legs lands on it, on the secret's cell, from a run-up long enough to see it's running. */
 const LEDGE: Jump = { name: 'onto the high ledge on the hydraulic legs', from: metro(96, 15), takeOff: 103, land: 106, onto: 12, run: true };
+/** West along the gantry under its roof and over its gap, which only a sprint clears, to the nook past `land`. */
+const GANTRY: Jump = { name: "across the gantry's gap on the sprint legs", from: metro(72, 8), takeOff: 69, land: 63.75, onto: 8, run: true };
+const GANTRY_SECRET = 61;
 const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
 
 /** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
@@ -359,7 +361,32 @@ async function fallLeg(page: Page, api: Api, index: number): Promise<void> {
   if (landed.y !== 15) throw new Error(`${name}: landed on row ${landed.y}, not the lane`);
 }
 
-/** E at the metro's jacks: dead without the datajack. The legs, fitted, reach the high ledge, and the datajack takes the lift. */
+/** On `legs`, runs `way` from `jump.from`, jumps past `takeOff` with Space held and lands past `land` on row `onto`. */
+async function legsJump(page: Page, api: Api, legs: string, jump: Jump, way: 1 | -1, index: number): Promise<void> {
+  const past = (x: number, edge: number) => (way > 0 ? x >= edge : x <= edge);
+  const key = way > 0 ? 'ArrowRight' : 'ArrowLeft';
+  await api.fit('legs', legs);
+  await teleport(page, api, jump.from, jump.name);
+  await page.keyboard.down(key);
+  await run(page, 100);
+  const walking = (await api.state())!.run < 0.5;
+  if (walking) await page.keyboard.press('Shift');
+  await until(page, async () => past((await api.state())!.x, jump.takeOff), 5, `${jump.name}: running up`, FRAME_MS);
+  await page.keyboard.down(' ');
+  await until(page, async () => (await api.state())!.airborne, 1, `${jump.name}: taking off`, FRAME_MS);
+  await run(page, 200);
+  await shot(page, index, jump.name);
+  await until(page, async () => !(await api.state())!.airborne, 3, `${jump.name}: landing`, FRAME_MS);
+  await page.keyboard.up(' ');
+  await page.keyboard.up(key);
+  if (walking) await page.keyboard.press('Shift');
+  const landed = (await api.state())!;
+  if (landed.y !== jump.onto || !past(landed.x, jump.land)) {
+    throw new Error(`${jump.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on row ${jump.onto} past ${jump.land}`);
+  }
+}
+
+/** E at the metro's jacks: dead without the datajack. Legs reach two secrets, and the datajack takes the lift. */
 async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the bionics at the depot';
   for (const [x, label] of [
@@ -375,25 +402,9 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
     if (dead !== `Nothing happens: the ${label} needs a datajack.`) throw new Error(`${name}: E at the ${label} said ${dead}`);
     await run(page, 2600);
   }
-  await api.fit('legs', 'hydraulic_legs');
-  await teleport(page, api, LEDGE.from, LEDGE.name);
-  await page.keyboard.down('ArrowRight');
-  await run(page, 500);
-  const walking = (await api.state())!.run < 0.5;
-  if (walking) await page.keyboard.press('Shift');
-  await until(page, async () => (await api.state())!.x >= LEDGE.takeOff, 5, `${LEDGE.name}: running up`, FRAME_MS);
-  await page.keyboard.down(' ');
-  await until(page, async () => (await api.state())!.airborne, 1, `${LEDGE.name}: taking off`, FRAME_MS);
-  await run(page, 200);
-  await shot(page, index, LEDGE.name);
-  await until(page, async () => !(await api.state())!.airborne, 3, `${LEDGE.name}: landing`, FRAME_MS);
-  await page.keyboard.up(' ');
-  await page.keyboard.up('ArrowRight');
-  if (walking) await page.keyboard.press('Shift');
-  const landed = (await api.state())!;
-  if (landed.y !== LEDGE.onto || landed.x < LEDGE.land) {
-    throw new Error(`${LEDGE.name}: landed at ${landed.x.toFixed(2)}, ${landed.y}, not on the ledge`);
-  }
+  await legsJump(page, api, 'hydraulic_legs', LEDGE, 1, index);
+  await legsJump(page, api, 'sprint_legs', GANTRY, -1, index);
+  await walkTo(page, api, GANTRY_SECRET, REACH.cell, `${GANTRY.name}, to the secret`);
   await api.fit('vertebra', 'datajack');
   await teleport(page, api, metro(98, 15), name);
   await run(page, 300);

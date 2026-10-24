@@ -28,13 +28,13 @@ class Move(NamedTuple):
     cost: float
 
 
-def moves(town: "TownMap", cell: Cell, jumps: bool = False) -> Iterator[Move]:
+def moves(town: "TownMap", cell: Cell, jumps: bool | Jump = False) -> Iterator[Move]:
     """The side-view neighbour rule: left and right between walkable cells on one row, and up and
     down only along a climbable run, straight on a ladder and diagonally on stairs, to the cells
     at its ends. A resident can stop on any cell of a run."""
     x, y = cell
     if jumps:
-        yield from _jumps(town, cell)
+        yield from _jumps(town, cell, JUMP if jumps is True else jumps)
     here = town.climb(x, y)
     for dx in (-1, 1):
         if town.walkable(x + dx, y):
@@ -69,20 +69,35 @@ def _flights(town: "TownMap", x: int, y: int) -> tuple[Cell, ...]:
     return linked or tuple(r for r in RISES if ends(*r) and ends(-r[0], -r[1]))
 
 
-def _jumps(town: "TownMap", cell: Cell) -> Iterator[Move]:
-    """A run jump through open air to a standing cell `JUMP.cells` along and `JUMP.rows` up."""
+def _jumps(town: "TownMap", cell: Cell, jump: Jump) -> Iterator[Move]:
+    """A run jump through open air to a standing cell up to `jump.cells` along, `jump.rows` up."""
     x, y = cell
     if not town.standing(x, y):
         return
-    for dx in (d for d in range(-JUMP.cells, JUMP.cells + 1) if d):
+    for dx in (d for d in range(-jump.cells, jump.cells + 1) if d):
         nx = x + dx
-        for ny in range(y - JUMP.rows, town.height):
+        for ny in range(y - jump.rows, town.height):
             if town.solid(nx, ny):
                 if ny > y:
                     break
                 continue
-            if (abs(dx) > 1 or ny != y) and town.standing(nx, ny) and _clear(town, cell, (nx, ny)):
-                yield Move((nx, ny), math.hypot(dx, ny - y))
+            end = (nx, ny)
+            if (abs(dx) > 1 or ny != y) and town.standing(nx, ny) and _clear(town, cell, end):
+                rise = _rise(town, cell, end, jump)
+                if y - ny <= math.floor(rise) and abs(dx) <= jump.along(rise):
+                    yield Move(end, math.hypot(dx, ny - y))
+
+
+def _rise(town: "TownMap", start: Cell, end: Cell, jump: Jump) -> float:
+    """How high above `start` a jump to `end` can rise before its head meets something solid."""
+    (x, y), (nx, ny) = start, end
+    top = min(y, ny) - 1
+    room = 0
+    while room <= jump.rows and not any(
+        town.solid(cx, top - room - 1) for cx in range(min(x, nx), max(x, nx) + 1)
+    ):
+        room += 1
+    return min(jump.rise, y + 1 - jump.body - top + room)
 
 
 def _clear(town: "TownMap", start: Cell, end: Cell) -> bool:

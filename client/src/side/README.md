@@ -107,7 +107,8 @@ The Phaser-free halves are tested under vitest.
   ledge. While crossing between floors the player's position stays at the end they left from, as
   the protocol holds residents.
 - Running: a press of Shift turns the walk into a run over `RUN_BLEND_SECONDS`, and another turns it
-  back, at up to `RUN_PACE` (2) times `PLAYER_SPEED` along streets and floors and through the air.
+  back, at up to `runSpeed`, `RUN_PACE` (2) times `PLAYER_SPEED` on their own legs and faster on the
+  sprint legs, along streets and floors and through the air.
   Stopping, stairs, ladders and the lift leave it on; they go at their own speeds. The figure turns
   from its walk to its run halfway through the blend (`Drawn.run`), and its phase steps by
   `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
@@ -130,9 +131,12 @@ The Phaser-free halves are tested under vitest.
   once the street is shown and any door they're going through is done. It's also where the scene
   starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed. After every `snapshot` the
   scene sends the player's position again, so a restarted server knows where they are.
-- The jump is the player's own: `content/street/jump.json`'s `legs` raise it a row once the
-  hydraulic legs are fitted (`jumpOf`), under the same gravity, so the metro's high ledge is in
-  reach. The scene reads the body from `player_state` each frame. With the datajack fitted, the link
+- The jump is the player's own, by the legs fitted (`jumpOf`): `content/street/jump.json`'s `legs`
+  say what each grade changes, under the same gravity (`LEGS_TABLES`). The spring branch rises
+  higher, two rows on the hydraulic legs and two more on the spring legs; the sprint branch runs
+  half as fast again on the sprint legs and twice as fast on the blades, and so jumps further; the
+  premium legs do both. The scene reads the body from `player_state` each frame and sets the
+  player's `rise` and `runSpeed`. With the datajack fitted, the link
   from a jack's stand tile, the lift down to the sewers, is a way like any other; without, it isn't.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`), by the same jump. `server/tests/street/positions.json` is a
@@ -151,7 +155,8 @@ checking the speed and the blend, jumps the rooftops' one-, two- and three-cell 
 running, checking it lands on the far roof, and the metro's jumps up to its secrets, walks off the
 clock house's roof into the lane, walks down into the metro, through it into the clinic and back up
 to Banyan Row, walks into the metro's dark west tunnel, lights the lamp with L and walks on to the
-plug, checking the darkness and the gauge's hints, checks a run jump at the metro's high ledge falls short, opens
+plug, checking the darkness and the gauge's hints, checks a run jump at the metro's high ledge falls short, lands
+on the high ledge's secret on the hydraulic legs and crosses the gantry's gap to its secret on the sprint legs, opens
 the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 

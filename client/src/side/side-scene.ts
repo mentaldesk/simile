@@ -172,7 +172,9 @@ export class SideScene extends Phaser.Scene {
     if (!content || !player || !street) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
     const body = playerState.latest?.player.body;
-    player.rise = jumpOf(body).rise;
+    const jump = jumpOf(body);
+    player.rise = jump.rise;
+    player.runSpeed = jump.run;
     player.datajack = fitted(body).includes('datajack');
     if (!this.passing) {
       const door = player.update(this.read(player), dt);

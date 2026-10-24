@@ -201,7 +201,9 @@ async def test_the_doctor_knows_the_fixed_prices_and_what_they_would_do_now() ->
     assert "copper wire 6" in system
     assert "hydraulic legs where their own legs were" in prompt
     assert "the scar where you took a kidney" in prompt
-    assert "fit datajack for 150 and fit infrared eye for 200." in prompt
+    assert "fit spring legs for 240, fit datajack for 150 and fit infrared eye for 200." in prompt
+    assert "Spring legs, 240, in place of their hydraulic legs, which you take back" in system
+    assert "and only with an Apex actuator they bring" in system
     assert "buy a kidney" not in prompt
 
 

@@ -1,19 +1,22 @@
 import json
 from collections import deque
+from functools import cache
 from typing import Any
 
 import pytest
 
 from simile.behaviour.scoring import Places
-from simile.schema import DoorKind, Facing, InteractableKind, LocationKind
-from simile.street import moves
-from simile.street.jump import JUMP, LEGS
+from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
+from simile.street.jump import GRADES, JUMP, NEEDS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
+    ALCOVE_SECRET,
     ARRIVAL,
     CLINIC,
     DEAD_TERMINAL,
     DOCTOR,
     ENTRANCE,
+    GANTRY,
+    GANTRY_SECRET,
     HIGH_LEDGE,
     LEDGE_SECRET,
     LEGS_ROWS,
@@ -24,12 +27,13 @@ from simile.street.metro import (
     SCRAP_STALL,
     SCRAP_TRADER,
 )
+from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
 from simile.street.sewers import LANDING, SEWERS
 from simile.street.village import GROUND, UNDERGROUND
 from simile.world.map import STREET_DIR, SpotKind, load_maps, with_every_location
 from simile.world.movement import Point, inside
-from simile.world.paths import Spot, door_ends, find_route, steps
+from simile.world.paths import Spot, door_ends, find_route
 
 MAPS = load_maps(STREET_DIR)
 TOWN = with_every_location(MAPS)
@@ -62,20 +66,34 @@ def stands(item_id: str) -> set[Spot]:
     return {Spot(METRO, tile.x, tile.y) for tile in machine(item_id).stand}
 
 
-def reachable(jumps: bool) -> set[Spot]:
+@cache
+def reachable(jumps: bool | Jump) -> frozenset[Spot]:
     """Every cell under the village the player can get to from the top of the stairway."""
-    doors = {a: b for a, b in door_ends(BELOW).items()}
+    doors = door_ends(BELOW)
     seen, queue = {START}, deque([START])
     while queue:
         here = queue.popleft()
-        nexts = [Spot(here.map, *c) for c, _ in steps(BELOW[here.map], (here.x, here.y), jumps)]
+        nexts = [Spot(here.map, *c) for c, _ in moves(BELOW[here.map], (here.x, here.y), jumps)]
         if here in doors:
             nexts.append(doors[here])
         for there in nexts:
             if there not in seen:
                 seen.add(there)
                 queue.append(there)
-    return seen
+    return frozenset(seen)
+
+
+def pickups(kind: str) -> dict[str, tuple[Spot, dict[str, Any]]]:
+    return {
+        o["name"]: (Spot(METRO, *cell(o)), props(o))
+        for o in objects(PICKUPS_LAYER)
+        if o["type"] == kind
+    }
+
+
+def roof() -> set[Spot]:
+    """The top of the gantry's roof, which nobody stands on."""
+    return {Spot(METRO, x, GANTRY - 5) for x in range(58, 74)}
 
 
 def walkable() -> set[Spot]:
@@ -114,30 +132,61 @@ def test_you_can_walk_down_through_the_metro_to_the_clinic_and_back() -> None:
     assert any(METRO_MAP.climb(spot.x, spot.y) is DoorKind.STAIRS for spot in there)
 
 
-def test_every_cell_but_the_high_ledge_is_in_reach_with_todays_jump() -> None:
-    jumped = reachable(jumps=True)
-
-    assert jumped == walkable() - stands(HIGH_LEDGE)
-    assert not jumped & stands(HIGH_LEDGE)
+def test_premium_legs_reach_every_cell_but_the_gantrys_roof() -> None:
+    assert reachable(GRADES[Bionic.PREMIUM_LEGS]) == walkable() - roof()
+    assert all(METRO_MAP.solid(spot.x, spot.y + 1) for spot in roof())
 
 
-def test_the_high_ledge_is_a_row_above_todays_jump_and_the_legs_reach_it(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+@pytest.mark.parametrize("needs", [None, *NEEDS], ids=lambda needs: needs or "walking")
+def test_each_place_is_in_reach_only_with_what_it_records(needs: str | None) -> None:
+    jump = NEEDS[needs] if needs else False
+    reached = reachable(jump)
+
+    for kind in ("salvage", "secret"):
+        for name, (spot, held) in pickups(kind).items():
+            recorded = held.get("needs")
+            can = recorded is None or (jump is not False and meets(jump, recorded))
+            assert (spot in reached) is can, (name, recorded)
+
+
+def test_the_high_ledge_is_out_of_a_jump_and_in_the_hydraulic_legs_reach() -> None:
     ledge = machine(HIGH_LEDGE)
     row = ledge.stand[0].y
     under = {(t.x, y) for t in ledge.stand for y in range(row + 1, METRO_MAP.height)}
     floor = min(y for x, y in under if METRO_MAP.standing(x, y))
+    hydraulic, sprint = GRADES[Bionic.HYDRAULIC_LEGS], GRADES[Bionic.SPRINT_LEGS]
 
     assert ledge.kind is InteractableKind.MACHINE
-    assert floor - row == LEGS_ROWS > JUMP.rows and JUMP.rise < LEGS_ROWS
-    assert LEGS.rows == LEGS_ROWS < LEGS.rise and LEGS.gravity == pytest.approx(JUMP.gravity)
-    monkeypatch.setattr(moves, "JUMP", LEGS)
-    assert stands(HIGH_LEDGE) <= reachable(jumps=True)
+    assert floor - row == LEGS_ROWS > JUMP.rows == sprint.rows and sprint.rise < LEGS_ROWS
+    assert hydraulic.rows > LEGS_ROWS
+    assert stands(HIGH_LEDGE) <= reachable(hydraulic)
+    assert not stands(HIGH_LEDGE) & reachable(GRADES[Bionic.BLADE_LEGS])
+
+
+def test_the_gantry_is_a_gap_under_a_roof_that_only_a_sprint_clears() -> None:
+    nook, edge = (63, GANTRY), (69, GANTRY)
+    gap = range(nook[0] + 1, edge[0])
+
+    assert len(gap) == 5 and not any(METRO_MAP.walkable(x, GANTRY) for x in gap)
+    assert METRO_MAP.solid(edge[0], GANTRY - 4) and not METRO_MAP.solid(edge[0], GANTRY - 3)
+    for grade, jump in GRADES.items():
+        over = nook in dict(moves(METRO_MAP, edge, jump))
+        assert over is (jump.run > JUMP.run), grade
+    assert nook not in dict(moves(METRO_MAP, edge, True))
+
+
+def test_the_spring_legs_reach_the_alcove_from_the_wall_below_it() -> None:
+    alcove, held = pickups("secret")[ALCOVE_SECRET]
+    wall = (82, 10)
+
+    assert held["needs"] == Bionic.SPRING_LEGS and held["item"] == "ration_pack"
+    assert wall[1] - alcove.y == 5
+    assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, GRADES[Bionic.SPRING_LEGS]))
+    assert (alcove.x, alcove.y) not in dict(moves(METRO_MAP, wall, GRADES[Bionic.HYDRAULIC_LEGS]))
 
 
 def test_the_lift_and_the_dead_terminal_are_jacks_you_walk_up_to() -> None:
-    walked = reachable(jumps=False)
+    walked = reachable(False)
     ends = {(end.map, end.x, end.y) for d in TOWN.doors for end in (d.outside, d.inside)}
 
     for item_id in (LIFT, DEAD_TERMINAL):
@@ -156,7 +205,7 @@ def test_the_lift_goes_down_to_a_landing_in_the_sewers_and_back() -> None:
 
     assert (door.kind, door.outside, door.inside) == (DoorKind.DOOR, LIFT_FOOT, LANDING)
     assert props(data)["underground"] is True
-    assert {cell for cell in cells if sewers.walkable(cell.x, cell.y)} <= reachable(jumps=False)
+    assert {cell for cell in cells if sewers.walkable(cell.x, cell.y)} <= reachable(False)
     assert sewers.light and all(light.lit for light in sewers.light)
 
 
@@ -166,7 +215,7 @@ def test_the_plug_is_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:
     (x0, _), width, lit = lights["metro_maintenance"]
 
     assert machine(PLUG).kind is InteractableKind.PLUG
-    assert plug in reachable(jumps=False)
+    assert plug in reachable(False)
     assert lit and x0 <= plug.x < x0 + width
     assert not lights["metro_tunnel_west"][2] and not lights["metro_tunnel_east"][2]
     assert not METRO_MAP.lit(plug.x - 2, plug.y) and not METRO_MAP.lit(plug.x + 2, plug.y)
@@ -182,6 +231,7 @@ def test_the_metro_is_underground_and_lit_by_its_own_lights() -> None:
         "metro_tunnel_west",
         "metro_tunnel_east",
     }
+    assert all(METRO_MAP.lit(x, GANTRY) for x in range(61, 74))
 
 
 def test_the_light_areas_cover_every_cell_of_the_metro_once() -> None:
@@ -199,29 +249,31 @@ def test_the_light_areas_cover_every_cell_of_the_metro_once() -> None:
 
 
 def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
-    secrets = [o for o in objects(PICKUPS_LAYER) if o["type"] == "secret"]
-    jumped, walked = reachable(jumps=True), reachable(jumps=False)
+    secrets = pickups("secret")
 
-    assert len(secrets) == 4
-    for secret in secrets:
-        here = Spot(METRO, *cell(secret))
-        held = props(secret)
-        if secret["name"] == LEDGE_SECRET:
-            assert here in stands(HIGH_LEDGE) and here not in jumped, secret["name"]
-        else:
-            assert here in jumped and here not in walked, secret["name"]
-        assert ("money" in held) != ("item" in held), secret["name"]
+    assert len(secrets) == 5
+    assert {held["needs"] for _, held in secrets.values()} == {
+        OWN_JUMP,
+        Bionic.HYDRAULIC_LEGS,
+        Bionic.SPRING_LEGS,
+        Bionic.SPRINT_LEGS,
+    }
+    for name, (spot, held) in secrets.items():
+        assert spot not in reachable(False), name
+        assert ("money" in held) != ("item" in held), name
         assert held.get("money", 1) > 0
+    assert secrets[LEDGE_SECRET][0] in stands(HIGH_LEDGE)
+    assert secrets[GANTRY_SECRET][1] == {"money": 60.0, "needs": Bionic.SPRINT_LEGS}
 
 
-def test_salvage_lies_about_the_metro_and_one_piece_waits_on_the_high_ledge() -> None:
-    salvage = [o for o in objects(PICKUPS_LAYER) if o["type"] == "salvage"]
-    cells = {Spot(METRO, *cell(o)) for o in salvage}
+def test_salvage_lies_about_the_metro_and_two_pieces_wait_up_high() -> None:
+    salvage = pickups("salvage")
+    high = {name: held["needs"] for name, (_, held) in salvage.items() if held}
 
-    assert len(salvage) == 6 and all(not props(o) for o in salvage)
-    assert all(METRO_MAP.standing(spot.x, spot.y) for spot in cells)
-    assert cells & stands(HIGH_LEDGE)
-    assert cells - stands(HIGH_LEDGE) <= reachable(jumps=False)
+    assert len(salvage) == 6
+    assert all(METRO_MAP.standing(spot.x, spot.y) for spot, _ in salvage.values())
+    assert high == {"metro_salvage_4": Bionic.SPRING_LEGS, "metro_salvage_6": Bionic.HYDRAULIC_LEGS}
+    assert salvage["metro_salvage_6"][0] in stands(HIGH_LEDGE)
 
 
 def test_the_scrap_trader_and_the_doctor_have_stall_spots() -> None:
@@ -231,7 +283,7 @@ def test_the_scrap_trader_and_the_doctor_have_stall_spots() -> None:
     assert (trader.kind, trader.facing) == (SpotKind.STANDING, Facing.SOUTH)
     assert inside(TOWN.location(SCRAP_STALL), Point(trader.x, trader.y, METRO))
     assert doctor.id == DOCTOR and (doctor.kind, doctor.facing) == (trader.kind, trader.facing)
-    walked = reachable(jumps=False)
+    walked = reachable(False)
     assert {Spot(METRO, trader.x, trader.y), Spot(CLINIC_FLOOR, doctor.x, doctor.y)} <= walked
 
 
@@ -273,8 +325,9 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         "metro_secret_catwalk": (52, 10),
         "metro_salvage_2": (63, 15),
         "metro_salvage_3": (68, 15),
-        "metro_salvage_4": (77, 12),
-        "metro_secret_alcove": (86, 8),
+        "metro_salvage_4": (85, 5),
+        "metro_secret_alcove": (86, 5),
+        GANTRY_SECRET: (61, 8),
         "metro_salvage_5": (83, 15),
         "metro_salvage_6": (108, 12),
         LEDGE_SECRET: (106, 12),
