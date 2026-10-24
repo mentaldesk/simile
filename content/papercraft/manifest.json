@@ -2894,16 +2894,16 @@
   "platforms/sewer_weir": {
    "file": "platforms/sewer_weir.webp",
    "size": [
-    276,
-    403
+    278,
+    667
    ],
-   "height": 3.36,
+   "height": 5.56,
    "kind": "sprite",
    "anchor": [
     0.5,
     1.0
    ],
-   "hash": "236c230ccd31314c37e7"
+   "hash": "f80bab77e3dc517b4701"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",

@@ -707,7 +707,7 @@
           "y": 32
         },
         {
-          "height": 48,
+          "height": 80,
           "id": 50,
           "name": "sewer_weir",
           "properties": [],

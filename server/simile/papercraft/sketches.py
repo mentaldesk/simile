@@ -312,17 +312,20 @@ def sewer_vault(length: float = 3.3, height: float = 2.3) -> Image.Image:
     return s.image
 
 
-def sewer_weir(width: float = 2.2, height: float = 3.36) -> Image.Image:
-    """A brick weir across the floor with an iron sluice gate in its face."""
-    s = Sheet(width, height, 160)
-    bricks(s, 0.0, 0.0, width, height)
-    s.rect(-0.05, height - 0.2, width + 0.05, height, CONCRETE, GRIME)
-    s.rect(0.45, 0.3, width - 0.45, 2.2, IRON, GRIME)
-    for y in np.arange(0.5, 2.1, 0.4):
+def sewer_weir(width: float = 2.2, height: float = 3.36, footing: float = 2.2) -> Image.Image:
+    """A brick weir with an iron sluice gate in its face, on the walkway's edge `footing` deep."""
+    s = Sheet(width, height + footing, 160)
+    bricks(s, 0.0, 0.0, width, footing)
+    s.rect(-0.05, footing - 0.4, width + 0.05, footing, CONCRETE, GRIME)
+    s.rect(0.0, footing - 0.55, width, footing - 0.4, SLIME)
+    bricks(s, 0.0, footing, width, footing + height)
+    s.rect(-0.05, footing + height - 0.2, width + 0.05, footing + height, CONCRETE, GRIME)
+    s.rect(0.45, footing + 0.3, width - 0.45, footing + 2.2, IRON, GRIME)
+    for y in np.arange(footing + 0.5, footing + 2.1, 0.4):
         s.rect(0.45, y, width - 0.45, y + 0.04, RUST)
-    s.ellipse(width / 2 - 0.35, 2.35, width / 2 + 0.35, 3.05, RUST)
-    s.ellipse(width / 2 - 0.1, 2.6, width / 2 + 0.1, 2.8, IRON)
-    s.rect(0.0, 0.0, width, 0.35, SLIME)
+    s.ellipse(width / 2 - 0.35, footing + 2.35, width / 2 + 0.35, footing + 3.05, RUST)
+    s.ellipse(width / 2 - 0.1, footing + 2.6, width / 2 + 0.1, footing + 2.8, IRON)
+    s.rect(0.0, footing, width, footing + 0.35, SLIME)
     return s.image
 
 

@@ -20,8 +20,8 @@ def register(app: typer.Typer) -> None:
         ] = None,
     ) -> None:
         """Paint the village's papercraft scenery into content/papercraft/, with FLUX.2 Klein in
-        edit mode. Needs Apple Silicon and the `images` extra. Repaints only what changed, and
-        waits for any other model on the GPU before loading.
+        edit mode, once the GPU is free. Needs Apple Silicon and the `images` extra. Repaints only
+        what changed.
 
         First copies the maps' layout into content/papercraft/layout.json, if the maps are there
         and it changed."""

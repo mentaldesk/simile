@@ -707,7 +707,7 @@
           "y": 32
         },
         {
-          "height": 48,
+          "height": 80,
           "id": 50,
           "name": "sewer_weir",
           "properties": [],
@@ -1199,12 +1199,27 @@
         {
           "height": 16,
           "id": 69,
-          "name": "sewers_secret_pipe_1",
+          "name": "sewers_secret_actuator",
           "properties": [
             {
-              "name": "money",
+              "name": "item",
+              "type": "string",
+              "value": "apex_actuator"
+            },
+            {
+              "name": "item_kind",
+              "type": "string",
+              "value": "part"
+            },
+            {
+              "name": "item_name",
+              "type": "string",
+              "value": "Apex actuator"
+            },
+            {
+              "name": "item_weight",
               "type": "float",
-              "value": 35.0
+              "value": 2.0
             },
             {
               "name": "needs",
@@ -1222,12 +1237,12 @@
         {
           "height": 16,
           "id": 70,
-          "name": "sewers_secret_pipe_2",
+          "name": "sewers_secret_pipe",
           "properties": [
             {
               "name": "money",
               "type": "float",
-              "value": 25.0
+              "value": 35.0
             },
             {
               "name": "needs",
@@ -1272,8 +1287,8 @@
           "type": "salvage",
           "visible": true,
           "width": 16,
-          "x": 416,
-          "y": 80
+          "x": 512,
+          "y": 240
         },
         {
           "height": 16,
@@ -1305,7 +1320,7 @@
           "type": "salvage",
           "visible": true,
           "width": 16,
-          "x": 704,
+          "x": 368,
           "y": 160
         },
         {
@@ -1338,7 +1353,7 @@
           "type": "salvage",
           "visible": true,
           "width": 16,
-          "x": 1744,
+          "x": 1728,
           "y": 160
         },
         {
@@ -1371,7 +1386,7 @@
           "type": "salvage",
           "visible": true,
           "width": 16,
-          "x": 1280,
+          "x": 1200,
           "y": 160
         },
         {
@@ -1404,7 +1419,7 @@
           "type": "salvage",
           "visible": true,
           "width": 16,
-          "x": 1664,
+          "x": 1728,
           "y": 240
         },
         {

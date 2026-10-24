@@ -779,7 +779,7 @@
           "y": 32
         },
         {
-          "height": 48,
+          "height": 80,
           "id": 56,
           "name": "sewer_weir",
           "properties": [],
@@ -1327,7 +1327,7 @@
         {
           "height": 16,
           "id": 77,
-          "name": "sewers_secret_pipe_2",
+          "name": "sewers_secret_pipe",
           "properties": [
             {
               "name": "money",

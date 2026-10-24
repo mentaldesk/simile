@@ -30,7 +30,7 @@ LANDING = MapTile(map=SEWERS, x=2, y=GROUND)
 SHAFT = 12
 """The lift's landing is the first 12 cells, S8's, so a position saved there still stands."""
 APEX_ACTUATOR = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator", weight=2.0)
-"""The part premium legs need, from Apex's own stock, in a secret in some levels."""
+"""The part premium legs need, from Apex's own stock, on a pipe past every level's gate."""
 HATCH = "sewers_hatch"
 """The maintenance hatch deep in every level, a jack holding Aris's trail."""
 FLOORS = (GROUND, GROUND - 5, GROUND - 10)
@@ -51,6 +51,7 @@ ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 SPRING_SECRET = "sewers_secret_spring"
 SPRINT_SECRET = "sewers_secret_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
+PIPE_SECRET = "sewers_secret_pipe"
 
 type Cell = tuple[int, int]
 type Node = tuple[int, int]
@@ -228,7 +229,7 @@ def walls(level: Level, node: Node) -> Iterator[int]:
 
 
 def shelves(level: Level) -> list[tuple[Node, int]]:
-    """A pipe two rows up against a room's wall: past the gate, and before it in most levels."""
+    """A pipe two rows up on a wall: past the gate for the actuator, and before it in most."""
     rng = level.rng
     found = []
     for zone in (1, 0):
@@ -238,6 +239,8 @@ def shelves(level: Level) -> list[tuple[Node, int]]:
             if level.columns[node[0]].kind == ROOMS and node[0] != level.spring_pocket
             for x in walls(level, node)
         ]
+        if not spots and zone == 1:
+            raise ValueError(f"no wall past the gate for the actuator in level {level.seed}")
         if spots and (zone == 1 or rng.random() < 0.7):
             node, x = rng.choice(spots)
             level.reserved.setdefault(node[0], set()).update(range(x - 1, x + 3))
@@ -367,12 +370,11 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
         plan.fill(x, row + 1, 2, 1)
         plan.piece("sewer_pipe", x, row + 1, 2, 1)
         end = x if x == level.columns[node[0]].x else x + 1
-        if zone == 1 and level.seed % 2 == 0:
+        if zone == 1:
             secret = Pickup(ACTUATOR_SECRET, SECRET, end, row, item=APEX_ACTUATOR, needs=OWN_JUMP)
         else:
             money = float(rng.choice((20, 25, 30, 35, 40)))
-            secret_id = f"sewers_secret_pipe_{2 - zone}"
-            secret = Pickup(secret_id, SECRET, end, row, money, needs=OWN_JUMP)
+            secret = Pickup(PIPE_SECRET, SECRET, end, row, money, needs=OWN_JUMP)
         plan.pickups.append(secret)
     rooms = [n for n in west if n != (0, 0)], east
     spread = [*rng.sample(rooms[0], 2), *rng.sample(rooms[1], 4)]
@@ -467,7 +469,7 @@ def cover(level: Level, plan: Plan) -> None:
             if (i, tier) not in level.doors:
                 plan.piece("sewer_pier", column.end, FLOORS[tier] - 3, 1, 4)
     gate = level.columns[level.gate]
-    plan.piece("sewer_weir", gate.x + WEIR_AT, GROUND + 1 - WEIR, 2, WEIR)
+    plan.piece("sewer_weir", gate.x + WEIR_AT, GROUND + 1 - WEIR, 2, WEIR + 2)
     for x in (gate.x + 5, gate.x + WEIR_AT - 3):
         plan.piece("sewer_lamp", x, FLOORS[1] - 1, 1, 1)
 

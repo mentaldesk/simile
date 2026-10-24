@@ -207,7 +207,7 @@ passes through it.
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the sprint legs', and in reach of the hydraulic legs', four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
-| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret in the sewers' levels from even seeds (below). The clinic fits the premium legs only to someone carrying it. |
+| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The clinic fits the premium legs only to someone carrying it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -238,7 +238,9 @@ roof is its picture's top edge.
 [`levels/preview.png`](levels/preview.png) drawing them one under another. Every level's map is
 `sewers`, so links, positions and saves name it the same way. A world plays one level, picked by
 its seed (`world_level`, above), and the `snapshot` says which, so the client, which bundles them
-all, plays the same one. Like the metro it's for the player alone (`JUMPING`) and under the village
+all, plays the same one. The pick depends on how many levels there are, so adding or removing one
+moves some worlds, today's village (level 1) among them; `test_sewers.py` fails on a stray folder.
+Like the metro it's for the player alone (`JUMPING`) and under the village
 (`UNDERGROUND`), and nobody's activity takes them there.
 
 A level is 20 rows like a street, with a vault solid from the top down to row 1, and three tiers
@@ -278,7 +280,8 @@ counts from the way through, which every grade of legs takes:
 | Needs | Place | What waits there |
 |---|---|---|
 | | On the floors, the way through | Six of lead pipe, copper coil, brass fitting, pump impeller, float valve, filter mesh and old battery |
-| `jump` | A pipe two rows up against a wall, past the gate, and before it in most levels | `sewers_secret_pipe_1` and `_2`, 20 to 40 money, or past the gate in the levels from even seeds `sewers_secret_actuator`, the `APEX_ACTUATOR` |
+| `jump` | A pipe two rows up against a wall, past the gate | `sewers_secret_actuator`, the `APEX_ACTUATOR` |
+| `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
 | `spring_legs` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `sprint_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 
@@ -294,7 +297,8 @@ reach of exactly the grades that meet its `needs`; and every salvage has a price
 **Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
 sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,
 `sewer_walkway` a slab three cells or longer and `sewer_pipe` a shorter one or a pipe to stand on,
-`sewer_pier` a wall on a tier, and `sewer_weir` the gate's weir. The hatch is a
+`sewer_pier` a wall on a tier, and `sewer_weir` the gate's weir, down past the floor over the
+walkway's edge, which the ground strip leaves out under it. The hatch is a
 `maintenance_hatch`, the plugs `breaker_box`es, and `sewer_outfall`, `rubble`, `crates`, `bedroll`
 and `pipes` dress the rooms.
 

@@ -791,7 +791,7 @@
           "y": 32
         },
         {
-          "height": 48,
+          "height": 80,
           "id": 57,
           "name": "sewer_weir",
           "properties": [],
@@ -1278,12 +1278,27 @@
         {
           "height": 16,
           "id": 76,
-          "name": "sewers_secret_pipe_1",
+          "name": "sewers_secret_actuator",
           "properties": [
             {
-              "name": "money",
+              "name": "item",
+              "type": "string",
+              "value": "apex_actuator"
+            },
+            {
+              "name": "item_kind",
+              "type": "string",
+              "value": "part"
+            },
+            {
+              "name": "item_name",
+              "type": "string",
+              "value": "Apex actuator"
+            },
+            {
+              "name": "item_weight",
               "type": "float",
-              "value": 25.0
+              "value": 2.0
             },
             {
               "name": "needs",
@@ -1301,12 +1316,12 @@
         {
           "height": 16,
           "id": 77,
-          "name": "sewers_secret_pipe_2",
+          "name": "sewers_secret_pipe",
           "properties": [
             {
               "name": "money",
               "type": "float",
-              "value": 40.0
+              "value": 25.0
             },
             {
               "name": "needs",

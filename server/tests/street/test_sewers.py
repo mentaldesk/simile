@@ -192,14 +192,17 @@ def test_the_lift_lands_on_s8s_landing_which_is_lit_in_the_dark(
     assert 0.3 < len(dark) / len(cells) < 0.95
 
 
-def test_some_levels_hold_the_apex_actuator() -> None:
-    holding = [
-        number
-        for number in range(LEVELS)
-        if any(pickup.item == APEX_ACTUATOR for pickup in played(number).town.pickups)
-    ]
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_every_level_holds_the_apex_actuator_past_the_gate_where_both_premium_routes_reach(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    played_level = level(seed)
+    [actuator] = [p for p in played_level.town.pickups if p.item == APEX_ACTUATOR]
+    cell, found = (actuator.x, actuator.y), played_level.reached
 
-    assert 2 <= len(holding) <= LEVELS - 2, holding
+    assert played_level.needs[actuator.id] == OWN_JUMP
+    assert cell in found[Bionic.SPRING_LEGS.value] and cell in found[Bionic.BLADE_LEGS.value]
+    assert cell not in found[OWN_JUMP], "past the gate"
 
 
 def test_every_grade_of_legs_finds_salvage_and_the_sprint_branch_finds_more() -> None:
@@ -213,6 +216,14 @@ def test_every_grade_of_legs_finds_salvage_and_the_sprint_branch_finds_more() ->
     for number in range(LEVELS):
         level = played(number)
         assert 30 <= worth(level, Bionic.HYDRAULIC_LEGS) < worth(level, Bionic.SPRINT_LEGS)
+
+
+def test_the_pool_is_the_size_the_worlds_levels_are_picked_from() -> None:
+    folders = sorted(path.name for path in (STREET_DIR / LEVELS_DIR).iterdir() if path.is_dir())
+
+    assert folders == sorted(str(n) for n in range(LEVELS)), "a level's folder came or went"
+    assert level_count() == LEVELS, "a world's level is picked from them all: worlds would move"
+    assert level_of(0, LEVELS) == 1, "today's village plays level 1"
 
 
 def test_each_world_plays_one_of_the_committed_levels_by_its_seed() -> None:

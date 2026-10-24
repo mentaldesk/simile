@@ -877,8 +877,9 @@ FURNITURE: dict[str, Item] = {
     ),
     "sewer_weir": Item(
         "a squat old brick weir across a sewer, seen exactly from the side, with a rusty iron "
-        "sluice gate and its wheel set in its face and slime along its foot",
-        3.36,
+        "sluice gate and its wheel set in its face and slime along its foot, standing on the "
+        "concrete edge of a walkway over a brick channel wall",
+        5.56,
         ref=TUNNELS,
         sketch="sewer_weir",
         folder="platforms",
