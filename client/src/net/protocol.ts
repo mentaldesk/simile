@@ -75,8 +75,7 @@ export type ClientMessage =
   | FitMessage;
 
 /**
- * The whole world, sent on connect. Replaces anything the client had. The server always
- * sends `level`: missing, it's 0.
+ * The whole world, sent on connect. Replaces anything the client had.
  */
 export interface SnapshotMessage {
   type: 'snapshot';

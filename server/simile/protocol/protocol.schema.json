@@ -1579,7 +1579,7 @@
     },
     "SnapshotMessage": {
       "additionalProperties": false,
-      "description": "The whole world, sent on connect. Replaces anything the client had. The server always\nsends `level`: missing, it's 0.",
+      "description": "The whole world, sent on connect. Replaces anything the client had.",
       "properties": {
         "type": {
           "const": "snapshot",

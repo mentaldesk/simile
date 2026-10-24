@@ -258,9 +258,8 @@ def load_map(path: Path) -> TownMap:
 
 
 def load_maps(directory: Path = MAP_DIR, level: int = 0) -> dict[str, TownMap]:
-    """Every map in the directory, by map id: the streets, every floor in floors/ and the maps
-    of `level` in levels/. Raises ValueError if the maps break docs/protocol.md's rules for links
-    and floors."""
+    """Every map in the directory, by map id: the streets, floors/ and levels/<level>/. Raises
+    ValueError if the maps break docs/protocol.md's rules for links and floors."""
     paths = [*sorted(directory.glob("*.tmj")), *sorted((directory / FLOORS).glob("*.tmj"))]
     paths += sorted((directory / LEVELS / str(level)).glob("*.tmj"))
     if not paths:
