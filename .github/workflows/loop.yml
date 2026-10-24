@@ -1,0 +1,27 @@
+name: Loop
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  play:
+    name: Loop playthrough (playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-server
+      - uses: ./.github/actions/setup-client
+      - run: npx playwright install --with-deps chromium
+        working-directory: client
+      - run: node src/loop/loop.e2e.ts
+        working-directory: client
