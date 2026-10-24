@@ -17,10 +17,13 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.street.jump import jump_of
     from simile.street.moves import possible
     from simile.street.sewers import SEWERS
+    from simile.world.map import world_level
     from simile.world.movement import Point, movement_of
     from simile.world.spots import indifferent, purpose_of
 
-    world, movement = world_of(app), movement_of(app)
+    world, movement, hub = world_of(app), movement_of(app), hub_of(app)
+    level, snapshot = world_level(), hub.snapshot
+    hub.snapshot = lambda: snapshot().model_copy(update={"level": level})
 
     def on_player_move(message: PlayerMoveMessage) -> None:
         position = message.position
@@ -60,10 +63,11 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     movement.affinity = affinity
     stops = [
         world.loop.register(movement),
-        hub_of(app).subscribe(PlayerMoveMessage, on_player_move),
+        hub.subscribe(PlayerMoveMessage, on_player_move),
         world.bus.subscribe(GoalChosen, on_goal),
     ]
     yield
     for stop in reversed(stops):
         stop()
     movement.affinity = indifferent
+    hub.snapshot = snapshot

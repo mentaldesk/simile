@@ -416,7 +416,8 @@ export function startHarness(scene: SideScene, village: Village): void {
   ];
   let hour = START_HOUR;
   let setAt = performance.now();
-  dispatch({ type: 'snapshot', time: clockAt(hour), map_id: map, entities, conversations: [] });
+  const level = Number(params.get('level') ?? 0);
+  dispatch({ type: 'snapshot', time: clockAt(hour), map_id: map, entities, conversations: [], level });
   dispatch({ type: 'clock', time: clockAt(hour), speed: SPEED });
   if (params.get('murals') !== '0') dispatch({ type: 'murals', walls: walls(village) });
   dispatch({ type: 'paintings', frames: frames(village) });

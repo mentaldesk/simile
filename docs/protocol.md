@@ -95,6 +95,7 @@ client replaces whatever it had.
 | `map_id` | string | The map the player starts on, e.g. `"village"`, or on side-view maps a street's id. |
 | `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. The player's can be mid-air, where a jump or a fall was when the server last heard (see [`player_move`](#player_move)). |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
+| `level` | number | Which of the generated levels in `content/street/levels/` this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers. The client bundles every level and plays this one's maps. The server always sends it; missing, it's 0. |
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one

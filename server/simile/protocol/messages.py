@@ -76,6 +76,8 @@ class Entity(Model):
 class SnapshotMessage(Model):
     """The whole world, sent on connect. Replaces anything the client had."""
 
+    model_config = ConfigDict(json_schema_extra=_not_required("level"))
+
     type: Literal["snapshot"] = "snapshot"
     time: Timestamp = Field(description="Sim time.")
     map_id: Key = Field(
@@ -83,6 +85,12 @@ class SnapshotMessage(Model):
     )
     entities: list[Entity]
     conversations: list[Conversation] = Field(description="Only those still going on.")
+    level: int = Field(
+        default=0,
+        ge=0,
+        description="Which of the generated levels in content/street/levels/ this world plays, "
+        "picked by its seed: the maps in `levels/<level>/`, such as the sewers.",
+    )
 
 
 class ClockMessage(Model):

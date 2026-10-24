@@ -204,3 +204,15 @@ def test_spots_go_by_behaviours_affinity_once_it_runs(make_package: MakePackage)
         affinity = movement_of(app).affinity
 
         assert affinity(a.id, b.id) > max(affinity(a.id, c.id), 0)
+
+
+def test_the_snapshot_says_which_level_the_world_plays(
+    make_package: MakePackage, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("simile.world.map.world_level", lambda: 3)
+    app = create_app(make_package(WORLD_LIFESPAN))
+
+    with TestClient(app):
+        assert hub_of(app).snapshot().level == 3
+
+    assert hub_of(app).snapshot().level == 0

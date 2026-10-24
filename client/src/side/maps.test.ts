@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { village } from './content';
-import { cellOf, climbAt, groundRow, isStanding, isWalkable } from './maps';
+import { cellOf, climbAt, groundRow, isStanding, isWalkable, Village } from './maps';
 
 const map = (id: string) => village.map(id)!;
 
@@ -32,6 +32,20 @@ describe('the side-view maps', () => {
     ]);
     expect(village.onStreet({ x: 6, y: 2, map: 'coffee_shop_floor_0' })).toEqual({ street: 'high_street', x: 31, y: 15 });
     expect(village.onStreet({ x: 6, y: 15, map: 'high_street' })).toEqual({ street: 'high_street', x: 6, y: 15 });
+  });
+
+  it("puts another level's map in place of one, with its links", () => {
+    const sewers = map('sewers');
+    const other = { ...sewers, links: sewers.links.map((link) => ({ ...link, x: link.x + 1 })) };
+    const played = new Village(village.maps.values());
+    played.replace(other);
+    const [link] = other.links;
+    expect(played.map('sewers')).toBe(other);
+    expect(played.linkAt('sewers', link.x, link.y)).toBe(link);
+    expect(played.linkAt('sewers', link.x - 1, link.y)).toBeUndefined();
+    expect(played.far(link)?.map).toBe('metro');
+    expect(played.streets).toContain(other);
+    expect(played.streets).not.toContain(sewers);
   });
 
   it('finds a link by its end tile, and its other end', () => {

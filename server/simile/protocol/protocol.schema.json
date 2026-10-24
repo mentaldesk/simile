@@ -1608,6 +1608,12 @@
             "$ref": "#/$defs/Conversation"
           },
           "type": "array"
+        },
+        "level": {
+          "default": 0,
+          "description": "Which of the generated levels in content/street/levels/ this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers.",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [

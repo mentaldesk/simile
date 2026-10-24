@@ -58,14 +58,14 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
   });
 }
 
-const byMap = new Map<string, Interactable[]>();
+const byMap = new WeakMap<TiledMap, Interactable[]>();
 
-/** The interactables on a map, once it's loaded. */
+/** The interactables on a map, once it's loaded: the level's map, for one a level has. */
 export function interactablesOn(map: string): readonly Interactable[] {
   const tiled = maps[map];
   if (!tiled) return [];
-  let found = byMap.get(map);
-  if (!found) byMap.set(map, (found = interactablesOf(map, tiled)));
+  let found = byMap.get(tiled);
+  if (!found) byMap.set(tiled, (found = interactablesOf(map, tiled)));
   return found;
 }
 

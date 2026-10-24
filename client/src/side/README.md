@@ -15,6 +15,7 @@ the protocol, through `server.dispatch`.
 | Query | |
 |---|---|
 | `at=<map>:<x>[:<y>]` | Where the player starts, e.g. `at=coffee_shop_floor_1:9`. |
+| `level=` | Which generated level the world plays (`content/street/levels/`), 0 by default. |
 | `hour=` and `speed=` | The sim hour to start at, and sim seconds a second (60). |
 | `still` | The residents stay where they start. |
 | `murals=0` | Leaves the mural walls blank. |
@@ -173,4 +174,5 @@ dialogue UI's world view, the audio's positions, the `MuralView` that finds the 
 and the prompts for the ways the player can take from where they stand, and updates `world/interactables.ts` with the
 player's position every frame. The murals and paintings come from `world/murals.ts`'s and
 `world/paintings.ts`'s stores, the maps from `world/assets.ts` (`content.ts` reads them into a
-`Village`), and the dialogue scene hands the same `maps` to `ui/side-view.ts`.
+`Village`, and puts each map of the level the snapshot names in place of level 0's with
+`Village.replace`), and the dialogue scene hands the same `maps` to `ui/side-view.ts`.

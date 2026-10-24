@@ -161,15 +161,35 @@ export const cellOf = ({ x, y }: { x: number; y: number }): Cell => ({
 });
 
 export class Village {
-  readonly maps: ReadonlyMap<string, SideMap>;
-  readonly streets: readonly SideMap[];
+  private readonly byId: Map<string, SideMap>;
+  private streetMaps: SideMap[] = [];
   private readonly ends = new Map<string, Link>();
   private readonly floorsByBuilding = new Map<string, SideMap[]>();
 
   constructor(maps: Iterable<SideMap>) {
-    this.maps = new Map([...maps].map((map) => [map.id, map]));
-    this.streets = [...this.maps.values()].filter(({ kind }) => kind === 'street');
-    for (const map of this.maps.values()) {
+    this.byId = new Map([...maps].map((map) => [map.id, map]));
+    this.index();
+  }
+
+  get maps(): ReadonlyMap<string, SideMap> {
+    return this.byId;
+  }
+
+  get streets(): readonly SideMap[] {
+    return this.streetMaps;
+  }
+
+  /** In place of the map with its id, as another level's is. */
+  replace(map: SideMap): void {
+    this.byId.set(map.id, map);
+    this.index();
+  }
+
+  private index(): void {
+    this.streetMaps = [...this.byId.values()].filter(({ kind }) => kind === 'street');
+    this.ends.clear();
+    this.floorsByBuilding.clear();
+    for (const map of this.byId.values()) {
       for (const link of map.links) this.ends.set(endKey(map.id, link.x, link.y), link);
       if (map.building) {
         const floors = this.floorsByBuilding.get(map.building) ?? [];
@@ -185,7 +205,7 @@ export class Village {
   }
 
   map(id: string): SideMap | undefined {
-    return this.maps.get(id);
+    return this.byId.get(id);
   }
 
   /** Ground floor first. */
@@ -204,7 +224,7 @@ export class Village {
 
   /** In cells. */
   onStreet(position: Position): Cell & { street: string } {
-    const map = this.maps.get(position.map ?? '');
+    const map = this.byId.get(position.map ?? '');
     const offset = map?.offset ?? { x: 0, y: 0 };
     return { street: map?.street ?? position.map ?? '', x: position.x + offset.x, y: position.y + offset.y };
   }
