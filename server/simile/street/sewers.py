@@ -235,25 +235,30 @@ def shelves(level: Level) -> list[tuple[Node, int]]:
 
 
 def place_holes(level: Level) -> None:
-    """Where each ladder and drop goes through its slab, apart from each other and the walls."""
+    """Where each ladder and drop goes through its slab, apart from each other and the walls,
+    and each ladder far enough from the next that holding a key doesn't climb on to it."""
     rng = level.rng
     for i, column in enumerate(level.columns):
         if column.kind == HALL:
             if (i, 0) in level.ladders:
                 level.ladders[(i, 0)] = column.x + 1
             continue
-        used = set(level.reserved.get(i, ()))
+        used, climbs = set(level.reserved.get(i, ())), set()
         for node in sorted(k for k in [*level.ladders, *level.drops] if k[0] == i):
             wide = 2 if node in level.drops else 1
+            apart = 2 if wide == 2 else 3
             spots = [
                 x
                 for x in range(column.x + 1, column.end - wide)
                 if all(abs(x + d - u) >= 2 for d in range(wide) for u in used)
+                and all(abs(x - u) >= apart for u in climbs)
             ]
             if not spots:
                 raise ValueError(f"no room for a hole in column {i} of sewers level {level.seed}")
             x = rng.choice(spots)
             used |= set(range(x, x + wide))
+            if wide == 1:
+                climbs.add(x)
             (level.drops if node in level.drops else level.ladders)[node] = x
 
 
@@ -454,6 +459,8 @@ def cover(level: Level, plan: Plan) -> None:
                 plan.piece("sewer_pier", column.end, FLOORS[tier] - 3, 1, 4)
     gate = level.columns[level.gate]
     plan.piece("sewer_weir", gate.x + WEIR_AT, GROUND + 1 - WEIR, 2, WEIR)
+    for x in (gate.x + 5, gate.x + WEIR_AT - 3):
+        plan.piece("sewer_lamp", x, FLOORS[1] - 1, 1, 1)
 
 
 def lift() -> Door:
@@ -468,6 +475,8 @@ def build(level: Level) -> Plan:
     carve(level, plan)
     light(plan, "sewers_dark", 0, 0, level.width, plan.height, lit=False)
     light(plan, "sewers_landing", 0, 0, SHAFT, plan.height, lit=True)
+    gate = level.columns[level.gate]
+    light(plan, "sewers_gate", gate.x, CEILING + 1, gate.width, GROUND - CEILING, lit=True)
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
     stock(level, plan, ledges)
     cover(level, plan)

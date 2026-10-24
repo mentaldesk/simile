@@ -38,9 +38,8 @@ STREETS: dict[str, Street] = {
     "metro": Street(
         "far-metro", "mid-metro", "near-metro", "ground-metro", "front-metro", sky="metro-vault"
     ),
-    # S8's landing borrows the metro's layers until S9 paints the sewers.
     "sewers": Street(
-        "far-metro", "mid-metro", "near-metro", "ground-metro", "front-metro", sky="metro-vault"
+        "far-sewer", "mid-sewer", "near-sewer", "ground-sewer", "front-sewer", sky="sewer-vault"
     ),
 }
 GROUNDS = {

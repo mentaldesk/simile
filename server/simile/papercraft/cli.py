@@ -20,14 +20,21 @@ def register(app: typer.Typer) -> None:
         ] = None,
     ) -> None:
         """Paint the village's papercraft scenery into content/papercraft/, with FLUX.2 Klein in
-        edit mode. Needs Apple Silicon and the `images` extra. Repaints only what changed.
+        edit mode. Needs Apple Silicon and the `images` extra. Repaints only what changed, and
+        waits for any other model on the GPU before loading.
 
         First copies the maps' layout into content/papercraft/layout.json, if the maps are there
         and it changed."""
         from fnmatch import fnmatch
 
+        from simile.dolls.flux import wait_for_gpu
         from simile.papercraft.build import Build
         from simile.papercraft.layout import STREET_DIR, refresh
+        from simile.papercraft.painter import EditPainter
+
+        def waiting() -> EditPainter:
+            wait_for_gpu(typer.echo)
+            return EditPainter()
 
         if refresh(maps or STREET_DIR):
             typer.echo("Updated layout.json from the maps")
@@ -35,7 +42,7 @@ def register(app: typer.Typer) -> None:
         def chosen(key: str) -> bool:
             return not only or any(fnmatch(key, pattern) for pattern in only)
 
-        build = Build()
+        build = Build(painter=waiting)
         if dry_run:
             stale = build.stale(build.read_manifest(), [k for k in build.pieces if chosen(k)])
             for piece in stale:

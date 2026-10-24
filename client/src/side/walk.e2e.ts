@@ -251,6 +251,9 @@ const LEDGE: Jump = { name: 'onto the high ledge on the hydraulic legs', from: m
 const GANTRY: Jump = { name: "across the gantry's gap on the sprint legs", from: metro(72, 8), takeOff: 69, land: 63.75, onto: 8, run: true };
 const GANTRY_SECRET = 61;
 const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
+const sewers = (x: number, y: number): Place => ({ map: 'sewers', x, y });
+/** The server's `WEIR_AT`: the gate's weir is this many cells into its hall, on row 12. */
+const WEIR_AT = 12;
 
 /** Jumps a gap on the rooftops with Space held, and lands on the far side rather than in the lane. */
 async function jumpLeg(page: Page, api: Api, jump: Jump, index: number): Promise<void> {
@@ -414,6 +417,41 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
 }
 
+/** A standing jump at the face of the weir, holding towards it: where it lands. */
+async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
+  await teleport(page, api, sewers(weir - 1, 15), name);
+  await run(page, 200);
+  await page.keyboard.down('ArrowRight');
+  await page.keyboard.down(' ');
+  await until(page, async () => (await api.state())!.airborne, 1, `${name}: taking off`, FRAME_MS);
+  await until(page, async () => !(await api.state())!.airborne, 3, `${name}: landing`, FRAME_MS);
+  await page.keyboard.up(' ');
+  await page.keyboard.up('ArrowRight');
+  await run(page, 100);
+  return (await api.state())!;
+}
+
+/** Level 0's gate: the player's own jump falls back from its weir, the hydraulic legs get onto it, and the sprint legs cross its high gap. */
+async function sewersLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = "the sewers' gate";
+  const xs = [...Array((await api.widths()).sewers).keys()];
+  const weir = (await Promise.all(xs.map((x) => api.standing(sewers(x, 12))))).indexOf(true);
+  if (weir < WEIR_AT) throw new Error(`${name}: no weir on level 0`);
+  const gate = weir - WEIR_AT;
+  await api.fit('legs', 'present');
+  const short = await atTheWeir(page, api, weir, `${name}, short of the weir`);
+  if (short.y !== 15 || short.x > weir - 0.5) throw new Error(`${name}: their own jump landed at ${short.x.toFixed(2)}, ${short.y}`);
+  await api.fit('legs', 'hydraulic_legs');
+  const onto = await atTheWeir(page, api, weir, `${name}, onto the weir on the hydraulic legs`);
+  if (onto.y !== 12) throw new Error(`${name}: the hydraulic legs landed at ${onto.x.toFixed(2)}, ${onto.y}`);
+  await shot(page, index, 'on the weir');
+  let from = gate + 2;
+  while (from > gate - 6 && (await api.standing(sewers(from - 1, 5)))) from--;
+  const across: Jump = { name: "across the gate's high gap on the sprint legs", from: sewers(from, 5), takeOff: gate + 2, land: gate + 7.25, onto: 5, run: true };
+  await legsJump(page, api, 'sprint_legs', across, 1, index);
+  await api.fit('legs', 'present');
+}
+
 const shown = (page: Page, selector: string) =>
   page.evaluate((selector) => {
     const element = document.querySelector<HTMLElement>(selector);
@@ -503,6 +541,7 @@ try {
     ['through the dark with the lamp', (i) => lampLeg(page, api, i)],
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
     ['the bionics at the depot', (i) => bionicsLeg(page, api, i)],
+    ["the sewers' gate", (i) => sewersLeg(page, api, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [
       `E at the terminal on ${at.map}`,
       (i) => terminalLeg(page, api, at, i),

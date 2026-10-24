@@ -16,6 +16,8 @@ uv run simile papercraft-preview /tmp/papercraft    # contact sheets, streets an
 
 - `--only 'fronts/*'` limits a run to the keys matching a glob.
 - `--dry-run` lists what's stale and what would be painted.
+- Before loading FLUX it waits until no other model is on the GPU: mflux, another simile build or
+  Ollama.
 - CI never runs FLUX or IS-Net. `server/tests/papercraft/` checks the committed files against the
   manifest, the catalogue and the maps, and keeps this folder under 12 MB.
 
@@ -152,3 +154,19 @@ The rest of the pipeline is the same, with three additions:
 - The clinic's `Look` is `whole`: one painting however wide, with no seam where units would meet.
 - The metro's catwalks and steps are furniture drawn over the street's own ledges and steps, which
   stay papercraft.
+
+## The sewers
+
+The sewers' levels (`content/street/README.md`'s *The sewers*) are generated, so nothing is
+painted per level: every level is composed from one set of pieces in #329's properly grimy
+cartoon (`painter.GRIMY`, from the study's `grimy` look, painted from the cartoon references):
+the sewers' six layers (`SEWER_LAYERS`) and the furniture marked `grimy`. The pieces that cover the
+levels' solid cells are redrawn from sketches, so they fit their cells and their tops are where
+the player stands: `sewer_vault` along the top, `sewer_walkway` and `sewer_pipe` over the slabs,
+stretched to their length, `sewer_pier` over each wall on a tier, and `sewer_weir` over the gate's
+weir. `maintenance_hatch`, `sewer_outfall` and `sewer_lamp` dress the rooms, with the metro's
+`breaker_box`, `rubble`, `crates`, `bedroll`, `pipes` and `freight_lift`.
+
+`layout.json` reads every level: they share the map id `sewers`, so its width is the widest
+level's.
+

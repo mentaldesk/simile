@@ -386,6 +386,10 @@
    2,
    2
   ],
+  "maintenance_hatch": [
+   2,
+   2
+  ],
   "menu_board": [
    3,
    1
@@ -423,7 +427,7 @@
    1
   ],
   "pipes": [
-   12,
+   13,
    1
   ],
   "plant": [
@@ -449,6 +453,34 @@
   "scrap_stall": [
    3,
    2
+  ],
+  "sewer_lamp": [
+   1,
+   1
+  ],
+  "sewer_outfall": [
+   2,
+   2
+  ],
+  "sewer_pier": [
+   1,
+   4
+  ],
+  "sewer_pipe": [
+   2,
+   1
+  ],
+  "sewer_vault": [
+   119,
+   2
+  ],
+  "sewer_walkway": [
+   20,
+   2
+  ],
+  "sewer_weir": [
+   2,
+   3
   ],
   "sewing_machine": [
    1,
@@ -579,6 +611,6 @@
   "lychee_lane": 68,
   "metro": 110,
   "rooftops": 60,
-  "sewers": 12
+  "sewers": 119
  }
 }

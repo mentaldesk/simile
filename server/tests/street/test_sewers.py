@@ -2,10 +2,11 @@ import asyncio
 import json
 import random
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import cache
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -143,6 +144,26 @@ def test_each_pickup_is_in_reach_only_of_the_legs_it_needs(
         if pickup.kind is PickupKind.SECRET:
             assert needs is not None, f"{pickup.id} is a jump that walking doesn't reach"
     assert {Bionic.SPRING_LEGS.value, Bionic.SPRINT_LEGS.value} <= set(recorded.values())
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_no_ladder_ends_where_holding_the_key_would_climb_on_to_the_next(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town = level(seed).town
+    rungs = {(x, y) for y in range(town.height) for x in range(town.width) if town.climb(x, y)}
+    tops = [(x, y) for x, y in rungs if (x, y - 1) not in rungs]
+    ends = [(x, y, y + 1 + len(list(_run(rungs, x, y)))) for x, y in tops]
+
+    for (x, top, foot), (other, other_top, other_foot) in combinations(ends, 2):
+        if {top, foot} & {other_top, other_foot}:
+            assert abs(x - other) >= 3, (x, other)
+
+
+def _run(rungs: set[tuple[int, int]], x: int, y: int) -> Iterator[int]:
+    while (x, y + 1) in rungs:
+        y += 1
+        yield y
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)

@@ -26,6 +26,13 @@ CARTOON = (
     "palette, chunky rounded simplified shapes, bold readable silhouettes"
 )
 """#329's revised cartoon, a little dirty: the tunnels' style."""
+GRIMY = (
+    "hand-drawn 2D cartoon game art: thick dark brown ink outlines that are scratchy, uneven and "
+    "slightly broken, as if drawn with a worn dip pen, flat colour fills with simple soft "
+    "shading, heavy grime, damp stains, slime, rust streaks, smudges and scuffs on every "
+    "surface, a dirty, muted palette, chunky rounded simplified shapes, bold readable silhouettes"
+)
+"""#329's properly grimy cartoon: the sewers' style."""
 NO_TEXT = " No text, no lettering, no logos, no words on signs."
 REFERENCE_WIDTH = 768
 
@@ -38,6 +45,11 @@ def styled(subject: str) -> str:
 def cartoon(subject: str) -> str:
     """`subject` in the tunnels' cartoon, with the ban on lettering."""
     return f"{subject} Art style: {CARTOON}.{NO_TEXT}"
+
+
+def grimy(subject: str) -> str:
+    """`subject` in the sewers' grimy cartoon, with the ban on lettering."""
+    return f"{subject} Art style: {GRIMY}.{NO_TEXT}"
 
 
 def reference(name: str, width: int = REFERENCE_WIDTH) -> Image.Image:

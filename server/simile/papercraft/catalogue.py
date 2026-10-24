@@ -6,7 +6,7 @@ from typing import Literal
 
 from simile.papercraft.fronts import GREY, Front, backdrop, unit_plans, units
 from simile.papercraft.layout import Layout, load_layout
-from simile.papercraft.painter import cartoon, styled
+from simile.papercraft.painter import cartoon, grimy, styled
 from simile.papercraft.sketches import SKETCHES
 from simile.papercraft.village import (
     CARTOON_PAPERS,
@@ -61,6 +61,14 @@ CARTOON_TEXTURE = (
 CARTOON_PAPER_LEAD = (
     "Make a flat texture in the colours and cartoon style of the reference picture, showing none "
     "of its objects: "
+)
+GRIMY_LEAD = "Make a new picture in exactly the grimy cartoon style of the reference picture: "
+GRIMY_REDRAW = (
+    "Redraw image 1 as {subject}, hand-drawn in the grimy cartoon style of image 2: thick "
+    "scratchy dark ink outlines around every shape, flat colours with simple soft shading, and "
+    "heavy grime, damp stains and slime. Keep every shape exactly where it is, with the same "
+    "outlines and colours, seen exactly from the side with no perspective, on a plain {back} "
+    "background, and no shadow on the background."
 )
 TUNNELS = "cartoon/street"
 TUNNEL_ROOMS = "cartoon/interior"
@@ -122,6 +130,14 @@ def paper(key: str, pattern: str, size: tuple[int, int] = (768, 512), **kw) -> P
 def cartoon_paper(key: str, pattern: str, size: tuple[int, int] = (768, 512)) -> Painting:
     prompt = cartoon(CARTOON_PAPER_LEAD + CARTOON_TEXTURE.format(pattern))
     return Painting(f"papers/{key}", "paper", prompt, size, (TUNNEL_ROOMS,))
+
+
+def sewer_layer(
+    key: str, kind: Kind, subject: str, size: tuple[int, int], height: float, **kw
+) -> Painting:
+    """A layer of the sewers, in the grimy cartoon."""
+    prompt = grimy(GRIMY_LEAD + subject)
+    return Painting(f"layers/{key}", kind, prompt, size, (TUNNELS,), height, **kw)
 
 
 def tunnel_layer(
@@ -362,6 +378,73 @@ TUNNEL_LAYERS = [
         2.0,
     ),
 ]
+SEWER_LAYERS = [
+    sewer_layer(
+        "sewer-vault",
+        "paper",
+        "A plain dark backdrop of the inside of a huge old brick sewer: tall curved vaults of "
+        "dark red-brown brick, wet, stained and streaked with slime, fading into deep shadow "
+        "towards the top, with a few dripping pipes. Only the vault: no floor, no walkway."
+        + NO_STREET,
+        (1536, 768),
+        12.0,
+    ),
+    sewer_layer(
+        "far-sewer",
+        "layer",
+        "A long strip of the far inside of a huge old brick sewer: a row of big round brick "
+        "arches opening onto pitch-dark tunnels, with old pipes and hanging chains, in murky "
+        "brown, grey and green, lying on a plain flat white background with white space above "
+        "and below it." + NO_STREET,
+        (1536, 512),
+        5.0,
+    ),
+    sewer_layer(
+        "mid-sewer",
+        "strip",
+        "A long run of the brick back wall of an old sewer seen straight from the front: filthy "
+        "red-brown brick streaked with slime and rust, a row of tall round brick arches with dark "
+        "tunnel mouths, and big rusty pipes and valves running along it, all standing on one "
+        "straight baseline, on a plain flat white background with white space above it. No "
+        "signs." + NO_STREET,
+        (1536, 640),
+        9.0,
+    ),
+    sewer_layer(
+        "near-sewer",
+        "ground",
+        "A long run of the lower brick wall of an old sewer seen straight from the front: a solid "
+        "wall of filthy damp brick from the ground up to a band of green slime along its straight "
+        "top edge, with drain grates, small pipes dribbling dirty water and rusty brackets along "
+        "it, and rubbish heaped at its foot, running from the left edge of the frame to the right "
+        "edge, on a plain flat white background with white space above it. Only the wall, pipes "
+        "and rubbish." + NO_STREET,
+        (1536, 768),
+        NEAR_WALL,
+        cut=("above",),
+    ),
+    sewer_layer(
+        "ground-sewer",
+        "ground",
+        "A long horizontal strip of an old sewer's walkway seen exactly from the side: wet "
+        "cracked concrete on top with a slimy green edge, and a thick band of dark stained brick "
+        "below, running from the left edge of the frame to the right edge, on a plain white "
+        "background.",
+        (1536, 384),
+        2.6,
+    ),
+    sewer_layer(
+        "front-sewer",
+        "strip",
+        "A long low channel of murky green-brown sewage water in a brick gutter, seen straight "
+        "from the front, with floating rubbish, scum and a broken iron grate, "
+        + STRIP
+        + " Only water, brick, rubbish and grates."
+        + NO_STREET,
+        (1536, 512),
+        2.0,
+    ),
+]
 SLAB = paper(
     "slab", "the cut edge of thick corrugated brown cardboard, a long band", (1024, 256), height=0.3
 )
@@ -391,6 +474,8 @@ class Item:
     """Colour variants: name, and what's recoloured to what."""
     cartoon: bool = False
     """Painted in the tunnels' cartoon rather than papercraft."""
+    grimy: bool = False
+    """Painted in the sewers' grimy cartoon."""
 
 
 STREET = "street"
@@ -746,6 +831,85 @@ FURNITURE: dict[str, Item] = {
         ref=TUNNELS,
         cartoon=True,
     ),
+    "sewer_walkway": Item(
+        "a narrow old sewer walkway seen exactly from the side: a slab of stained concrete on "
+        "rusty iron brackets with slime dripping from its edge, and a bent rusty iron handrail on "
+        "posts above it",
+        2.16,
+        ref=TUNNELS,
+        sketch="sewer_walkway",
+        folder="platforms",
+        stretch=True,
+        cut=("outline",),
+        grimy=True,
+    ),
+    "sewer_pipe": Item(
+        "a huge old cast-iron sewer pipe lying along, seen exactly from the side, rusty and "
+        "banded at its joints, with green slime along its underside",
+        1.16,
+        ref=TUNNELS,
+        sketch="sewer_pipe",
+        folder="platforms",
+        stretch=True,
+        cut=("outline",),
+        grimy=True,
+    ),
+    "sewer_pier": Item(
+        "a tall narrow pier of old dark red brick between two sewer rooms, filthy and streaked "
+        "with slime and rust, with a worn stone cap at its top and its foot",
+        4.46,
+        ref=TUNNELS,
+        sketch="sewer_pier",
+        folder="platforms",
+        cut=("outline",),
+        grimy=True,
+    ),
+    "sewer_vault": Item(
+        "a long band of the low brick vault of an old sewer seen exactly from the side, wet and "
+        "stained, with a dark slimy underside along its bottom edge",
+        2.3,
+        ref=TUNNELS,
+        sketch="sewer_vault",
+        folder="platforms",
+        stretch=True,
+        cut=("outline",),
+        grimy=True,
+    ),
+    "sewer_weir": Item(
+        "a squat old brick weir across a sewer, seen exactly from the side, with a rusty iron "
+        "sluice gate and its wheel set in its face and slime along its foot",
+        3.36,
+        ref=TUNNELS,
+        sketch="sewer_weir",
+        folder="platforms",
+        cut=("outline",),
+        grimy=True,
+    ),
+    "maintenance_hatch": Item(
+        "a heavy round steel maintenance hatch set in a patch of filthy brick wall, with big "
+        "bolts around its rim and a locking wheel in its middle, and beside it a small steel "
+        "panel with a dim green light and a round data port",
+        2.0,
+        (768, 768),
+        ref=TUNNELS,
+        grimy=True,
+    ),
+    "sewer_outfall": Item(
+        "the mouth of a big round old outflow pipe sticking out of a patch of filthy brick wall, "
+        "with a trickle of murky green water and slime pouring from it",
+        1.6,
+        (768, 768),
+        ref=TUNNELS,
+        grimy=True,
+    ),
+    "sewer_lamp": Item(
+        "a caged bulkhead work lamp on a short rusty iron wall bracket, its bulb glowing a weak "
+        "warm yellow",
+        0.6,
+        (512, 512),
+        ref=TUNNELS,
+        grimy=True,
+    ),
     "tunnel_arch": Item(
         "a tall archway at the mouth of an old metro tunnel, seen straight from the front: two "
         "square pillars of grimy cream tiles joined by a round concrete arch, with cables and a "
@@ -881,7 +1045,11 @@ PLATFORMS: dict[str, Item] = {
 def item(name: str, spec: Item, layout: Layout) -> Painting:
     key = f"{spec.folder}/{name}"
     style, lead, redraw = (
-        (cartoon, CARTOON_LEAD, CARTOON_REDRAW) if spec.cartoon else (styled, LEAD, REDRAW)
+        (grimy, GRIMY_LEAD, GRIMY_REDRAW)
+        if spec.grimy
+        else (cartoon, CARTOON_LEAD, CARTOON_REDRAW)
+        if spec.cartoon
+        else (styled, LEAD, REDRAW)
     )
     if spec.sketch:
         sketch = SKETCHES[spec.sketch]()
@@ -1065,7 +1233,14 @@ def room_papers(layout: Layout) -> list[Painting]:
 def paintings(layout: Layout | None = None) -> list[Painting]:
     """Every painting, in the order they're painted: a redrawn painting after its base."""
     layout = layout or load_layout()
-    return [*LAYERS, *TUNNEL_LAYERS, *room_papers(layout), *fronts(layout), *items(layout)]
+    return [
+        *LAYERS,
+        *TUNNEL_LAYERS,
+        *SEWER_LAYERS,
+        *room_papers(layout),
+        *fronts(layout),
+        *items(layout),
+    ]
 
 
 PARALLAX = {"sky": 0.04, "far": 0.2, "mid": 0.45, "near": 0.85, "ground": 1.0, "foreground": 1.3}
