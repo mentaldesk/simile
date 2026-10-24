@@ -72,8 +72,7 @@ def _tiles(obj: dict[str, Any]) -> tuple[int, int, int, int]:
 
 
 def read_maps(directory: Path = STREET_DIR) -> Layout:
-    """The layout of the side-view maps in `directory`, its `floors/` and every generated level,
-    whose maps share their ids: a street is as wide as its widest level."""
+    """The layout of every side-view map under `directory`: a street as wide as its widest level."""
     maps = [(p.stem, json.loads(p.read_text())) for p in sorted(directory.rglob("*.tmj"))]
     streets, facades, rooms = {}, {}, {}
     furniture: dict[str, tuple[int, int]] = {}

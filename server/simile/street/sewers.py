@@ -1,12 +1,21 @@
-"""The sewers under the metro, generated: content/street/README.md's *The sewers*. A pool of
-seeded levels, of which each world plays one."""
+"""The sewers under the metro: a pool of seeded levels, of which each world plays one."""
 
 import random
 from collections import deque
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 
-from simile.schema import Door, DoorKind, InteractableKind, Item, ItemKind, MapTile, Tile, TileArea
+from simile.schema import (
+    Bionic,
+    Door,
+    DoorKind,
+    InteractableKind,
+    Item,
+    ItemKind,
+    MapTile,
+    Tile,
+    TileArea,
+)
 from simile.street.jump import GRADES, JUMP, OWN_JUMP, Jump, meets
 from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
@@ -108,7 +117,6 @@ class Level:
     spring_pocket: int = 0
     """The column whose top room only a drop from the room under it joins."""
     reserved: dict[int, set[int]] = field(default_factory=dict)
-    taken: set[Cell] = field(default_factory=set)
 
     @property
     def gate(self) -> int:
@@ -134,8 +142,7 @@ class Level:
 
 
 def layout(seed: int, attempt: int = 0) -> Level:
-    """A level's columns, and each zone's rooms joined by doors and ladders with a drop or two,
-    either side of the gate."""
+    """A level's columns, and each zone's rooms joined by doors, ladders and a drop or two."""
     level = Level(seed, random.Random(f"sewers/{seed}/{attempt}"))
     rng = level.rng
     west = [ROOMS] * rng.choice((2, 3))
@@ -216,8 +223,7 @@ def walls(level: Level, node: Node) -> Iterator[int]:
 
 
 def shelves(level: Level) -> list[tuple[Node, int]]:
-    """A pipe two rows up from a room's floor against its wall: one past the gate, and one before
-    it in most levels. Holes keep clear of them."""
+    """A pipe two rows up against a room's wall: past the gate, and before it in most levels."""
     rng = level.rng
     found = []
     for zone in (1, 0):
@@ -235,8 +241,7 @@ def shelves(level: Level) -> list[tuple[Node, int]]:
 
 
 def place_holes(level: Level) -> None:
-    """Where each ladder and drop goes through its slab, apart from each other and the walls,
-    and each ladder far enough from the next that holding a key doesn't climb on to it."""
+    """Where each hole goes through its slab, ladders far enough apart that a held key stops."""
     rng = level.rng
     for i, column in enumerate(level.columns):
         if column.kind == HALL:
@@ -373,26 +378,24 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
 
 
 def pockets(level: Level, plan: Plan) -> None:
-    """The secrets only a grade of legs reaches: the room over the spring pocket's drop, and the
-    hall's ledge across its gap."""
+    """The secrets only a grade of legs reaches: the spring pocket's room and the hall's ledge."""
     rng = level.rng
     column = level.columns[level.spring_pocket]
     hole = level.drops[(level.spring_pocket, 1)]
     far = column.x if hole - column.x > column.end - hole else column.end - 1
     near = far + (1 if far == column.x else -1)
     row = FLOORS[2]
+    spring, sprint = Bionic.SPRING_LEGS, Bionic.SPRINT_LEGS
     money = float(rng.choice((60, 70, 80, 90)))
-    plan.pickups.append(Pickup(SPRING_SECRET, SECRET, far, row, money, needs="spring_legs"))
-    plan.pickups.append(
-        Pickup("sewers_salvage_spring", SALVAGE, near, row, item=GAUGE, needs="spring_legs")
-    )
+    plan.pickups.append(Pickup(SPRING_SECRET, SECRET, far, row, money, needs=spring))
+    salvage = Pickup("sewers_salvage_spring", SALVAGE, near, row, item=GAUGE, needs=spring)
+    plan.pickups.append(salvage)
     hall = next(c for c in level.columns if c.kind == HALL)
     money = float(rng.choice((50, 60, 70, 80)))
     end = hall.end - 1
-    plan.pickups.append(Pickup(SPRINT_SECRET, SECRET, end, row, money, needs="sprint_legs"))
-    plan.pickups.append(
-        Pickup("sewers_salvage_sprint", SALVAGE, end - 1, row, item=APEX_BOARD, needs="sprint_legs")
-    )
+    plan.pickups.append(Pickup(SPRINT_SECRET, SECRET, end, row, money, needs=sprint))
+    salvage = Pickup("sewers_salvage_sprint", SALVAGE, end - 1, row, item=APEX_BOARD, needs=sprint)
+    plan.pickups.append(salvage)
 
 
 def farthest(level: Level, start: Node) -> Node:
@@ -437,8 +440,7 @@ def dress(level: Level, plan: Plan, cells: Stocker, rooms: list[Node], hatch: No
 
 
 def cover(level: Level, plan: Plan) -> None:
-    """A piece over everything solid above the floor: the vault, the walkways, the piers between
-    the columns, and the gate's weir."""
+    """A piece over everything solid above the floor, so no plain ledge shows."""
     plan.piece("sewer_vault", 0, 0, level.width, CEILING + 1)
     for row in (slab(1), slab(2)):
         x = 0
@@ -528,7 +530,7 @@ def reach(town: object, start: Cell, jump: bool | Jump) -> set[Cell]:
     """Every cell the player gets to from `start` on `jump`, or walking and climbing alone."""
     seen, queue = {start}, deque([start])
     while queue:
-        for there, _ in moves(town, queue.popleft(), jump):  # type: ignore[arg-type]
+        for there, _ in moves(town, queue.popleft(), jump):
             if there not in seen:
                 seen.add(there)
                 queue.append(there)
@@ -539,7 +541,7 @@ def back(town: object, cells: set[Cell], end: Cell, jump: bool | Jump) -> set[Ce
     """Of `cells`, those the player can get back to `end` from."""
     into: dict[Cell, list[Cell]] = {}
     for cell in cells:
-        for there, _ in moves(town, cell, jump):  # type: ignore[arg-type]
+        for there, _ in moves(town, cell, jump):
             into.setdefault(there, []).append(cell)
     seen, queue = {end}, deque([end])
     while queue:
@@ -551,8 +553,7 @@ def back(town: object, cells: set[Cell], end: Cell, jump: bool | Jump) -> set[Ce
 
 
 def problems(plan: Plan, town: object | None = None) -> list[str]:
-    """What's wrong with a level: anywhere the player can be stuck, a hatch or plug that a grade of
-    legs can't get to or the player's own can, or a pickup in reach of other grades than it says."""
+    """Where a level fails content/street/README.md's checks for the sewers: none if it's sound."""
     town = town or Cells(plan)
     start = (LANDING.x, LANDING.y)
     jumps: dict[str, Jump] = {OWN_JUMP: JUMP, **{g.value: j for g, j in GRADES.items()}}

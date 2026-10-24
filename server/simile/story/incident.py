@@ -432,8 +432,7 @@ def hatch_log(gone: datetime) -> Fact:
 
 
 def logged(incident: Incident) -> bool:
-    """Brings an incident made before S8 or S9 up to date with the lift's log and the hatch's.
-    Whether it changed."""
+    """Brings an incident made before S8 or S9 up to date with both logs. Whether it changed."""
     facts = {fact.id: fact for fact in incident.facts}
     if GONE not in facts:
         return False

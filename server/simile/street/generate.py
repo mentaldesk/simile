@@ -15,9 +15,8 @@ PREVIEW = "preview.png"
 
 
 def generate(out: Path) -> list[Path]:
-    """Write every street to out/, every floor to out/floors/, each generated level's maps to
-    out/levels/<n>/, the marker tileset their tile layers use, and previews of the village and
-    the levels."""
+    """Write the streets to out/, the floors to out/floors/, each level to out/levels/<n>/, the
+    marker tileset their tile layers use, and previews of the village and the levels."""
     plans = village()
     pool = levels()
     out.mkdir(parents=True, exist_ok=True)

@@ -573,8 +573,7 @@ def rooftops() -> Plan:
 
 
 def village() -> list[Plan]:
-    """Every street, then every floor, with the streets joined. The sewers' levels are
-    `simile.street.sewers.levels`."""
+    """Every street, then every floor, with the streets joined. The sewers are `sewers.levels`."""
     from simile.street.metro import metro
     from simile.street.sewers import lift
 
