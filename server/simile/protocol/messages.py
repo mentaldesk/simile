@@ -74,8 +74,7 @@ class Entity(Model):
 
 
 class SnapshotMessage(Model):
-    """The whole world, sent on connect. Replaces anything the client had. The server always
-    sends `level`: missing, it's 0."""
+    """The whole world, sent on connect. Replaces anything the client had."""
 
     model_config = ConfigDict(json_schema_extra=_not_required("level"))
 
