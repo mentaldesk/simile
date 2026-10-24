@@ -427,7 +427,7 @@
    1
   ],
   "pipes": [
-   13,
+   14,
    1
   ],
   "plant": [
@@ -471,11 +471,11 @@
    1
   ],
   "sewer_vault": [
-   119,
+   126,
    2
   ],
   "sewer_walkway": [
-   20,
+   23,
    2
   ],
   "sewer_weir": [
@@ -611,6 +611,6 @@
   "lychee_lane": 68,
   "metro": 110,
   "rooftops": 60,
-  "sewers": 119
+  "sewers": 126
  }
 }

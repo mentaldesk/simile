@@ -111,6 +111,8 @@ class Level:
     columns: list[Column] = field(default_factory=list)
     doors: set[tuple[int, int]] = field(default_factory=set)
     ladders: dict[Node, int] = field(default_factory=dict)
+    openings: dict[Node, int] = field(default_factory=dict)
+    """The open cell beside each ladder's top, so a walk along that floor ends at the ladder."""
     drops: dict[Node, int] = field(default_factory=dict)
     edges: list[Edge] = field(default_factory=list)
     """The doors and ladders every room is joined by, walking and climbing."""
@@ -137,8 +139,7 @@ class Level:
     def ends(self, edge: Edge) -> tuple[Node, Node]:
         if edge.kind == "door":
             return (edge.c, edge.t), (edge.c + 1, edge.t)
-        top = 2 if self.columns[edge.c].kind == HALL else edge.t + 1
-        return (edge.c, edge.t), (edge.c, top)
+        return (edge.c, edge.t), (edge.c, edge.t + 1)
 
 
 def layout(seed: int, attempt: int = 0) -> Level:
@@ -147,21 +148,25 @@ def layout(seed: int, attempt: int = 0) -> Level:
     rng = level.rng
     west = [ROOMS] * rng.choice((2, 3))
     east = [ROOMS] * rng.choice((3, 4))
-    if rng.random() < 0.5:
-        west[rng.randrange(len(west) - 1)] = HALL
+    if len(west) == 3 and rng.random() < 0.5:
+        west[1] = HALL
     else:
         east[rng.randrange(1, len(east))] = HALL
     kinds = [(SHAFT_KIND, 0), *((k, 0) for k in west), (GATE_KIND, 0), *((k, 1) for k in east)]
     x = 0
     for kind, zone in kinds:
         width = {SHAFT_KIND: SHAFT, GATE_KIND: GATE}.get(kind) or rng.randint(
-            *((10, 12) if kind == HALL else (9, 13))
+            *((10, 12) if kind == HALL else (11, 14))
         )
         level.columns.append(Column(kind, x, width, zone))
         x += width + 1
-    gate = level.gate
+    gate, hall = level.gate, next(i for i, c in enumerate(level.columns) if c.kind == HALL)
     level.spring_pocket = rng.choice(
-        [i for i, c in enumerate(level.columns) if c.kind == ROOMS and abs(i - gate) > 1]
+        [
+            i
+            for i, c in enumerate(level.columns)
+            if c.kind == ROOMS and abs(i - gate) > 1 and i != hall - 1
+        ]
     )
     for zone in (0, 1):
         join(level, zone)
@@ -179,7 +184,7 @@ def join(level: Level, zone: int) -> None:
         kind = columns[c].kind
         if (c + 1, t) in here and not (kind == HALL and t == 2):
             candidates.append(Edge("door", c, t))
-        if (kind == ROOMS and t < 2 and (c, t + 1) in here) or (kind == HALL and t == 0):
+        if kind == ROOMS and t < 2 and (c, t + 1) in here:
             candidates.append(Edge("ladder", c, t))
     weights = {e: rng.random() * (1.8 if (e.kind, e.t) == ("door", 0) else 1.0) for e in candidates}
     parent = {node: node for node in nodes}
@@ -241,30 +246,29 @@ def shelves(level: Level) -> list[tuple[Node, int]]:
 
 
 def place_holes(level: Level) -> None:
-    """Where each hole goes through its slab, ladders far enough apart that a held key stops."""
+    """Where each two-cell hole goes through its slab, apart, and ladders far enough apart."""
     rng = level.rng
     for i, column in enumerate(level.columns):
-        if column.kind == HALL:
-            if (i, 0) in level.ladders:
-                level.ladders[(i, 0)] = column.x + 1
-            continue
-        used, climbs = set(level.reserved.get(i, ())), set()
+        reserved, used, climbs = level.reserved.get(i, set()), set(), set()
         for node in sorted(k for k in [*level.ladders, *level.drops] if k[0] == i):
-            wide = 2 if node in level.drops else 1
-            apart = 2 if wide == 2 else 3
+            ladder = node in level.ladders
             spots = [
                 x
-                for x in range(column.x + 1, column.end - wide)
-                if all(abs(x + d - u) >= 2 for d in range(wide) for u in used)
-                and all(abs(x - u) >= apart for u in climbs)
+                for x in range(column.x + 1, column.end - 2)
+                if not {x, x + 1} & reserved
+                and all(abs(x + d - u) >= 3 for d in (0, 1) for u in used)
+                and not (ladder and any(abs(x + d - u) < 4 for d in (0, 1) for u in climbs))
             ]
             if not spots:
                 raise ValueError(f"no room for a hole in column {i} of sewers level {level.seed}")
             x = rng.choice(spots)
-            used |= set(range(x, x + wide))
-            if wide == 1:
-                climbs.add(x)
-            (level.drops if node in level.drops else level.ladders)[node] = x
+            used |= {x, x + 1}
+            if ladder:
+                side = rng.randrange(2)
+                level.ladders[node], level.openings[node] = x + side, x + 1 - side
+                climbs.add(x + side)
+            else:
+                level.drops[node] = x
 
 
 def carve(level: Level, plan: Plan) -> None:
@@ -291,9 +295,8 @@ def carve(level: Level, plan: Plan) -> None:
     for (_, tier), x in level.drops.items():
         plan.clear(x, slab(tier + 1), 2, 1)
     for (c, tier), x in level.ladders.items():
-        top = 2 if level.columns[c].kind == HALL else tier + 1
-        plan.clear(x, slab(top), 1, 1)
-        plan.ladder((x, FLOORS[tier]), FLOORS[tier] - FLOORS[top])
+        plan.clear(min(x, level.openings[(c, tier)]), slab(tier + 1), 2, 1)
+        plan.ladder((x, FLOORS[tier]), FLOORS[tier] - FLOORS[tier + 1])
 
 
 class Stocker:
@@ -360,7 +363,7 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
         plan.fill(x, row + 1, 2, 1)
         plan.piece("sewer_pipe", x, row + 1, 2, 1)
         end = x if x == level.columns[node[0]].x else x + 1
-        if zone == 1 and rng.random() < 0.5:
+        if zone == 1 and level.seed % 2 == 0:
             secret = Pickup(ACTUATOR_SECRET, SECRET, end, row, item=APEX_ACTUATOR, needs=OWN_JUMP)
         else:
             money = float(rng.choice((20, 25, 30, 35, 40)))
@@ -433,7 +436,7 @@ def dress(level: Level, plan: Plan, cells: Stocker, rooms: list[Node], hatch: No
                 plan.piece(name, spot[0], row - tall, width, 1 + tall)
         if rng.random() < 0.35:
             plan.piece("pipes", column.x, row - 2, column.width, 1)
-        if node != hatch and rng.random() < 0.3:
+        if node != hatch and rng.random() < 0.25:
             middle = column.x + column.width // 2
             plan.piece("sewer_lamp", middle, row - 3, 1, 1)
             light(plan, f"sewers_lamp_{number}", column.x, row - 3, column.width, 4, lit=True)

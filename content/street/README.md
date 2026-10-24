@@ -207,7 +207,7 @@ passes through it.
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the sprint legs', and in reach of the hydraulic legs', four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
-| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret in about half the sewers' levels (below). The clinic fits the premium legs only to someone carrying it. |
+| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret in the sewers' levels from even seeds (below). The clinic fits the premium legs only to someone carrying it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -251,10 +251,13 @@ slab, the row under them. West to east it's columns of rooms:
 - **Two or three columns** of rooms, then **the gate hall**, 17 wide and the full height, then
   **three or four more**. Between columns is a wall cell, a brick pier on each tier it closes and a
   doorway on each it doesn't. One column, on either side of the gate, is a **hall**: two tiers
-  high, with a walkway along its top tier. The rooms on each side of the gate are joined by a
-  random tree of doorways and ladders, so walking and climbing get anywhere on that side, then an
-  extra doorway in most levels and a drop or two: a hole two cells wide in a slab, down to the
-  room under it.
+  high, with a walkway along its top tier through a doorway from the room west of it. The rooms on
+  each side of the gate are joined by a random tree of doorways and ladders, then an extra doorway
+  in most levels and a drop or two: a hole two cells wide in a slab, down to the room under it. A
+  ladder comes up through a hole two cells wide too, with open air on one side of its top rung, so
+  a walk along that floor ends at the ladder, as the client's walking does, rather than passing
+  over it. Holes are at least two cells apart, and ladders three, so a held key stops at the end
+  of each climb. Walking, climbing and the odd hop over a hole get anywhere on that side.
 - **The gate** is the way on, and it needs legs: a weir three rows high across the hall's floor,
   which the spring legs jump onto (`WEIR`, 12 cells in, `WEIR_AT`), or at the top tier a walkway
   from each side with a five-cell gap between them (`GAP`), under the vault, which stops a spring
@@ -275,7 +278,7 @@ counts from the way through, which every grade of legs takes:
 | Needs | Place | What waits there |
 |---|---|---|
 | | On the floors, the way through | Six of lead pipe, copper coil, brass fitting, pump impeller, float valve, filter mesh and old battery |
-| `jump` | A pipe two rows up against a wall, past the gate, and before it in most levels | `sewers_secret_pipe_1` and `_2`, 20 to 40 money, or in about half the levels `sewers_secret_actuator`, the `APEX_ACTUATOR` |
+| `jump` | A pipe two rows up against a wall, past the gate, and before it in most levels | `sewers_secret_pipe_1` and `_2`, 20 to 40 money, or past the gate in the levels from even seeds `sewers_secret_actuator`, the `APEX_ACTUATOR` |
 | `spring_legs` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `sprint_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 

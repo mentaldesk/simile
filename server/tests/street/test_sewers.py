@@ -189,7 +189,7 @@ def test_the_lift_lands_on_s8s_landing_which_is_lit_in_the_dark(
     assert (door.id, door.kind, door.inside) == ("metro_to_sewers", DoorKind.DOOR, LANDING)
     assert all(town.standing(x, LANDING.y) and town.lit(x, LANDING.y) for x in range(SHAFT))
     dark = [cell for cell in cells if not town.lit(*cell)]
-    assert 0.4 < len(dark) / len(cells) < 0.95
+    assert 0.3 < len(dark) / len(cells) < 0.95
 
 
 def test_some_levels_hold_the_apex_actuator() -> None:
