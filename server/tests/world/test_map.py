@@ -111,12 +111,11 @@ def test_a_map_without_a_pickups_layer_has_none() -> None:
 def test_loads_the_maps_of_one_level_beside_the_streets_and_floors(tmp_path: Path) -> None:
     shutil.copytree(STREET_DIR / FLOORS, tmp_path / FLOORS)
     for path in STREET_DIR.glob("*.tmj"):
-        if path.stem != "sewers":
-            shutil.copy(path, tmp_path)
+        shutil.copy(path, tmp_path)
     for level in range(3):
         folder = tmp_path / LEVELS / str(level)
         folder.mkdir(parents=True)
-        data = json.loads((STREET_DIR / "sewers.tmj").read_text())
+        data = json.loads((STREET_DIR / LEVELS / "0" / "sewers.tmj").read_text())
         data["properties"].append({"name": "label", "type": "string", "value": f"Level {level}"})
         (folder / "sewers.tmj").write_text(json.dumps(data))
 

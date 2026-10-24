@@ -100,6 +100,7 @@ def walkable() -> set[Spot]:
     return {
         Spot(town.id, x, y)
         for town in BELOW.values()
+        if town.id != SEWERS
         for y in range(town.height)
         for x in range(town.width)
         if town.walkable(x, y)
@@ -133,7 +134,8 @@ def test_you_can_walk_down_through_the_metro_to_the_clinic_and_back() -> None:
 
 
 def test_premium_legs_reach_every_cell_but_the_gantrys_roof() -> None:
-    assert reachable(GRADES[Bionic.PREMIUM_LEGS]) == walkable() - roof()
+    reached = {spot for spot in reachable(GRADES[Bionic.PREMIUM_LEGS]) if spot.map != SEWERS}
+    assert reached == walkable() - roof()
     assert all(METRO_MAP.solid(spot.x, spot.y + 1) for spot in roof())
 
 
@@ -200,13 +202,13 @@ def test_the_lift_goes_down_to_a_landing_in_the_sewers_and_back() -> None:
     [door] = [d for d in TOWN.doors if SEWERS in (d.outside.map, d.inside.map)]
     sewers = MAPS[SEWERS]
 
-    data = json.loads((STREET_DIR / f"{SEWERS}.tmj").read_text())
-    cells = {Spot(SEWERS, x, y) for y in range(sewers.height) for x in range(sewers.width)}
+    data = json.loads((STREET_DIR / "levels" / "0" / f"{SEWERS}.tmj").read_text())
+    landing = {Spot(SEWERS, x, GROUND) for x in range(12)}
 
     assert (door.kind, door.outside, door.inside) == (DoorKind.DOOR, LIFT_FOOT, LANDING)
     assert props(data)["underground"] is True
-    assert {cell for cell in cells if sewers.walkable(cell.x, cell.y)} <= reachable(False)
-    assert sewers.light and all(light.lit for light in sewers.light)
+    assert landing <= reachable(False)
+    assert all(sewers.lit(cell.x, cell.y) for cell in landing)
 
 
 def test_the_plug_is_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:

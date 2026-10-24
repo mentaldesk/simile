@@ -72,13 +72,13 @@ def _tiles(obj: dict[str, Any]) -> tuple[int, int, int, int]:
 
 
 def read_maps(directory: Path = STREET_DIR) -> Layout:
-    """The layout of the side-view maps in `directory` and its `floors/`."""
-    maps = {p.stem: json.loads(p.read_text()) for p in sorted(directory.rglob("*.tmj"))}
+    """The layout of every side-view map under `directory`: a street as wide as its widest level."""
+    maps = [(p.stem, json.loads(p.read_text())) for p in sorted(directory.rglob("*.tmj"))]
     streets, facades, rooms = {}, {}, {}
     furniture: dict[str, tuple[int, int]] = {}
     links: set[str] = set()
     floors: dict[str, dict[int, str]] = {}
-    for map_id, data in maps.items():
+    for map_id, data in maps:
         props = _props(data)
         if props.get("kind") == "floor":
             floors.setdefault(props["building"], {})[props["floor"]] = props["room"]
@@ -96,7 +96,7 @@ def read_maps(directory: Path = STREET_DIR) -> Layout:
                 links |= {tiles[gid] for gid in set(layer["data"]) if gid}
         if props.get("kind") != "street":
             continue
-        streets[map_id] = data["width"]
+        streets[map_id] = max(streets.get(map_id, 0), data["width"])
         doors = {
             o["name"]: _tiles(o)[0]
             for o in _objects(data, "doors")

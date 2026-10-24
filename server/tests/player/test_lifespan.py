@@ -175,13 +175,13 @@ def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_
         economy = economy_of(app)
         ledger = economy.ledger
 
-    assert len(greeted["piles"]) == 11
+    assert len(metro(greeted["piles"])) == 11
     assert {"at": {"map": "metro", "x": 38, "y": 12}, "items": [wire]} in greeted["piles"]
     assert salvaged["player"]["items"][1:] == [wire]
     assert salvaged["player"]["taken"] == {"metro_salvage_1": "2026-01-01T10:00:00Z"}
-    assert len(salvaged["piles"]) == 10
+    assert len(metro(salvaged["piles"])) == 10
     assert found["player"]["money"] == 40
-    assert len(found["piles"]) == 9
+    assert len(metro(found["piles"])) == 9
     assert at_the_stall["buyer"] == {
         "place": "scrap_stall",
         "name": "The scrap trader's stall",
@@ -219,3 +219,7 @@ def test_e_at_the_dead_terminal_finds_its_clue_only_with_the_datajack(
         [entry] = journal["entries"]
         assert entry["source"] == {"kind": "clue", "id": "metro_terminal", "name": "Dead terminal"}
         assert "maker's mark" in entry["text"] and entry["flushed"] is None
+
+
+def metro(piles: list[dict]) -> list[dict]:
+    return [pile for pile in piles if pile["at"]["map"] == "metro"]

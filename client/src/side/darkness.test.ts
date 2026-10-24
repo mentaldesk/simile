@@ -42,9 +42,10 @@ describe('light on the maps', () => {
     for (const map of village.maps.values()) {
       const below = village.map(map.street)!.underground;
       expect(below, map.id).toBe(map.street === 'metro' || map.street === 'sewers');
-      if (map.id !== 'metro') expect(hasDark(map), map.id).toBe(false);
+      if (!below) expect(hasDark(map), map.id).toBe(false);
     }
     expect(hasDark(metro)).toBe(true);
+    expect(hasDark(village.map('sewers')!)).toBe(true);
   });
 });
 

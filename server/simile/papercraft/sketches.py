@@ -250,6 +250,85 @@ def freight_lift(width: float = 2.2, height: float = 4.4) -> Image.Image:
     return s.image
 
 
+CONCRETE: Rgb = (138, 132, 116)
+GRIME: Rgb = (84, 78, 62)
+SLIME: Rgb = (104, 122, 70)
+RUST: Rgb = (132, 80, 52)
+BRICK: Rgb = (126, 70, 54)
+MORTAR: Rgb = (82, 62, 52)
+
+
+def bricks(s: Sheet, x0: float, y0: float, x1: float, y1: float, size: float = 0.25) -> None:
+    """Courses of brick filling a box, each course set half a brick along from the one below."""
+    s.rect(x0, y0, x1, y1, BRICK, MORTAR)
+    for i, y in enumerate(np.arange(y0 + size, y1, size)):
+        s.rect(x0, y - 0.015, x1, y + 0.015, MORTAR)
+        for x in np.arange(x0 + (size if i % 2 else 0.0), x1, 2 * size):
+            s.rect(x - 0.015, y - size, x + 0.015, y, MORTAR)
+
+
+def sewer_walkway(length: float = 3.3, height: float = 2.16, deck: float = 1.16) -> Image.Image:
+    """A concrete walkway on iron brackets with a railing, its deck `deck` up from the bottom."""
+    s = Sheet(length, height, 200)
+    s.rect(0.0, deck - 0.66, length, deck, CONCRETE, GRIME)
+    s.rect(0.0, deck - 0.74, length, deck - 0.66, SLIME)
+    for x in np.arange(0.4, length, 1.1):
+        s.polygon([(x - 0.3, deck - 0.66), (x + 0.3, deck - 0.66), (x, 0.0)], RUST, GRIME)
+    for x in np.arange(0.05, length, 1.1):
+        s.rect(x, deck, x + 0.06, height - 0.04, RUST)
+    for y in (deck + 0.5, height - 0.06):
+        s.rect(0.0, y, length, y + 0.05, RUST, GRIME)
+    return s.image
+
+
+def sewer_pipe(length: float = 3.3, height: float = 1.16) -> Image.Image:
+    """A big iron pipe lying along, banded at each joint, its top level with a row's."""
+    s = Sheet(length, height, 200)
+    s.rect(0.0, 0.0, length, height, RUST, GRIME)
+    s.rect(0.0, height * 0.55, length, height * 0.75, (156, 100, 66))
+    s.rect(0.0, 0.12, length, 0.3, SLIME)
+    s.rect(0.0, 0.0, length, 0.12, GRIME)
+    for x in np.arange(0.5, length, 1.1):
+        s.rect(x - 0.08, 0.0, x + 0.08, height, GRIME)
+    return s.image
+
+
+def sewer_pier(width: float = 1.2, height: float = 4.46) -> Image.Image:
+    """A brick pier between two rooms, a stone cap on each end."""
+    s = Sheet(width, height, 160)
+    bricks(s, 0.0, 0.0, width, height)
+    for y in (0.0, height - 0.22):
+        s.rect(-0.04, y, width + 0.04, y + 0.22, CONCRETE, GRIME)
+    s.rect(0.0, 0.22, width, 0.6, SLIME)
+    return s.image
+
+
+def sewer_vault(length: float = 3.3, height: float = 2.3) -> Image.Image:
+    """The vault over the sewers, brick down to a slimy underside."""
+    s = Sheet(length, height, 160)
+    bricks(s, 0.0, 0.0, length, height)
+    s.rect(0.0, 0.0, length, 0.2, GRIME)
+    s.rect(0.0, 0.2, length, 0.34, SLIME)
+    return s.image
+
+
+def sewer_weir(width: float = 2.2, height: float = 3.36, footing: float = 2.2) -> Image.Image:
+    """A brick weir with an iron sluice gate in its face, on the walkway's edge `footing` deep."""
+    s = Sheet(width, height + footing, 160)
+    bricks(s, 0.0, 0.0, width, footing)
+    s.rect(-0.05, footing - 0.4, width + 0.05, footing, CONCRETE, GRIME)
+    s.rect(0.0, footing - 0.55, width, footing - 0.4, SLIME)
+    bricks(s, 0.0, footing, width, footing + height)
+    s.rect(-0.05, footing + height - 0.2, width + 0.05, footing + height, CONCRETE, GRIME)
+    s.rect(0.45, footing + 0.3, width - 0.45, footing + 2.2, IRON, GRIME)
+    for y in np.arange(footing + 0.5, footing + 2.1, 0.4):
+        s.rect(0.45, y, width - 0.45, y + 0.04, RUST)
+    s.ellipse(width / 2 - 0.35, footing + 2.35, width / 2 + 0.35, footing + 3.05, RUST)
+    s.ellipse(width / 2 - 0.1, footing + 2.6, width / 2 + 0.1, footing + 2.8, IRON)
+    s.rect(0.0, footing, width, footing + 0.35, SLIME)
+    return s.image
+
+
 def bathtub() -> Image.Image:
     s = Sheet(1.7, 0.75, 400, GREY)
     s.polygon([(0.0, 0.62), (1.7, 0.62), (1.6, 0.2), (0.1, 0.2)], WHITE, (200, 196, 188))
@@ -293,6 +372,11 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "catwalk": catwalk,
     "metro_steps": metro_steps,
     "freight_lift": freight_lift,
+    "sewer_walkway": sewer_walkway,
+    "sewer_pipe": sewer_pipe,
+    "sewer_pier": sewer_pier,
+    "sewer_vault": sewer_vault,
+    "sewer_weir": sewer_weir,
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,

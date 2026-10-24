@@ -42,7 +42,17 @@ SALVAGE: dict[Id, float] = {
     "brass_valve": 7.0,
     "signal_relay": 6.0,
     "servo_motor": 18.0,
+    "lead_pipe": 7.0,
+    "copper_coil": 7.0,
+    "brass_fitting": 6.0,
+    "pump_impeller": 10.0,
+    "float_valve": 8.0,
+    "filter_mesh": 5.0,
+    "old_battery": 5.0,
+    "pressure_gauge": 8.0,
+    "apex_board": 14.0,
 }
+"""The metro's salvage, then the sewers' (`simile.street.sewers`)."""
 
 
 class EconomyConfig(BaseModel):

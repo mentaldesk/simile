@@ -13,6 +13,8 @@ cd server && uv run simile street
 Output is deterministic, and `tests/street` fails if a file drifts from the builder.
 
 - `<street>.tmj`: the five streets, and the metro under them.
+- `levels/<n>/sewers.tmj`: the sewers, one of a pool of generated levels (below), and
+  `levels/preview.png`.
 - `floors/<building>_floor_<n>.tmj`: each floor of each building, `0` for the ground floor.
 - `markers.png`: the tiny tileset the tile layers use, so Tiled shows them.
 - `jump.json`: the player's jump (#331) on each grade of legs (#389), from
@@ -72,8 +74,10 @@ The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `booksh
 `sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`,
 and in the metro `bedroll`, `breaker_box`, `catwalk`, `crates`, `dead_terminal`, `freight_lift`,
 `metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`, `ticket_machine`, `train_carriage`,
-`tunnel_arch` and `turnstile`, with `metro_entrance` beside the stairway down on Banyan Row. A table
-is drawn with a chair either side. A `rope_bridge` stands on the solid row under it, its deck. A
+`tunnel_arch` and `turnstile`, with `metro_entrance` beside the stairway down on Banyan Row, and in
+the sewers `maintenance_hatch`, `sewer_lamp`, `sewer_outfall`, `sewer_pier`, `sewer_pipe`,
+`sewer_vault`, `sewer_walkway` and `sewer_weir`. A table is drawn with a chair either side. A
+`rope_bridge` stands on the solid row under it, its deck. A
 `catwalk` covers its solid row and the row above it, its deck on the solid row's top, and the
 `train_carriage` its roof's solid row and everything under it. `metro_steps` covers a flight of stairs
 and the cells at its ends, over the street's own steps.
@@ -203,7 +207,7 @@ passes through it.
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the sprint legs', and in reach of the hydraulic legs', four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
-| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`. Nothing places it yet: S9 puts it in a sewers secret, and the clinic fits the premium legs only to someone carrying it. |
+| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The clinic fits the premium legs only to someone carrying it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -222,16 +226,81 @@ fast: the spring legs reach the hydraulic legs' places, the blade legs the sprin
 premium legs everything. With Space held, legs that rise higher than three rows bump their head on
 the gantry's roof and fall short, so the premium legs cross its gap on a tap.
 
+**Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
+front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are
+furniture over their solid rows, which hides the street's wooden ledge under them, and the train's
+roof is its picture's top edge.
+
 ## The sewers
 
-`sewers`, the Sewers, is a placeholder until S9 generates them: a landing 12 wide, under the metro
-(`UNDERGROUND`) and lit all over (`sewers_landing`), with a `freight_lift` at (2, row 15),
-`LANDING`, where the door from the metro's lift arrives. It isn't painted yet.
+`sewers`, the Sewers (S9), is generated: `simile.street.sewers` makes a level from a seed, and
+`simile street` writes a pool of eight, level `n` from seed `n`, to `levels/<n>/sewers.tmj`, with
+[`levels/preview.png`](levels/preview.png) drawing them one under another. Every level's map is
+`sewers`, so links, positions and saves name it the same way. A world plays one level, picked by
+its seed (`world_level`, above), and the `snapshot` says which, so the client, which bundles them
+all, plays the same one. The pick depends on how many levels there are, so adding or removing one
+moves some worlds, today's village (level 1) among them; `test_sewers.py` fails on a stray folder.
+Like the metro it's for the player alone (`JUMPING`) and under the village
+(`UNDERGROUND`), and nobody's activity takes them there.
 
-**Drawing it** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's front and
-room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are furniture over
-their solid rows, which hides the street's wooden ledge under them, and the train's roof is its
-picture's top edge.
+A level is 20 rows like a street, with a vault solid from the top down to row 1, and three tiers
+under it: rooms standing on rows 15, 10 and 5 (`FLOORS`), each four rows high, the upper two on a
+slab, the row under them. West to east it's columns of rooms:
+
+- **The lift's shaft** (x 0–11, `SHAFT`), S8's landing: the `freight_lift` at (2, row 15), `LANDING`,
+  where the door from the metro's lift arrives, lit (`sewers_landing`). A position saved there
+  before S9 is still somewhere to stand.
+- **Two or three columns** of rooms, then **the gate hall**, 17 wide and the full height, then
+  **three or four more**. Between columns is a wall cell, a brick pier on each tier it closes and a
+  doorway on each it doesn't. One column, on either side of the gate, is a **hall**: two tiers
+  high, with a walkway along its top tier through a doorway from the room west of it. The rooms on
+  each side of the gate are joined by a random tree of doorways and ladders, then an extra doorway
+  in most levels and a drop or two: a hole two cells wide in a slab, down to the room under it. A
+  ladder comes up through a hole two cells wide too, with open air on one side of its top rung, so
+  a walk along that floor ends at the ladder, as the client's walking does, rather than passing
+  over it. Holes are at least two cells apart, and ladders three, so a held key stops at the end
+  of each climb. Walking, climbing and the odd hop over a hole get anywhere on that side.
+- **The gate** is the way on, and it needs legs: a weir three rows high across the hall's floor,
+  which the spring legs jump onto (`WEIR`, 12 cells in, `WEIR_AT`), or at the top tier a walkway
+  from each side with a five-cell gap between them (`GAP`), under the vault, which stops a spring
+  jump rising, so only the sprint legs cross it. Either grade 1 gets through; the player's own legs
+  don't. A fall from the west walkway lands well short of the weir.
+- **The hatch** (`HATCH`, `sewers_hatch`) is a `jack` in the room past the gate that the most
+  doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
+  `hatch_log`, `simile.story`). Its cell is each level's own, so it's in the map, not in
+  `content/story/story.toml`.
+- **Plugs**: `sewers_plug_1`, a `Junction box` in the last column before the gate, and in half the
+  levels `sewers_plug_2` past it, each in a lit stretch three cells wide. Some rooms have a lamp
+  (`sewer_lamp`) and are lit (`sewers_lamp_<n>`). The rest is dark (`sewers_dark`).
+
+**Pickups.** Each names its item. Salvage is `sewers_salvage_<n>`, six on the way, two before the
+gate and four past it, from `SALVAGE_ITEMS`, which `simile.economy` prices. In the sewers `needs`
+counts from the way through, which every grade of legs takes:
+
+| Needs | Place | What waits there |
+|---|---|---|
+| | On the floors, the way through | Six of lead pipe, copper coil, brass fitting, pump impeller, float valve, filter mesh and old battery |
+| `jump` | A pipe two rows up against a wall, past the gate | `sewers_secret_actuator`, the `APEX_ACTUATOR` |
+| `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
+| `spring_legs` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
+| `sprint_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
+
+The premium legs need the spring or the blade legs, so the actuator waits where both reach. The
+spring and sprint pockets are never on the way to the hatch.
+
+**What every level is checked for** (`problems`, which the generator keeps trying layouts until it
+passes, and `tests/street/test_sewers.py` over the committed levels and more seeds): every grade of
+legs reaches the hatch and the plugs and the player's own legs don't; on every grade, and on their
+own legs, the player can get back to the lift from anywhere they can get to; each pickup is in
+reach of exactly the grades that meet its `needs`; and every salvage has a price.
+
+**Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
+sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,
+`sewer_walkway` a slab three cells or longer and `sewer_pipe` a shorter one or a pipe to stand on,
+`sewer_pier` a wall on a tier, and `sewer_weir` the gate's weir, down past the floor over the
+walkway's edge, which the ground strip leaves out under it. The hatch is a
+`maintenance_hatch`, the plugs `breaker_box`es, and `sewer_outfall`, `rubble`, `crates`, `bedroll`
+and `pipes` dress the rooms.
 
 ## Ids
 

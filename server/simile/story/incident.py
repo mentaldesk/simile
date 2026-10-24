@@ -18,7 +18,7 @@ from simile.schema import (
     Npc,
 )
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
-from simile.story.content import DOOR, NOTES, TERMINAL, Place, StoryContent, load_story
+from simile.story.content import DOOR, HATCH, NOTES, TERMINAL, Place, StoryContent, load_story
 from simile.story.looks import a, figure, top
 from simile.story.suspects import Suspect, attackers, hostility
 from simile.story.writing import Backstory, initial, write
@@ -32,6 +32,7 @@ SEEN = "seen"
 MEETING = "meeting"
 ATTACK = "attack"
 LIFT_LOG = "lift_log"
+HATCH_LOG = "hatch_log"
 TOPIC = "aris"
 
 
@@ -348,6 +349,7 @@ def build(
     )
 
     making.add(lift_log(gone), {})
+    making.add(hatch_log(gone), {})
 
     everyone = [npc.id for npc in npcs]
     relieved = {
@@ -404,15 +406,42 @@ def lift_log(gone: datetime) -> Fact:
         about=[ARIS],
         known_by=[],
         found_in=TERMINAL,
+        leads=[
+            Lead(
+                fact_id=HATCH_LOG,
+                text="The lift went down to the sewers. Take it down and find where she went.",
+            )
+        ],
+    )
+
+
+def hatch_log(gone: datetime) -> Fact:
+    """The fact in the sewers' maintenance hatch, an hour after the lift went down."""
+    return Fact(
+        id=HATCH_LOG,
+        what="A maintenance hatch deep in the sewers is stamped with Apex's mark, and its lock "
+        "carries Aris's maker's mark: she wired a key of her own into it. Its log shows that key "
+        "opening it the night before her workshop was found standing open, onto a shaft that "
+        "climbs towards the Apex towers.",
+        when=gone - timedelta(hours=19),
+        where="sewers",
+        about=[ARIS],
+        known_by=[],
+        found_in=HATCH,
     )
 
 
 def logged(incident: Incident) -> bool:
-    """Adds the lift log to an incident made before S8. Whether it was missing."""
+    """Brings an incident made before S8 or S9 up to date with both logs. Whether it changed."""
     facts = {fact.id: fact for fact in incident.facts}
-    if LIFT_LOG in facts or GONE not in facts:
+    if GONE not in facts:
         return False
-    incident.facts = [*incident.facts, lift_log(facts[GONE].when)]
+    gone = facts[GONE].when
+    wanted = [lift_log(gone), hatch_log(gone)]
+    if all(facts.get(fact.id) == fact for fact in wanted):
+        return False
+    kept = [fact for fact in incident.facts if fact.id not in (LIFT_LOG, HATCH_LOG)]
+    incident.facts = [*kept, *wanted]
     return True
 
 

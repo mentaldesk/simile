@@ -157,7 +157,9 @@ running, checking it lands on the far roof, and the metro's jumps up to its secr
 clock house's roof into the lane, walks down into the metro, through it into the clinic and back up
 to Banyan Row, walks into the metro's dark west tunnel, lights the lamp with L and walks on to the
 plug, checking the darkness and the gauge's hints, checks a run jump at the metro's high ledge falls short, lands
-on the high ledge's secret on the hydraulic legs and crosses the gantry's gap to its secret on the sprint legs, opens
+on the high ledge's secret on the hydraulic legs and crosses the gantry's gap to its secret on the sprint legs, at the gate in
+level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto it
+on the hydraulic legs and crosses the high gap on the sprint legs, opens
 the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 

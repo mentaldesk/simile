@@ -137,12 +137,12 @@
    "foreground": "layers/front-plants"
   },
   "sewers": {
-   "sky": "layers/metro-vault",
-   "far": "layers/far-metro",
-   "mid": "layers/mid-metro",
-   "near": "layers/near-metro",
-   "ground": "layers/ground-metro",
-   "foreground": "layers/front-metro"
+   "sky": "layers/sewer-vault",
+   "far": "layers/far-sewer",
+   "mid": "layers/mid-sewer",
+   "near": "layers/near-sewer",
+   "ground": "layers/ground-sewer",
+   "foreground": "layers/front-sewer"
   }
  },
  "grounds": {
@@ -505,6 +505,33 @@
    "piece": "furniture/pipes",
    "stretch": true
   },
+  "sewer_walkway": {
+   "piece": "platforms/sewer_walkway",
+   "stretch": true
+  },
+  "sewer_pipe": {
+   "piece": "platforms/sewer_pipe",
+   "stretch": true
+  },
+  "sewer_pier": {
+   "piece": "platforms/sewer_pier"
+  },
+  "sewer_vault": {
+   "piece": "platforms/sewer_vault",
+   "stretch": true
+  },
+  "sewer_weir": {
+   "piece": "platforms/sewer_weir"
+  },
+  "maintenance_hatch": {
+   "piece": "furniture/maintenance_hatch"
+  },
+  "sewer_outfall": {
+   "piece": "furniture/sewer_outfall"
+  },
+  "sewer_lamp": {
+   "piece": "furniture/sewer_lamp"
+  },
   "tunnel_arch": {
    "piece": "furniture/tunnel_arch"
   },
@@ -553,6 +580,11 @@
   "rope_bridge": "platforms/rope_bridge",
   "lift": "platforms/lift",
   "catwalk": "platforms/catwalk",
+  "sewer_walkway": "platforms/sewer_walkway",
+  "sewer_pipe": "platforms/sewer_pipe",
+  "sewer_pier": "platforms/sewer_pier",
+  "sewer_vault": "platforms/sewer_vault",
+  "sewer_weir": "platforms/sewer_weir",
   "stairs": "platforms/stairs",
   "ladder": "platforms/ladder",
   "steps": "platforms/steps",
@@ -1379,6 +1411,20 @@
    ],
    "hash": "a8e0d2517000a482fb0b"
   },
+  "furniture/maintenance_hatch": {
+   "file": "furniture/maintenance_hatch.webp",
+   "size": [
+    316,
+    240
+   ],
+   "height": 2.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "0f002faf5ac4bd1b187a"
+  },
   "furniture/menu_board": {
    "file": "furniture/menu_board.webp",
    "size": [
@@ -1602,6 +1648,34 @@
     1.0
    ],
    "hash": "7a04ad93737175fdb250"
+  },
+  "furniture/sewer_lamp": {
+   "file": "furniture/sewer_lamp.webp",
+   "size": [
+    44,
+    72
+   ],
+   "height": 0.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "c0b5f2a5327424e4d858"
+  },
+  "furniture/sewer_outfall": {
+   "file": "furniture/sewer_outfall.webp",
+   "size": [
+    223,
+    192
+   ],
+   "height": 1.6,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "37560c8756969c3201c5"
   },
   "furniture/sewing_machine": {
    "file": "furniture/sewing_machine.webp",
@@ -2253,6 +2327,16 @@
    "kind": "layer",
    "hash": "ebd2607209dcac26ba4f"
   },
+  "layers/far-sewer": {
+   "file": "layers/far-sewer.webp",
+   "size": [
+    1500,
+    265
+   ],
+   "height": 5.0,
+   "kind": "layer",
+   "hash": "3ce5133a514b39c6f5b7"
+  },
   "layers/front-metro": {
    "file": "layers/front-metro.webp",
    "size": [
@@ -2282,6 +2366,16 @@
    "height": 2.0,
    "kind": "strip",
    "hash": "0fa02b1bf85dbc5a276b"
+  },
+  "layers/front-sewer": {
+   "file": "layers/front-sewer.webp",
+   "size": [
+    1500,
+    198
+   ],
+   "height": 2.0,
+   "kind": "strip",
+   "hash": "2b50c6d6cf96d4b10743"
   },
   "layers/ground-metro": {
    "file": "layers/ground-metro.webp",
@@ -2322,6 +2416,16 @@
    "height": 2.6,
    "kind": "ground",
    "hash": "cb43afbb8b43e68cb267"
+  },
+  "layers/ground-sewer": {
+   "file": "layers/ground-sewer.webp",
+   "size": [
+    1268,
+    202
+   ],
+   "height": 2.6,
+   "kind": "ground",
+   "hash": "785bd7a6b234da243583"
   },
   "layers/ground-street": {
    "file": "layers/ground-street.webp",
@@ -2383,6 +2487,16 @@
    "kind": "strip",
    "hash": "6c4d6b24c49af1c84ece"
   },
+  "layers/mid-sewer": {
+   "file": "layers/mid-sewer.webp",
+   "size": [
+    1056,
+    374
+   ],
+   "height": 9.0,
+   "kind": "strip",
+   "hash": "b72c9dfaea73a9fe6f81"
+  },
   "layers/mid-shophouses": {
    "file": "layers/mid-shophouses.webp",
    "size": [
@@ -2423,6 +2537,16 @@
    "kind": "ground",
    "hash": "b19f36fab01212e05ba4"
   },
+  "layers/near-sewer": {
+   "file": "layers/near-sewer.webp",
+   "size": [
+    1200,
+    503
+   ],
+   "height": 4.6,
+   "kind": "ground",
+   "hash": "604273c7b7bea94a10bf"
+  },
   "layers/near-walls": {
    "file": "layers/near-walls.webp",
    "size": [
@@ -2432,6 +2556,16 @@
    "height": 2.2,
    "kind": "strip",
    "hash": "8514d80c86fe1146417d"
+  },
+  "layers/sewer-vault": {
+   "file": "layers/sewer-vault.webp",
+   "size": [
+    1500,
+    720
+   ],
+   "height": 12.0,
+   "kind": "paper",
+   "hash": "296802f5fbe512eeb530"
   },
   "layers/sky": {
    "file": "layers/sky.webp",
@@ -2700,6 +2834,76 @@
     1.0
    ],
    "hash": "0971e1fa9d7c824b2015"
+  },
+  "platforms/sewer_pier": {
+   "file": "platforms/sewer_pier.webp",
+   "size": [
+    155,
+    535
+   ],
+   "height": 4.46,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "60330b2a0402cffd2714"
+  },
+  "platforms/sewer_pipe": {
+   "file": "platforms/sewer_pipe.webp",
+   "size": [
+    386,
+    139
+   ],
+   "height": 1.16,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "7eb220dfc38beb721499"
+  },
+  "platforms/sewer_vault": {
+   "file": "platforms/sewer_vault.webp",
+   "size": [
+    401,
+    276
+   ],
+   "height": 2.3,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "7cd4146065b18157cb07"
+  },
+  "platforms/sewer_walkway": {
+   "file": "platforms/sewer_walkway.webp",
+   "size": [
+    396,
+    259
+   ],
+   "height": 2.16,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "f039456d5324f676bbb8"
+  },
+  "platforms/sewer_weir": {
+   "file": "platforms/sewer_weir.webp",
+   "size": [
+    278,
+    667
+   ],
+   "height": 5.56,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "f80bab77e3dc517b4701"
   },
   "platforms/stairs": {
    "file": "platforms/stairs.webp",

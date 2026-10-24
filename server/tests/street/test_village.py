@@ -14,6 +14,7 @@ from simile.schema import DoorKind, Facing, InteractableKind, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.street.metro import GANTRY, HIGH_LEDGE, METRO
 from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER, LIGHT_LAYER, PICKUPS_LAYER
+from simile.street.sewers import SEWERS
 from simile.street.village import (
     FLOOR_ROW,
     GROUND,
@@ -157,6 +158,7 @@ def test_every_cell_of_every_map_but_the_locked_ones_is_reachable_from_every_str
     every_cell = {
         Spot(town.id, x, y)
         for town in MAPS.values()
+        if town.id != SEWERS
         for y in range(town.height)
         for x in range(town.width)
         if town.walkable(x, y)
@@ -166,7 +168,8 @@ def test_every_cell_of_every_map_but_the_locked_ones_is_reachable_from_every_str
         start = next(
             Spot(street.id, x, GROUND) for x in range(street.width) if street.standing(x, GROUND)
         )
-        assert reachable(start, jumps=True) == every_cell, street.id
+        found = {cell for cell in reachable(start, jumps=True) if cell.map != SEWERS}
+        assert found == every_cell, street.id
         walked = reachable(start)
         assert every_cell - jumped <= walked, street.id
         assert jumped - walked, f"{street.id}: nothing on the rooftops needs a jump"
@@ -180,6 +183,7 @@ def test_every_stair_and_ladder_end_is_reachable_from_its_floor() -> None:
     ends += [
         (f"{town.id}'s {town.climb(x, y)}", town.id, (x, y))
         for town in STREETS
+        if town.id != SEWERS
         for y in range(town.height)
         for x in range(town.width)
         if town.climb(x, y) is not None
@@ -406,6 +410,7 @@ def test_streets_have_a_flight_of_stairs_and_a_ladder() -> None:
         ("rooftops", DoorKind.LADDER),
         ("metro", DoorKind.STAIRS),
         ("metro", DoorKind.LADDER),
+        ("sewers", DoorKind.LADDER),
     }
 
 
@@ -413,6 +418,7 @@ def test_the_cafe_the_noodle_bar_and_home_have_a_plug_downstairs() -> None:
     plugs = {
         item.id: item
         for town in MAPS.values()
+        if town.id != SEWERS
         for item in town.interactables
         if item.kind is InteractableKind.PLUG
     }
