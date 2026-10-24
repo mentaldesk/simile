@@ -67,6 +67,16 @@ so check they can pay first.
 | Brass valve | 7 |
 | Signal relay | 6 |
 | Servo motor | 18 |
+| **The sewers** (S9) | |
+| Lead pipe | 7 |
+| Copper coil | 7 |
+| Brass fitting | 6 |
+| Pump impeller | 10 |
+| Float valve | 8 |
+| Filter mesh | 5 |
+| Old battery | 5 |
+| Pressure gauge | 8 |
+| Apex control board | 14 |
 
 The prices are facts of the sim: whoever buys only voices them.
 

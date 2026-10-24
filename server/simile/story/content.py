@@ -78,6 +78,8 @@ DOOR = "door_frame"
 """The clue the attackers left behind."""
 TERMINAL = "metro_terminal"
 """The metro's dead terminal, a clue only the datajack reads."""
+HATCH = "sewers_hatch"
+"""The sewers' maintenance hatch, in every level: a clue only the datajack reads."""
 
 
 @cache

@@ -27,6 +27,7 @@ HATCH = "sewers_hatch"
 FLOORS = (GROUND, GROUND - 5, GROUND - 10)
 """Each tier's standing row, bottom up, with four rows of room over it."""
 CEILING = FLOORS[-1] - 4
+"""The vault's lowest row: it's solid from the top of the map down to it."""
 GATE = 17
 """The gate hall's width: the way on from the lift, over its weir or across its gap."""
 GAP = 5
@@ -258,7 +259,7 @@ def place_holes(level: Level) -> None:
 
 def carve(level: Level, plan: Plan) -> None:
     """The ceiling, each tier's slabs, the walls between the columns, the gate, and the holes."""
-    plan.fill(0, CEILING, level.width, 1)
+    plan.fill(0, 0, level.width, CEILING + 1)
     for i, column in enumerate(level.columns):
         x, width = column.x, column.width
         if column.kind == ROOMS:
@@ -433,7 +434,7 @@ def dress(level: Level, plan: Plan, cells: Stocker, rooms: list[Node], hatch: No
 def cover(level: Level, plan: Plan) -> None:
     """A piece over everything solid above the floor: the vault, the walkways, the piers between
     the columns, and the gate's weir."""
-    plan.piece("sewer_vault", 0, CEILING - 1, level.width, 2)
+    plan.piece("sewer_vault", 0, 0, level.width, CEILING + 1)
     for row in (slab(1), slab(2)):
         x = 0
         while x < level.width:

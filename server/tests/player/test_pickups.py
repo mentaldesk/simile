@@ -202,16 +202,17 @@ def test_every_salvage_pickup_on_the_maps_has_something_set_to_lie_there() -> No
         pickup.id
         for town in MAPS.values()
         for pickup in town.pickups
-        if pickup.kind is PickupKind.SALVAGE
+        if pickup.kind is PickupKind.SALVAGE and pickup.item is None
     }
 
     assert on_maps == set(SALVAGE)
 
 
 def test_the_metros_salvage_and_secrets_lie_where_s3_put_them() -> None:
-    lying = {(pile.at.x, pile.at.y): pile for pile in Tunnels(maps=MAPS).pickups.piles()}
+    piles = Tunnels(maps=MAPS).pickups.piles()
+    lying = {(pile.at.x, pile.at.y): pile for pile in piles if pile.at.map == "metro"}
 
-    assert {pile.at.map for pile in lying.values()} == {"metro"}
+    assert {pile.at.map for pile in piles} == {"metro", "sewers"}
     assert sorted(lying) == [
         (8, 7),
         (38, 12),
@@ -246,7 +247,7 @@ def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_ca
     assert tunnels.player.items == [lamp(), WIRE]
     assert tunnels.player.money == 40
     assert tunnels.player.taken == {"metro_salvage_1": NOW, "metro_secret_catwalk": NOW}
-    assert len(tunnels.pickups.piles()) == 9
+    assert len([pile for pile in tunnels.pickups.piles() if pile.at.map == "metro"]) == 9
     assert tunnels.balanced()
 
 

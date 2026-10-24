@@ -25,7 +25,7 @@ FLOOR_ROW = STOREY - 2
 """A floor's standing row."""
 STOOL_M = 0.25
 """How much higher a stool's seat is than a chair's."""
-JUMPING = frozenset({"rooftops", "metro"})
+JUMPING = frozenset({"rooftops", "metro", "sewers"})
 """Streets only the player gets all over, by jumping. No resident goes there."""
 UNDERGROUND = frozenset({"metro", "sewers"})
 """Streets under the village."""
