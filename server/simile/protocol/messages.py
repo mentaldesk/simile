@@ -375,13 +375,6 @@ class PlayerStateMessage(Model):
         description="Each recipe in `player.mind`, in full and in the same order. Left out while "
         "they know none.",
     )
-
-    @model_validator(mode="after")
-    def _the_recipes_they_know(self) -> Self:
-        if [recipe.bionic for recipe in self.recipes] != self.player.mind.recipes:
-            raise ValueError("player_state has each recipe they know, in order")
-        return self
-
     meal: Meal | None = Field(
         default=None,
         exclude_if=lambda meal: meal is None,
@@ -400,6 +393,12 @@ class PlayerStateMessage(Model):
         description="What's lying in the world for them to pick up, on every map, besides what "
         "they left (`player.left`): salvage and secrets. Left out while there's none.",
     )
+
+    @model_validator(mode="after")
+    def _the_recipes_they_know(self) -> Self:
+        if [recipe.bionic for recipe in self.recipes] != self.player.mind.recipes:
+            raise ValueError("player_state has each recipe they know, in order")
+        return self
 
 
 class PlayerCollapsedMessage(Model):
