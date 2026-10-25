@@ -51,35 +51,39 @@ GitHub "blocked by" links.
 
 ### Contracts first, each its own small PR
 
+They share files, so they go one at a time.
+
 | ID | Task | Done when |
 |---|---|---|
-| P1 | **Body, bionics and the mind:** `stomach` and `feet` body slots; the power cell, legs and feet lines and the eye as bionics, with stage 1's leg grades mapped onto them; a `Recipe` (parts with counts, credits, what it replaces, what it needs fitted first); known and sold recipes on the player. A protocol message for the mind. | Schema, protocol and generated types merged. Stage 1 saves load, their legs mapped. |
-| P2 | **Vitals:** health, power (in place of hunger once the cell is fitted), and effects (a kind, a strength and how fast it fades). In `player_state`. | Schema and protocol merged. Old saves load at full health with no effects. |
+| P1 | **Body, bionics and the mind:** `stomach` and `feet` body slots; the power cell, the legs and feet lines and their grades as bionics, beside stage 1's leg grades for now; a `Recipe` (parts with counts, credits, what it replaces, what must be fitted first); known and sold recipes on the player. A protocol message for the mind. | Schema, protocol and generated types merged. Stage 1 saves load. |
+| P2 | **Vitals:** health, power (in place of hunger once the cell is fitted), and effects (a kind, a strength, and either how fast it fades or that it lasts until treated). In `player_state`. | Schema and protocol merged. Old saves load at full health with no effects. |
 | P3 | **Creatures and searchable things:** a creature's kind, position, facing and state, in the snapshot and in a delta message; a searchable interactable holding items, and whether it's been searched. | Schema and protocol merged, with fixtures. |
 
 ### Then, in parallel where their paths allow
 
 | ID | Track | Task | Depends on |
 |---|---|---|---|
-| P4 | Economy | **Recipes at the clinic:** the doctor fits only known recipes, for their credits and parts, and only once the power cell is in (the cell itself excepted). She buys each recipe once. Her prompt follows what you know, so she can tease what she could do without listing it. | P1 |
+| P4 | Economy | **Recipes at the clinic:** every bionic's recipe (the cell, the datajack, the legs and feet lines, the eye); the doctor fits only known recipes, for their credits and parts, and only once the power cell is in (the cell itself excepted). She buys each recipe once. Her prompt follows what you know, so she can tease what she could do without listing it. | P1 |
 | P5 | Economy | **Trading parts:** the trader buys parts at the economy's prices and sells back what it bought at 2×. | P1 |
-| P6 | World | **Recipes and parts in the world:** the doctor's power cell recipe; Aris's datajack schematic on her bench; the maker space's furniture and the metro's dead appliances to search, holding the datajack's parts and the cell's; the legs' recipe and parts in sewers zone 0, the feet's in zone 1, the eye's recipe at a sewers security terminal (a jack). Generated sewers checked to hold each where it's reachable with what you'd have. | P1, P3 |
-| P7 | Behaviour | **Power:** hunger becomes power once the cell is fitted; drain grows with each bionic; charging at plugs; a cell's limit on bionics; the lamp and the player charging in about 3 seconds. Meals stop being on offer to a cell. | P1, P2 |
-| P8 | World, client | **Legs and feet:** speed and kick from the legs, jump height from the feet, each by grade; the sewers' gate passable with the legs; the metro's high ledge reached with the feet. | P1 |
-| P9 | Behaviour, client | **Health and kicking:** taking damage, healing, the clinic patching you up, collapsing at none; a kick, harder with the legs; a rat bite that can turn infected and lasts until it's treated; effects that fade, slower with one kidney, and effects that need a cure. | P2 |
+| P6 | World | **Recipes and parts in the world:** learning a recipe from a find; the doctor's power cell recipe; Aris's datajack schematic on her bench; the maker space's furniture and the metro's dead appliances to search, holding the datajack's parts and the cell's; the legs' recipe and parts in sewers zone 0, the feet's in zone 1, the eye's recipe at a sewers security terminal (a jack). Generated sewers checked to hold each where it's reachable with what you'd have. | P3, P4, P8 |
+| P7 | Behaviour | **Power:** hunger becomes power once the cell is fitted; drain grows with each bionic; charging at plugs; a cell's limit on bionics; the lamp and the player charging in about 3 seconds. Meals stop being on offer to a cell. | P2 |
+| P8 | World, client | **Legs and feet:** speed and kick strength from the legs, jump height from the feet, each by grade; the sewers' gate passable with the legs; the metro's high ledge reached with the feet. | P1 |
+| P9 | Behaviour, client | **Health, kicking and ailments:** taking damage, healing, the clinic patching you up, collapsing at none; a kick, harder with the legs; a rat bite that can turn infected and lasts until it's treated; effects that fade, slower with one kidney. | P2, P4 |
 | P10 | Sim, client | **Creatures:** the engine every creature uses, ticked on the loop: moving by tiles and ladders as their kind allows, the ways of moving above, hurting on contact, taking kicks. The client draws them from P3's messages. | P3, P9 |
-| P11 | Art | **Creature figures:** rats, recycler bots, wild dogs, bats and snakes, painted in the tunnels' cartoon, with a walk or fly cycle and an attack. | — |
-| P12 | World | **Rats and recycler bots:** in sewers zone 0, rats drawn to carried food, and bots that collect salvage and try to recycle a fitted player; a few bots on the metro's floor too, ignoring a wholly human one. | P10, P11 |
-| P13 | World | **The dogs' den:** one place in the sewers, worth going through, with a few wild dogs: faster than the player on any legs stage 2 has, strong enough that going through without the legs is almost certain death, and unable to climb ladders or pass doors. | P10, P11 |
-| P14 | World, client | **Bats and the dark:** bats in sewers zone 0 that attack while the lamp is on, and caves deeper in too thick with them to cross by lamplight; the infrared eye showing the dark without it. | P10, P11 |
-| P15 | Client | **The character screen:** vitals (power or hunger, health, the lamp, credits, effects), the body (each part present, sold or bionic) and what you carry against the limit, with the mind's recipes and what you have of each. | P1, P2 |
-| P16 | Story | **The eye's part from a villager:** a resident who has it, chosen by values, and gives it once they trust you enough. | P1 |
+| P11 | Art | **Creature figures:** rats, recycler bots, wild dogs and bats, painted in the tunnels' cartoon, with a walk or fly cycle and an attack. | — |
+| P12 | Art | **The player's new parts:** the player's figure with the legs and feet lines in place of stage 1's legs, painted as S10 did. | P1 |
+| P13 | World | **Rats and recycler bots:** in sewers zone 0, rats drawn to carried food, and bots that collect salvage and try to recycle a fitted player; a few bots on the metro's floor too, ignoring a wholly human one. | P10, P11 |
+| P14 | World | **The dogs' den:** one place in the sewers, worth going through, with a few wild dogs: faster than the player on any legs stage 2 has, strong enough that going through without the legs is almost certain death, and unable to climb ladders or pass doors. | P8, P10, P11 |
+| P15 | World, client | **Bats and the dark:** bats in sewers zone 0 that attack while the lamp is on, and caves deeper in too thick with them to cross by lamplight; the infrared eye showing the dark without it. | P10, P11 |
+| P16 | Client | **The character screen:** vitals (power or hunger, health, the lamp, credits, effects), the body (each part present, sold or bionic) and what you carry against the limit, with the mind's recipes and what you have of each. | P1, P2 |
+| P17 | Story | **The eye's part from a villager:** a resident who has it, chosen by values, and gives it once they trust you enough. | P1 |
 
 ### Last
 
 | ID | Task | Done when |
 |---|---|---|
-| P17 | **The loop, end to end:** S15's playthrough in the new order. Sell the kidney, learn and fit the cell, find the schematic and the datajack's parts, fit it, take the lift, slip past a dog, fit the legs, cross the gate, find the feet, reach the metro's high ledge, kick some rats. | It passes in CI on the fake LLM. The user plays it. |
+| P18 | **Retire stage 1's leg grades:** remove them from the schema, mapping old saves onto the legs and feet lines. A contract change in its own PR. | Nothing refers to the old grades, and stage 1 saves load. |
+| P19 | **The loop, end to end:** S15's playthrough in the new order. Sell the kidney, learn and fit the cell, find the schematic and the datajack's parts, fit it, take the lift, kick some rats, cross zone 0 with the lamp off past the bats, fit the legs, cross the gate, find the feet, and reach the metro's high ledge. | It passes in CI on the fake LLM. The user plays it. |
 
 ## Later
 
