@@ -136,11 +136,12 @@ the bionic or tool that answers it is further on.
 
 - **Rats** are the weakest. You can kick them, and bionic legs kick harder. A handful at once
   costs some health, no more.
-- **Recycler bots** are broken maintenance robots on the metro's floor. They collect the same
-  salvage you do, and ignore you while you're wholly human. Once you're fitted, they try to recycle
-  you. Later you can destroy one and take everything it collected.
+- **Recycler bots** are broken maintenance robots, in the sewers and on the metro's floor. They
+  collect the same salvage you do, and ignore you while you're wholly human. Once you're fitted,
+  they try to recycle you. Later you can destroy one and take everything it collected.
 - **Wild dogs** are few and frightening. They're faster than you, even on your first bionic legs,
-  and the only way out is up a ladder or through a door. Matching their speed takes a long time.
+  and the only way out is up a ladder or through a door. Without the legs or a weapon, their den
+  is almost certain death. Matching their speed takes a long time.
 - **Bats** roost in the dark and attack only while your lamp is on. Some caves are too thick with
   them to cross by lamplight, until the infrared eye lets you see without it. Sonar might drive
   them off, later.
@@ -149,6 +150,8 @@ the bionic or tool that answers it is further on.
   dark and shrink from light, so the lamp is a tool that costs battery.
 - **Radioactive waste** leaks from medical isotope drums. Being near them builds a dose, an
   ailment that fades slowly. With one kidney it fades more slowly still.
+
+Some ailments fade on their own and some, like an infected bite, last until they're treated.
 
 Later the maker space prints and builds weapons: a plastic pistol that lasts a few shots, charges
 that open walls, and maybe a sonar for the bats.

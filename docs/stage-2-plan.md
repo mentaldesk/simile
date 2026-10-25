@@ -32,7 +32,8 @@ GitHub "blocked by" links.
 | **Legs and feet** | Two parts, two lines of upgrades: the legs for speed (and kick), the feet for jump height. The body gets a `feet` slot. Stage 1's five grades of legs fold into the two lines, and the Apex actuator goes to the top grade of the legs. |
 | **The sewers' gate** | Passable with the bionic legs, over its gap. The weir's height waits for the feet, from zone 1. |
 | **Health** | A new vital. Dangers take it, it comes back slowly, faster at home, and the clinic patches you up for money. At none you collapse and wake at home, as when you starve. |
-| **Effects** | Ailments with a cause and a rate of fading. Stage 2's is an infected rat bite; the radiation dose comes with the deeper sewers. One kidney makes either fade more slowly. |
+| **Effects** | Ailments with a cause. Some fade on their own, and some last until they're treated, at the clinic or with medicine. Stage 2's is an infected rat bite, which needs treating; the radiation dose comes with the deeper sewers. One kidney makes a dose fade more slowly. |
+| **Where the dangers are** | Sewers zone 0 is the learner area, with rats, bats and recycler bots. A few bots also work the metro's floor, ignoring you until your first bionic. The dogs are in one den: going through it without the legs or a weapon is almost certain death. |
 | **Kicking** | The only attack until the maker space makes weapons. It hurts rats and little else. |
 | **The lamp** | A plug charges it from flat to full in about 3 real seconds. Waiting isn't the game; getting to a plug is. The player's own power charges as fast. |
 
@@ -65,12 +66,12 @@ GitHub "blocked by" links.
 | P6 | World | **Recipes and parts in the world:** the doctor's power cell recipe; Aris's datajack schematic on her bench; the maker space's furniture and the metro's dead appliances to search, holding the datajack's parts and the cell's; the legs' recipe and parts in sewers zone 0, the feet's in zone 1, the eye's recipe at a sewers security terminal (a jack). Generated sewers checked to hold each where it's reachable with what you'd have. | P1, P3 |
 | P7 | Behaviour | **Power:** hunger becomes power once the cell is fitted; drain grows with each bionic; charging at plugs; a cell's limit on bionics; the lamp and the player charging in about 3 seconds. Meals stop being on offer to a cell. | P1, P2 |
 | P8 | World, client | **Legs and feet:** speed and kick from the legs, jump height from the feet, each by grade; the sewers' gate passable with the legs; the metro's high ledge reached with the feet. | P1 |
-| P9 | Behaviour, client | **Health and kicking:** taking damage, healing, the clinic patching you up, collapsing at none; a kick, harder with the legs; a rat bite that can turn infected; effects fading, slower with one kidney. | P2 |
+| P9 | Behaviour, client | **Health and kicking:** taking damage, healing, the clinic patching you up, collapsing at none; a kick, harder with the legs; a rat bite that can turn infected and lasts until it's treated; effects that fade, slower with one kidney, and effects that need a cure. | P2 |
 | P10 | Sim, client | **Creatures:** the engine every creature uses, ticked on the loop: moving by tiles and ladders as their kind allows, the ways of moving above, hurting on contact, taking kicks. The client draws them from P3's messages. | P3, P9 |
 | P11 | Art | **Creature figures:** rats, recycler bots, wild dogs, bats and snakes, painted in the tunnels' cartoon, with a walk or fly cycle and an attack. | — |
-| P12 | World | **The metro's rats and recycler bots:** rats drawn to carried food; bots that collect the metro's salvage and ignore a wholly human player. | P10, P11 |
-| P13 | World | **Wild dogs:** few, in sewers zone 0, faster than the player on any legs stage 2 has, unable to climb ladders or pass doors. | P10, P11 |
-| P14 | World, client | **Bats and the dark:** bat caves in the sewers that attack while the lamp is on; the infrared eye showing the dark without it. | P10, P11 |
+| P12 | World | **Rats and recycler bots:** in sewers zone 0, rats drawn to carried food, and bots that collect salvage and try to recycle a fitted player; a few bots on the metro's floor too, ignoring a wholly human one. | P10, P11 |
+| P13 | World | **The dogs' den:** one place in the sewers, worth going through, with a few wild dogs: faster than the player on any legs stage 2 has, strong enough that going through without the legs is almost certain death, and unable to climb ladders or pass doors. | P10, P11 |
+| P14 | World, client | **Bats and the dark:** bats in sewers zone 0 that attack while the lamp is on, and caves deeper in too thick with them to cross by lamplight; the infrared eye showing the dark without it. | P10, P11 |
 | P15 | Client | **The character screen:** vitals (power or hunger, health, the lamp, credits, effects), the body (each part present, sold or bionic) and what you carry against the limit, with the mind's recipes and what you have of each. | P1, P2 |
 | P16 | Story | **The eye's part from a villager:** a resident who has it, chosen by values, and gives it once they trust you enough. | P1 |
 
