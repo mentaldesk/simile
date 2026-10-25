@@ -21,7 +21,7 @@
       "type": "object"
     },
     "Bionic": {
-      "description": "A part fitted in place of the player's own: a grade of legs, the datajack or the eye.",
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack, the eye, or one of stage 1's grades of legs.",
       "enum": [
         "hydraulic_legs",
         "datajack",
@@ -29,7 +29,15 @@
         "spring_legs",
         "sprint_legs",
         "blade_legs",
-        "premium_legs"
+        "premium_legs",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
       ],
       "title": "Bionic",
       "type": "string"
@@ -61,6 +69,16 @@
         "right_kidney": {
           "$ref": "#/$defs/PartState",
           "default": "present"
+        },
+        "stomach": {
+          "$ref": "#/$defs/PartState",
+          "default": "present",
+          "description": "Left out while it's still theirs, as in a save from before it could go."
+        },
+        "feet": {
+          "$ref": "#/$defs/PartState",
+          "default": "present",
+          "description": "Left out while they're still theirs, as in a save from before they could go."
         }
       },
       "required": [
@@ -81,7 +99,9 @@
         "left_eye",
         "right_eye",
         "left_kidney",
-        "right_kidney"
+        "right_kidney",
+        "stomach",
+        "feet"
       ],
       "type": "string"
     },
@@ -130,6 +150,18 @@
             "$ref": "#/$defs/Fitting"
           },
           "type": "array"
+        },
+        "recipes": {
+          "additionalProperties": {
+            "minimum": 0,
+            "type": "number"
+          },
+          "default": {},
+          "description": "What it pays, once, for each recipe they know that it would buy now, by `sell_recipe`, by the bionic it builds. Left out while it would buy none.",
+          "propertyNames": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "type": "object"
         }
       },
       "required": [
@@ -155,6 +187,7 @@
           "read_work": "#/$defs/ReadWorkMessage",
           "sell": "#/$defs/SellMessage",
           "sell_part": "#/$defs/SellPartMessage",
+          "sell_recipe": "#/$defs/SellRecipeMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -198,6 +231,9 @@
         },
         {
           "$ref": "#/$defs/FitMessage"
+        },
+        {
+          "$ref": "#/$defs/SellRecipeMessage"
         }
       ]
     },
@@ -893,6 +929,33 @@
       "title": "Meal",
       "type": "object"
     },
+    "Mind": {
+      "additionalProperties": false,
+      "description": "What the player knows, which they keep when they collapse, and later when they die. Left\nout of `Player` while they know no recipe.",
+      "properties": {
+        "recipes": {
+          "default": [],
+          "description": "The recipes they know, by the bionic each builds, in the order they learned them.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "type": "array"
+        },
+        "sold": {
+          "default": [],
+          "description": "The recipes they've sold to the clinic, in the order they sold them. They still know each, and can't sell it again. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "recipes"
+      ],
+      "title": "Mind",
+      "type": "object"
+    },
     "Mural": {
       "additionalProperties": false,
       "properties": {
@@ -1200,7 +1263,7 @@
     },
     "Player": {
       "additionalProperties": false,
-      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money and a charged lamp. Their\nhumanity is derived from the bionics fitted and isn't a field, so the client never sees it.",
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp and nothing\nknown. Their humanity is derived from the bionics fitted and isn't a field, so the client never\nsees it.",
       "properties": {
         "money": {
           "default": 0.0,
@@ -1223,6 +1286,9 @@
         },
         "body": {
           "$ref": "#/$defs/Body"
+        },
+        "mind": {
+          "$ref": "#/$defs/Mind"
         },
         "hunger": {
           "default": 0.0,
@@ -1331,7 +1397,7 @@
     },
     "PlayerStateMessage": {
       "additionalProperties": false,
-      "description": "The player's money, what they carry, their body and their hunger, but never their humanity,\nwith the meal on offer and the buyer where they stand, and what's lying in the world for them\nto pick up. Sent after the snapshot on connect, and whenever any of it changes.",
+      "description": "The player's money, what they carry, their body, their hunger and what they know, but never\ntheir humanity, with the recipes they know, the meal on offer and the buyer where they stand,\nand what's lying in the world for them to pick up. Sent after the snapshot on connect, and\nwhenever any of it changes.",
       "properties": {
         "type": {
           "const": "player_state",
@@ -1340,6 +1406,14 @@
         },
         "player": {
           "$ref": "#/$defs/Player"
+        },
+        "recipes": {
+          "default": [],
+          "description": "Each recipe in `player.mind`, in full and in the same order. Left out while they know none.",
+          "items": {
+            "$ref": "#/$defs/Recipe"
+          },
+          "type": "array"
         },
         "meal": {
           "anyOf": [
@@ -1462,6 +1536,61 @@
       "title": "ReadWorkMessage",
       "type": "object"
     },
+    "Recipe": {
+      "additionalProperties": false,
+      "description": "How to build a `bionic`, which the clinic needs before it fits one. It's known by the\nbionic it builds.",
+      "properties": {
+        "bionic": {
+          "$ref": "#/$defs/Bionic"
+        },
+        "name": {
+          "description": "The bionic as the player sees it, e.g. \"Datajack\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "parts": {
+          "additionalProperties": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "description": "The items the fitting uses up, how many of each by item `id`, e.g. `{\"copper_wire\": 3, \"usb_c_connector\": 1}`.",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "type": "object"
+        },
+        "credits": {
+          "description": "What the fitting costs, from their money.",
+          "minimum": 0,
+          "type": "number"
+        },
+        "replaces": {
+          "description": "The parts of their body it can go in place of, any one of which they give up for it, or a lower grade of its line fitted there: the bionic's own, filled in from it when left out.",
+          "items": {
+            "$ref": "#/$defs/BodyPart"
+          },
+          "type": "array"
+        },
+        "after": {
+          "default": [],
+          "description": "What must be fitted first, each of them or a higher grade of its line: a power cell for everything but a cell.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "bionic",
+        "name",
+        "parts",
+        "credits",
+        "replaces",
+        "after"
+      ],
+      "title": "Recipe",
+      "type": "object"
+    },
     "SellMessage": {
       "additionalProperties": false,
       "description": "Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The\nserver ignores it if there's no buyer, or they carry nothing it buys.",
@@ -1510,6 +1639,26 @@
         "part"
       ],
       "title": "SellPartMessage",
+      "type": "object"
+    },
+    "SellRecipeMessage": {
+      "additionalProperties": false,
+      "description": "Sells a recipe they know, by the bionic it builds, to the buyer where they stand, at its\n`buyer.recipes` price. They still know it, and can't sell it again.",
+      "properties": {
+        "type": {
+          "const": "sell_recipe",
+          "default": "sell_recipe",
+          "type": "string"
+        },
+        "recipe": {
+          "$ref": "#/$defs/Bionic"
+        }
+      },
+      "required": [
+        "type",
+        "recipe"
+      ],
+      "title": "SellRecipeMessage",
       "type": "object"
     },
     "ServerMessage": {

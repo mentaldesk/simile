@@ -18,6 +18,7 @@ from simile.schema import (
     Pile,
     Player,
     Pose,
+    Recipe,
     Timestamp,
 )
 from simile.schema.news import LongSummary
@@ -345,6 +346,12 @@ class Buyer(Model):
         description="The bionics it would fit now, by `fit`, whether or not they can pay, each "
         "once. Left out while there are none.",
     )
+    recipes: dict[Bionic, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
+        default={},
+        exclude_if=lambda recipes: not recipes,
+        description="What it pays, once, for each recipe they know that it would buy now, by "
+        "`sell_recipe`, by the bionic it builds. Left out while it would buy none.",
+    )
 
     @model_validator(mode="after")
     def _each_bionic_once(self) -> Self:
@@ -355,12 +362,26 @@ class Buyer(Model):
 
 
 class PlayerStateMessage(Model):
-    """The player's money, what they carry, their body and their hunger, but never their humanity,
-    with the meal on offer and the buyer where they stand, and what's lying in the world for them
-    to pick up. Sent after the snapshot on connect, and whenever any of it changes."""
+    """The player's money, what they carry, their body, their hunger and what they know, but never
+    their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
+    and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
+    whenever any of it changes."""
 
     type: Literal["player_state"] = "player_state"
     player: Player
+    recipes: list[Recipe] = Field(
+        default=[],
+        exclude_if=lambda recipes: not recipes,
+        description="Each recipe in `player.mind`, in full and in the same order. Left out while "
+        "they know none.",
+    )
+
+    @model_validator(mode="after")
+    def _the_recipes_they_know(self) -> Self:
+        if [recipe.bionic for recipe in self.recipes] != self.player.mind.recipes:
+            raise ValueError("player_state has each recipe they know, in order")
+        return self
+
     meal: Meal | None = Field(
         default=None,
         exclude_if=lambda meal: meal is None,
@@ -495,6 +516,14 @@ class FitMessage(Model):
     part: BodyPart
 
 
+class SellRecipeMessage(Model):
+    """Sells a recipe they know, by the bionic it builds, to the buyer where they stand, at its
+    `buyer.recipes` price. They still know it, and can't sell it again."""
+
+    type: Literal["sell_recipe"] = "sell_recipe"
+    recipe: Bionic
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
@@ -526,7 +555,8 @@ type ClientMessage = Annotated[
     | SellMessage
     | LampMessage
     | SellPartMessage
-    | FitMessage,
+    | FitMessage
+    | SellRecipeMessage,
     Field(discriminator="type"),
 ]
 

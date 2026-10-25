@@ -1,0 +1,34 @@
+[
+  {
+    "bionic": "power_cell",
+    "name": "Power cell",
+    "parts": {"lithium_cell": 2, "copper_wire": 1},
+    "credits": 90.0,
+    "replaces": ["stomach"],
+    "after": []
+  },
+  {
+    "bionic": "datajack",
+    "name": "Datajack",
+    "parts": {"copper_wire": 3, "usb_c_connector": 1},
+    "credits": 100.0,
+    "replaces": ["vertebra"],
+    "after": ["power_cell"]
+  },
+  {
+    "bionic": "bionic_legs_3",
+    "name": "Apex legs",
+    "parts": {"apex_actuator": 1},
+    "credits": 600.0,
+    "replaces": ["legs"],
+    "after": ["power_cell_2"]
+  },
+  {
+    "bionic": "infrared_eye",
+    "name": "Infrared eye",
+    "parts": {"infrared_lens": 1},
+    "credits": 200.0,
+    "replaces": ["left_eye", "right_eye"],
+    "after": ["power_cell"]
+  }
+]

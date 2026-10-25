@@ -14,6 +14,8 @@ const PARTS: Record<BodyPart, string> = {
   right_eye: 'your right eye',
   left_kidney: 'a kidney',
   right_kidney: 'a kidney',
+  stomach: 'your stomach',
+  feet: 'your feet',
 };
 
 /** One thing the player can do at the clinic. */

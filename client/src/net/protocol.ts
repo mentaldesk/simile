@@ -42,7 +42,8 @@ export type Face = 'south' | 'east';
  */
 export type ItemKind = 'salvage' | 'food' | 'lamp' | 'part';
 /**
- * A part fitted in place of the player's own: a grade of legs, the datajack or the eye.
+ * A part fitted in place of the player's own: a grade of the power cell, the legs or the
+ * feet, the datajack, the eye, or one of stage 1's grades of legs.
  */
 export type Bionic =
   | 'hydraulic_legs'
@@ -51,9 +52,24 @@ export type Bionic =
   | 'spring_legs'
   | 'sprint_legs'
   | 'blade_legs'
-  | 'premium_legs';
+  | 'premium_legs'
+  | 'power_cell'
+  | 'power_cell_2'
+  | 'power_cell_3'
+  | 'bionic_legs'
+  | 'bionic_legs_2'
+  | 'bionic_legs_3'
+  | 'spring_feet'
+  | 'spring_feet_2';
 export type BodyPart =
-  'legs' | 'vertebra' | 'left_eye' | 'right_eye' | 'left_kidney' | 'right_kidney';
+  | 'legs'
+  | 'vertebra'
+  | 'left_eye'
+  | 'right_eye'
+  | 'left_kidney'
+  | 'right_kidney'
+  | 'stomach'
+  | 'feet';
 /**
  * Where the player learned something: a `resident` told them, or they found a `clue`, such
  * as Aris's notes or a terminal.
@@ -72,7 +88,8 @@ export type ClientMessage =
   | SellMessage
   | LampMessage
   | SellPartMessage
-  | FitMessage;
+  | FitMessage
+  | SellRecipeMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -385,13 +402,18 @@ export interface Painting {
   image: string;
 }
 /**
- * The player's money, what they carry, their body and their hunger, but never their humanity,
- * with the meal on offer and the buyer where they stand, and what's lying in the world for them
- * to pick up. Sent after the snapshot on connect, and whenever any of it changes.
+ * The player's money, what they carry, their body, their hunger and what they know, but never
+ * their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
+ * and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
+ * whenever any of it changes.
  */
 export interface PlayerStateMessage {
   type: 'player_state';
   player: Player;
+  /**
+   * Each recipe in `player.mind`, in full and in the same order. Left out while they know none.
+   */
+  recipes?: Recipe[];
   /**
    * The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none.
    */
@@ -407,8 +429,9 @@ export interface PlayerStateMessage {
 }
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
- * a save from before the player loads with a whole body, no money and a charged lamp. Their
- * humanity is derived from the bionics fitted and isn't a field, so the client never sees it.
+ * a save from before the player loads with a whole body, no money, a charged lamp and nothing
+ * known. Their humanity is derived from the bionics fitted and isn't a field, so the client never
+ * sees it.
  */
 export interface Player {
   /**
@@ -424,6 +447,7 @@ export interface Player {
    */
   carry_limit: number;
   body: Body;
+  mind?: Mind;
   /**
    * 0 is fed and 1 is starving: they collapse.
    */
@@ -476,6 +500,28 @@ export interface Body {
   right_eye: ('present' | 'sold') | Bionic;
   left_kidney: ('present' | 'sold') | Bionic;
   right_kidney: ('present' | 'sold') | Bionic;
+  /**
+   * Left out while it's still theirs, as in a save from before it could go.
+   */
+  stomach?: ('present' | 'sold') | Bionic;
+  /**
+   * Left out while they're still theirs, as in a save from before they could go.
+   */
+  feet?: ('present' | 'sold') | Bionic;
+}
+/**
+ * What the player knows, which they keep when they collapse, and later when they die. Left
+ * out of `Player` while they know no recipe.
+ */
+export interface Mind {
+  /**
+   * The recipes they know, by the bionic each builds, in the order they learned them.
+   */
+  recipes: Bionic[];
+  /**
+   * The recipes they've sold to the clinic, in the order they sold them. They still know each, and can't sell it again. Left out while there's none.
+   */
+  sold?: Bionic[];
 }
 /**
  * Items, money or both lying `at` a tile in the world for the player to pick up, such as
@@ -496,6 +542,35 @@ export interface MapTile {
   map: string;
   x: number;
   y: number;
+}
+/**
+ * How to build a `bionic`, which the clinic needs before it fits one. It's known by the
+ * bionic it builds.
+ */
+export interface Recipe {
+  bionic: Bionic;
+  /**
+   * The bionic as the player sees it, e.g. "Datajack".
+   */
+  name: string;
+  /**
+   * The items the fitting uses up, how many of each by item `id`, e.g. `{"copper_wire": 3, "usb_c_connector": 1}`.
+   */
+  parts: {
+    [k: string]: number;
+  };
+  /**
+   * What the fitting costs, from their money.
+   */
+  credits: number;
+  /**
+   * The parts of their body it can go in place of, any one of which they give up for it, or a lower grade of its line fitted there: the bionic's own, filled in from it when left out.
+   */
+  replaces: BodyPart[];
+  /**
+   * What must be fitted first, each of them or a higher grade of its line: a power cell for everything but a cell.
+   */
+  after: Bionic[];
 }
 /**
  * A meal the player can have where they stand, by sending `eat` without an item.
@@ -542,6 +617,12 @@ export interface Buyer {
    * The bionics it would fit now, by `fit`, whether or not they can pay, each once. Left out while there are none.
    */
   fittings?: Fitting[];
+  /**
+   * What it pays, once, for each recipe they know that it would buy now, by `sell_recipe`, by the bionic it builds. Left out while it would buy none.
+   */
+  recipes?: {
+    [k: string]: number;
+  };
 }
 /**
  * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.
@@ -733,4 +814,12 @@ export interface FitMessage {
   type: 'fit';
   bionic: Bionic;
   part: BodyPart;
+}
+/**
+ * Sells a recipe they know, by the bionic it builds, to the buyer where they stand, at its
+ * `buyer.recipes` price. They still know it, and can't sell it again.
+ */
+export interface SellRecipeMessage {
+  type: 'sell_recipe';
+  recipe: Bionic;
 }
