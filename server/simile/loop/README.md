@@ -12,8 +12,9 @@ routes at the client's running pace, with the jumps its legs allow (`simile.stre
 lights its lamp in the dark.
 
 1. **A kidney.** From the square to the clinic, where it sells a kidney for 100.
-2. **The legs and a secret.** The high ledge is out of reach on its own legs. It's fitted with the
-   hydraulic legs and picks up the ledge's 60.
+2. **The feet and a secret.** The high ledge is out of reach on its own legs. It picks up the
+   metro's secrets and salvage until it can pay for the spring feet, is fitted with them, and picks
+   up the ledge's 60.
 3. **The datajack and the lift.** It picks up the metro's secrets and salvage, nearest first,
    selling once nothing more fits, until it can pay for the datajack's credits. The server refuses it the
    sewers until it's fitted. Then the dead terminal gives up `lift_log`, and the lift takes it down.
@@ -24,15 +25,16 @@ lights its lamp in the dark.
    where they were the night Aris was attacked. Their alibi flushes, and the journal marks it.
    The attacker it asks is one who stays put for two minutes in the world served from the eye
    beat's save (`Saves.stays`), since a save keeps less of what someone's doing than the sim, and
-   the browser takes a while to get there.
+   the browser takes a while to get there, and beside whom E talks rather than searching something
+   (`LoopPlayer.talks`).
 6. **The village reacts.** It finds Aris's notes, and talks to the residents most against bionics
    until one turns it down. Residents who saw its bionics remember them.
 
-**A stand-in until P6 and P19** (`stand_in.py`): the clinic now fits the datajack and the eye only
-from a known recipe, with its parts, once a power cell is in, and nothing in the world teaches a
-recipe or holds those parts yet. So before each, the loop fits the cell, teaches the recipe and
-hands over its parts, straight into the server's player. P19 replays the loop in stage 2's order
-and deletes it.
+**A stand-in until P6 and P19** (`stand_in.py`): the clinic now fits the spring feet, the datajack
+and the eye only from a known recipe, with its parts, once a power cell is in, and nothing in the
+world teaches a recipe or holds those parts yet. So before each, the loop fits the cell, teaches the
+recipe and hands over its parts, straight into the server's player. P19 replays the loop in stage
+2's order and deletes it.
 
 Every coin comes from the kidney, salvage and secrets, through the ledger. The fake LLM is
 `Covers`, the canned one, except that a resident set up to lie about where they'd been gives their
@@ -54,7 +56,8 @@ and the player where the beat starts:
 
 | Beat | From | By the keys |
 |---|---|---|
-| `kidney` | outside the clinic, on day 0 | E into the clinic, E for its panel, sell a kidney and be fitted with the legs, ↑ out, the run jump onto the high ledge, E for its secret |
+| `kidney` | outside the clinic, on day 0 | E into the clinic, E for its panel, sell a kidney |
+| `feet` | outside the clinic, with the spring feet's price | the spring feet, ↑ out, the run jump onto the high ledge, E for its secret |
 | `datajack` | outside the clinic, with the datajack's price | the datajack, E at the dead terminal for its log in the journal, E down the lift and back up |
 | `hatch` | beside the sewers' hatch | E for its log in the journal |
 | `eye` | beside the attacker, with the eye | E and the question, the flush on their alibi, J for the journal's mark |

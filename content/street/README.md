@@ -236,7 +236,7 @@ passes through it.
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEDGE_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the legs' on any grade, and in reach of the spring feet's, four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
-| S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up, and stage 1's premium legs until P18. |
+| S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -251,10 +251,9 @@ salvage waits in two of the places only the feet reach:
 | `bionic_legs` | The gantry's nook, past a five-cell gap under a roof that stops a high jump rising | `metro_secret_gantry` (61, 8, 60 money) |
 
 A place that needs a grade is in reach of whatever rises at least as high and runs at least as
-fast: the second grade of feet reaches the first's places, every grade of legs the first's, and
-stage 1's grades of legs the places of the grade of the line they jump as. With Space held, a jump
-that rises higher than three rows bumps its head on the gantry's roof and falls short, so the legs
-and feet together, like the premium legs, cross its gap on a tap.
+fast: the second grade of feet reaches the first's places, and every grade of legs the first's.
+With Space held, a jump that rises higher than three rows bumps its head on the gantry's roof and
+falls short, so the legs and feet together cross its gap on a tap.
 
 **Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
 front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are
@@ -405,11 +404,7 @@ the feet do and runs as the legs do, `kit`'s best of each:
 | `bionic_legs+spring_feet` | 4.3 | 4 | 7.8 | 8 | 9.9 | 2 |
 | `bionic_legs_3+spring_feet_2` | 6.3 | 6 | 13 | 16 | 18.7 | 4 |
 
-Stage 1's grades of legs (`STAGE_1`) jump as they did, until P18 retires them: `hydraulic_legs` as
-the spring feet, `spring_legs` as their second grade, `sprint_legs` and `blade_legs` as the legs'
-first two grades, and `premium_legs` as the legs' second grade with the feet's second. They kick
-as the player's own legs do. Every grade jumps under the same gravity, so a higher jump stays up
-longer and goes further too.
+Every grade jumps under the same gravity, so a higher jump stays up longer and goes further too.
 `rise` is how many tiles the feet rise with Space held, in `rise_seconds`; `run` how many tiles a
 second they run, and fly along in a run jump; `fall_gravity` how much stronger gravity is falling or
 once Space is let go;

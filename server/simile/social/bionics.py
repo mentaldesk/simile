@@ -2,7 +2,6 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 
 from simile.schema import (
-    LEGS,
     PLAYER_ID,
     Aspect,
     Bionic,
@@ -16,7 +15,6 @@ from simile.social.config import DEFAULT_BIONICS, BionicsConfig
 
 TOPIC = "bionics"
 LEG_NAMES: dict[Bionic, str] = {
-    **{legs: legs.replace("_", " ") for legs in LEGS},
     Bionic.BIONIC_LEGS: "bionic legs",
     Bionic.BIONIC_LEGS_2: "faster bionic legs",
     Bionic.BIONIC_LEGS_3: "fastest bionic legs",

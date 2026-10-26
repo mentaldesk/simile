@@ -24,6 +24,11 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
   - **Food they carry** relieves `food` (0.4) an item.
   - `meal()` is the meal on offer where they stand, which goes to the client in `player_state` so
     its hint can offer it. Ordering a drink at the café's counter is unchanged and free.
+  - `shut()` is the shop where they stand while it sells meals but isn't serving them, for the
+    hint to say why and when it opens. It's `sold_out` while its keeper is in but the batch has
+    gone, otherwise `closed` (off shift, or past the café's last orders). It opens at the next
+    start after now of its keeper's shifts (`hours.py`), so while a keeper is late it's their next
+    shift, and never while nobody works there.
 - **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
   they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
   of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
@@ -41,8 +46,7 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 the stomach, while a client is in the game, like hunger. Without one, `Player.power` stays full.
 
 - **It drains** by `drain` (0.2) a sim hour, and `per_bionic` (0.1) more for each other bionic
-  fitted: five hours on the cell alone, two with the datajack, the legs and the feet. Stage 1's
-  legs, which need no cell, don't count.
+  fitted: five hours on the cell alone, two with the datajack, the legs and the feet.
 - **It charges** at a plug as fast as the lamp, from the same `Lamp.charging`: flat to full in
   about three real seconds. Plugged in, it doesn't drain.
 - **Running flat** collapses them as hunger does, with `cause` `power`, and they wake at home with
@@ -50,7 +54,7 @@ the stomach, while a client is in the game, like hunger. Without one, `Player.po
 - **A cell runs a limited number of bionics** besides itself, by grade, in `runs`: 3 for the
   first cell, 4 for the second and 5 for the third. `runs(body, bionic)` says whether the cell
   would still run everything once `bionic` is fitted, so the clinic fits nothing past it. A higher
-  grade of a line in place of a lower one takes no more of the cell, and stage 1's legs take none.
+  grade of a line in place of a lower one takes no more of the cell.
 
 Its constants are in `PowerConfig`, beside it.
 
@@ -108,7 +112,7 @@ the nearest hit, and only that one. Nothing else is kicked yet.
 
   That's 12.5 kg, and with the lamp they carry 9 kg more, so it takes more than one trip.
 - **Secrets** are `secret` pickups holding money, an item or both, as the map says: 25, 40 and 60
-  money and a ration pack in the metro, the 60 on the high ledge only the hydraulic legs reach.
+  money and a ration pack in the metro, the 60 on the high ledge only the spring feet reach.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
   fits under their carry limit, in order. Money weighs nothing, and goes through the ledger as
@@ -169,15 +173,17 @@ their carry limit.
 
 ## `player_state`
 
-`PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer,
-the buyer where they stand and the piles lying at pickups they haven't taken, to every client. The
-recipes come from `recipes_of(app)`, which modules such as the clinic fill with theirs. It's sent:
+`PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer
+or the shop that's shut, the buyer where they stand and the piles lying at pickups they haven't
+taken, to every client. The recipes come from `recipes_of(app)`, which modules such as the clinic
+fill with theirs. It's sent:
 
 - to each new client after the snapshot and clock, and after the other modules' greetings, since
   it greets from `running`;
 - at once after any change but to hunger, power, health, an effect's strength or a lamp's charge:
   money, items, a lamp's switch, the body, an effect gained or gone, a pile, a pickup taken, or the
-  meal on offer or the buyer as they walk in or out of somewhere to eat or sell;
+  meal on offer, the shop that's shut or the buyer as they walk in or out of somewhere to eat or
+  sell, or as a shop they're in starts or stops serving;
 - and for hunger, power, health, an effect's strength or a lamp's charge alone, once one of them
   has moved by `step` (0.01)
   since the last one sent, or reached 0 or 1, so a full or flat battery is never shown a step

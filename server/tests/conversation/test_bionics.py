@@ -17,7 +17,7 @@ from .test_telling import ALIBI, GONE, INCIDENT, MEMORIES
 
 pytestmark = pytest.mark.anyio
 
-LEGS = Body(legs=Bionic.HYDRAULIC_LEGS)
+LEGS = Body(legs=Bionic.BIONIC_LEGS)
 WARY = make_npc("ana", "house_1", tradition=1.0, security=1.0)
 REFUSE = CUES[Cue.REFUSE].format(other="Visitor")
 OPENING = "You're with Visitor (a newcomer to the village)."
@@ -53,10 +53,10 @@ async def test_what_they_see_of_the_player_starts_the_prompt() -> None:
 
     first = village.script.prompts[-1].split("\n\n")[0]
     assert first.endswith(
-        f"{OPENING} Visitor has hydraulic legs where their own legs were. The hydraulic legs are "
+        f"{OPENING} Visitor has bionic legs where their own legs were. The bionic legs are "
         "new since you last saw them. Bionics don't much bother you either way."
     )
-    assert "I saw that Visitor has hydraulic legs" not in village.script.prompts[-1]
+    assert "I saw that Visitor has bionic legs" not in village.script.prompts[-1]
 
 
 async def test_a_whole_player_looks_like_anyone_and_the_prompt_is_as_it_was() -> None:
@@ -81,9 +81,9 @@ async def test_a_sighting_stays_on_their_mind_for_the_next_talk() -> None:
     await village.run()
 
     prompt = village.script.prompts[-1]
-    assert "Visitor has hydraulic legs where their own legs were. Bionics don't" in prompt
+    assert "Visitor has bionic legs where their own legs were. Bionics don't" in prompt
     assert "new since" not in prompt
-    assert "On your mind:\n- I saw that Visitor has hydraulic legs" in prompt
+    assert "On your mind:\n- I saw that Visitor has bionic legs" in prompt
 
 
 async def test_someone_put_off_by_the_players_bionics_turns_them_down() -> None:
@@ -121,7 +121,7 @@ async def test_someone_who_barely_minds_never_turns_the_player_down() -> None:
     shy = make_npc("ana", "house_1", tradition=0.55, security=0.55, connection=0.0)
     for social in (0.0, 0.3, 0.5):
         village = Village(npcs=(shy, BEN))
-        watched(village, Body(legs=Bionic.HYDRAULIC_LEGS, left_eye=Bionic.INFRARED_EYE))
+        watched(village, Body(legs=Bionic.BIONIC_LEGS, left_eye=Bionic.INFRARED_EYE))
         village.behaviour.minds["ana"].needs[Need.SOCIAL] = social
         await village.run()
         assert village.engine.accept_score(PLAYER_ID, "ana") < 0
@@ -245,7 +245,7 @@ async def test_word_of_a_sighting_comes_up_with_someone_who_hasnt_seen_it() -> N
     ana, ben = village.script.prompts[-1].split("## Ben")
     mind = ana.split("On Ana's mind, which only Ana knows:\n")[1]
     assert mind.startswith(
-        "- I saw that Visitor has hydraulic legs where their own legs were. It isn't natural, and "
+        "- I saw that Visitor has bionic legs where their own legs were. It isn't natural, and "
         "it turned my stomach."
     )
-    assert "hydraulic" not in ben.split("## Between them")[0]
+    assert "bionic legs" not in ben.split("## Between them")[0]

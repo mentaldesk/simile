@@ -20,7 +20,7 @@ using the GPU.
 ## Files
 
 For each resident, the clinic's doctor, `player`, and the player with each combination of bionics
-(`player_legs`, `player_bionic_legs_feet`, `player_legs_datajack_eye` and so on, below):
+(`player_feet`, `player_bionic_legs_feet`, `player_bionic_legs_datajack_eye` and so on, below):
 
 | File | What it is |
 |---|---|
@@ -122,19 +122,16 @@ gets a reroll in `build.REROLLS` (`"<id>/<frame>": n`), which repaints that fram
 
 ## The player with bionics
 
-Nineteen more figures, one for each combination of the lower body (stage 1's hydraulic legs, the
-bionic legs, the spring feet, or the bionic legs with the spring feet), the datajack and the
-infrared eye (`server/simile/dolls/bionics.py`), with the player's frames and poses. Every grade
-of a line looks alike, and so do stage 1's five grades of legs, until they're retired. Stage 1's
-legs with the feet show as the bionic legs with the feet (`bionics.shown`). The power cell is
+Fifteen more figures, one for each combination of the lower body (the bionic legs, the spring
+feet, or both), the datajack and the infrared eye (`server/simile/dolls/bionics.py`), with the
+player's frames and poses. Every grade of a line looks alike (`bionics.shown`). The power cell is
 inside, under the t-shirt, so it doesn't show. Their manifests say what's `fitted`, and their
 `hash` is the whole player's with each layer's prompts and rerolls, and `bionics.VERSION`.
 
 1. **Each layer is painted once on every frame that shows it** (`bionics.LAYERS`), as an edit of
-   the whole player's same frame: 41 paintings. The bionic legs with the feet are one layer, the
+   the whole player's same frame: 34 paintings. The bionic legs with the feet are one layer, the
    feet painted over the bionic legs' painting. The eye isn't seen from behind, so no climb has
    it.
-   - Stage 1's legs are steel hydraulic shins below shorts, in the same sneakers.
    - The bionic legs are rounded steel-grey armour plates below shorts, with black knee joints,
      in the same sneakers.
    - The spring feet are steel foot plates on yellow coil springs, in place of the sneakers. Over
@@ -144,8 +141,8 @@ inside, under the t-shirt, so it doesn't show. Their manifests say what's `fitte
    - The eye is a red lens in a chrome rim.
 2. **Each part is checked as the residents' poses are,** against the whole player's standing
    figure, and painted again if it doesn't show (`bionics.missing`):
-   - steel over 12% of the legs, for either legs, which the grey shading of the whole player's
-     sneakers stays under (about 6%), while hydraulic legs are 13 to 23%;
+   - steel over 12% of the legs, which the grey shading of the whole player's sneakers stays
+     under (about 6%);
    - the springs' yellow over 0.6% of the legs, which the whole player has none of, while the
      feet alone are 0.7 to 4% in the atlas;
    - the green light;

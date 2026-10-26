@@ -378,6 +378,12 @@ class LoopPlayer:
         cells = [(x + dx, y) for d in by for dx in (-d, d) if town.standing(x + dx, y)]
         return Spot(there.map, *(cells[0] if cells else (x, y)))
 
+    def talks(self) -> bool:
+        """Whether E would talk here, standing at no interactable it would use instead."""
+        assert self.at is not None
+        town, at = self.movement.maps[self.at.map], (round(self.at.x), round(self.at.y))
+        return all((tile.x, tile.y) != at for thing in town.interactables for tile in thing.stand)
+
     async def approach(self, npc: Id) -> bool:
         """Runs up beside `npc`, following them a few times if they walk off."""
         for _ in range(FOLLOW):
@@ -510,7 +516,7 @@ class Playthrough:
     async def run(self) -> Result:
         start = self.player.world.clock.now
         await self.sell_a_kidney()
-        await self.legs_and_a_secret()
+        await self.feet_and_a_secret()
         await self.datajack_and_the_lift()
         await self.the_sewers_clue()
         attacker, lie = await self.the_eye_and_a_lie()
@@ -544,11 +550,19 @@ class Playthrough:
         await p.clinic()
         await p.sell_part("left_kidney")
 
-    async def legs_and_a_secret(self) -> None:
+    async def feet_and_a_secret(self) -> None:
         p, ledge = self.player, self.pickup("metro_secret_ledge")
         if Spot(ledge.map, ledge.x, ledge.y) in p.reach(JUMP):
             raise Refused("The high ledge is in reach on the player's own legs")
-        await p.fit(Bionic.HYDRAULIC_LEGS, "legs")
+        stand_in.learn(player_of(self.app), Bionic.SPRING_FEET)
+        await p.wait(0.1)
+        await p.gather({"metro"}, enough=p.price(Bionic.SPRING_FEET))
+        await p.go(OUTSIDE_THE_CLINIC)
+        stand_in.carry(player_of(self.app), Bionic.SPRING_FEET)
+        await p.wait(0.1)
+        await self.saves.write("feet", p)
+        await p.clinic()
+        await p.fit(Bionic.SPRING_FEET, "feet")
         await p.take(ledge)
 
     async def datajack_and_the_lift(self) -> None:
@@ -659,7 +673,7 @@ class Playthrough:
                     if mind.walk is None and not engine.talking(attacker):
                         break
                     await p.wait(5)
-                if await p.approach(attacker) and await self.saved_beside(attacker):
+                if await p.approach(attacker) and p.talks() and await self.saved_beside(attacker):
                     return attacker
             await p.come_back(self.morning())
         raise Refused("No attacker could be found")

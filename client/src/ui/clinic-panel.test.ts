@@ -4,7 +4,7 @@ import type { Buyer, ClientMessage, Fitting, Item, Player, Recipe } from '../net
 import { ClinicPanel, deals, needed, needs, note } from './clinic-panel';
 
 const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
-const LEGS: Fitting = { bionic: 'hydraulic_legs', name: 'Hydraulic legs', price: 80, parts: ['legs'] };
+const LEGS: Fitting = { bionic: 'bionic_legs', name: 'Bionic legs', price: 80, parts: ['legs'] };
 const EYE: Fitting = { bionic: 'infrared_eye', name: 'Infrared eye', price: 200, parts: ['left_eye', 'right_eye'] };
 const JACK: Fitting = { bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] };
 const JACK_RECIPE: Recipe = {
@@ -61,7 +61,7 @@ describe('deals', () => {
       { kind: 'sell', label: 'Sell everything: copper wire ×2', price: 12 },
       { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
       { kind: 'part', label: 'Sell a kidney', price: 100, part: 'left_kidney' },
-      { kind: 'fit', label: 'Hydraulic legs, in place of your legs', price: 80, bionic: 'hydraulic_legs', part: 'legs', needs: [], short: false },
+      { kind: 'fit', label: 'Bionic legs, in place of your legs', price: 80, bionic: 'bionic_legs', part: 'legs', needs: [], short: false },
       { kind: 'fit', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', needs: [], short: true },
       { kind: 'fit', label: 'Infrared eye, in place of your right eye', price: 200, bionic: 'infrared_eye', part: 'right_eye', needs: [], short: true },
     ]);
@@ -200,7 +200,7 @@ describe('ClinicPanel', () => {
       'Talk to Annelie Joubert',
       'Sell one: Copper wireyou have 16',
       'Sell a kidney100',
-      'Hydraulic legs, in place of your legs80',
+      'Bionic legs, in place of your legs80',
       'Infrared eye, in place of your left eye200',
       'Infrared eye, in place of your right eye200',
     ]);
@@ -246,7 +246,7 @@ describe('ClinicPanel', () => {
     press('Enter');
     press('Enter');
 
-    expect(sent).toEqual([{ type: 'fit', bionic: 'hydraulic_legs', part: 'legs' }]);
+    expect(sent).toEqual([{ type: 'fit', bionic: 'bionic_legs', part: 'legs' }]);
     expect(status()).toBe('It costs 200, and you have 90.');
   });
 
@@ -267,8 +267,8 @@ describe('ClinicPanel', () => {
     press('ArrowDown');
     panel.update({ ...CLINIC, parts: undefined }, player(100));
 
-    expect(rows()[0]).toBe('Hydraulic legs, in place of your legs80');
-    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Hydraulic legs, in place of your legs80');
+    expect(rows()[0]).toBe('Bionic legs, in place of your legs80');
+    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Bionic legs, in place of your legs80');
     panel.update(undefined, player(100));
     expect(panel.isOpen).toBe(false);
   });
@@ -278,7 +278,7 @@ describe('ClinicPanel', () => {
     press('ArrowDown');
     panel.update({ ...CLINIC, parts: undefined }, player(100), DOCTOR);
 
-    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Hydraulic legs, in place of your legs80');
+    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Bionic legs, in place of your legs80');
     press('Enter');
     expect(talk).not.toHaveBeenCalled();
   });
