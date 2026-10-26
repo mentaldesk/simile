@@ -1,5 +1,6 @@
 import { CONTROLS } from './help';
 import './pause-menu.css';
+import { PAUSE_GRACE_MS } from './tuning';
 
 const kbd = (key: string) => Object.assign(document.createElement('kbd'), { textContent: key });
 
@@ -9,7 +10,29 @@ function button(label: string, onClick: () => void): HTMLButtonElement {
   return made;
 }
 
-/** Esc in game: Resume, the controls, or Exit to the title menu. */
+/** Esc opens the menu only with no panel open, nor one that closed by itself just now. */
+export class PauseGate {
+  private readonly panelOpen: () => boolean;
+  private wasOpen = false;
+  private closedAt = -Infinity;
+
+  constructor(panelOpen: () => boolean) {
+    this.panelOpen = panelOpen;
+  }
+
+  frameStart(): void {
+    this.wasOpen = this.panelOpen();
+  }
+
+  frameEnd(now: number): void {
+    if (this.wasOpen && !this.panelOpen()) this.closedAt = now;
+  }
+
+  allows(now: number): boolean {
+    return !this.panelOpen() && now - this.closedAt > PAUSE_GRACE_MS;
+  }
+}
+
 export class PauseMenu {
   private readonly root: HTMLElement;
   private readonly card: HTMLElement;

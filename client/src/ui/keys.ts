@@ -13,7 +13,6 @@ export type GameKeys = {
   help: Pick<HelpPanel, 'toggle' | 'close'>;
   journal: Pick<JournalPanel, 'toggle' | 'close'>;
   character: Pick<CharacterPanel, 'toggle' | 'close'>;
-  /** Esc with nothing else open: the pause menu. */
   pause: () => void;
 };
 

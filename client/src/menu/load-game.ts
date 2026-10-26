@@ -15,8 +15,8 @@ export function worldDetails(world: SavedWorld, now = Date.now()): string {
 }
 
 function undeletable(world: SavedWorld): string | null {
-  if (world.default) return "Today's village is kept, so it can't be deleted.";
-  if (world.running) return "This is the world you're in. Load another to delete it.";
+  if (world.default) return "Today's village is kept: it can't be deleted.";
+  if (world.running) return "You're in it: load another world to delete it.";
   return null;
 }
 
@@ -58,6 +58,9 @@ export class LoadGameScreen {
   }
 
   private row(world: SavedWorld): HTMLLIElement {
+    const refusal = undeletable(world);
+    const kept =
+      refusal && el('small', { className: 'menu-world-kept', id: `kept-${world.id}` }, refusal);
     const open = el(
       'button',
       {
@@ -75,12 +78,12 @@ export class LoadGameScreen {
         world.running && el('span', { className: 'menu-tag menu-tag-running' }, 'playing'),
       ),
       el('small', {}, worldDetails(world)),
+      kept,
     );
     open.addEventListener('click', () => void this.menu.load(world));
-    const refusal = undeletable(world);
     const remove = this.menu.button('Delete', () => this.confirm(item, world), 'menu-danger');
     remove.disabled = refusal !== null;
-    if (refusal) remove.title = refusal;
+    if (kept) remove.setAttribute('aria-describedby', kept.id);
     const actions = el(
       'div',
       { className: 'menu-world-actions' },

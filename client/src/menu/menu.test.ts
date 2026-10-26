@@ -371,7 +371,9 @@ describe('New game', () => {
     button(root, 'Start').click();
     await vi.waitFor(() => expect(root.querySelector('.menu-error')).toBeTruthy());
 
-    expect(root.querySelector('.menu-error')?.textContent).toMatch(/didn't come back/);
+    expect(root.querySelector('.menu-error')?.textContent).toMatch(
+      /didn't come back on it within .* The terminal running make dev says why\./,
+    );
     expect(actions.enter).not.toHaveBeenCalled();
     button(root, 'Back').click();
     expect(button(root, 'Continue')).toBeTruthy();
@@ -407,6 +409,10 @@ describe('Load game', () => {
     const village = row(root, "Today's village");
     expect(village.querySelector('.menu-world-name')?.textContent).toBe("Today's villageplaying");
     expect(village.textContent).toContain('day 4 · played');
+    expect(village.querySelector('.menu-world-kept')?.textContent).toBe(
+      "Today's village is kept: it can't be deleted.",
+    );
+    expect(row(root, 'Ash Lane').querySelector('.menu-world-kept')).toBeNull();
     expect(row(root, 'Ash Lane').querySelector('small')?.textContent).toMatch(
       /^day 2 · played .+ · Visitor · 3 residents$/,
     );
@@ -432,6 +438,19 @@ describe('Load game', () => {
 
     expect(actions.play).toHaveBeenCalledOnce();
     expect(api.open).not.toHaveBeenCalled();
+  });
+
+  it('goes into a world the server turns out to be running already', async () => {
+    const open = vi.fn(async (id: string): Promise<Opening> => ({ id, opening: false }));
+    const api = fakeApi({ open });
+    const { root, actions } = await openLoadGame(api);
+
+    row(root, 'Ash Lane').querySelector<HTMLButtonElement>('.menu-world-open')!.click();
+    await settle();
+
+    expect(open).toHaveBeenCalledWith(ASH.id);
+    expect(actions.enter).toHaveBeenCalledOnce();
+    expect(api.worlds).toHaveBeenCalledTimes(2);
   });
 
   it('says why it can’t open a world', async () => {
@@ -516,10 +535,12 @@ describe('Load game', () => {
     );
 
     const remove = (name: string) => button(row(root, name), 'Delete');
+    const reason = (name: string) =>
+      document.getElementById(remove(name).getAttribute('aria-describedby')!)?.textContent;
     expect(remove("Today's village").disabled).toBe(true);
-    expect(remove("Today's village").title).toContain("can't be deleted");
+    expect(reason("Today's village")).toContain("can't be deleted");
     expect(remove('Ash Lane').disabled).toBe(true);
-    expect(remove('Ash Lane').title).toContain("the world you're in");
+    expect(reason('Ash Lane')).toBe("You're in it: load another world to delete it.");
   });
 
   it('shows the server’s reason when it won’t delete', async () => {

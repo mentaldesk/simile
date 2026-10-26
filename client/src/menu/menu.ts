@@ -15,7 +15,6 @@ import { suggestName } from './names';
 import { BONDS, bondLabel, NewWorldState } from './new-world';
 import { NewsFeedsScreen } from './news-feeds';
 
-/** A screen saying what's happening while a world is made or opened. */
 export class Progress {
   readonly screen: HTMLElement;
   private readonly heading = el('h2');
@@ -40,9 +39,7 @@ export class Progress {
 }
 
 export type MenuActions = {
-  /** Plays the world the server is running. */
   play(): void;
-  /** Reloads the page into the game, once the server runs another world. */
   enter(): void;
   creator?: () => void;
 };
@@ -190,7 +187,9 @@ export class Menu {
       }
       if (!listing) progress.say(`Opening ${name}`, `Starting ${name}…`);
     }
-    throw new Error(`the server didn't come back within ${patienceMs / 1000} s`);
+    throw new Error(
+      `the server didn't come back on it within ${patienceMs / 1000} s. The terminal running make dev says why.`,
+    );
   }
 
   progress(heading: string, status: string): Progress {

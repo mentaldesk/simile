@@ -597,6 +597,11 @@
   color: #9fb5aa;
 }
 
+.menu .menu-world-kept {
+  color: #8aa197;
+  font-style: italic;
+}
+
 .menu-tag {
   font-size: 10px;
   letter-spacing: 0.06em;

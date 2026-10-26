@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CONTROLS } from './help';
-import { PauseMenu } from './pause-menu';
+import { onGameKey } from './keys';
+import { PauseGate, PauseMenu } from './pause-menu';
+import { PAUSE_GRACE_MS } from './tuning';
 
 function press(target: Element, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -86,5 +88,71 @@ describe('PauseMenu', () => {
     expect(menu.isOpen).toBe(true);
     document.querySelector('.pause')!.dispatchEvent(new Event('pointerdown', { bubbles: true }));
     expect(menu.isOpen).toBe(false);
+  });
+});
+
+describe('PauseGate', () => {
+  function game() {
+    const journal = { isOpen: false, toggle: vi.fn(), close: vi.fn() };
+    journal.toggle.mockImplementation(() => (journal.isOpen = !journal.isOpen));
+    journal.close.mockImplementation(() => (journal.isOpen = false));
+    const gate = new PauseGate(() => journal.isOpen);
+    const { menu } = opened();
+    menu.close();
+    let now = 1000;
+    const pause = () => {
+      if (gate.allows(now)) menu.open();
+    };
+    const closed = { toggle: vi.fn(), close: vi.fn() };
+    const handler = onGameKey({
+      chat: { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() },
+      talk: vi.fn(),
+      use: vi.fn(),
+      view: vi.fn(),
+      eat: vi.fn(),
+      help: closed,
+      journal,
+      character: closed,
+      pause,
+    });
+    window.addEventListener('keydown', handler);
+    const frame = (ms: number, update = () => {}) => {
+      gate.frameStart();
+      update();
+      gate.frameEnd(now);
+      now += ms;
+    };
+    const stop = () => window.removeEventListener('keydown', handler);
+    return { journal, menu, frame, stop };
+  }
+
+  it('opens the menu on a quick second Esc after the player closes the journal', () => {
+    const { journal, menu, frame, stop } = game();
+    press(document.body, 'j');
+    frame(16);
+    expect(journal.isOpen).toBe(true);
+
+    press(document.body, 'Escape');
+    expect(journal.isOpen).toBe(false);
+    expect(menu.isOpen).toBe(false);
+    frame(16);
+    press(document.body, 'Escape');
+
+    expect(menu.isOpen).toBe(true);
+    stop();
+  });
+
+  it('ignores Esc just after a panel closes by itself', () => {
+    const { journal, menu, frame, stop } = game();
+    journal.isOpen = true;
+    frame(16, () => (journal.isOpen = false));
+
+    press(document.body, 'Escape');
+    expect(menu.isOpen).toBe(false);
+
+    frame(PAUSE_GRACE_MS);
+    press(document.body, 'Escape');
+    expect(menu.isOpen).toBe(true);
+    stop();
   });
 });
