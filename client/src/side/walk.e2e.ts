@@ -447,6 +447,14 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 2600);
   const after = (await api.state())!;
   if (after.used === 'searchable') throw new Error(`${name}: E still searches the bench`);
+  await teleport(page, api, { map: 'maker_space_floor_2', x: 12, y: 2 }, `${name}, then the loft's shelf`);
+  await run(page, 300);
+  await pressingE(page, api, `${name}, E at the loft's shelf`);
+  const shelf = await shown(page, '.counter-hint');
+  if (shelf !== 'You find a USB-C connector and a copper wire.') throw new Error(`${name}: the shelf said ${shelf}`);
+  const { items } = await api.mind();
+  if (!items.includes('usb_c_connector') || !items.includes('copper_wire')) throw new Error(`${name}: they carry ${items.join(', ')}`);
+  await run(page, 2600);
 }
 
 /** A standing jump at the face of the weir, walking towards it: where it lands. */
@@ -562,11 +570,14 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
     ['Vitals', 'Lamp'],
     ['Body', 'Your own'],
     ['Gear', 'Lamp'],
-    ['Mind', 'no recipes'],
+    ['Mind', 'Datajack'],
   ] as const) {
     const selected = await shown(page, '.character-tabs [aria-selected="true"]');
     const body = await shown(page, '.character-page');
     if (selected !== tab || !body?.includes(has)) throw new Error(`${name}: on ${selected}, not ${tab} with ${has}: ${body}`);
+    if (tab === 'Mind' && !['copper wire 1/3', 'usb-c connector 1/1'].every((part) => body.includes(part))) {
+      throw new Error(`${name}: the datajack's parts against what they carry aren't on the Mind tab: ${body}`);
+    }
     await shot(page, index, `${name}, ${tab}`);
     await page.keyboard.press('ArrowRight');
     await run(page, 100);

@@ -1,6 +1,6 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type Bionic, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Wall } from '../net';
+import { server, type Bionic, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { usedByE } from '../world/reach';
@@ -259,6 +259,18 @@ function frames(village: Village): Frame[] {
   );
 }
 
+/** The server's recipes the walk learns, from `simile.clinic`'s config. */
+const RECIPES: Partial<Record<Bionic, Recipe>> = {
+  datajack: {
+    bionic: 'datajack',
+    name: 'Datajack',
+    parts: { copper_wire: 3, usb_c_connector: 1 },
+    credits: 100,
+    replaces: ['vertebra'],
+    after: ['power_cell'],
+  },
+};
+
 let items: Item[] = [LAMP];
 let searched: string[] = [];
 let known: Bionic[] = [];
@@ -275,7 +287,7 @@ let body: Body = {
 function sendPlayerState(): void {
   const mind = known.length ? { mind: { recipes: known } } : {};
   const player = { money: 0, items, carry_limit: 10, body, hunger: 0, ...(searched.length ? { searched } : {}), ...mind };
-  const recipes = known.map((bionic) => ({ bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] }));
+  const recipes = known.map((bionic) => RECIPES[bionic] ?? { bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] });
   dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}) });
 }
 
