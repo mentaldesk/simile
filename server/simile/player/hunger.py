@@ -5,10 +5,11 @@ from typing import TYPE_CHECKING
 from simile.behaviour import Activity, Goal, Need
 from simile.economy import PLAYER
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
+from simile.player.hours import hours, next_opening
 from simile.player.power import cell_in
 from simile.player.where import here, location
-from simile.protocol import Meal, Vital
-from simile.schema import PLAYER_ID, Id, ItemKind, MapTile, Pile, Player
+from simile.protocol import Meal, Shut, ShutReason, Vital
+from simile.schema import PLAYER_ID, Id, ItemKind, Location, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.movement import Movement, Point, cell_of, inside
 
@@ -71,12 +72,24 @@ class Hunger:
         home = location(self.movement, self.config.home)
         if home is not None and inside(home, at):
             return Meal(place=home.id, name=HOME, price=0)
-        for place in self.config.meals:
-            shop, price = location(self.movement, place), self._price(place)
-            if shop is None or price is None or not inside(shop, at):
-                continue
-            return Meal(place=place, name=shop.name, price=price) if self._serving(place) else None
-        return None
+        found = self._shop(at)
+        if found is None or not self._serving(found[0].id):
+            return None
+        shop, price = found
+        return Meal(place=shop.id, name=shop.name, price=price)
+
+    def shut(self) -> Shut | None:
+        """The shop where they stand, if it sells meals but isn't serving them, and when it next
+        does."""
+        at = here(self.movement)
+        found = None if at is None or self._on_cell() else self._shop(at)
+        if found is None or self._serving(found[0].id):
+            return None
+        shop, _ = found
+        reason = ShutReason.SOLD_OUT if self._sold_out(shop.id) else ShutReason.CLOSED
+        npcs = self.economy.behaviour.npcs.values() if self.economy is not None else []
+        opens = next_opening(hours(shop.id, npcs), self.clock.now)
+        return Shut(place=shop.id, name=shop.name, reason=reason, opens=opens)
 
     def eat(self, item: Id | None) -> bool:
         """Eats a carried food item by id, or with None the meal on offer. Whether they ate: never
@@ -148,6 +161,23 @@ class Hunger:
         except ValueError:
             return False
         return self.supply(Goal(activity, place), Need.HUNGER) > 0
+
+    def _shop(self, at: Point) -> tuple[Location, float] | None:
+        """The shop that sells meals where they stand, with a meal's price there."""
+        for place in self.config.meals:
+            shop, price = location(self.movement, place), self._price(place)
+            if shop is not None and price is not None and inside(shop, at):
+                return shop, price
+        return None
+
+    def _sold_out(self, place: Id) -> bool:
+        """For a shop that isn't serving: its keeper is in, so its batch has gone."""
+        economy = self.economy
+        return (
+            economy is not None
+            and economy.config.shops[place].batch is not None
+            and economy.staffed(place)
+        )
 
     def _price(self, place: Id) -> float | None:
         shop = self.economy.config.shops.get(place) if self.economy is not None else None

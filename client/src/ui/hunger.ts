@@ -1,4 +1,5 @@
-import type { EffectKind, Item, Meal, Pile, Player, PlayerStateMessage, Vital } from '../net';
+import { server } from '../net';
+import type { EffectKind, Item, Meal, Pile, Player, PlayerStateMessage, Shut, Vital } from '../net';
 import { amount, pickUpPrompt, sellPrompt } from './salvage';
 import { EAT_KEY } from './tuning';
 
@@ -14,6 +15,12 @@ export const FLAT = 0.1;
 export const HURT = 0.6;
 export const BADLY_HURT = 0.25;
 const COLLAPSED_MS = 6000;
+const DAY_MS = 86_400_000;
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+let simTime: string | undefined;
+server.on('snapshot', ({ time }) => (simTime = time));
+server.on('clock', ({ time }) => (simTime = time));
 
 export type Eat = { kind: 'meal'; meal: Meal } | { kind: 'item'; item: Item };
 
@@ -58,12 +65,32 @@ export function toEat(state: PlayerStateMessage | undefined): Eat | undefined {
   return item && { kind: 'item', item };
 }
 
-/** What F eats, or once they're hungry, where they could eat. */
-export function eatPrompt(state: PlayerStateMessage): string | undefined {
-  const { player, meal } = state;
+const dayOf = (time: string) => Math.floor(Date.parse(time) / DAY_MS);
+
+/** When `opens` is from `now`, in sim time, which is UTC: "today at 17:00", "tomorrow at 7:00", "Tuesday at 11:00". */
+export function when(opens: string, now: string | undefined): string {
+  const at = new Date(opens);
+  const time = `${at.getUTCHours()}:${String(at.getUTCMinutes()).padStart(2, '0')}`;
+  const weekday = WEEKDAYS[at.getUTCDay()];
+  const days = now === undefined ? undefined : dayOf(opens) - dayOf(now);
+  if (days === 0) return `today at ${time}`;
+  if (days === 1) return `tomorrow at ${time}`;
+  return `${days !== undefined && days >= 7 ? 'next ' : ''}${weekday} at ${time}`;
+}
+
+/** Why the shop they stand in isn't serving, and when it next does. */
+export function shutPrompt({ name, reason, opens }: Shut, now: string | undefined = simTime): string {
+  if (reason === 'sold_out') return `${name} has sold out for this shift.${opens ? ` Opens again ${when(opens, now)}.` : ''}`;
+  return `${name} is shut.${opens ? ` Opens ${when(opens, now)}.` : ''}`;
+}
+
+/** What F eats, or why the shop they stand in isn't serving, or once they're hungry, where they could eat. */
+export function eatPrompt(state: PlayerStateMessage, now: string | undefined = simTime): string | undefined {
+  const { player, meal, shut } = state;
   if (onCell(player)) return undefined;
   const eat = toEat(state);
   if (eat?.kind === 'item') return `Press ${key(EAT_KEY)} to eat your ${lowerFirst(eat.item.name)}.`;
+  if (shut) return shutPrompt(shut, now);
   if (eat) {
     const { name, price } = eat.meal;
     return `Press ${key(EAT_KEY)} to eat at ${name}${price ? ` for ${amount(price)}` : ''}.`;
