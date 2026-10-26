@@ -1,11 +1,14 @@
 import json
 import math
+import os
 import random
+import shutil
 import sqlite3
 import sys
+import tempfile
 from collections import deque
-from collections.abc import AsyncGenerator, Collection, Mapping
-from contextlib import closing
+from collections.abc import AsyncGenerator, Collection, Iterator, Mapping
+from contextlib import closing, contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from itertools import pairwise
@@ -89,6 +92,8 @@ NEAR = 2.0
 FOLLOW = 4
 QUIET = 10
 """Sim seconds without a line before a reply is over: longer than a goodbye waits for an answer."""
+STAYS = timedelta(minutes=2)
+"""How long the attacker stays put in the world served from the eye beat's save, for the browser."""
 QUESTION = "Where were you the night Aris was attacked?"
 HELLO = "Hello there! Lovely day for it."
 REFUSAL = CUES[Cue.REFUSE].split("{other}")[0]
@@ -423,6 +428,39 @@ class Saves:
         (self.folder / f"{beat}.json").write_text(json.dumps(info, indent=2) + "\n")
         player.note(f"Saved the {beat} beat")
 
+    def stays(self, beat: str, npc: Id) -> bool:
+        """Whether `npc` stays put for `STAYS` in the world `simile loop serve` makes of the beat's
+        save, as the browser starts it: a save keeps less of what someone's doing than the sim."""
+        if self.folder is None:
+            return True
+        from starlette.testclient import TestClient
+
+        from simile.loop.serve import create_loop_app
+
+        at = json.loads((self.folder / f"{beat}.json").read_text())["at"]
+        with tempfile.TemporaryDirectory() as scratch, _env("SIMILE_DB", str(Path(scratch) / beat)):
+            shutil.copy(self.folder / f"{beat}.db", Path(scratch) / beat)
+            app = create_loop_app(Spot(at["map"], at["x"], at["y"]))
+            app.state.world, app.state.headless = World(Clock(), FakeWallClock()), True
+            with TestClient(app) as client:
+                movement, world = movement_of(app), world_of(app)
+                there = movement.position(npc)
+                client.portal.call(world.loop.run, STAYS)
+                return movement.position(npc) == there
+
+
+@contextmanager
+def _env(name: str, value: str) -> Iterator[None]:
+    before = os.environ.get(name)
+    os.environ[name] = value
+    try:
+        yield
+    finally:
+        if before is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = before
+
 
 @dataclass
 class Result:
@@ -561,8 +599,6 @@ class Playthrough:
         await p.fit(Bionic.INFRARED_EYE, "left_eye")
         attacker = await self.find_attacker()
         alibi = self.alibi(attacker)
-        name = self.player.behaviour.npcs[attacker].name
-        await self.saves.write("eye", p, attacker={"id": attacker, "name": name}, alibi=alibi)
         lines, _ = await p.say(attacker, QUESTION)
         lie = next((line for line in lines if line.flushed), None)
         if lie is None or not says(" ".join(m.line.text for m in lines), alibi):
@@ -609,7 +645,8 @@ class Playthrough:
         return seen
 
     async def find_attacker(self) -> Id:
-        """The first attacker the player finds awake and walks up to, once they've settled."""
+        """The first attacker the player finds awake and walks up to, once they've settled, who
+        stays there in the world served from the eye beat's save."""
         p, engine = self.player, self.app.state.conversation
         assert self.incident is not None
         for _ in range(3):
@@ -621,10 +658,18 @@ class Playthrough:
                     if mind.walk is None and not engine.talking(attacker):
                         break
                     await p.wait(5)
-                if await p.approach(attacker):
+                if await p.approach(attacker) and await self.saved_beside(attacker):
                     return attacker
             await p.come_back(self.morning())
         raise Refused("No attacker could be found")
+
+    async def saved_beside(self, attacker: Id) -> bool:
+        """Saves the eye beat beside `attacker`, and whether they stay put once it's served."""
+        name = self.player.behaviour.npcs[attacker].name
+        alibi = self.alibi(attacker)
+        extra = {"attacker": {"id": attacker, "name": name}, "alibi": alibi}
+        await self.saves.write("eye", self.player, **extra)
+        return self.saves.stays("eye", attacker)
 
     def alibi(self, attacker: Id) -> str:
         assert self.incident is not None

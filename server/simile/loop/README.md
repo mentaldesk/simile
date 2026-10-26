@@ -22,6 +22,9 @@ lights its lamp in the dark.
 5. **The eye and a lie.** It does a round of the metro and the sewers each day, skipping the time
    until the salvage lies there again, until it can pay for the eye. Then it asks an attacker
    where they were the night Aris was attacked. Their alibi flushes, and the journal marks it.
+   The attacker it asks is one who stays put for two minutes in the world served from the eye
+   beat's save (`Saves.stays`), since a save keeps less of what someone's doing than the sim, and
+   the browser takes a while to get there.
 6. **The village reacts.** It finds Aris's notes, and talks to the residents most against bionics
    until one turns it down. Residents who saw its bionics remember them.
 
