@@ -211,8 +211,10 @@ class Worlds:
         return [self._listed(id, played, now, DEFAULT_BIONICS.player_name) for id in self.ids()]
 
     def world(self, id: str) -> World:
+        from simile.social import DEFAULT_BIONICS
+
         self.check(id)
-        return next(w for w in self.worlds() if w.id == id)
+        return self._listed(id, self.index.read(), running(self.root), DEFAULT_BIONICS.player_name)
 
     def rename(self, id: str, name: str) -> World:
         self.check(id)

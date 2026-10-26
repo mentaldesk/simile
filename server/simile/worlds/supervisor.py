@@ -47,14 +47,16 @@ class Supervisor:
         worlds: Worlds,
         environ: Mapping[str, str] = os.environ,
         spawn: Spawn = subprocess.Popen,
+        killpg: Callable[[int, int], None] = os.killpg,
     ) -> None:
         self.command = list(command)
         self.worlds = worlds
         self.environ = dict(environ)
         self.spawn = spawn
+        self.killpg = killpg
         self.child: subprocess.Popen[bytes] | None = None
         self.switching = self.stopping = False
-        self.signalled = 0
+        self.signalled = False
 
     def run(self) -> int:
         handlers = {sig: signal.signal(sig, self._stop) for sig in STOPS}
@@ -70,24 +72,21 @@ class Supervisor:
         while True:
             env, id = self.environment(first)
             first = False
-            if id is not None:
-                self.worlds.index.opened(id)
-            self.switching, self.signalled = False, 0
+            self.switching = self.signalled = False
             self.child = self.spawn(self.command, env=env, start_new_session=True)
             if self.stopping:
-                self._signal(signal.SIGTERM)
+                self._signal(force=False)
             code = self.child.wait()
-            if id is not None:
-                self.worlds.index.closed(id)
             if self.stopping:
                 return 0 if code < 0 else code
             if not self.switching:
                 return code
-            logger.info("Switching to %s", self.worlds.index.read().last or TODAY_ID)
+            logger.info("Switching worlds, from %s", id or self.environ.get("SIMILE_DB"))
 
     def environment(self, first: bool) -> tuple[dict[str, str], str | None]:
-        """The server's environment, and the id of the world it opens, if it's one of the worlds.
-        On the first start `$SIMILE_DB` overrides the last world played."""
+        """The server's environment, and the id of the world it opens, if it's one of the worlds:
+        the one the menu asked for, else the last played. On the first start `$SIMILE_DB`
+        overrides both."""
         from simile.library.store import DEFAULT_ROOT as LIBRARY
 
         env = {**self.environ, SUPERVISOR_ENV: str(os.getpid())}
@@ -96,9 +95,8 @@ class Supervisor:
         if not first:
             for name in FIRST_ONLY:
                 env.pop(name, None)
-        id = self.worlds.index.read().last
-        if id not in self.worlds.ids():
-            id = TODAY_ID
+        ids = self.worlds.ids()
+        id = next((id for id in self.worlds.index.take() if id in ids), TODAY_ID)
         env["SIMILE_DB"] = str(self.worlds.database(id))
         env["SIMILE_LIBRARY"] = self.environ.get("SIMILE_LIBRARY") or str(LIBRARY)
         return env, id
@@ -106,13 +104,19 @@ class Supervisor:
     def _switch(self, sig: int, frame: FrameType | None) -> None:
         if not self.switching and not self.stopping:
             self.switching = True
-            self._signal(signal.SIGTERM)
+            self._signal(force=False)
 
     def _stop(self, sig: int, frame: FrameType | None) -> None:
-        self.stopping = True
-        self._signal(signal.SIGTERM if self.signalled == 0 else signal.SIGINT)
+        force, self.stopping = self.stopping, True
+        self._signal(force)
 
-    def _signal(self, sig: int) -> None:
-        if self.child is not None and self.child.poll() is None:
-            self.signalled += 1
-            self.child.send_signal(sig)
+    def _signal(self, force: bool) -> None:
+        """SIGTERM to the server, which shuts down and saves. Forced, SIGINT to its whole group,
+        so it reaches the worker under uvicorn's reloader too."""
+        if self.child is None or self.child.poll() is not None:
+            return
+        if force:
+            self.killpg(self.child.pid, signal.SIGINT)
+        elif not self.signalled:
+            self.signalled = True
+            self.child.send_signal(signal.SIGTERM)

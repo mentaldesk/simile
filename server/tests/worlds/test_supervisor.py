@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterator
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -22,7 +23,7 @@ from simile.persistence import SavedWorld, WorldStore
 from simile.worlds import NewWorld, Worlds
 from simile.worlds.saves import progress
 from simile.worlds.store import TODAY_ID
-from simile.worlds.supervisor import SUPERVISOR_ENV, Supervisor, server_command
+from simile.worlds.supervisor import SUPERVISOR_ENV, Supervisor, server_command, switch
 
 from .conftest import POOL
 
@@ -40,8 +41,8 @@ def make(worlds: Worlds, library: Library, picks: list[str]) -> str:
 
 
 class Child:
-    def __init__(self, exits: Callable[[], None] = lambda: None, code: int = 0) -> None:
-        self.exits, self.code, self.signals = exits, code, list[int]()
+    def __init__(self, pid: int, exits: Callable[[], None] = lambda: None, code: int = 0) -> None:
+        self.pid, self.exits, self.code, self.signals = pid, exits, code, list[int]()
 
     def wait(self) -> int:
         self.exits()
@@ -64,8 +65,19 @@ class Spawner:
 
     def __call__(self, command: list[str], *, env: dict[str, str], **_: Any) -> Child:
         self.envs.append(env)
-        self.children.append(Child(self.then.pop(0) if self.then else lambda: None))
+        pid = 1000 + len(self.children)
+        self.children.append(Child(pid, self.then.pop(0) if self.then else lambda: None))
         return self.children[-1]
+
+
+class Groups:
+    """Signals sent to process groups."""
+
+    def __init__(self) -> None:
+        self.sent: list[tuple[int, int]] = []
+
+    def __call__(self, group: int, sig: int) -> None:
+        self.sent.append((group, sig))
 
 
 def test_opens_todays_village_the_first_time(worlds: Worlds) -> None:
@@ -129,7 +141,7 @@ def test_restarts_the_server_on_the_world_it_switches_to(worlds: Worlds, library
     other = make(worlds, library, POOL[:2])
 
     def switch() -> None:
-        worlds.index.opened(other)
+        worlds.index.ask(other)
         supervisor._switch(signal.SIGUSR1, None)
 
     spawner = Spawner(switch)
@@ -143,25 +155,80 @@ def test_restarts_the_server_on_the_world_it_switches_to(worlds: Worlds, library
     ]
     assert spawner.children[0].signals == [signal.SIGTERM]
     assert spawner.children[1].signals == []
-    played = worlds.index.read()
-    assert played.last == other
-    assert played.entry(TODAY_ID).played is not None
-    assert played.entry(other).played is not None
+    assert worlds.index.read().next is None
 
 
-def test_stops_with_the_server(worlds: Worlds) -> None:
+def test_switches_on_a_real_signal(
+    worlds: Worlds, library: Library, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    other = make(worlds, library, POOL[:2])
+    monkeypatch.setenv(SUPERVISOR_ENV, str(os.getpid()))
+
+    def asked() -> None:
+        worlds.index.ask(other)
+        assert switch()
+
+    spawner = Spawner(asked)
+
+    assert Supervisor(["serve"], worlds, BASE, spawn=spawner).run() == 0
+
+    assert len(spawner.envs) == 2
+    assert spawner.children[0].signals == [signal.SIGTERM]
+
+
+def test_a_world_asked_for_opens_once_and_the_last_played_after(
+    worlds: Worlds, library: Library
+) -> None:
+    played, asked = make(worlds, library, POOL[:2]), make(worlds, library, POOL[2:4])
+    worlds.index.opened(played)
+    worlds.index.ask(asked)
+    supervisor = Supervisor([], worlds, BASE)
+
+    assert supervisor.environment(first=False)[1] == asked
+    assert supervisor.environment(first=False)[1] == played
+
+
+def test_a_world_asked_for_and_gone_falls_back_to_the_last_played(
+    worlds: Worlds, library: Library
+) -> None:
+    played, asked = make(worlds, library, POOL[:2]), make(worlds, library, POOL[2:4])
+    worlds.index.opened(played)
+    worlds.index.ask(asked)
+    worlds.delete(asked)
+
+    assert Supervisor([], worlds, BASE).environment(first=False)[1] == played
+
+
+def test_stops_with_the_server_and_forces_it_when_asked_again(worlds: Worlds) -> None:
     def stop() -> None:
         supervisor._stop(signal.SIGINT, None)
         supervisor._switch(signal.SIGUSR1, None)
         supervisor._stop(signal.SIGINT, None)
+        supervisor._stop(signal.SIGINT, None)
 
-    spawner = Spawner(stop)
-    supervisor = Supervisor(["serve"], worlds, BASE, spawn=spawner)
+    spawner, groups = Spawner(stop), Groups()
+    supervisor = Supervisor(["serve"], worlds, BASE, spawn=spawner, killpg=groups)
 
     assert supervisor.run() == 0
 
     assert len(spawner.envs) == 1
-    assert spawner.children[0].signals == [signal.SIGTERM, signal.SIGINT]
+    assert spawner.children[0].signals == [signal.SIGTERM]
+    assert groups.sent == [(1000, signal.SIGINT), (1000, signal.SIGINT)]
+
+
+def test_stopping_while_switching_lets_the_server_save(worlds: Worlds) -> None:
+    def switch_then_stop() -> None:
+        supervisor._switch(signal.SIGUSR1, None)
+        supervisor._stop(signal.SIGINT, None)
+
+    spawner, groups = Spawner(switch_then_stop), Groups()
+    supervisor = Supervisor(["serve"], worlds, BASE, spawn=spawner, killpg=groups)
+
+    assert supervisor.run() == 0
+
+    assert len(spawner.envs) == 1
+    assert spawner.children[0].signals == [signal.SIGTERM]
+    assert groups.sent == []
 
 
 def test_the_server_command_runs_simile_serve() -> None:
@@ -241,9 +308,24 @@ def supervised(
 
     yield start
     for server in servers:
-        if server.poll() is None:
-            server.kill()
-            server.wait()
+        stop(server)
+
+
+def stop(server: subprocess.Popen[bytes]) -> None:
+    """Stops the supervisor and, since it runs in a session of its own, its server's group."""
+    if server.poll() is not None:
+        return
+    found = subprocess.run(["pgrep", "-P", str(server.pid)], capture_output=True, text=True)
+    groups = [int(pid) for pid in found.stdout.split()]
+    server.terminate()
+    try:
+        server.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        server.kill()
+        server.wait()
+    for group in groups:
+        with suppress(ProcessLookupError, PermissionError):
+            os.killpg(group, signal.SIGKILL)
 
 
 def test_switches_worlds_without_restarting_and_keeps_each_as_it_was_saved(

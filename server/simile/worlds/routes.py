@@ -86,7 +86,7 @@ async def listing(request: Request) -> Response:
             "current": now.model_dump(mode="json"),
             "houses": count,
             "worlds": [world.model_dump(mode="json") for world in listed],
-            "switching": supervised(),
+            "supervised": supervised(),
         }
     )
 
@@ -109,7 +109,7 @@ async def create(request: Request) -> Response:
     made = await run_in_threadpool(worlds.create, new, library)
     opening = new.open and supervised()
     if opening:
-        await run_in_threadpool(worlds.index.opened, made.id)
+        await run_in_threadpool(worlds.index.ask, made.id)
     made = made.model_copy(update={"opening": opening})
     return JSONResponse(
         made.model_dump(mode="json"),
@@ -148,7 +148,7 @@ async def open_world(request: Request) -> Response:
         return JSONResponse({"id": id, "opening": False})
     if not supervised():
         return problem(409, UNSUPERVISED)
-    await run_in_threadpool(worlds.index.opened, id)
+    await run_in_threadpool(worlds.index.ask, id)
     return JSONResponse(
         {"id": id, "opening": True}, status_code=202, background=BackgroundTask(supervisor.switch)
     )

@@ -1,4 +1,5 @@
 import sqlite3
+from collections.abc import Callable
 from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
@@ -7,9 +8,10 @@ from typing import Any
 import pytest
 from starlette.testclient import TestClient
 
+from simile.app import create_app
 from simile.memory import MemoryStore
 from simile.persistence import SavedWorld, WorldStore
-from simile.worlds import supervisor
+from simile.worlds import Worlds, supervisor
 from simile.worlds.index import Index
 from simile.worlds.store import TODAY, TODAY_ID
 
@@ -34,7 +36,7 @@ def switches(monkeypatch: pytest.MonkeyPatch, root: Path) -> list[str | None]:
     asked: list[str | None] = []
 
     def switch() -> bool:
-        asked.append(Index(root).read().last)
+        asked.append(Index(root).read().next)
         return True
 
     monkeypatch.setenv(supervisor.SUPERVISOR_ENV, "1")
@@ -180,6 +182,7 @@ def test_opens_a_world_through_the_supervisor(
     assert response.status_code == 202
     assert response.json() == {"id": world["id"], "opening": True}
     assert switches == [world["id"]]
+    assert Index(root).read().last is None
 
 
 def test_opening_the_running_world_does_nothing(
@@ -202,7 +205,7 @@ def test_cant_open_a_world_without_a_supervisor(client: TestClient, root: Path) 
 
     assert response.status_code == 409
     assert "simile worlds serve" in response.json()["error"]
-    assert client.get("/api/worlds").json()["switching"] is False
+    assert client.get("/api/worlds").json()["supervised"] is False
 
 
 def test_makes_a_world_and_opens_it(
@@ -212,7 +215,7 @@ def test_makes_a_world_and_opens_it(
 
     assert world["opening"] is True
     assert switches == [world["id"]]
-    assert client.get("/api/worlds").json()["switching"] is True
+    assert client.get("/api/worlds").json()["supervised"] is True
 
 
 def test_makes_a_world_without_opening_it(
@@ -222,3 +225,48 @@ def test_makes_a_world_without_opening_it(
 
     assert world["opening"] is False
     assert switches == []
+
+
+def test_without_a_supervisor_a_new_world_isnt_opened(client: TestClient, root: Path) -> None:
+    world = made(client, count=2, picks=[A, B], open=True)
+
+    assert world["opening"] is False
+    assert Index(root).read().next is None
+
+
+def test_a_corrupt_index_is_moved_aside(client: TestClient, root: Path) -> None:
+    world = made(client, count=2, picks=[A, B], name="Ash Lane")
+    (root / "worlds.json").write_text("{not json")
+
+    assert listed(client)[world["id"]]["name"] == world["id"]
+    client.patch(f"/api/worlds/{world['id']}", json={"name": "Elm Row"})
+
+    assert (root / "worlds.json.bad").read_text() == "{not json"
+    assert Index(root).read().entry(world["id"]).name == "Elm Row"
+
+
+@pytest.mark.parametrize("supervised", [True, False])
+def test_the_world_is_last_played_once_its_server_is_up(
+    make_package: Callable[[dict[str, str]], str],
+    client: TestClient,
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    supervised: bool,
+) -> None:
+    world = made(client, count=2, picks=[A, B])
+    running_on(monkeypatch, root, world["id"])
+    if supervised:
+        monkeypatch.setenv(supervisor.SUPERVISOR_ENV, "1")
+    hook = {"worlds/lifespan.py": "from simile.worlds.lifespan import running\n"}
+    app = create_app(make_package(hook))
+    app.state.worlds = Worlds(root)
+
+    with TestClient(app):
+        up = Index(root).read()
+    down = Index(root).read()
+
+    if supervised:
+        assert up.last == world["id"] and up.entry(world["id"]).played is not None
+        assert down.entry(world["id"]).played > up.entry(world["id"]).played
+    else:
+        assert up.last is None and down.entry(world["id"]).played is None
