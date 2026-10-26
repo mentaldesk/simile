@@ -30,6 +30,22 @@ BOT = Kind(
         Patrol(pause=3.0),
     ),
 )
+DOG = Kind(
+    CreatureKind.DOG,
+    speed=4.0,
+    think=0.1,
+    climbs=False,
+    doors=False,
+    reach=1.2,
+    lunges=True,
+    damage=0.1,
+    rest=0.9,
+    health=math.inf,
+    toughness=1.0,
+    knock=1.5,
+    stagger=1.0,
+    ways=(Chase(sight=10.0, pace=4.0, memory=3.0), Patrol(pause=2.0)),
+)
 
 
 @dataclass(frozen=True)
@@ -38,5 +54,9 @@ class Placing:
     respawn: float | None = None
 
 
-KINDS = {CreatureKind.RAT: Placing(RAT, respawn=120.0), CreatureKind.BOT: Placing(BOT)}
+KINDS = {
+    CreatureKind.RAT: Placing(RAT, respawn=120.0),
+    CreatureKind.BOT: Placing(BOT),
+    CreatureKind.DOG: Placing(DOG),
+}
 """Each kind a map's `creatures` layer can place."""

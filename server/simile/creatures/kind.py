@@ -14,6 +14,7 @@ class Kind:
     id: CreatureKind
     ways: "tuple[Way, ...]" = ()
     speed: float = 1.0
+    think: float = 0.25
     flies: bool = False
     climbs: bool = True
     doors: bool = True
@@ -22,6 +23,7 @@ class Kind:
     bites: bool = False
     damage: float = 0.05
     windup: float = 0.3
+    lunges: bool = False
     rest: float = 1.0
     health: float = 1.0
     toughness: float = 0.0

@@ -321,6 +321,30 @@
       ],
       "hash": "5b8da755a92d2e06"
     },
+    "aris_notes": {
+      "file": "aris_notes.webp",
+      "size": [
+        260,
+        250
+      ],
+      "hash": "d9e11547c852e59c"
+    },
+    "door_frame": {
+      "file": "door_frame.webp",
+      "size": [
+        81,
+        260
+      ],
+      "hash": "74de88de89ec8a81"
+    },
+    "schematic": {
+      "file": "schematic.webp",
+      "size": [
+        260,
+        229
+      ],
+      "hash": "83fa774a1e8c1c16"
+    },
     "unknown_item": {
       "file": "unknown_item.webp",
       "size": [

@@ -406,6 +406,7 @@ function exposeWalk(scene: SideScene, village: Village): void {
       },
       teleport: (to: MapPosition) => scene.teleport(to),
       mind: () => ({ recipes: known, searched, items: items.map(({ id }) => id) }),
+      usables: () => scene.usableView.drawn(),
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
         sendPlayerState();
