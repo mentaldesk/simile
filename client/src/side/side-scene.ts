@@ -34,6 +34,7 @@ import { PileGlints } from './piles';
 import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
 import { StreetView, type Content } from './street-view';
+import { UsableView } from './usable-view';
 import { SideTextures } from './textures';
 import { prompts } from './ways';
 
@@ -67,6 +68,7 @@ export class SideScene extends Phaser.Scene {
   private pictures!: SideTextures;
   private glints!: PileGlints;
   private creatures!: CreatureView;
+  private usables!: UsableView;
   private street?: StreetView;
   private dark?: DarkView;
   private sockets: Phaser.GameObjects.Graphics[] = [];
@@ -105,6 +107,7 @@ export class SideScene extends Phaser.Scene {
     this.pictures = new SideTextures(this);
     this.glints = new PileGlints(this);
     this.creatures = new CreatureView(this);
+    this.usables = new UsableView(this, this.pictures);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
     const keyboard = this.input.keyboard!;
@@ -142,6 +145,7 @@ export class SideScene extends Phaser.Scene {
       () => this.dark?.destroy(),
       () => this.glints.destroy(),
       () => this.creatures.destroy(),
+      () => this.usables.destroy(),
       () => this.pictures.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
@@ -172,6 +176,11 @@ export class SideScene extends Phaser.Scene {
   /** For the dev harness. */
   get playing(): SidePlayer | undefined {
     return this.player;
+  }
+
+  /** For the dev harness. */
+  get usableView(): UsableView {
+    return this.usables;
   }
 
   /** For the dev harness. */
@@ -220,6 +229,7 @@ export class SideScene extends Phaser.Scene {
     const shown = [street.map.id, ...street.map.buildings.flatMap(({ name }) => content.village.floors(name).map(({ id }) => id))];
     const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.(), shown);
     this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
+    this.usables.update(content, street, this.passing ? undefined : player.mapPosition, time / 1000);
     this.report(player.mapPosition, time / 1000);
   }
 

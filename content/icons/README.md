@@ -58,6 +58,19 @@ the sewers' salvage, and the recipes' parts. `tests/icons/test_items.py` finds e
 server's code, config and maps, and fails for one without an icon. `unknown_item`, a box with a
 question mark, is the Gear tab's picture for an item with none of its own.
 
+## The side view's
+
+The side view draws what the player can use where no furniture does (`client/src/side/usables.ts`).
+
+| Icons | What they are |
+|---|---|
+| `aris_notes`, `door_frame` | Clues: Aris's notes, pinned over her bench, and the splintered door frame. |
+| `note` | Any other clue. |
+| `schematic` | A recipe lying on a searchable that teaches it, until it's searched. |
+| `cupboard`, `terminal` | A searchable or a jack that no furniture draws. |
+
+A pile is drawn as its first item's icon.
+
 ## Adding icons
 
 Add an `Icon` to `server/simile/icons/catalogue.py`, in a tuple of its own if it starts a new set,
