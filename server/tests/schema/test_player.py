@@ -20,6 +20,8 @@ from simile.schema import (
     Bionic,
     Body,
     BodyPart,
+    Effect,
+    EffectKind,
     Item,
     ItemKind,
     MapTile,
@@ -27,14 +29,16 @@ from simile.schema import (
     Pile,
     Player,
     Recipe,
+    Sale,
     export,
     lamp,
 )
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED = PLAYERS
-STAGE_1 = PLAYERS[:-1]
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED, HURT = PLAYERS
+STAGE_1 = PLAYERS[:-2]
+BEFORE_VITALS = PLAYERS[:-1]
 SALVAGE = DELVING["items"][1]
 RECIPES: list[dict[str, Any]] = json.loads((HERE / "recipes.json").read_text())
 CELL, JACK, APEX_LEGS, EYE = RECIPES
@@ -45,7 +49,9 @@ def schema(name: str) -> Draft202012Validator:
 
 
 def rejects(
-    model: type[Player | Item | Body | Pile | Recipe | Mind], data: dict[str, Any], match: str
+    model: type[Player | Item | Body | Pile | Recipe | Mind | Effect | Sale],
+    data: dict[str, Any],
+    match: str,
 ) -> None:
     with pytest.raises(ValidationError, match=match):
         model.model_validate(data)
@@ -54,7 +60,16 @@ def rejects(
 @pytest.mark.parametrize(
     "data",
     PLAYERS,
-    ids=["starting", "kidney_sold", "delving", "fitted", "collapsed", "salvaging", "cell_fitted"],
+    ids=[
+        "starting",
+        "kidney_sold",
+        "delving",
+        "fitted",
+        "collapsed",
+        "salvaging",
+        "cell_fitted",
+        "hurt",
+    ],
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
     parsed = Player.model_validate_json(json.dumps(data))
@@ -251,7 +266,10 @@ def test_load_is_what_everything_carried_weighs() -> None:
 
 
 def changes(
-    model: Player | Item | Body | Pile | MapTile | Mind, field: str, value: Any, match: str
+    model: Player | Item | Body | Pile | MapTile | Mind | Effect,
+    field: str,
+    value: Any,
+    match: str,
 ) -> None:
     before = model.model_dump()
     with pytest.raises(ValidationError, match=match):
@@ -263,6 +281,8 @@ def changes(
     ("field", "value", "match"),
     [
         ("hunger", 1.02, "less than or equal to 1"),
+        ("power", -0.01, "greater than or equal to 0"),
+        ("health", 1.5, "less than or equal to 1"),
         ("money", -5, "greater than or equal to 0"),
         ("carry_limit", 0, "greater than 0"),
     ],
@@ -556,3 +576,85 @@ def test_rejects_selling_a_recipe_they_never_learned_or_forgetting_one_sold() ->
     mind.sold = [Bionic.DATAJACK]
     changes(mind, "recipes", [], "only sell a recipe they know")
     assert mind.sold == [Bionic.DATAJACK]
+
+
+BITE = HURT["effects"][0]
+
+
+@pytest.mark.parametrize("data", BEFORE_VITALS)
+def test_a_save_from_before_vitals_loads_at_full_health_and_power_with_no_effects(
+    data: dict[str, Any],
+) -> None:
+    player = Player.model_validate(data)
+
+    assert (player.health, player.power) == (1, 1)
+    assert player.effects == []
+    assert player.sales == []
+    assert json.loads(player.model_dump_json()) == data
+
+
+def test_full_vitals_no_effects_and_no_sales_are_left_out() -> None:
+    required = schema("Player").schema["required"]
+
+    for field in ("power", "health", "effects", "sales"):
+        assert field not in json.loads(Player().model_dump_json())
+        assert field in Player.model_fields
+        assert field not in required
+    assert json.loads(Player(health=0.99).model_dump_json())["health"] == 0.99
+
+
+def test_a_hurt_player_has_their_vitals_effects_and_what_they_can_buy_back() -> None:
+    player = Player.model_validate(HURT)
+
+    assert (player.hunger, player.power, player.health) == (0.3, 0.65, 0.5)
+    assert [effect.kind for effect in player.effects] == [EffectKind.RAT_BITE, EffectKind.INFECTION]
+    bite, infection = player.effects
+    assert (bite.strength, bite.fades) == (0.2, 0.05)
+    assert bite.since == datetime(2026, 3, 15, 11, 20, tzinfo=UTC)
+    assert infection.fades is None
+    assert [(sale.item.id, sale.place, sale.price) for sale in player.sales] == [
+        ("copper_wire", "scrap_stall", 6),
+        ("copper_wire", "scrap_stall", 5),
+    ]
+
+
+def test_an_effect_lasting_until_treated_says_so_with_null() -> None:
+    assert json.loads(Effect.model_validate(HURT["effects"][1]).model_dump_json())["fades"] is None
+    assert "fades" in schema("Player").schema["$defs"]["Effect"]["required"]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"kind": "snake_bite"}, "rat_bite"),
+        ({"strength": 0}, "greater than 0"),
+        ({"strength": 1.1}, "less than or equal to 1"),
+        ({"fades": 0}, "greater than 0"),
+        ({"fades": float("inf")}, "finite"),
+        ({"since": "2026-03-15T11:20:00"}, "timezone"),
+    ],
+)
+def test_rejects_invalid_effects(update: dict[str, Any], match: str) -> None:
+    rejects(Effect, BITE | update, match)
+
+
+def test_rejects_an_effect_without_how_it_fades() -> None:
+    rejects(Effect, {key: value for key, value in BITE.items() if key != "fades"}, "fades")
+
+
+def test_they_have_each_kind_of_effect_once() -> None:
+    rejects(Player, HURT | {"effects": [BITE, BITE | {"strength": 0.5}]}, "each kind of effect")
+    player = Player.model_validate(HURT)
+    changes(player, "effects", [*player.effects, Effect.model_validate(BITE)], "each kind")
+    assert len(player.effects) == 2
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"place": "Scrap stall"}, "pattern"),
+        ({"price": -1}, "greater than or equal to 0"),
+    ],
+)
+def test_rejects_invalid_sales(update: dict[str, Any], match: str) -> None:
+    rejects(Sale, HURT["sales"][0] | update, match)
