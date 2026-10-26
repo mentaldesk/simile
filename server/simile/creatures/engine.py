@@ -33,9 +33,9 @@ KICK_SLACK = 0.3
 KICK_HEIGHT = 1.2
 """Tiles above the player's feet a kick reaches: a bat lower than that is in it."""
 JUMPS_OVER = 0.8
+"""Tiles above a walking creature the player's feet are out of its reach."""
 COLLECTING = 4.0
 """Sim seconds a creature spends at salvage before it's taken, for the player to beat it."""
-"""Tiles above a walking creature the player's feet are out of its reach."""
 
 
 class Leg(NamedTuple):
