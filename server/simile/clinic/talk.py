@@ -232,6 +232,8 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             f"can't build it. Nothing you build runs without a {cell} in place of the stomach, "
             "so the cell goes in first.",
             "- You buy each recipe a customer knows once, at your price, and they still know it.",
+            f"- You patch up the hurt, for up to {_money(config.patch_up)} by how hurt they are, "
+            f"and you {_cures(config)}: a rat bite left untreated can turn infected.",
             "- You still have a few old legs in stock, fitted for the price alone:",
             *fits,
             "Up in the village people notice bionics, and some think less of anyone who has them. "
@@ -242,6 +244,12 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             f"The customer is {PLAYER_NAME}. Reply with only what you say aloud, in one to three "
             "short sentences, with no name label and no stage directions.",
         ]
+    )
+
+
+def _cures(config: ClinicConfig) -> str:
+    return _listed(
+        [f"{cure.name.lower()} for {_money(cure.price)}" for cure in config.cures.values()]
     )
 
 
@@ -286,6 +294,7 @@ def _now(clinic: Clinic) -> str:
         f"buy their recipe for the {recipes[bionic].name.lower()} for a one-off {_money(price)}"
         for bionic, price in clinic.recipes().items()
     ]
+    deals += [f"{t.name.lower()} for {_money(t.price)}" for t in clinic.treatments()]
     return f"{_listed(deals)}." if deals else "nothing, until they know how to build something."
 
 
