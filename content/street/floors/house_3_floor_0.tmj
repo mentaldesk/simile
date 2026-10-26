@@ -249,7 +249,31 @@
       "draworder": "topdown",
       "id": 9,
       "name": "interactables",
-      "objects": [],
+      "objects": [
+        {
+          "height": 16,
+          "id": 6,
+          "name": "house_3_sofa",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Sofa cushions"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "3,2 4,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 48,
+          "y": 32
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -291,7 +315,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 6,
+  "nextobjectid": 7,
   "orientation": "orthogonal",
   "properties": [
     {

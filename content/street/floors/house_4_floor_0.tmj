@@ -249,7 +249,36 @@
       "draworder": "topdown",
       "id": 9,
       "name": "interactables",
-      "objects": [],
+      "objects": [
+        {
+          "height": 32,
+          "id": 6,
+          "name": "house_4_kitchen",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"ration_bar\", \"kind\": \"food\", \"name\": \"Ration bar\", \"weight\": 0.2, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Kitchen drawer"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "5,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 16
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -291,7 +320,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 6,
+  "nextobjectid": 7,
   "orientation": "orthogonal",
   "properties": [
     {

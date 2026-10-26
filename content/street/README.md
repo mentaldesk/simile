@@ -155,6 +155,31 @@ and the metro's two, besides the salvage on the train's roof. The infrared eye n
 power cell, so its recipe and the cell's are found together, in the room past the gate farthest
 from it, but the hatch's, that has room for both. The eye's lens is a villager's (P17).
 
+### Houses
+
+Each house has a place or two to search in its furniture (`STASHES` in `simile.street.finds`,
+P27), with the id `<house>_<piece>`. They hold loose cash, which `Interactable` has no field for,
+so `simile.theft` pays it through the ledger as `found` once the place is searched, and the odd
+ration bar (food, 0.2 kg). No electrical parts: residents don't keep them. Whoever is awake in
+the room sees the player at it, and minds as much as their security and tradition say.
+
+| House | Living room | Bedroom | Cash |
+|---|---|---|--:|
+| `house_1` | `kitchen`, a jar on the shelf: 5 | `wardrobe`, a coat: 3 | 8 |
+| `house_2` | `kitchen`, a tea tin: 2 and a ration bar | `bed`, under the mattress: 10 | 12 |
+| `house_3` | `sofa`, the cushions: 2 | `bed`, the bedside drawer: 4 | 6 |
+| `house_4` | `kitchen`, a drawer: 1 and a ration bar | `wardrobe`, a handbag: 6 | 7 |
+| `house_5` | `sofa` 2, `kitchen`, a jar: 3 | | 5 |
+| `house_6` | `sofa` 3, `kitchen`, a cupboard: a ration bar | | 3 |
+| `house_7` | `kitchen`, a drawer: 2 | `wardrobe`, a coat: 7 | 9 |
+| `house_8` | `kitchen`, a biscuit tin: 4, `sofa` 1 | | 5 |
+| `house_9` | | `bed`, the bedside drawer: 5 | 5 |
+| `house_10` | `kitchen`, a drawer: 2 and a ration bar | | 2 |
+
+That's 62 in all. With the kidney (100) and the metro's secrets a jump reaches (65), it pays for
+the power cell and the datajack (200) without waiting for salvage to come back, and without the
+kidney the houses, those secrets and one round of the metro's salvage (25) come to 152.
+
 ## The village
 
 Five streets. Kapok Walk and Lychee Lane lead off the square on the High Street, and steps go

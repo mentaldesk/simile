@@ -249,7 +249,54 @@
       "draworder": "topdown",
       "id": 9,
       "name": "interactables",
-      "objects": [],
+      "objects": [
+        {
+          "height": 16,
+          "id": 6,
+          "name": "house_5_sofa",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Sofa cushions"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "3,2 4,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 48,
+          "y": 32
+        },
+        {
+          "height": 32,
+          "id": 7,
+          "name": "house_5_kitchen",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Jar on the kitchen shelf"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "1,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 16
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -291,7 +338,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 6,
+  "nextobjectid": 8,
   "orientation": "orthogonal",
   "properties": [
     {
