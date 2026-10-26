@@ -1,5 +1,6 @@
 import json
 from datetime import UTC, datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,6 +15,9 @@ from simile.protocol import (
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
+    Creature,
+    CreatureGoneMessage,
+    CreatureMovedMessage,
     EatMessage,
     EntityMovedMessage,
     Face,
@@ -21,6 +25,7 @@ from simile.protocol import (
     Fitting,
     Frame,
     JournalMessage,
+    KickMessage,
     LampMessage,
     LineMessage,
     ListNewsMessage,
@@ -47,6 +52,8 @@ from simile.protocol import (
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
+    Treatment,
+    TreatMessage,
     Vital,
     Wall,
     WatchNpcMessage,
@@ -59,6 +66,8 @@ from simile.protocol.messages import client_messages, server_messages
 from simile.schema import (
     Bionic,
     Body,
+    CreatureKind,
+    CreatureState,
     Effect,
     EffectKind,
     Facing,
@@ -78,6 +87,10 @@ from simile.schema import (
     lamp,
 )
 
+CREATURE_FIGURES = Path(__file__).parents[3] / "content" / "creatures"
+CREATURES = TypeAdapter(list[Creature]).validate_json(
+    (Path(__file__).parent / "creatures.json").read_bytes()
+)
 SNAPSHOT = fixture_snapshot(datetime(2026, 3, 14, 9, 10, 3, tzinfo=UTC))
 CONVERSATION = SNAPSHOT.conversations[0]
 ARTICLE = NewsArticle(
@@ -271,6 +284,23 @@ BUYING_BACK = HURT.model_copy(
         "buyer": SCRAP_TRADER.model_copy(update={"stock": [Offer(item=USB_C, price=40)]}),
     }
 )
+PATCH_UP = Treatment(effect=None, name="Patch up", price=30)
+TREAT_INFECTION = Treatment(effect=EffectKind.INFECTION, name="Treat the infection", price=45)
+TREATING = HURT.model_copy(
+    update={
+        "buyer": DOCTOR.model_copy(
+            update={"fittings": [], "parts": {}, "treatments": [PATCH_UP, TREAT_INFECTION]}
+        )
+    }
+)
+SEARCHED = PlayerStateMessage(
+    player=Player(
+        items=[lamp(), USB_C],
+        mind=Mind(recipes=[Bionic.DATAJACK]),
+        searched=["aris_bench", "maker_space_drawers"],
+    ),
+    recipes=[JACK_RECIPE],
+)
 DRAINED = PlayerCollapsedMessage(position=Position(x=4, y=9, map="home"), cause=Vital.POWER)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
@@ -302,6 +332,7 @@ FROM_RAYMOND = JournalEntry(
 JOURNAL = JournalMessage(entries=[FROM_THE_NOTES, FROM_RAYMOND])
 
 CLOCK = ClockMessage(time=SNAPSHOT.time, speed=60)
+IN_THE_SEWERS = SNAPSHOT.model_copy(update={"creatures": CREATURES})
 SERVER = [
     SNAPSHOT,
     EntityMovedMessage(entity_id="mei", position=Position(x=4.5, y=6)),
@@ -340,10 +371,15 @@ SERVER = [
     SELLING_RECIPES,
     HURT,
     BUYING_BACK,
+    TREATING,
+    SEARCHED,
     JournalMessage(entries=[]),
     JOURNAL,
     COLLAPSED,
     DRAINED,
+    IN_THE_SEWERS,
+    *(CreatureMovedMessage(creature=creature) for creature in CREATURES),
+    CreatureGoneMessage(creature_id="rat_2"),
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -368,6 +404,10 @@ CLIENT = [
     FitMessage(bionic=Bionic.POWER_CELL, part="stomach"),
     SellRecipeMessage(recipe=Bionic.DATAJACK),
     BuyMessage(item="usb_c_connector"),
+    TreatMessage(effect=None),
+    TreatMessage(effect=EffectKind.INFECTION),
+    KickMessage(facing="east"),
+    KickMessage(facing="west"),
 ]
 
 
@@ -905,6 +945,9 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("Buyer", "fittings"),
         ("Buyer", "recipes"),
         ("Buyer", "stock"),
+        ("Buyer", "treatments"),
+        ("SnapshotMessage", "creatures"),
+        ("Player", "searched"),
         ("Player", "power"),
         ("Player", "health"),
         ("Player", "effects"),
@@ -1115,6 +1158,12 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
             {"type": "sell_recipe", "recipe": "datajack"},
         ),
         (BuyMessage(item="usb_c_connector"), {"type": "buy", "item": "usb_c_connector"}),
+        (TreatMessage(effect=None), {"type": "treat", "effect": None}),
+        (
+            TreatMessage(effect=EffectKind.RAT_BITE),
+            {"type": "treat", "effect": "rat_bite"},
+        ),
+        (KickMessage(facing="west"), {"type": "kick", "facing": "west"}),
     ],
     ids=[
         "item",
@@ -1128,6 +1177,9 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
         "fit",
         "sell_recipe",
         "buy",
+        "patch_up",
+        "treat",
+        "kick",
     ],
 )
 def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
@@ -1275,6 +1327,12 @@ def test_timestamps_are_utc() -> None:
         {"type": "buy", "item": None},
         {"type": "buy", "item": "USB-C connector"},
         {"type": "buy", "item": "usb_c_connector", "price": 40},
+        {"type": "treat"},
+        {"type": "treat", "effect": "snake_bite"},
+        {"type": "kick"},
+        {"type": "kick", "facing": "north"},
+        {"type": "kick", "facing": None},
+        {"type": "kick", "facing": "east", "creature": "rat_1"},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:
@@ -1291,3 +1349,135 @@ def test_fixture_snapshot_has_everyone_and_only_active_conversations() -> None:
     ]
     assert SNAPSHOT.entities[0].position == Position(x=3, y=11)
     assert [c.id for c in SNAPSHOT.conversations] == ["conv_2"]
+
+
+def test_the_snapshot_has_every_creature_on_every_map() -> None:
+    data = json.loads(IN_THE_SEWERS.model_dump_json())
+
+    assert data["creatures"] == json.loads((Path(__file__).parent / "creatures.json").read_text())
+    assert json.loads(SNAPSHOT.model_dump_json())["creatures"] == []
+
+
+def test_a_snapshot_without_creatures_has_none() -> None:
+    data = json.loads(SNAPSHOT.model_dump_json())
+    del data["creatures"]
+
+    validator().validate(data)
+    assert server_messages.validate_python(data).creatures == []
+
+
+def test_a_creature_moving_carries_all_of_it_so_a_new_one_can_appear() -> None:
+    assert json.loads(CreatureMovedMessage(creature=CREATURES[2]).model_dump_json()) == {
+        "type": "creature_moved",
+        "creature": {
+            "id": "dog_1",
+            "kind": "dog",
+            "position": {"x": 61.25, "y": 18.0, "map": "sewers"},
+            "facing": "east",
+            "state": "chasing",
+        },
+    }
+    assert json.loads(CreatureGoneMessage(creature_id="rat_2").model_dump_json()) == {
+        "type": "creature_gone",
+        "creature_id": "rat_2",
+    }
+
+
+def test_creatures_are_rats_bots_dogs_and_bats_named_as_their_figures() -> None:
+    assert [kind.value for kind in CreatureKind] == ["rat", "bot", "dog", "bat"]
+    assert [state.value for state in CreatureState] == [
+        "idle",
+        "moving",
+        "chasing",
+        "fleeing",
+        "attacking",
+        "roosting",
+        "hurt",
+    ]
+
+
+@pytest.mark.parametrize("kind", list(CreatureKind))
+def test_each_kind_of_creature_has_its_figure(kind: CreatureKind) -> None:
+    figure = json.loads((CREATURE_FIGURES / f"{kind}.json").read_text())
+
+    assert figure["id"] == kind
+
+
+def test_creatures_and_kicks_face_right_or_left_alike() -> None:
+    defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
+
+    assert defs["SideFacing"]["enum"] == ["east", "west"]
+    assert defs["Creature"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
+    assert defs["KickMessage"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
+
+
+def test_the_exported_creature_requires_every_field() -> None:
+    creature = json.loads(SCHEMA_FILE.read_text())["$defs"]["Creature"]
+
+    assert sorted(creature["required"]) == ["facing", "id", "kind", "position", "state"]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"state": "roosting"}, "only a bat roosts"),
+        ({"kind": "snake"}, "Input should be 'rat'"),
+        ({"state": "dead"}, "Input should be 'idle'"),
+        ({"facing": "up"}, "Input should be 'east' or 'west'"),
+        ({"facing": "north"}, "Input should be 'east' or 'west'"),
+        ({"facing": "south_east"}, "Input should be 'east' or 'west'"),
+        ({"id": "Rat 1"}, "String should match pattern"),
+        ({"health": 0.5}, "Extra inputs"),
+    ],
+)
+def test_rejects_invalid_creatures(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Creature.model_validate(CREATURES[0].model_dump() | update)
+
+
+def test_creature_messages_go_only_from_server_to_client() -> None:
+    for message in (
+        CreatureMovedMessage(creature=CREATURES[0]),
+        CreatureGoneMessage(creature_id="rat_1"),
+    ):
+        with pytest.raises(ValidationError):
+            client_messages.validate_python(json.loads(message.model_dump_json()))
+
+
+def test_player_state_says_what_the_clinic_would_treat_and_for_what() -> None:
+    buyer = json.loads(TREATING.model_dump_json())["buyer"]
+
+    assert buyer["treatments"] == [
+        {"effect": None, "name": "Patch up", "price": 30.0},
+        {"effect": "infection", "name": "Treat the infection", "price": 45.0},
+    ]
+    assert "treatments" not in json.loads(DOCTOR.model_dump_json())
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        (
+            {"treatments": [PATCH_UP.model_dump(), PATCH_UP.model_dump()]},
+            "a buyer offers each treatment once",
+        ),
+        (
+            {"treatments": [TREAT_INFECTION.model_dump(), TREAT_INFECTION.model_dump()]},
+            "a buyer offers each treatment once",
+        ),
+        ({"treatments": [PATCH_UP.model_dump() | {"price": -1}]}, "greater than or equal to 0"),
+        ({"treatments": [PATCH_UP.model_dump() | {"name": ""}]}, "at least 1 character"),
+        ({"treatments": [PATCH_UP.model_dump() | {"effect": "snake_bite"}]}, "rat_bite"),
+        ({"treatments": [{"name": "Patch up", "price": 30}]}, "Field required"),
+    ],
+)
+def test_rejects_invalid_treatments(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Buyer.model_validate(DOCTOR.model_dump() | update)
+
+
+def test_player_state_says_what_they_have_searched() -> None:
+    player = json.loads(SEARCHED.model_dump_json())["player"]
+
+    assert player["searched"] == ["aris_bench", "maker_space_drawers"]
+    assert "searched" not in json.loads(STARTING.model_dump_json())["player"]

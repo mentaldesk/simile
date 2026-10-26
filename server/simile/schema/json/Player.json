@@ -333,7 +333,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health and no effects. Their humanity is derived from the bionics fitted and isn't a\nfield, so the client never sees it.",
+  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects and nothing searched. Their humanity is derived from the bionics\nfitted and isn't a field, so the client never sees it.",
   "properties": {
     "money": {
       "default": 0.0,
@@ -425,6 +425,17 @@
         "$ref": "#/$defs/Sale"
       },
       "title": "Sales",
+      "type": "array"
+    },
+    "searched": {
+      "default": [],
+      "description": "The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none.",
+      "items": {
+        "maxLength": 64,
+        "pattern": "^[a-z][a-z0-9_]*$",
+        "type": "string"
+      },
+      "title": "Searched",
       "type": "array"
     }
   },

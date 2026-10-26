@@ -36,9 +36,10 @@ from simile.schema import (
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED, HURT = PLAYERS
-STAGE_1 = PLAYERS[:-2]
-BEFORE_VITALS = PLAYERS[:-1]
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED, HURT, SEARCHING = PLAYERS
+STAGE_1 = PLAYERS[:-3]
+BEFORE_VITALS = PLAYERS[:-2]
+BEFORE_SEARCHING = PLAYERS[:-1]
 SALVAGE = DELVING["items"][1]
 RECIPES: list[dict[str, Any]] = json.loads((HERE / "recipes.json").read_text())
 CELL, JACK, APEX_LEGS, EYE = RECIPES
@@ -69,6 +70,7 @@ def rejects(
         "salvaging",
         "cell_fitted",
         "hurt",
+        "searching",
     ],
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
@@ -658,3 +660,28 @@ def test_they_have_each_kind_of_effect_once() -> None:
 )
 def test_rejects_invalid_sales(update: dict[str, Any], match: str) -> None:
     rejects(Sale, HURT["sales"][0] | update, match)
+
+
+@pytest.mark.parametrize("data", BEFORE_SEARCHING)
+def test_a_save_from_before_searching_has_searched_nothing(data: dict[str, Any]) -> None:
+    player = Player.model_validate(data)
+
+    assert player.searched == []
+    assert json.loads(player.model_dump_json()) == data
+
+
+def test_they_keep_what_they_have_searched_in_order() -> None:
+    player = Player.model_validate(SEARCHING)
+
+    assert player.searched == ["maker_space_drawers", "aris_bench", "metro_vending_machine"]
+    assert "searched" not in schema("Player").schema["required"]
+
+
+def test_they_search_each_thing_once() -> None:
+    rejects(
+        Player, SEARCHING | {"searched": ["aris_bench", "aris_bench"]}, "search each thing once"
+    )
+    rejects(Player, SEARCHING | {"searched": ["Aris bench"]}, "pattern")
+    player = Player.model_validate(SEARCHING)
+    changes(player, "searched", [*player.searched, "aris_bench"], "search each thing once")
+    assert len(player.searched) == 3

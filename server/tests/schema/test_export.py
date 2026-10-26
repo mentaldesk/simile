@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.schema import MODELS, export
 
-from .conftest import COUNTER, DOOR
+from .conftest import COUNTER, DOOR, SEARCHABLES
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
@@ -82,7 +82,10 @@ def test_exported_schema_accepts_fixtures(name: str, pattern: str) -> None:
             schema(name).validate(item)
 
 
-@pytest.mark.parametrize(("name", "item"), [("Door", DOOR), ("Interactable", COUNTER)])
+@pytest.mark.parametrize(
+    ("name", "item"),
+    [("Door", DOOR), ("Interactable", COUNTER), *(("Interactable", s) for s in SEARCHABLES)],
+)
 def test_exported_schema_accepts_doors_and_interactables(name: str, item: dict[str, Any]) -> None:
     assert schema(name).is_valid(item)
     assert not schema(name).is_valid(item | {"extra": 1})

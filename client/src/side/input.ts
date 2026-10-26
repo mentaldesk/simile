@@ -30,6 +30,16 @@ export class RunToggle {
   }
 }
 
+/** `handle`, called once for each event: Phaser hands a frame's earlier key events to its listeners again with each new one. */
+export function eachOnce<E extends object>(handle: (event: E) => void): (event: E) => void {
+  const seen = new WeakSet<E>();
+  return (event) => {
+    if (seen.has(event)) return;
+    seen.add(event);
+    handle(event);
+  };
+}
+
 /** A frame's controls. E uses what's in reach before a door. */
 export function readControls(
   held: Held,
