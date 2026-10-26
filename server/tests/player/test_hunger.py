@@ -399,7 +399,8 @@ def test_a_shop_that_is_serving_has_a_meal_and_is_not_shut() -> None:
 
 
 def test_after_last_orders_the_cafe_opens_the_next_morning() -> None:
-    village = Village(Player(money=25, hunger=0.9), monday(17.5))
+    mirela = next(npc for npc in load_npcs() if npc.id == "mirela")
+    village = Village(Player(money=25, hunger=0.9), monday(17.5), mirela)
     village.open = set()
     village.stand(9, 2, "coffee_shop_floor_1")
 

@@ -66,10 +66,4 @@ def test_a_shop_serves_in_the_shifts_of_whoever_works_there() -> None:
 
     assert hours("noodle_bar", npcs) == next(n for n in npcs if n.id == "odalys").shifts
     assert hours("noodle_bar", []) == []
-
-
-def test_without_a_barista_who_works_there_the_cafe_keeps_its_own_hours() -> None:
-    [daily] = hours("coffee_shop", [])
-
-    assert (set(daily.days), daily.start, daily.end) == (set(Weekday), 7, 17)
-    assert next_opening([daily], at(0, 17, 30)) == at(1, 7)
+    assert hours("coffee_shop", []) == []

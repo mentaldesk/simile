@@ -106,7 +106,6 @@ describe('eatPrompt', () => {
   });
 });
 
-// Monday 26 October 2026, 19:52, when the playtest found the noodle bar shut.
 const MONDAY_EVENING = '2026-10-26T19:52:00Z';
 const SHUT: Shut = { place: 'noodle_bar', name: 'Golden Bowl Noodles', reason: 'closed', opens: '2026-10-27T11:00:00Z' };
 const SOLD_OUT: Shut = { ...SHUT, reason: 'sold_out', opens: '2026-10-26T17:00:00Z' };

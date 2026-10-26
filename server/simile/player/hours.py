@@ -1,7 +1,6 @@
 from collections.abc import Iterable
 from datetime import datetime, timedelta
 
-from simile.cafe.config import DEFAULT_CONFIG as CAFE
 from simile.schema import Id, Npc, Shift, Weekday
 
 HOUR = timedelta(hours=1)
@@ -9,11 +8,8 @@ WEEK = 7
 
 
 def hours(place: Id, npcs: Iterable[Npc]) -> list[Shift]:
-    """When a shop serves: the shifts of whoever works there, else the café's own hours."""
-    shifts = [shift for npc in npcs if npc.workplace == place for shift in npc.shifts]
-    if not shifts and place == CAFE.home:
-        return [Shift(days=list(Weekday), start=CAFE.opens, end=CAFE.closes)]
-    return shifts
+    """When a shop serves: the shifts of whoever works there."""
+    return [shift for npc in npcs if npc.workplace == place for shift in npc.shifts]
 
 
 def next_opening(shifts: list[Shift], now: datetime) -> datetime | None:
