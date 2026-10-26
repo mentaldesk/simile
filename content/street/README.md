@@ -155,7 +155,6 @@ and the metro's two, besides the salvage on the train's roof. The infrared eye n
 power cell, so its recipe and the cell's are found together, in the room past the gate farthest
 from it, but the hatch's, that has room for both. The eye's lens is a villager's (P17).
 
-
 ## The village
 
 Five streets. Kapok Walk and Lychee Lane lead off the square on the High Street, and steps go

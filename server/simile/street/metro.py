@@ -51,7 +51,6 @@ GANTRY = GROUND - 7
 GANTRY_SECRET = "metro_secret_gantry"
 TICKET_MACHINE = "metro_ticket_machine"
 FRIDGE = "metro_fridge"
-"""A dead fridge by the bedroll in the west tunnel, where someone camped."""
 
 SALVAGE = "salvage"
 SECRET = "secret"

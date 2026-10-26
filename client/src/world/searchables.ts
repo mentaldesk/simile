@@ -37,9 +37,9 @@ export function foundIn(thing: Interactable): string {
 
 const glints = new WeakMap<Interactable, Pile>();
 
-/** A pile to glint at each thing on any map still to search, the same object each time. */
-export function toSearch(searched: readonly string[], jacked: boolean): Pile[] {
-  return Object.keys(maps).flatMap((map) =>
+/** A pile to glint at each thing still to search on the maps `on`, the same object each time. */
+export function toSearch(searched: readonly string[], jacked: boolean, on: readonly string[] = Object.keys(maps)): Pile[] {
+  return on.flatMap((map) =>
     interactablesOn(map)
       .filter((thing) => holds(thing) && searches(thing, searched, jacked))
       .map((thing) => {

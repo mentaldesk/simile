@@ -51,7 +51,6 @@ class Finds:
         self.player = player
         self.movement = movement
         self.known = known
-        """The recipes there are, which are all they can learn."""
         self.config = config
 
     def claim(self, at: Point) -> Claim | None:

@@ -212,7 +212,8 @@ export class SideScene extends Phaser.Scene {
       street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
-    const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.());
+    const shown = [street.map.id, ...street.map.buildings.flatMap(({ name }) => content.village.floors(name).map(({ id }) => id))];
+    const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.(), shown);
     this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
     this.report(player.mapPosition, time / 1000);
   }
