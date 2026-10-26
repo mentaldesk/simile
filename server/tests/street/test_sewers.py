@@ -30,6 +30,8 @@ from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
 from simile.street.sewers import (
     APEX_ACTUATOR,
+    CAVE,
+    CAVE_SECRET,
     CEILING,
     DEN,
     DEN_SECRET,
@@ -164,15 +166,39 @@ def test_past_the_last_room_the_den_has_a_door_and_a_ladder_up_to_its_stash(
     seed: int, level: Callable[[int], Played]
 ) -> None:
     town, found = level(seed).town, level(seed).reached
-    door, ladder, floor, loft = town.width - DEN - 1, town.width - 2, FLOORS[0], FLOORS[1]
+    [door] = [light.area.x for light in town.light if light.id == "sewers_den"]
+    ladder, floor, loft = door + DEN - 1, FLOORS[0], FLOORS[1]
     [stash] = [pickup for pickup in town.pickups if pickup.id == DEN_SECRET]
 
     assert town.walkable(door, floor) and all(town.solid(door, y) for y in range(CEILING, loft))
     assert all(town.climb(ladder, y) is DoorKind.LADDER for y in range(loft, floor))
-    assert town.width - DEN <= stash.x and stash.y < loft and stash.money >= 90
+    assert door < stash.x <= ladder and stash.y < loft and stash.money >= 90
     for name in FITTED:
         assert {(door + 1, floor), (stash.x, stash.y)} <= found[name], name
     assert (door, floor) not in found[OWN_JUMP]
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_past_the_den_the_bat_cave_climbs_three_dark_tiers_to_a_stash_only_the_legs_reach(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town, found = level(seed).town, level(seed).reached
+    [door] = [light.area.x for light in town.light if light.id == "sewers_cave"]
+    west, east = door + 1, door + CAVE
+    [stash] = [pickup for pickup in town.pickups if pickup.id == CAVE_SECRET]
+
+    assert east == town.width - 1 and town.walkable(door, FLOORS[0])
+    assert all(town.solid(door, y) for y in range(CEILING, FLOORS[0] - 3))
+    assert not any(town.lit(x, y) for x in range(door, east) for y in range(town.height))
+    for tier, ladder in ((0, east - GAP - 3), (1, west + 1)):
+        rungs = range(FLOORS[tier + 1], FLOORS[tier])
+        assert all(town.climb(ladder, y) is DoorKind.LADDER for y in rungs)
+    assert (stash.x, stash.y) == (east, FLOORS[2]) and stash.money >= 140
+    needs = level(seed).needs[CAVE_SECRET]
+    assert needs == Bionic.BIONIC_LEGS
+    for name in FITTED:
+        assert (west, FLOORS[0]) in found[name], name
+        assert ((east, FLOORS[2]) in found[name]) == meets(KITS[name], needs), name
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)

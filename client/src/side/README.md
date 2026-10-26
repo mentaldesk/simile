@@ -96,6 +96,9 @@ world: a canvas of four px a cell, scaled up smoothly, so the edges of the dark 
   fully within its inner `INNER` share and fading to its edge. Below `LOW` (20%) charge it draws in,
   to `FADED` of its radius when flat. A flat lamp gives no light. Without it, a glimmer
   (`GLIMMER`) is just enough to make out the player.
+- With the infrared eye fitted and the lamp off, the player sees the dark around them (`EYE`, 5
+  tiles) through a red veil, and what it sees is dimmed from then on, as with the lamp. The lamp
+  outshines it while it's on.
 - L sends `lamp`, switching the lamp the other way (`switchLamp` in `lamp.ts`). The lamp's state is
   the last `player_state`'s, so it lights once the server says so.
 - The player charges their lamp by standing on a plug's stand tile, as the server reads it

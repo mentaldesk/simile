@@ -29,3 +29,4 @@ class Kind:
     toughness: float = 0.0
     knock: float = 1.0
     stagger: float = 0.6
+    dodges: bool = False
