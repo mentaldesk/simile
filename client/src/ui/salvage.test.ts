@@ -69,14 +69,14 @@ describe('pickUpPrompt', () => {
 });
 
 describe('sellPrompt', () => {
-  it('says what E sells, and for how much', () => {
-    expect(sellPrompt(TRADER, player([LAMP, WIRE, RATION]))).toBe("Press E to sell your copper wire at the scrap trader's stall for 6.");
-    expect(sellPrompt(TRADER, player([WIRE, BOARD]))).toBe("Press E to sell your copper wire and circuit board at the scrap trader's stall for 14.");
-    expect(sellPrompt(TRADER, player([WIRE, BOARD, SERVO, WIRE]))).toBe("Press E to sell your salvage at the scrap trader's stall for 38.");
+  it('says what the buyer pays for what they carry', () => {
+    expect(sellPrompt(TRADER, player([LAMP, WIRE, RATION]))).toBe("Press E to sell at the scrap trader's stall: 6 for your copper wire.");
+    expect(sellPrompt(TRADER, player([WIRE, BOARD]))).toBe("Press E to sell at the scrap trader's stall: 14 for your copper wire and circuit board.");
+    expect(sellPrompt(TRADER, player([WIRE, BOARD, SERVO, WIRE]))).toBe("Press E to sell at the scrap trader's stall: 38 for your salvage.");
     expect(sellPrompt(TRADER, player([WIRE, BOARD, WIRE]))).toBe(
-      "Press E to sell your copper wire ×2 and circuit board at the scrap trader's stall for 20.",
+      "Press E to sell at the scrap trader's stall: 20 for your copper wire ×2 and circuit board.",
     );
-    expect(sellPrompt(TRADER, player([WIRE, WIRE]))).toBe("Press E to sell your copper wire ×2 at the scrap trader's stall for 12.");
+    expect(sellPrompt(TRADER, player([WIRE, WIRE]))).toBe("Press E to sell at the scrap trader's stall: 12 for your copper wire ×2.");
   });
 
   it('with nothing to sell, says the buyer buys salvage and what they have', () => {

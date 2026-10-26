@@ -299,7 +299,8 @@ class LoopPlayer:
         _, place = min(ways)
         await self.go(self.entry(place))
         money = self.money
-        self.send(SellMessage(item=None))
+        for item in [item for item in self.player.items if item.kind is ItemKind.SALVAGE]:
+            self.send(SellMessage(item=item.id))
         if self.money <= money:
             raise Refused(f"Nothing sold at {place}")
         self.note(f"Sold salvage at {place} for {self.money - money:g}")

@@ -1,4 +1,4 @@
-import type { Bionic, BodyPart, Buyer, ClientMessage, Item, Offer, Player, Recipe } from '../net';
+import type { Bionic, BodyPart, Buyer, ClientMessage, Item, Player, Recipe } from '../net';
 import { callCue } from './call-cue';
 import './clinic-panel.css';
 import { pressedNewsKey } from './keys';
@@ -25,6 +25,7 @@ export type Need = { name: string; count: number; have: number };
 export type Deal =
   | { kind: 'talk'; label: string; npcId: string }
   | { kind: 'sell'; label: string; price: number }
+  | { kind: 'item'; label: string; price: number; item: string; count: number }
   | { kind: 'buy'; label: string; price: number; item: string; weight: number; short?: 'money' | 'weight' }
   | { kind: 'part'; label: string; price: number; part: BodyPart }
   | { kind: 'fit'; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean }
@@ -41,28 +42,31 @@ export function needs(recipe: Recipe | undefined, items: readonly Item[]): Need[
   });
 }
 
-/** Each part the buyer sells back once, at the cheapest it has, with how many of it there are. */
-export function stocked(stock: readonly Offer[]): { offer: Offer; count: number }[] {
-  const found = new Map<string, { offer: Offer; count: number }>();
-  for (const offer of stock) {
-    const seen = found.get(offer.item.id);
+/** Each kind once, by item id, as it first comes, with how many of it there are. */
+export function kinds<T>(things: readonly T[], id: (thing: T) => string): { first: T; count: number }[] {
+  const found = new Map<string, { first: T; count: number }>();
+  for (const thing of things) {
+    const seen = found.get(id(thing));
     if (seen) seen.count += 1;
-    else found.set(offer.item.id, { offer, count: 1 });
+    else found.set(id(thing), { first: thing, count: 1 });
   }
   return [...found.values()];
 }
 
-/** What the player can do at a buyer's panel: talk to the doctor, sell salvage, a kidney or a recipe, buy back a part, or be fitted. */
+/** What the player can do at a buyer's panel: talk to the doctor, sell everything it buys or one of a kind, buy back a part, sell a kidney or a recipe, or be fitted. */
 export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: readonly Recipe[] = []): Deal[] {
   const found: Deal[] = [];
   if (keeper) found.push({ kind: 'talk', label: `Talk to ${keeper.name}`, npcId: keeper.id });
   const sold = player.items.filter(({ id }) => id in buyer.prices);
-  if (sold.length) {
+  if (sold.length > 1) {
     const price = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
-    found.push({ kind: 'sell', label: `Sell your ${listed(counted(sold))}`, price });
+    found.push({ kind: 'sell', label: `Sell everything: ${listed(counted(sold))}`, price });
+  }
+  for (const { first, count } of kinds(sold, ({ id }) => id)) {
+    found.push({ kind: 'item', label: `Sell one: ${first.name}`, price: buyer.prices[first.id]!, item: first.id, count });
   }
   const room = player.carry_limit - player.items.reduce((load, { weight }) => load + weight, 0);
-  for (const { offer, count } of stocked(buyer.stock ?? [])) {
+  for (const { first: offer, count } of kinds(buyer.stock ?? [], ({ item }) => item.id)) {
     const { item, price } = offer;
     const label = `Buy back: ${item.name}${count > 1 ? ` ×${count}` : ''}`;
     const short = player.money < price - 1e-9 ? 'money' : item.weight > room + 1e-9 ? 'weight' : undefined;
@@ -104,6 +108,7 @@ export function note(deal: Deal | undefined, armed: boolean, money: number): str
     return 'Enter to buy it back.';
   }
   if (deal.kind === 'recipe') return "Enter to sell it. You'll still know it, but she buys it only once.";
+  if (deal.kind === 'item') return 'Enter to sell one.';
   if (deal.kind === 'talk' || deal.kind === 'sell') return 'Enter to go ahead.';
   const what = deal.kind === 'part' ? `sell ${PARTS[deal.part]}` : `have this fitted in place of ${PARTS[deal.part]}`;
   return armed ? `Enter again to ${what} for ${amount(deal.price)}. It can't be undone.` : 'Enter to go ahead.';
@@ -111,7 +116,8 @@ export function note(deal: Deal | undefined, armed: boolean, money: number): str
 
 const key = (deal: Deal) => {
   if (deal.kind === 'fit') return `fit:${deal.bionic}:${deal.part}`;
-  return deal.kind === 'buy' ? `buy:${deal.item}` : `${deal.kind}:${deal.label}`;
+  if (deal.kind === 'buy' || deal.kind === 'item') return `${deal.kind}:${deal.item}`;
+  return deal.kind === 'sell' ? 'sell' : `${deal.kind}:${deal.label}`;
 };
 const isShort = (deal: Deal | undefined) => (deal?.kind === 'fit' && deal.short) || (deal?.kind === 'buy' && deal.short !== undefined);
 
@@ -224,6 +230,8 @@ export class ClinicPanel {
       this.talk(deal.npcId);
     } else if (deal.kind === 'sell') {
       this.send({ type: 'sell', item: null });
+    } else if (deal.kind === 'item') {
+      this.send({ type: 'sell', item: deal.item });
     } else if (deal.kind === 'recipe') {
       this.send({ type: 'sell_recipe', recipe: deal.bionic });
     } else if (deal.kind === 'buy') {
@@ -250,6 +258,7 @@ export class ClinicPanel {
       const label = item.appendChild(document.createElement('span'));
       label.textContent = deal.label;
       if (deal.kind === 'fit' && deal.needs.length) label.appendChild(document.createElement('small')).textContent = needed(deal.needs);
+      if (deal.kind === 'item') label.appendChild(document.createElement('small')).textContent = `you have ${deal.count}`;
       if (deal.kind !== 'talk') item.appendChild(document.createElement('b')).textContent = amount(deal.price);
       return item;
     });

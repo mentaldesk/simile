@@ -141,24 +141,27 @@ The same corner says what E picks up or sells where the player stands, in
   it: "Press E to pick up the copper wire.", "Press E to pick up 25 in cash.", "Press E to pick up
   what you left here." What won't fit is named: "The servo motor won't fit.", or "The servo motor is
   too heavy to carry with what you have." E sends `pick_up`.
-- At a buyer (`player_state`'s `buyer`), what E sells and for how much: "Press E to sell your copper
-  wire at the scrap trader's stall for 6.", or "your salvage" for three things or more. E sends
-  `sell` with `null`, selling everything it buys, parts included. With nothing it buys, the line
-  says it buys salvage and what they have, and E does what it would without it.
+- At a buyer (`player_state`'s `buyer`), what it pays for everything they carry that it buys:
+  "Press E to sell at the scrap trader's stall: 6 for your copper wire.", or "your salvage" for
+  three things or more. E opens the trading panel below, to choose what to sell. With nothing it
+  buys, the line says it buys salvage and what they have, and E does what it would without it.
 - While the buyer has a part they sold it to buy back (`buyer.stock`), the line says "Press E to
-  see what the scrap trader's stall buys and sells.", and E opens the clinic panel below for it.
+  see what the scrap trader's stall buys and sells.", and E opens the panel too.
 - The world scene draws a glint over each pile on the street shown and its floors, gold for cash
   (`side/piles.ts`).
 
-## At the clinic
+## Trading, and at the clinic
 
-While the clinic's doctor would buy a part of the player or fit a bionic (`buyer.parts` or
-`buyer.fittings`), the corner says "Press E to see what the Clinic buys and fits.", and E opens the
-clinic panel ([`clinic-panel.ts`](clinic-panel.ts)) instead of selling. It lists, from the latest
-`player_state`:
+E at a buyer opens the trading panel ([`clinic-panel.ts`](clinic-panel.ts)), the same at the scrap
+trader's stall and the clinic. While the clinic's doctor would buy a part of the player or fit a
+bionic (`buyer.parts` or `buyer.fittings`), the corner says "Press E to see what the Clinic buys and
+fits.". It lists, from the latest `player_state`:
 
 - "Talk to Annelie Joubert", while she's ringed: Enter closes the panel and opens the chat to her;
-- the salvage they carry that the clinic buys, and for how much, sold at once with `sell`;
+- "Sell everything", what they carry that it buys and the total, sold at once with `sell` and
+  `null`, while they carry more than one thing it buys;
+- each kind of thing it buys, with its price and how many they have: "Sell one: Copper wire", one
+  a press with `sell` and its id, so they keep what they want for a fitting;
 - each part it sells back, once at its cheapest, with how many there are: "Buy back: USB-C
   connector ×2", bought with `buy` on one Enter. One they can't afford or carry is dimmed, and says
   why;
@@ -168,8 +171,7 @@ clinic panel ([`clinic-panel.ts`](clinic-panel.ts)) instead of selling. It lists
 
 ↑ and ↓ choose, and Enter or a click goes ahead. Selling a part or a fitting can't be undone, so it
 takes a second Enter or click, and moving the choice forgets the first. Esc or E closes the panel,
-and so does walking out of the clinic. Once she'd buy and fit nothing more, E sells salvage there
-as at the stall, or else talks to her.
+and so does walking away from the buyer, or once it has nothing left to trade.
 
 ## The journal
 
