@@ -57,7 +57,7 @@ def client(app: Starlette) -> Iterator[TestClient]:
 
 
 def folders(root: Path) -> list[str]:
-    return sorted(p.name for p in root.iterdir()) if root.exists() else []
+    return sorted(p.name for p in root.iterdir() if p.is_dir()) if root.exists() else []
 
 
 def files(folder: Path) -> dict[Path, bytes]:
