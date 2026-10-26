@@ -71,9 +71,8 @@ class Clinic:
         body, known = self.player.body, self.player.mind.recipes
         fittings = []
         for bionic, recipe in self.config.recipes.items():
-            if bionic not in known or body.has(bionic) or not recipe.ready(body):
-                continue
-            if not runs(body, bionic):
+            fits = recipe.ready(body) and runs(body, bionic)
+            if bionic not in known or body.has(bionic) or not fits:
                 continue
             lower = bionic.line[: bionic.line.index(bionic)]
             free = [part for part in recipe.replaces if getattr(body, part) in (PRESENT, *lower)]

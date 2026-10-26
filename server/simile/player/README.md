@@ -40,7 +40,8 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 the stomach, while a client is in the game, like hunger. Without one, `Player.power` stays full.
 
 - **It drains** by `drain` (0.2) a sim hour, and `per_bionic` (0.1) more for each other bionic
-  fitted: five hours on the cell alone, two with the datajack, the legs and the feet.
+  fitted: five hours on the cell alone, two with the datajack, the legs and the feet. Stage 1's
+  legs, which need no cell, don't count.
 - **It charges** at a plug as fast as the lamp, from the same `Lamp.charging`: flat to full in
   about three real seconds. Plugged in, it doesn't drain.
 - **Running flat** collapses them as hunger does, with `cause` `power`, and they wake at home with
@@ -48,7 +49,7 @@ the stomach, while a client is in the game, like hunger. Without one, `Player.po
 - **A cell runs a limited number of bionics** besides itself, by grade, in `runs`: 3 for the
   first cell, 4 for the second and 5 for the third. `runs(body, bionic)` says whether the cell
   would still run everything once `bionic` is fitted, so the clinic fits nothing past it. A higher
-  grade in place of a lower one takes no more of the cell.
+  grade of a line in place of a lower one takes no more of the cell, and stage 1's legs take none.
 
 Its constants are in `PowerConfig`, beside it.
 

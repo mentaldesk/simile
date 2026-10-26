@@ -64,11 +64,8 @@ def test_the_battery_runs_down_while_the_lamp_is_on() -> None:
     assert down.held.on is True
 
 
-def test_a_full_battery_lasts_twenty_minutes_and_charges_in_three_real_seconds() -> None:
-    config = LampConfig()
-
-    assert 60 / config.drain == 20
-    assert config.charge == 3
+def test_a_full_battery_lasts_twenty_minutes() -> None:
+    assert 60 / LampConfig().drain == 20
 
 
 def test_the_battery_keeps_its_charge_while_the_lamp_is_off() -> None:

@@ -262,6 +262,14 @@ def test_she_fits_nothing_past_what_their_cell_runs_until_a_bigger_cell_is_in() 
     assert depot.player.body == three.model_copy(update={"stomach": bigger, "left_eye": EYE})
 
 
+def test_stage_1s_legs_leave_the_first_cell_room_for_three() -> None:
+    body = Body(stomach=CELL, legs=Bionic.HYDRAULIC_LEGS, vertebra=JACK, feet=Bionic.SPRING_FEET)
+    depot = Depot(knowing(EYE, money=500, body=body))
+
+    assert depot.clinic.fit(EYE, "left_eye")
+    assert depot.player.body == body.model_copy(update={"left_eye": EYE})
+
+
 @pytest.mark.parametrize(
     ("bionic", "part"),
     [

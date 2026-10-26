@@ -123,6 +123,18 @@ def test_an_upgrade_in_place_of_a_bionic_takes_no_more_of_the_cell() -> None:
     assert runs(THREE, Bionic.SPRING_FEET_2)
 
 
+def test_stage_1s_legs_take_none_of_the_cell() -> None:
+    hydraulic = Body(stomach=CELL, legs=Bionic.HYDRAULIC_LEGS, vertebra=JACK, feet=FEET)
+    cell = Cell(Player(body=hydraulic))
+
+    cell.run(HOUR, step=60)
+
+    assert cell.player.power == pytest.approx(0.6)
+    assert runs(hydraulic, EYE)
+    assert runs(hydraulic.model_copy(update={"right_eye": EYE}), Bionic.SPRING_LEGS)
+    assert not runs(Body(stomach=CELL, vertebra=JACK, right_eye=EYE, feet=FEET), LEGS)
+
+
 def test_a_cell_runs_what_is_already_fitted() -> None:
     four = THREE.model_copy(update={"right_eye": EYE})
 
@@ -178,8 +190,14 @@ def test_a_flat_cell_collapses_them_for_power_and_a_plug_at_home_charges_it(
         client.portal.call(tick)
         collapsed = next_of(ws, "player_collapsed")
         woken = next_of(ws, "player_state")
+        client.portal.call(lambda: [tick() for _ in range(40)])
+        charging = [next_of(ws, "player_state")]
+        while "power" in charging[-1]["player"]:
+            charging.append(next_of(ws, "player_state"))
 
     assert collapsed["cause"] == "power"
     assert woken["player"]["power"] == DEFAULT_POWER.waking
     assert woken["player"]["hunger"] == 0
     assert woken.get("meal") is None
+    rising = [message["player"].get("power", 1) for message in charging]
+    assert rising == sorted(rising) and rising[0] > DEFAULT_POWER.waking and rising[-1] == 1
