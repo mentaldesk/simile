@@ -22,13 +22,13 @@ describe('pictureOf', () => {
     expect(pictureOf({ part: 'right_eye', state: 'sold' })).toBe('eye_sold');
   });
 
-  it('shows every grade of a line alike, and stage 1’s legs as the hydraulic legs', () => {
+  it('shows every grade of a line alike', () => {
     expect(['power_cell', 'power_cell_2', 'power_cell_3'].map((b) => pictureOf(bionic('stomach', b as Bionic)))).toEqual([
       'power_cell',
       'power_cell',
       'power_cell',
     ]);
-    expect(pictureOf(bionic('legs', 'premium_legs'))).toBe('hydraulic_legs');
+    expect(pictureOf(bionic('legs', 'bionic_legs_3'))).toBe('bionic_legs');
     expect(pictureOf(bionic('feet', 'spring_feet_2'))).toBe('spring_feet');
   });
 

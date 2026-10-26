@@ -14,52 +14,40 @@ from simile.dolls.sprites import head
 from simile.dolls.words import described
 from simile.schema import PLAYER_ID, Appearance
 from simile.schema.player import BIONIC_LEGS as LEGS_LINE
-from simile.schema.player import LEGS as STAGE_1_LEGS
 from simile.schema.player import SPRING_FEET as FEET_LINE
 from simile.schema.player import Bionic
 
 VERSION = 1
 """How the parts are laid over the whole player: a new one lays them again."""
-HYDRAULIC, LEGS_PART, FEET = Bionic.HYDRAULIC_LEGS, Bionic.BIONIC_LEGS, Bionic.SPRING_FEET
-FITTED = (HYDRAULIC, LEGS_PART, FEET, Bionic.DATAJACK, Bionic.INFRARED_EYE)
+LEGS_PART, FEET = Bionic.BIONIC_LEGS, Bionic.SPRING_FEET
+FITTED = (LEGS_PART, FEET, Bionic.DATAJACK, Bionic.INFRARED_EYE)
 EYE = Bionic.INFRARED_EYE
 NAMES = {
-    HYDRAULIC: "legs",
     LEGS_PART: "bionic_legs",
     FEET: "feet",
     Bionic.DATAJACK: "datajack",
     Bionic.INFRARED_EYE: "eye",
 }
 SHOWN_AS = (
-    dict.fromkeys(STAGE_1_LEGS, HYDRAULIC)
-    | dict.fromkeys(LEGS_LINE, LEGS_PART)
+    dict.fromkeys(LEGS_LINE, LEGS_PART)
     | dict.fromkeys(FEET_LINE, FEET)
     | {Bionic.DATAJACK: Bionic.DATAJACK, EYE: EYE}
 )
 """The part a figure shows for each bionic: every grade of a line looks alike."""
-LEGGED = (HYDRAULIC, LEGS_PART)
-LOWER = (HYDRAULIC, LEGS_PART, FEET)
+LOWER = (LEGS_PART, FEET)
 """Parts of the lower body, painted together as one layer."""
 type Combination = tuple[Bionic, ...]
 
 
-def possible(combination: Combination) -> bool:
-    """One kind of legs at most, and never stage 1's with the feet: see `shown`."""
-    have = set(combination)
-    return len(have & set(LEGGED)) <= 1 and not {HYDRAULIC, FEET} <= have
-
-
 COMBINATIONS: tuple[Combination, ...] = tuple(
-    c for n in range(1, len(FITTED) + 1) for c in combinations(FITTED, n) if possible(c)
+    c for n in range(1, len(FITTED) + 1) for c in combinations(FITTED, n)
 )
 """Every combination of bionics a figure shows but none, fewest first, each in `FITTED`'s order."""
 
 
 def shown(fitted: Iterable[Bionic]) -> Combination:
-    """The parts a body's figure shows: stage 1's legs with the feet as the bionic legs."""
+    """The parts a body's figure shows."""
     have = {SHOWN_AS[b] for b in fitted if b in SHOWN_AS}
-    if {HYDRAULIC, FEET} <= have:
-        have = have - {HYDRAULIC} | {LEGS_PART}
     return tuple(b for b in FITTED if b in have)
 
 
@@ -77,12 +65,6 @@ LAYERS: tuple[Combination, ...] = tuple(
 )
 """Each layer painted, as an edit of the whole player's frame or of `layer[:-1]`'s painting."""
 WORDS = {
-    Bionic.HYDRAULIC_LEGS: (
-        "both legs replaced by bionic hydraulic legs: the trousers now end above the knees as "
-        "shorts, and below them each lower leg is bare steel-grey machinery with a shiny chrome "
-        "hydraulic piston down the shin and a round metal knee joint, ending in the same white "
-        "sneakers"
-    ),
     LEGS_PART: (
         "both legs replaced by sleek bionic legs: the trousers now end above the knees as shorts, "
         "and below them each lower leg is a smooth streamlined robot leg of rounded steel-grey "
@@ -115,7 +97,7 @@ METAL = (12.0, 40.0, 88.0)
 LEGS_FROM = 0.6
 """Where the legs start, down the figure."""
 SHORTS = (0.62, 0.7)
-"""The bottom colour's `measure.CORES` with either legs, whose shins are steel."""
+"""The bottom colour's `measure.CORES` with the bionic legs, whose shins are steel."""
 SPRING = (55.0, 25.0, 50.0)
 """The yellow spring: b* above the first, a* below the second, lightness above the third."""
 LENS = (40.0, 15.0)
@@ -123,7 +105,6 @@ LENS = (40.0, 15.0)
 LIGHT = (-30.0, 15.0)
 """The datajack's green light: a* below the first, b* above the second."""
 LEAST = {
-    HYDRAULIC: 0.12,
     LEGS_PART: 0.12,
     FEET: 0.006,
     Bionic.DATAJACK: 0.001,
@@ -154,7 +135,7 @@ FEATHER = 2.0
 
 
 def figure_id(fitted: Iterable[Bionic]) -> str:
-    """The figure for a body with `fitted`: `player` with none, `player_legs_eye` and so on."""
+    """The figure for a body with `fitted`: `player` with none, `player_feet_eye` and so on."""
     return "_".join([PLAYER_ID, *(NAMES[b] for b in shown(fitted))])
 
 
@@ -175,7 +156,7 @@ def shows(bionic: Bionic, frame: str) -> bool:
 def edit_prompt(frame: str, bionic: Bionic, appearance: Appearance, over: Combination = ()) -> str:
     """Adds `bionic` to the whole player's `frame`, with the parts `over` it already shows."""
     words = described(appearance, PLAYER_ID)
-    if {bionic, *over} & set(LEGGED):
+    if LEGS_PART in {bionic, *over}:
         words = words.replace(" trousers ", " shorts ")
     if bionic == FEET:
         words = re.sub(r", ([^,]+?) (trousers|shorts) and [^,.]+? sneakers", r" and \1 \2", words)
@@ -212,7 +193,6 @@ def parts(figure: Image.Image) -> dict[Bionic, NDArray[np.bool_]]:
     legs = solid & (down >= LEGS_FROM)
     spring = (b > SPRING[0]) & (a < SPRING[1]) & (light > SPRING[2])
     return {
-        HYDRAULIC: legs & metal,
         LEGS_PART: legs & metal,
         FEET: legs & spring,
         Bionic.DATAJACK: solid & (a < LIGHT[0]) & (b > LIGHT[1]),

@@ -333,10 +333,10 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
   or at the clinic once they've sold a kidney.
 - `fittings`: the bionics it would fit now, whether or not they can pay, each once, which they have
   fitted with [`fit`](#fit). It's left out while there are none. A `Fitting` has its `bionic`; its
-  `name`, as the player sees it, such as `"Hydraulic legs"`; its `price`; and its `parts`, the parts
+  `name`, as the player sees it, such as `"Spring feet"`; its `price`; and its `parts`, the parts
   of their body it can go in place of, any one of which they give up for it: `["legs"]`, or
   `["left_eye", "right_eye"]` for the infrared eye. Each part is named once, and only a part the
-  bionic can replace. A grade of legs past the first goes in place of the legs before it, which
+  bionic can replace. A grade of a line past the first goes in place of the grade before it, which
   the doctor takes back.
 - `recipes`: what it pays for each recipe they know that it would buy now, keyed by the `Bionic`
   it builds, which they sell with [`sell_recipe`](#sell_recipe): `{"datajack": 40}`. It buys each
@@ -399,10 +399,6 @@ Three bionics come in a line of grades, each grade better than the one before:
 - the legs, for speed and kick: `"bionic_legs"`, `"bionic_legs_2"` and `"bionic_legs_3"`.
 - the feet, for jump height: `"spring_feet"` and `"spring_feet_2"`.
 
-Stage 1's legs are still there until stage 2 retires them, in two branches and then premium:
-`"hydraulic_legs"` then `"spring_legs"` jump higher, `"sprint_legs"` then `"blade_legs"` run faster
-and jump further, and `"premium_legs"` do both.
-
 `mind` is what they know, a `Mind`. They keep it when they collapse, and later when they die. It has
 `recipes`, the recipes they know, each by the `Bionic` it builds, in the order they learned them;
 and `sold`, those they've sold to the clinic, in the order they sold them. They still know a recipe
@@ -412,8 +408,11 @@ know no recipe.
 The player's state is saved with the world. A save from before it loads with the starting player:
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere, nothing
 taken and nothing known. A save from before the stomach, the feet and the mind loads with them
-still their own and knowing nothing, and one from before vitals loads at full power and health,
-with no effects and nothing to buy back. One from before searching has searched nothing. Their
+still their own and knowing nothing. One with stage 1's legs loads them as the lines: the hydraulic
+and spring legs as the spring feet's first and second grades, with their own legs back, unless
+higher feet are already fitted; the sprint and blade legs as the legs' first and second; and the
+premium legs as the top grade of both. One from before vitals loads at full power and health, with
+no effects and nothing to buy back. One from before searching has searched nothing. Their
 humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
 never sent: the player sees it only in how residents treat them.
 

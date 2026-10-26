@@ -22,12 +22,12 @@ describe('the side view’s player', () => {
   it('wears the figure for each bionic fitted', async () => {
     const doll = new SideDoll(scene(), dolls.player, 'figure-player');
 
-    playerBody.set({ ...whole, legs: 'hydraulic_legs' });
-    await vi.waitFor(() => expect(doll.figure).toBe(dolls.player_legs));
-    playerBody.set({ ...whole, legs: 'hydraulic_legs', left_eye: 'infrared_eye' });
+    playerBody.set({ ...whole, legs: 'bionic_legs' });
+    await vi.waitFor(() => expect(doll.figure).toBe(dolls.player_bionic_legs));
+    playerBody.set({ ...whole, legs: 'bionic_legs', left_eye: 'infrared_eye' });
 
-    await vi.waitFor(() => expect(doll.figure).toBe(dolls.player_legs_eye));
-    expect(drawnImage(doll).key).toBe('figure-player_legs_eye');
+    await vi.waitFor(() => expect(doll.figure).toBe(dolls.player_bionic_legs_eye));
+    expect(drawnImage(doll).key).toBe('figure-player_bionic_legs_eye');
   });
 
   it('catches up with a bionic fitted while its first atlas loaded', async () => {
@@ -43,7 +43,7 @@ describe('the side view’s player', () => {
     const doll = new SideDoll(scene(), dolls.player, 'figure-player');
     doll.destroy();
 
-    playerBody.set({ ...whole, legs: 'hydraulic_legs' });
+    playerBody.set({ ...whole, legs: 'bionic_legs' });
     await Promise.resolve();
 
     expect(doll.figure).toBe(dolls.player);
@@ -52,7 +52,7 @@ describe('the side view’s player', () => {
   it('leaves a resident’s figure alone', async () => {
     const doll = new SideDoll(scene(), dolls.kofi, 'figure-kofi');
 
-    playerBody.set({ ...whole, legs: 'hydraulic_legs' });
+    playerBody.set({ ...whole, legs: 'bionic_legs' });
     await Promise.resolve();
 
     expect(doll.figure).toBe(dolls.kofi);

@@ -365,7 +365,7 @@ describe('on each grade of legs and feet', () => {
     expect(tableOf()).toBe(JUMP_TABLE);
     expect(tableOf('sold')).toBe(JUMP_TABLE);
     expect(JUMP_TABLE.run).toBeCloseTo(RUN_PACE * PLAYER_SPEED, 9);
-    expect(KIT_TABLES.size).toBe(26);
+    expect(KIT_TABLES.size).toBe(11);
     for (const [legs, expected] of KIT_TABLES) {
       const table = tableOf(legs);
       expect(table, legs).toBe(expected);
@@ -386,18 +386,12 @@ describe('on each grade of legs and feet', () => {
     expect([JUMP_TABLE.kick, legs.kick, legs2.kick, legs3.kick]).toEqual([1, 2, 3, 4]);
     expect([feet.rise, feet2.rise, feet.run, legs.rise]).toEqual([4.3, 6.3, JUMP_TABLE.run, JUMP_TABLE.rise]);
     expect(tableOf('bionic_legs+spring_feet')).toMatchObject({ rise: feet.rise, run: legs.run, kick: legs.kick });
-    expect(tableOf('sprint_legs')).toMatchObject({ rise: legs.rise, run: legs.run });
   });
 
   it.each<[string | undefined, number]>([
     [undefined, 15],
-    ['sprint_legs', 15],
-    ['blade_legs', 15],
     ['bionic_legs', 15],
     ['bionic_legs_3', 15],
-    ['hydraulic_legs', 12],
-    ['spring_legs', 12],
-    ['premium_legs', 12],
     ['spring_feet', 12],
     ['spring_feet_2', 12],
     ['bionic_legs+spring_feet', 12],
@@ -407,12 +401,9 @@ describe('on each grade of legs and feet', () => {
 
   it.each<[string | undefined, boolean]>([
     [undefined, false],
-    ['hydraulic_legs', false],
-    ['blade_legs', false],
+    ['bionic_legs_2', false],
     ['spring_feet', false],
     ['bionic_legs_3', false],
-    ['spring_legs', true],
-    ['premium_legs', true],
     ['spring_feet_2', true],
     ['bionic_legs+spring_feet_2', true],
   ])('jumps from the tunnel wall up to the alcove only on the second grade of feet or as high: %s, %s', (legs, reaches) => {
@@ -420,8 +411,6 @@ describe('on each grade of legs and feet', () => {
   });
 
   it.each<[string, number]>([
-    ['sprint_legs', 69],
-    ['blade_legs', 69.5],
     ['bionic_legs', 69],
     ['bionic_legs_2', 69.5],
   ])("sprints across the gantry's gap under its roof on the %s, jumping as it passes %s", (legs, at) => {
@@ -430,7 +419,7 @@ describe('on each grade of legs and feet', () => {
     expect(landed.x).toBeLessThan(63.75);
   });
 
-  it.each([['premium_legs'], ['bionic_legs_2+spring_feet_2']])(
+  it.each([['bionic_legs_2+spring_feet_2']])(
     'crosses the gap on %s with Space tapped, and bumps its head with it held',
     (kit) => {
       expect(legsJump(kit, { x: 72, y: 8 }, -1, 68.5, 4).y).toBe(8);
@@ -438,7 +427,7 @@ describe('on each grade of legs and feet', () => {
     },
   );
 
-  it.each<[string | undefined]>([[undefined], ['hydraulic_legs'], ['spring_legs'], ['spring_feet'], ['spring_feet_2']])(
+  it.each<[string | undefined]>([[undefined], ['spring_feet'], ['spring_feet_2']])(
     "never clears the gantry's gap on %s, however it jumps",
     (legs) => {
       for (const at of [70, 69.5, 69, 68.7, 68.5, 68.3]) {

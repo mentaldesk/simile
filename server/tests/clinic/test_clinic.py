@@ -14,7 +14,6 @@ from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
 from simile.player.trade import Trade
 from simile.protocol import Buyer, Fitting, Treatment
-from simile.schema import LEGS as GRADES
 from simile.schema import (
     LINES,
     PLAYER_ID,
@@ -44,14 +43,12 @@ STALL = Point(26, 15, "metro")
 WIRE = PLAYER_CONFIG.salvage["metro_salvage_1"].item
 RECIPES = DEFAULT_CONFIG.recipes
 CELL, JACK, EYE = Bionic.POWER_CELL, Bionic.DATAJACK, Bionic.INFRARED_EYE
-LEGS = Fitting(bionic=Bionic.HYDRAULIC_LEGS, name="Hydraulic legs", price=80, parts=["legs"])
-SPRINT = Fitting(bionic=Bionic.SPRINT_LEGS, name="Sprint legs", price=80, parts=["legs"])
 POWER = Fitting(bionic=CELL, name="Power cell", price=100, parts=["stomach"])
 DATAJACK = Fitting(bionic=JACK, name="Datajack", price=100, parts=["vertebra"])
 INFRARED = Fitting(bionic=EYE, name="Infrared eye", price=200, parts=["left_eye", "right_eye"])
 POWERED = Body(stomach=CELL)
 FITTED = Body(
-    legs=Bionic.PREMIUM_LEGS,
+    legs=Bionic.BIONIC_LEGS_3,
     vertebra=JACK,
     right_eye=EYE,
     left_kidney=SOLD,
@@ -104,7 +101,7 @@ def offered(depot: Depot) -> list[Bionic]:
     return [fitting.bionic for fitting in depot.clinic.fittings()]
 
 
-def test_a_whole_player_knowing_nothing_is_offered_a_kidney_sale_and_the_old_legs() -> None:
+def test_a_whole_player_knowing_nothing_is_offered_a_kidney_sale() -> None:
     depot = Depot(Player(items=[WIRE]))
 
     assert depot.trade.buyer() == Buyer(
@@ -112,7 +109,6 @@ def test_a_whole_player_knowing_nothing_is_offered_a_kidney_sale_and_the_old_leg
         name="The Clinic",
         prices={"copper_wire": ECONOMY.salvage["copper_wire"]},
         parts={"left_kidney": 100},
-        fittings=[LEGS, SPRINT],
     )
 
 
@@ -142,9 +138,7 @@ def test_the_doctor_buys_one_kidney_and_never_the_last(part: BodyPart) -> None:
     assert depot.clinic.parts() == {}
     assert not depot.clinic.sell_part(part)
     assert depot.player.money == 100
-    assert depot.trade.buyer() == Buyer(
-        place="clinic", name="The Clinic", prices={}, fittings=[LEGS, SPRINT]
-    )
+    assert depot.trade.buyer() == Buyer(place="clinic", name="The Clinic", prices={})
 
 
 @pytest.mark.parametrize("part", ["right_kidney", "legs", "left_eye", "vertebra", "stomach"])
@@ -162,12 +156,12 @@ def test_she_fits_only_what_they_know_the_recipe_for() -> None:
     player.items = [*player.items, *parts(JACK, EYE)]
     depot = Depot(player)
 
-    assert offered(depot) == [LEGS.bionic, SPRINT.bionic]
+    assert offered(depot) == []
     assert not depot.clinic.fit(JACK, "vertebra")
     assert not depot.clinic.fit(EYE, "left_eye")
 
     player.mind = Mind(recipes=[JACK])
-    assert depot.clinic.fittings() == [LEGS, SPRINT, DATAJACK]
+    assert depot.clinic.fittings() == [DATAJACK]
     assert depot.clinic.fit(JACK, "vertebra")
     assert depot.player.money == 400
 
@@ -175,13 +169,13 @@ def test_she_fits_only_what_they_know_the_recipe_for() -> None:
 def test_nothing_but_the_cell_goes_in_before_the_cell() -> None:
     depot = Depot(knowing(JACK, EYE, Bionic.BIONIC_LEGS, CELL, money=1000, body=Body()))
 
-    assert depot.clinic.fittings() == [LEGS, SPRINT, POWER]
+    assert depot.clinic.fittings() == [POWER]
     for bionic, part in [(JACK, "vertebra"), (EYE, "left_eye"), (Bionic.BIONIC_LEGS, "legs")]:
         assert not depot.clinic.fit(bionic, part), bionic
     assert depot.player.body == Body()
 
     assert depot.clinic.fit(CELL, "stomach")
-    assert offered(depot) == [LEGS.bionic, SPRINT.bionic, JACK, Bionic.BIONIC_LEGS, EYE]
+    assert offered(depot) == [JACK, Bionic.BIONIC_LEGS, EYE]
     assert depot.clinic.fit(JACK, "vertebra")
 
 
@@ -264,18 +258,10 @@ def test_she_fits_nothing_past_what_their_cell_runs_until_a_bigger_cell_is_in() 
     assert depot.player.body == three.model_copy(update={"stomach": bigger, "left_eye": EYE})
 
 
-def test_stage_1s_legs_leave_the_first_cell_room_for_three() -> None:
-    body = Body(stomach=CELL, legs=Bionic.HYDRAULIC_LEGS, vertebra=JACK, feet=Bionic.SPRING_FEET)
-    depot = Depot(knowing(EYE, money=500, body=body))
-
-    assert depot.clinic.fit(EYE, "left_eye")
-    assert depot.player.body == body.model_copy(update={"left_eye": EYE})
-
-
 @pytest.mark.parametrize(
     ("bionic", "part"),
     [
-        (Bionic.HYDRAULIC_LEGS, "vertebra"),
+        (Bionic.BIONIC_LEGS, "vertebra"),
         (JACK, "left_eye"),
         (EYE, "legs"),
         (EYE, "left_kidney"),
@@ -320,7 +306,7 @@ def test_the_doctor_fits_only_what_they_stock() -> None:
     config = DEFAULT_CONFIG.model_copy(update={"stock": stock})
     depot = Depot(knowing(JACK, EYE, money=500), config)
 
-    assert depot.clinic.fittings() == [LEGS, SPRINT, INFRARED]
+    assert depot.clinic.fittings() == [INFRARED]
     assert not depot.clinic.fit(JACK, "vertebra")
     assert depot.player.money == 500
 
@@ -330,7 +316,7 @@ def test_nothing_is_bought_sold_or_fitted_outside_the_clinic() -> None:
     depot.stand(STALL)
 
     assert not depot.clinic.sell_part("left_kidney")
-    assert not depot.clinic.fit(Bionic.HYDRAULIC_LEGS, "legs")
+    assert not depot.clinic.fit(Bionic.BIONIC_LEGS, "legs")
     assert not depot.clinic.fit(JACK, "vertebra")
     assert not depot.clinic.sell_recipe(JACK)
     assert depot.player.body == POWERED
@@ -416,16 +402,6 @@ def test_each_grade_of_a_line_costs_more_than_the_one_before() -> None:
         assert credits == sorted(credits) and len(set(credits)) == len(credits), line
 
 
-def test_each_grade_of_the_old_legs_costs_steeply_more_than_the_one_before() -> None:
-    prices = {bionic: offer.price for bionic, offer in DEFAULT_CONFIG.offers.items()}
-
-    for legs in GRADES:
-        for before in DEFAULT_CONFIG.offers[legs].after:
-            assert prices[legs] >= 2.5 * prices[before], (legs, before)
-    assert prices[Bionic.SPRINT_LEGS] == prices[Bionic.HYDRAULIC_LEGS]
-    assert prices[Bionic.SPRING_LEGS] == prices[Bionic.BLADE_LEGS] > RECIPES[EYE].credits
-
-
 def metro_pickups() -> list[dict]:
     """Each pickup on the metro: its name, type and properties, with `needs` "jump" for a walk."""
     data = json.loads((STREET_DIR / "metro.tmj").read_text())
@@ -435,59 +411,6 @@ def metro_pickups() -> list[dict]:
         | {p["name"]: p["value"] for p in o.get("properties", [])}
         for o in layer["objects"]
     ]
-
-
-@pytest.mark.parametrize(
-    ("legs", "next_grades"),
-    [
-        ("present", [Bionic.HYDRAULIC_LEGS, Bionic.SPRINT_LEGS]),
-        (Bionic.HYDRAULIC_LEGS, [Bionic.SPRING_LEGS]),
-        (Bionic.SPRINT_LEGS, [Bionic.BLADE_LEGS]),
-        (Bionic.SPRING_LEGS, []),
-        (Bionic.BLADE_LEGS, []),
-        (Bionic.PREMIUM_LEGS, []),
-    ],
-)
-def test_the_clinic_stocks_the_next_grade_only_after_the_one_before(
-    legs: str, next_grades: list[Bionic]
-) -> None:
-    depot = Depot(Player(money=5000, body=Body(legs=legs)))
-
-    assert [bionic for bionic in offered(depot) if bionic in GRADES] == next_grades
-    for grade in set(GRADES) - set(next_grades):
-        assert not depot.clinic.fit(grade, "legs"), grade
-    assert depot.player.body.legs == legs and depot.player.money == 5000
-
-
-def test_an_upgrade_takes_the_legs_before_it_back_for_its_price() -> None:
-    depot = Depot(Player(money=300, body=Body(legs=Bionic.HYDRAULIC_LEGS)))
-    [spring] = [f for f in depot.clinic.fittings() if f.bionic is Bionic.SPRING_LEGS]
-
-    assert spring.parts == ["legs"] and spring.price == 240
-    assert depot.clinic.fit(Bionic.SPRING_LEGS, "legs")
-
-    assert depot.player.body == Body(legs=Bionic.SPRING_LEGS)
-    assert depot.player.money == 60
-    assert depot.player.humanity == 1 - Bionic.HYDRAULIC_LEGS.humanity_cost
-    assert Bionic.SPRING_LEGS not in offered(depot)
-    assert depot.balanced()
-
-
-@pytest.mark.parametrize("legs", [Bionic.SPRING_LEGS, Bionic.BLADE_LEGS])
-def test_premium_legs_need_the_apex_actuator_which_the_fitting_uses_up(legs: Bionic) -> None:
-    depot = Depot(Player(money=700, body=Body(legs=legs)))
-
-    assert Bionic.PREMIUM_LEGS not in offered(depot)
-    assert not depot.clinic.fit(Bionic.PREMIUM_LEGS, "legs")
-
-    depot.player.items = [*depot.player.items, APEX_ACTUATOR, WIRE]
-    assert Bionic.PREMIUM_LEGS in offered(depot)
-    assert depot.clinic.fit(Bionic.PREMIUM_LEGS, "legs")
-
-    assert depot.player.body.legs is Bionic.PREMIUM_LEGS
-    assert depot.player.money == 100
-    assert [item.id for item in depot.player.items] == ["lamp", WIRE.id]
-    assert DEFAULT_CONFIG.offers[Bionic.PREMIUM_LEGS].needs == APEX_ACTUATOR
 
 
 BITTEN = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=NOW)

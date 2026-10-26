@@ -25,15 +25,8 @@ const ORGANS: Record<BodyPart, string> = {
   feet: 'feet',
 };
 
-const STAGE_1_LEGS = 'hydraulic_legs';
-
-/** Each bionic's picture: its line's, so every grade looks alike, and stage 1's legs as the hydraulic legs. */
+/** Each bionic's picture: its line's, so every grade looks alike. */
 export const PICTURES: Record<Bionic, string> = {
-  hydraulic_legs: STAGE_1_LEGS,
-  spring_legs: STAGE_1_LEGS,
-  sprint_legs: STAGE_1_LEGS,
-  blade_legs: STAGE_1_LEGS,
-  premium_legs: STAGE_1_LEGS,
   datajack: 'datajack',
   infrared_eye: 'infrared_eye',
   power_cell: 'power_cell',
@@ -71,11 +64,6 @@ const DOES: Record<Bionic, string> = {
   bionic_legs_3: 'The fastest run, the furthest jump and the hardest kick.',
   spring_feet: 'Jump higher, onto ledges you couldn’t reach.',
   spring_feet_2: 'Jump higher still.',
-  hydraulic_legs: 'Jump higher.',
-  spring_legs: 'Jump higher still.',
-  sprint_legs: 'Run faster, and jump further.',
-  blade_legs: 'Run faster still.',
-  premium_legs: 'Run faster and jump higher.',
 };
 
 const OWN: Record<BodyPart, string> = {

@@ -17,7 +17,7 @@ from .test_mind import ANA, BEN, Village, at
 A = Activity
 CAFE = MapTile(map="coffee_shop_floor_0", x=12, y=2)
 WHOLE = Body()
-BIONIC = Body(legs=Bionic.HYDRAULIC_LEGS, vertebra=Bionic.DATAJACK, left_eye=Bionic.INFRARED_EYE)
+BIONIC = Body(legs=Bionic.BIONIC_LEGS, vertebra=Bionic.DATAJACK, left_eye=Bionic.INFRARED_EYE)
 
 
 def uneasy(level: float, who: str = "ana"):  # type: ignore[no-untyped-def]
