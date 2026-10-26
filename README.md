@@ -27,8 +27,8 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
-| E | Go through a door, or onto another street. Off a door, read the news at a terminal, order at a counter, pick up what you left when you collapsed, or look at a clue in Aris's workshop. |
-| T | Talk to the ringed resident. |
+| E | Go through a door, or onto another street. Off a door, read the news at a terminal, pick up what you left when you collapsed, or look at a clue in Aris's workshop. |
+| T | Talk to the ringed resident. At a counter, order from whoever serves there. |
 | V | Look at a mural or a painting. |
 | F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and if it runs out you collapse. |
 | J | Open or close your journal: what you've learned about what happened to Aris, from whom and when, and the leads still open. A red mark shows where your infrared eye caught someone flush. |

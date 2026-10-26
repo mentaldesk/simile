@@ -82,10 +82,10 @@ camera, a hint says "Press V to look at “<title>”", and V opens the mural pa
 title, the artist and their statement.
 Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or V
 closes it, and so does walking off: out of the wall's reach and more than a tile from where the
-panel opened. The hint gives way to anything E uses in reach, and only one of the mural and news
-panels is open at a time. If the wall is painted over while the panel is open it shows the new mural, and if the wall
-goes blank it closes. The panel keeps its key-downs from `window`, like the news panel, and sends
-nothing: the server notices a player near a mural itself.
+panel opened. The hint gives way to anything E or T uses in reach, and only one of the mural and
+news panels is open at a time. If the wall is painted over while the panel is open it shows the new
+mural, and if the wall goes blank it closes. The panel keeps its key-downs from `window`, like the
+news panel, and sends nothing: the server notices a player near a mural itself.
 
 `MuralPanel` reads the walls from `muralWalls` and asks the scene drawing murals for the one under
 a click through `muralView()`, both in [`world/murals.ts`](../world/murals.ts). With no
@@ -105,11 +105,13 @@ saw the speaker flush, so the line is a lie.
 
 ## Ordering at a counter
 
-On a counter's stand tile (`interactables` in [`world/interactables.ts`](../world/interactables.ts)),
-a hint says "Press E to order at the counter.", and E opens the chat box to whoever is serving: the
-NPC behind the counter nearest the stand, on its row past the tile beside the stand where customers
-wait for their drinks (`servingAt` in [`counter.ts`](counter.ts)), or else the player's partner. With nobody there it says so. The rest is the server's: the barista greets the
-player as they step up and takes the order over `player_say` like any conversation
+On a counter's stand tile (`interactables` in
+[`world/interactables.ts`](../world/interactables.ts)), a hint says "Press T to order at the
+counter.", and T opens the chat box to whoever is serving (`servingAt` in
+[`counter.ts`](counter.ts)): the NPC behind the counter nearest the stand, on its row past the tile
+beside the stand where customers wait for their drinks, or else the player's partner, or else the
+ringed resident. E does nothing there. The rest is the server's: the barista greets the player as
+they step up and takes the order over `player_say` like any conversation
 ([`simile.cafe`](../../../server/simile/cafe/README.md)). Other kinds of interactable get their own
 prompts from their own tasks.
 
@@ -225,18 +227,20 @@ The side walk opens it on C and goes through its tabs.
 
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, T, V, F, J, C, ?) are handled on `window` only when nothing on the page has
-focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
-Tab and Esc.
+The game's keys (Enter, Tab, Esc, E, T, V, F, J, C, ?) are handled on `window` only when nothing on
+the page has focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps
+its own Enter, Tab and Esc.
 
-E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a pile, the clinic, a buyer they can sell to, or a clue, but not on a door's
-cell, where E takes the door (`doorOnE`), so one press never does two things. E never talks to anyone, so a resident by a door doesn't stand in the way: T opens the chat to the
-ringed NPC, as Enter does, and their name tag says so: "T: talk to Lachlan". V looks at a mural or
-a painting (`lookedAtByV`). Stairs, ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
-takes from where the player stands names the keys and what it does: "E: go in", "↑: upstairs",
-"↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). The world scene words them and says where they go
-(`wayPrompts`); tags that would overlap move apart.
+E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it: a
+terminal, a pile, the clinic, a buyer they can sell to, or a clue, but not on a door's cell, where E
+takes the door (`eUse` in [`keys.ts`](keys.ts)), so one press never does two things. E never talks
+to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
+counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to
+Lachlan". V looks at a mural or a painting (`lookedAtByV`). Stairs, ladders and the lift are the
+arrows' alone. A small tag over each door, flight, ladder or lift a key takes from where the player
+stands names the keys and what it does: "E: go in", "↑: upstairs", "↓: downstairs", "↑ ↓: lift"
+(`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). The world scene words them and says where
+they go (`wayPrompts`); tags that would overlap move apart.
 
 `?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in
 the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README, and say

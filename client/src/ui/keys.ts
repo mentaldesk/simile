@@ -1,4 +1,3 @@
-import type { WayPrompt } from '../world/reach';
 import type { CharacterPanel } from './character-panel';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
@@ -7,6 +6,7 @@ import { CHARACTER_KEY, EAT_KEY, JOURNAL_KEY, NEWS_KEY, TALK_KEY, VIEW_KEY } fro
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
+  talk: () => void;
   use: () => void;
   view: () => void;
   eat: () => void;
@@ -15,9 +15,6 @@ export type GameKeys = {
   character: Pick<CharacterPanel, 'toggle' | 'close'>;
 };
 
-/** E takes a door on the player's cell, so nothing else there is E's. */
-export const doorOnE = (ways: readonly WayPrompt[]): boolean => ways.some(({ keys }) => keys.includes('E'));
-
 /** Whether nothing on the page has focus, so a key is the game's and not a link's or a field's. */
 export function unfocused({ target }: Event): boolean {
   return (
@@ -25,7 +22,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, use, view, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, talk, use, view, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -49,7 +46,7 @@ export function onGameKey({ chat, use, view, eat, help, journal, character }: Ga
     } else if (pressed(event, TALK_KEY)) {
       // Otherwise the T reaches the chat box once it has focus.
       event.preventDefault();
-      chat.open();
+      talk();
     } else if (pressedNewsKey(event)) {
       event.preventDefault();
       use();

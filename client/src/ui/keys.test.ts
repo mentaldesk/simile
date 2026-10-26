@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { doorOnE, onGameKey } from './keys';
+import { onGameKey } from './keys';
 
 const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
+const talk = vi.fn();
 const use = vi.fn();
 const view = vi.fn();
 const eat = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
 const journal = { toggle: vi.fn(), close: vi.fn() };
 const character = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, use, view, eat, help, journal, character });
+const handler = onGameKey({ chat, talk, use, view, eat, help, journal, character });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -84,16 +85,17 @@ describe('with nothing focused', () => {
 
     expect(use).toHaveBeenCalledTimes(2);
     expect(chat.open).not.toHaveBeenCalled();
+    expect(talk).not.toHaveBeenCalled();
     expect(view).not.toHaveBeenCalled();
   });
 
-  it('T talks to the ringed resident, without typing the T into the chat box, but not held down or with a modifier', () => {
+  it('T talks or orders, without typing the T into the chat box, but not held down or with a modifier', () => {
     expect(press(document.body, 't').defaultPrevented).toBe(true);
     press(document.body, 'T', { shiftKey: true });
     press(document.body, 't', { repeat: true });
     press(document.body, 't', { metaKey: true });
 
-    expect(chat.open).toHaveBeenCalledTimes(2);
+    expect(talk).toHaveBeenCalledTimes(2);
     expect(use).not.toHaveBeenCalled();
   });
 
@@ -139,16 +141,10 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(chat.clear).not.toHaveBeenCalled();
   expect(chat.cycle).not.toHaveBeenCalled();
   expect(use).not.toHaveBeenCalled();
+  expect(talk).not.toHaveBeenCalled();
   expect(view).not.toHaveBeenCalled();
   expect(eat).not.toHaveBeenCalled();
   expect(help.toggle).not.toHaveBeenCalled();
   expect(journal.toggle).not.toHaveBeenCalled();
   expect(character.toggle).not.toHaveBeenCalled();
-});
-
-it('leaves E to a door on the player’s cell, and to what is in reach elsewhere', () => {
-  const at = (keys: string[], action: string) => ({ keys, action, x: 0, y: 0 });
-  expect(doorOnE([at(['E'], 'go out'), at(['↑'], 'upstairs')])).toBe(true);
-  expect(doorOnE([at(['↑'], 'upstairs')])).toBe(false);
-  expect(doorOnE([])).toBe(false);
 });

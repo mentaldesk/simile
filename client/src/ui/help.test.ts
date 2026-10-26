@@ -45,9 +45,9 @@ describe('HelpPanel', () => {
 
   it('gives talking to T and looking at art to V, never to E', () => {
     const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
-    expect(what.T).toBe('talk to the ringed resident');
+    expect(what.T).toMatch(/talk to the ringed resident.*order/);
     expect(what.V).toMatch(/look at a mural or a painting/);
-    expect(what.E).not.toMatch(/talk|mural|painting/);
+    expect(what.E).not.toMatch(/talk|order|mural|painting/);
   });
 
   it('gives the lamp to L', () => {

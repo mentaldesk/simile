@@ -9,7 +9,7 @@ import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { searches } from './searchables';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
 
-/** Something E uses, or V looks at, `tiles` along the street from the player. */
+/** Something E uses, V looks at or T orders at, `tiles` along the street from the player. */
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
   | { kind: 'counter' | 'painting' | 'jack' | 'searchable'; tiles: number; interactable: Interactable }
@@ -67,7 +67,7 @@ const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
 /** A jack is used with E, unless it works and a link leaves from it, which E takes instead. */
 const opens = (from: Reachables, jack: Interactable) => !!from.jacked?.() && !!from.leadsAway?.(jack);
 
-/** What E can use or V look at where the player stands, nearest first. */
+/** What E can use, V look at or T order at where the player stands, nearest first. */
 export function inReach(position: Position | undefined, from: Reachables = reachables): Reachable[] {
   if (!position) return [];
   const along = position.x + 0.5;
@@ -96,15 +96,22 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 
-const looked = (reachable: Reachable) => reachable.kind === 'mural' || reachable.kind === 'painting';
+const keyFor = ({ kind }: Reachable): 'E' | 'T' | 'V' =>
+  kind === 'mural' || kind === 'painting' ? 'V' : kind === 'counter' ? 'T' : 'E';
 
 /** What E uses off a door's cell, where E takes the door. */
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
-  inReach(position, from).find((reachable) => !looked(reachable));
+  inReach(position, from).find((reachable) => keyFor(reachable) === 'E');
 
 /** The mural or painting V looks at. */
 export const lookedAtByV = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
-  inReach(position, from).find(looked);
+  inReach(position, from).find((reachable) => keyFor(reachable) === 'V');
+
+/** The counter T orders at, from whoever serves there. */
+export const orderedAtByT = (position: Position | undefined, from?: Reachables): Interactable | undefined => {
+  const counter = inReach(position, from).find((reachable) => keyFor(reachable) === 'T');
+  return counter?.kind === 'counter' ? counter.interactable : undefined;
+};
 
 /** The keys that take a door, stairs, a ladder or the lift, what it does, and a game-canvas point just above it. */
 export type WayPrompt = { keys: readonly string[]; action: string; x: number; y: number };
@@ -122,3 +129,10 @@ export function setWayPrompts(prompts: WayPrompts): () => void {
 }
 
 export const wayPrompts = (): readonly WayPrompt[] => waysHere?.() ?? [];
+
+/** Whether E takes a door from where the player stands. */
+export const doorOnE = (ways: readonly WayPrompt[]): boolean => ways.some(({ keys }) => keys.includes('E'));
+
+/** What E uses here: nothing on a door's cell, where E takes the door. */
+export const eUse = (position: Position | undefined, ways: readonly WayPrompt[], from?: Reachables): Reachable | undefined =>
+  doorOnE(ways) ? undefined : usedByE(position, from);

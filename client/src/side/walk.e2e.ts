@@ -538,19 +538,21 @@ async function terminalLeg(page: Page, api: Api, at: Place, index: number): Prom
   if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
 }
 
-/** E at the café counter opens the chat to whoever is behind it, and Esc closes it. */
+/** E at the café counter does nothing, T opens the chat to whoever is behind it, and Esc closes it. */
 async function counterLeg(page: Page, api: Api, counter: Counter, index: number): Promise<void> {
   const name = `the counter on ${counter.map}`;
   await api.move('odalys', { map: counter.map, x: counter.behind, y: counter.y });
   const stand = { map: counter.map, x: counter.x, y: counter.y };
   await teleport(page, api, stand, name);
   await run(page, 500);
-  if (!(await shown(page, '.counter-hint'))?.includes('Press E')) throw new Error(`${name}: no hint to press E`);
-  await page.keyboard.press('e');
+  const hint = await shown(page, '.counter-hint');
+  if (hint !== 'Press T to order at the counter.') throw new Error(`${name}: the hint is ${hint}`);
+  await pressingE(page, api, name);
+  await page.keyboard.press('t');
   await run(page, 300);
   await shot(page, index, name);
   const chat = await shown(page, '.dialogue-chat');
-  if (!chat?.includes('Odalys')) throw new Error(`${name}: E didn't open the chat to Odalys, only ${chat}`);
+  if (!chat?.includes('Odalys')) throw new Error(`${name}: T didn't open the chat to Odalys, only ${chat}`);
   await page.keyboard.press('Escape');
   await run(page, 200);
   if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
@@ -668,7 +670,7 @@ try {
       (i) => terminalLeg(page, api, at, i),
     ]),
     ...(await api.counters()).map((counter): [string, (index: number) => Promise<string | void>] => [
-      `E at the counter on ${counter.map}`,
+      `T at the counter on ${counter.map}`,
       (i) => counterLeg(page, api, counter, i),
     ]),
     ['T beside a resident', (i) => talkLeg(page, api, i)],
