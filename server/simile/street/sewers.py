@@ -61,12 +61,18 @@ BOT_GAP = 8
 """Steps from any salvage that every cell of a bot's patrol keeps: over half a minute's drift."""
 REACH = next(way.within for way in BOT.ways if isinstance(way, Collect))
 """How far by its own grid a bot notices salvage: every cell of its patrol is within it of some."""
+DEN = 14
+"""The dogs' den's width: a column of its own east of the last room."""
+DOGS = 3
 
-ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
+ROOMS, HALL, SHAFT_KIND, GATE_KIND, DEN_KIND = "rooms", "hall", "shaft", "gate", "den"
 SPRING_SECRET = "sewers_secret_spring"
 SPRINT_SECRET = "sewers_secret_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
 PIPE_SECRET = "sewers_secret_pipe"
+DEN_SECRET = "sewers_secret_den"
+TIERS = {SHAFT_KIND: (0,), ROOMS: (0, 1, 2), HALL: (0, 2), DEN_KIND: ()}
+"""Each kind of column's rooms, by tier: the den isn't one of the rooms that join the rest."""
 
 type Cell = tuple[int, int]
 type Node = tuple[int, int]
@@ -183,8 +189,7 @@ class Level:
         found = []
         for i, column in enumerate(self.columns):
             if column.zone == zone and column.kind != GATE_KIND:
-                tiers = {SHAFT_KIND: (0,), ROOMS: (0, 1, 2), HALL: (0, 2)}[column.kind]
-                found += [(i, t) for t in tiers if (i, t) != (self.spring_pocket, 2)]
+                found += [(i, t) for t in TIERS[column.kind] if (i, t) != (self.spring_pocket, 2)]
         return found
 
     def ends(self, edge: Edge) -> tuple[Node, Node]:
@@ -622,6 +627,33 @@ def dangers(level: Level, plan: Plan) -> None:
             plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
 
 
+def den(level: Level, plan: Plan) -> None:
+    """The dogs' den past the last room, and its loft: content/street/README.md's *The den*."""
+    rng = random.Random(f"sewers/{level.seed}/den")
+    last, wall = len(level.columns) - 1, level.width
+    column = Column(DEN_KIND, wall + 1, DEN, 1)
+    level.columns.append(column)
+    level.doors.add((last, 0))
+    plan.width = level.width
+    x, floor, loft = column.x, FLOORS[0], FLOORS[1]
+    plan.fill(wall, 0, DEN + 1, CEILING + 1)
+    plan.fill(wall, GROUND + 1, DEN + 1, plan.height - GROUND - 1)
+    plan.fill(wall, CEILING + 1, 1, slab(1) - CEILING)
+    ladder = column.end - 2
+    plan.fill(x, slab(1), ladder - x, 1)
+    plan.ladder((ladder, floor), floor - loft)
+    light(plan, "sewers_den", wall, 0, DEN + 1, plan.height, lit=False)
+    row = loft - 2
+    plan.fill(x, row + 1, 2, 1)
+    plan.piece("sewer_pipe", x, row + 1, 2, 1)
+    money = float(rng.choice((90, 100, 110, 120)))
+    plan.pickups.append(Pickup(DEN_SECRET, SECRET, x, row, money, needs=OWN_JUMP))
+    plan.piece("bedroll", ladder - 3, loft, 2, 1)
+    area = TileArea(x=x, y=floor - 3, width=DEN, height=4)
+    for number, at in enumerate(sorted(rng.sample(range(x + 2, ladder), DOGS)), 1):
+        plan.creatures.append(Spawn(f"sewers_dog_{number}", CreatureKind.DOG, at, floor, area))
+
+
 def towards(
     edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
 ) -> dict[Cell, float]:
@@ -660,6 +692,7 @@ def build(level: Level) -> Plan:
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
     stock(level, plan, ledges)
     dangers(level, plan)
+    den(level, plan)
     cover(level, plan)
     plan.doors.append(lift())
     return plan

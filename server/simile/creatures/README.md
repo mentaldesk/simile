@@ -14,6 +14,7 @@ second:
 |---|--:|---|
 | `ways` | none | Its ways of moving, below, first first. |
 | `speed` | 1 | Its own pace; each way can go `pace` times it. The player walks 2.6 tiles a second and runs 5.2 on their own legs. |
+| `think` | 0.25 | How often it chooses where to go. |
 | `flies` | no | Through any open cell, rather than along floors. |
 | `climbs` | yes | Up and down ladders. Every walking kind takes stairs. |
 | `doors` | yes | Onto a door's tile, a link's end on its map. No creature takes a link to another map. |
@@ -22,6 +23,7 @@ second:
 | `bites` | no | Hurts with `health_of(app).bite()`, which can turn infected, rather than `hurt(damage)`. |
 | `damage` | 0.05 | Health each attack takes, if it doesn't bite. |
 | `windup` | 0.3 | How long it shows its attack before it lands. |
+| `lunges` | no | Keeps after the player while its attack winds up, so running doesn't get away. |
 | `rest` | 1 | How long after an attack before the next. |
 | `health` | 1 | How hard it must be kicked to go down: a kick on the player's own legs is 1, the bionic legs 2 to 4. |
 | `toughness` | 0 | How much of each kick it shrugs off. |
@@ -34,19 +36,25 @@ The tunnels' kinds are in `kinds.py` (below).
 
 `kinds.py` has the tunnels' kinds, and `KINDS` each one a map can place, with its `respawn`.
 
-| | Rat (P13) | Recycler bot (P13) |
-|---|---|---|
-| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` |
-| Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage |
-| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s |
-| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back |
-| Climbs | No | Yes |
+| | Rat (P13) | Recycler bot (P13) | Wild dog (P14) |
+|---|---|---|---|
+| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` |
+| Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up |
+| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s |
+| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back | As the bot, and a kick staggers it for 1 s, knocked 1.5 cells for each of the kick's strength |
+| Climbs | No | Yes | No, and takes no door |
 
 A rat leaves a player who carries no food alone, so a handful of them costs some health only
 when the player brings food, and they scatter after each bite. A bot ignores a wholly human
 player and chases one with any bionic (`fitted`): in the sewers that's always, since the lift
 takes the datajack. Bots are placed to start within `Collect`'s reach of salvage but patrol at
 least eight steps from any, so a player who heads straight for it gets there first.
+
+Three dogs keep to their den (`content/street/README.md`). With nothing but a kick it shrugs off,
+a player on their own legs or the feet is bitten about fifteen times going through and back, and
+collapses. On the first legs, running through leaves about a tenth of their health, and kicking
+each dog back as it comes leaves over half; the best legs get through running with a quarter or
+so (`tests/creatures/test_den.py`).
 
 ## Placing them
 
@@ -76,8 +84,8 @@ ledge or into a hole to fall to the floor below. A flier goes through any cell t
 diagonally only past two open ones. Paths are A\*; with no way to its target, a creature goes to
 where it gets nearest and waits there, as a dog under a ladder.
 
-Every quarter of a sim second each creature asks its kind's ways, in order, where to go
-(`ways.py`), and the first with an answer, an `Aim`, decides. With none, it stands still, `idle`.
+Every `think` (a quarter of a sim second unless its kind says otherwise) each creature asks its
+kind's ways, in order, where to go (`ways.py`), and the first with an answer, an `Aim`, decides. With none, it stands still, `idle`.
 
 | Way | Goes | State |
 |---|---|---|
@@ -98,8 +106,9 @@ for bats, and `fitted` for bots.
 
 A creature whose way attacks, in `reach` of the player, starts its attack: `attacking` for `windup`,
 facing them. Then, if they're still in reach, it lands, `bite()` or `hurt(damage)` on
-`health_of(app)`, looked up as it lands, and it rests for `rest`. A player more than 0.8 tiles above
-a walking creature has jumped out of its reach.
+`health_of(app)`, looked up as it lands, and it rests for `rest`. A kind that `lunges` keeps
+moving after the player while it winds up. A player more than 0.8 tiles above a walking creature
+has jumped out of its reach.
 
 The server keeps the player where their last `player_move` put them, up to one throttle interval
 (0.2 s) behind the client. The windup is at least that long, so by the time an attack lands the

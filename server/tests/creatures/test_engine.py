@@ -279,6 +279,22 @@ def test_an_attack_misses_a_player_who_moves_away_or_jumps_over_it() -> None:
     assert world.harmed == []
 
 
+def test_a_lunging_kind_keeps_after_a_player_who_moves_away_as_it_winds_up() -> None:
+    world = World(ROW)
+    kind = replace(STAND_IN, ways=(Chase(sight=10, pace=4),), lunges=True, think=STEP)
+    dog = world.spawn(kind, 3, 2)
+    world.stand(6, 2)
+    world.run_until(lambda: dog.state is CreatureState.ATTACKING)
+    world.stand(8, 2)
+    world.run(0.4)
+    assert world.harmed == [kind]
+
+    world.run_until(lambda: dog.state is CreatureState.ATTACKING)
+    world.stand(dog.x, 2 - 1.2)
+    world.run(0.4)
+    assert world.harmed == [kind]
+
+
 def test_nothing_attacks_without_a_way_that_attacks() -> None:
     world = World(ROW)
     rat = world.spawn(replace(STAND_IN, ways=(DrawnTo(food),)), 3, 2)

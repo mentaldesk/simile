@@ -20,6 +20,7 @@ type State = Place & {
   talk: string | null;
   lamp: { dark: boolean; plug: boolean; on: boolean; gloom: number; hint: string | null };
 };
+type Usable = { id: string; shown: boolean; glowing: boolean; searched: boolean; recipe: boolean };
 type SideWalk = {
   state(): State | undefined;
   links(): Link[];
@@ -33,6 +34,7 @@ type SideWalk = {
   fit(part: string, bionic: string): void;
   jacks(): Place[];
   mind(): { recipes: string[]; searched: string[]; items: string[] };
+  usables(): Usable[];
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -68,6 +70,7 @@ const walkApi = (page: Page) => ({
     page.evaluate(([part, bionic]) => (window as unknown as Paged).sideWalk.fit(part, bionic), [part, bionic] as const),
   jacks: () => page.evaluate(() => (window as unknown as Paged).sideWalk.jacks()),
   mind: () => page.evaluate(() => (window as unknown as Paged).sideWalk.mind()),
+  usables: () => page.evaluate(() => (window as unknown as Paged).sideWalk.usables()),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -450,6 +453,24 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
 }
 
+async function usable(api: Api, id: string, what: string): Promise<Usable> {
+  const found = (await api.usables()).find((usable) => usable.id === id);
+  if (!found?.shown) throw new Error(`${what}: ${id} isn't drawn`);
+  return found;
+}
+
+/** Aris's notes are drawn in the maker space, and glow only while the player stands by them. */
+async function notesLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = "Aris's notes";
+  await teleport(page, api, { map: 'maker_space_floor_0', x: 8, y: 2 }, name);
+  await run(page, 300);
+  if ((await usable(api, 'clue:aris_notes', name)).glowing) throw new Error(`${name}: they glow from across the room`);
+  await teleport(page, api, { map: 'maker_space_floor_0', x: 3, y: 2 }, name);
+  await run(page, 300);
+  if (!(await usable(api, 'clue:aris_notes', name)).glowing) throw new Error(`${name}: they don't glow by them`);
+  await shot(page, index, name);
+}
+
 /** E at Aris's bench searches it and learns the datajack's schematic, once. */
 async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = "searching Aris's bench";
@@ -465,6 +486,8 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   if (!recipes.includes('datajack') || !searched.includes('maker_space_bench')) {
     throw new Error(`${name}: they know ${recipes.join(', ')} and searched ${searched.join(', ')}`);
   }
+  const bench = await usable(api, 'maker_space_floor_0/maker_space_bench', name);
+  if (!bench.searched || bench.recipe) throw new Error(`${name}: the bench isn't drawn searched`);
   await run(page, 2600);
   const after = (await api.state())!;
   if (after.used === 'searchable') throw new Error(`${name}: E still searches the bench`);
@@ -662,6 +685,7 @@ try {
     ['through the metro and back', (i) => metroLeg(page, api, i)],
     ['through the dark with the lamp', (i) => lampLeg(page, api, i)],
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
+    ["Aris's notes", (i) => notesLeg(page, api, i)],
     ["searching Aris's bench", (i) => searchLeg(page, api, i)],
     ['the bionics at the depot', (i) => bionicsLeg(page, api, i)],
     ["the sewers' gate", (i) => sewersLeg(page, api, i)],

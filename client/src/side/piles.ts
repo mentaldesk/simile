@@ -67,4 +67,8 @@ export class PileGlints {
   }
 }
 
-const sameItems = (a: readonly Pile[], b: readonly Pile[]) => a.length === b.length && a.every((pile, i) => pile === b[i]);
+const itemsOf = ({ at, items, money }: Pile) => `${at.map}:${at.x},${at.y}:${items.map(({ id }) => id).join()}:${money ?? 0}`;
+
+/** Whether two lists of piles lie in the same places and hold the same, as each `player_state` sends them anew. */
+export const sameItems = (a: readonly Pile[], b: readonly Pile[]): boolean =>
+  a.length === b.length && a.every((pile, i) => pile === b[i] || itemsOf(pile) === itemsOf(b[i]));
