@@ -143,8 +143,10 @@ The same corner says what E picks up or sells where the player stands, in
   too heavy to carry with what you have." E sends `pick_up`.
 - At a buyer (`player_state`'s `buyer`), what E sells and for how much: "Press E to sell your copper
   wire at the scrap trader's stall for 6.", or "your salvage" for three things or more. E sends
-  `sell` with `null`, selling everything it buys. With nothing it buys, the line says it buys
-  salvage and what they have, and E does what it would without it.
+  `sell` with `null`, selling everything it buys, parts included. With nothing it buys, the line
+  says it buys salvage and what they have, and E does what it would without it.
+- While the buyer has a part they sold it to buy back (`buyer.stock`), the line says "Press E to
+  see what the scrap trader's stall buys and sells.", and E opens the clinic panel below for it.
 - The world scene draws a glint over each pile on the street shown and its floors, gold for cash
   (`side/piles.ts`).
 
@@ -157,6 +159,9 @@ clinic panel ([`clinic-panel.ts`](clinic-panel.ts)) instead of selling. It lists
 
 - "Talk to Annelie Joubert", while she's ringed: Enter closes the panel and opens the chat to her;
 - the salvage they carry that the clinic buys, and for how much, sold at once with `sell`;
+- each part it sells back, once at its cheapest, with how many there are: "Buy back: USB-C
+  connector ×2", bought with `buy` on one Enter. One they can't afford or carry is dimmed, and says
+  why;
 - a kidney, for `buyer.parts`' price, sold with `sell_part`;
 - each fitting in each part it can go in place of, with its price, fitted with `fit`. One they
   can't afford is dimmed, and says what it costs against what they have.

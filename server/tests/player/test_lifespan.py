@@ -221,5 +221,30 @@ def test_e_at_the_dead_terminal_finds_its_clue_only_with_the_datajack(
         assert "maker's mark" in entry["text"] and entry["flushed"] is None
 
 
+def test_a_part_sold_at_the_stall_is_bought_back_with_buy(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+    plug = Item(id="usb_c_connector", kind=ItemKind.PART, name="USB-C connector", weight=0.1)
+    player_of(app).items = [plug]
+    player_of(app).money = 20
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        move(client, app, ws, 26, 15, "metro")
+        client.portal.call(world_of(app).loop.tick)
+        next_of(ws, "player_state")
+        ws.send_json({"type": "sell", "item": None})
+        sold = next_of(ws, "player_state")
+        ws.send_json({"type": "buy", "item": "usb_c_connector"})
+        bought = next_of(ws, "player_state")
+
+    offer = {"item": plug.model_dump(mode="json"), "price": 24.0}
+    assert sold["buyer"]["stock"] == [offer]
+    assert sold["player"]["sales"] == [{**offer, "place": "scrap_stall", "price": 12.0}]
+    assert bought["player"]["items"] == [plug.model_dump(mode="json")]
+    assert bought["player"]["money"] == 8
+    assert "stock" not in bought["buyer"]
+    assert "sales" not in bought["player"]
+
+
 def metro(piles: list[dict]) -> list[dict]:
     return [pile for pile in piles if pile["at"]["map"] == "metro"]

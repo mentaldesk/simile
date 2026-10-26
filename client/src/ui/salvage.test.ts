@@ -87,4 +87,10 @@ describe('sellPrompt', () => {
     const clinic: Buyer = { place: 'clinic', name: 'The Clinic', prices: { copper_wire: 6 }, parts: { left_kidney: 100 } };
     expect(sellPrompt(clinic, player([WIRE]))).toBe('Press E to see what the Clinic buys and fits.');
   });
+
+  it('with parts to buy back, says E shows what the buyer buys and sells', () => {
+    const plug: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
+    const stall: Buyer = { ...TRADER, stock: [{ item: plug, price: 24 }] };
+    expect(sellPrompt(stall, player([WIRE]))).toBe("Press E to see what the scrap trader's stall buys and sells.");
+  });
 });

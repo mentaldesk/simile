@@ -40,6 +40,18 @@ const body = {
 } as const;
 const player = (money: number, items: Item[] = []): Player => ({ money, items, carry_limit: 10, body, hunger: 0 });
 const DOCTOR = { id: 'annelie', name: 'Annelie Joubert' };
+const PLUG: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
+const LENS: Item = { id: 'infrared_lens', kind: 'part', name: 'Infrared lens', weight: 0.2, charge: null, on: null };
+const TRADER: Buyer = {
+  place: 'scrap_stall',
+  name: "The scrap trader's stall",
+  prices: {},
+  stock: [
+    { item: PLUG, price: 10 },
+    { item: LENS, price: 80 },
+    { item: PLUG, price: 24 },
+  ],
+};
 
 describe('deals', () => {
   it('lists talking, the salvage, the kidney and each fitting in each part it takes', () => {
@@ -85,6 +97,24 @@ describe('deals', () => {
 
   it('leaves out what the doctor no longer buys or fits, and talking with nobody to talk to', () => {
     expect(deals({ ...CLINIC, parts: undefined, fittings: [EYE] }, player(0))).toHaveLength(2);
+  });
+});
+
+describe('buying back', () => {
+  it('offers each part once, at the cheapest, with how many there are', () => {
+    expect(deals(TRADER, player(50))).toEqual([
+      { kind: 'buy', label: 'Buy back: USB-C connector ×2', price: 10, item: 'usb_c_connector', weight: 0.1 },
+      { kind: 'buy', label: 'Buy back: Infrared lens', price: 80, item: 'infrared_lens', weight: 0.2, short: 'money' },
+    ]);
+  });
+
+  it('says what a part costs against what they have, or that it will not fit', () => {
+    const [plug, lens] = deals(TRADER, player(50));
+    const [heavy] = deals(TRADER, player(50, [{ ...WIRE, weight: 9.95 }]));
+
+    expect(note(plug, false, 50)).toBe('Enter to buy it back.');
+    expect(note(lens, false, 50)).toBe('It costs 80, and you have 50.');
+    expect(note(heavy, false, 50)).toBe('It weighs 0.1 kg, more than you can carry now.');
   });
 });
 
@@ -222,6 +252,19 @@ describe('ClinicPanel', () => {
     press('ArrowDown');
     press('Enter');
     expect(sent).toEqual([{ type: 'sell_recipe', recipe: 'datajack' }]);
+  });
+
+  it('buys a part back on one Enter, and never one they cannot pay for', () => {
+    panel.open(TRADER, player(50));
+
+    expect(section().querySelector('b')!.textContent).toBe("The scrap trader's stall");
+    expect(section().ariaLabel).toBe("The scrap trader's stall");
+    expect(rows()).toEqual(['Buy back: USB-C connector ×210', 'Buy back: Infrared lens80']);
+    expect(section().querySelectorAll('.clinic-short')).toHaveLength(1);
+    press('Enter');
+    press('ArrowDown');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'buy', item: 'usb_c_connector' }]);
   });
 
   it('closes on Esc or E, and a click chooses and acts', () => {

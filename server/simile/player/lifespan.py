@@ -18,6 +18,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.sync import PlayerSync, recipes_of
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
+        BuyMessage,
         EatMessage,
         JournalMessage,
         LampMessage,
@@ -102,6 +103,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         if trade.sell(message.item):
             sync.update()
 
+    def on_buy(message: BuyMessage) -> None:
+        if trade.buy(message.item):
+            sync.update()
+
     stops = [
         world.loop.register(hunger),
         world.loop.register(lamp),
@@ -111,6 +116,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(EatMessage, on_eat),
         hub.subscribe(PickUpMessage, on_pick_up),
         hub.subscribe(SellMessage, on_sell),
+        hub.subscribe(BuyMessage, on_buy),
         hub.subscribe(LampMessage, on_lamp),
         hub.greet(sync.message),
     ]

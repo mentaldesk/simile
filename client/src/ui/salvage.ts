@@ -1,5 +1,5 @@
 import type { Buyer, Item, Pile, Player } from '../net';
-import { isClinic } from '../world/buyers';
+import { fits, isClinic } from '../world/buyers';
 import { NEWS_KEY } from './tuning';
 
 const E = NEWS_KEY.toUpperCase();
@@ -53,7 +53,7 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
 
 /** What E sells to the buyer where they stand, or that it buys. */
 export function sellPrompt(buyer: Buyer, player: Player): string {
-  if (isClinic(buyer)) return `Press ${E} to see what ${lowerFirst(buyer.name)} buys and fits.`;
+  if (isClinic(buyer)) return `Press ${E} to see what ${lowerFirst(buyer.name)} buys and ${fits(buyer) ? 'fits' : 'sells'}.`;
   const sold = player.items.filter(({ id }) => id in buyer.prices);
   if (!sold.length) return `${buyer.name} buys salvage. You have ${amount(player.money)}.`;
   const total = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
