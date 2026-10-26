@@ -38,7 +38,8 @@ const [{ spawn }, fs, { tmpdir }, net] = await Promise.all([
 ]);
 
 type Listing = { current: { id: string | null; name: string }; worlds: { id: string; name: string }[] };
-type Probed = { menuProbe: { positionOf(id: string): { map: string; x: number } | undefined } };
+type View = { positionOf(id: string): { map: string; x: number } | undefined };
+type Probed = { menuProbe: () => View };
 
 const args = process.argv.slice(2);
 const option = (name: string) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
@@ -112,22 +113,22 @@ async function shot(page: Page, what: string): Promise<void> {
     await page.screenshot({ path: `${screens}/${String(++shots).padStart(2, '0')}-${what}.png` });
 }
 
-/** Waits for the reload into the game, and for the player to be drawn. */
+/** Waits for the reload into the game, and for the side scene to draw the player. */
 async function inGame(page: Page): Promise<void> {
   await page.waitForURL(/\?play$/, { timeout: SECONDS * 1000 });
   await until(
     () =>
-      page.evaluate(async (view) => {
-        const { worldView, PLAYER_ID } = await import(view);
-        (window as unknown as Probed).menuProbe = worldView();
-        return !!worldView().positionOf(PLAYER_ID);
+      page.evaluate(async (module) => {
+        const { worldView, trackedWorld, PLAYER_ID } = await import(module);
+        (window as unknown as Probed).menuProbe = worldView;
+        return worldView() !== trackedWorld && !!worldView().positionOf(PLAYER_ID);
       }, '/src/ui/world-view.ts'),
-    'the player in the game',
+    'the side scene drawing the player',
   );
 }
 
 const playerAt = (page: Page) =>
-  page.evaluate(() => (window as unknown as Probed).menuProbe.positionOf('player'));
+  page.evaluate(() => (window as unknown as Probed).menuProbe().positionOf('player'));
 
 try {
   if (screens) fs.mkdirSync(screens, { recursive: true });
@@ -161,10 +162,8 @@ try {
 
   const before = await playerAt(page);
   await page.keyboard.down('ArrowRight');
-  await page.waitForTimeout(1200);
+  await until(async () => ((await playerAt(page))?.x ?? 0) > before!.x + 1, 'walking right');
   await page.keyboard.up('ArrowRight');
-  const after = await playerAt(page);
-  if (!before || !after || after.x === before.x) throw new Error(`didn't walk: ${JSON.stringify([before, after])}`);
   await shot(page, 'playing');
   console.log('ok   walked in it');
 
