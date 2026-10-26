@@ -26,7 +26,7 @@ Output is deterministic, and `tests/street` fails if a file drifts from the buil
   lift. Violet dots are spots, with a tick the way they face (up for `north`, down for `south`).
   Yellow squares are entries, teal boxes locations, orange boxes things to use, cyan boxes mural
   walls from `bottom` to `top`, and thin grey boxes furniture. Dark stretches are shaded navy,
-  places salvage can lie are green diamonds and secrets pink ones. Mural walls and doors to other
+  places salvage can lie are green diamonds, secrets pink ones and creatures red dots. Mural walls and doors to other
   streets are named in the ground under them.
 
 ## The grid
@@ -66,6 +66,7 @@ Every map has every layer, bottom to top:
 | `spots` | Objects, as today. |
 | `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. A cell is dark where a dark stretch covers it and no lit one does, and lit everywhere else, so a map without any is lit all over. Only the metro has any yet, and every cell of it is in one. |
 | `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. `needs` is what reaching it takes, on one scale for every map (`simile.street.jump.NEEDS`): `jump`, the player's own, or a grade of legs or feet, such as `spring_feet`. It's left out where walking and climbing get there. |
+| `creatures` | Objects, only on maps with creatures: the metro and the sewers. One tile per creature, where it starts, named by its id, its type its kind (`rat` or `bot`), with an optional `area`, `x,y,width,height`, that it keeps to. `simile.creatures` spawns them (P13). |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
 `cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
@@ -237,6 +238,7 @@ passes through it.
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up, and stage 1's premium legs until P18. |
+| P13 | Bots on the floor, in `creatures` | `metro_bot_1` on the platform (starting at 47, kept to 30–54) and `metro_bot_2` in the west tunnel (64, kept to 56–69), both on the floor's row, clear of the scrap trader's stall, the plug and the fridge. The tunnel's passes `metro_salvage_2` and `_3`, and takes them while the player's in the metro. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -314,6 +316,12 @@ counts from the way through, which every grade of legs or feet takes:
 | `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
 | `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
+
+**Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
+`sewers_bot_<n>`, a recycler bot in the room of each salvage there, starting at least three cells
+from it and kept to zone 0; and `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to
+a room of its own, away from the bots where zone 0 has the rooms. They're placed from their own random stream, after the rest of
+the level, so adding them moved nothing else, and later kinds can follow them the same way.
 
 **Finds** (above): in zone 0 a delver's bedroll and crates with the bionic legs' recipe and parts,
 reached on the player's own legs, and past the gate the spring feet's, and the security station's

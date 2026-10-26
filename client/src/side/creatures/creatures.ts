@@ -4,7 +4,7 @@ import { TILE_M } from '../layout';
 /** The server's `SEND`: sim seconds between a moving creature's `creature_moved`s. */
 export const SEND_SECONDS = 0.2;
 const TWEEN_SECONDS = { min: 0.05, max: 0.5 };
-/** Well over a 13 tiles a second dog, or an 8 tiles a second fall, between sends: further snaps. */
+/** Tiles moved between sends past which it snaps there: no dog or fall goes that far. */
 export const SNAP_TILES = 4;
 /** How long one that's gone takes to keel over and fade. */
 export const DOWN_SECONDS = 0.6;
@@ -21,7 +21,6 @@ export class Tracked {
   private elapsed = 0;
   private duration = 0;
   private sinceLast = Infinity;
-  /** Seconds in its state. */
   seconds = 0;
   /** Metres walked, which steps its cycle. */
   travelled = 0;

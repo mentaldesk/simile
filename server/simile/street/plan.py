@@ -3,7 +3,16 @@ from dataclasses import dataclass
 from itertools import count
 from typing import Any
 
-from simile.schema import Door, DoorKind, Facing, Interactable, Item, Location, TileArea
+from simile.schema import (
+    CreatureKind,
+    Door,
+    DoorKind,
+    Facing,
+    Interactable,
+    Item,
+    Location,
+    TileArea,
+)
 from simile.world.map import (
     CLIMBABLE_LAYER,
     COLLISION_LAYER,
@@ -27,6 +36,7 @@ TILE_SIZE = 16
 BUILDINGS_LAYER = "buildings"
 FURNITURE_LAYER = "furniture"
 PICKUPS_LAYER = "pickups"
+CREATURES_LAYER = "creatures"
 MARKERS = ("blocked", "solid", "stairs", "ladder")
 """The marker tiles, in tile id order, that the tile layers use."""
 MARKERS_IMAGE = "markers.png"
@@ -60,6 +70,17 @@ class Pickup:
 
 
 @dataclass(frozen=True)
+class Spawn:
+    """Where a creature starts, and the `area` it keeps to, if any."""
+
+    id: str
+    kind: CreatureKind
+    x: int
+    y: int
+    area: TileArea | None = None
+
+
+@dataclass(frozen=True)
 class Facade:
     """A building's front on a street, covering its storeys above the street's standing row."""
 
@@ -88,6 +109,7 @@ class Plan:
         self.spots: list[Spot] = []
         self.light: list[Light] = []
         self.pickups: list[Pickup] = []
+        self.creatures: list[Spawn] = []
 
     def fill(self, x: int, y: int, width: int, height: int) -> None:
         for cell in ((cx, cy) for cy in range(y, y + height) for cx in range(x, x + width)):
@@ -189,6 +211,8 @@ def tmj(plan: Plan, markers: str) -> dict[str, Any]:
         LIGHT_LAYER: [_light(next(ids), light) for light in plan.light],
         PICKUPS_LAYER: [_pickup(next(ids), pickup) for pickup in plan.pickups],
     }
+    if plan.creatures:
+        objects[CREATURES_LAYER] = [_spawn(next(ids), spawn) for spawn in plan.creatures]
     for name, group in objects.items():
         layers.append(_object_layer(len(layers) + 1, name, group))
     return {
@@ -392,3 +416,10 @@ def _pickup(object_id: int, pickup: Pickup) -> dict[str, Any]:
     if pickup.needs is not None:
         props["needs"] = str(pickup.needs)
     return _rectangle(object_id, pickup.id, pickup.kind, _tile(pickup.x, pickup.y), props)
+
+
+def _spawn(object_id: int, spawn: Spawn) -> dict[str, Any]:
+    props = {}
+    if (area := spawn.area) is not None:
+        props["area"] = f"{area.x},{area.y},{area.width},{area.height}"
+    return _rectangle(object_id, spawn.id, spawn.kind.value, _tile(spawn.x, spawn.y), props)

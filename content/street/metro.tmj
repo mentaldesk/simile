@@ -1262,10 +1262,58 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 13,
+      "name": "creatures",
+      "objects": [
+        {
+          "height": 16,
+          "id": 62,
+          "name": "metro_bot_1",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "30,15,25,1"
+            }
+          ],
+          "rotation": 0,
+          "type": "bot",
+          "visible": true,
+          "width": 16,
+          "x": 752,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 63,
+          "name": "metro_bot_2",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "56,15,14,1"
+            }
+          ],
+          "rotation": 0,
+          "type": "bot",
+          "visible": true,
+          "width": 16,
+          "x": 1024,
+          "y": 240
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 13,
-  "nextobjectid": 62,
+  "nextlayerid": 14,
+  "nextobjectid": 64,
   "orientation": "orthogonal",
   "properties": [
     {

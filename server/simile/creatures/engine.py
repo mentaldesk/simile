@@ -143,12 +143,17 @@ class Creatures:
         sense: Callable[[], Sight] = Sight,
         harm: Callable[[Kind], None] = lambda kind: None,
         send: Callable[[ServerMessage], None] = lambda message: None,
+        salvage: Callable[[TownMap], Mapping[Cell, str]] = lambda town: {},
+        collect: Callable[[str], None] = lambda pickup: None,
     ) -> None:
         self.maps = maps
         self.clock = clock
         self.sense = sense
         self.harm = harm
         self.send = send
+        self.salvage = salvage
+        """What lies at a map's salvage pickups now, by cell: README.md's *Collecting*."""
+        self.collect = collect
         self.now = 0.0
         self.all: dict[str, Creature] = {}
         self.numbers: dict[str, int] = {}
@@ -220,7 +225,8 @@ class Creatures:
             if town.id not in senses:
                 at = sight.at if sight.at is not None and sight.at.map == town.id else None
                 player = sight.player if at is not None else None
-                senses[town.id] = Senses(self.now, town, player, at)
+                salvage = self.salvage(town) if at is not None else {}
+                senses[town.id] = Senses(self.now, town, player, at, salvage)
             self._step(creature, senses[town.id], dt)
 
     def kickable(self, kick: Kick) -> Hit | None:
@@ -288,6 +294,8 @@ class Creatures:
             self._settle(creature, CreatureState.ATTACKING)
             return
         self._move(creature, dt, kind.speed * (aim.pace if aim else 1.0))
+        if aim and aim.collects and creature.resting and creature.cell == aim.target:
+            self._take(creature, senses)
         if not creature.resting:
             state = aim.state if aim else CreatureState.MOVING
         elif aim is not None and creature.cell == aim.target:
@@ -331,6 +339,12 @@ class Creatures:
                 creature.x += (tx - creature.x) * share
                 creature.y += (ty - creature.y) * share
                 budget = 0
+
+    def _take(self, creature: Creature, senses: Senses) -> None:
+        pickup = senses.salvage.get(creature.cell)
+        if pickup is not None:
+            self._log("A %s collects salvage", creature)
+            self.collect(pickup)
 
     def _settle(self, creature: Creature, state: CreatureState) -> None:
         creature.state = state

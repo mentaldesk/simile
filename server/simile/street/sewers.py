@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 from simile.schema import (
     Bionic,
+    CreatureKind,
     Door,
     DoorKind,
     InteractableKind,
@@ -20,7 +21,7 @@ from simile.street.finds import searchable, under
 from simile.street.jump import KITS, OWN_JUMP, Jump, meets
 from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
-from simile.street.plan import Pickup, Plan
+from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, plug, street
 
 SEWERS = "sewers"
@@ -49,6 +50,8 @@ WEIR = 3
 WEIR_AT = 12
 """Cells into the gate hall: farther than a fall from its west walkway carries anyone."""
 ATTEMPTS = 40
+RATS = (3, 2)
+"""Zone 0's nests of rats, each keeping to a room of its own."""
 
 ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 SPRING_SECRET = "sewers_secret_spring"
@@ -555,6 +558,41 @@ def cover(level: Level, plan: Plan) -> None:
         plan.piece("sewer_lamp", x, FLOORS[1] - 1, 1, 1)
 
 
+def dangers(level: Level, plan: Plan) -> None:
+    """Zone 0's rats, in nests, and a bot in the room of each salvage there, kept to the zone."""
+    rng = random.Random(f"sewers/{level.seed}/creatures")
+    start, gate = level.columns[1].x, level.columns[level.gate].x
+    zone = TileArea(x=start, y=0, width=gate - start, height=plan.height)
+
+    def node(x: int, row: int) -> Node:
+        c = next(i for i, column in enumerate(level.columns) if column.x <= x < column.end)
+        return c, FLOORS.index(row)
+
+    def floor(node: Node) -> list[int]:
+        column = level.columns[node[0]]
+        return [x for x in range(column.x, column.end) if plan.standing(x, FLOORS[node[1]])]
+
+    salvage = [
+        p for p in plan.pickups if p.kind == SALVAGE and p.needs is None and start <= p.x < gate
+    ]
+    for number, pickup in enumerate(salvage, 1):
+        here = node(pickup.x, pickup.y)
+        xs = [x for x in floor(here) if abs(x - pickup.x) >= 3] or floor(here)
+        bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, rng.choice(xs), pickup.y, zone)
+        plan.creatures.append(bot)
+    rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
+    bots = {node(p.x, p.y) for p in salvage}
+    nests = [n for n in rooms if n not in bots]
+    nests = rng.sample(nests if len(nests) >= len(RATS) else rooms, len(RATS))
+    number = 0
+    for (c, tier), rats in zip(nests, RATS, strict=True):
+        column, row = level.columns[c], FLOORS[tier]
+        area = TileArea(x=column.x, y=row - 3, width=column.width, height=4)
+        for x in sorted(rng.sample(floor((c, tier)), rats)):
+            number += 1
+            plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
+
+
 def lift() -> Door:
     """The metro's maintenance lift, down to every level's landing."""
     return Door(id=f"{METRO}_to_{SEWERS}", outside=LIFT_FOOT, inside=LANDING)
@@ -571,6 +609,7 @@ def build(level: Level) -> Plan:
     light(plan, "sewers_gate", gate.x, CEILING + 1, gate.width, GROUND - CEILING, lit=True)
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
     stock(level, plan, ledges)
+    dangers(level, plan)
     cover(level, plan)
     plan.doors.append(lift())
     return plan
