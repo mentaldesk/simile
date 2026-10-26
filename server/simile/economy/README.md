@@ -20,7 +20,8 @@ Money moves between residents, the player (`PLAYER`) and `OUTSIDE`, the world be
 | Between residents | Paying at a shop | A meal at the noodle bar or the Daily Grind when they start eating. A drink whenever the café serves them (its `Served` event), and at the noodle bar when they come in while it's staffed, at most once every 90 minutes there |
 | Between residents | Loans and repaying them | When B3 finds one in a conversation B2 set up for it (E6) |
 | In, from the player | Paying at a shop | A meal at the noodle bar or the Daily Grind (S5) |
-| To the player | Salvage (`salvage`) | When they sell it to a buyer (S6) |
+| To the player | Salvage (`salvage`) | When they sell salvage or a part to a buyer (S6, P5) |
+| Out, from the player | Buying back (`purchase`) | When they buy back a part they sold (P5) |
 | To the player | Money they find (`found`) | When they pick up a secret's cash (S6) |
 
 A shop is run by whoever works there on `takings`: Mirela at the Daily Grind and Odalys at the noodle
@@ -57,6 +58,11 @@ so check they can pay first.
   trader's stall (`scrap_stall`) and the clinic, pay it. `offer(place, items)` is what the buyer at
   a place pays for one of each of the items it buys, and `sell(place, item)` pays them for one, as
   `salvage` from `OUTSIDE`. Neither buyer is a resident.
+- **Parts.** `EconomyConfig.parts` prices the recipes' parts that aren't salvage, and the buyers
+  buy them as they do salvage. A buyer sells a part back for `buy_back` (2) times what it paid, and
+  the salvage in `kept` too: the copper coil, pump impeller, float valve, brass fitting and old
+  battery, which recipes use up and the sewers' finds hold. See *Buying back* in `simile.player`'s
+  README. Each part is worth less than the fitting it goes into.
 - **Money they find.** `find(amount, pickup)`, as `found` from `OUTSIDE`.
 
 | Salvage | Price |
@@ -77,6 +83,14 @@ so check they can pay first.
 | Old battery | 5 |
 | Pressure gauge | 8 |
 | Apex control board | 14 |
+
+| Part | Price |
+|---|--:|
+| Lithium cell | 10 |
+| Charge controller | 15 |
+| USB-C connector | 12 |
+| Infrared lens | 40 |
+| Apex actuator | 30 |
 
 The prices are facts of the sim: whoever buys only voices them.
 
