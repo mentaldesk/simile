@@ -22,12 +22,12 @@ Output is deterministic, and `tests/street` fails if a file drifts from the buil
   and paths by it (below).
 - [`preview.png`](preview.png): every street with its buildings' floors drawn in place. Ground is
   brown, walls and floors grey, cells you can stand on cream, stairs yellow, ladders orange. Green
-  squares are doors, yellow and orange lines stairs and ladders between floors, pink lines the
-  lift. Violet dots are spots, with a tick the way they face (up for `north`, down for `south`).
-  Yellow squares are entries, teal boxes locations, orange boxes things to use, cyan boxes mural
-  walls from `bottom` to `top`, and thin grey boxes furniture. Dark stretches are shaded navy,
-  places salvage can lie are green diamonds, secrets pink ones and creatures red dots. Mural walls and doors to other
-  streets are named in the ground under them.
+  squares are doors, yellow and orange lines stairs and ladders between floors, pink lines the lift.
+  Violet dots are spots, with a tick the way they face (up for `north`, down for `south`). Yellow
+  squares are entries, teal boxes locations, orange boxes things to use, cyan boxes mural walls from
+  `bottom` to `top`, and thin grey boxes furniture. Dark stretches are shaded navy, places salvage
+  can lie are green diamonds, secrets pink ones and creatures red dots. Mural walls and doors to
+  other streets are named in the ground under them.
 
 ## The grid
 
@@ -238,7 +238,7 @@ passes through it.
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
-| P13 | Bots on the floor, in `creatures` | `metro_bot_1` on the platform (starting at 47, kept to 30–54) and `metro_bot_2` in the west tunnel (64, kept to 56–69), both on the floor's row, clear of the scrap trader's stall, the plug and the fridge. The tunnel's passes `metro_salvage_2` and `_3`, and takes them while the player's in the metro. |
+| P13 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 53 and is kept to 30–68, ten cells from `metro_salvage_2`, which it drifts to while the player's in the metro. `metro_bot_2` guards the platform, starting at 46 and kept to 30–54, with no salvage in reach. Each patrols two cells either side, clear of where the player stops: the stall, the plug, the fridge, the clinic and the lift. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -317,10 +317,17 @@ counts from the way through, which every grade of legs or feet takes:
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
-`sewers_bot_<n>`, a recycler bot in the room of each salvage there, starting at least three cells
-from it and kept to zone 0; and `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to
-a room of its own, away from the bots where zone 0 has the rooms. They're placed from their own random stream, after the rest of
-the level, so adding them moved nothing else, and later kinds can follow them the same way.
+
+- `sewers_bot_<n>`, a recycler bot for each salvage there, kept to zone 0. It starts within
+  `BOT_NOTICES` (14) steps of its salvage, walking, climbing or dropping, and patrols two cells
+  either side, every one at least `BOT_GAP` (8) steps from any salvage. That's over half a minute's
+  drift to it, so a player walking from the lift gets there first. Where no cell is in reach and
+  clear, it starts anywhere clear.
+- `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to a room of its own, away from
+  the salvage where zone 0 has the rooms.
+
+They're placed from their own random stream, after the rest of the level, so adding them moved
+nothing else, and later kinds can follow them the same way.
 
 **Finds** (above): in zone 0 a delver's bedroll and crates with the bionic legs' recipe and parts,
 reached on the player's own legs, and past the gate the spring feet's, and the security station's

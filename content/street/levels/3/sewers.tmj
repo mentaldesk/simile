@@ -1592,13 +1592,18 @@
               "name": "area",
               "type": "string",
               "value": "13,0,26,20"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
             }
           ],
           "rotation": 0,
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 432,
+          "x": 304,
           "y": 240
         },
         {
@@ -1610,14 +1615,19 @@
               "name": "area",
               "type": "string",
               "value": "13,0,26,20"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
             }
           ],
           "rotation": 0,
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 576,
-          "y": 160
+          "x": 528,
+          "y": 80
         },
         {
           "height": 16,

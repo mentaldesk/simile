@@ -24,7 +24,11 @@ BOT = Kind(
     rest=2.0,
     health=math.inf,
     toughness=1.0,
-    ways=(Chase(sight=5.0, pace=1.5, memory=3.0, when=fitted), Collect(), Patrol(pause=3.0)),
+    ways=(
+        Chase(sight=5.0, pace=1.5, memory=3.0, when=fitted),
+        Collect(within=14.0, pace=0.2),
+        Patrol(pause=3.0),
+    ),
 )
 
 

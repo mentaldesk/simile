@@ -2,7 +2,7 @@
 
 import random
 from collections import deque
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
 from simile.schema import (
@@ -19,7 +19,7 @@ from simile.schema import (
 )
 from simile.street.finds import searchable, under
 from simile.street.jump import KITS, OWN_JUMP, Jump, meets
-from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
+from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, plug, street
@@ -52,6 +52,10 @@ WEIR_AT = 12
 ATTEMPTS = 40
 RATS = (3, 2)
 """Zone 0's nests of rats, each keeping to a room of its own."""
+BOT_GAP = 8
+"""Steps from any salvage that every cell of a bot's patrol keeps: over half a minute's drift."""
+BOT_NOTICES = 14
+"""Steps from its salvage a bot starts within, so it drifts there: the bots' `Collect` reach."""
 
 ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 SPRING_SECRET = "sewers_secret_spring"
@@ -559,7 +563,8 @@ def cover(level: Level, plan: Plan) -> None:
 
 
 def dangers(level: Level, plan: Plan) -> None:
-    """Zone 0's rats, in nests, and a bot in the room of each salvage there, kept to the zone."""
+    """Zone 0's rats, in nests, and a bot for each salvage there, kept to the zone, starting within
+    reach of it but patrolling well clear of all of it."""
     rng = random.Random(f"sewers/{level.seed}/creatures")
     start, gate = level.columns[1].x, level.columns[level.gate].x
     zone = TileArea(x=start, y=0, width=gate - start, height=plan.height)
@@ -575,10 +580,29 @@ def dangers(level: Level, plan: Plan) -> None:
     salvage = [
         p for p in plan.pickups if p.kind == SALVAGE and p.needs is None and start <= p.x < gate
     ]
-    for number, pickup in enumerate(salvage, 1):
-        here = node(pickup.x, pickup.y)
-        xs = [x for x in floor(here) if abs(x - pickup.x) >= 3] or floor(here)
-        bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, rng.choice(xs), pickup.y, zone)
+    edges = bot_steps(plan, lambda cell: start <= cell[0] < gate)
+    away = [steps_to(edges, (p.x, p.y)) for p in salvage]
+
+    def patrol(cell: Cell) -> list[Cell]:
+        x, y = cell
+        found = [cell]
+        for dx in (-1, 1):
+            for step in range(1, BOT_SPAN + 1):
+                if not plan.standing(x + dx * step, y):
+                    break
+                found.append((x + dx * step, y))
+        return found
+
+    def clear(cell: Cell) -> bool:
+        return all(d.get(c, BOT_GAP) >= BOT_GAP for c in patrol(cell) for d in away)
+
+    used: set[Cell] = set()
+    for number, steps in enumerate(away, 1):
+        free = sorted(c for c in edges if plan.standing(*c) and c not in used and clear(c))
+        near = [c for c in free if steps.get(c, BOT_NOTICES + 1) <= BOT_NOTICES]
+        x, y = rng.choice(near or free)
+        used.add((x, y))
+        bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, x, y, zone, BOT_SPAN)
         plan.creatures.append(bot)
     rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
     bots = {node(p.x, p.y) for p in salvage}
@@ -591,6 +615,42 @@ def dangers(level: Level, plan: Plan) -> None:
         for x in sorted(rng.sample(floor((c, tier)), rats)):
             number += 1
             plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
+
+
+def bot_steps(plan: Plan, inside: Callable[[Cell], bool]) -> dict[Cell, list[Cell]]:
+    """Each cell `inside` a bot can be on, and where one step takes it: along, up or down a ladder,
+    or off a ledge to the floor below, which falls fast enough to count as one."""
+    town, edges = Cells(plan), {}
+    for x in range(plan.width):
+        for y in range(plan.height):
+            if not inside((x, y)) or not plan.walkable(x, y):
+                continue
+            ends = [move.cell for move in moves(town, (x, y)) if inside(move.cell)]
+            for side in ((x - 1, y), (x + 1, y)) if plan.standing(x, y) else ():
+                if inside(side) and not plan.walkable(*side) and side not in plan.solid:
+                    land = side
+                    while not plan.walkable(*land) and (land[0], land[1] + 1) not in plan.solid:
+                        land = (land[0], land[1] + 1)
+                    if plan.walkable(*land):
+                        ends.append(land)
+            edges[(x, y)] = ends
+    return edges
+
+
+def steps_to(edges: dict[Cell, list[Cell]], goal: Cell) -> dict[Cell, int]:
+    """The fewest steps from each cell to `goal`, by `edges`."""
+    into: dict[Cell, list[Cell]] = {}
+    for cell, ends in edges.items():
+        for end in ends:
+            into.setdefault(end, []).append(cell)
+    found, queue = {goal: 0}, deque([goal])
+    while queue:
+        here = queue.popleft()
+        for there in into.get(here, []):
+            if there not in found:
+                found[there] = found[here] + 1
+                queue.append(there)
+    return found
 
 
 def lift() -> Door:

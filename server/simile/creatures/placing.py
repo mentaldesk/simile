@@ -8,15 +8,13 @@ from simile.creatures.engine import Creature, Creatures
 from simile.creatures.kinds import KINDS
 from simile.schema import CreatureKind, MapTile, TileArea
 from simile.street.plan import CREATURES_LAYER, Spawn
-from simile.world.map import LEVELS, MAP_DIR
+from simile.world.map import FLOORS, LEVELS, MAP_DIR
 
 
 def spawns(directory: Path = MAP_DIR, level: int = 0) -> list[tuple[str, Spawn]]:
-    """Every creature on the streets and `level`'s maps, which are all that have any, by map id."""
-    paths = [
-        *sorted(directory.glob("*.tmj")),
-        *sorted((directory / LEVELS / str(level)).glob("*.tmj")),
-    ]
+    """Every creature on the maps `load_maps(directory, level)` reads, with its map's id."""
+    paths = [*sorted(directory.glob("*.tmj")), *sorted((directory / FLOORS).glob("*.tmj"))]
+    paths += sorted((directory / LEVELS / str(level)).glob("*.tmj"))
     found = []
     for path in paths:
         data = json.loads(path.read_text())
@@ -35,9 +33,10 @@ def populate(creatures: Creatures, placed: list[tuple[str, Spawn]]) -> list[Crea
             continue
         placing = KINDS[spawn.kind]
         at = MapTile(map=map_id, x=spawn.x, y=spawn.y)
-        made.append(
-            creatures.spawn(placing.kind, at, id=spawn.id, area=spawn.area, respawn=placing.respawn)
-        )
+        options: dict[str, Any] = {"area": spawn.area, "respawn": placing.respawn}
+        if spawn.span is not None:
+            options["span"] = spawn.span
+        made.append(creatures.spawn(placing.kind, at, id=spawn.id, **options))
     return made
 
 
@@ -48,4 +47,4 @@ def _spawn(data: dict[str, Any], size: int) -> Spawn:
         x, y, width, height = map(int, props["area"].split(","))
         area = TileArea(x=x, y=y, width=width, height=height)
     x, y = data["x"] // size, data["y"] // size
-    return Spawn(data["name"], CreatureKind(data["type"]), x, y, area)
+    return Spawn(data["name"], CreatureKind(data["type"]), x, y, area, props.get("span"))

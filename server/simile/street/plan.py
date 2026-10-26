@@ -71,13 +71,14 @@ class Pickup:
 
 @dataclass(frozen=True)
 class Spawn:
-    """Where a creature starts, and the `area` it keeps to, if any."""
+    """Where a creature starts, the `area` it keeps to and the `span` it patrols, if any."""
 
     id: str
     kind: CreatureKind
     x: int
     y: int
     area: TileArea | None = None
+    span: int | None = None
 
 
 @dataclass(frozen=True)
@@ -419,7 +420,9 @@ def _pickup(object_id: int, pickup: Pickup) -> dict[str, Any]:
 
 
 def _spawn(object_id: int, spawn: Spawn) -> dict[str, Any]:
-    props = {}
+    props: dict[str, Any] = {}
     if (area := spawn.area) is not None:
         props["area"] = f"{area.x},{area.y},{area.width},{area.height}"
+    if spawn.span is not None:
+        props["span"] = spawn.span
     return _rectangle(object_id, spawn.id, spawn.kind.value, _tile(spawn.x, spawn.y), props)

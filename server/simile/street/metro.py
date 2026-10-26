@@ -56,9 +56,10 @@ FRIDGE = "metro_fridge"
 SALVAGE = "salvage"
 SECRET = "secret"
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
-BOTS = ((47, 30, 54), (64, 56, 69))
-"""Each bot on the metro's floor: where it starts, and the stretch of floor it keeps to, west to
-east, clear of the scrap trader's stall, the plug and the fridge."""
+BOTS = ((53, 30, 68), (46, 30, 54))
+"""Each bot on the floor: where it starts, and the stretch it keeps to, west to east."""
+BOT_SPAN = 2
+"""Cells either side of where it starts that a bot patrols."""
 
 
 def catwalk(plan: Plan, x: int, row: int, width: int) -> None:
@@ -216,7 +217,8 @@ def depot(plan: Plan) -> list[Plan]:
 def bots(plan: Plan) -> None:
     for number, (x, west, east) in enumerate(BOTS, 1):
         area = TileArea(x=west, y=GROUND, width=east - west + 1, height=1)
-        plan.creatures.append(Spawn(f"metro_bot_{number}", CreatureKind.BOT, x, GROUND, area))
+        bot = Spawn(f"metro_bot_{number}", CreatureKind.BOT, x, GROUND, area, BOT_SPAN)
+        plan.creatures.append(bot)
 
 
 def lighting(plan: Plan) -> None:

@@ -1276,14 +1276,19 @@
             {
               "name": "area",
               "type": "string",
-              "value": "30,15,25,1"
+              "value": "30,15,39,1"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
             }
           ],
           "rotation": 0,
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 752,
+          "x": 848,
           "y": 240
         },
         {
@@ -1294,14 +1299,19 @@
             {
               "name": "area",
               "type": "string",
-              "value": "56,15,14,1"
+              "value": "30,15,25,1"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
             }
           ],
           "rotation": 0,
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 1024,
+          "x": 736,
           "y": 240
         }
       ],

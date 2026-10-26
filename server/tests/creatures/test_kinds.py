@@ -1,6 +1,6 @@
 import math
 
-from simile.creatures.engine import Creature, Creatures, Sight
+from simile.creatures.engine import COLLECTING, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.kinds import BOT, RAT
 from simile.player.kick import Kick
@@ -129,14 +129,34 @@ def test_a_bot_shrugs_off_the_player_s_own_kick_and_is_only_knocked_back_by_bion
     assert bot.cell[0] > 6
 
 
-def test_a_bot_collects_salvage_near_it_while_the_player_is_on_its_map() -> None:
+def test_a_bot_drifts_to_salvage_while_the_player_is_on_its_map_and_takes_a_while_there() -> None:
     world = World({(6, 2): "near", (15, 2): "far"})
-    world.spawn(BOT, 3)
+    bot = world.spawn(BOT, 3)
 
-    world.run(10)
-    assert world.collected == []
+    world.run(30)
+    assert bot.cell == (3, 2) and world.collected == []
 
     world.at = Point(19, 2, ROW.id)
-    world.run(10)
+    world.run(5)
+    assert bot.cell != (6, 2) and bot.state is CreatureState.MOVING
+    for _ in range(300):
+        if bot.state is not CreatureState.ATTACKING:
+            world.run(STEP)
+    assert bot.cell == (6, 2) and world.collected == []
+    world.run(COLLECTING - 0.5)
+    assert world.collected == []
+    world.run(1)
     assert world.collected == ["near"]
-    assert world.lying == {(15, 2): "far"}
+
+
+def test_the_player_beats_a_bot_to_salvage_by_picking_it_up_while_the_bot_is_taking_it() -> None:
+    world = World({(6, 2): "near"})
+    world.at = Point(19, 2, ROW.id)
+    bot = world.spawn(BOT, 3)
+    for _ in range(300):
+        if bot.state is not CreatureState.ATTACKING:
+            world.run(STEP)
+
+    world.lying = {}
+    world.run(COLLECTING + 1)
+    assert world.collected == [] and bot.state is not CreatureState.ATTACKING
