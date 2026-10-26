@@ -537,7 +537,7 @@ export interface Player {
    */
   left?: Pile[];
   /**
-   * When they last took from each pickup in the world, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.
+   * When each pickup in the world was last emptied, by the player or a recycler bot, in sim time, by pickup id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, stays taken for good. Left out while there's none.
    */
   taken?: {
     [k: string]: string;

@@ -481,7 +481,7 @@ def test_interactable_fields_follow_the_rules(update: dict[str, Any], match: str
     rejects(Interactable, COUNTER | update, match)
 
 
-DRAWERS, BENCH, FRIDGE, VENDING_MACHINE, SECURITY_TERMINAL = SEARCHABLES
+DRAWERS, BENCH, FRIDGE, VENDING_MACHINE, SECURITY_TERMINAL, MATTRESS = SEARCHABLES
 
 
 @pytest.mark.parametrize("data", SEARCHABLES, ids=lambda data: data["id"])
@@ -492,14 +492,15 @@ def test_a_searchable_thing_round_trips(data: dict[str, Any]) -> None:
     assert Interactable.model_validate_json(searchable.model_dump_json()) == searchable
 
 
-def test_a_searchable_thing_holds_items_teaches_a_recipe_or_neither() -> None:
-    drawers, bench, _, vending_machine, terminal = map(Interactable.model_validate, SEARCHABLES)
+def test_a_searchable_thing_holds_items_money_teaches_a_recipe_or_none() -> None:
+    drawers, bench, _, vending, terminal, mattress = map(Interactable.model_validate, SEARCHABLES)
 
     assert [item.id for item in drawers.items] == ["usb_c_connector", "copper_wire"]
-    assert drawers.teaches is None
+    assert (drawers.money, drawers.teaches) == (0, None)
     assert (bench.items, bench.teaches) == ([], Bionic.DATAJACK)
-    assert (vending_machine.items, vending_machine.teaches) == ([], None)
+    assert (vending.items, vending.money, vending.teaches) == ([], 0, None)
     assert (terminal.kind, terminal.teaches) == (InteractableKind.JACK, Bionic.INFRARED_EYE)
+    assert (mattress.items, mattress.money, mattress.teaches) == ([], 10, None)
 
 
 def test_an_interactable_that_holds_nothing_dumps_as_before() -> None:
@@ -507,7 +508,9 @@ def test_an_interactable_that_holds_nothing_dumps_as_before() -> None:
 
 
 @pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug"])
-@pytest.mark.parametrize("update", [{"items": DRAWERS["items"]}, {"teaches": "datajack"}])
+@pytest.mark.parametrize(
+    "update", [{"items": DRAWERS["items"]}, {"money": 5.0}, {"teaches": "datajack"}]
+)
 def test_only_searchable_things_and_jacks_hold_or_teach(kind: str, update: dict[str, Any]) -> None:
     rejects(Interactable, COUNTER | {"kind": kind} | update, "only a searchable or a jack")
 
@@ -517,6 +520,8 @@ def test_only_searchable_things_and_jacks_hold_or_teach(kind: str, update: dict[
     [
         ({"teaches": "steel_hand"}, "Input should be 'datajack'"),
         ({"items": [{"id": "copper_wire"}]}, "items.0.kind"),
+        ({"money": -1.0}, "greater than or equal to 0"),
+        ({"money": "10"}, "Input should be a valid number"),
     ],
 )
 def test_searchable_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
