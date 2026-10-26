@@ -1,6 +1,6 @@
 import { playerState, type Buyer, type Pile, type Position, type Wall } from '../net';
 import { maps } from './assets';
-import { isClinic } from './buyers';
+import { trades } from './buyers';
 import { clueInReach, clues, type Clue } from './clues';
 import { interactableAt, type Interactable } from './interactables';
 import { jacked, leadsAway } from './jacks';
@@ -89,7 +89,7 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   const pile = pileInReach(position, from.piles());
   if (pile) found.push({ kind: 'pile', ...pile });
   const buyer = from.buyer();
-  if (buyer && isClinic(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
+  if (buyer && trades(buyer)) found.push({ kind: 'clinic', tiles: 0, buyer });
   else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
   const clue = clueInReach(position, from.clues);
   if (clue) found.push({ kind: 'clue', ...clue });

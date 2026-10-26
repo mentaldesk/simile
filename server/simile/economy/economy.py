@@ -205,11 +205,11 @@ class Economy:
         """What the buyer at `place` pays for each of `items` it buys, by id, or None."""
         if place not in self.config.buyers:
             return None
-        prices = self.config.salvage
+        prices = {ItemKind.SALVAGE: self.config.salvage, ItemKind.PART: self.config.parts}
         return {
-            item.id: prices[item.id]
+            item.id: prices[item.kind][item.id]
             for item in items
-            if item.kind is ItemKind.SALVAGE and item.id in prices
+            if item.kind in prices and item.id in prices[item.kind]
         }
 
     def sell(self, place: Id, item: Item) -> bool:

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { playerState, server, type Position } from '../net';
+import { playerState, server, type Buyer, type Position } from '../net';
 import { maps } from '../world/assets';
+import { fits } from '../world/buyers';
 import type { Interactable } from '../world/interactables';
 import { deadJack, jacked } from '../world/jacks';
 import { muralWalls } from '../world/murals';
@@ -32,6 +33,8 @@ import { NEWS_KEY } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
 setMaps(maps);
+
+const trading = (used: Reachable | undefined) => (used?.kind === 'clinic' || used?.kind === 'buyer' ? used.buyer : undefined);
 
 export class DialogueScene extends Phaser.Scene {
   private root!: HTMLElement;
@@ -130,7 +133,8 @@ export class DialogueScene extends Phaser.Scene {
     const prompted = used?.kind === 'counter' || used?.kind === 'jack' || used?.kind === 'searchable';
     const counter = prompted ? used.interactable : undefined;
     this.counter.update(counter, !this.chat.isOpen);
-    this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper(), playerState.latest?.recipes);
+    const buyer = trading(used);
+    this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
@@ -160,18 +164,19 @@ export class DialogueScene extends Phaser.Scene {
       this.news.open(used.terminal.label);
     } else if (used?.kind === 'mural') this.murals.look(this.player());
     else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
-    else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'jack') this.useJack(used.interactable);
     else if (used?.kind === 'searchable') {
       server.send({ type: 'pick_up' });
       this.counter.flash(foundIn(used.interactable));
-    }
-    else if (used?.kind === 'clinic' && playerState.latest) {
-      this.murals.close();
-      this.news.close();
-      this.clinic.open(used.buyer, playerState.latest.player, this.keeper(), playerState.latest.recipes);
-    }
+    } else if (used?.kind === 'clinic' || used?.kind === 'buyer') this.trade(used.buyer);
+  }
+
+  private trade(buyer: Buyer): void {
+    if (!playerState.latest) return;
+    this.murals.close();
+    this.news.close();
+    this.clinic.open(buyer, playerState.latest.player, this.keeper(buyer), playerState.latest.recipes);
   }
 
   /** With the datajack, E at a jack finds the clue in it, as at a clue; without, it's dead. */
@@ -181,8 +186,8 @@ export class DialogueScene extends Phaser.Scene {
   }
 
   /** Whoever the player could talk to at the clinic: the doctor, once they're ringed. */
-  private keeper(): Keeper | undefined {
-    const id = this.targets.current();
+  private keeper(buyer: Buyer | undefined): Keeper | undefined {
+    const id = buyer && fits(buyer) ? this.targets.current() : undefined;
     return id === undefined ? undefined : { id, name: dialogue.nameOf(id) };
   }
 

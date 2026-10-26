@@ -10,8 +10,8 @@ from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG, SALVAGE
 from simile.player.trade import Trade, counted
-from simile.protocol import Buyer
-from simile.schema import PLAYER_ID, Item, ItemKind, Player, lamp
+from simile.protocol import Buyer, Offer
+from simile.schema import PLAYER_ID, Item, ItemKind, Player, Sale, lamp
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -145,3 +145,126 @@ def test_nothing_sells_that_the_buyer_does_not_buy_or_they_do_not_carry(item: st
 def test_what_they_sold_is_said_once_a_kind() -> None:
     assert counted([WIRE, BOARD, WIRE]) == "Copper wire ×2, Circuit board"
     assert counted([STEEL]) == "Scrap steel"
+
+
+PLUG = Item(id="usb_c_connector", kind=ItemKind.PART, name="USB-C connector", weight=0.1)
+LENS = Item(id="infrared_lens", kind=ItemKind.PART, name="Infrared lens", weight=0.2)
+
+
+def test_every_part_a_recipe_uses_up_sells() -> None:
+    from simile.clinic.config import DEFAULT_CONFIG as CLINIC
+
+    used = {id for recipe in CLINIC.recipes.values() for id in recipe.parts}
+    assert used <= set(ECONOMY.salvage) | set(ECONOMY.parts)
+
+
+@pytest.mark.parametrize(("at", "place"), [(STALL, "scrap_stall"), (CLINIC, "clinic")])
+def test_a_part_sold_is_bought_back_at_twice_what_it_fetched(at: Point, place: str) -> None:
+    platform = Platform(Player(money=20, items=[lamp(), PLUG, WIRE]))
+    platform.stand(at)
+
+    assert platform.trade.buyer().prices == {"usb_c_connector": 12, "copper_wire": 6}
+    assert platform.trade.sell(None)
+    assert platform.player.money == 38
+    assert platform.player.sales == [Sale(item=PLUG, place=place, price=12)]
+    assert platform.trade.buyer().stock == [Offer(item=PLUG, price=24)]
+
+    assert platform.trade.buy("usb_c_connector")
+
+    assert platform.player.items == [lamp(), PLUG]
+    assert platform.player.money == 14
+    assert platform.player.sales == []
+    assert platform.trade.buyer().stock == []
+    bought = platform.economy.ledger.entries[-1]
+    assert (bought.kind, bought.payer, bought.payee, bought.place, bought.amount) == (
+        Kind.PURCHASE,
+        PLAYER,
+        OUTSIDE,
+        place,
+        24,
+    )
+    assert platform.balanced()
+
+
+def test_only_what_was_sold_is_on_offer_and_only_where_it_was_sold() -> None:
+    platform = Platform(Player(money=100, items=[PLUG, WIRE]))
+    platform.stand(STALL)
+    platform.trade.sell(None)
+
+    assert [offer.item for offer in platform.trade.buyer().stock] == [PLUG]
+    assert not platform.trade.buy("copper_wire")
+    assert not platform.trade.buy("infrared_lens")
+    platform.stand(CLINIC)
+    assert platform.trade.buyer().stock == []
+    assert not platform.trade.buy("usb_c_connector")
+    platform.stand(Point(40, 15, "metro"))
+    assert not platform.trade.buy("usb_c_connector")
+    assert platform.player.items == []
+    assert platform.player.money == 118
+
+
+def test_stock_is_cheapest_first_and_buying_takes_the_cheapest() -> None:
+    dear = Sale(item=PLUG, place="scrap_stall", price=12)
+    cheap = Sale(item=PLUG, place="scrap_stall", price=5)
+    lens = Sale(item=LENS, place="scrap_stall", price=8)
+    platform = Platform(Player(money=100, items=[], sales=[dear, lens, cheap]))
+    platform.stand(STALL)
+
+    assert platform.trade.buyer().stock == [
+        Offer(item=PLUG, price=10),
+        Offer(item=LENS, price=16),
+        Offer(item=PLUG, price=24),
+    ]
+    assert platform.trade.buy("usb_c_connector")
+    assert platform.player.money == 90
+    assert platform.player.sales == [dear, lens]
+
+
+def test_selling_one_part_by_id_keeps_it_for_them() -> None:
+    platform = Platform(Player(items=[PLUG, PLUG]))
+    platform.stand(STALL)
+
+    assert platform.trade.sell("usb_c_connector")
+
+    assert platform.player.items == [PLUG]
+    assert platform.player.sales == [Sale(item=PLUG, place="scrap_stall", price=12)]
+
+
+def test_they_buy_back_nothing_they_cannot_pay_for_or_carry() -> None:
+    sale = Sale(item=PLUG, place="scrap_stall", price=12)
+    broke = Platform(Player(money=23.5, items=[], sales=[sale]))
+    broke.stand(STALL)
+    laden = Platform(Player(money=100, items=[STEEL, STEEL], carry_limit=9, sales=[sale]))
+    laden.stand(STALL)
+
+    assert not broke.trade.buy("usb_c_connector")
+    assert not laden.trade.buy("usb_c_connector")
+
+    for platform in (broke, laden):
+        assert platform.player.sales == [sale]
+        assert platform.economy.ledger.entries == []
+
+
+def test_salvage_a_recipe_uses_up_is_kept_but_other_salvage_is_not() -> None:
+    coil = Item(id="copper_coil", kind=ItemKind.SALVAGE, name="Copper coil", weight=1.0)
+    platform = Platform(Player(money=0, items=[coil, WIRE]))
+    platform.stand(STALL)
+
+    assert platform.trade.sell(None)
+
+    assert platform.player.sales == [Sale(item=coil, place="scrap_stall", price=7)]
+    assert platform.trade.buyer().stock == [Offer(item=coil, price=14)]
+
+
+def test_a_part_is_worth_less_than_the_fitting_it_goes_into() -> None:
+    from simile.clinic.config import DEFAULT_CONFIG as CLINIC
+
+    prices = ECONOMY.salvage | ECONOMY.parts
+    for recipe in CLINIC.recipes.values():
+        assert sum(prices[id] * n for id, n in recipe.parts.items()) < recipe.credits
+
+
+def test_the_salvage_kept_is_what_the_sewers_finds_hold() -> None:
+    from simile.street.sewers import FINDS
+
+    assert ECONOMY.kept == {item for find in FINDS for item in find.items}
