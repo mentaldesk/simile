@@ -22,8 +22,6 @@ from simile.world.movement import Point
 
 logger = logging.getLogger(__name__)
 
-THINK = 0.25
-"""Sim seconds between a creature's choices of where to go."""
 SEND = 0.2
 """Sim seconds between `creature_moved`s while one moves; a change of state goes at once."""
 FALL_SPEED = 8.0
@@ -282,10 +280,12 @@ class Creatures:
             self._collect(creature, *collecting, senses)
             return
         if self.now >= creature.thinks:
-            creature.thinks = self.now + THINK
+            creature.thinks = self.now + kind.think
             self._think(creature, senses)
         aim, at = creature.aim, senses.at
         if creature.strikes is not None:
+            if kind.lunges:
+                self._move(creature, dt, kind.speed * (aim.pace if aim else 1.0))
             if self.now >= creature.strikes:
                 creature.strikes = None
                 creature.rested = self.now + kind.rest

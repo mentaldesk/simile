@@ -1,8 +1,10 @@
 import math
 
+import pytest
+
 from simile.creatures.engine import COLLECTING, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
-from simile.creatures.kinds import BOT, RAT
+from simile.creatures.kinds import BOT, DOG, RAT
 from simile.player.kick import Kick
 from simile.schema import (
     Bionic,
@@ -14,9 +16,11 @@ from simile.schema import (
     Player,
     SideFacing,
 )
+from simile.street.jump import LEGS
+from simile.world.map import TownMap
 from simile.world.movement import Point
 
-from .conftest import side_view
+from .conftest import LOWER, TWO_FLOORS, UPPER, side_view
 
 STEP = 0.1
 ROW = side_view(
@@ -160,3 +164,50 @@ def test_the_player_beats_a_bot_to_salvage_by_picking_it_up_while_the_bot_is_tak
     world.lying = {}
     world.run(COLLECTING + 1)
     assert world.collected == [] and bot.state is not CreatureState.ATTACKING
+
+
+LONG = side_view("#" * 120, "#" + "." * 118 + "#", "#" + "." * 118 + "#", "#" * 120)
+"""A floor long enough to run along for seconds on the best legs."""
+
+
+class Hunted:
+    """A dog after the player, who's wherever `at` says."""
+
+    def __init__(self, town: TownMap, dog: tuple[int, int], at: Point) -> None:
+        self.at = at
+        self.harmed: list[Kind] = []
+        self.creatures = Creatures(
+            {town.id: town}, sense=lambda: Sight(Player(), self.at), harm=self.harmed.append
+        )
+        self.dog = self.creatures.spawn(DOG, MapTile(map=town.id, x=dog[0], y=dog[1]), route=())
+
+    def run(self, seconds: float) -> None:
+        for _ in range(round(seconds / STEP)):
+            self.creatures.tick(STEP)
+
+
+@pytest.mark.parametrize("legs", list(LEGS))
+def test_a_dog_runs_down_the_player_on_every_grade_of_legs(legs: Bionic) -> None:
+    run = LEGS[legs].run
+    hunted = Hunted(LONG, (6, 2), Point(10, 2, LONG.id))
+    for _ in range(round(8 / STEP)):
+        hunted.at = Point(min(hunted.at.x + run * STEP, 117), 2, LONG.id)
+        hunted.run(STEP)
+    assert hunted.dog.x > 10 + run * 2, "it never caught up"
+    assert len(hunted.harmed) >= 3
+
+
+def test_a_dog_waits_under_the_ladder_the_player_climbs_and_never_takes_a_door() -> None:
+    tunnel = side_view(*TWO_FLOORS)
+    hunted = Hunted(tunnel, (2, LOWER), Point(8, LOWER, tunnel.id))
+    for y in (LOWER - 1, LOWER - 2, UPPER):
+        hunted.at = Point(6, y, tunnel.id)
+        hunted.run(1)
+    hunted.harmed.clear()
+    hunted.run(5)
+    assert hunted.dog.cell == (6, LOWER) and hunted.harmed == []
+
+    for x in (14, 18):
+        hunted.at = Point(x, LOWER, tunnel.id)
+        hunted.run(1.5)
+    assert hunted.dog.cell == (17, LOWER)

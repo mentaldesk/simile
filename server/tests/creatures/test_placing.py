@@ -11,13 +11,16 @@ from simile.creatures.engine import Creature, Creatures, Sight, creatures_of
 from simile.creatures.kinds import BOT
 from simile.creatures.placing import populate, spawns
 from simile.persistence import player_of
-from simile.schema import CreatureKind, DoorKind, Player
+from simile.schema import CreatureKind, DoorKind, Player, TileArea
 from simile.sim import Clock, World, world_of
 from simile.street.jump import JUMP
 from simile.street.metro import ARRIVAL, METRO
 from simile.street.moves import moves
 from simile.street.plan import dumps, tmj
 from simile.street.sewers import (
+    DEN,
+    DOGS,
+    FLOORS,
     LANDING,
     LEVELS,
     RATS,
@@ -95,10 +98,15 @@ def cost(creature: Creature, cell: Cell) -> float:
 
 
 def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
-    sewer = [c for c in spawned.all.values() if c.map == SEWERS]
-    kinds = Counter(c.kind.id for c in sewer)
-    assert kinds == {CreatureKind.RAT: sum(RATS), CreatureKind.BOT: BOTS}
+    every = [c for c in spawned.all.values() if c.map == SEWERS]
+    kinds = Counter(c.kind.id for c in every)
+    assert kinds == {CreatureKind.RAT: sum(RATS), CreatureKind.BOT: BOTS, CreatureKind.DOG: DOGS}
+    sewer = [c for c in every if c.kind.id is not CreatureKind.DOG]
     assert all(c.cell in zone_0 for c in sewer), "one is past the gate"
+    dogs = [c for c in every if c.kind.id is CreatureKind.DOG]
+    width = spawned.maps[SEWERS].width
+    den = TileArea(x=width - DEN, y=FLOORS[0] - 3, width=DEN, height=4)
+    assert all(c.grid.area == den and c.cell not in zone_0 for c in dogs)
     assert all(c.home[0] >= SHAFT for c in sewer), "one is at the lift"
     rats = [c.grid.area for c in sewer if c.kind.id is CreatureKind.RAT]
     rooms = Counter((area.x, area.y) for area in rats if area is not None)
@@ -106,7 +114,7 @@ def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
 
 
 @pytest.mark.parametrize("level", range(LEVELS))
-def test_every_level_places_its_rats_and_bots_before_the_gate(level: int) -> None:
+def test_every_level_places_rats_and_bots_before_the_gate_and_dogs_in_its_den(level: int) -> None:
     maps = load_maps(level=level)
     spawned = Creatures(maps)
     populate(spawned, spawns(level=level))

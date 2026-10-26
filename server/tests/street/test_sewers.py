@@ -30,6 +30,10 @@ from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
 from simile.street.sewers import (
     APEX_ACTUATOR,
+    CEILING,
+    DEN,
+    DEN_SECRET,
+    FLOORS,
     GAP,
     HATCH,
     LANDING,
@@ -153,6 +157,22 @@ def test_each_pickup_is_in_reach_only_of_the_legs_or_feet_it_needs(
         if pickup.kind is PickupKind.SECRET:
             assert needs is not None, f"{pickup.id} is a jump that walking doesn't reach"
     assert {Bionic.SPRING_FEET_2.value, Bionic.BIONIC_LEGS.value} <= set(recorded.values())
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_past_the_last_room_the_den_has_a_door_and_a_ladder_up_to_its_stash(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town, found = level(seed).town, level(seed).reached
+    door, ladder, floor, loft = town.width - DEN - 1, town.width - 2, FLOORS[0], FLOORS[1]
+    [stash] = [pickup for pickup in town.pickups if pickup.id == DEN_SECRET]
+
+    assert town.walkable(door, floor) and all(town.solid(door, y) for y in range(CEILING, loft))
+    assert all(town.climb(ladder, y) is DoorKind.LADDER for y in range(loft, floor))
+    assert town.width - DEN <= stash.x and stash.y < loft and stash.money >= 90
+    for name in FITTED:
+        assert {(door + 1, floor), (stash.x, stash.y)} <= found[name], name
+    assert (door, floor) not in found[OWN_JUMP]
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
