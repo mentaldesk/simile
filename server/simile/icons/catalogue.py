@@ -126,4 +126,124 @@ BIONICS = (
     ),
 )
 
-ICONS: dict[str, Icon] = {icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS)}
+ITEMS = (
+    Icon(
+        "lamp",
+        "a battered handheld electric lantern: a chunky dark green metal body with a curved carry "
+        "handle on top and a round glass lens on its front glowing warm yellow.",
+    ),
+    Icon(
+        "ration_pack",
+        "a sealed khaki foil ration pack: a flat rectangular food pouch with crimped edges, a "
+        "printed white label and a torn-off notch at one corner.",
+    ),
+    Icon(
+        "copper_wire",
+        "a coil of bare shiny copper wire wound round and round in a loose bundle, one loose end "
+        "sticking out.",
+    ),
+    Icon(
+        "scrap_steel",
+        "a small stack of rusty scrap steel: a few bent flat steel plates and a short girder, "
+        "dark grey with orange rust patches and bolt holes.",
+    ),
+    Icon(
+        "circuit_board",
+        "a single green electronic circuit board seen from the front: gold tracks, little black "
+        "chips and a few coloured components, one corner snapped off.",
+    ),
+    Icon(
+        "brass_valve",
+        "a chunky old brass water valve: a round brass body with a pipe stub at each side and a "
+        "red iron wheel handle on top.",
+    ),
+    Icon(
+        "signal_relay",
+        "an old railway signal relay: a small grey metal box with a clear glass window on its "
+        "front showing copper coils inside, and screw terminals along its top.",
+    ),
+    Icon(
+        "servo_motor",
+        "a chunky electric servo motor: a dark grey metal cylinder motor with a small gearbox and "
+        "a white output shaft on its front, and three coloured wires coming out of its back.",
+    ),
+    Icon(
+        "lead_pipe",
+        "a short dull grey lead pipe, bent once in the middle, with dented ends, lying on its "
+        "side.",
+    ),
+    Icon(
+        "copper_coil",
+        "a copper electromagnet coil: tightly wound shiny copper wire on a black plastic bobbin, "
+        "two wire ends sticking out.",
+    ),
+    Icon(
+        "brass_fitting",
+        "a single brass plumbing fitting: a shiny brass T-shaped pipe joint with screw threads "
+        "and a hexagonal nut at each of its three ends.",
+    ),
+    Icon(
+        "pump_impeller",
+        "a pump impeller seen from the front: a round steel-grey wheel of curved blades around a "
+        "hub with a hole in its middle, a bit of green slime on it.",
+    ),
+    Icon(
+        "float_valve",
+        "a toilet cistern float valve: a round orange plastic float ball on the end of a long "
+        "thin brass arm, the other end of the arm in a small brass valve.",
+    ),
+    Icon(
+        "filter_mesh",
+        "a square of grimy steel filter mesh: a fine wire grid in a thin metal frame, bent at one "
+        "corner, with brown muck caught in it.",
+    ),
+    Icon(
+        "old_battery",
+        "a big old car battery: a black plastic box with a red and a black terminal on its top, "
+        "a faded label and a white crust on one terminal.",
+    ),
+    Icon(
+        "pressure_gauge",
+        "an old round pressure gauge: a brass dial with a white face, black numbers and a red "
+        "needle behind cracked glass, and a short threaded brass stem below it.",
+    ),
+    Icon(
+        "apex_board",
+        "a sleek high-tech control board: a dark blue circuit board with fine silver tracks, a "
+        "big square chip in its middle and a small glowing white logo light.",
+    ),
+    Icon(
+        "lithium_cell",
+        "a single cylindrical lithium battery cell standing upright: a shiny blue metal tube "
+        "with a silver cap on top and a thin white label band.",
+    ),
+    Icon(
+        "charge_controller",
+        "a small electronic charge controller: a black plastic box with a tiny screen showing "
+        "green numbers, a few little lights and screw terminals along its bottom edge.",
+    ),
+    Icon(
+        "usb_c_connector",
+        "a single USB-C connector plug: a small silver oval metal plug on a short black rubber "
+        "body, with a stub of black cable coming out of its back.",
+    ),
+    Icon(
+        "infrared_lens",
+        "one single round lens seen straight from the front: a thick black metal ring around a "
+        "deep red glowing glass disc, like one loose camera lens, nothing beside it.",
+    ),
+    Icon(
+        "apex_actuator",
+        "a chunky high-tech robot joint actuator standing upright: a short fat smooth white "
+        "cylinder with chrome caps at both ends, a glowing blue ring round its middle and a short "
+        "shiny piston rod sticking out of its top.",
+    ),
+)
+UNKNOWN = Icon(
+    "unknown_item",
+    "a small battered brown cardboard box tied up with string, a big black question mark "
+    "scrawled on its side.",
+)
+"""The picture of an item with none of its own yet."""
+
+ICONS: dict[str, Icon] = {icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, UNKNOWN)}

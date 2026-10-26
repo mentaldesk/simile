@@ -209,7 +209,11 @@ Opening it closes the journal and the controls.
   Hovering over a part, or Up and Down head to foot, shows what it is, whether it's theirs, sold or
   a bionic, and for a bionic its name by its recipe or as the clinic names it (`bionicName`), its
   grade and what it does. `stomach` and `feet` are their own when left out.
-- **Gear:** what they carry, each kind once with how many and its weight, against the carry limit.
+- **Gear:** the weight they carry against the carry limit, over a grid of what they carry: a tile
+  per kind of item with its picture from `content/icons/` by item id (`unknown_item` for one with
+  none), how many when there's more than one, its name, and the lamp's charge. Hovering over a
+  tile, or Down then the arrows, shows what it's for, its weight, the lamp's charge and which
+  recipes they know use it. Up off the top row lets go of the grid, so ← → switch tabs again.
 - **Mind:** each recipe in `player.mind`, from `player_state`'s `recipes`: the parts it needs
   against what they carry, its credits against their money, what it goes in place of and what must
   be fitted first, and whether they've sold it to the clinic.
