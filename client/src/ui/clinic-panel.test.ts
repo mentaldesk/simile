@@ -88,6 +88,25 @@ describe('deals', () => {
   });
 });
 
+const TREATED: Buyer = {
+  ...CLINIC,
+  treatments: [
+    { effect: null, name: 'Patch up', price: 15 },
+    { effect: 'infection', name: 'Treat the infection', price: 25 },
+  ],
+};
+
+describe('treatments', () => {
+  it('lists each treatment after talking, and what it costs against what they have', () => {
+    const [, patch, infection] = deals(TREATED, player(20), DOCTOR);
+
+    expect(patch).toEqual({ kind: 'treat', label: 'Patch up', price: 15, effect: null, short: false });
+    expect(infection).toMatchObject({ kind: 'treat', effect: 'infection', short: true });
+    expect(note(patch, false, 20)).toBe('Enter to go ahead.');
+    expect(note(infection, false, 20)).toBe('It costs 25, and you have 20.');
+  });
+});
+
 describe('note', () => {
   const kidney = deals(CLINIC, player(0))[0]!;
   const eye = deals(CLINIC, player(0))[2]!;
@@ -163,6 +182,16 @@ describe('ClinicPanel', () => {
     press('Enter');
 
     expect(sent).toEqual([]);
+  });
+
+  it('treats them on one Enter, and never for what they cannot pay', () => {
+    panel.open(TREATED, player(20));
+    press('Enter');
+    press('ArrowDown');
+    press('Enter');
+
+    expect(sent).toEqual([{ type: 'treat', effect: null }]);
+    expect(section().querySelector('.clinic-short')!.textContent).toBe('Treat the infection25');
   });
 
   it('fits the legs, and never what they cannot pay for', () => {
