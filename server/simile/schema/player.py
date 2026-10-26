@@ -3,8 +3,7 @@ from typing import Annotated, Any, Final, Literal, Self, get_args
 
 from pydantic import Field, field_validator, model_validator
 
-from simile.schema.common import CHECKED, Id, Key, Model, Timestamp, Unit
-from simile.schema.world import MapTile
+from simile.schema.common import CHECKED, Id, Key, MapTile, Model, Timestamp, Unit
 
 CARRY_LIMIT = 10.0
 PRESENT: Final = "present"
@@ -333,8 +332,8 @@ class Sale(Model):
 class Player(Model):
     """The player's state, saved with the world. Each field defaults to the starting player's, so
     a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
-    full health and no effects. Their humanity is derived from the bionics fitted and isn't a
-    field, so the client never sees it."""
+    full health, no effects and nothing searched. Their humanity is derived from the bionics
+    fitted and isn't a field, so the client never sees it."""
 
     model_config = CHECKED
 
@@ -392,6 +391,13 @@ class Player(Model):
         description="What they've sold that its buyer keeps for them to buy back, oldest first. "
         "Left out while there's none.",
     )
+    searched: list[Id] = Field(
+        default=[],
+        exclude_if=lambda searched: not searched,
+        description="The searchable things and jacks they've searched, by interactable id, in the "
+        "order they searched them. Each is searched once, and holds nothing after. Left out while "
+        "there's none.",
+    )
 
     @field_validator("effects")
     @classmethod
@@ -399,6 +405,13 @@ class Player(Model):
         if len({effect.kind for effect in effects}) != len(effects):
             raise ValueError("they have each kind of effect once")
         return effects
+
+    @field_validator("searched")
+    @classmethod
+    def _each_searched_once(cls, searched: list[str]) -> list[str]:
+        if len(set(searched)) != len(searched):
+            raise ValueError("they search each thing once")
+        return searched
 
     @property
     def humanity(self) -> float:

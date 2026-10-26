@@ -1,0 +1,44 @@
+[
+  {
+    "id": "rat_1",
+    "kind": "rat",
+    "position": {"x": 14.5, "y": 9.0, "map": "sewers"},
+    "facing": "west",
+    "state": "moving"
+  },
+  {
+    "id": "bot_1",
+    "kind": "bot",
+    "position": {"x": 42.0, "y": 12.0, "map": "metro"},
+    "facing": "east",
+    "state": "idle"
+  },
+  {
+    "id": "dog_1",
+    "kind": "dog",
+    "position": {"x": 61.25, "y": 18.0, "map": "sewers"},
+    "facing": "east",
+    "state": "chasing"
+  },
+  {
+    "id": "bat_1",
+    "kind": "bat",
+    "position": {"x": 30.0, "y": 3.0, "map": "sewers"},
+    "facing": "west",
+    "state": "roosting"
+  },
+  {
+    "id": "bat_2",
+    "kind": "bat",
+    "position": {"x": 33.4, "y": 5.6, "map": "sewers"},
+    "facing": "east",
+    "state": "attacking"
+  },
+  {
+    "id": "rat_2",
+    "kind": "rat",
+    "position": {"x": 15.0, "y": 9.0, "map": "sewers"},
+    "facing": "east",
+    "state": "hurt"
+  }
+]

@@ -1,15 +1,115 @@
 {
   "$defs": {
+    "Bionic": {
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack, the eye, or one of stage 1's grades of legs.",
+      "enum": [
+        "hydraulic_legs",
+        "datajack",
+        "infrared_eye",
+        "spring_legs",
+        "sprint_legs",
+        "blade_legs",
+        "premium_legs",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
+      ],
+      "title": "Bionic",
+      "type": "string"
+    },
     "InteractableKind": {
-      "description": "What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles.\nA `jack` is a machine only the datajack works, such as the metro's dead terminal and its lift:\nwithout one it's dead, and a link ending on one of its stand tiles can't be taken.",
+      "description": "What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles.\nA `jack` is a machine only the datajack works, such as the metro's dead terminal and its lift:\nwithout one it's dead, and a link ending on one of its stand tiles can't be taken. A\n`searchable` is a piece of furniture or a dead appliance, searched once for what it holds.",
       "enum": [
         "counter",
         "painting",
         "machine",
         "plug",
-        "jack"
+        "jack",
+        "searchable"
       ],
       "title": "InteractableKind",
+      "type": "string"
+    },
+    "Item": {
+      "additionalProperties": false,
+      "description": "Something the player carries.",
+      "properties": {
+        "id": {
+          "description": "What it is, the same for every one of its kind, e.g. \"copper_wire\" or \"lamp\". Salvage is priced by it.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/ItemKind"
+        },
+        "name": {
+          "description": "What the player sees, e.g. \"Copper wire\".",
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "weight": {
+          "description": "In kg, counted against the carry limit.",
+          "minimum": 0,
+          "title": "Weight",
+          "type": "number"
+        },
+        "charge": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A lamp's battery, from 0 (flat) to 1 (full). It runs down while the lamp is on, and at a plug it charges, on or off. Null for anything else.",
+          "title": "Charge"
+        },
+        "on": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Whether a lamp is switched on, running its battery down. The player switches it, and it goes off by itself when it's flat. Null for anything else.",
+          "title": "On"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "weight",
+        "charge",
+        "on"
+      ],
+      "title": "Item",
+      "type": "object"
+    },
+    "ItemKind": {
+      "description": "What it's for: `salvage` to sell, `food` to eat, the `lamp` to see by, or a `part` to fit.",
+      "enum": [
+        "salvage",
+        "food",
+        "lamp",
+        "part"
+      ],
+      "title": "ItemKind",
       "type": "string"
     },
     "Tile": {
@@ -70,7 +170,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Something on an interior's map that you can use, from one of its stand tiles.",
+  "description": "Something on an interior's map that you can use, from one of its stand tiles. A searchable\nthing is searched once for the `items` it holds and the recipe it `teaches`, and so is a jack\nthat holds or teaches anything, with the datajack. The player's `searched` says whether it has\nbeen.",
   "properties": {
     "id": {
       "maxLength": 64,
@@ -104,6 +204,27 @@
       "minItems": 1,
       "title": "Stand",
       "type": "array"
+    },
+    "items": {
+      "default": [],
+      "description": "What searching it finds, in order: a searchable's, or a jack's. Left out while it holds nothing.",
+      "items": {
+        "$ref": "#/$defs/Item"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "teaches": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Bionic"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The recipe searching it teaches, by the bionic it builds, such as Aris's schematic for the datajack: a searchable's, or a jack's. Left out while it teaches none."
     }
   },
   "required": [

@@ -19,3 +19,13 @@ CHECKED = ConfigDict(validate_assignment=True)
 
 class Model(BaseModel):
     model_config = ConfigDict(extra="forbid", json_schema_serialization_defaults_required=True)
+
+
+class MapTile(Model):
+    """A tile on a given map: the village or an interior, or in side view a street or a floor."""
+
+    model_config = CHECKED
+
+    map: Key
+    x: int = Field(ge=0)
+    y: int = Field(ge=0)
