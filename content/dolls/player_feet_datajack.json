@@ -1,0 +1,137 @@
+{
+  "id": "player_feet_datajack",
+  "hash": "dea3ec272be7eb45",
+  "appearance": {
+    "skin": "#e4a672",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#0099db",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "average",
+    "accessories": [
+      "backpack"
+    ]
+  },
+  "fitted": [
+    "spring_feet",
+    "datajack"
+  ],
+  "version": 3,
+  "ppm": 80,
+  "height": 163.2,
+  "painted": "player_feet_datajack.webp",
+  "frames": {
+    "climb": {
+      "frame": [
+        85,
+        0,
+        85,
+        166
+      ],
+      "feet": [
+        44.7,
+        164.0
+      ]
+    },
+    "pass": {
+      "frame": [
+        172,
+        0,
+        65,
+        166
+      ],
+      "feet": [
+        38.0,
+        164.0
+      ]
+    },
+    "run": {
+      "frame": [
+        490,
+        0,
+        101,
+        136
+      ],
+      "feet": [
+        58.0,
+        166.0
+      ]
+    },
+    "run_pass": {
+      "frame": [
+        0,
+        0,
+        83,
+        167
+      ],
+      "feet": [
+        44.0,
+        165.0
+      ]
+    },
+    "sit": {
+      "frame": [
+        395,
+        0,
+        93,
+        150
+      ],
+      "feet": [
+        49.8,
+        148.0
+      ],
+      "seat": [
+        49.8,
+        119.0
+      ]
+    },
+    "stand": {
+      "frame": [
+        239,
+        0,
+        68,
+        166
+      ],
+      "feet": [
+        38.0,
+        164.0
+      ]
+    },
+    "stride": {
+      "frame": [
+        309,
+        0,
+        84,
+        165
+      ],
+      "feet": [
+        39.5,
+        163.0
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "stride",
+      "pass",
+      "stride",
+      "pass"
+    ],
+    "run": [
+      "run",
+      "run_pass",
+      "run",
+      "run_pass"
+    ],
+    "sit": [
+      "sit"
+    ],
+    "climb": [
+      "climb"
+    ]
+  }
+}
