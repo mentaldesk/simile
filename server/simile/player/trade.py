@@ -29,8 +29,7 @@ def keepers_of(app: Starlette) -> dict[Id, Keeper]:
 
 
 class Trade:
-    """Selling to whoever buys where the player stands, at the economy's prices, and buying back
-    what it keeps of what they sold it: parts, and the economy's `kept` salvage."""
+    """Selling to whoever buys where the player stands, and buying back what it keeps."""
 
     def __init__(
         self,
@@ -85,14 +84,12 @@ class Trade:
         return True
 
     def stock(self, place: Id) -> list[Offer]:
-        """What the buyer at `place` keeps of what they sold it, at `buy_back` times what it paid,
-        cheapest first."""
+        """What the buyer at `place` keeps of theirs, at `buy_back` times, cheapest first."""
         back = self.economy.config.buy_back
         return [Offer(item=sale.item, price=sale.price * back) for sale in self._kept(place)]
 
     def buy(self, item: Id) -> bool:
-        """Buys back the cheapest of `item` the buyer where they stand keeps, if they can pay for it
-        and carry it. Whether they bought it."""
+        """Buys back the cheapest of `item` here if they can pay and carry it. Whether they did."""
         buyer = self.buyer()
         if buyer is None:
             return False

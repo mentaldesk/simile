@@ -262,3 +262,9 @@ def test_a_part_is_worth_less_than_the_fitting_it_goes_into() -> None:
     prices = ECONOMY.salvage | ECONOMY.parts
     for recipe in CLINIC.recipes.values():
         assert sum(prices[id] * n for id, n in recipe.parts.items()) < recipe.credits
+
+
+def test_the_salvage_kept_is_what_the_sewers_finds_hold() -> None:
+    from simile.street.sewers import FINDS
+
+    assert ECONOMY.kept == {item for find in FINDS for item in find.items}

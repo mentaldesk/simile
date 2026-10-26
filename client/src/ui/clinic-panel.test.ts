@@ -333,6 +333,7 @@ describe('ClinicPanel', () => {
     press('Enter');
     expect(sent).toEqual([{ type: 'sell', item: null }]);
   });
+
   it('closes on Esc or E, and a click chooses and acts', () => {
     panel.open(CLINIC, player(0));
     press('e');

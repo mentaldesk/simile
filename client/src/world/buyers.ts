@@ -4,5 +4,4 @@ import type { Buyer } from '../net';
 export const fits = (buyer: Buyer): boolean =>
   Object.keys(buyer.parts ?? {}).length > 0 || (buyer.fittings ?? []).length > 0 || (buyer.treatments ?? []).length > 0;
 
-/** Whether E opens the buyer's panel rather than selling at once: it fits, or sells something back. */
-export const isClinic = (buyer: Buyer): boolean => fits(buyer) || (buyer.stock ?? []).length > 0;
+export const trades = (buyer: Buyer): boolean => fits(buyer) || (buyer.stock ?? []).length > 0;
