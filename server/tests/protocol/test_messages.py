@@ -10,6 +10,7 @@ from pydantic.json_schema import JsonSchemaMode
 from simile.protocol import (
     Artist,
     Buyer,
+    BuyMessage,
     ClockMessage,
     ConversationEndedMessage,
     ConversationStartedMessage,
@@ -32,6 +33,7 @@ from simile.protocol import (
     NewsMessage,
     Notice,
     NpcStateMessage,
+    Offer,
     Painting,
     PaintingsMessage,
     PickUpMessage,
@@ -45,6 +47,7 @@ from simile.protocol import (
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
+    Vital,
     Wall,
     WatchNpcMessage,
     WorksMessage,
@@ -56,6 +59,8 @@ from simile.protocol.messages import client_messages, server_messages
 from simile.schema import (
     Bionic,
     Body,
+    Effect,
+    EffectKind,
     Facing,
     Item,
     ItemKind,
@@ -67,6 +72,7 @@ from simile.schema import (
     Player,
     Pose,
     Recipe,
+    Sale,
     Source,
     SourceKind,
     lamp,
@@ -237,6 +243,35 @@ KNOWING = PlayerStateMessage(
 SELLING_RECIPES = KNOWING.model_copy(
     update={"buyer": DOCTOR.model_copy(update={"recipes": {Bionic.DATAJACK: 40}})}
 )
+USB_C = Item(id="usb_c_connector", kind=ItemKind.PART, name="USB-C connector", weight=0.1)
+HURT = PlayerStateMessage(
+    player=Player(
+        body=Body(stomach=Bionic.POWER_CELL),
+        power=0.65,
+        health=0.5,
+        effects=[
+            Effect(
+                kind=EffectKind.RAT_BITE,
+                strength=0.2,
+                fades=0.05,
+                since=datetime(2026, 3, 15, 11, 20, tzinfo=UTC),
+            ),
+            Effect(
+                kind=EffectKind.INFECTION,
+                strength=0.6,
+                fades=None,
+                since=datetime(2026, 3, 15, 9, tzinfo=UTC),
+            ),
+        ],
+        sales=[Sale(item=USB_C, place="scrap_stall", price=20)],
+    ),
+)
+BUYING_BACK = HURT.model_copy(
+    update={
+        "buyer": SCRAP_TRADER.model_copy(update={"stock": [Offer(item=USB_C, price=40)]}),
+    }
+)
+DRAINED = PlayerCollapsedMessage(position=Position(x=4, y=9, map="home"), cause=Vital.POWER)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 IN_THE_METRO = STARTING.model_copy(
@@ -303,9 +338,12 @@ SERVER = [
     IN_THE_METRO,
     KNOWING,
     SELLING_RECIPES,
+    HURT,
+    BUYING_BACK,
     JournalMessage(entries=[]),
     JOURNAL,
     COLLAPSED,
+    DRAINED,
 ]
 CLIENT = [
     PlayerMoveMessage(position=Position(x=14, y=12.25)),
@@ -329,6 +367,7 @@ CLIENT = [
     FitMessage(bionic=Bionic.INFRARED_EYE, part="right_eye"),
     FitMessage(bionic=Bionic.POWER_CELL, part="stomach"),
     SellRecipeMessage(recipe=Bionic.DATAJACK),
+    BuyMessage(item="usb_c_connector"),
 ]
 
 
@@ -811,6 +850,38 @@ def test_player_state_says_which_recipes_the_clinic_would_buy() -> None:
     assert recipes["propertyNames"] == {"$ref": "#/$defs/Bionic"}
 
 
+def test_player_state_has_their_vitals_and_effects() -> None:
+    player = json.loads(HURT.model_dump_json())["player"]
+
+    assert (player["hunger"], player["power"], player["health"]) == (0.0, 0.65, 0.5)
+    assert player["effects"] == [
+        {"kind": "rat_bite", "strength": 0.2, "fades": 0.05, "since": "2026-03-15T11:20:00Z"},
+        {"kind": "infection", "strength": 0.6, "fades": None, "since": "2026-03-15T09:00:00Z"},
+    ]
+
+
+def test_player_state_says_what_the_buyer_sells_back_and_for_what() -> None:
+    data = json.loads(BUYING_BACK.model_dump_json())
+
+    assert data["player"]["sales"] == [
+        {"item": USB_C.model_dump(mode="json"), "place": "scrap_stall", "price": 20.0}
+    ]
+    assert data["buyer"]["stock"] == [{"item": USB_C.model_dump(mode="json"), "price": 40.0}]
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"price": -1}, "greater than or equal to 0"),
+        ({"price": float("nan")}, "finite number"),
+        ({"item": None}, "valid dictionary"),
+    ],
+)
+def test_rejects_invalid_offers(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Offer.model_validate(Offer(item=USB_C, price=40).model_dump() | update)
+
+
 def test_player_state_has_what_they_left_where_they_collapsed() -> None:
     player = json.loads(WOKEN.model_dump_json())["player"]
 
@@ -833,6 +904,11 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("Buyer", "parts"),
         ("Buyer", "fittings"),
         ("Buyer", "recipes"),
+        ("Buyer", "stock"),
+        ("Player", "power"),
+        ("Player", "health"),
+        ("Player", "effects"),
+        ("Player", "sales"),
         ("Player", "left"),
         ("Player", "taken"),
         ("Player", "mind"),
@@ -1003,11 +1079,20 @@ def test_rejects_invalid_meals(update: dict[str, Any], match: str) -> None:
         Meal.model_validate(NOODLES.model_dump() | update)
 
 
-def test_a_collapse_says_where_they_wake() -> None:
+def test_a_collapse_says_where_they_wake_and_why() -> None:
     assert json.loads(COLLAPSED.model_dump_json()) == {
         "type": "player_collapsed",
         "position": {"x": 13.0, "y": 2.0, "map": "maker_space_floor_0"},
+        "cause": "hunger",
     }
+    assert json.loads(DRAINED.model_dump_json())["cause"] == "power"
+    assert {vital.value for vital in Vital} == {"hunger", "power", "health"}
+
+
+def test_a_collapse_from_before_its_cause_was_hunger() -> None:
+    data = {"type": "player_collapsed", "position": {"x": 13, "y": 2}}
+
+    assert server_messages.validate_python(data).cause is Vital.HUNGER
 
 
 @pytest.mark.parametrize(
@@ -1029,6 +1114,7 @@ def test_a_collapse_says_where_they_wake() -> None:
             SellRecipeMessage(recipe=Bionic.DATAJACK),
             {"type": "sell_recipe", "recipe": "datajack"},
         ),
+        (BuyMessage(item="usb_c_connector"), {"type": "buy", "item": "usb_c_connector"}),
     ],
     ids=[
         "item",
@@ -1041,6 +1127,7 @@ def test_a_collapse_says_where_they_wake() -> None:
         "sell_part",
         "fit",
         "sell_recipe",
+        "buy",
     ],
 )
 def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
@@ -1184,6 +1271,10 @@ def test_timestamps_are_utc() -> None:
         {"type": "lamp", "on": None},
         {"type": "lamp", "on": "maybe"},
         {"type": "lamp", "on": True, "charge": 1},
+        {"type": "buy"},
+        {"type": "buy", "item": None},
+        {"type": "buy", "item": "USB-C connector"},
+        {"type": "buy", "item": "usb_c_connector", "price": 40},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:

@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Annotated, Any, Final, Literal, Self, get_args
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from simile.schema.common import CHECKED, Id, Key, Model, Timestamp, Unit
 from simile.schema.world import MapTile
@@ -159,6 +159,10 @@ type BodyPart = Literal[
 ]
 
 
+def _full(vital: float) -> bool:
+    return vital == 1
+
+
 def _theirs(state: PartState) -> bool:
     return state == PRESENT
 
@@ -291,11 +295,46 @@ class Mind(Model):
         return data
 
 
+class EffectKind(StrEnum):
+    """An ailment and its cause: a `rat_bite`, the `infection` an untreated bite can turn into, or
+    a dose of `radiation`."""
+
+    RAT_BITE = "rat_bite"
+    INFECTION = "infection"
+    RADIATION = "radiation"
+
+
+class Effect(Model):
+    """An ailment the player has, which fades on its own or lasts until it's treated."""
+
+    model_config = CHECKED
+
+    kind: EffectKind
+    strength: Annotated[float, Field(gt=0, le=1)] = Field(
+        description="How bad it is, up to 1. It's gone once it fades to 0."
+    )
+    fades: Annotated[float, Field(gt=0, allow_inf_nan=False)] | None = Field(
+        description="The strength it loses each sim hour, or null while it lasts until it's "
+        "treated, at the clinic or with medicine."
+    )
+    since: Timestamp = Field(description="When they got it, in sim time.")
+
+
+class Sale(Model):
+    """Something the player sold that its buyer keeps for them to buy back."""
+
+    model_config = CHECKED
+
+    item: Item
+    place: Id = Field(description='The buyer that has it, by its place, e.g. "scrap_stall".')
+    price: float = Field(ge=0, allow_inf_nan=False, description="What it fetched.")
+
+
 class Player(Model):
     """The player's state, saved with the world. Each field defaults to the starting player's, so
-    a save from before the player loads with a whole body, no money, a charged lamp and nothing
-    known. Their humanity is derived from the bionics fitted and isn't a field, so the client never
-    sees it."""
+    a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
+    full health and no effects. Their humanity is derived from the bionics fitted and isn't a
+    field, so the client never sees it."""
 
     model_config = CHECKED
 
@@ -315,6 +354,24 @@ class Player(Model):
     body: Body = Field(default_factory=Body)
     mind: Mind = Field(default_factory=Mind, exclude_if=lambda mind: not mind.recipes)
     hunger: Unit = Field(default=0.0, description="0 is fed and 1 is starving: they collapse.")
+    power: Unit = Field(
+        default=1.0,
+        exclude_if=_full,
+        description="Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which "
+        "they run on in place of hunger once a cell is in their stomach. It stays full without "
+        "one. Left out while it's full.",
+    )
+    health: Unit = Field(
+        default=1.0,
+        exclude_if=_full,
+        description="From 1, unhurt, to 0, when they collapse. Left out while it's full.",
+    )
+    effects: list[Effect] = Field(
+        default=[],
+        exclude_if=lambda effects: not effects,
+        description="Their ailments, in the order they got them, each kind once. Left out while "
+        "there's none.",
+    )
     left: list[Pile] = Field(
         default=[],
         exclude_if=lambda left: not left,
@@ -329,6 +386,19 @@ class Player(Model):
         "id. Salvage lies there again a while after it was taken, but a secret, cash or a ration, "
         "stays taken for good. Left out while there's none.",
     )
+    sales: list[Sale] = Field(
+        default=[],
+        exclude_if=lambda sales: not sales,
+        description="What they've sold that its buyer keeps for them to buy back, oldest first. "
+        "Left out while there's none.",
+    )
+
+    @field_validator("effects")
+    @classmethod
+    def _each_kind_once(cls, effects: list[Effect]) -> list[Effect]:
+        if len({effect.kind for effect in effects}) != len(effects):
+            raise ValueError("they have each kind of effect once")
+        return effects
 
     @property
     def humanity(self) -> float:

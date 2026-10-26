@@ -61,6 +61,11 @@ export type Bionic =
   | 'bionic_legs_3'
   | 'spring_feet'
   | 'spring_feet_2';
+/**
+ * An ailment and its cause: a `rat_bite`, the `infection` an untreated bite can turn into, or
+ * a dose of `radiation`.
+ */
+export type EffectKind = 'rat_bite' | 'infection' | 'radiation';
 export type BodyPart =
   | 'legs'
   | 'vertebra'
@@ -75,6 +80,10 @@ export type BodyPart =
  * as Aris's notes or a terminal.
  */
 export type SourceKind = 'resident' | 'clue';
+/**
+ * The vital that ran out.
+ */
+export type Vital = 'hunger' | 'power' | 'health';
 export type ClientMessage =
   | PlayerMoveMessage
   | PlayerSayMessage
@@ -89,7 +98,8 @@ export type ClientMessage =
   | LampMessage
   | SellPartMessage
   | FitMessage
-  | SellRecipeMessage;
+  | SellRecipeMessage
+  | BuyMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -402,7 +412,7 @@ export interface Painting {
   image: string;
 }
 /**
- * The player's money, what they carry, their body, their hunger and what they know, but never
+ * The player's money, what they carry, their body, their vitals and what they know, but never
  * their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
  * and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
  * whenever any of it changes.
@@ -429,9 +439,9 @@ export interface PlayerStateMessage {
 }
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
- * a save from before the player loads with a whole body, no money, a charged lamp and nothing
- * known. Their humanity is derived from the bionics fitted and isn't a field, so the client never
- * sees it.
+ * a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
+ * full health and no effects. Their humanity is derived from the bionics fitted and isn't a
+ * field, so the client never sees it.
  */
 export interface Player {
   /**
@@ -453,6 +463,18 @@ export interface Player {
    */
   hunger: number;
   /**
+   * Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.
+   */
+  power?: number;
+  /**
+   * From 1, unhurt, to 0, when they collapse. Left out while it's full.
+   */
+  health?: number;
+  /**
+   * Their ailments, in the order they got them, each kind once. Left out while there's none.
+   */
+  effects?: Effect[];
+  /**
    * What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.
    */
   left?: Pile[];
@@ -462,6 +484,10 @@ export interface Player {
   taken?: {
     [k: string]: string;
   };
+  /**
+   * What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none.
+   */
+  sales?: Sale[];
 }
 /**
  * Something the player carries.
@@ -524,6 +550,24 @@ export interface Mind {
   sold?: Bionic[];
 }
 /**
+ * An ailment the player has, which fades on its own or lasts until it's treated.
+ */
+export interface Effect {
+  kind: EffectKind;
+  /**
+   * How bad it is, up to 1. It's gone once it fades to 0.
+   */
+  strength: number;
+  /**
+   * The strength it loses each sim hour, or null while it lasts until it's treated, at the clinic or with medicine.
+   */
+  fades: number | null;
+  /**
+   * When they got it, in sim time.
+   */
+  since: string;
+}
+/**
  * Items, money or both lying `at` a tile in the world for the player to pick up, such as
  * salvage, a secret's cash, or what they left when they collapsed.
  */
@@ -542,6 +586,20 @@ export interface MapTile {
   map: string;
   x: number;
   y: number;
+}
+/**
+ * Something the player sold that its buyer keeps for them to buy back.
+ */
+export interface Sale {
+  item: Item;
+  /**
+   * The buyer that has it, by its place, e.g. "scrap_stall".
+   */
+  place: string;
+  /**
+   * What it fetched.
+   */
+  price: number;
 }
 /**
  * How to build a `bionic`, which the clinic needs before it fits one. It's known by the
@@ -590,7 +648,8 @@ export interface Meal {
   price: number;
 }
 /**
- * Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`.
+ * Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and
+ * sells with `buy`.
  */
 export interface Buyer {
   /**
@@ -623,6 +682,10 @@ export interface Buyer {
   recipes?: {
     [k: string]: number;
   };
+  /**
+   * What it sells now, by `buy`, whether or not they can pay, such as what they sold it, to buy back. Left out while there's nothing.
+   */
+  stock?: Offer[];
 }
 /**
  * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.
@@ -640,6 +703,13 @@ export interface Fitting {
    * @minItems 1
    */
   parts: [BodyPart, ...BodyPart[]];
+}
+/**
+ * Something a buyer sells, by `buy`, for its `price`.
+ */
+export interface Offer {
+  item: Item;
+  price: number;
 }
 /**
  * What the player has learned about the incident, in the order they learned it, with the
@@ -705,13 +775,14 @@ export interface Lead {
   text: string;
 }
 /**
- * The player starved and collapsed. They wake at home, at `position`, still hungry, with
- * their lamp, switched off. Everything else they carried stays where they fell, in
- * `player_state`'s `left`.
+ * The player collapsed: they starved, their power cell ran flat, or they had no health left.
+ * They wake at home, at `position`, with their lamp, switched off. Everything else they carried
+ * stays where they fell, in `player_state`'s `left`.
  */
 export interface PlayerCollapsedMessage {
   type: 'player_collapsed';
   position: Position;
+  cause: Vital;
 }
 /**
  * A position without `map` is on the village. Side-view maps have no village, so there the
@@ -822,4 +893,15 @@ export interface FitMessage {
 export interface SellRecipeMessage {
   type: 'sell_recipe';
   recipe: Bionic;
+}
+/**
+ * Buys one of something the buyer where they stand sells, `player_state`'s `buyer`'s
+ * `stock`, at its price.
+ */
+export interface BuyMessage {
+  type: 'buy';
+  /**
+   * What they buy, by its `id`: the first of that id in `stock`.
+   */
+  item: string;
 }

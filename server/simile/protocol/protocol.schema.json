@@ -105,9 +105,32 @@
       ],
       "type": "string"
     },
+    "BuyMessage": {
+      "additionalProperties": false,
+      "description": "Buys one of something the buyer where they stand sells, `player_state`'s `buyer`'s\n`stock`, at its price.",
+      "properties": {
+        "type": {
+          "const": "buy",
+          "default": "buy",
+          "type": "string"
+        },
+        "item": {
+          "description": "What they buy, by its `id`: the first of that id in `stock`.",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "item"
+      ],
+      "title": "BuyMessage",
+      "type": "object"
+    },
     "Buyer": {
       "additionalProperties": false,
-      "description": "Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`.",
+      "description": "Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and\nsells with `buy`.",
       "properties": {
         "place": {
           "description": "Where: a location id, e.g. \"scrap_stall\" or \"clinic\".",
@@ -162,6 +185,14 @@
             "$ref": "#/$defs/Bionic"
           },
           "type": "object"
+        },
+        "stock": {
+          "default": [],
+          "description": "What it sells now, by `buy`, whether or not they can pay, such as what they sold it, to buy back. Left out while there's nothing.",
+          "items": {
+            "$ref": "#/$defs/Offer"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -175,6 +206,7 @@
     "ClientMessage": {
       "discriminator": {
         "mapping": {
+          "buy": "#/$defs/BuyMessage",
           "eat": "#/$defs/EatMessage",
           "fit": "#/$defs/FitMessage",
           "lamp": "#/$defs/LampMessage",
@@ -234,6 +266,9 @@
         },
         {
           "$ref": "#/$defs/SellRecipeMessage"
+        },
+        {
+          "$ref": "#/$defs/BuyMessage"
         }
       ]
     },
@@ -389,6 +424,56 @@
       ],
       "title": "EatMessage",
       "type": "object"
+    },
+    "Effect": {
+      "additionalProperties": false,
+      "description": "An ailment the player has, which fades on its own or lasts until it's treated.",
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/EffectKind"
+        },
+        "strength": {
+          "description": "How bad it is, up to 1. It's gone once it fades to 0.",
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "type": "number"
+        },
+        "fades": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The strength it loses each sim hour, or null while it lasts until it's treated, at the clinic or with medicine."
+        },
+        "since": {
+          "description": "When they got it, in sim time.",
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "strength",
+        "fades",
+        "since"
+      ],
+      "title": "Effect",
+      "type": "object"
+    },
+    "EffectKind": {
+      "description": "An ailment and its cause: a `rat_bite`, the `infection` an untreated bite can turn into, or\na dose of `radiation`.",
+      "enum": [
+        "rat_bite",
+        "infection",
+        "radiation"
+      ],
+      "title": "EffectKind",
+      "type": "string"
     },
     "Entity": {
       "additionalProperties": false,
@@ -1149,6 +1234,25 @@
       "title": "NpcStateMessage",
       "type": "object"
     },
+    "Offer": {
+      "additionalProperties": false,
+      "description": "Something a buyer sells, by `buy`, for its `price`.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Item"
+        },
+        "price": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "item",
+        "price"
+      ],
+      "title": "Offer",
+      "type": "object"
+    },
     "Painting": {
       "additionalProperties": false,
       "properties": {
@@ -1263,7 +1367,7 @@
     },
     "Player": {
       "additionalProperties": false,
-      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp and nothing\nknown. Their humanity is derived from the bionics fitted and isn't a field, so the client never\nsees it.",
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health and no effects. Their humanity is derived from the bionics fitted and isn't a\nfield, so the client never sees it.",
       "properties": {
         "money": {
           "default": 0.0,
@@ -1297,6 +1401,28 @@
           "minimum": 0,
           "type": "number"
         },
+        "power": {
+          "default": 1.0,
+          "description": "Their power cell's charge, from 1 (full) to 0 (flat: they collapse), which they run on in place of hunger once a cell is in their stomach. It stays full without one. Left out while it's full.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "health": {
+          "default": 1.0,
+          "description": "From 1, unhurt, to 0, when they collapse. Left out while it's full.",
+          "maximum": 1,
+          "minimum": 0,
+          "type": "number"
+        },
+        "effects": {
+          "default": [],
+          "description": "Their ailments, in the order they got them, each kind once. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Effect"
+          },
+          "type": "array"
+        },
         "left": {
           "default": [],
           "description": "What they left lying in the world, oldest first: what they carried when they collapsed, on the tile they fell on or the ground below it, and anything of a pickup that didn't fit when they took from it. Left out while there's none.",
@@ -1316,6 +1442,14 @@
             "minLength": 1
           },
           "type": "object"
+        },
+        "sales": {
+          "default": [],
+          "description": "What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Sale"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -1330,7 +1464,7 @@
     },
     "PlayerCollapsedMessage": {
       "additionalProperties": false,
-      "description": "The player starved and collapsed. They wake at home, at `position`, still hungry, with\ntheir lamp, switched off. Everything else they carried stays where they fell, in\n`player_state`'s `left`.",
+      "description": "The player collapsed: they starved, their power cell ran flat, or they had no health left.\nThey wake at home, at `position`, with their lamp, switched off. Everything else they carried\nstays where they fell, in `player_state`'s `left`.",
       "properties": {
         "type": {
           "const": "player_collapsed",
@@ -1339,11 +1473,17 @@
         },
         "position": {
           "$ref": "#/$defs/Position"
+        },
+        "cause": {
+          "$ref": "#/$defs/Vital",
+          "default": "hunger",
+          "description": "The vital that ran out."
         }
       },
       "required": [
         "type",
-        "position"
+        "position",
+        "cause"
       ],
       "title": "PlayerCollapsedMessage",
       "type": "object"
@@ -1397,7 +1537,7 @@
     },
     "PlayerStateMessage": {
       "additionalProperties": false,
-      "description": "The player's money, what they carry, their body, their hunger and what they know, but never\ntheir humanity, with the recipes they know, the meal on offer and the buyer where they stand,\nand what's lying in the world for them to pick up. Sent after the snapshot on connect, and\nwhenever any of it changes.",
+      "description": "The player's money, what they carry, their body, their vitals and what they know, but never\ntheir humanity, with the recipes they know, the meal on offer and the buyer where they stand,\nand what's lying in the world for them to pick up. Sent after the snapshot on connect, and\nwhenever any of it changes.",
       "properties": {
         "type": {
           "const": "player_state",
@@ -1589,6 +1729,33 @@
         "after"
       ],
       "title": "Recipe",
+      "type": "object"
+    },
+    "Sale": {
+      "additionalProperties": false,
+      "description": "Something the player sold that its buyer keeps for them to buy back.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Item"
+        },
+        "place": {
+          "description": "The buyer that has it, by its place, e.g. \"scrap_stall\".",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "price": {
+          "description": "What it fetched.",
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "item",
+        "place",
+        "price"
+      ],
+      "title": "Sale",
       "type": "object"
     },
     "SellMessage": {
@@ -1809,6 +1976,16 @@
         "clue"
       ],
       "title": "SourceKind",
+      "type": "string"
+    },
+    "Vital": {
+      "description": "What runs out when the player collapses.",
+      "enum": [
+        "hunger",
+        "power",
+        "health"
+      ],
+      "title": "Vital",
       "type": "string"
     },
     "Wall": {

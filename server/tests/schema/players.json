@@ -142,5 +142,41 @@
       "sold": ["power_cell"]
     },
     "hunger": 0.2
+  },
+  {
+    "money": 12.0,
+    "items": [
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.4, "on": true}
+    ],
+    "carry_limit": 10.0,
+    "body": {
+      "legs": "present",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "sold",
+      "right_kidney": "present",
+      "stomach": "power_cell"
+    },
+    "mind": {"recipes": ["power_cell"]},
+    "hunger": 0.3,
+    "power": 0.65,
+    "health": 0.5,
+    "effects": [
+      {"kind": "rat_bite", "strength": 0.2, "fades": 0.05, "since": "2026-03-15T11:20:00Z"},
+      {"kind": "infection", "strength": 0.6, "fades": null, "since": "2026-03-15T09:00:00Z"}
+    ],
+    "sales": [
+      {
+        "item": {"id": "copper_wire", "kind": "part", "name": "Copper wire", "weight": 0.2, "charge": null, "on": null},
+        "place": "scrap_stall",
+        "price": 6.0
+      },
+      {
+        "item": {"id": "copper_wire", "kind": "part", "name": "Copper wire", "weight": 0.2, "charge": null, "on": null},
+        "place": "scrap_stall",
+        "price": 5.0
+      }
+    ]
   }
 ]
