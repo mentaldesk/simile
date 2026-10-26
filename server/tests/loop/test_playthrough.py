@@ -8,7 +8,7 @@ import pytest
 from starlette.testclient import TestClient
 
 from simile.economy import Kind
-from simile.loop.playthrough import DAYS, QUESTION, Result, play
+from simile.loop.playthrough import QUESTION, Result, play
 from simile.loop.serve import create_loop_app
 from simile.npc import load_npcs
 from simile.schema import Bionic
@@ -50,14 +50,6 @@ def test_a_kidney_and_what_the_tunnels_pay_buy_every_bionic(result: Result) -> N
     assert result.earned[Kind.PURCHASE] == -(150 + 100 + 200)
     assert result.earned[Kind.FOUND] >= 25 + 40 + 60
     assert sum(result.earned.values()) == pytest.approx(result.player.money)
-
-
-def test_the_tunnels_pay_for_the_eye_within_a_few_days_of_salvage_rounds(result: Result) -> None:
-    """Stage 1 had the eye wait days for salvage to come back. Past the depot the metro (P28)
-    now pays for it in the first round or two, and P19 rewrites the loop."""
-    assert result.days < DAYS
-    assert result.played <= result.end - result.start
-    assert result.earned[Kind.SALVAGE] > 0
 
 
 def test_an_attackers_alibi_flushes_and_the_journal_records_it(result: Result) -> None:

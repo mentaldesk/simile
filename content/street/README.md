@@ -149,9 +149,9 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | The metro's freight siding (124–129) | `metro_container` | The lower `shipping_container` of the stack | servo motor, lithium cell | |
 | The metro's signal box (143–144, row 11) | `metro_switchboard` | A dead `switchboard` | 2 copper wire, signal relay | |
 | The metro's signal box (146–147, row 11) | `metro_relay_rack` | A `switchboard` | USB-C connector | |
+| The metro's signal box (150, row 11) | `metro_signal_desk` | A `jack`, a `dead_terminal` | 2 circuit board | |
 | The metro's disused track (168) | `metro_tool_crate` | `crates` | copper wire, lithium cell | |
 | The metro's shed (210–211) | `metro_lockers` | `lockers` | a ration pack | |
-| The metro's signal box (150, row 11) | `metro_signal_desk` | A `jack`, a `dead_terminal` | 2 circuit board | |
 | Sewers zone 0 | `sewers_bedroll_legs` | A delver's `bedroll` | copper coil | `bionic_legs` |
 | Sewers zone 0 | `sewers_crates_legs` | `crates` | 2 pump impeller | |
 | Sewers zone 1 | `sewers_bedroll_feet` | A delver's `bedroll` | float valve | `spring_feet` |
@@ -161,7 +161,7 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | Sewers zone 1 | `sewers_crates_cell` | `crates` | 4 old battery | |
 
 The cell's parts are in the village and the metro, and the datajack's three wires are the shelf's
-and the metro's two, besides the salvage on the train's roof. Past the clinic (P28) the metro holds
+and the metro's two, besides the salvage on the train's roof. Past the clinic the metro holds
 a spare of every part the two need, so a player who sells one or misses one can still build both.
 The infrared eye needs the second power cell, so its recipe and the cell's are found together, in
 the room past the gate farthest from it, but the hatch's, that has room for both. The eye's lens is
@@ -189,9 +189,9 @@ and minds as much as their security and tradition say.
 | `house_10` | `kitchen`, a drawer: 2 and a ration bar | | 2 |
 
 That's 62 in all. With the metro's secrets a jump reaches (95), one round of its salvage (44) and
-the salvage stripped from the finds that the recipes don't use (42), it pays for the power cell
-and the datajack (200) without the kidney or waiting for salvage to come back (P28,
-`tests/street/test_houses.py`). Fetching each find, secret and salvage from home and back on its
+the salvage stripped from the finds, keeping a spare of every part the recipes use (36), it pays
+for the power cell and the datajack (200) without the kidney or waiting for salvage to come back
+(`tests/street/test_houses.py`). Fetching each find, secret and salvage from home and back on its
 own takes about 70 sim minutes on foot, under half the time from a meal to collapsing.
 
 ## The village
@@ -308,9 +308,9 @@ fast: the second grade of feet reaches the first's places, and every grade of le
 With Space held, a jump that rises higher than three rows bumps its head on the gantry's roof and
 falls short, so the legs and feet together cross its gap on a tap. The shed's gap is the same.
 
-**Pacing** (P28): before P28 the houses, the metro's secrets and a round of its salvage came to
-152 against the cell and the datajack's 200; past the depot there's 30 more in secrets, 19 in
-salvage, and salvage to strip from the finds. *Houses* above has the sums.
+**Pacing**: up to the depot, the houses, the metro's secrets and a round of its salvage come to
+152 against the cell and the datajack's 200; past it there's 30 more in secrets, 19 in salvage,
+and salvage to strip from the finds. *Houses* above has the sums.
 
 **Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
 front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are

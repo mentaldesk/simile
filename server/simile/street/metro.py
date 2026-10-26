@@ -1,5 +1,6 @@
 """The abandoned metro station under the village: content/street/README.md's *The metro*."""
 
+from simile.player.config import SALVAGE as PLAYER_SALVAGE
 from simile.schema import (
     Bionic,
     CreatureKind,
@@ -30,7 +31,7 @@ from simile.world.map import Light, SpotKind
 
 METRO = "metro"
 DEPOT_END = 110
-"""The east wall of the depot before the metro went on past it (P28)."""
+"""Where the depot ends and the freight siding begins."""
 WIDTH = 230
 ENTRANCE = MapTile(map="banyan_row", x=62, y=GROUND + 3)
 """The stairway down's door on the river promenade under Banyan Row."""
@@ -90,16 +91,12 @@ SECRET = "secret"
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 
 
-def _salvage(item_id: str, name: str, weight: float) -> Item:
-    """The same as the salvage `simile.player.config` lays at the depot's pickups."""
-    return Item(id=item_id, kind=ItemKind.SALVAGE, name=name, weight=weight)
-
-
-SCRAP_STEEL = _salvage("scrap_steel", "Scrap steel", 4.5)
-CIRCUIT_BOARD = _salvage("circuit_board", "Circuit board", 0.5)
-BRASS_VALVE = _salvage("brass_valve", "Brass valve", 2.0)
-SIGNAL_RELAY = _salvage("signal_relay", "Signal relay", 1.0)
-SERVO_MOTOR = _salvage("servo_motor", "Servo motor", 3.0)
+_LYING = {salvage.item.id: salvage.item for salvage in PLAYER_SALVAGE.values()}
+SCRAP_STEEL = _LYING["scrap_steel"]
+CIRCUIT_BOARD = _LYING["circuit_board"]
+BRASS_VALVE = _LYING["brass_valve"]
+SIGNAL_RELAY = _LYING["signal_relay"]
+SERVO_MOTOR = _LYING["servo_motor"]
 BOTS = ((53, 30, 68), (46, 30, 54))
 """Each bot on the floor: where it starts, and the stretch it keeps to, west to east."""
 BOT_SPAN = 2
