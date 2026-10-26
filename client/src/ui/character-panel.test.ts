@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
 import { bionicName, bodyRows, CharacterPanel, gear, known, TABS, vitals } from './character-panel';
+
+// jsdom tests load modules as the browser does, which may not reach content/: character-body.test.ts checks the real icons.
+vi.mock('./icons', () => ({ iconUrl: (id: string) => `/icons/${id}.webp` }));
 
 const item = (id: string, name: string, weight: number, extra: Partial<Item> = {}): Item => ({
   id,
@@ -151,12 +154,94 @@ describe('body', () => {
     expect(bionicName('infrared_eye')).toBe('Infrared eye');
   });
 
-  it('draws on the Body tab', () => {
+  it('maps each part at its place: their own organ, a stitched socket once sold, or the bionic fitted', () => {
     const { section, page } = opened();
     press(section, 'ArrowRight');
     expect(texts(section, '[aria-selected="true"]')).toEqual(['Body']);
-    expect(texts(page, '.character-sold')).toEqual(['Sold']);
-    expect(texts(page, '.character-bionic')).toEqual(['Power cell']);
+    const slots = [...page.querySelectorAll<HTMLElement>('.character-slot')];
+    expect(slots.map(({ dataset }) => [dataset.part, dataset.picture])).toEqual([
+      ['left_eye', 'eye'],
+      ['right_eye', 'eye'],
+      ['vertebra', 'vertebra'],
+      ['stomach', 'power_cell'],
+      ['left_kidney', 'kidney_sold'],
+      ['right_kidney', 'kidney'],
+      ['legs', 'legs'],
+      ['feet', 'feet'],
+    ]);
+    expect(slots[4].querySelector('img')?.getAttribute('src')).toBe('/icons/kidney_sold.webp');
+    expect(slots[4].classList).toContain('character-slot-sold');
+    expect(slots[3].classList).toContain('character-slot-bionic');
+  });
+
+  it('shows each bionic fitted, every grade of a line in its picture with its grade', () => {
+    const fitted: Player = {
+      ...PLAYER,
+      body: {
+        ...PLAYER.body,
+        stomach: 'power_cell_3',
+        vertebra: 'datajack',
+        right_eye: 'infrared_eye',
+        legs: 'bionic_legs_2',
+        feet: 'spring_feet_2',
+      },
+    };
+    const { section, page } = opened({ ...STATE, player: fitted });
+    press(section, 'ArrowRight');
+    const pictures = [...page.querySelectorAll<HTMLElement>('.character-slot')].map(({ dataset }) => dataset.picture);
+    expect(pictures).toEqual(['eye', 'infrared_eye', 'datajack', 'power_cell', 'kidney_sold', 'kidney', 'bionic_legs', 'spring_feet']);
+    expect(texts(page, '.character-grade')).toEqual(['3', '2', '2']);
+  });
+
+  it('shows a part’s details on hover, and Up and Down cycle through them head to foot', () => {
+    const { section, page } = opened();
+    press(section, 'ArrowRight');
+    const details = () => [page.querySelector('.character-part h3')?.textContent, page.querySelector('.character-part b')?.textContent];
+    expect(details()).toEqual(['Left eye', 'Your own']);
+    page.querySelector('[data-part="left_kidney"]')!.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(details()).toEqual(['Left kidney', 'Sold']);
+    expect(page.querySelector('.character-picked')?.getAttribute('data-part')).toBe('left_kidney');
+    expect(press(section, 'ArrowUp').defaultPrevented).toBe(true);
+    expect(details()).toEqual(['Stomach', 'Power cell']);
+    expect(texts(page, '.character-part p')).toEqual([
+      'A bionic in place of your stomach, grade 1 of 3.',
+      expect.stringMatching(/^Runs 3 other bionics/),
+    ]);
+    press(section, 'ArrowDown');
+    press(section, 'ArrowDown');
+    press(section, 'ArrowDown');
+    press(section, 'ArrowDown');
+    expect(details()).toEqual(['Feet', 'Your own']);
+    press(section, 'ArrowDown');
+    expect(details()).toEqual(['Left eye', 'Your own']);
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Gear']);
+  });
+
+  it('keeps the part picked as each player_state redraws it', () => {
+    const { panel, section, page } = opened();
+    press(section, 'ArrowRight');
+    press(section, 'ArrowUp');
+    panel.update({ ...STATE, player: { ...PLAYER, body: { ...PLAYER.body, feet: 'spring_feet' } } }, away);
+    expect(page.querySelector('.character-part b')?.textContent).toBe('Spring feet');
+  });
+
+  it('maps a stage 1 player, with no stomach or feet in their save', () => {
+    const { section, page } = opened({ type: 'player_state', player: STAGE_1 });
+    press(section, 'ArrowRight');
+    const slots = [...page.querySelectorAll<HTMLElement>('.character-slot')];
+    expect(slots.map(({ dataset }) => dataset.picture)).toEqual([
+      'eye',
+      'eye',
+      'vertebra',
+      'stomach',
+      'kidney',
+      'kidney',
+      'hydraulic_legs',
+      'feet',
+    ]);
+    page.querySelector('[data-part="legs"]')!.dispatchEvent(new MouseEvent('mouseenter'));
+    expect(texts(page, '.character-part p')).toEqual(['A bionic in place of your legs.', 'Jump higher.']);
   });
 });
 
