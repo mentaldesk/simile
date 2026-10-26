@@ -1,0 +1,139 @@
+{
+  "id": "player_bionic_legs_feet_datajack_eye",
+  "hash": "2f3b63b272d5d886",
+  "appearance": {
+    "skin": "#e4a672",
+    "hair_style": "short",
+    "hair_colour": "#3e2731",
+    "top_colour": "#0099db",
+    "bottom_colour": "#3a4466",
+    "shoe_colour": "#ffffff",
+    "build": "average",
+    "accessories": [
+      "backpack"
+    ]
+  },
+  "fitted": [
+    "bionic_legs",
+    "spring_feet",
+    "datajack",
+    "infrared_eye"
+  ],
+  "version": 3,
+  "ppm": 80,
+  "height": 163.2,
+  "painted": "player_bionic_legs_feet_datajack_eye.webp",
+  "frames": {
+    "climb": {
+      "frame": [
+        152,
+        0,
+        85,
+        166
+      ],
+      "feet": [
+        44.4,
+        164.0
+      ]
+    },
+    "pass": {
+      "frame": [
+        0,
+        0,
+        65,
+        167
+      ],
+      "feet": [
+        38.0,
+        164.0
+      ]
+    },
+    "run": {
+      "frame": [
+        489,
+        0,
+        101,
+        136
+      ],
+      "feet": [
+        58.0,
+        166.0
+      ]
+    },
+    "run_pass": {
+      "frame": [
+        67,
+        0,
+        83,
+        167
+      ],
+      "feet": [
+        44.0,
+        165.0
+      ]
+    },
+    "sit": {
+      "frame": [
+        393,
+        0,
+        94,
+        150
+      ],
+      "feet": [
+        50.0,
+        148.0
+      ],
+      "seat": [
+        50.0,
+        119.0
+      ]
+    },
+    "stand": {
+      "frame": [
+        239,
+        0,
+        66,
+        166
+      ],
+      "feet": [
+        37.5,
+        164.0
+      ]
+    },
+    "stride": {
+      "frame": [
+        307,
+        0,
+        84,
+        166
+      ],
+      "feet": [
+        39.5,
+        164.0
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "stride",
+      "pass",
+      "stride",
+      "pass"
+    ],
+    "run": [
+      "run",
+      "run_pass",
+      "run",
+      "run_pass"
+    ],
+    "sit": [
+      "sit"
+    ],
+    "climb": [
+      "climb"
+    ]
+  }
+}

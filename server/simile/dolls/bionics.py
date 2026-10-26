@@ -1,5 +1,6 @@
 """The player with each combination of bionics: each part painted once over the player's frames."""
 
+import re
 from collections.abc import Iterable
 from itertools import combinations
 
@@ -12,24 +13,87 @@ from simile.dolls.figure import EDITS, FACE, styled, touching
 from simile.dolls.sprites import head
 from simile.dolls.words import described
 from simile.schema import PLAYER_ID, Appearance
+from simile.schema.player import BIONIC_LEGS as LEGS_LINE
+from simile.schema.player import LEGS as STAGE_1_LEGS
+from simile.schema.player import SPRING_FEET as FEET_LINE
 from simile.schema.player import Bionic
 
 VERSION = 1
 """How the parts are laid over the whole player: a new one lays them again."""
-FITTED = (Bionic.HYDRAULIC_LEGS, Bionic.DATAJACK, Bionic.INFRARED_EYE)
+HYDRAULIC, LEGS_PART, FEET = Bionic.HYDRAULIC_LEGS, Bionic.BIONIC_LEGS, Bionic.SPRING_FEET
+FITTED = (HYDRAULIC, LEGS_PART, FEET, Bionic.DATAJACK, Bionic.INFRARED_EYE)
 EYE = Bionic.INFRARED_EYE
-NAMES = {Bionic.HYDRAULIC_LEGS: "legs", Bionic.DATAJACK: "datajack", Bionic.INFRARED_EYE: "eye"}
-type Combination = tuple[Bionic, ...]
-COMBINATIONS: tuple[Combination, ...] = tuple(
-    c for n in range(1, len(FITTED) + 1) for c in combinations(FITTED, n)
+NAMES = {
+    HYDRAULIC: "legs",
+    LEGS_PART: "bionic_legs",
+    FEET: "feet",
+    Bionic.DATAJACK: "datajack",
+    Bionic.INFRARED_EYE: "eye",
+}
+SHOWN_AS = (
+    dict.fromkeys(STAGE_1_LEGS, HYDRAULIC)
+    | dict.fromkeys(LEGS_LINE, LEGS_PART)
+    | dict.fromkeys(FEET_LINE, FEET)
+    | {Bionic.DATAJACK: Bionic.DATAJACK, EYE: EYE}
 )
-"""Every combination of bionics but none, fewest first, each in `FITTED`'s order."""
+"""The part a figure shows for each bionic: every grade of a line looks alike."""
+LEGGED = (HYDRAULIC, LEGS_PART)
+LOWER = (HYDRAULIC, LEGS_PART, FEET)
+"""Parts of the lower body, painted together as one layer."""
+type Combination = tuple[Bionic, ...]
+
+
+def possible(combination: Combination) -> bool:
+    """One kind of legs at most, and never stage 1's with the feet: see `shown`."""
+    have = set(combination)
+    return len(have & set(LEGGED)) <= 1 and not {HYDRAULIC, FEET} <= have
+
+
+COMBINATIONS: tuple[Combination, ...] = tuple(
+    c for n in range(1, len(FITTED) + 1) for c in combinations(FITTED, n) if possible(c)
+)
+"""Every combination of bionics a figure shows but none, fewest first, each in `FITTED`'s order."""
+
+
+def shown(fitted: Iterable[Bionic]) -> Combination:
+    """The parts a body's figure shows: stage 1's legs with the feet as the bionic legs."""
+    have = {SHOWN_AS[b] for b in fitted if b in SHOWN_AS}
+    if {HYDRAULIC, FEET} <= have:
+        have = have - {HYDRAULIC} | {LEGS_PART}
+    return tuple(b for b in FITTED if b in have)
+
+
+def layers(combination: Combination) -> list[Combination]:
+    """What's laid over the whole player for `combination`: the lower body, then each other part."""
+    lower = tuple(b for b in combination if b in LOWER)
+    return ([lower] if lower else []) + [(b,) for b in combination if b not in LOWER]
+
+
+LAYERS: tuple[Combination, ...] = tuple(
+    sorted(
+        {layer for c in COMBINATIONS for layer in layers(c)},
+        key=lambda c: (len(c), FITTED.index(c[0])),
+    )
+)
+"""Each layer painted, as an edit of the whole player's frame or of `layer[:-1]`'s painting."""
 WORDS = {
     Bionic.HYDRAULIC_LEGS: (
         "both legs replaced by bionic hydraulic legs: the trousers now end above the knees as "
         "shorts, and below them each lower leg is bare steel-grey machinery with a shiny chrome "
         "hydraulic piston down the shin and a round metal knee joint, ending in the same white "
         "sneakers"
+    ),
+    LEGS_PART: (
+        "both legs replaced by sleek bionic legs: the trousers now end above the knees as shorts, "
+        "and below them each lower leg is a smooth streamlined robot leg of rounded steel-grey "
+        "armour plates, like a racing robot's, with a black rubber joint at the knee and at the "
+        "ankle, ending in the same white sneakers"
+    ),
+    FEET: (
+        "both feet replaced by bionic spring feet, in place of the sneakers: below each ankle, "
+        "a flat steel-grey metal foot plate shaped like a shoe, with a chunky bright yellow coil "
+        "spring between the ankle and the heel. Everything above the ankles, the legs and their "
+        "clothes, stays exactly as it is"
     ),
     Bionic.DATAJACK: (
         "a datajack port set into the skin at the back of the neck, just under the hair at the "
@@ -51,12 +115,20 @@ METAL = (12.0, 40.0, 88.0)
 LEGS = 0.6
 """Where the legs start, down the figure."""
 SHORTS = (0.62, 0.7)
-"""The bottom colour's `measure.CORES` with the hydraulic legs, whose shins are steel."""
+"""The bottom colour's `measure.CORES` with either legs, whose shins are steel."""
+SPRING = (55.0, 25.0, 50.0)
+"""The yellow spring: b* above the first, a* below the second, lightness above the third."""
 LENS = (40.0, 15.0)
 """The red lens: a* above the first and lightness above the second, in the top half."""
 LIGHT = (-30.0, 15.0)
 """The datajack's green light: a* below the first, b* above the second."""
-LEAST = {Bionic.HYDRAULIC_LEGS: 0.12, Bionic.DATAJACK: 0.001, Bionic.INFRARED_EYE: 0.002}
+LEAST = {
+    HYDRAULIC: 0.12,
+    LEGS_PART: 0.12,
+    FEET: 0.006,
+    Bionic.DATAJACK: 0.001,
+    Bionic.INFRARED_EYE: 0.002,
+}
 """The share of a frame, or of its legs for the legs, a part must cover to be there."""
 LENS_WIDE = 0.17
 """The widest the lens may be, as a share of the head's width: the walk's is about 0.15."""
@@ -66,7 +138,7 @@ RIM = 0.012
 """How far round the lens, in the figure's heights, its rim reaches: the face check spares it."""
 PALETTE = np.array(
     [[lightness, 0.0, 0.0] for lightness in range(35, 95, 10)]
-    + [[48.0, 70.0, 55.0], [80.0, -70.0, 65.0]]
+    + [[48.0, 70.0, 55.0], [80.0, -70.0, 65.0], [85.0, 0.0, 85.0]]
 )
 """The parts' colours in CIELAB, which a frame may show although the whole player doesn't."""
 CHANGED = 10.0
@@ -83,8 +155,12 @@ FEATHER = 2.0
 
 def figure_id(fitted: Iterable[Bionic]) -> str:
     """The figure for a body with `fitted`: `player` with none, `player_legs_eye` and so on."""
-    have = set(fitted)
-    return "_".join([PLAYER_ID, *(NAMES[b] for b in FITTED if b in have)])
+    return "_".join([PLAYER_ID, *(NAMES[b] for b in shown(fitted))])
+
+
+def hides(fitted: Combination) -> frozenset[str]:
+    """The `Appearance`'s colours a figure with `fitted` lacks: the feet replace the shoes."""
+    return frozenset({"shoe"}) if FEET in fitted else frozenset()
 
 
 def faces(frame: str) -> bool:
@@ -96,11 +172,13 @@ def shows(bionic: Bionic, frame: str) -> bool:
     return bionic != Bionic.INFRARED_EYE or faces(frame)
 
 
-def edit_prompt(frame: str, bionic: Bionic, appearance: Appearance) -> str:
-    """Adds `bionic` to the whole player's `frame`."""
+def edit_prompt(frame: str, bionic: Bionic, appearance: Appearance, over: Combination = ()) -> str:
+    """Adds `bionic` to the whole player's `frame`, with the parts `over` it already shows."""
     words = described(appearance, PLAYER_ID)
-    if bionic == Bionic.HYDRAULIC_LEGS:
+    if {bionic, *over} & set(LEGGED):
         words = words.replace(" trousers ", " shorts ")
+    if bionic == FEET:
+        words = re.sub(r", ([^,]+?) (trousers|shorts) and [^,.]+? sneakers", r" and \1 \2", words)
     face = ""
     if faces(frame):
         face = f" {EYE_FACE if bionic == Bionic.INFRARED_EYE else FACE}"
@@ -131,8 +209,12 @@ def parts(figure: Image.Image) -> dict[Bionic, NDArray[np.bool_]]:
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     light, a, b = lab[..., 0], lab[..., 1], lab[..., 2]
     metal = (np.hypot(a, b) < METAL[0]) & (light > METAL[1]) & (light < METAL[2])
+    legs = solid & (down >= LEGS)
+    spring = (b > SPRING[0]) & (a < SPRING[1]) & (light > SPRING[2])
     return {
-        Bionic.HYDRAULIC_LEGS: solid & metal & (down >= LEGS),
+        HYDRAULIC: legs & metal,
+        LEGS_PART: legs & metal,
+        FEET: legs & spring,
         Bionic.DATAJACK: solid & (a < LIGHT[0]) & (b > LIGHT[1]),
         Bionic.INFRARED_EYE: solid & (a > LENS[0]) & (light > LENS[1]) & (down < 0.5),
     }
@@ -159,7 +241,7 @@ def missing(
     for bionic in combination:
         if not shows(bionic, frame):
             continue
-        whole = solid & (down >= LEGS) if bionic == Bionic.HYDRAULIC_LEGS else solid
+        whole = solid & (down >= LEGS) if bionic in LOWER else solid
         if found[bionic].sum() < least * LEAST[bionic] * whole.sum():
             out.append(NAMES[bionic])
         elif bionic == Bionic.INFRARED_EYE:
@@ -189,24 +271,26 @@ def spared(figure: Image.Image) -> NDArray[np.bool_]:
     return grown(parts(figure)[Bionic.INFRARED_EYE], reach)
 
 
-def changed(whole: Image.Image, edit: Image.Image, bionic: Bionic) -> NDArray[np.bool_]:
-    """Where the `edit` of the `whole` player's frame painted `bionic`, with its outline."""
+def changed(whole: Image.Image, edit: Image.Image, layer: Combination) -> NDArray[np.bool_]:
+    """Where the `edit` of the `whole` player's frame painted `layer`'s parts, with its outline."""
     a, b = np.asarray(whole.convert("RGBA")), np.asarray(edit.convert("RGBA"))
     solid, down = regions(edit)
     both = (a[..., 3] > 128) & (b[..., 3] > 128)
     far = delta_e_lab(cielab(a[..., :3].astype(np.float64)), cielab(b[..., :3].astype(np.float64)))
     diff = (np.abs(a[..., 3].astype(int) - b[..., 3].astype(int)) > 64) | (both & (far > CHANGED))
-    seeds = parts(edit)[bionic]
-    if bionic == Bionic.HYDRAULIC_LEGS:
+    found = parts(edit)
+    seeds = [found[bionic] for bionic in layer]
+    if layer[0] in LOWER:
         diff &= down >= SHORTS_FROM
-    elif seeds.any():
-        seeds = patches(seeds)[0]
-        diff &= grown(seeds, round(REACH[bionic] * height(solid)))
-    joined = grown(diff | seeds, 2)
+    elif seeds[0].any():
+        seeds = [patches(seeds[0])[0]]
+        diff &= grown(seeds[0], round(REACH[layer[0]] * height(solid)))
+    joined = grown(diff | np.logical_or.reduce(seeds), 2)
     keep = np.zeros_like(joined)
-    for y, x in np.argwhere(seeds)[:: max(1, int(seeds.sum()) // 50)]:
-        if not keep[y, x]:
-            keep |= touching(joined, int(x), int(y))
+    for seed in seeds:
+        for y, x in np.argwhere(seed)[:: max(1, int(seed.sum()) // 50)]:
+            if not keep[y, x]:
+                keep |= touching(joined, int(x), int(y))
     return grown(keep, GROW)
 
 

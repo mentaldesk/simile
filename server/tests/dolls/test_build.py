@@ -85,7 +85,7 @@ def stamps(directory: Path) -> dict[str, int]:
     return {path.name: path.stat().st_mtime_ns for path in directory.iterdir()}
 
 
-LEGS, DATAJACK, EYE = bionics.FITTED
+LEGS, BIONIC_LEGS, FEET, DATAJACK, EYE = bionics.FITTED
 
 
 @pytest.fixture
@@ -268,8 +268,9 @@ def test_paints_the_player_with_each_combination_of_bionics(tmp_path: Path, ever
 
     done = made(painters, tmp_path, only=["player"], cache=None)
 
-    assert [p.who for p in done] == ["player", "player_legs", "player_datajack", "player_eye"]
-    parts = sum(bionics.shows(b, frame) for b in bionics.FITTED for frame in FRAMES)
+    assert [p.who for p in done] == ["player", *(figure_id(layer) for layer in bionics.LAYERS)]
+    assert "player_bionic_legs_feet" in [p.who for p in done]
+    parts = sum(any(bionics.shows(b, f) for b in layer) for layer in bionics.LAYERS for f in FRAMES)
     assert len(painters.fake.calls) == len(FRAMES) + parts
     player = build.fingerprint("player", every["player"])
     for combination in COMBINATIONS:

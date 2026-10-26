@@ -1,20 +1,47 @@
 import type { Bionic, Body } from '../net/protocol';
 
 export const PLAYER_FIGURE = 'player';
-type Shown = Extract<Bionic, 'hydraulic_legs' | 'datajack' | 'infrared_eye'>;
+type Shown = Extract<Bionic, 'hydraulic_legs' | 'bionic_legs' | 'spring_feet' | 'datajack' | 'infrared_eye'>;
 /** In the order a figure's id names them. */
-export const FITTED: readonly Shown[] = ['hydraulic_legs', 'datajack', 'infrared_eye'];
-const NAMES: Record<Shown, string> = { hydraulic_legs: 'legs', datajack: 'datajack', infrared_eye: 'eye' };
-/** Every grade of legs, which a figure shows alike. */
-export const LEGS: ReadonlySet<string> = new Set<Bionic>(['hydraulic_legs', 'spring_legs', 'sprint_legs', 'blade_legs', 'premium_legs']);
+export const FITTED: readonly Shown[] = ['hydraulic_legs', 'bionic_legs', 'spring_feet', 'datajack', 'infrared_eye'];
+const NAMES: Record<Shown, string> = {
+  hydraulic_legs: 'legs',
+  bionic_legs: 'bionic_legs',
+  spring_feet: 'feet',
+  datajack: 'datajack',
+  infrared_eye: 'eye',
+};
+/** The part a figure shows for each bionic: every grade of a line alike, and of stage 1's legs. */
+const SHOWN_AS: Partial<Record<Bionic, Shown>> = {
+  hydraulic_legs: 'hydraulic_legs',
+  spring_legs: 'hydraulic_legs',
+  sprint_legs: 'hydraulic_legs',
+  blade_legs: 'hydraulic_legs',
+  premium_legs: 'hydraulic_legs',
+  bionic_legs: 'bionic_legs',
+  bionic_legs_2: 'bionic_legs',
+  bionic_legs_3: 'bionic_legs',
+  spring_feet: 'spring_feet',
+  spring_feet_2: 'spring_feet',
+  datajack: 'datajack',
+  infrared_eye: 'infrared_eye',
+};
 
-/** The bionics a body's figure shows, in `FITTED`'s order, any grade of legs as the hydraulic legs. */
+/** The bionics a body's figure shows, in `FITTED`'s order, stage 1's legs with the feet as the bionic legs. */
 export function fitted(body?: Body): Shown[] {
-  const parts = new Set<string>(Object.values(body ?? {}).map((part: string) => (LEGS.has(part) ? 'hydraulic_legs' : part)));
+  const parts = new Set<Shown>();
+  for (const part of Object.values(body ?? {})) {
+    const shown = SHOWN_AS[part as Bionic];
+    if (shown) parts.add(shown);
+  }
+  if (parts.has('hydraulic_legs') && parts.has('spring_feet')) {
+    parts.delete('hydraulic_legs');
+    parts.add('bionic_legs');
+  }
   return FITTED.filter((bionic) => parts.has(bionic));
 }
 
-/** The player's figure for a body: `player` with nothing fitted, `player_legs_eye` and so on. */
+/** The player's figure for a body: `player` with nothing fitted, `player_bionic_legs_feet_eye` and so on. */
 export const playerFigureId = (body?: Body): string =>
   [PLAYER_FIGURE, ...fitted(body).map((bionic) => NAMES[bionic])].join('_');
 
