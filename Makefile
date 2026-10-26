@@ -27,7 +27,7 @@ client-lint: $(CLIENT_DEPS)
 	cd client && npm run lint
 
 dev-server:
-	cd server && SIMILE_VOICE=$(SIMILE_VOICE) uv run simile serve --reload
+	cd server && SIMILE_VOICE=$(SIMILE_VOICE) uv run simile worlds serve --reload
 
 dev-client: $(CLIENT_DEPS)
 	cd client && npm run dev
