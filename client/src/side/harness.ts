@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { server, type Bionic, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
+import { levels } from '../world/assets';
 import { usedByE } from '../world/reach';
 import { WALKING_SPEED } from '../world/tuning';
 import worksJson from '../../../content/works/works.json';
@@ -407,6 +408,16 @@ function exposeWalk(scene: SideScene, village: Village): void {
       teleport: (to: MapPosition) => scene.teleport(to),
       mind: () => ({ recipes: known, searched, items: items.map(({ id }) => id) }),
       usables: () => scene.usableView.drawn(),
+      levels: () => Object.fromEntries(Object.entries(levels).map(([level, { sewers }]) => [level, sewers.width])),
+      pieces: (piece: string) =>
+        scene.children.list
+          .filter((child) => child instanceof Phaser.GameObjects.Image && child.texture.key.startsWith(`side:${piece}`))
+          .map((child) => {
+            const image = child as Phaser.GameObjects.Image;
+            const { left, right } = image.getBounds();
+            return { key: image.texture.key, width: image.frame.realWidth, left, right, visible: image.visible };
+          }),
+      textureLimit: () => (scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer>).getMaxTextureSize?.() ?? null,
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
         sendPlayerState();
