@@ -91,10 +91,9 @@ export function waysNear(
   return [...onCell, ...climbs.sort((a, b) => a.tiles - b.tiles)];
 }
 
-/** E takes a door on the player's cell, or up does while E is used by something in reach; up and down the rest. */
-export function chosen(ways: readonly Way[], press: Press, eTaken = false): Way | undefined {
-  const door = ways.find((way) => way.kind === 'door');
-  if (press === 'use' || (press === 'up' && eTaken && door)) return door;
+/** E takes a door on the player's cell, whatever else is in reach; up and down the rest. */
+export function chosen(ways: readonly Way[], press: Press): Way | undefined {
+  if (press === 'use') return ways.find((way) => way.kind === 'door');
   return ways.find((way) => way.kind !== 'door' && way.up === (press === 'up'));
 }
 
@@ -112,11 +111,11 @@ function action(village: Village, map: SideMap, way: Way): string {
 }
 
 /** A prompt for each way a key takes here, naming its keys. The lift's keys share one, over its car. */
-export function prompts(village: Village, map: SideMap, ways: readonly Way[], eTaken = false): Prompt[] {
+export function prompts(village: Village, map: SideMap, ways: readonly Way[]): Prompt[] {
   const byKey: [Key, Way | undefined][] = [
-    ['E', eTaken ? undefined : chosen(ways, 'use')],
-    ['↑', chosen(ways, 'up', eTaken)],
-    ['↓', chosen(ways, 'down', eTaken)],
+    ['E', chosen(ways, 'use')],
+    ['↑', chosen(ways, 'up')],
+    ['↓', chosen(ways, 'down')],
   ];
   const found: Prompt[] = [];
   for (const [key, way] of byKey) {

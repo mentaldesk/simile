@@ -25,8 +25,8 @@ lights its lamp in the dark.
    where they were the night Aris was attacked. Their alibi flushes, and the journal marks it.
    The attacker it asks is one who stays put for two minutes in the world served from the eye
    beat's save (`Saves.stays`), since a save keeps less of what someone's doing than the sim, and
-   the browser takes a while to get there, and beside whom E talks rather than searching something
-   (`LoopPlayer.talks`).
+   the browser takes a while to get there, and who stands off anything to search
+   (`LoopPlayer.talks`, which T talking no longer needs).
 6. **The village reacts.** It finds Aris's notes, and talks to the residents most against bionics
    until one turns it down. Residents who saw its bionics remember them.
 
@@ -57,10 +57,10 @@ and the player where the beat starts:
 | Beat | From | By the keys |
 |---|---|---|
 | `kidney` | outside the clinic, on day 0 | E into the clinic, E for its panel, sell a kidney |
-| `feet` | outside the clinic, with the spring feet's price | the spring feet, ↑ out, the run jump onto the high ledge, E for its secret |
+| `feet` | outside the clinic, with the spring feet's price | the spring feet, E out, the run jump onto the high ledge, E for its secret |
 | `datajack` | outside the clinic, with the datajack's price | the datajack, E at the dead terminal for its log in the journal, E down the lift and back up |
 | `hatch` | beside the sewers' hatch | E for its log in the journal |
-| `eye` | beside the attacker, with the eye | E and the question, the flush on their alibi, J for the journal's mark |
+| `eye` | beside the attacker, with the eye | T and the question, the flush on their alibi, J for the journal's mark |
 
 ```bash
 cd client

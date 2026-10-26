@@ -125,7 +125,7 @@ function showPanel(root: HTMLElement): (message: ClientMessage) => void {
   const panel = root.appendChild(document.createElement('section'));
   panel.className = 'dialogue-harness';
   panel.innerHTML = `<b>Dialogue harness</b>
-    <p>Arrows, WASD or click to move. Enter talks to the ringed NPC: click one or press Tab to pick
+    <p>Arrows, WASD or click to move. T or Enter talks to the ringed NPC: click one or press Tab to pick
     another within ${CHAT_RANGE_TILES} tiles.</p>
     <ol></ol>`;
   const sent = panel.querySelector('ol')!;

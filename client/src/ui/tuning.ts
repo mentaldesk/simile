@@ -15,6 +15,9 @@ export const LOG_LIMIT = 200;
 /** Opens the news at a terminal, and closes it. */
 export const NEWS_KEY = 'e';
 export const EAT_KEY = 'f';
+export const TALK_KEY = 't';
+/** Opens a mural or a painting, and closes it. */
+export const VIEW_KEY = 'v';
 /** Opens the journal, and closes it. */
 export const JOURNAL_KEY = 'j';
 /** Opens the character screen, and closes it. */

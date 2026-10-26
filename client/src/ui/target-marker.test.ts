@@ -13,7 +13,7 @@ const nameOf = () => 'Lachlan';
 const tag = (root: HTMLElement) => root.querySelector<HTMLElement>('.dialogue-target-name')!;
 
 describe('TargetMarker', () => {
-  it('names the ringed resident, and says E talks to them while it does', () => {
+  it('names the ringed resident, and says T talks to them while it does', () => {
     const root = document.createElement('div');
     const marker = new TargetMarker(root);
 
@@ -22,8 +22,8 @@ describe('TargetMarker', () => {
     expect(tag(root).classList.contains('dialogue-target-talk')).toBe(false);
 
     marker.render('lachlan', view, nameOf, true);
-    expect(tag(root).ariaLabel).toBe('E: talk to Lachlan');
-    expect(tag(root).querySelector('kbd')?.textContent).toBe('E');
+    expect(tag(root).ariaLabel).toBe('T: talk to Lachlan');
+    expect(tag(root).querySelector('kbd')?.textContent).toBe('T');
     expect(tag(root).classList.contains('dialogue-target-talk')).toBe(true);
 
     marker.render('lachlan', view, nameOf);

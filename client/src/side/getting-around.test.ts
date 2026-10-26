@@ -5,7 +5,7 @@ import { SidePlayer, spanEnd, type Controls, type MapPosition } from './player';
 import { climbRuns } from './runs';
 import { chosen, CLIMB_REACH, type Way } from './ways';
 
-const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+const idle: Controls = { x: 0, y: 0, use: false, run: false };
 const EDGE = CLIMB_REACH - 0.1;
 const OFFSETS = [-EDGE, -1, -0.5, 0, 0.5, 1, EDGE];
 const maps = [...village.maps.values()];
@@ -146,11 +146,12 @@ describe('every door', () => {
   const doors = links.filter(({ kind }) => kind === 'door');
   const jacked = (start: MapPosition) => Object.assign(new SidePlayer(village, start), { datajack: true });
 
-  it('is taken on E from its cell, and on up there while E is used by something in reach', () => {
+  it('is taken on E from its cell, and never on up or down', () => {
     for (const door of doors) {
       const start = { x: door.x, y: door.y, map: door.map };
       expect(jacked(start).update({ ...idle, use: true }, 1 / 60), door.id).toBe(door);
-      expect(jacked(start).update({ ...idle, y: -1, eTaken: true }, 1 / 60), door.id).toBe(door);
+      expect(jacked(start).update({ ...idle, y: -1 }, 1 / 60), door.id).toBeUndefined();
+      expect(jacked(start).update({ ...idle, y: 1 }, 1 / 60), door.id).toBeUndefined();
     }
   });
 

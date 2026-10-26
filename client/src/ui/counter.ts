@@ -1,6 +1,6 @@
 import type { Interactable } from '../world/interactables';
 import { mapOf } from '../world/map';
-import { NEWS_KEY } from './tuning';
+import { NEWS_KEY, TALK_KEY } from './tuning';
 import type { WorldView } from './world-view';
 
 /** How far past the counter's far end whoever serves at it can stand. */
@@ -26,7 +26,7 @@ export function servingAt(counter: Interactable, view: WorldView): string | unde
   return best?.[1];
 }
 
-/** "Press E to order at the counter." while the player stands at a counter. */
+/** "Press T to order at the counter." while the player stands at a counter, or E's prompt at a jack or a search. */
 export class CounterPrompt {
   private readonly hint: HTMLElement;
   private flashing?: ReturnType<typeof setTimeout>;
@@ -42,7 +42,8 @@ export class CounterPrompt {
     this.hint.hidden = !counter || !shown;
     if (counter) {
       const prompt = counter.prompt.charAt(0).toLowerCase() + counter.prompt.slice(1);
-      this.hint.textContent = `Press ${NEWS_KEY.toUpperCase()} to ${prompt}.`;
+      const key = counter.kind === 'counter' ? TALK_KEY : NEWS_KEY;
+      this.hint.textContent = `Press ${key.toUpperCase()} to ${prompt}.`;
     }
   }
 

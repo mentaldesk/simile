@@ -24,7 +24,7 @@ import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 const DT = 1 / 60;
 /** server/simile/street/moves.py's `ON_THE_WAY`. */
 const ON_THE_WAY = 0.02;
-const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+const idle: Controls = { x: 0, y: 0, use: false, run: false };
 const press = (controls: Partial<Controls>): Controls => ({ ...idle, ...controls });
 
 /** `#` is solid, `H` a ladder and anything else open air. */

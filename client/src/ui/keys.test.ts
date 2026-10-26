@@ -1,15 +1,16 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Reachable, WayPrompt } from '../world/reach';
-import { eUse, onGameKey } from './keys';
+import { onGameKey } from './keys';
 
 const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
+const talk = vi.fn();
 const use = vi.fn();
+const view = vi.fn();
 const eat = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
 const journal = { toggle: vi.fn(), close: vi.fn() };
 const character = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, use, eat, help, journal, character });
+const handler = onGameKey({ chat, talk, use, view, eat, help, journal, character });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -75,7 +76,7 @@ describe('with nothing focused', () => {
     expect(use).not.toHaveBeenCalled();
   });
 
-  it('E uses what is here, but not held down or with a modifier', () => {
+  it('E uses what is here, but not held down or with a modifier, and never talks', () => {
     press(document.body, 'e');
     press(document.body, 'E', { shiftKey: true });
     press(document.body, 'e', { repeat: true });
@@ -83,6 +84,30 @@ describe('with nothing focused', () => {
     press(document.body, 'e', { ctrlKey: true });
 
     expect(use).toHaveBeenCalledTimes(2);
+    expect(chat.open).not.toHaveBeenCalled();
+    expect(talk).not.toHaveBeenCalled();
+    expect(view).not.toHaveBeenCalled();
+  });
+
+  it('T talks or orders, without typing the T into the chat box, but not held down or with a modifier', () => {
+    expect(press(document.body, 't').defaultPrevented).toBe(true);
+    press(document.body, 'T', { shiftKey: true });
+    press(document.body, 't', { repeat: true });
+    press(document.body, 't', { metaKey: true });
+
+    expect(talk).toHaveBeenCalledTimes(2);
+    expect(use).not.toHaveBeenCalled();
+  });
+
+  it('V looks at a mural or a painting, but not held down or with a modifier', () => {
+    expect(press(document.body, 'v').defaultPrevented).toBe(true);
+    press(document.body, 'V', { shiftKey: true });
+    press(document.body, 'v', { repeat: true });
+    press(document.body, 'v', { ctrlKey: true });
+
+    expect(view).toHaveBeenCalledTimes(2);
+    expect(use).not.toHaveBeenCalled();
+    expect(chat.open).not.toHaveBeenCalled();
   });
 
   it('F eats, but not held down or with a modifier', () => {
@@ -103,6 +128,8 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   const tab = press(element, 'Tab');
   press(element, 'Escape');
   press(element, 'e');
+  press(element, 't');
+  press(element, 'v');
   press(element, 'f');
   press(element, 'j');
   press(element, 'c');
@@ -114,27 +141,10 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(chat.clear).not.toHaveBeenCalled();
   expect(chat.cycle).not.toHaveBeenCalled();
   expect(use).not.toHaveBeenCalled();
+  expect(talk).not.toHaveBeenCalled();
+  expect(view).not.toHaveBeenCalled();
   expect(eat).not.toHaveBeenCalled();
   expect(help.toggle).not.toHaveBeenCalled();
   expect(journal.toggle).not.toHaveBeenCalled();
   expect(character.toggle).not.toHaveBeenCalled();
-});
-
-describe('what E does', () => {
-  const mural = { kind: 'mural', tiles: 1 } as Reachable;
-  const door: WayPrompt = { keys: ['E'], action: 'go in', x: 0, y: 0 };
-  const doorOnUp: WayPrompt = { keys: ['↑'], action: 'go in', x: 0, y: 0 };
-  const stairs: WayPrompt = { keys: ['↑'], action: 'upstairs', x: 0, y: 0 };
-
-  it('uses what is in reach first, then a door, then talks to the ringed resident', () => {
-    expect(eUse(mural, [doorOnUp], 'lachlan')).toEqual({ kind: 'reach', reachable: mural });
-    expect(eUse(undefined, [door, stairs], 'lachlan')).toEqual({ kind: 'door' });
-    expect(eUse(undefined, [stairs], 'lachlan')).toEqual({ kind: 'talk', npcId: 'lachlan' });
-    expect(eUse(undefined, [], 'lachlan')).toEqual({ kind: 'talk', npcId: 'lachlan' });
-  });
-
-  it('does nothing with none of them', () => {
-    expect(eUse(undefined, [stairs], undefined)).toBeUndefined();
-    expect(eUse(undefined, [], undefined)).toBeUndefined();
-  });
 });

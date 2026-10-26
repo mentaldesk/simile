@@ -320,7 +320,7 @@ function showPanel(): void {
   panel.className = 'side-harness';
   panel.innerHTML = `<b>Side-view harness</b>
     <p>Left and right walk, Shift switches to running and back, and Space jumps. E takes a door, or uses
-    what's in reach. Up climbs stairs or a ladder from the tile beside its foot, and down from beside its
+    what's in reach. T talks to the ringed resident, and V looks at a mural or a painting. Up climbs stairs or a ladder from the tile beside its foot, and down from beside its
     top; up and down ride the lift. L switches the lamp. [ and ] move the clock an hour; 1 to 6 go to each
     street, 6 the metro.</p>`;
 }
