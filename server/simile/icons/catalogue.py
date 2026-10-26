@@ -84,7 +84,6 @@ SOLD = (
     Icon("legs_sold", scar("two tall narrow upright strips side by side"), pieces=2),
     Icon("feet_sold", scar("two small oval patches side by side"), pieces=2),
 )
-"""Where an organ was, sold: `<organ>_sold`."""
 BIONICS = (
     Icon(
         "power_cell",
@@ -126,7 +125,5 @@ BIONICS = (
         pieces=2,
     ),
 )
-"""Each bionic's picture, by its line: every grade of a line shares it, and stage 1's legs show
-as the hydraulic legs."""
 
 ICONS: dict[str, Icon] = {icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS)}

@@ -67,9 +67,7 @@ class Painted:
     icon: Icon
     painting: Image.Image | None = None
     figure: Image.Image | None = None
-    """Cut out, the size of its painting."""
     tries: list[Try] = field(default_factory=list)
-    """Every painting of it, the one kept last."""
 
     @property
     def seconds(self) -> float:

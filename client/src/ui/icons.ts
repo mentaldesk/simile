@@ -1,6 +1,6 @@
 import manifest from '../../../content/icons/icons.json';
 
-const files = import.meta.glob<string>('../../../content/icons/*.webp', {
+const files = import.meta.glob<string>(['../../../content/icons/*.webp', '!../../../content/icons/preview.webp'], {
   eager: true,
   query: '?url',
   import: 'default',

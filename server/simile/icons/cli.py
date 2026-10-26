@@ -11,7 +11,8 @@ def busy() -> list[str]:
     """Other image models on this Mac, painting creatures or icons too."""
     import subprocess
 
-    from simile.dolls.flux import SHELLS, busy, ours
+    from simile.dolls.flux import SHELLS, ours
+    from simile.dolls.flux import busy as flux_busy
 
     mine = ours()
     run = subprocess.run(["pgrep", "-fl", OTHERS], capture_output=True, text=True)
@@ -21,7 +22,7 @@ def busy() -> list[str]:
         if line.partition(" ")[0] not in mine
         and Path(line.partition(" ")[2].split(" ", 1)[0]).name not in SHELLS
     ]
-    return busy() + found
+    return flux_busy() + found
 
 
 def wait_for_gpu(log=typer.echo) -> None:

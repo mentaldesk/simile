@@ -89,7 +89,6 @@ const OWN: Record<BodyPart, string> = {
   feet: 'Your own feet.',
 };
 
-/** The picture at a part's place: their own organ, its stitched socket once sold, or the bionic fitted there. */
 export function pictureOf({ part, state, fitted }: Pick<BodyRow, 'part' | 'state' | 'fitted'>): string {
   if (state === 'sold') return `${ORGANS[part]}_sold`;
   if (state === 'bionic' && fitted) return PICTURES[fitted];
@@ -102,7 +101,6 @@ export function gradeOf(bionic: Bionic | undefined): [number, number] | undefine
 
 export type PartDetails = { title: string; state: BodyRow['state']; status: string; lines: string[] };
 
-/** What hovering over a part, or picking it with Up and Down, says about it. */
 export function partDetails({ part, label, state, text, fitted }: BodyRow): PartDetails {
   if (state === 'sold') {
     return { title: label, state, status: 'Sold', lines: ['Stitched shut where it was.'] };

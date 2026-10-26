@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
 import { bionicName, bodyRows, CharacterPanel, gear, known, TABS, vitals } from './character-panel';
 
-// jsdom tests load modules as the browser does, which may not reach content/: character-body.test.ts checks the real icons.
 vi.mock('./icons', () => ({ iconUrl: (id: string) => `/icons/${id}.webp` }));
 
 const item = (id: string, name: string, weight: number, extra: Partial<Item> = {}): Item => ({

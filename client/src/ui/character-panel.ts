@@ -283,7 +283,6 @@ export class CharacterPanel {
     return [list, el('h3', 'Effects'), effects.length ? ailments : el('p', 'None.', 'character-empty')];
   }
 
-  /** The body as a chart, each part at its place: their own organ, a stitched socket, or a bionic. */
   private body(rows: BodyRow[]): HTMLElement {
     const shown = el('div', undefined, 'character-body');
     const map = shown.appendChild(el('div', undefined, 'character-map'));
