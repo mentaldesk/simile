@@ -14,6 +14,7 @@ from simile.schema import (
     Tile,
     TileArea,
 )
+from simile.street.finds import COPPER_WIRE, LITHIUM_CELL, searchable, under
 from simile.street.jump import OWN_JUMP
 from simile.street.plan import Pickup, Plan
 from simile.street.village import GROUND, Building, plug, street
@@ -48,6 +49,8 @@ ALCOVE_SECRET = "metro_secret_alcove"
 GANTRY = GROUND - 7
 """The row the gantry over the west tunnel stands on, with three rows of room under its roof."""
 GANTRY_SECRET = "metro_secret_gantry"
+TICKET_MACHINE = "metro_ticket_machine"
+FRIDGE = "metro_fridge"
 
 SALVAGE = "salvage"
 SECRET = "secret"
@@ -111,6 +114,10 @@ def entrance(plan: Plan) -> None:
     secret(plan, "metro_secret_stairwell", 8, LANDING - 2, OWN_JUMP, money=25.0)
     plan.piece("turnstile", 11, HALL, 2, 1)
     plan.piece("ticket_machine", 15, HALL - 1, 1, 2)
+    area = TileArea(x=15, y=HALL - 1, width=1, height=2)
+    searchable(
+        plan, TICKET_MACHINE, "Dead ticket machine", area, under(area), [COPPER_WIRE, LITHIUM_CELL]
+    )
 
 
 def platform(plan: Plan) -> None:
@@ -148,6 +155,9 @@ def tunnel(plan: Plan) -> None:
     salvage(plan, 2, 63, GROUND)
     plan.piece("bedroll", 65, GROUND, 2, 1)
     salvage(plan, 3, 68, GROUND)
+    plan.piece("fridge", 70, GROUND - 1, 1, 2)
+    area = TileArea(x=70, y=GROUND - 1, width=1, height=2)
+    searchable(plan, FRIDGE, "Dead fridge", area, under(area), [COPPER_WIRE, LITHIUM_CELL])
     plan.piece("breaker_box", 72, GROUND - 1, 1, 2)
     area = TileArea(x=72, y=GROUND - 1, width=1, height=2)
     plug(plan, PLUG, "Maintenance plug", area, Tile(x=72, y=GROUND))
