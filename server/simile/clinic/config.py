@@ -1,12 +1,14 @@
-from pydantic import BaseModel, ConfigDict, Field
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.llm import Model
-from simile.schema import Bionic, Id, Item
+from simile.schema import Bionic, Id, Item, Recipe
 from simile.street.sewers import APEX_ACTUATOR
 
 
 class Offer(BaseModel):
-    """A bionic the doctor fits: what it's called, what it costs, what it does and what it takes."""
+    """One of stage 1's grades of legs, which the doctor fits for its price alone until P18."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -49,14 +51,127 @@ OFFERS: dict[Bionic, Offer] = {
         after=(Bionic.SPRING_LEGS, Bionic.BLADE_LEGS),
         needs=APEX_ACTUATOR,
     ),
-    Bionic.DATAJACK: Offer(
-        name="Datajack",
-        price=150.0,
-        does="plug into basic machines, like the maintenance lift down to the sewers",
-    ),
-    Bionic.INFRARED_EYE: Offer(
-        name="Infrared eye", price=200.0, does="see the flush on someone's face when they lie"
-    ),
+}
+
+
+class Procedure(BaseModel):
+    """A bionic the doctor builds from its recipe, for a player who knows it."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    recipe: Recipe
+    does: str = Field(min_length=1, description="What it lets them do, for the doctor to say.")
+    buys: float | None = Field(
+        default=None,
+        ge=0,
+        allow_inf_nan=False,
+        description="What the doctor pays for the recipe, once. None if she won't buy it.",
+    )
+
+
+CELL: list[Bionic] = [Bionic.POWER_CELL]
+
+
+def _procedure(
+    bionic: Bionic,
+    name: str,
+    parts: dict[str, int],
+    credits: float,
+    does: str,
+    buys: float | None,
+    after: list[Bionic] = CELL,
+) -> Procedure:
+    recipe = Recipe(bionic=bionic, name=name, parts=parts, credits=credits, after=after)
+    return Procedure(recipe=recipe, does=does, buys=buys)
+
+
+PROCEDURES: dict[Bionic, Procedure] = {
+    procedure.recipe.bionic: procedure
+    for procedure in (
+        _procedure(
+            Bionic.POWER_CELL,
+            "Power cell",
+            {"lithium_cell": 3, "charge_controller": 1},
+            100.0,
+            "run every other bionic, charging at a plug instead of eating",
+            None,
+            after=[],
+        ),
+        _procedure(
+            Bionic.DATAJACK,
+            "Datajack",
+            {"copper_wire": 3, "usb_c_connector": 1},
+            100.0,
+            "plug into basic machines, like the maintenance lift down to the sewers",
+            15.0,
+        ),
+        _procedure(
+            Bionic.BIONIC_LEGS,
+            "Bionic legs",
+            {"pump_impeller": 2, "copper_coil": 1},
+            150.0,
+            "run faster, jump further and kick harder",
+            25.0,
+        ),
+        _procedure(
+            Bionic.SPRING_FEET,
+            "Spring feet",
+            {"brass_fitting": 2, "float_valve": 1},
+            150.0,
+            "jump higher, up to ledges out of reach",
+            25.0,
+        ),
+        _procedure(
+            Bionic.INFRARED_EYE,
+            "Infrared eye",
+            {"infrared_lens": 1},
+            200.0,
+            "see the flush on someone's face when they lie, and see in the dark without a lamp",
+            30.0,
+        ),
+        _procedure(
+            Bionic.POWER_CELL_2,
+            "Power cell, grade 2",
+            {"old_battery": 4, "copper_coil": 2},
+            250.0,
+            "run more bionics at once than the first cell",
+            40.0,
+            after=[],
+        ),
+        _procedure(
+            Bionic.BIONIC_LEGS_2,
+            "Bionic legs, grade 2",
+            {"pump_impeller": 2, "servo_motor": 2},
+            300.0,
+            "run faster and kick harder than the first bionic legs",
+            45.0,
+        ),
+        _procedure(
+            Bionic.SPRING_FEET_2,
+            "Spring feet, grade 2",
+            {"pressure_gauge": 2, "brass_fitting": 3},
+            300.0,
+            "jump higher than the first spring feet",
+            45.0,
+        ),
+        _procedure(
+            Bionic.POWER_CELL_3,
+            "Power cell, grade 3",
+            {"old_battery": 6, "apex_board": 1},
+            600.0,
+            "run more bionics still",
+            90.0,
+            after=[],
+        ),
+        _procedure(
+            Bionic.BIONIC_LEGS_3,
+            "Bionic legs, grade 3",
+            {APEX_ACTUATOR.id: 1, "servo_motor": 2},
+            700.0,
+            "run the fastest and kick the hardest of any legs",
+            105.0,
+        ),
+    )
 }
 
 
@@ -73,7 +188,14 @@ class ClinicConfig(BaseModel):
         allow_inf_nan=False,
         description="What the doctor pays for a kidney. They buy one, never the last.",
     )
-    offers: dict[Bionic, Offer] = Field(default=OFFERS, description="The bionics they fit.")
+    offers: dict[Bionic, Offer] = Field(
+        default=OFFERS, description="Stage 1's grades of legs, fitted for their price alone."
+    )
+    procedures: dict[Bionic, Procedure] = Field(
+        default=PROCEDURES,
+        description="Every other bionic, built from its recipe for a player who knows it, after "
+        "the recipe's `after`: the power cell, for everything but a cell.",
+    )
     stock: dict[Bionic, int] = Field(
         default=dict.fromkeys(Bionic, 1),
         description="How many of each bionic the doctor had, counting any fitted in the player. "
@@ -92,6 +214,18 @@ class ClinicConfig(BaseModel):
     timeout: float = Field(
         default=30.0, gt=0, description="Real seconds a reply may take before it's dropped."
     )
+
+    @model_validator(mode="after")
+    def _each_bionic_once(self) -> Self:
+        if wrong := [b for b, p in self.procedures.items() if p.recipe.bionic is not b]:
+            raise ValueError(f"a procedure is keyed by its recipe's bionic: {wrong}")
+        if both := set(self.offers) & set(self.procedures):
+            raise ValueError(f"a bionic is an offer or a procedure, not both: {both}")
+        return self
+
+    @property
+    def recipes(self) -> dict[Bionic, Recipe]:
+        return {bionic: procedure.recipe for bionic, procedure in self.procedures.items()}
 
 
 DEFAULT_CONFIG = ClinicConfig()

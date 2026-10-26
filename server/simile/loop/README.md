@@ -15,15 +15,24 @@ lights its lamp in the dark.
 2. **The legs and a secret.** The high ledge is out of reach on its own legs. It's fitted with the
    hydraulic legs and picks up the ledge's 60.
 3. **The datajack and the lift.** It picks up the metro's secrets and salvage, nearest first,
-   selling once nothing more fits, until it can pay for the datajack. The server refuses it the
+   selling once nothing more fits, until it can pay for the datajack's credits. The server refuses it the
    sewers until it's fitted. Then the dead terminal gives up `lift_log`, and the lift takes it down.
 4. **The sewers' clue.** The hatch is out of reach on its own legs, and gives up `hatch_log`. It
    gathers the sewers' salvage and comes back up to sell it.
 5. **The eye and a lie.** It does a round of the metro and the sewers each day, skipping the time
    until the salvage lies there again, until it can pay for the eye. Then it asks an attacker
    where they were the night Aris was attacked. Their alibi flushes, and the journal marks it.
+   The attacker it asks is one who stays put for two minutes in the world served from the eye
+   beat's save (`Saves.stays`), since a save keeps less of what someone's doing than the sim, and
+   the browser takes a while to get there.
 6. **The village reacts.** It finds Aris's notes, and talks to the residents most against bionics
    until one turns it down. Residents who saw its bionics remember them.
+
+**A stand-in until P6 and P19** (`stand_in.py`): the clinic now fits the datajack and the eye only
+from a known recipe, with its parts, once a power cell is in, and nothing in the world teaches a
+recipe or holds those parts yet. So before each, the loop fits the cell, teaches the recipe and
+hands over its parts, straight into the server's player. P19 replays the loop in stage 2's order
+and deletes it.
 
 Every coin comes from the kidney, salvage and secrets, through the ledger. The fake LLM is
 `Covers`, the canned one, except that a resident set up to lie about where they'd been gives their

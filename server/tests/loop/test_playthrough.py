@@ -40,13 +40,14 @@ def test_a_kidney_and_what_the_tunnels_pay_buy_every_bionic(result: Result) -> N
     body = result.player.body
 
     assert (body.left_kidney, body.right_kidney) == ("sold", "present")
-    assert (body.legs, body.vertebra, body.left_eye) == (
+    assert (body.legs, body.vertebra, body.left_eye, body.stomach) == (
         Bionic.HYDRAULIC_LEGS,
         Bionic.DATAJACK,
         Bionic.INFRARED_EYE,
+        Bionic.POWER_CELL,
     )
     assert set(result.earned) == {Kind.SALVAGE, Kind.FOUND, Kind.PURCHASE}
-    assert result.earned[Kind.PURCHASE] == -(80 + 150 + 200)
+    assert result.earned[Kind.PURCHASE] == -(80 + 100 + 200)
     assert result.earned[Kind.FOUND] >= 25 + 40 + 60
     assert sum(result.earned.values()) == pytest.approx(result.player.money)
 

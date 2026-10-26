@@ -12,7 +12,7 @@ from simile.clinic.doctor import DOCTOR
 from simile.economy import OUTSIDE, PLAYER, Kind
 from simile.economy.economy import economy_of
 from simile.persistence import player_of
-from simile.schema import PLAYER_ID, Player
+from simile.schema import PLAYER_ID, Bionic, Mind, Player
 from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
 
@@ -89,18 +89,12 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_legs(make_package: Mak
     assert [f["bionic"] for f in at_the_clinic["buyer"]["fittings"]] == [
         "hydraulic_legs",
         "sprint_legs",
-        "datajack",
-        "infrared_eye",
     ]
     assert sold["player"]["body"]["left_kidney"] == "sold"
     assert "parts" not in sold["buyer"]
     assert fitted["player"]["body"]["legs"] == "hydraulic_legs"
     assert fitted["player"]["money"] == 20
-    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == [
-        "spring_legs",
-        "datajack",
-        "infrared_eye",
-    ]
+    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == ["spring_legs"]
     entries = [(e.kind, e.payer, e.payee, e.amount) for e in economy.ledger.entries]
     assert entries == [
         (Kind.SALVAGE, OUTSIDE, PLAYER, 100),
@@ -109,3 +103,27 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_legs(make_package: Mak
     assert economy.ledger.net(PLAYER) == 20
     assert economy.ledger.gap(economy.money) == pytest.approx(0)
     assert Player.model_validate(fitted["player"]).humanity < 1
+
+
+def test_the_player_sells_a_recipe_they_know_and_still_knows_it(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+    player_of(app).mind = Mind(recipes=[Bionic.POWER_CELL, Bionic.DATAJACK])
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        greeted = next_of(ws, "player_state")
+        player, tick = player_of(app), world_of(app).loop.tick
+        ws.send_json({"type": "player_move", "position": {"x": 4, "y": 2, "map": CLINIC.map}})
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        client.portal.call(tick)
+        at_the_clinic = next_of(ws, "player_state")
+        ws.send_json({"type": "sell_recipe", "recipe": "datajack"})
+        until(client, lambda: player.money > 0)
+        client.portal.call(tick)
+        sold = next_of(ws, "player_state")
+
+    assert [recipe["bionic"] for recipe in greeted["recipes"]] == ["power_cell", "datajack"]
+    assert greeted["recipes"][1]["parts"] == {"copper_wire": 3, "usb_c_connector": 1}
+    assert at_the_clinic["buyer"]["recipes"] == {"datajack": 15}
+    assert sold["player"]["money"] == 15
+    assert sold["player"]["mind"] == {"recipes": ["power_cell", "datajack"], "sold": ["datajack"]}
+    assert "recipes" not in sold["buyer"]

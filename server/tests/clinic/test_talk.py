@@ -14,7 +14,7 @@ from simile.economy.economy import Economy
 from simile.llm import FakeProvider, LLMClient, LLMError
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, SOLD, Bionic, Body, Line, Player
+from simile.schema import PLAYER_ID, SOLD, Bionic, Body, Item, ItemKind, Line, Mind, Player, lamp
 from simile.sim import (
     Clock,
     ConversationEnded,
@@ -199,12 +199,51 @@ async def test_the_doctor_knows_the_fixed_prices_and_what_they_would_do_now() ->
         assert f"{offer.name}, {offer.price:g}," in system, bionic
     assert f"kidney for {DEFAULT_CONFIG.kidney:g}" in system
     assert "copper wire 6" in system
+    assert "a recipe the customer knows" in system
+    assert "Nothing you build runs without a power cell in place of the stomach" in system
+    for recipe in DEFAULT_CONFIG.recipes.values():
+        assert recipe.name not in system, "no menu of every bionic"
     assert "hydraulic legs where their own legs were" in prompt
     assert "the scar where you took a kidney" in prompt
-    assert "fit spring legs for 240, fit datajack for 150 and fit infrared eye for 200." in prompt
+    assert "What you'd do for them now: fit spring legs for 240." in prompt
     assert "Spring legs, 240, in place of their hydraulic legs, which you take back" in system
     assert "and only with an Apex actuator they bring" in system
     assert "buy a kidney" not in prompt
+
+
+async def test_what_she_says_follows_the_recipes_they_know() -> None:
+    mind = Mind(recipes=[Bionic.POWER_CELL, Bionic.DATAJACK, Bionic.INFRARED_EYE])
+    items = [lamp(), Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)]
+    depot = Depot(player=Player(money=10, items=items, mind=mind))
+    depot.stand(INSIDE)
+    await depot.run()
+
+    [request] = depot.provider.requests
+    prompt = request.messages[-1].content
+    assert (
+        "build the power cell for 100, using up 3 lithium cell and 1 charge controller, though"
+        in prompt
+    )
+    assert "buy their recipe for the datajack for a one-off 15" in prompt
+    assert "buy their recipe for the power cell" not in prompt
+    assert (
+        "They know how to build the datajack and infrared eye, but not before a power cell"
+        in prompt
+    )
+    hint = prompt.split("you might hint at")[1]
+    assert "the bionic legs, in place of their own legs" in hint
+    assert "the spring feet" in hint and "datajack" not in hint and "grade 2" not in hint
+
+
+async def test_she_hints_at_the_cell_to_someone_who_knows_nothing() -> None:
+    depot = Depot()
+    depot.stand(INSIDE)
+    await depot.run()
+
+    [request] = depot.provider.requests
+    hint = request.messages[-1].content.split("you might hint at")[1]
+    assert "the power cell, in place of their stomach" in hint
+    assert "grade" not in hint
 
 
 def test_a_reply_is_spoken_a_sentence_at_a_time_without_a_name_label() -> None:

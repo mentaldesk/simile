@@ -1,11 +1,28 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Buyer, ClientMessage, Fitting, Item, Player } from '../net';
-import { ClinicPanel, deals, note } from './clinic-panel';
+import type { Buyer, ClientMessage, Fitting, Item, Player, Recipe } from '../net';
+import { ClinicPanel, deals, needed, needs, note } from './clinic-panel';
 
 const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
 const LEGS: Fitting = { bionic: 'hydraulic_legs', name: 'Hydraulic legs', price: 80, parts: ['legs'] };
 const EYE: Fitting = { bionic: 'infrared_eye', name: 'Infrared eye', price: 200, parts: ['left_eye', 'right_eye'] };
+const JACK: Fitting = { bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] };
+const JACK_RECIPE: Recipe = {
+  bionic: 'datajack',
+  name: 'Datajack',
+  parts: { copper_wire: 3, usb_c_connector: 1 },
+  credits: 100,
+  replaces: ['vertebra'],
+  after: ['power_cell'],
+};
+const CELL_RECIPE: Recipe = {
+  bionic: 'power_cell',
+  name: 'Power cell',
+  parts: { lithium_cell: 3 },
+  credits: 100,
+  replaces: ['stomach'],
+  after: [],
+};
 const CLINIC: Buyer = {
   place: 'clinic',
   name: 'The Clinic',
@@ -30,10 +47,40 @@ describe('deals', () => {
       { kind: 'talk', label: 'Talk to Annelie Joubert', npcId: 'annelie' },
       { kind: 'sell', label: 'Sell your copper wire ×2', price: 12 },
       { kind: 'part', label: 'Sell a kidney', price: 100, part: 'left_kidney' },
-      { kind: 'fit', label: 'Hydraulic legs, in place of your legs', price: 80, bionic: 'hydraulic_legs', part: 'legs', short: false },
-      { kind: 'fit', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', short: true },
-      { kind: 'fit', label: 'Infrared eye, in place of your right eye', price: 200, bionic: 'infrared_eye', part: 'right_eye', short: true },
+      { kind: 'fit', label: 'Hydraulic legs, in place of your legs', price: 80, bionic: 'hydraulic_legs', part: 'legs', needs: [], short: false },
+      { kind: 'fit', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', needs: [], short: true },
+      { kind: 'fit', label: 'Infrared eye, in place of your right eye', price: 200, bionic: 'infrared_eye', part: 'right_eye', needs: [], short: true },
     ]);
+  });
+
+  it('says what each fitting from a recipe uses up, what they have of it, and the recipes she buys', () => {
+    const buyer: Buyer = { ...CLINIC, parts: undefined, fittings: [JACK], recipes: { datajack: 15 } };
+    const found = deals(buyer, player(500, [WIRE, WIRE]), undefined, [CELL_RECIPE, JACK_RECIPE]);
+
+    expect(found).toEqual([
+      { kind: 'sell', label: 'Sell your copper wire ×2', price: 12 },
+      {
+        kind: 'fit',
+        label: 'Datajack, in place of a vertebra',
+        price: 100,
+        bionic: 'datajack',
+        part: 'vertebra',
+        needs: [
+          { name: 'copper wire', count: 3, have: 2 },
+          { name: 'usb c connector', count: 1, have: 0 },
+        ],
+        short: true,
+      },
+      { kind: 'recipe', label: 'Sell your recipe: Datajack', price: 15, bionic: 'datajack' },
+    ]);
+    expect(needed(needs(JACK_RECIPE, [WIRE]))).toBe('copper wire 1/3 · usb c connector 0/1');
+  });
+
+  it('is short of nothing once they have the parts and the credits', () => {
+    const connector: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
+    const [fit] = deals({ ...CLINIC, prices: {}, parts: undefined, fittings: [JACK] }, player(100, [WIRE, WIRE, WIRE, connector]), undefined, [JACK_RECIPE]);
+
+    expect(fit).toMatchObject({ kind: 'fit', short: false, needs: [{ have: 3 }, { name: 'usb-c connector', have: 1 }] });
   });
 
   it('leaves out what the doctor no longer buys or fits, and talking with nobody to talk to', () => {
@@ -52,6 +99,12 @@ describe('note', () => {
 
   it('says what a fitting costs against what they have', () => {
     expect(note(eye, false, 20)).toBe('It costs 200, and you have 20.');
+  });
+
+  it('says which part a fitting is short of first', () => {
+    const [jack] = deals({ ...CLINIC, prices: {}, parts: undefined, fittings: [JACK] }, player(500, [WIRE]), undefined, [JACK_RECIPE]);
+
+    expect(note(jack, false, 500)).toBe('It needs 3 copper wire, and you have 1.');
   });
 });
 
@@ -156,6 +209,19 @@ describe('ClinicPanel', () => {
     expect(section().querySelector('.clinic-selected')!.textContent).toBe('Hydraulic legs, in place of your legs80');
     press('Enter');
     expect(talk).not.toHaveBeenCalled();
+  });
+
+  it('shows what a fitting needs under it, and sells a recipe on one Enter', () => {
+    const buyer: Buyer = { ...CLINIC, prices: {}, parts: undefined, fittings: [JACK], recipes: { datajack: 15 } };
+    panel.open(buyer, player(500, [WIRE]), undefined, [JACK_RECIPE]);
+
+    expect(rows()).toEqual(['Datajack, in place of a vertebracopper wire 1/3 · usb c connector 0/1100', 'Sell your recipe: Datajack15']);
+    expect(document.querySelector('.clinic li small')!.textContent).toBe('copper wire 1/3 · usb c connector 0/1');
+    press('Enter');
+    expect(sent).toEqual([]);
+    press('ArrowDown');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell_recipe', recipe: 'datajack' }]);
   });
 
   it('closes on Esc or E, and a click chooses and acts', () => {

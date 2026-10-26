@@ -17,40 +17,56 @@ like theirs (`simile greetings annelie`): both commands read her through `load_d
 
 ## What she buys and fits
 
-`ClinicConfig` holds every price and the stock. They're sim facts: the doctor voices them, and
-nothing said to her changes them.
+`ClinicConfig` holds every price, recipe and the stock. They're sim facts: the doctor voices them,
+and nothing said to her changes them. She buys a kidney for 100, one while they have both, and
+salvage at the economy's prices (`simile.player`'s *Selling*).
 
-| | Price | And |
-|---|--:|---|
-| A kidney, bought | 100 | One, while they have both |
-| Hydraulic legs | 80 | Their legs |
-| Sprint legs | 80 | Their legs |
-| Spring legs | 240 | The hydraulic legs |
-| Blade legs | 240 | The sprint legs |
-| Premium legs | 600 | The spring or blade legs, and an Apex actuator |
-| Datajack | 150 | A vertebra |
-| Infrared eye | 200 | Either eye |
+**From recipes** (P4). Every stage 2 bionic is a `Procedure` in `procedures`: its `Recipe` (P1),
+what it does, for her to say, and what she pays for the recipe. She builds one only for a player
+who knows its recipe (`Player.mind`), for its credits and the parts it lists, which the fitting uses
+up, and only once everything in its `after` is fitted: the power cell, for everything but a cell.
+Each `Fitting` is built from its recipe, so the two can't drift.
 
-She has one of each bionic (`stock`), so once fitted it's gone. What's in stock is the stock less
-what the player has fitted, so nothing more is saved. She buys salvage too, at the economy's prices
-(`simile.player`'s *Selling*).
+| Bionic | In place of | Credits | Parts | She buys the recipe for |
+|---|---|--:|---|--:|
+| Power cell | The stomach | 100 | 3 lithium cell, 1 charge controller | — |
+| Datajack | A vertebra | 100 | 3 copper wire, 1 USB-C connector | 15 |
+| Bionic legs | The legs | 150 | 2 pump impeller, 1 copper coil | 25 |
+| Spring feet | The feet | 150 | 2 brass fitting, 1 float valve | 25 |
+| Infrared eye | Either eye | 200 | 1 infrared lens | 30 |
+| Power cell, grade 2 | The stomach | 250 | 4 old battery, 2 copper coil | 40 |
+| Bionic legs, grade 2 | The legs | 300 | 2 pump impeller, 2 servo motor | 45 |
+| Spring feet, grade 2 | The feet | 300 | 2 pressure gauge, 3 brass fitting | 45 |
+| Power cell, grade 3 | The stomach | 600 | 6 old battery, 1 Apex board | 90 |
+| Bionic legs, grade 3 | The legs | 700 | 1 Apex actuator, 2 servo motor | 105 |
 
-**Legs come in grades** (#389), two branches and then premium, each a bionic in place of the legs.
-`street/jump.py` says what each does. The hydraulic and sprint legs go in place of the player's
-own. Each grade after them goes in place of the legs before it (`Offer.after`), which she takes
-back, so she stocks the next grade only once the one before is fitted and a branch, once chosen,
-is the way to premium. The premium legs also need a part they bring (`Offer.needs`), the Apex
-actuator, which only S9's sewers will hold (`simile.street.sewers.APEX_ACTUATOR`). She offers them
-only while they carry it, and the fitting uses it up.
+A higher grade goes in place of the player's own part or a lower grade of its line, which she
+takes back. The lithium cells, charge controller, USB-C connector and infrared lens are P6's to
+place in the world; the rest are the sewers' salvage.
 
-- `Clinic.keep` adds `parts` and `fittings` to the clinic's `player_state` buyer, through
-  `simile.player`'s `keepers_of(app)`: what she'd buy of their body now, and each bionic she'd fit,
-  with the parts it can go in place of that are still theirs, or the legs an upgrade follows.
-- `sell_part` sells a kidney: the economy pays the player from `OUTSIDE` as `salvage` at the
-  clinic, and the part is `sold`.
-- `fit` takes the price from the player to `OUTSIDE` as a `purchase` at the clinic, and the bionic
-  goes in place of the part. Nothing happens if they can't pay, so `Economy.pay` never raises.
-- Both only work in the clinic. The next `player_state` follows on the sim loop.
+**Selling recipes.** She buys each recipe they know once, for its one-off sum. They still know it,
+and she still builds from it. She won't buy the power cell's, which she teaches.
+
+**Stage 1's legs** (#389) are `offers`, fitted for their price alone until P18 retires them: the
+hydraulic and sprint legs (80) in place of the player's own, then the spring and blade legs (240)
+in place of each, and the premium legs (600) in place of either, with an Apex actuator they bring.
+`street/jump.py` says what each does. Each goes in place of the legs before it (`Offer.after`),
+which she takes back, and the premium legs are offered only while they carry the actuator.
+
+She has one of each bionic (`stock`), so once fitted it's gone.
+
+- `Clinic.keep` adds `parts`, `fittings` and `recipes` to the clinic's `player_state` buyer,
+  through `simile.player`'s `keepers_of(app)`: what she'd buy of their body now, each bionic she'd
+  fit, whether or not they can pay or have the parts, with the parts of their body it can go in
+  place of, and what she'd pay for each recipe they know.
+- The `running` hook adds every recipe to `simile.player`'s `recipes_of(app)`, so `player_state`
+  carries each one they know in full.
+- `sell_part` sells a kidney, and `sell_recipe` a recipe: the economy pays the player from
+  `OUTSIDE` as `salvage` at the clinic, and the part is `sold`, or the recipe is in `mind.sold`.
+- `fit` takes the price from the player to `OUTSIDE` as a `purchase` at the clinic, uses up the
+  parts, and the bionic goes in place of the part. Nothing happens if they can't pay or are short
+  of a part, so `Economy.pay` never raises.
+- They only work in the clinic. The next `player_state` follows on the sim loop.
 
 ## Talking to her
 
@@ -64,24 +80,26 @@ but outside B2's engine, which only knows residents. It publishes `ConversationS
 - **Replies.** `player_say` to her, while in the clinic, gets a reply at the player's priority, one
   sentence a line, paced by each line's length.
 - **Ending.** It ends when they walk out, or after `silence` (60) sim seconds with nothing said.
-- **The prompt.** The system prompt is who she is and the clinic's fixed price list, with no
-  haggling. Each turn adds what she can see of them (their bionics, a sold kidney) and what she'd
-  buy or fit now, so what she says follows the sim. She never takes money in talk: the player
-  trades at the counter, with E.
+- **The prompt.** The system prompt is who she is, her fixed prices for a kidney and salvage, how
+  she builds from recipes, and stage 1's legs, with no haggling: no menu of every bionic. Each turn
+  adds what she can see of them (their bionics, a sold kidney), what she'd buy or fit now, with
+  the parts they're short of, the recipes they know that wait for the cell, and a bionic or two
+  they don't know the recipe for, to hint at without a price. So what she says follows what they
+  know. She never takes money in talk: the player trades at the counter, with E.
 
 B2's `player_say` handler logs that it ignored a line to her, since she isn't a resident.
 
 ## Pricing
 
-The prices carry S15's loop: a kidney, then a round of the metro's salvage with daily respawns,
-and its secrets, against meals at 5–10. The kidney buys the hydraulic legs with 20 over. On them a
-round is worth 43, all but the valve up in the alcove, and the secrets they reach 125: the
-stairwell's, the catwalk's and the high ledge's. Those and two days' rounds, less two café meals a
-day, buy the datajack with 61 over. The eye then takes about four days of the metro alone, which
-the sewers (S9) should shorten. `test_the_prices_carry_s15s_loop` checks it.
+**The kidney pays for the power cell.** The cell's 100 credits are what the kidney fetches. On
+their own legs the metro gives 65 in secrets, the stairwell's and the catwalk's, and 25 a round of
+salvage, so two days of it, less two café meals a day, come to 95: not enough. A day of it and the
+datajack's schematic, sold, don't either. `test_the_kidney_pays_for_the_cell_and_the_metro_on_foot_doesnt_in_two_days`
+checks it. The cell's parts, from P6, cost nothing but finding them.
 
-The upgrades rise steeply and wait for the loop. A grade 2 costs three times a grade 1 and more
-than the eye: about seven days of the metro's rounds, less meals, after the eye. Premium costs two
-and a half times that, about fifteen days of rounds on the spring legs, and the part from the
-sewers. The sprint branch reaches less of the metro's salvage, 25 a round, so it leans on the
-sewers more. `test_each_grade_of_legs_costs_steeply_more_than_the_one_before` checks the steps.
+Each grade of a line costs more than the one before. Recipes sell for about 15% of what
+they cost to build, so selling one is a little money now, never the way to a bionic.
+
+Stage 1's legs keep S15's prices: a grade 2 costs three times a grade 1 and more than the eye, and
+premium two and a half times that. `test_each_grade_of_the_old_legs_costs_steeply_more_than_the_one_before`
+checks the steps.

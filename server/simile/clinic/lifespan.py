@@ -13,8 +13,15 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.conversation import line_ids
     from simile.economy.economy import economy_of
     from simile.persistence import player_of
+    from simile.player.sync import recipes_of
     from simile.player.trade import keepers_of
-    from simile.protocol import FitMessage, PlayerSayMessage, SellPartMessage, hub_of
+    from simile.protocol import (
+        FitMessage,
+        PlayerSayMessage,
+        SellPartMessage,
+        SellRecipeMessage,
+        hub_of,
+    )
     from simile.sim import world_of
     from simile.world import movement_of
 
@@ -32,11 +39,13 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     )
     keepers = keepers_of(app)
     keepers[clinic.config.place] = clinic.keep
+    recipes_of(app).update(clinic.config.recipes)
     snapshot = hub.snapshot
     hub.snapshot = lambda: standing(snapshot(), doctor, movement, talk.live())
     stops = [
         hub.subscribe(SellPartMessage, lambda message: clinic.sell_part(message.part)),
         hub.subscribe(FitMessage, lambda message: clinic.fit(message.bionic, message.part)),
+        hub.subscribe(SellRecipeMessage, lambda message: clinic.sell_recipe(message.recipe)),
         hub.subscribe(PlayerSayMessage, lambda message: talk.say(message.text, message.target)),
         world.loop.register(talk),
     ]

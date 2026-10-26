@@ -4,7 +4,7 @@ import pytest
 
 from simile.player.sync import PlayerSync
 from simile.protocol import Buyer, Meal, PlayerStateMessage
-from simile.schema import SOLD, Item, ItemKind, MapTile, Pile, Player, lamp
+from simile.schema import SOLD, Bionic, Item, ItemKind, MapTile, Mind, Pile, Player, Recipe, lamp
 
 HOME = Meal(place="maker_space", name="home", price=0)
 TRADER = Buyer(place="scrap_stall", name="The scrap trader's stall", prices={})
@@ -131,3 +131,18 @@ def test_with_a_change_it_sends_hunger_as_it_is() -> None:
 
     assert message.player.hunger == 0.503
     assert sent.after(lambda: setattr(player, "hunger", 0.51)) == []
+
+
+def test_it_sends_each_recipe_they_know_in_full() -> None:
+    jack = Recipe(bionic=Bionic.DATAJACK, name="Datajack", parts={"copper_wire": 3}, credits=100)
+    book = {Bionic.DATAJACK: jack}
+    player, sent = Player(), []
+    sync = PlayerSync(
+        player, lambda: None, sent.append, recipes=lambda: [book[b] for b in player.mind.recipes]
+    )
+
+    player.mind = Mind(recipes=[Bionic.DATAJACK])
+    sync.update()
+
+    [message] = sent
+    assert message.recipes == [jack]

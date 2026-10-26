@@ -15,19 +15,40 @@ from simile.schema import (
 from simile.social.config import DEFAULT_BIONICS, BionicsConfig
 
 TOPIC = "bionics"
-LEG_NAMES: dict[Bionic, str] = {legs: legs.replace("_", " ") for legs in LEGS}
+LEG_NAMES: dict[Bionic, str] = {
+    **{legs: legs.replace("_", " ") for legs in LEGS},
+    Bionic.BIONIC_LEGS: "bionic legs",
+    Bionic.BIONIC_LEGS_2: "faster bionic legs",
+    Bionic.BIONIC_LEGS_3: "fastest bionic legs",
+}
+FEET_NAMES: dict[Bionic, str] = {
+    Bionic.SPRING_FEET: "spring feet",
+    Bionic.SPRING_FEET_2: "higher spring feet",
+}
+CELL_NAMES: dict[Bionic, str] = {
+    Bionic.POWER_CELL: "power cell",
+    Bionic.POWER_CELL_2: "bigger power cell",
+    Bionic.POWER_CELL_3: "biggest power cell",
+}
+PLURAL: frozenset[Bionic] = frozenset({*LEG_NAMES, *FEET_NAMES})
 NAMES: dict[Bionic, str] = {
     **LEG_NAMES,
+    **FEET_NAMES,
+    **CELL_NAMES,
     Bionic.DATAJACK: "datajack",
     Bionic.INFRARED_EYE: "infrared eye",
 }
 FITTED: dict[Bionic, str] = {
     **LEG_NAMES,
+    **FEET_NAMES,
+    **{cell: f"a {name}" for cell, name in CELL_NAMES.items()},
     Bionic.DATAJACK: "a datajack",
     Bionic.INFRARED_EYE: "an infrared eye",
 }
 LOOKS: dict[Bionic, str] = {
     **{legs: f"{name} where their own legs were" for legs, name in LEG_NAMES.items()},
+    **{feet: f"{name} where their own feet were" for feet, name in FEET_NAMES.items()},
+    **{cell: f"a {name}'s charging port low on their belly" for cell, name in CELL_NAMES.items()},
     Bionic.DATAJACK: "a datajack socket in the back of their neck",
     Bionic.INFRARED_EYE: "an infrared eye that glows faintly red in place of one of their own",
 }
@@ -88,7 +109,7 @@ def looks(
         return None
     parts = [f"{name} has {_listed([LOOKS[bionic] for bionic in bionics])}."]
     if new := [bionic for bionic in bionics if bionic in new]:
-        are = "is" if len(new) == 1 and new[0] not in LEGS else "are"
+        are = "is" if len(new) == 1 and new[0] not in PLURAL else "are"
         parts.append(f"The {_listed([NAMES[b] for b in new])} {are} new since you last saw them.")
     parts.append(FEELS[level(tolerance, config)])
     return " ".join(parts)
