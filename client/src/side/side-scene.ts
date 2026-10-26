@@ -12,6 +12,7 @@ import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
+import { CreatureView } from './creatures/view';
 import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { kick, KICK_KEY } from './kick';
@@ -64,6 +65,7 @@ export class SideScene extends Phaser.Scene {
   private content?: Content;
   private pictures!: SideTextures;
   private glints!: PileGlints;
+  private creatures!: CreatureView;
   private street?: StreetView;
   private dark?: DarkView;
   private sockets: Phaser.GameObjects.Graphics[] = [];
@@ -101,6 +103,7 @@ export class SideScene extends Phaser.Scene {
     this.scene.sendToBack();
     this.pictures = new SideTextures(this);
     this.glints = new PileGlints(this);
+    this.creatures = new CreatureView(this);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
     const keyboard = this.input.keyboard!;
@@ -137,6 +140,7 @@ export class SideScene extends Phaser.Scene {
       () => this.street?.destroy(),
       () => this.dark?.destroy(),
       () => this.glints.destroy(),
+      () => this.creatures.destroy(),
       () => this.pictures.destroy(),
     ];
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => cleanups.forEach((cleanup) => cleanup()));
@@ -211,6 +215,7 @@ export class SideScene extends Phaser.Scene {
       street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
+    this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt);
     this.glints.update(content.village, street.map.id, reachables.piles(), time / 1000);
     this.report(player.mapPosition, time / 1000);
   }
