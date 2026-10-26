@@ -1,9 +1,11 @@
 import type { Bionic, Body, BodyPart, Effect, Item, Player, PlayerStateMessage, Recipe } from '../net';
 import { lampHere, lampOf } from '../side/lamp';
 import { callCue } from './call-cue';
+import { CHART, gradeOf, partDetails, pictureOf, PLACES } from './character-body';
 import './character-panel.css';
 import { needs, type Need } from './clinic-panel';
 import { feeling } from './hunger';
+import { iconUrl } from './icons';
 import { level, percent, type Where } from './lamp-gauge';
 import { amount } from './salvage';
 import { CHARACTER_KEY } from './tuning';
@@ -24,6 +26,8 @@ const PARTS: readonly (readonly [BodyPart, string])[] = [
   ['legs', 'Legs'],
   ['feet', 'Feet'],
 ];
+
+const share = (value: number, of: number) => `${Number(((100 * value) / of).toFixed(2))}%`;
 
 const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
@@ -71,14 +75,20 @@ export function vitals(player: Player, where: Where = lampHere): Vitals {
   return { meters, credits: amount(player.money), effects: (player.effects ?? []).map(effectLine) };
 }
 
-export type BodyRow = { part: BodyPart; label: string; state: 'present' | 'sold' | 'bionic'; text: string };
+export type BodyRow = {
+  part: BodyPart;
+  label: string;
+  state: 'present' | 'sold' | 'bionic';
+  text: string;
+  fitted?: Bionic;
+};
 
 export function bodyRows(body: Body, recipes: readonly Recipe[] = []): BodyRow[] {
   return PARTS.map(([part, label]) => {
     const fitted = body[part] ?? 'present';
     if (fitted === 'present') return { part, label, state: 'present', text: 'Your own' };
     if (fitted === 'sold') return { part, label, state: 'sold', text: 'Sold' };
-    return { part, label, state: 'bionic', text: bionicName(fitted, recipes) };
+    return { part, label, state: 'bionic', text: bionicName(fitted, recipes), fitted };
   });
 }
 
@@ -159,6 +169,8 @@ export class CharacterPanel {
   private readonly tabs: HTMLButtonElement[];
   private readonly page: HTMLElement;
   private shown = 0;
+  private part = 0;
+  private map?: { rows: BodyRow[]; slots: HTMLElement[]; details: HTMLElement };
   private state?: PlayerStateMessage;
   private where: Where = { dark: false, plug: false };
   private drawn = '';
@@ -228,6 +240,9 @@ export class CharacterPanel {
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
       event.preventDefault();
       this.showTab((this.shown + (key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length);
+    } else if ((key === 'ArrowUp' || key === 'ArrowDown') && this.map) {
+      event.preventDefault();
+      this.select((this.part + (key === 'ArrowDown' ? 1 : -1) + PARTS.length) % PARTS.length);
     }
   }
 
@@ -242,6 +257,7 @@ export class CharacterPanel {
     if (drawn === this.drawn) return;
     this.drawn = drawn;
     this.tabs.forEach((tab, i) => tab.setAttribute('aria-selected', String(i === this.shown)));
+    this.map = undefined;
     const player = this.state?.player;
     if (!player) {
       this.page.replaceChildren(el('p', 'Not connected, so there’s nothing to show.', 'character-empty'));
@@ -268,11 +284,51 @@ export class CharacterPanel {
   }
 
   private body(rows: BodyRow[]): HTMLElement {
-    const list = el('ul', undefined, 'character-rows');
-    for (const { label, state, text } of rows) {
-      list.appendChild(row(label, el('span', text, `character-${state}`)));
-    }
-    return list;
+    const shown = el('div', undefined, 'character-body');
+    const map = shown.appendChild(el('div', undefined, 'character-map'));
+    const slots = rows.map((each, i) => {
+      const { x, y, w, h, flip } = PLACES[each.part];
+      const slot = map.appendChild(el('button', undefined, `character-slot character-slot-${each.state}`));
+      slot.type = 'button';
+      slot.tabIndex = -1;
+      slot.ariaLabel = `${each.label}: ${each.text}`;
+      slot.dataset.part = each.part;
+      slot.dataset.picture = pictureOf(each);
+      Object.assign(slot.style, {
+        left: share(x - w / 2, CHART.width),
+        top: share(y - h / 2, CHART.height),
+        width: share(w, CHART.width),
+        height: share(h, CHART.height),
+      });
+      const url = iconUrl(slot.dataset.picture);
+      if (url) {
+        const picture = slot.appendChild(el('img', undefined, flip ? 'character-flip' : undefined));
+        picture.src = url;
+        picture.alt = '';
+      }
+      const grade = gradeOf(each.fitted);
+      if (grade) slot.appendChild(el('span', String(grade[0]), 'character-grade'));
+      slot.addEventListener('mouseenter', () => this.select(i));
+      slot.addEventListener('click', () => this.select(i));
+      return slot;
+    });
+    this.map = { rows, slots, details: shown.appendChild(el('div', undefined, 'character-part')) };
+    this.select(this.part);
+    return shown;
+  }
+
+  private select(index: number): void {
+    if (!this.map) return;
+    this.part = index;
+    const { rows, slots, details } = this.map;
+    slots.forEach((slot, i) => slot.classList.toggle('character-picked', i === index));
+    const { title, state, status, lines } = partDetails(rows[index]);
+    details.replaceChildren(
+      el('h3', title),
+      el('b', status, `character-${state}`),
+      ...lines.map((line) => el('p', line)),
+      el('small', '↑↓ or hover for each part'),
+    );
   }
 
   private gear({ rows, load, limit }: Gear): HTMLElement[] {

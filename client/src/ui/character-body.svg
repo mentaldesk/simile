@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240">
+  <defs>
+    <filter id="paper" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="4" seed="7" />
+      <feColorMatrix values="0 0 0 0 0.45  0 0 0 0 0.3  0 0 0 0 0.15  0 0 0 0.9 -0.42" />
+      <feComposite in2="SourceGraphic" operator="in" />
+    </filter>
+    <radialGradient id="edge" cx="50%" cy="50%" r="72%">
+      <stop offset="62%" stop-color="#6b4422" stop-opacity="0" />
+      <stop offset="100%" stop-color="#6b4422" stop-opacity="0.55" />
+    </radialGradient>
+    <g id="squiggle">
+      <path d="M0 0q2-2 4 0t4 0 4 0 4 0m3 0q2-2 4 0t4 0 4 0m3 0q2-2 4 0t4 0" />
+    </g>
+  </defs>
+  <rect width="200" height="240" rx="4" fill="#e6d3ab" />
+  <rect width="200" height="240" rx="4" fill="#fff" filter="url(#paper)" />
+  <rect width="200" height="240" rx="4" fill="url(#edge)" />
+  <g fill="none" stroke="#6b4a2c" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="0.5" opacity="0.55">
+      <use href="#squiggle" x="14" y="9" />
+      <use href="#squiggle" x="120" y="9" />
+      <use href="#squiggle" x="14" y="233" />
+      <use href="#squiggle" x="128" y="233" />
+      <path d="M100 4v232M8 128h184" stroke-dasharray="1 3" />
+    </g>
+    <g stroke-width="0.8" opacity="0.7">
+      <rect x="18" y="16" width="164" height="212" />
+      <circle cx="100" cy="128" r="98" />
+    </g>
+    <g stroke-width="0.6" opacity="0.28">
+      <path d="M78 76 44 40l-8-6M122 76l34-36 8-6" />
+      <path d="M86 146 62 206l-10 6M114 146l24 60 10 6" />
+      <circle cx="36" cy="33" r="5" />
+      <circle cx="164" cy="33" r="5" />
+    </g>
+    <g fill="#f1e3c4" fill-opacity="0.6" stroke-width="1.4">
+      <path d="M92 60v13M108 60v13" />
+      <ellipse cx="88" cy="214" rx="11" ry="6" />
+      <ellipse cx="112" cy="214" rx="11" ry="6" />
+      <path
+        d="M82 73Q100 68 118 73L168 78Q172 84 168 90L124 92Q120 110 121 128Q125 134 124 142L117 208H105L101 150H99L95 208H83L76 142Q75 134 79 128Q80 110 76 92L32 90Q28 84 32 78Z"
+      />
+      <circle cx="24" cy="84" r="8" fill-opacity="1" />
+      <circle cx="176" cy="84" r="8" fill-opacity="1" />
+      <ellipse cx="100" cy="42" rx="20" ry="23" />
+      <path d="M80 40q-5 1-4 7t4 4M120 40q5 1 4 7t-4 4" />
+      <path d="M94 55q6 4 12 0" />
+      <g stroke-width="0.7" opacity="0.6">
+        <path d="M86 98q14 5 28 0M88 104q12 4 24 0M100 142v6" />
+        <circle cx="100" cy="132" r="1.2" />
+      </g>
+    </g>
+  </g>
+</svg>
