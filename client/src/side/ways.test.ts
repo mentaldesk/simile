@@ -3,13 +3,13 @@ import { village } from './content';
 import { SidePlayer, type MapPosition } from './player';
 import { prompts } from './ways';
 
-const promptsOf = (position: MapPosition, eTaken = false) => {
+const promptsOf = (position: MapPosition) => {
   const ways = new SidePlayer(village, position).ways();
-  return prompts(village, village.map(position.map)!, ways, eTaken);
+  return prompts(village, village.map(position.map)!, ways);
 };
 
-const promptsAt = (position: MapPosition, eTaken = false) =>
-  promptsOf(position, eTaken).map(({ keys, action }) => `${keys.join(' ')}: ${action}`);
+const promptsAt = (position: MapPosition) =>
+  promptsOf(position).map(({ keys, action }) => `${keys.join(' ')}: ${action}`);
 
 describe('prompts', () => {
   it('give doors to E, saying where they go', () => {
@@ -63,22 +63,25 @@ describe('prompts', () => {
     expect(promptsAt({ x: 46, y: 12, map: 'lychee_lane' })).toEqual(['↓: climb down']);
   });
 
-  it('give the door to up while E is used for something in reach', () => {
-    expect(promptsAt({ x: 17, y: 15, map: 'banyan_row' }, true)).toEqual(['↑: go in']);
-    expect(promptsAt({ x: 18, y: 2, map: 'coffee_shop_floor_0' }, true)).toEqual(['↑: go out']);
-    expect(promptsAt({ x: 15, y: 2, map: 'coffee_shop_floor_0' }, true)).toEqual(['↑: upstairs']);
-    expect(promptsAt({ x: 16, y: 2, map: 'gallery_floor_1' }, true)).toEqual(['↑ ↓: lift']);
+  it('give every door and every way onto another street to E, and none to up or down', () => {
+    for (const map of village.maps.values()) {
+      for (const door of map.links.filter(({ kind }) => kind === 'door')) {
+        const player = Object.assign(new SidePlayer(village, { x: door.x, y: door.y, map: map.id }), { datajack: true });
+        const here = prompts(village, map, player.ways());
+        const keys = here.filter(({ way }) => way.kind === 'door').map(({ keys }) => keys);
+        expect(keys, `${map.id} ${door.id}`).toEqual([['E']]);
+      }
+    }
   });
 
-  it("keep the door to up on its own cell then, and the stairs from the next", () => {
-    expect(promptsAt({ x: 2, y: 2, map: 'noodle_bar_floor_0' }, true)).toEqual(['↑: go out']);
-    expect(promptsAt({ x: 2.6, y: 2, map: 'noodle_bar_floor_0' }, true)).toEqual(['↑: upstairs']);
+  it('give the stairs beside a door to up, and the door to E', () => {
+    expect(promptsAt({ x: 2, y: 2, map: 'noodle_bar_floor_0' })).toEqual(['E: go out', '↑: upstairs']);
   });
 
   it('are none elsewhere, or partway up', () => {
     expect(promptsAt({ x: 30, y: 15, map: 'high_street' })).toEqual([]);
     const climbing = new SidePlayer(village, { x: 45, y: 15, map: 'lychee_lane' });
-    climbing.update({ x: 0, y: -1, use: false, eTaken: false, run: false }, 1 / 60);
+    climbing.update({ x: 0, y: -1, use: false, run: false }, 1 / 60);
     expect(climbing.climbing).toBe('ladder');
     expect(climbing.ways()).toEqual([]);
   });

@@ -6,7 +6,7 @@ import type { Interactable } from '../world/interactables';
 import { deadJack, jacked } from '../world/jacks';
 import { muralWalls } from '../world/murals';
 import { foundIn } from '../world/searchables';
-import { usedByE, wayPrompts, type Reachable } from '../world/reach';
+import { doorOnE, eUse, lookedAtByV, orderedAtByT, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { callCue } from './call-cue';
 import { CharacterPanel } from './character-panel';
@@ -18,7 +18,7 @@ import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
-import { eUse, onGameKey } from './keys';
+import { onGameKey } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -92,7 +92,7 @@ export class DialogueScene extends Phaser.Scene {
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
     const character = (this.character = new CharacterPanel(this.root));
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal, character });
+    const onKeyDown = onGameKey({ chat, talk: () => this.talk(), use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -125,45 +125,58 @@ export class DialogueScene extends Phaser.Scene {
     callCue.update(dialogue.partner());
     const player = this.player();
     this.place.update(player?.map, this.time.now / 1000);
-    const used = usedByE(player);
+    const here = wayPrompts();
+    const used = eUse(player, here);
+    const ordered = orderedAtByT(player);
     const atTerminal = used?.kind === 'terminal';
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
-    this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
-    const prompted = used?.kind === 'counter' || used?.kind === 'jack' || used?.kind === 'searchable';
-    const counter = prompted ? used.interactable : undefined;
-    this.counter.update(counter, !this.chat.isOpen);
+    this.murals.update(player, !used && !ordered && lookedAtByV(player)?.kind === 'mural' && !this.news.isOpen);
+    const prompted = used?.kind === 'jack' || used?.kind === 'searchable';
+    this.counter.update(prompted ? used.interactable : ordered, !this.chat.isOpen);
     const buyer = trading(used);
     this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
-    const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
+    const sells = !this.clinic.isOpen && !doorOnE(here);
+    const state = playerState.latest && !sells ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
     this.character.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
-    const ways = panelOpen ? [] : wayPrompts(used !== undefined);
-    this.ways.render(ways, this.fromGame);
-    const target = this.targets.current();
-    const talks = !panelOpen && !this.chat.isOpen && eUse(used, ways, target)?.kind === 'talk';
-    this.marker.render(target, view, (id) => dialogue.nameOf(id), talks);
+    this.ways.render(panelOpen ? [] : here, this.fromGame);
+    const talks = !panelOpen && !this.chat.isOpen && !ordered;
+    this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id), talks);
   }
 
   private pressE(): void {
-    const used = usedByE(this.player());
-    const e = eUse(used, wayPrompts(used !== undefined), this.targets.current());
-    if (e?.kind === 'reach') this.use(e.reachable);
-    else if (e?.kind === 'talk') this.chat.open();
+    const used = eUse(this.player(), wayPrompts());
+    if (used) this.use(used);
   }
 
-  /** E uses the nearest thing in reach; the gallery scene looks at paintings. */
+  /** T orders from whoever serves at the counter here, else talks to the ringed resident. */
+  private talk(): void {
+    const counter = orderedAtByT(this.player());
+    const serving = counter && (servingAt(counter, worldView()) ?? dialogue.partner());
+    if (serving) this.chat.choose(serving);
+    this.chat.open();
+  }
+
+  /** V looks at the mural in reach; the gallery scene looks at paintings. */
+  private view(): void {
+    const player = this.player();
+    if (lookedAtByV(player)?.kind !== 'mural') return;
+    this.character.close();
+    this.news.close();
+    this.murals.look(player);
+  }
+
+  /** E uses the nearest thing in reach. */
   private use(used: Reachable | undefined): void {
     this.character.close();
-    if (used?.kind === 'counter') this.order(used.interactable);
-    else if (used?.kind === 'terminal') {
+    if (used?.kind === 'terminal') {
       this.murals.close();
       this.news.open(used.terminal.label);
-    } else if (used?.kind === 'mural') this.murals.look(this.player());
-    else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+    } else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'jack') this.useJack(used.interactable);
     else if (used?.kind === 'searchable') {
@@ -195,17 +208,6 @@ export class DialogueScene extends Phaser.Scene {
   private eat(): void {
     const eat = toEat(playerState.latest);
     if (eat) server.send({ type: 'eat', item: eat.kind === 'item' ? eat.item.id : null });
-  }
-
-  /** At a counter, E opens the chat to whoever is serving behind it. */
-  private order(counter: Interactable): void {
-    const serving = servingAt(counter, worldView()) ?? dialogue.partner();
-    if (!serving) {
-      this.counter.flash("Nobody's behind the counter.");
-      return;
-    }
-    this.chat.choose(serving);
-    this.chat.open();
   }
 
   private player(): Position | undefined {

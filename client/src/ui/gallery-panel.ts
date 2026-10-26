@@ -4,15 +4,15 @@ import type { GalleryFrames } from '../world/paintings';
 import { mapOf } from '../world/map';
 import { callCue } from './call-cue';
 import './gallery-panel.css';
-import { pressedNewsKey } from './keys';
-import { NEWS_KEY } from './tuning';
+import { pressedViewKey } from './keys';
+import { VIEW_KEY } from './tuning';
 
-const KEY = NEWS_KEY.toUpperCase();
+const KEY = VIEW_KEY.toUpperCase();
 
 /** `interactableAt` in the game. */
 type Find = (map: string, position: Position | undefined) => Interactable | undefined;
 
-/** A painting up close, opened with E at its frame in the gallery. */
+/** A painting up close, opened with V at its frame in the gallery. */
 export class GalleryPanel {
   readonly hint: HTMLElement;
   private readonly panel: HTMLElement;
@@ -47,7 +47,7 @@ export class GalleryPanel {
 
     this.panel.addEventListener('keydown', (event) => {
       event.stopPropagation();
-      if (event.key === 'Escape' || pressedNewsKey(event)) {
+      if (event.key === 'Escape' || pressedViewKey(event)) {
         event.preventDefault();
         this.close();
       }
