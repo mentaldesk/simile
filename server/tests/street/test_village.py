@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 from simile.cli import create_cli
 from simile.schema import DoorKind, Facing, InteractableKind, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
-from simile.street.metro import GANTRY, HIGH_LEDGE, METRO
+from simile.street.metro import CRANE, GANTRY, HIGH_LEDGE, METRO, MEZZANINE, STORE_WALL
 from simile.street.plan import (
     BUILDINGS_LAYER,
     CREATURES_LAYER,
@@ -156,8 +156,17 @@ LOCKED = (
     | {Spot(METRO, x, 5) for x in (85, 86)}
     | {Spot(METRO, x, GANTRY) for x in (61, 62, 63)}
     | {Spot(METRO, x, GANTRY - 5) for x in range(58, 74)}
+    | {Spot(METRO, x, CRANE) for x in range(131, 139)}
+    | {Spot(METRO, x, MEZZANINE - 5) for x in range(205, MAPS[METRO].width)}
+    | {
+        Spot(METRO, x, y)
+        for x in range(STORE_WALL, MAPS[METRO].width)
+        for y in range(MEZZANINE, GROUND + 1)
+        if MAPS[METRO].walkable(x, y)
+    }
 )
-"""Out of reach until legs open them, and the gantry's roof, which nobody reaches."""
+"""Out of reach until legs or feet open them, and the gantry's and the shed's roofs, which
+nobody reaches."""
 
 
 def test_every_cell_of_every_map_but_the_locked_ones_is_reachable_from_every_street() -> None:
@@ -192,7 +201,7 @@ def test_every_stair_and_ladder_end_is_reachable_from_its_floor() -> None:
         if town.id != SEWERS
         for y in range(town.height)
         for x in range(town.width)
-        if town.climb(x, y) is not None
+        if town.climb(x, y) is not None and Spot(town.id, x, y) not in LOCKED
     ]
     assert len(ends) > 2 * len(climbs)
     for what, map_id, end in ends:
@@ -429,7 +438,14 @@ def test_the_cafe_the_noodle_bar_and_home_have_a_plug_downstairs() -> None:
         if item.kind is InteractableKind.PLUG
     }
 
-    assert set(plugs) == {"coffee_shop_plug", "maker_space_plug", "noodle_bar_plug", "metro_plug"}
+    assert set(plugs) == {
+        "coffee_shop_plug",
+        "maker_space_plug",
+        "noodle_bar_plug",
+        "metro_plug",
+        "metro_track_plug",
+        "metro_shed_plug",
+    }
     for building in ("coffee_shop", "maker_space", "noodle_bar"):
         item = plugs[f"{building}_plug"]
         [stand] = item.stand

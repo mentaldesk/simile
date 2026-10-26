@@ -13,6 +13,7 @@ from simile.player.config import DEFAULT_CONFIG, SALVAGE, Salvage
 from simile.player.pickups import Pickups
 from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Pile, Player, lamp
 from simile.sim import Clock, FakeWallClock, World
+from simile.street.metro import DEPOT_END
 from simile.world import Movement, Point
 from simile.world.map import Pickup, PickupKind, TownMap, load_maps
 
@@ -211,6 +212,7 @@ def test_every_salvage_pickup_on_the_maps_has_something_set_to_lie_there() -> No
 def test_the_metros_salvage_and_secrets_lie_where_s3_put_them() -> None:
     piles = Tunnels(maps=MAPS).pickups.piles()
     lying = {(pile.at.x, pile.at.y): pile for pile in piles if pile.at.map == "metro"}
+    lying = {cell: pile for cell, pile in lying.items() if cell[0] < DEPOT_END}
 
     assert {pile.at.map for pile in piles} == {"metro", "sewers"}
     assert sorted(lying) == [
@@ -247,7 +249,7 @@ def test_on_the_metro_they_pick_up_salvage_on_the_trains_roof_and_cash_on_the_ca
     assert tunnels.player.items == [lamp(), WIRE]
     assert tunnels.player.money == 40
     assert tunnels.player.taken == {"metro_salvage_1": NOW, "metro_secret_catwalk": NOW}
-    assert len([pile for pile in tunnels.pickups.piles() if pile.at.map == "metro"]) == 9
+    assert len([pile for pile in tunnels.pickups.piles() if pile.at.map == "metro"]) == 18
     assert tunnels.balanced()
 
 
