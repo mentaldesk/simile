@@ -12,6 +12,8 @@ type Counter = Place & { behind: number };
 type State = Place & {
   climbing: string | null;
   run: number;
+  /** Whether Shift has switched running on. */
+  running: boolean;
   airborne: boolean;
   used: string | null;
   prompts: string[];
@@ -378,10 +380,10 @@ async function legsJump(page: Page, api: Api, kit: Kit, jump: Jump, way: 1 | -1,
   const key = way > 0 ? 'ArrowRight' : 'ArrowLeft';
   await fitKit(api, kit);
   await teleport(page, api, jump.from, jump.name);
+  const walking = !(await api.state())!.running;
+  if (walking) await page.keyboard.press('Shift');
   await page.keyboard.down(key);
   await run(page, 100);
-  const walking = (await api.state())!.run < 0.5;
-  if (walking) await page.keyboard.press('Shift');
   await until(page, async () => past((await api.state())!.x, jump.takeOff), 5, `${jump.name}: running up`, FRAME_MS);
   await page.keyboard.down(' ');
   await until(page, async () => (await api.state())!.airborne, 1, `${jump.name}: taking off`, FRAME_MS);
@@ -428,9 +430,10 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
 /** A standing jump at the face of the weir, walking towards it: where it lands. */
 async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
   await teleport(page, api, sewers(weir - 1, 15), name);
-  await run(page, 300);
-  if ((await api.state())!.run > 0) await page.keyboard.press('Shift');
-  await until(page, async () => (await api.state())!.run === 0, 1, `${name}: walking`, FRAME_MS);
+  await run(page, 200);
+  if ((await api.state())!.running) await page.keyboard.press('Shift');
+  await run(page, 100);
+  if ((await api.state())!.running) throw new Error(`${name}: Shift didn't switch running off`);
   await page.keyboard.down('ArrowRight');
   await page.keyboard.down(' ');
   await until(page, async () => (await api.state())!.airborne, 1, `${name}: taking off`, FRAME_MS);

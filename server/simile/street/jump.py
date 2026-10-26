@@ -99,8 +99,7 @@ STAGE_1: dict[Bionic, Jump] = {
     Bionic.BLADE_LEGS: grade(run=10.4),
     Bionic.PREMIUM_LEGS: grade(rise=6.3, run=10.4),
 }
-"""Stage 1's grades of legs, until P18 retires them: the hydraulic and spring legs rise as the
-feet do, the sprint and blade legs run as the legs' first two grades do, and the premium do both."""
+"""Stage 1's grades of legs, until P18 retires them, each jumping as a grade of the lines does."""
 GRADES: dict[Bionic, Jump] = {**STAGE_1, **LEGS, **FEET}
 """Each grade's jump on its own."""
 OWN_JUMP = "jump"

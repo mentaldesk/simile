@@ -109,7 +109,9 @@ The Phaser-free halves are tested under vitest.
   the protocol holds residents.
 - Running: a press of Shift turns the walk into a run over `RUN_BLEND_SECONDS`, and another turns it
   back, at up to `runSpeed`, `RUN_PACE` (2) times `PLAYER_SPEED` on their own legs and faster on the
-  bionic legs, along streets and floors and through the air.
+  bionic legs, along streets and floors and through the air. Each press counts once, though Phaser
+  hands a frame's earlier key events to its listeners again with each new one (`eachOnce`), so a
+  tap of Shift and an arrow in the same frame still switches.
   Stopping, stairs, ladders and the lift leave it on; they go at their own speeds. The figure turns
   from its walk to its run halfway through the blend (`Drawn.run`), and its phase steps by
   `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
@@ -137,9 +139,10 @@ The Phaser-free halves are tested under vitest.
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
   grade; the legs run half as fast again, then twice and two and a half times as fast, and so jump
   further, and kick harder (`kick`, which the client doesn't use yet). With both, the jump rises as
-  the feet do and runs as the legs do. Stage 1's grades of legs jump as they did. The scene reads the body from `player_state` each frame and sets the
-  player's `rise` and `runSpeed`. With the datajack fitted, the link
-  from a jack's stand tile, the lift down to the sewers, is a way like any other; without, it isn't.
+  the feet do and runs as the legs do. Stage 1's grades of legs jump as they did. The scene reads
+  the body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the
+  datajack fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any
+  other; without, it isn't.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`), by the same jump. `server/tests/street/positions.json` is a
   table of the client's sends and places nobody could be that the server's tests and

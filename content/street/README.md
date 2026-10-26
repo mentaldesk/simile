@@ -372,8 +372,8 @@ the feet do and runs as the legs do, `kit`'s best of each:
 Stage 1's grades of legs (`STAGE_1`) jump as they did, until P18 retires them: `hydraulic_legs` as
 the spring feet, `spring_legs` as their second grade, `sprint_legs` and `blade_legs` as the legs'
 first two grades, and `premium_legs` as the legs' second grade with the feet's second. They kick
-as the player's own legs do. Every grade jumps under the same gravity, so a higher jump stays up longer and
-goes further too.
+as the player's own legs do. Every grade jumps under the same gravity, so a higher jump stays up
+longer and goes further too.
 `rise` is how many tiles the feet rise with Space held, in `rise_seconds`; `run` how many tiles a
 second they run, and fly along in a run jump; `fall_gravity` how much stronger gravity is falling or
 once Space is let go;

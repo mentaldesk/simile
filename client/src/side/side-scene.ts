@@ -16,7 +16,7 @@ import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
-import { readControls, RunToggle, type Held } from './input';
+import { eachOnce, readControls, RunToggle, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt, lightBelow, UNDERGROUND } from './light';
 import { cellOf, type Link, type Village } from './maps';
@@ -106,9 +106,9 @@ export class SideScene extends Phaser.Scene {
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
     keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
-    keyboard.on('keydown-L', (event: KeyboardEvent) => !event.repeat && this.switchLamp());
-    keyboard.on('keydown', (event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat));
-    keyboard.on('keyup', (event: KeyboardEvent) => this.running.keyUp(event.key));
+    keyboard.on('keydown-L', eachOnce((event: KeyboardEvent) => !event.repeat && this.switchLamp()));
+    keyboard.on('keydown', eachOnce((event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat)));
+    keyboard.on('keyup', eachOnce((event: KeyboardEvent) => this.running.keyUp(event.key)));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
     for (const key of ['DOWN', 'S']) keyboard.on(`keydown-${key}`, () => (this.tapped.down = true));
     const cleanups = [
@@ -165,6 +165,11 @@ export class SideScene extends Phaser.Scene {
   /** For the dev harness. */
   get playing(): SidePlayer | undefined {
     return this.player;
+  }
+
+  /** For the dev harness. */
+  get runningOn(): boolean {
+    return this.running.on;
   }
 
   update(time: number, delta: number): void {
