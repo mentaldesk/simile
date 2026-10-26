@@ -3,7 +3,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.llm import Model
-from simile.schema import Bionic, Id, Item, Recipe
+from simile.schema import Bionic, EffectKind, Id, Item, Recipe
 from simile.street.sewers import APEX_ACTUATOR
 
 
@@ -175,6 +175,21 @@ PROCEDURES: dict[Bionic, Procedure] = {
 }
 
 
+class Cure(BaseModel):
+    """How the doctor treats an effect, by `treat`."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(min_length=1, description="As the player sees it.")
+    price: float = Field(ge=0, allow_inf_nan=False)
+
+
+CURES: dict[EffectKind, Cure] = {
+    EffectKind.RAT_BITE: Cure(name="Clean the bite", price=5.0),
+    EffectKind.INFECTION: Cure(name="Treat the infection", price=25.0),
+}
+
+
 class ClinicConfig(BaseModel):
     """What the doctor buys and fits, at prices the doctor only voices, and how they talk."""
 
@@ -200,6 +215,17 @@ class ClinicConfig(BaseModel):
         default=dict.fromkeys(Bionic, 1),
         description="How many of each bionic the doctor had, counting any fitted in the player. "
         "With 0 they don't fit it.",
+    )
+    patch_up: float = Field(
+        default=30.0,
+        ge=0,
+        allow_inf_nan=False,
+        description="What patching them up from no health to full costs. Less hurt costs less, "
+        "rounded up to a whole credit.",
+    )
+    patch_name: str = Field(default="Patch up", min_length=1)
+    cures: dict[EffectKind, Cure] = Field(
+        default=CURES, description="The effects the doctor treats, and for how much."
     )
     model: str = Field(default=Model.HAIKU_4_5, description="The model that writes the doctor.")
     greet_every: float = Field(

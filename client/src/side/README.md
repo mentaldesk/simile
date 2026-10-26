@@ -37,7 +37,7 @@ where you stand names the keys and what it does ("E: go out", "↑: upstairs", "
 `ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
 shorter than a frame still counts, and so does a tap of Space. Shift switches running only when
 it's pressed and let go on its own (`RunToggle`), so Shift+Tab and ? leave it alone. Clicking a
-mural looks at it. L switches the lamp (below). In the harness, `[` and `]` move the clock an hour
+mural looks at it. L switches the lamp (below). K kicks (below). In the harness, `[` and `]` move the clock an hour
 and 1 to 6 go to each street, 5 the rooftops and 6 the metro.
 
 ## How it draws
@@ -139,11 +139,16 @@ The Phaser-free halves are tested under vitest.
   `kits` say what each grade of either, or one of each, changes, under the same gravity
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
   grade; the legs run half as fast again, then twice and two and a half times as fast, and so jump
-  further, and kick harder (`kick`, which the client doesn't use yet). With both, the jump rises as
+  further, and kick harder (`kick`, which the server reads for itself). With both, the jump rises as
   the feet do and runs as the legs do. Stage 1's grades of legs jump as they did. The scene reads
   the body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the
   datajack fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any
   other; without, it isn't.
+- K kicks (`kick.ts`), standing on the ground: not in the air, on stairs, a ladder or the lift. It
+  kicks the way they last walked, turning them to it if they faced up or down, and sends `kick`
+  with that `facing`. The server decides what it hits. The figure stands still for `KICK_SECONDS`
+  (0.3), drawn in its run cycle's frame with the near leg furthest forward (`KICK_PHASE`), and
+  another kick waits until it's done.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`), by the same jump. `server/tests/street/positions.json` is a
   table of the client's sends and places nobody could be that the server's tests and

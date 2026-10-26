@@ -1,4 +1,4 @@
-import type { Bionic, BodyPart, Buyer, ClientMessage, Item, Player, Recipe } from '../net';
+import type { Bionic, BodyPart, Buyer, ClientMessage, EffectKind, Item, Player, Recipe } from '../net';
 import { callCue } from './call-cue';
 import './clinic-panel.css';
 import { pressedNewsKey } from './keys';
@@ -27,7 +27,8 @@ export type Deal =
   | { kind: 'sell'; label: string; price: number }
   | { kind: 'part'; label: string; price: number; part: BodyPart }
   | { kind: 'fit'; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean }
-  | { kind: 'recipe'; label: string; price: number; bionic: Bionic };
+  | { kind: 'recipe'; label: string; price: number; bionic: Bionic }
+  | { kind: 'treat'; label: string; price: number; effect: EffectKind | null; short: boolean };
 
 export type Keeper = { id: string; name: string };
 
@@ -40,10 +41,13 @@ export function needs(recipe: Recipe | undefined, items: readonly Item[]): Need[
   });
 }
 
-/** What the player can do at the clinic: talk to the doctor, sell salvage, a kidney or a recipe, or be fitted. */
+/** What the player can do at the clinic: talk to the doctor, be treated, sell salvage, a kidney or a recipe, or be fitted. */
 export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: readonly Recipe[] = []): Deal[] {
   const found: Deal[] = [];
   if (keeper) found.push({ kind: 'talk', label: `Talk to ${keeper.name}`, npcId: keeper.id });
+  for (const { effect, name, price } of buyer.treatments ?? []) {
+    found.push({ kind: 'treat', label: name, price, effect, short: player.money < price });
+  }
   const sold = player.items.filter(({ id }) => id in buyer.prices);
   if (sold.length) {
     const price = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
@@ -80,12 +84,16 @@ export function note(deal: Deal | undefined, armed: boolean, money: number): str
     return `It costs ${amount(deal.price)}, and you have ${amount(money)}.`;
   }
   if (deal.kind === 'recipe') return "Enter to sell it. You'll still know it, but she buys it only once.";
+  if (deal.kind === 'treat') return deal.short ? `It costs ${amount(deal.price)}, and you have ${amount(money)}.` : 'Enter to go ahead.';
   if (deal.kind === 'talk' || deal.kind === 'sell') return 'Enter to go ahead.';
   const what = deal.kind === 'part' ? `sell ${PARTS[deal.part]}` : `have this fitted in place of ${PARTS[deal.part]}`;
   return armed ? `Enter again to ${what} for ${amount(deal.price)}. It can't be undone.` : 'Enter to go ahead.';
 }
 
-const key = (deal: Deal) => (deal.kind === 'fit' ? `fit:${deal.bionic}:${deal.part}` : `${deal.kind}:${deal.label}`);
+function key(deal: Deal): string {
+  if (deal.kind === 'fit') return `fit:${deal.bionic}:${deal.part}`;
+  return deal.kind === 'treat' ? `treat:${deal.effect}` : `${deal.kind}:${deal.label}`;
+}
 
 /** The clinic up close: what the doctor buys and fits, for how much and what parts. */
 export class ClinicPanel {
@@ -197,6 +205,8 @@ export class ClinicPanel {
       this.send({ type: 'sell', item: null });
     } else if (deal.kind === 'recipe') {
       this.send({ type: 'sell_recipe', recipe: deal.bionic });
+    } else if (deal.kind === 'treat') {
+      if (!deal.short) this.send({ type: 'treat', effect: deal.effect });
     } else if (deal.kind === 'fit' && deal.short) {
       this.armed = undefined;
     } else if (this.armed !== key(deal)) {
@@ -214,7 +224,7 @@ export class ClinicPanel {
       const item = document.createElement('li');
       item.dataset.index = String(index);
       item.classList.toggle('clinic-selected', index === this.selected);
-      item.classList.toggle('clinic-short', deal.kind === 'fit' && deal.short);
+      item.classList.toggle('clinic-short', (deal.kind === 'fit' || deal.kind === 'treat') && deal.short);
       item.classList.toggle('clinic-armed', this.armed === key(deal));
       const label = item.appendChild(document.createElement('span'));
       label.textContent = deal.label;

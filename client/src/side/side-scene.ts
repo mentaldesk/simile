@@ -15,6 +15,7 @@ import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
+import { kick, KICK_KEY } from './kick';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
 import { eachOnce, readControls, RunToggle, type Held } from './input';
@@ -108,6 +109,7 @@ export class SideScene extends Phaser.Scene {
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
     keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
     keyboard.on('keydown-L', eachOnce((event: KeyboardEvent) => !event.repeat && this.switchLamp()));
+    keyboard.on(`keydown-${KICK_KEY}`, eachOnce((event: KeyboardEvent) => !event.repeat && this.kick()));
     keyboard.on('keydown', eachOnce((event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat)));
     keyboard.on('keyup', eachOnce((event: KeyboardEvent) => this.running.keyUp(event.key)));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
@@ -229,6 +231,11 @@ export class SideScene extends Phaser.Scene {
   private switchLamp(): void {
     const message = switchLamp(lampOf(playerState.latest));
     if (message) server.send(message);
+  }
+
+  private kick(): void {
+    const facing = this.passing ? undefined : this.player?.kick();
+    if (facing) server.send(kick(facing));
   }
 
   private startPosition(village: Village): MapPosition {

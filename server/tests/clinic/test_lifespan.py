@@ -12,7 +12,7 @@ from simile.clinic.doctor import DOCTOR
 from simile.economy import OUTSIDE, PLAYER, Kind
 from simile.economy.economy import economy_of
 from simile.persistence import player_of
-from simile.schema import PLAYER_ID, Bionic, Mind, Player
+from simile.schema import PLAYER_ID, Bionic, Effect, EffectKind, Mind, Player
 from simile.sim import Clock, World, world_of
 from simile.world import Point, movement_of
 
@@ -128,3 +128,28 @@ def test_the_player_sells_a_recipe_they_know_and_still_knows_it(make_package: Ma
     assert sold["player"]["money"] == 15
     assert sold["player"]["mind"] == {"recipes": ["power_cell", "datajack"], "sold": ["datajack"]}
     assert "recipes" not in sold["buyer"]
+
+
+def test_the_player_is_patched_up_and_has_a_bite_cleaned(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+    player = player_of(app)
+    player.money, player.health = 50, 0.5
+    player.effects = [Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=START)]
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        tick = world_of(app).loop.tick
+        ws.send_json({"type": "player_move", "position": {"x": 4, "y": 2, "map": CLINIC.map}})
+        until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == CLINIC)
+        client.portal.call(tick)
+        at_the_clinic = next_of(ws, "player_state")
+        ws.send_json({"type": "treat", "effect": None})
+        ws.send_json({"type": "treat", "effect": "rat_bite"})
+        until(client, lambda: player.money == 30)
+        client.portal.call(tick)
+        treated = next_of(ws, "player_state")
+
+    assert [t["effect"] for t in at_the_clinic["buyer"]["treatments"]] == [None, "rat_bite"]
+    assert at_the_clinic["buyer"]["treatments"][0]["price"] == 15
+    assert "health" not in treated["player"] and "effects" not in treated["player"]
+    assert "treatments" not in treated["buyer"]

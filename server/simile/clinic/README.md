@@ -1,8 +1,8 @@
 # simile.clinic
 
 S7: the clinic in the old metro's depot, and the tunnel doctor who runs it. Its `running` hook makes
-a `Clinic` and a `DoctorTalk`, adds the doctor's trade to the clinic's buyer, puts the doctor in the
-snapshot and ticks their talk on the sim loop.
+a `Clinic` and a `DoctorTalk`, adds the doctor's trade and treatments to the clinic's buyer, puts
+the doctor in the snapshot and ticks their talk on the sim loop.
 
 ## The doctor
 
@@ -69,6 +69,20 @@ She has one of each bionic (`stock`), so once fitted it's gone.
   of a part, so `Economy.pay` never raises.
 - They only work in the clinic. The next `player_state` follows on the sim loop.
 
+## Patching them up
+
+The doctor treats the player (P9), for prices in `ClinicConfig`:
+
+- **Patching up** to full health while they're hurt, for `patch_up` (30) from none, less the less
+  hurt they are, rounded up to a whole credit: 15 from half.
+- **Each effect she cures**, in `cures`: cleaning a rat bite (5) before it can turn, and treating
+  the infection it turns into (25), which nothing else ends. Radiation fades on its own.
+
+`Clinic.keep` adds them to the buyer's `treatments`, and `treat` gives one, by its `effect` or
+null for patching up: the price goes from the player to `OUTSIDE` as a `purchase` at the clinic.
+It does nothing outside the clinic, for a treatment she wouldn't give now, or one they can't pay
+for. Her prompt has her prices for both, and what she'd treat now.
+
 ## Talking to her
 
 `DoctorTalk` is the player's conversation with her, written through L1 like any resident's reply
@@ -81,12 +95,12 @@ but outside B2's engine, which only knows residents. It publishes `ConversationS
 - **Replies.** `player_say` to her, while in the clinic, gets a reply at the player's priority, one
   sentence a line, paced by each line's length.
 - **Ending.** It ends when they walk out, or after `silence` (60) sim seconds with nothing said.
-- **The prompt.** The system prompt is who she is, her fixed prices for a kidney and salvage, how
-  she builds from recipes, and stage 1's legs, with no haggling: no menu of every bionic. Each turn
-  adds what she can see of them (their bionics, a sold kidney), what she'd buy or fit now, with
-  the parts they're short of, the recipes they know that wait for the cell, and a bionic or two
-  they don't know the recipe for, to hint at without a price. So what she says follows what they
-  know. She never takes money in talk: the player trades at the counter, with E.
+- **The prompt.** The system prompt is who she is, her fixed prices for a kidney, salvage and
+  treatments, how she builds from recipes, and stage 1's legs, with no haggling: no menu of every
+  bionic. Each turn adds what she can see of them (their bionics, a sold kidney), what she'd buy,
+  fit or treat now, with the parts they're short of, the recipes they know that wait for the cell,
+  and a bionic or two they don't know the recipe for, to hint at without a price. So what she says
+  follows what they know. She never takes money in talk: the player trades at the counter, with E.
 
 B2's `player_say` handler logs that it ignored a line to her, since she isn't a resident.
 

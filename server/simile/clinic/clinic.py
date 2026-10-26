@@ -1,13 +1,25 @@
 import logging
+import math
 from collections import Counter
 from typing import TYPE_CHECKING
 
 from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig
 from simile.economy import OUTSIDE, PLAYER, Kind
+from simile.player.health import KIDNEYS
 from simile.player.power import runs
 from simile.player.where import here, location
-from simile.protocol import Buyer, Fitting
-from simile.schema import BODY_PARTS, PRESENT, SOLD, Bionic, Body, BodyPart, Mind, Player
+from simile.protocol import Buyer, Fitting, Treatment
+from simile.schema import (
+    BODY_PARTS,
+    PRESENT,
+    SOLD,
+    Bionic,
+    Body,
+    BodyPart,
+    EffectKind,
+    Mind,
+    Player,
+)
 from simile.sim import Clock
 from simile.world.movement import Movement, inside
 
@@ -16,12 +28,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KIDNEYS: tuple[BodyPart, ...] = ("left_kidney", "right_kidney")
-
 
 class Clinic:
-    """The doctor's trade, through the ledger: a kidney, recipes, and each bionic for money, a
-    part of their body and, from a recipe, the parts it uses up."""
+    """The doctor's trade, through the ledger: a kidney, recipes, each bionic for money, a part of
+    their body and, from a recipe, the parts it uses up, and treating them."""
 
     def __init__(
         self,
@@ -108,9 +118,27 @@ class Clinic:
             and (buys := procedures[bionic].buys) is not None
         }
 
+    def treatments(self) -> list[Treatment]:
+        """What the doctor would treat now: patching them up while they're hurt, and each effect
+        they have that she cures."""
+        found = []
+        if (hurt := 1 - self.player.health) > 1e-9:
+            price = math.ceil(self.config.patch_up * hurt - 1e-9)
+            found.append(Treatment(effect=None, name=self.config.patch_name, price=price))
+        for effect in self.player.effects:
+            if cure := self.config.cures.get(effect.kind):
+                found.append(Treatment(effect=effect.kind, name=cure.name, price=cure.price))
+        return found
+
     def keep(self, buyer: Buyer) -> Buyer:
-        """The clinic's buyer with what the doctor would buy of their body and mind, and fit."""
-        update = {"parts": self.parts(), "fittings": self.fittings(), "recipes": self.recipes()}
+        """The clinic's buyer with what the doctor would buy of their body and mind, fit and
+        treat."""
+        update = {
+            "parts": self.parts(),
+            "fittings": self.fittings(),
+            "recipes": self.recipes(),
+            "treatments": self.treatments(),
+        }
         return buyer.model_copy(update=update)
 
     def sell_part(self, part: BodyPart) -> bool:
@@ -146,6 +174,20 @@ class Clinic:
         self._use_up(self._uses(bionic))
         self._change(part, bionic)
         logger.info("%s  The doctor fits %s in place of the player's %s", self.clock, bionic, part)
+        return True
+
+    def treat(self, effect: EffectKind | None) -> bool:
+        """The doctor treats `effect`, or with None patches them up to full health, if they can
+        pay. Whether she did."""
+        treatment = next((t for t in self.treatments() if t.effect == effect), None)
+        if treatment is None or not self.inside() or treatment.price > self.player.money + 1e-9:
+            return False
+        self.economy.pay(PLAYER, OUTSIDE, treatment.price, Kind.PURCHASE, self.config.place)
+        if effect is None:
+            self.player.health = 1.0
+        else:
+            self.player.effects = [e for e in self.player.effects if e.kind is not effect]
+        logger.info("%s  The doctor gives the player %s", self.clock, treatment.name.lower())
         return True
 
     def _use_up(self, parts: dict[str, int]) -> None:

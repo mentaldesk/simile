@@ -107,12 +107,13 @@ def test_each_frame_stands_under_the_middle_of_its_head(who: str) -> None:
 
 @pytest.mark.parametrize("who", FIGURES)
 def test_standing_figures_keep_the_appearances_colours(who: str) -> None:
-    legs = Bionic.HYDRAULIC_LEGS in FITTED.get(who, ())
-    cores = CORES | {"bottom": SHORTS} if legs else CORES
+    fitted = FITTED.get(who, ())
+    cores = CORES | {"bottom": SHORTS} if set(fitted) & set(bionics.LEGGED) else CORES
     found = swatches(frame(who, "stand"), FIGURES[who], cores=cores)
 
     for name, swatch in found.items():
-        if name in hidden(FIGURES[who]) or (who, "stand", name) in MISSES:
+        unseen = hidden(FIGURES[who]) | bionics.hides(fitted)
+        if name in unseen or (who, "stand", name) in MISSES:
             continue
         assert swatch.delta_e < FROM_APPEARANCE, f"{name}: {swatch}"
 

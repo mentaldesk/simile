@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import type { Buyer, Item, Meal, Pile, PlayerStateMessage } from '../net';
-import { COLLAPSED, eatPrompt, feeling, HungerHint, onCell, powerFeeling, toEat } from './hunger';
+import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage } from '../net';
+import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, toEat } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -31,6 +31,24 @@ describe('feeling', () => {
     expect(feeling(0.49)).toBeUndefined();
     expect(feeling(0.5)).toBe("You're hungry.");
     expect(feeling(0.85)).toBe("You're starving. Eat soon, or you'll collapse.");
+  });
+});
+
+describe('healthFeeling', () => {
+  const BITE: Effect = { kind: 'rat_bite', strength: 0.2, fades: 0.25, since: '2026-01-01T12:00:00Z' };
+  const INFECTION: Effect = { kind: 'infection', strength: 0.4, fades: null, since: '2026-01-01T12:00:00Z' };
+  const hurt = (health: number, effects?: Effect[]): Player => ({ ...state(0).player, health, ...(effects && { effects }) });
+
+  it('says nothing while they are well, then that they are hurt, then warns them before they collapse', () => {
+    expect(healthFeeling(state(0).player)).toBeUndefined();
+    expect(healthFeeling(hurt(0.61))).toBeUndefined();
+    expect(healthFeeling(hurt(0.6))).toBe("You're hurt. Rest at home to heal faster.");
+    expect(healthFeeling(hurt(0.25))).toBe("You're badly hurt. Rest at home or get patched up at the clinic, or you'll collapse.");
+  });
+
+  it('warns of a bite before it turns, and of an infection above all', () => {
+    expect(healthFeeling(hurt(0.9, [BITE]))).toBe('A rat bit you. Have the clinic clean it before it turns.');
+    expect(healthFeeling(hurt(0.1, [INFECTION]))).toBe("Your bite is infected. It won't heal until the clinic treats it.");
   });
 });
 

@@ -13,7 +13,7 @@ from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
 from simile.player.trade import Trade
-from simile.protocol import Buyer, Fitting
+from simile.protocol import Buyer, Fitting, Treatment
 from simile.schema import LEGS as GRADES
 from simile.schema import (
     LINES,
@@ -23,6 +23,8 @@ from simile.schema import (
     Bionic,
     Body,
     BodyPart,
+    Effect,
+    EffectKind,
     Item,
     ItemKind,
     Mind,
@@ -486,3 +488,67 @@ def test_premium_legs_need_the_apex_actuator_which_the_fitting_uses_up(legs: Bio
     assert depot.player.money == 100
     assert [item.id for item in depot.player.items] == ["lamp", WIRE.id]
     assert DEFAULT_CONFIG.offers[Bionic.PREMIUM_LEGS].needs == APEX_ACTUATOR
+
+
+BITTEN = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=NOW)
+INFECTED = Effect(kind=EffectKind.INFECTION, strength=0.6, fades=None, since=NOW)
+DOSE = Effect(kind=EffectKind.RADIATION, strength=0.5, fades=0.05, since=NOW)
+
+
+def test_she_patches_up_the_hurt_for_less_the_less_hurt_they_are() -> None:
+    assert Depot(Player()).clinic.treatments() == []
+    for health, price in [(0.0, 30), (0.5, 15), (0.99, 1)]:
+        depot = Depot(Player(health=health))
+
+        assert depot.clinic.treatments() == [Treatment(effect=None, name="Patch up", price=price)]
+
+
+def test_she_treats_a_bite_and_an_infection_but_not_a_dose() -> None:
+    depot = Depot(Player(effects=[BITTEN, DOSE, INFECTED]))
+
+    assert depot.trade.buyer().treatments == [
+        Treatment(effect=EffectKind.RAT_BITE, name="Clean the bite", price=5),
+        Treatment(effect=EffectKind.INFECTION, name="Treat the infection", price=25),
+    ]
+
+
+def test_patching_up_brings_them_to_full_health_through_the_ledger() -> None:
+    depot = Depot(Player(money=20, health=0.5, effects=[INFECTED]))
+
+    assert depot.clinic.treat(None)
+
+    assert depot.player.health == 1
+    assert depot.player.money == 5
+    assert depot.player.effects == [INFECTED]
+    [entry] = depot.economy.ledger.entries
+    assert (entry.kind, entry.payer, entry.payee, entry.place, entry.amount) == (
+        Kind.PURCHASE,
+        PLAYER,
+        OUTSIDE,
+        "clinic",
+        15,
+    )
+    assert depot.balanced()
+
+
+def test_treating_an_infection_ends_it_and_nothing_else() -> None:
+    depot = Depot(Player(money=30, health=0.5, effects=[DOSE, INFECTED]))
+
+    assert depot.clinic.treat(EffectKind.INFECTION)
+
+    assert depot.player.effects == [DOSE]
+    assert depot.player.health == 0.5
+    assert depot.player.money == 5
+
+
+def test_she_gives_no_treatment_they_cant_pay_for_dont_need_or_outside() -> None:
+    depot = Depot(Player(money=10, health=0.5, effects=[INFECTED, DOSE]))
+
+    assert not depot.clinic.treat(EffectKind.INFECTION)
+    assert not depot.clinic.treat(EffectKind.RADIATION)
+    assert not depot.clinic.treat(EffectKind.RAT_BITE)
+    depot.stand(STALL)
+    assert not depot.clinic.treat(None)
+
+    assert depot.player.money == 10
+    assert depot.economy.ledger.entries == []

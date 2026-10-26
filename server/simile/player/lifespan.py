@@ -11,7 +11,9 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.persistence import investigation_of, player_of
     from simile.player.clients import InGame
     from simile.player.finds import Finds
+    from simile.player.health import Health
     from simile.player.hunger import Hunger
+    from simile.player.kick import Kicks, kickables_of
     from simile.player.lamp import Lamp
     from simile.player.machines import Machines
     from simile.player.pickups import Pickups, claimers_of
@@ -21,6 +23,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.protocol import (
         EatMessage,
         JournalMessage,
+        KickMessage,
         LampMessage,
         PickUpMessage,
         PlayerCollapsedMessage,
@@ -73,6 +76,14 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         playing=lambda: bool(in_game),
         collapse=lambda: hunger.collapse(Vital.POWER),
     )
+    health = app.state.health = Health(
+        player,
+        movement,
+        world.clock,
+        playing=lambda: bool(in_game),
+        collapse=lambda: hunger.collapse(Vital.HEALTH),
+    )
+    kicks = Kicks(player, movement, world.clock, kickables_of(app))
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player)
 
@@ -108,6 +119,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.loop.register(hunger),
         world.loop.register(lamp),
         world.loop.register(power),
+        world.loop.register(health),
         world.loop.register(finds),
         world.loop.register(sync),
         hub.subscribe(PlayerMoveMessage, in_game.moved),
@@ -115,6 +127,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(PickUpMessage, on_pick_up),
         hub.subscribe(SellMessage, on_sell),
         hub.subscribe(LampMessage, on_lamp),
+        hub.subscribe(KickMessage, lambda message: kicks.kick(message.facing)),
         hub.greet(sync.message),
     ]
     yield
@@ -122,4 +135,5 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         stop()
     claimers_of(app).remove(finds.claim)
     claimers_of(app).remove(machines.claim)
+    del app.state.health
     economy.player = None

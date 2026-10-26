@@ -1,4 +1,4 @@
-import type { Item, Meal, Pile, Player, PlayerStateMessage, Vital } from '../net';
+import type { EffectKind, Item, Meal, Pile, Player, PlayerStateMessage, Vital } from '../net';
 import { amount, pickUpPrompt, sellPrompt } from './salvage';
 import { EAT_KEY } from './tuning';
 
@@ -10,6 +10,9 @@ export const STARVING = 0.85;
 /** Power from which they're warned to charge, and from which they're told they'll collapse. */
 export const LOW_POWER = 0.3;
 export const FLAT = 0.1;
+/** Health from which they're told they're hurt, and from which they're warned they'll collapse. */
+export const HURT = 0.6;
+export const BADLY_HURT = 0.25;
 const COLLAPSED_MS = 6000;
 
 export type Eat = { kind: 'meal'; meal: Meal } | { kind: 'item'; item: Item };
@@ -29,6 +32,17 @@ export function feeling(hunger: number): string | undefined {
 export function powerFeeling(power: number): string | undefined {
   if (power <= FLAT) return "Your power cell is nearly flat. Charge it at a plug, or you'll collapse.";
   if (power <= LOW_POWER) return 'Your power is low. Charge it at a plug.';
+  return undefined;
+}
+
+/** How their health and ailments feel, the infection first: only the clinic ends it. */
+export function healthFeeling(player: Player): string | undefined {
+  const has = (kind: EffectKind) => player.effects?.some((effect) => effect.kind === kind);
+  const health = player.health ?? 1;
+  if (has('infection')) return "Your bite is infected. It won't heal until the clinic treats it.";
+  if (health <= BADLY_HURT) return "You're badly hurt. Rest at home or get patched up at the clinic, or you'll collapse.";
+  if (has('rat_bite')) return 'A rat bit you. Have the clinic clean it before it turns.';
+  if (health <= HURT) return "You're hurt. Rest at home to heal faster.";
   return undefined;
 }
 
@@ -65,9 +79,9 @@ export const COLLAPSED: Record<Vital, string> = {
   health: 'You collapsed from your wounds and woke at home.',
 };
 
-type Line = 'collapsed' | 'feeling' | 'eat' | 'pile' | 'sell';
+type Line = 'collapsed' | 'feeling' | 'health' | 'eat' | 'pile' | 'sell';
 
-/** How hungry the player is and what they can eat, or how much power they have, in a corner, and what they can pick up or sell where they stand. */
+/** How hungry the player is and what they can eat, or how much power they have, and how hurt they are, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
   private readonly lines = new Map<Line, HTMLElement>();
   private collapsedUntil = 0;
@@ -76,7 +90,7 @@ export class HungerHint {
   constructor(parent: HTMLElement) {
     const root = parent.appendChild(document.createElement('div'));
     root.className = 'hunger-hint';
-    for (const line of ['collapsed', 'feeling', 'eat', 'pile', 'sell'] as const) {
+    for (const line of ['collapsed', 'feeling', 'health', 'eat', 'pile', 'sell'] as const) {
       const element = root.appendChild(document.createElement('div'));
       element.hidden = true;
       this.lines.set(line, element);
@@ -92,6 +106,7 @@ export class HungerHint {
   update(state: PlayerStateMessage | undefined, pile: Pile | undefined, now = Date.now()): void {
     this.show('collapsed', now < this.collapsedUntil ? COLLAPSED[this.cause] : undefined);
     this.show('feeling', state && feelingOf(state.player));
+    this.show('health', state && healthFeeling(state.player));
     this.show('eat', state && eatPrompt(state));
     this.show('pile', state && pile && pickUpPrompt(pile, state.player));
     this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);
