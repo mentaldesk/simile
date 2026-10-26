@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.schema import (
     BIONIC_LEGS,
-    LEGS,
     POWER_CELLS,
     SPRING_FEET,
     Aspect,
@@ -154,7 +153,7 @@ TOLERANCE_WEIGHTS: dict[CoreValue, float] = {
 
 STANDS_OUT: dict[Bionic, float] = {
     Bionic.INFRARED_EYE: 1.0,
-    **dict.fromkeys(LEGS + BIONIC_LEGS, 0.75),
+    **dict.fromkeys(BIONIC_LEGS, 0.75),
     Bionic.DATAJACK: 0.5,
     **dict.fromkeys(SPRING_FEET, 0.5),
     **dict.fromkeys(POWER_CELLS, 0.25),

@@ -13,7 +13,7 @@ from simile.world.map import load_maps
 MAPS = load_maps()
 START = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
-EYE, LEGS = Bionic.INFRARED_EYE, Bionic.HYDRAULIC_LEGS
+EYE, LEGS = Bionic.INFRARED_EYE, Bionic.BIONIC_LEGS
 
 
 def resident(id: str, **values: float) -> Npc:
@@ -151,9 +151,9 @@ def test_what_they_see_calls_a_bionic_new_for_an_hour() -> None:
     street.clock.now += timedelta(minutes=31)
     looks = street.sightings.looks("ana") or ""
 
-    assert looks.startswith("Visitor has hydraulic legs") and "new since" not in looks
+    assert looks.startswith("Visitor has bionic legs") and "new since" not in looks
     assert street.sightings.looks("ben") == (
-        "Visitor has hydraulic legs where their own legs were. Bionics fascinate you."
+        "Visitor has bionic legs where their own legs were. Bionics fascinate you."
     )
     street.body = Body()
     assert street.sightings.looks("ana") is None

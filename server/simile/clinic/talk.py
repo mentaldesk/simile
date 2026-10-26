@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from simile.clinic.clinic import Clinic
-from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig, Offer, Procedure
+from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig, Procedure
 from simile.conversation import duration, parse_reply
 from simile.llm import LLMClient, LLMError
 from simile.schema import (
@@ -204,11 +204,6 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
     ranked = sorted(doctor.values.items(), key=lambda item: item[1], reverse=True)
     most, least = _values(ranked[:3]), _values(ranked[-3:])
     habits = f"Your habits: {_listed(doctor.mannerisms)}." if doctor.mannerisms else ""
-    fits = [
-        f"  - {offer.name}, {_money(offer.price)}, "
-        f"in place of {_in_place_of(bionic, offer, config)}: they {offer.does}."
-        for bionic, offer in config.offers.items()
-    ]
     cell = config.procedures[Bionic.POWER_CELL].recipe.name.lower()
     bought = ", ".join(f"{id.replace('_', ' ')} {_money(price)}" for id, price in salvage.items())
     return "\n".join(
@@ -234,8 +229,6 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "- You buy each recipe a customer knows once, at your price, and they still know it.",
             f"- You patch up the hurt, for up to {_money(config.patch_up)} by how hurt they are, "
             f"and you {_cures(config)}: a rat bite left untreated can turn infected.",
-            "- You still have a few old legs in stock, fitted for the price alone:",
-            *fits,
             "Up in the village people notice bionics, and some think less of anyone who has them. "
             "The eye shows the most.",
             "You never take money or operate while talking: the customer does that at your "
@@ -251,14 +244,6 @@ def _cures(config: ClinicConfig) -> str:
     return _listed(
         [f"{cure.name.lower()} for {_money(cure.price)}" for cure in config.cures.values()]
     )
-
-
-def _in_place_of(bionic: Bionic, offer: Offer, config: ClinicConfig) -> str:
-    if not offer.after:
-        return REPLACES[min(bionic.replaces)]
-    legs = " or ".join(config.offers[before].name.lower() for before in offer.after)
-    brought = f", and only with an {offer.needs.name} they bring" if offer.needs else ""
-    return f"their {legs}, which you take back{brought}"
 
 
 def turn_prompt(doctor: Npc, clinic: Clinic, lines: Sequence[Line], cue: Cue) -> str:

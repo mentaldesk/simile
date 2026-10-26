@@ -92,15 +92,7 @@ FEET: dict[Bionic, Jump] = {
     Bionic.SPRING_FEET_2: grade(rise=6.3),
 }
 """The feet's line: each grade rises higher."""
-STAGE_1: dict[Bionic, Jump] = {
-    Bionic.HYDRAULIC_LEGS: grade(rise=4.3),
-    Bionic.SPRING_LEGS: grade(rise=6.3),
-    Bionic.SPRINT_LEGS: grade(run=7.8),
-    Bionic.BLADE_LEGS: grade(run=10.4),
-    Bionic.PREMIUM_LEGS: grade(rise=6.3, run=10.4),
-}
-"""Stage 1's grades of legs, until P18 retires them, each jumping as a grade of the lines does."""
-GRADES: dict[Bionic, Jump] = {**STAGE_1, **LEGS, **FEET}
+GRADES: dict[Bionic, Jump] = {**LEGS, **FEET}
 """Each grade's jump on its own."""
 OWN_JUMP = "jump"
 
@@ -122,7 +114,7 @@ def kit_name(*fitted: Bionic) -> str:
 
 def _kits() -> dict[str, Jump]:
     found = {}
-    for legs in (None, *STAGE_1, *LEGS):
+    for legs in (None, *LEGS):
         for feet in (None, *FEET):
             on = [bionic for bionic in (legs, feet) if bionic is not None]
             found[kit_name(*on)] = kit(*(GRADES[bionic] for bionic in on))

@@ -105,7 +105,7 @@ S11: the village reacts to the player's bionics (`bionics.py`, `sightings.py`). 
   out, applied as one encounter. So Tobias seeing the eye takes his like from 0.52 to 0.29, Mirela
   seeing the legs takes hers from 0.5 to 0.43, and Kofi's rises a little. The events move how they
   feel but aren't stored, so they stay out of the history B2's prompts list. It also leaves an
-  `observation` memory about the player, "I saw that Visitor has hydraulic legs where their own
+  `observation` memory about the player, "I saw that Visitor has bionic legs where their own
   legs were. It made me uneasy.", with topics `bionics` and each bionic's name, salience from
   `salience` (0.3) plus `salience_feeling` (0.6) times the strength of their feeling and how much
   the bionic stands out, and valence their tolerance. That memory is the record of what they've
@@ -119,7 +119,7 @@ S11: the village reacts to the player's bionics (`bionics.py`, `sightings.py`). 
   decline (see their READMEs).
 - **What they see.** `looks(npc)` is the line B5's prompt starts with, or nothing for a whole
   player: what's fitted, which is new to them (seen in the last `new_for`, an hour, or not yet), and
-  how they feel about bionics: "Visitor has hydraulic legs where their own legs were and an
+  how they feel about bionics: "Visitor has bionic legs where their own legs were and an
   infrared eye that glows faintly red in place of one of their own. The infrared eye is new since
   you last saw them. Bionics on a person repel you: it isn't natural, and you'd rather keep your
   distance."

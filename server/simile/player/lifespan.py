@@ -64,6 +64,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         player,
         hunger.meal,
         hub.broadcast,
+        shut=hunger.shut,
         buyer=trade.buyer,
         piles=pickups.piles,
         recipes=lambda: [book[bionic] for bionic in player.mind.recipes],

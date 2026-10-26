@@ -3,7 +3,7 @@ from collections.abc import Callable
 from starlette.applications import Starlette
 
 from simile.player.config import DEFAULT_CONFIG
-from simile.protocol import Buyer, Meal, PlayerStateMessage
+from simile.protocol import Buyer, Meal, PlayerStateMessage, Shut
 from simile.schema import Bionic, Pile, Player, Recipe
 
 
@@ -26,6 +26,7 @@ class PlayerSync:
         send: Callable[[PlayerStateMessage], None],
         step: float = DEFAULT_CONFIG.step,
         *,
+        shut: Callable[[], Shut | None] = lambda: None,
         buyer: Callable[[], Buyer | None] = lambda: None,
         piles: Callable[[], list[Pile]] = list,
         recipes: Callable[[], list[Recipe]] = list,
@@ -34,6 +35,7 @@ class PlayerSync:
         self.meal = meal
         self.send = send
         self.step = step
+        self.shut = shut
         self.buyer = buyer
         self.piles = piles
         self.recipes = recipes
@@ -44,6 +46,7 @@ class PlayerSync:
             player=self.player.model_copy(deep=True),
             recipes=self.recipes(),
             meal=self.meal(),
+            shut=self.shut(),
             buyer=self.buyer(),
             piles=self.piles(),
         )

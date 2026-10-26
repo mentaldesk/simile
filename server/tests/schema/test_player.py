@@ -10,7 +10,6 @@ from pydantic import ValidationError
 from simile.schema import (
     BIONIC_LEGS,
     BODY_PARTS,
-    LEGS,
     LINES,
     MODELS,
     POWER_CELLS,
@@ -107,7 +106,7 @@ def test_anything_left_out_is_the_starting_players() -> None:
     assert Player.model_validate({}) == Player()
     assert Player.model_validate(FITTED).left == []
     assert Player.model_validate({"money": 40}).items == [lamp()]
-    assert Body.model_validate({"legs": "hydraulic_legs"}).left_kidney == PRESENT
+    assert Body.model_validate({"legs": "bionic_legs"}).left_kidney == PRESENT
 
 
 def test_humanity_falls_with_each_bionic_fitted() -> None:
@@ -116,7 +115,7 @@ def test_humanity_falls_with_each_bionic_fitted() -> None:
     assert humanity[0] == humanity[1] == 1
     assert humanity[0] > humanity[2] > humanity[3] > 0
     assert Player.model_validate(FITTED).body.bionics == [
-        Bionic.HYDRAULIC_LEGS,
+        Bionic.BIONIC_LEGS,
         Bionic.DATAJACK,
         Bionic.INFRARED_EYE,
     ]
@@ -141,7 +140,7 @@ def test_humanity_is_never_saved() -> None:
 @pytest.mark.parametrize(
     ("bionic", "parts"),
     [
-        *((legs, {"legs"}) for legs in LEGS + BIONIC_LEGS),
+        *((legs, {"legs"}) for legs in BIONIC_LEGS),
         *((cell, {"stomach"}) for cell in POWER_CELLS),
         *((feet, {"feet"}) for feet in SPRING_FEET),
         (Bionic.DATAJACK, {"vertebra"}),
@@ -158,10 +157,38 @@ def test_each_bionic_fits_only_in_place_of_its_part(bionic: Bionic, parts: set[s
 
 
 def test_every_grade_of_legs_is_a_bionic_that_takes_the_legs() -> None:
-    assert LEGS[0] is Bionic.HYDRAULIC_LEGS, "today's legs are the first grade, so saves keep them"
-    assert {bionic for bionic in Bionic if bionic.replaces == {"legs"}} == {*LEGS, *BIONIC_LEGS}
-    assert len({legs.humanity_cost for legs in LEGS + BIONIC_LEGS}) == 1
-    assert Body.model_validate({"legs": "spring_legs"}).bionics == [Bionic.SPRING_LEGS]
+    assert {bionic for bionic in Bionic if bionic.replaces == {"legs"}} == set(BIONIC_LEGS)
+    assert len({legs.humanity_cost for legs in BIONIC_LEGS}) == 1
+
+
+@pytest.mark.parametrize(
+    ("legs", "body"),
+    [
+        ("hydraulic_legs", Body(feet=Bionic.SPRING_FEET)),
+        ("spring_legs", Body(feet=Bionic.SPRING_FEET_2)),
+        ("sprint_legs", Body(legs=Bionic.BIONIC_LEGS)),
+        ("blade_legs", Body(legs=Bionic.BIONIC_LEGS_2)),
+        ("premium_legs", Body(legs=Bionic.BIONIC_LEGS_3, feet=Bionic.SPRING_FEET_2)),
+    ],
+)
+def test_stage_1s_legs_load_as_the_lines(legs: str, body: Body) -> None:
+    saved = FITTED | {"body": FITTED["body"] | {"legs": legs}}
+    player = Player.model_validate(saved)
+
+    assert player.body == body.model_copy(
+        update={"vertebra": Bionic.DATAJACK, "right_eye": Bionic.INFRARED_EYE, "left_kidney": SOLD}
+    )
+    assert Player.model_validate_json(player.model_dump_json()) == player
+    assert legs not in Bionic
+
+
+def test_stage_1s_legs_keep_higher_feet_already_fitted() -> None:
+    body = Body.model_validate({"legs": "hydraulic_legs", "feet": "spring_feet_2"})
+
+    assert body == Body(feet=Bionic.SPRING_FEET_2)
+    assert Body.model_validate({"legs": "sprint_legs", "feet": "spring_feet"}) == Body(
+        legs=Bionic.BIONIC_LEGS, feet=Bionic.SPRING_FEET
+    )
 
 
 def test_a_part_is_an_item_found_for_the_doctor_to_fit() -> None:
@@ -481,9 +508,7 @@ def test_each_line_comes_in_grades_of_one_part() -> None:
         assert len({bionic.replaces for bionic in line}) == 1
         assert len({bionic.humanity_cost for bionic in line}) == 1
         assert all(bionic.line == line for bionic in line)
-    assert not set(LEGS) & {bionic for line in LINES for bionic in line}
     assert Bionic.DATAJACK.line == (Bionic.DATAJACK,)
-    assert Bionic.SPRING_LEGS.line == (Bionic.SPRING_LEGS,)
 
 
 def test_a_higher_grade_counts_as_having_a_lower_one() -> None:
@@ -493,7 +518,6 @@ def test_a_higher_grade_counts_as_having_a_lower_one() -> None:
     assert not body.has(Bionic.POWER_CELL_3)
     assert body.has(Bionic.DATAJACK)
     assert not body.has(Bionic.BIONIC_LEGS)
-    assert not Body(legs=Bionic.PREMIUM_LEGS).has(Bionic.HYDRAULIC_LEGS)
 
 
 @pytest.mark.parametrize("data", RECIPES, ids=lambda data: data["bionic"])

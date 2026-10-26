@@ -140,7 +140,7 @@ The Phaser-free halves are tested under vitest.
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
   grade; the legs run half as fast again, then twice and two and a half times as fast, and so jump
   further, and kick harder (`kick`, which the server reads for itself). With both, the jump rises as
-  the feet do and runs as the legs do. Stage 1's grades of legs jump as they did. The scene reads
+  the feet do and runs as the legs do. The scene reads
   the body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the
   datajack fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any
   other; without, it isn't.

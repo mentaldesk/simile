@@ -48,7 +48,7 @@ const serverDir = new URL('../../../server', import.meta.url).pathname;
 const metro = (x: number, y: number): Place => ({ map: 'metro', x, y });
 const CLINIC: Place = { map: 'clinic_floor_0', x: 1, y: 2 };
 const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
-/** The walk's jump onto the metro's high ledge on the hydraulic legs, landing on its secret's cell. */
+/** The walk's jump onto the metro's high ledge on the spring feet, landing on its secret's cell. */
 const LEDGE = { from: 96, takeOff: 103, land: 106, onto: 12 };
 const QUESTION = 'Where were you the night Aris was attacked?';
 
@@ -156,6 +156,15 @@ async function jumpToTheLedge(page: Page): Promise<void> {
   if (at.y !== LEDGE.onto || at.x < LEDGE.land) throw new Error(`landed at ${at.x.toFixed(2)}, ${at.y}, not on the ledge`);
 }
 
+/** Out of the clinic's door: up while E still uses the clinic, or E once it has nothing left to do. */
+async function leaveClinic(page: Page): Promise<void> {
+  const eTaken = await page.evaluate(async (reach) => {
+    const { usedByE } = await import(reach);
+    return !!usedByE((window as unknown as Probed).loopProbe.view().positionOf('player'));
+  }, '/src/world/reach.ts');
+  await take(page, eTaken ? 'ArrowUp' : 'e', metro(89, 15), 'out of the clinic');
+}
+
 /** E at a jack with the datajack opens the journal on what it held. */
 async function jack(page: Page, text: string, what: string): Promise<void> {
   await page.keyboard.press('e');
@@ -168,10 +177,17 @@ const kidney: Beat = async (page, saved, shot) => {
   await openClinic(page);
   await shot('the clinic');
   await deal(page, 'Sell a kidney', (at) => at.money === saved.money + 100 && at.body.left_kidney === 'sold');
-  await deal(page, 'Hydraulic legs', (at) => at.body.legs === 'hydraulic_legs');
-  await shot('the legs fitted');
+  await shot('the kidney sold');
+};
+
+const feet: Beat = async (page, _saved, shot) => {
+  await walkTo(page, 89, REACH.cell, 'to the clinic');
+  await take(page, 'e', CLINIC, 'into the clinic');
+  await openClinic(page);
+  await deal(page, 'Spring feet', (at) => at.body.feet === 'spring_feet');
+  await shot('the feet fitted');
   await page.keyboard.press('Escape');
-  await take(page, 'ArrowUp', metro(89, 15), 'out of the clinic');
+  await leaveClinic(page);
   await jumpToTheLedge(page);
   await walkTo(page, LEDGE.land, 0.3, "to the secret's cell");
   const money = (await seen(page))!.money;
@@ -186,7 +202,7 @@ const datajack: Beat = async (page, saved, shot) => {
   await openClinic(page);
   await deal(page, 'Datajack', (at) => at.body.vertebra === 'datajack');
   await page.keyboard.press('Escape');
-  await take(page, 'ArrowUp', metro(89, 15), 'out of the clinic');
+  await leaveClinic(page);
   await walkTo(page, 104, REACH.cell, 'to the dead terminal');
   await jack(page, saved.lift_log!.slice(0, 40), 'dead terminal');
   await shot('the lift log');
@@ -223,6 +239,7 @@ const eye: Beat = async (page, saved, shot) => {
 
 const BEATS: [string, Beat][] = [
   ['kidney', kidney],
+  ['feet', feet],
   ['datajack', datajack],
   ['hatch', hatch],
   ['eye', eye],

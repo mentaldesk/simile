@@ -1,13 +1,16 @@
 """Until P6 puts recipes and their parts in the world and P19 plays the loop in stage 2's order,
-the loop hands the player what the clinic needs for the datajack and the eye. Delete with P19."""
+the loop hands the player what the clinic needs for the spring feet, the datajack and the eye.
+Delete with P19."""
 
 from simile.clinic.config import DEFAULT_CONFIG
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
 from simile.schema import POWER_CELLS, Bionic, Body, Item, ItemKind, Mind, Player
+from simile.street.sewers import SCRAP
 
 WIRE = PLAYER_CONFIG.salvage["metro_salvage_1"].item
 PARTS: dict[str, Item] = {
     WIRE.id: WIRE,
+    **{id: SCRAP[id] for id in ("brass_fitting", "float_valve")},
     "usb_c_connector": Item(
         id="usb_c_connector", kind=ItemKind.PART, name="USB-C connector", weight=0.1
     ),

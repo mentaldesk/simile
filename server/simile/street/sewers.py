@@ -33,7 +33,7 @@ SHAFT = 12
 """The lift's landing is the first 12 cells, S8's, so a position saved there still stands."""
 APEX_ACTUATOR = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator", weight=2.0)
 """The part the bionic legs' top grade needs, from Apex's own stock, on a pipe past every level's
-gate. Stage 1's premium legs take it too, until P18."""
+gate."""
 HATCH = "sewers_hatch"
 """The maintenance hatch deep in every level, a jack holding Aris's trail."""
 FLOORS = (GROUND, GROUND - 5, GROUND - 10)

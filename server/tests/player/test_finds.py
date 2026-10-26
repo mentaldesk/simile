@@ -168,8 +168,9 @@ def test_a_jack_is_searched_only_with_the_datajack() -> None:
 
 def test_they_learn_only_a_recipe_there_is() -> None:
     searching = Searching()
+    searching.finds.known = lambda: {Bionic.SPRING_FEET: CLINIC.recipes[Bionic.SPRING_FEET]}
 
-    assert not searching.finds.learn(Bionic.HYDRAULIC_LEGS)
+    assert not searching.finds.learn(Bionic.INFRARED_EYE)
     assert searching.finds.learn(Bionic.SPRING_FEET)
     assert not searching.finds.learn(Bionic.SPRING_FEET)
     assert searching.player.mind.recipes == [Bionic.SPRING_FEET]
