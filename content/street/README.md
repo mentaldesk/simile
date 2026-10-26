@@ -318,11 +318,13 @@ counts from the way through, which every grade of legs or feet takes:
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
 
-- `sewers_bot_<n>`, a recycler bot for each salvage there, kept to zone 0. It starts within
-  `BOT_NOTICES` (14) steps of its salvage, walking, climbing or dropping, and patrols two cells
-  either side, every one at least `BOT_GAP` (8) steps from any salvage. That's over half a minute's
-  drift to it, so a player walking from the lift gets there first. Where no cell is in reach and
-  clear, it starts anywhere clear.
+- `sewers_bot_<n>`, a recycler bot for each salvage there, kept to zone 0. Every cell of its patrol,
+  two cells either side of where it starts, is within `REACH` of its salvage by the bot's own grid
+  (the bot's `Collect` reach, 14), so it drifts there while the player's in the sewers. Every cell
+  is also at least `BOT_GAP` (8) moves from any salvage. That's over half a minute's drift, so a
+  player walking from the lift gets there first. A bot whose salvage is on a ledge only a jump
+  reaches starts by the zone's other salvage instead. Where neither is in reach, as in level 5,
+  it only guards, starting anywhere clear.
 - `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to a room of its own, away from
   the salvage where zone 0 has the rooms.
 

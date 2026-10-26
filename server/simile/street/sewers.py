@@ -1,10 +1,15 @@
 """The sewers under the metro: a pool of seeded levels, of which each world plays one."""
 
+import heapq
+import math
 import random
 from collections import deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
+from simile.creatures import grid as moving
+from simile.creatures.kinds import BOT
+from simile.creatures.ways import Collect
 from simile.schema import (
     Bionic,
     CreatureKind,
@@ -54,8 +59,8 @@ RATS = (3, 2)
 """Zone 0's nests of rats, each keeping to a room of its own."""
 BOT_GAP = 8
 """Steps from any salvage that every cell of a bot's patrol keeps: over half a minute's drift."""
-BOT_NOTICES = 14
-"""Steps from its salvage a bot starts within, so it drifts there: the bots' `Collect` reach."""
+REACH = next(way.within for way in BOT.ways if isinstance(way, Collect))
+"""How far by its own grid a bot notices salvage: every cell of its patrol is within it of some."""
 
 ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 SPRING_SECRET = "sewers_secret_spring"
@@ -563,8 +568,7 @@ def cover(level: Level, plan: Plan) -> None:
 
 
 def dangers(level: Level, plan: Plan) -> None:
-    """Zone 0's rats, in nests, and a bot for each salvage there, kept to the zone, starting within
-    reach of it but patrolling well clear of all of it."""
+    """Zone 0's rats and bots: content/street/README.md's *Creatures*."""
     rng = random.Random(f"sewers/{level.seed}/creatures")
     start, gate = level.columns[1].x, level.columns[level.gate].x
     zone = TileArea(x=start, y=0, width=gate - start, height=plan.height)
@@ -580,27 +584,28 @@ def dangers(level: Level, plan: Plan) -> None:
     salvage = [
         p for p in plan.pickups if p.kind == SALVAGE and p.needs is None and start <= p.x < gate
     ]
-    edges = bot_steps(plan, lambda cell: start <= cell[0] < gate)
-    away = [steps_to(edges, (p.x, p.y)) for p in salvage]
+    grid = moving.Grid(Cells(plan), BOT, zone)  # type: ignore[arg-type]
+    cells = [(x, y) for x in range(start, gate) for y in range(plan.height)]
+    edges = {cell: list(grid.edges(cell)) for cell in cells if grid.allowed(cell)}
+    costs = [towards(edges, (p.x, p.y), lambda edge: edge.cost) for p in salvage]
+    steps = [towards(edges, (p.x, p.y), lambda edge: 1.0) for p in salvage]
 
     def patrol(cell: Cell) -> list[Cell]:
-        x, y = cell
-        found = [cell]
-        for dx in (-1, 1):
-            for step in range(1, BOT_SPAN + 1):
-                if not plan.standing(x + dx * step, y):
-                    break
-                found.append((x + dx * step, y))
-        return found
+        return [cell, *grid.run(cell, -1, BOT_SPAN), *grid.run(cell, 1, BOT_SPAN)]
 
     def clear(cell: Cell) -> bool:
-        return all(d.get(c, BOT_GAP) >= BOT_GAP for c in patrol(cell) for d in away)
+        return all(d.get(c, math.inf) >= BOT_GAP for c in patrol(cell) for d in steps)
 
     used: set[Cell] = set()
-    for number, steps in enumerate(away, 1):
+    for number in range(1, len(salvage) + 1):
         free = sorted(c for c in edges if plan.standing(*c) and c not in used and clear(c))
-        near = [c for c in free if steps.get(c, BOT_NOTICES + 1) <= BOT_NOTICES]
-        x, y = rng.choice(near or free)
+        options = free
+        for cost in sorted(costs, key=lambda cost: cost is not costs[number - 1]):
+            near = [c for c in free if all(cost.get(p, math.inf) <= REACH for p in patrol(c))]
+            if near:
+                options = near
+                break
+        x, y = rng.choice(options)
         used.add((x, y))
         bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, x, y, zone, BOT_SPAN)
         plan.creatures.append(bot)
@@ -617,39 +622,24 @@ def dangers(level: Level, plan: Plan) -> None:
             plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
 
 
-def bot_steps(plan: Plan, inside: Callable[[Cell], bool]) -> dict[Cell, list[Cell]]:
-    """Each cell `inside` a bot can be on, and where one step takes it: along, up or down a ladder,
-    or off a ledge to the floor below, which falls fast enough to count as one."""
-    town, edges = Cells(plan), {}
-    for x in range(plan.width):
-        for y in range(plan.height):
-            if not inside((x, y)) or not plan.walkable(x, y):
-                continue
-            ends = [move.cell for move in moves(town, (x, y)) if inside(move.cell)]
-            for side in ((x - 1, y), (x + 1, y)) if plan.standing(x, y) else ():
-                if inside(side) and not plan.walkable(*side) and side not in plan.solid:
-                    land = side
-                    while not plan.walkable(*land) and (land[0], land[1] + 1) not in plan.solid:
-                        land = (land[0], land[1] + 1)
-                    if plan.walkable(*land):
-                        ends.append(land)
-            edges[(x, y)] = ends
-    return edges
-
-
-def steps_to(edges: dict[Cell, list[Cell]], goal: Cell) -> dict[Cell, int]:
-    """The fewest steps from each cell to `goal`, by `edges`."""
-    into: dict[Cell, list[Cell]] = {}
-    for cell, ends in edges.items():
-        for end in ends:
-            into.setdefault(end, []).append(cell)
-    found, queue = {goal: 0}, deque([goal])
-    while queue:
-        here = queue.popleft()
-        for there in into.get(here, []):
+def towards(
+    edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
+) -> dict[Cell, float]:
+    """The least `cost` from each cell to `goal` by `edges`."""
+    into: dict[Cell, list[tuple[Cell, moving.Edge]]] = {}
+    for cell, ways in edges.items():
+        for edge in ways:
+            into.setdefault(edge.to, []).append((cell, edge))
+    found: dict[Cell, float] = {}
+    frontier = [(0.0, goal)]
+    while frontier:
+        spent, here = heapq.heappop(frontier)
+        if here in found:
+            continue
+        found[here] = spent
+        for there, edge in into.get(here, []):
             if there not in found:
-                found[there] = found[here] + 1
-                queue.append(there)
+                heapq.heappush(frontier, (spent + cost(edge), there))
     return found
 
 
@@ -701,6 +691,7 @@ class Cells:
 
     def __init__(self, plan: Plan) -> None:
         self.plan, self.width, self.height = plan, plan.width, plan.height
+        self.id, self.doors = plan.id, plan.doors
 
     def solid(self, x: int, y: int) -> bool:
         return not (0 <= x < self.width and 0 <= y < self.height) or (x, y) in self.plan.solid

@@ -1872,8 +1872,8 @@
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 272,
-          "y": 80
+          "x": 752,
+          "y": 240
         },
         {
           "height": 16,
@@ -1895,7 +1895,7 @@
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 736,
+          "x": 784,
           "y": 240
         },
         {

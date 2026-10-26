@@ -1659,7 +1659,7 @@
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 288,
+          "x": 624,
           "y": 240
         },
         {
@@ -1682,7 +1682,7 @@
           "type": "bot",
           "visible": true,
           "width": 16,
-          "x": 544,
+          "x": 528,
           "y": 160
         },
         {

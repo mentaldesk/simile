@@ -1,4 +1,5 @@
 import heapq
+import math
 from collections import Counter
 from pathlib import Path
 
@@ -6,7 +7,8 @@ import pytest
 from starlette.testclient import TestClient
 
 from simile.app import create_app
-from simile.creatures.engine import Creatures, Sight, creatures_of
+from simile.creatures.engine import Creature, Creatures, Sight, creatures_of
+from simile.creatures.kinds import BOT
 from simile.creatures.placing import populate, spawns
 from simile.persistence import player_of
 from simile.schema import CreatureKind, DoorKind, Player
@@ -15,7 +17,16 @@ from simile.street.jump import JUMP
 from simile.street.metro import ARRIVAL, METRO
 from simile.street.moves import moves
 from simile.street.plan import dumps, tmj
-from simile.street.sewers import LANDING, LEVELS, RATS, SEWERS, SHAFT, Cells, routes, sewers
+from simile.street.sewers import (
+    LANDING,
+    LEVELS,
+    RATS,
+    SEWERS,
+    SHAFT,
+    Cells,
+    routes,
+    sewers,
+)
 from simile.world.map import STREET_DIR, PickupKind, TownMap, load_map, load_maps
 from simile.world.movement import Point
 
@@ -47,8 +58,7 @@ def walking(town: TownMap, start: Cell) -> dict[Cell, float]:
 
 
 def race(maps: dict[str, TownMap], level: int, map_id: str, arrival: Cell) -> dict[str, float]:
-    """When the bots take each salvage on the map, with the player standing where they arrive,
-    checked to be after the player could have walked there."""
+    """When bots take each salvage, with the player waiting where they could have walked from."""
     town = maps[map_id]
     lying = {(p.x, p.y): p.id for p in town.pickups if p.kind is PickupKind.SALVAGE}
     taken: dict[str, float] = {}
@@ -63,14 +73,25 @@ def race(maps: dict[str, TownMap], level: int, map_id: str, arrival: Cell) -> di
         salvage=lambda here: lying if here.id == map_id else {},
         collect=collect,
     )
-    populate(creatures, spawns(level=level))
-    for _ in range(1200):
+    placed = populate(creatures, spawns(level=level))
+    bots = [c for c in placed if c.kind is BOT and c.map == map_id]
+    reachable = {cell for c in bots for cell in lying if cost(c, cell) < math.inf}
+    for _ in range(3000):
         creatures.tick(0.1)
     reach = walking(town, arrival)
     pickups = {p.id: (p.x, p.y) for p in town.pickups}
     late = {id: when for id, when in taken.items() if when <= reach[pickups[id]]}
     assert not late, f"bots beat a walking player to {late}"
+    left = reachable & set(lying)
+    assert not left, f"bots never took salvage they can get to at {left}"
     return taken
+
+
+def cost(creature: Creature, cell: Cell) -> float:
+    """What getting to `cell` costs `creature` from where it starts, by its own grid."""
+    edges = creature.grid.path(creature.home, cell)
+    reaches = (edges[-1].to if edges else creature.home) == cell
+    return sum(edge.cost for edge in edges) if reaches else math.inf
 
 
 def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
