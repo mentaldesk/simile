@@ -125,11 +125,16 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
 - For six seconds after `player_collapsed`, why they collapsed, by its `cause`: "You collapsed from
-  hunger and woke at home.", or "Your power cell ran flat. You collapsed and woke at home." The
-  world scene puts the player at home.
+  hunger and woke at home.", "Your power cell ran flat. You collapsed and woke at home.", or "You
+  collapsed from your wounds and woke at home." The world scene puts the player at home.
 - **On a power cell** (a `power_cell` grade in their stomach) they never eat: no F, no meals, and
   no hunger. The corner says "Your power is low. Charge it at a plug." from 30% power, and "Your
   power cell is nearly flat. Charge it at a plug, or you'll collapse." from 10%.
+- **Health** (`healthFeeling`), on a line of its own: "You're hurt. Rest at home to heal faster."
+  from 60%, and "You're badly hurt. Rest at home or get patched up at the clinic, or you'll
+  collapse." from 25%. A rat bite says "A rat bit you. Have the clinic clean it before it turns.",
+  and an infection, above all else, "Your bite is infected. It won't heal until the clinic treats
+  it." The character screen shows health and each effect in full.
 
 ## Picking up and selling
 
@@ -156,6 +161,9 @@ clinic panel ([`clinic-panel.ts`](clinic-panel.ts)) instead of selling. It lists
 `player_state`:
 
 - "Talk to Annelie Joubert", while she's ringed: Enter closes the panel and opens the chat to her;
+- each of `buyer.treatments`, by its name and price: patching up while they're hurt, and cleaning a
+  bite or treating an infection. Enter sends `treat` with its `effect`, or `null` to be patched up.
+  One they can't afford is dimmed, and says what it costs against what they have;
 - the salvage they carry that the clinic buys, and for how much, sold at once with `sell`;
 - a kidney, for `buyer.parts`' price, sold with `sell_part`;
 - each fitting in each part it can go in place of, with its price, fitted with `fit`. One they

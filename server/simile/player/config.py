@@ -74,8 +74,8 @@ class PlayerConfig(BaseModel):
     step: float = Field(
         default=0.01,
         gt=0,
-        description="How far hunger, power or a lamp's charge moves before a change to it alone "
-        "is sent.",
+        description="How far hunger, power, health, an effect's strength or a lamp's charge moves "
+        "before a change to it alone is sent.",
     )
 
 

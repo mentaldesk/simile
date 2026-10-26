@@ -20,6 +20,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         PlayerSayMessage,
         SellPartMessage,
         SellRecipeMessage,
+        TreatMessage,
         hub_of,
     )
     from simile.sim import world_of
@@ -46,6 +47,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(SellPartMessage, lambda message: clinic.sell_part(message.part)),
         hub.subscribe(FitMessage, lambda message: clinic.fit(message.bionic, message.part)),
         hub.subscribe(SellRecipeMessage, lambda message: clinic.sell_recipe(message.recipe)),
+        hub.subscribe(TreatMessage, lambda message: clinic.treat(message.effect)),
         hub.subscribe(PlayerSayMessage, lambda message: talk.say(message.text, message.target)),
         world.loop.register(talk),
     ]
