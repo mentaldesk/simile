@@ -382,7 +382,7 @@ def shipping_container(length: float = 6.6, height: float = 3.36) -> Image.Image
     return s.image
 
 
-def bulkhead(width: float = 2.2, height: float = 7.8, footing: float = 2.2) -> Image.Image:
+def bulkhead(width: float = 3.3, height: float = 7.8, footing: float = 2.2) -> Image.Image:
     """A tiled wall with a jammed steel door at its foot and a vent near its top, on the floor's
     edge `footing` deep."""
     s = Sheet(width, height + footing, 120)

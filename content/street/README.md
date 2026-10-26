@@ -82,7 +82,7 @@ the sewers `maintenance_hatch`, `sewer_lamp`, `sewer_outfall`, `sewer_pier`, `se
 `rope_bridge` stands on the solid row under it, its deck. A
 `catwalk` covers its solid row and the row above it, its deck on the solid row's top, and the
 `train_carriage` and a `shipping_container` their roof's solid row and everything under it, or a
-solid block where one container stands on another. A `bulkhead` covers a wall two cells thick and, like the sewers' weir, two rows of the ground under it. `metro_steps` covers a flight of stairs
+solid block where one container stands on another. A `bulkhead` covers a wall three cells thick and, like the sewers' weir, two rows of the ground under it. `metro_steps` covers a flight of stairs
 and the cells at its ends, over the street's own steps.
 
 ## Map properties
@@ -265,7 +265,7 @@ passes through it.
 | 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12). Nothing past it stands lower than the floor for twelve cells, so the legs alone don't reach the ledge from the east. |
 | 110–155 | The freight siding, lit, through a `tunnel_arch` (112–114): `crates` to search (119), two `shipping_container`s stacked (124–129) with a ladder (123) up their side to the top (row 9), a third beside them (132–137, roof row 12) a jump down from the top, and over it a crane's gantry (131–138, row 5), four rows above the top of the stack. Then the signal box: a deck (142–153, row 11) up a ladder (141), with two dead `switchboard`s and the signal desk, a `dead_terminal`. |
 | 156–205 | The disused track, through a `tunnel_arch` (156–158), dark either side of a lit alcove (180–182) with a plug, past `rubble`, a tool crate (168) and a `bedroll`. In the east half a ladder (188) climbs to a pipe ledge (189–191, row 12), and a ledge (194–195, row 10) is a hop up from it. |
-| 206–229 | The shed, lit, under a roof of `pipes` (row 4) like the gantry's: a plug, the `lockers`, and a ladder (207) up to a mezzanine (208–212, row 8). Past a five-cell gap from it is the top of the store room's wall (218–219, row 8), a `bulkhead` with a jammed door at its foot, and a ladder (220) inside down to the store room's floor and back up. |
+| 206–229 | The shed, lit, under a roof of `pipes` (row 4) like the gantry's: a plug, the `lockers`, and a ladder (207) up to a mezzanine (208–212, row 8). Past a five-cell gap from it is the top of the store room's wall (218–220, row 8), a `bulkhead` with a jammed door at its foot, and a ladder (221) inside down to the store room's floor and back up. |
 
 **What later tasks build on.** Each has an id that stays put; `simile.street.metro` names them.
 
@@ -284,7 +284,7 @@ passes through it.
 | P28 | Dark stretches past the depot, in `light` | `metro_track_west` (156–179) and `metro_track_east` (183–205). The rest is lit: `metro_siding` (110–155), `metro_track_alcove` and `metro_shed`. |
 | P28 | Two more plugs, each a `plug` at a `breaker_box` | `metro_track_plug`, stood at from (181, 15) in the track's lit alcove, and `metro_shed_plug` from (208, 15). |
 | P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
-| P28 | The jammed door | The store room's wall, `STORE_WALL` (218–219, rows 9–15), solid: for now the way in is over its top. A kick (P9) that opens it would clear the wall's foot. |
+| P28 | The jammed door | The store room's wall, `STORE_WALL` (218–220, rows 9–15), solid: for now the way in is over its top. A kick (P9) that opens it would clear the wall's foot. |
 | P28 | The signal desk, a `jack` | `metro_signal_desk`, stood at from (150, 11). With the datajack, E finds two circuit boards in it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 

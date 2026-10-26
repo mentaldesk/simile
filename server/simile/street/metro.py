@@ -81,7 +81,7 @@ MEZZANINE = GROUND - 7
 """The row the shed's mezzanine and the top of the store room's wall stand on, three rows under
 its roof, like the gantry."""
 STORE_WALL = 218
-"""The west end of the wall, two cells thick, between the shed and its store room, with the
+"""The west end of the wall, three cells thick, between the shed and its store room, with the
 jammed door at its foot."""
 STORE_SECRET = "metro_secret_store"
 
@@ -340,9 +340,9 @@ def shed(plan: Plan) -> None:
     searchable(plan, LOCKERS, "Tool lockers", area, under(area), [RATION_PACK])
     plan.ladder((207, GROUND), GROUND - MEZZANINE)
     catwalk(plan, 208, MEZZANINE, 5)
-    plan.fill(STORE_WALL, MEZZANINE + 1, 2, GROUND - MEZZANINE)
-    plan.piece("bulkhead", STORE_WALL, MEZZANINE + 1, 2, GROUND - MEZZANINE + 2)
-    plan.ladder((STORE_WALL + 2, GROUND), GROUND - MEZZANINE)
+    plan.fill(STORE_WALL, MEZZANINE + 1, 3, GROUND - MEZZANINE)
+    plan.piece("bulkhead", STORE_WALL, MEZZANINE + 1, 3, GROUND - MEZZANINE + 2)
+    plan.ladder((STORE_WALL + 3, GROUND), GROUND - MEZZANINE)
     salvage(plan, 11, 224, GROUND, Bionic.BIONIC_LEGS, BRASS_VALVE)
     plan.piece("crates", 227, GROUND, 1, 1)
     secret(plan, STORE_SECRET, 228, GROUND, Bionic.BIONIC_LEGS, money=50.0)

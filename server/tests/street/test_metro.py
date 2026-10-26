@@ -452,7 +452,7 @@ def test_the_metro_goes_on_past_the_clinic_and_its_new_places_are_walked_to_from
     for thing in things:
         assert {(t.x, t.y) for t in machine(thing).stand} <= walked, thing
     assert set(salvage) <= walked
-    assert (STORE_WALL - 1, GROUND) in walked and (STORE_WALL + 2, GROUND) not in walked
+    assert (STORE_WALL - 1, GROUND) in walked and (STORE_WALL + 3, GROUND) not in walked
 
 
 def test_the_siding_stacks_containers_under_a_crane_that_only_the_feet_reach() -> None:
@@ -497,12 +497,12 @@ def test_the_store_room_is_behind_a_jammed_door_and_only_the_legs_clear_the_gap_
     edge, wall = (212, MEZZANINE), (STORE_WALL, MEZZANINE)
     gap = range(edge[0] + 1, wall[0])
     store = Spot(METRO, STORE_WALL + 4, GROUND)
-    jams = [(STORE_WALL + dx, y) for dx in range(2) for y in range(MEZZANINE + 1, GROUND + 1)]
+    jams = [(STORE_WALL + dx, y) for dx in range(3) for y in range(MEZZANINE + 1, GROUND + 1)]
 
     assert all(METRO_MAP.solid(x, y) for x, y in jams)
     assert len(gap) == 5 and not any(METRO_MAP.walkable(x, MEZZANINE) for x in gap)
     assert METRO_MAP.solid(edge[0], MEZZANINE - 4) and not METRO_MAP.solid(edge[0], MEZZANINE - 3)
-    assert METRO_MAP.climb(STORE_WALL + 2, MEZZANINE) is DoorKind.LADDER, "no way out"
+    assert METRO_MAP.climb(STORE_WALL + 3, MEZZANINE) is DoorKind.LADDER, "no way out"
     assert wall not in dict(moves(METRO_MAP, edge, True))
     for kit, jump in KITS.items():
         legs = jump.run > JUMP.run
