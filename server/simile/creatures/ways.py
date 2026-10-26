@@ -1,8 +1,8 @@
 """How a creature decides where to go: README.md's *Moving*."""
 
 import math
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, NamedTuple, Protocol
 
 from simile.creatures.grid import Cell
@@ -27,6 +27,8 @@ class Senses:
     town: TownMap
     player: Player | None = None
     at: Point | None = None
+    salvage: Mapping[Cell, str] = field(default_factory=dict)
+    """The salvage lying on the map, by its pickup's cell, while the player's on it."""
 
     @property
     def lamp(self) -> bool:
@@ -57,6 +59,7 @@ class Aim(NamedTuple):
     pace: float = 1.0
     attacks: bool = False
     still: CreatureState = CreatureState.IDLE
+    collects: bool = False
 
 
 class Way(Protocol):
@@ -68,17 +71,20 @@ type Lure = Callable[[Senses], tuple[float, float] | None]
 
 
 def food(senses: Senses) -> Point | None:
-    """The player, while they carry food."""
     return senses.at if senses.carries(ItemKind.FOOD) else None
 
 
 def lamp(senses: Senses) -> tuple[float, float] | None:
-    """The player's lamp, while it's on."""
     return senses.light
 
 
 def lamp_on(senses: Senses) -> bool:
     return senses.lamp
+
+
+def fitted(senses: Senses) -> bool:
+    """While the player has any bionic."""
+    return senses.player is not None and bool(senses.player.body.bionics)
 
 
 @dataclass(frozen=True)
@@ -187,3 +193,34 @@ class Roost:
         if creature.roost is None or (self.when is not None and not self.when(senses)):
             return None
         return Aim(creature.roost, CreatureState.MOVING, still=CreatureState.ROOSTING)
+
+
+@dataclass(frozen=True)
+class Scurry:
+    """Home after an attack, until it's rested."""
+
+    pace: float = 1.5
+
+    def aim(self, creature: "Creature", senses: Senses) -> Aim | None:
+        if senses.now >= creature.rested:
+            return None
+        return Aim(creature.home, CreatureState.FLEEING, self.pace)
+
+
+@dataclass(frozen=True)
+class Collect:
+    """To the nearest salvage lying within `within`, to take it."""
+
+    within: float = 4.0
+    pace: float = 1.0
+
+    def aim(self, creature: "Creature", senses: Senses) -> Aim | None:
+        salvage = senses.salvage
+        if not salvage:
+            return None
+        target = creature.grid.nearest(
+            creature.cell, lambda cell: 0.0 if cell in salvage else None, self.within
+        )
+        if target not in salvage:
+            return None
+        return Aim(target, CreatureState.MOVING, self.pace, collects=True)

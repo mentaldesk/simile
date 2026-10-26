@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
-import { bionicName, bodyRows, CharacterPanel, gear, known, TABS, vitals } from './character-panel';
+import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, known, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
 
-vi.mock('./icons', () => ({ iconUrl: (id: string) => `/icons/${id}.webp` }));
+vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'unpainted' ? undefined : `/icons/${id}.webp`) }));
 
 const item = (id: string, name: string, weight: number, extra: Partial<Item> = {}): Item => ({
   id,
@@ -16,7 +16,7 @@ const item = (id: string, name: string, weight: number, extra: Partial<Item> = {
 });
 
 const LAMP = item('lamp', 'Lamp', 0.5, { kind: 'lamp', charge: 0.6, on: true });
-const WIRE = item('copper_wire', 'Copper wire', 0.25);
+const WIRE = item('copper_wire', 'Copper wire', 0.25, { kind: 'salvage' });
 
 const DATAJACK: Recipe = {
   bionic: 'datajack',
@@ -245,23 +245,178 @@ describe('body', () => {
 });
 
 describe('gear', () => {
-  it('lists what they carry, each kind once, against the carry limit', () => {
-    expect(gear(PLAYER)).toEqual({
-      rows: [
-        { name: 'Lamp', count: 1, weight: 0.5, note: '60%' },
-        { name: 'Copper wire', count: 2, weight: 0.5, note: undefined },
-      ],
-      load: 1,
-      limit: 10,
-    });
+  const RATIONS = item('ration_pack', 'Ration pack', 0.5, { kind: 'food' });
+  const CELLS = item('lithium_cell', 'Lithium cell', 0.3);
+  const ODD = item('unpainted', 'Odd thing', 1, { kind: 'salvage' });
+  const LADEN: Player = {
+    ...PLAYER,
+    items: [
+      LAMP,
+      WIRE,
+      RATIONS,
+      WIRE,
+      CELLS,
+      CELLS,
+      CELLS,
+      item('usb_c_connector', 'USB-C connector', 0.1),
+      item('scrap_steel', 'Scrap steel', 4.5, { kind: 'salvage' }),
+      item('apex_actuator', 'Apex actuator', 2),
+      ODD,
+    ],
+  };
+  const LADEN_STATE: PlayerStateMessage = { ...STATE, player: LADEN };
+
+  function onGear(state: PlayerStateMessage = LADEN_STATE) {
+    const shown = opened(state);
+    shown.section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+    return shown;
+  }
+
+  const tiles = (page: HTMLElement) => [...page.querySelectorAll<HTMLElement>('.character-tile')];
+  const picked = (page: HTMLElement) => page.querySelector<HTMLElement>('.character-tile.character-picked')?.dataset.item;
+  const details = (page: HTMLElement) => texts(page, '.character-item > :is(h3, b, p)');
+
+  it('has a tile per kind of item in the order they got it, with its count, weight and picture', () => {
+    const { tiles, load, limit } = gear(LADEN);
+    expect(tiles.map(({ id, count, weight }) => [id, count, Number(weight.toFixed(2))])).toEqual([
+      ['lamp', 1, 0.5],
+      ['copper_wire', 2, 0.5],
+      ['ration_pack', 1, 0.5],
+      ['lithium_cell', 3, 0.9],
+      ['usb_c_connector', 1, 0.1],
+      ['scrap_steel', 1, 4.5],
+      ['apex_actuator', 1, 2],
+      ['unpainted', 1, 1],
+    ]);
+    expect(tiles[0]).toMatchObject({ kind: 'lamp', picture: 'lamp', charge: 0.6, on: true });
+    expect(tiles[1]).not.toHaveProperty('charge');
+    expect(Number(load.toFixed(2))).toBe(10);
+    expect(limit).toBe(10);
   });
 
-  it('draws on the Gear tab', () => {
-    const { section, page } = opened();
-    press(section, 'ArrowLeft');
-    press(section, 'ArrowLeft');
+  it('shows the fallback picture for an item with none of its own', () => {
+    expect(gear(LADEN).tiles.at(-1)?.picture).toBe(UNKNOWN_ITEM);
+    const { page } = onGear();
+    expect(tiles(page).at(-1)?.querySelector('img')?.getAttribute('src')).toBe(`/icons/${UNKNOWN_ITEM}.webp`);
+  });
+
+  it('details what each is for, its weight, the lamp’s charge, and the known recipes that use it', () => {
+    const [lamp, wire, rations, cells, usb, scrap] = gear(LADEN).tiles;
+    const detail = (tile: (typeof lamp)) => itemDetails(tile, LADEN, STATE.recipes);
+    expect(detail(lamp)).toEqual({
+      title: 'Lamp',
+      kind: 'lamp',
+      status: 'Your lamp, to see by',
+      lines: ['0.5 kg.', 'Charged 60%, on. L switches it.'],
+    });
+    expect(detail(wire).lines).toEqual(['2 of them, 0.25 kg each, 0.5 kg in all.', 'Your recipe for the datajack uses it.']);
+    expect(detail(rations)).toMatchObject({ status: 'Food, to eat', lines: ['0.5 kg.', "F eats it once you're peckish."] });
+    expect(detail(cells)).toMatchObject({
+      status: 'A part, for a bionic',
+      lines: ['3 of them, 0.3 kg each, 0.9 kg in all.', 'Your recipe for the power cell uses it.'],
+    });
+    expect(detail(usb).lines.at(-1)).toBe('Your recipe for the datajack uses it.');
+    expect(itemDetails(usb, { ...LADEN, mind: { recipes: [], sold: [] } }, STATE.recipes).lines.at(-1)).toBe('No recipe you know uses it.');
+    expect(detail(scrap)).toMatchObject({ status: 'Salvage, to sell', lines: ['4.5 kg.'] });
+    const both: Recipe = { ...DATAJACK, bionic: 'infrared_eye', name: 'Infrared eye' };
+    const knowing: Player = { ...LADEN, mind: { recipes: ['datajack', 'infrared_eye'], sold: [] } };
+    expect(itemDetails(wire, knowing, [DATAJACK, both]).lines.at(-1)).toBe('Your recipe for the datajack and the infrared eye uses it.');
+  });
+
+  it('draws a grid of pictures, each with its count when there’s more than one and its name, under the load', () => {
+    const { section, page } = onGear();
     expect(texts(section, '[aria-selected="true"]')).toEqual(['Gear']);
-    expect(texts(page, '.character-rows > li')).toEqual(['Carrying1 kg of 10 kg', 'Lamp60% · 0.5 kg', 'Copper wire ×20.5 kg']);
+    expect(texts(page, '.character-rows > li')).toEqual(['Carrying10 kg of 10 kg']);
+    expect(page.querySelector<HTMLElement>('.character-grid')!.style.getPropertyValue('--columns')).toBe(String(COLUMNS));
+    expect(tiles(page).map(({ dataset }) => dataset.item)).toEqual(gear(LADEN).tiles.map(({ id }) => id));
+    expect(tiles(page)[1].querySelector('img')?.getAttribute('src')).toBe('/icons/copper_wire.webp');
+    expect(texts(page, '.character-count')).toEqual(['×2', '×3']);
+    expect(texts(page, '.character-tile-name').slice(0, 3)).toEqual(['Lamp', 'Copper wire', 'Ration pack']);
+    expect(tiles(page)[0].querySelector<HTMLElement>('.character-meter > span')!.style.width).toBe('60%');
+  });
+
+  it('shows a tile’s details on hover, and lets go when the mouse leaves the grid', () => {
+    const { section, page } = onGear();
+    expect(picked(page)).toBeUndefined();
+    tiles(page)[1].dispatchEvent(new MouseEvent('mouseenter'));
+    expect(picked(page)).toBe('copper_wire');
+    expect(details(page)).toEqual([
+      'Copper wire',
+      'Salvage, to sell',
+      '2 of them, 0.25 kg each, 0.5 kg in all.',
+      'Your recipe for the datajack uses it.',
+    ]);
+    page.querySelector('.character-grid')!.dispatchEvent(new MouseEvent('mouseleave'));
+    expect(picked(page)).toBeUndefined();
+    expect(page.querySelector('.character-item h3')).toBeNull();
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+  });
+
+  it('picks the first tile on Down, moves with the arrows, and lets go Up off the top row so ← → switch tabs', () => {
+    const { section, page } = onGear();
+    expect(press(section, 'ArrowDown').defaultPrevented).toBe(true);
+    expect(picked(page)).toBe('lamp');
+    press(section, 'ArrowRight');
+    expect(picked(page)).toBe('copper_wire');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Gear']);
+    press(section, 'ArrowDown');
+    expect(picked(page)).toBe('apex_actuator');
+    press(section, 'ArrowDown');
+    expect(picked(page)).toBe('apex_actuator');
+    press(section, 'ArrowRight');
+    press(section, 'ArrowRight');
+    expect(picked(page)).toBe('unpainted');
+    expect(details(page)[0]).toBe('Odd thing');
+    press(section, 'ArrowLeft');
+    press(section, 'ArrowUp');
+    expect(picked(page)).toBe('copper_wire');
+    press(section, 'ArrowLeft');
+    press(section, 'ArrowLeft');
+    expect(picked(page)).toBe('lamp');
+    press(section, 'ArrowUp');
+    expect(picked(page)).toBeUndefined();
+    press(section, 'ArrowLeft');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Body']);
+  });
+
+  it('keeps the tile picked as each player_state redraws it, or the one in its place once it’s gone', () => {
+    const { panel, section, page } = onGear();
+    press(section, 'ArrowDown');
+    press(section, 'ArrowRight');
+    panel.update({ ...LADEN_STATE, player: { ...LADEN, items: [...LADEN.items, WIRE] } }, away);
+    expect(picked(page)).toBe('copper_wire');
+    expect(details(page)[2]).toBe('3 of them, 0.25 kg each, 0.75 kg in all.');
+    panel.update({ ...LADEN_STATE, player: { ...LADEN, items: LADEN.items.filter(({ id }) => id !== 'copper_wire') } }, away);
+    expect(picked(page)).toBe('ration_pack');
+  });
+
+  it('starts with nothing picked each time it’s shown', () => {
+    const { section, page } = onGear();
+    press(section, 'ArrowDown');
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[1].click();
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+    expect(picked(page)).toBeUndefined();
+  });
+
+  it('lets go of the tile picked when the Gear tab is clicked again', () => {
+    const { section, page } = onGear();
+    press(section, 'ArrowDown');
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+    expect(picked(page)).toBeUndefined();
+    expect(page.querySelector('.character-item h3')).toBeNull();
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+  });
+
+  it('opens again with nothing picked, so ← → switch tabs straight away', () => {
+    const { panel, section, page } = onGear();
+    press(section, 'ArrowDown');
+    panel.close();
+    panel.open();
+    expect(picked(page)).toBeUndefined();
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
   });
 
   it('says when they carry nothing', () => {

@@ -34,6 +34,8 @@ KICK_HEIGHT = 1.2
 """Tiles above the player's feet a kick reaches: a bat lower than that is in it."""
 JUMPS_OVER = 0.8
 """Tiles above a walking creature the player's feet are out of its reach."""
+COLLECTING = 4.0
+"""Sim seconds a creature spends at salvage before it's taken, for the player to beat it."""
 
 
 class Leg(NamedTuple):
@@ -79,6 +81,8 @@ class Creature:
     strikes: float | None = None
     rested: float = 0.0
     hurt: float = 0.0
+    collecting: tuple[str, float] | None = None
+    """The pickup it's taking, and when it's taken."""
     down: float | None = None
     """When it went down, while it's gone."""
     sent: Shown | None = None
@@ -143,12 +147,16 @@ class Creatures:
         sense: Callable[[], Sight] = Sight,
         harm: Callable[[Kind], None] = lambda kind: None,
         send: Callable[[ServerMessage], None] = lambda message: None,
+        salvage: Callable[[TownMap], Mapping[Cell, str]] = lambda town: {},
+        collect: Callable[[str], None] = lambda pickup: None,
     ) -> None:
         self.maps = maps
         self.clock = clock
         self.sense = sense
         self.harm = harm
         self.send = send
+        self.salvage = salvage
+        self.collect = collect
         self.now = 0.0
         self.all: dict[str, Creature] = {}
         self.numbers: dict[str, int] = {}
@@ -220,7 +228,8 @@ class Creatures:
             if town.id not in senses:
                 at = sight.at if sight.at is not None and sight.at.map == town.id else None
                 player = sight.player if at is not None else None
-                senses[town.id] = Senses(self.now, town, player, at)
+                salvage = self.salvage(town) if at is not None else {}
+                senses[town.id] = Senses(self.now, town, player, at, salvage)
             self._step(creature, senses[town.id], dt)
 
     def kickable(self, kick: Kick) -> Hit | None:
@@ -256,7 +265,7 @@ class Creatures:
         start = kept[-1].to if kept else creature.cell
         cells = creature.grid.run(start, away, round(creature.kind.knock * kick.strength))
         creature.path = deque([*kept, *(Leg(cell) for cell in cells)])
-        creature.goal = creature.aim = creature.strikes = None
+        creature.goal = creature.aim = creature.strikes = creature.collecting = None
         creature.hurt = self.now + creature.kind.stagger
         creature.facing = SideFacing.WEST if away > 0 else SideFacing.EAST
         creature.state = CreatureState.HURT
@@ -268,6 +277,9 @@ class Creatures:
         if self.now < creature.hurt:
             self._move(creature, dt, KNOCK_SPEED)
             self._settle(creature, CreatureState.HURT)
+            return
+        if (collecting := creature.collecting) is not None:
+            self._collect(creature, *collecting, senses)
             return
         if self.now >= creature.thinks:
             creature.thinks = self.now + THINK
@@ -288,6 +300,11 @@ class Creatures:
             self._settle(creature, CreatureState.ATTACKING)
             return
         self._move(creature, dt, kind.speed * (aim.pace if aim else 1.0))
+        arrived = aim and aim.collects and creature.resting and creature.cell == aim.target
+        if arrived and (pickup := senses.salvage.get(creature.cell)) is not None:
+            creature.collecting = (pickup, self.now + COLLECTING)
+            self._settle(creature, CreatureState.ATTACKING)
+            return
         if not creature.resting:
             state = aim.state if aim else CreatureState.MOVING
         elif aim is not None and creature.cell == aim.target:
@@ -332,6 +349,18 @@ class Creatures:
                 creature.y += (ty - creature.y) * share
                 budget = 0
 
+    def _collect(self, creature: Creature, pickup: str, done: float, senses: Senses) -> None:
+        if senses.salvage.get(creature.cell) != pickup:
+            creature.collecting = None
+            self._settle(creature, CreatureState.IDLE)
+        elif self.now >= done:
+            creature.collecting = None
+            self._log("A %s collects salvage", creature)
+            self.collect(pickup)
+            self._settle(creature, CreatureState.IDLE)
+        else:
+            self._settle(creature, CreatureState.ATTACKING)
+
     def _settle(self, creature: Creature, state: CreatureState) -> None:
         creature.state = state
         self._send(creature)
@@ -350,6 +379,7 @@ class Creatures:
         creature.down = self.now
         creature.path.clear()
         creature.goal = creature.aim = creature.strikes = creature.seen = None
+        creature.collecting = None
         creature.sent = None
         self._log("A %s goes down", creature)
         self.send(CreatureGoneMessage(creature_id=creature.id))

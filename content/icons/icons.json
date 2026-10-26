@@ -136,6 +136,198 @@
         187
       ],
       "hash": "fc6088b579a10395"
+    },
+    "lamp": {
+      "file": "lamp.webp",
+      "size": [
+        168,
+        260
+      ],
+      "hash": "efe4d4ae69378bff"
+    },
+    "ration_pack": {
+      "file": "ration_pack.webp",
+      "size": [
+        233,
+        260
+      ],
+      "hash": "7c835dbcc3de1873"
+    },
+    "ration_bar": {
+      "file": "ration_bar.webp",
+      "size": [
+        260,
+        116
+      ],
+      "hash": "08e256dddf373dea"
+    },
+    "copper_wire": {
+      "file": "copper_wire.webp",
+      "size": [
+        260,
+        200
+      ],
+      "hash": "986e069fb483b16d"
+    },
+    "scrap_steel": {
+      "file": "scrap_steel.webp",
+      "size": [
+        260,
+        176
+      ],
+      "hash": "218093d41a8e95d0"
+    },
+    "circuit_board": {
+      "file": "circuit_board.webp",
+      "size": [
+        260,
+        229
+      ],
+      "hash": "fbecf5d89d763545"
+    },
+    "brass_valve": {
+      "file": "brass_valve.webp",
+      "size": [
+        260,
+        248
+      ],
+      "hash": "e0cac15cdb181dfa"
+    },
+    "signal_relay": {
+      "file": "signal_relay.webp",
+      "size": [
+        226,
+        260
+      ],
+      "hash": "61355bb37ab9f674"
+    },
+    "servo_motor": {
+      "file": "servo_motor.webp",
+      "size": [
+        260,
+        218
+      ],
+      "hash": "13fd8adadf2a37c1"
+    },
+    "lead_pipe": {
+      "file": "lead_pipe.webp",
+      "size": [
+        260,
+        143
+      ],
+      "hash": "9c76c6707b4341b4"
+    },
+    "copper_coil": {
+      "file": "copper_coil.webp",
+      "size": [
+        260,
+        145
+      ],
+      "hash": "80fa25961a5882dc"
+    },
+    "brass_fitting": {
+      "file": "brass_fitting.webp",
+      "size": [
+        260,
+        212
+      ],
+      "hash": "4b501772b3f0bb2c"
+    },
+    "pump_impeller": {
+      "file": "pump_impeller.webp",
+      "size": [
+        260,
+        257
+      ],
+      "hash": "f700f4ad72a7d40b"
+    },
+    "float_valve": {
+      "file": "float_valve.webp",
+      "size": [
+        260,
+        98
+      ],
+      "hash": "40ce53f6b26ad3a4"
+    },
+    "filter_mesh": {
+      "file": "filter_mesh.webp",
+      "size": [
+        260,
+        235
+      ],
+      "hash": "fd941a09a34bdcce"
+    },
+    "old_battery": {
+      "file": "old_battery.webp",
+      "size": [
+        260,
+        201
+      ],
+      "hash": "718b2c0b8bf0a258"
+    },
+    "pressure_gauge": {
+      "file": "pressure_gauge.webp",
+      "size": [
+        206,
+        260
+      ],
+      "hash": "773ffd00bfae36a5"
+    },
+    "apex_board": {
+      "file": "apex_board.webp",
+      "size": [
+        260,
+        234
+      ],
+      "hash": "e0e410f52f1e9bd5"
+    },
+    "lithium_cell": {
+      "file": "lithium_cell.webp",
+      "size": [
+        121,
+        260
+      ],
+      "hash": "b17a046d25f475c8"
+    },
+    "charge_controller": {
+      "file": "charge_controller.webp",
+      "size": [
+        246,
+        260
+      ],
+      "hash": "e1cddb813347479f"
+    },
+    "usb_c_connector": {
+      "file": "usb_c_connector.webp",
+      "size": [
+        252,
+        260
+      ],
+      "hash": "7ccaa6dfe5495af7"
+    },
+    "infrared_lens": {
+      "file": "infrared_lens.webp",
+      "size": [
+        260,
+        258
+      ],
+      "hash": "f8070604c315273e"
+    },
+    "apex_actuator": {
+      "file": "apex_actuator.webp",
+      "size": [
+        161,
+        260
+      ],
+      "hash": "5b8da755a92d2e06"
+    },
+    "unknown_item": {
+      "file": "unknown_item.webp",
+      "size": [
+        260,
+        249
+      ],
+      "hash": "3a3943a9ecdb61dd"
     }
   }
 }
