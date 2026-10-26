@@ -27,7 +27,7 @@ def make_app(make_package: MakePackage) -> Starlette:
     files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in LIFESPANS}
     files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
     files["player/lifespan.py"] = "from simile.player.lifespan import running\n"
-    files["clinic/lifespan.py"] = "from simile.clinic.lifespan import running\n"
+    files["clinic/lifespan.py"] = "from simile.clinic.lifespan import lifespan, running\n"
     app = create_app(make_package(files))
     app.state.world = World(Clock(START))
     return app
@@ -89,12 +89,13 @@ def test_the_player_sells_a_kidney_and_is_fitted_with_the_legs(make_package: Mak
     assert [f["bionic"] for f in at_the_clinic["buyer"]["fittings"]] == [
         "hydraulic_legs",
         "sprint_legs",
+        "power_cell",
     ]
     assert sold["player"]["body"]["left_kidney"] == "sold"
     assert "parts" not in sold["buyer"]
     assert fitted["player"]["body"]["legs"] == "hydraulic_legs"
     assert fitted["player"]["money"] == 20
-    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == ["spring_legs"]
+    assert [f["bionic"] for f in fitted["buyer"]["fittings"]] == ["spring_legs", "power_cell"]
     entries = [(e.kind, e.payer, e.payee, e.amount) for e in economy.ledger.entries]
     assert entries == [
         (Kind.SALVAGE, OUTSIDE, PLAYER, 100),

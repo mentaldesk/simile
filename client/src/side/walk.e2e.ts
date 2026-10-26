@@ -32,6 +32,7 @@ type SideWalk = {
   move(id: string, to: Place): void;
   fit(part: string, bionic: string): void;
   jacks(): Place[];
+  mind(): { recipes: string[]; searched: string[]; items: string[] };
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -66,6 +67,7 @@ const walkApi = (page: Page) => ({
   fit: (part: string, bionic: string) =>
     page.evaluate(([part, bionic]) => (window as unknown as Paged).sideWalk.fit(part, bionic), [part, bionic] as const),
   jacks: () => page.evaluate(() => (window as unknown as Paged).sideWalk.jacks()),
+  mind: () => page.evaluate(() => (window as unknown as Paged).sideWalk.mind()),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -427,6 +429,34 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
 }
 
+/** E at Aris's bench searches it and learns the datajack's schematic, once. */
+async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = "searching Aris's bench";
+  await teleport(page, api, { map: 'maker_space_floor_0', x: 5, y: 2 }, name);
+  await run(page, 300);
+  const hint = await shown(page, '.counter-hint');
+  if (hint !== "Press E to search Aris's bench.") throw new Error(`${name}: the hint is ${hint}`);
+  await pressingE(page, api, name);
+  const found = await shown(page, '.counter-hint');
+  if (found !== 'You learn how to build the datajack.') throw new Error(`${name}: E said ${found}`);
+  await shot(page, index, name);
+  const { recipes, searched } = await api.mind();
+  if (!recipes.includes('datajack') || !searched.includes('maker_space_bench')) {
+    throw new Error(`${name}: they know ${recipes.join(', ')} and searched ${searched.join(', ')}`);
+  }
+  await run(page, 2600);
+  const after = (await api.state())!;
+  if (after.used === 'searchable') throw new Error(`${name}: E still searches the bench`);
+  await teleport(page, api, { map: 'maker_space_floor_2', x: 12, y: 2 }, `${name}, then the loft's shelf`);
+  await run(page, 300);
+  await pressingE(page, api, `${name}, E at the loft's shelf`);
+  const shelf = await shown(page, '.counter-hint');
+  if (shelf !== 'You find a USB-C connector and a copper wire.') throw new Error(`${name}: the shelf said ${shelf}`);
+  const { items } = await api.mind();
+  if (!items.includes('usb_c_connector') || !items.includes('copper_wire')) throw new Error(`${name}: they carry ${items.join(', ')}`);
+  await run(page, 2600);
+}
+
 /** A standing jump at the face of the weir, walking towards it: where it lands. */
 async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
   await teleport(page, api, sewers(weir - 1, 15), name);
@@ -540,11 +570,14 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
     ['Vitals', 'Lamp'],
     ['Body', 'Your own'],
     ['Gear', 'Lamp'],
-    ['Mind', 'no recipes'],
+    ['Mind', 'Datajack'],
   ] as const) {
     const selected = await shown(page, '.character-tabs [aria-selected="true"]');
     const body = await shown(page, '.character-page');
     if (selected !== tab || !body?.includes(has)) throw new Error(`${name}: on ${selected}, not ${tab} with ${has}: ${body}`);
+    if (tab === 'Mind' && !['copper wire 1/3', 'usb-c connector 1/1'].every((part) => body.includes(part))) {
+      throw new Error(`${name}: the datajack's parts against what they carry aren't on the Mind tab: ${body}`);
+    }
     await shot(page, index, `${name}, ${tab}`);
     await page.keyboard.press('ArrowRight');
     await run(page, 100);
@@ -581,6 +614,7 @@ try {
     ['through the metro and back', (i) => metroLeg(page, api, i)],
     ['through the dark with the lamp', (i) => lampLeg(page, api, i)],
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
+    ["searching Aris's bench", (i) => searchLeg(page, api, i)],
     ['the bionics at the depot', (i) => bionicsLeg(page, api, i)],
     ["the sewers' gate", (i) => sewersLeg(page, api, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [

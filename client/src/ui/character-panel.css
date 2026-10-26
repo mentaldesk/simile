@@ -159,3 +159,88 @@
   padding: 0 4px;
   opacity: 0.7;
 }
+
+.character-body {
+  display: flex;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.character-map {
+  position: relative;
+  flex: none;
+  width: 210px;
+  aspect-ratio: 200 / 240;
+  background: url('./character-body.svg') center / 100% 100%;
+}
+
+.character-slot {
+  position: absolute;
+  padding: 0;
+  border: 1px solid rgb(139 58 46 / 75%);
+  border-radius: 45%;
+  background: radial-gradient(rgb(120 70 40 / 35%), rgb(90 45 25 / 55%));
+  box-shadow: inset 0 1px 3px rgb(60 25 10 / 60%);
+  cursor: pointer;
+}
+
+.character-slot img {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.character-slot img.character-flip {
+  transform: scaleX(-1);
+}
+
+.character-slot.character-picked {
+  border-color: #7fc8a9;
+  box-shadow:
+    inset 0 1px 3px rgb(0 0 0 / 70%),
+    0 0 4px 1px #7fc8a9;
+}
+
+.character-grade {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 7px;
+  padding: 0 1px;
+  border: 1px solid #1d2b26;
+  border-radius: 2px;
+  background: #7fc8a9;
+  color: #1d2b26;
+  font-size: 6px;
+  line-height: 7px;
+  text-align: center;
+}
+
+.character-part {
+  flex: 1;
+  min-width: 0;
+}
+
+.character-part h3 {
+  margin: 2px 0 1px;
+  padding: 0;
+  color: #f4ecd8;
+}
+
+.character-part > b {
+  font-weight: normal;
+}
+
+.character-part p {
+  margin: 3px 0 0;
+}
+
+.character-part small {
+  display: block;
+  margin-top: 6px;
+  font-size: 7px;
+  opacity: 0.7;
+}
