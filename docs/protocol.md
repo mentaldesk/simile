@@ -25,7 +25,7 @@ interiors' ids; this document says where.
   `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`,
   `sales` and `searched`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, and `player_state`'s `meal`,
-  `buyer`, `piles` and `recipes`, below.
+  `shut`, `buyer`, `piles` and `recipes`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -304,6 +304,14 @@ have by sending [`eat`](#eat) without an item. It's left out where there's none.
 the shop's name, such as `"Golden Bowl Noodles"`; and its `price`, 0 at home. A shop offers one only
 while it's serving, as it would feed a resident. The server sends a new `player_state` when the
 player walks into or out of a place with a meal.
+
+Where a shop sells meals but isn't serving them, the message has `shut` in place of `meal`: it's
+left out everywhere else, and never sent beside a `meal`. A `Shut` has the shop's `place` and
+`name`, as a `Meal` does; its `reason`, `"closed"` while nobody's there to serve or `"sold_out"`
+while it's open but its batch for this shift has gone, as the noodle bar's can; and `opens`, the
+timestamp it next starts serving, or `null` if it never does. `opens` is a forecast from its
+keeper's shifts, or the café's hours: a keeper who comes late or skips a shift makes it wrong. The
+server sends a new `player_state` when a shop the player stands in starts or stops serving.
 
 It also has `buyer`: who buys things where the player stands, which they sell to with
 [`sell`](#sell). It's left out where there's none. A `Buyer` is a stall, such as the scrap trader's,

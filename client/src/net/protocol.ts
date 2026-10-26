@@ -96,6 +96,11 @@ export type BodyPart =
   | 'stomach'
   | 'feet';
 /**
+ * Why a shop that sells meals isn't serving them: `closed`, with nobody there to serve, or
+ * `sold_out`, open but with nothing left of its batch for this shift.
+ */
+export type ShutReason = 'closed' | 'sold_out';
+/**
  * Where the player learned something: a `resident` told them, or they found a `clue`, such
  * as Aris's notes or a terminal.
  */
@@ -467,9 +472,9 @@ export interface Painting {
 }
 /**
  * The player's money, what they carry, their body, their vitals and what they know, but never
- * their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
- * and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
- * whenever any of it changes.
+ * their humanity, with the recipes they know, the meal on offer or the shop that's shut and the
+ * buyer where they stand, and what's lying in the world for them to pick up. Sent after the
+ * snapshot on connect, and whenever any of it changes.
  */
 export interface PlayerStateMessage {
   type: 'player_state';
@@ -482,6 +487,10 @@ export interface PlayerStateMessage {
    * The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none.
    */
   meal?: Meal | null;
+  /**
+   * The shop where they stand, if it sells meals but isn't serving them, and why. Left out everywhere else.
+   */
+  shut?: Shut | null;
   /**
    * Who buys where they stand, such as the scrap trader at their stall. Left out where there's none.
    */
@@ -704,6 +713,24 @@ export interface Meal {
    * What it costs. Nothing at home.
    */
   price: number;
+}
+/**
+ * A shop where the player stands that sells meals but isn't serving them now.
+ */
+export interface Shut {
+  /**
+   * The shop's location id, e.g. "noodle_bar".
+   */
+  place: string;
+  /**
+   * The shop as the player sees it, e.g. "Golden Bowl Noodles".
+   */
+  name: string;
+  reason: ShutReason;
+  /**
+   * When it next starts serving, by its keeper's shifts or its hours: a forecast, so a keeper who comes late or skips a shift makes it wrong. Null if it never does.
+   */
+  opens: string | null;
 }
 /**
  * Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`,

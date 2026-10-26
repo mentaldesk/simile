@@ -1682,7 +1682,7 @@
     },
     "PlayerStateMessage": {
       "additionalProperties": false,
-      "description": "The player's money, what they carry, their body, their vitals and what they know, but never\ntheir humanity, with the recipes they know, the meal on offer and the buyer where they stand,\nand what's lying in the world for them to pick up. Sent after the snapshot on connect, and\nwhenever any of it changes.",
+      "description": "The player's money, what they carry, their body, their vitals and what they know, but never\ntheir humanity, with the recipes they know, the meal on offer or the shop that's shut and the\nbuyer where they stand, and what's lying in the world for them to pick up. Sent after the\nsnapshot on connect, and whenever any of it changes.",
       "properties": {
         "type": {
           "const": "player_state",
@@ -1711,6 +1711,18 @@
           ],
           "default": null,
           "description": "The meal on offer where they stand: at home, or at a shop that's serving. Left out where there's none."
+        },
+        "shut": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Shut"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The shop where they stand, if it sells meals but isn't serving them, and why. Left out everywhere else."
         },
         "buyer": {
           "anyOf": [
@@ -2045,6 +2057,55 @@
           "$ref": "#/$defs/PlayerCollapsedMessage"
         }
       ]
+    },
+    "Shut": {
+      "additionalProperties": false,
+      "description": "A shop where the player stands that sells meals but isn't serving them now.",
+      "properties": {
+        "place": {
+          "description": "The shop's location id, e.g. \"noodle_bar\".",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "name": {
+          "description": "The shop as the player sees it, e.g. \"Golden Bowl Noodles\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/ShutReason"
+        },
+        "opens": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "When it next starts serving, by its keeper's shifts or its hours: a forecast, so a keeper who comes late or skips a shift makes it wrong. Null if it never does."
+        }
+      },
+      "required": [
+        "place",
+        "name",
+        "reason",
+        "opens"
+      ],
+      "title": "Shut",
+      "type": "object"
+    },
+    "ShutReason": {
+      "description": "Why a shop that sells meals isn't serving them: `closed`, with nobody there to serve, or\n`sold_out`, open but with nothing left of its batch for this shift.",
+      "enum": [
+        "closed",
+        "sold_out"
+      ],
+      "title": "ShutReason",
+      "type": "string"
     },
     "SideFacing": {
       "description": "Which way something faces or acts on a side-view map, where only right and left draw:\n`east`, to the right, or `west`, to the left.",
