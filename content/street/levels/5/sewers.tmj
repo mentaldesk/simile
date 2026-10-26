@@ -455,8 +455,92 @@
           "y": 128
         },
         {
-          "height": 32,
+          "height": 16,
           "id": 29,
+          "name": "bedroll",
+          "properties": [],
+          "rotation": 0,
+          "type": "bedroll",
+          "visible": true,
+          "width": 32,
+          "x": 272,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 30,
+          "name": "crates",
+          "properties": [],
+          "rotation": 0,
+          "type": "crates",
+          "visible": true,
+          "width": 16,
+          "x": 448,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 31,
+          "name": "bedroll",
+          "properties": [],
+          "rotation": 0,
+          "type": "bedroll",
+          "visible": true,
+          "width": 32,
+          "x": 976,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 32,
+          "name": "crates",
+          "properties": [],
+          "rotation": 0,
+          "type": "crates",
+          "visible": true,
+          "width": 16,
+          "x": 928,
+          "y": 240
+        },
+        {
+          "height": 32,
+          "id": 33,
+          "name": "dead_terminal",
+          "properties": [],
+          "rotation": 0,
+          "type": "dead_terminal",
+          "visible": true,
+          "width": 16,
+          "x": 1664,
+          "y": 224
+        },
+        {
+          "height": 16,
+          "id": 34,
+          "name": "bedroll",
+          "properties": [],
+          "rotation": 0,
+          "type": "bedroll",
+          "visible": true,
+          "width": 32,
+          "x": 1760,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 35,
+          "name": "crates",
+          "properties": [],
+          "rotation": 0,
+          "type": "crates",
+          "visible": true,
+          "width": 16,
+          "x": 1248,
+          "y": 240
+        },
+        {
+          "height": 32,
+          "id": 36,
           "name": "sewer_vault",
           "properties": [],
           "rotation": 0,
@@ -468,7 +552,7 @@
         },
         {
           "height": 32,
-          "id": 30,
+          "id": 37,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -480,7 +564,7 @@
         },
         {
           "height": 32,
-          "id": 31,
+          "id": 38,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -492,7 +576,7 @@
         },
         {
           "height": 32,
-          "id": 32,
+          "id": 39,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -504,7 +588,7 @@
         },
         {
           "height": 32,
-          "id": 33,
+          "id": 40,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -516,7 +600,7 @@
         },
         {
           "height": 32,
-          "id": 34,
+          "id": 41,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -528,7 +612,7 @@
         },
         {
           "height": 32,
-          "id": 35,
+          "id": 42,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -540,7 +624,7 @@
         },
         {
           "height": 32,
-          "id": 36,
+          "id": 43,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -552,7 +636,7 @@
         },
         {
           "height": 32,
-          "id": 37,
+          "id": 44,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -564,7 +648,7 @@
         },
         {
           "height": 32,
-          "id": 38,
+          "id": 45,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -576,7 +660,7 @@
         },
         {
           "height": 32,
-          "id": 39,
+          "id": 46,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -588,7 +672,7 @@
         },
         {
           "height": 32,
-          "id": 40,
+          "id": 47,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -600,7 +684,7 @@
         },
         {
           "height": 32,
-          "id": 41,
+          "id": 48,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -612,7 +696,7 @@
         },
         {
           "height": 32,
-          "id": 42,
+          "id": 49,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -624,7 +708,7 @@
         },
         {
           "height": 32,
-          "id": 43,
+          "id": 50,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -636,7 +720,7 @@
         },
         {
           "height": 32,
-          "id": 44,
+          "id": 51,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -648,7 +732,7 @@
         },
         {
           "height": 32,
-          "id": 45,
+          "id": 52,
           "name": "sewer_walkway",
           "properties": [],
           "rotation": 0,
@@ -660,7 +744,7 @@
         },
         {
           "height": 64,
-          "id": 46,
+          "id": 53,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -672,7 +756,7 @@
         },
         {
           "height": 64,
-          "id": 47,
+          "id": 54,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -684,7 +768,7 @@
         },
         {
           "height": 64,
-          "id": 48,
+          "id": 55,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -696,7 +780,7 @@
         },
         {
           "height": 64,
-          "id": 49,
+          "id": 56,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -708,7 +792,7 @@
         },
         {
           "height": 64,
-          "id": 50,
+          "id": 57,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -720,7 +804,7 @@
         },
         {
           "height": 64,
-          "id": 51,
+          "id": 58,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -732,7 +816,7 @@
         },
         {
           "height": 64,
-          "id": 52,
+          "id": 59,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -744,7 +828,7 @@
         },
         {
           "height": 64,
-          "id": 53,
+          "id": 60,
           "name": "sewer_pier",
           "properties": [],
           "rotation": 0,
@@ -756,7 +840,7 @@
         },
         {
           "height": 80,
-          "id": 54,
+          "id": 61,
           "name": "sewer_weir",
           "properties": [],
           "rotation": 0,
@@ -768,7 +852,7 @@
         },
         {
           "height": 16,
-          "id": 55,
+          "id": 62,
           "name": "sewer_lamp",
           "properties": [],
           "rotation": 0,
@@ -780,7 +864,7 @@
         },
         {
           "height": 16,
-          "id": 56,
+          "id": 63,
           "name": "sewer_lamp",
           "properties": [],
           "rotation": 0,
@@ -826,7 +910,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 57,
+          "id": 64,
           "name": "metro_to_sewers",
           "properties": [
             {
@@ -876,7 +960,7 @@
       "objects": [
         {
           "height": 32,
-          "id": 58,
+          "id": 65,
           "name": "sewers_hatch",
           "properties": [
             {
@@ -899,7 +983,7 @@
         },
         {
           "height": 32,
-          "id": 59,
+          "id": 66,
           "name": "sewers_plug_1",
           "properties": [
             {
@@ -922,7 +1006,7 @@
         },
         {
           "height": 32,
-          "id": 60,
+          "id": 67,
           "name": "sewers_plug_2",
           "properties": [
             {
@@ -942,6 +1026,217 @@
           "width": 16,
           "x": 1152,
           "y": 64
+        },
+        {
+          "height": 16,
+          "id": 68,
+          "name": "sewers_bedroll_legs",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"copper_coil\", \"kind\": \"salvage\", \"name\": \"Copper coil\", \"weight\": 1.0, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Delver's bedroll"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "17,5 18,5"
+            },
+            {
+              "name": "teaches",
+              "type": "string",
+              "value": "bionic_legs"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 272,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 69,
+          "name": "sewers_crates_legs",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"pump_impeller\", \"kind\": \"salvage\", \"name\": \"Pump impeller\", \"weight\": 2.5, \"charge\": null, \"on\": null}, {\"id\": \"pump_impeller\", \"kind\": \"salvage\", \"name\": \"Pump impeller\", \"weight\": 2.5, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Crates"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "28,10"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 448,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 70,
+          "name": "sewers_bedroll_feet",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"float_valve\", \"kind\": \"salvage\", \"name\": \"Float valve\", \"weight\": 1.2, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Delver's bedroll"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "61,5 62,5"
+            },
+            {
+              "name": "teaches",
+              "type": "string",
+              "value": "spring_feet"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 976,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 71,
+          "name": "sewers_crates_feet",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"brass_fitting\", \"kind\": \"salvage\", \"name\": \"Brass fitting\", \"weight\": 0.8, \"charge\": null, \"on\": null}, {\"id\": \"brass_fitting\", \"kind\": \"salvage\", \"name\": \"Brass fitting\", \"weight\": 0.8, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Crates"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "58,15"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 928,
+          "y": 240
+        },
+        {
+          "height": 32,
+          "id": 72,
+          "name": "sewers_security_terminal",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Security terminal"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "104,15"
+            },
+            {
+              "name": "teaches",
+              "type": "string",
+              "value": "infrared_eye"
+            }
+          ],
+          "rotation": 0,
+          "type": "jack",
+          "visible": true,
+          "width": 16,
+          "x": 1664,
+          "y": 224
+        },
+        {
+          "height": 16,
+          "id": 73,
+          "name": "sewers_bedroll_cell",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"copper_coil\", \"kind\": \"salvage\", \"name\": \"Copper coil\", \"weight\": 1.0, \"charge\": null, \"on\": null}, {\"id\": \"copper_coil\", \"kind\": \"salvage\", \"name\": \"Copper coil\", \"weight\": 1.0, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Delver's bedroll"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "110,15 111,15"
+            },
+            {
+              "name": "teaches",
+              "type": "string",
+              "value": "power_cell_2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 32,
+          "x": 1760,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 74,
+          "name": "sewers_crates_cell",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Crates"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "78,15"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 1248,
+          "y": 240
         }
       ],
       "opacity": 1,
@@ -968,7 +1263,7 @@
       "objects": [
         {
           "height": 320,
-          "id": 61,
+          "id": 75,
           "name": "sewers_dark",
           "properties": [
             {
@@ -986,7 +1281,7 @@
         },
         {
           "height": 320,
-          "id": 62,
+          "id": 76,
           "name": "sewers_landing",
           "properties": [
             {
@@ -1004,7 +1299,7 @@
         },
         {
           "height": 224,
-          "id": 63,
+          "id": 77,
           "name": "sewers_gate",
           "properties": [
             {
@@ -1022,7 +1317,7 @@
         },
         {
           "height": 64,
-          "id": 64,
+          "id": 78,
           "name": "sewers_plug_1",
           "properties": [
             {
@@ -1040,7 +1335,7 @@
         },
         {
           "height": 64,
-          "id": 65,
+          "id": 79,
           "name": "sewers_plug_2",
           "properties": [
             {
@@ -1070,7 +1365,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 66,
+          "id": 80,
           "name": "sewers_secret_spring",
           "properties": [
             {
@@ -1093,7 +1388,7 @@
         },
         {
           "height": 16,
-          "id": 67,
+          "id": 81,
           "name": "sewers_salvage_spring",
           "properties": [
             {
@@ -1131,7 +1426,7 @@
         },
         {
           "height": 16,
-          "id": 68,
+          "id": 82,
           "name": "sewers_secret_sprint",
           "properties": [
             {
@@ -1154,7 +1449,7 @@
         },
         {
           "height": 16,
-          "id": 69,
+          "id": 83,
           "name": "sewers_salvage_sprint",
           "properties": [
             {
@@ -1192,7 +1487,7 @@
         },
         {
           "height": 16,
-          "id": 70,
+          "id": 84,
           "name": "sewers_secret_actuator",
           "properties": [
             {
@@ -1230,7 +1525,7 @@
         },
         {
           "height": 16,
-          "id": 71,
+          "id": 85,
           "name": "sewers_salvage_1",
           "properties": [
             {
@@ -1263,7 +1558,7 @@
         },
         {
           "height": 16,
-          "id": 72,
+          "id": 86,
           "name": "sewers_salvage_2",
           "properties": [
             {
@@ -1296,7 +1591,7 @@
         },
         {
           "height": 16,
-          "id": 73,
+          "id": 87,
           "name": "sewers_salvage_3",
           "properties": [
             {
@@ -1329,7 +1624,7 @@
         },
         {
           "height": 16,
-          "id": 74,
+          "id": 88,
           "name": "sewers_salvage_4",
           "properties": [
             {
@@ -1362,7 +1657,7 @@
         },
         {
           "height": 16,
-          "id": 75,
+          "id": 89,
           "name": "sewers_salvage_5",
           "properties": [
             {
@@ -1395,7 +1690,7 @@
         },
         {
           "height": 16,
-          "id": 76,
+          "id": 90,
           "name": "sewers_salvage_6",
           "properties": [
             {
@@ -1435,7 +1730,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 77,
+  "nextobjectid": 91,
   "orientation": "orthogonal",
   "properties": [
     {

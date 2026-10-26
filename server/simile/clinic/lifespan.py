@@ -5,6 +5,15 @@ from starlette.applications import Starlette
 
 
 @asynccontextmanager
+async def lifespan(app: Starlette) -> AsyncIterator[None]:
+    from simile.clinic.config import DEFAULT_CONFIG
+    from simile.player.sync import recipes_of
+
+    recipes_of(app).update(DEFAULT_CONFIG.recipes)
+    yield
+
+
+@asynccontextmanager
 async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.clinic.clinic import Clinic
     from simile.clinic.doctor import load_doctor
@@ -13,7 +22,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.conversation import line_ids
     from simile.economy.economy import economy_of
     from simile.persistence import player_of
-    from simile.player.sync import recipes_of
     from simile.player.trade import keepers_of
     from simile.protocol import (
         FitMessage,
@@ -39,7 +47,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     )
     keepers = keepers_of(app)
     keepers[clinic.config.place] = clinic.keep
-    recipes_of(app).update(clinic.config.recipes)
     snapshot = hub.snapshot
     hub.snapshot = lambda: standing(snapshot(), doctor, movement, talk.live())
     stops = [

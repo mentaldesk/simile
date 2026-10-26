@@ -125,6 +125,36 @@ As in [`content/map/`](../map/README.md), with these additions.
   counter, the noodle bar's east to its kitchen); and on a bench, at what its sitters look at (the
   square's at the fountain, the park's at the lookout, and in the gallery each at the nearest
   painting, so two can sit back to back). `dx` and `dy` are always 0. The stools keep `dz` 0.25.
+- **Finds.** A `searchable` interactable, or a `jack`, can hold `items`, a JSON list of `Item`s,
+  and `teach` a recipe, `teaches`, by the bionic it builds. The player searches each once (P6,
+  *Finds* below).
+
+## Finds
+
+Stage 2's recipes and the parts they use up (`simile.street.finds`, P6), in the order the player
+needs them. Each is searched once, with E at its stand tiles, and holds nothing after. The doctor
+tells the player the power cell's recipe when they walk into the clinic (`simile.player`).
+
+| Where | Id | What it is | Holds | Teaches |
+|---|---|---|---|---|
+| The maker space, ground floor (5–6) | `maker_space_bench` | Aris's bench, the `workbench` | | `datajack` |
+| The maker space, first floor (11–14) | `maker_space_spares` | A `workbench` | lithium cell, charge controller | |
+| The maker space's loft (11–14) | `maker_space_shelf` | The storage `shelf` | USB-C connector, copper wire | |
+| The metro's ticket hall (15, row 12) | `metro_ticket_machine` | The dead `ticket_machine` | copper wire, lithium cell | |
+| The metro's west tunnel (70, row 15) | `metro_fridge` | A dead `fridge` by the bedroll | copper wire, lithium cell | |
+| Sewers zone 0 | `sewers_bedroll_legs` | A delver's `bedroll` | copper coil | `bionic_legs` |
+| Sewers zone 0 | `sewers_crates_legs` | `crates` | 2 pump impeller | |
+| Sewers zone 1 | `sewers_bedroll_feet` | A delver's `bedroll` | float valve | `spring_feet` |
+| Sewers zone 1 | `sewers_crates_feet` | `crates` | 2 brass fitting | |
+| Sewers zone 1, the security station | `sewers_security_terminal` | A `jack`, a `dead_terminal` | | `infrared_eye` |
+| Sewers zone 1, the security station | `sewers_bedroll_cell` | A delver's `bedroll` | 2 copper coil | `power_cell_2` |
+| Sewers zone 1 | `sewers_crates_cell` | `crates` | 4 old battery | |
+
+The cell's parts are in the village and the metro, and the datajack's three wires are the shelf's
+and the metro's two, besides the salvage on the train's roof. The infrared eye needs the second
+power cell, so its recipe and the cell's are found together, in the room past the gate farthest
+from it, but the hatch's, that has room for both. The eye's lens is a villager's (P17).
+
 
 ## The village
 
@@ -190,9 +220,9 @@ passes through it.
 
 | x | |
 |---|---|
-| 0–19 | The landing (row 9), a flight down to the ticket hall (row 12) with the `turnstile` and `ticket_machine`, and a flight down to the platform (row 15). A catwalk over the first flight, at row 7, is a run jump from the landing. |
+| 0–19 | The landing (row 9), a flight down to the ticket hall (row 12) with the `turnstile` and a dead `ticket_machine` to search, and a flight down to the platform (row 15). A catwalk over the first flight, at row 7, is a run jump from the landing. |
 | 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–52, row 10) is a jump from the roof's east end. |
-| 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) goes on up the wall, a jump from it. An alcove (85–86, row 5) is five rows above that catwalk. West of the pipe ledge, a step (73–74, row 10) is a hop up to a gantry (69–72, row 8) that runs west under a roof of `pipes` (58–73, row 4), lit, with a five-cell gap (64–68) before a nook at its end (61–63). |
+| 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug, and a dead `fridge` to search at 70. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) goes on up the wall, a jump from it. An alcove (85–86, row 5) is five rows above that catwalk. West of the pipe ledge, a step (73–74, row 10) is a hop up to a gantry (69–72, row 8) that runs west under a roof of `pipes` (58–73, row 4), lit, with a five-cell gap (64–68) before a nook at its end (61–63). |
 | 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12) against the east wall. |
 
 **What later tasks build on.** Each has an id that stays put; `simile.street.metro` names them.
@@ -207,7 +237,7 @@ passes through it.
 | S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEDGE_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the legs' on any grade, and in reach of the spring feet's, four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
-| S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The clinic fits the premium legs only to someone carrying it. |
+| S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up, and stage 1's premium legs until P18. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
@@ -286,13 +316,20 @@ counts from the way through, which every grade of legs or feet takes:
 | `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 
+**Finds** (above): in zone 0 a delver's bedroll and crates with the bionic legs' recipe and parts,
+reached on the player's own legs, and past the gate the spring feet's, and the security station's
+terminal and bedroll with the eye's recipe and the second power cell's, and its crates of old
+batteries, on any legs or feet but not the player's own. Each goes in a room of its zone with room
+for it, after the rest is stocked, so it moves nothing else.
+
 The actuator waits where the legs and the feet both reach. The two pockets keep their stage 1 ids,
 and are never on the way to the hatch.
 
 **What every level is checked for** (`problems`, which the generator keeps trying layouts until it
 passes, and `tests/street/test_sewers.py` over the committed levels and more seeds): on every
-one of `KITS`, any grade of legs or feet or one of each, the player reaches the hatch and the plugs,
-and on their own legs they don't; on every one, and on their own legs, they can get back to the
+one of `KITS`, any grade of legs or feet or one of each, the player reaches the hatch, the plugs and
+the finds past the gate, and on their own legs they don't, while zone 0's finds are in reach of
+every kit and the player's own legs; on every one, and on their own legs, they can get back to the
 lift from anywhere they can get to; each pickup is in reach on exactly the ones that meet its
 `needs`; and every salvage has a price.
 

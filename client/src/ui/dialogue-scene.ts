@@ -4,6 +4,7 @@ import { maps } from '../world/assets';
 import type { Interactable } from '../world/interactables';
 import { deadJack, jacked } from '../world/jacks';
 import { muralWalls } from '../world/murals';
+import { foundIn } from '../world/searchables';
 import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { callCue } from './call-cue';
@@ -119,7 +120,8 @@ export class DialogueScene extends Phaser.Scene {
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
-    const counter = used?.kind === 'counter' || used?.kind === 'jack' ? used.interactable : undefined;
+    const prompted = used?.kind === 'counter' || used?.kind === 'jack' || used?.kind === 'searchable';
+    const counter = prompted ? used.interactable : undefined;
     this.counter.update(counter, !this.chat.isOpen);
     this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper(), playerState.latest?.recipes);
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
@@ -152,6 +154,10 @@ export class DialogueScene extends Phaser.Scene {
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'jack') this.useJack(used.interactable);
+    else if (used?.kind === 'searchable') {
+      server.send({ type: 'pick_up' });
+      this.counter.flash(foundIn(used.interactable));
+    }
     else if (used?.kind === 'clinic' && playerState.latest) {
       this.murals.close();
       this.news.close();

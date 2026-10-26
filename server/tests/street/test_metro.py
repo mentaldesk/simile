@@ -1,12 +1,15 @@
 import json
-from collections import deque
+from collections import Counter, deque
 from functools import cache
 from typing import Any
 
 import pytest
 
 from simile.behaviour.scoring import Places
+from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
+from simile.player.config import SALVAGE
 from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
+from simile.street.finds import COPPER_WIRE
 from simile.street.jump import FEET, GRADES, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
     ALCOVE_SECRET,
@@ -15,6 +18,7 @@ from simile.street.metro import (
     DEAD_TERMINAL,
     DOCTOR,
     ENTRANCE,
+    FRIDGE,
     GANTRY,
     GANTRY_SECRET,
     HIGH_LEDGE,
@@ -26,6 +30,7 @@ from simile.street.metro import (
     PLUG,
     SCRAP_STALL,
     SCRAP_TRADER,
+    TICKET_MACHINE,
 )
 from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
@@ -41,6 +46,7 @@ METRO_MAP = MAPS[METRO]
 CLINIC_FLOOR = f"{CLINIC}_floor_0"
 BELOW = {METRO: METRO_MAP, CLINIC_FLOOR: MAPS[CLINIC_FLOOR], SEWERS: MAPS[SEWERS]}
 START = Spot(METRO, ARRIVAL.x, ARRIVAL.y)
+CLINIC_RECIPES = CLINIC_CONFIG.recipes
 
 
 def objects(layer: str) -> list[dict[str, Any]]:
@@ -189,6 +195,36 @@ def test_the_second_grade_of_feet_reaches_the_alcove_from_the_wall_below_it() ->
     assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, GRADES[Bionic.SPRING_LEGS]))
 
 
+def test_the_cell_and_the_datajack_are_found_at_home_and_on_the_metro_on_foot() -> None:
+    def held(maps: list[str]) -> Counter[str]:
+        things = [thing for map_id in maps for thing in MAPS[map_id].interactables]
+        return Counter(item.id for thing in things for item in thing.items)
+
+    home = [f"maker_space_floor_{n}" for n in range(3)]
+    [bench] = [t for t in MAPS[home[0]].interactables if t.teaches is not None]
+    needed = Counter(CLINIC_RECIPES[Bionic.POWER_CELL].parts)
+    needed += Counter(CLINIC_RECIPES[Bionic.DATAJACK].parts)
+    walking = reachable(False)
+
+    assert (bench.label, bench.kind, bench.teaches) == (
+        "Aris's bench",
+        InteractableKind.SEARCHABLE,
+        Bionic.DATAJACK,
+    )
+    assert held(home) == {
+        "lithium_cell": 1,
+        "charge_controller": 1,
+        "usb_c_connector": 1,
+        "copper_wire": 1,
+    }
+    assert held([METRO]) == {"lithium_cell": 2, "copper_wire": 2}
+    assert held(home) + held([METRO]) == needed
+    for find in (machine(TICKET_MACHINE), machine(FRIDGE)):
+        assert find.kind is InteractableKind.SEARCHABLE
+        assert all(Spot(METRO, t.x, t.y) in walking for t in find.stand), find.id
+    assert SALVAGE["metro_salvage_1"].item == COPPER_WIRE
+
+
 def test_the_lift_and_the_dead_terminal_are_jacks_you_walk_up_to() -> None:
     walked = reachable(False)
     ends = {(end.map, end.x, end.y) for d in TOWN.doors for end in (d.outside, d.inside)}
@@ -321,6 +357,8 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         LIFT: [(100, 15)],
         DEAD_TERMINAL: [(104, 15)],
         HIGH_LEDGE: [(106, 12), (107, 12), (108, 12), (109, 12)],
+        TICKET_MACHINE: [(15, 12)],
+        FRIDGE: [(70, 15)],
     }
     assert spots == {SCRAP_TRADER: (METRO, 26, 15), DOCTOR: (CLINIC_FLOOR, 6, 2)}
     assert pickups == {

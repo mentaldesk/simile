@@ -10,6 +10,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.economy.economy import economy_of
     from simile.persistence import investigation_of, player_of
     from simile.player.clients import InGame
+    from simile.player.finds import Finds
     from simile.player.hunger import Hunger
     from simile.player.lamp import Lamp
     from simile.player.machines import Machines
@@ -74,7 +75,8 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         return {fact.found_in for fact in incident.facts if fact.found_in} if incident else set()
 
     machines = Machines(player, movement, found, clues)
-    claimers_of(app).append(machines.claim)
+    finds = Finds(player, movement, known=lambda: book)
+    claimers_of(app).extend((machines.claim, finds.claim))
 
     def on_lamp(message: LampMessage) -> None:
         if lamp.switch(message.on):
@@ -85,8 +87,8 @@ async def running(app: Starlette) -> AsyncIterator[None]:
             sync.update()
 
     def on_pick_up(message: PickUpMessage) -> None:
-        if pickups.pick_up(claimers_of(app)):
-            sync.update()
+        pickups.pick_up(claimers_of(app))
+        sync.update()
 
     def on_sell(message: SellMessage) -> None:
         if trade.sell(message.item):
@@ -95,6 +97,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     stops = [
         world.loop.register(hunger),
         world.loop.register(lamp),
+        world.loop.register(finds),
         world.loop.register(sync),
         hub.subscribe(PlayerMoveMessage, in_game.moved),
         hub.subscribe(EatMessage, on_eat),
@@ -106,5 +109,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     yield
     for stop in reversed(stops):
         stop()
+    claimers_of(app).remove(finds.claim)
     claimers_of(app).remove(machines.claim)
     economy.player = None
