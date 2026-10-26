@@ -1,4 +1,4 @@
-import type { Position } from '../net';
+import type { Bionic, Item, Position } from '../net';
 import { maps } from './assets';
 import { mapOf, objectsOf, propertyOf, tileOf, type Tile, type TiledMap } from './map';
 
@@ -13,17 +13,31 @@ export type Interactable = {
   area: Area;
   stand: Tile[];
   prompt: string;
+  /** What searching it finds, for a searchable or a jack: left out while it holds nothing. */
+  items?: Item[];
+  /** The recipe searching it teaches, by the bionic it builds. */
+  teaches?: Bionic;
 };
 
 export type Area = { x: number; y: number; width: number; height: number };
 
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 
+/** "the dead fridge", but "Aris's bench". */
+export const theLabel = (label: string): string => (/^\p{Lu}\p{Ll}*'s /u.test(label) ? label : `the ${lowerFirst(label)}`);
+
 const PROMPTS: Record<string, (label: string) => string> = {
   counter: () => 'Order at the counter',
   painting: () => 'Look at the painting',
   machine: (label) => `Use the ${lowerFirst(label)}`,
   jack: (label) => `Use the ${lowerFirst(label)}`,
+  searchable: (label) => `Search ${theLabel(label)}`,
+};
+
+const itemsOf = (value: unknown): Item[] => {
+  if (typeof value !== 'string') return [];
+  const items: unknown = JSON.parse(value);
+  return Array.isArray(items) ? (items as Item[]) : [];
 };
 
 const tiles = (stand: unknown): Tile[] =>
@@ -41,6 +55,8 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
   return objectsOf(map, INTERACTABLES_LAYER).map((object) => {
     const label = propertyOf(object, 'label');
     const name = typeof label === 'string' ? label : object.name;
+    const items = itemsOf(propertyOf(object, 'items'));
+    const teaches = propertyOf(object, 'teaches');
     return {
       id: object.name,
       kind: object.type,
@@ -54,6 +70,8 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
       },
       stand: tiles(propertyOf(object, 'stand')),
       prompt: PROMPTS[object.type]?.(name) ?? name,
+      ...(items.length ? { items } : {}),
+      ...(typeof teaches === 'string' ? { teaches: teaches as Bionic } : {}),
     };
   });
 }

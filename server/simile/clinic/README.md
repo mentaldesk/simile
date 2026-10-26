@@ -42,8 +42,8 @@ Each `Fitting` is built from its recipe, so the two can't drift. She fits none t
 | Bionic legs, grade 3 | The legs | 700 | 1 Apex actuator, 2 servo motor | 105 |
 
 A higher grade goes in place of the player's own part or a lower grade of its line, which she
-takes back. The lithium cells, charge controller, USB-C connector and infrared lens are P6's to
-place in the world; the rest are the sewers' salvage.
+takes back. Where each recipe and its parts are found is `content/street/README.md`'s *Finds*;
+she tells the player the power cell's as they walk in (`simile.player`'s *Finds*).
 
 **Selling recipes.** She buys each recipe they know once, for its one-off sum. They still know it,
 and she still builds from it. She won't buy the power cell's, which she teaches.
@@ -60,8 +60,8 @@ She has one of each bionic (`stock`), so once fitted it's gone.
   through `simile.player`'s `keepers_of(app)`: what she'd buy of their body now, each bionic she'd
   fit, whether or not they can pay or have the parts, with the parts of their body it can go in
   place of, and what she'd pay for each recipe they know.
-- The `running` hook adds every recipe to `simile.player`'s `recipes_of(app)`, so `player_state`
-  carries each one they know in full.
+- The `lifespan` hook adds every recipe to `simile.player`'s `recipes_of(app)`, before any
+  module's `running` reads it, so `player_state` carries each one they know in full.
 - `sell_part` sells a kidney, and `sell_recipe` a recipe: the economy pays the player from
   `OUTSIDE` as `salvage` at the clinic, and the part is `sold`, or the recipe is in `mind.sold`.
 - `fit` takes the price from the player to `OUTSIDE` as a `purchase` at the clinic, uses up the

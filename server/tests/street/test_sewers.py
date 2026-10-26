@@ -2,6 +2,7 @@ import asyncio
 import json
 import random
 import time
+from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.app import create_app
+from simile.clinic.config import DEFAULT_CONFIG as CLINIC
 from simile.economy.config import EconomyConfig
 from simile.npc import load_npcs
 from simile.persistence import investigation_of, player_of
@@ -32,6 +34,7 @@ from simile.street.sewers import (
     HATCH,
     LANDING,
     LEVELS,
+    SECURITY_TERMINAL,
     SEWERS,
     SHAFT,
     WEIR,
@@ -60,6 +63,7 @@ SEEDS = [*range(LEVELS), *MORE_SEEDS]
 START = (LANDING.x, LANDING.y)
 FITTED = [name for name in KITS if name != OWN_JUMP]
 PRICES = EconomyConfig().salvage
+RECIPES = CLINIC.recipes
 
 
 def path_of(level: int) -> Path:
@@ -208,6 +212,40 @@ def test_every_level_holds_the_apex_actuator_past_the_gate_on_the_legs_and_on_th
     assert played_level.needs[actuator.id] == OWN_JUMP
     assert cell in found[Bionic.BIONIC_LEGS.value] and cell in found[Bionic.SPRING_FEET.value]
     assert cell not in found[OWN_JUMP], "past the gate"
+
+
+ZONE_RECIPES = (
+    [Bionic.BIONIC_LEGS],
+    [Bionic.SPRING_FEET, Bionic.INFRARED_EYE, Bionic.POWER_CELL_2],
+)
+"""What each zone teaches, in the order the player needs them: the legs before the gate, then the
+feet past it, and the eye with the second cell, which it needs. The eye's lens is a villager's."""
+VILLAGERS = Counter(RECIPES[Bionic.INFRARED_EYE].parts)
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_each_zone_teaches_its_recipes_and_holds_their_parts_where_youd_reach_them_by_then(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    played_level = level(seed)
+    town, found = played_level.town, played_level.reached
+    weir = next(x for x in range(town.width) if town.standing(x, LANDING.y - WEIR))
+    gate = weir - WEIR_AT
+    finds = [item for item in town.interactables if item.items or item.teaches]
+    by_zone = ([f for f in finds if f.area.x < gate], [f for f in finds if f.area.x > gate])
+
+    for zone, recipes in enumerate(ZONE_RECIPES):
+        assert [f.teaches for f in by_zone[zone] if f.teaches] == recipes, zone
+        held = Counter(item.id for f in by_zone[zone] for item in f.items)
+        needed = sum((Counter(RECIPES[bionic].parts) for bionic in recipes), Counter()) - VILLAGERS
+        assert held >= needed, (zone, held, needed)
+        for find in by_zone[zone]:
+            cell = (find.stand[0].x, find.stand[0].y)
+            assert all(cell in found[name] for name in FITTED), find.id
+            assert (cell in found[OWN_JUMP]) is (zone == 0), find.id
+    [terminal] = [f for f in finds if f.teaches is Bionic.INFRARED_EYE]
+    assert terminal.id == SECURITY_TERMINAL and terminal.kind is InteractableKind.JACK
+    assert {f.kind for f in finds} - {terminal.kind} == {InteractableKind.SEARCHABLE}
 
 
 def test_the_feet_find_salvage_and_the_legs_find_more() -> None:

@@ -16,6 +16,7 @@ from simile.schema import (
     Tile,
     TileArea,
 )
+from simile.street.finds import searchable, under
 from simile.street.jump import KITS, OWN_JUMP, Jump, meets
 from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
@@ -30,7 +31,8 @@ LANDING = MapTile(map=SEWERS, x=2, y=GROUND)
 SHAFT = 12
 """The lift's landing is the first 12 cells, S8's, so a position saved there still stands."""
 APEX_ACTUATOR = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator", weight=2.0)
-"""The part premium legs need, from Apex's own stock, on a pipe past every level's gate."""
+"""The part the bionic legs' top grade needs, from Apex's own stock, on a pipe past every level's
+gate. Stage 1's premium legs take it too, until P18."""
 HATCH = "sewers_hatch"
 """The maintenance hatch deep in every level, a jack holding Aris's trail."""
 FLOORS = (GROUND, GROUND - 5, GROUND - 10)
@@ -75,6 +77,41 @@ SALVAGE_ITEMS = (
 """What lies on the way through. `simile.economy` prices each."""
 APEX_BOARD = scrap("apex_board", "Apex control board", 0.4)
 GAUGE = scrap("pressure_gauge", "Pressure gauge", 0.6)
+SCRAP = {item.id: item for item in SALVAGE_ITEMS}
+
+SECURITY_TERMINAL = "sewers_security_terminal"
+"""A jack in a security station deep past the gate, teaching the infrared eye."""
+
+
+@dataclass(frozen=True)
+class Find:
+    """Something to search in a level: a delver's bedroll, crates or the security terminal."""
+
+    id: str
+    zone: int
+    """0 before the gate, reached on the player's own legs, or 1 past it, on any legs or feet."""
+    piece: str
+    items: tuple[str, ...] = ()
+    """What it holds, by `SALVAGE_ITEMS` id."""
+    teaches: Bionic | None = None
+    security: bool = False
+    """In the security station: the room past the gate farthest from it but the hatch's."""
+
+
+LABELS = {"bedroll": "Delver's bedroll", "crates": "Crates", "dead_terminal": "Security terminal"}
+WIDTHS = {"bedroll": 2, "crates": 1, "dead_terminal": 1}
+FINDS = (
+    Find("sewers_bedroll_legs", 0, "bedroll", ("copper_coil",), Bionic.BIONIC_LEGS),
+    Find("sewers_crates_legs", 0, "crates", ("pump_impeller",) * 2),
+    Find("sewers_bedroll_feet", 1, "bedroll", ("float_valve",), Bionic.SPRING_FEET),
+    Find("sewers_crates_feet", 1, "crates", ("brass_fitting",) * 2),
+    Find(SECURITY_TERMINAL, 1, "dead_terminal", teaches=Bionic.INFRARED_EYE, security=True),
+    Find("sewers_bedroll_cell", 1, "bedroll", ("copper_coil",) * 2, Bionic.POWER_CELL_2, True),
+    Find("sewers_crates_cell", 1, "crates", ("old_battery",) * 4),
+)
+"""Each level's recipes and their parts: the legs' before the gate, the feet's past it, and in the
+security station the eye's with the second power cell's, which the eye needs."""
+ZONES = {find.id: find.zone for find in FINDS}
 
 
 def slab(tier: int) -> int:
@@ -385,6 +422,43 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
         if spot is not None:
             plan.pickups.append(Pickup(f"sewers_salvage_{number}", SALVAGE, *spot, item=item))
     dress(level, plan, cells, [*rooms[0], *rooms[1]], room)
+    finds(level, plan, cells, rooms, room)
+
+
+def finds(
+    level: Level, plan: Plan, cells: Stocker, rooms: tuple[list[Node], list[Node]], hatch: Node
+) -> None:
+    """`FINDS`, each in a room of its zone with room for it, and the security station's together
+    in the deepest room past the gate but the hatch's that has room for them all."""
+    rng = level.rng
+    station = [find for find in FINDS if find.security]
+    spots: dict[str, Cell] = {}
+    for node in (n for n in reversed(by_distance(level, (level.gate + 1, 0))) if n != hatch):
+        taken = set(cells.taken)
+        placed = {find.id: cells.take(node, WIDTHS[find.piece]) for find in station}
+        if None not in placed.values():
+            spots |= {id: spot for id, spot in placed.items() if spot is not None}
+            break
+        cells.taken = taken
+    for find in FINDS:
+        width = WIDTHS[find.piece]
+        nodes = [n for n in rooms[find.zone] if cells.free(n, width)]
+        if not find.security and nodes and (spot := cells.take(rng.choice(nodes), width)):
+            spots[find.id] = spot
+    for find in FINDS:
+        if find.id not in spots:
+            raise ValueError(f"no room for {find.id} in sewers level {level.seed}")
+        spot = spots[find.id]
+        width = WIDTHS[find.piece]
+        x, row = spot
+        height = 2 if find.piece == "dead_terminal" else 1
+        area = TileArea(x=x, y=row + 1 - height, width=width, height=height)
+        plan.piece(find.piece, area.x, area.y, width, height)
+        jack = find.piece == "dead_terminal"
+        kind = InteractableKind.JACK if jack else InteractableKind.SEARCHABLE
+        items = [SCRAP[item] for item in find.items]
+        label = LABELS[find.piece]
+        searchable(plan, find.id, label, area, under(area), items, find.teaches, kind)
 
 
 def pockets(level: Level, plan: Plan) -> None:
@@ -411,19 +485,24 @@ def pockets(level: Level, plan: Plan) -> None:
 
 def farthest(level: Level, start: Node) -> Node:
     """The room the most doors and ladders from `start`."""
+    return by_distance(level, start)[-1]
+
+
+def by_distance(level: Level, start: Node) -> list[Node]:
+    """The rooms joined to `start`, nearest first by doors and ladders."""
     near: dict[Node, list[Node]] = {}
     for edge in level.edges:
         a, b = level.ends(edge)
         near.setdefault(a, []).append(b)
         near.setdefault(b, []).append(a)
-    seen, queue, last = {start}, deque([start]), start
+    seen, queue, order = {start}, deque([start]), []
     while queue:
-        last = queue.popleft()
-        for there in near.get(last, []):
+        order.append(here := queue.popleft())
+        for there in near.get(here, []):
             if there not in seen:
                 seen.add(there)
                 queue.append(there)
-    return last
+    return order
 
 
 DECOR = (("rubble", 2), ("crates", 1), ("bedroll", 2), ("sewer_outfall", 2))
@@ -582,13 +661,21 @@ def problems(plan: Plan, town: object | None = None) -> list[str]:
     reached = {name: by_jump[jump] for name, jump in KITS.items()}
     [hatch] = [item for item in plan.interactables if item.id == HATCH]
     plugs = [item for item in plan.interactables if item.kind is InteractableKind.PLUG]
-    for item in [hatch, *plugs]:
+    held = {item.id: item for item in plan.interactables if item.id in ZONES}
+    if missing := sorted(set(ZONES) - set(held)):
+        found.append(f"no {', '.join(missing)}")
+    near = [held[id] for id, zone in ZONES.items() if zone == 0 and id in held]
+    deep = [held[id] for id, zone in ZONES.items() if zone == 1 and id in held]
+    for item in [hatch, *plugs, *near, *deep]:
         cell = (item.stand[0].x, item.stand[0].y)
         missed = [name for name in KITS if name != OWN_JUMP and cell not in reached[name]]
+        if item in near and cell not in reached[OWN_JUMP]:
+            missed.insert(0, OWN_JUMP)
         if missed:
             found.append(f"{item.id} is out of reach of {', '.join(missed)}")
-    if (hatch.stand[0].x, hatch.stand[0].y) in reached[OWN_JUMP]:
-        found.append("the hatch is in reach of the player's own legs")
+    for item in [hatch, *deep]:
+        if (item.stand[0].x, item.stand[0].y) in reached[OWN_JUMP]:
+            found.append(f"{item.id} is in reach of the player's own legs")
     for pickup in plan.pickups:
         cell = (pickup.x, pickup.y)
         for name, jump in KITS.items():

@@ -227,7 +227,36 @@
       "draworder": "topdown",
       "id": 9,
       "name": "interactables",
-      "objects": [],
+      "objects": [
+        {
+          "height": 16,
+          "id": 6,
+          "name": "maker_space_spares",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"lithium_cell\", \"kind\": \"part\", \"name\": \"Lithium cell\", \"weight\": 0.3, \"charge\": null, \"on\": null}, {\"id\": \"charge_controller\", \"kind\": \"part\", \"name\": \"Charge controller\", \"weight\": 0.2, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Workbench"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "11,2 12,2 13,2 14,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 64,
+          "x": 176,
+          "y": 32
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -241,7 +270,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 6,
+          "id": 7,
           "name": "desk-3-8",
           "properties": [
             {
@@ -259,7 +288,7 @@
         },
         {
           "height": 16,
-          "id": 7,
+          "id": 8,
           "name": "desk-4-8",
           "properties": [
             {
@@ -277,7 +306,7 @@
         },
         {
           "height": 16,
-          "id": 8,
+          "id": 9,
           "name": "desk-3-10",
           "properties": [
             {
@@ -295,7 +324,7 @@
         },
         {
           "height": 16,
-          "id": 9,
+          "id": 10,
           "name": "desk-4-10",
           "properties": [
             {
@@ -313,7 +342,7 @@
         },
         {
           "height": 16,
-          "id": 10,
+          "id": 11,
           "name": "desk-8-5",
           "properties": [
             {
@@ -331,7 +360,7 @@
         },
         {
           "height": 16,
-          "id": 11,
+          "id": 12,
           "name": "desk-9-5",
           "properties": [
             {
@@ -349,7 +378,7 @@
         },
         {
           "height": 16,
-          "id": 12,
+          "id": 13,
           "name": "desk-8-7",
           "properties": [
             {
@@ -367,7 +396,7 @@
         },
         {
           "height": 16,
-          "id": 13,
+          "id": 14,
           "name": "desk-9-7",
           "properties": [
             {
@@ -385,7 +414,7 @@
         },
         {
           "height": 16,
-          "id": 14,
+          "id": 15,
           "name": "desk-8-8",
           "properties": [
             {
@@ -403,7 +432,7 @@
         },
         {
           "height": 16,
-          "id": 15,
+          "id": 16,
           "name": "desk-9-8",
           "properties": [
             {
@@ -421,7 +450,7 @@
         },
         {
           "height": 16,
-          "id": 16,
+          "id": 17,
           "name": "desk-8-10",
           "properties": [
             {
@@ -439,7 +468,7 @@
         },
         {
           "height": 16,
-          "id": 17,
+          "id": 18,
           "name": "desk-9-10",
           "properties": [
             {
@@ -486,7 +515,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 18,
+  "nextobjectid": 19,
   "orientation": "orthogonal",
   "properties": [
     {

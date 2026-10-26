@@ -31,7 +31,8 @@ describe('clues', () => {
   it('give way to a pile as near or nearer, as the server does', () => {
     const bun = { id: 'pork_bun', kind: 'food', name: 'Pork bun', weight: 0.2, charge: null, on: null } as const;
     const pile: Pile = { at: { map: 'maker_space_floor_0', x: 4, y: 2 }, items: [bun] };
-    const used = (x: number) => usedByE(at('maker_space_floor_0', x), { ...reachables, piles: () => [pile] })?.kind;
+    const from = { ...reachables, piles: () => [pile], searched: () => ['maker_space_bench'] };
+    const used = (x: number) => usedByE(at('maker_space_floor_0', x), from)?.kind;
 
     expect([3.4, 3.5, 3.6].map(used)).toEqual(['clue', 'pile', 'pile']);
   });
