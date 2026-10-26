@@ -6,8 +6,10 @@ import { TILE } from './layout';
 /** Canvas px a cell: the lamp's edge stays soft once scaled up. */
 const RES = 4;
 const NIGHT: [number, number, number] = [5, 7, 14];
+const INFRARED = '120, 14, 28';
 
-/** Darkness over a street's dark stretches, dimmed where the lamp has been and cut away around the player. */
+/** Darkness over a street's dark stretches, dimmed where the lamp has been and cut away around the player,
+ * or turned to a red veil around them by the infrared eye. */
 export class DarkView {
   private readonly scene: Phaser.Scene;
   private readonly sight: Sight;
@@ -34,7 +36,7 @@ export class DarkView {
       this.paintBase();
       this.drawn = '';
     }
-    const signature = `${glow.x.toFixed(3)},${glow.y.toFixed(3)},${glow.radius.toFixed(3)},${glow.strength}`;
+    const signature = `${glow.x.toFixed(3)},${glow.y.toFixed(3)},${glow.radius.toFixed(3)},${glow.strength},${!!glow.infrared}`;
     if (signature === this.drawn) return;
     this.drawn = signature;
     const { context, width, height } = this.texture;
@@ -49,6 +51,15 @@ export class DarkView {
     light.addColorStop(1, 'rgba(0, 0, 0, 0)');
     context.fillStyle = light;
     context.fillRect(x - radius, y - radius, 2 * radius, 2 * radius);
+    if (glow.infrared) {
+      context.globalCompositeOperation = 'source-atop';
+      const veil = context.createRadialGradient(x, y, 0, x, y, radius);
+      veil.addColorStop(0, `rgba(${INFRARED}, 1)`);
+      veil.addColorStop(INNER, `rgba(${INFRARED}, 1)`);
+      veil.addColorStop(1, `rgba(${INFRARED}, 0)`);
+      context.fillStyle = veil;
+      context.fillRect(x - radius, y - radius, 2 * radius, 2 * radius);
+    }
     context.globalCompositeOperation = 'source-over';
     this.texture.refresh();
   }

@@ -205,7 +205,7 @@ export class SideScene extends Phaser.Scene {
     const open = content.village.map(player.drawnMap);
     this.frame(dt, street);
     street.update(this.view, this.light, lightChanged, open?.kind === 'floor' ? open.building : undefined, dt);
-    this.dark?.update(glowAround(player.at, lampOf(playerState.latest)));
+    this.dark?.update(glowAround(player.at, lampOf(playerState.latest), fitted(body).includes('infrared_eye')));
     const cell = cellOf(player.at);
     lampHere.dark = !!this.dark && !isLit(street.map, cell.x, cell.y);
     lampHere.plug = atPlug(player.mapPosition);

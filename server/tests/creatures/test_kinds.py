@@ -167,12 +167,9 @@ def test_the_player_beats_a_bot_to_salvage_by_picking_it_up_while_the_bot_is_tak
 
 
 LONG = side_view("#" * 120, "#" + "." * 118 + "#", "#" + "." * 118 + "#", "#" * 120)
-"""A floor long enough to run along for seconds on the best legs."""
 
 
 class Hunted:
-    """A dog after the player, who's wherever `at` says."""
-
     def __init__(self, town: TownMap, dog: tuple[int, int], at: Point) -> None:
         self.at = at
         self.harmed: list[Kind] = []

@@ -18,6 +18,8 @@ from simile.street.metro import ARRIVAL, METRO
 from simile.street.moves import moves
 from simile.street.plan import dumps, tmj
 from simile.street.sewers import (
+    BATS,
+    CAVE_BATS,
     DEN,
     DOGS,
     FLOORS,
@@ -100,13 +102,30 @@ def cost(creature: Creature, cell: Cell) -> float:
 def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
     every = [c for c in spawned.all.values() if c.map == SEWERS]
     kinds = Counter(c.kind.id for c in every)
-    assert kinds == {CreatureKind.RAT: sum(RATS), CreatureKind.BOT: BOTS, CreatureKind.DOG: DOGS}
-    sewer = [c for c in every if c.kind.id is not CreatureKind.DOG]
+    bats = sum(BATS) + CAVE_BATS
+    expected = {
+        CreatureKind.RAT: sum(RATS),
+        CreatureKind.BOT: BOTS,
+        CreatureKind.DOG: DOGS,
+        CreatureKind.BAT: bats,
+    }
+    assert kinds == expected
+    sewer = [c for c in every if c.kind.id in (CreatureKind.RAT, CreatureKind.BOT)]
     assert all(c.cell in zone_0 for c in sewer), "one is past the gate"
+    town = spawned.maps[SEWERS]
+    lights = {light.id: light.area for light in town.light}
     dogs = [c for c in every if c.kind.id is CreatureKind.DOG]
-    width = spawned.maps[SEWERS].width
-    den = TileArea(x=width - DEN, y=FLOORS[0] - 3, width=DEN, height=4)
+    den = TileArea(x=lights["sewers_den"].x + 1, y=FLOORS[0] - 3, width=DEN, height=4)
     assert all(c.grid.area == den and c.cell not in zone_0 for c in dogs)
+    flying = [c for c in every if c.kind.id is CreatureKind.BAT]
+    assert all(c.cell == c.roost and not town.lit(*c.cell) for c in flying), "one isn't roosting"
+    cave = lights["sewers_cave"].x + 1
+    in_cave = [c for c in flying if c.grid.area is not None and c.grid.area.x == cave]
+    assert len(in_cave) == CAVE_BATS
+    rooms = [c.grid.area for c in flying if c not in in_cave]
+    floors = [{(x, a.y + 3) for x in range(a.x, a.x + a.width)} for a in rooms if a]
+    assert all(floor & zone_0 for floor in floors), "one is past the gate"
+    assert sorted(Counter((a.x, a.y) for a in rooms if a).values()) == sorted(BATS)
     assert all(c.home[0] >= SHAFT for c in sewer), "one is at the lift"
     rats = [c.grid.area for c in sewer if c.kind.id is CreatureKind.RAT]
     rooms = Counter((area.x, area.y) for area in rats if area is not None)
@@ -114,7 +133,7 @@ def check(spawned: Creatures, zone_0: set[tuple[int, int]]) -> None:
 
 
 @pytest.mark.parametrize("level", range(LEVELS))
-def test_every_level_places_rats_and_bots_before_the_gate_and_dogs_in_its_den(level: int) -> None:
+def test_every_level_places_its_creatures_where_they_keep_to(level: int) -> None:
     maps = load_maps(level=level)
     spawned = Creatures(maps)
     populate(spawned, spawns(level=level))

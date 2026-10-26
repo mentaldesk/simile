@@ -18,9 +18,11 @@ export const FADED = 0.55;
 export const LAMP_HEIGHT = 1.1;
 /** Without the lamp, just enough to make out the player. */
 export const GLIMMER = { radius: 1.2, strength: 0.4 };
+/** The infrared eye without the lamp: the dark around the player seen through a red veil. */
+export const EYE = { radius: 5, strength: 0.6 };
 
 /** Light around a point in street cells, where cell (x, y) spans x to x + 1. */
-export type Glow = { x: number; y: number; radius: number; strength: number };
+export type Glow = { x: number; y: number; radius: number; strength: number; infrared?: boolean };
 
 export function isLit(map: SideMap, x: number, y: number): boolean {
   let dark = false;
@@ -43,12 +45,12 @@ export function lampRadius(charge: number): number {
 export const atPlug = (position: Position | undefined): boolean =>
   !!position && interactableAt(mapOf(position), position)?.kind === 'plug';
 
-/** The lamp's light around the player at `at`, in street cells, or a glimmer without it. */
-export function glowAround(at: { x: number; y: number }, lamp: Item | undefined): Glow {
+/** The lamp's light around the player at `at`, in street cells, else the eye's sight or a glimmer. */
+export function glowAround(at: { x: number; y: number }, lamp: Item | undefined, eye = false): Glow {
   const x = at.x + 0.5;
   const y = at.y + 1 - LAMP_HEIGHT;
-  if (!shining(lamp)) return { x, y, ...GLIMMER };
-  return { x, y, radius: lampRadius(lamp!.charge ?? 0), strength: 1 };
+  if (shining(lamp)) return { x, y, radius: lampRadius(lamp!.charge ?? 0), strength: 1 };
+  return eye ? { x, y, ...EYE, infrared: true } : { x, y, ...GLIMMER };
 }
 
 /** The share of the darkness a glow takes away at `distance`. */
@@ -73,9 +75,9 @@ export class Sight {
     }
   }
 
-  /** Marks the dark cells the lamp lights as seen. Whether any were new. */
+  /** Marks the dark cells the lamp lights or the eye sees as seen. Whether any were new. */
   see(glow: Glow): boolean {
-    if (glow.strength < 1) return false;
+    if (glow.strength < 1 && !glow.infrared) return false;
     const { width, height } = this.map;
     const reach = glow.radius * (1 + INNER) * 0.5;
     let found = false;

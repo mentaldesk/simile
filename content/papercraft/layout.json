@@ -475,7 +475,7 @@
    1
   ],
   "sewer_vault": [
-   141,
+   160,
    2
   ],
   "sewer_walkway": [
@@ -615,6 +615,6 @@
   "lychee_lane": 68,
   "metro": 110,
   "rooftops": 60,
-  "sewers": 141
+  "sewers": 160
  }
 }

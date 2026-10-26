@@ -29,6 +29,7 @@ second:
 | `toughness` | 0 | How much of each kick it shrugs off. |
 | `knock` | 1 | How many cells a kick of strength 1 sends it. |
 | `stagger` | 0.6 | How long it's `hurt` after a kick. |
+| `dodges` | no | Too quick to kick: a kick never lands on it. |
 
 The tunnels' kinds are in `kinds.py` (below).
 
@@ -36,13 +37,13 @@ The tunnels' kinds are in `kinds.py` (below).
 
 `kinds.py` has the tunnels' kinds, and `KINDS` each one a map can place, with its `respawn`.
 
-| | Rat (P13) | Recycler bot (P13) | Wild dog (P14) |
-|---|---|---|---|
-| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` |
-| Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up |
-| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s |
-| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back | As the bot, and a kick staggers it for 1 s, knocked 1.5 cells for each of the kick's strength |
-| Climbs | No | Yes | No, and takes no door |
+| | Rat (P13) | Recycler bot (P13) | Wild dog (P14) | Bat (P15) |
+|---|---|---|---|---|
+| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
+| Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up | 3, and 12 chasing: faster than any legs but the best (13). It flies, and thinks every 0.15 s |
+| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
+| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back | As the bot, and a kick staggers it for 1 s, knocked 1.5 cells for each of the kick's strength | Never: it `dodges` |
+| Climbs | No | Yes | No, and takes no door | Flies |
 
 A rat leaves a player who carries no food alone, so a handful of them costs some health only
 when the player brings food, and they scatter after each bite. A bot ignores a wholly human
@@ -55,6 +56,14 @@ a player on their own legs or the feet is bitten about fifteen times going throu
 collapses. On the first legs, running through leaves about a tenth of their health, and kicking
 each dog back as it comes leaves over half; the best legs get through running with a quarter or
 so (`tests/creatures/test_den.py`).
+
+A bat hangs at its roost while the player's lamp is off, however near they are. While it's on, a
+bat that sees the lamp, with nothing solid between, flies at the player's chest and keeps
+attacking, and goes back to its roost once the lamp's off. It's too quick to kick. Walking across a
+room of two roosting bats by lamplight and back costs about a fifth of the player's health, and
+running about a twentieth; with the lamp off, nothing. The cave's thirty bats
+collapse a player who crosses it by lamplight on any legs, and leave one who crosses in the dark
+untouched (`tests/creatures/test_bats.py`).
 
 ## Placing them
 
@@ -85,7 +94,8 @@ diagonally only past two open ones. Paths are A\*; with no way to its target, a 
 where it gets nearest and waits there, as a dog under a ladder.
 
 Every `think` (a quarter of a sim second unless its kind says otherwise) each creature asks its
-kind's ways, in order, where to go (`ways.py`), and the first with an answer, an `Aim`, decides. With none, it stands still, `idle`.
+kind's ways, in order, where to go (`ways.py`), and the first with an answer, an `Aim`, decides.
+With none, it stands still, `idle`.
 
 | Way | Goes | State |
 |---|---|---|
@@ -131,7 +141,7 @@ races them for it rather than clearing it while they're away.
 
 The engine adds its `kickable` to `kickables_of(app)`. A kick hits the nearest creature in front of
 the player within the kick's reach, 0.3 tiles of slack either side, and no higher than 1.2 tiles
-above their feet, which takes in a low bat but never a roosting one. It takes the kick's strength
+above their feet, which would take in a low bat, but bats dodge. It takes the kick's strength
 less the kind's `toughness` from its health. At none the creature goes down: `creature_gone`, and
 it's back after `respawn` if it has one. Otherwise it's `hurt` for `stagger`, knocked `knock` ×
 strength cells away along its floor. A kick it shrugs off does nothing.
