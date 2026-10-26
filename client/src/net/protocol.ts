@@ -96,8 +96,8 @@ export type BodyPart =
   | 'stomach'
   | 'feet';
 /**
- * Why a shop that sells meals isn't serving them: `closed`, with nobody there to serve, or
- * `sold_out`, open but with nothing left of its batch for this shift.
+ * Why a shop that sells meals isn't serving them: `closed`, not serving now, off shift or past
+ * last orders, or `sold_out`, open but with nothing left of its batch for this shift.
  */
 export type ShutReason = 'closed' | 'sold_out';
 /**
@@ -728,7 +728,7 @@ export interface Shut {
   name: string;
   reason: ShutReason;
   /**
-   * When it next starts serving, by its keeper's shifts or its hours: a forecast, so a keeper who comes late or skips a shift makes it wrong. Null if it never does.
+   * When it next starts serving, by its keeper's shifts or its own hours: the next start after now, even while a keeper is due but hasn't come. Null only for a shop with no keeper, or a keeper with no shifts, and no hours of its own.
    */
   opens: string | null;
 }

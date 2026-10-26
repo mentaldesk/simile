@@ -222,6 +222,9 @@ NOODLES_SHUT = Shut(
     opens=datetime(2026, 3, 17, 11, tzinfo=UTC),
 )
 AT_THE_SHUT_NOODLE_BAR = DELVING.model_copy(update={"shut": NOODLES_SHUT})
+AT_A_SHOP_NOBODY_KEEPS = DELVING.model_copy(
+    update={"shut": NOODLES_SHUT.model_copy(update={"opens": None})}
+)
 WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 WOKEN = PlayerStateMessage(
     player=Player(
@@ -379,6 +382,7 @@ SERVER = [
     KNOWING,
     SELLING_RECIPES,
     AT_THE_SHUT_NOODLE_BAR,
+    AT_A_SHOP_NOBODY_KEEPS,
     HURT,
     BUYING_BACK,
     TREATING,
@@ -859,10 +863,10 @@ def test_player_state_says_when_the_shop_they_stand_in_next_serves() -> None:
     assert {reason.value for reason in ShutReason} == {"closed", "sold_out"}
 
 
-def test_a_shop_that_never_opens_again_has_no_opening() -> None:
-    sold_out = NOODLES_SHUT.model_copy(update={"reason": ShutReason.SOLD_OUT, "opens": None})
+def test_a_shop_without_a_keeper_has_no_opening() -> None:
+    shut = json.loads(AT_A_SHOP_NOBODY_KEEPS.model_dump_json())["shut"]
 
-    assert json.loads(sold_out.model_dump_json())["opens"] is None
+    assert (shut["reason"], shut["opens"]) == ("closed", None)
 
 
 def test_player_state_has_a_meal_or_a_shut_shop_not_both() -> None:
