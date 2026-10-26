@@ -368,6 +368,13 @@ def test_after_the_evening_shift_it_opens_for_lunch_the_next_day() -> None:
     assert shut.opens == monday(11, days=6)
 
 
+def test_while_its_keeper_is_late_it_opens_at_their_next_shift() -> None:
+    shut = at_the_noodle_bar(monday(11 + 20 / 60, days=1)).hunger.shut()
+
+    assert shut is not None
+    assert (shut.reason, shut.opens) == (ShutReason.CLOSED, monday(17, days=1))
+
+
 def test_sold_out_while_its_keeper_is_in_until_the_next_shift() -> None:
     now = monday(13, days=1)
     village = at_the_noodle_bar(now)

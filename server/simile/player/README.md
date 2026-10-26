@@ -25,9 +25,10 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
   - `meal()` is the meal on offer where they stand, which goes to the client in `player_state` so
     its hint can offer it. Ordering a drink at the café's counter is unchanged and free.
   - `shut()` is, in its place, the shop where they stand while it isn't serving: `sold_out` while
-    its keeper is in but the batch has gone, otherwise `closed`, and when it next opens. That's the
-    next start of its keeper's shifts (`hours.py`), or the café's `opens` while nobody works
-    there: a forecast that a late or absent keeper makes wrong.
+    its keeper is in but the batch has gone, otherwise `closed` (off shift, or past the café's
+    last orders), and when it next opens. That's the next start after now of its keeper's shifts
+    (`hours.py`), or of the café's own hours while nobody works there: a forecast, so while a
+    keeper is late it's their next shift.
 - **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
   they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
   of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
