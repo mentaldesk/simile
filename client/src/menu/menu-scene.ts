@@ -21,6 +21,7 @@ export class MenuScene extends Phaser.Scene {
     if (params.has('creator')) return;
     const menu = new Menu(document.body, new ServerApi(), {
       play: () => this.scene.start(SIDE_SCENE),
+      enter: () => location.assign(`${location.pathname}?play`),
       creator: hasCreator ? () => (location.search = '?creator') : undefined,
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => menu.remove());

@@ -13,6 +13,8 @@ export type GameKeys = {
   help: Pick<HelpPanel, 'toggle' | 'close'>;
   journal: Pick<JournalPanel, 'toggle' | 'close'>;
   character: Pick<CharacterPanel, 'toggle' | 'close'>;
+  /** Esc with nothing else open: the pause menu. */
+  pause: () => void;
 };
 
 /** Whether nothing on the page has focus, so a key is the game's and not a link's or a field's. */
@@ -22,7 +24,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, talk, use, view, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, talk, use, view, eat, help, journal, character, pause }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -31,6 +33,7 @@ export function onGameKey({ chat, talk, use, view, eat, help, journal, character
       event.preventDefault();
       chat.open();
     } else if (key === 'Escape') {
+      pause();
       chat.clear();
       help.close();
       journal.close();

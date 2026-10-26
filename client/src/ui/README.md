@@ -251,6 +251,16 @@ the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-l
 as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
 greet the player out loud either way.
 
+## The pause menu
+
+Esc with nothing open (no chat, controls, journal, character screen, news, mural or clinic) opens
+the pause menu (`PauseMenu` in [`pause-menu.ts`](pause-menu.ts)), but only while the side scene
+runs, so never over the title menu. It has Resume, the controls, and Exit to menu, which reloads the
+page without `?play` and so lands on the title menu. The server saves the world every 10 seconds
+and on every switch, so exiting needs no save of its own, and the village carries on meanwhile.
+↑ ↓ and Tab go through its buttons, Esc or a click outside resumes, and it keeps its key-downs from
+`window`, so the player doesn't walk while it's open.
+
 ## Where you are
 
 A paper tag at the top names the place the player is in (`PlaceLabel` in

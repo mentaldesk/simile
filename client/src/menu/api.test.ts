@@ -35,6 +35,29 @@ it('throws the status when there is no reason', async () => {
   await expect(new ServerApi(fetcher).characters()).rejects.toThrow('/api/characters: 502');
 });
 
+it('opens, renames and deletes a world by its id', async () => {
+  const fetcher = vi.fn(async () => reply(202, { id: 'w', opening: true }));
+  const api = new ServerApi(fetcher);
+
+  expect(await api.open('w')).toEqual({ id: 'w', opening: true });
+  await api.rename('w', 'Ash Lane');
+  fetcher.mockResolvedValueOnce(new Response(null, { status: 204 }));
+  await api.remove('w');
+
+  expect(fetcher.mock.calls).toEqual([
+    ['/api/worlds/w/open', { method: 'POST' }],
+    [
+      '/api/worlds/w',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Ash Lane' }),
+      },
+    ],
+    ['/api/worlds/w', { method: 'DELETE' }],
+  ]);
+});
+
 it('lists the news feeds', async () => {
   const fetcher = vi.fn(async () => reply(200, { feeds: [] }));
 

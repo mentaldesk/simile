@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { playerState, server, type Buyer, type Position } from '../net';
+import { SIDE_SCENE } from '../side';
 import { maps } from '../world/assets';
 import { fits } from '../world/buyers';
 import type { Interactable } from '../world/interactables';
@@ -23,6 +24,7 @@ import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
+import { PauseMenu } from './pause-menu';
 import { fitOverlay, inOverlay } from './overlay';
 import { PlaceLabel } from './place-label';
 import { setMaps } from './side-view';
@@ -92,7 +94,12 @@ export class DialogueScene extends Phaser.Scene {
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
     const character = (this.character = new CharacterPanel(this.root));
-    const onKeyDown = onGameKey({ chat, talk: () => this.talk(), use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character });
+    const paused = new PauseMenu(document.body, () => location.assign(location.pathname));
+    const pause = () => {
+      const open = chat.isOpen || help.isOpen || journal.isOpen || character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
+      if (!open && this.scene.isActive(SIDE_SCENE)) paused.open();
+    };
+    const onKeyDown = onGameKey({ chat, talk: () => this.talk(), use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character, pause });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -109,6 +116,7 @@ export class DialogueScene extends Phaser.Scene {
       this.murals.stop();
       journal.stop();
       log.stop();
+      paused.remove();
       this.root.remove();
     });
 

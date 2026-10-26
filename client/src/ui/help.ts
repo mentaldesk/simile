@@ -20,7 +20,7 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['C'], 'open or close your character: your vitals, your body, what you carry and the recipes you know'],
   [['Enter'], 'talk to the ringed resident, then send'],
   [['Tab'], 'choose who to talk to'],
-  [['Esc'], 'close the chat or a panel'],
+  [['Esc'], 'close the chat or a panel; with none open, open the menu'],
   [[HELP_KEY], 'show or hide the controls'],
 ];
 
