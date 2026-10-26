@@ -8,6 +8,7 @@ import { interactables } from '../world/interactables';
 import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
 import { reachables, setWayPrompts, type WayPrompt } from '../world/reach';
+import { toSearch } from '../world/searchables';
 import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
@@ -211,7 +212,9 @@ export class SideScene extends Phaser.Scene {
       street.setPaintings(galleryFrames.frames, load);
     }
     this.drawFigures(content.village, street);
-    this.glints.update(content.village, street.map.id, reachables.piles(), time / 1000);
+    const shown = [street.map.id, ...street.map.buildings.flatMap(({ name }) => content.village.floors(name).map(({ id }) => id))];
+    const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.(), shown);
+    this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
     this.report(player.mapPosition, time / 1000);
   }
 

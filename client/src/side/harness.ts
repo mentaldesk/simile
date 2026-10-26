@@ -1,6 +1,6 @@
 // The `?harness=side` dev harness: README.md.
 import Phaser from 'phaser';
-import { server, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Wall } from '../net';
+import { server, type Bionic, type Body, type ClientMessage, type Entity, type Facing, type Frame, type Item, type Pose, type Position, type Recipe, type Wall } from '../net';
 import { speakingSeconds } from '../ui/bubbles';
 import { PLAYER_ID } from '../ui/world-view';
 import { usedByE } from '../world/reach';
@@ -259,6 +259,22 @@ function frames(village: Village): Frame[] {
   );
 }
 
+/** The server's recipes the walk learns, from `simile.clinic`'s config. */
+const RECIPES: Partial<Record<Bionic, Recipe>> = {
+  datajack: {
+    bionic: 'datajack',
+    name: 'Datajack',
+    parts: { copper_wire: 3, usb_c_connector: 1 },
+    credits: 100,
+    replaces: ['vertebra'],
+    after: ['power_cell'],
+  },
+};
+
+let items: Item[] = [LAMP];
+let searched: string[] = [];
+let known: Bionic[] = [];
+
 let body: Body = {
   legs: 'present',
   vertebra: 'present',
@@ -269,10 +285,25 @@ let body: Body = {
 };
 
 function sendPlayerState(): void {
-  dispatch({ type: 'player_state', player: { money: 0, items: [LAMP], carry_limit: 10, body, hunger: 0 } });
+  const mind = known.length ? { mind: { recipes: known } } : {};
+  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, ...(searched.length ? { searched } : {}), ...mind };
+  const recipes = known.map((bionic) => RECIPES[bionic] ?? { bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] });
+  dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}) });
 }
 
-function answer(message: ClientMessage): void {
+/** E at something to search, as the server does it, carrying everything. */
+function search(at: Position | undefined): void {
+  const used = usedByE(at);
+  if (used?.kind !== 'searchable') return;
+  const { id, items: found = [], teaches } = used.interactable;
+  searched = [...searched, id];
+  items = [...items, ...found];
+  if (teaches && !known.includes(teaches)) known = [...known, teaches];
+  sendPlayerState();
+}
+
+function answer(message: ClientMessage, scene: SideScene): void {
+  if (message.type === 'pick_up') search(scene.playing?.mapPosition);
   if (message.type !== 'lamp' || (message.on && !LAMP.charge)) return;
   LAMP.on = message.on;
   sendPlayerState();
@@ -374,6 +405,7 @@ function exposeWalk(scene: SideScene, village: Village): void {
         return !!found && isStanding(found, x, y);
       },
       teleport: (to: MapPosition) => scene.teleport(to),
+      mind: () => ({ recipes: known, searched, items: items.map(({ id }) => id) }),
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
         sendPlayerState();
@@ -397,7 +429,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   server.close();
   server.send = (message) => {
     console.info('Side harness: sent', message);
-    answer(message);
+    answer(message, scene);
     return true;
   };
   const [map, x, y] = (params.get('at') ?? 'high_street:51:15').split(':');

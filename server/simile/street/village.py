@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 from simile.schema import (
+    Bionic,
     Door,
     DoorKind,
     Facing,
@@ -12,6 +13,14 @@ from simile.schema import (
     MapTile,
     Tile,
     TileArea,
+)
+from simile.street.finds import (
+    CHARGE_CONTROLLER,
+    COPPER_WIRE,
+    LITHIUM_CELL,
+    USB_C_CONNECTOR,
+    searchable,
+    under,
 )
 from simile.street.plan import Facade, Plan
 from simile.world.map import MapKind, MuralWall, SpotKind
@@ -35,6 +44,10 @@ SEAT, BAR, DESK, VIEWING = SpotKind.SEAT, SpotKind.BAR, SpotKind.DESK, SpotKind.
 FRAMES = [(3, 0), (7, 0), (11, 0), (15, 0), (19, 0), (23, 0), (27, 0)]
 FRAMES += [(5, 9), (8, 9), (11, 9), (19, 9), (22, 9), (25, 9)]
 """Each gallery painting's frame on today's map, which its viewing spots are named after."""
+ARIS_BENCH = "maker_space_bench"
+"""Aris's bench downstairs in the maker space, with her schematic for the datajack."""
+SPARES = "maker_space_spares"
+SHELF = "maker_space_shelf"
 
 
 def street(map_id: str, label: str, width: int) -> Plan:
@@ -366,6 +379,8 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     shop.link("maker_space_ladder", DoorKind.LADDER, (1, 6), (2, 6))
     shop.place(entry=13)
     workbench(ground, 3, (3, 6))
+    bench = TileArea(x=5, y=FLOOR_ROW, width=2, height=1)
+    searchable(ground, ARIS_BENCH, "Aris's bench", bench, under(bench), teaches=Bionic.DATAJACK)
     ground.piece("pegboard", 3, 0, 4, 1)
     machine(ground, "laser_cutter", "Laser cutter", 7, 2, "desk-2-3", "desk-3-3")
     machine(ground, "printer_3d", "3D printer", 9, 1, "desk-6-3")
@@ -374,9 +389,13 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     wall_plug(ground, "maker_space_plug", 13)
     for at, old in ((1, (3, 9)), (7, (8, 6)), (11, (8, 9))):
         workbench(first, at, old)
+    spares = TileArea(x=11, y=FLOOR_ROW, width=4, height=1)
+    searchable(first, SPARES, "Workbench", spares, under(spares), [LITHIUM_CELL, CHARGE_CONTROLLER])
     for at, old in ((1, (13, 6)), (7, (13, 9))):
         workbench(loft, at, old)
     loft.piece("shelf", 11, FLOOR_ROW - 1, 4, 2)
+    shelf = TileArea(x=11, y=FLOOR_ROW - 1, width=4, height=2)
+    searchable(loft, SHELF, "Storage shelf", shelf, under(shelf), [USB_C_CONNECTOR, COPPER_WIRE])
     return shop.floors
 
 

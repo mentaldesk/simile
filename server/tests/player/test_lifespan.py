@@ -246,5 +246,28 @@ def test_a_part_sold_at_the_stall_is_bought_back_with_buy(make_package: MakePack
     assert "sales" not in bought["player"]
 
 
+def test_e_at_aris_bench_teaches_the_datajack(
+    make_package: MakePackage,
+) -> None:
+    files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in LIFESPANS}
+    files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
+    files["player/lifespan.py"] = "from simile.player.lifespan import running\n"
+    files["clinic/lifespan.py"] = "from simile.clinic.lifespan import lifespan\n"
+    app = create_app(make_package(files))
+    app.state.world = World(Clock(START))
+
+    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
+        next_of(ws, "player_state")
+        move(client, app, ws, 5, 2, "maker_space_floor_0")
+        ws.send_json({"type": "pick_up"})
+        searched = next_of(ws, "player_state")
+        while "searched" not in searched["player"]:
+            searched = next_of(ws, "player_state")
+
+    assert searched["player"]["searched"] == ["maker_space_bench"]
+    assert searched["player"]["mind"] == {"recipes": ["datajack"]}
+    assert [recipe["bionic"] for recipe in searched["recipes"]] == ["datajack"]
+
+
 def metro(piles: list[dict]) -> list[dict]:
     return [pile for pile in piles if pile["at"]["map"] == "metro"]

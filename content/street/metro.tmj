@@ -390,6 +390,18 @@
         {
           "height": 32,
           "id": 22,
+          "name": "fridge",
+          "properties": [],
+          "rotation": 0,
+          "type": "fridge",
+          "visible": true,
+          "width": 16,
+          "x": 1120,
+          "y": 224
+        },
+        {
+          "height": 32,
+          "id": 23,
           "name": "breaker_box",
           "properties": [],
           "rotation": 0,
@@ -401,7 +413,7 @@
         },
         {
           "height": 32,
-          "id": 23,
+          "id": 24,
           "name": "catwalk",
           "properties": [],
           "rotation": 0,
@@ -413,7 +425,7 @@
         },
         {
           "height": 32,
-          "id": 24,
+          "id": 25,
           "name": "catwalk",
           "properties": [],
           "rotation": 0,
@@ -425,7 +437,7 @@
         },
         {
           "height": 32,
-          "id": 25,
+          "id": 26,
           "name": "catwalk",
           "properties": [],
           "rotation": 0,
@@ -437,7 +449,7 @@
         },
         {
           "height": 16,
-          "id": 26,
+          "id": 27,
           "name": "rubble",
           "properties": [],
           "rotation": 0,
@@ -449,7 +461,7 @@
         },
         {
           "height": 64,
-          "id": 27,
+          "id": 28,
           "name": "freight_lift",
           "properties": [],
           "rotation": 0,
@@ -461,7 +473,7 @@
         },
         {
           "height": 32,
-          "id": 28,
+          "id": 29,
           "name": "dead_terminal",
           "properties": [],
           "rotation": 0,
@@ -473,7 +485,7 @@
         },
         {
           "height": 32,
-          "id": 29,
+          "id": 30,
           "name": "catwalk",
           "properties": [],
           "rotation": 0,
@@ -485,7 +497,7 @@
         },
         {
           "height": 16,
-          "id": 30,
+          "id": 31,
           "name": "crates",
           "properties": [],
           "rotation": 0,
@@ -509,7 +521,7 @@
       "objects": [
         {
           "height": 48,
-          "id": 31,
+          "id": 32,
           "name": "scrap_stall",
           "properties": [
             {
@@ -560,7 +572,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 32,
+          "id": 33,
           "name": "clinic",
           "properties": [
             {
@@ -598,7 +610,7 @@
         },
         {
           "height": 16,
-          "id": 33,
+          "id": 34,
           "name": "banyan_row_to_metro",
           "properties": [
             {
@@ -636,7 +648,7 @@
         },
         {
           "height": 16,
-          "id": 34,
+          "id": 35,
           "name": "metro_to_sewers",
           "properties": [
             {
@@ -686,7 +698,63 @@
       "objects": [
         {
           "height": 32,
-          "id": 35,
+          "id": 36,
+          "name": "metro_ticket_machine",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"copper_wire\", \"kind\": \"salvage\", \"name\": \"Copper wire\", \"weight\": 1.5, \"charge\": null, \"on\": null}, {\"id\": \"lithium_cell\", \"kind\": \"part\", \"name\": \"Lithium cell\", \"weight\": 0.3, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Dead ticket machine"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "15,12"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 240,
+          "y": 176
+        },
+        {
+          "height": 32,
+          "id": 37,
+          "name": "metro_fridge",
+          "properties": [
+            {
+              "name": "items",
+              "type": "string",
+              "value": "[{\"id\": \"copper_wire\", \"kind\": \"salvage\", \"name\": \"Copper wire\", \"weight\": 1.5, \"charge\": null, \"on\": null}, {\"id\": \"lithium_cell\", \"kind\": \"part\", \"name\": \"Lithium cell\", \"weight\": 0.3, \"charge\": null, \"on\": null}]"
+            },
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Dead fridge"
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "70,15"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 1120,
+          "y": 224
+        },
+        {
+          "height": 32,
+          "id": 38,
           "name": "metro_plug",
           "properties": [
             {
@@ -709,7 +777,7 @@
         },
         {
           "height": 64,
-          "id": 36,
+          "id": 39,
           "name": "metro_lift",
           "properties": [
             {
@@ -732,7 +800,7 @@
         },
         {
           "height": 32,
-          "id": 37,
+          "id": 40,
           "name": "metro_terminal",
           "properties": [
             {
@@ -755,7 +823,7 @@
         },
         {
           "height": 16,
-          "id": 38,
+          "id": 41,
           "name": "metro_high_ledge",
           "properties": [
             {
@@ -790,7 +858,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 39,
+          "id": 42,
           "name": "metro_scrap_trader",
           "properties": [
             {
@@ -820,7 +888,7 @@
       "objects": [
         {
           "height": 320,
-          "id": 40,
+          "id": 43,
           "name": "metro_entrance",
           "properties": [
             {
@@ -838,7 +906,7 @@
         },
         {
           "height": 192,
-          "id": 41,
+          "id": 44,
           "name": "metro_vault",
           "properties": [
             {
@@ -856,7 +924,7 @@
         },
         {
           "height": 128,
-          "id": 42,
+          "id": 45,
           "name": "metro_platform",
           "properties": [
             {
@@ -874,7 +942,7 @@
         },
         {
           "height": 160,
-          "id": 43,
+          "id": 46,
           "name": "metro_gantry",
           "properties": [
             {
@@ -892,7 +960,7 @@
         },
         {
           "height": 160,
-          "id": 44,
+          "id": 47,
           "name": "metro_tunnel_west",
           "properties": [
             {
@@ -910,7 +978,7 @@
         },
         {
           "height": 320,
-          "id": 45,
+          "id": 48,
           "name": "metro_maintenance",
           "properties": [
             {
@@ -928,7 +996,7 @@
         },
         {
           "height": 320,
-          "id": 46,
+          "id": 49,
           "name": "metro_tunnel_east",
           "properties": [
             {
@@ -946,7 +1014,7 @@
         },
         {
           "height": 320,
-          "id": 47,
+          "id": 50,
           "name": "metro_depot",
           "properties": [
             {
@@ -976,7 +1044,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 48,
+          "id": 51,
           "name": "metro_secret_stairwell",
           "properties": [
             {
@@ -999,7 +1067,7 @@
         },
         {
           "height": 16,
-          "id": 49,
+          "id": 52,
           "name": "metro_salvage_1",
           "properties": [],
           "rotation": 0,
@@ -1011,7 +1079,7 @@
         },
         {
           "height": 16,
-          "id": 50,
+          "id": 53,
           "name": "metro_secret_catwalk",
           "properties": [
             {
@@ -1034,7 +1102,7 @@
         },
         {
           "height": 16,
-          "id": 51,
+          "id": 54,
           "name": "metro_secret_gantry",
           "properties": [
             {
@@ -1057,7 +1125,7 @@
         },
         {
           "height": 16,
-          "id": 52,
+          "id": 55,
           "name": "metro_salvage_2",
           "properties": [],
           "rotation": 0,
@@ -1069,7 +1137,7 @@
         },
         {
           "height": 16,
-          "id": 53,
+          "id": 56,
           "name": "metro_salvage_3",
           "properties": [],
           "rotation": 0,
@@ -1081,7 +1149,7 @@
         },
         {
           "height": 16,
-          "id": 54,
+          "id": 57,
           "name": "metro_salvage_4",
           "properties": [
             {
@@ -1099,7 +1167,7 @@
         },
         {
           "height": 16,
-          "id": 55,
+          "id": 58,
           "name": "metro_secret_alcove",
           "properties": [
             {
@@ -1137,7 +1205,7 @@
         },
         {
           "height": 16,
-          "id": 56,
+          "id": 59,
           "name": "metro_salvage_5",
           "properties": [],
           "rotation": 0,
@@ -1149,7 +1217,7 @@
         },
         {
           "height": 16,
-          "id": 57,
+          "id": 60,
           "name": "metro_salvage_6",
           "properties": [
             {
@@ -1167,7 +1235,7 @@
         },
         {
           "height": 16,
-          "id": 58,
+          "id": 61,
           "name": "metro_secret_ledge",
           "properties": [
             {
@@ -1197,7 +1265,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 59,
+  "nextobjectid": 62,
   "orientation": "orthogonal",
   "properties": [
     {

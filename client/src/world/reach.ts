@@ -6,12 +6,13 @@ import { interactableAt, type Interactable } from './interactables';
 import { jacked, leadsAway } from './jacks';
 import { mapOf } from './map';
 import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
+import { searches } from './searchables';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
 
 /** Something E uses, `tiles` along the street from the player. */
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
-  | { kind: 'counter' | 'painting' | 'jack'; tiles: number; interactable: Interactable }
+  | { kind: 'counter' | 'painting' | 'jack' | 'searchable'; tiles: number; interactable: Interactable }
   | { kind: 'mural'; tiles: number; wall: Wall }
   | { kind: 'pile'; tiles: number; pile: Pile }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
@@ -29,6 +30,8 @@ export type Reachables = {
   jacked?: () => boolean;
   /** Whether a link leaves from the jack's stand tile, for E to take once it works. */
   leadsAway?: (jack: Interactable) => boolean;
+  /** The interactables the player has searched, by id. */
+  searched?: () => readonly string[];
 };
 
 /** Murals only count while a scene draws them, as for the mural panel. */
@@ -41,6 +44,7 @@ export const reachables: Reachables = {
   clues,
   jacked: () => jacked(playerState.latest?.player.body),
   leadsAway,
+  searched: () => playerState.latest?.player.searched ?? [],
 };
 
 /** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
@@ -74,7 +78,9 @@ export function inReach(position: Position | undefined, from: Reachables = reach
     found.push({ kind: 'terminal', tiles, terminal });
   }
   const interactable = from.interactableAt(mapOf(position), position);
-  if (interactable && isUsed(interactable.kind) && !(interactable.kind === 'jack' && opens(from, interactable))) {
+  if (interactable && searches(interactable, from.searched?.() ?? [], !!from.jacked?.())) {
+    found.push({ kind: 'searchable', tiles: -1, interactable });
+  } else if (interactable && isUsed(interactable.kind) && !(interactable.kind === 'jack' && opens(from, interactable))) {
     const tiles = Math.min(...interactable.stand.map(({ x }) => Math.abs(x + 0.5 - along)));
     found.push({ kind: interactable.kind, tiles, interactable });
   }

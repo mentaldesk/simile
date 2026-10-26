@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from simile.schema import (
+    Bionic,
     Door,
     DoorKind,
     Facing,
@@ -427,6 +428,8 @@ def _door(obj: dict[str, Any], size: int, map_id: str) -> Door:
 def _interactable(obj: dict[str, Any], size: int, map_id: str) -> Interactable:
     props = _props(obj)
     stand = [pair.split(",") for pair in props["stand"].split()]
+    items = [Item.model_validate(thing) for thing in json.loads(props.get("items", "[]"))]
+    teaches = Bionic(props["teaches"]) if "teaches" in props else None
     return Interactable(
         id=obj["name"],
         label=props["label"],
@@ -434,6 +437,8 @@ def _interactable(obj: dict[str, Any], size: int, map_id: str) -> Interactable:
         map=map_id,
         area=_area(obj, size),
         stand=[Tile(x=int(x), y=int(y)) for x, y in stand],
+        items=items,
+        teaches=teaches,
     )
 
 
