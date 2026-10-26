@@ -1,5 +1,5 @@
-import type { Bionic, Body, BodyPart, Effect, Item, Player, PlayerStateMessage, Recipe } from '../net';
-import { lampHere, lampOf } from '../side/lamp';
+import type { Bionic, Body, BodyPart, Effect, ItemKind, Player, PlayerStateMessage, Recipe } from '../net';
+import { LAMP_KEY, lampHere, lampOf } from '../side/lamp';
 import { callCue } from './call-cue';
 import { CHART, gradeOf, partDetails, pictureOf, PLACES } from './character-body';
 import './character-panel.css';
@@ -8,7 +8,7 @@ import { feeling } from './hunger';
 import { iconUrl } from './icons';
 import { level, percent, type Where } from './lamp-gauge';
 import { amount } from './salvage';
-import { CHARACTER_KEY } from './tuning';
+import { CHARACTER_KEY, EAT_KEY } from './tuning';
 
 const KEY = CHARACTER_KEY.toUpperCase();
 
@@ -92,24 +92,70 @@ export function bodyRows(body: Body, recipes: readonly Recipe[] = []): BodyRow[]
   });
 }
 
-export type GearRow = { name: string; count: number; weight: number; note?: string };
-export type Gear = { rows: GearRow[]; load: number; limit: number };
+export const UNKNOWN_ITEM = 'unknown_item';
+export const COLUMNS = 5;
+
+export type GearTile = {
+  id: string;
+  kind: ItemKind;
+  name: string;
+  count: number;
+  each: number;
+  weight: number;
+  picture: string;
+  charge?: number;
+  on?: boolean;
+};
+export type Gear = { tiles: GearTile[]; load: number; limit: number };
 
 const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
 
+/** What they carry, a tile per kind of item in the order they got it, against the carry limit. */
 export function gear(player: Player): Gear {
-  const rows = new Map<string, GearRow>();
-  for (const item of player.items) {
-    const row = rows.get(item.id) ?? { name: item.name, count: 0, weight: 0, note: lampNote(item) };
-    row.count += 1;
-    row.weight += item.weight;
-    rows.set(item.id, row);
+  const tiles = new Map<string, GearTile>();
+  for (const { id, kind, name, weight, charge, on } of player.items) {
+    const tile = tiles.get(id) ?? {
+      id,
+      kind,
+      name,
+      count: 0,
+      each: weight,
+      weight: 0,
+      picture: iconUrl(id) ? id : UNKNOWN_ITEM,
+      ...(kind === 'lamp' ? { charge: charge ?? 0, on: !!on } : {}),
+    };
+    tile.count += 1;
+    tile.weight += weight;
+    tiles.set(id, tile);
   }
   const load = player.items.reduce((sum, { weight }) => sum + weight, 0);
-  return { rows: [...rows.values()], load, limit: player.carry_limit };
+  return { tiles: [...tiles.values()], load, limit: player.carry_limit };
 }
 
-const lampNote = ({ kind, charge }: Item) => (kind === 'lamp' ? percent(charge ?? 0) : undefined);
+const KINDS: Record<ItemKind, string> = {
+  salvage: 'Salvage, to sell',
+  food: 'Food, to eat',
+  lamp: 'Your lamp, to see by',
+  part: 'A part, for a bionic',
+};
+
+const listed = (names: string[]) => (names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names.at(-1)}` : names[0]);
+
+export type ItemDetails = { title: string; kind: ItemKind; status: string; lines: string[] };
+
+/** What it's for, its weight, the lamp's charge, and which recipes they know use it. */
+export function itemDetails(tile: GearTile, player: Player, recipes: readonly Recipe[] = []): ItemDetails {
+  const { id, kind, name, count, each, weight } = tile;
+  const lines = [count > 1 ? `${count} of them, ${kg(each)} each, ${kg(weight)} in all.` : `${kg(weight)}.`];
+  if (kind === 'lamp') lines.push(`Charged ${percent(tile.charge ?? 0)}, ${tile.on ? 'on' : 'off'}. ${LAMP_KEY} switches it.`);
+  if (kind === 'food') lines.push(`${EAT_KEY.toUpperCase()} eats it once you're peckish.`);
+  const using = (player.mind?.recipes ?? [])
+    .filter((bionic) => recipes.find((recipe) => recipe.bionic === bionic)?.parts[id])
+    .map((bionic) => `the ${bionicName(bionic, recipes).toLowerCase()}`);
+  if (using.length) lines.push(`Your recipe for ${listed(using)} uses it.`);
+  else if (kind === 'part') lines.push('No recipe you know uses it.');
+  return { title: name, kind, status: KINDS[kind], lines };
+}
 
 export type Known = {
   bionic: Bionic;
@@ -171,6 +217,9 @@ export class CharacterPanel {
   private shown = 0;
   private part = 0;
   private map?: { rows: BodyRow[]; slots: HTMLElement[]; details: HTMLElement };
+  private grid?: { tiles: GearTile[]; cells: HTMLElement[]; details: HTMLElement; player: Player; recipes: readonly Recipe[] };
+  private item?: string;
+  private itemAt = 0;
   private state?: PlayerStateMessage;
   private where: Where = { dark: false, plug: false };
   private drawn = '';
@@ -215,6 +264,7 @@ export class CharacterPanel {
   open(): void {
     this.panel.hidden = false;
     this.drawn = '';
+    this.item = undefined;
     this.render();
     this.panel.focus();
   }
@@ -237,6 +287,8 @@ export class CharacterPanel {
     if (key === 'Escape' || (key.toLowerCase() === CHARACTER_KEY && !event.repeat)) {
       event.preventDefault();
       this.close();
+    } else if (this.grid && this.onGrid(key)) {
+      event.preventDefault();
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
       event.preventDefault();
       this.showTab((this.shown + (key === 'ArrowRight' ? 1 : -1) + TABS.length) % TABS.length);
@@ -248,7 +300,9 @@ export class CharacterPanel {
 
   private showTab(index: number): void {
     this.shown = index;
+    this.item = undefined;
     this.render();
+    this.pick(undefined);
   }
 
   private render(): void {
@@ -258,6 +312,7 @@ export class CharacterPanel {
     this.drawn = drawn;
     this.tabs.forEach((tab, i) => tab.setAttribute('aria-selected', String(i === this.shown)));
     this.map = undefined;
+    this.grid = undefined;
     const player = this.state?.player;
     if (!player) {
       this.page.replaceChildren(el('p', 'Not connected, so there’s nothing to show.', 'character-empty'));
@@ -267,7 +322,7 @@ export class CharacterPanel {
     const tab = this.tab;
     if (tab === 'Vitals') this.page.replaceChildren(...this.vitals(vitals(player, where)));
     else if (tab === 'Body') this.page.replaceChildren(this.body(bodyRows(player.body, recipes)));
-    else if (tab === 'Gear') this.page.replaceChildren(...this.gear(gear(player)));
+    else if (tab === 'Gear') this.page.replaceChildren(...this.gear(gear(player), player, recipes));
     else this.page.replaceChildren(...this.mind(known(player, recipes), player.money));
   }
 
@@ -331,16 +386,81 @@ export class CharacterPanel {
     );
   }
 
-  private gear({ rows, load, limit }: Gear): HTMLElement[] {
+  private gear({ tiles, load, limit }: Gear, player: Player, recipes: readonly Recipe[]): HTMLElement[] {
     const carrying = el('ul', undefined, 'character-rows');
     const left = 1 - load / (limit || 1);
     carrying.appendChild(row('Carrying', meter({ fill: load / (limit || 1), good: left }), el('span', `${kg(load)} of ${kg(limit)}`)));
-    const list = el('ul', undefined, 'character-rows');
-    for (const { name, count, weight, note } of rows) {
-      const what = count > 1 ? `${name} ×${count}` : name;
-      list.appendChild(row(what, el('span', note ? `${note} · ${kg(weight)}` : kg(weight))));
+    if (!tiles.length) return [carrying, el('p', 'You carry nothing.', 'character-empty')];
+    const shown = el('div', undefined, 'character-gear');
+    const grid = shown.appendChild(el('div', undefined, 'character-grid'));
+    grid.style.setProperty('--columns', String(COLUMNS));
+    grid.addEventListener('mouseleave', () => this.pick(undefined));
+    const cells = tiles.map((tile, i) => {
+      const cell = grid.appendChild(el('button', undefined, `character-tile character-tile-${tile.kind}`));
+      cell.type = 'button';
+      cell.tabIndex = -1;
+      cell.ariaLabel = tile.count > 1 ? `${tile.name} ×${tile.count}` : tile.name;
+      cell.dataset.item = tile.id;
+      cell.dataset.picture = tile.picture;
+      const url = iconUrl(tile.picture);
+      if (url) {
+        const picture = cell.appendChild(el('img'));
+        picture.src = url;
+        picture.alt = '';
+      }
+      if (tile.count > 1) cell.appendChild(el('span', `×${tile.count}`, 'character-count'));
+      if (tile.charge !== undefined) cell.appendChild(meter({ fill: tile.charge, good: tile.charge }));
+      cell.appendChild(el('span', tile.name, 'character-tile-name'));
+      cell.addEventListener('mouseenter', () => this.pick(i));
+      cell.addEventListener('click', () => this.pick(i));
+      return cell;
+    });
+    this.grid = { tiles, cells, player, recipes, details: shown.appendChild(el('div', undefined, 'character-item')) };
+    const at = tiles.findIndex(({ id }) => id === this.item);
+    this.pick(this.item === undefined ? undefined : at >= 0 ? at : Math.min(this.itemAt, tiles.length - 1));
+    return [carrying, shown];
+  }
+
+  /** Down picks the first tile, the arrows move about the grid, and Up off its top row lets go. */
+  private onGrid(key: string): boolean {
+    const { tiles } = this.grid!;
+    const at = this.item === undefined ? -1 : this.itemAt;
+    if (at < 0) {
+      if (key !== 'ArrowDown') return false;
+      this.pick(0, true);
+      return true;
     }
-    return [carrying, rows.length ? list : el('p', 'You carry nothing.', 'character-empty')];
+    const last = tiles.length - 1;
+    const lastRow = Math.floor(at / COLUMNS) === Math.floor(last / COLUMNS);
+    const moves: Record<string, number | undefined> = {
+      ArrowLeft: Math.max(at - 1, 0),
+      ArrowRight: Math.min(at + 1, last),
+      ArrowUp: at < COLUMNS ? undefined : at - COLUMNS,
+      ArrowDown: lastRow ? at : Math.min(at + COLUMNS, last),
+    };
+    if (!(key in moves)) return false;
+    this.pick(moves[key], true);
+    return true;
+  }
+
+  private pick(index: number | undefined, scroll = false): void {
+    if (!this.grid) return;
+    const { tiles, cells, details, player, recipes } = this.grid;
+    this.item = index === undefined ? undefined : tiles[index].id;
+    if (index !== undefined) this.itemAt = index;
+    cells.forEach((cell, i) => cell.classList.toggle('character-picked', i === index));
+    if (index === undefined) {
+      details.replaceChildren(el('small', 'Hover, or ↓ then the arrows, for each thing’s details'));
+      return;
+    }
+    const { title, kind, status, lines } = itemDetails(tiles[index], player, recipes);
+    details.replaceChildren(
+      el('h3', title),
+      el('b', status, `character-item-${kind}`),
+      ...lines.map((line) => el('p', line)),
+      el('small', 'Arrows move · ↑ off the top row for the tabs'),
+    );
+    if (scroll) cells[index].scrollIntoView?.({ block: 'nearest' });
   }
 
   private mind(recipes: Known[], money: number): HTMLElement[] {
