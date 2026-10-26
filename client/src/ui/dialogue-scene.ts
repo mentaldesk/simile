@@ -22,6 +22,7 @@ import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
 import { NewsPanel } from './news-panel';
 import { fitOverlay, inOverlay } from './overlay';
+import { PlaceLabel } from './place-label';
 import { setMaps } from './side-view';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
@@ -35,6 +36,7 @@ export class DialogueScene extends Phaser.Scene {
   private root!: HTMLElement;
   private bubbles!: BubbleLayer;
   private marker!: TargetMarker;
+  private place!: PlaceLabel;
   private news!: NewsPanel;
   private newsHint!: HTMLElement;
   private ways!: WayPromptLayer;
@@ -62,6 +64,7 @@ export class DialogueScene extends Phaser.Scene {
     this.marker = new TargetMarker(this.root);
     this.bubbles = new BubbleLayer(this.root);
     const log = new LogPanel(this.root, dialogue.log);
+    this.place = new PlaceLabel(this.root, maps);
     const chat = (this.chat = new ChatBox(this.root, dialogue, this.targets));
     const stopInvitations = dialogue.onInvitation((npcId) => {
       chat.invite(npcId);
@@ -117,6 +120,7 @@ export class DialogueScene extends Phaser.Scene {
     this.bubbles.render(dialogue.bubbles.current(), view);
     callCue.update(dialogue.partner());
     const player = this.player();
+    this.place.update(player?.map, this.time.now / 1000);
     const used = usedByE(player);
     const atTerminal = used?.kind === 'terminal';
     if (!atTerminal && this.news.isOpen) this.news.close();

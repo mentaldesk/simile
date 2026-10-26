@@ -171,6 +171,16 @@ async function pressingE(page: Page, api: Api, name: string): Promise<void> {
   }
 }
 
+/** Through a door, the label names another place and stands out. */
+async function placeChanged(page: Page, before: string | null, what: string): Promise<void> {
+  await run(page, 100);
+  const after = await shown(page, '.place-label');
+  const standsOut = await page.evaluate(() => !!document.querySelector('.place-label-new'));
+  if (!before || !after || after === before || !standsOut) {
+    throw new Error(`${what}: the place label went from ${before} to ${after}${standsOut ? '' : ', standing out'}`);
+  }
+}
+
 /** Says whether E was pressed first, to no effect. */
 async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<string | void> {
   await teleport(page, api, leg.start, leg.name);
@@ -194,6 +204,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
   }
   await shot(page, index, leg.name);
   const eFree = !used && !talk && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  const place = await shown(page, '.place-label');
   if (leg.key === 'e') await page.keyboard.press('e');
   else {
     if (eFree) await pressingE(page, api, leg.name);
@@ -202,6 +213,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
   const arrive = `${leg.name}: arriving at ${JSON.stringify(leg.arrive)}`;
   await until(page, async () => near(await api.state(), leg.arrive), SECONDS_TO_ARRIVE, arrive);
   if (leg.key !== 'e') await page.keyboard.up(leg.key);
+  if (leg.key === 'e') await placeChanged(page, place, leg.name);
   if (leg.key !== 'e' && eFree) return 'E first did nothing';
 }
 
@@ -302,6 +314,11 @@ async function take(page: Page, api: Api, key: 'e' | Hold, arrive: Place, what: 
   await run(page, 300);
 }
 
+async function placeIs(page: Page, place: string, what: string): Promise<void> {
+  const label = await shown(page, '.place-label');
+  if (label !== place) throw new Error(`${what}: the place label says ${label}, not ${place}`);
+}
+
 /** From Banyan Row down through the metro into the clinic and back, by the keys alone. */
 async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   const name = 'through the metro and back';
@@ -310,6 +327,7 @@ async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   await page.keyboard.press('Shift');
   await walkTo(page, walk, 62, REACH.cell, name);
   await take(page, walk, 'e', metro(2, 9), `${name}, down the stairway`);
+  await placeIs(page, 'The Old Metro', name);
   await shot(page, index, 'into the metro');
   await walkTo(page, walk, 4, REACH.edge, name);
   await take(page, walk, 'ArrowDown', metro(7, 12), `${name}, down to the ticket hall`);
@@ -318,6 +336,7 @@ async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   await walkTo(page, walk, 89, REACH.cell, name);
   await shot(page, index, 'at the clinic');
   await take(page, walk, 'e', { map: 'clinic_floor_0', x: 1, y: 2 }, `${name}, into the clinic`);
+  await placeIs(page, 'The Clinic', name);
   await take(page, walk, 'e', metro(89, 15), `${name}, out of the clinic`);
   await walkTo(page, walk, 22, REACH.edge, name);
   await take(page, walk, 'ArrowUp', metro(19, 12), `${name}, up to the ticket hall`);
@@ -325,6 +344,7 @@ async function metroLeg(page: Page, walk: Api, index: number): Promise<void> {
   await take(page, walk, 'ArrowUp', metro(4, 9), `${name}, up to the landing`);
   await walkTo(page, walk, 2, REACH.cell, name);
   await take(page, walk, 'e', { map: 'banyan_row', x: 62, y: 18 }, `${name}, up to Banyan Row`);
+  await placeIs(page, 'Banyan Row', name);
   await page.keyboard.press('Shift');
 }
 
