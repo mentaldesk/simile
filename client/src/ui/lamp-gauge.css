@@ -1,4 +1,5 @@
-.lamp-gauge {
+.lamp-gauge,
+.power-gauge {
   position: absolute;
   right: 4px;
   top: 16px;
@@ -17,6 +18,10 @@
   font: inherit;
   font-weight: bold;
   text-align: center;
+}
+
+.power-gauge {
+  top: 28px;
 }
 
 .lamp-battery {
@@ -63,4 +68,8 @@
   max-width: 200px;
   text-align: right;
   text-shadow: 0 1px 0 #000;
+}
+
+.power-gauge:not([hidden]) ~ .lamp-hint {
+  top: 40px;
 }

@@ -1,0 +1,161 @@
+.character {
+  position: absolute;
+  left: 200px;
+  right: 4px;
+  top: 4px;
+  max-height: calc(100% - 28px);
+  display: flex;
+  flex-direction: column;
+  padding: 3px 4px 4px;
+  border: 1px solid #7fc8a9;
+  border-radius: 3px;
+  background: rgb(17 17 17 / 92%);
+  pointer-events: auto;
+  outline: none;
+}
+
+.character header {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #555;
+  color: #7fc8a9;
+}
+
+.character header span {
+  opacity: 0.7;
+  font-size: 7px;
+}
+
+.character-tabs {
+  display: flex;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.character-tabs button {
+  padding: 0 6px;
+  border: 1px solid #555;
+  border-radius: 2px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.character-tabs button[aria-selected='true'] {
+  border-color: #7fc8a9;
+  color: #7fc8a9;
+}
+
+.character-page {
+  min-height: 0;
+  margin-top: 3px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.character-page ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.character-rows > li {
+  display: grid;
+  grid-template-columns: 64px auto 1fr;
+  align-items: center;
+  gap: 2px 6px;
+  padding: 1px 4px;
+}
+
+.character-rows > li > b {
+  font-weight: normal;
+  color: #b9b2a0;
+}
+
+.character-rows > li > b + span:last-child {
+  grid-column: 2 / span 2;
+}
+
+.character-rows small {
+  grid-column: 2 / span 2;
+  font-size: 7px;
+  color: #e8b04a;
+}
+
+.character-meter {
+  position: relative;
+  width: 60px;
+  height: 6px;
+  border: 1px solid #f4ecd8;
+  border-radius: 1px;
+}
+
+.character-meter > span {
+  display: block;
+  height: 100%;
+}
+
+.character h3 {
+  margin: 4px 0 1px;
+  padding: 0 4px;
+  font-size: inherit;
+  font-weight: normal;
+  color: #b9b2a0;
+}
+
+.character-effects li {
+  padding: 1px 4px;
+  border-left: 2px solid #e0605a;
+}
+
+.character-sold {
+  color: #e0605a;
+}
+
+.character-bionic {
+  color: #7fc8a9;
+}
+
+.character-recipes > li {
+  margin-top: 3px;
+  padding: 1px 4px;
+  border-left: 2px solid #7fc8a9;
+}
+
+.character-recipes > li.character-short {
+  border-left-color: #555;
+}
+
+.character-recipes ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 7px;
+}
+
+.character-recipes small {
+  font-size: 7px;
+  color: #b9b2a0;
+}
+
+.character-missing {
+  color: #e0605a;
+}
+
+.character-sold-recipe {
+  margin-left: 4px;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: #555;
+  font-size: 7px;
+  font-weight: normal;
+}
+
+.character-empty {
+  margin: 3px 0 0;
+  padding: 0 4px;
+  opacity: 0.7;
+}

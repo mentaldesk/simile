@@ -7,7 +7,7 @@ from simile.schema import CoreValue, HowKnown, Unit
 
 
 class StoryConfig(BaseModel):
-    """Every tunable constant of the incident."""
+    """Every tunable constant of the incident and the lens."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -82,6 +82,35 @@ class StoryConfig(BaseModel):
         description="How its owner felt about it. A hostile resident is glad she's gone.",
     )
     relieved: float = Field(default=0.2, description="How a hostile resident feels she's gone.")
+    keeps: dict[CoreValue, float] = Field(
+        default={
+            CoreValue.SECURITY: 0.3,
+            CoreValue.TRADITION: 0.3,
+            CoreValue.KNOWLEDGE: 0.2,
+            CoreValue.ADVENTURE: 0.2,
+        },
+        description="The values of someone who'd keep an old thermal camera, whose infrared lens "
+        "the eye needs, weighed as an attacker's grievance is.",
+    )
+    keeps_from: float = Field(
+        default=0.1,
+        description="The least lean to `keeps` the lens's keeper is drawn from. If nobody has "
+        "it, whoever leans that way most keeps it.",
+    )
+    mentions_from: Unit = Field(
+        default=0.55,
+        description="The trust the keeper needs in the player to remember, and so say, that they "
+        "have the lens.",
+    )
+    gives_from: Unit = Field(
+        default=0.7, description="The trust the keeper needs in the player to give them the lens."
+    )
+    lens_every: float = Field(
+        default=60.0,
+        gt=0,
+        description="Sim seconds between checks of whether the keeper trusts the player enough "
+        "to speak of the lens.",
+    )
     clue_reach: float = Field(
         default=0.5,
         gt=0,

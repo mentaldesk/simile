@@ -8,8 +8,20 @@ from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.hunger import Hunger
-from simile.protocol import Meal
-from simile.schema import PLAYER_ID, Item, ItemKind, MapTile, Pay, PayKind, Pile, Player, lamp
+from simile.protocol import Meal, Vital
+from simile.schema import (
+    PLAYER_ID,
+    Bionic,
+    Body,
+    Item,
+    ItemKind,
+    MapTile,
+    Pay,
+    PayKind,
+    Pile,
+    Player,
+    lamp,
+)
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
@@ -47,7 +59,7 @@ class Village:
         self.economy = Economy(self.world.clock, behaviour, player=self.player)
         self.open: set[str] = {"noodle_bar", "coffee_shop"}
         self.playing = True
-        self.woke: list[MapTile] = []
+        self.woke: list[tuple[MapTile, Vital]] = []
         self.hunger = Hunger(
             self.player,
             self.movement,
@@ -55,7 +67,7 @@ class Village:
             supply=self.supply,
             economy=self.economy,
             playing=lambda: self.playing,
-            collapsed=self.woke.append,
+            collapsed=lambda home, cause: self.woke.append((home, cause)),
         )
 
     def supply(self, goal: Goal, need: Need) -> float:
@@ -227,7 +239,7 @@ def test_starving_collapses_them_at_home_with_what_they_carried_left_where_they_
         Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE, BUN])
     ]
     assert village.here() == HOME
-    assert village.woke == [MapTile(map="maker_space_floor_0", x=13, y=2)]
+    assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.HUNGER)]
 
 
 @pytest.mark.parametrize(
@@ -282,3 +294,26 @@ def test_a_collapse_before_the_server_knows_where_they_are_keeps_what_they_carry
     assert village.player.items == [lamp(), WIRE]
     assert village.player.left == []
     assert village.here() == HOME
+
+
+def test_a_power_cell_clears_hunger_and_takes_meals_off_the_menu() -> None:
+    cell = Body(stomach=Bionic.POWER_CELL)
+    village = Village(Player(items=[lamp(), BUN], hunger=0.6, body=cell))
+    village.stand(13, 2, "maker_space_floor_0")
+
+    village.hunger.tick(3600)
+
+    assert village.player.hunger == 0
+    assert village.hunger.meal() is None
+    assert not village.hunger.eat(None)
+    assert not village.hunger.eat("pork_bun")
+    assert village.player.items == [lamp(), BUN]
+
+
+def test_a_collapse_for_power_leaves_hunger_alone_and_says_why() -> None:
+    village = Village(Player(body=Body(stomach=Bionic.POWER_CELL)))
+
+    village.hunger.collapse(Vital.POWER)
+
+    assert village.player.hunger == 0
+    assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.POWER)]

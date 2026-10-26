@@ -147,6 +147,33 @@ The `journal` message goes to each client on connect and to all of them whenever
 
 Every constant is in `StoryConfig`.
 
+## The lens
+
+P17: the clinic's infrared eye needs an `infrared_lens` (P4), a part of 0.2 kg. One resident has
+it, out of an old thermal camera, and gives it to the player once they trust them enough
+(`lens.py`, which the `running` hook starts).
+
+- **Who.** The keeper leans towards `keeps`: Security, Tradition, Knowledge and Adventure, weighed
+  as an attacker's grievance is. They're drawn from everyone leaning at least `keeps_from` (0.1),
+  by how far past it they are, or else whoever leans that way most. Never an attacker while anyone
+  else lives here. The draw is from the world's seed (the cast's, or 0 for the village in
+  `content/`), so it's the same on every start and nothing is saved. In the default village that's
+  Tobias or Raymond.
+- **Saying so.** Once they trust the player `mentions_from` (0.55), checked every `lens_every` (60
+  sim seconds), they gain a memory about the player of still having it and that they'd give it to
+  them once they trust them a little more. R2's `recall` brings it to mind in conversations with
+  the player, so they can bring it up.
+- **The hand-over.** In a conversation with the player, once the keeper has spoken and it's the
+  player's turn, the sim checks R1's trust in them, once per conversation. From `gives_from` (0.7)
+  the lens goes into the player's items, and the keeper says a stock line through B5's
+  `interject` handing it over, which later replies see in the transcript. They remember giving it,
+  about the player, which marks it given across restarts: they never give it twice. If the player
+  can't carry it, the keeper says so instead and offers it again in a later conversation. The
+  model never decides any of this.
+
+The player's items are saved with the world at the next autosave, so a crash within those 10
+seconds loses a lens the keeper remembers giving.
+
 ## The town
 
 #384: what residents know of the village, in `town.py`. Each `TownFact` is something about a place

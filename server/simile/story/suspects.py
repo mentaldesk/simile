@@ -14,11 +14,15 @@ class Suspect:
     hostility: float
 
 
-def fit(npc: Npc, grievance: Grievance) -> float:
-    """How much `npc`'s values make `grievance` rankle, from -0.5 to 0.5."""
-    weights = grievance.values
+def lean(npc: Npc, weights: Mapping[CoreValue, float]) -> float:
+    """How far `npc`'s values lean the way `weights` point, from -0.5 to 0.5."""
     total = sum(abs(weight) for weight in weights.values()) or 1.0
     return sum(weight * (npc.values[value] - 0.5) for value, weight in weights.items()) / total
+
+
+def fit(npc: Npc, grievance: Grievance) -> float:
+    """How much `npc`'s values make `grievance` rankle, from -0.5 to 0.5."""
+    return lean(npc, grievance.values)
 
 
 def hostility(

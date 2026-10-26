@@ -17,3 +17,5 @@ export const NEWS_KEY = 'e';
 export const EAT_KEY = 'f';
 /** Opens the journal, and closes it. */
 export const JOURNAL_KEY = 'j';
+/** Opens the character screen, and closes it. */
+export const CHARACTER_KEY = 'c';

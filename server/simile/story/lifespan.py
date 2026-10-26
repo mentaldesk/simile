@@ -14,8 +14,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
 @asynccontextmanager
 async def running(app: Starlette) -> AsyncIterator[None]:
+    from simile.story.lens import give
     from simile.story.recording import record
 
-    stop = record(app)
+    stops = [record(app), give(app)]
     yield
-    stop()
+    for stop in reversed(stops):
+        stop()

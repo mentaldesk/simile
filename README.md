@@ -31,6 +31,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | F | Eat, once you're peckish: a meal at home, at the café or the noodle bar, or food you carry. Hunger rises while you play, and if it runs out you collapse. |
 | J | Open or close your journal: what you've learned about what happened to Aris, from whom and when, and the leads still open. A red mark shows where your infrared eye caught someone flush. |
 | L | Switch your lamp on or off. Parts of the tunnels are dark, and only the lamp lights them. Its battery runs down while it's on: the gauge under the controls shows what's left, and standing at a plug charges it, at home, at the café or the noodle bar, or in the tunnels. |
+| C | Open or close your character: your power or hunger, health, lamp, credits and ailments; each part of your body, still yours, sold or bionic; what you carry against what you can; and the recipes you know, with what each needs and what you have of it. ← → switch between them. |
 | Enter | Talk to the ringed resident, then send what you typed. |
 | Tab | Choose who to talk to. Clicking a resident does too. |
 | Esc | Close the chat or a panel. |

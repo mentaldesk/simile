@@ -18,7 +18,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a mural up close (see *Looking at a mural*);
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
   (see *Picking up and selling*);
-- the player's journal of what happened to Aris (see *The journal*).
+- the player's journal of what happened to Aris (see *The journal*);
+- the character screen: their vitals, body, gear and recipes (see *The character screen*).
 
 ## Choosing who to talk to
 
@@ -123,8 +124,12 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
-- "You collapsed from hunger and woke at home." for six seconds after `player_collapsed`. The world
-  scene puts the player at home.
+- For six seconds after `player_collapsed`, why they collapsed, by its `cause`: "You collapsed from
+  hunger and woke at home.", or "Your power cell ran flat. You collapsed and woke at home." The
+  world scene puts the player at home.
+- **On a power cell** (a `power_cell` grade in their stomach) they never eat: no F, no meals, and
+  no hunger. The corner says "Your power is low. Charge it at a plug." from 30% power, and "Your
+  power cell is nearly flat. Charge it at a plug, or you'll collapse." from 10%.
 
 ## Picking up and selling
 
@@ -178,9 +183,28 @@ and opens the journal in place of the controls (`lookAtClue`). The server writes
 holds into the journal and sends it. Where a pile is in reach too, E takes whichever is nearer, the
 pile on a tie, as the server does.
 
+## The character screen
+
+C opens the character screen (`CharacterPanel` in [`character-panel.ts`](character-panel.ts)), and
+C or Esc closes it. It shows the last `player_state` in four tabs, and ← → or a click switch them.
+It opens on the tab it was left on, and takes the keys while it's open, so the player stands still.
+Opening it closes the journal and the controls.
+
+- **Vitals:** power once a power cell is in `body.stomach`, else hunger with what `feeling` says of
+  it; health; the lamp's charge and whether it's on, off or charging; credits; and each effect, how
+  strong and whether it fades or lasts until it's treated.
+- **Body:** each part head to foot, the player's own, sold, or the bionic in its place, named by its
+  recipe or as the clinic names it (`bionicName`). `stomach` and `feet` are their own when left out.
+- **Gear:** what they carry, each kind once with how many and its weight, against the carry limit.
+- **Mind:** each recipe in `player.mind`, from `player_state`'s `recipes`: the parts it needs
+  against what they carry, its credits against their money, what it goes in place of and what must
+  be fitted first, and whether they've sold it to the clinic.
+
+The side walk opens it on C and goes through its tabs.
+
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, F, J, ?) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, F, J, C, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 
@@ -208,6 +232,10 @@ on, off, or charging (⚡) at a plug. A line under it says "It's dark. Press L f
 dark with it off, "Your lamp is running low." from 20% with it on, "Your lamp is flat. Charge it at
 a plug." when it's flat, and "Charging your lamp." at a plug. The world scene handles L
 ([`side/`](../side/README.md)).
+
+Once a power cell is in, a second battery under the lamp's shows their power, coloured the same,
+with ⚡ while it charges at a plug, and the line says "Charging your cell." (or "your lamp and your
+cell"). A plug fills both in about three seconds.
 
 ## What the world scene provides
 

@@ -8,7 +8,8 @@ const use = vi.fn();
 const eat = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
 const journal = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, use, eat, help, journal });
+const character = { toggle: vi.fn(), close: vi.fn() };
+const handler = onGameKey({ chat, use, eat, help, journal, character });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -59,6 +60,21 @@ describe('with nothing focused', () => {
     expect(use).not.toHaveBeenCalled();
   });
 
+  it('C shows or hides the character screen in place of the journal and the controls, and Esc hides it', () => {
+    expect(press(document.body, 'c').defaultPrevented).toBe(true);
+    press(document.body, 'C', { shiftKey: true });
+    press(document.body, 'c', { repeat: true });
+    press(document.body, 'c', { ctrlKey: true });
+    expect(character.toggle).toHaveBeenCalledTimes(2);
+    expect(journal.close).toHaveBeenCalledTimes(2);
+    expect(help.close).toHaveBeenCalledTimes(2);
+
+    press(document.body, 'j');
+    press(document.body, 'Escape');
+    expect(character.close).toHaveBeenCalledTimes(2);
+    expect(use).not.toHaveBeenCalled();
+  });
+
   it('E uses what is here, but not held down or with a modifier', () => {
     press(document.body, 'e');
     press(document.body, 'E', { shiftKey: true });
@@ -89,6 +105,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   press(element, 'e');
   press(element, 'f');
   press(element, 'j');
+  press(element, 'c');
   press(element, '?');
 
   expect(enter.defaultPrevented).toBe(false);
@@ -100,6 +117,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(eat).not.toHaveBeenCalled();
   expect(help.toggle).not.toHaveBeenCalled();
   expect(journal.toggle).not.toHaveBeenCalled();
+  expect(character.toggle).not.toHaveBeenCalled();
 });
 
 describe('what E does', () => {

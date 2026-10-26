@@ -25,7 +25,8 @@ salvage at the economy's prices (`simile.player`'s *Selling*).
 what it does, for her to say, and what she pays for the recipe. She builds one only for a player
 who knows its recipe (`Player.mind`), for its credits and the parts it lists, which the fitting uses
 up, and only once everything in its `after` is fitted: the power cell, for everything but a cell.
-Each `Fitting` is built from its recipe, so the two can't drift.
+Each `Fitting` is built from its recipe, so the two can't drift. She fits none their cell can't run
+(`simile.player`'s *Power*): past its limit, the next one waits for a bigger cell.
 
 | Bionic | In place of | Credits | Parts | She buys the recipe for |
 |---|---|--:|---|--:|

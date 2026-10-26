@@ -2,8 +2,8 @@
 
 S5: the player gets hungry. S6: salvage, and selling it. The player's state is `player_of(app)`
 (`simile.persistence`), saved with the world. This module changes it at runtime and tells the
-client: its `running` hook joins the player to the economy, makes a `Hunger`, `Pickups`, a `Trade`
-and a `PlayerSync`, and ticks `Hunger` and `PlayerSync` on the sim loop.
+client: its `running` hook joins the player to the economy, makes a `Hunger`, a `Power`, `Pickups`,
+a `Trade` and a `PlayerSync`, and ticks `Hunger`, `Power` and `PlayerSync` on the sim loop.
 
 ## Hunger
 
@@ -26,11 +26,32 @@ and a `PlayerSync`, and ticks `Hunger` and `PlayerSync` on the sim loop.
 - **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
   they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
   of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
-  client gets `player_collapsed` to put them there. The lamp and their money stay with them, so
-  they can see to go back for the rest.
+  client gets `player_collapsed` to put them there, with `cause` `hunger`. The lamp and their money
+  stay with them, so they can see to go back for the rest.
+- **Once a power cell is in** their stomach, hunger is 0 for good and nothing is on offer to eat:
+  `meal()` is none and `eat` does nothing. They run on power instead.
 
 Home is `PlayerConfig.home`, the maker space: the village has no house for the player, and every
 house is someone's. Aris's workshop is the place the story makes theirs until one is added.
+
+## Power
+
+`Power` (`power.py`, P7) runs the power cell once one is fitted, a `power_cell` grade in place of
+the stomach, while a client is in the game, like hunger. Without one, `Player.power` stays full.
+
+- **It drains** by `drain` (0.2) a sim hour, and `per_bionic` (0.1) more for each other bionic
+  fitted: five hours on the cell alone, two with the datajack, the legs and the feet. Stage 1's
+  legs, which need no cell, don't count.
+- **It charges** at a plug as fast as the lamp, from the same `Lamp.charging`: flat to full in
+  about three real seconds. Plugged in, it doesn't drain.
+- **Running flat** collapses them as hunger does, with `cause` `power`, and they wake at home with
+  `waking` (0.25) power.
+- **A cell runs a limited number of bionics** besides itself, by grade, in `runs`: 3 for the
+  first cell, 4 for the second and 5 for the third. `runs(body, bionic)` says whether the cell
+  would still run everything once `bionic` is fitted, so the clinic fits nothing past it. A higher
+  grade of a line in place of a lower one takes no more of the cell, and stage 1's legs take none.
+
+Its constants are in `PowerConfig`, beside it.
 
 ## Salvage and secrets
 
@@ -111,12 +132,12 @@ recipes come from `recipes_of(app)`, which modules such as the clinic fill with 
 
 - to each new client after the snapshot and clock, and after the other modules' greetings, since
   it greets from `running`;
-- at once after any change but to hunger or a lamp's charge: money, items, a lamp's switch, the
-  body, a pile, a pickup taken, or the meal on offer or the buyer as they walk in or out of
+- at once after any change but to hunger, power or a lamp's charge: money, items, a lamp's switch,
+  the body, a pile, a pickup taken, or the meal on offer or the buyer as they walk in or out of
   somewhere to eat or sell;
-- and for hunger or a lamp's charge alone, once one of them has moved by `step` (0.01) since the
-  last one sent, or reached 0 or 1, so a full or flat battery is never shown a step short. That's
-  every 2.4 sim minutes of hunger.
+- and for hunger, power or a lamp's charge alone, once one of them has moved by `step` (0.01)
+  since the last one sent, or reached 0 or 1, so a full or flat battery is never shown a step
+  short. That's every 2.4 sim minutes of hunger.
 
 Every constant is in `PlayerConfig`.
 
@@ -127,9 +148,10 @@ in the game, like hunger:
 
 - **It drains** by `drain` (3) a sim hour while it's on: a full battery lasts twenty minutes. When
   it runs flat it goes off by itself.
-- **It charges** by `charge` (60) a sim hour while the player stands on a plug's stand tile (a
-  `plug` interactable: at home, the café, the noodle bar and the metro's maintenance alcove), on or
-  off, from flat to full in a minute. Plugged in, it doesn't drain.
+- **It charges** while the player stands on a plug's stand tile (a `plug` interactable: at home,
+  the café, the noodle bar and the metro's maintenance alcove), on or off, from flat to full in
+  `charge` (3) real seconds whatever the sim's speed. Getting to a plug is the game, not waiting at
+  one. Plugged in, it doesn't drain.
 - **A collapse switches it off,** so it doesn't run down at home while they recover.
 - **The client's `lamp`** switches it on or off (`docs/protocol.md`). Switching on a flat one, or
   to how it already is, does nothing. A switch goes out in `player_state` at once, and the charge

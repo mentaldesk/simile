@@ -48,6 +48,11 @@ describe('HelpPanel', () => {
     expect(what.L).toMatch(/lamp on or off.*plug to charge it/);
   });
 
+  it('gives the character screen to C', () => {
+    const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
+    expect(what.C).toMatch(/character.*vitals.*body.*carry.*recipes/);
+  });
+
   it('says voices are off unless turned on, and that greetings play either way', () => {
     const root = document.createElement('div');
     new HelpPanel(root);
