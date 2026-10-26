@@ -2,8 +2,9 @@
 
 S5: the player gets hungry. S6: salvage, and selling it. The player's state is `player_of(app)`
 (`simile.persistence`), saved with the world. This module changes it at runtime and tells the
-client: its `running` hook joins the player to the economy, makes a `Hunger`, a `Power`, `Pickups`,
-a `Trade` and a `PlayerSync`, and ticks `Hunger`, `Power` and `PlayerSync` on the sim loop.
+client: its `running` hook joins the player to the economy, makes a `Hunger`, a `Power`, a `Health`,
+`Kicks`, `Pickups`, a `Trade` and a `PlayerSync`, and ticks `Hunger`, `Power`, `Health` and
+`PlayerSync` on the sim loop.
 
 ## Hunger
 
@@ -52,6 +53,40 @@ the stomach, while a client is in the game, like hunger. Without one, `Player.po
   grade of a line in place of a lower one takes no more of the cell, and stage 1's legs take none.
 
 Its constants are in `PowerConfig`, beside it.
+
+## Health and ailments
+
+`Health` (`health.py`, P9) runs the player's health and their effects, while a client is in the
+game, like hunger. It's `health_of(app)` once the `running` hook has made it, for P10's creatures
+to hurt and bite the player: they look it up when they do, not at startup.
+
+- **Damage.** `hurt(damage)` takes that much of their health. At none they collapse as when they
+  starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
+- **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
+  `heal_at_home` (0.5) at home, in two. The clinic patches them up for money (`simile.clinic`).
+- **A rat bite.** `bite()` takes `bite` (0.05) health and gives them a `rat_bite` effect of
+  `bitten` (0.2) strength, or makes the one they have that much stronger, up to 1, keeping `since`
+  from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
+  still there `infects` (2) sim hours after `since` turns into an `infection` of the same strength,
+  as a handful of bites at once does.
+- **An infection** lasts until the clinic treats it (`fades` null). While infected no health comes
+  back, even at home, and it takes `infection` (0.02) a sim hour at full strength.
+- **Fading.** Each effect loses `fades` of its strength a sim hour, and is gone at 0. Its rate is
+  its kind's in `fades`, and `one_kidney` (half) of it with a kidney sold, so a sold kidney slows
+  what they have already. Two bites close together fade before they turn on two kidneys, and turn
+  on one. Radiation fades by 0.05 an hour, for the deeper sewers.
+- **Collapsing** for health keeps their effects: an untreated infection still needs the clinic.
+
+Its constants are in `HealthConfig`, beside it.
+
+## Kicking
+
+`Kicks` (`kick.py`) is the client's `kick`, from where the server keeps the player on a side-view
+map, the way the client says they face. A kick is a `Kick`: where, which way, its `strength` (the
+legs' `jump_of(body).kick`, 1 on their own legs and 2 to 4 up the bionic legs) and its `reach`
+(1.2 tiles). Whatever can be kicked adds a `Kickable` to `kickables_of(app)`, as P10's creatures
+will: given the kick, it says what it would hit and how far away, as a `Hit`. The kick lands on
+the nearest hit, and only that one. Nothing else is kicked yet.
 
 ## Salvage and secrets
 
@@ -114,10 +149,11 @@ recipes come from `recipes_of(app)`, which modules such as the clinic fill with 
 
 - to each new client after the snapshot and clock, and after the other modules' greetings, since
   it greets from `running`;
-- at once after any change but to hunger, power or a lamp's charge: money, items, a lamp's switch,
-  the body, a pile, a pickup taken, or the meal on offer or the buyer as they walk in or out of
-  somewhere to eat or sell;
-- and for hunger, power or a lamp's charge alone, once one of them has moved by `step` (0.01)
+- at once after any change but to hunger, power, health, an effect's strength or a lamp's charge:
+  money, items, a lamp's switch, the body, an effect gained or gone, a pile, a pickup taken, or the
+  meal on offer or the buyer as they walk in or out of somewhere to eat or sell;
+- and for hunger, power, health, an effect's strength or a lamp's charge alone, once one of them
+  has moved by `step` (0.01)
   since the last one sent, or reached 0 or 1, so a full or flat battery is never shown a step
   short. That's every 2.4 sim minutes of hunger.
 

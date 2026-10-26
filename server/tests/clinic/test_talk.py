@@ -14,7 +14,20 @@ from simile.economy.economy import Economy
 from simile.llm import FakeProvider, LLMClient, LLMError
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, SOLD, Bionic, Body, Item, ItemKind, Line, Mind, Player, lamp
+from simile.schema import (
+    PLAYER_ID,
+    SOLD,
+    Bionic,
+    Body,
+    Effect,
+    EffectKind,
+    Item,
+    ItemKind,
+    Line,
+    Mind,
+    Player,
+    lamp,
+)
 from simile.sim import (
     Clock,
     ConversationEnded,
@@ -233,6 +246,19 @@ async def test_what_she_says_follows_the_recipes_they_know() -> None:
     hint = prompt.split("you might hint at")[1]
     assert "the bionic legs, in place of their own legs" in hint
     assert "the spring feet" in hint and "datajack" not in hint and "grade 2" not in hint
+
+
+async def test_she_offers_to_patch_up_the_hurt_and_treat_their_ailments() -> None:
+    bite = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=START)
+    depot = Depot(player=Player(health=0.5, effects=[bite], body=Body(left_kidney=SOLD)))
+    depot.stand(INSIDE)
+    await depot.run()
+
+    [request] = depot.provider.requests
+    system, prompt = request.system, request.messages[-1].content
+    assert "patch up the hurt, for up to 30" in system
+    assert "clean the bite for 5 and treat the infection for 25" in system
+    assert "patch up for 15 and clean the bite for 5." in prompt
 
 
 async def test_she_hints_at_the_cell_to_someone_who_knows_nothing() -> None:

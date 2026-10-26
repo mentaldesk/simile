@@ -1,4 +1,4 @@
-import type { Facing, Position } from '../net';
+import type { Facing, Position, SideFacing } from '../net';
 import { PLAYER_SPEED } from '../world/tuning';
 import { isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import {
@@ -19,6 +19,7 @@ import { drawnCrossing, emptyDrawn, RIDE_SPEED, RUN_CYCLE_M, sideways, WALK_CYCL
 import { TILE_M } from './layout';
 import { climbRuns, pointAlong, type Crossing, type Path, type Run } from './runs';
 import { jackAt } from './jacks';
+import { KICK_PHASE, KICK_SECONDS } from './kick';
 import { chosen, waysNear, type Press, type Way } from './ways';
 
 /** Tiles a second. */
@@ -78,6 +79,8 @@ export class SidePlayer {
   /** Seconds left in which a press of Space still jumps, on landing. */
   private buffered = 0;
   private landing = 0;
+  /** Seconds left of a kick, standing still. */
+  private kicking = 0;
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
@@ -101,9 +104,20 @@ export class SidePlayer {
     this.position.x = x;
     this.position.y = y;
     this.onRun = this.crossed = this.approaching = this.air = undefined;
-    this.coyote = this.buffered = this.landing = 0;
+    this.coyote = this.buffered = this.landing = this.kicking = 0;
     this.armed = false;
     this.locate();
+  }
+
+  /** Kicks the way they last moved, standing on the ground and not kicking already. Which way, or none. */
+  kick(): SideFacing | undefined {
+    if (this.kicking > 0 || this.onRun || this.crossed || this.approaching || this.air) return undefined;
+    const facing: SideFacing = this.heading < 0 ? 'west' : 'east';
+    this.facing = facing;
+    this.kicking = KICK_SECONDS;
+    this.walking = false;
+    this.locate();
+    return facing;
   }
 
   /** Held at the end left from while crossing, as the protocol holds residents. Reused: copy it to keep it. */
@@ -140,13 +154,14 @@ export class SidePlayer {
     this.run = controls.run ? Math.min(this.run + blend, 1) : Math.max(this.run - blend, 0);
     this.buffered = controls.jump ? BUFFER_SECONDS : Math.max(this.buffered - dt, 0);
     this.landing = Math.max(this.landing - dt, 0);
+    this.kicking = Math.max(this.kicking - dt, 0);
     if (this.approaching && this.buffered > 0) this.approaching = undefined;
     let door: Link | undefined;
     if (this.crossed) this.cross(this.crossed, controls, dt);
     else if (this.onRun) this.climb(this.onRun, controls, dt);
     else if (this.approaching) this.approach(this.approaching, controls, dt);
     else if (this.air) this.fly(controls, dt);
-    else door = this.walk(controls, dt);
+    else if (!this.kicking) door = this.walk(controls, dt);
     this.locate();
     return door;
   }
@@ -361,6 +376,12 @@ export class SidePlayer {
     if (this.air) {
       drawn.pose = 'jumping';
       drawn.phase = this.air.vy < 0 ? 0 : 0.5;
+      return;
+    }
+    if (this.kicking > 0) {
+      drawn.pose = 'walking';
+      drawn.phase = KICK_PHASE;
+      drawn.run = 1;
       return;
     }
     const landing = !this.walking && this.landing > 0;
