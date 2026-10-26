@@ -248,7 +248,6 @@ describe('gear', () => {
   const RATIONS = item('ration_pack', 'Ration pack', 0.5, { kind: 'food' });
   const CELLS = item('lithium_cell', 'Lithium cell', 0.3);
   const ODD = item('unpainted', 'Odd thing', 1, { kind: 'salvage' });
-  /** Eight kinds, so the grid has a second row. */
   const LADEN: Player = {
     ...PLAYER,
     items: [
@@ -398,6 +397,26 @@ describe('gear', () => {
     section.querySelectorAll<HTMLElement>('[role="tab"]')[1].click();
     section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
     expect(picked(page)).toBeUndefined();
+  });
+
+  it('lets go of the tile picked when the Gear tab is clicked again', () => {
+    const { section, page } = onGear();
+    press(section, 'ArrowDown');
+    section.querySelectorAll<HTMLElement>('[role="tab"]')[2].click();
+    expect(picked(page)).toBeUndefined();
+    expect(page.querySelector('.character-item h3')).toBeNull();
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+  });
+
+  it('opens again with nothing picked, so ← → switch tabs straight away', () => {
+    const { panel, section, page } = onGear();
+    press(section, 'ArrowDown');
+    panel.close();
+    panel.open();
+    expect(picked(page)).toBeUndefined();
+    press(section, 'ArrowRight');
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
   });
 
   it('says when they carry nothing', () => {

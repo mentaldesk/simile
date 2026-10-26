@@ -153,6 +153,14 @@
       ],
       "hash": "7c835dbcc3de1873"
     },
+    "ration_bar": {
+      "file": "ration_bar.webp",
+      "size": [
+        260,
+        116
+      ],
+      "hash": "08e256dddf373dea"
+    },
     "copper_wire": {
       "file": "copper_wire.webp",
       "size": [

@@ -130,6 +130,11 @@ ITEMS = (
         "printed white label and a torn-off notch at one corner.",
     ),
     Icon(
+        "ration_bar",
+        "a single wrapped energy ration bar: a short flat rectangular bar in a crinkled olive "
+        "green foil wrapper with crimped ends and a plain white label band round its middle.",
+    ),
+    Icon(
         "copper_wire",
         "a coil of bare shiny copper wire wound round and round in a loose bundle, one loose end "
         "sticking out.",
@@ -236,6 +241,5 @@ UNKNOWN = Icon(
     "a small battered brown cardboard box tied up with string, a big black question mark "
     "scrawled on its side.",
 )
-"""The picture of an item with none of its own yet."""
 
 ICONS: dict[str, Icon] = {icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, UNKNOWN)}

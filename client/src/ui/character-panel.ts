@@ -93,7 +93,6 @@ export function bodyRows(body: Body, recipes: readonly Recipe[] = []): BodyRow[]
 }
 
 export const UNKNOWN_ITEM = 'unknown_item';
-/** Tiles to a row of the Gear tab's grid, for Up and Down. */
 export const COLUMNS = 5;
 
 export type GearTile = {
@@ -219,7 +218,6 @@ export class CharacterPanel {
   private part = 0;
   private map?: { rows: BodyRow[]; slots: HTMLElement[]; details: HTMLElement };
   private grid?: { tiles: GearTile[]; cells: HTMLElement[]; details: HTMLElement; player: Player; recipes: readonly Recipe[] };
-  /** The Gear tab's tile picked, by item id, and where it was in case it's gone. */
   private item?: string;
   private itemAt = 0;
   private state?: PlayerStateMessage;
@@ -266,6 +264,7 @@ export class CharacterPanel {
   open(): void {
     this.panel.hidden = false;
     this.drawn = '';
+    this.item = undefined;
     this.render();
     this.panel.focus();
   }
@@ -303,6 +302,7 @@ export class CharacterPanel {
     this.shown = index;
     this.item = undefined;
     this.render();
+    this.pick(undefined);
   }
 
   private render(): void {

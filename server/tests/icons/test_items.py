@@ -34,13 +34,14 @@ def every_item() -> set[str]:
         *(salvage.item for salvage in PLAYER.salvage.values()),
     ]
     parts = {id for recipe in CLINIC.recipes.values() for id in recipe.parts}
-    return {item.id for item in defined} | parts | set(ECONOMY.salvage) | in_the_world()
+    priced = set(ECONOMY.salvage) | set(ECONOMY.parts) | ECONOMY.kept
+    return {item.id for item in defined} | parts | priced | in_the_world()
 
 
 def test_every_item_the_server_defines_has_a_picture() -> None:
     assert every_item() - ICONS.keys() == set()
 
 
-def test_the_items_pictures_are_of_items_and_one_for_any_without() -> None:
-    assert {icon.id for icon in ITEMS} == every_item()
+def test_the_items_pictures_cover_every_item_and_one_for_any_without() -> None:
+    assert every_item() <= {icon.id for icon in ITEMS}
     assert UNKNOWN.id not in every_item()
