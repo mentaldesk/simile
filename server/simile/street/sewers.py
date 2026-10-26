@@ -1,12 +1,18 @@
 """The sewers under the metro: a pool of seeded levels, of which each world plays one."""
 
+import heapq
+import math
 import random
 from collections import deque
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
+from simile.creatures import grid as moving
+from simile.creatures.kinds import BOT
+from simile.creatures.ways import Collect
 from simile.schema import (
     Bionic,
+    CreatureKind,
     Door,
     DoorKind,
     InteractableKind,
@@ -18,9 +24,9 @@ from simile.schema import (
 )
 from simile.street.finds import searchable, under
 from simile.street.jump import KITS, OWN_JUMP, Jump, meets
-from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
+from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
-from simile.street.plan import Pickup, Plan
+from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, plug, street
 
 SEWERS = "sewers"
@@ -49,6 +55,12 @@ WEIR = 3
 WEIR_AT = 12
 """Cells into the gate hall: farther than a fall from its west walkway carries anyone."""
 ATTEMPTS = 40
+RATS = (3, 2)
+"""Zone 0's nests of rats, each keeping to a room of its own."""
+BOT_GAP = 8
+"""Steps from any salvage that every cell of a bot's patrol keeps: over half a minute's drift."""
+REACH = next(way.within for way in BOT.ways if isinstance(way, Collect))
+"""How far by its own grid a bot notices salvage: every cell of its patrol is within it of some."""
 
 ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 SPRING_SECRET = "sewers_secret_spring"
@@ -555,6 +567,82 @@ def cover(level: Level, plan: Plan) -> None:
         plan.piece("sewer_lamp", x, FLOORS[1] - 1, 1, 1)
 
 
+def dangers(level: Level, plan: Plan) -> None:
+    """Zone 0's rats and bots: content/street/README.md's *Creatures*."""
+    rng = random.Random(f"sewers/{level.seed}/creatures")
+    start, gate = level.columns[1].x, level.columns[level.gate].x
+    zone = TileArea(x=start, y=0, width=gate - start, height=plan.height)
+
+    def node(x: int, row: int) -> Node:
+        c = next(i for i, column in enumerate(level.columns) if column.x <= x < column.end)
+        return c, FLOORS.index(row)
+
+    def floor(node: Node) -> list[int]:
+        column = level.columns[node[0]]
+        return [x for x in range(column.x, column.end) if plan.standing(x, FLOORS[node[1]])]
+
+    salvage = [
+        p for p in plan.pickups if p.kind == SALVAGE and p.needs is None and start <= p.x < gate
+    ]
+    grid = moving.Grid(Cells(plan), BOT, zone)  # type: ignore[arg-type]
+    cells = [(x, y) for x in range(start, gate) for y in range(plan.height)]
+    edges = {cell: list(grid.edges(cell)) for cell in cells if grid.allowed(cell)}
+    costs = [towards(edges, (p.x, p.y), lambda edge: edge.cost) for p in salvage]
+    steps = [towards(edges, (p.x, p.y), lambda edge: 1.0) for p in salvage]
+
+    def patrol(cell: Cell) -> list[Cell]:
+        return [cell, *grid.run(cell, -1, BOT_SPAN), *grid.run(cell, 1, BOT_SPAN)]
+
+    def clear(cell: Cell) -> bool:
+        return all(d.get(c, math.inf) >= BOT_GAP for c in patrol(cell) for d in steps)
+
+    used: set[Cell] = set()
+    for number in range(1, len(salvage) + 1):
+        free = sorted(c for c in edges if plan.standing(*c) and c not in used and clear(c))
+        options = free
+        for cost in sorted(costs, key=lambda cost: cost is not costs[number - 1]):
+            near = [c for c in free if all(cost.get(p, math.inf) <= REACH for p in patrol(c))]
+            if near:
+                options = near
+                break
+        x, y = rng.choice(options)
+        used.add((x, y))
+        bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, x, y, zone, BOT_SPAN)
+        plan.creatures.append(bot)
+    rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
+    bots = {node(p.x, p.y) for p in salvage}
+    nests = [n for n in rooms if n not in bots]
+    nests = rng.sample(nests if len(nests) >= len(RATS) else rooms, len(RATS))
+    number = 0
+    for (c, tier), rats in zip(nests, RATS, strict=True):
+        column, row = level.columns[c], FLOORS[tier]
+        area = TileArea(x=column.x, y=row - 3, width=column.width, height=4)
+        for x in sorted(rng.sample(floor((c, tier)), rats)):
+            number += 1
+            plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
+
+
+def towards(
+    edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
+) -> dict[Cell, float]:
+    """The least `cost` from each cell to `goal` by `edges`."""
+    into: dict[Cell, list[tuple[Cell, moving.Edge]]] = {}
+    for cell, ways in edges.items():
+        for edge in ways:
+            into.setdefault(edge.to, []).append((cell, edge))
+    found: dict[Cell, float] = {}
+    frontier = [(0.0, goal)]
+    while frontier:
+        spent, here = heapq.heappop(frontier)
+        if here in found:
+            continue
+        found[here] = spent
+        for there, edge in into.get(here, []):
+            if there not in found:
+                heapq.heappush(frontier, (spent + cost(edge), there))
+    return found
+
+
 def lift() -> Door:
     """The metro's maintenance lift, down to every level's landing."""
     return Door(id=f"{METRO}_to_{SEWERS}", outside=LIFT_FOOT, inside=LANDING)
@@ -571,6 +659,7 @@ def build(level: Level) -> Plan:
     light(plan, "sewers_gate", gate.x, CEILING + 1, gate.width, GROUND - CEILING, lit=True)
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
     stock(level, plan, ledges)
+    dangers(level, plan)
     cover(level, plan)
     plan.doors.append(lift())
     return plan
@@ -602,6 +691,7 @@ class Cells:
 
     def __init__(self, plan: Plan) -> None:
         self.plan, self.width, self.height = plan, plan.width, plan.height
+        self.id, self.doors = plan.id, plan.doors
 
     def solid(self, x: int, y: int) -> bool:
         return not (0 <= x < self.width and 0 <= y < self.height) or (x, y) in self.plan.solid

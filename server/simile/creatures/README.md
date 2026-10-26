@@ -28,14 +28,31 @@ second:
 | `knock` | 1 | How many cells a kick of strength 1 sends it. |
 | `stagger` | 0.6 | How long it's `hurt` after a kick. |
 
-```python
-RAT = Kind(CreatureKind.RAT, speed=2, bites=True, ways=(Chase(sight=4), DrawnTo(food), Patrol()))
-DOG = Kind(
-    CreatureKind.DOG, speed=6, climbs=False, doors=False, toughness=3, ways=(Chase(), Patrol())
-)
-```
+The tunnels' kinds are in `kinds.py` (below).
+
+## The kinds
+
+`kinds.py` has the tunnels' kinds, and `KINDS` each one a map can place, with its `respawn`.
+
+| | Rat (P13) | Recycler bot (P13) |
+|---|---|---|
+| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` |
+| Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage |
+| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s |
+| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back |
+| Climbs | No | Yes |
+
+A rat leaves a player who carries no food alone, so a handful of them costs some health only
+when the player brings food, and they scatter after each bite. A bot ignores a wholly human
+player and chases one with any bionic (`fitted`): in the sewers that's always, since the lift
+takes the datajack. Bots are placed to start within `Collect`'s reach of salvage but patrol at
+least eight steps from any, so a player who heads straight for it gets there first.
 
 ## Placing them
+
+The maps place them: each map's `creatures` layer (`content/street/README.md`) says where each
+starts, its kind, the area it keeps to and the span it patrols. The `running` hook spawns every
+one on the maps the world plays (`placing.py`) and removes them when it stops.
 
 `creatures_of(app).spawn(kind, MapTile(...))` puts one in the world, from any module's lifespan,
 since `creatures_of` makes the engine on first use. Creatures aren't saved: they're spawned again
@@ -69,10 +86,13 @@ Every quarter of a sim second each creature asks its kind's ways, in order, wher
 | `FleeLight(radius, lit, within, pace)` | Out of the lamp's light (`radius`, 4.5 tiles, as the client draws it) and, with `lit`, the map's lit stretches, to the nearest dark cell within `within`, or else as far from the lamp as it can. | `fleeing` |
 | `DrawnTo(lure, within, pace, attacks)` | Towards `lure` while it's within `within`: `food`, the player while they carry food, or `lamp`, theirs while it's on. Attacks in reach if `attacks`. | `moving`, or `chasing` if it attacks |
 | `Roost(when)` | A bat to its roost, to hang there while `when` holds. | `moving`, then `roosting` |
+| `Scurry(pace)` | Home after its attack lands, until it's rested. | `fleeing` |
+| `Collect(within, pace)` | To the nearest salvage lying within `within` (4) cells' walk, to take it (below). | `moving`, then `attacking` |
 
 A way is anything with `aim(creature, senses)`. `Senses` has the time, the map, and the player and
 where the server keeps them, but only while a client is in the game and they're on the creature's
-map, with `lamp` and `carries(kind)`. `lamp_on` is a `when` for bats.
+map, with `lamp` and `carries(kind)`, and the `salvage` lying on the map. `lamp_on` is a `when`
+for bats, and `fitted` for bots.
 
 ## Hurting the player
 
@@ -87,6 +107,16 @@ server has heard where they went after it started: a player who moves away from 
 to bite is out of reach when the bite lands, and isn't bitten. A shorter windup would bite players
 who had already got away. The windup is in sim seconds and the throttle in real ones, so at
 `--speed 2` a 0.3 s windup is only 0.15 real seconds, shorter than the throttle.
+
+## Collecting
+
+A creature whose aim `collects`, standing on the pickup it went to, takes the salvage lying there
+after `COLLECTING` (4 s), `attacking` meanwhile. If it's gone before then, picked up by the player
+or out of sight as they leave the map, the creature gives up. The `running` hook has the salvage
+lying at each map's pickups from `simile.player`'s `Pickups`, and a take records it in
+`Player.taken`, as the player's own does: it lies there again on the same clock, it's saved, and the
+client stops showing it. Creatures sense salvage only while the player is on their map, so a bot
+races them for it rather than clearing it while they're away.
 
 ## Kicks
 
