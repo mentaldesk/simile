@@ -38,19 +38,22 @@ DEFAULT_CONFIG = FindsConfig()
 
 
 class Finds:
-    """Searching furniture, dead appliances and jacks once for what they hold, and learning the
-    recipes they teach or a keeper tells."""
+    """Searching furniture, dead appliances and jacks once for the money and things they hold,
+    and learning the recipes they teach or a keeper tells."""
 
     def __init__(
         self,
         player: Player,
         movement: Movement,
         known: Callable[[], Collection[Bionic]],
+        find: Callable[[float, Id], None],
         config: FindsConfig = DEFAULT_CONFIG,
     ) -> None:
         self.player = player
         self.movement = movement
         self.known = known
+        self.find = find
+        """Pays the player money found in a thing, by its id: the economy's `find`."""
         self.config = config
 
     def claim(self, at: Point) -> Claim | None:
@@ -75,6 +78,8 @@ class Finds:
     def search(self, thing: Interactable, at: Point) -> None:
         if thing.teaches is not None:
             self.learn(thing.teaches)
+        if thing.money:
+            self.find(thing.money, thing.id)
         room = self.player.carry_limit - self.player.load
         taken: list[Item] = []
         kept: list[Item] = []
@@ -119,4 +124,4 @@ class Finds:
 
     def _jacked(self, jack: Interactable) -> bool:
         working = Bionic.DATAJACK in self.player.body.bionics
-        return working and (bool(jack.items) or jack.teaches is not None)
+        return working and (bool(jack.items) or bool(jack.money) or jack.teaches is not None)

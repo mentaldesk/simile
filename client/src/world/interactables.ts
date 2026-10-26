@@ -15,6 +15,8 @@ export type Interactable = {
   prompt: string;
   /** What searching it finds, for a searchable or a jack: left out while it holds nothing. */
   items?: Item[];
+  /** The cash searching it finds, for a searchable or a jack: left out while there's none. */
+  money?: number;
   /** The recipe searching it teaches, by the bionic it builds. */
   teaches?: Bionic;
 };
@@ -57,6 +59,7 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
     const name = typeof label === 'string' ? label : object.name;
     const items = itemsOf(propertyOf(object, 'items'));
     const teaches = propertyOf(object, 'teaches');
+    const money = propertyOf(object, 'money');
     return {
       id: object.name,
       kind: object.type,
@@ -71,6 +74,7 @@ export function interactablesOf(id: string, map: TiledMap): Interactable[] {
       stand: tiles(propertyOf(object, 'stand')),
       prompt: PROMPTS[object.type]?.(name) ?? name,
       ...(items.length ? { items } : {}),
+      ...(typeof money === 'number' && money > 0 ? { money } : {}),
       ...(typeof teaches === 'string' ? { teaches: teaches as Bionic } : {}),
     };
   });

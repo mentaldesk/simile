@@ -129,8 +129,8 @@ As in [`content/map/`](../map/README.md), with these additions.
   square's at the fountain, the park's at the lookout, and in the gallery each at the nearest
   painting, so two can sit back to back). `dx` and `dy` are always 0. The stools keep `dz` 0.25.
 - **Finds.** A `searchable` interactable, or a `jack`, can hold `items`, a JSON list of `Item`s,
-  and `teach` a recipe, `teaches`, by the bionic it builds. The player searches each once (P6,
-  *Finds* below).
+  and cash, `money`, a float, and teach a recipe, `teaches`, by the bionic it builds. The player
+  searches each once (P6, *Finds* below).
 
 ## Finds
 
@@ -162,9 +162,37 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 
 The cell's parts are in the village and the metro, and the datajack's three wires are the shelf's
 and the metro's two, besides the salvage on the train's roof. Past the clinic (P28) the metro holds
-a spare of every part the two need, so a player who sells one or misses one can still build both. The infrared eye needs the second
-power cell, so its recipe and the cell's are found together, in the room past the gate farthest
-from it, but the hatch's, that has room for both. The eye's lens is a villager's (P17).
+a spare of every part the two need, so a player who sells one or misses one can still build both.
+The infrared eye needs the second power cell, so its recipe and the cell's are found together, in
+the room past the gate farthest from it, but the hatch's, that has room for both. The eye's lens is
+a villager's (P17).
+
+### Houses
+
+Each house has a place or two to search in its furniture (`STASHES` in `simile.street.finds`,
+P27), with the id `<house>_<piece>`. They hold loose cash, their `money`, which searching pays
+through the ledger as `found`, and the odd ration bar (food, 0.2 kg). No electrical parts:
+residents don't keep them. Whoever is awake in the room sees the player at it (`simile.theft`),
+and minds as much as their security and tradition say.
+
+| House | Living room | Bedroom | Cash |
+|---|---|---|--:|
+| `house_1` | `kitchen`, a jar on the shelf: 5 | `wardrobe`, a coat: 3 | 8 |
+| `house_2` | `kitchen`, a tea tin: 2 and a ration bar | `bed`, under the mattress: 10 | 12 |
+| `house_3` | `sofa`, the cushions: 2 | `bed`, the bedside drawer: 4 | 6 |
+| `house_4` | `kitchen`, a drawer: 1 and a ration bar | `wardrobe`, a handbag: 6 | 7 |
+| `house_5` | `sofa` 2, `kitchen`, a jar: 3 | | 5 |
+| `house_6` | `sofa` 3, `kitchen`, a cupboard: a ration bar | | 3 |
+| `house_7` | `kitchen`, a drawer: 2 | `wardrobe`, a coat: 7 | 9 |
+| `house_8` | `kitchen`, a biscuit tin: 4, `sofa` 1 | | 5 |
+| `house_9` | | `bed`, the bedside drawer: 5 | 5 |
+| `house_10` | `kitchen`, a drawer: 2 and a ration bar | | 2 |
+
+That's 62 in all. With the metro's secrets a jump reaches (95), one round of its salvage (44) and
+the salvage stripped from the finds that the recipes don't use (42), it pays for the power cell
+and the datajack (200) without the kidney or waiting for salvage to come back (P28,
+`tests/street/test_houses.py`). Fetching each find, secret and salvage from home and back on its
+own takes about 70 sim minutes on foot, under half the time from a meal to collapsing.
 
 ## The village
 
@@ -280,11 +308,9 @@ fast: the second grade of feet reaches the first's places, and every grade of le
 With Space held, a jump that rises higher than three rows bumps its head on the gantry's roof and
 falls short, so the legs and feet together cross its gap on a tap. The shed's gap is the same.
 
-**Pacing** (P28, with P27's houses): on their own legs, taking each find, secret and salvage once
-and selling what the power cell and the datajack don't use, the player affords both, 200, without
-the kidney. Before P28 the houses, the metro's secrets and a round of its salvage came to 152; past
-the depot there's 30 more in secrets, 19 in salvage, and 24 in salvage to strip from the finds,
-besides their spare parts. `tests/street/test_metro.py` checks it.
+**Pacing** (P28): before P28 the houses, the metro's secrets and a round of its salvage came to
+152 against the cell and the datajack's 200; past the depot there's 30 more in secrets, 19 in
+salvage, and salvage to strip from the finds. *Houses* above has the sums.
 
 **Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
 front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are

@@ -378,6 +378,8 @@ def _interactable(object_id: int, item: Interactable) -> dict[str, Any]:
     if item.items:
         found = [thing.model_dump(mode="json") for thing in item.items]
         props["items"] = json.dumps(found, ensure_ascii=False)
+    if item.money:
+        props["money"] = item.money
     if item.teaches is not None:
         props["teaches"] = item.teaches.value
     return _rectangle(object_id, item.id, item.kind.value, item.area, props)

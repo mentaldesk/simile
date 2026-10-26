@@ -427,8 +427,6 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
     assert (LIFT_FOOT.map, LIFT_FOOT.x, LIFT_FOOT.y) == (METRO, 100, 15)
 
 
-HOUSES = 62.0
-"""The loose cash P27 (#451) leaves in the village's houses."""
 BEYOND = (SWITCHBOARD, RELAY_RACK, CONTAINER, FREIGHT_CRATES, TOOL_CRATE, LOCKERS)
 
 
@@ -519,35 +517,3 @@ def test_every_salvage_on_the_metro_has_a_price() -> None:
         if pickup.kind is PickupKind.SALVAGE:
             item = pickup.item or SALVAGE[pickup.id].item
             assert item.id in ECONOMY.salvage, pickup.id
-
-
-def test_with_the_houses_cash_the_cell_and_the_datajack_are_paid_for_without_respawns() -> None:
-    """Pacing: on their own legs, taking every find, secret and salvage once and selling all the
-    recipes don't use, the player affords both without selling the kidney (P28)."""
-    walked = reachable(True)
-    recipes = [CLINIC_RECIPES[bionic] for bionic in (Bionic.POWER_CELL, Bionic.DATAJACK)]
-    needed = sum((Counter(recipe.parts) for recipe in recipes), Counter())
-    cost = sum(recipe.credits for recipe in recipes)
-    home = [t for n in range(3) for t in MAPS[f"maker_space_floor_{n}"].interactables]
-    found = [
-        thing
-        for thing in [*home, *METRO_MAP.interactables]
-        if thing.kind is InteractableKind.SEARCHABLE
-        and (thing.map != METRO or stands(thing.id) & walked)
-    ]
-    lying = [p for p in METRO_MAP.pickups if Spot(METRO, p.x, p.y) in walked]
-
-    def price(item_id: str) -> float:
-        return ECONOMY.salvage.get(item_id) or ECONOMY.parts.get(item_id, 0.0)
-
-    def worth(beyond: bool) -> float:
-        here = [p for p in lying if (p.x >= DEPOT_END) is beyond]
-        salvage = [p.item or SALVAGE[p.id].item for p in here if p.kind is PickupKind.SALVAGE]
-        return sum(p.money for p in here) + sum(price(item.id) for item in salvage)
-
-    parts = Counter(item.id for thing in found for item in thing.items)
-    spare = sum(price(item) * count for item, count in (parts - needed).items())
-
-    assert all(parts[part] > count for part, count in needed.items()), "no spare parts"
-    assert HOUSES + worth(beyond=False) < cost
-    assert HOUSES + worth(beyond=False) + worth(beyond=True) + spare >= cost * 1.1

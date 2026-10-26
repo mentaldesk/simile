@@ -438,6 +438,7 @@ def _interactable(obj: dict[str, Any], size: int, map_id: str) -> Interactable:
         area=_area(obj, size),
         stand=[Tile(x=int(x), y=int(y)) for x, y in stand],
         items=items,
+        money=float(props.get("money", 0.0)),
         teaches=teaches,
     )
 
