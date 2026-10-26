@@ -22,7 +22,8 @@ from simile.llm import LLMClient
 from simile.llm.fake import FakeProvider
 from simile.llm.lifespan import CannedProvider
 from simile.llm.provider import Request, Usage
-from simile.persistence import investigation_of
+from simile.loop import stand_in
+from simile.persistence import investigation_of, player_of
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
 from simile.protocol import (
     ConversationEndedMessage,
@@ -513,6 +514,7 @@ class Playthrough:
 
     async def datajack_and_the_lift(self) -> None:
         p = self.player
+        stand_in.learn(player_of(self.app), Bionic.DATAJACK)
         await p.clinic()
         await p.gather({"metro"}, enough=p.price(Bionic.DATAJACK))
         await p.go(LIFT)
@@ -520,6 +522,8 @@ class Playthrough:
             raise Refused("The server let the player into the sewers without the datajack")
         p.note("The lift didn't take them without the datajack")
         await p.go(OUTSIDE_THE_CLINIC)
+        stand_in.carry(player_of(self.app), Bionic.DATAJACK)
+        await p.wait(0.1)
         await self.saves.write("datajack", p, lift_log=self.fact(LIFT_LOG))
         await p.clinic()
         await p.fit(Bionic.DATAJACK, "vertebra")
@@ -542,6 +546,8 @@ class Playthrough:
 
     async def the_eye_and_a_lie(self) -> tuple[Id, LineMessage]:
         p = self.player
+        stand_in.learn(player_of(self.app), Bionic.INFRARED_EYE)
+        stand_in.carry(player_of(self.app), Bionic.INFRARED_EYE)
         await p.clinic()
         price = p.price(Bionic.INFRARED_EYE)
         for _ in range(DAYS):

@@ -45,6 +45,12 @@
   color: #7fc8a9;
 }
 
+.clinic li small {
+  display: block;
+  padding-top: 1px;
+  color: #aaa;
+}
+
 .clinic ol {
   min-height: 0;
   margin: 3px 0 0;

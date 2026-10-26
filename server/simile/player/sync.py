@@ -1,8 +1,18 @@
 from collections.abc import Callable
 
+from starlette.applications import Starlette
+
 from simile.player.config import DEFAULT_CONFIG
 from simile.protocol import Buyer, Meal, PlayerStateMessage
-from simile.schema import Pile, Player
+from simile.schema import Bionic, Pile, Player, Recipe
+
+
+def recipes_of(app: Starlette) -> dict[Bionic, Recipe]:
+    """Every recipe the player could know, by the bionic it builds, on `app.state.recipes`, for
+    modules such as the clinic to add theirs."""
+    if not hasattr(app.state, "recipes"):
+        app.state.recipes = {}
+    return app.state.recipes
 
 
 class PlayerSync:
@@ -17,6 +27,7 @@ class PlayerSync:
         *,
         buyer: Callable[[], Buyer | None] = lambda: None,
         piles: Callable[[], list[Pile]] = list,
+        recipes: Callable[[], list[Recipe]] = list,
     ) -> None:
         self.player = player
         self.meal = meal
@@ -24,11 +35,13 @@ class PlayerSync:
         self.step = step
         self.buyer = buyer
         self.piles = piles
+        self.recipes = recipes
         self.sent = self.message()
 
     def message(self) -> PlayerStateMessage:
         return PlayerStateMessage(
             player=self.player.model_copy(deep=True),
+            recipes=self.recipes(),
             meal=self.meal(),
             buyer=self.buyer(),
             piles=self.piles(),
