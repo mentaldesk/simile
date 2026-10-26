@@ -49,7 +49,7 @@ either end. Every wall faces the camera. The scene drawing the murals registers 
 **E** (`reach.ts`): `inReach(position)` lists what E can use where the player stands, nearest first
 along the street: a terminal, a counter, a painting's frame, a painted wall while murals are drawn,
 a pile within a tile (one the player left, or one in `player_state`'s `piles`), the clinic while its
-doctor would buy a part of them or fit a bionic (`isClinic` in `buyers.ts`), or else the buyer where
+doctor would buy a part of them, fit a bionic or treat them (`isClinic` in `buyers.ts`), or else the buyer where
 they stand while they carry something it buys, or a clue from `content/story/story.toml` on the
 player's cell (`clues.ts`), after a pile as near. Before any of them, a thing to search on the
 player's stand tile (`searchables.ts`): a `searchable`, or with the datajack a jack holding `items`
