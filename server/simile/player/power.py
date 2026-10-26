@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.schema import LEGS, POWER_CELLS, Bionic, Body, Player
+from simile.schema import POWER_CELLS, Bionic, Body, Player
 from simile.sim import Clock
 
 logger = logging.getLogger(__name__)
@@ -46,17 +46,17 @@ def cell_in(body: Body) -> Bionic | None:
 
 
 def others(body: Body) -> list[Bionic]:
-    """Every bionic the cell runs: all fitted but the cell and stage 1's legs, which need none."""
-    return [bionic for bionic in body.bionics if bionic not in POWER_CELLS + LEGS]
+    """Every bionic the cell runs: all fitted but the cell."""
+    return [bionic for bionic in body.bionics if bionic not in POWER_CELLS]
 
 
 def runs(body: Body, bionic: Bionic, config: PowerConfig = DEFAULT_POWER) -> bool:
     """Whether their cell would still run every other bionic once `bionic` is fitted. True
-    without a cell, since a recipe's `after` says what needs one, and for stage 1's legs."""
+    without a cell, since a recipe's `after` says what needs one."""
     if bionic in POWER_CELLS:
         return len(others(body)) <= config.runs[bionic]
     cell = cell_in(body)
-    if cell is None or bionic in LEGS:
+    if cell is None:
         return True
     upgrade = any(getattr(body, part) in bionic.line for part in bionic.replaces)
     return len(others(body)) + (0 if upgrade else 1) <= config.runs[cell]

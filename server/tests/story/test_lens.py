@@ -237,10 +237,10 @@ async def test_seeing_the_player_s_bionics_isn_t_talking_so_the_lens_stays_locke
         village.clock,
         {"ana": ANA},
         village.movement,
-        lambda: Body(legs=Bionic.HYDRAULIC_LEGS),
+        lambda: Body(legs=Bionic.BIONIC_LEGS),
         lambda npc: True,
     )
-    sightings.see("ana", [Bionic.HYDRAULIC_LEGS])
+    sightings.see("ana", [Bionic.BIONIC_LEGS])
     assert village.store.relationship("ana", PLAYER_ID) is not None
 
     await village.run(DEFAULT_CONFIG.lens_every * 3)

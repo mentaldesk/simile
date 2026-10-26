@@ -25,7 +25,7 @@ from simile.schema.player import Bionic, Body
 
 from .keyed import keyed
 
-LEGS, BIONIC_LEGS, FEET, DATAJACK, EYE = FITTED
+BIONIC_LEGS, FEET, DATAJACK, EYE = FITTED
 SIZE = (300, 400)
 
 
@@ -41,24 +41,23 @@ def with_parts(*parts: Bionic) -> Image.Image:
 
 
 def test_every_combination_once_fewest_first() -> None:
-    lower = [(), (LEGS,), (BIONIC_LEGS,), (FEET,), (BIONIC_LEGS, FEET)]
+    lower = [(), (BIONIC_LEGS,), (FEET,), (BIONIC_LEGS, FEET)]
     upper = [(), (DATAJACK,), (EYE,), (DATAJACK, EYE)]
     every = {low + up for low in lower for up in upper} - {()}
 
-    assert len(COMBINATIONS) == len(every) == 19 and set(COMBINATIONS) == every
+    assert len(COMBINATIONS) == len(every) == 15 and set(COMBINATIONS) == every
     assert [len(c) for c in COMBINATIONS] == sorted(len(c) for c in COMBINATIONS)
     assert all(list(c) == sorted(c, key=FITTED.index) for c in COMBINATIONS)
 
 
 def test_the_lower_body_is_one_layer_and_each_other_part_its_own() -> None:
     assert layers((BIONIC_LEGS, FEET, DATAJACK, EYE)) == [(BIONIC_LEGS, FEET), (DATAJACK,), (EYE,)]
-    assert layers((LEGS, EYE)) == [(LEGS,), (EYE,)]
+    assert layers((BIONIC_LEGS, EYE)) == [(BIONIC_LEGS,), (EYE,)]
     assert layers((DATAJACK,)) == [(DATAJACK,)]
 
 
 def test_each_layer_is_painted_after_the_one_it_adds_to() -> None:
     assert set(LAYERS) == {
-        (LEGS,),
         (BIONIC_LEGS,),
         (FEET,),
         (BIONIC_LEGS, FEET),
@@ -72,9 +71,9 @@ def test_each_layer_is_painted_after_the_one_it_adds_to() -> None:
     ("fitted_", "id_"),
     [
         ((), "player"),
-        ((LEGS,), "player_legs"),
-        ((EYE, LEGS), "player_legs_eye"),
-        ((EYE, DATAJACK, LEGS), "player_legs_datajack_eye"),
+        ((BIONIC_LEGS,), "player_bionic_legs"),
+        ((EYE, FEET), "player_feet_eye"),
+        ((EYE, DATAJACK, BIONIC_LEGS), "player_bionic_legs_datajack_eye"),
     ],
 )
 def test_names_the_figure_for_whatever_is_fitted(fitted_: tuple, id_: str) -> None:
@@ -89,11 +88,6 @@ def test_every_grade_of_a_line_is_one_figure_and_the_power_cell_none() -> None:
     assert figure_id(Body(stomach=Bionic.POWER_CELL).bionics) == "player"
 
 
-def test_stage_1s_legs_are_one_figure_and_the_bionic_legs_with_the_feet() -> None:
-    assert figure_id([Bionic.PREMIUM_LEGS, DATAJACK]) == "player_legs_datajack"
-    assert figure_id([Bionic.SPRINT_LEGS, Bionic.SPRING_FEET_2]) == "player_bionic_legs_feet"
-
-
 def test_a_body_names_its_figure_by_its_bionics_whichever_eye() -> None:
     left = Body(left_eye=EYE, vertebra=DATAJACK)
     right = Body(right_eye=EYE, vertebra=DATAJACK, left_kidney="sold")
@@ -103,11 +97,11 @@ def test_a_body_names_its_figure_by_its_bionics_whichever_eye() -> None:
 
 def test_the_eye_isnt_seen_from_behind() -> None:
     assert [f for f in FRAMES if not shows(EYE, f)] == ["climb"]
-    assert all(shows(LEGS, f) and shows(DATAJACK, f) for f in FRAMES)
+    assert all(shows(BIONIC_LEGS, f) and shows(DATAJACK, f) for f in FRAMES)
 
 
 def test_each_part_is_asked_for_alone_over_the_whole_player() -> None:
-    legs, eye = edit_prompt("run", LEGS, PLAYER), edit_prompt("run", EYE, PLAYER)
+    legs, eye = edit_prompt("run", BIONIC_LEGS, PLAYER), edit_prompt("run", EYE, PLAYER)
 
     assert "now with both legs replaced" in legs and "eye nearer the ear" not in legs
     assert " shorts and " in legs and " trousers and " not in legs
@@ -132,16 +126,17 @@ def test_climbing_asks_for_no_face() -> None:
 
 def test_finds_each_part_painted() -> None:
     assert missing(with_parts(), FITTED, "stand") == [
-        "legs",
         "bionic_legs",
         "feet",
         "datajack",
         "eye",
     ]
-    assert missing(with_parts(LEGS, DATAJACK, EYE), (LEGS, DATAJACK, EYE), "stand") == []
+    assert (
+        missing(with_parts(BIONIC_LEGS, DATAJACK, EYE), (BIONIC_LEGS, DATAJACK, EYE), "stand") == []
+    )
     assert missing(with_parts(BIONIC_LEGS, FEET), (BIONIC_LEGS, FEET), "stand") == []
     assert missing(with_parts(BIONIC_LEGS), (BIONIC_LEGS, FEET), "stand") == ["feet"]
-    assert missing(with_parts(DATAJACK), (LEGS, DATAJACK, EYE), "climb") == ["legs"]
+    assert missing(with_parts(DATAJACK), (BIONIC_LEGS, DATAJACK, EYE), "climb") == ["bionic_legs"]
 
 
 def test_both_eyes_painted_red_is_one_too_many() -> None:
@@ -195,14 +190,14 @@ def test_a_part_is_where_painting_it_changed_the_frame_near_it() -> None:
 
 def test_parts_are_laid_over_the_player_and_nothing_else_changes() -> None:
     player = with_parts()
-    legs, eye = with_parts(LEGS), with_parts(EYE)
+    legs, eye = with_parts(BIONIC_LEGS), with_parts(EYE)
     w, h = SIZE
 
     both = laid(
-        player, [(legs, changed(player, legs, (LEGS,))), (eye, changed(player, eye, (EYE,)))]
+        player, [(legs, changed(player, legs, (BIONIC_LEGS,))), (eye, changed(player, eye, (EYE,)))]
     )
 
-    assert missing(both, (LEGS, EYE), "stand") == []
+    assert missing(both, (BIONIC_LEGS, EYE), "stand") == []
     before, after = np.asarray(player), np.asarray(both)
     assert (before[: int(0.12 * h)] == after[: int(0.12 * h)]).all()
     assert (before[:, : int(0.2 * w)] == after[:, : int(0.2 * w)]).all()
@@ -224,4 +219,4 @@ def test_the_fake_painter_paints_what_an_edit_asks_for() -> None:
 
     edited = painter.paint(edit_prompt("stand", EYE, PLAYER), SIZE, 1, [base])
 
-    assert missing(keyed(edited), FITTED, "stand") == ["legs", "bionic_legs", "feet", "datajack"]
+    assert missing(keyed(edited), FITTED, "stand") == ["bionic_legs", "feet", "datajack"]

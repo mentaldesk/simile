@@ -360,9 +360,9 @@ class Shut(Model):
     )
     reason: ShutReason
     opens: Timestamp | None = Field(
-        description="When it next starts serving, by its keeper's shifts or its own hours: the "
-        "next start after now, even while a keeper is due but hasn't come. Null only for a shop "
-        "with no keeper, or a keeper with no shifts, and no hours of its own."
+        description="When it next starts serving: the next start of a shift of whoever works "
+        "there, after now, even while they're due but haven't come. Null when nobody works there "
+        "or they have no shifts."
     )
 
 
@@ -371,7 +371,7 @@ class Fitting(Model):
 
     bionic: Bionic
     name: str = Field(
-        min_length=1, description='The bionic as the player sees it, e.g. "Hydraulic legs".'
+        min_length=1, description='The bionic as the player sees it, e.g. "Spring feet".'
     )
     price: float = Field(ge=0, allow_inf_nan=False)
     parts: list[BodyPart] = Field(

@@ -26,7 +26,7 @@ DELVING = Player(
         lamp().model_copy(update={"charge": 0.35}),
         Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5),
     ],
-    body=Body(legs=Bionic.HYDRAULIC_LEGS, vertebra=Bionic.DATAJACK, left_kidney=SOLD),
+    body=Body(legs=Bionic.BIONIC_LEGS, vertebra=Bionic.DATAJACK, left_kidney=SOLD),
     hunger=0.55,
 )
 

@@ -208,7 +208,7 @@ DELVING = PlayerStateMessage(
             Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5),
             Item(id="noodles", kind=ItemKind.FOOD, name="Noodles", weight=0.5),
         ],
-        body=Body(legs=Bionic.HYDRAULIC_LEGS, right_eye=Bionic.INFRARED_EYE, left_kidney="sold"),
+        body=Body(legs=Bionic.BIONIC_LEGS, right_eye=Bionic.INFRARED_EYE, left_kidney="sold"),
         hunger=0.55,
     )
 )
@@ -236,7 +236,7 @@ WOKEN = PlayerStateMessage(
 COLLAPSED = PlayerCollapsedMessage(position=Position(x=13, y=2, map="maker_space_floor_0"))
 SCRAP_TRADER = Buyer(place="scrap_stall", name="The scrap trader", prices={"copper_wire": 6})
 AT_THE_SCRAP_STALL = DELVING.model_copy(update={"buyer": SCRAP_TRADER})
-LEGS = Fitting(bionic=Bionic.HYDRAULIC_LEGS, name="Hydraulic legs", price=80, parts=["legs"])
+LEGS = Fitting(bionic=Bionic.BIONIC_LEGS, name="Bionic legs", price=80, parts=["legs"])
 EYE = Fitting(
     bionic=Bionic.INFRARED_EYE, name="Infrared eye", price=200, parts=["left_eye", "right_eye"]
 )
@@ -798,7 +798,7 @@ def test_player_state_has_their_money_items_body_and_hunger() -> None:
             ],
             "carry_limit": 10.0,
             "body": {
-                "legs": "hydraulic_legs",
+                "legs": "bionic_legs",
                 "vertebra": "present",
                 "left_eye": "present",
                 "right_eye": "infrared_eye",
@@ -1045,8 +1045,8 @@ def test_player_state_says_what_the_clinic_buys_of_their_body_and_fits() -> None
             "parts": {"left_kidney": 100.0},
             "fittings": [
                 {
-                    "bionic": "hydraulic_legs",
-                    "name": "Hydraulic legs",
+                    "bionic": "bionic_legs",
+                    "name": "Bionic legs",
                     "price": 80.0,
                     "parts": ["legs"],
                 },
@@ -1082,16 +1082,16 @@ def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
     [
         ({"parts": []}, "at least 1 item"),
         ({"parts": ["tail"]}, "Input should be 'legs'"),
-        ({"parts": ("left_kidney",)}, "hydraulic_legs can't replace left_kidney"),
+        ({"parts": ("left_kidney",)}, "bionic_legs can't replace left_kidney"),
         (
             {"bionic": "infrared_eye", "parts": ("left_eye", "left_eye")},
             "a fitting names each part once",
         ),
-        ({"bionic": "steel_hand"}, "Input should be 'hydraulic_legs'"),
+        ({"bionic": "steel_hand"}, "Input should be 'datajack'"),
         ({"price": -1}, "greater than or equal to 0"),
         ({"price": float("nan")}, "finite number"),
         ({"name": ""}, "at least 1 character"),
-        ({"parts": ["left_kidney"]}, "hydraulic_legs can't replace left_kidney"),
+        ({"parts": ["left_kidney"]}, "bionic_legs can't replace left_kidney"),
         ({"parts": ["legs", "legs"]}, "a fitting names each part once"),
         (
             {"bionic": "infrared_eye", "parts": ["right_eye", "right_eye"]},

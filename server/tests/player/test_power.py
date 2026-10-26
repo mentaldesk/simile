@@ -123,18 +123,6 @@ def test_an_upgrade_in_place_of_a_bionic_takes_no_more_of_the_cell() -> None:
     assert runs(THREE, Bionic.SPRING_FEET_2)
 
 
-def test_stage_1s_legs_take_none_of_the_cell() -> None:
-    hydraulic = Body(stomach=CELL, legs=Bionic.HYDRAULIC_LEGS, vertebra=JACK, feet=FEET)
-    cell = Cell(Player(body=hydraulic))
-
-    cell.run(HOUR, step=60)
-
-    assert cell.player.power == pytest.approx(0.6)
-    assert runs(hydraulic, EYE)
-    assert runs(hydraulic.model_copy(update={"right_eye": EYE}), Bionic.SPRING_LEGS)
-    assert not runs(Body(stomach=CELL, vertebra=JACK, right_eye=EYE, feet=FEET), LEGS)
-
-
 def test_a_cell_runs_what_is_already_fitted() -> None:
     four = THREE.model_copy(update={"right_eye": EYE})
 

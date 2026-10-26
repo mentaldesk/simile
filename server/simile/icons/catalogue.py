@@ -103,14 +103,6 @@ BIONICS = (
         "lens in a thin chrome rim, a few thin wires trailing behind it.",
     ),
     Icon(
-        "hydraulic_legs",
-        "a pair of bionic hydraulic legs side by side, from the thighs down to the ankles and "
-        "no further, no feet at all: bare steel-grey machinery with a shiny chrome hydraulic "
-        "piston down each shin and a round metal knee joint.",
-        pieces=2,
-        keep=ABOVE_THE_FEET,
-    ),
-    Icon(
         "bionic_legs",
         "a pair of sleek bionic legs side by side, from the thighs down to the ankles and no "
         "further, no feet at all: smooth streamlined robot legs of rounded steel-grey armour "

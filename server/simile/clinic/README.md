@@ -48,12 +48,6 @@ she tells the player the power cell's as they walk in (`simile.player`'s *Finds*
 **Selling recipes.** She buys each recipe they know once, for its one-off sum. They still know it,
 and she still builds from it. She won't buy the power cell's, which she teaches.
 
-**Stage 1's legs** (#389) are `offers`, fitted for their price alone until P18 retires them: the
-hydraulic and sprint legs (80) in place of the player's own, then the spring and blade legs (240)
-in place of each, and the premium legs (600) in place of either, with an Apex actuator they bring.
-`street/jump.py` says what each does. Each goes in place of the legs before it (`Offer.after`),
-which she takes back, and the premium legs are offered only while they carry the actuator.
-
 She has one of each bionic (`stock`), so once fitted it's gone.
 
 - `Clinic.keep` adds `parts`, `fittings` and `recipes` to the clinic's `player_state` buyer,
@@ -96,7 +90,7 @@ but outside B2's engine, which only knows residents. It publishes `ConversationS
   sentence a line, paced by each line's length.
 - **Ending.** It ends when they walk out, or after `silence` (60) sim seconds with nothing said.
 - **The prompt.** The system prompt is who she is, her fixed prices for a kidney, salvage and
-  treatments, how she builds from recipes, and stage 1's legs, with no haggling: no menu of every
+  treatments and how she builds from recipes, with no haggling: no menu of every
   bionic. Each turn adds what she can see of them (their bionics, a sold kidney), what she'd buy,
   fit or treat now, with the parts they're short of, the recipes they know that wait for the cell,
   and a bionic or two they don't know the recipe for, to hint at without a price. So what she says
@@ -114,7 +108,3 @@ checks it. The cell's parts, from P6, cost nothing but finding them.
 
 Each grade of a line costs more than the one before. Recipes sell for about 15% of what
 they cost to build, so selling one is a little money now, never the way to a bionic.
-
-Stage 1's legs keep S15's prices: a grade 2 costs three times a grade 1 and more than the eye, and
-premium two and a half times that. `test_each_grade_of_the_old_legs_costs_steeply_more_than_the_one_before`
-checks the steps.

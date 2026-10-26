@@ -19,18 +19,15 @@ describe('the player’s figure', () => {
     [{}, 'player'],
     [{ left_kidney: 'sold', right_eye: 'sold' }, 'player'],
     [{ stomach: 'power_cell' }, 'player'],
-    [{ legs: 'hydraulic_legs' }, 'player_legs'],
-    [{ legs: 'sprint_legs' }, 'player_legs'],
-    [{ legs: 'premium_legs', vertebra: 'datajack' }, 'player_legs_datajack'],
+    [{ legs: 'bionic_legs_3', vertebra: 'datajack' }, 'player_bionic_legs_datajack'],
     [{ vertebra: 'datajack' }, 'player_datajack'],
     [{ left_eye: 'infrared_eye' }, 'player_eye'],
-    [{ right_eye: 'infrared_eye', legs: 'hydraulic_legs' }, 'player_legs_eye'],
-    [{ right_eye: 'infrared_eye', vertebra: 'datajack', legs: 'hydraulic_legs' }, 'player_legs_datajack_eye'],
+    [{ right_eye: 'infrared_eye', feet: 'spring_feet' }, 'player_feet_eye'],
+    [{ right_eye: 'infrared_eye', vertebra: 'datajack', legs: 'bionic_legs' }, 'player_bionic_legs_datajack_eye'],
     [{ legs: 'bionic_legs', stomach: 'power_cell' }, 'player_bionic_legs'],
     [{ legs: 'bionic_legs_3', stomach: 'power_cell_2' }, 'player_bionic_legs'],
     [{ feet: 'spring_feet_2' }, 'player_feet'],
     [{ legs: 'bionic_legs_2', feet: 'spring_feet', left_eye: 'infrared_eye' }, 'player_bionic_legs_feet_eye'],
-    [{ legs: 'blade_legs', feet: 'spring_feet' }, 'player_bionic_legs_feet'],
   ])('with %o fitted is %s', (fitted, id) => {
     expect(playerFigureId({ ...whole, ...fitted })).toBe(id);
   });
@@ -41,7 +38,7 @@ describe('the player’s figure', () => {
 
   it('is committed for every body, with the same frames and poses', () => {
     const bodies: Body[] = [];
-    for (const legs of ['present', 'hydraulic_legs', 'premium_legs', 'bionic_legs', 'bionic_legs_3'] as const)
+    for (const legs of ['present', 'bionic_legs', 'bionic_legs_3'] as const)
       for (const feet of ['present', 'spring_feet', 'spring_feet_2'] as const)
         for (const vertebra of ['present', 'datajack'] as const)
           for (const left_eye of ['present', 'infrared_eye'] as const)
@@ -58,7 +55,7 @@ describe('the player’s figure', () => {
 
   it('tells the player’s figures from the residents’', () => {
     expect(isPlayerFigure('player')).toBe(true);
-    expect(isPlayerFigure('player_legs_eye')).toBe(true);
+    expect(isPlayerFigure('player_feet_eye')).toBe(true);
     expect(isPlayerFigure('player_bionic_legs_feet')).toBe(true);
     expect(isPlayerFigure('priya')).toBe(false);
     expect(isPlayerFigure(undefined)).toBe(false);
