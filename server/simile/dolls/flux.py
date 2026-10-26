@@ -187,7 +187,7 @@ def fitted(painting: Image.Image, prompt: str) -> Image.Image:
             draw.rectangle(box(legs[0], 0.72, legs[1], 0.93), (150, 152, 158), (40, 26, 20), 3)
     if WORDS[Bionic.SPRING_FEET] in prompt:
         for side in (-1, 1):
-            feet = sorted((side * 0.0, side * 0.13))
+            feet = sorted((0.0, side * 0.13))
             draw.rectangle(box(feet[0], 0.94, feet[1], 1.0), (240, 210, 40), (40, 26, 20), 3)
     if WORDS[Bionic.DATAJACK] in prompt:
         draw.ellipse(box(-0.13, 0.3, -0.09, 0.34), (60, 220, 60))

@@ -12,7 +12,10 @@ const NAMES: Record<Shown, string> = {
   infrared_eye: 'eye',
 };
 /** The part a figure shows for each bionic: every grade of a line alike, and of stage 1's legs. */
-const SHOWN_AS: Partial<Record<Bionic, Shown>> = {
+const SHOWN_AS: Record<Bionic, Shown | undefined> = {
+  power_cell: undefined,
+  power_cell_2: undefined,
+  power_cell_3: undefined,
   hydraulic_legs: 'hydraulic_legs',
   spring_legs: 'hydraulic_legs',
   sprint_legs: 'hydraulic_legs',

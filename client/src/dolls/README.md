@@ -26,10 +26,9 @@ const preview = await makeDoll(scene, x, y, 'draft', await flatDoll(appearance),
   what a `Body` has fitted, `player` with nothing and `player_bionic_legs_feet_datajack_eye` with
   everything. Every grade of a line is the same figure, stage 1's legs with the feet show as the
   bionic legs, the power cell doesn't show, and the eye is painted where it shows, so either
-  socket is the same figure. `PlayerBody` keeps the
-  last body and says when its figure changes: `world/assets.ts` feeds one from `player_state`,
-  `dollFor('player')` picks the player's figure by it, and the side view's player wears the new
-  figure when a bionic is fitted.
+  socket is the same figure. `PlayerBody` keeps the last body and says when its figure changes:
+  `world/assets.ts` feeds one from `player_state`, `dollFor('player')` picks the player's figure
+  by it, and the side view's player wears the new figure when a bionic is fitted.
 - **`SpriteFigure.setPose(pose, facing, phase, options)`** is `PaperDoll`'s: `pose` is the sim's
   `Pose`, or the player's `'jumping'` or `'landing'`, and `phase` how far through its cycle it is,
   any number. Each pose plays its painted frames by phase (`sprite.ts`):

@@ -112,7 +112,7 @@ EYE_FACE = (
 )
 METAL = (12.0, 40.0, 88.0)
 """Steel and chrome, CIELAB: chroma below the first, lightness between the others."""
-LEGS = 0.6
+LEGS_FROM = 0.6
 """Where the legs start, down the figure."""
 SHORTS = (0.62, 0.7)
 """The bottom colour's `measure.CORES` with either legs, whose shins are steel."""
@@ -209,7 +209,7 @@ def parts(figure: Image.Image) -> dict[Bionic, NDArray[np.bool_]]:
     lab = cielab(np.asarray(figure.convert("RGB"), dtype=np.float64))
     light, a, b = lab[..., 0], lab[..., 1], lab[..., 2]
     metal = (np.hypot(a, b) < METAL[0]) & (light > METAL[1]) & (light < METAL[2])
-    legs = solid & (down >= LEGS)
+    legs = solid & (down >= LEGS_FROM)
     spring = (b > SPRING[0]) & (a < SPRING[1]) & (light > SPRING[2])
     return {
         HYDRAULIC: legs & metal,
@@ -241,7 +241,7 @@ def missing(
     for bionic in combination:
         if not shows(bionic, frame):
             continue
-        whole = solid & (down >= LEGS) if bionic in LOWER else solid
+        whole = solid & (down >= LEGS_FROM) if bionic in LOWER else solid
         if found[bionic].sum() < least * LEAST[bionic] * whole.sum():
             out.append(NAMES[bionic])
         elif bionic == Bionic.INFRARED_EYE:

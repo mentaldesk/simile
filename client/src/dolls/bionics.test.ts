@@ -53,6 +53,7 @@ describe('the player’s figure', () => {
       expect(figure.poses).toEqual(dolls.player.poses);
       expect(figure.height).toBe(dolls.player.height);
     }
+    expect(Object.keys(dolls).filter(isPlayerFigure).sort()).toEqual([...new Set(bodies.map(playerFigureId))].sort());
   });
 
   it('tells the player’s figures from the residents’', () => {
