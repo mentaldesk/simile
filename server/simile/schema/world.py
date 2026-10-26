@@ -1,9 +1,10 @@
 from enum import StrEnum
-from typing import Self
+from typing import Any, Self
 
 from pydantic import Field, model_validator
 
-from simile.schema.common import CHECKED, Id, Key, Model
+from simile.schema.common import Id, Key, MapTile, Model
+from simile.schema.player import Bionic, Item
 
 VILLAGE_MAP = "village"
 
@@ -13,16 +14,6 @@ class Tile(Model):
     side-view map, x runs along the street and y counts rows down from the top, and a resident
     stands on a cell with ground under it or on a climbable cell."""
 
-    x: int = Field(ge=0)
-    y: int = Field(ge=0)
-
-
-class MapTile(Model):
-    """A tile on a given map: the village or an interior, or in side view a street or a floor."""
-
-    model_config = CHECKED
-
-    map: Key
     x: int = Field(ge=0)
     y: int = Field(ge=0)
 
@@ -154,17 +145,25 @@ class Door(Model):
 class InteractableKind(StrEnum):
     """What it is. A `plug` charges the player's lamp while they stand on one of its stand tiles.
     A `jack` is a machine only the datajack works, such as the metro's dead terminal and its lift:
-    without one it's dead, and a link ending on one of its stand tiles can't be taken."""
+    without one it's dead, and a link ending on one of its stand tiles can't be taken. A
+    `searchable` is a piece of furniture or a dead appliance, searched once for what it holds."""
 
     COUNTER = "counter"
     PAINTING = "painting"
     MACHINE = "machine"
     PLUG = "plug"
     JACK = "jack"
+    SEARCHABLE = "searchable"
+
+
+HOLDS = (InteractableKind.SEARCHABLE, InteractableKind.JACK)
+"""The kinds that can hold items or teach a recipe, found by searching them once."""
 
 
 class Interactable(Model):
-    """Something on an interior's map that you can use, from one of its stand tiles."""
+    """Something on an interior's map that you can use, from one of its stand tiles. A searchable
+    thing, or a jack with the datajack, is searched once for the `items` it holds and the recipe
+    it `teaches`, and the player's `searched` says whether it has been."""
 
     id: Id
     label: str = Field(min_length=1, description='What it\'s called, e.g. "3D printer".')
@@ -174,3 +173,24 @@ class Interactable(Model):
     stand: list[Tile] = Field(
         min_length=1, description="The tiles you use it from, on the same map."
     )
+    items: list[Item] = Field(
+        default=[],
+        exclude_if=lambda items: not items,
+        description="What searching it finds, in order: a searchable's, or a jack's. Left out "
+        "while it holds nothing.",
+    )
+    teaches: Bionic | None = Field(
+        default=None,
+        exclude_if=lambda teaches: teaches is None,
+        description="The recipe searching it teaches, by the bionic it builds, such as Aris's "
+        "schematic for the datajack: a searchable's, or a jack's. Left out while it teaches none.",
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _only_searched_things_hold(cls, data: Any) -> Any:
+        if not isinstance(data, dict) or data.get("kind") in HOLDS:
+            return data
+        if data.get("items") or data.get("teaches") is not None:
+            raise ValueError("only a searchable or a jack holds items or teaches a recipe")
+        return data

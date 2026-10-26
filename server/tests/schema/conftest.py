@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import Any
 
 DOOR: dict[str, Any] = {
@@ -13,3 +15,6 @@ COUNTER: dict[str, Any] = {
     "area": {"x": 6, "y": 4, "width": 6, "height": 1},
     "stand": [{"x": 9, "y": 6}],
 }
+SEARCHABLES: list[dict[str, Any]] = json.loads(
+    (Path(__file__).parent / "searchables.json").read_text()
+)

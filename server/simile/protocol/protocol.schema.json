@@ -130,7 +130,7 @@
     },
     "Buyer": {
       "additionalProperties": false,
-      "description": "Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and\nsells with `buy`.",
+      "description": "Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`,\ntreats with `treat`, and sells with `buy`.",
       "properties": {
         "place": {
           "description": "Where: a location id, e.g. \"scrap_stall\" or \"clinic\".",
@@ -193,6 +193,14 @@
             "$ref": "#/$defs/Offer"
           },
           "type": "array"
+        },
+        "treatments": {
+          "default": [],
+          "description": "What it would treat now, by `treat`, whether or not they can pay, each once: patching them up while they're hurt, and each effect they have that it treats. Left out while there's nothing.",
+          "items": {
+            "$ref": "#/$defs/Treatment"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -209,6 +217,7 @@
           "buy": "#/$defs/BuyMessage",
           "eat": "#/$defs/EatMessage",
           "fit": "#/$defs/FitMessage",
+          "kick": "#/$defs/KickMessage",
           "lamp": "#/$defs/LampMessage",
           "list_news": "#/$defs/ListNewsMessage",
           "list_works": "#/$defs/ListWorksMessage",
@@ -220,6 +229,7 @@
           "sell": "#/$defs/SellMessage",
           "sell_part": "#/$defs/SellPartMessage",
           "sell_recipe": "#/$defs/SellRecipeMessage",
+          "treat": "#/$defs/TreatMessage",
           "watch_npc": "#/$defs/WatchNpcMessage"
         },
         "propertyName": "type"
@@ -269,6 +279,12 @@
         },
         {
           "$ref": "#/$defs/BuyMessage"
+        },
+        {
+          "$ref": "#/$defs/TreatMessage"
+        },
+        {
+          "$ref": "#/$defs/KickMessage"
         }
       ]
     },
@@ -394,6 +410,105 @@
       ],
       "title": "ConversationStartedMessage",
       "type": "object"
+    },
+    "Creature": {
+      "additionalProperties": false,
+      "description": "A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking\nkind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one\nroosting the ceiling it hangs from. On a side-view map, it faces right for the eastward\n`facing` values and left for the westward ones.",
+      "properties": {
+        "id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/CreatureKind"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "facing": {
+          "$ref": "#/$defs/Facing"
+        },
+        "state": {
+          "$ref": "#/$defs/CreatureState"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "position",
+        "facing",
+        "state"
+      ],
+      "title": "Creature",
+      "type": "object"
+    },
+    "CreatureGoneMessage": {
+      "additionalProperties": false,
+      "description": "A creature is gone from the world, such as a rat kicked to death.",
+      "properties": {
+        "type": {
+          "const": "creature_gone",
+          "default": "creature_gone",
+          "type": "string"
+        },
+        "creature_id": {
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "creature_id"
+      ],
+      "title": "CreatureGoneMessage",
+      "type": "object"
+    },
+    "CreatureKind": {
+      "description": "What a creature is, named as its figure is in `content/creatures/`: a `rat`, a recycler\n`bot`, a wild `dog` or a `bat`.",
+      "enum": [
+        "rat",
+        "bot",
+        "dog",
+        "bat"
+      ],
+      "title": "CreatureKind",
+      "type": "string"
+    },
+    "CreatureMovedMessage": {
+      "additionalProperties": false,
+      "description": "A creature moved, turned or changed state, or appeared: one the client doesn't have yet is\nnew. On its way somewhere, it's sent as it goes.",
+      "properties": {
+        "type": {
+          "const": "creature_moved",
+          "default": "creature_moved",
+          "type": "string"
+        },
+        "creature": {
+          "$ref": "#/$defs/Creature"
+        }
+      },
+      "required": [
+        "type",
+        "creature"
+      ],
+      "title": "CreatureMovedMessage",
+      "type": "object"
+    },
+    "CreatureState": {
+      "description": "What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a\nbat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or\nfly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.\n`hurt` is just kicked, standing or flying.",
+      "enum": [
+        "idle",
+        "moving",
+        "chasing",
+        "fleeing",
+        "attacking",
+        "roosting",
+        "hurt"
+      ],
+      "title": "CreatureState",
+      "type": "string"
     },
     "EatMessage": {
       "additionalProperties": false,
@@ -816,6 +931,31 @@
       "type": "object"
     },
     "JsonValue": {},
+    "KickMessage": {
+      "additionalProperties": false,
+      "description": "The player kicks, from where the server last kept them. The server decides what it hits.\nIt ignores a kick off a side-view map.",
+      "properties": {
+        "type": {
+          "const": "kick",
+          "default": "kick",
+          "type": "string"
+        },
+        "facing": {
+          "description": "Which way: right or left.",
+          "enum": [
+            "east",
+            "west"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "facing"
+      ],
+      "title": "KickMessage",
+      "type": "object"
+    },
     "LampMessage": {
       "additionalProperties": false,
       "description": "Switches the lamp the player carries on or off. The server ignores it if they carry no\nlamp, and for switching on a flat one.",
@@ -1324,7 +1464,7 @@
     },
     "PickUpMessage": {
       "additionalProperties": false,
-      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer\nclue is found instead, and so is a clue in the jack they stand at, with the datajack.",
+      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer\nclue is found instead, and so is a clue in the jack they stand at, with the datajack.\n\nA searchable thing they stand at, or a jack with the datajack, that they haven't searched is\nsearched before anything else: they learn the recipe it teaches and take what it holds, as\nfrom a pile, and what doesn't fit is left where they stand.",
       "properties": {
         "type": {
           "const": "pick_up",
@@ -1367,7 +1507,7 @@
     },
     "Player": {
       "additionalProperties": false,
-      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health and no effects. Their humanity is derived from the bionics fitted and isn't a\nfield, so the client never sees it.",
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects and nothing searched. Their humanity is derived from the bionics\nfitted and isn't a field, so the client never sees it.",
       "properties": {
         "money": {
           "default": 0.0,
@@ -1448,6 +1588,16 @@
           "description": "What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none.",
           "items": {
             "$ref": "#/$defs/Sale"
+          },
+          "type": "array"
+        },
+        "searched": {
+          "default": [],
+          "description": "The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none.",
+          "items": {
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
           },
           "type": "array"
         }
@@ -1834,6 +1984,8 @@
           "clock": "#/$defs/ClockMessage",
           "conversation_ended": "#/$defs/ConversationEndedMessage",
           "conversation_started": "#/$defs/ConversationStartedMessage",
+          "creature_gone": "#/$defs/CreatureGoneMessage",
+          "creature_moved": "#/$defs/CreatureMovedMessage",
           "entity_moved": "#/$defs/EntityMovedMessage",
           "journal": "#/$defs/JournalMessage",
           "line": "#/$defs/LineMessage",
@@ -1857,6 +2009,12 @@
         },
         {
           "$ref": "#/$defs/EntityMovedMessage"
+        },
+        {
+          "$ref": "#/$defs/CreatureMovedMessage"
+        },
+        {
+          "$ref": "#/$defs/CreatureGoneMessage"
         },
         {
           "$ref": "#/$defs/ConversationStartedMessage"
@@ -1930,6 +2088,14 @@
           "description": "Which of the generated levels in content/street/levels/ this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers.",
           "minimum": 0,
           "type": "integer"
+        },
+        "creatures": {
+          "default": [],
+          "description": "Every creature on every map. The server always sends it, and missing, there are none.",
+          "items": {
+            "$ref": "#/$defs/Creature"
+          },
+          "type": "array"
         }
       },
       "required": [
@@ -1977,6 +2143,67 @@
       ],
       "title": "SourceKind",
       "type": "string"
+    },
+    "TreatMessage": {
+      "additionalProperties": false,
+      "description": "Has the buyer where they stand give a treatment, for its `treatments` price.",
+      "properties": {
+        "type": {
+          "const": "treat",
+          "default": "treat",
+          "type": "string"
+        },
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EffectKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The effect to treat, or null for patching up their health."
+        }
+      },
+      "required": [
+        "type",
+        "effect"
+      ],
+      "title": "TreatMessage",
+      "type": "object"
+    },
+    "Treatment": {
+      "additionalProperties": false,
+      "description": "Something the buyer treats, by `treat`, for its `price`: patching up their health, or an\neffect they have.",
+      "properties": {
+        "effect": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EffectKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The effect it treats, or null for patching up their health to full."
+        },
+        "name": {
+          "description": "The treatment as the player sees it, e.g. \"Patch up\".",
+          "minLength": 1,
+          "type": "string"
+        },
+        "price": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "effect",
+        "name",
+        "price"
+      ],
+      "title": "Treatment",
+      "type": "object"
     },
     "Vital": {
       "description": "What runs out when the player collapses.",

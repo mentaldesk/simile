@@ -9,6 +9,9 @@ from simile.schema import (
     Bionic,
     BodyPart,
     Conversation,
+    CreatureKind,
+    CreatureState,
+    EffectKind,
     Facing,
     Id,
     Item,
@@ -75,10 +78,29 @@ class Entity(Model):
     facing: Facing = Facing.SOUTH_EAST
 
 
+class Creature(Model):
+    """A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking
+    kind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one
+    roosting the ceiling it hangs from. On a side-view map, it faces right for the eastward
+    `facing` values and left for the westward ones."""
+
+    id: Id
+    kind: CreatureKind
+    position: Position
+    facing: Facing
+    state: CreatureState
+
+    @model_validator(mode="after")
+    def _only_bats_roost(self) -> Self:
+        if self.state == CreatureState.ROOSTING and self.kind != CreatureKind.BAT:
+            raise ValueError("only a bat roosts")
+        return self
+
+
 class SnapshotMessage(Model):
     """The whole world, sent on connect. Replaces anything the client had."""
 
-    model_config = ConfigDict(json_schema_extra=_not_required("level"))
+    model_config = ConfigDict(json_schema_extra=_not_required("level", "creatures"))
 
     type: Literal["snapshot"] = "snapshot"
     time: Timestamp = Field(description="Sim time.")
@@ -92,6 +114,11 @@ class SnapshotMessage(Model):
         ge=0,
         description="Which of the generated levels in content/street/levels/ this world plays, "
         "picked by its seed: the maps in `levels/<level>/`, such as the sewers.",
+    )
+    creatures: list[Creature] = Field(
+        default=[],
+        description="Every creature on every map. The server always sends it, and missing, "
+        "there are none.",
     )
 
 
@@ -116,6 +143,21 @@ class EntityMovedMessage(Model):
     position: Position
     pose: Pose = Pose.STANDING
     facing: Facing = Facing.SOUTH_EAST
+
+
+class CreatureMovedMessage(Model):
+    """A creature moved, turned or changed state, or appeared: one the client doesn't have yet is
+    new. On its way somewhere, it's sent as it goes."""
+
+    type: Literal["creature_moved"] = "creature_moved"
+    creature: Creature
+
+
+class CreatureGoneMessage(Model):
+    """A creature is gone from the world, such as a rat kicked to death."""
+
+    type: Literal["creature_gone"] = "creature_gone"
+    creature_id: Id
 
 
 class ConversationStartedMessage(Model):
@@ -322,6 +364,19 @@ class Fitting(Model):
         return self
 
 
+class Treatment(Model):
+    """Something the buyer treats, by `treat`, for its `price`: patching up their health, or an
+    effect they have."""
+
+    effect: EffectKind | None = Field(
+        description="The effect it treats, or null for patching up their health to full."
+    )
+    name: str = Field(
+        min_length=1, description='The treatment as the player sees it, e.g. "Patch up".'
+    )
+    price: float = Field(ge=0, allow_inf_nan=False)
+
+
 class Offer(Model):
     """Something a buyer sells, by `buy`, for its `price`."""
 
@@ -330,8 +385,8 @@ class Offer(Model):
 
 
 class Buyer(Model):
-    """Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and
-    sells with `buy`."""
+    """Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`,
+    treats with `treat`, and sells with `buy`."""
 
     place: Id = Field(description='Where: a location id, e.g. "scrap_stall" or "clinic".')
     name: str = Field(
@@ -367,12 +422,22 @@ class Buyer(Model):
         description="What it sells now, by `buy`, whether or not they can pay, such as what they "
         "sold it, to buy back. Left out while there's nothing.",
     )
+    treatments: list[Treatment] = Field(
+        default=[],
+        exclude_if=lambda treatments: not treatments,
+        description="What it would treat now, by `treat`, whether or not they can pay, each once: "
+        "patching them up while they're hurt, and each effect they have that it treats. Left out "
+        "while there's nothing.",
+    )
 
     @model_validator(mode="after")
-    def _each_bionic_once(self) -> Self:
+    def _each_bionic_and_treatment_once(self) -> Self:
         bionics = [fitting.bionic for fitting in self.fittings]
         if len(set(bionics)) != len(bionics):
             raise ValueError("a buyer offers each bionic once")
+        effects = [treatment.effect for treatment in self.treatments]
+        if len(set(effects)) != len(effects):
+            raise ValueError("a buyer offers each treatment once")
         return self
 
 
@@ -500,7 +565,11 @@ class EatMessage(Model):
 class PickUpMessage(Model):
     """Picks up, from the nearest pile within reach of the player, its money and each item that
     still fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer
-    clue is found instead, and so is a clue in the jack they stand at, with the datajack."""
+    clue is found instead, and so is a clue in the jack they stand at, with the datajack.
+
+    A searchable thing they stand at, or a jack with the datajack, that they haven't searched is
+    searched before anything else: they learn the recipe it teaches and take what it holds, as
+    from a pile, and what doesn't fit is left where they stand."""
 
     type: Literal["pick_up"] = "pick_up"
 
@@ -547,6 +616,23 @@ class SellRecipeMessage(Model):
     recipe: Bionic
 
 
+class TreatMessage(Model):
+    """Has the buyer where they stand give a treatment, for its `treatments` price."""
+
+    type: Literal["treat"] = "treat"
+    effect: EffectKind | None = Field(
+        description="The effect to treat, or null for patching up their health."
+    )
+
+
+class KickMessage(Model):
+    """The player kicks, from where the server last kept them. The server decides what it hits.
+    It ignores a kick off a side-view map."""
+
+    type: Literal["kick"] = "kick"
+    facing: Literal["east", "west"] = Field(description="Which way: right or left.")
+
+
 class BuyMessage(Model):
     """Buys one of something the buyer where they stand sells, `player_state`'s `buyer`'s
     `stock`, at its price."""
@@ -559,6 +645,8 @@ type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
     | EntityMovedMessage
+    | CreatureMovedMessage
+    | CreatureGoneMessage
     | ConversationStartedMessage
     | ConversationEndedMessage
     | LineMessage
@@ -588,7 +676,9 @@ type ClientMessage = Annotated[
     | SellPartMessage
     | FitMessage
     | SellRecipeMessage
-    | BuyMessage,
+    | BuyMessage
+    | TreatMessage
+    | KickMessage,
     Field(discriminator="type"),
 ]
 

@@ -178,5 +178,26 @@
         "price": 5.0
       }
     ]
+  },
+  {
+    "money": 3.0,
+    "items": [
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.8, "on": false},
+      {"id": "usb_c_connector", "kind": "part", "name": "USB-C connector", "weight": 0.1, "charge": null, "on": null},
+      {"id": "copper_wire", "kind": "part", "name": "Copper wire", "weight": 0.2, "charge": null, "on": null}
+    ],
+    "carry_limit": 10.0,
+    "body": {
+      "legs": "present",
+      "vertebra": "present",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "sold",
+      "right_kidney": "present",
+      "stomach": "power_cell"
+    },
+    "mind": {"recipes": ["power_cell", "datajack"]},
+    "hunger": 0.3,
+    "searched": ["maker_space_drawers", "aris_bench", "metro_vending_machine"]
   }
 ]

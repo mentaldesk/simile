@@ -22,10 +22,10 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`
-  and `sales`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a buyer's
-  `parts`, `fittings`, `recipes` and `stock`, and `player_state`'s `meal`, `buyer`, `piles` and
-  `recipes`, below.
+  `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`,
+  `sales` and `searched`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
+  buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, and `player_state`'s `meal`,
+  `buyer`, `piles` and `recipes`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -59,15 +59,23 @@ interiors' ids; this document says where.
 - The maps aren't sent: the client bundles the village and its interiors as Tiled maps. F2's
   `Door` and `Interactable` in `server/simile/schema/world.py` describe their doors and the things
   you can use inside, and a `Location` says which map it's on. Interactable ids go over the wire
-  only in [`paintings`](#paintings).
-  - An `Interactable`'s `kind` is `"counter"`, `"painting"`, `"machine"`, `"plug"` or `"jack"`. A
-    plug charges the player's lamp, on or off, while they stand on one of its `stand` tiles, so the
-    client finds the plugs, and whether the lamp is charging, from the maps.
+  only in [`paintings`](#paintings) and the player's `searched`.
+  - An `Interactable`'s `kind` is `"counter"`, `"painting"`, `"machine"`, `"plug"`, `"jack"` or
+    `"searchable"`. A plug charges the player's lamp, on or off, while they stand on one of its
+    `stand` tiles, so the client finds the plugs, and whether the lamp is charging, from the maps.
   - A jack is a machine only the datajack works, such as the metro's dead terminal and its
     maintenance lift. With the datajack fitted (`player_state`'s `body`), E at one sends
     [`pick_up`](#pick_up), which finds the clue it holds, if any. A link ending on one of its
     `stand` tiles, like the lift's down to the sewers, is taken only with the datajack. Without
     one the jack is dead: the client says so, and offers no link from it.
+  - A searchable thing is a piece of furniture or a dead appliance, such as the maker space's
+    drawers or a dead fridge in the metro, searched once for what it holds. Its `items` are what
+    searching it finds, and `teaches` is the recipe it teaches, by the `Bionic` it builds, such as
+    Aris's schematic on her bench for the datajack. A jack can hold and teach too, such as the
+    sewers' security terminal with the infrared eye's recipe, searched only with the datajack.
+    Either may be empty, a thing with nothing in it. Each is left out while it's empty, and no
+    other kind holds or teaches anything. E at one sends [`pick_up`](#pick_up), and the player's
+    `searched` says which they've searched, so the client can tell what's left, from the maps.
   - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
     door. A door joins a street or the village (`outside`) and a building's ground floor
     (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
@@ -98,6 +106,25 @@ client replaces whatever it had.
 | `entities` | `Entity[]` | Every NPC and the player: `id`, `kind` (`"npc"` or `"player"`), `name`, `position`, `pose` and `facing`. Each position has its own `map`. The player's can be mid-air, where a jump or a fall was when the server last heard (see [`player_move`](#player_move)). |
 | `conversations` | `Conversation[]` | Conversations still going on, with their lines so far (F2 `Conversation`). |
 | `level` | number | Which of the generated levels in `content/street/levels/` this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers. The client bundles every level and plays this one's maps. The server always sends it; missing, it's 0. |
+| `creatures` | `Creature[]` | Every creature on every map. The server always sends it; missing, there are none. |
+
+A `Creature` is one of the tunnels' dangers, which the sim runs and the client draws and animates.
+It has its `id`; its `kind`, named as its figure is in `content/creatures/`: `"rat"`, `"bot"` (a
+recycler bot), `"dog"` (a wild dog) or `"bat"`; its `position`, with its `map`; its `facing`, which
+on a side-view map draws it facing right for the eastward values and left for the westward ones;
+and its `state`, what it's doing, which picks the pose its figure plays:
+
+| `state` | Pose |
+|---|---|
+| `"idle"` | `stand`, or for a bat `fly`, on the spot. |
+| `"moving"`, `"chasing"`, `"fleeing"` | Its kind's cycle: `walk` for rats and bots, `run` for dogs, `fly` for bats. |
+| `"attacking"` | `attack`. |
+| `"roosting"` | `roost`, hanging from the ceiling. Only a bat roosts. |
+| `"hurt"` | Just kicked: `stand`, or for a bat `fly`. |
+
+A walking kind's position is the ground under it, its figure's anchor, and a bat's is the middle of
+it in the air, or the ceiling it hangs from while it roosts. How a creature moves, its health and
+what it does on contact stay on the server.
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one
@@ -129,6 +156,17 @@ On a side-view map:
   then arrives on the other map as through a door.
 - The client finds the link from that end tile, which no other link shares, and plays a climb or
   a ride by its `kind`.
+
+### `creature_moved`
+
+`creature`: a `Creature`, all of it, as in the [`snapshot`](#snapshot). The server sends it as a
+creature moves, turns or changes state. One the client doesn't have yet has just appeared, and the
+client adds it.
+
+### `creature_gone`
+
+`creature_id`: a creature that's gone from the world, such as a rat kicked to death. The client
+removes it.
 
 ### `conversation_started`
 
@@ -243,6 +281,7 @@ change is sent at once. Clients that predate it ignore it.
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
 | `taken` | object | When they last took from each pickup in the world, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 | `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
+| `searched` | `string[]` | The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none. |
 
 Power is what hunger becomes once the power cell is fitted, but it's a field of its own rather than
 hunger read the other way. It runs from full to flat like the lamp's `charge`, and charges at a
@@ -289,6 +328,11 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
 - `recipes`: what it pays for each recipe they know that it would buy now, keyed by the `Bionic`
   it builds, which they sell with [`sell_recipe`](#sell_recipe): `{"datajack": 40}`. It buys each
   recipe once. It's left out while it would buy none.
+- `treatments`: what it would treat now, whether or not they can pay, each once, which they pay for
+  with [`treat`](#treat): patching them up while they're hurt, and each effect they have that it
+  treats. It's left out while there's nothing. A `Treatment` has its `effect`, the `EffectKind` it
+  treats, or `null` for patching up their health to full; its `name`, as the player sees it, such
+  as `"Patch up"`; and its `price`.
 
 And any buyer may sell:
 
@@ -356,9 +400,9 @@ The player's state is saved with the world. A save from before it loads with the
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere, nothing
 taken and nothing known. A save from before the stomach, the feet and the mind loads with them
 still their own and knowing nothing, and one from before vitals loads at full power and health,
-with no effects and nothing to buy back. Their humanity is part of it on the server, derived from the
-bionics fitted (`Player.humanity`), but it's never sent: the player sees it only in how residents
-treat them.
+with no effects and nothing to buy back. One from before searching has searched nothing. Their
+humanity is part of it on the server, derived from the bionics fitted (`Player.humanity`), but it's
+never sent: the player sees it only in how residents treat them.
 
 ### `player_collapsed`
 
@@ -482,6 +526,13 @@ in a jack whose `stand` tile they're on, with the datajack fitted. The nearer of
 is taken, the pile if they're as near. A clue found writes each fact in it to the journal, and the
 server sends the [`journal`](#journal) that follows rather than a `player_state`.
 
+And it searches (P3): a searchable thing whose `stand` tile the player is on, or a jack with the
+datajack fitted, that isn't in their `searched` yet, before any pile or clue. They learn the recipe
+it `teaches`, if it's new to them, and take its `items` as from a pile. What doesn't fit under their
+carry limit is left where they stand, a new `Pile` at the end of their `left`. It's in their
+`searched` from then on, even if it held nothing, and the server sends the
+[`player_state`](#player_state) that follows. The client knows what it held from the maps.
+
 ### `sell`
 
 `item`: one thing the player carries, by its `id`, or `null` for everything they carry that the
@@ -528,6 +579,21 @@ there's no buyer, and one for a recipe the buyer won't buy, which includes any t
 their `money`, and carry it from then on. The server sends the [`player_state`](#player_state) that
 follows. It ignores a `buy` where there's no buyer, for something not in its `stock`, one they
 can't pay for, and one that won't fit under their carry limit.
+
+### `treat`
+
+`effect`: one of the treatments the buyer where they stand gives, by `player_state`'s
+[`buyer`](#player_state)'s `treatments`: an `EffectKind` to treat, or `null` to be patched up. They
+pay its `price` from their `money`. The server sends the [`player_state`](#player_state) that
+follows. It ignores a `treat` where there's no buyer, for a treatment it doesn't give now, and one
+they can't pay for.
+
+### `kick`
+
+`facing`: `"east"` to kick right, or `"west"` to kick left. The player kicks from where the server
+last kept them ([`player_move`](#player_move)), and the server decides what it hits, as it runs the
+creatures: a creature it hurts changes `state`, in a [`creature_moved`](#creature_moved), or is
+gone, in a [`creature_gone`](#creature_gone). The client plays the kick itself. The server ignores a `kick` off a side-view map.
 
 ### `watch_npc`
 

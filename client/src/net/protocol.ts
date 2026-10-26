@@ -6,6 +6,8 @@ export type ServerMessage =
   | SnapshotMessage
   | ClockMessage
   | EntityMovedMessage
+  | CreatureMovedMessage
+  | CreatureGoneMessage
   | ConversationStartedMessage
   | ConversationEndedMessage
   | LineMessage
@@ -31,6 +33,19 @@ export type Pose =
  */
 export type Facing =
   'east' | 'south_east' | 'south' | 'south_west' | 'west' | 'north_west' | 'north' | 'north_east';
+/**
+ * What a creature is, named as its figure is in `content/creatures/`: a `rat`, a recycler
+ * `bot`, a wild `dog` or a `bat`.
+ */
+export type CreatureKind = 'rat' | 'bot' | 'dog' | 'bat';
+/**
+ * What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a
+ * bat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or
+ * fly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.
+ * `hurt` is just kicked, standing or flying.
+ */
+export type CreatureState =
+  'idle' | 'moving' | 'chasing' | 'fleeing' | 'attacking' | 'roosting' | 'hurt';
 export type JsonValue = unknown;
 /**
  * The way a wall faces. The iso camera sees only south and east faces, and a side-view map
@@ -99,7 +114,9 @@ export type ClientMessage =
   | SellPartMessage
   | FitMessage
   | SellRecipeMessage
-  | BuyMessage;
+  | BuyMessage
+  | TreatMessage
+  | KickMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -123,6 +140,10 @@ export interface SnapshotMessage {
    * Which of the generated levels in content/street/levels/ this world plays, picked by its seed: the maps in `levels/<level>/`, such as the sewers.
    */
   level?: number;
+  /**
+   * Every creature on every map. The server always sends it, and missing, there are none.
+   */
+  creatures?: Creature[];
 }
 /**
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
@@ -179,6 +200,19 @@ export interface Line {
   duration: number;
 }
 /**
+ * A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking
+ * kind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one
+ * roosting the ceiling it hangs from. On a side-view map, it faces right for the eastward
+ * `facing` values and left for the westward ones.
+ */
+export interface Creature {
+  id: string;
+  kind: CreatureKind;
+  position: Position;
+  facing: Facing;
+  state: CreatureState;
+}
+/**
  * The sim clock, sent after the snapshot, when the speed changes and every sim minute.
  */
 export interface ClockMessage {
@@ -204,6 +238,21 @@ export interface EntityMovedMessage {
   position: Position;
   pose?: Pose;
   facing?: Facing;
+}
+/**
+ * A creature moved, turned or changed state, or appeared: one the client doesn't have yet is
+ * new. On its way somewhere, it's sent as it goes.
+ */
+export interface CreatureMovedMessage {
+  type: 'creature_moved';
+  creature: Creature;
+}
+/**
+ * A creature is gone from the world, such as a rat kicked to death.
+ */
+export interface CreatureGoneMessage {
+  type: 'creature_gone';
+  creature_id: string;
 }
 export interface ConversationStartedMessage {
   type: 'conversation_started';
@@ -440,8 +489,8 @@ export interface PlayerStateMessage {
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
  * a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
- * full health and no effects. Their humanity is derived from the bionics fitted and isn't a
- * field, so the client never sees it.
+ * full health, no effects and nothing searched. Their humanity is derived from the bionics
+ * fitted and isn't a field, so the client never sees it.
  */
 export interface Player {
   /**
@@ -488,6 +537,10 @@ export interface Player {
    * What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none.
    */
   sales?: Sale[];
+  /**
+   * The searchable things and jacks they've searched, by interactable id, in the order they searched them. Each is searched once, and holds nothing after. Left out while there's none.
+   */
+  searched?: string[];
 }
 /**
  * Something the player carries.
@@ -648,8 +701,8 @@ export interface Meal {
   price: number;
 }
 /**
- * Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and
- * sells with `buy`.
+ * Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`,
+ * treats with `treat`, and sells with `buy`.
  */
 export interface Buyer {
   /**
@@ -686,6 +739,10 @@ export interface Buyer {
    * What it sells now, by `buy`, whether or not they can pay, such as what they sold it, to buy back. Left out while there's nothing.
    */
   stock?: Offer[];
+  /**
+   * What it would treat now, by `treat`, whether or not they can pay, each once: patching them up while they're hurt, and each effect they have that it treats. Left out while there's nothing.
+   */
+  treatments?: Treatment[];
 }
 /**
  * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.
@@ -709,6 +766,21 @@ export interface Fitting {
  */
 export interface Offer {
   item: Item;
+  price: number;
+}
+/**
+ * Something the buyer treats, by `treat`, for its `price`: patching up their health, or an
+ * effect they have.
+ */
+export interface Treatment {
+  /**
+   * The effect it treats, or null for patching up their health to full.
+   */
+  effect: EffectKind | null;
+  /**
+   * The treatment as the player sees it, e.g. "Patch up".
+   */
+  name: string;
   price: number;
 }
 /**
@@ -848,6 +920,10 @@ export interface EatMessage {
  * Picks up, from the nearest pile within reach of the player, its money and each item that
  * still fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer
  * clue is found instead, and so is a clue in the jack they stand at, with the datajack.
+ *
+ * A searchable thing they stand at, or a jack with the datajack, that they haven't searched is
+ * searched before anything else: they learn the recipe it teaches and take what it holds, as
+ * from a pile, and what doesn't fit is left where they stand.
  */
 export interface PickUpMessage {
   type: 'pick_up';
@@ -904,4 +980,25 @@ export interface BuyMessage {
    * What they buy, by its `id`: the first of that id in `stock`.
    */
   item: string;
+}
+/**
+ * Has the buyer where they stand give a treatment, for its `treatments` price.
+ */
+export interface TreatMessage {
+  type: 'treat';
+  /**
+   * The effect to treat, or null for patching up their health.
+   */
+  effect: EffectKind | null;
+}
+/**
+ * The player kicks, from where the server last kept them. The server decides what it hits.
+ * It ignores a kick off a side-view map.
+ */
+export interface KickMessage {
+  type: 'kick';
+  /**
+   * Which way: right or left.
+   */
+  facing: 'east' | 'west';
 }
