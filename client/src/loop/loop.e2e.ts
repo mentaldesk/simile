@@ -206,11 +206,11 @@ const hatch: Beat = async (page, saved, shot) => {
 
 const eye: Beat = async (page, saved, shot) => {
   const { name } = saved.attacker!;
-  const talk = `E: talk to ${name}`;
+  const talk = `T: talk to ${name}`;
   const label = () => page.$eval('.dialogue-target-name', (tag) => tag.ariaLabel).catch(() => null);
   await awaitServer(page, async () => (await label()) === talk, `${talk} showing`);
-  await page.keyboard.press('e');
-  await until(page, async () => !!(await shown(page, '.dialogue-chat'))?.includes(name), 3, 'E opening the chat');
+  await page.keyboard.press('t');
+  await until(page, async () => !!(await shown(page, '.dialogue-chat'))?.includes(name), 3, 'T opening the chat');
   await page.keyboard.type(QUESTION);
   await page.keyboard.press('Enter');
   const flushed = async () => (await page.$$eval('.dialogue-bubble-flushed', (all) => all.map((bubble) => bubble.textContent ?? ''))).some((text) => text.includes(saved.alibi!));

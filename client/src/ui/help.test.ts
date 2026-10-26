@@ -29,18 +29,25 @@ describe('HelpPanel', () => {
     ]);
     expect(rows).toEqual(CONTROLS.map(([keys, what]) => [keys, what]));
     expect(rows.map(([keys]) => (keys as string[]).join(' '))).toEqual(
-      expect.arrayContaining(['← → A D', 'Shift', 'Space', '↑ W', '↓ S', 'E', 'Enter', 'Tab', 'Esc', '?']),
+      expect.arrayContaining(['← → A D', 'Shift', 'Space', '↑ W', '↓ S', 'E', 'T', 'V', 'Enter', 'Tab', 'Esc', '?']),
     );
   });
 
   it('gives doors to E, and stairs, ladders and the lift to the arrows', () => {
     const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
-    expect(what.E).toMatch(/door.*talk to the ringed resident/);
+    expect(what.E).toMatch(/door/);
     expect(what['↑']).toMatch(/upstairs.*ladder.*lift up/);
     expect(what['↓']).toMatch(/downstairs.*ladder.*lift down/);
     expect(what['↑']).not.toMatch(/door/);
     expect(what.Shift).toMatch(/switch between walking and running/);
     expect(what.Space).toMatch(/jump/);
+  });
+
+  it('gives talking to T and looking at art to V, never to E', () => {
+    const what = Object.fromEntries(CONTROLS.map(([keys, does]) => [keys[0], does]));
+    expect(what.T).toBe('talk to the ringed resident');
+    expect(what.V).toMatch(/look at a mural or a painting/);
+    expect(what.E).not.toMatch(/talk|mural|painting/);
   });
 
   it('gives the lamp to L', () => {

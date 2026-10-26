@@ -2,12 +2,12 @@ import type { Position, Wall } from '../net';
 import { muralView, wallNear, type MuralView, type MuralWalls } from '../world/murals';
 import type { Point } from '../world/view';
 import { callCue } from './call-cue';
-import { pressedNewsKey } from './keys';
+import { pressedViewKey } from './keys';
 import './mural-panel.css';
 import { tilesApart } from './side-view';
-import { NEWS_KEY } from './tuning';
+import { VIEW_KEY } from './tuning';
 
-const KEY = NEWS_KEY.toUpperCase();
+const KEY = VIEW_KEY.toUpperCase();
 
 /** How far the player can walk from where they opened a mural's panel, out of its wall's reach. */
 const STAY_TILES = 1;
@@ -52,7 +52,7 @@ export class MuralPanel {
 
     this.panel.addEventListener('keydown', (event) => {
       event.stopPropagation();
-      if (event.key === 'Escape' || pressedNewsKey(event)) {
+      if (event.key === 'Escape' || pressedViewKey(event)) {
         event.preventDefault();
         this.close();
       }

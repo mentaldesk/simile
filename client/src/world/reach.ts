@@ -9,7 +9,7 @@ import { muralView, muralWalls, tilesToWall, wallNear } from './murals';
 import { searches } from './searchables';
 import { terminalAt, terminalsOn, type Terminal } from './terminals';
 
-/** Something E uses, `tiles` along the street from the player. */
+/** Something E uses, or V looks at, `tiles` along the street from the player. */
 export type Reachable =
   | { kind: 'terminal'; tiles: number; terminal: Terminal }
   | { kind: 'counter' | 'painting' | 'jack' | 'searchable'; tiles: number; interactable: Interactable }
@@ -67,7 +67,7 @@ const isUsed = (kind: string): kind is 'counter' | 'painting' | 'jack' =>
 /** A jack is used with E, unless it works and a link leaves from it, which E takes instead. */
 const opens = (from: Reachables, jack: Interactable) => !!from.jacked?.() && !!from.leadsAway?.(jack);
 
-/** What E can use where the player stands, nearest first. */
+/** What E can use or V look at where the player stands, nearest first. */
 export function inReach(position: Position | undefined, from: Reachables = reachables): Reachable[] {
   if (!position) return [];
   const along = position.x + 0.5;
@@ -96,9 +96,15 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 
+const looked = (reachable: Reachable) => reachable.kind === 'mural' || reachable.kind === 'painting';
+
 /** What E uses: a door only when there's nothing. */
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
-  inReach(position, from)[0];
+  inReach(position, from).find((reachable) => !looked(reachable));
+
+/** The mural or painting V looks at. */
+export const lookedAtByV = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
+  inReach(position, from).find(looked);
 
 /** The keys that take a door, stairs, a ladder or the lift, what it does, and a game-canvas point just above it. */
 export type WayPrompt = { keys: readonly string[]; action: string; x: number; y: number };

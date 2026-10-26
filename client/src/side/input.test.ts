@@ -55,30 +55,16 @@ describe('readControls', () => {
     expect(controls).toEqual({ x: -1, y: -1, use: false, eTaken: false, run: true, jump: true, hold: true });
   });
 
-  it('leaves E to the mural by house 10’s door, so one press doesn’t also go in', () => {
-    const { controls, door } = frame(DOORSTEP, {}, true);
-
-    expect(controls).toMatchObject({ use: false, eTaken: true });
-    expect(door).toBeUndefined();
-  });
-
-  it('takes house 10’s door with up instead, while the mural has E', () => {
-    expect(frame(DOORSTEP, { up: true }, false).door?.id).toBe('house_10');
-  });
-
-  it('leaves E to the mural at the passage to the High Street too', () => {
-    expect(frame(PASSAGE, {}, true).door).toBeUndefined();
-    expect(frame(PASSAGE, { up: true }, false).door?.to.map).toBe('high_street');
-  });
-
-  it('takes the door with E once nothing is in reach, and not with up', () => {
-    server.dispatch(JSON.stringify({ type: 'murals', walls: [] }));
-
+  it('takes house 10’s door with E though its mural is beside it, and not with up', () => {
     const { controls, door } = frame(DOORSTEP, {}, true);
 
     expect(controls).toMatchObject({ use: true, eTaken: false });
     expect(door?.id).toBe('house_10');
     expect(frame(DOORSTEP, { up: true }, false).door).toBeUndefined();
+  });
+
+  it('takes the passage to the High Street with E beside the mural too', () => {
+    expect(frame(PASSAGE, {}, true).door?.to.map).toBe('high_street');
   });
 });
 

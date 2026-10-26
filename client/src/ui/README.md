@@ -5,7 +5,7 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a speech bubble over each speaker within earshot, for the line's `duration`, fainter the further
   away they are, except in the player's own conversation, whose lines always show in full;
 - a ring and name tag on the NPC the player will talk to (see *Choosing who to talk to*);
-- a chat box: Enter opens it to that NPC, Enter sends `player_say`, Esc closes;
+- a chat box: T or Enter opens it to that NPC, Enter sends `player_say`, Esc closes;
 - an ellipsis over the NPC while they write their reply, until a line of theirs arrives or the
   conversation ends;
 - a hint when an NPC starts a conversation with the player: "Mei wants to talk. Press Enter to
@@ -78,12 +78,12 @@ input, so the player doesn't walk while reading, and it ignores `news` and `work
 
 The side scene paints murals on the buildings' fronts ([`side/`](../side/README.md)). Within
 `MURAL_REACH_TILES` (3) along the street of either end of a painted wall, since every wall faces the
-camera, a hint says "Press E to look at “<title>”", and E opens the mural panel: the picture, its
+camera, a hint says "Press V to look at “<title>”", and V opens the mural panel: the picture, its
 title, the artist and their statement.
-Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or E
+Clicking a mural opens it too, from anywhere it's on screen, unless the click picks an NPC. Esc or V
 closes it, and so does walking off: out of the wall's reach and more than a tile from where the
-panel opened. At a terminal E opens the news instead, and only one of the two panels is open at a
-time. If the wall is painted over while the panel is open it shows the new mural, and if the wall
+panel opened. The hint gives way to anything E uses in reach, and only one of the mural and news
+panels is open at a time. If the wall is painted over while the panel is open it shows the new mural, and if the wall
 goes blank it closes. The panel keeps its key-downs from `window`, like the news panel, and sends
 nothing: the server notices a player near a mural itself.
 
@@ -218,15 +218,16 @@ The side walk opens it on C and goes through its tabs.
 
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, F, J, C, ?) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, T, V, F, J, C, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a painting (the gallery panel's), a mural, a pile, the clinic, a buyer
-they can sell to, or a clue. The world scene takes a door on E only when none is, so one press never does two things, and
-then up takes the door. With neither, E opens the chat to the ringed NPC, as Enter does, and their
-name tag says so: "E: talk to Lachlan" (`eUse` in [`keys.ts`](keys.ts)). Stairs, ladders and the
+a terminal, the counter, a pile, the clinic, a buyer they can sell to, or a clue. The world scene
+takes a door on E only when none is, so one press never does two things, and then up takes the door.
+E never talks to anyone, so a resident by a door doesn't stand in the way: T opens the chat to the
+ringed NPC, as Enter does, and their name tag says so: "T: talk to Lachlan". V looks at a mural or
+a painting (`lookedAtByV`), so neither takes E from a door beside it. Stairs, ladders and the
 lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
 takes from where the player stands names the keys and what it does: "E: go in", "↑: upstairs",
 "↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). With

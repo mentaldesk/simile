@@ -1,27 +1,18 @@
-import type { Reachable, WayPrompt } from '../world/reach';
 import type { CharacterPanel } from './character-panel';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
 import type { JournalPanel } from './journal-panel';
-import { CHARACTER_KEY, EAT_KEY, JOURNAL_KEY, NEWS_KEY } from './tuning';
+import { CHARACTER_KEY, EAT_KEY, JOURNAL_KEY, NEWS_KEY, TALK_KEY, VIEW_KEY } from './tuning';
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
   use: () => void;
+  view: () => void;
   eat: () => void;
   help: Pick<HelpPanel, 'toggle' | 'close'>;
   journal: Pick<JournalPanel, 'toggle' | 'close'>;
   character: Pick<CharacterPanel, 'toggle' | 'close'>;
 };
-
-export type EUse = { kind: 'reach'; reachable: Reachable } | { kind: 'door' } | { kind: 'talk'; npcId: string };
-
-/** What E does: uses the nearest thing in reach, else the world scene takes a door, else talks to the ringed resident. */
-export function eUse(reachable: Reachable | undefined, ways: readonly WayPrompt[], ringed: string | undefined): EUse | undefined {
-  if (reachable) return { kind: 'reach', reachable };
-  if (ways.some(({ keys }) => keys.includes('E'))) return { kind: 'door' };
-  return ringed === undefined ? undefined : { kind: 'talk', npcId: ringed };
-}
 
 /** Whether nothing on the page has focus, so a key is the game's and not a link's or a field's. */
 export function unfocused({ target }: Event): boolean {
@@ -30,7 +21,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, use, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, use, view, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -51,9 +42,16 @@ export function onGameKey({ chat, use, eat, help, journal, character }: GameKeys
     } else if (key === 'Tab') {
       event.preventDefault();
       chat.cycle(event.shiftKey ? -1 : 1);
+    } else if (pressed(event, TALK_KEY)) {
+      // Otherwise the T reaches the chat box once it has focus.
+      event.preventDefault();
+      chat.open();
     } else if (pressedNewsKey(event)) {
       event.preventDefault();
       use();
+    } else if (pressedViewKey(event)) {
+      event.preventDefault();
+      view();
     } else if (pressed(event, EAT_KEY)) {
       event.preventDefault();
       eat();
@@ -73,6 +71,10 @@ export function onGameKey({ chat, use, eat, help, journal, character }: GameKeys
 
 export function pressedNewsKey(event: KeyboardEvent): boolean {
   return pressed(event, NEWS_KEY);
+}
+
+export function pressedViewKey(event: KeyboardEvent): boolean {
+  return pressed(event, VIEW_KEY);
 }
 
 function pressed({ key, repeat, ctrlKey, metaKey, altKey }: KeyboardEvent, letter: string): boolean {

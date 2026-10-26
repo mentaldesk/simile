@@ -5,7 +5,7 @@ import type { Interactable } from '../world/interactables';
 import { deadJack, jacked } from '../world/jacks';
 import { muralWalls } from '../world/murals';
 import { foundIn } from '../world/searchables';
-import { usedByE, wayPrompts, type Reachable } from '../world/reach';
+import { lookedAtByV, usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { callCue } from './call-cue';
 import { CharacterPanel } from './character-panel';
@@ -17,7 +17,7 @@ import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
-import { eUse, onGameKey } from './keys';
+import { onGameKey } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -89,7 +89,7 @@ export class DialogueScene extends Phaser.Scene {
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
     const character = (this.character = new CharacterPanel(this.root));
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal, character });
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -126,7 +126,7 @@ export class DialogueScene extends Phaser.Scene {
     const atTerminal = used?.kind === 'terminal';
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
-    this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
+    this.murals.update(player, !used && lookedAtByV(player)?.kind === 'mural' && !this.news.isOpen);
     const prompted = used?.kind === 'counter' || used?.kind === 'jack' || used?.kind === 'searchable';
     const counter = prompted ? used.interactable : undefined;
     this.counter.update(counter, !this.chat.isOpen);
@@ -139,27 +139,32 @@ export class DialogueScene extends Phaser.Scene {
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
-    const target = this.targets.current();
-    const talks = !panelOpen && !this.chat.isOpen && eUse(used, ways, target)?.kind === 'talk';
-    this.marker.render(target, view, (id) => dialogue.nameOf(id), talks);
+    const talks = !panelOpen && !this.chat.isOpen;
+    this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id), talks);
   }
 
   private pressE(): void {
     const used = usedByE(this.player());
-    const e = eUse(used, wayPrompts(used !== undefined), this.targets.current());
-    if (e?.kind === 'reach') this.use(e.reachable);
-    else if (e?.kind === 'talk') this.chat.open();
+    if (used) this.use(used);
   }
 
-  /** E uses the nearest thing in reach; the gallery scene looks at paintings. */
+  /** V looks at the mural in reach; the gallery scene looks at paintings. */
+  private view(): void {
+    const player = this.player();
+    if (lookedAtByV(player)?.kind !== 'mural') return;
+    this.character.close();
+    this.news.close();
+    this.murals.look(player);
+  }
+
+  /** E uses the nearest thing in reach. */
   private use(used: Reachable | undefined): void {
     this.character.close();
     if (used?.kind === 'counter') this.order(used.interactable);
     else if (used?.kind === 'terminal') {
       this.murals.close();
       this.news.open(used.terminal.label);
-    } else if (used?.kind === 'mural') this.murals.look(this.player());
-    else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
+    } else if (used?.kind === 'pile') server.send({ type: 'pick_up' });
     else if (used?.kind === 'buyer') server.send({ type: 'sell', item: null });
     else if (used?.kind === 'clue') lookAtClue((message) => server.send(message), this.journal, this.help);
     else if (used?.kind === 'jack') this.useJack(used.interactable);

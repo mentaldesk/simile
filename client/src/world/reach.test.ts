@@ -3,7 +3,7 @@ import { server, type Pile, type Wall } from '../net';
 import { interactableAt } from './interactables';
 import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
-import { inReach, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
+import { inReach, lookedAtByV, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -30,34 +30,38 @@ const at = (map: string, x: number, y = 15) => ({ x, y, map });
 afterEach(() => server.dispatch(JSON.stringify({ type: 'murals', walls: [] })));
 
 describe('usedByE', () => {
-  it('uses the terminal, counter or painting frame the player is at', () => {
+  it('uses the terminal or counter the player is at', () => {
     expect(usedByE(at('high_street', 60))).toMatchObject({ kind: 'terminal', terminal: { id: 'terminal_1' } });
     expect(usedByE(at('banyan_row', 60, 18))).toMatchObject({ kind: 'terminal', terminal: { id: 'terminal_3' } });
     expect(usedByE(at('coffee_shop_floor_0', 6, 2))).toMatchObject({
       kind: 'counter',
       interactable: { id: 'coffee_shop_counter' },
     });
-    expect(usedByE(at('gallery_floor_1', 14, 2))).toMatchObject({
-      kind: 'painting',
-      interactable: { id: 'painting_8' },
-    });
   });
 
-  it('uses nothing at a machine, at a plain door or nowhere', () => {
+  it('uses nothing at a machine, a painting frame, a plain door or nowhere', () => {
+    expect(usedByE(at('gallery_floor_1', 14, 2))).toBeUndefined();
     expect(usedByE(at('maker_space_floor_0', 8, 2))).toBeUndefined();
     expect(usedByE(at('high_street', 43))).toBeUndefined();
     expect(usedByE(at('gallery_floor_1', 15, 2))).toBeUndefined();
     expect(usedByE(undefined)).toBeUndefined();
   });
 
-  it('looks at the mural by house 10’s door, rather than going in, once murals are drawn', () => {
+  it('leaves the painting frame the player is at to V', () => {
+    expect(lookedAtByV(at('gallery_floor_1', 14, 2))).toMatchObject({ kind: 'painting', interactable: { id: 'painting_8' } });
+    expect(lookedAtByV(at('gallery_floor_1', 15, 2))).toBeUndefined();
+  });
+
+  it('leaves the door by house 10’s mural to E, and the mural to V, once murals are drawn', () => {
     server.dispatch(JSON.stringify({ type: 'murals', walls: [HOUSE_10] }));
-    expect(usedByE(at('banyan_row', 17))).toBeUndefined();
+    expect(lookedAtByV(at('banyan_row', 17))).toBeUndefined();
 
     const unset = setMuralView({ wallAt: () => undefined });
-    expect(usedByE(at('banyan_row', 17))).toMatchObject({ kind: 'mural', tiles: 1.5, wall: HOUSE_10 });
-    expect(usedByE(at('banyan_row', 24))).toMatchObject({ kind: 'mural', wall: HOUSE_10 });
-    expect(usedByE(at('banyan_row', 10))).toBeUndefined();
+    expect(usedByE(at('banyan_row', 17))).toBeUndefined();
+    expect(usedByE(at('banyan_row', 24))).toBeUndefined();
+    expect(lookedAtByV(at('banyan_row', 17))).toMatchObject({ kind: 'mural', tiles: 1.5, wall: HOUSE_10 });
+    expect(lookedAtByV(at('banyan_row', 24))).toMatchObject({ kind: 'mural', wall: HOUSE_10 });
+    expect(lookedAtByV(at('banyan_row', 10))).toBeUndefined();
     expect(muralWalls.walls).toEqual([HOUSE_10]);
     unset();
   });

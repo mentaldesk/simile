@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import type { Position } from '../net';
 import { interactableAt } from '../world/interactables';
 import { galleryFrames } from '../world/paintings';
-import { usedByE } from '../world/reach';
+import { lookedAtByV } from '../world/reach';
 import './dialogue.css';
 import { GalleryPanel } from './gallery-panel';
-import { pressedNewsKey, unfocused } from './keys';
+import { pressedViewKey, unfocused } from './keys';
 import { fitOverlay } from './overlay';
 import { PLAYER_ID, worldView } from './world-view';
 
@@ -24,9 +24,9 @@ export class GalleryScene extends Phaser.Scene {
     this.root.className = 'dialogue';
     this.panel = new GalleryPanel(this.root, galleryFrames, interactableAt);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!unfocused(event) || !pressedNewsKey(event)) return;
+      if (!unfocused(event) || !pressedViewKey(event)) return;
       const player = this.player();
-      if (usedByE(player)?.kind === 'painting' && this.panel.look(player)) event.preventDefault();
+      if (lookedAtByV(player)?.kind === 'painting' && this.panel.look(player)) event.preventDefault();
     };
     window.addEventListener('keydown', onKeyDown);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
