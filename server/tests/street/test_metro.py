@@ -7,7 +7,7 @@ import pytest
 
 from simile.behaviour.scoring import Places
 from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
-from simile.street.jump import GRADES, JUMP, NEEDS, OWN_JUMP, Jump, meets
+from simile.street.jump import FEET, GRADES, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
     ALCOVE_SECRET,
     ARRIVAL,
@@ -18,8 +18,8 @@ from simile.street.metro import (
     GANTRY,
     GANTRY_SECRET,
     HIGH_LEDGE,
+    LEDGE_ROWS,
     LEDGE_SECRET,
-    LEGS_ROWS,
     LIFT,
     LIFT_FOOT,
     METRO,
@@ -133,15 +133,16 @@ def test_you_can_walk_down_through_the_metro_to_the_clinic_and_back() -> None:
     assert any(METRO_MAP.climb(spot.x, spot.y) is DoorKind.STAIRS for spot in there)
 
 
-def test_premium_legs_reach_every_cell_but_the_gantrys_roof() -> None:
-    reached = {spot for spot in reachable(GRADES[Bionic.PREMIUM_LEGS]) if spot.map != SEWERS}
+@pytest.mark.parametrize("kit", ["premium_legs", "bionic_legs_2+spring_feet_2"])
+def test_the_legs_and_feet_together_reach_every_cell_but_the_gantrys_roof(kit: str) -> None:
+    reached = {spot for spot in reachable(KITS[kit]) if spot.map != SEWERS}
     assert reached == walkable() - roof()
     assert all(METRO_MAP.solid(spot.x, spot.y + 1) for spot in roof())
 
 
-@pytest.mark.parametrize("needs", [None, *NEEDS], ids=lambda needs: needs or "walking")
-def test_each_place_is_in_reach_only_with_what_it_records(needs: str | None) -> None:
-    jump = NEEDS[needs] if needs else False
+@pytest.mark.parametrize("kit", [None, *KITS], ids=lambda kit: kit or "walking")
+def test_each_place_is_in_reach_only_with_what_it_records(kit: str | None) -> None:
+    jump = KITS[kit] if kit else False
     reached = reachable(jump)
 
     for kind in ("salvage", "secret"):
@@ -151,40 +152,41 @@ def test_each_place_is_in_reach_only_with_what_it_records(needs: str | None) -> 
             assert (spot in reached) is can, (name, recorded)
 
 
-def test_the_high_ledge_is_out_of_a_jump_and_in_the_hydraulic_legs_reach() -> None:
+def test_the_high_ledge_is_reached_with_the_feet_and_not_on_the_legs_alone() -> None:
     ledge = machine(HIGH_LEDGE)
     row = ledge.stand[0].y
     under = {(t.x, y) for t in ledge.stand for y in range(row + 1, METRO_MAP.height)}
     floor = min(y for x, y in under if METRO_MAP.standing(x, y))
-    hydraulic, sprint = GRADES[Bionic.HYDRAULIC_LEGS], GRADES[Bionic.SPRINT_LEGS]
+    feet = FEET[Bionic.SPRING_FEET]
 
     assert ledge.kind is InteractableKind.MACHINE
-    assert floor - row == LEGS_ROWS > JUMP.rows == sprint.rows and sprint.rise < LEGS_ROWS
-    assert hydraulic.rows > LEGS_ROWS
-    assert stands(HIGH_LEDGE) <= reachable(hydraulic)
-    assert not stands(HIGH_LEDGE) & reachable(GRADES[Bionic.BLADE_LEGS])
+    assert floor - row == LEDGE_ROWS > JUMP.rows and feet.rows > LEDGE_ROWS
+    for grade, jump in {**LEGS, **FEET}.items():
+        assert bool(stands(HIGH_LEDGE) & reachable(jump)) is (grade in FEET), grade
+    assert stands(HIGH_LEDGE) <= reachable(GRADES[Bionic.HYDRAULIC_LEGS]), "as in stage 1"
 
 
-def test_the_gantry_is_a_gap_under_a_roof_that_only_a_sprint_clears() -> None:
+def test_the_gantry_is_a_gap_under_a_roof_that_only_the_legs_clear() -> None:
     nook, edge = (63, GANTRY), (69, GANTRY)
     gap = range(nook[0] + 1, edge[0])
 
     assert len(gap) == 5 and not any(METRO_MAP.walkable(x, GANTRY) for x in gap)
     assert METRO_MAP.solid(edge[0], GANTRY - 4) and not METRO_MAP.solid(edge[0], GANTRY - 3)
-    for grade, jump in GRADES.items():
+    for kit, jump in KITS.items():
         over = nook in dict(moves(METRO_MAP, edge, jump))
-        assert over is (jump.run > JUMP.run), grade
+        assert over is (jump.run > JUMP.run), kit
     assert nook not in dict(moves(METRO_MAP, edge, True))
 
 
-def test_the_spring_legs_reach_the_alcove_from_the_wall_below_it() -> None:
+def test_the_second_grade_of_feet_reaches_the_alcove_from_the_wall_below_it() -> None:
     alcove, held = pickups("secret")[ALCOVE_SECRET]
     wall = (82, 10)
 
-    assert held["needs"] == Bionic.SPRING_LEGS and held["item"] == "ration_pack"
+    assert held["needs"] == Bionic.SPRING_FEET_2 and held["item"] == "ration_pack"
     assert wall[1] - alcove.y == 5
+    assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, FEET[Bionic.SPRING_FEET_2]))
+    assert (alcove.x, alcove.y) not in dict(moves(METRO_MAP, wall, FEET[Bionic.SPRING_FEET]))
     assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, GRADES[Bionic.SPRING_LEGS]))
-    assert (alcove.x, alcove.y) not in dict(moves(METRO_MAP, wall, GRADES[Bionic.HYDRAULIC_LEGS]))
 
 
 def test_the_lift_and_the_dead_terminal_are_jacks_you_walk_up_to() -> None:
@@ -256,16 +258,16 @@ def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
     assert len(secrets) == 5
     assert {held["needs"] for _, held in secrets.values()} == {
         OWN_JUMP,
-        Bionic.HYDRAULIC_LEGS,
-        Bionic.SPRING_LEGS,
-        Bionic.SPRINT_LEGS,
+        Bionic.SPRING_FEET,
+        Bionic.SPRING_FEET_2,
+        Bionic.BIONIC_LEGS,
     }
     for name, (spot, held) in secrets.items():
         assert spot not in reachable(False), name
         assert ("money" in held) != ("item" in held), name
         assert held.get("money", 1) > 0
     assert secrets[LEDGE_SECRET][0] in stands(HIGH_LEDGE)
-    assert secrets[GANTRY_SECRET][1] == {"money": 60.0, "needs": Bionic.SPRINT_LEGS}
+    assert secrets[GANTRY_SECRET][1] == {"money": 60.0, "needs": Bionic.BIONIC_LEGS}
 
 
 def test_salvage_lies_about_the_metro_and_two_pieces_wait_up_high() -> None:
@@ -274,7 +276,7 @@ def test_salvage_lies_about_the_metro_and_two_pieces_wait_up_high() -> None:
 
     assert len(salvage) == 6
     assert all(METRO_MAP.standing(spot.x, spot.y) for spot, _ in salvage.values())
-    assert high == {"metro_salvage_4": Bionic.SPRING_LEGS, "metro_salvage_6": Bionic.HYDRAULIC_LEGS}
+    assert high == {"metro_salvage_4": Bionic.SPRING_FEET_2, "metro_salvage_6": Bionic.SPRING_FEET}
     assert salvage["metro_salvage_6"][0] in stands(HIGH_LEDGE)
 
 

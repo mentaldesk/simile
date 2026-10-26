@@ -10,8 +10,19 @@ from simile.schema.character import (
     PastMemory,
     Traits,
 )
-from simile.schema.common import PLAYER_ID, Colour, Id, Key, Model, Signed, Timestamp, Unit
+from simile.schema.common import (
+    PLAYER_ID,
+    Colour,
+    Id,
+    Key,
+    MapTile,
+    Model,
+    Signed,
+    Timestamp,
+    Unit,
+)
 from simile.schema.conversation import Conversation, Line
+from simile.schema.creature import CreatureKind, CreatureState
 from simile.schema.intention import Intention, IntentionKind
 from simile.schema.news import NewsItem
 from simile.schema.npc import (
@@ -79,6 +90,7 @@ from simile.schema.story import (
 )
 from simile.schema.works import Work
 from simile.schema.world import (
+    HOLDS,
     VILLAGE_MAP,
     Door,
     DoorKind,
@@ -88,8 +100,8 @@ from simile.schema.world import (
     Location,
     LocationKind,
     MapArea,
-    MapTile,
     Pose,
+    SideFacing,
     Tile,
     TileArea,
 )
@@ -132,6 +144,7 @@ __all__ = [
     "BIONIC_LEGS",
     "BODY_PARTS",
     "CARRY_LIMIT",
+    "HOLDS",
     "LEGS",
     "LINES",
     "MODELS",
@@ -156,6 +169,8 @@ __all__ = [
     "Colour",
     "Conversation",
     "CoreValue",
+    "CreatureKind",
+    "CreatureState",
     "Craft",
     "Door",
     "DoorKind",
@@ -209,6 +224,7 @@ __all__ = [
     "Relationship",
     "Sale",
     "Shift",
+    "SideFacing",
     "Signed",
     "Source",
     "SourceKind",

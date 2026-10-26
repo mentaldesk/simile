@@ -1,0 +1,51 @@
+[
+  {
+    "id": "maker_space_drawers",
+    "label": "Drawers",
+    "kind": "searchable",
+    "map": "maker_space_floor_0",
+    "area": {"x": 4, "y": 7, "width": 2, "height": 1},
+    "stand": [{"x": 4, "y": 8}, {"x": 5, "y": 8}],
+    "items": [
+      {"id": "usb_c_connector", "kind": "part", "name": "USB-C connector", "weight": 0.1, "charge": null, "on": null},
+      {"id": "copper_wire", "kind": "part", "name": "Copper wire", "weight": 0.2, "charge": null, "on": null}
+    ]
+  },
+  {
+    "id": "aris_bench",
+    "label": "Aris's bench",
+    "kind": "searchable",
+    "map": "maker_space_floor_0",
+    "area": {"x": 10, "y": 7, "width": 3, "height": 1},
+    "stand": [{"x": 11, "y": 8}],
+    "teaches": "datajack"
+  },
+  {
+    "id": "metro_fridge",
+    "label": "Dead fridge",
+    "kind": "searchable",
+    "map": "metro",
+    "area": {"x": 72, "y": 10, "width": 1, "height": 2},
+    "stand": [{"x": 73, "y": 11}],
+    "items": [
+      {"id": "copper_wire", "kind": "part", "name": "Copper wire", "weight": 0.2, "charge": null, "on": null}
+    ]
+  },
+  {
+    "id": "metro_vending_machine",
+    "label": "Dead vending machine",
+    "kind": "searchable",
+    "map": "metro",
+    "area": {"x": 90, "y": 10, "width": 1, "height": 2},
+    "stand": [{"x": 91, "y": 11}]
+  },
+  {
+    "id": "security_terminal",
+    "label": "Security terminal",
+    "kind": "jack",
+    "map": "sewers",
+    "area": {"x": 140, "y": 30, "width": 1, "height": 1},
+    "stand": [{"x": 140, "y": 31}],
+    "teaches": "infrared_eye"
+  }
+]

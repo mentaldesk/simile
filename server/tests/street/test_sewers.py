@@ -23,18 +23,22 @@ from simile.sim import Clock, World
 from simile.story import make_incident
 from simile.story.content import HATCH as HATCH_CLUE
 from simile.story.incident import HATCH_LOG, LIFT_LOG
-from simile.street.jump import GRADES, JUMP, OWN_JUMP, Jump, meets
+from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, meets
+from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
 from simile.street.sewers import (
     APEX_ACTUATOR,
+    GAP,
     HATCH,
     LANDING,
     LEVELS,
     SEWERS,
     SHAFT,
-    back,
-    reach,
+    WEIR,
+    WEIR_AT,
+    routes,
     sewers,
+    stranded,
 )
 from simile.street.village import JUMPING, UNDERGROUND
 from simile.world import Point, movement_of
@@ -54,7 +58,7 @@ MORE_SEEDS = range(LEVELS, LEVELS + 24)
 """Seeds past the committed levels', made afresh: the generator holds for any seed."""
 SEEDS = [*range(LEVELS), *MORE_SEEDS]
 START = (LANDING.x, LANDING.y)
-JUMPS: dict[str, Jump] = {OWN_JUMP: JUMP, **{grade.value: jump for grade, jump in GRADES.items()}}
+FITTED = [name for name in KITS if name != OWN_JUMP]
 PRICES = EconomyConfig().salvage
 
 
@@ -66,7 +70,9 @@ def path_of(level: int) -> Path:
 class Played:
     town: TownMap
     reached: dict[str, frozenset[tuple[int, int]]]
-    """Where the player's own legs and each grade get to from the landing."""
+    """Where the player gets to from the landing on each of `KITS`, by its name."""
+    stuck: dict[str, frozenset[tuple[int, int]]]
+    """Where they get to on each and can't get back to the landing from."""
     needs: dict[str, str | None]
     """What each pickup records reaching it takes, by its id."""
 
@@ -80,14 +86,16 @@ def played(seed: int, folder: Path = Path()) -> Played:
         path.parent.mkdir(parents=True)
         path.write_text(dumps(tmj(sewers(seed), "markers.png")))
     town = load_map(path)
-    reached = {name: frozenset(reach(town, START, jump)) for name, jump in JUMPS.items()}
+    ways = {jump: routes(town, START, jump) for jump in set(KITS.values())}
+    reached = {name: frozenset(ways[jump]) for name, jump in KITS.items()}
+    stuck = {name: frozenset(stranded(ways[jump], START)) for name, jump in KITS.items()}
     layers = json.loads(path.read_text())["layers"]
     [layer] = [each for each in layers if each["name"] == PICKUPS_LAYER]
     needs = {
         o["name"]: {p["name"]: p["value"] for p in o.get("properties", [])}.get("needs")
         for o in layer["objects"]
     }
-    return Played(town, reached, needs)
+    return Played(town, reached, stuck, needs)
 
 
 @pytest.fixture(scope="module")
@@ -101,7 +109,7 @@ def ids(seed: int) -> str:
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
-def test_every_grade_of_legs_reaches_the_hatch_and_the_plugs_and_the_players_own_dont(
+def test_the_legs_or_the_feet_reach_the_hatch_and_the_plugs_and_the_players_own_dont(
     seed: int, level: Callable[[int], Played]
 ) -> None:
     town, found = level(seed).town, level(seed).reached
@@ -112,38 +120,35 @@ def test_every_grade_of_legs_reaches_the_hatch_and_the_plugs_and_the_players_own
     assert 1 <= len(plugs) <= 2
     for item in [hatch, *plugs]:
         [stand] = item.stand
-        for grade in GRADES:
-            assert (stand.x, stand.y) in found[grade.value], (item.id, grade)
+        for name in FITTED:
+            assert (stand.x, stand.y) in found[name], (item.id, name)
     assert (hatch.stand[0].x, hatch.stand[0].y) not in found[OWN_JUMP], "it needs the legs"
     for item in plugs:
         assert town.lit(item.stand[0].x, item.stand[0].y), item.id
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
-def test_nobody_gets_stuck_on_any_grade_of_legs(seed: int, level: Callable[[int], Played]) -> None:
-    town, found = level(seed).town, level(seed).reached
-
-    for name, jump in JUMPS.items():
-        cells = set(found[name])
-        assert cells == back(town, cells, START, jump), name
+def test_nobody_gets_stuck_on_any_legs_or_feet(seed: int, level: Callable[[int], Played]) -> None:
+    for name, stuck in level(seed).stuck.items():
+        assert not stuck, name
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
-def test_each_pickup_is_in_reach_only_of_the_legs_it_needs(
+def test_each_pickup_is_in_reach_only_of_the_legs_or_feet_it_needs(
     seed: int, level: Callable[[int], Played]
 ) -> None:
     town, found, recorded = level(seed).town, level(seed).reached, level(seed).needs
 
     for pickup in town.pickups:
         cell, needs = (pickup.x, pickup.y), recorded[pickup.id]
-        for grade in GRADES:
-            can = meets(GRADES[grade], needs or OWN_JUMP)
-            assert (cell in found[grade.value]) is can, (pickup.id, needs, grade)
+        for name in FITTED:
+            can = meets(KITS[name], needs or OWN_JUMP)
+            assert (cell in found[name]) is can, (pickup.id, needs, name)
         if needs not in (None, OWN_JUMP):
             assert cell not in found[OWN_JUMP], pickup.id
         if pickup.kind is PickupKind.SECRET:
             assert needs is not None, f"{pickup.id} is a jump that walking doesn't reach"
-    assert {Bionic.SPRING_LEGS.value, Bionic.SPRINT_LEGS.value} <= set(recorded.values())
+    assert {Bionic.SPRING_FEET_2.value, Bionic.BIONIC_LEGS.value} <= set(recorded.values())
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
@@ -193,7 +198,7 @@ def test_the_lift_lands_on_s8s_landing_which_is_lit_in_the_dark(
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
-def test_every_level_holds_the_apex_actuator_past_the_gate_where_both_premium_routes_reach(
+def test_every_level_holds_the_apex_actuator_past_the_gate_on_the_legs_and_on_the_feet(
     seed: int, level: Callable[[int], Played]
 ) -> None:
     played_level = level(seed)
@@ -201,11 +206,11 @@ def test_every_level_holds_the_apex_actuator_past_the_gate_where_both_premium_ro
     cell, found = (actuator.x, actuator.y), played_level.reached
 
     assert played_level.needs[actuator.id] == OWN_JUMP
-    assert cell in found[Bionic.SPRING_LEGS.value] and cell in found[Bionic.BLADE_LEGS.value]
+    assert cell in found[Bionic.BIONIC_LEGS.value] and cell in found[Bionic.SPRING_FEET.value]
     assert cell not in found[OWN_JUMP], "past the gate"
 
 
-def test_every_grade_of_legs_finds_salvage_and_the_sprint_branch_finds_more() -> None:
+def test_the_feet_find_salvage_and_the_legs_find_more() -> None:
     def worth(level: Played, grade: Bionic) -> float:
         return sum(
             PRICES[p.item.id]
@@ -215,7 +220,23 @@ def test_every_grade_of_legs_finds_salvage_and_the_sprint_branch_finds_more() ->
 
     for number in range(LEVELS):
         level = played(number)
-        assert 30 <= worth(level, Bionic.HYDRAULIC_LEGS) < worth(level, Bionic.SPRINT_LEGS)
+        assert 30 <= worth(level, Bionic.SPRING_FEET) < worth(level, Bionic.BIONIC_LEGS)
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_the_legs_cross_the_gate_over_its_gap_and_the_feet_climb_its_weir(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town = level(seed).town
+    weir = next(x for x in range(town.width) if town.standing(x, LANDING.y - WEIR))
+    gate = weir - WEIR_AT
+    walkway, over = (gate + 2, LANDING.y - 10), (gate + 3 + GAP, LANDING.y - 10)
+    face, top = (weir - 1, LANDING.y), (weir, LANDING.y - WEIR)
+
+    assert not any(town.walkable(x, walkway[1]) for x in range(walkway[0] + 1, over[0]))
+    for name, jump in {OWN_JUMP: JUMP, **LEGS, **FEET}.items():
+        assert (over in dict(moves(town, walkway, jump))) is (name in LEGS), name
+        assert (top in dict(moves(town, face, jump))) is (name in FEET), name
 
 
 def test_the_pool_is_the_size_the_worlds_levels_are_picked_from() -> None:

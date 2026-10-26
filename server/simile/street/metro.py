@@ -41,8 +41,8 @@ DEAD_TERMINAL = "metro_terminal"
 HIGH_LEDGE = "metro_high_ledge"
 LIFT_FOOT = MapTile(map=METRO, x=100, y=GROUND)
 """Where the lift down to the sewers stops on the metro."""
-LEGS_ROWS = 3
-"""Rows up the high ledge is: out of the player's own jump, and in the hydraulic legs'."""
+LEDGE_ROWS = 3
+"""Rows up the high ledge is: out of the player's own jump, and in the spring feet's."""
 LEDGE_SECRET = "metro_secret_ledge"
 ALCOVE_SECRET = "metro_secret_alcove"
 GANTRY = GROUND - 7
@@ -157,21 +157,21 @@ def tunnel(plan: Plan) -> None:
     catwalk(plan, 81, ledge - 2, 2)
     alcove = ledge - 7
     catwalk(plan, 85, alcove, 2)
-    salvage(plan, 4, 85, alcove, needs=Bionic.SPRING_LEGS)
-    secret(plan, ALCOVE_SECRET, 86, alcove, Bionic.SPRING_LEGS, item=RATION_PACK)
+    salvage(plan, 4, 85, alcove, needs=Bionic.SPRING_FEET_2)
+    secret(plan, ALCOVE_SECRET, 86, alcove, Bionic.SPRING_FEET_2, item=RATION_PACK)
     plan.piece("rubble", 79, GROUND, 2, 1)
     salvage(plan, 5, 83, GROUND)
 
 
 def gantry(plan: Plan) -> None:
-    """A gantry under a roof too low for a spring jump, over a gap only a sprint clears."""
+    """A gantry under a roof too low for the feet to rise, over a gap only the legs clear."""
     catwalk(plan, 73, GANTRY + 2, 2)
     catwalk(plan, 69, GANTRY, 4)
     catwalk(plan, 61, GANTRY, 3)
     plan.fill(58, GANTRY - 4, 16, 1)
     for x in (58, 66):
         plan.piece("pipes", x, GANTRY - 4, 8, 1)
-    secret(plan, GANTRY_SECRET, 61, GANTRY, Bionic.SPRINT_LEGS, money=60.0)
+    secret(plan, GANTRY_SECRET, 61, GANTRY, Bionic.BIONIC_LEGS, money=60.0)
 
 
 def depot(plan: Plan) -> list[Plan]:
@@ -189,13 +189,13 @@ def depot(plan: Plan) -> list[Plan]:
     area = TileArea(x=104, y=GROUND - 1, width=1, height=2)
     stand = [Tile(x=104, y=GROUND)]
     machine(plan, DEAD_TERMINAL, "Dead terminal", area, stand, InteractableKind.JACK)
-    ledge = GROUND - LEGS_ROWS
+    ledge = GROUND - LEDGE_ROWS
     catwalk(plan, 106, ledge, 4)
     area = TileArea(x=106, y=ledge, width=4, height=1)
     machine(plan, HIGH_LEDGE, "High ledge", area, [Tile(x=x, y=ledge) for x in range(106, 110)])
     plan.piece("crates", 108, ledge, 1, 1)
-    salvage(plan, 6, 108, ledge, needs=Bionic.HYDRAULIC_LEGS)
-    secret(plan, LEDGE_SECRET, 106, ledge, Bionic.HYDRAULIC_LEGS, money=60.0)
+    salvage(plan, 6, 108, ledge, needs=Bionic.SPRING_FEET)
+    secret(plan, LEDGE_SECRET, 106, ledge, Bionic.SPRING_FEET, money=60.0)
     return clinic.floors
 
 

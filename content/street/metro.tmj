@@ -1045,7 +1045,7 @@
             {
               "name": "needs",
               "type": "string",
-              "value": "sprint_legs"
+              "value": "bionic_legs"
             }
           ],
           "rotation": 0,
@@ -1087,7 +1087,7 @@
             {
               "name": "needs",
               "type": "string",
-              "value": "spring_legs"
+              "value": "spring_feet_2"
             }
           ],
           "rotation": 0,
@@ -1125,7 +1125,7 @@
             {
               "name": "needs",
               "type": "string",
-              "value": "spring_legs"
+              "value": "spring_feet_2"
             }
           ],
           "rotation": 0,
@@ -1155,7 +1155,7 @@
             {
               "name": "needs",
               "type": "string",
-              "value": "hydraulic_legs"
+              "value": "spring_feet"
             }
           ],
           "rotation": 0,
@@ -1178,7 +1178,7 @@
             {
               "name": "needs",
               "type": "string",
-              "value": "hydraulic_legs"
+              "value": "spring_feet"
             }
           ],
           "rotation": 0,
