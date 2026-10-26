@@ -142,9 +142,9 @@ is `content/street/README.md`'s *Finds*.
 
 - **Searching** is one more claim on `pick_up` (`claimers_of(app)`), ahead of any pile or clue: a
   `searchable` whose stand tile the player is on, or with the datajack a `jack` that holds `items`
-  or `teaches` a recipe, that isn't in `Player.searched`. They learn the recipe it teaches, take
-  what fits of its items, and what doesn't is a new pile of theirs where they stand, at the end of
-  `left`. It's then in `searched`, held nothing or not. A jack holding neither, such as the dead
+  or `money` or `teaches` a recipe, that isn't in `Player.searched`. They learn the recipe it
+  teaches, take its money, paid through the economy's ledger as `found`, and what fits of its
+  items, and what doesn't is a new pile of theirs where they stand, at the end of `left`. It's then in `searched`, held nothing or not. A jack holding neither, such as the dead
   terminal or the lift, is never searched, so E there finds its clue at once; one with both gives
   what it holds first and its clue on the next E.
 - **Learning** adds a recipe to `Player.mind` once, and only one in `recipes_of(app)`, so

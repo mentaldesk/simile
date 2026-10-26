@@ -177,7 +177,36 @@
       "draworder": "topdown",
       "id": 9,
       "name": "interactables",
-      "objects": [],
+      "objects": [
+        {
+          "height": 32,
+          "id": 4,
+          "name": "house_7_wardrobe",
+          "properties": [
+            {
+              "name": "label",
+              "type": "string",
+              "value": "Coat in the wardrobe"
+            },
+            {
+              "name": "money",
+              "type": "float",
+              "value": 7.0
+            },
+            {
+              "name": "stand",
+              "type": "string",
+              "value": "1,2"
+            }
+          ],
+          "rotation": 0,
+          "type": "searchable",
+          "visible": true,
+          "width": 16,
+          "x": 16,
+          "y": 16
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -219,7 +248,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 4,
+  "nextobjectid": 5,
   "orientation": "orthogonal",
   "properties": [
     {
