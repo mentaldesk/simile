@@ -64,15 +64,22 @@ REACH = next(way.within for way in BOT.ways if isinstance(way, Collect))
 DEN = 14
 """The dogs' den's width: a column of its own east of the last room."""
 DOGS = 3
+BATS = (2, 2)
+"""Zone 0's roosts of bats, each in a dark room of its own, the first on the way to the gate."""
+CAVE = 18
+"""The bat cave's width: a column of its own east of the den, three tiers high."""
+CAVE_BATS = 30
+"""Bats roosting under the cave's ceilings."""
 
-ROOMS, HALL, SHAFT_KIND, GATE_KIND, DEN_KIND = "rooms", "hall", "shaft", "gate", "den"
+ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
+DEN_KIND, CAVE_KIND = "den", "cave"
 SPRING_SECRET = "sewers_secret_spring"
 SPRINT_SECRET = "sewers_secret_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
 PIPE_SECRET = "sewers_secret_pipe"
 DEN_SECRET = "sewers_secret_den"
-TIERS = {SHAFT_KIND: (0,), ROOMS: (0, 1, 2), HALL: (0, 2), DEN_KIND: ()}
-"""Each kind of column's rooms, by tier: the den isn't one of the rooms that join the rest."""
+CAVE_SECRET = "sewers_secret_cave"
+TIERS = {SHAFT_KIND: (0,), ROOMS: (0, 1, 2), HALL: (0, 2), DEN_KIND: (), CAVE_KIND: ()}
 
 type Cell = tuple[int, int]
 type Node = tuple[int, int]
@@ -654,6 +661,99 @@ def den(level: Level, plan: Plan) -> None:
         plan.creatures.append(Spawn(f"sewers_dog_{number}", CreatureKind.DOG, at, floor, area))
 
 
+def bats(level: Level, plan: Plan) -> None:
+    """Zone 0's bats: content/street/README.md's *Creatures*."""
+    rng = random.Random(f"sewers/{level.seed}/bats")
+    rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
+    dark = [n for n in rooms if roosts(level, plan, n) and not lit(plan, level, n)]
+    way = [n for n in between(level, (0, 0), (level.gate - 1, 0)) if n in dark]
+    first = rng.choice(way or dark)
+    others = [n for n in dark if n != first]
+    if not others:
+        raise ValueError(f"no dark rooms for zone 0's bats in sewers level {level.seed}")
+    nodes = [first, rng.choice(others)]
+    number = 0
+    for (c, tier), count in zip(nodes, BATS, strict=True):
+        column, row = level.columns[c], FLOORS[tier]
+        area = TileArea(x=column.x, y=row - 3, width=column.width, height=4)
+        for x in sorted(rng.sample(roosts(level, plan, (c, tier)), count)):
+            number += 1
+            bat = Spawn(f"sewers_bat_{number}", CreatureKind.BAT, x, row - 3, area)
+            plan.creatures.append(bat)
+
+
+def roosts(level: Level, plan: Plan, node: Node) -> list[int]:
+    """Where a bat hangs in a room: under its ceiling, not over a hole."""
+    column, top = level.columns[node[0]], FLOORS[node[1]] - 3
+    return [x for x in range(column.x, column.end) if (x, top - 1) in plan.solid]
+
+
+def lit(plan: Plan, level: Level, node: Node) -> bool:
+    """Whether a lit stretch reaches into the room."""
+    column, row = level.columns[node[0]], FLOORS[node[1]]
+    room = TileArea(x=column.x, y=row - 3, width=column.width, height=4)
+    return any(
+        light.lit
+        and light.area.x < room.x + room.width
+        and room.x < light.area.x + light.area.width
+        and light.area.y < room.y + room.height
+        and room.y < light.area.y + light.area.height
+        for light in plan.light
+    )
+
+
+def between(level: Level, start: Node, end: Node) -> list[Node]:
+    """The rooms on the way from `start` to `end` by doors and ladders."""
+    near: dict[Node, list[Node]] = {}
+    for edge in level.edges:
+        a, b = level.ends(edge)
+        near.setdefault(a, []).append(b)
+        near.setdefault(b, []).append(a)
+    came: dict[Node, Node | None] = {start: None}
+    queue = deque([start])
+    while queue:
+        for there in near.get(here := queue.popleft(), []):
+            if there not in came:
+                came[there] = here
+                queue.append(there)
+    way: list[Node] = []
+    at: Node | None = end if end in came else None
+    while at is not None:
+        way.append(at)
+        at = came[at]
+    return way[::-1]
+
+
+def cave(level: Level, plan: Plan) -> None:
+    """The bat cave past the den: content/street/README.md's *The cave*."""
+    rng = random.Random(f"sewers/{level.seed}/cave")
+    den, wall = len(level.columns) - 1, level.width
+    column = Column(CAVE_KIND, wall + 1, CAVE, 1)
+    level.columns.append(column)
+    level.doors.add((den, 0))
+    plan.width = level.width
+    x, end = column.x, column.end
+    plan.fill(wall, 0, CAVE + 1, CEILING + 1)
+    plan.fill(wall, GROUND + 1, CAVE + 1, plan.height - GROUND - 1)
+    plan.fill(wall, CEILING + 1, 1, slab(1) - CEILING)
+    ledge = end - 2
+    up = ledge - GAP - 2
+    plan.fill(x, slab(1), up - x, 1)
+    plan.ladder((up, FLOORS[0]), FLOORS[0] - FLOORS[1])
+    plan.fill(x + 2, slab(2), ledge - GAP - x - 2, 1)
+    plan.fill(ledge, slab(2), 2, 1)
+    plan.ladder((x + 1, FLOORS[1]), FLOORS[1] - FLOORS[2])
+    light(plan, "sewers_cave", wall, 0, CAVE + 1, plan.height, lit=False)
+    money = float(rng.choice((140, 160, 180, 200)))
+    stash = Pickup(CAVE_SECRET, SECRET, end - 1, FLOORS[2], money, needs=Bionic.BIONIC_LEGS)
+    plan.pickups.append(stash)
+    area = TileArea(x=x, y=CEILING + 1, width=CAVE, height=GROUND - CEILING)
+    hanging = [(FLOORS[t] - 3, at) for t in range(3) for at in roosts(level, plan, (den + 1, t))]
+    for number, (top, at) in enumerate(sorted(rng.sample(hanging, CAVE_BATS)), 1):
+        bat = Spawn(f"sewers_cave_bat_{number}", CreatureKind.BAT, at, top, area)
+        plan.creatures.append(bat)
+
+
 def towards(
     edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
 ) -> dict[Cell, float]:
@@ -692,7 +792,9 @@ def build(level: Level) -> Plan:
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
     stock(level, plan, ledges)
     dangers(level, plan)
+    bats(level, plan)
     den(level, plan)
+    cave(level, plan)
     cover(level, plan)
     plan.doors.append(lift())
     return plan

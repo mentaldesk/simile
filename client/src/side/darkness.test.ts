@@ -5,6 +5,7 @@ import {
   atPlug,
   DARK,
   DIM,
+  EYE,
   falloff,
   FADED,
   GLIMMER,
@@ -82,6 +83,19 @@ describe('Sight', () => {
     expect(sight.shade(TUNNEL.x + 6, TUNNEL.y)).toBe(DARK);
     expect(sight.shade(30, 15)).toBe(0);
     expect(sight.darkness(TUNNEL.x, TUNNEL.y, glowAround({ x: 85, y: 15 }, lamp(1, false)))).toBe(DIM);
+  });
+
+  it('shows the dark through the infrared eye with the lamp off, and remembers what it saw', () => {
+    const sight = new Sight(metro);
+    const eye = glowAround(TUNNEL, lamp(1, false), true);
+
+    expect(eye).toMatchObject({ radius: EYE.radius, strength: EYE.strength, infrared: true });
+    expect(sight.darkness(TUNNEL.x + 3, TUNNEL.y, eye)).toBeLessThan(DIM);
+    expect(sight.darkness(TUNNEL.x + 6, TUNNEL.y, eye)).toBe(DARK);
+    expect(sight.see(eye)).toBe(true);
+    expect(sight.shade(TUNNEL.x + 3, TUNNEL.y)).toBe(DIM);
+    expect(glowAround(TUNNEL, lamp(1, true), true)).toMatchObject({ radius: LAMP_RADIUS, strength: 1 });
+    expect(glowAround(TUNNEL, lamp(0, true), true).infrared).toBe(true);
   });
 
   it('sees nothing new with a flat lamp, which gives no light', () => {

@@ -66,7 +66,7 @@ Every map has every layer, bottom to top:
 | `spots` | Objects, as today. |
 | `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. A cell is dark where a dark stretch covers it and no lit one does, and lit everywhere else, so a map without any is lit all over. Only the metro has any yet, and every cell of it is in one. |
 | `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. `needs` is what reaching it takes, on one scale for every map (`simile.street.jump.NEEDS`): `jump`, the player's own, or a grade of legs or feet, such as `spring_feet`. It's left out where walking and climbing get there. |
-| `creatures` | Objects, only on maps with creatures: the metro and the sewers. One tile per creature, where it starts, named by its id, its type its kind (`rat` or `bot`), with an optional `area`, `x,y,width,height`, that it keeps to. `simile.creatures` spawns them (P13). |
+| `creatures` | Objects, only on maps with creatures: the metro and the sewers. One tile per creature, where it starts, named by its id, its type its kind (`rat`, `bot`, `dog` or `bat`), with an optional `area`, `x,y,width,height`, that it keeps to. `simile.creatures` spawns them (P13). |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
 `cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
@@ -360,6 +360,16 @@ slab, the row under them. West to east it's columns of rooms:
   means crossing the den to the ladder and back to the door, or dropping through the hole by the
   ladder's top and running for it. On the player's own legs or the feet that's almost certain
   collapse; on the legs, kicks knock the dogs back (`server/simile/creatures/README.md`).
+- **The cave** (`cave`, P15), the bats', is a column of its own past the den, 18 wide (`CAVE`),
+  made after the den from its own random stream, so it moves nothing: the den only gains a doorway
+  through its east wall on its floor. Inside it's three tiers, dark (`sewers_cave`): a ladder
+  up from the floor near its east end, another up from the middle tier at its west, and along the
+  top tier a walkway to a five-cell gap (`GAP`) under the vault, past which a ledge against the
+  east wall holds a stash, `sewers_secret_cave`, 140 to 200 money. As with the hall's ledge only the
+  bionic legs cross the gap, as only they get through the den. A fall from the gap lands on the
+  cave's floor. Thirty bats (`CAVE_BATS`) roost under its ceilings, kept to the cave: by lamplight
+  they collapse a player on any legs before they're back out, and with the lamp off they never stir.
+  Without the infrared eye it can only be crossed blind.
 - **The hatch** (`HATCH`, `sewers_hatch`) is a `jack` in the room past the gate that the most
   doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
   `hatch_log`, `simile.story`). Its cell is each level's own, so it's in the map, not in
@@ -380,6 +390,7 @@ counts from the way through, which every grade of legs or feet takes:
 | `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 | `jump` | A pipe in the den's loft, past the dogs | `sewers_secret_den`, 90 to 120 money |
+| `bionic_legs` | The cave's ledge, past the dogs, the bats and a five-cell gap under the vault | `sewers_secret_cave`, 140 to 200 money |
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
 
@@ -396,7 +407,14 @@ counts from the way through, which every grade of legs or feet takes:
 They're placed from their own random stream, after the rest of the level, so adding them moved
 nothing else, and later kinds can follow them the same way.
 
-Past them all, `sewers_dog_1` to `sewers_dog_3` keep to the den (above).
+Bats (`bats`, P15) roost in zone 0 too, from their own random stream after the rats:
+
+- `sewers_bat_<n>`, two roosts of two bats (`BATS`) under the ceilings of dark rooms, each kept
+  to its room. The first is in a room on the way from the lift to the gate's floor where one is
+  dark, so the way through passes it. They attack only while the lamp is on.
+
+Past them all, `sewers_dog_1` to `sewers_dog_3` keep to the den, and `sewers_cave_bat_<n>` to the
+cave (above).
 
 **Finds** (above): in zone 0 a delver's bedroll and crates with the bionic legs' recipe and parts,
 reached on the player's own legs, and past the gate the spring feet's, and the security station's

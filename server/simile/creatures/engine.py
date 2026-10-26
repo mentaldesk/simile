@@ -235,7 +235,7 @@ class Creatures:
         ahead = 1 if kick.facing is SideFacing.EAST else -1
         hits = []
         for creature in self.all.values():
-            if creature.down is not None or creature.map != kick.at.map:
+            if creature.down is not None or creature.kind.dodges or creature.map != kick.at.map:
                 continue
             along = (creature.x - kick.at.x) * ahead
             low = creature.y - 0.5 if creature.kind.flies else creature.y
