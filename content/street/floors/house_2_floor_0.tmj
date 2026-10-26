@@ -266,6 +266,11 @@
               "value": "Tea tin"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 2.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "5,2"

@@ -27,8 +27,9 @@ def searchable(
     items: Sequence[Item] = (),
     teaches: Bionic | None = None,
     kind: InteractableKind = InteractableKind.SEARCHABLE,
+    money: float = 0.0,
 ) -> None:
-    """Something searched once for the `items` it holds and the recipe it `teaches`."""
+    """Something searched once for the `items` and `money` it holds and the recipe it `teaches`."""
     plan.interactables.append(
         Interactable(
             id=thing_id,
@@ -38,6 +39,7 @@ def searchable(
             area=area,
             stand=list(stand),
             items=list(items),
+            money=money,
             teaches=teaches,
         )
     )
@@ -91,5 +93,5 @@ STASHES: dict[Id, Stash] = _by_id(
     Stash("house_9", "bed", "Bedside drawer", 5.0),
     Stash("house_10", "kitchen", "Kitchen drawer", 2.0, (RATION_BAR,)),
 )
-"""The loose cash in the houses, which `Interactable` has no field for, so `simile.theft` pays
-it out: content/street/README.md's *Houses*."""
+"""The places to search in the houses, and the loose cash in them: content/street/README.md's
+*Houses*."""

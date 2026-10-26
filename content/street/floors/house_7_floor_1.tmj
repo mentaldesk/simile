@@ -189,6 +189,11 @@
               "value": "Coat in the wardrobe"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 7.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "1,2"

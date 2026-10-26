@@ -108,8 +108,8 @@ def caught(
 
 
 class Theft:
-    """Pays out the cash in each house's places to search once the player searches it, and
-    whoever is awake in the room sees them do it. Tick it on the sim loop."""
+    """Whoever is awake in the room seeing the player search a place in a house. Tick it on the
+    sim loop."""
 
     def __init__(
         self,
@@ -118,7 +118,6 @@ class Theft:
         store: Store,
         clock: Clock,
         npcs: Mapping[Id, Npc],
-        find: Callable[[float, Id], None],
         awake: Callable[[Id], bool],
         *,
         stashes: Mapping[Id, Stash] = STASHES,
@@ -129,7 +128,6 @@ class Theft:
         self.store = store
         self.clock = clock
         self.npcs = npcs
-        self.find = find
         self.awake = awake
         self.stashes = stashes
         self.config = config
@@ -149,9 +147,7 @@ class Theft:
         self._handled = len(searched)
 
     def search(self, stash: Stash) -> list[Id]:
-        """The player takes `stash`'s cash, and whoever sees it minds. Returns who saw."""
-        if stash.money:
-            self.find(stash.money, stash.id)
+        """The player has searched `stash`, and whoever sees it minds. Returns who saw."""
         owner = next((npc for npc in self.npcs.values() if npc.home == stash.house), None)
         witnesses = self.witnesses(self.rooms.get(stash.id))
         for npc in witnesses:
@@ -181,7 +177,6 @@ def theft_of(app: Starlette) -> Theft:
     """The server's `Theft`, made on first use."""
     if not hasattr(app.state, "theft"):
         from simile.behaviour import Activity, behaviour_of
-        from simile.economy.economy import economy_of
         from simile.memory import memory_of
         from simile.persistence import player_of
 
@@ -192,7 +187,6 @@ def theft_of(app: Starlette) -> Theft:
             memory_of(app),
             behaviour.clock,
             behaviour.npcs,
-            economy_of(app).find,
             lambda npc: behaviour.goal(npc).activity is not Activity.SLEEP,
         )
     return app.state.theft

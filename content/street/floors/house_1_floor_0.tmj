@@ -261,6 +261,11 @@
               "value": "Jar on the kitchen shelf"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 5.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "1,2"

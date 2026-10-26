@@ -126,8 +126,8 @@ As in [`content/map/`](../map/README.md), with these additions.
   square's at the fountain, the park's at the lookout, and in the gallery each at the nearest
   painting, so two can sit back to back). `dx` and `dy` are always 0. The stools keep `dz` 0.25.
 - **Finds.** A `searchable` interactable, or a `jack`, can hold `items`, a JSON list of `Item`s,
-  and `teach` a recipe, `teaches`, by the bionic it builds. The player searches each once (P6,
-  *Finds* below).
+  and cash, `money`, a float, and teach a recipe, `teaches`, by the bionic it builds. The player
+  searches each once (P6, *Finds* below).
 
 ## Finds
 
@@ -158,10 +158,10 @@ from it, but the hatch's, that has room for both. The eye's lens is a villager's
 ### Houses
 
 Each house has a place or two to search in its furniture (`STASHES` in `simile.street.finds`,
-P27), with the id `<house>_<piece>`. They hold loose cash, which `Interactable` has no field for,
-so `simile.theft` pays it through the ledger as `found` once the place is searched, and the odd
-ration bar (food, 0.2 kg). No electrical parts: residents don't keep them. Whoever is awake in
-the room sees the player at it, and minds as much as their security and tradition say.
+P27), with the id `<house>_<piece>`. They hold loose cash, their `money`, which searching pays
+through the ledger as `found`, and the odd ration bar (food, 0.2 kg). No electrical parts:
+residents don't keep them. Whoever is awake in the room sees the player at it (`simile.theft`),
+and minds as much as their security and tradition say.
 
 | House | Living room | Bedroom | Cash |
 |---|---|---|--:|

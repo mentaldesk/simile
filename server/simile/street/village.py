@@ -287,7 +287,9 @@ def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> lis
     for stash in STASHES.values():
         if stash.house == home.id:
             plan, area = furniture[stash.piece]
-            searchable(plan, stash.id, stash.label, area, under(area), stash.items)
+            searchable(
+                plan, stash.id, stash.label, area, under(area), stash.items, money=stash.money
+            )
     return home.floors
 
 

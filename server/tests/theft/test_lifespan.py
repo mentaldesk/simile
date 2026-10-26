@@ -9,8 +9,9 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.economy import PLAYER, Kind
 from simile.economy.economy import economy_of
+from simile.memory import memory_of
 from simile.persistence import player_of
-from simile.schema import PLAYER_ID
+from simile.schema import PLAYER_ID, MapTile, MemoryKind
 from simile.sim import Clock, World, world_of
 from simile.street.finds import STASHES
 from simile.world import Point, movement_of
@@ -39,20 +40,27 @@ def until(client: TestClient, done: Callable[[], bool]) -> None:
         time.sleep(0.001)
 
 
-def test_searching_a_house_finds_its_cash_through_the_ledger(make_package: MakePackage) -> None:
+def test_searching_a_house_finds_its_cash_and_whoever_is_in_the_room_sees(
+    make_package: MakePackage,
+) -> None:
     app = make_app(make_package)
     at = Point(2, 2, "house_9_floor_1")
 
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        player = player_of(app)
+        player, store = player_of(app), memory_of(app)
+        client.portal.call(lambda: movement_of(app).place("priya", MapTile(map=at.map, x=4, y=2)))
         ws.send_json({"type": "player_move", "position": {"x": at.x, "y": at.y, "map": at.map}})
         until(client, lambda: movement_of(app).entities().get(PLAYER_ID) == at)
         ws.send_json({"type": "pick_up"})
         until(client, lambda: BED.id in player.searched)
-        unpaid = player.money
+        money = player.money
         client.portal.call(world_of(app).loop.tick)
+        seen = store.recall("priya", START, about=PLAYER_ID, kind=MemoryKind.OBSERVATION, k=10)
         ledger = economy_of(app).ledger
 
-    assert (unpaid, player.money) == (0, BED.money)
+    assert money == BED.money
     assert [(entry.kind, entry.place) for entry in ledger.entries] == [(Kind.FOUND, BED.id)]
     assert ledger.net(PLAYER) == pytest.approx(BED.money)
+    assert [memory.content for memory in seen] == [
+        "I saw Visitor going through the bedside drawer in my house."
+    ]

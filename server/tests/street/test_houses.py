@@ -51,6 +51,7 @@ def test_each_house_has_a_place_or_two_to_search_holding_cash() -> None:
         assert 1 <= len(things) <= 2, house
         assert all(thing.kind is InteractableKind.SEARCHABLE for thing in things), house
         assert [list(s.items) for s in stashes] == [thing.items for thing in things], house
+        assert [s.money for s in stashes] == [thing.money for thing in things], house
         assert all(stash.house == house for stash in stashes), house
         assert sum(stash.money for stash in stashes) > 0, house
         assert all(item.kind is ItemKind.FOOD for s in stashes for item in s.items), house
@@ -73,7 +74,7 @@ def test_the_cell_and_the_datajack_are_paid_for_and_found_on_foot_without_respaw
         for pickup in town.pickups
         if Spot(town.id, pickup.x, pickup.y) in reachable()
     ]
-    houses = sum(STASHES[thing.id].money for thing in found if thing.id in STASHES)
+    houses = sum(thing.money for thing in found)
     secrets = sum(pickup.money for pickup in pickups if pickup.kind is PickupKind.SECRET)
     salvage = sum(PRICES[SALVAGE[p.id].item.id] for p in pickups if p.kind is PickupKind.SALVAGE)
     parts = Counter(item.id for thing in found for item in thing.items)

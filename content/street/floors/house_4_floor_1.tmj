@@ -189,6 +189,11 @@
               "value": "Handbag in the wardrobe"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 6.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "5,2"

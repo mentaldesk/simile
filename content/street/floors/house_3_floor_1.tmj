@@ -189,6 +189,11 @@
               "value": "Bedside drawer"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 4.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "3,2 4,2"

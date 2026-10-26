@@ -261,6 +261,11 @@
               "value": "Sofa cushions"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 3.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "2,2 3,2"

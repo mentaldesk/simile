@@ -40,14 +40,12 @@ class House:
             self.movement.place(npc.id, MapTile(map="house_2_floor_0", x=3, y=2))
         self.player = Player(searched=searched or [])
         self.asleep: set[Id] = set()
-        self.found: list[tuple[float, Id]] = []
         self.theft = Theft(
             self.player,
             self.movement,
             self.store,
             self.clock,
             {npc.id: npc for npc in (ANA, BEN)},
-            lambda money, place: self.found.append((money, place)),
             lambda npc: npc not in self.asleep,
         )
 
@@ -64,22 +62,17 @@ class House:
         return (rel or meet(npc, PLAYER_ID)).trust
 
 
-def test_searching_a_place_in_a_house_finds_its_cash_once() -> None:
+def test_a_search_is_seen_once_and_not_again_after_a_restart() -> None:
     house = House()
 
     house.search(KITCHEN.id)
     house.theft.tick(0.1)
+    again = House(searched=[KITCHEN.id])
+    again.theft.tick(0.1)
+    again.search("maker_space_spares")
 
-    assert house.found == [(KITCHEN.money, KITCHEN.id)]
-
-
-def test_cash_already_searched_for_before_a_restart_isnt_found_again() -> None:
-    house = House(searched=[KITCHEN.id])
-
-    house.theft.tick(0.1)
-    house.search("maker_space_spares")
-
-    assert house.found == []
+    assert len(house.memories("ana")) == 1
+    assert again.memories("ana") == []
 
 
 def test_the_resident_whose_house_it_is_minds_by_their_values_and_remembers() -> None:
@@ -101,7 +94,6 @@ def test_searching_with_nobody_in_the_room_costs_nothing() -> None:
 
     house.search(BED.id)
 
-    assert house.found == [(BED.money, BED.id)]
     assert house.memories("ana") == house.memories("ben") == []
     assert house.store.relationship("ana", PLAYER_ID) is None
 

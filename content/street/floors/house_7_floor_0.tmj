@@ -261,6 +261,11 @@
               "value": "Kitchen drawer"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 2.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "1,2"

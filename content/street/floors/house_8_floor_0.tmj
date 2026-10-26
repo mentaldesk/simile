@@ -261,6 +261,11 @@
               "value": "Biscuit tin"
             },
             {
+              "name": "money",
+              "type": "float",
+              "value": 4.0
+            },
+            {
               "name": "stand",
               "type": "string",
               "value": "1,2"
@@ -282,6 +287,11 @@
               "name": "label",
               "type": "string",
               "value": "Sofa cushions"
+            },
+            {
+              "name": "money",
+              "type": "float",
+              "value": 1.0
             },
             {
               "name": "stand",
