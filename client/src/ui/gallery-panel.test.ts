@@ -76,7 +76,7 @@ afterEach(() => {
 it('hints at the painting the player stands at, and at an empty frame', () => {
   panel.update(AT_HARBOUR);
   expect(panel.hint.hidden).toBe(false);
-  expect(panel.hint.textContent).toBe('Press E to look at “Harbour at Dusk” by Kofi Mensah.');
+  expect(panel.hint.textContent).toBe('Press V to look at “Harbour at Dusk” by Kofi Mensah.');
 
   panel.update(AT_EMPTY);
   expect(panel.hint.textContent).toBe('This frame is empty.');
@@ -110,7 +110,7 @@ it('opens nothing at an empty frame, away from the frames or on another map', ()
   expect(section().hidden).toBe(true);
 });
 
-it('closes on Esc or E, without the keys reaching the game', () => {
+it('closes on Esc or V, but not E, without the keys reaching the game', () => {
   let reached = 0;
   const count = () => reached++;
   window.addEventListener('keydown', count);
@@ -121,8 +121,9 @@ it('closes on Esc or E, without the keys reaching the game', () => {
 
   panel.look(AT_HARBOUR);
   press('ArrowLeft');
-  expect(section().hidden).toBe(false);
   press('e');
+  expect(section().hidden).toBe(false);
+  press('v');
   expect(section().hidden).toBe(true);
 
   window.removeEventListener('keydown', count);

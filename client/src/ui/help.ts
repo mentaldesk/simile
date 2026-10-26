@@ -10,7 +10,9 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['Space'], 'jump, higher while held and further running'],
   [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up'],
   [['↓', 'S'], 'downstairs or down a ladder from beside its top, or the lift down'],
-  [['E'], 'read the news at a terminal, look at a mural or a painting, order at a counter, pick something up, sell salvage, trade at the clinic, look at a clue, use a machine with the datajack, go through a door, or talk to the ringed resident'],
+  [['E'], 'go through a door or onto another street; off a door, read the news at a terminal, pick something up, sell salvage, trade at the clinic, look at a clue, or use a machine with the datajack'],
+  [['T'], 'talk to the ringed resident, or at a counter order from whoever serves there'],
+  [['V'], 'look at a mural or a painting'],
   [['F'], 'eat: a meal at home, at the café or the noodle bar, or food you carry'],
   [['J'], 'open or close your journal: what you have learned about Aris, and the leads still open'],
   [['L'], 'switch your lamp on or off, to see in the dark; stand at a plug to charge it'],
@@ -22,7 +24,7 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [[HELP_KEY], 'show or hide the controls'],
 ];
 
-const NOTE = 'A tag over each door, flight, ladder and lift names its keys. Where E is used for something else, ↑ takes the door.';
+const NOTE = 'A tag over each door, flight, ladder and lift names its keys.';
 
 /** What the help says about voices, as the top-level README does. */
 export const VOICES =

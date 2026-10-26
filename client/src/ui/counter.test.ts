@@ -62,13 +62,15 @@ describe('servingAt', () => {
 describe('CounterPrompt', () => {
   afterEach(() => vi.useRealTimers());
 
-  it('prompts the player at a counter to order', () => {
+  it('prompts the player at a counter to order with T, and at a jack to use it with E', () => {
     const prompt = new CounterPrompt(document.body);
     const hint = document.body.querySelector<HTMLElement>('.counter-hint')!;
 
+    prompt.update({ ...counter, kind: 'jack', prompt: 'Use the dead terminal' }, true);
+    expect(hint.textContent).toBe('Press E to use the dead terminal.');
     prompt.update(counter, true);
     expect(hint.hidden).toBe(false);
-    expect(hint.textContent).toBe('Press E to order at the counter.');
+    expect(hint.textContent).toBe('Press T to order at the counter.');
 
     prompt.update(counter, false);
     expect(hint.hidden).toBe(true);
