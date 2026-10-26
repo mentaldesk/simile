@@ -22,9 +22,10 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `left`, `taken` and `mind`, a body's `stomach` and
-  `feet`, a mind's `sold`, a pile's `money`, a buyer's `parts`, `fittings` and `recipes`, and
-  `player_state`'s `meal`, `buyer`, `piles` and `recipes`, below.
+  `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`
+  and `sales`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a buyer's
+  `parts`, `fittings`, `recipes` and `stock`, and `player_state`'s `meal`, `buyer`, `piles` and
+  `recipes`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -221,12 +222,12 @@ painting's F2 `Work` has no `wall` and doesn't say where it hangs.
 
 ### `player_state`
 
-`player`: the player's money, what they carry, their body, their hunger and what they know, an F2
+`player`: the player's money, what they carry, their body, their vitals and what they know, an F2
 `Player` (`server/simile/schema/player.py`). The server sends it after the `snapshot` and `clock`
-on connect, and again whenever any of it changes, and the client replaces what it had. Hunger and a
-lamp's charge change all the time, so a change to them alone is sent once one of them has moved by
-0.01 or more since the last `player_state`; any other change is sent at once. Clients that predate
-it ignore it.
+on connect, and again whenever any of it changes, and the client replaces what it had. Hunger,
+power, health, an effect's strength and a lamp's charge change all the time, so a change to them
+alone is sent once one of them has moved by 0.01 or more since the last `player_state`; any other
+change is sent at once. Clients that predate it ignore it.
 
 | Field | Type | |
 |---|---|---|
@@ -235,9 +236,26 @@ it ignore it.
 | `carry_limit` | number | The most they can carry, in kg. Picking things up keeps the items' total `weight` within it. |
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
 | `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
+| `power` | number | Their power cell's charge, from 1, full, to 0, flat, when they collapse. They run on it in place of hunger once a cell is in their `stomach`, and it stays full without one. Left out while it's full: read it as `player.power ?? 1`. |
+| `health` | number | From 1, unhurt, to 0, when they collapse. Left out while it's full: read it as `player.health ?? 1`. |
+| `effects` | `Effect[]` | Their ailments, in the order they got them, each kind once. Left out while there's none. |
 | `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
 | `taken` | object | When they last took from each pickup in the world, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
+| `sales` | `Sale[]` | What they've sold that its buyer keeps for them to buy back, oldest first. Left out while there's none. |
+
+Power is what hunger becomes once the power cell is fitted, but it's a field of its own rather than
+hunger read the other way. It runs from full to flat like the lamp's `charge`, and charges at a
+plug as the lamp does, while hunger keeps meaning what it always has for every client that reads
+it. The client shows `power` while a power cell is in the `stomach`, and `hunger` otherwise.
+
+An `Effect` has its `kind`: `"rat_bite"`, `"infection"`, what an untreated bite can turn into, or
+`"radiation"`; its `strength`, above 0 and at most 1; `fades`, the strength it loses each sim hour,
+or `null` while it lasts until it's treated, at the clinic or with medicine; and `since`, when they
+got it. A fading effect is gone once its strength reaches 0.
+
+A `Sale` has the `item` they sold, the `place` of the buyer that keeps it, and its `price`, what it
+fetched. The buyer offers it back in its `stock`.
 
 Beside `player`, the message has `meal`: the meal on offer where the player stands, which they can
 have by sending [`eat`](#eat) without an item. It's left out where there's none. A `Meal` has its
@@ -272,8 +290,14 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
   it builds, which they sell with [`sell_recipe`](#sell_recipe): `{"datajack": 40}`. It buys each
   recipe once. It's left out while it would buy none.
 
-Like `prices`, these are the server's, and so is the stock: what the keeper would buy or fit now is
-already in them. The keeper only voices them, and talking can't change them.
+And any buyer may sell:
+
+- `stock`: what it sells now, whether or not they can pay, which they buy with [`buy`](#buy). Each
+  `Offer` has its `item`, as they'd carry it, and its `price`. The scrap trader sells back what
+  they sold it, from their `sales`. It's left out while there's nothing.
+
+Like `prices`, these are the server's, and so is the stock: what the keeper would buy, fit or sell
+now is already in them. The keeper only voices them, and talking can't change them.
 
 `player_state` also has `recipes`: each recipe in `player.mind`, in full and in the same order. It's
 left out while they know none. A `Recipe` has the `bionic` it builds; its `name`, as the player sees
@@ -331,15 +355,17 @@ know no recipe.
 The player's state is saved with the world. A save from before it loads with the starting player:
 a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere, nothing
 taken and nothing known. A save from before the stomach, the feet and the mind loads with them
-still their own and knowing nothing. Their humanity is part of it on the server, derived from the
+still their own and knowing nothing, and one from before vitals loads at full power and health,
+with no effects and nothing to buy back. Their humanity is part of it on the server, derived from the
 bionics fitted (`Player.humanity`), but it's never sent: the player sees it only in how residents
 treat them.
 
 ### `player_collapsed`
 
-`position`: where the player wakes, at home. They starved and collapsed: the client puts them at
-`position`, snapping there as through a door, and can say what happened. They're still hungry, and
-they wake with their lamp, switched off, so they can see to go back once they switch it on. Everything else they carried stays where they
+`position`: where the player wakes, at home. `cause`: the `Vital` that ran out, why they
+collapsed: `"hunger"`, they starved; `"power"`, their power cell ran flat; or `"health"`, they had
+none left. The client puts them at `position`, snapping there as through a door, and can say what
+happened. They wake with their lamp, switched off, so they can see to go back once they switch it on. Everything else they carried stays where they
 fell: the [`player_state`](#player_state) that follows has it in a new `Pile` at the end of `left`.
 With nothing but the lamp, they leave no pile. Clients that predate it ignore it.
 
@@ -494,6 +520,14 @@ buys, by `player_state`'s [`buyer`](#player_state)'s `recipes`. It's sold for th
 goes to their `money`, and it's in their `mind`'s `sold` from then on. They still know it. The
 server sends the [`player_state`](#player_state) that follows. It ignores a `sell_recipe` where
 there's no buyer, and one for a recipe the buyer won't buy, which includes any they've sold.
+
+### `buy`
+
+`item`: the `id` of something the buyer where the player stands sells, in `player_state`'s
+[`buyer`](#player_state)'s `stock`. They buy the first offer of that `id` for its `price`, from
+their `money`, and carry it from then on. The server sends the [`player_state`](#player_state) that
+follows. It ignores a `buy` where there's no buyer, for something not in its `stock`, one they
+can't pay for, and one that won't fit under their carry limit.
 
 ### `watch_npc`
 

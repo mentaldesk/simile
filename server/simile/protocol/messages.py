@@ -11,6 +11,7 @@ from simile.schema import (
     Conversation,
     Facing,
     Id,
+    Item,
     JournalEntry,
     Key,
     Line,
@@ -321,8 +322,16 @@ class Fitting(Model):
         return self
 
 
+class Offer(Model):
+    """Something a buyer sells, by `buy`, for its `price`."""
+
+    item: Item
+    price: float = Field(ge=0, allow_inf_nan=False)
+
+
 class Buyer(Model):
-    """Who trades where the player stands: buys with `sell` and `sell_part`, and fits with `fit`."""
+    """Who trades where the player stands: buys with `sell` and `sell_part`, fits with `fit`, and
+    sells with `buy`."""
 
     place: Id = Field(description='Where: a location id, e.g. "scrap_stall" or "clinic".')
     name: str = Field(
@@ -352,6 +361,12 @@ class Buyer(Model):
         description="What it pays, once, for each recipe they know that it would buy now, by "
         "`sell_recipe`, by the bionic it builds. Left out while it would buy none.",
     )
+    stock: list[Offer] = Field(
+        default=[],
+        exclude_if=lambda stock: not stock,
+        description="What it sells now, by `buy`, whether or not they can pay, such as what they "
+        "sold it, to buy back. Left out while there's nothing.",
+    )
 
     @model_validator(mode="after")
     def _each_bionic_once(self) -> Self:
@@ -362,7 +377,7 @@ class Buyer(Model):
 
 
 class PlayerStateMessage(Model):
-    """The player's money, what they carry, their body, their hunger and what they know, but never
+    """The player's money, what they carry, their body, their vitals and what they know, but never
     their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
     and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
     whenever any of it changes."""
@@ -401,13 +416,22 @@ class PlayerStateMessage(Model):
         return self
 
 
+class Vital(StrEnum):
+    """What runs out when the player collapses."""
+
+    HUNGER = "hunger"
+    POWER = "power"
+    HEALTH = "health"
+
+
 class PlayerCollapsedMessage(Model):
-    """The player starved and collapsed. They wake at home, at `position`, still hungry, with
-    their lamp, switched off. Everything else they carried stays where they fell, in
-    `player_state`'s `left`."""
+    """The player collapsed: they starved, their power cell ran flat, or they had no health left.
+    They wake at home, at `position`, with their lamp, switched off. Everything else they carried
+    stays where they fell, in `player_state`'s `left`."""
 
     type: Literal["player_collapsed"] = "player_collapsed"
     position: Position
+    cause: Vital = Field(default=Vital.HUNGER, description="The vital that ran out.")
 
 
 class JournalMessage(Model):
@@ -523,6 +547,14 @@ class SellRecipeMessage(Model):
     recipe: Bionic
 
 
+class BuyMessage(Model):
+    """Buys one of something the buyer where they stand sells, `player_state`'s `buyer`'s
+    `stock`, at its price."""
+
+    type: Literal["buy"] = "buy"
+    item: Id = Field(description="What they buy, by its `id`: the first of that id in `stock`.")
+
+
 type ServerMessage = Annotated[
     SnapshotMessage
     | ClockMessage
@@ -555,7 +587,8 @@ type ClientMessage = Annotated[
     | LampMessage
     | SellPartMessage
     | FitMessage
-    | SellRecipeMessage,
+    | SellRecipeMessage
+    | BuyMessage,
     Field(discriminator="type"),
 ]
 
