@@ -123,8 +123,12 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   home.", "Press F to eat at Golden Bowl Noodles for 10."), else the first food they carry ("Press F
   to eat your pork bun."). F sends `eat`, with the item's id or `null` for the meal. From 0.5, with
   nothing F can eat, it says where they could, or what the meal here costs against what they have.
-- "You collapsed from hunger and woke at home." for six seconds after `player_collapsed`. The world
-  scene puts the player at home.
+- For six seconds after `player_collapsed`, why they collapsed, by its `cause`: "You collapsed from
+  hunger and woke at home.", or "Your power cell ran flat. You collapsed and woke at home." The
+  world scene puts the player at home.
+- **On a power cell** (a `power_cell` grade in their stomach) they never eat: no F, no meals, and
+  no hunger. The corner says "Your power is low. Charge it at a plug." from 30% power, and "Your
+  power cell is nearly flat. Charge it at a plug, or you'll collapse." from 10%.
 
 ## Picking up and selling
 
@@ -208,6 +212,10 @@ on, off, or charging (⚡) at a plug. A line under it says "It's dark. Press L f
 dark with it off, "Your lamp is running low." from 20% with it on, "Your lamp is flat. Charge it at
 a plug." when it's flat, and "Charging your lamp." at a plug. The world scene handles L
 ([`side/`](../side/README.md)).
+
+Once a power cell is in, a second battery under the lamp's shows their power, coloured the same,
+with ⚡ while it charges at a plug, and the line says "Charging your cell." (or "your lamp and your
+cell"). A plug fills both in about three seconds.
 
 ## What the world scene provides
 

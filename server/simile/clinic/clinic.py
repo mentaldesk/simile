@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig
 from simile.economy import OUTSIDE, PLAYER, Kind
+from simile.player.power import runs
 from simile.player.where import here, location
 from simile.protocol import Buyer, Fitting
 from simile.schema import BODY_PARTS, PRESENT, SOLD, Bionic, Body, BodyPart, Mind, Player
@@ -49,7 +50,8 @@ class Clinic:
 
     def fittings(self) -> list[Fitting]:
         """What the doctor would fit now, whether or not they can pay or have the parts: stage 1's
-        legs in stock, and each bionic they know the recipe for, once the cell's in."""
+        legs in stock, and each bionic they know the recipe for, once the cell's in and while it
+        would run it."""
         return [*self._offered(), *self._from_recipes()]
 
     def _offered(self) -> list[Fitting]:
@@ -70,6 +72,8 @@ class Clinic:
         fittings = []
         for bionic, recipe in self.config.recipes.items():
             if bionic not in known or body.has(bionic) or not recipe.ready(body):
+                continue
+            if not runs(body, bionic):
                 continue
             lower = bionic.line[: bionic.line.index(bionic)]
             free = [part for part in recipe.replaces if getattr(body, part) in (PRESENT, *lower)]

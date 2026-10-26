@@ -33,12 +33,14 @@ def with_lamp(charge: float = 1.0, on: bool = False) -> Player:
 
 
 class Underground:
-    def __init__(self, player: Player, at: Point = TUNNEL) -> None:
+    def __init__(self, player: Player, at: Point = TUNNEL, speed: float = 1.0) -> None:
         self.player = player
         self.playing = True
         self.movement = Movement(MAPS, EventBus())
         self.movement.track(PLAYER_ID, at)
-        self.lamp = Lamp(player, self.movement, Clock(NOW), playing=lambda: self.playing)
+        self.lamp = Lamp(
+            player, self.movement, Clock(NOW, speed=speed), playing=lambda: self.playing
+        )
 
     def go(self, to: Point) -> None:
         self.movement.track(PLAYER_ID, to)
@@ -62,11 +64,11 @@ def test_the_battery_runs_down_while_the_lamp_is_on() -> None:
     assert down.held.on is True
 
 
-def test_a_full_battery_lasts_twenty_minutes_and_charges_in_one() -> None:
+def test_a_full_battery_lasts_twenty_minutes_and_charges_in_three_real_seconds() -> None:
     config = LampConfig()
 
     assert 60 / config.drain == 20
-    assert 60 / config.charge == 1
+    assert config.charge == 3
 
 
 def test_the_battery_keeps_its_charge_while_the_lamp_is_off() -> None:
@@ -91,13 +93,24 @@ def test_nothing_changes_while_nobody_is_playing() -> None:
 def test_it_charges_at_a_plug_on_or_off_up_to_full(plug: Point, on: bool) -> None:
     down = Underground(with_lamp(charge=0.2, on=on), at=plug)
 
-    down.run(30)
+    down.run(1.5, step=0.1)
     half = down.held.charge
-    down.run(MINUTE)
+    down.run(3, step=0.1)
 
     assert half == pytest.approx(0.7)
     assert down.held.charge == 1.0
     assert down.held.on is on
+
+
+def test_it_charges_in_three_real_seconds_whatever_the_sims_speed() -> None:
+    down = Underground(with_lamp(charge=0.0), at=METRO_PLUG, speed=20)
+
+    down.run(30, step=0.1)
+    partway = down.held.charge
+    down.run(30, step=0.1)
+
+    assert partway == pytest.approx(0.5)
+    assert down.held.charge == 1.0
 
 
 @pytest.mark.parametrize("off", [Point(71, 15, "metro"), Point(73, 15, "metro"), TUNNEL])
@@ -132,7 +145,7 @@ def test_a_flat_lamp_does_nothing_until_it_is_charged() -> None:
     down.run(10 * MINUTE)
     still = down.held
     down.go(METRO_PLUG)
-    down.run(6)
+    down.run(0.3, step=0.1)
     charged = down.lamp.switch(True)
 
     assert not switched and still.charge == 0 and still.on is False
