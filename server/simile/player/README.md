@@ -87,8 +87,9 @@ and the bionics they'd fit.
 
 ## `player_state`
 
-`PlayerSync` sends `player_state`, the player, the meal on offer, the buyer where they stand and
-the piles lying at pickups they haven't taken, to every client:
+`PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer,
+the buyer where they stand and the piles lying at pickups they haven't taken, to every client. The
+recipes come from `recipes_of(app)`, which modules such as the clinic fill with theirs. It's sent:
 
 - to each new client after the snapshot and clock, and after the other modules' greetings, since
   it greets from `running`;

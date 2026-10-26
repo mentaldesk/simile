@@ -7,10 +7,20 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from simile.clinic.clinic import Clinic
-from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig, Offer
+from simile.clinic.config import DEFAULT_CONFIG, ClinicConfig, Offer, Procedure
 from simile.conversation import duration, parse_reply
 from simile.llm import LLMClient, LLMError
-from simile.schema import LEGS, PLAYER_ID, SOLD, Bionic, Conversation, CoreValue, Id, Line, Npc
+from simile.schema import (
+    PLAYER_ID,
+    SOLD,
+    Bionic,
+    Body,
+    Conversation,
+    CoreValue,
+    Id,
+    Line,
+    Npc,
+)
 from simile.sim import Clock, ConversationEnded, ConversationStarted, EventBus, LineSpoken
 from simile.social.bionics import LOOKS
 
@@ -18,11 +28,16 @@ logger = logging.getLogger(__name__)
 
 PLAYER_NAME = "Visitor"
 SENTENCE = re.compile(r"(?<=[.!?…])\s+(?=[A-Z\"“])")
-REPLACES: dict[Bionic, str] = {
-    **dict.fromkeys(LEGS, "their own legs"),
-    Bionic.DATAJACK: "a vertebra",
-    Bionic.INFRARED_EYE: "one of their eyes",
+REPLACES: dict[str, str] = {
+    "legs": "their own legs",
+    "vertebra": "a vertebra",
+    "left_eye": "one of their eyes",
+    "right_eye": "one of their eyes",
+    "stomach": "their stomach",
+    "feet": "their own feet",
 }
+HINTS = 2
+"""The most bionics they don't know the recipe for that the doctor might hint at."""
 
 
 class Cue(StrEnum):
@@ -190,10 +205,11 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
     most, least = _values(ranked[:3]), _values(ranked[-3:])
     habits = f"Your habits: {_listed(doctor.mannerisms)}." if doctor.mannerisms else ""
     fits = [
-        f"- {offer.name}, {_money(offer.price)}, in place of {_in_place_of(bionic, offer, config)}:"
-        f" they {offer.does}."
+        f"  - {offer.name}, {_money(offer.price)}, "
+        f"in place of {_in_place_of(bionic, offer, config)}: they {offer.does}."
         for bionic, offer in config.offers.items()
     ]
+    cell = config.procedures[Bionic.POWER_CELL].recipe.name.lower()
     bought = ", ".join(f"{id.replace('_', ' ')} {_money(price)}" for id, price in salvage.items())
     return "\n".join(
         [
@@ -210,8 +226,14 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
             "credit or offer anything else:",
             f"- You buy a healthy kidney for {_money(config.kidney)}, one from each customer, "
             "never the last.",
-            *fits,
             f"- You buy salvage: {bought}.",
+            "- You build bionics from a recipe the customer knows: they pay your fee "
+            "and bring the parts it lists, which the fitting uses up. Without the recipe you "
+            f"can't build it. Nothing you build runs without a {cell} in place of the stomach, "
+            "so the cell goes in first.",
+            "- You buy each recipe a customer knows once, at your price, and they still know it.",
+            "- You still have a few old legs in stock, fitted for the price alone:",
+            *fits,
             "Up in the village people notice bionics, and some think less of anyone who has them. "
             "The eye shows the most.",
             "You never take money or operate while talking: the customer does that at your "
@@ -225,7 +247,7 @@ def system_prompt(doctor: Npc, salvage: Mapping[Id, float], config: ClinicConfig
 
 def _in_place_of(bionic: Bionic, offer: Offer, config: ClinicConfig) -> str:
     if not offer.after:
-        return REPLACES[bionic]
+        return REPLACES[min(bionic.replaces)]
     legs = " or ".join(config.offers[before].name.lower() for before in offer.after)
     brought = f", and only with an {offer.needs.name} they bring" if offer.needs else ""
     return f"their {legs}, which you take back{brought}"
@@ -239,6 +261,8 @@ def turn_prompt(doctor: Npc, clinic: Clinic, lines: Sequence[Line], cue: Cue) ->
         [
             f"What you can see of {PLAYER_NAME}: {_looks(clinic)}",
             f"What you'd do for them now: {_now(clinic)}",
+            *_waiting(clinic),
+            *_hints(clinic),
             "",
             *(["The conversation so far:", *said, ""] if said else []),
             cue.value,
@@ -255,9 +279,69 @@ def _looks(clinic: Clinic) -> str:
 
 
 def _now(clinic: Clinic) -> str:
+    recipes = clinic.config.recipes
     deals = [f"buy a kidney for {_money(price)}" for price in clinic.parts().values()]
-    deals += [f"fit {f.name.lower()} for {_money(f.price)}" for f in clinic.fittings()]
-    return f"{_listed(deals)}." if deals else "nothing more: they've everything you stock."
+    deals += [_fitting(clinic, f.bionic, f.name, f.price) for f in clinic.fittings()]
+    deals += [
+        f"buy their recipe for the {recipes[bionic].name.lower()} for a one-off {_money(price)}"
+        for bionic, price in clinic.recipes().items()
+    ]
+    return f"{_listed(deals)}." if deals else "nothing, until they know how to build something."
+
+
+def _fitting(clinic: Clinic, bionic: Bionic, name: str, price: float) -> str:
+    recipe = clinic.config.recipes.get(bionic)
+    if recipe is None:
+        return f"fit {name.lower()} for {_money(price)}"
+    said = f"build the {name.lower()} for {_money(price)}, using up {_parts(recipe.parts)}"
+    if missing := clinic.missing(bionic):
+        said += f", though they're short of {_parts(missing)}"
+    return said
+
+
+def _waiting(clinic: Clinic) -> list[str]:
+    """The recipes they know that wait for the power cell."""
+    body, recipes = clinic.player.body, clinic.config.recipes
+    waiting = [
+        recipes[bionic].name.lower()
+        for bionic in clinic.player.mind.recipes
+        if bionic in recipes and not body.has(bionic) and not recipes[bionic].ready(body)
+    ]
+    if not waiting:
+        return []
+    return [f"They know how to build the {_listed(waiting)}, but not before a power cell is in."]
+
+
+def _hints(clinic: Clinic) -> list[str]:
+    """A bionic or two they don't know the recipe for, for the doctor to hint at."""
+    body, known = clinic.player.body, clinic.player.mind.recipes
+    unknown = [
+        procedure
+        for bionic, procedure in clinic.config.procedures.items()
+        if bionic not in known and not body.has(bionic) and _next_grade(body, bionic)
+    ][:HINTS]
+    if not unknown:
+        return []
+    hints = "; or ".join(_hint(procedure) for procedure in unknown)
+    return [
+        "If it suits the talk, you might hint at what else you could do for them, but never with "
+        f"a price, a list or how to build it: {hints}."
+    ]
+
+
+def _next_grade(body: Body, bionic: Bionic) -> bool:
+    line = bionic.line
+    return all(body.has(lower) for lower in line[: line.index(bionic)])
+
+
+def _hint(procedure: Procedure) -> str:
+    recipe = procedure.recipe
+    where = REPLACES[recipe.replaces[0]]
+    return f"the {recipe.name.lower()}, in place of {where}, to {procedure.does}"
+
+
+def _parts(parts: dict[str, int]) -> str:
+    return _listed([f"{n} {id.replace('_', ' ')}" for id, n in parts.items()])
 
 
 def _values(pairs: Sequence[tuple[CoreValue, float]]) -> str:

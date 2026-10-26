@@ -121,7 +121,7 @@ export class DialogueScene extends Phaser.Scene {
     this.murals.update(player, used?.kind === 'mural' && !this.news.isOpen);
     const counter = used?.kind === 'counter' || used?.kind === 'jack' ? used.interactable : undefined;
     this.counter.update(counter, !this.chat.isOpen);
-    this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper());
+    this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper(), playerState.latest?.recipes);
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
@@ -155,7 +155,7 @@ export class DialogueScene extends Phaser.Scene {
     else if (used?.kind === 'clinic' && playerState.latest) {
       this.murals.close();
       this.news.close();
-      this.clinic.open(used.buyer, playerState.latest.player, this.keeper());
+      this.clinic.open(used.buyer, playerState.latest.player, this.keeper(), playerState.latest.recipes);
     }
   }
 

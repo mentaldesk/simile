@@ -13,7 +13,8 @@ from simile.social import (
     tolerance,
     unease,
 )
-from simile.social.bionics import LEG_NAMES, level, seen_in
+from simile.social.bionics import FITTED, LOOKS, NAMES, level, seen_in
+from simile.social.config import DEFAULT_BIONICS
 
 NOW = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
@@ -136,12 +137,23 @@ def test_every_bionic_reads_back_from_its_memory(bionics: list[Bionic]) -> None:
     assert seen_in(memory) == bionics
 
 
-@pytest.mark.parametrize("legs", list(LEG_NAMES))
+@pytest.mark.parametrize("legs", [b for b in Bionic if b.replaces == {"legs"}])
 def test_every_grade_of_legs_is_seen_as_legs_and_read_back(legs: Bionic) -> None:
     events, memory = sighting(resident(tradition=1, security=1), [legs, JACK], NOW)
-    name = legs.value.replace("_", " ")
+    name = NAMES[legs]
 
     assert seen_in(memory) == [legs, JACK]
     assert f"has {name} where their own legs were" in memory.content
     assert events[0].magnitude == pytest.approx(events[1].magnitude * 0.75 / 0.5)
     assert f"The {name} are new" in (looks("Visitor", [legs], -1, new=[legs]) or "")
+
+
+@pytest.mark.parametrize("bionic", list(Bionic))
+def test_residents_can_see_name_and_remember_every_bionic(bionic: Bionic) -> None:
+    events, memory = sighting(resident(tradition=1, security=1), [bionic, JACK], NOW)
+
+    assert FITTED[bionic] in events[0].action
+    assert LOOKS[bionic] in memory.content
+    assert set(seen_in(memory)) == {bionic, JACK}
+    assert DEFAULT_BIONICS.stands_out[bionic] > 0
+    assert list(NAMES.values()).count(NAMES[bionic]) == 1

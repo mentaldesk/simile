@@ -1,0 +1,89 @@
+{
+  "id": "bat",
+  "hash": "c1b47d47fc8a8744",
+  "version": 1,
+  "ppm": 80,
+  "moves": "fly",
+  "size": [
+    0.99,
+    0.61
+  ],
+  "painted": "bat.webp",
+  "frames": {
+    "glide": {
+      "frame": [
+        261,
+        0,
+        83,
+        53
+      ],
+      "anchor": [
+        41.3,
+        26.4
+      ]
+    },
+    "up": {
+      "frame": [
+        196,
+        0,
+        63,
+        61
+      ],
+      "anchor": [
+        21.3,
+        34.4
+      ]
+    },
+    "down": {
+      "frame": [
+        131,
+        0,
+        63,
+        61
+      ],
+      "anchor": [
+        21.3,
+        34.4
+      ]
+    },
+    "attack": {
+      "frame": [
+        58,
+        0,
+        71,
+        64
+      ],
+      "anchor": [
+        31.3,
+        36.4
+      ]
+    },
+    "roost": {
+      "frame": [
+        0,
+        0,
+        56,
+        77
+      ],
+      "anchor": [
+        26.6,
+        1.6
+      ],
+      "hangs": true
+    }
+  },
+  "poses": {
+    "fly": [
+      "up",
+      "glide",
+      "down",
+      "glide"
+    ],
+    "attack": [
+      "attack"
+    ],
+    "roost": [
+      "roost"
+    ]
+  }
+}
