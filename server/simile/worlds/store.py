@@ -273,6 +273,8 @@ class Worlds:
         names = (stem if n == 1 else f"{stem}-{n}" for n in counting(1))
         while True:
             folder = self.root / next(names)
+            if folder.exists():
+                continue
             check_writable(folder)
             self.root.mkdir(parents=True, exist_ok=True)
             try:

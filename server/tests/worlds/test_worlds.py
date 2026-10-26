@@ -1,9 +1,9 @@
 import sqlite3
 from collections.abc import Callable
 from contextlib import closing
-from datetime import UTC, datetime
+from datetime import UTC, datetime, tzinfo
 from pathlib import Path
-from typing import Any
+from typing import Any, Self
 
 import pytest
 from starlette.testclient import TestClient
@@ -11,7 +11,7 @@ from starlette.testclient import TestClient
 from simile.app import create_app
 from simile.memory import MemoryStore
 from simile.persistence import SavedWorld, WorldStore
-from simile.worlds import Worlds, supervisor
+from simile.worlds import Worlds, store, supervisor
 from simile.worlds.index import Index
 from simile.worlds.store import TODAY, TODAY_ID
 
@@ -270,3 +270,23 @@ def test_the_world_is_last_played_once_its_server_is_up(
         assert down.entry(world["id"]).played > up.entry(world["id"]).played
     else:
         assert up.last is None and down.entry(world["id"]).played is None
+
+
+class AtHalfPastTwo(datetime):
+    @classmethod
+    def now(cls, tz: tzinfo | None = None) -> Self:
+        return cls(2026, 10, 18, 14, 32, tzinfo=tz)
+
+
+def test_a_world_made_in_the_same_minute_as_a_saved_one_gets_a_folder_of_its_own(
+    client: TestClient, root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(store, "datetime", AtHalfPastTwo)
+    played = made(client, count=2, picks=[A, B])
+    with MemoryStore(root / played["id"] / "simile.db") as memory, WorldStore(memory) as saves:
+        saves.save(SavedWorld(now=datetime(2026, 1, 1, 8, tzinfo=UTC), npcs={}))
+
+    second = made(client, count=2, picks=[C, D])
+
+    assert (played["id"], second["id"]) == ("2026-10-18-1432", "2026-10-18-1432-2")
+    assert folders(root) == [played["id"], second["id"]]

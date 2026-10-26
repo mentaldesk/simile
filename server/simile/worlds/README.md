@@ -78,9 +78,10 @@ then reloads the page.
 A plain `make dev` opens the last world played, or today's village if there's none or it's been
 deleted. A world that fails to start isn't recorded as played, so the next `make dev` opens the one
 before it. If a world that used to start stops starting, `SIMILE_DB=data/simile.db make dev` opens
-today's village instead, and the menu can open another from there. `$SIMILE_DB` set when it starts opens that save instead, and `SIMILE_FRESH=1` starts the
-world it opens afresh; neither carries over to the worlds opened after it. Each
-world uses the player's character library, `$SIMILE_LIBRARY` or `server/data/library/`.
+today's village instead, and the menu can open another from there. `$SIMILE_DB` set when it starts
+opens that save instead, and `SIMILE_FRESH=1` starts the world it opens afresh; neither carries over
+to the worlds opened after it. Each world uses the player's character library, `$SIMILE_LIBRARY` or
+`server/data/library/`.
 
 `simile serve` on its own runs only the world `$SIMILE_DB` names, and opening a world there gets
 409. `POST /api/worlds` still reports the `restart` command that starts the server on the new world

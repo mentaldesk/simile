@@ -71,8 +71,6 @@ class Spawner:
 
 
 class Groups:
-    """Signals sent to process groups."""
-
     def __init__(self) -> None:
         self.sent: list[tuple[int, int]] = []
 
@@ -170,7 +168,7 @@ def test_switches_on_a_real_signal(
 
     spawner = Spawner(asked)
 
-    assert Supervisor(["serve"], worlds, BASE, spawn=spawner).run() == 0
+    assert Supervisor(["serve"], worlds, BASE, spawn=spawner, killpg=Groups()).run() == 0
 
     assert len(spawner.envs) == 2
     assert spawner.children[0].signals == [signal.SIGTERM]
