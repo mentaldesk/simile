@@ -53,6 +53,18 @@ SALVAGE: dict[Id, float] = {
     "apex_board": 14.0,
 }
 """The metro's salvage, then the sewers' (`simile.street.sewers`)."""
+PARTS: dict[Id, float] = {
+    "lithium_cell": 10.0,
+    "charge_controller": 15.0,
+    "usb_c_connector": 12.0,
+    "infrared_lens": 40.0,
+    "apex_actuator": 30.0,
+}
+"""The recipes' parts that aren't salvage, which buyers keep for the player to buy back."""
+KEPT: frozenset[Id] = frozenset(
+    {"copper_coil", "pump_impeller", "float_valve", "brass_fitting", "old_battery"}
+)
+"""The sewers' salvage that recipes use up and its finds hold: buyers keep it as they do parts."""
 
 
 class EconomyConfig(BaseModel):
@@ -76,10 +88,24 @@ class EconomyConfig(BaseModel):
         default=SALVAGE,
         description="What a buyer pays the player for one of each kind of salvage, by item id.",
     )
+    parts: dict[Id, Annotated[float, Field(ge=0)]] = Field(
+        default=PARTS,
+        description="What a buyer pays the player for one of each kind of part, by item id.",
+    )
+    kept: frozenset[Id] = Field(
+        default=KEPT,
+        description="The salvage a buyer keeps for the player to buy back, as it keeps every part.",
+    )
+    buy_back: float = Field(
+        default=2.0,
+        ge=1,
+        description="What a buyer asks for something it keeps that the player sold it, as a "
+        "multiple of what it paid.",
+    )
     buyers: tuple[Id, ...] = Field(
         default=("scrap_stall", "clinic"),
-        description="Where salvage sells, by location id: the scrap trader's stall on the metro's "
-        "platform and the clinic.",
+        description="Where salvage and parts sell, by location id: the scrap trader's stall on "
+        "the metro's platform and the clinic.",
     )
     takings: float = Field(
         default=10.0,

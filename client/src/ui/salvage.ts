@@ -1,11 +1,11 @@
 import type { Buyer, Item, Pile, Player } from '../net';
-import { isClinic } from '../world/buyers';
+import { fits, trades } from '../world/buyers';
 import { NEWS_KEY } from './tuning';
 
 const E = NEWS_KEY.toUpperCase();
 
 export const amount = (money: number) => String(Number(money.toFixed(2)));
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
+const lowerFirst = (text: string) => (/^[A-Z][A-Z]/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1));
 const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 
 /** "a", "a and b", or "a, b and c". */
@@ -51,13 +51,13 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
   return `Press ${E} to pick up ${what}.${left}`;
 }
 
-/** What E sells to the buyer where they stand, or that it buys. */
+/** What the buyer where they stand would pay for what they carry, for E's panel, or that it buys. */
 export function sellPrompt(buyer: Buyer, player: Player): string {
-  if (isClinic(buyer)) return `Press ${E} to see what ${lowerFirst(buyer.name)} buys and fits.`;
+  if (trades(buyer)) return `Press ${E} to see what ${lowerFirst(buyer.name)} buys and ${fits(buyer) ? 'fits' : 'sells'}.`;
   const sold = player.items.filter(({ id }) => id in buyer.prices);
   if (!sold.length) return `${buyer.name} buys salvage. You have ${amount(player.money)}.`;
   const total = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
   const kinds = counted(sold);
   const what = kinds.length > 2 ? 'your salvage' : `your ${listed(kinds)}`;
-  return `Press ${E} to sell ${what} at ${lowerFirst(buyer.name)} for ${amount(total)}.`;
+  return `Press ${E} to sell at ${lowerFirst(buyer.name)}: ${amount(total)} for ${what}.`;
 }
