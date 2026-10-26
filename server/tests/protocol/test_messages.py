@@ -52,6 +52,8 @@ from simile.protocol import (
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
+    Shut,
+    ShutReason,
     Treatment,
     TreatMessage,
     Vital,
@@ -213,6 +215,16 @@ DELVING = PlayerStateMessage(
 
 NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
 AT_THE_NOODLE_BAR = DELVING.model_copy(update={"meal": NOODLES})
+NOODLES_SHUT = Shut(
+    place="noodle_bar",
+    name="Golden Bowl Noodles",
+    reason=ShutReason.CLOSED,
+    opens=datetime(2026, 3, 17, 11, tzinfo=UTC),
+)
+AT_THE_SHUT_NOODLE_BAR = DELVING.model_copy(update={"shut": NOODLES_SHUT})
+AT_A_SHOP_NOBODY_KEEPS = DELVING.model_copy(
+    update={"shut": NOODLES_SHUT.model_copy(update={"opens": None})}
+)
 WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 WOKEN = PlayerStateMessage(
     player=Player(
@@ -369,6 +381,8 @@ SERVER = [
     IN_THE_METRO,
     KNOWING,
     SELLING_RECIPES,
+    AT_THE_SHUT_NOODLE_BAR,
+    AT_A_SHOP_NOBODY_KEEPS,
     HURT,
     BUYING_BACK,
     TREATING,
@@ -835,6 +849,45 @@ def test_player_state_says_what_meal_is_on_offer_where_they_stand() -> None:
     }
 
 
+def test_player_state_says_when_the_shop_they_stand_in_next_serves() -> None:
+    data = json.loads(AT_THE_SHUT_NOODLE_BAR.model_dump_json())
+
+    assert data == json.loads(DELVING.model_dump_json()) | {
+        "shut": {
+            "place": "noodle_bar",
+            "name": "Golden Bowl Noodles",
+            "reason": "closed",
+            "opens": "2026-03-17T11:00:00Z",
+        }
+    }
+    assert {reason.value for reason in ShutReason} == {"closed", "sold_out"}
+
+
+def test_a_shop_without_a_keeper_has_no_opening() -> None:
+    shut = json.loads(AT_A_SHOP_NOBODY_KEEPS.model_dump_json())["shut"]
+
+    assert (shut["reason"], shut["opens"]) == ("closed", None)
+
+
+def test_player_state_has_a_meal_or_a_shut_shop_not_both() -> None:
+    with pytest.raises(ValidationError, match="not both"):
+        PlayerStateMessage(player=Player(), meal=NOODLES, shut=NOODLES_SHUT)
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"name": ""}, "at least 1 character"),
+        ({"place": "Noodle bar"}, "String should match pattern"),
+        ({"reason": "busy"}, "Input should be 'closed' or 'sold_out'"),
+        ({"opens": "2026-03-17T11:00:00"}, "timezone info"),
+    ],
+)
+def test_rejects_invalid_shut_shops(update: dict[str, Any], match: str) -> None:
+    with pytest.raises(ValidationError, match=match):
+        Shut.model_validate(NOODLES_SHUT.model_dump() | update)
+
+
 @pytest.mark.parametrize("message", [STARTING, DELVING], ids=["starting", "delving"])
 def test_player_state_without_a_meal_buyer_or_piles_dumps_as_before(
     message: PlayerStateMessage,
@@ -938,6 +991,7 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
     ("model", "field"),
     [
         ("PlayerStateMessage", "meal"),
+        ("PlayerStateMessage", "shut"),
         ("PlayerStateMessage", "buyer"),
         ("PlayerStateMessage", "piles"),
         ("PlayerStateMessage", "recipes"),
