@@ -20,7 +20,7 @@ using the GPU.
 ## Files
 
 For each resident, the clinic's doctor, `player`, and the player with each combination of bionics
-(`player_legs`, `player_datajack_eye`, `player_legs_datajack_eye` and so on, below):
+(`player_legs`, `player_bionic_legs_feet`, `player_legs_datajack_eye` and so on, below):
 
 | File | What it is |
 |---|---|
@@ -122,31 +122,44 @@ gets a reroll in `build.REROLLS` (`"<id>/<frame>": n`), which repaints that fram
 
 ## The player with bionics
 
-Seven more figures, one for each combination of the hydraulic legs, the datajack and the
-infrared eye (`server/simile/dolls/bionics.py`), with the player's frames and poses. Their
-manifests say what's `fitted`, and their `hash` is the whole player's with each part's prompts
-and rerolls, and `bionics.VERSION`.
+Nineteen more figures, one for each combination of the lower body (stage 1's hydraulic legs, the
+bionic legs, the spring feet, or the bionic legs with the spring feet), the datajack and the
+infrared eye (`server/simile/dolls/bionics.py`), with the player's frames and poses. Every grade
+of a line looks alike, and so do stage 1's five grades of legs, until they're retired. Stage 1's
+legs with the feet show as the bionic legs with the feet (`bionics.shown`). The power cell is
+inside, under the t-shirt, so it doesn't show. Their manifests say what's `fitted`, and their
+`hash` is the whole player's with each layer's prompts and rerolls, and `bionics.VERSION`.
 
-1. **Each part is painted once on every frame that shows it,** as an edit of the whole player's
-   same frame: 20 paintings. The eye isn't seen from behind, so no climb has it.
-   - The legs are steel hydraulic shins below shorts, in the same sneakers.
+1. **Each layer is painted once on every frame that shows it** (`bionics.LAYERS`), as an edit of
+   the whole player's same frame: 41 paintings. The bionic legs with the feet are one layer, the
+   feet painted over the bionic legs' painting. The eye isn't seen from behind, so no climb has
+   it.
+   - Stage 1's legs are steel hydraulic shins below shorts, in the same sneakers.
+   - The bionic legs are rounded steel-grey armour plates below shorts, with black knee joints,
+     in the same sneakers.
+   - The spring feet are steel foot plates on yellow coil springs, in place of the sneakers. Over
+     the bionic legs, FLUX coils the springs up the shins.
    - The datajack is a chrome port with a green light. FLUX paints it on a band round the neck
      however it's asked not to, so that's how it looks, the same in every frame.
    - The eye is a red lens in a chrome rim.
 2. **Each part is checked as the residents' poses are,** against the whole player's standing
    figure, and painted again if it doesn't show (`bionics.missing`):
-   - steel over 12% of the legs, which the grey shading of the whole player's sneakers stays
-     under (about 6%), while hydraulic legs are 13 to 23%;
+   - steel over 12% of the legs, for either legs, which the grey shading of the whole player's
+     sneakers stays under (about 6%), while hydraulic legs are 13 to 23%;
+   - the springs' yellow over 0.6% of the legs, which the whole player has none of, while the
+     feet alone are 0.7 to 4% in the atlas;
    - the green light;
    - one red lens, not two, no wider than 17% of the head, as the walk's lenses are (about
      15%), so it doesn't grow when the player stops.
 
    The face check spares the lens and its rim (`bionics.spared`). A frame may show the parts'
-   steel, red and green (`bionics.PALETTE`) without their counting as strays. With the legs, the
-   standing colour check looks for the bottom colour in the shorts (`bionics.SHORTS`).
-3. **Laid over the whole player** (`bionics.changed`, `bionics.laid`): each part is what its edit
-   changed of the whole player's frame, near the part (anything else FLUX redrew, a backpack a
-   shade lighter, is left out), grown by its outline and feathered. Each combination is the whole
+   steel, red, green and yellow (`bionics.PALETTE`) without their counting as strays. With either
+   legs, the standing colour check looks for the bottom colour in the shorts (`bionics.SHORTS`),
+   and with the feet it doesn't look for the shoes (`bionics.hides`).
+3. **Laid over the whole player** (`bionics.changed`, `bionics.laid`): each layer is what its edit
+   changed of the whole player's frame, near the part, or below the waist for the lower body
+   (anything else FLUX redrew, a backpack a shade lighter, is left out), grown by its outline and
+   feathered. Each combination is the whole
    player's frames with its parts laid over them, so the player is the same in every combination
    but for the parts, and each part is the same in every combination it's in.
 4. **Scaled as the whole player is** (`sprites.frames`' `reference`), so fitting a part doesn't

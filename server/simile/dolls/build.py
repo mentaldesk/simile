@@ -15,7 +15,7 @@ import numpy as np
 from PIL import Image
 
 from simile.dolls import bionics
-from simile.dolls.bionics import COMBINATIONS, Combination, figure_id
+from simile.dolls.bionics import COMBINATIONS, Combination, figure_id, layers
 from simile.dolls.figure import (
     EDITS,
     FRAMES,
@@ -67,6 +67,8 @@ REROLLS: dict[str, int] = {
     "player_eye/stand": 3,
     "player_eye/pass": 2,
     "player_eye/sit": 8,
+    "player_bionic_legs/climb": 1,
+    "player_bionic_legs_feet/pass": 2,
 }
 """`<id>/<frame>` to a reroll number, for a painting that came out off-model by eye."""
 MISSES: dict[tuple[str, str, str], str] = {
@@ -121,11 +123,13 @@ def fingerprint(who: str, appearance: Appearance, said: str = "") -> str:
 
 def fitted_fingerprint(combination: Combination, player: str, appearance: Appearance) -> str:
     """What the player with bionics is made from: the player's, its parts' prompts and rerolls."""
-    ids = {figure_id((b,)) for b in combination}
+    painted = [layer[: n + 1] for layer in layers(combination) for n in range(len(layer))]
+    ids = {figure_id(layer) for layer in painted}
+    prompts = [bionics.edit_prompt(f, p[-1], appearance, p[:-1]) for p in painted for f in FRAMES]
     inputs = {
         "player": player,
         "version": bionics.VERSION,
-        "prompts": [bionics.edit_prompt(f, b, appearance) for b in combination for f in FRAMES],
+        "prompts": prompts,
         "rerolls": {k: v for k, v in REROLLS.items() if k.split("/")[0] in ids},
     }
     return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
@@ -225,11 +229,12 @@ def attempt(
         fixed = pulled(figure, appearance, pose.bands)
         tried = Try(seed, raw, swatches(fixed, appearance, pose.bands), seconds)
     else:
-        found = follow(figure, standing.colours, appearance, pose.bands)
+        colours = {k: v for k, v in standing.colours.items() if k not in bionics.hides(fitted)}
+        found = follow(figure, colours, appearance, pose.bands)
         fixed = matched(figure, found, pose.bands)
-        after = kept(figure, fixed, standing.colours, appearance, pose.bands)
+        after = kept(figure, fixed, colours, appearance, pose.bands)
         tried = Try(seed, raw, after, seconds, followed=True)
-        tried.lost = sorted(set(standing.colours) - set(found))
+        tried.lost = sorted(set(colours) - set(found))
         stand = standing.figures["stand"]
         tried.scale = round(scale(fixed, stand, pose.bands == "climb"), 3)
         tried.strays = strays(fixed, stand, bionics.PALETTE if fitted else None)
@@ -315,35 +320,36 @@ def paint_parts(
     painter: Cached,
     cut: Cut = cut_out,
     log: Callable[[str], None] = print,
-) -> dict[Bionic, Painted]:
-    """Each bionic on every frame that shows it, as an edit of the `player`'s same frame."""
-    found = {}
-    for bionic in bionics.FITTED:
-        painted = Painted(figure_id((bionic,)), colours=player.colours)
+) -> dict[Combination, Painted]:
+    """Each layer on every frame that shows it, as an edit of the `player`'s frame or its base's."""
+    found: dict[Combination, Painted] = {}
+    for layer in bionics.LAYERS:
+        base = found[layer[:-1]] if len(layer) > 1 else player
+        painted = Painted(figure_id(layer), colours=player.colours)
         for frame in FRAMES:
-            if not bionics.shows(bionic, frame):
+            if not any(bionics.shows(b, frame) for b in layer):
                 continue
             pose = STANDING if frame == "stand" else EDITS[frame]
-            prompt = bionics.edit_prompt(frame, bionic, appearance)
-            images, tries = [player.paintings[frame]], TRIES["fitted"]
+            prompt = bionics.edit_prompt(frame, layer[-1], appearance, layer[:-1])
+            images, tries = [base.paintings[frame]], TRIES["fitted"]
             args = (painter, painted, frame, prompt, images, appearance, cut, pose, tries)
-            paint_frame(*args, standing=player, fitted=(bionic,))
+            paint_frame(*args, standing=player, fitted=layer)
             log(f"{painted.who} {frame}: {summary(painted.tries[frame][-1])}")
-        found[bionic] = painted
+        found[layer] = painted
     return found
 
 
-def fit(player: Painted, parts: dict[Bionic, Painted]) -> dict[Combination, dict]:
+def fit(player: Painted, parts: dict[Combination, Painted]) -> dict[Combination, dict]:
     """Each combination's frames: the `player`'s, with its `parts` laid over them."""
-    layers = {
-        (bionic, frame): (figure, bionics.changed(player.figures[frame], figure, bionic))
-        for bionic, painted in parts.items()
+    laid = {
+        (layer, frame): (figure, bionics.changed(player.figures[frame], figure, layer))
+        for layer, painted in parts.items()
         for frame, figure in painted.figures.items()
     }
     return {
         combination: {
             frame: bionics.laid(
-                whole, [layers[b, frame] for b in combination if (b, frame) in layers]
+                whole, [laid[p, frame] for p in layers(combination) if (p, frame) in laid]
             )
             for frame, whole in player.figures.items()
         }
