@@ -18,7 +18,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - a mural up close (see *Looking at a mural*);
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
   (see *Picking up and selling*);
-- the player's journal of what happened to Aris (see *The journal*).
+- the player's journal of what happened to Aris (see *The journal*);
+- the character screen: their vitals, body, gear and recipes (see *The character screen*).
 
 ## Choosing who to talk to
 
@@ -178,9 +179,28 @@ and opens the journal in place of the controls (`lookAtClue`). The server writes
 holds into the journal and sends it. Where a pile is in reach too, E takes whichever is nearer, the
 pile on a tie, as the server does.
 
+## The character screen
+
+C opens the character screen (`CharacterPanel` in [`character-panel.ts`](character-panel.ts)), and
+C or Esc closes it. It shows the last `player_state` in four tabs, and ← → or a click switch them.
+It opens on the tab it was left on, and takes the keys while it's open, so the player stands still.
+Opening it closes the journal and the controls.
+
+- **Vitals:** power once a power cell is in `body.stomach`, else hunger with what `feeling` says of
+  it; health; the lamp's charge and whether it's on, off or charging; credits; and each effect, how
+  strong and whether it fades or lasts until it's treated.
+- **Body:** each part head to foot, the player's own, sold, or the bionic in its place, named by its
+  recipe or as the clinic names it (`bionicName`). `stomach` and `feet` are their own when left out.
+- **Gear:** what they carry, each kind once with how many and its weight, against the carry limit.
+- **Mind:** each recipe in `player.mind`, from `player_state`'s `recipes`: the parts it needs
+  against what they carry, its credits against their money, what it goes in place of and what must
+  be fitted first, and whether they've sold it to the clinic.
+
+The side walk opens it on C and goes through its tabs.
+
 ## Keys
 
-The game's keys (Enter, Tab, Esc, E, F, J, ?) are handled on `window` only when nothing on the page has
+The game's keys (Enter, Tab, Esc, E, F, J, C, ?) are handled on `window` only when nothing on the page has
 focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input keeps its own Enter,
 Tab and Esc.
 

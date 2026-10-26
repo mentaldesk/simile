@@ -514,6 +514,34 @@ async function talkLeg(page: Page, api: Api, index: number): Promise<void> {
   if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
 }
 
+/** C opens the character screen, ← → go through its tabs without moving the player, and C closes it. */
+async function characterLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the character screen';
+  const at = { map: 'high_street', x: 20, y: 15 };
+  await teleport(page, api, at, name);
+  await run(page, 200);
+  await page.keyboard.press('c');
+  await run(page, 200);
+  if ((await shown(page, 'section.character')) === null) throw new Error(`${name}: C didn't open it`);
+  for (const [tab, has] of [
+    ['Vitals', 'Lamp'],
+    ['Body', 'Your own'],
+    ['Gear', 'Lamp'],
+    ['Mind', 'no recipes'],
+  ] as const) {
+    const selected = await shown(page, '.character-tabs [aria-selected="true"]');
+    const body = await shown(page, '.character-page');
+    if (selected !== tab || !body?.includes(has)) throw new Error(`${name}: on ${selected}, not ${tab} with ${has}: ${body}`);
+    await shot(page, index, `${name}, ${tab}`);
+    await page.keyboard.press('ArrowRight');
+    await run(page, 100);
+  }
+  await page.keyboard.press('c');
+  await run(page, 200);
+  if ((await shown(page, 'section.character')) !== null) throw new Error(`${name}: C didn't close it`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
+}
+
 const root = new URL('../..', import.meta.url).pathname;
 const server = await createServer({ root, configFile: false, logLevel: 'error', server: { port: 0 } });
 await server.listen();
@@ -551,6 +579,7 @@ try {
       (i) => counterLeg(page, api, counter, i),
     ]),
     ['E beside a resident', (i) => talkLeg(page, api, i)],
+    ['C for the character screen', (i) => characterLeg(page, api, i)],
   ];
   const started = Date.now();
   for (const [i, [name, walk]] of all.entries()) {
