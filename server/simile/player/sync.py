@@ -16,7 +16,8 @@ def recipes_of(app: Starlette) -> dict[Bionic, Recipe]:
 
 
 class PlayerSync:
-    """Sends `player_state` on each change, and on hunger or charge alone once moved by `step`."""
+    """Sends `player_state` on each change, and on hunger, power or a charge alone once moved by
+    `step`."""
 
     def __init__(
         self,
@@ -66,12 +67,16 @@ class PlayerSync:
 
 def _moving(message: PlayerStateMessage) -> list[float]:
     player = message.player
-    return [player.hunger, *(item.charge for item in player.items if item.charge is not None)]
+    return [
+        player.hunger,
+        player.power,
+        *(item.charge for item in player.items if item.charge is not None),
+    ]
 
 
 def _steady(message: PlayerStateMessage) -> PlayerStateMessage:
-    """Without hunger or the lamps' charges, for comparing."""
+    """Without hunger, power or the lamps' charges, for comparing."""
     player = message.player
     items = [item.model_copy(update={"charge": None}) for item in player.items]
-    still = player.model_copy(update={"hunger": 0.0, "items": items})
+    still = player.model_copy(update={"hunger": 0.0, "power": 1.0, "items": items})
     return message.model_copy(update={"player": still})

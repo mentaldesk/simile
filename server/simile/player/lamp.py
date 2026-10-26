@@ -23,9 +23,10 @@ class LampConfig(BaseModel):
         description="How much of a full battery it uses each sim hour it's on: twenty minutes.",
     )
     charge: float = Field(
-        default=60.0,
+        default=3.0,
         gt=0,
-        description="How much a plug charges it each sim hour: from flat to full in a minute.",
+        description="Real seconds a plug takes to charge it from flat to full, whatever the sim's "
+        "speed. The player's power cell charges as fast.",
     )
 
 
@@ -56,8 +57,8 @@ class Lamp:
             return
         lamp = self.player.items[index]
         charge, on = lamp.charge or 0.0, bool(lamp.on)
-        if self.plug() is not None:
-            charge = min(charge + self.config.charge * dt / HOUR, 1.0)
+        if gained := self.charging(dt):
+            charge = min(charge + gained, 1.0)
         elif on:
             charge = max(charge - self.config.drain * dt / HOUR, 0.0)
             on = charge > 0
@@ -76,6 +77,12 @@ class Lamp:
             return False
         self._replace(index, lamp.model_copy(update={"on": on}))
         return True
+
+    def charging(self, dt: float) -> float:
+        """How much of a full charge a plug gives in `dt` sim seconds where the player stands."""
+        if self.plug() is None:
+            return 0.0
+        return dt / self.clock.speed / self.config.charge
 
     def plug(self) -> Interactable | None:
         """The plug the player stands at: they're on one of its stand tiles."""

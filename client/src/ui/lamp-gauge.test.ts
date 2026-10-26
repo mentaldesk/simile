@@ -6,7 +6,7 @@ import { lampHint, LampGauge, level } from './lamp-gauge';
 const lamp = (charge: number, on: boolean): Item => ({ id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge, on });
 const LIT = { dark: false, plug: false };
 
-function state(items: Item[]): PlayerStateMessage {
+function state(items: Item[], power?: number): PlayerStateMessage {
   const body = {
     legs: 'present',
     vertebra: 'present',
@@ -14,8 +14,10 @@ function state(items: Item[]): PlayerStateMessage {
     right_eye: 'present',
     left_kidney: 'present',
     right_kidney: 'present',
+    ...(power !== undefined && { stomach: 'power_cell' as const }),
   } as const;
-  return { type: 'player_state', player: { money: 0, items, carry_limit: 10, body, hunger: 0 } };
+  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, ...(power !== undefined && power < 1 && { power }) };
+  return { type: 'player_state', player };
 }
 
 const shown = (root: HTMLElement, selector: string) => {
@@ -44,6 +46,14 @@ describe('lampHint', () => {
   it('says when it is charging at a plug, and when it is full', () => {
     expect(lampHint(lamp(0.3, false), { dark: false, plug: true })).toBe('Charging your lamp.');
     expect(lampHint(lamp(1, true), { dark: false, plug: true })).toBe('Your lamp is charged.');
+  });
+
+  it('says when the cell charges too', () => {
+    const plug = { dark: false, plug: true };
+    expect(lampHint(lamp(0.3, false), plug, 0.5)).toBe('Charging your lamp and your cell.');
+    expect(lampHint(lamp(1, false), plug, 0.5)).toBe('Charging your cell.');
+    expect(lampHint(undefined, plug, 0.5)).toBe('Charging your cell.');
+    expect(lampHint(lamp(1, false), plug, 1)).toBe('Your lamp is charged.');
   });
 
   it('colours the battery by what is left', () => {
@@ -80,5 +90,35 @@ describe('LampGauge', () => {
     gauge.update(state([lamp(0.5, false)]), { dark: true, plug: false });
     expect(shown(root, '.lamp-gauge')).toBe('Loff');
     expect(shown(root, '.lamp-hint')).toBe("It's dark. Press L for your lamp.");
+  });
+});
+
+describe('the power gauge', () => {
+  it('shows only once a cell is in', () => {
+    const root = document.createElement('div');
+    const gauge = new LampGauge(root);
+
+    gauge.update(state([lamp(1, false)]), LIT);
+    expect(shown(root, '.power-gauge')).toBeNull();
+
+    gauge.update(state([lamp(1, false)], 0.15), LIT);
+    const fill = root.querySelector<HTMLElement>('.power-gauge .lamp-battery > span')!;
+    expect(shown(root, '.power-gauge')).toBe('Power');
+    expect(fill.style.width).toBe('15%');
+    expect(fill.className).toBe('lamp-level-low');
+    expect(root.querySelector('.power-gauge')!.ariaLabel).toBe('Power 15%');
+  });
+
+  it('marks the cell charging at a plug', () => {
+    const root = document.createElement('div');
+    const gauge = new LampGauge(root);
+
+    gauge.update(state([lamp(1, false)], 0.4), { dark: false, plug: true });
+    expect(shown(root, '.power-gauge')).toBe('Power⚡');
+    expect(shown(root, '.lamp-hint')).toBe('Charging your cell.');
+
+    gauge.update(state([lamp(1, false)], 1), { dark: false, plug: true });
+    expect(shown(root, '.power-gauge')).toBe('Power');
+    expect(root.querySelector<HTMLElement>('.power-gauge .lamp-battery > span')!.style.width).toBe('100%');
   });
 });
