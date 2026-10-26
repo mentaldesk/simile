@@ -255,7 +255,9 @@ greet the player out loud either way.
 
 Esc with nothing open (no chat, controls, journal, character screen, news, mural or clinic) opens
 the pause menu (`PauseMenu` in [`pause-menu.ts`](pause-menu.ts)), but only while the side scene
-runs, so never over the title menu. It has Resume, the controls, and Exit to menu, which reloads the
+runs, so never over the title menu, and not within `PAUSE_GRACE_MS` of a panel closing, so
+Esc at a panel that has just closed by itself (the clinic, once nothing is left to trade) closes
+nothing rather than opening the menu. It has Resume, the controls, and Exit to menu, which reloads the
 page without `?play` and so lands on the title menu. The server saves the world every 10 seconds
 and on every switch, so exiting needs no save of its own, and the village carries on meanwhile.
 ↑ ↓ and Tab go through its buttons, Esc or a click outside resumes, and it keeps its key-downs from

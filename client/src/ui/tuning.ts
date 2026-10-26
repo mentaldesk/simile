@@ -22,3 +22,5 @@ export const VIEW_KEY = 'v';
 export const JOURNAL_KEY = 'j';
 /** Opens the character screen, and closes it. */
 export const CHARACTER_KEY = 'c';
+/** Esc this soon after a panel closed, even by itself, closes nothing rather than opening the pause menu. */
+export const PAUSE_GRACE_MS = 600;

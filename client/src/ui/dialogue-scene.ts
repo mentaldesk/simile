@@ -31,7 +31,7 @@ import { setMaps } from './side-view';
 import { ChatTarget, clicked } from './target';
 import { TargetMarker } from './target-marker';
 import { WayPromptLayer } from './way-prompts';
-import { NEWS_KEY } from './tuning';
+import { NEWS_KEY, PAUSE_GRACE_MS } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
 setMaps(maps);
@@ -58,6 +58,7 @@ export class DialogueScene extends Phaser.Scene {
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
   private fromGame = 1;
+  private panelSeen = -Infinity;
 
   constructor() {
     super({ key: 'dialogue', active: true });
@@ -96,8 +97,7 @@ export class DialogueScene extends Phaser.Scene {
     const character = (this.character = new CharacterPanel(this.root));
     const paused = new PauseMenu(document.body, () => location.assign(location.pathname));
     const pause = () => {
-      const open = chat.isOpen || help.isOpen || journal.isOpen || character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
-      if (!open && this.scene.isActive(SIDE_SCENE)) paused.open();
+      if (!this.panelOpen() && this.time.now - this.panelSeen > PAUSE_GRACE_MS && this.scene.isActive(SIDE_SCENE)) paused.open();
     };
     const onKeyDown = onGameKey({ chat, talk: () => this.talk(), use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character, pause });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
@@ -154,6 +154,11 @@ export class DialogueScene extends Phaser.Scene {
     this.ways.render(panelOpen ? [] : here, this.fromGame);
     const talks = !panelOpen && !this.chat.isOpen && !ordered;
     this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id), talks);
+    if (this.panelOpen()) this.panelSeen = this.time.now;
+  }
+
+  private panelOpen(): boolean {
+    return this.chat.isOpen || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
   }
 
   private pressE(): void {
