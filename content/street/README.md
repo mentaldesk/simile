@@ -73,14 +73,16 @@ The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `booksh
 `lamp`, `laser_cutter`, `lift`, `loom`, `menu_board`, `news_terminal`, `noodle_counter`,
 `noodle_table`, `palm_tree`, `pegboard`, `plant`, `plinth`, `printer_3d`, `rope_bridge`,
 `sewing_machine`, `shelf`, `sofa`, `stool`, `stove`, `table`, `tree`, `wardrobe` and `workbench`,
-and in the metro `bedroll`, `breaker_box`, `catwalk`, `crates`, `dead_terminal`, `freight_lift`,
-`metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`, `ticket_machine`, `train_carriage`,
-`tunnel_arch` and `turnstile`, with `metro_entrance` beside the stairway down on Banyan Row, and in
+and in the metro `bedroll`, `breaker_box`, `bulkhead`, `catwalk`, `crates`, `dead_terminal`,
+`freight_lift`, `lockers`, `metro_bench`, `metro_steps`, `pipes`, `rubble`, `scrap_stall`,
+`shipping_container`, `switchboard`, `ticket_machine`, `train_carriage`, `tunnel_arch` and
+`turnstile`, with `metro_entrance` beside the stairway down on Banyan Row, and in
 the sewers `maintenance_hatch`, `sewer_lamp`, `sewer_outfall`, `sewer_pier`, `sewer_pipe`,
 `sewer_vault`, `sewer_walkway` and `sewer_weir`. A table is drawn with a chair either side. A
 `rope_bridge` stands on the solid row under it, its deck. A
 `catwalk` covers its solid row and the row above it, its deck on the solid row's top, and the
-`train_carriage` its roof's solid row and everything under it. `metro_steps` covers a flight of stairs
+`train_carriage` and a `shipping_container` their roof's solid row and everything under it, or a
+solid block where one container stands on another. A `bulkhead` covers a wall two cells thick and, like the sewers' weir, two rows of the ground under it. `metro_steps` covers a flight of stairs
 and the cells at its ends, over the street's own steps.
 
 ## Map properties
@@ -143,6 +145,13 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | The maker space's loft (11–14) | `maker_space_shelf` | The storage `shelf` | USB-C connector, copper wire | |
 | The metro's ticket hall (15, row 12) | `metro_ticket_machine` | The dead `ticket_machine` | copper wire, lithium cell | |
 | The metro's west tunnel (70, row 15) | `metro_fridge` | A dead `fridge` by the bedroll | copper wire, lithium cell | |
+| The metro's freight siding (119) | `metro_freight_crates` | `crates` | charge controller | |
+| The metro's freight siding (124–129) | `metro_container` | The lower `shipping_container` of the stack | servo motor, lithium cell | |
+| The metro's signal box (143–144, row 11) | `metro_switchboard` | A dead `switchboard` | 2 copper wire, signal relay | |
+| The metro's signal box (146–147, row 11) | `metro_relay_rack` | A `switchboard` | USB-C connector | |
+| The metro's disused track (168) | `metro_tool_crate` | `crates` | copper wire, lithium cell | |
+| The metro's shed (210–211) | `metro_lockers` | `lockers` | a ration pack | |
+| The metro's signal box (150, row 11) | `metro_signal_desk` | A `jack`, a `dead_terminal` | 2 circuit board | |
 | Sewers zone 0 | `sewers_bedroll_legs` | A delver's `bedroll` | copper coil | `bionic_legs` |
 | Sewers zone 0 | `sewers_crates_legs` | `crates` | 2 pump impeller | |
 | Sewers zone 1 | `sewers_bedroll_feet` | A delver's `bedroll` | float valve | `spring_feet` |
@@ -152,7 +161,8 @@ tells the player the power cell's recipe when they walk into the clinic (`simile
 | Sewers zone 1 | `sewers_crates_cell` | `crates` | 4 old battery | |
 
 The cell's parts are in the village and the metro, and the datajack's three wires are the shelf's
-and the metro's two, besides the salvage on the train's roof. The infrared eye needs the second
+and the metro's two, besides the salvage on the train's roof. Past the clinic (P28) the metro holds
+a spare of every part the two need, so a player who sells one or misses one can still build both. The infrared eye needs the second
 power cell, so its recipe and the cell's are found together, in the room past the gate farthest
 from it, but the hatch's, that has room for both. The eye's lens is a villager's (P17).
 
@@ -210,7 +220,8 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
 
 ## The metro
 
-`metro`, the Old Metro (#350), is an abandoned station under the village, 110 wide. Its stairway
+`metro`, the Old Metro (#350), is an abandoned station under the village, 230 wide: 110 to the
+depot's east end, and P28's freight siding, signal box, disused track and shed past it. Its stairway
 down is a door like any other, `banyan_row_to_metro`, from Banyan Row's river promenade (62, row
 18) to a landing at the top of the stairs (2, row 9). Like the Rooftops it's for the player alone
 (`JUMPING`), and it's in `UNDERGROUND`, the streets under the village. Its locations, the clinic
@@ -223,7 +234,10 @@ passes through it.
 | 0–19 | The landing (row 9), a flight down to the ticket hall (row 12) with the `turnstile` and a dead `ticket_machine` to search, and a flight down to the platform (row 15). A catwalk over the first flight, at row 7, is a run jump from the landing. |
 | 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–52, row 10) is a jump from the roof's east end. |
 | 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug, and a dead `fridge` to search at 70. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) goes on up the wall, a jump from it. An alcove (85–86, row 5) is five rows above that catwalk. West of the pipe ledge, a step (73–74, row 10) is a hop up to a gantry (69–72, row 8) that runs west under a roof of `pipes` (58–73, row 4), lit, with a five-cell gap (64–68) before a nook at its end (61–63). |
-| 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12) against the east wall. |
+| 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12). Nothing past it stands lower than the floor for twelve cells, so the legs alone don't reach the ledge from the east. |
+| 110–155 | The freight siding, lit, through a `tunnel_arch` (112–114): `crates` to search (119), two `shipping_container`s stacked (124–129) with a ladder (123) up their side to the top (row 9), a third beside them (132–137, roof row 12) a jump down from the top, and over it a crane's gantry (131–138, row 5), four rows above the top of the stack. Then the signal box: a deck (142–153, row 11) up a ladder (141), with two dead `switchboard`s and the signal desk, a `dead_terminal`. |
+| 156–205 | The disused track, through a `tunnel_arch` (156–158), dark either side of a lit alcove (180–182) with a plug, past `rubble`, a tool crate (168) and a `bedroll`. In the east half a ladder (188) climbs to a pipe ledge (189–191, row 12), and a ledge (194–195, row 10) is a hop up from it. |
+| 206–229 | The shed, lit, under a roof of `pipes` (row 4) like the gantry's: a plug, the `lockers`, and a ladder (207) up to a mezzanine (208–212, row 8). Past a five-cell gap from it is the top of the store room's wall (218–219, row 8), a `bulkhead` with a jammed door at its foot, and a ladder (220) inside down to the store room's floor and back up. |
 
 **What later tasks build on.** Each has an id that stays put; `simile.street.metro` names them.
 
@@ -239,10 +253,15 @@ passes through it.
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
 | P13 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 53 and is kept to 30–68, ten cells from `metro_salvage_2`, which it drifts to while the player's in the metro. `metro_bot_2` guards the platform, starting at 46 and kept to 30–54, with no salvage in reach. Each patrols two cells either side, clear of where the player stops: the stall, the plug, the fridge, the clinic and the lift. |
+| P28 | Dark stretches past the depot, in `light` | `metro_track_west` (156–179) and `metro_track_east` (183–205). The rest is lit: `metro_siding` (110–155), `metro_track_alcove` and `metro_shed`. |
+| P28 | Two more plugs, each a `plug` at a `breaker_box` | `metro_track_plug`, stood at from (181, 15) in the track's lit alcove, and `metro_shed_plug` from (208, 15). |
+| P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
+| P28 | The jammed door | The store room's wall, `STORE_WALL` (218–219, rows 9–15), solid: for now the way in is over its top. A kick (P9) that opens it would clear the wall's foot. |
+| P28 | The signal desk, a `jack` | `metro_signal_desk`, stood at from (150, 11). With the datajack, E finds two circuit boards in it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
-salvage waits in two of the places only the feet reach:
+salvage waits in four of the places only the legs or the feet reach:
 
 | Needs | Place | What waits there |
 |---|---|---|
@@ -251,16 +270,26 @@ salvage waits in two of the places only the feet reach:
 | `spring_feet` | The high ledge, three rows up | `metro_secret_ledge` (106, 12, 60 money) and `metro_salvage_6` |
 | `spring_feet_2` | The alcove, five rows above the catwalk up the tunnel wall | `metro_secret_alcove` (86, 5, a `ration_pack`, food, 0.5 kg) and `metro_salvage_4` |
 | `bionic_legs` | The gantry's nook, past a five-cell gap under a roof that stops a high jump rising | `metro_secret_gantry` (61, 8, 60 money) |
+| `jump` | The container beside the stack, a jump down from its top | `metro_secret_container` (135, 12, 20 money) |
+| `jump` | The ledge over the track, a hop up from the pipe ledge | `metro_secret_tunnel` (195, 10, 10 money) |
+| `spring_feet` | The crane's gantry, four rows above the top of the stack | `metro_secret_crane` (132, 5, 40 money) and `metro_salvage_10` |
+| `bionic_legs` | The store room, over its wall from the shed's mezzanine, past a five-cell gap under the shed's roof | `metro_secret_store` (228, 15, 50 money) and `metro_salvage_11` |
 
 A place that needs a grade is in reach of whatever rises at least as high and runs at least as
 fast: the second grade of feet reaches the first's places, and every grade of legs the first's.
 With Space held, a jump that rises higher than three rows bumps its head on the gantry's roof and
-falls short, so the legs and feet together cross its gap on a tap.
+falls short, so the legs and feet together cross its gap on a tap. The shed's gap is the same.
+
+**Pacing** (P28, with P27's houses): on their own legs, taking each find, secret and salvage once
+and selling what the power cell and the datajack don't use, the player affords both, 200, without
+the kidney. Before P28 the houses, the metro's secrets and a round of its salvage came to 152; past
+the depot there's 30 more in secrets, 19 in salvage, and 24 in salvage to strip from the finds,
+besides their spare parts. `tests/street/test_metro.py` checks it.
 
 **Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
 front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are
 furniture over their solid rows, which hides the street's wooden ledge under them, and the train's
-roof is its picture's top edge.
+roof is its picture's top edge, as a container's is.
 
 ## The sewers
 

@@ -32,6 +32,7 @@ from simile.schema import (
 )
 from simile.sim import Clock, FakeWallClock, World
 from simile.street.jump import JUMP, meets
+from simile.street.metro import DEPOT_END
 from simile.street.sewers import APEX_ACTUATOR
 from simile.world import Movement, Point
 from simile.world.map import STREET_DIR, load_maps
@@ -376,10 +377,12 @@ def test_everything_but_a_cell_waits_for_the_cell() -> None:
         assert recipe.after == ([] if bionic in POWER_CELLS else [CELL]), bionic
 
 
-def test_the_kidney_pays_for_the_cell_and_the_metro_on_foot_doesnt_in_two_days() -> None:
-    """The cell costs what the kidney fetches, more than two days of the metro on their own legs,
-    or a day of it and the datajack's schematic, sold."""
-    reached = [p for p in metro_pickups() if meets(JUMP, p["needs"])]
+def test_the_kidney_pays_for_the_cell_and_the_depot_on_foot_doesnt_in_two_days() -> None:
+    """The cell costs what the kidney fetches, more than two days of the metro up to the depot on
+    their own legs, or a day of it and the datajack's schematic, sold. Past the depot P28 adds
+    enough that, with the houses' cash, a day's exploring pays for the cell and the datajack."""
+    depot = [p for p in metro_pickups() if p["x"] < DEPOT_END]
+    reached = [p for p in depot if meets(JUMP, p["needs"])]
     salvage = sum(
         ECONOMY.salvage[PLAYER_CONFIG.salvage[p["name"]].item.id]
         for p in reached
@@ -407,7 +410,7 @@ def metro_pickups() -> list[dict]:
     data = json.loads((STREET_DIR / "metro.tmj").read_text())
     [layer] = [layer for layer in data["layers"] if layer["name"] == "pickups"]
     return [
-        {"name": o["name"], "type": o["type"], "needs": "jump"}
+        {"name": o["name"], "type": o["type"], "needs": "jump", "x": o["x"] // 16}
         | {p["name"]: p["value"] for p in o.get("properties", [])}
         for o in layer["objects"]
     ]

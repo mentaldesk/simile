@@ -51,6 +51,6 @@ describe('searchable things', () => {
     expect(toSearch([], false)).toEqual(first);
     expect(toSearch([], false).every((pile, i) => pile === first[i])).toBe(true);
     expect(toSearch(['maker_space_bench'], false)).not.toContain(bench);
-    expect(toSearch([], false, ['metro']).map(({ at }) => at.map)).toEqual(['metro', 'metro']);
+    expect(new Set(toSearch([], false, ['metro']).map(({ at }) => at.map))).toEqual(new Set(['metro']));
   });
 });

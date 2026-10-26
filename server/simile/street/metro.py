@@ -15,14 +15,23 @@ from simile.schema import (
     Tile,
     TileArea,
 )
-from simile.street.finds import COPPER_WIRE, LITHIUM_CELL, searchable, under
+from simile.street.finds import (
+    CHARGE_CONTROLLER,
+    COPPER_WIRE,
+    LITHIUM_CELL,
+    USB_C_CONNECTOR,
+    searchable,
+    under,
+)
 from simile.street.jump import OWN_JUMP
 from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, Building, plug, street
 from simile.world.map import Light, SpotKind
 
 METRO = "metro"
-WIDTH = 110
+DEPOT_END = 110
+"""The east wall of the depot before the metro went on past it (P28)."""
+WIDTH = 230
 ENTRANCE = MapTile(map="banyan_row", x=62, y=GROUND + 3)
 """The stairway down's door on the river promenade under Banyan Row."""
 HALL = GROUND - 3
@@ -52,10 +61,45 @@ GANTRY = GROUND - 7
 GANTRY_SECRET = "metro_secret_gantry"
 TICKET_MACHINE = "metro_ticket_machine"
 FRIDGE = "metro_fridge"
+CONTAINER = "metro_container"
+FREIGHT_CRATES = "metro_freight_crates"
+SWITCHBOARD = "metro_switchboard"
+RELAY_RACK = "metro_relay_rack"
+SIGNAL_DESK = "metro_signal_desk"
+TOOL_CRATE = "metro_tool_crate"
+LOCKERS = "metro_lockers"
+TRACK_PLUG = "metro_track_plug"
+SHED_PLUG = "metro_shed_plug"
+STACK = 124
+"""The west end of the two containers stacked on the siding, with a ladder up their side."""
+CRANE = GROUND - 10
+"""The row the crane's gantry over the siding stands on, four rows above the stacked containers."""
+CRANE_SECRET = "metro_secret_crane"
+DECK = GROUND - 4
+"""The row the signal box's deck stands on."""
+MEZZANINE = GROUND - 7
+"""The row the shed's mezzanine and the top of the store room's wall stand on, three rows under
+its roof, like the gantry."""
+STORE_WALL = 218
+"""The west end of the wall, two cells thick, between the shed and its store room, with the
+jammed door at its foot."""
+STORE_SECRET = "metro_secret_store"
 
 SALVAGE = "salvage"
 SECRET = "secret"
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
+
+
+def _salvage(item_id: str, name: str, weight: float) -> Item:
+    """The same as the salvage `simile.player.config` lays at the depot's pickups."""
+    return Item(id=item_id, kind=ItemKind.SALVAGE, name=name, weight=weight)
+
+
+SCRAP_STEEL = _salvage("scrap_steel", "Scrap steel", 4.5)
+CIRCUIT_BOARD = _salvage("circuit_board", "Circuit board", 0.5)
+BRASS_VALVE = _salvage("brass_valve", "Brass valve", 2.0)
+SIGNAL_RELAY = _salvage("signal_relay", "Signal relay", 1.0)
+SERVO_MOTOR = _salvage("servo_motor", "Servo motor", 3.0)
 BOTS = ((53, 30, 68), (46, 30, 54))
 """Each bot on the floor: where it starts, and the stretch it keeps to, west to east."""
 BOT_SPAN = 2
@@ -86,8 +130,10 @@ def light(plan: Plan, light_id: str, x: int, y: int, width: int, height: int, li
     plan.light.append(Light(light_id, area, lit))
 
 
-def salvage(plan: Plan, number: int, x: int, y: int, needs: str | None = None) -> None:
-    plan.pickups.append(Pickup(f"metro_salvage_{number}", SALVAGE, x, y, needs=needs))
+def salvage(
+    plan: Plan, number: int, x: int, y: int, needs: str | None = None, item: Item | None = None
+) -> None:
+    plan.pickups.append(Pickup(f"metro_salvage_{number}", SALVAGE, x, y, item=item, needs=needs))
 
 
 def secret(
@@ -214,6 +260,94 @@ def depot(plan: Plan) -> list[Plan]:
     return clinic.floors
 
 
+def siding(plan: Plan) -> None:
+    """Crates, two containers stacked under a crane's gantry, and one beside them."""
+    plan.piece("tunnel_arch", 112, GROUND - 7, 3, 8)
+    plan.piece("crates", 119, GROUND, 1, 1)
+    area = TileArea(x=119, y=GROUND, width=1, height=1)
+    searchable(plan, FREIGHT_CRATES, "Freight crates", area, under(area), [CHARGE_CONTROLLER])
+    low, high = GROUND - 2, GROUND - 5
+    plan.piece("shipping_container", STACK, low, 6, 3)
+    plan.fill(STACK, low, 6, 1)
+    plan.piece("shipping_container", STACK, high, 6, 3)
+    plan.fill(STACK, high, 6, 3)
+    plan.ladder((STACK - 1, GROUND), GROUND - high + 1)
+    area = TileArea(x=STACK, y=low, width=6, height=3)
+    searchable(
+        plan, CONTAINER, "Shipping container", area, under(area), [SERVO_MOTOR, LITHIUM_CELL]
+    )
+    plan.piece("shipping_container", 132, low, 6, 3)
+    plan.fill(132, low, 6, 1)
+    secret(plan, "metro_secret_container", 135, low - 1, OWN_JUMP, money=20.0)
+    catwalk(plan, 131, CRANE, 8)
+    secret(plan, CRANE_SECRET, 132, CRANE, Bionic.SPRING_FEET, money=40.0)
+    salvage(plan, 10, 137, CRANE, Bionic.SPRING_FEET, SERVO_MOTOR)
+    salvage(plan, 7, 139, GROUND, item=SCRAP_STEEL)
+
+
+def signal_box(plan: Plan) -> None:
+    """A deck up a ladder with dead switchboards and the signal desk, a jack."""
+    catwalk(plan, 142, DECK, 12)
+    plan.ladder((141, GROUND), GROUND - DECK)
+    plan.piece("switchboard", 143, DECK - 1, 2, 2)
+    area = TileArea(x=143, y=DECK - 1, width=2, height=2)
+    held = [COPPER_WIRE, COPPER_WIRE, SIGNAL_RELAY]
+    searchable(plan, SWITCHBOARD, "Dead switchboard", area, under(area), held)
+    plan.piece("switchboard", 146, DECK - 1, 2, 2)
+    area = TileArea(x=146, y=DECK - 1, width=2, height=2)
+    searchable(plan, RELAY_RACK, "Relay rack", area, under(area), [USB_C_CONNECTOR])
+    plan.piece("dead_terminal", 150, DECK - 1, 1, 2)
+    area = TileArea(x=150, y=DECK - 1, width=1, height=2)
+    held = [CIRCUIT_BOARD, CIRCUIT_BOARD]
+    searchable(
+        plan, SIGNAL_DESK, "Signal desk", area, under(area), held, kind=InteractableKind.JACK
+    )
+    salvage(plan, 8, 152, DECK, item=CIRCUIT_BOARD)
+
+
+def track(plan: Plan) -> None:
+    """The disused track into the dark, a plug halfway, and a ledge a hop above a pipe ledge."""
+    plan.piece("tunnel_arch", 156, GROUND - 7, 3, 8)
+    plan.piece("pipes", 160, GROUND - 3, 14, 1)
+    plan.piece("rubble", 163, GROUND, 2, 1)
+    plan.piece("crates", 168, GROUND, 1, 1)
+    area = TileArea(x=168, y=GROUND, width=1, height=1)
+    searchable(plan, TOOL_CRATE, "Tool crate", area, under(area), [COPPER_WIRE, LITHIUM_CELL])
+    salvage(plan, 9, 174, GROUND, item=SIGNAL_RELAY)
+    plan.piece("breaker_box", 181, GROUND - 1, 1, 2)
+    area = TileArea(x=181, y=GROUND - 1, width=1, height=2)
+    plug(plan, TRACK_PLUG, "Track plug", area, Tile(x=181, y=GROUND))
+    plan.ladder((188, GROUND), 3)
+    catwalk(plan, 189, GROUND - 3, 3)
+    catwalk(plan, 194, GROUND - 5, 2)
+    secret(plan, "metro_secret_tunnel", 195, GROUND - 5, OWN_JUMP, money=10.0)
+    plan.piece("bedroll", 197, GROUND, 2, 1)
+    plan.piece("rubble", 201, GROUND, 2, 1)
+
+
+def shed(plan: Plan) -> None:
+    """The maintenance shed, and its store room behind a jammed door, reached over its wall from a
+    mezzanine across a gap that only the legs clear, as the gantry's nook is."""
+    roof = MEZZANINE - 4
+    plan.fill(205, roof, WIDTH - 205, 1)
+    for x, width in ((205, 12), (217, WIDTH - 217)):
+        plan.piece("pipes", x, roof, width, 1)
+    plan.piece("breaker_box", 208, GROUND - 1, 1, 2)
+    area = TileArea(x=208, y=GROUND - 1, width=1, height=2)
+    plug(plan, SHED_PLUG, "Shed plug", area, Tile(x=208, y=GROUND))
+    plan.piece("lockers", 210, GROUND - 1, 2, 2)
+    area = TileArea(x=210, y=GROUND - 1, width=2, height=2)
+    searchable(plan, LOCKERS, "Tool lockers", area, under(area), [RATION_PACK])
+    plan.ladder((207, GROUND), GROUND - MEZZANINE)
+    catwalk(plan, 208, MEZZANINE, 5)
+    plan.fill(STORE_WALL, MEZZANINE + 1, 2, GROUND - MEZZANINE)
+    plan.piece("bulkhead", STORE_WALL, MEZZANINE + 1, 2, GROUND - MEZZANINE + 2)
+    plan.ladder((STORE_WALL + 2, GROUND), GROUND - MEZZANINE)
+    salvage(plan, 11, 224, GROUND, Bionic.BIONIC_LEGS, BRASS_VALVE)
+    plan.piece("crates", 227, GROUND, 1, 1)
+    secret(plan, STORE_SECRET, 228, GROUND, Bionic.BIONIC_LEGS, money=50.0)
+
+
 def bots(plan: Plan) -> None:
     for number, (x, west, east) in enumerate(BOTS, 1):
         area = TileArea(x=west, y=GROUND, width=east - west + 1, height=1)
@@ -231,7 +365,12 @@ def lighting(plan: Plan) -> None:
     light(plan, "metro_tunnel_west", 58, GANTRY + 2, 13, height - GANTRY - 2, lit=False)
     light(plan, "metro_maintenance", 71, 0, 3, height, lit=True)
     light(plan, "metro_tunnel_east", 74, 0, 13, height, lit=False)
-    light(plan, "metro_depot", 87, 0, WIDTH - 87, height, lit=True)
+    light(plan, "metro_depot", 87, 0, DEPOT_END - 87, height, lit=True)
+    light(plan, "metro_siding", DEPOT_END, 0, 156 - DEPOT_END, height, lit=True)
+    light(plan, "metro_track_west", 156, 0, 24, height, lit=False)
+    light(plan, "metro_track_alcove", 180, 0, 3, height, lit=True)
+    light(plan, "metro_track_east", 183, 0, 23, height, lit=False)
+    light(plan, "metro_shed", 206, 0, WIDTH - 206, height, lit=True)
 
 
 def metro(village: Plan) -> list[Plan]:
@@ -241,6 +380,10 @@ def metro(village: Plan) -> list[Plan]:
     platform(plan)
     tunnel(plan)
     floors = depot(plan)
+    siding(plan)
+    signal_box(plan)
+    track(plan)
+    shed(plan)
     bots(plan)
     lighting(plan)
     door = Door(id=f"{village.id}_to_{METRO}", outside=ENTRANCE, inside=ARRIVAL)

@@ -7,6 +7,7 @@ import pytest
 
 from simile.behaviour.scoring import Places
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
+from simile.economy.config import DEFAULT_CONFIG as ECONOMY
 from simile.player.config import SALVAGE
 from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
 from simile.street.finds import COPPER_WIRE
@@ -15,9 +16,15 @@ from simile.street.metro import (
     ALCOVE_SECRET,
     ARRIVAL,
     CLINIC,
+    CONTAINER,
+    CRANE,
+    CRANE_SECRET,
     DEAD_TERMINAL,
+    DECK,
+    DEPOT_END,
     DOCTOR,
     ENTRANCE,
+    FREIGHT_CRATES,
     FRIDGE,
     GANTRY,
     GANTRY_SECRET,
@@ -26,17 +33,28 @@ from simile.street.metro import (
     LEDGE_SECRET,
     LIFT,
     LIFT_FOOT,
+    LOCKERS,
     METRO,
+    MEZZANINE,
     PLUG,
+    RELAY_RACK,
     SCRAP_STALL,
     SCRAP_TRADER,
+    SHED_PLUG,
+    SIGNAL_DESK,
+    STACK,
+    STORE_SECRET,
+    STORE_WALL,
+    SWITCHBOARD,
     TICKET_MACHINE,
+    TOOL_CRATE,
+    TRACK_PLUG,
 )
 from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
 from simile.street.sewers import LANDING, SEWERS
 from simile.street.village import GROUND, UNDERGROUND
-from simile.world.map import STREET_DIR, SpotKind, load_maps, with_every_location
+from simile.world.map import STREET_DIR, PickupKind, SpotKind, load_maps, with_every_location
 from simile.world.movement import Point, inside
 from simile.world.paths import Spot, door_ends, find_route
 
@@ -98,8 +116,9 @@ def pickups(kind: str) -> dict[str, tuple[Spot, dict[str, Any]]]:
 
 
 def roof() -> set[Spot]:
-    """The top of the gantry's roof, which nobody stands on."""
-    return {Spot(METRO, x, GANTRY - 5) for x in range(58, 74)}
+    """The tops of the gantry's roof and the shed's, which nobody stands on."""
+    gantry = {Spot(METRO, x, GANTRY - 5) for x in range(58, 74)}
+    return gantry | {Spot(METRO, x, MEZZANINE - 5) for x in range(205, METRO_MAP.width)}
 
 
 def walkable() -> set[Spot]:
@@ -120,7 +139,7 @@ def test_a_stairway_goes_down_through_a_door_on_banyan_rows_promenade() -> None:
     assert (door.outside, door.inside) == (ENTRANCE, ARRIVAL)
     assert ENTRANCE.y > GROUND, "on the river promenade, below Banyan Row's street"
     assert ARRIVAL.y < GROUND
-    top = max(x for x in range(METRO_MAP.width) if METRO_MAP.standing(x, ARRIVAL.y))
+    top = max(x for x in range(20) if METRO_MAP.standing(x, ARRIVAL.y))
     assert METRO_MAP.climb(top + 1, ARRIVAL.y + 1) is DoorKind.STAIRS
     assert {METRO, SEWERS} == UNDERGROUND
 
@@ -195,7 +214,12 @@ def test_the_second_grade_of_feet_reaches_the_alcove_from_the_wall_below_it() ->
 
 def test_the_cell_and_the_datajack_are_found_at_home_and_on_the_metro_on_foot() -> None:
     def held(maps: list[str]) -> Counter[str]:
-        things = [thing for map_id in maps for thing in MAPS[map_id].interactables]
+        things = [
+            thing
+            for map_id in maps
+            for thing in MAPS[map_id].interactables
+            if map_id != METRO or thing.area.x < DEPOT_END
+        ]
         return Counter(item.id for thing in things for item in thing.items)
 
     home = [f"maker_space_floor_{n}" for n in range(3)]
@@ -260,15 +284,20 @@ def test_the_plug_is_in_a_lit_alcove_between_dark_stretches_of_tunnel() -> None:
     assert METRO_MAP.lit(plug.x, plug.y)
 
 
+DARK = {
+    "metro_vault",
+    "metro_tunnel_west",
+    "metro_tunnel_east",
+    "metro_track_west",
+    "metro_track_east",
+}
+
+
 def test_the_metro_is_underground_and_lit_by_its_own_lights() -> None:
     data = json.loads((STREET_DIR / f"{METRO}.tmj").read_text())
 
     assert props(data)["underground"] is True
-    assert {light.id for light in METRO_MAP.light if not light.lit} == {
-        "metro_vault",
-        "metro_tunnel_west",
-        "metro_tunnel_east",
-    }
+    assert {light.id for light in METRO_MAP.light if not light.lit} == DARK
     assert all(METRO_MAP.lit(x, GANTRY) for x in range(61, 74))
 
 
@@ -283,13 +312,13 @@ def test_the_light_areas_cover_every_cell_of_the_metro_once() -> None:
     assert sorted(covered) == sorted(
         (x, y) for y in range(METRO_MAP.height) for x in range(METRO_MAP.width)
     )
-    assert dark == {"metro_vault", "metro_tunnel_west", "metro_tunnel_east"}
+    assert dark == DARK
 
 
 def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
     secrets = pickups("secret")
 
-    assert len(secrets) == 5
+    assert len(secrets) == 9
     assert {held["needs"] for _, held in secrets.values()} == {
         OWN_JUMP,
         Bionic.SPRING_FEET,
@@ -304,13 +333,18 @@ def test_every_secret_needs_a_jump_and_holds_money_or_an_item() -> None:
     assert secrets[GANTRY_SECRET][1] == {"money": 60.0, "needs": Bionic.BIONIC_LEGS}
 
 
-def test_salvage_lies_about_the_metro_and_two_pieces_wait_up_high() -> None:
+def test_salvage_lies_about_the_metro_and_four_pieces_wait_up_high() -> None:
     salvage = pickups("salvage")
-    high = {name: held["needs"] for name, (_, held) in salvage.items() if held}
+    high = {name: held["needs"] for name, (_, held) in salvage.items() if "needs" in held}
 
-    assert len(salvage) == 6
+    assert len(salvage) == 11
     assert all(METRO_MAP.standing(spot.x, spot.y) for spot, _ in salvage.values())
-    assert high == {"metro_salvage_4": Bionic.SPRING_FEET_2, "metro_salvage_6": Bionic.SPRING_FEET}
+    assert high == {
+        "metro_salvage_4": Bionic.SPRING_FEET_2,
+        "metro_salvage_6": Bionic.SPRING_FEET,
+        "metro_salvage_10": Bionic.SPRING_FEET,
+        "metro_salvage_11": Bionic.BIONIC_LEGS,
+    }
     assert salvage["metro_salvage_6"][0] in stands(HIGH_LEDGE)
 
 
@@ -357,6 +391,15 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         HIGH_LEDGE: [(106, 12), (107, 12), (108, 12), (109, 12)],
         TICKET_MACHINE: [(15, 12)],
         FRIDGE: [(70, 15)],
+        FREIGHT_CRATES: [(119, 15)],
+        CONTAINER: [(x, 15) for x in range(124, 130)],
+        SWITCHBOARD: [(143, 11), (144, 11)],
+        RELAY_RACK: [(146, 11), (147, 11)],
+        SIGNAL_DESK: [(150, 11)],
+        TOOL_CRATE: [(168, 15)],
+        TRACK_PLUG: [(181, 15)],
+        SHED_PLUG: [(208, 15)],
+        LOCKERS: [(210, 15), (211, 15)],
     }
     assert spots == {SCRAP_TRADER: (METRO, 26, 15), DOCTOR: (CLINIC_FLOOR, 6, 2)}
     assert pickups == {
@@ -371,5 +414,140 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         "metro_salvage_5": (83, 15),
         "metro_salvage_6": (108, 12),
         LEDGE_SECRET: (106, 12),
+        "metro_secret_container": (135, 12),
+        CRANE_SECRET: (132, 5),
+        "metro_salvage_10": (137, 5),
+        "metro_salvage_7": (139, 15),
+        "metro_salvage_8": (152, 11),
+        "metro_salvage_9": (174, 15),
+        "metro_secret_tunnel": (195, 10),
+        "metro_salvage_11": (224, 15),
+        STORE_SECRET: (228, 15),
     }
     assert (LIFT_FOOT.map, LIFT_FOOT.x, LIFT_FOOT.y) == (METRO, 100, 15)
+
+
+HOUSES = 62.0
+"""The loose cash P27 (#451) leaves in the village's houses."""
+BEYOND = (SWITCHBOARD, RELAY_RACK, CONTAINER, FREIGHT_CRATES, TOOL_CRATE, LOCKERS)
+
+
+def walk(start: tuple[int, int]) -> set[tuple[int, int]]:
+    """Every metro cell walking and climbing get to from `start`, without a jump."""
+    seen, queue = {start}, deque([start])
+    while queue:
+        for there, _ in moves(METRO_MAP, queue.popleft(), False):
+            if there not in seen:
+                seen.add(there)
+                queue.append(there)
+    return seen
+
+
+def test_the_metro_goes_on_past_the_clinic_and_its_new_places_are_walked_to_from_there() -> None:
+    clinic = next(d.outside for d in TOWN.doors if d.id == CLINIC)
+    walked = walk((clinic.x, clinic.y))
+    things = [*BEYOND, SIGNAL_DESK, TRACK_PLUG, SHED_PLUG]
+    salvage = [(s.x, s.y) for s, held in pickups("salvage").values() if "needs" not in held]
+
+    assert METRO_MAP.width > DEPOT_END
+    assert all(machine(thing).area.x >= DEPOT_END for thing in things)
+    for thing in things:
+        assert {(t.x, t.y) for t in machine(thing).stand} <= walked, thing
+    assert set(salvage) <= walked
+    assert (STORE_WALL - 1, GROUND) in walked and (STORE_WALL + 2, GROUND) not in walked
+
+
+def test_the_siding_stacks_containers_under_a_crane_that_only_the_feet_reach() -> None:
+    top = GROUND - 6
+    crane, _ = pickups("secret")[CRANE_SECRET]
+    roof, held = pickups("secret")["metro_secret_container"]
+    walked = reachable(False)
+
+    assert all(Spot(METRO, x, top) in walked for x in range(STACK, STACK + 6))
+    assert METRO_MAP.climb(STACK - 1, top) is DoorKind.LADDER
+    assert top - CRANE == 4 and crane.y == CRANE
+    assert held["needs"] == OWN_JUMP and roof not in walked and roof in reachable(True)
+    for kit, jump in KITS.items():
+        assert (crane in reachable(jump)) is (jump.rise > JUMP.rise), kit
+
+
+def test_the_signal_box_is_a_deck_up_a_ladder_with_switchboards_to_strip_and_a_jack() -> None:
+    walked = reachable(False)
+    stripped = Counter(item.id for t in (SWITCHBOARD, RELAY_RACK) for item in machine(t).items)
+
+    assert METRO_MAP.climb(141, DECK) is DoorKind.LADDER
+    for thing in (SWITCHBOARD, RELAY_RACK, SIGNAL_DESK):
+        assert {t.y for t in machine(thing).stand} == {DECK}
+        assert stands(thing) <= walked, thing
+    assert stripped == {"copper_wire": 2, "signal_relay": 1, "usb_c_connector": 1}
+    assert machine(SIGNAL_DESK).kind is InteractableKind.JACK and machine(SIGNAL_DESK).items
+
+
+def test_the_disused_track_is_dark_with_a_lit_plug_halfway_and_a_lit_shed_at_its_end() -> None:
+    [track] = stands(TRACK_PLUG)
+    [shed] = stands(SHED_PLUG)
+
+    for plug in (TRACK_PLUG, SHED_PLUG):
+        assert machine(plug).kind is InteractableKind.PLUG
+    assert METRO_MAP.lit(track.x, track.y) and METRO_MAP.lit(shed.x, shed.y)
+    assert not METRO_MAP.lit(track.x - 2, track.y) and not METRO_MAP.lit(track.x + 2, track.y)
+    assert not any(METRO_MAP.lit(x, GROUND) for x in range(159, track.x - 1))
+    assert not any(METRO_MAP.lit(x, GROUND) for x in range(track.x + 2, 206))
+
+
+def test_the_store_room_is_behind_a_jammed_door_and_only_the_legs_clear_the_gap_over_it() -> None:
+    edge, wall = (212, MEZZANINE), (STORE_WALL, MEZZANINE)
+    gap = range(edge[0] + 1, wall[0])
+    store = Spot(METRO, STORE_WALL + 4, GROUND)
+    jams = [(STORE_WALL + dx, y) for dx in range(2) for y in range(MEZZANINE + 1, GROUND + 1)]
+
+    assert all(METRO_MAP.solid(x, y) for x, y in jams)
+    assert len(gap) == 5 and not any(METRO_MAP.walkable(x, MEZZANINE) for x in gap)
+    assert METRO_MAP.solid(edge[0], MEZZANINE - 4) and not METRO_MAP.solid(edge[0], MEZZANINE - 3)
+    assert METRO_MAP.climb(STORE_WALL + 2, MEZZANINE) is DoorKind.LADDER, "no way out"
+    assert wall not in dict(moves(METRO_MAP, edge, True))
+    for kit, jump in KITS.items():
+        legs = jump.run > JUMP.run
+        assert (wall in dict(moves(METRO_MAP, edge, jump))) is legs, kit
+        assert (store in reachable(jump)) is legs, kit
+    assert store not in reachable(True)
+    assert pickups("secret")[STORE_SECRET][1] == {"money": 50.0, "needs": Bionic.BIONIC_LEGS}
+
+
+def test_every_salvage_on_the_metro_has_a_price() -> None:
+    for pickup in METRO_MAP.pickups:
+        if pickup.kind is PickupKind.SALVAGE:
+            item = pickup.item or SALVAGE[pickup.id].item
+            assert item.id in ECONOMY.salvage, pickup.id
+
+
+def test_with_the_houses_cash_the_cell_and_the_datajack_are_paid_for_without_respawns() -> None:
+    """Pacing: on their own legs, taking every find, secret and salvage once and selling all the
+    recipes don't use, the player affords both without selling the kidney (P28)."""
+    walked = reachable(True)
+    recipes = [CLINIC_RECIPES[bionic] for bionic in (Bionic.POWER_CELL, Bionic.DATAJACK)]
+    needed = sum((Counter(recipe.parts) for recipe in recipes), Counter())
+    cost = sum(recipe.credits for recipe in recipes)
+    home = [t for n in range(3) for t in MAPS[f"maker_space_floor_{n}"].interactables]
+    found = [
+        thing
+        for thing in [*home, *METRO_MAP.interactables]
+        if thing.kind is InteractableKind.SEARCHABLE
+        and (thing.map != METRO or stands(thing.id) & walked)
+    ]
+    lying = [p for p in METRO_MAP.pickups if Spot(METRO, p.x, p.y) in walked]
+
+    def price(item_id: str) -> float:
+        return ECONOMY.salvage.get(item_id) or ECONOMY.parts.get(item_id, 0.0)
+
+    def worth(beyond: bool) -> float:
+        here = [p for p in lying if (p.x >= DEPOT_END) is beyond]
+        salvage = [p.item or SALVAGE[p.id].item for p in here if p.kind is PickupKind.SALVAGE]
+        return sum(p.money for p in here) + sum(price(item.id) for item in salvage)
+
+    parts = Counter(item.id for thing in found for item in thing.items)
+    spare = sum(price(item) * count for item, count in (parts - needed).items())
+
+    assert all(parts[part] > count for part, count in needed.items()), "no spare parts"
+    assert HOUSES + worth(beyond=False) < cost
+    assert HOUSES + worth(beyond=False) + worth(beyond=True) + spare >= cost * 1.1

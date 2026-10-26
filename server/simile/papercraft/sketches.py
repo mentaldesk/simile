@@ -360,6 +360,51 @@ def fridge() -> Image.Image:
     return s.image
 
 
+CONTAINER_BLUE: Rgb = (62, 98, 128)
+
+
+def shipping_container(length: float = 6.6, height: float = 3.36) -> Image.Image:
+    """A container's corrugated side, its doors at the east end, its flat top along the top edge
+    to stand on."""
+    s = Sheet(length, height, 120)
+    s.rect(0.0, 0.0, length, height, CONTAINER_BLUE, DARK_STEEL)
+    for x in np.arange(0.35, length - 1.3, 0.3):
+        s.rect(x, 0.2, x + 0.12, height - 0.2, (52, 84, 112))
+    s.rect(0.0, height - 0.2, length, height, DARK_STEEL)
+    s.rect(0.0, 0.0, length, 0.2, DARK_STEEL)
+    for x in (0.0, length - 0.2):
+        s.rect(x, 0.0, x + 0.2, height, DARK_STEEL)
+    s.rect(length - 1.3, 0.2, length - 0.2, height - 0.2, (70, 108, 138), DARK_STEEL)
+    for x in (length - 1.05, length - 0.5):
+        s.rect(x, 0.2, x + 0.06, height - 0.2, STEEL)
+        s.rect(x - 0.08, 1.2, x + 0.14, 1.32, IRON)
+    s.rect(0.6, 0.6, 1.6, 1.2, RUST)
+    return s.image
+
+
+def bulkhead(width: float = 2.2, height: float = 7.8, footing: float = 2.2) -> Image.Image:
+    """A tiled wall with a jammed steel door at its foot and a vent near its top, on the floor's
+    edge `footing` deep."""
+    s = Sheet(width, height + footing, 120)
+    s.rect(0.0, 0.0, width, footing, CONCRETE, GRIME)
+    s.rect(0.0, footing - 0.25, width, footing, (110, 106, 94))
+    s.rect(0.0, footing, width, footing + height, CREAM, DARK_STEEL)
+    for y in np.arange(footing + 0.3, footing + height, 0.3):
+        s.rect(0.0, y - 0.01, width, y + 0.01, (196, 188, 160))
+    s.rect(0.0, footing + height - 0.25, width, footing + height, DARK_STEEL)
+    s.rect(0.2, footing, width - 0.2, footing + 2.4, DARK_STEEL)
+    s.rect(0.32, footing, width - 0.32, footing + 2.28, STEEL, IRON)
+    for y in (0.3, 2.0):
+        s.rect(0.32, footing + y, width - 0.32, footing + y + 0.12, HAZARD)
+    s.ellipse(width / 2 - 0.3, footing + 0.9, width / 2 + 0.3, footing + 1.5, IRON)
+    s.rect(0.32, footing + 1.6, 0.9, footing + 1.9, RUST)
+    top = footing + height
+    s.rect(0.5, top - 1.2, width - 0.5, top - 0.6, IRON)
+    for x in np.arange(0.6, width - 0.5, 0.15):
+        s.rect(x, top - 1.15, x + 0.06, top - 0.65, DARK_STEEL)
+    return s.image
+
+
 SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "stairs": stairs,
     "ladder": ladder,
@@ -380,4 +425,6 @@ SKETCHES: dict[str, Callable[[], Image.Image]] = {
     "bathtub": bathtub,
     "washbasin": washbasin,
     "fridge": fridge,
+    "shipping_container": shipping_container,
+    "bulkhead": bulkhead,
 }

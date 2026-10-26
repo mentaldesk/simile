@@ -921,6 +921,50 @@ FURNITURE: dict[str, Item] = {
         cut=("gaps",),
         cartoon=True,
     ),
+    "shipping_container": Item(
+        "an old steel shipping container seen exactly from the side: corrugated walls of faded "
+        "blue paint with rust patches and streaks, a flat roof, and its double doors at one end "
+        "with long vertical locking bars",
+        3.36,
+        ref=TUNNELS,
+        sketch="shipping_container",
+        cut=("outline",),
+        reseed=1,
+        variants={
+            "rust": "Recolour the container's blue paint to faded rust red.",
+            "mustard": "Recolour the container's blue paint to faded mustard yellow.",
+        },
+        cartoon=True,
+    ),
+    "switchboard": Item(
+        "an old railway signal switchboard seen straight from the front: a tall cabinet of "
+        "grimy green-grey steel, its front a panel of rows of dead toggle switches, little round "
+        "dials and dark indicator lamps, with bundles of cut copper wire hanging out of an open "
+        "access hatch at the bottom",
+        2.0,
+        (640, 640),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "lockers": Item(
+        "a row of three tall battered steel workers' lockers, dented and scuffed grey-green "
+        "paint, one door hanging open, with a hard hat on top",
+        1.9,
+        (640, 640),
+        ref=TUNNEL_ROOMS,
+        cartoon=True,
+    ),
+    "bulkhead": Item(
+        "a tall wall of grimy cream tiles seen straight from the front, with a heavy riveted "
+        "steel door at its foot, jammed shut and rusted, with yellow and black hazard stripes "
+        "and a big locking wheel, and a dark vent grille high up, standing on a strip of grey "
+        "concrete floor edge",
+        10.0,
+        ref=TUNNELS,
+        sketch="bulkhead",
+        cut=("outline",),
+        cartoon=True,
+    ),
 }
 EXTRAS: dict[str, Item] = {
     "armchair": Item(
@@ -1058,7 +1102,17 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
         prompt = style(redraw.format(subject=spec.subject, back=back))
         refs = (spec.ref,)
         size, height = sketch.size, spec.height
-        return Painting(key, "sprite", prompt, size, refs, height, sketch=spec.sketch, cut=spec.cut)
+        return Painting(
+            key,
+            "sprite",
+            prompt,
+            size,
+            refs,
+            height,
+            reseed=spec.reseed,
+            sketch=spec.sketch,
+            cut=spec.cut,
+        )
     size = spec.size
     backdrop_text = SIDE_SPRITE if spec.side else SPRITE
     if spec.grey:
@@ -1070,12 +1124,13 @@ def item(name: str, spec: Item, layout: Layout) -> Painting:
 
 
 def variants(spec: Item, base: Painting) -> list[Painting]:
+    style, texture = (cartoon, "the ink lines") if spec.cartoon else (styled, "the paper texture")
     return [
         Painting(
             f"{base.key}-{variant}",
             "sprite",
-            styled(
-                f"{change} Keep everything else exactly the same: the shape, the paper texture, "
+            style(
+                f"{change} Keep everything else exactly the same: the shape, {texture}, "
                 "the background."
             ),
             base.size,
