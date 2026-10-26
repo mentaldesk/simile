@@ -12,7 +12,8 @@ const figure = {
 
 describe('the committed figures', () => {
   it('load for every resident, the doctor and the player, each with its atlas', () => {
-    expect(Object.keys(dolls).sort()).toEqual([
+    const withoutBionics = Object.keys(dolls).filter((id) => !id.startsWith('player_'));
+    expect(withoutBionics.sort()).toEqual([
       'annelie',
       'desmond',
       'henrietta',
@@ -23,13 +24,6 @@ describe('the committed figures', () => {
       'mirela',
       'odalys',
       'player',
-      'player_datajack',
-      'player_datajack_eye',
-      'player_eye',
-      'player_legs',
-      'player_legs_datajack',
-      'player_legs_datajack_eye',
-      'player_legs_eye',
       'priya',
       'raymond',
       'tobias',

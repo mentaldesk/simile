@@ -6,10 +6,13 @@ from simile.characters.palette import PLAYER
 from simile.dolls.bionics import (
     COMBINATIONS,
     FITTED,
+    LAYERS,
     changed,
     edit_prompt,
     figure_id,
+    hides,
     laid,
+    layers,
     missing,
     patches,
     shows,
@@ -22,7 +25,7 @@ from simile.schema.player import Bionic, Body
 
 from .keyed import keyed
 
-LEGS, DATAJACK, EYE = FITTED
+LEGS, BIONIC_LEGS, FEET, DATAJACK, EYE = FITTED
 SIZE = (300, 400)
 
 
@@ -38,9 +41,31 @@ def with_parts(*parts: Bionic) -> Image.Image:
 
 
 def test_every_combination_once_fewest_first() -> None:
-    assert len(COMBINATIONS) == 7 == len(set(COMBINATIONS))
-    assert [len(c) for c in COMBINATIONS] == [1, 1, 1, 2, 2, 2, 3]
+    lower = [(), (LEGS,), (BIONIC_LEGS,), (FEET,), (BIONIC_LEGS, FEET)]
+    upper = [(), (DATAJACK,), (EYE,), (DATAJACK, EYE)]
+    every = {low + up for low in lower for up in upper} - {()}
+
+    assert len(COMBINATIONS) == len(every) == 19 and set(COMBINATIONS) == every
+    assert [len(c) for c in COMBINATIONS] == sorted(len(c) for c in COMBINATIONS)
     assert all(list(c) == sorted(c, key=FITTED.index) for c in COMBINATIONS)
+
+
+def test_the_lower_body_is_one_layer_and_each_other_part_its_own() -> None:
+    assert layers((BIONIC_LEGS, FEET, DATAJACK, EYE)) == [(BIONIC_LEGS, FEET), (DATAJACK,), (EYE,)]
+    assert layers((LEGS, EYE)) == [(LEGS,), (EYE,)]
+    assert layers((DATAJACK,)) == [(DATAJACK,)]
+
+
+def test_each_layer_is_painted_after_the_one_it_adds_to() -> None:
+    assert set(LAYERS) == {
+        (LEGS,),
+        (BIONIC_LEGS,),
+        (FEET,),
+        (BIONIC_LEGS, FEET),
+        (DATAJACK,),
+        (EYE,),
+    }
+    assert all(layer[:-1] in LAYERS[:n] for n, layer in enumerate(LAYERS) if len(layer) > 1)
 
 
 @pytest.mark.parametrize(
@@ -54,6 +79,19 @@ def test_every_combination_once_fewest_first() -> None:
 )
 def test_names_the_figure_for_whatever_is_fitted(fitted_: tuple, id_: str) -> None:
     assert figure_id(fitted_) == id_
+
+
+def test_every_grade_of_a_line_is_one_figure_and_the_power_cell_none() -> None:
+    first = Body(legs=BIONIC_LEGS, feet=FEET, stomach=Bionic.POWER_CELL)
+    best = Body(legs=Bionic.BIONIC_LEGS_3, feet=Bionic.SPRING_FEET_2, stomach=Bionic.POWER_CELL_3)
+
+    assert figure_id(first.bionics) == figure_id(best.bionics) == "player_bionic_legs_feet"
+    assert figure_id(Body(stomach=Bionic.POWER_CELL).bionics) == "player"
+
+
+def test_stage_1s_legs_are_one_figure_and_the_bionic_legs_with_the_feet() -> None:
+    assert figure_id([Bionic.PREMIUM_LEGS, DATAJACK]) == "player_legs_datajack"
+    assert figure_id([Bionic.SPRINT_LEGS, Bionic.SPRING_FEET_2]) == "player_bionic_legs_feet"
 
 
 def test_a_body_names_its_figure_by_its_bionics_whichever_eye() -> None:
@@ -77,6 +115,15 @@ def test_each_part_is_asked_for_alone_over_the_whole_player() -> None:
     assert "one bright red bionic eye" in eye and "simple dot eyes" in legs
 
 
+def test_the_feet_are_asked_for_in_place_of_the_sneakers() -> None:
+    feet = edit_prompt("stand", FEET, PLAYER)
+    over_legs = edit_prompt("stand", FEET, PLAYER, (BIONIC_LEGS,))
+
+    assert "spring feet" in feet and "pure white sneakers" not in feet
+    assert " trousers" in feet and " shorts" in over_legs and " trousers" not in over_legs
+    assert hides((BIONIC_LEGS, FEET)) == {"shoe"} and hides((BIONIC_LEGS,)) == set()
+
+
 def test_climbing_asks_for_no_face() -> None:
     climb = edit_prompt("climb", DATAJACK, PLAYER)
 
@@ -84,9 +131,17 @@ def test_climbing_asks_for_no_face() -> None:
 
 
 def test_finds_each_part_painted() -> None:
-    assert missing(with_parts(), FITTED, "stand") == ["legs", "datajack", "eye"]
-    assert missing(with_parts(LEGS, DATAJACK, EYE), FITTED, "stand") == []
-    assert missing(with_parts(DATAJACK), FITTED, "climb") == ["legs"]
+    assert missing(with_parts(), FITTED, "stand") == [
+        "legs",
+        "bionic_legs",
+        "feet",
+        "datajack",
+        "eye",
+    ]
+    assert missing(with_parts(LEGS, DATAJACK, EYE), (LEGS, DATAJACK, EYE), "stand") == []
+    assert missing(with_parts(BIONIC_LEGS, FEET), (BIONIC_LEGS, FEET), "stand") == []
+    assert missing(with_parts(BIONIC_LEGS), (BIONIC_LEGS, FEET), "stand") == ["feet"]
+    assert missing(with_parts(DATAJACK), (LEGS, DATAJACK, EYE), "climb") == ["legs"]
 
 
 def test_both_eyes_painted_red_is_one_too_many() -> None:
@@ -130,7 +185,7 @@ def test_a_part_is_where_painting_it_changed_the_frame_near_it() -> None:
     w, h = SIZE
     ImageDraw.Draw(eye).rectangle((0.45 * w, 0.8 * h, 0.55 * w, 0.85 * h), (139, 155, 180))
 
-    where = changed(player, eye, EYE)
+    where = changed(player, eye, (EYE,))
 
     lens = np.argwhere(np.asarray(eye.convert("RGB")) == (222, 30, 30))
     assert where[lens[:, 0], lens[:, 1]].all()
@@ -143,12 +198,24 @@ def test_parts_are_laid_over_the_player_and_nothing_else_changes() -> None:
     legs, eye = with_parts(LEGS), with_parts(EYE)
     w, h = SIZE
 
-    both = laid(player, [(legs, changed(player, legs, LEGS)), (eye, changed(player, eye, EYE))])
+    both = laid(
+        player, [(legs, changed(player, legs, (LEGS,))), (eye, changed(player, eye, (EYE,)))]
+    )
 
     assert missing(both, (LEGS, EYE), "stand") == []
     before, after = np.asarray(player), np.asarray(both)
     assert (before[: int(0.12 * h)] == after[: int(0.12 * h)]).all()
     assert (before[:, : int(0.2 * w)] == after[:, : int(0.2 * w)]).all()
+
+
+def test_the_lower_body_is_laid_as_one_with_the_legs_and_the_feet() -> None:
+    player, both = with_parts(), with_parts(BIONIC_LEGS, FEET)
+    h = SIZE[1]
+
+    laid_over = laid(player, [(both, changed(player, both, (BIONIC_LEGS, FEET)))])
+
+    assert missing(laid_over, (BIONIC_LEGS, FEET), "stand") == []
+    assert (np.asarray(player)[: h // 2] == np.asarray(laid_over)[: h // 2]).all()
 
 
 def test_the_fake_painter_paints_what_an_edit_asks_for() -> None:
@@ -157,4 +224,4 @@ def test_the_fake_painter_paints_what_an_edit_asks_for() -> None:
 
     edited = painter.paint(edit_prompt("stand", EYE, PLAYER), SIZE, 1, [base])
 
-    assert missing(keyed(edited), FITTED, "stand") == ["legs", "datajack"]
+    assert missing(keyed(edited), FITTED, "stand") == ["legs", "bionic_legs", "feet", "datajack"]
