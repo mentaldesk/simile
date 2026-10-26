@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { stretchParts } from './layout';
+import { spans, stretchParts, TEXTURE_LIMIT } from './layout';
 
 const PREFIX = 'side:';
 const SHADOW = '#1e140c';
@@ -7,8 +7,11 @@ const TILE_FRAME = 'tile';
 /** Alpha above which a column of a tiling picture counts as drawn. */
 const OPAQUE = 8;
 
+/** One of the textures a picture wider than the GPU's limit is drawn with, `x` px from its left. */
+export type Part = { key: string; x: number; width: number };
 /** `name` makes more from it; `scale` and `pad` scale it back up. */
-export type Derived = { key: string; name: string; scale: number; pad: number };
+export type Derived = { key: string; name: string; scale: number; pad: number; parts: Part[] };
+type Source = HTMLImageElement | HTMLCanvasElement;
 
 function canvasOf(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const canvas = document.createElement('canvas');
@@ -49,9 +52,13 @@ export class SideTextures {
   private readonly scene: Phaser.Scene;
   private readonly loading = new Map<string, Promise<string>>();
   private readonly derived = new Map<string, Derived>();
+  private readonly wide = new Map<string, { source: Source; parts: Part[] }>();
+  private readonly limit: number;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
+    const renderer = scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer> | undefined;
+    this.limit = renderer?.getMaxTextureSize?.() ?? TEXTURE_LIMIT;
   }
 
   load(key: string, url: string): Promise<string> {
@@ -72,6 +79,17 @@ export class SideTextures {
 
   key(key: string): string {
     return PREFIX + key;
+  }
+
+  /** The textures it's drawn with, side by side. */
+  parts(key: string): Part[] {
+    const texture = PREFIX + key;
+    return this.wide.get(texture)?.parts ?? [{ key: texture, x: 0, width: this.source(key).width }];
+  }
+
+  size(key: string): { width: number; height: number } {
+    const { width, height } = this.source(key);
+    return { width, height };
   }
 
   /** Blurred and dark, from its alpha. */
@@ -260,8 +278,8 @@ export class SideTextures {
   }
 
   destroy(): void {
-    for (const derived of this.derived.values()) this.scene.textures.remove(derived.key);
-    for (const texture of this.loading.keys()) if (this.scene.textures.exists(texture)) this.scene.textures.remove(texture);
+    for (const derived of this.derived.values()) this.remove(derived.key);
+    for (const texture of this.loading.keys()) this.remove(texture);
     this.derived.clear();
     this.loading.clear();
   }
@@ -270,22 +288,23 @@ export class SideTextures {
     const texture = PREFIX + key;
     for (const [name, derived] of this.derived) {
       if (name.startsWith(`${key}#`) || name.startsWith(`${key}@`)) {
-        this.scene.textures.remove(derived.key);
+        this.remove(derived.key);
         this.derived.delete(name);
       }
     }
-    if (this.scene.textures.exists(texture)) this.scene.textures.remove(texture);
+    this.remove(texture);
     this.loading.delete(texture);
   }
 
-  private source(key: string): HTMLImageElement | HTMLCanvasElement {
-    return this.scene.textures.get(PREFIX + key).getSourceImage() as HTMLImageElement;
+  private source(key: string): Source {
+    const texture = PREFIX + key;
+    return this.wide.get(texture)?.source ?? (this.scene.textures.get(texture).getSourceImage() as HTMLImageElement);
   }
 
   private make(
     name: string,
     key: string,
-    draw: (source: HTMLImageElement | HTMLCanvasElement, context: CanvasRenderingContext2D, pad: number) => void,
+    draw: (source: Source, context: CanvasRenderingContext2D, pad: number) => void,
     scale: number,
     pad: number,
     width?: number,
@@ -298,14 +317,30 @@ export class SideTextures {
       source.height * scale + 2 * pad,
     );
     draw(source, context, pad);
-    const derived = { key: PREFIX + name, name, scale, pad };
-    this.add(derived.key, canvas);
+    this.add(PREFIX + name, canvas);
+    const derived = { key: PREFIX + name, name, scale, pad, parts: this.parts(name) };
     this.derived.set(name, derived);
     return derived;
   }
 
-  private add(key: string, source: HTMLImageElement | HTMLCanvasElement): void {
-    if (source instanceof HTMLCanvasElement) this.scene.textures.addCanvas(key, source);
+  /** Split into parts if it's wider than the GPU can take, which would draw nothing. */
+  private add(key: string, source: Source): void {
+    if (source.width > this.limit) {
+      const parts = spans(source.width, this.limit).map(({ x, width }) => {
+        const [canvas, context] = canvasOf(width, source.height);
+        context.drawImage(source, x, 0, width, source.height, 0, 0, width, source.height);
+        const part = { key: `${key}~${x}`, x, width };
+        this.scene.textures.addCanvas(part.key, canvas);
+        return part;
+      });
+      this.wide.set(key, { source, parts });
+    } else if (source instanceof HTMLCanvasElement) this.scene.textures.addCanvas(key, source);
     else this.scene.textures.addImage(key, source);
+  }
+
+  private remove(key: string): void {
+    for (const part of this.wide.get(key)?.parts ?? []) this.scene.textures.remove(part.key);
+    this.wide.delete(key);
+    if (this.scene.textures.exists(key)) this.scene.textures.remove(key);
   }
 }

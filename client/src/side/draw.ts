@@ -62,15 +62,28 @@ export function placeDerived(
   y: number,
   scale = 1,
 ): Phaser.GameObjects.Image {
-  const width = Math.ceil(source.width * derived.scale) + 2 * derived.pad;
+  return placeParts(scene, derived, source, anchor, x, y, scale)[0];
+}
+
+/** Each part anchored at (x, y), so they meet edge to edge. */
+export function placeParts(
+  scene: Phaser.Scene,
+  derived: Pick<Derived, 'scale' | 'pad' | 'parts'>,
+  source: { width: number; height: number },
+  anchor: readonly [number, number],
+  x: number,
+  y: number,
+  scale = 1,
+): Phaser.GameObjects.Image[] {
+  const left = derived.pad + anchor[0] * source.width * derived.scale;
   const height = Math.ceil(source.height * derived.scale) + 2 * derived.pad;
-  return scene.add
-    .image(x, y, derived.key)
-    .setOrigin(
-      (derived.pad + anchor[0] * source.width * derived.scale) / width,
-      (derived.pad + anchor[1] * source.height * derived.scale) / height,
-    )
-    .setScale(scale / derived.scale);
+  const originY = (derived.pad + anchor[1] * source.height * derived.scale) / height;
+  return derived.parts.map((part) =>
+    scene.add
+      .image(x, y, part.key)
+      .setOrigin((left - part.x) / part.width, originY)
+      .setScale(scale / derived.scale),
+  );
 }
 
 export function tileAlong(
@@ -104,6 +117,7 @@ export function furnitureKey(manifest: SceneryManifest, item: Placed, mapId: str
 
 export const SHADOW_OFFSET_M = { x: 0.17, y: 0.12 };
 export const SHADOW_ALPHA = 0.36;
+const SHADOW = { scale: 0.5, blur: 8 };
 
 export function dropShadow(
   scene: Phaser.Scene,
@@ -115,7 +129,7 @@ export function dropShadow(
   options: { scale?: number; blur?: number; ppm: number; alpha?: number; flip?: boolean },
 ): Phaser.GameObjects.Image {
   const source = scene.textures.get(textures.key(key)).getSourceImage();
-  const derived = textures.shadow(key, options.scale ?? 0.5, options.blur ?? 8);
+  const derived = textures.shadow(key, options.scale ?? SHADOW.scale, options.blur ?? SHADOW.blur);
   return placeDerived(
     scene,
     derived,
@@ -126,4 +140,26 @@ export function dropShadow(
   )
     .setAlpha(options.alpha ?? SHADOW_ALPHA)
     .setFlipX(options.flip ?? false);
+}
+
+/** It and its drop shadow, each in parts side by side if stretched wider than a texture can be. */
+export function placeFurniture(
+  scene: Phaser.Scene,
+  textures: SideTextures,
+  key: string,
+  stretch: number | undefined,
+  anchor: readonly [number, number],
+  x: number,
+  y: number,
+  ppm: number,
+): { images: Phaser.GameObjects.Image[]; shadows: Phaser.GameObjects.Image[] } {
+  const name = stretch ? textures.stretched(key, stretch).name : key;
+  const source = textures.size(name);
+  const picture = { scale: 1, pad: 0, parts: textures.parts(name) };
+  const shadow = textures.shadow(name, SHADOW.scale, SHADOW.blur);
+  const [sx, sy] = [x + SHADOW_OFFSET_M.x * ppm, y + SHADOW_OFFSET_M.y * ppm];
+  return {
+    images: placeParts(scene, picture, source, anchor, x, y),
+    shadows: placeParts(scene, shadow, source, anchor, sx, sy).map((image) => image.setAlpha(SHADOW_ALPHA)),
+  };
 }

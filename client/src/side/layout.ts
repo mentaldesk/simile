@@ -14,6 +14,8 @@ export const GROUND_LIFT_M = 0.35;
 export const FURNITURE_DROP_M = 0.06;
 export const STRETCH_FILL = 0.96;
 export const STRETCH_CAP = 0.15;
+/** WebGL's widest texture on most GPUs, for a renderer that doesn't say. */
+export const TEXTURE_LIMIT = 16384;
 
 /** The middle of its cell. */
 export const xOf = (x: number): number => (x + 0.5) * TILE;
@@ -68,6 +70,13 @@ export function stretchParts(width: number, sourceWidth: number, cap = STRETCH_C
   const middle = Math.max(1, sourceWidth - 2 * end);
   const fill = Math.max(0, width - 2 * end);
   return { end, middle, fill, repeats: Math.ceil(fill / middle) };
+}
+
+/** Side by side, covering `width`, none wider than `limit`. */
+export function spans(width: number, limit = TEXTURE_LIMIT): { x: number; width: number }[] {
+  const parts = [];
+  for (let x = 0; x < width; x += limit) parts.push({ x, width: Math.min(limit, width - x) });
+  return parts;
 }
 
 export type GroundRun = { key: string; x0: number; x1: number; row: number };

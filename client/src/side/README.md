@@ -79,7 +79,9 @@ it, and rises to the top floor or drops to Banyan Row's river.
   stands (`glowing`, as `world/reach.ts`'s `eUse` finds it) gets a pulsing glow round its outline,
   made in code from its picture; a jack doesn't without the datajack, and the lift does with it.
 
-Every texture is filtered smoothly, Phaser's default. A mural painted at another aspect than its
+Every texture is filtered smoothly, Phaser's default. A picture wider than the GPU's widest texture
+(16384 px on most), such as `sewer_vault` stretched across a level, is cut into parts within it,
+drawn side by side, and its shadow is made from the whole (`textures.ts`, `placeParts`). A mural painted at another aspect than its
 wall is cropped to cover it, not stretched (`coverCrop`). Each street loads its pictures when the
 player first goes there and frees the last street's.
 
@@ -185,7 +187,8 @@ secret on the spring feet and crosses the gantry's gap to its secret on the bion
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto
 it on the spring feet and crosses the high gap on the bionic legs, opens the news at every terminal
 on E, orders at the café's counter on T, talks to Lachlan on T, each after E there does nothing, and
-looks at house 10's mural and a painting on V and closes them on V. It steps Playwright's clock
+looks at house 10's mural and a painting on V and closes them on V, and checks the sewers' vault is
+drawn edge to edge in parts on the widest level, with no `texImage2D` error. It steps Playwright's clock
 rather than waiting, and the *Side walk* workflow runs it on every PR.
 
 ```bash

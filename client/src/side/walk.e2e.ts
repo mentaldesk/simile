@@ -21,6 +21,7 @@ type State = Place & {
   lamp: { dark: boolean; plug: boolean; on: boolean; gloom: number; hint: string | null };
 };
 type Usable = { id: string; shown: boolean; glowing: boolean; searched: boolean; recipe: boolean };
+type Drawn = { key: string; width: number; left: number; right: number; visible: boolean };
 type SideWalk = {
   state(): State | undefined;
   links(): Link[];
@@ -35,6 +36,9 @@ type SideWalk = {
   jacks(): Place[];
   mind(): { recipes: string[]; searched: string[]; items: string[] };
   usables(): Usable[];
+  levels(): Record<string, number>;
+  pieces(piece: string): Drawn[];
+  textureLimit(): number | null;
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -71,6 +75,9 @@ const walkApi = (page: Page) => ({
   jacks: () => page.evaluate(() => (window as unknown as Paged).sideWalk.jacks()),
   mind: () => page.evaluate(() => (window as unknown as Paged).sideWalk.mind()),
   usables: () => page.evaluate(() => (window as unknown as Paged).sideWalk.usables()),
+  levels: () => page.evaluate(() => (window as unknown as Paged).sideWalk.levels()),
+  pieces: (piece: string) => page.evaluate((piece) => (window as unknown as Paged).sideWalk.pieces(piece), piece),
+  textureLimit: () => page.evaluate(() => (window as unknown as Paged).sideWalk.textureLimit()),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -539,6 +546,35 @@ async function sewersLeg(page: Page, api: Api, index: number): Promise<void> {
   await fitKit(api, {});
 }
 
+/** The vault is wider than a texture can be on the widest level, so it's drawn in parts side by side. */
+async function vaultLeg(open: (query: string) => Promise<[Page, Api]>, level: string, cells: number, index: number): Promise<string> {
+  const name = `the sewers' vault on level ${level}, ${cells} cells wide`;
+  const glErrors: string[] = [];
+  const [page, api] = await open(`level=${level}&lamp=on`);
+  page.on('console', (message) => {
+    if (/teximage2d/i.test(message.text())) glErrors.push(message.text());
+  });
+  try {
+    const hatch = (await api.links()).find(({ map }) => map === 'sewers')!;
+    await teleport(page, api, { map: 'sewers', x: hatch.x, y: hatch.y }, name);
+    await run(page, 500);
+    const limit = (await api.textureLimit()) ?? Infinity;
+    const parts = (await api.pieces('platforms/sewer_vault@')).filter(({ key }) => !key.includes('#'));
+    parts.sort((a, b) => a.left - b.left);
+    const span = parts.length ? parts.at(-1)!.right - parts[0].left : 0;
+    if (span < cells * 132 * 0.95) throw new Error(`${name}: drawn ${span.toFixed(0)} px wide in ${parts.length} parts`);
+    for (const [i, part] of parts.entries()) {
+      if (part.width > limit || !part.visible) throw new Error(`${name}: ${JSON.stringify(part)} against a limit of ${limit}`);
+      if (i > 0 && Math.abs(part.left - parts[i - 1].right) > 0.5) throw new Error(`${name}: a gap or overlap at ${part.left}`);
+    }
+    await shot(page, index, 'the vault');
+    if (glErrors.length) throw new Error(`${name}: ${glErrors[0]}`);
+    return `${parts.length} parts across ${span.toFixed(0)} px, ${limit} px a texture`;
+  } finally {
+    await page.close();
+  }
+}
+
 const shown = (page: Page, selector: string) =>
   page.evaluate((selector) => {
     const element = document.querySelector<HTMLElement>(selector);
@@ -669,14 +705,19 @@ const GL: Record<string, string[]> = {
 const browser = await chromium.launch({ args: GL[process.platform] ?? [] });
 const failures: string[] = [];
 try {
-  const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 320, height: 200 } });
-  page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));
-  if (!realTime) await page.clock.install();
   const url = server.resolvedUrls!.local[0];
-  await page.goto(`${url}?harness=side&still&panel=0`);
-  if (!realTime) await page.clock.pauseAt(Date.now() + 1000);
-  const api = walkApi(page);
-  await until(page, async () => !!(await page.evaluate(() => 'sideWalk' in window)) && !!(await api.state()), 60, 'starting');
+  const open = async (query = ''): Promise<[Page, Api]> => {
+    const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 320, height: 200 } });
+    page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));
+    if (!realTime) await page.clock.install();
+    await page.goto(`${url}?harness=side&still&panel=0&${query}`);
+    if (!realTime) await page.clock.pauseAt(Date.now() + 1000);
+    const api = walkApi(page);
+    await until(page, async () => !!(await page.evaluate(() => 'sideWalk' in window)) && !!(await api.state()), 60, 'starting');
+    return [page, api];
+  };
+  const [page, api] = await open();
+  const [widest, cells] = Object.entries(await api.levels()).sort((a, b) => b[1] - a[1])[0];
   const all: [string, (index: number) => Promise<string | void>][] = [
     ...(await legs(api)).map((leg): [string, (index: number) => Promise<string | void>] => [leg.name, (i) => walkLeg(page, api, leg, i)]),
     ['running with Shift', (i) => runLeg(page, api, i)],
@@ -701,6 +742,7 @@ try {
     ["V at the mural by house 10's door", (i) => lookLeg(page, api, { map: 'banyan_row', x: 17, y: 15 }, 'mural', 'E: go in', i)],
     ['V at a painting in the gallery', (i) => lookLeg(page, api, { map: 'gallery_floor_1', x: 14, y: 2 }, 'gallery', null, i)],
     ['C for the character screen', (i) => characterLeg(page, api, i)],
+    ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();
   for (const [i, [name, walk]] of all.entries()) {

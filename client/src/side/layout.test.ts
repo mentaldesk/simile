@@ -11,8 +11,10 @@ import {
   muralRect,
   PPM,
   roofHeight,
+  spans,
   stretchParts,
   stretchWidth,
+  TEXTURE_LIMIT,
   TILE,
   xOf,
 } from './layout';
@@ -87,6 +89,21 @@ describe('the street layout', () => {
     expect(parts.end).toBe(42);
     expect(parts.middle * parts.repeats).toBeGreaterThanOrEqual(parts.fill);
     expect(2 * parts.end + parts.fill).toBe(width);
+  });
+
+  it('splits a picture wider than a texture can be into parts within it, covering it with no gap or overlap', () => {
+    for (const width of [1, 4000, TEXTURE_LIMIT, TEXTURE_LIMIT + 1, 3 * TEXTURE_LIMIT - 7]) {
+      const parts = spans(width);
+      expect(parts.length).toBe(Math.ceil(width / TEXTURE_LIMIT));
+      expect(parts[0].x).toBe(0);
+      for (const [i, part] of parts.entries()) {
+        expect(part.width).toBeGreaterThan(0);
+        expect(part.width).toBeLessThanOrEqual(TEXTURE_LIMIT);
+        if (i > 0) expect(part.x).toBe(parts[i - 1].x + parts[i - 1].width);
+      }
+      expect(parts.at(-1)!.x + parts.at(-1)!.width).toBe(width);
+    }
+    expect(spans(10_000, 4096).map(({ width }) => width)).toEqual([4096, 4096, 1808]);
   });
 
   it('lays the pavement, the square, the park and the promenade below Banyan Row', () => {
