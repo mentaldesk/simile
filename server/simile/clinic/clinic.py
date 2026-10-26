@@ -10,7 +10,6 @@ from simile.player.power import runs
 from simile.player.where import here, location
 from simile.protocol import Buyer, Fitting, Treatment
 from simile.schema import (
-    BODY_PARTS,
     PRESENT,
     SOLD,
     Bionic,
@@ -59,25 +58,8 @@ class Clinic:
         return {KIDNEYS[0]: self.config.kidney}
 
     def fittings(self) -> list[Fitting]:
-        """What the doctor would fit now, whether or not they can pay or have the parts: stage 1's
-        legs in stock, and each bionic they know the recipe for, once the cell's in and while it
-        would run it."""
-        return [*self._offered(), *self._from_recipes()]
-
-    def _offered(self) -> list[Fitting]:
-        body, offers = self.player.body, self.config.offers
-        carried = {item.id for item in self.player.items}
-        fittings = []
-        for bionic, offer in offers.items():
-            takes = offer.after or (PRESENT,)
-            free = [p for p in BODY_PARTS if p in bionic.replaces and getattr(body, p) in takes]
-            short = offer.needs is not None and offer.needs.id not in carried
-            if bionic in body.bionics or short or not free or not self._stocked(bionic):
-                continue
-            fittings.append(Fitting(bionic=bionic, name=offer.name, price=offer.price, parts=free))
-        return fittings
-
-    def _from_recipes(self) -> list[Fitting]:
+        """What the doctor would fit now, whether or not they can pay or have the parts: each
+        bionic they know the recipe for, once the cell's in and while it would run it."""
         body, known = self.player.body, self.player.mind.recipes
         fittings = []
         for bionic, recipe in self.config.recipes.items():
@@ -97,10 +79,8 @@ class Clinic:
 
     def _uses(self, bionic: Bionic) -> dict[str, int]:
         """The items fitting `bionic` uses up, how many of each by id."""
-        if recipe := self.config.recipes.get(bionic):
-            return recipe.parts
-        offer = self.config.offers.get(bionic)
-        return {offer.needs.id: 1} if offer and offer.needs else {}
+        recipe = self.config.recipes.get(bionic)
+        return recipe.parts if recipe else {}
 
     def missing(self, bionic: Bionic) -> dict[str, int]:
         """How many of each item fitting `bionic` uses up they're short of."""

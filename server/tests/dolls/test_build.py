@@ -85,7 +85,7 @@ def stamps(directory: Path) -> dict[str, int]:
     return {path.name: path.stat().st_mtime_ns for path in directory.iterdir()}
 
 
-LEGS, BIONIC_LEGS, FEET, DATAJACK, EYE = bionics.FITTED
+BIONIC_LEGS, FEET, DATAJACK, EYE = bionics.FITTED
 
 
 @pytest.fixture

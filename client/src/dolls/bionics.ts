@@ -1,26 +1,20 @@
 import type { Bionic, Body } from '../net/protocol';
 
 export const PLAYER_FIGURE = 'player';
-type Shown = Extract<Bionic, 'hydraulic_legs' | 'bionic_legs' | 'spring_feet' | 'datajack' | 'infrared_eye'>;
+type Shown = Extract<Bionic, 'bionic_legs' | 'spring_feet' | 'datajack' | 'infrared_eye'>;
 /** In the order a figure's id names them. */
-export const FITTED: readonly Shown[] = ['hydraulic_legs', 'bionic_legs', 'spring_feet', 'datajack', 'infrared_eye'];
+export const FITTED: readonly Shown[] = ['bionic_legs', 'spring_feet', 'datajack', 'infrared_eye'];
 const NAMES: Record<Shown, string> = {
-  hydraulic_legs: 'legs',
   bionic_legs: 'bionic_legs',
   spring_feet: 'feet',
   datajack: 'datajack',
   infrared_eye: 'eye',
 };
-/** The part a figure shows for each bionic: every grade of a line alike, and of stage 1's legs. */
+/** The part a figure shows for each bionic: every grade of a line alike. */
 const SHOWN_AS: Record<Bionic, Shown | undefined> = {
   power_cell: undefined,
   power_cell_2: undefined,
   power_cell_3: undefined,
-  hydraulic_legs: 'hydraulic_legs',
-  spring_legs: 'hydraulic_legs',
-  sprint_legs: 'hydraulic_legs',
-  blade_legs: 'hydraulic_legs',
-  premium_legs: 'hydraulic_legs',
   bionic_legs: 'bionic_legs',
   bionic_legs_2: 'bionic_legs',
   bionic_legs_3: 'bionic_legs',
@@ -30,16 +24,12 @@ const SHOWN_AS: Record<Bionic, Shown | undefined> = {
   infrared_eye: 'infrared_eye',
 };
 
-/** The bionics a body's figure shows, in `FITTED`'s order, stage 1's legs with the feet as the bionic legs. */
+/** The bionics a body's figure shows, in `FITTED`'s order. */
 export function fitted(body?: Body): Shown[] {
   const parts = new Set<Shown>();
   for (const part of Object.values(body ?? {})) {
     const shown = SHOWN_AS[part as Bionic];
     if (shown) parts.add(shown);
-  }
-  if (parts.has('hydraulic_legs') && parts.has('spring_feet')) {
-    parts.delete('hydraulic_legs');
-    parts.add('bionic_legs');
   }
   return FITTED.filter((bionic) => parts.has(bionic));
 }

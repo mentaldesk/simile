@@ -46,8 +46,7 @@ house is someone's. Aris's workshop is the place the story makes theirs until on
 the stomach, while a client is in the game, like hunger. Without one, `Player.power` stays full.
 
 - **It drains** by `drain` (0.2) a sim hour, and `per_bionic` (0.1) more for each other bionic
-  fitted: five hours on the cell alone, two with the datajack, the legs and the feet. Stage 1's
-  legs, which need no cell, don't count.
+  fitted: five hours on the cell alone, two with the datajack, the legs and the feet.
 - **It charges** at a plug as fast as the lamp, from the same `Lamp.charging`: flat to full in
   about three real seconds. Plugged in, it doesn't drain.
 - **Running flat** collapses them as hunger does, with `cause` `power`, and they wake at home with
@@ -55,7 +54,7 @@ the stomach, while a client is in the game, like hunger. Without one, `Player.po
 - **A cell runs a limited number of bionics** besides itself, by grade, in `runs`: 3 for the
   first cell, 4 for the second and 5 for the third. `runs(body, bionic)` says whether the cell
   would still run everything once `bionic` is fitted, so the clinic fits nothing past it. A higher
-  grade of a line in place of a lower one takes no more of the cell, and stage 1's legs take none.
+  grade of a line in place of a lower one takes no more of the cell.
 
 Its constants are in `PowerConfig`, beside it.
 
@@ -113,7 +112,7 @@ the nearest hit, and only that one. Nothing else is kicked yet.
 
   That's 12.5 kg, and with the lamp they carry 9 kg more, so it takes more than one trip.
 - **Secrets** are `secret` pickups holding money, an item or both, as the map says: 25, 40 and 60
-  money and a ration pack in the metro, the 60 on the high ledge only the hydraulic legs reach.
+  money and a ration pack in the metro, the 60 on the high ledge only the spring feet reach.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
   fits under their carry limit, in order. Money weighs nothing, and goes through the ledger as

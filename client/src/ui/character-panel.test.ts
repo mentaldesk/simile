@@ -66,7 +66,7 @@ const STAGE_1: Player = {
   items: [],
   carry_limit: 10,
   body: {
-    legs: 'hydraulic_legs',
+    legs: 'bionic_legs',
     vertebra: 'present',
     left_eye: 'present',
     right_eye: 'present',
@@ -148,7 +148,7 @@ describe('body', () => {
   });
 
   it('names a bionic without a recipe as the clinic does', () => {
-    expect(bodyRows(STAGE_1.body).find(({ part }) => part === 'legs')?.text).toBe('Hydraulic legs');
+    expect(bodyRows(STAGE_1.body).find(({ part }) => part === 'legs')?.text).toBe('Bionic legs');
     expect(bionicName('power_cell_2')).toBe('Power cell, grade 2');
     expect(bionicName('infrared_eye')).toBe('Infrared eye');
   });
@@ -236,11 +236,11 @@ describe('body', () => {
       'stomach',
       'kidney',
       'kidney',
-      'hydraulic_legs',
+      'bionic_legs',
       'feet',
     ]);
     page.querySelector('[data-part="legs"]')!.dispatchEvent(new MouseEvent('mouseenter'));
-    expect(texts(page, '.character-part p')).toEqual(['A bionic in place of your legs.', 'Jump higher.']);
+    expect(texts(page, '.character-part p')).toEqual(['A bionic in place of your legs, grade 1 of 3.', 'Run faster, jump further and kick harder.']);
   });
 });
 

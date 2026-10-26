@@ -44,9 +44,9 @@ describe('dollFor', () => {
     const body = new PlayerBody();
     expect(dollFor('player', body)).toBe(dolls.player);
 
-    body.set({ ...whole, legs: 'hydraulic_legs', right_eye: 'infrared_eye' });
+    body.set({ ...whole, legs: 'bionic_legs', right_eye: 'infrared_eye' });
 
-    expect(dollFor('player', body)).toBe(dolls.player_legs_eye);
+    expect(dollFor('player', body)).toBe(dolls.player_bionic_legs_eye);
     expect(dollFor('kofi', body)).toBe(dolls.kofi);
   });
 

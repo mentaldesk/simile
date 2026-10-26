@@ -1,15 +1,10 @@
 {
   "$defs": {
     "Bionic": {
-      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack, the eye, or one of stage 1's grades of legs.",
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack or the eye.",
       "enum": [
-        "hydraulic_legs",
         "datajack",
         "infrared_eye",
-        "spring_legs",
-        "sprint_legs",
-        "blade_legs",
-        "premium_legs",
         "power_cell",
         "power_cell_2",
         "power_cell_3",
