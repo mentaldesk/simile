@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from simile.behaviour import Behaviour
 from simile.clinic.config import DEFAULT_CONFIG as CLINIC
+from simile.economy import PLAYER, Kind
 from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
@@ -61,7 +62,10 @@ class Searching:
         self.player = player or Player()
         economy = Economy(world.clock, behaviour, player=self.player)
         self.pickups = Pickups(self.player, self.movement, economy, world.clock)
-        self.finds = Finds(self.player, self.movement, known=lambda: CLINIC.recipes)
+        self.economy = economy
+        self.finds = Finds(
+            self.player, self.movement, known=lambda: CLINIC.recipes, find=economy.find
+        )
         self.clues: list[str] = []
         self.machines = Machines(
             self.player,
@@ -99,6 +103,21 @@ def test_searching_takes_what_it_holds_and_it_holds_nothing_after() -> None:
     ]
     assert searching.player.searched == [SHELF]
     assert searching.player.mind == Mind()
+
+
+def test_the_money_in_a_thing_is_found_through_the_ledger_once() -> None:
+    searching = Searching()
+    mattress = Point(2, 2, "house_2_floor_1")
+
+    searching.e(mattress)
+    searching.e(mattress)
+
+    ledger = searching.economy.ledger
+    assert searching.player.money == 10
+    assert [(e.kind, e.amount, e.payee, e.place) for e in ledger.entries] == [
+        (Kind.FOUND, 10, PLAYER, "house_2_bed")
+    ]
+    assert searching.player.searched == ["house_2_bed"]
 
 
 def test_what_doesnt_fit_is_left_where_they_stand() -> None:
@@ -154,6 +173,16 @@ def test_a_jack_holding_something_gives_it_first_and_its_clue_on_the_second_e() 
 
     assert searching.clues == [DEAD_TERMINAL]
     assert searching.player.searched == [DEAD_TERMINAL]
+
+
+def test_a_jack_holding_only_money_is_searched_with_the_datajack() -> None:
+    maps = holding("metro", DEAD_TERMINAL, money=20.0)
+    searching = Searching(Player(body=DATAJACK), maps)
+
+    searching.e(TERMINAL)
+
+    assert (searching.player.money, searching.player.searched) == (20, [DEAD_TERMINAL])
+    assert searching.clues == []
 
 
 def test_a_jack_is_searched_only_with_the_datajack() -> None:

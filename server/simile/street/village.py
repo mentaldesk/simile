@@ -18,6 +18,7 @@ from simile.street.finds import (
     CHARGE_CONTROLLER,
     COPPER_WIRE,
     LITHIUM_CELL,
+    STASHES,
     USB_C_CONNECTOR,
     searchable,
     under,
@@ -265,7 +266,7 @@ def painting(plan: Plan, number: int, x: int) -> None:
 
 def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> list[Plan]:
     """Two floors: a living room with the front door and the foot of the stairs, a step in from
-    the far wall, and a bedroom."""
+    the far wall, and a bedroom, with its `STASHES` to search in the furniture."""
     home = Building(
         street, f"house_{number}", label, LocationKind.HOUSE, x, 7, ("living_room", "bedroom")
     )
@@ -274,10 +275,21 @@ def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> lis
     home.door(mat)
     home.link(f"house_{number}_stairs", DoorKind.STAIRS, (0, foot), (1, top))
     home.place(entry=3)
-    living.piece("kitchen", 5 if door_west else 1, FLOOR_ROW - 1, 1, 2)
-    living.piece("sofa", 2 if door_west else 3, FLOOR_ROW, 2, 1)
-    bedroom.piece("bed", 2 if door_west else 3, FLOOR_ROW, 2, 1)
-    bedroom.piece("wardrobe", 5 if door_west else 1, FLOOR_ROW - 1, 1, 2)
+    end, middle = (5, 2) if door_west else (1, 3)
+    furniture = {
+        "kitchen": (living, TileArea(x=end, y=FLOOR_ROW - 1, width=1, height=2)),
+        "sofa": (living, TileArea(x=middle, y=FLOOR_ROW, width=2, height=1)),
+        "bed": (bedroom, TileArea(x=middle, y=FLOOR_ROW, width=2, height=1)),
+        "wardrobe": (bedroom, TileArea(x=end, y=FLOOR_ROW - 1, width=1, height=2)),
+    }
+    for piece, (plan, area) in furniture.items():
+        plan.piece(piece, area.x, area.y, area.width, area.height)
+    for stash in STASHES.values():
+        if stash.house == home.id:
+            plan, area = furniture[stash.piece]
+            searchable(
+                plan, stash.id, stash.label, area, under(area), stash.items, money=stash.money
+            )
     return home.floors
 
 

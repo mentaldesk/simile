@@ -98,7 +98,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         return {fact.found_in for fact in incident.facts if fact.found_in} if incident else set()
 
     machines = Machines(player, movement, found, clues)
-    finds = Finds(player, movement, known=lambda: book)
+    finds = Finds(player, movement, known=lambda: book, find=economy.find)
     claimers_of(app).extend((machines.claim, finds.claim))
 
     def on_lamp(message: LampMessage) -> None:

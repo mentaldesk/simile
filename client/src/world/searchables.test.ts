@@ -44,6 +44,18 @@ describe('searchable things', () => {
     expect(listed([battery, battery, coil, battery])).toBe('three old batteries and a copper coil');
   });
 
+  it('read the cash in them from the maps, and say it', () => {
+    const mattress = thing('house_2_floor_1', 'house_2_bed');
+    const tin = thing('house_2_floor_0', 'house_2_kitchen');
+    expect(mattress).toMatchObject({ label: 'Under the mattress', money: 10 });
+    expect(SHELF.money).toBeUndefined();
+    expect(foundIn(mattress)).toBe('You find 10 credits.');
+    expect(foundIn(tin)).toBe('You find 2 credits and a ration bar.');
+    expect(foundIn({ ...SHELF, money: 1 })).toBe('You find 1 credit, a USB-C connector and a copper wire.');
+    expect(toSearch([], false, ['house_2_floor_1'])).toEqual([{ at: { map: 'house_2_floor_1', x: 3, y: 2 }, items: [], money: 10 }]);
+    expect(toSearch(['house_2_bed'], false, ['house_2_floor_1'])).toEqual([]);
+  });
+
   it('glint until searched, each the same pile every time', () => {
     const first = toSearch([], false);
     const bench = first.find(({ at }) => at.map === 'maker_space_floor_0');

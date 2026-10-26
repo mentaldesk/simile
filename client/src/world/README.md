@@ -53,10 +53,10 @@ wall while murals are drawn, a pile within a tile (one the player left, or one i
 buyer with a part to sell back (`trades` in `buyers.ts`), or else the buyer where they stand while
 they carry something it buys, or a clue from `content/story/story.toml` on the player's cell
 (`clues.ts`), after a pile as near. Before any of them, a thing to search on the player's stand tile
-(`searchables.ts`): a `searchable`, or with the datajack a jack holding `items` or `teaches`, that
-`player_state`'s `searched` doesn't list yet. Its `items` and `teaches` come from the map, so its
-prompt is "Search the dead fridge" and E says what it found ("You find a lithium cell and a copper
-wire.") as it sends `pick_up`. `usedByE` is the first that isn't a mural or a painting, which are
+(`searchables.ts`): a `searchable`, or with the datajack a jack holding `items`, `money` or
+`teaches`, that `player_state`'s `searched` doesn't list yet. Its `items`, `money` and `teaches` come
+from the map, so its prompt is "Search the dead fridge" and E says what it found ("You find 2 credits
+and a ration bar.") as it sends `pick_up`. `usedByE` is the first that isn't a mural or a painting, which are
 V's (`lookedAtByV`), or a counter, which is T's (`orderedAtByT`). E takes every door, and the
 dialogue UI uses `usedByE` only off a door's cell, so one press does one thing. Stairs, ladders and
 the lift are the arrows'. The side scene says what each key would take where the player stands, and
