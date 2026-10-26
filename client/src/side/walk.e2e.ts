@@ -425,10 +425,12 @@ async function bionicsLeg(page: Page, api: Api, index: number): Promise<void> {
   await take(page, api, 'e', metro(100, 15), `${name}, up the lift to the metro`);
 }
 
-/** A standing jump at the face of the weir, holding towards it: where it lands. */
+/** A standing jump at the face of the weir, walking towards it: where it lands. */
 async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
   await teleport(page, api, sewers(weir - 1, 15), name);
-  await run(page, 200);
+  await run(page, 300);
+  if ((await api.state())!.run > 0) await page.keyboard.press('Shift');
+  await until(page, async () => (await api.state())!.run === 0, 1, `${name}: walking`, FRAME_MS);
   await page.keyboard.down('ArrowRight');
   await page.keyboard.down(' ');
   await until(page, async () => (await api.state())!.airborne, 1, `${name}: taking off`, FRAME_MS);
