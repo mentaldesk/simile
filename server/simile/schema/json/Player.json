@@ -1,7 +1,7 @@
 {
   "$defs": {
     "Bionic": {
-      "description": "A part fitted in place of the player's own: a grade of legs, the datajack or the eye.",
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack, the eye, or one of stage 1's grades of legs.",
       "enum": [
         "hydraulic_legs",
         "datajack",
@@ -9,7 +9,15 @@
         "spring_legs",
         "sprint_legs",
         "blade_legs",
-        "premium_legs"
+        "premium_legs",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
       ],
       "title": "Bionic",
       "type": "string"
@@ -41,6 +49,16 @@
         "right_kidney": {
           "$ref": "#/$defs/PartState",
           "default": "present"
+        },
+        "stomach": {
+          "$ref": "#/$defs/PartState",
+          "default": "present",
+          "description": "Left out while it's still theirs, as in a save from before it could go."
+        },
+        "feet": {
+          "$ref": "#/$defs/PartState",
+          "default": "present",
+          "description": "Left out while they're still theirs, as in a save from before they could go."
         }
       },
       "required": [
@@ -159,6 +177,35 @@
       "title": "MapTile",
       "type": "object"
     },
+    "Mind": {
+      "additionalProperties": false,
+      "description": "What the player knows, which they keep when they collapse, and later when they die. Left\nout of `Player` while they know no recipe.",
+      "properties": {
+        "recipes": {
+          "default": [],
+          "description": "The recipes they know, by the bionic each builds, in the order they learned them.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "title": "Recipes",
+          "type": "array"
+        },
+        "sold": {
+          "default": [],
+          "description": "The recipes they've sold to the clinic, in the order they sold them. They still know each, and can't sell it again. Left out while there's none.",
+          "items": {
+            "$ref": "#/$defs/Bionic"
+          },
+          "title": "Sold",
+          "type": "array"
+        }
+      },
+      "required": [
+        "recipes"
+      ],
+      "title": "Mind",
+      "type": "object"
+    },
     "PartState": {
       "anyOf": [
         {
@@ -204,7 +251,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money and a charged lamp. Their\nhumanity is derived from the bionics fitted and isn't a field, so the client never sees it.",
+  "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp and nothing\nknown. Their humanity is derived from the bionics fitted and isn't a field, so the client never\nsees it.",
   "properties": {
     "money": {
       "default": 0.0,
@@ -230,6 +277,9 @@
     },
     "body": {
       "$ref": "#/$defs/Body"
+    },
+    "mind": {
+      "$ref": "#/$defs/Mind"
     },
     "hunger": {
       "default": 0.0,

@@ -22,8 +22,9 @@ interiors' ids; this document says where.
 - Field names are `snake_case` on both sides.
 - Every field is always present. Optional values are `null`, never missing. The exceptions are a
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
-  `long_summary`, a wall's `map`, a player's `left` and `taken`, a pile's `money`, a buyer's
-  `parts` and `fittings`, and `player_state`'s `meal`, `buyer` and `piles`, below.
+  `long_summary`, a wall's `map`, a player's `left`, `taken` and `mind`, a body's `stomach` and
+  `feet`, a mind's `sold`, a pile's `money`, a buyer's `parts`, `fittings` and `recipes`, and
+  `player_state`'s `meal`, `buyer`, `piles` and `recipes`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -220,9 +221,9 @@ painting's F2 `Work` has no `wall` and doesn't say where it hangs.
 
 ### `player_state`
 
-`player`: the player's money, what they carry, their body and their hunger, an F2 `Player`
-(`server/simile/schema/player.py`). The server sends it after the `snapshot` and `clock` on
-connect, and again whenever any of it changes, and the client replaces what it had. Hunger and a
+`player`: the player's money, what they carry, their body, their hunger and what they know, an F2
+`Player` (`server/simile/schema/player.py`). The server sends it after the `snapshot` and `clock`
+on connect, and again whenever any of it changes, and the client replaces what it had. Hunger and a
 lamp's charge change all the time, so a change to them alone is sent once one of them has moved by
 0.01 or more since the last `player_state`; any other change is sent at once. Clients that predate
 it ignore it.
@@ -234,6 +235,7 @@ it ignore it.
 | `carry_limit` | number | The most they can carry, in kg. Picking things up keeps the items' total `weight` within it. |
 | `body` | `Body` | What's become of each part of their body that can be sold or replaced. |
 | `hunger` | number | From 0, fed, to 1, starving, when they collapse. |
+| `mind` | `Mind` | What they know: the recipes they've learned, and those they've sold. Left out while they know none. |
 | `left` | `Pile[]` | What they left lying in the world, oldest first: what they carried when they collapsed, and anything of a pickup that didn't fit. Left out while there's none. |
 | `taken` | object | When they last took from each pickup in the world, a timestamp by pickup id. Salvage lies there again a while after it was taken; a secret, cash or a ration, stays taken for good. Left out while there's none. |
 
@@ -266,9 +268,21 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
   `["left_eye", "right_eye"]` for the infrared eye. Each part is named once, and only a part the
   bionic can replace. A grade of legs past the first goes in place of the legs before it, which
   the doctor takes back.
+- `recipes`: what it pays for each recipe they know that it would buy now, keyed by the `Bionic`
+  it builds, which they sell with [`sell_recipe`](#sell_recipe): `{"datajack": 40}`. It buys each
+  recipe once. It's left out while it would buy none.
 
-Like `prices`, both are the server's, and so is the stock: what the keeper would buy or fit now is
+Like `prices`, these are the server's, and so is the stock: what the keeper would buy or fit now is
 already in them. The keeper only voices them, and talking can't change them.
+
+`player_state` also has `recipes`: each recipe in `player.mind`, in full and in the same order. It's
+left out while they know none. A `Recipe` has the `bionic` it builds; its `name`, as the player sees
+it, such as `"Datajack"`; its `parts`, the items the fitting uses up, how many of each by item `id`:
+`{"copper_wire": 3, "usb_c_connector": 1}`; its `credits`, what the fitting costs from their money;
+`replaces`, the parts of their body it can go in place of, any one of which they give up for it, or
+a lower grade of its line fitted there; and `after`, what must be fitted first, each of them or a
+higher grade of its line: a power cell, for everything but a cell. The clinic fits only what they
+have a recipe for.
 
 And it has `piles`: what's lying in the world for the player to pick up besides what they left,
 such as salvage and secrets, as `Pile`s on every map. It's left out while there's none. A pile in
@@ -290,17 +304,36 @@ A `Pile` is things lying on a tile in the world for the player to pick up with
 it's 0. What they left when they collapsed is one kind, in `left`, each on the tile they fell on or
 the ground below it. Salvage and secrets, in `piles`, are another.
 
-A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney` and
-`right_kidney`. Each is `"present"`, `"sold"`, or the bionic fitted in its place: a grade of legs in
-the legs, `"datajack"` in the vertebra, or `"infrared_eye"` in one eye or the other, never both. A
-`BodyPart` is one of those six field names. The legs come in two branches and then premium:
+A `Body` has a field for each part: `legs`, `vertebra`, `left_eye`, `right_eye`, `left_kidney`,
+`right_kidney`, `stomach` and `feet`. Each is `"present"`, `"sold"`, or the bionic fitted in its
+place: a grade of legs in the legs, `"datajack"` in the vertebra, `"infrared_eye"` in one eye or the
+other, never both, a power cell in the stomach, or a grade of feet in the feet. `stomach` and `feet`
+are left out while they're `"present"`, so a body from before them reads the same. A `BodyPart` is
+one of those eight field names.
+
+Three bionics come in a line of grades, each grade better than the one before:
+
+- the power cell, in place of the stomach: `"power_cell"`, `"power_cell_2"` and `"power_cell_3"`.
+  It runs every other bionic, and a bigger cell runs more of them.
+- the legs, for speed and kick: `"bionic_legs"`, `"bionic_legs_2"` and `"bionic_legs_3"`.
+- the feet, for jump height: `"spring_feet"` and `"spring_feet_2"`.
+
+Stage 1's legs are still there until stage 2 retires them, in two branches and then premium:
 `"hydraulic_legs"` then `"spring_legs"` jump higher, `"sprint_legs"` then `"blade_legs"` run faster
 and jump further, and `"premium_legs"` do both.
 
+`mind` is what they know, a `Mind`. They keep it when they collapse, and later when they die. It has
+`recipes`, the recipes they know, each by the `Bionic` it builds, in the order they learned them;
+and `sold`, those they've sold to the clinic, in the order they sold them. They still know a recipe
+they've sold, and can't sell it again. `sold` is left out while there's none, and `mind` while they
+know no recipe.
+
 The player's state is saved with the world. A save from before it loads with the starting player:
-a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere and
-nothing taken. Their humanity is part of it on the server, derived from the bionics fitted
-(`Player.humanity`), but it's never sent: the player sees it only in how residents treat them.
+a whole body, no money and a fully charged lamp, switched off, with nothing left anywhere, nothing
+taken and nothing known. A save from before the stomach, the feet and the mind loads with them
+still their own and knowing nothing. Their humanity is part of it on the server, derived from the
+bionics fitted (`Player.humanity`), but it's never sent: the player sees it only in how residents
+treat them.
 
 ### `player_collapsed`
 
@@ -453,6 +486,14 @@ fitting's `parts`. They pay its `price` from their `money`, and the bionic is in
 `body` from then on. The server sends the [`player_state`](#player_state) that follows. It ignores
 a `fit` where there's no buyer, for a bionic it doesn't fit, for a part the bionic can't go in
 place of, and one they can't pay for.
+
+### `sell_recipe`
+
+`recipe`: a recipe the player knows, by the `Bionic` it builds, that the buyer where they stand
+buys, by `player_state`'s [`buyer`](#player_state)'s `recipes`. It's sold for that price, which
+goes to their `money`, and it's in their `mind`'s `sold` from then on. They still know it. The
+server sends the [`player_state`](#player_state) that follows. It ignores a `sell_recipe` where
+there's no buyer, and one for a recipe the buyer won't buy, which includes any they've sold.
 
 ### `watch_npc`
 

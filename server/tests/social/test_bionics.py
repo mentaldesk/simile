@@ -13,7 +13,7 @@ from simile.social import (
     tolerance,
     unease,
 )
-from simile.social.bionics import level, seen_in
+from simile.social.bionics import LEG_NAMES, level, seen_in
 
 NOW = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
@@ -136,7 +136,7 @@ def test_every_bionic_reads_back_from_its_memory(bionics: list[Bionic]) -> None:
     assert seen_in(memory) == bionics
 
 
-@pytest.mark.parametrize("legs", [b for b in Bionic if b.replaces == {"legs"}])
+@pytest.mark.parametrize("legs", list(LEG_NAMES))
 def test_every_grade_of_legs_is_seen_as_legs_and_read_back(legs: Bionic) -> None:
     events, memory = sighting(resident(tradition=1, security=1), [legs, JACK], NOW)
     name = legs.value.replace("_", " ")

@@ -118,5 +118,29 @@
       "metro_salvage_2": "2026-03-14T10:05:30Z",
       "metro_salvage_4": "2026-03-14T10:12:00Z"
     }
+  },
+  {
+    "money": 64.0,
+    "items": [
+      {"id": "lamp", "kind": "lamp", "name": "Lamp", "weight": 1.0, "charge": 0.9, "on": false},
+      {"id": "copper_wire", "kind": "salvage", "name": "Copper wire", "weight": 1.5, "charge": null, "on": null},
+      {"id": "usb_c_connector", "kind": "part", "name": "USB-C connector", "weight": 0.1, "charge": null, "on": null}
+    ],
+    "carry_limit": 10.0,
+    "body": {
+      "legs": "bionic_legs",
+      "vertebra": "datajack",
+      "left_eye": "present",
+      "right_eye": "present",
+      "left_kidney": "sold",
+      "right_kidney": "present",
+      "stomach": "power_cell",
+      "feet": "spring_feet"
+    },
+    "mind": {
+      "recipes": ["power_cell", "datajack", "bionic_legs", "spring_feet", "infrared_eye"],
+      "sold": ["power_cell"]
+    },
+    "hunger": 0.2
   }
 ]

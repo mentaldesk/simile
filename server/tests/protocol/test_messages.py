@@ -44,6 +44,7 @@ from simile.protocol import (
     ReadWorkMessage,
     SellMessage,
     SellPartMessage,
+    SellRecipeMessage,
     Wall,
     WatchNpcMessage,
     WorksMessage,
@@ -61,9 +62,11 @@ from simile.schema import (
     JournalEntry,
     Lead,
     MapTile,
+    Mind,
     Pile,
     Player,
     Pose,
+    Recipe,
     Source,
     SourceKind,
     lamp,
@@ -214,6 +217,26 @@ DOCTOR = Buyer(
     fittings=[LEGS, EYE],
 )
 AT_THE_CLINIC = STARTING.model_copy(update={"buyer": DOCTOR})
+CELL_RECIPE = Recipe(
+    bionic=Bionic.POWER_CELL, name="Power cell", parts={"lithium_cell": 2}, credits=90
+)
+JACK_RECIPE = Recipe(
+    bionic=Bionic.DATAJACK,
+    name="Datajack",
+    parts={"copper_wire": 3, "usb_c_connector": 1},
+    credits=100,
+    after=[Bionic.POWER_CELL],
+)
+KNOWING = PlayerStateMessage(
+    player=Player(
+        body=Body(stomach=Bionic.POWER_CELL, legs=Bionic.BIONIC_LEGS, feet=Bionic.SPRING_FEET),
+        mind=Mind(recipes=[Bionic.POWER_CELL, Bionic.DATAJACK], sold=[Bionic.POWER_CELL]),
+    ),
+    recipes=[CELL_RECIPE, JACK_RECIPE],
+)
+SELLING_RECIPES = KNOWING.model_copy(
+    update={"buyer": DOCTOR.model_copy(update={"recipes": {Bionic.DATAJACK: 40}})}
+)
 SERVO = Item(id="servo_motor", kind=ItemKind.SALVAGE, name="Servo motor", weight=3)
 RATION_PACK = Item(id="ration_pack", kind=ItemKind.FOOD, name="Ration pack", weight=0.5)
 IN_THE_METRO = STARTING.model_copy(
@@ -278,6 +301,8 @@ SERVER = [
     AT_THE_SCRAP_STALL,
     AT_THE_CLINIC,
     IN_THE_METRO,
+    KNOWING,
+    SELLING_RECIPES,
     JournalMessage(entries=[]),
     JOURNAL,
     COLLAPSED,
@@ -302,6 +327,8 @@ CLIENT = [
     LampMessage(on=False),
     SellPartMessage(part="left_kidney"),
     FitMessage(bionic=Bionic.INFRARED_EYE, part="right_eye"),
+    FitMessage(bionic=Bionic.POWER_CELL, part="stomach"),
+    SellRecipeMessage(recipe=Bionic.DATAJACK),
 ]
 
 
@@ -739,6 +766,51 @@ def test_player_state_without_a_meal_buyer_or_piles_dumps_as_before(
     assert set(data["player"]) == {"money", "items", "carry_limit", "body", "hunger"}
 
 
+def test_player_state_has_the_recipes_they_know_in_full() -> None:
+    data = json.loads(KNOWING.model_dump_json())
+
+    body = data["player"]["body"]
+    assert (body["stomach"], body["feet"]) == ("power_cell", "spring_feet")
+    assert data["player"]["mind"] == {
+        "recipes": ["power_cell", "datajack"],
+        "sold": ["power_cell"],
+    }
+    assert data["recipes"] == [
+        {
+            "bionic": "power_cell",
+            "name": "Power cell",
+            "parts": {"lithium_cell": 2},
+            "credits": 90.0,
+            "replaces": ["stomach"],
+            "after": [],
+        },
+        {
+            "bionic": "datajack",
+            "name": "Datajack",
+            "parts": {"copper_wire": 3, "usb_c_connector": 1},
+            "credits": 100.0,
+            "replaces": ["vertebra"],
+            "after": ["power_cell"],
+        },
+    ]
+
+
+@pytest.mark.parametrize(
+    "recipes", [[], [JACK_RECIPE], [JACK_RECIPE, CELL_RECIPE]], ids=["none", "one", "out_of_order"]
+)
+def test_rejects_a_player_state_without_each_recipe_they_know(recipes: list[Recipe]) -> None:
+    with pytest.raises(ValidationError, match="each recipe they know, in order"):
+        PlayerStateMessage(player=KNOWING.player, recipes=recipes)
+
+
+def test_player_state_says_which_recipes_the_clinic_would_buy() -> None:
+    data = json.loads(SELLING_RECIPES.model_dump_json())
+
+    assert data["buyer"]["recipes"] == {"datajack": 40.0}
+    recipes = json.loads(SCHEMA_FILE.read_text())["$defs"]["Buyer"]["properties"]["recipes"]
+    assert recipes["propertyNames"] == {"$ref": "#/$defs/Bionic"}
+
+
 def test_player_state_has_what_they_left_where_they_collapsed() -> None:
     player = json.loads(WOKEN.model_dump_json())["player"]
 
@@ -757,10 +829,16 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("PlayerStateMessage", "meal"),
         ("PlayerStateMessage", "buyer"),
         ("PlayerStateMessage", "piles"),
+        ("PlayerStateMessage", "recipes"),
         ("Buyer", "parts"),
         ("Buyer", "fittings"),
+        ("Buyer", "recipes"),
         ("Player", "left"),
         ("Player", "taken"),
+        ("Player", "mind"),
+        ("Body", "stomach"),
+        ("Body", "feet"),
+        ("Mind", "sold"),
         ("Pile", "money"),
     ],
 )
@@ -947,6 +1025,10 @@ def test_a_collapse_says_where_they_wake() -> None:
             FitMessage(bionic=Bionic.DATAJACK, part="vertebra"),
             {"type": "fit", "bionic": "datajack", "part": "vertebra"},
         ),
+        (
+            SellRecipeMessage(recipe=Bionic.DATAJACK),
+            {"type": "sell_recipe", "recipe": "datajack"},
+        ),
     ],
     ids=[
         "item",
@@ -958,6 +1040,7 @@ def test_a_collapse_says_where_they_wake() -> None:
         "lamp_off",
         "sell_part",
         "fit",
+        "sell_recipe",
     ],
 )
 def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(

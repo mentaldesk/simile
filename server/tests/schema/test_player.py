@@ -8,39 +8,53 @@ from jsonschema import Draft202012Validator
 from pydantic import ValidationError
 
 from simile.schema import (
+    BIONIC_LEGS,
+    BODY_PARTS,
     LEGS,
+    LINES,
     MODELS,
+    POWER_CELLS,
     PRESENT,
     SOLD,
+    SPRING_FEET,
     Bionic,
     Body,
     BodyPart,
     Item,
     ItemKind,
     MapTile,
+    Mind,
     Pile,
     Player,
+    Recipe,
     export,
     lamp,
 )
 
 HERE = Path(__file__).parent
 PLAYERS: list[dict[str, Any]] = json.loads((HERE / "players.json").read_text())
-STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING = PLAYERS
+STARTING, KIDNEY_SOLD, DELVING, FITTED, COLLAPSED, SALVAGING, CELL_FITTED = PLAYERS
+STAGE_1 = PLAYERS[:-1]
 SALVAGE = DELVING["items"][1]
+RECIPES: list[dict[str, Any]] = json.loads((HERE / "recipes.json").read_text())
+CELL, JACK, APEX_LEGS, EYE = RECIPES
 
 
 def schema(name: str) -> Draft202012Validator:
     return Draft202012Validator(json.loads((export.JSON_DIR / f"{name}.json").read_text()))
 
 
-def rejects(model: type[Player | Item | Body | Pile], data: dict[str, Any], match: str) -> None:
+def rejects(
+    model: type[Player | Item | Body | Pile | Recipe | Mind], data: dict[str, Any], match: str
+) -> None:
     with pytest.raises(ValidationError, match=match):
         model.model_validate(data)
 
 
 @pytest.mark.parametrize(
-    "data", PLAYERS, ids=["starting", "kidney_sold", "delving", "fitted", "collapsed", "salvaging"]
+    "data",
+    PLAYERS,
+    ids=["starting", "kidney_sold", "delving", "fitted", "collapsed", "salvaging", "cell_fitted"],
 )
 def test_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
     parsed = Player.model_validate_json(json.dumps(data))
@@ -110,7 +124,9 @@ def test_humanity_is_never_saved() -> None:
 @pytest.mark.parametrize(
     ("bionic", "parts"),
     [
-        *((legs, {"legs"}) for legs in LEGS),
+        *((legs, {"legs"}) for legs in LEGS + BIONIC_LEGS),
+        *((cell, {"stomach"}) for cell in POWER_CELLS),
+        *((feet, {"feet"}) for feet in SPRING_FEET),
         (Bionic.DATAJACK, {"vertebra"}),
         (Bionic.INFRARED_EYE, {"left_eye", "right_eye"}),
     ],
@@ -126,8 +142,8 @@ def test_each_bionic_fits_only_in_place_of_its_part(bionic: Bionic, parts: set[s
 
 def test_every_grade_of_legs_is_a_bionic_that_takes_the_legs() -> None:
     assert LEGS[0] is Bionic.HYDRAULIC_LEGS, "today's legs are the first grade, so saves keep them"
-    assert {bionic for bionic in Bionic if bionic.replaces == {"legs"}} == set(LEGS)
-    assert len({legs.humanity_cost for legs in LEGS}) == 1
+    assert {bionic for bionic in Bionic if bionic.replaces == {"legs"}} == {*LEGS, *BIONIC_LEGS}
+    assert len({legs.humanity_cost for legs in LEGS + BIONIC_LEGS}) == 1
     assert Body.model_validate({"legs": "spring_legs"}).bionics == [Bionic.SPRING_LEGS]
 
 
@@ -140,7 +156,7 @@ def test_a_part_is_an_item_found_for_the_doctor_to_fit() -> None:
 
 
 def test_a_body_part_names_each_part_of_the_body() -> None:
-    assert get_args(BodyPart.__value__) == tuple(Body.model_fields)
+    assert get_args(BodyPart.__value__) == BODY_PARTS == tuple(Body.model_fields)
     assert all(bionic.replaces <= set(Body.model_fields) for bionic in Bionic)
 
 
@@ -235,7 +251,7 @@ def test_load_is_what_everything_carried_weighs() -> None:
 
 
 def changes(
-    model: Player | Item | Body | Pile | MapTile, field: str, value: Any, match: str
+    model: Player | Item | Body | Pile | MapTile | Mind, field: str, value: Any, match: str
 ) -> None:
     before = model.model_dump()
     with pytest.raises(ValidationError, match=match):
@@ -401,3 +417,142 @@ def test_rejects_moving_a_pile_off_its_map(field: str, value: Any, match: str) -
 
     changes(player.left[0].at, field, value, match)
     assert Player.model_validate_json(player.model_dump_json()) == player
+
+
+@pytest.mark.parametrize("data", STAGE_1)
+def test_a_stage_1_save_loads_knowing_nothing_with_its_own_stomach_and_feet(
+    data: dict[str, Any],
+) -> None:
+    player = Player.model_validate(data)
+
+    assert (player.body.stomach, player.body.feet) == (PRESENT, PRESENT)
+    assert player.mind == Mind()
+    assert json.loads(player.model_dump_json()) == data
+
+
+def test_a_stomach_and_feet_still_theirs_and_an_empty_mind_are_left_out() -> None:
+    dumped = json.loads(Player(body=Body(stomach=SOLD)).model_dump_json())
+
+    assert "mind" not in dumped
+    assert dumped["body"]["stomach"] == SOLD
+    assert "feet" not in dumped["body"]
+    assert not {"stomach", "feet"} & set(schema("Player").schema["$defs"]["Body"]["required"])
+    assert "mind" not in schema("Player").schema["required"]
+
+
+def test_a_fitted_cell_legs_and_feet_count_as_bionics() -> None:
+    player = Player.model_validate(CELL_FITTED)
+
+    assert player.body.bionics == [
+        Bionic.BIONIC_LEGS,
+        Bionic.DATAJACK,
+        Bionic.POWER_CELL,
+        Bionic.SPRING_FEET,
+    ]
+    assert player.humanity == pytest.approx(1 - 0.15 - 0.1 - 0.1 - 0.1)
+
+
+def test_each_line_comes_in_grades_of_one_part() -> None:
+    assert LINES == (POWER_CELLS, BIONIC_LEGS, SPRING_FEET)
+    for line in LINES:
+        assert len(line) > 1
+        assert len({bionic.replaces for bionic in line}) == 1
+        assert len({bionic.humanity_cost for bionic in line}) == 1
+        assert all(bionic.line == line for bionic in line)
+    assert not set(LEGS) & {bionic for line in LINES for bionic in line}
+    assert Bionic.DATAJACK.line == (Bionic.DATAJACK,)
+    assert Bionic.SPRING_LEGS.line == (Bionic.SPRING_LEGS,)
+
+
+def test_a_higher_grade_counts_as_having_a_lower_one() -> None:
+    body = Body(stomach=Bionic.POWER_CELL_2, vertebra=Bionic.DATAJACK)
+
+    assert body.has(Bionic.POWER_CELL) and body.has(Bionic.POWER_CELL_2)
+    assert not body.has(Bionic.POWER_CELL_3)
+    assert body.has(Bionic.DATAJACK)
+    assert not body.has(Bionic.BIONIC_LEGS)
+    assert not Body(legs=Bionic.PREMIUM_LEGS).has(Bionic.HYDRAULIC_LEGS)
+
+
+@pytest.mark.parametrize("data", RECIPES, ids=lambda data: data["bionic"])
+def test_recipe_fixture_round_trips_through_json(data: dict[str, Any]) -> None:
+    recipe = Recipe.model_validate_json(json.dumps(data))
+
+    assert json.loads(recipe.model_dump_json()) == data
+    schema("Recipe").validate(data)
+
+
+def test_recipes_are_exported_with_every_field_required() -> None:
+    assert Recipe in MODELS
+    assert set(schema("Recipe").schema["required"]) == set(Recipe.model_fields)
+
+
+def test_a_recipe_left_without_what_it_replaces_takes_its_bionics() -> None:
+    def without_replaces(data: dict[str, Any]) -> Recipe:
+        return Recipe.model_validate({k: v for k, v in data.items() if k != "replaces"})
+
+    assert without_replaces(EYE).replaces == ["left_eye", "right_eye"]
+    assert without_replaces(CELL).replaces == ["stomach"]
+
+
+def test_a_recipe_is_ready_once_what_comes_before_it_is_fitted() -> None:
+    cell, legs = Recipe.model_validate(CELL), Recipe.model_validate(APEX_LEGS)
+
+    assert cell.ready(Body())
+    assert not legs.ready(Body(stomach=Bionic.POWER_CELL))
+    assert legs.ready(Body(stomach=Bionic.POWER_CELL_2))
+    assert legs.ready(Body(stomach=Bionic.POWER_CELL_3))
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"replaces": ["left_eye"]}, "datajack replaces vertebra"),
+        ({"replaces": ["vertebra", "vertebra"]}, "datajack replaces vertebra"),
+        ({"replaces": ["tail"]}, "replaces"),
+        ({"after": ["datajack"]}, "never itself"),
+        ({"after": ["power_cell", "power_cell"]}, "once each"),
+        ({"parts": {"copper_wire": 0}}, "greater than or equal to 1"),
+        ({"parts": {"": 1}}, "at least 1 character"),
+        ({"credits": -1}, "greater than or equal to 0"),
+        ({"credits": float("inf")}, "finite number"),
+        ({"name": ""}, "at least 1 character"),
+        ({"bionic": "jetpack"}, "bionic"),
+        ({"price": 100}, "Extra inputs are not permitted"),
+    ],
+)
+def test_rejects_invalid_recipes(update: dict[str, Any], match: str) -> None:
+    rejects(Recipe, JACK | update, match)
+
+
+def test_a_mind_keeps_what_it_learned_and_sold_in_order() -> None:
+    mind = Player.model_validate(CELL_FITTED).mind
+
+    assert mind.recipes[:2] == [Bionic.POWER_CELL, Bionic.DATAJACK]
+    assert mind.sold == [Bionic.POWER_CELL]
+    assert "sold" not in json.loads(Mind(recipes=[Bionic.DATAJACK]).model_dump_json())
+
+
+@pytest.mark.parametrize(
+    ("data", "match"),
+    [
+        ({"recipes": ["datajack", "datajack"]}, "knows each recipe once"),
+        ({"recipes": ["datajack"], "sold": ["datajack", "datajack"]}, "sells it once"),
+        ({"recipes": ["datajack"], "sold": ["power_cell"]}, "only sell a recipe they know"),
+        ({"sold": ["datajack"]}, "only sell a recipe they know"),
+        ({"recipes": ["jetpack"]}, "recipes"),
+        ({"recipes": "datajack"}, "valid list"),
+        ({"recipes": [{}]}, "recipes"),
+    ],
+)
+def test_rejects_invalid_minds(data: dict[str, Any], match: str) -> None:
+    rejects(Mind, data, match)
+
+
+def test_rejects_selling_a_recipe_they_never_learned_or_forgetting_one_sold() -> None:
+    mind = Mind(recipes=[Bionic.DATAJACK])
+
+    changes(mind, "sold", [Bionic.POWER_CELL], "only sell a recipe they know")
+    mind.sold = [Bionic.DATAJACK]
+    changes(mind, "recipes", [], "only sell a recipe they know")
+    assert mind.sold == [Bionic.DATAJACK]

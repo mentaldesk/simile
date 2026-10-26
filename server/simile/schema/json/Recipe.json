@@ -1,0 +1,97 @@
+{
+  "$defs": {
+    "Bionic": {
+      "description": "A part fitted in place of the player's own: a grade of the power cell, the legs or the\nfeet, the datajack, the eye, or one of stage 1's grades of legs.",
+      "enum": [
+        "hydraulic_legs",
+        "datajack",
+        "infrared_eye",
+        "spring_legs",
+        "sprint_legs",
+        "blade_legs",
+        "premium_legs",
+        "power_cell",
+        "power_cell_2",
+        "power_cell_3",
+        "bionic_legs",
+        "bionic_legs_2",
+        "bionic_legs_3",
+        "spring_feet",
+        "spring_feet_2"
+      ],
+      "title": "Bionic",
+      "type": "string"
+    },
+    "BodyPart": {
+      "enum": [
+        "legs",
+        "vertebra",
+        "left_eye",
+        "right_eye",
+        "left_kidney",
+        "right_kidney",
+        "stomach",
+        "feet"
+      ],
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "How to build a `bionic`, which the clinic needs before it fits one. It's known by the\nbionic it builds.",
+  "properties": {
+    "bionic": {
+      "$ref": "#/$defs/Bionic"
+    },
+    "name": {
+      "description": "The bionic as the player sees it, e.g. \"Datajack\".",
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "parts": {
+      "additionalProperties": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "description": "The items the fitting uses up, how many of each by item `id`, e.g. `{\"copper_wire\": 3, \"usb_c_connector\": 1}`.",
+      "propertyNames": {
+        "minLength": 1
+      },
+      "title": "Parts",
+      "type": "object"
+    },
+    "credits": {
+      "description": "What the fitting costs, from their money.",
+      "minimum": 0,
+      "title": "Credits",
+      "type": "number"
+    },
+    "replaces": {
+      "description": "The parts of their body it can go in place of, any one of which they give up for it, or a lower grade of its line fitted there: the bionic's own, filled in from it when left out.",
+      "items": {
+        "$ref": "#/$defs/BodyPart"
+      },
+      "title": "Replaces",
+      "type": "array"
+    },
+    "after": {
+      "default": [],
+      "description": "What must be fitted first, each of them or a higher grade of its line: a power cell for everything but a cell.",
+      "items": {
+        "$ref": "#/$defs/Bionic"
+      },
+      "title": "After",
+      "type": "array"
+    }
+  },
+  "required": [
+    "bionic",
+    "name",
+    "parts",
+    "credits",
+    "replaces",
+    "after"
+  ],
+  "title": "Recipe",
+  "type": "object"
+}
