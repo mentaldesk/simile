@@ -242,6 +242,16 @@ the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-l
 as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
 greet the player out loud either way.
 
+## Where you are
+
+A paper tag at the top names the place the player is in (`PlaceLabel` in
+[`place-label.ts`](place-label.ts)): a street's or the metro's or sewers' `label`, or on a floor
+its building's, from the `buildings` front on its street ([`content/street/`](../../../content/street/README.md)),
+so every floor of the café is "The Daily Grind". When the name changes, through a door or onto
+another street, it stands out bigger for `NEW_PLACE_SECONDS` (2.5), then settles. It drops a line
+while a hint takes the top, in this overlay or the gallery's, and panels cover it. It's centred
+unless that would reach under the hunger corner's widest line, when it sits just right of it.
+
 ## The lamp
 
 Under "? controls", the lamp's gauge (`LampGauge` in [`lamp-gauge.ts`](lamp-gauge.ts)) shows L, its

@@ -88,15 +88,10 @@ class Pile(Model):
 
 class Bionic(StrEnum):
     """A part fitted in place of the player's own: a grade of the power cell, the legs or the
-    feet, the datajack, the eye, or one of stage 1's grades of legs."""
+    feet, the datajack or the eye."""
 
-    HYDRAULIC_LEGS = "hydraulic_legs"
     DATAJACK = "datajack"
     INFRARED_EYE = "infrared_eye"
-    SPRING_LEGS = "spring_legs"
-    SPRINT_LEGS = "sprint_legs"
-    BLADE_LEGS = "blade_legs"
-    PREMIUM_LEGS = "premium_legs"
     POWER_CELL = "power_cell"
     POWER_CELL_2 = "power_cell_2"
     POWER_CELL_3 = "power_cell_3"
@@ -121,14 +116,6 @@ class Bionic(StrEnum):
         return next((line for line in LINES if self in line), (self,))
 
 
-LEGS: Final = (
-    Bionic.HYDRAULIC_LEGS,
-    Bionic.SPRING_LEGS,
-    Bionic.SPRINT_LEGS,
-    Bionic.BLADE_LEGS,
-    Bionic.PREMIUM_LEGS,
-)
-"""Stage 1's grades of legs."""
 POWER_CELLS: Final = (Bionic.POWER_CELL, Bionic.POWER_CELL_2, Bionic.POWER_CELL_3)
 """The power cell's grades, in place of the stomach: it runs every other bionic, and a bigger cell
 runs more of them."""
@@ -136,17 +123,26 @@ BIONIC_LEGS: Final = (Bionic.BIONIC_LEGS, Bionic.BIONIC_LEGS_2, Bionic.BIONIC_LE
 """The legs' grades, for speed and kick."""
 SPRING_FEET: Final = (Bionic.SPRING_FEET, Bionic.SPRING_FEET_2)
 """The feet's grades, for jump height."""
+STAGE_1_LEGS: Final[dict[str, tuple[Bionic | None, Bionic | None]]] = {
+    "hydraulic_legs": (None, Bionic.SPRING_FEET),
+    "spring_legs": (None, Bionic.SPRING_FEET_2),
+    "sprint_legs": (Bionic.BIONIC_LEGS, None),
+    "blade_legs": (Bionic.BIONIC_LEGS_2, None),
+    "premium_legs": (Bionic.BIONIC_LEGS_3, Bionic.SPRING_FEET_2),
+}
+"""Stage 1's grades of legs, which a save from then may have, and the legs and feet each loads as:
+None for their own legs back, or for the feet as they were."""
 LINES: Final = (POWER_CELLS, BIONIC_LEGS, SPRING_FEET)
 """Each bionic that comes in grades, lowest first."""
 _REPLACES = {
-    **dict.fromkeys(LEGS + BIONIC_LEGS, frozenset({"legs"})),
+    **dict.fromkeys(BIONIC_LEGS, frozenset({"legs"})),
     **dict.fromkeys(POWER_CELLS, frozenset({"stomach"})),
     **dict.fromkeys(SPRING_FEET, frozenset({"feet"})),
     Bionic.DATAJACK: frozenset({"vertebra"}),
     Bionic.INFRARED_EYE: frozenset({"left_eye", "right_eye"}),
 }
 _HUMANITY_COST = {
-    **dict.fromkeys(LEGS + BIONIC_LEGS, 0.15),
+    **dict.fromkeys(BIONIC_LEGS, 0.15),
     **dict.fromkeys(POWER_CELLS + SPRING_FEET, 0.1),
     Bionic.DATAJACK: 0.1,
     Bionic.INFRARED_EYE: 0.2,
@@ -202,6 +198,7 @@ class Body(Model):
     @classmethod
     def _bionics_fit(cls, data: Any) -> Any:
         if isinstance(data, dict):
+            data = _from_stage_1(data)
             for part, state in data.items():
                 fitted = Bionic(state) if isinstance(state, str) and state in Bionic else None
                 if fitted and part not in fitted.replaces:
@@ -209,6 +206,17 @@ class Body(Model):
             if data.get("left_eye") == data.get("right_eye") == Bionic.INFRARED_EYE:
                 raise ValueError("there's only one infrared eye")
         return data
+
+
+def _from_stage_1(data: dict[str, Any]) -> dict[str, Any]:
+    """`data` with stage 1's legs as the legs and feet they load as, keeping higher feet."""
+    legs = data.get("legs")
+    if not isinstance(legs, str) or legs not in STAGE_1_LEGS:
+        return data
+    bionic_legs, feet = STAGE_1_LEGS[legs]
+    if feet and data.get("feet") in SPRING_FEET:
+        feet = max(feet, Bionic(data["feet"]), key=SPRING_FEET.index)
+    return data | {"legs": bionic_legs or PRESENT} | ({"feet": feet} if feet else {})
 
 
 BODY_PARTS: Final[tuple[BodyPart, ...]] = get_args(BodyPart.__value__)

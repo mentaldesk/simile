@@ -29,7 +29,7 @@ def test_the_dead_terminal_shows_its_clue_only_with_the_datajack() -> None:
 
     assert used(DATAJACK, at) == [DEAD_TERMINAL]
     assert used(Body(), at) == []
-    assert used(Body(legs=Bionic.HYDRAULIC_LEGS, left_eye=Bionic.INFRARED_EYE), at) == []
+    assert used(Body(legs=Bionic.BIONIC_LEGS, left_eye=Bionic.INFRARED_EYE), at) == []
 
 
 def test_the_lift_holds_no_clue_so_e_there_is_left_to_a_pile() -> None:

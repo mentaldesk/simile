@@ -18,7 +18,7 @@ from simile.social.config import DEFAULT_BIONICS
 
 NOW = datetime(2026, 1, 1, 10, tzinfo=UTC)
 TEMPLATE = load_npcs()[0]
-EYE, LEGS, JACK = Bionic.INFRARED_EYE, Bionic.HYDRAULIC_LEGS, Bionic.DATAJACK
+EYE, LEGS, JACK = Bionic.INFRARED_EYE, Bionic.BIONIC_LEGS, Bionic.DATAJACK
 
 
 def resident(id: str = "ana", **values: float) -> Npc:
@@ -92,7 +92,7 @@ def test_a_sighting_is_one_event_per_bionic_and_one_memory_that_records_them() -
     assert all(set(e.aspects) == set(Aspect) for e in events)
     assert all(e.valence == tolerance(hostile.values) for e in events)
     assert memory.kind is MemoryKind.OBSERVATION and memory.about == [PLAYER_ID]
-    assert memory.content.startswith("I saw that Visitor has hydraulic legs")
+    assert memory.content.startswith("I saw that Visitor has bionic legs")
     assert "infrared eye" in memory.content and "turned my stomach" in memory.content
     assert seen_in(memory) == [LEGS, EYE]
     assert memory.salience > sighting(resident(), [LEGS], NOW)[1].salience
@@ -122,7 +122,7 @@ def test_what_they_see_names_each_bionic_what_is_new_and_how_they_feel() -> None
     line = looks("Visitor", [LEGS, EYE], -1, new=[EYE])
 
     assert line is not None
-    assert line.startswith("Visitor has hydraulic legs where their own legs were and an infrared")
+    assert line.startswith("Visitor has bionic legs where their own legs were and an infrared")
     assert "The infrared eye is new since you last saw them." in line
     assert line.endswith("you'd rather keep your distance.")
     assert looks("Visitor", [], -1) is None

@@ -63,16 +63,11 @@ export type Face = 'south' | 'east';
 export type ItemKind = 'salvage' | 'food' | 'lamp' | 'part';
 /**
  * A part fitted in place of the player's own: a grade of the power cell, the legs or the
- * feet, the datajack, the eye, or one of stage 1's grades of legs.
+ * feet, the datajack or the eye.
  */
 export type Bionic =
-  | 'hydraulic_legs'
   | 'datajack'
   | 'infrared_eye'
-  | 'spring_legs'
-  | 'sprint_legs'
-  | 'blade_legs'
-  | 'premium_legs'
   | 'power_cell'
   | 'power_cell_2'
   | 'power_cell_3'
@@ -728,7 +723,7 @@ export interface Shut {
   name: string;
   reason: ShutReason;
   /**
-   * When it next starts serving, by its keeper's shifts or its own hours: the next start after now, even while a keeper is due but hasn't come. Null only for a shop with no keeper, or a keeper with no shifts, and no hours of its own.
+   * When it next starts serving: the next start of a shift of whoever works there, after now, even while they're due but haven't come. Null when nobody works there or they have no shifts.
    */
   opens: string | null;
 }
@@ -782,7 +777,7 @@ export interface Buyer {
 export interface Fitting {
   bionic: Bionic;
   /**
-   * The bionic as the player sees it, e.g. "Hydraulic legs".
+   * The bionic as the player sees it, e.g. "Spring feet".
    */
   name: string;
   price: number;

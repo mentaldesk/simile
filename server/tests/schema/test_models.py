@@ -515,7 +515,7 @@ def test_only_searchable_things_and_jacks_hold_or_teach(kind: str, update: dict[
 @pytest.mark.parametrize(
     ("update", "match"),
     [
-        ({"teaches": "steel_hand"}, "Input should be 'hydraulic_legs'"),
+        ({"teaches": "steel_hand"}, "Input should be 'datajack'"),
         ({"items": [{"id": "copper_wire"}]}, "items.0.kind"),
     ],
 )

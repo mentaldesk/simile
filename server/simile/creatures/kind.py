@@ -1,0 +1,29 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+from simile.schema import CreatureKind
+
+if TYPE_CHECKING:
+    from simile.creatures.ways import Way
+
+
+@dataclass(frozen=True)
+class Kind:
+    """What every creature of a kind shares: README.md has each field."""
+
+    id: CreatureKind
+    ways: "tuple[Way, ...]" = ()
+    speed: float = 1.0
+    flies: bool = False
+    climbs: bool = True
+    doors: bool = True
+    drops: bool = True
+    reach: float = 0.7
+    bites: bool = False
+    damage: float = 0.05
+    windup: float = 0.3
+    rest: float = 1.0
+    health: float = 1.0
+    toughness: float = 0.0
+    knock: float = 1.0
+    stagger: float = 0.6

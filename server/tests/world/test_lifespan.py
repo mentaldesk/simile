@@ -87,18 +87,18 @@ def test_keeps_a_jump_and_a_fall_where_they_are(make_package: MakePackage) -> No
         assert movement.position(PLAYER_ID) == Point(20, 13.1, "high_street")
 
 
-@pytest.mark.parametrize("legs", [False, True], ids=["own legs", "hydraulic legs"])
-def test_keeps_a_jump_a_row_higher_only_with_the_hydraulic_legs(
-    make_package: MakePackage, legs: bool
+@pytest.mark.parametrize("feet", [False, True], ids=["own feet", "spring feet"])
+def test_keeps_a_jump_a_row_higher_only_with_the_spring_feet(
+    make_package: MakePackage, feet: bool
 ) -> None:
     app = create_app(make_package(WORLD_LIFESPAN))
 
     with TestClient(app):
-        if legs:
-            player_of(app).body = Body(legs=Bionic.HYDRAULIC_LEGS)
+        if feet:
+            player_of(app).body = Body(feet=Bionic.SPRING_FEET)
         send_moves(app, (100, 15, "metro"), (100, 11.9, "metro"))
 
-        assert (movement_of(app).position(PLAYER_ID) == Point(100, 11.9, "metro")) is legs
+        assert (movement_of(app).position(PLAYER_ID) == Point(100, 11.9, "metro")) is feet
 
 
 @pytest.mark.parametrize("datajack", [False, True], ids=["without", "with the datajack"])

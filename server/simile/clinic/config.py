@@ -3,55 +3,8 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from simile.llm import Model
-from simile.schema import Bionic, EffectKind, Id, Item, Recipe
+from simile.schema import Bionic, EffectKind, Id, Recipe
 from simile.street.sewers import APEX_ACTUATOR
-
-
-class Offer(BaseModel):
-    """One of stage 1's grades of legs, which the doctor fits for its price alone until P18."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    name: str = Field(min_length=1)
-    price: float = Field(ge=0, allow_inf_nan=False)
-    does: str = Field(min_length=1, description="What it lets them do, for the doctor to say.")
-    after: tuple[Bionic, ...] = Field(
-        default=(),
-        description="The legs it goes in place of, which the doctor takes back, so it's stocked "
-        "only once one of them is fitted. Empty for a bionic in place of a part still theirs.",
-    )
-    needs: Item | None = Field(
-        default=None, description="A part they bring for it, used up in the fitting."
-    )
-
-
-OFFERS: dict[Bionic, Offer] = {
-    Bionic.HYDRAULIC_LEGS: Offer(
-        name="Hydraulic legs", price=80.0, does="jump two rows higher, up to ledges out of reach"
-    ),
-    Bionic.SPRINT_LEGS: Offer(
-        name="Sprint legs", price=80.0, does="run half as fast again, and jump further"
-    ),
-    Bionic.SPRING_LEGS: Offer(
-        name="Spring legs",
-        price=240.0,
-        does="jump two rows higher than the hydraulic legs",
-        after=(Bionic.HYDRAULIC_LEGS,),
-    ),
-    Bionic.BLADE_LEGS: Offer(
-        name="Blade legs",
-        price=240.0,
-        does="run twice as fast as their own legs, and jump further still",
-        after=(Bionic.SPRINT_LEGS,),
-    ),
-    Bionic.PREMIUM_LEGS: Offer(
-        name="Premium legs",
-        price=600.0,
-        does="jump as high as the spring legs and run as fast as the blades",
-        after=(Bionic.SPRING_LEGS, Bionic.BLADE_LEGS),
-        needs=APEX_ACTUATOR,
-    ),
-}
 
 
 class Procedure(BaseModel):
@@ -203,12 +156,9 @@ class ClinicConfig(BaseModel):
         allow_inf_nan=False,
         description="What the doctor pays for a kidney. They buy one, never the last.",
     )
-    offers: dict[Bionic, Offer] = Field(
-        default=OFFERS, description="Stage 1's grades of legs, fitted for their price alone."
-    )
     procedures: dict[Bionic, Procedure] = Field(
         default=PROCEDURES,
-        description="Every other bionic, built from its recipe for a player who knows it, after "
+        description="Each bionic, built from its recipe for a player who knows it, after "
         "the recipe's `after`: the power cell, for everything but a cell.",
     )
     stock: dict[Bionic, int] = Field(
@@ -245,8 +195,6 @@ class ClinicConfig(BaseModel):
     def _each_bionic_once(self) -> Self:
         if wrong := [b for b, p in self.procedures.items() if p.recipe.bionic is not b]:
             raise ValueError(f"a procedure is keyed by its recipe's bionic: {wrong}")
-        if both := set(self.offers) & set(self.procedures):
-            raise ValueError(f"a bionic is an offer or a procedure, not both: {both}")
         return self
 
     @property

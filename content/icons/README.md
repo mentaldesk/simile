@@ -15,8 +15,8 @@ Don't edit them by hand. CI never paints; the tests check what's committed. Pain
 another image model, an Ollama model, or a `simile creatures` or `simile icons` run is using the GPU.
 
 **[`preview.webp`](preview.webp)** shows the character screen's Body tab in four bodies: whole, a
-kidney sold, fully fitted with a grade 2 cell and grade 3 legs, and stage 1's blade legs. It's a
-screenshot of the client, taken by hand: take it again when the map or its icons change.
+kidney sold, fully fitted with a grade 2 cell and grade 3 legs, and a stage 1 body whose legs have
+since been retired. It's a screenshot of the client, taken by hand: take it again when the map or its icons change.
 **[`previews/gear.webp`](previews/gear.webp)** is the same for the Gear tab: carrying one of every
 item, and nearly nothing.
 
@@ -48,7 +48,6 @@ item, and nearly nothing.
 | `eye`, `vertebra`, `stomach`, `kidney`, `legs`, `feet` | The player's own organs. |
 | `<organ>_sold` | Where one was, sold: a patch of skin stitched shut. |
 | `power_cell`, `datajack`, `infrared_eye`, `bionic_legs`, `spring_feet` | Each bionic, every grade of its line alike. |
-| `hydraulic_legs` | Each of stage 1's grades of legs. |
 
 The client mirrors the left kidney, so both face the spine.
 

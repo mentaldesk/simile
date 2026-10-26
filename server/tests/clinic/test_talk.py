@@ -200,7 +200,7 @@ async def test_a_failed_reply_leaves_the_doctor_silent() -> None:
 
 
 async def test_the_doctor_knows_the_fixed_prices_and_what_they_would_do_now() -> None:
-    body = Body(legs=Bionic.HYDRAULIC_LEGS, left_kidney=SOLD)
+    body = Body(legs=Bionic.BIONIC_LEGS, left_kidney=SOLD)
     depot = Depot(player=Player(body=body))
     depot.stand(INSIDE)
     await depot.run()
@@ -208,19 +208,15 @@ async def test_the_doctor_knows_the_fixed_prices_and_what_they_would_do_now() ->
     [request] = depot.provider.requests
     system, prompt = request.system, request.messages[-1].content
     assert "You never haggle" in system
-    for bionic, offer in DEFAULT_CONFIG.offers.items():
-        assert f"{offer.name}, {offer.price:g}," in system, bionic
     assert f"kidney for {DEFAULT_CONFIG.kidney:g}" in system
     assert "copper wire 6" in system
     assert "a recipe the customer knows" in system
     assert "Nothing you build runs without a power cell in place of the stomach" in system
     for recipe in DEFAULT_CONFIG.recipes.values():
         assert recipe.name not in system, "no menu of every bionic"
-    assert "hydraulic legs where their own legs were" in prompt
+    assert "bionic legs where their own legs were" in prompt
     assert "the scar where you took a kidney" in prompt
-    assert "What you'd do for them now: fit spring legs for 240." in prompt
-    assert "Spring legs, 240, in place of their hydraulic legs, which you take back" in system
-    assert "and only with an Apex actuator they bring" in system
+    assert "What you'd do for them now: nothing, until they know how to build something." in prompt
     assert "buy a kidney" not in prompt
 
 

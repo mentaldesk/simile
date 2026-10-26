@@ -10,7 +10,7 @@ from simile.clinic.config import DEFAULT_CONFIG as CLINIC_CONFIG
 from simile.player.config import SALVAGE
 from simile.schema import Bionic, DoorKind, Facing, InteractableKind, LocationKind
 from simile.street.finds import COPPER_WIRE
-from simile.street.jump import FEET, GRADES, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
+from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import (
     ALCOVE_SECRET,
     ARRIVAL,
@@ -139,7 +139,7 @@ def test_you_can_walk_down_through_the_metro_to_the_clinic_and_back() -> None:
     assert any(METRO_MAP.climb(spot.x, spot.y) is DoorKind.STAIRS for spot in there)
 
 
-@pytest.mark.parametrize("kit", ["premium_legs", "bionic_legs_2+spring_feet_2"])
+@pytest.mark.parametrize("kit", ["bionic_legs_2+spring_feet_2"])
 def test_the_legs_and_feet_together_reach_every_cell_but_the_gantrys_roof(kit: str) -> None:
     reached = {spot for spot in reachable(KITS[kit]) if spot.map != SEWERS}
     assert reached == walkable() - roof()
@@ -169,7 +169,6 @@ def test_the_high_ledge_is_reached_with_the_feet_and_not_on_the_legs_alone() -> 
     assert floor - row == LEDGE_ROWS > JUMP.rows and feet.rows > LEDGE_ROWS
     for grade, jump in {**LEGS, **FEET}.items():
         assert bool(stands(HIGH_LEDGE) & reachable(jump)) is (grade in FEET), grade
-    assert stands(HIGH_LEDGE) <= reachable(GRADES[Bionic.HYDRAULIC_LEGS]), "as in stage 1"
 
 
 def test_the_gantry_is_a_gap_under_a_roof_that_only_the_legs_clear() -> None:
@@ -192,7 +191,6 @@ def test_the_second_grade_of_feet_reaches_the_alcove_from_the_wall_below_it() ->
     assert wall[1] - alcove.y == 5
     assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, FEET[Bionic.SPRING_FEET_2]))
     assert (alcove.x, alcove.y) not in dict(moves(METRO_MAP, wall, FEET[Bionic.SPRING_FEET]))
-    assert (alcove.x, alcove.y) in dict(moves(METRO_MAP, wall, GRADES[Bionic.SPRING_LEGS]))
 
 
 def test_the_cell_and_the_datajack_are_found_at_home_and_on_the_metro_on_foot() -> None:
