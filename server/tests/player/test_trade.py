@@ -243,3 +243,22 @@ def test_they_buy_back_nothing_they_cannot_pay_for_or_carry() -> None:
     for platform in (broke, laden):
         assert platform.player.sales == [sale]
         assert platform.economy.ledger.entries == []
+
+
+def test_salvage_a_recipe_uses_up_is_kept_but_other_salvage_is_not() -> None:
+    coil = Item(id="copper_coil", kind=ItemKind.SALVAGE, name="Copper coil", weight=1.0)
+    platform = Platform(Player(money=0, items=[coil, WIRE]))
+    platform.stand(STALL)
+
+    assert platform.trade.sell(None)
+
+    assert platform.player.sales == [Sale(item=coil, place="scrap_stall", price=7)]
+    assert platform.trade.buyer().stock == [Offer(item=coil, price=14)]
+
+
+def test_a_part_is_worth_less_than_the_fitting_it_goes_into() -> None:
+    from simile.clinic.config import DEFAULT_CONFIG as CLINIC
+
+    prices = ECONOMY.salvage | ECONOMY.parts
+    for recipe in CLINIC.recipes.values():
+        assert sum(prices[id] * n for id, n in recipe.parts.items()) < recipe.credits

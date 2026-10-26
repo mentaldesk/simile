@@ -30,7 +30,7 @@ def keepers_of(app: Starlette) -> dict[Id, Keeper]:
 
 class Trade:
     """Selling to whoever buys where the player stands, at the economy's prices, and buying back
-    the parts it keeps of what they sold it."""
+    what it keeps of what they sold it: parts, and the economy's `kept` salvage."""
 
     def __init__(
         self,
@@ -75,7 +75,7 @@ class Trade:
         for thing in sold:
             if self.economy.sell(buyer.place, thing):
                 kept.remove(thing)
-                if thing.kind is ItemKind.PART:
+                if thing.kind is ItemKind.PART or thing.id in self.economy.config.kept:
                     sales.append(Sale(item=thing, place=buyer.place, price=buyer.prices[thing.id]))
         if len(kept) == len(self.player.items):
             return False
@@ -85,8 +85,8 @@ class Trade:
         return True
 
     def stock(self, place: Id) -> list[Offer]:
-        """The parts the buyer at `place` keeps of what they sold it, at `buy_back` times what it
-        paid, cheapest first."""
+        """What the buyer at `place` keeps of what they sold it, at `buy_back` times what it paid,
+        cheapest first."""
         back = self.economy.config.buy_back
         return [Offer(item=sale.item, price=sale.price * back) for sale in self._kept(place)]
 

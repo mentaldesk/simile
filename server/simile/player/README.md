@@ -138,9 +138,9 @@ scrap trader's stall on the metro's platform and the clinic. `buyer()` names it,
 name, with the economy's price for each kind of salvage and part they carry. The client's `sell`
 sells one item by id, or everything the buyer buys, each through the ledger as `salvage`.
 
-**Buying back.** A buyer keeps each part (`kind` `part`) it buys, as a `Sale` at the end of
-`Player.sales`, saved with the player, so selling one never leaves them stuck. Salvage isn't kept:
-it lies about again. `buyer()`'s `stock` is what it keeps of theirs, at the economy's `buy_back`
+**Buying back.** A buyer keeps each part (`kind` `part`) it buys, and the salvage in the economy's
+`kept`, the sewers' that recipes use up, as a `Sale` at the end of `Player.sales`, saved with the
+player, so selling one never leaves them stuck. Other salvage isn't kept: it lies about again. `buyer()`'s `stock` is what it keeps of theirs, at the economy's `buy_back`
 (2×) what it paid, cheapest first, and only where they sold it. The client's `buy` buys back the
 first of an id in it, the cheapest, through the ledger as a `purchase` to `OUTSIDE`, if they can
 pay and it fits under their carry limit. The stall needs

@@ -59,8 +59,10 @@ so check they can pay first.
   a place pays for one of each of the items it buys, and `sell(place, item)` pays them for one, as
   `salvage` from `OUTSIDE`. Neither buyer is a resident.
 - **Parts.** `EconomyConfig.parts` prices the recipes' parts that aren't salvage, and the buyers
-  buy them as they do salvage. A buyer sells a part back for `buy_back` (2) times what it paid: see
-  *Buying back* in `simile.player`'s README.
+  buy them as they do salvage. A buyer sells a part back for `buy_back` (2) times what it paid, and
+  the salvage in `kept` too: the copper coil, pump impeller, float valve, brass fitting and old
+  battery, which recipes use up and the sewers' finds hold. See *Buying back* in `simile.player`'s
+  README. Each part is worth less than the fitting it goes into.
 - **Money they find.** `find(amount, pickup)`, as `found` from `OUTSIDE`.
 
 | Salvage | Price |

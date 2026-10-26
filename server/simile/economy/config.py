@@ -61,6 +61,10 @@ PARTS: dict[Id, float] = {
     "apex_actuator": 30.0,
 }
 """The recipes' parts that aren't salvage, which buyers keep for the player to buy back."""
+KEPT: frozenset[Id] = frozenset(
+    {"copper_coil", "pump_impeller", "float_valve", "brass_fitting", "old_battery"}
+)
+"""The sewers' salvage that recipes use up and its finds hold: buyers keep it as they do parts."""
 
 
 class EconomyConfig(BaseModel):
@@ -88,11 +92,15 @@ class EconomyConfig(BaseModel):
         default=PARTS,
         description="What a buyer pays the player for one of each kind of part, by item id.",
     )
+    kept: frozenset[Id] = Field(
+        default=KEPT,
+        description="The salvage a buyer keeps for the player to buy back, as it keeps every part.",
+    )
     buy_back: float = Field(
         default=2.0,
         ge=1,
-        description="What a buyer asks for a part the player sold it, as a multiple of what it "
-        "paid.",
+        description="What a buyer asks for something it keeps that the player sold it, as a "
+        "multiple of what it paid.",
     )
     buyers: tuple[Id, ...] = Field(
         default=("scrap_stall", "clinic"),
