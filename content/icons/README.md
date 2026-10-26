@@ -1,7 +1,8 @@
 # Icons
 
 Pictures of things on their own, painted by FLUX.2 [klein] 4B in #329's cartoon, as the tunnels'
-creatures are. The character screen's body map draws them at each part's place. Made from
+creatures are. The character screen's body map draws them at each part's place, and its Gear tab
+draws a tile for each kind of item the player carries. Made from
 `server/` on Apple Silicon by
 
 ```bash
@@ -16,6 +17,8 @@ another image model, an Ollama model, or a `simile creatures` or `simile icons` 
 **[`preview.webp`](preview.webp)** shows the character screen's Body tab in four bodies: whole, a
 kidney sold, fully fitted with a grade 2 cell and grade 3 legs, and a stage 1 body whose legs have
 since been retired. It's a screenshot of the client, taken by hand: take it again when the map or its icons change.
+**[`previews/gear.webp`](previews/gear.webp)** is the same for the Gear tab: carrying one of every
+item, and nearly nothing.
 
 ## Files
 
@@ -47,6 +50,13 @@ since been retired. It's a screenshot of the client, taken by hand: take it agai
 | `power_cell`, `datajack`, `infrared_eye`, `bionic_legs`, `spring_feet` | Each bionic, every grade of its line alike. |
 
 The client mirrors the left kidney, so both face the spine.
+
+## The items'
+
+Every item the server defines has one, by its item id: the lamp, the ration pack, the metro's and
+the sewers' salvage, and the recipes' parts. `tests/icons/test_items.py` finds every item in the
+server's code, config and maps, and fails for one without an icon. `unknown_item`, a box with a
+question mark, is the Gear tab's picture for an item with none of its own.
 
 ## Adding icons
 

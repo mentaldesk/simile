@@ -32,6 +32,7 @@ COLOURS = {
     "dark": (20, 24, 60, 90),
     "salvage": (64, 196, 120, 255),
     "secret": (255, 64, 160, 255),
+    "creature": (200, 30, 30, 255),
 }
 COLOURS["solid"] = COLOURS["ground"]
 LINKS = {DoorKind.STAIRS: "stairs", DoorKind.LADDER: "ladder", DoorKind.LIFT: "lift"}
@@ -193,6 +194,10 @@ class Panel:
             r = SCALE * 0.3
             diamond = [(cx, cy - r), (cx + r, cy), (cx, cy + r), (cx - r, cy)]
             self.draw.polygon(diamond, fill=COLOURS[pickup.kind], outline=COLOURS["ink"])
+        for spawn in plan.creatures:
+            cx, cy = self.middle(spawn.x, spawn.y, dx, dy)
+            r = SCALE * 0.25
+            self.draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=COLOURS["creature"])
         for spot in plan.spots:
             cx, cy = self.middle(spot.x, spot.y, dx, dy)
             tx, ty = TICKS[spot.facing]

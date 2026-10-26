@@ -165,7 +165,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Something on an interior's map that you can use, from one of its stand tiles. A searchable\nthing is searched once for the `items` it holds and the recipe it `teaches`, and so is a jack\nthat holds or teaches anything, with the datajack. The player's `searched` says whether it has\nbeen.",
+  "description": "Something on an interior's map that you can use, from one of its stand tiles. A searchable\nthing is searched once for the `items` and `money` it holds and the recipe it `teaches`, and so\nis a jack that holds or teaches anything, with the datajack. The player's `searched` says\nwhether it has been.",
   "properties": {
     "id": {
       "maxLength": 64,
@@ -208,6 +208,13 @@
       },
       "title": "Items",
       "type": "array"
+    },
+    "money": {
+      "default": 0.0,
+      "description": "Cash searching it finds, which weighs nothing: a searchable's, or a jack's. Left out while there's none.",
+      "minimum": 0,
+      "title": "Money",
+      "type": "number"
     },
     "teaches": {
       "anyOf": [
