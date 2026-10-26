@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage } from '../net';
-import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, toEat } from './hunger';
+import { server } from '../net';
+import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
+import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, toEat, when } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -10,9 +11,9 @@ const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 
 const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
 const TRADER: Buyer = { place: 'scrap_stall', name: "The scrap trader's stall", prices: { copper_wire: 6 } };
 
-type Options = { money?: number; items?: Item[]; meal?: Meal; left?: Pile[]; buyer?: Buyer; power?: number };
+type Options = { money?: number; items?: Item[]; meal?: Meal; shut?: Shut; left?: Pile[]; buyer?: Buyer; power?: number };
 
-function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer, power }: Options = {}): PlayerStateMessage {
+function state(hunger: number, { money = 0, items = [LAMP], meal, shut, left, buyer, power }: Options = {}): PlayerStateMessage {
   const body = {
     legs: 'present',
     vertebra: 'present',
@@ -23,7 +24,7 @@ function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer, p
     ...(power !== undefined && { stomach: 'power_cell' as const }),
   } as const;
   const player = { money, items, carry_limit: 10, body, hunger, ...(left && { left }), ...(power !== undefined && power < 1 && { power }) };
-  return { type: 'player_state', player, ...(meal && { meal }), ...(buyer && { buyer }) };
+  return { type: 'player_state', player, ...(meal && { meal }), ...(shut && { shut }), ...(buyer && { buyer }) };
 }
 
 describe('feeling', () => {
@@ -102,6 +103,56 @@ describe('eatPrompt', () => {
     expect(eatPrompt(state(0.5, { meal: NOODLES, money: 4.25 }))).toBe(
       'A meal at Golden Bowl Noodles is 10, and you have 4.25.',
     );
+  });
+});
+
+// Monday 26 October 2026, 19:52, when the playtest found the noodle bar shut.
+const MONDAY_EVENING = '2026-10-26T19:52:00Z';
+const SHUT: Shut = { place: 'noodle_bar', name: 'Golden Bowl Noodles', reason: 'closed', opens: '2026-10-27T11:00:00Z' };
+const SOLD_OUT: Shut = { ...SHUT, reason: 'sold_out', opens: '2026-10-26T17:00:00Z' };
+
+describe('when', () => {
+  it('says today, tomorrow, or the day of the week, at the hour', () => {
+    expect(when('2026-10-26T21:30:00Z', MONDAY_EVENING)).toBe('today at 21:30');
+    expect(when('2026-10-27T07:00:00Z', MONDAY_EVENING)).toBe('tomorrow at 7:00');
+    expect(when('2026-10-28T11:00:00Z', MONDAY_EVENING)).toBe('Wednesday at 11:00');
+    expect(when('2026-11-02T09:05:00Z', MONDAY_EVENING)).toBe('next Monday at 9:05');
+  });
+
+  it('counts days across midnight by the date, not 24 hours', () => {
+    expect(when('2026-10-27T00:30:00Z', '2026-10-26T23:50:00Z')).toBe('tomorrow at 0:30');
+    expect(when('2026-10-28T07:00:00Z', '2026-10-27T00:10:00Z')).toBe('tomorrow at 7:00');
+  });
+
+  it('names the day before the sim clock is known', () => {
+    expect(when('2026-10-27T11:00:00Z', undefined)).toBe('Tuesday at 11:00');
+  });
+});
+
+describe('shut shops', () => {
+  it('says a shop is shut and when it opens, hungry or not', () => {
+    expect(eatPrompt(state(0.6, { shut: SHUT }), MONDAY_EVENING)).toBe('Golden Bowl Noodles is shut. Opens tomorrow at 11:00.');
+    expect(eatPrompt(state(0, { shut: SHUT }), '2026-10-25T22:00:00Z')).toBe('Golden Bowl Noodles is shut. Opens Tuesday at 11:00.');
+    expect(eatPrompt(state(0.6, { shut: { ...SHUT, opens: null } }), MONDAY_EVENING)).toBe('Golden Bowl Noodles is shut.');
+  });
+
+  it('says it has sold out for this shift, and when the next starts', () => {
+    expect(eatPrompt(state(0.6, { shut: SOLD_OUT }), '2026-10-26T13:00:00Z')).toBe(
+      'Golden Bowl Noodles has sold out for this shift. Opens again today at 17:00.',
+    );
+  });
+
+  it('still offers what they carry first', () => {
+    expect(eatPrompt(state(0.6, { shut: SHUT, items: [BUN] }), MONDAY_EVENING)).toBe('Press F to eat your pork bun.');
+  });
+
+  it('says nothing of it on a power cell', () => {
+    expect(eatPrompt(state(0, { shut: SHUT, power: 0.8 }), MONDAY_EVENING)).toBeUndefined();
+  });
+
+  it('reads the day from the sim clock', () => {
+    server.dispatch(JSON.stringify({ type: 'clock', time: MONDAY_EVENING, speed: 60 }));
+    expect(eatPrompt(state(0.6, { shut: SHUT }))).toBe('Golden Bowl Noodles is shut. Opens tomorrow at 11:00.');
   });
 });
 

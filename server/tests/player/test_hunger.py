@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -8,7 +8,7 @@ from simile.economy.economy import Economy
 from simile.memory import MemoryStore
 from simile.npc import load_npcs
 from simile.player.hunger import Hunger
-from simile.protocol import Meal, Vital
+from simile.protocol import Meal, Shut, ShutReason, Vital
 from simile.schema import (
     PLAYER_ID,
     Bionic,
@@ -16,6 +16,7 @@ from simile.schema import (
     Item,
     ItemKind,
     MapTile,
+    Npc,
     Pay,
     PayKind,
     Pile,
@@ -43,15 +44,26 @@ HOME = Point(13, 2, "maker_space_floor_0")
 NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
 
 
+SHIFTS = next(npc for npc in load_npcs() if npc.id == "odalys").shifts
+"""Tuesday to Sunday, 11:00 to 14:30 and 17:00 to 21:30."""
+MONDAY = datetime(2026, 10, 26, tzinfo=UTC)
+
+
+def monday(hour: float, days: int = 0) -> datetime:
+    return MONDAY + timedelta(days=days, hours=hour)
+
+
 class Village:
-    def __init__(self, player: Player | None = None) -> None:
-        self.world = World(Clock(NOW), FakeWallClock())
+    def __init__(
+        self, player: Player | None = None, now: datetime = NOW, keeper: Npc = ODALYS
+    ) -> None:
+        self.world = World(Clock(now), FakeWallClock())
         self.movement = Movement(MAPS, self.world.bus)
         behaviour = Behaviour(
             self.world.clock,
             self.world.bus,
             self.movement,
-            [ODALYS],
+            [keeper],
             MemoryStore(":memory:"),
             seed=0,
         )
@@ -317,3 +329,96 @@ def test_a_collapse_for_power_leaves_hunger_alone_and_says_why() -> None:
 
     assert village.player.hunger == 0
     assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.POWER)]
+
+
+def at_the_noodle_bar(now: datetime) -> Village:
+    """With Odalys's own shifts, and the economy saying whether it's serving."""
+    village = Village(
+        Player(money=25, hunger=0.9), now, ODALYS.model_copy(update={"shifts": SHIFTS})
+    )
+    village.hunger.supply = village.economy.supply
+    village.economy.behaviour.start()
+    village.stand(9, 2, "noodle_bar_floor_1")
+    return village
+
+
+def test_the_noodle_bar_is_shut_on_a_monday_and_opens_on_tuesday() -> None:
+    village = at_the_noodle_bar(monday(19 + 52 / 60))
+
+    assert village.hunger.meal() is None
+    assert village.hunger.shut() == Shut(
+        place="noodle_bar",
+        name="Golden Bowl Noodles",
+        reason=ShutReason.CLOSED,
+        opens=monday(11, days=1),
+    )
+
+
+def test_after_its_last_shift_on_sunday_it_opens_again_on_tuesday() -> None:
+    shut = at_the_noodle_bar(monday(22, days=6)).hunger.shut()
+
+    assert shut is not None
+    assert (shut.reason, shut.opens) == (ShutReason.CLOSED, monday(11, days=8))
+
+
+def test_after_the_evening_shift_it_opens_for_lunch_the_next_day() -> None:
+    shut = at_the_noodle_bar(monday(23, days=5)).hunger.shut()
+
+    assert shut is not None
+    assert shut.opens == monday(11, days=6)
+
+
+def test_sold_out_while_its_keeper_is_in_until_the_next_shift() -> None:
+    now = monday(13, days=1)
+    village = at_the_noodle_bar(now)
+    behaviour = village.economy.behaviour
+    work = Goal(Activity.WORK, "noodle_bar")
+    behaviour.restore("odalys", work, behaviour.needs("odalys"), now, None, {})
+    batch = Batch(shop="noodle_bar", shift=monday(11, days=1), cooked=6, left=0, sold_out=now)
+    village.economy.batches["noodle_bar"] = batch
+
+    assert village.hunger.meal() is None
+    shut = village.hunger.shut()
+    assert shut is not None
+    assert (shut.reason, shut.opens) == (ShutReason.SOLD_OUT, monday(17, days=1))
+
+
+def test_a_shop_that_is_serving_has_a_meal_and_is_not_shut() -> None:
+    village = Village(Player(money=25, hunger=0.9))
+    village.stand(9, 2, "noodle_bar_floor_1")
+
+    assert village.hunger.meal() == NOODLES
+    assert village.hunger.shut() is None
+
+
+def test_after_last_orders_the_cafe_opens_the_next_morning() -> None:
+    village = Village(Player(money=25, hunger=0.9), monday(17.5))
+    village.open = set()
+    village.stand(9, 2, "coffee_shop_floor_1")
+
+    assert village.hunger.shut() == Shut(
+        place="coffee_shop",
+        name="The Daily Grind",
+        reason=ShutReason.CLOSED,
+        opens=monday(7, days=1),
+    )
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "map"),
+    [(13, 2, "maker_space_floor_0"), (70, 15, "high_street"), (3, 2, "house_3_floor_0")],
+)
+def test_nowhere_else_is_shut(x: int, y: int, map: str) -> None:
+    village = Village(Player(hunger=0.9))
+    village.open = set()
+    village.stand(x, y, map)
+
+    assert village.hunger.shut() is None
+
+
+def test_nothing_is_shut_to_them_on_a_power_cell() -> None:
+    village = Village(Player(body=Body(stomach=Bionic.POWER_CELL)))
+    village.open = set()
+    village.stand(9, 2, "noodle_bar_floor_1")
+
+    assert village.hunger.shut() is None

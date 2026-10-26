@@ -24,6 +24,10 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
   - **Food they carry** relieves `food` (0.4) an item.
   - `meal()` is the meal on offer where they stand, which goes to the client in `player_state` so
     its hint can offer it. Ordering a drink at the café's counter is unchanged and free.
+  - `shut()` is, in its place, the shop where they stand while it isn't serving: `sold_out` while
+    its keeper is in but the batch has gone, otherwise `closed`, and when it next opens. That's the
+    next start of its keeper's shifts (`hours.py`), or the café's `opens` while nobody works
+    there: a forecast that a late or absent keeper makes wrong.
 - **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
   they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
   of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
@@ -143,15 +147,16 @@ and the bionics they'd fit.
 
 ## `player_state`
 
-`PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer,
-the buyer where they stand and the piles lying at pickups they haven't taken, to every client. The
+`PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer
+or the shop that's shut, the buyer where they stand and the piles lying at pickups they haven't taken, to every client. The
 recipes come from `recipes_of(app)`, which modules such as the clinic fill with theirs. It's sent:
 
 - to each new client after the snapshot and clock, and after the other modules' greetings, since
   it greets from `running`;
 - at once after any change but to hunger, power, health, an effect's strength or a lamp's charge:
   money, items, a lamp's switch, the body, an effect gained or gone, a pile, a pickup taken, or the
-  meal on offer or the buyer as they walk in or out of somewhere to eat or sell;
+  meal on offer, the shop that's shut or the buyer as they walk in or out of somewhere to eat or
+  sell, or as a shop they're in starts or stops serving;
 - and for hunger, power, health, an effect's strength or a lamp's charge alone, once one of them
   has moved by `step` (0.01)
   since the last one sent, or reached 0 or 1, so a full or flat battery is never shown a step
