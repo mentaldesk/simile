@@ -14,7 +14,7 @@ export const TABS = ['Vitals', 'Body', 'Gear', 'Mind'] as const;
 export type Tab = (typeof TABS)[number];
 
 /** Head to foot. */
-export const PARTS: readonly (readonly [BodyPart, string])[] = [
+const PARTS: readonly (readonly [BodyPart, string])[] = [
   ['left_eye', 'Left eye'],
   ['right_eye', 'Right eye'],
   ['vertebra', 'Vertebra'],
@@ -35,18 +35,17 @@ export function bionicName(bionic: Bionic, recipes: readonly Recipe[] = []): str
   return upperFirst(line.replaceAll('_', ' ')) + (grade ? `, grade ${grade}` : '');
 }
 
-export const runsOnPower = (body: Body): boolean => body.stomach?.startsWith('power_cell') ?? false;
+const runsOnPower = (body: Body): boolean => body.stomach?.startsWith('power_cell') ?? false;
 
 export type Meter = { label: string; fill: number; good: number; text: string; note?: string };
 
 export type Vitals = { meters: Meter[]; credits: string; effects: string[] };
 
 /** "Rat bite, 60%, until it's treated". */
-export function effectLine({ kind, strength, fades }: Effect): string {
+function effectLine({ kind, strength, fades }: Effect): string {
   return `${upperFirst(kind.replaceAll('_', ' '))}, ${percent(strength)}, ${fades === null ? "until it's treated" : 'fading'}`;
 }
 
-/** Power once a cell is fitted, else hunger; health; the lamp; credits; effects. */
 export function vitals(player: Player, where: Where = lampHere): Vitals {
   const meters: Meter[] = [];
   if (runsOnPower(player.body)) {
@@ -74,7 +73,6 @@ export function vitals(player: Player, where: Where = lampHere): Vitals {
 
 export type BodyRow = { part: BodyPart; label: string; state: 'present' | 'sold' | 'bionic'; text: string };
 
-/** Each part, still theirs, sold, or the bionic in its place. */
 export function bodyRows(body: Body, recipes: readonly Recipe[] = []): BodyRow[] {
   return PARTS.map(([part, label]) => {
     const fitted = body[part] ?? 'present';
@@ -89,7 +87,6 @@ export type Gear = { rows: GearRow[]; load: number; limit: number };
 
 const kg = (weight: number) => `${Number(weight.toFixed(2))} kg`;
 
-/** What they carry, each kind once, and its weight against the carry limit. */
 export function gear(player: Player): Gear {
   const rows = new Map<string, GearRow>();
   for (const item of player.items) {
@@ -117,7 +114,6 @@ export type Known = {
 
 const PART_NAMES = Object.fromEntries(PARTS.map(([part, label]) => [part, label.toLowerCase()]));
 
-/** Each recipe they know, what it needs and what they have of it. */
 export function known(player: Player, recipes: readonly Recipe[] = []): Known[] {
   const sold = new Set(player.mind?.sold ?? []);
   return (player.mind?.recipes ?? []).map((bionic) => {
@@ -224,7 +220,6 @@ export class CharacterPanel {
   }
 
   private onKey(event: KeyboardEvent): void {
-    // Keys in the panel mustn't move the player.
     event.stopPropagation();
     const { key } = event;
     if (key === 'Escape' || (key.toLowerCase() === CHARACTER_KEY && !event.repeat)) {
