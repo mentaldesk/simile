@@ -60,7 +60,7 @@ stop() {
 }
 trap stop EXIT INT TERM
 
-(cd "$root/server" && exec uv run ${extras[@]+"${extras[@]}"} simile serve --port "$server_port") &
+(cd "$root/server" && exec uv run ${extras[@]+"${extras[@]}"} simile worlds serve --port "$server_port") &
 server=$!
 (cd "$root/client" && exec node_modules/.bin/vite --port "$client_port" --strictPort --clearScreen false </dev/null) &
 client=$!
