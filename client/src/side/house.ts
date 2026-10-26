@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import type { Frame } from '../net';
 import { DEPTH } from './depths';
-import { dropShadow, furnitureKey, tileAlong, type Tints } from './draw';
+import { dropShadow, furnitureKey, placeFurniture, tileAlong, type Tints } from './draw';
 import {
   dollhouse,
   feetOf,
@@ -270,7 +270,7 @@ export class House {
 
   private furniture(item: Placed, map: SideMap): void {
     const { manifest, scene, textures } = this;
-    let key = furnitureKey(manifest, item, map.id);
+    const key = furnitureKey(manifest, item, map.id);
     if (!key) return;
     const place = furniturePlacement(item, map);
     if (item.name === 'lift') {
@@ -287,13 +287,12 @@ export class House {
       this.cars.push({ image: car, floorLine: (map.offset.y + 3) * TILE });
       return;
     }
-    if (manifest.furniture[item.name]?.stretch) key = textures.stretched(key, stretchWidth(item)).name;
+    const stretch = manifest.furniture[item.name]?.stretch ? stretchWidth(item) : undefined;
     const anchor = [place.originX, place.originY] as const;
     const onWall = place.originY < 1;
-    const shadow = dropShadow(scene, textures, key, anchor, place.x, place.y, { ppm: PPM });
-    this.images.push(shadow.setDepth(onWall ? DEPTH.frame - 0.05 : DEPTH.furnitureShadow));
-    const image = scene.add.image(place.x, place.y, textures.key(key)).setOrigin(...anchor);
-    this.add(image, onWall ? DEPTH.frame : DEPTH.furniture);
+    const { images, shadows } = placeFurniture(scene, textures, key, stretch, anchor, place.x, place.y, PPM);
+    for (const shadow of shadows) this.images.push(shadow.setDepth(onWall ? DEPTH.frame - 0.05 : DEPTH.furnitureShadow));
+    for (const image of images) this.add(image, onWall ? DEPTH.frame : DEPTH.furniture);
   }
 
   private shadowOf(image: Phaser.GameObjects.Image, key: string): void {

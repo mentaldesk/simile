@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { Frame, Wall } from '../net';
 import { LAYER_PLACES, layerCopies, streetCentreY, type Copies, type Point } from './camera';
 import { DEPTH } from './depths';
-import { dropShadow, furnitureKey, placeDerived, tileAlong, Tints, type TintGroup } from './draw';
+import { dropShadow, furnitureKey, placeDerived, placeFurniture, placeParts, tileAlong, Tints, type TintGroup } from './draw';
 import { House } from './house';
 import {
   coverCrop,
@@ -94,7 +94,7 @@ export class StreetView {
   private readonly byName = new Map<string, Front>();
   private readonly rides = new Map<House, number>();
   private readonly lamps: Image[] = [];
-  private readonly props: { x: number; image: Image; shadow: Image }[] = [];
+  private readonly props: { x: number; images: Image[] }[] = [];
   private readonly owned: Phaser.GameObjects.GameObject[] = [];
   private readonly copies: Copies = { first: 0, count: 0, y: 0 };
   private readonly view = { left: 0, width: 0, centre: { x: 0, y: 0 } as Point };
@@ -185,10 +185,9 @@ export class StreetView {
       moved ||= front.open !== before;
     }
     if (moved) {
-      for (const { x, image, shadow } of this.props) {
+      for (const { x, images } of this.props) {
         const shown = this.ghost(x) === 1;
-        image.setVisible(shown);
-        shadow.setVisible(shown);
+        for (const image of images) image.setVisible(shown);
       }
     }
   }
@@ -352,8 +351,9 @@ export class StreetView {
     const ledge = manifest.platforms.ledge;
     for (const { x0, x1, row } of ledges(map)) {
       const derived = textures.stretched(ledge, Math.round((x1 - x0) * TILE));
-      const image = scene.add.image(x0 * TILE, row * TILE, derived.key).setOrigin(0, 0);
-      this.tints.add('ground', this.own(image.setDepth(DEPTH.ledge)));
+      for (const image of placeParts(scene, derived, textures.size(derived.name), [0, 0], x0 * TILE, row * TILE)) {
+        this.tints.add('ground', this.own(image.setDepth(DEPTH.ledge)));
+      }
     }
   }
 
@@ -412,16 +412,15 @@ export class StreetView {
 
   private buildFurniture(item: Placed): void {
     const { manifest, map, scene, textures } = this;
-    let key = furnitureKey(manifest, item, map.id);
+    const key = furnitureKey(manifest, item, map.id);
     if (!key) return;
-    if (manifest.furniture[item.name]?.stretch) key = textures.stretched(key, stretchWidth(item)).name;
+    const stretch = manifest.furniture[item.name]?.stretch ? stretchWidth(item) : undefined;
     const place = furniturePlacement(item, map);
     const anchor = [place.originX, place.originY] as const;
-    const shadow = dropShadow(scene, textures, key, anchor, place.x, place.y, { ppm: PPM });
-    this.own(shadow.setDepth(DEPTH.streetShadow));
-    const image = scene.add.image(place.x, place.y, textures.key(key)).setOrigin(...anchor);
-    this.tints.add('ground', this.own(image.setDepth(DEPTH.streetFurniture)));
-    this.props.push({ x: place.x, image, shadow });
+    const { images, shadows } = placeFurniture(scene, textures, key, stretch, anchor, place.x, place.y, PPM);
+    for (const shadow of shadows) this.own(shadow.setDepth(DEPTH.streetShadow));
+    for (const image of images) this.tints.add('ground', this.own(image.setDepth(DEPTH.streetFurniture)));
+    this.props.push({ x: place.x, images: [...images, ...shadows] });
     if (item.name === 'lamp') {
       const lamp = scene.add.image(place.x, place.y - LAMP_HEAD_M * PPM, textures.lamp());
       lamp.setScale((LAMP_LIGHT_M * PPM) / 256).setBlendMode(Phaser.BlendModes.ADD).setDepth(DEPTH.lampGlow);
@@ -441,7 +440,7 @@ export class StreetView {
       this.own(shadow.setScale(shadow.scaleX * SIGN_SCALE).setDepth(DEPTH.streetShadow));
       const image = scene.add.image(x, y, textures.key(key)).setOrigin(0.5, 1).setScale(SIGN_SCALE);
       this.tints.add('ground', this.own(image.setDepth(DEPTH.streetFurniture)));
-      this.props.push({ x, image, shadow });
+      this.props.push({ x, images: [image, shadow] });
     }
   }
 

@@ -40,10 +40,15 @@ const fakeTextures = {
   key: (key: string) => `side:${key}`,
   tileFrame: () => ({ frame: 'tile', x: 0, width: 100 }),
   bottomColour: () => 0,
+  parts: (key: string) => [{ key: `side:${key}`, x: 0, width: 100 }],
+  size: () => ({ width: 100, height: 100 }),
   ...Object.fromEntries(
     ['shadow', 'light', 'blurred', 'stretched', 'band'].map((name) => [
       name,
-      (key: string) => ({ key: `side:${key}#${name}`, name: `${key}#${name}`, scale: 1, pad: 0 }),
+      (key: string) => {
+        const parts = [{ key: `side:${key}#${name}`, x: 0, width: 100 }];
+        return { key: `side:${key}#${name}`, name: `${key}#${name}`, scale: 1, pad: 0, parts };
+      },
     ]),
   ),
   ...Object.fromEntries(['lamp', 'signpost', 'exitSign', 'roomShade', 'contact'].map((name) => [name, () => name])),
