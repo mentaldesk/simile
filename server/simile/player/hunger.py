@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 from simile.behaviour import Activity, Goal, Need
 from simile.economy import PLAYER
 from simile.player.config import DEFAULT_CONFIG, PlayerConfig
+from simile.player.power import cell_in
 from simile.player.where import here, location
-from simile.protocol import Meal
+from simile.protocol import Meal, Vital
 from simile.schema import PLAYER_ID, Id, ItemKind, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.movement import Movement, Point, cell_of, inside
@@ -23,7 +24,8 @@ type Supply = Callable[[Goal, Need], float]
 
 
 class Hunger:
-    """The player's hunger, eating and collapsing. Tick it on the sim loop."""
+    """The player's hunger, eating and collapsing, until a power cell takes the stomach's place.
+    Tick it on the sim loop."""
 
     def __init__(
         self,
@@ -34,7 +36,7 @@ class Hunger:
         supply: Supply = lambda goal, need: 1.0,
         economy: "Economy | None" = None,
         playing: Callable[[], bool] = lambda: True,
-        collapsed: Callable[[MapTile], None] = lambda home: None,
+        collapsed: Callable[[MapTile, Vital], None] = lambda home, cause: None,
         config: PlayerConfig = DEFAULT_CONFIG,
     ) -> None:
         self.player = player
@@ -46,10 +48,13 @@ class Hunger:
         """Its `player` is this one, so meals are paid through its ledger."""
         self.playing = playing
         self.collapsed = collapsed
-        """Told where they wake after collapsing."""
+        """Told where they wake after collapsing, and what ran out."""
         self.config = config
 
     def tick(self, dt: float) -> None:
+        if self._on_cell():
+            self.player.hunger = 0.0
+            return
         if not self.playing():
             return
         hunger = self.player.hunger + self.config.rise * dt / HOUR
@@ -61,7 +66,7 @@ class Hunger:
     def meal(self) -> Meal | None:
         """The meal on offer where they stand, if any."""
         at = here(self.movement)
-        if at is None:
+        if at is None or self._on_cell():
             return None
         home = location(self.movement, self.config.home)
         if home is not None and inside(home, at):
@@ -74,11 +79,15 @@ class Hunger:
         return None
 
     def eat(self, item: Id | None) -> bool:
-        """Eats a carried food item by id, or with None the meal on offer. Whether they ate."""
+        """Eats a carried food item by id, or with None the meal on offer. Whether they ate: never
+        on a power cell."""
+        if self._on_cell():
+            return False
         return self._eat_meal() if item is None else self._eat_item(item)
 
-    def collapse(self) -> None:
-        """Leaves all but the lamp where they are, and wakes them at home still hungry."""
+    def collapse(self, cause: Vital = Vital.HUNGER) -> None:
+        """Leaves all but the lamp where they are, and wakes them at home, still hungry if that's
+        why."""
         at = here(self.movement)
         kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
         dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
@@ -89,9 +98,13 @@ class Hunger:
         house = self.movement.town.location(self.config.home)
         home = MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
         self.movement.track(PLAYER_ID, Point(home.x, home.y, home.map))
-        self.player.hunger = self.config.waking
-        logger.info("%s  The player collapses from hunger and wakes at home", self.clock)
-        self.collapsed(home)
+        if cause is Vital.HUNGER:
+            self.player.hunger = self.config.waking
+        logger.info("%s  The player collapses (%s) and wakes at home", self.clock, cause)
+        self.collapsed(home, cause)
+
+    def _on_cell(self) -> bool:
+        return cell_in(self.player.body) is not None
 
     def _eat_meal(self) -> bool:
         meal = self.meal()

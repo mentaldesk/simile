@@ -250,6 +250,26 @@ def test_a_higher_grade_goes_in_place_of_the_lower_which_she_takes_back() -> Non
     assert legs not in offered(depot) and better not in offered(depot)
 
 
+def test_she_fits_nothing_past_what_their_cell_runs_until_a_bigger_cell_is_in() -> None:
+    three = Body(stomach=CELL, vertebra=JACK, legs=Bionic.BIONIC_LEGS, feet=Bionic.SPRING_FEET)
+    bigger = Bionic.POWER_CELL_2
+    depot = Depot(knowing(EYE, bigger, money=1000, body=three))
+
+    assert EYE not in offered(depot)
+    assert not depot.clinic.fit(EYE, "left_eye")
+    assert depot.clinic.fit(bigger, "stomach")
+    assert depot.clinic.fit(EYE, "left_eye")
+    assert depot.player.body == three.model_copy(update={"stomach": bigger, "left_eye": EYE})
+
+
+def test_stage_1s_legs_leave_the_first_cell_room_for_three() -> None:
+    body = Body(stomach=CELL, legs=Bionic.HYDRAULIC_LEGS, vertebra=JACK, feet=Bionic.SPRING_FEET)
+    depot = Depot(knowing(EYE, money=500, body=body))
+
+    assert depot.clinic.fit(EYE, "left_eye")
+    assert depot.player.body == body.model_copy(update={"left_eye": EYE})
+
+
 @pytest.mark.parametrize(
     ("bionic", "part"),
     [

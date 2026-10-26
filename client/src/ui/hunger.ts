@@ -1,4 +1,4 @@
-import type { Item, Meal, Pile, PlayerStateMessage } from '../net';
+import type { Item, Meal, Pile, Player, PlayerStateMessage, Vital } from '../net';
 import { amount, pickUpPrompt, sellPrompt } from './salvage';
 import { EAT_KEY } from './tuning';
 
@@ -7,6 +7,9 @@ export const PECKISH = 0.3;
 export const HUNGRY = 0.5;
 /** The server collapses the player at 1. */
 export const STARVING = 0.85;
+/** Power from which they're warned to charge, and from which they're told they'll collapse. */
+export const LOW_POWER = 0.3;
+export const FLAT = 0.1;
 const COLLAPSED_MS = 6000;
 
 export type Eat = { kind: 'meal'; meal: Meal } | { kind: 'item'; item: Item };
@@ -14,15 +17,27 @@ export type Eat = { kind: 'meal'; meal: Meal } | { kind: 'item'; item: Item };
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1);
 const key = (name: string) => name.toUpperCase();
 
+/** Whether a power cell has taken their stomach's place, so they run on power and never eat. */
+export const onCell = (player: Player): boolean => player.body.stomach?.startsWith('power_cell') ?? false;
+
 export function feeling(hunger: number): string | undefined {
   if (hunger >= STARVING) return "You're starving. Eat soon, or you'll collapse.";
   if (hunger >= HUNGRY) return "You're hungry.";
   return undefined;
 }
 
+export function powerFeeling(power: number): string | undefined {
+  if (power <= FLAT) return "Your power cell is nearly flat. Charge it at a plug, or you'll collapse.";
+  if (power <= LOW_POWER) return 'Your power is low. Charge it at a plug.';
+  return undefined;
+}
+
+const feelingOf = (player: Player): string | undefined =>
+  onCell(player) ? powerFeeling(player.power ?? 1) : feeling(player.hunger);
+
 /** What F eats once they're peckish: the meal on offer here if they can pay, else the first food they carry. */
 export function toEat(state: PlayerStateMessage | undefined): Eat | undefined {
-  if (!state || state.player.hunger < PECKISH) return undefined;
+  if (!state || onCell(state.player) || state.player.hunger < PECKISH) return undefined;
   const { player, meal } = state;
   if (meal && meal.price <= player.money) return { kind: 'meal', meal };
   const item = player.items.find(({ kind }) => kind === 'food');
@@ -32,6 +47,7 @@ export function toEat(state: PlayerStateMessage | undefined): Eat | undefined {
 /** What F eats, or once they're hungry, where they could eat. */
 export function eatPrompt(state: PlayerStateMessage): string | undefined {
   const { player, meal } = state;
+  if (onCell(player)) return undefined;
   const eat = toEat(state);
   if (eat?.kind === 'item') return `Press ${key(EAT_KEY)} to eat your ${lowerFirst(eat.item.name)}.`;
   if (eat) {
@@ -43,14 +59,19 @@ export function eatPrompt(state: PlayerStateMessage): string | undefined {
   return 'Eat at home, or at the café or the noodle bar.';
 }
 
-export const COLLAPSED = 'You collapsed from hunger and woke at home.';
+export const COLLAPSED: Record<Vital, string> = {
+  hunger: 'You collapsed from hunger and woke at home.',
+  power: 'Your power cell ran flat. You collapsed and woke at home.',
+  health: 'You collapsed from your wounds and woke at home.',
+};
 
 type Line = 'collapsed' | 'feeling' | 'eat' | 'pile' | 'sell';
 
-/** How hungry the player is and what they can eat, in a corner, and what they can pick up or sell where they stand. */
+/** How hungry the player is and what they can eat, or how much power they have, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
   private readonly lines = new Map<Line, HTMLElement>();
   private collapsedUntil = 0;
+  private cause: Vital = 'hunger';
 
   constructor(parent: HTMLElement) {
     const root = parent.appendChild(document.createElement('div'));
@@ -62,14 +83,15 @@ export class HungerHint {
     }
   }
 
-  collapsed(now = Date.now()): void {
+  collapsed(cause: Vital = 'hunger', now = Date.now()): void {
+    this.cause = cause;
     this.collapsedUntil = now + COLLAPSED_MS;
   }
 
   /** `pile` is the one E picks up from, if any. */
   update(state: PlayerStateMessage | undefined, pile: Pile | undefined, now = Date.now()): void {
-    this.show('collapsed', now < this.collapsedUntil ? COLLAPSED : undefined);
-    this.show('feeling', state && feeling(state.player.hunger));
+    this.show('collapsed', now < this.collapsedUntil ? COLLAPSED[this.cause] : undefined);
+    this.show('feeling', state && feelingOf(state.player));
     this.show('eat', state && eatPrompt(state));
     this.show('pile', state && pile && pickUpPrompt(pile, state.player));
     this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Buyer, Item, Meal, Pile, PlayerStateMessage } from '../net';
-import { COLLAPSED, eatPrompt, feeling, HungerHint, toEat } from './hunger';
+import { COLLAPSED, eatPrompt, feeling, HungerHint, onCell, powerFeeling, toEat } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -10,9 +10,9 @@ const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 
 const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
 const TRADER: Buyer = { place: 'scrap_stall', name: "The scrap trader's stall", prices: { copper_wire: 6 } };
 
-type Options = { money?: number; items?: Item[]; meal?: Meal; left?: Pile[]; buyer?: Buyer };
+type Options = { money?: number; items?: Item[]; meal?: Meal; left?: Pile[]; buyer?: Buyer; power?: number };
 
-function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer }: Options = {}): PlayerStateMessage {
+function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer, power }: Options = {}): PlayerStateMessage {
   const body = {
     legs: 'present',
     vertebra: 'present',
@@ -20,8 +20,9 @@ function state(hunger: number, { money = 0, items = [LAMP], meal, left, buyer }:
     right_eye: 'present',
     left_kidney: 'present',
     right_kidney: 'present',
+    ...(power !== undefined && { stomach: 'power_cell' as const }),
   } as const;
-  const player = { money, items, carry_limit: 10, body, hunger, ...(left && { left }) };
+  const player = { money, items, carry_limit: 10, body, hunger, ...(left && { left }), ...(power !== undefined && power < 1 && { power }) };
   return { type: 'player_state', player, ...(meal && { meal }), ...(buyer && { buyer }) };
 }
 
@@ -30,6 +31,25 @@ describe('feeling', () => {
     expect(feeling(0.49)).toBeUndefined();
     expect(feeling(0.5)).toBe("You're hungry.");
     expect(feeling(0.85)).toBe("You're starving. Eat soon, or you'll collapse.");
+  });
+});
+
+describe('on a power cell', () => {
+  it('knows a cell from a stomach', () => {
+    expect(onCell(state(0, { power: 1 }).player)).toBe(true);
+    expect(onCell(state(0).player)).toBe(false);
+  });
+
+  it('warns as power runs low, and before they collapse', () => {
+    expect(powerFeeling(0.31)).toBeUndefined();
+    expect(powerFeeling(0.3)).toBe('Your power is low. Charge it at a plug.');
+    expect(powerFeeling(0.1)).toBe("Your power cell is nearly flat. Charge it at a plug, or you'll collapse.");
+  });
+
+  it('never eats or offers a meal', () => {
+    const fed = state(0.9, { meal: HOME, items: [BUN], power: 0.5 });
+    expect(toEat(fed)).toBeUndefined();
+    expect(eatPrompt(fed)).toBeUndefined();
   });
 });
 
@@ -89,14 +109,34 @@ describe('HungerHint', () => {
     expect(shown(root)).toEqual(["Press E to sell your copper wire at the scrap trader's stall for 6."]);
   });
 
+  it('shows their power in place of hunger once a cell is in', () => {
+    const root = document.createElement('div');
+    const hint = new HungerHint(root);
+
+    hint.update(state(0.9, { meal: HOME, power: 1 }), undefined);
+    expect(shown(root)).toEqual([]);
+
+    hint.update(state(0.9, { meal: HOME, power: 0.2 }), undefined);
+    expect(shown(root)).toEqual(['Your power is low. Charge it at a plug.']);
+  });
+
   it('says they collapsed for a few seconds after it', () => {
     const root = document.createElement('div');
     const hint = new HungerHint(root);
 
-    hint.collapsed(1000);
+    hint.collapsed('hunger', 1000);
     hint.update(state(0.75), undefined, 6999);
-    expect(shown(root)[0]).toBe(COLLAPSED);
+    expect(shown(root)[0]).toBe(COLLAPSED.hunger);
     hint.update(state(0.75), undefined, 7000);
-    expect(shown(root)).not.toContain(COLLAPSED);
+    expect(shown(root)).not.toContain(COLLAPSED.hunger);
+  });
+
+  it('says why they collapsed', () => {
+    const root = document.createElement('div');
+    const hint = new HungerHint(root);
+
+    hint.collapsed('power', 1000);
+    hint.update(state(0, { power: 0.25 }), undefined, 2000);
+    expect(shown(root)[0]).toBe('Your power cell ran flat. You collapsed and woke at home.');
   });
 });

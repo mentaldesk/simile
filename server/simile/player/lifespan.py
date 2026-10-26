@@ -14,6 +14,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.lamp import Lamp
     from simile.player.machines import Machines
     from simile.player.pickups import Pickups, claimers_of
+    from simile.player.power import Power
     from simile.player.sync import PlayerSync, recipes_of
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
@@ -25,6 +26,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         PlayerMoveMessage,
         Position,
         SellMessage,
+        Vital,
         hub_of,
     )
     from simile.schema import Interactable, MapTile
@@ -37,9 +39,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     economy.player = player
     in_game = InGame()
 
-    def collapsed(home: MapTile) -> None:
+    def collapsed(home: MapTile, cause: Vital) -> None:
         lamp.switch(False)
-        hub.broadcast(PlayerCollapsedMessage(position=Position(x=home.x, y=home.y, map=home.map)))
+        position = Position(x=home.x, y=home.y, map=home.map)
+        hub.broadcast(PlayerCollapsedMessage(position=position, cause=cause))
 
     hunger = Hunger(
         player,
@@ -62,6 +65,13 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         recipes=lambda: [book[bionic] for bionic in player.mind.recipes],
     )
     lamp = Lamp(player, movement, world.clock, playing=lambda: bool(in_game))
+    power = Power(
+        player,
+        world.clock,
+        charging=lamp.charging,
+        playing=lambda: bool(in_game),
+        collapse=lambda: hunger.collapse(Vital.POWER),
+    )
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player)
 
@@ -95,6 +105,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     stops = [
         world.loop.register(hunger),
         world.loop.register(lamp),
+        world.loop.register(power),
         world.loop.register(sync),
         hub.subscribe(PlayerMoveMessage, in_game.moved),
         hub.subscribe(EatMessage, on_eat),

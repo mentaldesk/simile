@@ -80,7 +80,7 @@ export class DialogueScene extends Phaser.Scene {
     });
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
-    const stopCollapses = server.on('player_collapsed', () => hunger.collapsed());
+    const stopCollapses = server.on('player_collapsed', ({ cause }) => hunger.collapsed(cause));
     this.lamp = new LampGauge(this.root);
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
