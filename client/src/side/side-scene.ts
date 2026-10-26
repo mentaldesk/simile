@@ -84,7 +84,7 @@ export class SideScene extends Phaser.Scene {
   private readonly size = { width: 0, height: 0 };
   private readonly sent = { x: NaN, y: NaN, map: '' };
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
-  private readonly controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+  private readonly controls: Controls = { x: 0, y: 0, use: false, run: false };
   private readonly running = new RunToggle();
   private jumped = false;
   private passing = false;
@@ -134,7 +134,7 @@ export class SideScene extends Phaser.Scene {
           return this.street?.muralAt(point.x, point.y);
         },
       }),
-      setWayPrompts((eTaken) => this.prompts(eTaken)),
+      setWayPrompts(() => this.prompts()),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -189,7 +189,7 @@ export class SideScene extends Phaser.Scene {
     player.runSpeed = jump.run;
     player.datajack = fitted(body).includes('datajack');
     if (!this.passing) {
-      const door = player.update(this.read(player), dt);
+      const door = player.update(this.read(), dt);
       if (door) this.takeDoor(door);
     }
     interactables.update(player.mapPosition);
@@ -249,7 +249,7 @@ export class SideScene extends Phaser.Scene {
     return start && village.map(start.map) ? start : DEFAULT_START;
   }
 
-  private read(player: SidePlayer): Controls {
+  private read(): Controls {
     const { held, keys, tapped } = this;
     held.up = keys.UP.isDown || keys.W.isDown || tapped.up;
     held.down = keys.DOWN.isDown || keys.S.isDown || tapped.down;
@@ -258,18 +258,18 @@ export class SideScene extends Phaser.Scene {
     held.run = this.running.on;
     held.jump = this.jumped;
     held.hold = keys.SPACE.isDown;
-    readControls(held, this.used, player.mapPosition, this.controls);
+    readControls(held, this.used, this.controls);
     this.used = this.jumped = tapped.up = tapped.down = false;
     return this.controls;
   }
 
   /** Each in game-canvas px, over the end of its way. */
-  private prompts(eTaken: boolean): WayPrompt[] {
+  private prompts(): WayPrompt[] {
     const { content, player } = this;
     const map = player && content?.village.map(player.map);
     if (!map || this.passing) return [];
     const zoom = this.cameras.main.zoom;
-    return prompts(content!.village, map, player!.ways(), eTaken).map(({ at, keys, action }) => ({
+    return prompts(content!.village, map, player!.ways()).map(({ at, keys, action }) => ({
       keys,
       action,
       x: (xOf(map.offset.x + at.x) - this.view.x) * zoom,

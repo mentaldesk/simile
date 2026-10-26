@@ -111,7 +111,9 @@ async function take(page: Page, key: 'e' | Hold, arrive: Place, what: string): P
   await run(page, 300);
 }
 
+/** Off the door's cell, where E takes the door, then E. */
 async function openClinic(page: Page): Promise<void> {
+  await walkTo(page, CLINIC.x + 2, REACH.cell, 'into the clinic');
   await page.keyboard.press('e');
   await until(page, async () => (await shown(page, 'section.clinic')) !== null, 3, 'E opening the clinic');
 }
@@ -156,13 +158,9 @@ async function jumpToTheLedge(page: Page): Promise<void> {
   if (at.y !== LEDGE.onto || at.x < LEDGE.land) throw new Error(`landed at ${at.x.toFixed(2)}, ${at.y}, not on the ledge`);
 }
 
-/** Out of the clinic's door: up while E still uses the clinic, or E once it has nothing left to do. */
 async function leaveClinic(page: Page): Promise<void> {
-  const eTaken = await page.evaluate(async (reach) => {
-    const { usedByE } = await import(reach);
-    return !!usedByE((window as unknown as Probed).loopProbe.view().positionOf('player'));
-  }, '/src/world/reach.ts');
-  await take(page, eTaken ? 'ArrowUp' : 'e', metro(89, 15), 'out of the clinic');
+  await walkTo(page, CLINIC.x, REACH.cell, "to the clinic's door");
+  await take(page, 'e', metro(89, 15), 'out of the clinic');
 }
 
 /** E at a jack with the datajack opens the journal on what it held. */

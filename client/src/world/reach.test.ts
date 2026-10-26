@@ -206,12 +206,4 @@ describe('wayPrompts', () => {
     unset();
     expect(wayPrompts()).toEqual([]);
   });
-
-  it('tell the world scene when E is used for something in reach', () => {
-    const door = (eTaken: boolean) => ({ keys: eTaken ? ['↑'] : ['E', '↑'], action: 'go in', x: 0, y: 0 });
-    const unset = setWayPrompts((eTaken) => [door(eTaken)]);
-    expect(wayPrompts()[0].keys).toEqual(['E', '↑']);
-    expect(wayPrompts(true)[0].keys).toEqual(['↑']);
-    unset();
-  });
 });

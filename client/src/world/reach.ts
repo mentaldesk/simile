@@ -98,7 +98,7 @@ export function inReach(position: Position | undefined, from: Reachables = reach
 
 const looked = (reachable: Reachable) => reachable.kind === 'mural' || reachable.kind === 'painting';
 
-/** What E uses: a door only when there's nothing. */
+/** What E uses off a door's cell, where E takes the door. */
 export const usedByE = (position: Position | undefined, from?: Reachables): Reachable | undefined =>
   inReach(position, from).find((reachable) => !looked(reachable));
 
@@ -109,7 +109,7 @@ export const lookedAtByV = (position: Position | undefined, from?: Reachables): 
 /** The keys that take a door, stairs, a ladder or the lift, what it does, and a game-canvas point just above it. */
 export type WayPrompt = { keys: readonly string[]; action: string; x: number; y: number };
 
-type WayPrompts = (eTaken: boolean) => readonly WayPrompt[];
+type WayPrompts = () => readonly WayPrompt[];
 
 let waysHere: WayPrompts | undefined;
 
@@ -121,5 +121,4 @@ export function setWayPrompts(prompts: WayPrompts): () => void {
   };
 }
 
-/** `eTaken` while E uses something in reach, so up takes a door instead. */
-export const wayPrompts = (eTaken = false): readonly WayPrompt[] => waysHere?.(eTaken) ?? [];
+export const wayPrompts = (): readonly WayPrompt[] => waysHere?.() ?? [];

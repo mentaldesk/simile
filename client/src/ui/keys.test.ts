@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { onGameKey } from './keys';
+import { doorOnE, onGameKey } from './keys';
 
 const chat = { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() };
 const use = vi.fn();
@@ -144,4 +144,11 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(help.toggle).not.toHaveBeenCalled();
   expect(journal.toggle).not.toHaveBeenCalled();
   expect(character.toggle).not.toHaveBeenCalled();
+});
+
+it('leaves E to a door on the player’s cell, and to what is in reach elsewhere', () => {
+  const at = (keys: string[], action: string) => ({ keys, action, x: 0, y: 0 });
+  expect(doorOnE([at(['E'], 'go out'), at(['↑'], 'upstairs')])).toBe(true);
+  expect(doorOnE([at(['↑'], 'upstairs')])).toBe(false);
+  expect(doorOnE([])).toBe(false);
 });

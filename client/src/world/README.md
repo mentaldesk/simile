@@ -56,11 +56,10 @@ player's stand tile (`searchables.ts`): a `searchable`, or with the datajack a j
 or `teaches`, that `player_state`'s `searched` doesn't list yet. Its `items` and `teaches` come from
 the map, so its prompt is "Search the dead fridge" and E says what it found ("You find a lithium
 cell and a copper wire.") as it sends `pick_up`. `usedByE` is the first but a mural or a
-painting, which are V's (`lookedAtByV`), so a door beside one stays E's. The dialogue UI and the side
-scene both ask it, so one press does one thing: E uses that, and takes a door only
-when nothing is in reach, when up takes the door instead. Stairs, ladders and the lift are the
-arrows'. The side scene says what each key would take where the player stands, and where on the
-canvas, through `setWayPrompts`, and the dialogue UI shows `wayPrompts(eTaken)` over them.
+painting, which are V's (`lookedAtByV`). E takes every door, and the dialogue UI uses `usedByE` only
+off a door's cell, so one press does one thing. Stairs, ladders and the lift are the arrows'. The
+side scene says what each key would take where the player stands, and where on the canvas, through
+`setWayPrompts`, and the dialogue UI shows `wayPrompts()` over them.
 
 `npcAt(point, view)` in [`hit.ts`](hit.ts) finds the NPC drawn at a canvas point from the view's
 `spriteOf` boxes: front to back, the first whose frame is opaque there, else the first whose box

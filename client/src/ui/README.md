@@ -223,15 +223,12 @@ focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, button or input 
 Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it:
-a terminal, the counter, a pile, the clinic, a buyer they can sell to, or a clue. The world scene
-takes a door on E only when none is, so one press never does two things, and then up takes the door.
-E never talks to anyone, so a resident by a door doesn't stand in the way: T opens the chat to the
+a terminal, the counter, a pile, the clinic, a buyer they can sell to, or a clue, but not on a door's
+cell, where E takes the door (`doorOnE`), so one press never does two things. E never talks to anyone, so a resident by a door doesn't stand in the way: T opens the chat to the
 ringed NPC, as Enter does, and their name tag says so: "T: talk to Lachlan". V looks at a mural or
-a painting (`lookedAtByV`), so neither takes E from a door beside it. Stairs, ladders and the
-lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
+a painting (`lookedAtByV`). Stairs, ladders and the lift are the arrows' alone. A small tag over each door, flight, ladder or lift a key
 takes from where the player stands names the keys and what it does: "E: go in", "↑: upstairs",
-"↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). With
-something in reach the door's tag says "↑: go in". The world scene words them and says where they go
+"↓: downstairs", "↑ ↓: lift" (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). The world scene words them and says where they go
 (`wayPrompts`); tags that would overlap move apart.
 
 `?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in

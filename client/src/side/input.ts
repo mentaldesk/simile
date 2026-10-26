@@ -1,5 +1,3 @@
-import type { Position } from '../net';
-import { usedByE } from '../world/reach';
 import type { Controls } from './player';
 
 /** Which arrow (or WASD) keys are down, whether running is on, and Space pressed (`jump`) or down (`hold`). */
@@ -40,18 +38,10 @@ export function eachOnce<E extends object>(handle: (event: E) => void): (event: 
   };
 }
 
-/** A frame's controls. E uses what's in reach before a door. */
-export function readControls(
-  held: Held,
-  pressedE: boolean,
-  at: Position,
-  out: Controls,
-  reach: (at: Position) => unknown = usedByE,
-): Controls {
+export function readControls(held: Held, pressedE: boolean, out: Controls): Controls {
   out.x = Number(held.right) - Number(held.left);
   out.y = Number(held.down) - Number(held.up);
-  out.eTaken = !!reach(at);
-  out.use = pressedE && !out.eTaken;
+  out.use = pressedE;
   out.run = held.run;
   out.jump = !!held.jump;
   out.hold = !!held.hold;

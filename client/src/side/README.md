@@ -23,16 +23,14 @@ the protocol, through `server.dispatch`.
 | `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
-jumps (`jump.ts`, below). E takes a door you're on, and never climbs
-or rides, or talks: T talks to the ringed resident, and V looks at a mural or a painting (`ui/`). Up climbs stairs or a ladder from
+jumps (`jump.ts`, below). E takes a door you're on, every door and every way onto another street,
+whatever else is in reach, and never climbs or rides, or talks: T talks to the ringed resident, and V looks at a mural or a painting (`ui/`). Up climbs stairs or a ladder from
 its foot, and down from its top, from anywhere in the tile either side of the end (`CLIMB_REACH`,
 1.5 tiles from its middle): the player steps onto it first, and where two are in reach each key
 takes the nearest its way. Up and down keep climbing while held, stopping anywhere. On either of the
-lift's cells, up rides it a floor up and down a floor down, all the way. Where a terminal, the
-counter or a pile is in reach, E uses that instead
-([`world/reach.ts`](../world/reach.ts)) and up takes the door. A door on the cell beside a flight's
-foot, as in the noodle bar, is E's and the stairs are up's; with E in use there too, up takes the
-door from its own cell and the stairs from the next. A small tag over each way a key takes from
+lift's cells, up rides it a floor up and down a floor down, all the way. Off a door, E uses what's in reach
+([`world/reach.ts`](../world/reach.ts)). A door on the cell beside a flight's foot, as in the noodle
+bar, is E's and the stairs are up's. A small tag over each way a key takes from
 where you stand names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift",
 `ways.ts`). The scene reads its keys through `input.ts`'s `readControls`; a tap of E, up or down
 shorter than a frame still counts, and so does a tap of Space. Shift switches running only when
@@ -170,7 +168,8 @@ plug, checking the darkness and the gauge's hints, checks a run jump at the metr
 on the high ledge's secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate in
 level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto it
 on the spring feet and crosses the high gap on the bionic legs, opens
-the news at every terminal on E, orders at the café's counter on E, and talks to Lachlan on T, after E beside him does nothing. Murals are drawn, so the doors beside them are walked on E. It steps Playwright's clock rather than waiting, and the *Side walk*
+the news at every terminal on E, orders at the café's counter on E, talks to Lachlan on T, after E beside him does nothing, and looks at house 10's mural and a
+painting on V and closes them on V. Murals are drawn, so the doors beside them are walked on E. It steps Playwright's clock rather than waiting, and the *Side walk*
 workflow runs it on every PR.
 
 ```bash

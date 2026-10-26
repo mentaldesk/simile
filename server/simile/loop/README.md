@@ -57,10 +57,10 @@ and the player where the beat starts:
 | Beat | From | By the keys |
 |---|---|---|
 | `kidney` | outside the clinic, on day 0 | E into the clinic, E for its panel, sell a kidney |
-| `feet` | outside the clinic, with the spring feet's price | the spring feet, ↑ out, the run jump onto the high ledge, E for its secret |
+| `feet` | outside the clinic, with the spring feet's price | the spring feet, E out, the run jump onto the high ledge, E for its secret |
 | `datajack` | outside the clinic, with the datajack's price | the datajack, E at the dead terminal for its log in the journal, E down the lift and back up |
 | `hatch` | beside the sewers' hatch | E for its log in the journal |
-| `eye` | beside the attacker, with the eye | E and the question, the flush on their alibi, J for the journal's mark |
+| `eye` | beside the attacker, with the eye | T and the question, the flush on their alibi, J for the journal's mark |
 
 ```bash
 cd client

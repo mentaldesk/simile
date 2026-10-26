@@ -17,7 +17,7 @@ import './dialogue.css';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
-import { onGameKey } from './keys';
+import { doorOnE, onGameKey } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -122,7 +122,9 @@ export class DialogueScene extends Phaser.Scene {
     callCue.update(dialogue.partner());
     const player = this.player();
     this.place.update(player?.map, this.time.now / 1000);
-    const used = usedByE(player);
+    const here = wayPrompts();
+    const door = doorOnE(here);
+    const used = door ? undefined : usedByE(player);
     const atTerminal = used?.kind === 'terminal';
     if (!atTerminal && this.news.isOpen) this.news.close();
     this.newsHint.hidden = !atTerminal || this.news.isOpen || this.murals.isOpen;
@@ -131,20 +133,20 @@ export class DialogueScene extends Phaser.Scene {
     const counter = prompted ? used.interactable : undefined;
     this.counter.update(counter, !this.chat.isOpen);
     this.clinic.update(used?.kind === 'clinic' ? used.buyer : undefined, playerState.latest?.player, this.keeper(), playerState.latest?.recipes);
-    const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
+    const sells = !this.clinic.isOpen && !door;
+    const state = playerState.latest && !sells ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
     this.character.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
-    const ways = panelOpen ? [] : wayPrompts(used !== undefined);
-    this.ways.render(ways, this.fromGame);
+    this.ways.render(panelOpen ? [] : here, this.fromGame);
     const talks = !panelOpen && !this.chat.isOpen;
     this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id), talks);
   }
 
   private pressE(): void {
-    const used = usedByE(this.player());
+    const used = doorOnE(wayPrompts()) ? undefined : usedByE(this.player());
     if (used) this.use(used);
   }
 

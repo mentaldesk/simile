@@ -3,7 +3,7 @@ import { village } from './content';
 import { kick, KICK_PHASE, KICK_SECONDS } from './kick';
 import { SidePlayer, type Controls } from './player';
 
-const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+const idle: Controls = { x: 0, y: 0, use: false, run: false };
 const street = () => new SidePlayer(village, { x: 10, y: 15, map: 'high_street' });
 
 describe('kicking', () => {

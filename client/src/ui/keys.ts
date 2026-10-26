@@ -1,3 +1,4 @@
+import type { WayPrompt } from '../world/reach';
 import type { CharacterPanel } from './character-panel';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
@@ -13,6 +14,9 @@ export type GameKeys = {
   journal: Pick<JournalPanel, 'toggle' | 'close'>;
   character: Pick<CharacterPanel, 'toggle' | 'close'>;
 };
+
+/** E takes a door on the player's cell, so nothing else there is E's. */
+export const doorOnE = (ways: readonly WayPrompt[]): boolean => ways.some(({ keys }) => keys.includes('E'));
 
 /** Whether nothing on the page has focus, so a key is the game's and not a link's or a field's. */
 export function unfocused({ target }: Event): boolean {
