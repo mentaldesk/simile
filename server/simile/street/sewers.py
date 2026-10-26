@@ -16,7 +16,7 @@ from simile.schema import (
     Tile,
     TileArea,
 )
-from simile.street.jump import GRADES, JUMP, OWN_JUMP, Jump, meets
+from simile.street.jump import KITS, OWN_JUMP, Jump, meets
 from simile.street.metro import LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan
@@ -38,11 +38,12 @@ FLOORS = (GROUND, GROUND - 5, GROUND - 10)
 CEILING = FLOORS[-1] - 4
 """The vault's lowest row: it's solid from the top of the map down to it."""
 GATE = 17
-"""The gate hall's width: the way on from the lift, over its weir or across its gap."""
+"""The gate hall's width: the way on from the lift, across its gap on the legs or over its weir on
+the feet."""
 GAP = 5
-"""Open cells in the gate's high gap and the sprint pocket's, a jump of six: sprint legs'."""
+"""Open cells in the gate's high gap and the legs' pocket's, a jump of six: the bionic legs'."""
 WEIR = 3
-"""Rows up the gate's weir is: out of reach of the sprint legs, in the hydraulic legs'."""
+"""Rows up the gate's weir is: out of reach of the bionic legs, in the spring feet's."""
 WEIR_AT = 12
 """Cells into the gate hall: farther than a fall from its west walkway carries anyone."""
 ATTEMPTS = 40
@@ -387,14 +388,15 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
 
 
 def pockets(level: Level, plan: Plan) -> None:
-    """The secrets only a grade of legs reaches: the spring pocket's room and the hall's ledge."""
+    """The secrets only a grade reaches: the spring pocket's room on the feet, and on the legs
+    the hall's ledge."""
     rng = level.rng
     column = level.columns[level.spring_pocket]
     hole = level.drops[(level.spring_pocket, 1)]
     far = column.x if hole - column.x > column.end - hole else column.end - 1
     near = far + (1 if far == column.x else -1)
     row = FLOORS[2]
-    spring, sprint = Bionic.SPRING_LEGS, Bionic.SPRINT_LEGS
+    spring, sprint = Bionic.SPRING_FEET_2, Bionic.BIONIC_LEGS
     money = float(rng.choice((60, 70, 80, 90)))
     plan.pickups.append(Pickup(SPRING_SECRET, SECRET, far, row, money, needs=spring))
     salvage = Pickup("sewers_salvage_spring", SALVAGE, near, row, item=GAUGE, needs=spring)
@@ -535,57 +537,64 @@ class Cells:
         return self.plan.standing(x, y)
 
 
-def reach(town: object, start: Cell, jump: bool | Jump) -> set[Cell]:
-    """Every cell the player gets to from `start` on `jump`, or walking and climbing alone."""
-    seen, queue = {start}, deque([start])
+def routes(town: object, start: Cell, jump: bool | Jump) -> dict[Cell, list[Cell]]:
+    """Every cell the player gets to from `start` on `jump`, or walking and climbing alone, with the
+    cells a move takes them to from each."""
+    found: dict[Cell, list[Cell]] = {}
+    queue = deque([start])
     while queue:
-        for there, _ in moves(town, queue.popleft(), jump):
-            if there not in seen:
-                seen.add(there)
-                queue.append(there)
-    return seen
+        cell = queue.popleft()
+        if cell in found:
+            continue
+        found[cell] = [there for there, _ in moves(town, cell, jump)]
+        queue.extend(there for there in found[cell] if there not in found)
+    return found
 
 
-def back(town: object, cells: set[Cell], end: Cell, jump: bool | Jump) -> set[Cell]:
-    """Of `cells`, those the player can get back to `end` from."""
+def stranded(ways: dict[Cell, list[Cell]], start: Cell) -> set[Cell]:
+    """Of the cells in `ways`, from `routes`, those the player can't get back to `start` from."""
     into: dict[Cell, list[Cell]] = {}
-    for cell in cells:
-        for there, _ in moves(town, cell, jump):
+    for cell, theres in ways.items():
+        for there in theres:
             into.setdefault(there, []).append(cell)
-    seen, queue = {end}, deque([end])
+    seen, queue = {start}, deque([start])
     while queue:
         for there in into.get(queue.popleft(), []):
             if there not in seen:
                 seen.add(there)
                 queue.append(there)
-    return seen
+    return set(ways) - seen
 
 
 def problems(plan: Plan, town: object | None = None) -> list[str]:
     """Where a level fails content/street/README.md's checks for the sewers: none if it's sound."""
     town = town or Cells(plan)
     start = (LANDING.x, LANDING.y)
-    jumps: dict[str, Jump] = {OWN_JUMP: JUMP, **{g.value: j for g, j in GRADES.items()}}
-    reached = {name: reach(town, start, jump) for name, jump in jumps.items()}
-    found = []
-    for name, cells in reached.items():
-        stuck = cells - back(town, cells, start, jumps[name])
-        if stuck:
+    found: list[str] = []
+    by_jump: dict[Jump, set[Cell]] = {}
+    for name, jump in KITS.items():
+        if jump in by_jump:
+            continue
+        ways = routes(town, start, jump)
+        by_jump[jump] = set(ways)
+        if stuck := stranded(ways, start):
             found.append(f"{name} can't get back to the lift from {min(stuck)}")
+    reached = {name: by_jump[jump] for name, jump in KITS.items()}
     [hatch] = [item for item in plan.interactables if item.id == HATCH]
     plugs = [item for item in plan.interactables if item.kind is InteractableKind.PLUG]
     for item in [hatch, *plugs]:
         cell = (item.stand[0].x, item.stand[0].y)
-        missed = [grade for grade in GRADES if cell not in reached[grade.value]]
+        missed = [name for name in KITS if name != OWN_JUMP and cell not in reached[name]]
         if missed:
             found.append(f"{item.id} is out of reach of {', '.join(missed)}")
     if (hatch.stand[0].x, hatch.stand[0].y) in reached[OWN_JUMP]:
         found.append("the hatch is in reach of the player's own legs")
     for pickup in plan.pickups:
         cell = (pickup.x, pickup.y)
-        for grade in GRADES:
-            if (cell in reached[grade.value]) != meets(GRADES[grade], pickup.needs or OWN_JUMP):
-                found.append(f"{pickup.id} needs {pickup.needs}, but {grade} says otherwise")
+        for name, jump in KITS.items():
+            reaches = cell in reached[name]
+            if name != OWN_JUMP and reaches != meets(jump, pickup.needs or OWN_JUMP):
+                found.append(f"{pickup.id} needs {pickup.needs}, but {name} says otherwise")
         if pickup.needs not in (None, OWN_JUMP) and cell in reached[OWN_JUMP]:
             found.append(f"{pickup.id} is in reach of the player's own legs")
     return found
