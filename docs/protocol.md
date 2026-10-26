@@ -310,12 +310,11 @@ left out everywhere else, and never sent beside a `meal`. A `Shut` has the shop'
 `name`, as a `Meal` does; its `reason`, `"closed"` while it isn't serving, off shift or past
 last orders as the Daily Grind is after 17:00 while its barista finishes the queue, or
 `"sold_out"` while it's open but its batch for this shift has gone, as the noodle bar's can; and
-`opens`, the timestamp it next starts serving. That's the next start after now of its keeper's
-shifts, or of its own hours as the café has: a forecast, so a keeper who comes late or skips a
-shift makes it wrong, and while a keeper is due but hasn't come it's their next shift, not the one
-they're missing. It's `null` only for a shop with no keeper, or a keeper with no shifts, and no
-hours of its own. The server sends a new `player_state` when a shop the player stands in starts or
-stops serving.
+`opens`, the timestamp it next starts serving. That's the next start after now of the shifts of
+whoever works there: a forecast, so a keeper who comes late or skips a shift makes it wrong, and
+while a keeper is due but hasn't come it's their next shift, not the one they're missing. It's
+`null` when nobody works there, or they have no shifts. The server sends a new `player_state` when
+a shop the player stands in starts or stops serving.
 
 It also has `buyer`: who buys things where the player stands, which they sell to with
 [`sell`](#sell). It's left out where there's none. A `Buyer` is a stall, such as the scrap trader's,
