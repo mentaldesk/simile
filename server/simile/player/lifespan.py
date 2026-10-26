@@ -14,7 +14,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     from simile.player.lamp import Lamp
     from simile.player.machines import Machines
     from simile.player.pickups import Pickups, claimers_of
-    from simile.player.sync import PlayerSync
+    from simile.player.sync import PlayerSync, recipes_of
     from simile.player.trade import Trade, keepers_of
     from simile.protocol import (
         EatMessage,
@@ -52,7 +52,15 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     )
     pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))
-    sync = PlayerSync(player, hunger.meal, hub.broadcast, buyer=trade.buyer, piles=pickups.piles)
+    book = recipes_of(app)
+    sync = PlayerSync(
+        player,
+        hunger.meal,
+        hub.broadcast,
+        buyer=trade.buyer,
+        piles=pickups.piles,
+        recipes=lambda: [book[bionic] for bionic in player.mind.recipes],
+    )
     lamp = Lamp(player, movement, world.clock, playing=lambda: bool(in_game))
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player)

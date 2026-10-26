@@ -3,7 +3,17 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from simile.schema import LEGS, Aspect, Bionic, CoreValue, Signed, Unit
+from simile.schema import (
+    BIONIC_LEGS,
+    LEGS,
+    POWER_CELLS,
+    SPRING_FEET,
+    Aspect,
+    Bionic,
+    CoreValue,
+    Signed,
+    Unit,
+)
 
 BASELINE_WEIGHTS: dict[Aspect, dict[CoreValue, float]] = {
     Aspect.LIKE: {
@@ -144,8 +154,10 @@ TOLERANCE_WEIGHTS: dict[CoreValue, float] = {
 
 STANDS_OUT: dict[Bionic, float] = {
     Bionic.INFRARED_EYE: 1.0,
-    **dict.fromkeys(LEGS, 0.75),
+    **dict.fromkeys(LEGS + BIONIC_LEGS, 0.75),
     Bionic.DATAJACK: 0.5,
+    **dict.fromkeys(SPRING_FEET, 0.5),
+    **dict.fromkeys(POWER_CELLS, 0.25),
 }
 
 
@@ -168,7 +180,7 @@ class BionicsConfig(BaseModel):
     )
     stands_out: dict[Bionic, Unit] = Field(
         default=STANDS_OUT,
-        description="How much each bionic catches the eye: the eye most, the datajack least.",
+        description="How much each bionic catches the eye: the eye most, the power cell least.",
     )
     sighting: float = Field(
         default=0.3,
