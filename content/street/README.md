@@ -296,6 +296,15 @@ slab, the row under them. West to east it's columns of rooms:
   or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
   `WEIR_AT`). The legs get through on their first grade, and so do the feet, which are found past
   it; the player's own legs don't. A fall from the west walkway lands well short of the weir.
+- **The den** (`den`, P14), the wild dogs', is a column of its own past the last room, 14 wide
+  (`DEN`), made after the rest of the level from its own random stream, so it moves nothing. A
+  doorway leads in from the last room's bottom tier. At its far end a ladder climbs through the
+  den's ceiling to a loft as high as the two tiers over it, where a delver slept out of the dogs'
+  reach, and left a stash on a pipe against its wall: `sewers_secret_den`, 90 to 120 money. Three
+  dogs (`DOGS`), kept to the den's floor, run down any player on any legs, so getting the stash
+  means crossing the den to the ladder and back to the door, or dropping through the hole by the
+  ladder's top and running for it. On the player's own legs or the feet that's almost certain
+  collapse; on the legs, kicks knock the dogs back (`server/simile/creatures/README.md`).
 - **The hatch** (`HATCH`, `sewers_hatch`) is a `jack` in the room past the gate that the most
   doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
   `hatch_log`, `simile.story`). Its cell is each level's own, so it's in the map, not in
@@ -315,6 +324,7 @@ counts from the way through, which every grade of legs or feet takes:
 | `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
 | `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
 | `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
+| `jump` | A pipe in the den's loft, past the dogs | `sewers_secret_den`, 90 to 120 money |
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
 
@@ -330,6 +340,8 @@ counts from the way through, which every grade of legs or feet takes:
 
 They're placed from their own random stream, after the rest of the level, so adding them moved
 nothing else, and later kinds can follow them the same way.
+
+Past them all, `sewers_dog_1` to `sewers_dog_3` keep to the den (above).
 
 **Finds** (above): in zone 0 a delver's bedroll and crates with the bionic legs' recipe and parts,
 reached on the player's own legs, and past the gate the spring feet's, and the security station's
