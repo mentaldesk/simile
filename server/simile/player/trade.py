@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 
 from starlette.applications import Starlette
 
+from simile.economy import OUTSIDE, PLAYER, Kind
 from simile.player.where import here, location
-from simile.protocol import Buyer
-from simile.schema import Id, Item, Player
+from simile.protocol import Buyer, Offer
+from simile.schema import Id, Item, ItemKind, Player, Sale
 from simile.sim import Clock
 from simile.world.movement import Movement, inside
 
@@ -28,7 +29,7 @@ def keepers_of(app: Starlette) -> dict[Id, Keeper]:
 
 
 class Trade:
-    """Selling to whoever buys where the player stands, at the economy's prices."""
+    """Selling to whoever buys where the player stands, and buying back what it keeps."""
 
     def __init__(
         self,
@@ -55,7 +56,7 @@ class Trade:
             if stall is None or not inside(stall, at):
                 continue
             prices = self.economy.offer(place, self.player.items) or {}
-            buyer = Buyer(place=place, name=stall.name, prices=prices)
+            buyer = Buyer(place=place, name=stall.name, prices=prices, stock=self.stock(place))
             keeper = self.keepers.get(place)
             return keeper(buyer) if keeper else buyer
         return None
@@ -69,14 +70,46 @@ class Trade:
         sold = [thing for thing in kept if thing.id in buyer.prices and item in (None, thing.id)]
         if item is not None:
             sold = sold[:1]
+        sales = list(self.player.sales)
         for thing in sold:
             if self.economy.sell(buyer.place, thing):
                 kept.remove(thing)
+                if thing.kind is ItemKind.PART or thing.id in self.economy.config.kept:
+                    sales.append(Sale(item=thing, place=buyer.place, price=buyer.prices[thing.id]))
         if len(kept) == len(self.player.items):
             return False
         self.player.items = kept
+        self.player.sales = sales
         logger.info("%s  The player sells %s to %s", self.clock, counted(sold), buyer.name)
         return True
+
+    def stock(self, place: Id) -> list[Offer]:
+        """What the buyer at `place` keeps of theirs, at `buy_back` times, cheapest first."""
+        back = self.economy.config.buy_back
+        return [Offer(item=sale.item, price=sale.price * back) for sale in self._kept(place)]
+
+    def buy(self, item: Id) -> bool:
+        """Buys back the cheapest of `item` here if they can pay and carry it. Whether they did."""
+        buyer = self.buyer()
+        if buyer is None:
+            return False
+        sale = next((sale for sale in self._kept(buyer.place) if sale.item.id == item), None)
+        if sale is None:
+            return False
+        price = sale.price * self.economy.config.buy_back
+        heavy = self.player.load + sale.item.weight > self.player.carry_limit + 1e-9
+        if price > self.player.money + 1e-9 or heavy:
+            return False
+        self.economy.pay(PLAYER, OUTSIDE, price, Kind.PURCHASE, buyer.place)
+        sales = list(self.player.sales)
+        sales.remove(sale)
+        self.player.sales = sales
+        self.player.items = [*self.player.items, sale.item]
+        logger.info("%s  The player buys back %s from %s", self.clock, sale.item.name, buyer.name)
+        return True
+
+    def _kept(self, place: Id) -> list[Sale]:
+        return sorted((s for s in self.player.sales if s.place == place), key=lambda s: s.price)
 
 
 def counted(items: list[Item]) -> str:

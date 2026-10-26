@@ -40,12 +40,26 @@ const body = {
 } as const;
 const player = (money: number, items: Item[] = []): Player => ({ money, items, carry_limit: 10, body, hunger: 0 });
 const DOCTOR = { id: 'annelie', name: 'Annelie Joubert' };
+const PLUG: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
+const LENS: Item = { id: 'infrared_lens', kind: 'part', name: 'Infrared lens', weight: 0.2, charge: null, on: null };
+const TRADER: Buyer = {
+  place: 'scrap_stall',
+  name: "The scrap trader's stall",
+  prices: {},
+  stock: [
+    { item: PLUG, price: 10 },
+    { item: LENS, price: 80 },
+    { item: PLUG, price: 24 },
+  ],
+};
+const SELLS: Buyer = { place: 'scrap_stall', name: "The scrap trader's stall", prices: { copper_wire: 6, usb_c_connector: 12 } };
 
 describe('deals', () => {
   it('lists talking, the salvage, the kidney and each fitting in each part it takes', () => {
     expect(deals(CLINIC, player(90, [WIRE, WIRE]), DOCTOR)).toEqual([
       { kind: 'talk', label: 'Talk to Annelie Joubert', npcId: 'annelie' },
-      { kind: 'sell', label: 'Sell your copper wire ×2', price: 12 },
+      { kind: 'sell', label: 'Sell everything: copper wire ×2', price: 12 },
+      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
       { kind: 'part', label: 'Sell a kidney', price: 100, part: 'left_kidney' },
       { kind: 'fit', label: 'Bionic legs, in place of your legs', price: 80, bionic: 'bionic_legs', part: 'legs', needs: [], short: false },
       { kind: 'fit', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', needs: [], short: true },
@@ -58,7 +72,8 @@ describe('deals', () => {
     const found = deals(buyer, player(500, [WIRE, WIRE]), undefined, [CELL_RECIPE, JACK_RECIPE]);
 
     expect(found).toEqual([
-      { kind: 'sell', label: 'Sell your copper wire ×2', price: 12 },
+      { kind: 'sell', label: 'Sell everything: copper wire ×2', price: 12 },
+      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
       {
         kind: 'fit',
         label: 'Datajack, in place of a vertebra',
@@ -85,6 +100,34 @@ describe('deals', () => {
 
   it('leaves out what the doctor no longer buys or fits, and talking with nobody to talk to', () => {
     expect(deals({ ...CLINIC, parts: undefined, fittings: [EYE] }, player(0))).toHaveLength(2);
+  });
+});
+
+describe('selling', () => {
+  it('lists everything it buys as one row, then each kind with its price and how many they have', () => {
+    expect(deals(SELLS, player(0, [WIRE, PLUG, WIRE, LENS]))).toEqual([
+      { kind: 'sell', label: 'Sell everything: copper wire ×2 and USB-C connector', price: 24 },
+      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
+      { kind: 'item', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
+    ]);
+  });
+});
+
+describe('buying back', () => {
+  it('offers each part once, at the cheapest, with how many there are', () => {
+    expect(deals(TRADER, player(50))).toEqual([
+      { kind: 'buy', label: 'Buy back: USB-C connector ×2', price: 10, item: 'usb_c_connector', weight: 0.1 },
+      { kind: 'buy', label: 'Buy back: Infrared lens', price: 80, item: 'infrared_lens', weight: 0.2, short: 'money' },
+    ]);
+  });
+
+  it('says what a part costs against what they have, or that it will not fit', () => {
+    const [plug, lens] = deals(TRADER, player(50));
+    const [heavy] = deals(TRADER, player(50, [{ ...WIRE, weight: 9.95 }]));
+
+    expect(note(plug, false, 50)).toBe('Enter to buy it back.');
+    expect(note(lens, false, 50)).toBe('It costs 80, and you have 50.');
+    expect(note(heavy, false, 50)).toBe('It weighs 0.1 kg, more than you can carry now.');
   });
 });
 
@@ -155,7 +198,7 @@ describe('ClinicPanel', () => {
     expect(section().querySelector('small')!.textContent).toBe('You have 90.');
     expect(rows()).toEqual([
       'Talk to Annelie Joubert',
-      'Sell your copper wire6',
+      'Sell one: Copper wireyou have 16',
       'Sell a kidney100',
       'Bionic legs, in place of your legs80',
       'Infrared eye, in place of your left eye200',
@@ -211,7 +254,7 @@ describe('ClinicPanel', () => {
     panel.open(CLINIC, player(0, [WIRE]), DOCTOR);
     press('ArrowDown');
     press('Enter');
-    expect(sent).toEqual([{ type: 'sell', item: null }]);
+    expect(sent).toEqual([{ type: 'sell', item: 'copper_wire' }]);
 
     press('ArrowUp');
     press('Enter');
@@ -251,6 +294,44 @@ describe('ClinicPanel', () => {
     press('ArrowDown');
     press('Enter');
     expect(sent).toEqual([{ type: 'sell_recipe', recipe: 'datajack' }]);
+  });
+
+  it('buys a part back on one Enter, and never one they cannot pay for', () => {
+    panel.open(TRADER, player(50));
+
+    expect(section().querySelector('b')!.textContent).toBe("The scrap trader's stall");
+    expect(section().ariaLabel).toBe("The scrap trader's stall");
+    expect(rows()).toEqual(['Buy back: USB-C connector ×210', 'Buy back: Infrared lens80']);
+    expect(section().querySelectorAll('.clinic-short')).toHaveLength(1);
+    press('Enter');
+    press('ArrowDown');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'buy', item: 'usb_c_connector' }]);
+  });
+
+  it('sells one of a kind a press, keeping the choice while they have more', () => {
+    panel.open(SELLS, player(0, [WIRE, PLUG, WIRE]));
+    expect(rows()).toEqual(['Sell everything: copper wire ×2 and USB-C connector24', 'Sell one: Copper wireyou have 26', 'Sell one: USB-C connectoryou have 112']);
+    press('ArrowDown');
+    expect(status()).toBe('Enter to sell one.');
+    press('Enter');
+    panel.update(SELLS, player(6, [PLUG, WIRE]));
+    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Sell one: Copper wireyou have 16');
+    press('Enter');
+    panel.update(SELLS, player(12, [PLUG]));
+    expect(rows()).toEqual(['Sell one: USB-C connectoryou have 112']);
+    press('Enter');
+    expect(sent).toEqual([
+      { type: 'sell', item: 'copper_wire' },
+      { type: 'sell', item: 'copper_wire' },
+      { type: 'sell', item: 'usb_c_connector' },
+    ]);
+  });
+
+  it('sells everything on one Enter', () => {
+    panel.open(SELLS, player(0, [WIRE, PLUG]));
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell', item: null }]);
   });
 
   it('closes on Esc or E, and a click chooses and acts', () => {

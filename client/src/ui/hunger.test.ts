@@ -174,7 +174,7 @@ describe('HungerHint', () => {
     expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', 'Press E to pick up what you left here.']);
 
     hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), undefined);
-    expect(shown(root)).toEqual(["Press E to sell your copper wire at the scrap trader's stall for 6."]);
+    expect(shown(root)).toEqual(["Press E to sell at the scrap trader's stall: 6 for your copper wire."]);
   });
 
   it('shows their power in place of hunger once a cell is in', () => {
