@@ -1,0 +1,74 @@
+{
+  "id": "rat",
+  "hash": "883b43d215de28a8",
+  "version": 1,
+  "ppm": 80,
+  "moves": "walk",
+  "size": [
+    0.79,
+    0.41
+  ],
+  "painted": "rat.webp",
+  "frames": {
+    "stand": {
+      "frame": [
+        70,
+        0,
+        67,
+        37
+      ],
+      "anchor": [
+        34.1,
+        35.2
+      ]
+    },
+    "stride": {
+      "frame": [
+        208,
+        0,
+        67,
+        32
+      ],
+      "anchor": [
+        34.1,
+        35.2
+      ]
+    },
+    "pass": {
+      "frame": [
+        139,
+        0,
+        67,
+        34
+      ],
+      "anchor": [
+        34.1,
+        35.2
+      ]
+    },
+    "attack": {
+      "frame": [
+        0,
+        0,
+        68,
+        40
+      ],
+      "anchor": [
+        34.1,
+        37.2
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "stride",
+      "pass"
+    ],
+    "attack": [
+      "attack"
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "id": "bot",
+  "hash": "e159b882185184ba",
+  "version": 1,
+  "ppm": 80,
+  "moves": "walk",
+  "size": [
+    1.7,
+    1.34
+  ],
+  "painted": "bot.webp",
+  "frames": {
+    "stand": {
+      "frame": [
+        137,
+        0,
+        140,
+        111
+      ],
+      "anchor": [
+        69.6,
+        109.2
+      ]
+    },
+    "step": {
+      "frame": [
+        279,
+        0,
+        140,
+        109
+      ],
+      "anchor": [
+        69.6,
+        109.2
+      ]
+    },
+    "attack": {
+      "frame": [
+        0,
+        0,
+        135,
+        111
+      ],
+      "anchor": [
+        69.6,
+        109.2
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "walk": [
+      "step",
+      "stand"
+    ],
+    "attack": [
+      "attack"
+    ]
+  }
+}
