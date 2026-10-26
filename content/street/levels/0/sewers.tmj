@@ -1674,10 +1674,158 @@
       "visible": true,
       "x": 0,
       "y": 0
+    },
+    {
+      "draworder": "topdown",
+      "id": 13,
+      "name": "creatures",
+      "objects": [
+        {
+          "height": 16,
+          "id": 87,
+          "name": "sewers_bot_1",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "13,0,40,20"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "bot",
+          "visible": true,
+          "width": 16,
+          "x": 464,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 88,
+          "name": "sewers_bot_2",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "13,0,40,20"
+            },
+            {
+              "name": "span",
+              "type": "int",
+              "value": 2
+            }
+          ],
+          "rotation": 0,
+          "type": "bot",
+          "visible": true,
+          "width": 16,
+          "x": 352,
+          "y": 80
+        },
+        {
+          "height": 16,
+          "id": 89,
+          "name": "sewers_rat_1",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "40,7,12,4"
+            }
+          ],
+          "rotation": 0,
+          "type": "rat",
+          "visible": true,
+          "width": 16,
+          "x": 672,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 90,
+          "name": "sewers_rat_2",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "40,7,12,4"
+            }
+          ],
+          "rotation": 0,
+          "type": "rat",
+          "visible": true,
+          "width": 16,
+          "x": 704,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 91,
+          "name": "sewers_rat_3",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "40,7,12,4"
+            }
+          ],
+          "rotation": 0,
+          "type": "rat",
+          "visible": true,
+          "width": 16,
+          "x": 816,
+          "y": 160
+        },
+        {
+          "height": 16,
+          "id": 92,
+          "name": "sewers_rat_4",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "13,12,14,4"
+            }
+          ],
+          "rotation": 0,
+          "type": "rat",
+          "visible": true,
+          "width": 16,
+          "x": 288,
+          "y": 240
+        },
+        {
+          "height": 16,
+          "id": 93,
+          "name": "sewers_rat_5",
+          "properties": [
+            {
+              "name": "area",
+              "type": "string",
+              "value": "13,12,14,4"
+            }
+          ],
+          "rotation": 0,
+          "type": "rat",
+          "visible": true,
+          "width": 16,
+          "x": 352,
+          "y": 240
+        }
+      ],
+      "opacity": 1,
+      "type": "objectgroup",
+      "visible": true,
+      "x": 0,
+      "y": 0
     }
   ],
-  "nextlayerid": 13,
-  "nextobjectid": 87,
+  "nextlayerid": 14,
+  "nextobjectid": 94,
   "orientation": "orthogonal",
   "properties": [
     {

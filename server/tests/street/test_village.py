@@ -13,7 +13,13 @@ from simile.cli import create_cli
 from simile.schema import DoorKind, Facing, InteractableKind, MapTile, Pose
 from simile.sim import Clock, EntityMoved, FakeWallClock, World
 from simile.street.metro import GANTRY, HIGH_LEDGE, METRO
-from simile.street.plan import BUILDINGS_LAYER, FURNITURE_LAYER, LIGHT_LAYER, PICKUPS_LAYER
+from simile.street.plan import (
+    BUILDINGS_LAYER,
+    CREATURES_LAYER,
+    FURNITURE_LAYER,
+    LIGHT_LAYER,
+    PICKUPS_LAYER,
+)
 from simile.street.sewers import SEWERS
 from simile.street.village import (
     FLOOR_ROW,
@@ -459,7 +465,8 @@ def test_every_map_has_the_layers_and_furniture_has_names() -> None:
     furniture = set()
     for path in [*STREET_DIR.glob("*.tmj"), *(STREET_DIR / "floors").glob("*.tmj")]:
         data = json.loads(path.read_text())
-        assert [layer["name"] for layer in data["layers"]] == names, path.name
+        found = [layer["name"] for layer in data["layers"]]
+        assert found in (names, [*names, CREATURES_LAYER]), path.name
         [layer] = [layer for layer in data["layers"] if layer["name"] == FURNITURE_LAYER]
         for piece in layer["objects"]:
             assert piece["name"] == piece["type"] and re.fullmatch(r"[a-z0-9_]+", piece["type"])
