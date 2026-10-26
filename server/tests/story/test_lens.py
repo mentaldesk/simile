@@ -1,63 +1,139 @@
 import random
 from collections import Counter
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, Item, ItemKind, Player
-from simile.story import DEFAULT_CONFIG
+from simile.schema import (
+    PLAYER_ID,
+    Aspect,
+    Bionic,
+    Body,
+    InteractionEvent,
+    Item,
+    ItemKind,
+    Memory,
+    MemoryKind,
+    Npc,
+    Player,
+)
+from simile.social import apply_events, as_of, meet, tolerance
+from simile.social.bionics import level
+from simile.social.sightings import Sightings
+from simile.story import DEFAULT_CONFIG, StoryConfig
 from simile.story.lens import FULL, GIVEN, GIVES, KEPT, LENS, Lens, keeper
-from simile.story.suspects import lean
 
-from ..conversation.test_player import ANA, BEN, Village, feeling, make_npc
+from ..conversation.test_player import ANA, Village, feeling, make_npc
 
 pytestmark = pytest.mark.anyio
 
-KEEPER = make_npc("keeper", "house_3", security=1.0, tradition=1.0, knowledge=0.9, adventure=0.8)
-CAREFREE = make_npc("carefree", "house_4", security=0.0, tradition=0.0, knowledge=0.2)
+FAN = make_npc("fan", "house_3", adventure=1.0, ambition=1.0, open_mindedness=1.0)
+EASY = make_npc("easy", "house_4")
+UNEASY = make_npc("uneasy", "house_5", security=0.65, tradition=0.65)
+WARY = make_npc("wary", "house_6", security=0.8, tradition=0.8)
 
 
-def test_the_lens_goes_to_someone_who_d_keep_an_old_thermal_camera() -> None:
-    village = [KEEPER, CAREFREE, ANA, BEN]
+def takes_to_bionics(npc: Npc) -> int:
+    return level(tolerance(npc.values))
+
+
+def test_the_lens_goes_to_someone_who_doesn_t_mind_bionics() -> None:
+    village = [FAN, EASY, UNEASY, WARY]
 
     chosen = {keeper(village, random.Random(seed)).id for seed in range(50)}
 
-    assert chosen == {"keeper"}
-    assert lean(KEEPER, DEFAULT_CONFIG.keeps) > 0.3 > DEFAULT_CONFIG.keeps_from
-    assert lean(CAREFREE, DEFAULT_CONFIG.keeps) < 0
+    assert chosen == {"fan", "easy"}
+    assert [takes_to_bionics(npc) for npc in village] == [2, 0, -1, -2]
 
 
-def test_the_keeper_is_drawn_from_those_who_lean_that_way_the_same_for_a_seed() -> None:
+def test_any_tolerant_default_resident_may_keep_it_the_same_for_a_seed() -> None:
     npcs = load_npcs()
-    keen = {npc.id for npc in npcs if lean(npc, DEFAULT_CONFIG.keeps) >= DEFAULT_CONFIG.keeps_from}
+    tolerant = {npc.id for npc in npcs if takes_to_bionics(npc) >= DEFAULT_CONFIG.tolerates_from}
 
     drawn = Counter(keeper(npcs, random.Random(f"lens/{seed}")).id for seed in range(200))
 
-    assert set(drawn) == keen and len(keen) > 1
+    assert set(drawn) == tolerant and len(tolerant) < len(npcs)
+    assert keeper(npcs, random.Random("lens/0")).id == "desmond"
     assert keeper(npcs, random.Random("lens/3")) == keeper(npcs, random.Random("lens/3"))
 
 
-def test_an_attacker_never_keeps_it_and_with_nobody_keen_the_keenest_does() -> None:
-    village = [KEEPER, CAREFREE, ANA]
+def test_an_attacker_keeps_it_only_if_every_tolerant_resident_is_one() -> None:
+    village = [FAN, EASY, UNEASY, WARY]
 
-    assert keeper(village, random.Random(0), besides={"keeper"}).id == "ana"
-    assert keeper([KEEPER], random.Random(0), besides={"keeper"}).id == "keeper"
+    for seed in range(20):
+        assert keeper(village, random.Random(seed), besides={"fan"}).id == "easy"
+        drawn = keeper(village, random.Random(seed))
+        assert keeper(village, random.Random(seed), besides={"wary"}) == drawn
+    assert keeper(village, random.Random(0), besides={"fan", "easy"}).id in {"fan", "easy"}
+
+
+def test_with_nobody_tolerant_whoever_minds_least_keeps_it() -> None:
+    assert keeper([WARY, UNEASY], random.Random(0)).id == "uneasy"
+    assert keeper([WARY, UNEASY], random.Random(0), besides={"uneasy"}).id == "wary"
+    assert keeper([UNEASY], random.Random(0), besides={"uneasy"}).id == "uneasy"
     assert keeper([], random.Random(0)) is None
+
+
+def test_a_few_good_conversations_win_any_tolerant_default_resident_s_trust() -> None:
+    def conversations(npc: Npc, trust: float) -> int:
+        rel, now = meet(npc, PLAYER_ID), datetime(2026, 1, 1, tzinfo=UTC)
+        for had in range(10):
+            if as_of(rel, now).trust >= trust:
+                return had
+            event = InteractionEvent(
+                actor=PLAYER_ID,
+                target=npc.id,
+                action="kept their word",
+                aspects=[Aspect.TRUST],
+                valence=0.5,
+                magnitude=0.5,
+                timestamp=now,
+            )
+            rel = apply_events(as_of(rel, now), [event], now)
+            now += timedelta(hours=6)
+        return 10
+
+    for npc in load_npcs():
+        if takes_to_bionics(npc) >= DEFAULT_CONFIG.tolerates_from:
+            assert conversations(npc, DEFAULT_CONFIG.mentions_from) <= 2, npc.id
+            assert conversations(npc, DEFAULT_CONFIG.gives_from) <= 4, npc.id
 
 
 class Keeping:
     """Ana keeps the lens, trusting the player `trust`, on the conversation tests' village."""
 
-    def __init__(self, trust: float | None = None, player: Player | None = None) -> None:
+    def __init__(
+        self,
+        trust: float | None = None,
+        player: Player | None = None,
+        config: StoryConfig = DEFAULT_CONFIG,
+    ) -> None:
         trusting = [] if trust is None else [feeling(ANA, PLAYER_ID, trust=trust)]
         self.village = Village(relationships=trusting)
+        if trust is not None:
+            self.talked()
         self.player = player or Player()
+        self.config = config
         self.lens = self.start()
+
+    def talked(self) -> None:
+        self.village.store.add(
+            Memory(
+                owner="ana",
+                kind=MemoryKind.CONVERSATION,
+                content="I chatted with Visitor about the village.",
+                salience=0.3,
+                valence=0.2,
+                timestamp=self.village.clock.now,
+                about=[PLAYER_ID],
+            )
+        )
 
     def start(self) -> Lens:
         village = self.village
         now, players = (lambda: village.clock.now), (lambda: village.players)
-        lens = Lens(ANA, village.store, now, lambda: self.player, players)
+        lens = Lens(ANA, village.store, now, lambda: self.player, players, self.config)
         village.world.loop.register(lens)
         return lens
 
@@ -151,3 +227,26 @@ async def test_another_resident_never_hands_it_over() -> None:
     await keeping.village.run()
 
     assert GIVES not in keeping.village.said("ben") and keeping.lenses() == 0
+
+
+async def test_seeing_the_player_s_bionics_isn_t_talking_so_the_lens_stays_locked() -> None:
+    keeping = Keeping(config=StoryConfig(mentions_from=0.0, gives_from=0.0))
+    village = keeping.village
+    sightings = Sightings(
+        village.store,
+        village.clock,
+        {"ana": ANA},
+        village.movement,
+        lambda: Body(legs=Bionic.HYDRAULIC_LEGS),
+        lambda npc: True,
+    )
+    sightings.see("ana", [Bionic.HYDRAULIC_LEGS])
+    assert village.store.relationship("ana", PLAYER_ID) is not None
+
+    await village.run(DEFAULT_CONFIG.lens_every * 3)
+    said = await keeping.talk()
+
+    assert keeping.remembered(KEPT) == [] and GIVES not in said and keeping.lenses() == 0
+    keeping.talked()
+    await village.run(DEFAULT_CONFIG.lens_every)
+    assert keeping.lens.kept
