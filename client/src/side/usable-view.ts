@@ -7,7 +7,7 @@ import { PPM } from './layout';
 import { sameItems } from './piles';
 import type { Content, StreetView } from './street-view';
 import type { SideTextures } from './textures';
-import { glowing, usablesOn, type Sprite, type Usable } from './usables';
+import { glowKey, glowing, usablesOn, type Sprite, type Usable } from './usables';
 
 const GLOW = { colour: '#fff3b8', px: 7, alpha: 0.75, pulse: 0.2, seconds: 1.6 };
 const TICK = { colour: 0xe8572a, outline: 0x2b2118, m: 0.36, width: 0.055 };
@@ -20,7 +20,6 @@ export type DrawnUsable = { id: string; kind: string; map: string; x: number; y:
 /** Draws what E uses where nothing else does, and a glow round the one E uses where the player stands. */
 export class UsableView {
   private shown: Shown[] = [];
-  /** By usable id, kept until the street changes. */
   private readonly glows = new Map<string, Glow>();
   private glowing?: string;
   private drawnFor?: { street: StreetView; searched: string; piles: readonly Pile[] };
@@ -55,7 +54,7 @@ export class UsableView {
       x: usable.picture.x,
       y: usable.picture.y,
       shown: 'piece' in usable.picture || images.some((image) => image.visible),
-      glowing: this.glowing === usable.id && !!this.glows.get(usable.id)?.image.visible,
+      glowing: this.glowing === glowKey(usable) && !!this.glows.get(glowKey(usable))?.image.visible,
       searched: !!tick,
       recipe: !!usable.recipe,
     }));
@@ -126,21 +125,22 @@ export class UsableView {
 
   private light(id: string | undefined, street: StreetView, seconds: number): void {
     const shown = id ? this.shown.find(({ usable }) => usable.id === id) : undefined;
-    if (this.glowing !== shown?.usable.id) this.glows.get(this.glowing ?? '')?.image.setVisible(false);
-    this.glowing = shown?.usable.id;
-    if (!shown) return;
-    let glow = this.glows.get(shown.usable.id);
+    const key = shown && glowKey(shown.usable);
+    if (this.glowing !== key) this.glows.get(this.glowing ?? '')?.image.setVisible(false);
+    this.glowing = key;
+    if (!shown || !key) return;
+    let glow = this.glows.get(key);
     if (!glow) {
-      glow = this.glowAround(shown.usable);
+      glow = this.glowAround(shown.usable, key);
       if (!glow) return;
-      this.glows.set(shown.usable.id, glow);
+      this.glows.set(key, glow);
     }
     const visible = !shown.usable.building || street.isOpen(shown.usable.building);
     glow.image.setVisible(visible).setAlpha(GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2));
   }
 
   /** An outline of the picture, blurred, just behind it. */
-  private glowAround(usable: Usable): Glow | undefined {
+  private glowAround(usable: Usable, key: string): Glow | undefined {
     const sprite = usable.picture;
     const source = this.texture(sprite);
     if (!source) return undefined;
@@ -161,7 +161,7 @@ export class UsableView {
     context.globalCompositeOperation = 'source-in';
     context.fillStyle = GLOW.colour;
     context.fillRect(0, 0, canvas.width, canvas.height);
-    const texture = `usable-glow:${usable.id}`;
+    const texture = `usable-glow:${key}`;
     if (this.scene.textures.exists(texture)) this.scene.textures.remove(texture);
     this.scene.textures.addCanvas(texture, canvas);
     const glow = this.scene.add

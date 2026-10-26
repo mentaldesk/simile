@@ -6,7 +6,7 @@ import { scenery, village } from './content';
 import { DEPTH } from './depths';
 import { feetOf, furniturePlacement, PPM, xOf } from './layout';
 import { Village } from './maps';
-import { boxOf, glowing, usablesOn, type Usable, type UsableState } from './usables';
+import { boxOf, glowing, glowKey, usablesOn, type Usable, type UsableState } from './usables';
 
 vi.mock('phaser', () => ({ default: {} }));
 
@@ -109,6 +109,16 @@ describe('usablesOn', () => {
     });
     expect(stash.searched).toBeUndefined();
     expect(byId(on('lychee_lane', { searched: ['house_1_wardrobe'] }), stash.id).searched).toBeDefined();
+  });
+
+  it("keys a pile's glow by its picture, so taking its first item glows round the next", () => {
+    const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.5, on: false };
+    const at = { map: 'metro', x: 30, y: 15 };
+    const before = byId(on('metro', { piles: [{ at, items: [WIRE, LAMP] }] }), 'pile:metro:30,15');
+    const after = byId(on('metro', { piles: [{ at, items: [LAMP] }] }), 'pile:metro:30,15');
+    expect(after.picture).toMatchObject({ icon: 'lamp' });
+    expect(glowKey(after)).not.toBe(glowKey(before));
+    expect(glowKey(byId(on('metro'), 'metro/metro_fridge'))).toBe(glowKey(byId(on('metro', { piles: [] }), 'metro/metro_fridge')));
   });
 
   it('leaves out a searchable or a jack that no furniture draws', () => {

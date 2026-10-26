@@ -51,6 +51,8 @@ const ABOVE = 0.1;
 export const thingId = (map: string, id: string): string => `${map}/${id}`;
 export const clueId = (id: string): string => `clue:${id}`;
 export const pileId = ({ at }: Pile): string => `pile:${at.map}:${at.x},${at.y}`;
+/** A pile keeps its id as its first item changes, and its picture with it. */
+export const glowKey = ({ id, picture }: Usable): string => `${id}|${'icon' in picture ? picture.icon : picture.piece}`;
 
 const area = ({ w, h }: Placed) => w * h;
 const shared = (a: Placed, b: Placed) =>
