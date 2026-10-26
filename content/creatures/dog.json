@@ -1,0 +1,74 @@
+{
+  "id": "dog",
+  "hash": "d31740d53399fd2e",
+  "version": 1,
+  "ppm": 80,
+  "moves": "walk",
+  "size": [
+    2.2,
+    1.51
+  ],
+  "painted": "dog.webp",
+  "frames": {
+    "stand": {
+      "frame": [
+        0,
+        0,
+        180,
+        125
+      ],
+      "anchor": [
+        89.8,
+        123.0
+      ]
+    },
+    "run": {
+      "frame": [
+        510,
+        0,
+        180,
+        102
+      ],
+      "anchor": [
+        90.8,
+        121.0
+      ]
+    },
+    "run_pass": {
+      "frame": [
+        333,
+        0,
+        175,
+        112
+      ],
+      "anchor": [
+        86.8,
+        121.0
+      ]
+    },
+    "attack": {
+      "frame": [
+        182,
+        0,
+        149,
+        123
+      ],
+      "anchor": [
+        80.8,
+        125.0
+      ]
+    }
+  },
+  "poses": {
+    "stand": [
+      "stand"
+    ],
+    "run": [
+      "run",
+      "run_pass"
+    ],
+    "attack": [
+      "attack"
+    ]
+  }
+}
