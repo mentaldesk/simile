@@ -3,7 +3,7 @@ import type { Item, Pile } from '../net';
 import { village } from './content';
 import { DEPTH } from './depths';
 import { feetOf, PPM, xOf } from './layout';
-import { pileMarks } from './piles';
+import { pileMarks, sameItems } from './piles';
 
 vi.mock('phaser', () => ({ default: {} }));
 
@@ -24,6 +24,15 @@ describe('pileMarks', () => {
       { x: xOf(20), y: expect.closeTo(feetOf(15) - 0.3 * PPM), depth: DEPTH.streetFurniture + 0.5, cash: false },
       { x: xOf(2 + 5), y: expect.closeTo(feetOf(13 + 2) - 0.3 * PPM), depth: DEPTH.furniture + 0.25, cash: true },
     ]);
+  });
+
+  it('has the same piles while a new player_state sends the same ones again', () => {
+    const piles = [pile('metro', 30, 15), pile('metro', 40, 15, 20)];
+    expect(sameItems(piles, [pile('metro', 30, 15), pile('metro', 40, 15, 20)])).toBe(true);
+    expect(sameItems(piles, [pile('metro', 30, 15), pile('metro', 40, 15, 25)])).toBe(false);
+    expect(sameItems(piles, [pile('metro', 31, 15), pile('metro', 40, 15, 20)])).toBe(false);
+    expect(sameItems(piles, [{ ...pile('metro', 30, 15), items: [] }, pile('metro', 40, 15, 20)])).toBe(false);
+    expect(sameItems(piles, piles.slice(1))).toBe(false);
   });
 
   it('has none for maps it does not know', () => {

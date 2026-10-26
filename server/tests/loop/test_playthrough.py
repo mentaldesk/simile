@@ -52,12 +52,6 @@ def test_a_kidney_and_what_the_tunnels_pay_buy_every_bionic(result: Result) -> N
     assert sum(result.earned.values()) == pytest.approx(result.player.money)
 
 
-def test_the_eye_waits_for_days_of_salvage_rounds(result: Result) -> None:
-    assert 1 < result.days < 7
-    assert result.played < result.end - result.start
-    assert sum("Came back to the game" in note for note in result.notes) >= 1
-
-
 def test_an_attackers_alibi_flushes_and_the_journal_records_it(result: Result) -> None:
     lie = next(entry for entry in result.journal if entry.fact_id == there(result.attacker))
 

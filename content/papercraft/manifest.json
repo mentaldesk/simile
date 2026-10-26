@@ -535,6 +535,22 @@
   "tunnel_arch": {
    "piece": "furniture/tunnel_arch"
   },
+  "shipping_container": {
+   "piece": "furniture/shipping_container",
+   "variants": {
+    "rust": "furniture/shipping_container-rust",
+    "mustard": "furniture/shipping_container-mustard"
+   }
+  },
+  "switchboard": {
+   "piece": "furniture/switchboard"
+  },
+  "lockers": {
+   "piece": "furniture/lockers"
+  },
+  "bulkhead": {
+   "piece": "furniture/bulkhead"
+  },
   "armchair": {
    "piece": "furniture/armchair",
    "variants": {
@@ -1173,6 +1189,20 @@
    ],
    "hash": "c331890130c19dc84d24"
   },
+  "furniture/bulkhead": {
+   "file": "furniture/bulkhead.webp",
+   "size": [
+    399,
+    1200
+   ],
+   "height": 10.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "ce8f1cd3c21c33184c84"
+  },
   "furniture/bush": {
    "file": "furniture/bush.webp",
    "size": [
@@ -1396,6 +1426,20 @@
     1.0
    ],
    "hash": "b601751e93c2823bbcb2"
+  },
+  "furniture/lockers": {
+   "file": "furniture/lockers.webp",
+   "size": [
+    255,
+    228
+   ],
+   "height": 1.9,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "be77be7dbfe42d6e981b"
   },
   "furniture/loom": {
    "file": "furniture/loom.webp",
@@ -1705,6 +1749,48 @@
    ],
    "hash": "675177cb4a050eaf60dc"
   },
+  "furniture/shipping_container": {
+   "file": "furniture/shipping_container.webp",
+   "size": [
+    792,
+    403
+   ],
+   "height": 3.36,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "ee30c1507dc1e98551d4"
+  },
+  "furniture/shipping_container-mustard": {
+   "file": "furniture/shipping_container-mustard.webp",
+   "size": [
+    793,
+    403
+   ],
+   "height": 3.36,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "3f34ee1397d4d8e3a28f"
+  },
+  "furniture/shipping_container-rust": {
+   "file": "furniture/shipping_container-rust.webp",
+   "size": [
+    794,
+    403
+   ],
+   "height": 3.36,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "f88f93d461dd468e97bd"
+  },
   "furniture/sofa": {
    "file": "furniture/sofa.webp",
    "size": [
@@ -1802,6 +1888,20 @@
     1.0
    ],
    "hash": "dfae034b2e4127e94eb5"
+  },
+  "furniture/switchboard": {
+   "file": "furniture/switchboard.webp",
+   "size": [
+    146,
+    240
+   ],
+   "height": 2.0,
+   "kind": "sprite",
+   "anchor": [
+    0.5,
+    1.0
+   ],
+   "hash": "6b5141ce928454b87683"
   },
   "furniture/table": {
    "file": "furniture/table.webp",

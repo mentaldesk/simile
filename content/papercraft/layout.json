@@ -322,6 +322,10 @@
    1,
    2
   ],
+  "bulkhead": [
+   3,
+   9
+  ],
   "bush": [
    1,
    1
@@ -331,7 +335,7 @@
    1
   ],
   "catwalk": [
-   8,
+   12,
    2
   ],
   "counter": [
@@ -385,6 +389,10 @@
   "lift": [
    2,
    3
+  ],
+  "lockers": [
+   2,
+   2
   ],
   "loom": [
    2,
@@ -494,6 +502,10 @@
    4,
    2
   ],
+  "shipping_container": [
+   6,
+   3
+  ],
   "sofa": [
    2,
    1
@@ -503,6 +515,10 @@
    1
   ],
   "stove": [
+   2,
+   2
+  ],
+  "switchboard": [
    2,
    2
   ],
@@ -613,7 +629,7 @@
   "high_street": 84,
   "kapok_walk": 34,
   "lychee_lane": 68,
-  "metro": 110,
+  "metro": 230,
   "rooftops": 60,
   "sewers": 160
  }

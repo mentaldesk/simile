@@ -69,6 +69,15 @@ it, and rises to the top floor or drops to Banyan Row's river.
   `player_state` on the street or its floors, gold for cash: salvage, secrets and what the player
   left, and each thing still to search (`world/searchables.ts`'s `toSearch`), which stops glinting
   once it's searched.
+- **What E uses** (`usables.ts`, drawn by `usable-view.ts`): every clue, searchable, jack, news
+  terminal and pile on the street or its floors. Searchables, jacks and terminals are the furniture
+  the street already draws, and one that no furniture draws is left out. The rest are icons from
+  [`content/icons/`](../../../content/icons/README.md): Aris's notes pinned over her bench, out of
+  the player's way, the splintered door frame on the maker space's door, a schematic on a searchable
+  that teaches a recipe until it's searched, and each pile's first item. A clue without a picture
+  of its own isn't drawn. A searched thing gets a painted tick. The one E would use where the player
+  stands (`glowing`, as `world/reach.ts`'s `eUse` finds it) gets a pulsing glow round its outline,
+  made in code from its picture; a jack doesn't without the datajack, and the lift does with it.
 
 Every texture is filtered smoothly, Phaser's default. A mural painted at another aspect than its
 wall is cropped to cover it, not stretched (`coverCrop`). Each street loads its pictures when the
@@ -169,7 +178,9 @@ jumps the rooftops' one-, two- and three-cell gaps, the last running, checking i
 roof, and the metro's jumps up to its secrets, walks off the clock house's roof into the lane, walks
 down into the metro, through it into the clinic and back up to Banyan Row, walks into the metro's
 dark west tunnel, lights the lamp with L and walks on to the plug, checking the darkness and the
-gauge's hints, checks a run jump at the metro's high ledge falls short, lands on the high ledge's
+gauge's hints, checks Aris's notes are drawn in the maker space and glow only while the player
+stands by them, searches Aris's bench and checks it's drawn searched, checks a run jump at the
+metro's high ledge falls short, lands on the high ledge's
 secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto
 it on the spring feet and crosses the high gap on the bionic legs, opens the news at every terminal

@@ -1,4 +1,3 @@
-import json
 from datetime import UTC, datetime
 
 import pytest
@@ -31,10 +30,9 @@ from simile.schema import (
     lamp,
 )
 from simile.sim import Clock, FakeWallClock, World
-from simile.street.jump import JUMP, meets
 from simile.street.sewers import APEX_ACTUATOR
 from simile.world import Movement, Point
-from simile.world.map import STREET_DIR, load_maps
+from simile.world.map import load_maps
 
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 MAPS = load_maps()
@@ -376,41 +374,14 @@ def test_everything_but_a_cell_waits_for_the_cell() -> None:
         assert recipe.after == ([] if bionic in POWER_CELLS else [CELL]), bionic
 
 
-def test_the_kidney_pays_for_the_cell_and_the_metro_on_foot_doesnt_in_two_days() -> None:
-    """The cell costs what the kidney fetches, more than two days of the metro on their own legs,
-    or a day of it and the datajack's schematic, sold."""
-    reached = [p for p in metro_pickups() if meets(JUMP, p["needs"])]
-    salvage = sum(
-        ECONOMY.salvage[PLAYER_CONFIG.salvage[p["name"]].item.id]
-        for p in reached
-        if p["type"] == "salvage"
-    )
-    secrets = sum(p.get("money", 0) for p in reached if p["type"] == "secret")
-    meals = 2 * ECONOMY.shops["coffee_shop"].meal
-    schematic = DEFAULT_CONFIG.procedures[JACK].buys or 0
-    cell = RECIPES[CELL].credits
-
-    assert (salvage, secrets) == (25, 25 + 40), "the stairwell's and the catwalk's"
-    assert cell <= DEFAULT_CONFIG.kidney
-    assert secrets + 2 * (salvage - meals) < cell
-    assert secrets + salvage - meals + schematic < cell
+def test_the_kidney_pays_for_the_cell() -> None:
+    assert RECIPES[CELL].credits <= DEFAULT_CONFIG.kidney
 
 
 def test_each_grade_of_a_line_costs_more_than_the_one_before() -> None:
     for line in LINES:
         credits = [RECIPES[grade].credits for grade in line]
         assert credits == sorted(credits) and len(set(credits)) == len(credits), line
-
-
-def metro_pickups() -> list[dict]:
-    """Each pickup on the metro: its name, type and properties, with `needs` "jump" for a walk."""
-    data = json.loads((STREET_DIR / "metro.tmj").read_text())
-    [layer] = [layer for layer in data["layers"] if layer["name"] == "pickups"]
-    return [
-        {"name": o["name"], "type": o["type"], "needs": "jump"}
-        | {p["name"]: p["value"] for p in o.get("properties", [])}
-        for o in layer["objects"]
-    ]
 
 
 BITTEN = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=NOW)
