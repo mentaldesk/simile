@@ -135,8 +135,7 @@ class Grid:
         return steps[::-1]
 
     def nearest(self, start: Cell, good: Callable[[Cell], float | None], limit: float) -> Cell:
-        """Of the cells within `limit` of `start`, the best by `good`, lower first, among those
-        it scores: `start` if it scores none."""
+        """The reachable cell `good` scores lowest, or `start` if it scores none."""
         frontier: list[tuple[float, Cell]] = [(0.0, start)]
         cost = {start: 0.0}
         best, best_score = start, good(start)

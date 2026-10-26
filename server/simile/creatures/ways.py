@@ -1,5 +1,4 @@
-"""The ways a creature decides where to go. A kind lists them first first, and each tick the
-first with somewhere to go decides; P13 to P15 give each kind its own, with their numbers."""
+"""How a creature decides where to go: README.md's *Moving*."""
 
 import math
 from collections.abc import Callable
@@ -22,8 +21,7 @@ CHEST = 1.0
 
 @dataclass(frozen=True)
 class Senses:
-    """What a creature knows of the world this tick. The player is there only while a client is
-    in the game and they're on its map, where the server last kept them."""
+    """The player is here only while a client is in the game and they're on the creature's map."""
 
     now: float
     town: TownMap
@@ -32,7 +30,6 @@ class Senses:
 
     @property
     def lamp(self) -> bool:
-        """Their lamp is on."""
         return (
             self.at is not None
             and self.player is not None
@@ -53,9 +50,7 @@ class Senses:
 
 
 class Aim(NamedTuple):
-    """Where a way sends a creature and what it's doing on the way, `state`, at `pace` times its
-    kind's speed. It's `still` once there, and `idle` while it can't get nearer. `attacks` hurts
-    the player whenever they're in reach."""
+    """Where a way sends a creature, and its state there: `still` once there, `idle` if stuck."""
 
     target: Cell
     state: CreatureState
@@ -109,8 +104,7 @@ class Patrol:
 
 @dataclass(frozen=True)
 class Chase:
-    """After the player while it can see them within `sight` and `when` holds, attacking in
-    reach, and on to where it saw them last for `memory` after it loses sight of them."""
+    """After the player while it sees them, then where it saw them last for `memory`."""
 
     sight: float = 6.0
     pace: float = 1.0
@@ -136,9 +130,7 @@ class Chase:
 
 @dataclass(frozen=True)
 class FleeLight:
-    """Away from the player's lamp within `radius` of it, and with `lit`, out of the map's lit
-    stretches: to the nearest dark cell within `within`, or else as far from the lamp as it
-    can."""
+    """To the nearest dark cell within `within`, or else as far from the lamp as it can."""
 
     radius: float = LAMP
     lit: bool = True

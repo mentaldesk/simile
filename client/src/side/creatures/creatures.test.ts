@@ -60,6 +60,22 @@ describe('the creatures', () => {
     expect(tracked.at.x).toBe(41);
   });
 
+  it('tweens a fall and a fast dog’s strides rather than snapping them', () => {
+    const all = new Creatures();
+    const dog: Creature = { ...rat, id: 'dog_1', kind: 'dog', state: 'chasing' };
+    all.move(dog);
+    const tracked = all.all.get('dog_1')!;
+    for (const x of [32.6, 35.2, 37.8]) {
+      all.move(at(dog, x));
+      run(all, 0.1);
+      expect(tracked.at.x).toBeCloseTo(x - 1.3);
+      run(all, 0.1);
+    }
+    all.move(at(dog, 37.8, 16.6));
+    run(all, 0.1);
+    expect(tracked.at.y).toBeCloseTo(15.8);
+  });
+
   it('keeps the rest of a snapshot, drops what it leaves out, and replaces one that came back', () => {
     const all = new Creatures();
     all.reset([rat, { ...rat, id: 'rat_2' }]);

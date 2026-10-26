@@ -12,17 +12,14 @@ TWO_FLOORS = (
     "#.................D#",
     "####################",
 )
-"""Two floors joined by a ladder at x 6 and a hole at x 12 and 13, with a door at the east end
-of the lower floor, (18, 5)."""
+"""A ladder at x 6, a hole at 12 and 13, and a door at (18, 5)."""
 UPPER, LOWER = 2, 5
 
 
 def side_view(
     *rows: str, map_id: str = "tunnel", dark: TileArea | None = None, lit: tuple[TileArea, ...] = ()
 ) -> TownMap:
-    """A side-view map from rows of `#` solid, `.` open, `H` ladder, `/` stairs and `D` the end
-    of a door to another map. Open cells and doors are walkable on solid ground, climbable cells
-    always. `dark` is a dark stretch, and `lit` lit ones over it."""
+    """From rows of `#` solid, `.` open, `H` ladder, `/` stairs and `D` a door's end."""
     width, height = len(rows[0]), len(rows)
 
     def solid(x: int, y: int) -> bool:

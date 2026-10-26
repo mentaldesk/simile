@@ -1,5 +1,4 @@
-"""The creatures in the sim: each moves by its kind's ways, hurts the player in reach, takes kicks
-and goes down, and is sent to the client as it changes."""
+"""The creatures in the sim: README.md."""
 
 import logging
 import math
@@ -26,13 +25,11 @@ logger = logging.getLogger(__name__)
 THINK = 0.25
 """Sim seconds between a creature's choices of where to go."""
 SEND = 0.2
-"""Sim seconds between `creature_moved`s while one moves, as often as the client sends the
-player's: it tweens between them. A change of state or facing goes at once."""
+"""Sim seconds between `creature_moved`s while one moves; a change of state goes at once."""
 FALL_SPEED = 8.0
 KNOCK_SPEED = 6.0
 KICK_SLACK = 0.3
-"""Tiles either side of a kick's reach that still hit, as the client draws each a little
-behind the server."""
+"""Tiles either side of a kick's reach that still hit, for the client's lag."""
 KICK_HEIGHT = 1.2
 """Tiles above the player's feet a kick reaches: a bat lower than that is in it."""
 JUMPS_OVER = 0.8
@@ -40,8 +37,7 @@ JUMPS_OVER = 0.8
 
 
 class Leg(NamedTuple):
-    """A stretch of a creature's path: to a cell, falling or not. A move ends at its last leg,
-    where a new path can start."""
+    """A stretch of a path; a new path can start only where a leg `ends`."""
 
     to: Cell
     falls: bool = False
@@ -59,8 +55,7 @@ def legs(edges: Iterable[Edge]) -> Iterable[Leg]:
 
 @dataclass
 class Creature:
-    """One creature: where it is, in tiles, on which map, and what it's doing. A walking kind's
-    `y` is the row it stands on, and a flying kind's the row it's in."""
+    """`y` is the row a walking kind stands on, or a flying kind is in."""
 
     id: str
     kind: Kind
@@ -138,7 +133,7 @@ class Sight:
 
 
 class Creatures:
-    """Every creature, ticked on the sim loop. `spawn` puts one in the world."""
+    """Every creature, ticked on the sim loop."""
 
     def __init__(
         self,
@@ -156,6 +151,7 @@ class Creatures:
         self.send = send
         self.now = 0.0
         self.all: dict[str, Creature] = {}
+        self.numbers: dict[str, int] = {}
 
     def spawn(
         self,
@@ -169,10 +165,7 @@ class Creatures:
         roost: tuple[int, int] | None = None,
         respawn: float | None = None,
     ) -> Creature:
-        """Puts a creature of `kind` at `at`, on the floor under it for a walking kind, kept in
-        `area` if given. It patrols `route`, or the floor `span` cells either side of where it
-        starts; a bat roosts at `roost`, or under the ceiling above where it starts. Gone, it's
-        back where it started `respawn` sim seconds later, or never."""
+        """README.md's *Placing them*."""
         town = self.maps[at.map]
         if town.kind is None:
             raise ValueError(f"creatures are only on side-view maps, not {at.map}")
@@ -180,9 +173,10 @@ class Creatures:
         home = grid.ground(at.x, at.y) if not kind.flies else (at.x, at.y)
         if home is None or not grid.allowed(home):
             raise ValueError(f"a {kind.id} can't be at {at.map} {at.x},{at.y}")
-        number = sum(creature.kind.id == kind.id for creature in self.all.values()) + 1
+        if id is None:
+            id = f"{kind.id}_{self._number(kind)}"
         creature = Creature(
-            id=id or f"{kind.id}_{number}",
+            id=id,
             kind=kind,
             grid=grid,
             home=home,
@@ -198,6 +192,13 @@ class Creatures:
         self.all[creature.id] = creature
         self._send(creature)
         return creature
+
+    def _number(self, kind: Kind) -> int:
+        number = self.numbers.get(kind.id, 0) + 1
+        while f"{kind.id}_{number}" in self.all:
+            number += 1
+        self.numbers[kind.id] = number
+        return number
 
     def remove(self, creature_id: str) -> None:
         if self.all.pop(creature_id, None) is not None:
@@ -313,7 +314,6 @@ class Creatures:
         creature.path = deque([*kept, *legs(creature.grid.path(start, goal))])
 
     def _move(self, creature: Creature, dt: float, speed: float) -> None:
-        """Along its path at `speed`, falling faster."""
         budget = dt
         while creature.path and budget > 1e-9 and speed > 0:
             leg = creature.path[0]

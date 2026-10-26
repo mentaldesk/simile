@@ -85,7 +85,8 @@ The server keeps the player where their last `player_move` put them, up to one t
 (0.2 s) behind the client. The windup is at least that long, so by the time an attack lands the
 server has heard where they went after it started: a player who moves away from a rat as it starts
 to bite is out of reach when the bite lands, and isn't bitten. A shorter windup would bite players
-who had already got away.
+who had already got away. The windup is in sim seconds and the throttle in real ones, so at
+`--speed 2` a 0.3 s windup is only 0.15 real seconds, shorter than the throttle.
 
 ## Kicks
 

@@ -5,6 +5,7 @@ import pytest
 from simile.creatures.engine import SEND, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.ways import Chase, DrawnTo, FleeLight, Patrol, Roost, food, lamp_on
+from simile.creatures.ways import lamp as lamp_light
 from simile.player.kick import Kick
 from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, ServerMessage
 from simile.schema import (
@@ -225,6 +226,18 @@ def test_a_creature_is_drawn_to_food_the_player_carries() -> None:
     assert rat.facing is EAST
 
 
+def test_a_creature_is_drawn_to_the_lamp_while_it_is_on() -> None:
+    world = World(ROW)
+    bat = world.spawn(replace(FLIER, ways=(DrawnTo(lamp_light, within=10),)), 3, 1)
+    world.stand(9, 2)
+    world.run(1)
+    assert bat.cell == (3, 1)
+
+    world.player.items = [lamp().model_copy(update={"on": True})]
+    world.run_until(lambda: bat.cell == (9, 1) and bat.resting)
+    assert bat.state is CreatureState.IDLE
+
+
 def test_a_bat_roosts_under_the_ceiling_above_where_it_starts() -> None:
     world = World(ROW)
     bat = world.spawn(replace(FLIER, ways=(Roost(when=lambda senses: not senses.lamp),)), 5, 2)
@@ -313,6 +326,17 @@ def test_a_hard_enough_kick_puts_it_down_and_it_comes_back_later() -> None:
     world.run(1)
     assert [c.id for c in world.creatures.shown()] == [rat.id]
     assert rat.health == 2 and rat.cell == (6, 2)
+
+
+def test_each_kind_numbers_its_own_and_never_reuses_a_number() -> None:
+    world = World(ROW)
+    first = world.spawn(STAND_IN, 6, 2)
+    assert world.spawn(FLIER, 3, 1).id == "bat_1"
+    world.creatures.kickable(kick(5, EAST)).land()
+
+    assert [world.spawn(STAND_IN, 6, 2).id, first.id] == ["rat_2", "rat_1"]
+    world.spawn(STAND_IN, 8, 2, id="rat_3")
+    assert world.spawn(STAND_IN, 9, 2).id == "rat_4"
 
 
 def test_one_that_never_comes_back_is_gone_for_good_and_a_tough_one_shrugs_off_a_kick() -> None:

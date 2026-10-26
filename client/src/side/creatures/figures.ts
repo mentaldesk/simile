@@ -8,7 +8,6 @@ export type CreatureManifest = {
   moves: 'walk' | 'fly';
   /** Its first frame's width and height in metres. */
   size: [number, number];
-  /** The atlas's URL. */
   painted: string;
   frames: Record<string, CreatureFrame>;
   poses: Record<string, string[]>;
@@ -34,7 +33,6 @@ const atlases = import.meta.glob<string>('../../../../content/creatures/*.webp',
 
 const folder = (path: string) => path.slice(0, path.lastIndexOf('/') + 1);
 
-/** Each kind's figure, with its atlas's URL. */
 export const creatureFigures: Partial<Record<CreatureKind, CreatureManifest>> = Object.fromEntries(
   Object.entries(manifests).map(([path, figure]) => [figure.id, { ...figure, painted: atlases[folder(path) + figure.painted] }]),
 );
@@ -68,8 +66,7 @@ export function poseOf(figure: CreatureManifest, state: CreatureState): string {
   }
 }
 
-/** The frame of its pose to draw now: a walking cycle steps with the distance it covers, and
- * anything else with time. */
+/** A walking cycle steps with the distance covered, anything else with time. */
 export function frameOf(figure: CreatureManifest, tracked: Tracked): string {
   const pose = poseOf(figure, tracked.state);
   const frames = figure.poses[pose];
@@ -94,8 +91,7 @@ export function placedOf(figure: CreatureManifest, frame: string, facing: SideFa
 
 export type Going = { angle: number; alpha: number; drop: number };
 
-/** Keeling over away from the way it faces and fading, `down` seconds after it went, a bat
- * dropping as it goes. `drop` is in tiles. */
+/** Keeling over on its back and fading; `drop` is in tiles. */
 export function goingDown(figure: CreatureManifest, facing: SideFacing, down: number): Going {
   const t = Math.min(down / DOWN_SECONDS, 1);
   const eased = 1 - (1 - t) ** 2;
