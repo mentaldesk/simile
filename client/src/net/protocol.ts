@@ -39,6 +39,11 @@ export type Facing =
  */
 export type CreatureKind = 'rat' | 'bot' | 'dog' | 'bat';
 /**
+ * Which way something faces or acts on a side-view map, where only right and left draw:
+ * `east`, to the right, or `west`, to the left.
+ */
+export type SideFacing = 'east' | 'west';
+/**
  * What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a
  * bat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or
  * fly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.
@@ -202,14 +207,14 @@ export interface Line {
 /**
  * A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking
  * kind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one
- * roosting the ceiling it hangs from. On a side-view map, it faces right for the eastward
- * `facing` values and left for the westward ones.
+ * roosting the ceiling it hangs from. Creatures are only on side-view maps, so each faces right
+ * or left.
  */
 export interface Creature {
   id: string;
   kind: CreatureKind;
   position: Position;
-  facing: Facing;
+  facing: SideFacing;
   state: CreatureState;
 }
 /**
@@ -921,9 +926,10 @@ export interface EatMessage {
  * still fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer
  * clue is found instead, and so is a clue in the jack they stand at, with the datajack.
  *
- * A searchable thing they stand at, or a jack with the datajack, that they haven't searched is
- * searched before anything else: they learn the recipe it teaches and take what it holds, as
- * from a pile, and what doesn't fit is left where they stand.
+ * A searchable thing they stand at that they haven't searched is searched before anything else:
+ * they learn the recipe it teaches and take what it holds, as from a pile, and what doesn't fit
+ * is left where they stand. So is a jack that holds or teaches anything, with the datajack, and
+ * its clue is found on the next one.
  */
 export interface PickUpMessage {
   type: 'pick_up';
@@ -992,13 +998,10 @@ export interface TreatMessage {
   effect: EffectKind | null;
 }
 /**
- * The player kicks, from where the server last kept them. The server decides what it hits.
- * It ignores a kick off a side-view map.
+ * The player kicks, right or left, from where the server last kept them. The server decides
+ * what it hits. It ignores a kick off a side-view map.
  */
 export interface KickMessage {
   type: 'kick';
-  /**
-   * Which way: right or left.
-   */
-  facing: 'east' | 'west';
+  facing: SideFacing;
 }

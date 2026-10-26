@@ -87,6 +87,7 @@ from simile.schema import (
     lamp,
 )
 
+CREATURE_FIGURES = Path(__file__).parents[3] / "content" / "creatures"
 CREATURES = TypeAdapter(list[Creature]).validate_json(
     (Path(__file__).parent / "creatures.json").read_bytes()
 )
@@ -1395,6 +1396,21 @@ def test_creatures_are_rats_bots_dogs_and_bats_named_as_their_figures() -> None:
     ]
 
 
+@pytest.mark.parametrize("kind", list(CreatureKind))
+def test_each_kind_of_creature_has_its_figure(kind: CreatureKind) -> None:
+    figure = json.loads((CREATURE_FIGURES / f"{kind}.json").read_text())
+
+    assert figure["id"] == kind
+
+
+def test_creatures_and_kicks_face_right_or_left_alike() -> None:
+    defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
+
+    assert defs["SideFacing"]["enum"] == ["east", "west"]
+    assert defs["Creature"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
+    assert defs["KickMessage"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
+
+
 def test_the_exported_creature_requires_every_field() -> None:
     creature = json.loads(SCHEMA_FILE.read_text())["$defs"]["Creature"]
 
@@ -1407,7 +1423,9 @@ def test_the_exported_creature_requires_every_field() -> None:
         ({"state": "roosting"}, "only a bat roosts"),
         ({"kind": "snake"}, "Input should be 'rat'"),
         ({"state": "dead"}, "Input should be 'idle'"),
-        ({"facing": "up"}, "Input should be 'east'"),
+        ({"facing": "up"}, "Input should be 'east' or 'west'"),
+        ({"facing": "north"}, "Input should be 'east' or 'west'"),
+        ({"facing": "south_east"}, "Input should be 'east' or 'west'"),
         ({"id": "Rat 1"}, "String should match pattern"),
         ({"health": 0.5}, "Extra inputs"),
     ],

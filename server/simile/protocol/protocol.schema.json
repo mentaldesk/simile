@@ -413,7 +413,7 @@
     },
     "Creature": {
       "additionalProperties": false,
-      "description": "A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking\nkind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one\nroosting the ceiling it hangs from. On a side-view map, it faces right for the eastward\n`facing` values and left for the westward ones.",
+      "description": "A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking\nkind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one\nroosting the ceiling it hangs from. Creatures are only on side-view maps, so each faces right\nor left.",
       "properties": {
         "id": {
           "maxLength": 64,
@@ -427,7 +427,7 @@
           "$ref": "#/$defs/Position"
         },
         "facing": {
-          "$ref": "#/$defs/Facing"
+          "$ref": "#/$defs/SideFacing"
         },
         "state": {
           "$ref": "#/$defs/CreatureState"
@@ -933,7 +933,7 @@
     "JsonValue": {},
     "KickMessage": {
       "additionalProperties": false,
-      "description": "The player kicks, from where the server last kept them. The server decides what it hits.\nIt ignores a kick off a side-view map.",
+      "description": "The player kicks, right or left, from where the server last kept them. The server decides\nwhat it hits. It ignores a kick off a side-view map.",
       "properties": {
         "type": {
           "const": "kick",
@@ -941,12 +941,7 @@
           "type": "string"
         },
         "facing": {
-          "description": "Which way: right or left.",
-          "enum": [
-            "east",
-            "west"
-          ],
-          "type": "string"
+          "$ref": "#/$defs/SideFacing"
         }
       },
       "required": [
@@ -1464,7 +1459,7 @@
     },
     "PickUpMessage": {
       "additionalProperties": false,
-      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer\nclue is found instead, and so is a clue in the jack they stand at, with the datajack.\n\nA searchable thing they stand at, or a jack with the datajack, that they haven't searched is\nsearched before anything else: they learn the recipe it teaches and take what it holds, as\nfrom a pile, and what doesn't fit is left where they stand.",
+      "description": "Picks up, from the nearest pile within reach of the player, its money and each item that\nstill fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer\nclue is found instead, and so is a clue in the jack they stand at, with the datajack.\n\nA searchable thing they stand at that they haven't searched is searched before anything else:\nthey learn the recipe it teaches and take what it holds, as from a pile, and what doesn't fit\nis left where they stand. So is a jack that holds or teaches anything, with the datajack, and\nits clue is found on the next one.",
       "properties": {
         "type": {
           "const": "pick_up",
@@ -2050,6 +2045,15 @@
           "$ref": "#/$defs/PlayerCollapsedMessage"
         }
       ]
+    },
+    "SideFacing": {
+      "description": "Which way something faces or acts on a side-view map, where only right and left draw:\n`east`, to the right, or `west`, to the left.",
+      "enum": [
+        "east",
+        "west"
+      ],
+      "title": "SideFacing",
+      "type": "string"
     },
     "SnapshotMessage": {
       "additionalProperties": false,

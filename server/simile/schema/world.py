@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, Self
+from typing import Self
 
 from pydantic import Field, model_validator
 
@@ -31,6 +31,14 @@ class Facing(StrEnum):
     NORTH_WEST = "north_west"
     NORTH = "north"
     NORTH_EAST = "north_east"
+
+
+class SideFacing(StrEnum):
+    """Which way something faces or acts on a side-view map, where only right and left draw:
+    `east`, to the right, or `west`, to the left."""
+
+    EAST = "east"
+    WEST = "west"
 
 
 class Pose(StrEnum):
@@ -162,8 +170,9 @@ HOLDS = (InteractableKind.SEARCHABLE, InteractableKind.JACK)
 
 class Interactable(Model):
     """Something on an interior's map that you can use, from one of its stand tiles. A searchable
-    thing, or a jack with the datajack, is searched once for the `items` it holds and the recipe
-    it `teaches`, and the player's `searched` says whether it has been."""
+    thing is searched once for the `items` it holds and the recipe it `teaches`, and so is a jack
+    that holds or teaches anything, with the datajack. The player's `searched` says whether it has
+    been."""
 
     id: Id
     label: str = Field(min_length=1, description='What it\'s called, e.g. "3D printer".')
@@ -186,11 +195,8 @@ class Interactable(Model):
         "schematic for the datajack: a searchable's, or a jack's. Left out while it teaches none.",
     )
 
-    @model_validator(mode="before")
-    @classmethod
-    def _only_searched_things_hold(cls, data: Any) -> Any:
-        if not isinstance(data, dict) or data.get("kind") in HOLDS:
-            return data
-        if data.get("items") or data.get("teaches") is not None:
+    @model_validator(mode="after")
+    def _only_searched_things_hold(self) -> Self:
+        if self.kind not in HOLDS and (self.items or self.teaches is not None):
             raise ValueError("only a searchable or a jack holds items or teaches a recipe")
-        return data
+        return self

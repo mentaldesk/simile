@@ -71,11 +71,13 @@ interiors' ids; this document says where.
   - A searchable thing is a piece of furniture or a dead appliance, such as the maker space's
     drawers or a dead fridge in the metro, searched once for what it holds. Its `items` are what
     searching it finds, and `teaches` is the recipe it teaches, by the `Bionic` it builds, such as
-    Aris's schematic on her bench for the datajack. A jack can hold and teach too, such as the
-    sewers' security terminal with the infrared eye's recipe, searched only with the datajack.
-    Either may be empty, a thing with nothing in it. Each is left out while it's empty, and no
-    other kind holds or teaches anything. E at one sends [`pick_up`](#pick_up), and the player's
-    `searched` says which they've searched, so the client can tell what's left, from the maps.
+    Aris's schematic on her bench for the datajack. Either may be empty, a thing with nothing in
+    it. A jack can hold and teach too, such as the sewers' security terminal with the infrared
+    eye's recipe, and is searched, with the datajack, only while it has `items` or `teaches`: a
+    jack that holds neither, like the metro's dead terminal or its lift, is never searched. Each
+    is left out while it's empty, and no other kind holds or teaches anything. E at one sends
+    [`pick_up`](#pick_up), and the player's `searched` says which they've searched, so the client
+    can tell what's left, from the maps.
   - A `Door`'s `kind` is `"door"`, `"stairs"`, `"ladder"` or `"lift"`, and it's left out for a
     door. A door joins a street or the village (`outside`) and a building's ground floor
     (`inside`), or two streets, with `outside` on the street whose id comes first alphabetically:
@@ -110,9 +112,9 @@ client replaces whatever it had.
 
 A `Creature` is one of the tunnels' dangers, which the sim runs and the client draws and animates.
 It has its `id`; its `kind`, named as its figure is in `content/creatures/`: `"rat"`, `"bot"` (a
-recycler bot), `"dog"` (a wild dog) or `"bat"`; its `position`, with its `map`; its `facing`, which
-on a side-view map draws it facing right for the eastward values and left for the westward ones;
-and its `state`, what it's doing, which picks the pose its figure plays:
+recycler bot), `"dog"` (a wild dog) or `"bat"`; its `position`, with its `map`; its `facing`, a
+`SideFacing`, `"east"` to draw it facing right or `"west"` facing left, as creatures are only on
+side-view maps; and its `state`, what it's doing, which picks the pose its figure plays:
 
 | `state` | Pose |
 |---|---|
@@ -527,7 +529,9 @@ is taken, the pile if they're as near. A clue found writes each fact in it to th
 server sends the [`journal`](#journal) that follows rather than a `player_state`.
 
 And it searches (P3): a searchable thing whose `stand` tile the player is on, or a jack with the
-datajack fitted, that isn't in their `searched` yet, before any pile or clue. They learn the recipe
+datajack fitted that has `items` or `teaches`, that isn't in their `searched` yet, before any pile
+or clue. A jack with a clue and something to search gives what it holds first, and its clue on the
+next `pick_up`. They learn the recipe
 it `teaches`, if it's new to them, and take its `items` as from a pile. What doesn't fit under their
 carry limit is left where they stand, a new `Pile` at the end of their `left`. It's in their
 `searched` from then on, even if it held nothing, and the server sends the
@@ -590,10 +594,11 @@ they can't pay for.
 
 ### `kick`
 
-`facing`: `"east"` to kick right, or `"west"` to kick left. The player kicks from where the server
-last kept them ([`player_move`](#player_move)), and the server decides what it hits, as it runs the
-creatures: a creature it hurts changes `state`, in a [`creature_moved`](#creature_moved), or is
-gone, in a [`creature_gone`](#creature_gone). The client plays the kick itself. The server ignores a `kick` off a side-view map.
+`facing`: a `SideFacing`, as a creature's is: `"east"` to kick right, or `"west"` to kick left. The
+player kicks from where the server last kept them ([`player_move`](#player_move)), and the server
+decides what it hits, as it runs the creatures: a creature it hurts changes `state`, in a
+[`creature_moved`](#creature_moved), or is gone, in a [`creature_gone`](#creature_gone). The client
+plays the kick itself. The server ignores a `kick` off a side-view map.
 
 ### `watch_npc`
 

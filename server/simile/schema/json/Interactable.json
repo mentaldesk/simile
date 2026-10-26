@@ -170,7 +170,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Something on an interior's map that you can use, from one of its stand tiles. A searchable\nthing, or a jack with the datajack, is searched once for the `items` it holds and the recipe\nit `teaches`, and the player's `searched` says whether it has been.",
+  "description": "Something on an interior's map that you can use, from one of its stand tiles. A searchable\nthing is searched once for the `items` it holds and the recipe it `teaches`, and so is a jack\nthat holds or teaches anything, with the datajack. The player's `searched` says whether it has\nbeen.",
   "properties": {
     "id": {
       "maxLength": 64,

@@ -23,6 +23,7 @@ from simile.schema import (
     Player,
     Pose,
     Recipe,
+    SideFacing,
     Timestamp,
 )
 from simile.schema.news import LongSummary
@@ -81,13 +82,13 @@ class Entity(Model):
 class Creature(Model):
     """A danger in the tunnels, ticked by the sim, which the client draws and animates. A walking
     kind's `position` is the ground under it, and a bat's the middle of it, in the air, or for one
-    roosting the ceiling it hangs from. On a side-view map, it faces right for the eastward
-    `facing` values and left for the westward ones."""
+    roosting the ceiling it hangs from. Creatures are only on side-view maps, so each faces right
+    or left."""
 
     id: Id
     kind: CreatureKind
     position: Position
-    facing: Facing
+    facing: SideFacing
     state: CreatureState
 
     @model_validator(mode="after")
@@ -567,9 +568,10 @@ class PickUpMessage(Model):
     still fits under their carry limit, in order. Any that don't fit stay in the pile. A nearer
     clue is found instead, and so is a clue in the jack they stand at, with the datajack.
 
-    A searchable thing they stand at, or a jack with the datajack, that they haven't searched is
-    searched before anything else: they learn the recipe it teaches and take what it holds, as
-    from a pile, and what doesn't fit is left where they stand."""
+    A searchable thing they stand at that they haven't searched is searched before anything else:
+    they learn the recipe it teaches and take what it holds, as from a pile, and what doesn't fit
+    is left where they stand. So is a jack that holds or teaches anything, with the datajack, and
+    its clue is found on the next one."""
 
     type: Literal["pick_up"] = "pick_up"
 
@@ -626,11 +628,11 @@ class TreatMessage(Model):
 
 
 class KickMessage(Model):
-    """The player kicks, from where the server last kept them. The server decides what it hits.
-    It ignores a kick off a side-view map."""
+    """The player kicks, right or left, from where the server last kept them. The server decides
+    what it hits. It ignores a kick off a side-view map."""
 
     type: Literal["kick"] = "kick"
-    facing: Literal["east", "west"] = Field(description="Which way: right or left.")
+    facing: SideFacing
 
 
 class BuyMessage(Model):

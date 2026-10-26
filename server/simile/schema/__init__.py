@@ -101,6 +101,7 @@ from simile.schema.world import (
     LocationKind,
     MapArea,
     Pose,
+    SideFacing,
     Tile,
     TileArea,
 )
@@ -223,6 +224,7 @@ __all__ = [
     "Relationship",
     "Sale",
     "Shift",
+    "SideFacing",
     "Signed",
     "Source",
     "SourceKind",
