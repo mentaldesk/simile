@@ -170,11 +170,12 @@ it, out of an old thermal camera, and gives it to the player once they trust the
   about the player, which marks it given across restarts: they never give it twice. If the player
   can't carry it, the keeper says so instead and offers it again in a later conversation. The
   model never decides any of this.
-- **Only once they've met.** Both need R1 to hold the keeper's feelings about the player, which it
-  does after their first conversation, so a keeper who trusts newcomers that much from the start
-  doesn't give it away before they've spoken. Good conversations (trust events of 0.5 valence and
-  magnitude) take any tolerant resident of the default village to `mentions_from` in at most two
-  and to `gives_from` in at most four.
+- **Only once they've talked.** Both need the keeper to remember a conversation with the player
+  (B3's `conversation` memory about them), so a keeper who trusts newcomers that much from the
+  start, or warms to them on seeing their bionics, doesn't give it away before they've spoken.
+  With good conversations (trust events of 0.5 valence and magnitude) every 6 sim hours, any
+  tolerant resident of the default village trusts the player `mentions_from` after at most two
+  and `gives_from` after at most four. Once a sim day, it can take Marguerite five.
 
 The player's items are saved with the world at the next autosave, so a crash within those 10
 seconds loses a lens the keeper remembers giving.

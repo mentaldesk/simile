@@ -5,9 +5,22 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from simile.npc import load_npcs
-from simile.schema import PLAYER_ID, Aspect, InteractionEvent, Item, ItemKind, Npc, Player
+from simile.schema import (
+    PLAYER_ID,
+    Aspect,
+    Bionic,
+    Body,
+    InteractionEvent,
+    Item,
+    ItemKind,
+    Memory,
+    MemoryKind,
+    Npc,
+    Player,
+)
 from simile.social import apply_events, as_of, meet, tolerance
 from simile.social.bionics import level
+from simile.social.sightings import Sightings
 from simile.story import DEFAULT_CONFIG, StoryConfig
 from simile.story.lens import FULL, GIVEN, GIVES, KEPT, LENS, Lens, keeper
 
@@ -41,6 +54,7 @@ def test_any_tolerant_default_resident_may_keep_it_the_same_for_a_seed() -> None
     drawn = Counter(keeper(npcs, random.Random(f"lens/{seed}")).id for seed in range(200))
 
     assert set(drawn) == tolerant and len(tolerant) < len(npcs)
+    assert keeper(npcs, random.Random("lens/0")).id == "desmond"
     assert keeper(npcs, random.Random("lens/3")) == keeper(npcs, random.Random("lens/3"))
 
 
@@ -67,7 +81,7 @@ def test_a_few_good_conversations_win_any_tolerant_default_resident_s_trust() ->
         for had in range(10):
             if as_of(rel, now).trust >= trust:
                 return had
-            kind = InteractionEvent(
+            event = InteractionEvent(
                 actor=PLAYER_ID,
                 target=npc.id,
                 action="kept their word",
@@ -76,7 +90,7 @@ def test_a_few_good_conversations_win_any_tolerant_default_resident_s_trust() ->
                 magnitude=0.5,
                 timestamp=now,
             )
-            rel = apply_events(as_of(rel, now), [kind], now)
+            rel = apply_events(as_of(rel, now), [event], now)
             now += timedelta(hours=6)
         return 10
 
@@ -97,9 +111,24 @@ class Keeping:
     ) -> None:
         trusting = [] if trust is None else [feeling(ANA, PLAYER_ID, trust=trust)]
         self.village = Village(relationships=trusting)
+        if trust is not None:
+            self.talked()
         self.player = player or Player()
         self.config = config
         self.lens = self.start()
+
+    def talked(self) -> None:
+        self.village.store.add(
+            Memory(
+                owner="ana",
+                kind=MemoryKind.CONVERSATION,
+                content="I chatted with Visitor about the village.",
+                salience=0.3,
+                valence=0.2,
+                timestamp=self.village.clock.now,
+                about=[PLAYER_ID],
+            )
+        )
 
     def start(self) -> Lens:
         village = self.village
@@ -200,10 +229,24 @@ async def test_another_resident_never_hands_it_over() -> None:
     assert GIVES not in keeping.village.said("ben") and keeping.lenses() == 0
 
 
-async def test_before_they_ve_met_the_player_they_neither_mention_nor_give_it() -> None:
+async def test_seeing_the_player_s_bionics_isn_t_talking_so_the_lens_stays_locked() -> None:
     keeping = Keeping(config=StoryConfig(mentions_from=0.0, gives_from=0.0))
+    village = keeping.village
+    sightings = Sightings(
+        village.store,
+        village.clock,
+        {"ana": ANA},
+        village.movement,
+        lambda: Body(legs=Bionic.HYDRAULIC_LEGS),
+        lambda npc: True,
+    )
+    sightings.see("ana", [Bionic.HYDRAULIC_LEGS])
+    assert village.store.relationship("ana", PLAYER_ID) is not None
 
-    await keeping.village.run(DEFAULT_CONFIG.lens_every * 3)
+    await village.run(DEFAULT_CONFIG.lens_every * 3)
     said = await keeping.talk()
 
     assert keeping.remembered(KEPT) == [] and GIVES not in said and keeping.lenses() == 0
+    keeping.talked()
+    await village.run(DEFAULT_CONFIG.lens_every)
+    assert keeping.lens.kept

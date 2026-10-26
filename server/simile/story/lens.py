@@ -44,7 +44,13 @@ class Memories(Protocol):
     def relationship(self, owner: str, about: str) -> Relationship | None: ...
 
     def recall(
-        self, owner: str, now: datetime, *, about: str | None = None, k: int = 5
+        self,
+        owner: str,
+        now: datetime,
+        *,
+        about: str | None = None,
+        kind: MemoryKind | None = None,
+        k: int = 5,
     ) -> list[Memory]: ...
 
     def add(self, *records: Memory) -> None: ...
@@ -67,7 +73,7 @@ def keeper(
 
 
 class Lens:
-    """Once they've met, the keeper speaks of the lens when they trust the player
+    """Once they've talked, the keeper speaks of the lens when they trust the player
     `mentions_from`, and hands it over in a conversation with them once they trust them
     `gives_from`, if they can carry it."""
 
@@ -93,13 +99,24 @@ class Lens:
         }
         self.kept = KEPT in topics
         self.given = GIVEN in topics
+        self._talked = False
         self._considered: set[str] = set()
         self._elapsed = config.lens_every
 
+    def talked(self) -> bool:
+        """Whether they remember a conversation with the player, which a sighting isn't."""
+        if not self._talked:
+            remembered = self.memory.recall(
+                self.keeper.id, self.now(), about=PLAYER_ID, kind=MemoryKind.CONVERSATION, k=1
+            )
+            self._talked = bool(remembered)
+        return self._talked
+
     def trusts(self, enough: float) -> bool:
-        """Whether they've met the player and trust them `enough`."""
+        """Whether they've talked with the player and trust them `enough`."""
         stored = self.memory.relationship(self.keeper.id, PLAYER_ID)
-        return stored is not None and as_of(stored, self.now()).trust >= enough
+        trusted = stored is not None and as_of(stored, self.now()).trust >= enough
+        return trusted and self.talked()
 
     def tick(self, dt: float) -> None:
         self._elapsed += dt
