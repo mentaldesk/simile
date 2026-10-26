@@ -65,9 +65,7 @@ The side view draws what the player can use where no furniture does (`client/src
 | Icons | What they are |
 |---|---|
 | `aris_notes`, `door_frame` | Clues: Aris's notes, pinned over her bench, and the splintered door frame. |
-| `note` | Any other clue. |
 | `schematic` | A recipe lying on a searchable that teaches it, until it's searched. |
-| `cupboard`, `terminal` | A searchable or a jack that no furniture draws. |
 
 A pile is drawn as its first item's icon.
 

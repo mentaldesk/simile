@@ -70,12 +70,12 @@ it, and rises to the top floor or drops to Banyan Row's river.
   left, and each thing still to search (`world/searchables.ts`'s `toSearch`), which stops glinting
   once it's searched.
 - **What E uses** (`usables.ts`, drawn by `usable-view.ts`): every clue, searchable, jack, news
-  terminal and pile on the street or its floors. Most searchables, jacks and terminals are furniture
-  the street already draws; the rest are icons from [`content/icons/`](../../../content/icons/README.md):
-  Aris's notes pinned over her bench, out of the player's way, the splintered door frame on the
-  maker space's door, a note for any other clue, a schematic on a searchable that teaches a recipe
-  until it's searched, each pile's first item, and a cupboard or a terminal for a searchable or jack
-  no furniture draws. A searched thing gets a painted tick. The one E would use where the player
+  terminal and pile on the street or its floors. Searchables, jacks and terminals are the furniture
+  the street already draws, and one that no furniture draws is left out. The rest are icons from
+  [`content/icons/`](../../../content/icons/README.md): Aris's notes pinned over her bench, out of
+  the player's way, the splintered door frame on the maker space's door, a schematic on a searchable
+  that teaches a recipe until it's searched, and each pile's first item. A clue without a picture
+  of its own isn't drawn. A searched thing gets a painted tick. The one E would use where the player
   stands (`glowing`, as `world/reach.ts`'s `eUse` finds it) gets a pulsing glow round its outline,
   made in code from its picture; a jack doesn't without the datajack, and the lift does with it.
 

@@ -345,30 +345,6 @@
       ],
       "hash": "83fa774a1e8c1c16"
     },
-    "note": {
-      "file": "note.webp",
-      "size": [
-        260,
-        254
-      ],
-      "hash": "11b7b4dc7d0a0f87"
-    },
-    "cupboard": {
-      "file": "cupboard.webp",
-      "size": [
-        253,
-        260
-      ],
-      "hash": "9a9f2ec3ae84892b"
-    },
-    "terminal": {
-      "file": "terminal.webp",
-      "size": [
-        183,
-        260
-      ],
-      "hash": "a63c0e5e207dca34"
-    },
     "unknown_item": {
       "file": "unknown_item.webp",
       "size": [

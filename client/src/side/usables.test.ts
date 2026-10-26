@@ -98,12 +98,23 @@ describe('usablesOn', () => {
     ]);
   });
 
-  it('draws a cupboard for a searchable and a terminal for a jack where no furniture does', () => {
+  it("finds a house's stash in the furniture it's hidden in, and ticks it once searched", () => {
+    const house = village.map('house_1_floor_1')!;
+    const wardrobe = furniturePlacement(furniture('house_1_floor_1', 'wardrobe'), house);
+    const stash = byId(on('lychee_lane'), 'house_1_floor_1/house_1_wardrobe');
+    expect(stash).toMatchObject({
+      kind: 'searchable',
+      building: 'house_1',
+      picture: { piece: expect.stringContaining('wardrobe'), x: wardrobe.x, y: wardrobe.y, depth: DEPTH.furniture },
+    });
+    expect(stash.searched).toBeUndefined();
+    expect(byId(on('lychee_lane', { searched: ['house_1_wardrobe'] }), stash.id).searched).toBeDefined();
+  });
+
+  it('leaves out a searchable or a jack that no furniture draws', () => {
     const metro = village.map('metro')!;
-    const bare = new Village([{ ...metro, furniture: [] }]);
-    const usables = on('metro', {}, bare);
-    expect(byId(usables, 'metro/metro_fridge').picture).toMatchObject({ icon: 'cupboard', x: xOf(70), y: feetOf(15) });
-    expect(byId(usables, 'metro/metro_terminal').picture).toMatchObject({ icon: 'terminal', x: xOf(104), y: feetOf(15) });
+    const usables = on('metro', {}, new Village([{ ...metro, furniture: [] }]));
+    expect(usables.filter(({ kind }) => kind === 'searchable' || kind === 'jack')).toEqual([]);
   });
 });
 

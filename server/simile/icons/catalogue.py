@@ -256,23 +256,8 @@ USABLES = (
         "white technical line drawings of a small bionic spine part and its wiring, seen from "
         "the front and a little above.",
     ),
-    Icon(
-        "note",
-        "a single crumpled sheet of cream paper half unfolded, covered in scribbled grey pencil "
-        "lines.",
-    ),
-    Icon(
-        "cupboard",
-        "a small battered wooden cupboard standing on short legs, two closed doors with round "
-        "knobs, scuffed paint and a chipped corner.",
-    ),
-    Icon(
-        "terminal",
-        "an old dead computer terminal on a short metal post: a chunky grey box with a dark "
-        "cracked screen, a few unlit buttons and a socket for a cable.",
-    ),
 )
-"""Things the side view draws for the player to use where nothing else draws them."""
+"""Things the side view draws for the player to use where no furniture does."""
 
 UNKNOWN = Icon(
     "unknown_item",

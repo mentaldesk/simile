@@ -37,7 +37,7 @@ export type UsableState = { searched: readonly string[]; piles: readonly Pile[];
 const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
 /** Metres tall. */
-const ICON_M = { note: 0.35, schematic: 0.34, pile: 0.4, cupboard: 1.3, terminal: 1.5 };
+const ICON_M = { schematic: 0.34, pile: 0.4 };
 /** `pinned` that far up the wall, over the player's head; a `jamb` on the frame of the door beside it. */
 const CLUES: Record<string, { icon: string; m: number; pinned?: number; jamb?: boolean }> = {
   aris_notes: { icon: 'aris_notes', m: 0.55, pinned: 2.2 },
@@ -57,7 +57,6 @@ const shared = (a: Placed, b: Placed) =>
   Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
   Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
 const fit = (a: Placed, b: Placed) => shared(a, b) / (area(a) + area(b) - shared(a, b));
-const cell = (x: number, y: number): Placed => ({ name: '', type: '', x, y, w: 1, h: 1, props: {} });
 
 /** The drawn piece of furniture that best covers `thing`. */
 function furnitureOver(manifest: SceneryManifest, map: SideMap, thing: Placed): Placed | undefined {
@@ -99,15 +98,16 @@ function iconOn(manifest: SceneryManifest, map: SideMap, thing: Placed, icon: st
   return { icon, height: m * PPM, x, y, originX: 0.5, originY: 1, depth: (base?.depth ?? depthOf(map)) + ABOVE };
 }
 
-function cluePicture(manifest: SceneryManifest, map: SideMap, clue: Clue): IconSprite {
-  const look = CLUES[clue.id] ?? { icon: 'note', m: ICON_M.note };
+function cluePicture(manifest: SceneryManifest, map: SideMap, clue: Clue): IconSprite | undefined {
+  const look = CLUES[clue.id];
+  if (!look) return undefined;
   const door = map.links.find((link) => link.kind === 'door' && link.y === clue.y && Math.abs(link.x - clue.x) === 1);
   const frame = manifest.pieces[manifest.platforms.door];
   if (look.pinned) {
     const y = feetOf(map.offset.y + clue.y) - look.pinned * PPM;
     return { icon: look.icon, height: look.m * PPM, x: xOf(map.offset.x + clue.x), y, originX: 0.5, originY: 1, depth: DEPTH.stairs + ABOVE };
   }
-  if (!look.jamb || !door || !frame) return iconOn(manifest, map, cell(clue.x, clue.y), look.icon, look.m);
+  if (!look.jamb || !door || !frame) return undefined;
   const side = Math.sign(clue.x - door.x);
   const half = (frame.size[0] * frame.height * PPM) / frame.size[1] / 2;
   return {
@@ -131,14 +131,15 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
   const maps = [street, ...street.buildings.flatMap(({ name }) => village.floors(name))];
   return maps.flatMap((map) => {
     const at = { map: map.id, ...(map.kind === 'floor' && { building: map.building }) };
-    const drawn = (thing: Placed, icon: 'cupboard' | 'terminal'): Sprite => {
+    const drawn = (thing: Placed) => {
       const under = furnitureOver(manifest, map, thing);
-      return (under && pieceSprite(manifest, map, under)) ?? iconOn(manifest, map, thing, icon, ICON_M[icon]);
+      return under && pieceSprite(manifest, map, under);
     };
     const found: Usable[] = [];
     for (const thing of map.interactables) {
       if (thing.type !== 'searchable' && thing.type !== 'jack') continue;
-      const picture = drawn(thing, thing.type === 'jack' ? 'terminal' : 'cupboard');
+      const picture = drawn(thing);
+      if (!picture) continue;
       const usable: Usable = { id: thingId(map.id, thing.name), kind: thing.type, ...at, picture };
       if (state.searched.includes(thing.name)) usable.searched = tickOn(manifest, picture);
       else if (thing.type === 'searchable' && thing.props.teaches) {
@@ -147,10 +148,12 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       found.push(usable);
     }
     for (const terminal of map.locations.filter(({ type }) => type === 'terminal')) {
-      found.push({ id: thingId(map.id, terminal.name), kind: 'terminal', ...at, picture: drawn(terminal, 'terminal') });
+      const picture = drawn(terminal);
+      if (picture) found.push({ id: thingId(map.id, terminal.name), kind: 'terminal', ...at, picture });
     }
     for (const clue of state.clues.filter((clue) => clue.map === map.id)) {
-      found.push({ id: clueId(clue.id), kind: 'clue', ...at, picture: cluePicture(manifest, map, clue) });
+      const picture = cluePicture(manifest, map, clue);
+      if (picture) found.push({ id: clueId(clue.id), kind: 'clue', ...at, picture });
     }
     for (const pile of state.piles.filter(({ at, items }) => at.map === map.id && items.length)) {
       const icon = ICONS[pile.items[0].id] ? pile.items[0].id : 'unknown_item';

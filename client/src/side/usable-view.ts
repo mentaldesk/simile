@@ -4,24 +4,25 @@ import { iconUrl } from '../ui/icons';
 import { clues } from '../world/clues';
 import { reachables, wayPrompts } from '../world/reach';
 import { PPM } from './layout';
+import { sameItems } from './piles';
 import type { Content, StreetView } from './street-view';
 import type { SideTextures } from './textures';
 import { glowing, usablesOn, type Sprite, type Usable } from './usables';
 
-/** World px out from its edge, and its alpha from `alpha - pulse` to `alpha + pulse`. */
 const GLOW = { colour: '#fff3b8', px: 7, alpha: 0.75, pulse: 0.2, seconds: 1.6 };
 const TICK = { colour: 0xe8572a, outline: 0x2b2118, m: 0.36, width: 0.055 };
 
 type Shown = { usable: Usable; images: Phaser.GameObjects.Image[]; tick?: Phaser.GameObjects.Graphics };
-type Glow = { id: string; image: Phaser.GameObjects.Image; texture: string };
+type Glow = { image: Phaser.GameObjects.Image; texture: string };
 
-/** What the harness and the walk read: each usable thing on the street shown, and whether it glows. */
 export type DrawnUsable = { id: string; kind: string; map: string; x: number; y: number; shown: boolean; glowing: boolean; searched: boolean; recipe: boolean };
 
 /** Draws what E uses where nothing else does, and a glow round the one E uses where the player stands. */
 export class UsableView {
   private shown: Shown[] = [];
-  private glow?: Glow;
+  /** By usable id, kept until the street changes. */
+  private readonly glows = new Map<string, Glow>();
+  private glowing?: string;
   private drawnFor?: { street: StreetView; searched: string; piles: readonly Pile[] };
   private readonly scene: Phaser.Scene;
   private readonly textures: SideTextures;
@@ -35,7 +36,8 @@ export class UsableView {
     const searched = playerState.latest?.player.searched ?? [];
     const piles = reachables.piles();
     const drawn = this.drawnFor;
-    if (drawn?.street !== street || drawn.searched !== searched.join() || !same(drawn.piles, piles)) {
+    if (drawn?.street !== street || drawn.searched !== searched.join() || !sameItems(drawn.piles, piles)) {
+      if (drawn?.street !== street) this.unglow();
       this.clear();
       const usables = usablesOn(content.village, content.scenery, street.map, { searched, piles, clues });
       this.shown = usables.map((usable) => ({ usable, images: [] }));
@@ -53,7 +55,7 @@ export class UsableView {
       x: usable.picture.x,
       y: usable.picture.y,
       shown: 'piece' in usable.picture || images.some((image) => image.visible),
-      glowing: this.glow?.id === usable.id && this.glow.image.visible,
+      glowing: this.glowing === usable.id && !!this.glows.get(usable.id)?.image.visible,
       searched: !!tick,
       recipe: !!usable.recipe,
     }));
@@ -61,6 +63,7 @@ export class UsableView {
 
   destroy(): void {
     this.clear();
+    this.unglow();
   }
 
   private clear(): void {
@@ -69,7 +72,6 @@ export class UsableView {
       tick?.destroy();
     }
     this.shown = [];
-    this.unglow();
     this.drawnFor = undefined;
   }
 
@@ -124,12 +126,17 @@ export class UsableView {
 
   private light(id: string | undefined, street: StreetView, seconds: number): void {
     const shown = id ? this.shown.find(({ usable }) => usable.id === id) : undefined;
-    if (this.glow && this.glow.id !== shown?.usable.id) this.unglow();
+    if (this.glowing !== shown?.usable.id) this.glows.get(this.glowing ?? '')?.image.setVisible(false);
+    this.glowing = shown?.usable.id;
     if (!shown) return;
-    this.glow ??= this.glowAround(shown.usable);
-    if (!this.glow) return;
+    let glow = this.glows.get(shown.usable.id);
+    if (!glow) {
+      glow = this.glowAround(shown.usable);
+      if (!glow) return;
+      this.glows.set(shown.usable.id, glow);
+    }
     const visible = !shown.usable.building || street.isOpen(shown.usable.building);
-    this.glow.image.setVisible(visible).setAlpha(GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2));
+    glow.image.setVisible(visible).setAlpha(GLOW.alpha + GLOW.pulse * Math.sin((seconds / GLOW.seconds) * Math.PI * 2));
   }
 
   /** An outline of the picture, blurred, just behind it. */
@@ -162,15 +169,15 @@ export class UsableView {
       .setOrigin((pad + sprite.originX * image.width) / canvas.width, (pad + sprite.originY * image.height) / canvas.height)
       .setScale(scale)
       .setDepth(sprite.depth - 0.01);
-    return { id: usable.id, image: glow, texture };
+    return { image: glow, texture };
   }
 
   private unglow(): void {
-    if (!this.glow) return;
-    this.glow.image.destroy();
-    this.scene.textures.remove(this.glow.texture);
-    this.glow = undefined;
+    for (const { image, texture } of this.glows.values()) {
+      image.destroy();
+      this.scene.textures.remove(texture);
+    }
+    this.glows.clear();
+    this.glowing = undefined;
   }
 }
-
-const same = (a: readonly Pile[], b: readonly Pile[]) => a.length === b.length && a.every((pile, i) => pile === b[i]);
