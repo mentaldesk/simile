@@ -236,10 +236,35 @@ ITEMS = (
         "shiny piston rod sticking out of its top.",
     ),
 )
+USABLES = (
+    Icon(
+        "aris_notes",
+        "a few sheets of handwritten paper notes pinned up together by one red drawing pin at "
+        "the top, cream paper covered in scribbled grey pencil lines and little sketches of "
+        "machine parts, their corners curling, seen straight from the front.",
+    ),
+    Icon(
+        "door_frame",
+        "one very tall, very thin strip of pale unpainted wood standing upright on its own, the "
+        "side of a door frame, split open halfway up where a door was kicked in, jagged pale "
+        "splinters bursting out of the split, and a small bent metal lock plate hanging off it "
+        "by one screw.",
+    ),
+    Icon(
+        "schematic",
+        "a single sheet of blue blueprint paper lying flat, its corners curling up, with fine "
+        "white technical line drawings of a small bionic spine part and its wiring, seen from "
+        "the front and a little above.",
+    ),
+)
+"""Things the side view draws for the player to use where no furniture does."""
+
 UNKNOWN = Icon(
     "unknown_item",
     "a small battered brown cardboard box tied up with string, a big black question mark "
     "scrawled on its side.",
 )
 
-ICONS: dict[str, Icon] = {icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, UNKNOWN)}
+ICONS: dict[str, Icon] = {
+    icon.id: icon for icon in (*ORGANS, *SOLD, *BIONICS, *ITEMS, *USABLES, UNKNOWN)
+}
