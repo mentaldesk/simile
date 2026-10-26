@@ -47,5 +47,14 @@
     "area": {"x": 140, "y": 30, "width": 1, "height": 1},
     "stand": [{"x": 140, "y": 31}],
     "teaches": "infrared_eye"
+  },
+  {
+    "id": "house_2_bed",
+    "label": "Under the mattress",
+    "kind": "searchable",
+    "map": "house_2_floor_1",
+    "area": {"x": 2, "y": 2, "width": 2, "height": 1},
+    "stand": [{"x": 2, "y": 2}, {"x": 3, "y": 2}],
+    "money": 10.0
   }
 ]

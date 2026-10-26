@@ -165,14 +165,14 @@ class InteractableKind(StrEnum):
 
 
 HOLDS = (InteractableKind.SEARCHABLE, InteractableKind.JACK)
-"""The kinds that can hold items or teach a recipe, found by searching them once."""
+"""The kinds that can hold items or money or teach a recipe, found by searching them once."""
 
 
 class Interactable(Model):
     """Something on an interior's map that you can use, from one of its stand tiles. A searchable
-    thing is searched once for the `items` it holds and the recipe it `teaches`, and so is a jack
-    that holds or teaches anything, with the datajack. The player's `searched` says whether it has
-    been."""
+    thing is searched once for the `items` and `money` it holds and the recipe it `teaches`, and so
+    is a jack that holds or teaches anything, with the datajack. The player's `searched` says
+    whether it has been."""
 
     id: Id
     label: str = Field(min_length=1, description='What it\'s called, e.g. "3D printer".')
@@ -188,6 +188,15 @@ class Interactable(Model):
         description="What searching it finds, in order: a searchable's, or a jack's. Left out "
         "while it holds nothing.",
     )
+    money: float = Field(
+        default=0.0,
+        ge=0,
+        allow_inf_nan=False,
+        strict=True,
+        exclude_if=lambda money: not money,
+        description="Cash searching it finds, which weighs nothing: a searchable's, or a jack's. "
+        "Left out while there's none.",
+    )
     teaches: Bionic | None = Field(
         default=None,
         exclude_if=lambda teaches: teaches is None,
@@ -197,6 +206,6 @@ class Interactable(Model):
 
     @model_validator(mode="after")
     def _only_searched_things_hold(self) -> Self:
-        if self.kind not in HOLDS and (self.items or self.teaches is not None):
-            raise ValueError("only a searchable or a jack holds items or teaches a recipe")
+        if self.kind not in HOLDS and (self.items or self.money or self.teaches is not None):
+            raise ValueError("only a searchable or a jack holds items or money or teaches a recipe")
         return self
