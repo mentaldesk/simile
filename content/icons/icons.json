@@ -1,0 +1,149 @@
+{
+  "version": 1,
+  "icons": {
+    "eye": {
+      "file": "eye.webp",
+      "size": [
+        223,
+        260
+      ],
+      "hash": "965ebb7d81ff5e41"
+    },
+    "vertebra": {
+      "file": "vertebra.webp",
+      "size": [
+        140,
+        260
+      ],
+      "hash": "14115950771bb137"
+    },
+    "stomach": {
+      "file": "stomach.webp",
+      "size": [
+        260,
+        250
+      ],
+      "hash": "820e1bd6826b8894"
+    },
+    "kidney": {
+      "file": "kidney.webp",
+      "size": [
+        245,
+        260
+      ],
+      "hash": "ecfbc0c03059bcfd"
+    },
+    "legs": {
+      "file": "legs.webp",
+      "size": [
+        172,
+        260
+      ],
+      "hash": "f51a7b545b26da65"
+    },
+    "feet": {
+      "file": "feet.webp",
+      "size": [
+        260,
+        242
+      ],
+      "hash": "7be9e2f44cd88217"
+    },
+    "eye_sold": {
+      "file": "eye_sold.webp",
+      "size": [
+        260,
+        255
+      ],
+      "hash": "bca3e5b9f4cd32b4"
+    },
+    "vertebra_sold": {
+      "file": "vertebra_sold.webp",
+      "size": [
+        111,
+        260
+      ],
+      "hash": "62dd85a3dda4c79e"
+    },
+    "stomach_sold": {
+      "file": "stomach_sold.webp",
+      "size": [
+        247,
+        260
+      ],
+      "hash": "0214de9244076ab3"
+    },
+    "kidney_sold": {
+      "file": "kidney_sold.webp",
+      "size": [
+        260,
+        233
+      ],
+      "hash": "a1362257096828e1"
+    },
+    "legs_sold": {
+      "file": "legs_sold.webp",
+      "size": [
+        173,
+        260
+      ],
+      "hash": "fcb45e3f79b41f7b"
+    },
+    "feet_sold": {
+      "file": "feet_sold.webp",
+      "size": [
+        260,
+        171
+      ],
+      "hash": "89b209d6320ad108"
+    },
+    "power_cell": {
+      "file": "power_cell.webp",
+      "size": [
+        260,
+        134
+      ],
+      "hash": "7ed946e3e1b52558"
+    },
+    "datajack": {
+      "file": "datajack.webp",
+      "size": [
+        128,
+        260
+      ],
+      "hash": "d21b7e7b2255bde2"
+    },
+    "infrared_eye": {
+      "file": "infrared_eye.webp",
+      "size": [
+        260,
+        217
+      ],
+      "hash": "686d416e244b5559"
+    },
+    "hydraulic_legs": {
+      "file": "hydraulic_legs.webp",
+      "size": [
+        206,
+        260
+      ],
+      "hash": "337e2f971c207676"
+    },
+    "bionic_legs": {
+      "file": "bionic_legs.webp",
+      "size": [
+        174,
+        260
+      ],
+      "hash": "f89683595245d8c1"
+    },
+    "spring_feet": {
+      "file": "spring_feet.webp",
+      "size": [
+        260,
+        187
+      ],
+      "hash": "fc6088b579a10395"
+    }
+  }
+}
