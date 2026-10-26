@@ -7,6 +7,7 @@ import { muralWalls } from '../world/murals';
 import { usedByE, wayPrompts, type Reachable } from '../world/reach';
 import { BubbleLayer } from './bubble-layer';
 import { callCue } from './call-cue';
+import { CharacterPanel } from './character-panel';
 import { ChatBox } from './chat-box';
 import { ClinicPanel, type Keeper } from './clinic-panel';
 import { CounterPrompt, servingAt } from './counter';
@@ -44,6 +45,7 @@ export class DialogueScene extends Phaser.Scene {
   private lamp!: LampGauge;
   private journal!: JournalPanel;
   private help!: HelpPanel;
+  private character!: CharacterPanel;
   private chat!: ChatBox;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
@@ -82,7 +84,8 @@ export class DialogueScene extends Phaser.Scene {
     this.lamp = new LampGauge(this.root);
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
-    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal });
+    const character = (this.character = new CharacterPanel(this.root));
+    const onKeyDown = onGameKey({ chat, use: () => this.pressE(), eat: () => this.eat(), help, journal, character });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -125,7 +128,8 @@ export class DialogueScene extends Phaser.Scene {
     const state = playerState.latest && this.clinic.isOpen ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
-    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
+    this.character.update(playerState.latest);
+    const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     const ways = panelOpen ? [] : wayPrompts(used !== undefined);
     this.ways.render(ways, this.fromGame);
@@ -143,6 +147,7 @@ export class DialogueScene extends Phaser.Scene {
 
   /** E uses the nearest thing in reach; the gallery scene looks at paintings. */
   private use(used: Reachable | undefined): void {
+    this.character.close();
     if (used?.kind === 'counter') this.order(used.interactable);
     else if (used?.kind === 'terminal') {
       this.murals.close();

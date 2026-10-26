@@ -1,8 +1,9 @@
 import type { Reachable, WayPrompt } from '../world/reach';
+import type { CharacterPanel } from './character-panel';
 import type { ChatBox } from './chat-box';
 import { HELP_KEY, type HelpPanel } from './help';
 import type { JournalPanel } from './journal-panel';
-import { EAT_KEY, JOURNAL_KEY, NEWS_KEY } from './tuning';
+import { CHARACTER_KEY, EAT_KEY, JOURNAL_KEY, NEWS_KEY } from './tuning';
 
 export type GameKeys = {
   chat: Pick<ChatBox, 'open' | 'clear' | 'cycle'>;
@@ -10,6 +11,7 @@ export type GameKeys = {
   eat: () => void;
   help: Pick<HelpPanel, 'toggle' | 'close'>;
   journal: Pick<JournalPanel, 'toggle' | 'close'>;
+  character: Pick<CharacterPanel, 'toggle' | 'close'>;
 };
 
 export type EUse = { kind: 'reach'; reachable: Reachable } | { kind: 'door' } | { kind: 'talk'; npcId: string };
@@ -28,7 +30,7 @@ export function unfocused({ target }: Event): boolean {
   );
 }
 
-export function onGameKey({ chat, use, eat, help, journal }: GameKeys): (event: KeyboardEvent) => void {
+export function onGameKey({ chat, use, eat, help, journal, character }: GameKeys): (event: KeyboardEvent) => void {
   return (event) => {
     if (!unfocused(event)) return;
     const { key } = event;
@@ -40,9 +42,11 @@ export function onGameKey({ chat, use, eat, help, journal }: GameKeys): (event: 
       chat.clear();
       help.close();
       journal.close();
+      character.close();
     } else if (key === HELP_KEY && !event.repeat) {
       event.preventDefault();
       journal.close();
+      character.close();
       help.toggle();
     } else if (key === 'Tab') {
       event.preventDefault();
@@ -56,7 +60,13 @@ export function onGameKey({ chat, use, eat, help, journal }: GameKeys): (event: 
     } else if (pressed(event, JOURNAL_KEY)) {
       event.preventDefault();
       help.close();
+      character.close();
       journal.toggle();
+    } else if (pressed(event, CHARACTER_KEY)) {
+      event.preventDefault();
+      help.close();
+      journal.close();
+      character.toggle();
     }
   };
 }

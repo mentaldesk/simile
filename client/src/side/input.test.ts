@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { server, type Wall } from '../net';
 import { setMuralView } from '../world/murals';
 import { village } from './content';
-import { readControls, RunToggle, type Held } from './input';
+import { eachOnce, readControls, RunToggle, type Held } from './input';
 import { RUN_BLEND_SECONDS, RUN_PACE, SidePlayer, type Controls, type MapPosition } from './player';
 
 /** content/street/banyan_row.tmj's wall on house 10, along cells 19 to 21. */
@@ -99,6 +99,21 @@ describe('Shift', () => {
     running.keyUp('Shift');
     expect(running.on).toBe(false);
     tap(running, 'Shift');
+    expect(running.on).toBe(true);
+  });
+
+  it('switches once for a tap and an arrow in one frame, though Phaser hands the tap over again with the arrow', () => {
+    const running = new RunToggle();
+    const down = eachOnce((event: { key: string }) => running.keyDown(event.key));
+    const up = eachOnce((event: { key: string }) => running.keyUp(event.key));
+    const frame = [
+      { type: 'down', key: 'Shift' },
+      { type: 'up', key: 'Shift' },
+      { type: 'down', key: 'ArrowRight' },
+    ];
+    for (let i = 1; i <= frame.length; i++) {
+      for (const event of frame.slice(0, i)) (event.type === 'down' ? down : up)(event);
+    }
     expect(running.on).toBe(true);
   });
 

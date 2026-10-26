@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from simile.schema import (
     PLAYER_ID,
     VILLAGE_MAP,
+    Bionic,
     Conversation,
     CoreValue,
     Craft,
@@ -35,7 +36,7 @@ from simile.schema import (
 )
 from simile.world.map import load_maps
 
-from .conftest import COUNTER, DOOR
+from .conftest import COUNTER, DOOR, SEARCHABLES
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 CONTENT_NPCS = Path(__file__).parents[3] / "content" / "npcs"
@@ -448,8 +449,10 @@ def test_an_interactable_round_trips() -> None:
     assert Interactable.model_validate_json(counter.model_dump_json()) == counter
 
 
-@pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug", "jack"])
-def test_interactables_are_counters_paintings_machines_plugs_or_jacks(kind: str) -> None:
+@pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug", "jack", "searchable"])
+def test_interactables_are_counters_paintings_machines_plugs_jacks_or_searchable(
+    kind: str,
+) -> None:
     assert Interactable.model_validate(COUNTER | {"kind": kind}).kind == InteractableKind(kind)
 
 
@@ -476,3 +479,45 @@ def test_an_interactable_can_be_used_from_several_tiles() -> None:
 )
 def test_interactable_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
     rejects(Interactable, COUNTER | update, match)
+
+
+DRAWERS, BENCH, FRIDGE, VENDING_MACHINE, SECURITY_TERMINAL = SEARCHABLES
+
+
+@pytest.mark.parametrize("data", SEARCHABLES, ids=lambda data: data["id"])
+def test_a_searchable_thing_round_trips(data: dict[str, Any]) -> None:
+    searchable = Interactable.model_validate(data)
+
+    assert json.loads(searchable.model_dump_json()) == data
+    assert Interactable.model_validate_json(searchable.model_dump_json()) == searchable
+
+
+def test_a_searchable_thing_holds_items_teaches_a_recipe_or_neither() -> None:
+    drawers, bench, _, vending_machine, terminal = map(Interactable.model_validate, SEARCHABLES)
+
+    assert [item.id for item in drawers.items] == ["usb_c_connector", "copper_wire"]
+    assert drawers.teaches is None
+    assert (bench.items, bench.teaches) == ([], Bionic.DATAJACK)
+    assert (vending_machine.items, vending_machine.teaches) == ([], None)
+    assert (terminal.kind, terminal.teaches) == (InteractableKind.JACK, Bionic.INFRARED_EYE)
+
+
+def test_an_interactable_that_holds_nothing_dumps_as_before() -> None:
+    assert set(json.loads(Interactable.model_validate(COUNTER).model_dump_json())) == set(COUNTER)
+
+
+@pytest.mark.parametrize("kind", ["counter", "painting", "machine", "plug"])
+@pytest.mark.parametrize("update", [{"items": DRAWERS["items"]}, {"teaches": "datajack"}])
+def test_only_searchable_things_and_jacks_hold_or_teach(kind: str, update: dict[str, Any]) -> None:
+    rejects(Interactable, COUNTER | {"kind": kind} | update, "only a searchable or a jack")
+
+
+@pytest.mark.parametrize(
+    ("update", "match"),
+    [
+        ({"teaches": "steel_hand"}, "Input should be 'hydraulic_legs'"),
+        ({"items": [{"id": "copper_wire"}]}, "items.0.kind"),
+    ],
+)
+def test_searchable_fields_follow_the_rules(update: dict[str, Any], match: str) -> None:
+    rejects(Interactable, BENCH | update, match)
