@@ -201,8 +201,14 @@ Opening it closes the journal and the controls.
 - **Vitals:** power once a power cell is in `body.stomach`, else hunger with what `feeling` says of
   it; health; the lamp's charge and whether it's on, off or charging; credits; and each effect, how
   strong and whether it fades or lasts until it's treated.
-- **Body:** each part head to foot, the player's own, sold, or the bionic in its place, named by its
-  recipe or as the clinic names it (`bionicName`). `stomach` and `feet` are their own when left out.
+- **Body:** a map of the body, an anatomical chart ([`character-body.svg`](character-body.svg)) with
+  each part at its place (`PLACES` in [`character-body.ts`](character-body.ts)): a picture of their
+  own organ, its stitched socket once sold, or the bionic fitted there, every grade of a line alike
+  with its grade on a badge. The pictures are `content/icons/`'s
+  ([README](../../../content/icons/README.md)), found by `iconUrl` in [`icons.ts`](icons.ts).
+  Hovering over a part, or Up and Down head to foot, shows what it is, whether it's theirs, sold or
+  a bionic, and for a bionic its name by its recipe or as the clinic names it (`bionicName`), its
+  grade and what it does. `stomach` and `feet` are their own when left out.
 - **Gear:** what they carry, each kind once with how many and its weight, against the carry limit.
 - **Mind:** each recipe in `player.mind`, from `player_state`'s `recipes`: the parts it needs
   against what they carry, its credits against their money, what it goes in place of and what must
