@@ -5158,5 +5158,316 @@
    15
   ],
   "kept": false
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 101,
+  "y": 15,
+  "last": null,
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 103.04,
+  "y": 15,
+  "last": [
+   101,
+   15
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 103.82,
+  "y": 13.35,
+  "last": [
+   103.04,
+   15
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 104.42,
+  "y": 12.37,
+  "last": [
+   103.82,
+   13.35
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 104.94,
+  "y": 11.88,
+  "last": [
+   104.42,
+   12.37
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 105.55,
+  "y": 11.7,
+  "last": [
+   104.94,
+   11.88
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 106.07,
+  "y": 11.95,
+  "last": [
+   105.55,
+   11.7
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a run jump onto the high ledge on the spring feet",
+  "map": "metro",
+  "x": 106.16,
+  "y": 12,
+  "last": [
+   106.07,
+   11.95
+  ],
+  "kept": true,
+  "feet": "spring_feet"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 71.95,
+  "y": 8,
+  "last": null,
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 71.62,
+  "y": 8,
+  "last": [
+   71.95,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 71.14,
+  "y": 8,
+  "last": [
+   71.62,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 70.53,
+  "y": 8,
+  "last": [
+   71.14,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 69.88,
+  "y": 8,
+  "last": [
+   70.53,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 69.23,
+  "y": 8,
+  "last": [
+   69.88,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 68.58,
+  "y": 8,
+  "last": [
+   69.23,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 67.93,
+  "y": 7.26,
+  "last": [
+   68.58,
+   8
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 67.28,
+  "y": 6.54,
+  "last": [
+   67.93,
+   7.26
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 66.63,
+  "y": 6.04,
+  "last": [
+   67.28,
+   6.54
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 65.98,
+  "y": 5.76,
+  "last": [
+   66.63,
+   6.04
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 65.33,
+  "y": 5.71,
+  "last": [
+   65.98,
+   5.76
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 64.68,
+  "y": 5.92,
+  "last": [
+   65.33,
+   5.71
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 64.03,
+  "y": 6.42,
+  "last": [
+   64.68,
+   5.92
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 63.38,
+  "y": 7.2,
+  "last": [
+   64.03,
+   6.42
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a sprint across the gantry's gap on the bionic legs",
+  "map": "metro",
+  "x": 62.86,
+  "y": 8,
+  "last": [
+   63.38,
+   7.2
+  ],
+  "kept": true,
+  "legs": "bionic_legs"
+ },
+ {
+  "why": "a jump straight up by the clinic on the second grade of feet",
+  "map": "metro",
+  "x": 92,
+  "y": 9.0,
+  "last": null,
+  "kept": true,
+  "feet": "spring_feet_2"
+ },
+ {
+  "why": "as high by the clinic on the legs and the first grade of feet",
+  "map": "metro",
+  "x": 92,
+  "y": 9.0,
+  "last": null,
+  "kept": false,
+  "legs": "bionic_legs",
+  "feet": "spring_feet"
+ },
+ {
+  "why": "as high by the clinic on the legs and the second grade of feet",
+  "map": "metro",
+  "x": 92,
+  "y": 9.0,
+  "last": null,
+  "kept": true,
+  "legs": "bionic_legs",
+  "feet": "spring_feet_2"
  }
 ]

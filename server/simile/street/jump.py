@@ -1,8 +1,8 @@
-"""The player's jump on each grade of legs, which `simile street` writes to jump.json."""
+"""The player's jump on each grade of legs and feet, which `simile street` writes to jump.json."""
 
 import json
 import math
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from simile.schema import Bionic, Body
@@ -33,6 +33,8 @@ class Jump:
     """From the feet to the top of the head."""
     frame_seconds: float = 0.1
     """The client's longest step, `MAX_FRAME_SECONDS`, which a jump can overrun its take-off by."""
+    kick: float = field(default=1.0, compare=False)
+    """Times the player's own kick, which comparing jumps leaves out: it takes them nowhere."""
 
     @property
     def gravity(self) -> float:
@@ -68,28 +70,80 @@ JUMP = Jump()
 """The player's own legs."""
 
 
-def legs(rise: float = JUMP.rise, run: float = RUN_SPEED) -> Jump:
-    """A grade of legs' jump, rising `rise` tiles under the same gravity and running at `run`."""
+def grade(rise: float = JUMP.rise, run: float = RUN_SPEED, kick: float = JUMP.kick) -> Jump:
+    """A grade's jump, rising `rise` tiles under the same gravity, running at `run`."""
     return replace(
-        JUMP, rise=rise, rise_seconds=JUMP.rise_seconds * math.sqrt(rise / JUMP.rise), run=run
+        JUMP,
+        rise=rise,
+        rise_seconds=JUMP.rise_seconds * math.sqrt(rise / JUMP.rise),
+        run=run,
+        kick=kick,
     )
 
 
-GRADES: dict[Bionic, Jump] = {
-    Bionic.HYDRAULIC_LEGS: legs(rise=4.3),
-    Bionic.SPRING_LEGS: legs(rise=6.3),
-    Bionic.SPRINT_LEGS: legs(run=7.8),
-    Bionic.BLADE_LEGS: legs(run=10.4),
-    Bionic.PREMIUM_LEGS: legs(rise=6.3, run=10.4),
+LEGS: dict[Bionic, Jump] = {
+    Bionic.BIONIC_LEGS: grade(run=7.8, kick=2.0),
+    Bionic.BIONIC_LEGS_2: grade(run=10.4, kick=3.0),
+    Bionic.BIONIC_LEGS_3: grade(run=13.0, kick=4.0),
 }
-"""Each grade of legs' jump: spring legs rise higher, sprint legs run faster, premium do both."""
+"""The legs' line: each grade runs faster, so jumps further, and kicks harder."""
+FEET: dict[Bionic, Jump] = {
+    Bionic.SPRING_FEET: grade(rise=4.3),
+    Bionic.SPRING_FEET_2: grade(rise=6.3),
+}
+"""The feet's line: each grade rises higher."""
+STAGE_1: dict[Bionic, Jump] = {
+    Bionic.HYDRAULIC_LEGS: grade(rise=4.3),
+    Bionic.SPRING_LEGS: grade(rise=6.3),
+    Bionic.SPRINT_LEGS: grade(run=7.8),
+    Bionic.BLADE_LEGS: grade(run=10.4),
+    Bionic.PREMIUM_LEGS: grade(rise=6.3, run=10.4),
+}
+"""Stage 1's grades of legs, until P18 retires them: the hydraulic and spring legs rise as the
+feet do, the sprint and blade legs run as the legs' first two grades do, and the premium do both."""
+GRADES: dict[Bionic, Jump] = {**STAGE_1, **LEGS, **FEET}
+"""Each grade's jump on its own."""
 OWN_JUMP = "jump"
+
+
+def kit(*grades: Jump) -> Jump:
+    """The jump on `grades` fitted together: the highest rise, the fastest run, the hardest kick."""
+    if len(grades) <= 1:
+        return grades[0] if grades else JUMP
+    return grade(
+        rise=max(g.rise for g in grades),
+        run=max(g.run for g in grades),
+        kick=max(g.kick for g in grades),
+    )
+
+
+def kit_name(*fitted: Bionic) -> str:
+    return "+".join(fitted) or OWN_JUMP
+
+
+def _kits() -> dict[str, Jump]:
+    found = {}
+    for legs in (None, *STAGE_1, *LEGS):
+        for feet in (None, *FEET):
+            on = [bionic for bionic in (legs, feet) if bionic is not None]
+            found[kit_name(*on)] = kit(*(GRADES[bionic] for bionic in on))
+    return found
+
+
+KITS = _kits()
+"""Every jump the player can have, by what's fitted on their legs and feet: `jump`, a grade's
+name, or both joined by `+`, as `kit_name` names them."""
 NEEDS: dict[str, Jump] = {OWN_JUMP: JUMP, **{grade.value: jump for grade, jump in GRADES.items()}}
 """What reaching a place takes, on one scale for every map, as a pickup's `needs` records it."""
 
 
+def fitted(body: Body) -> tuple[Bionic, ...]:
+    """The grades on their legs and feet that change their jump."""
+    return tuple(part for part in (body.legs, body.feet) if part in GRADES)
+
+
 def jump_of(body: Body) -> Jump:
-    return GRADES.get(body.legs, JUMP) if isinstance(body.legs, Bionic) else JUMP
+    return KITS[kit_name(*fitted(body))]
 
 
 def meets(jump: Jump, needs: str) -> bool:
@@ -103,13 +157,14 @@ def _table(jump: Jump) -> dict[str, Any]:
 
 
 def jump_table() -> dict[str, Any]:
-    """The player's own jump, and under `legs` what each grade of legs changes of it."""
+    """The player's own jump, and under `kits` what each other one in `KITS` changes of it."""
     own = _table(JUMP)
     changed = {
-        grade.value: {key: value for key, value in _table(jump).items() if value != own[key]}
-        for grade, jump in GRADES.items()
+        name: {key: value for key, value in _table(jump).items() if value != own[key]}
+        for name, jump in KITS.items()
+        if name != OWN_JUMP
     }
-    return {**own, "legs": changed}
+    return {**own, "kits": changed}
 
 
 def dumps() -> str:

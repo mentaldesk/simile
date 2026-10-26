@@ -17,7 +17,7 @@ Output is deterministic, and `tests/street` fails if a file drifts from the buil
   `levels/preview.png`.
 - `floors/<building>_floor_<n>.tmj`: each floor of each building, `0` for the ground floor.
 - `markers.png`: the tiny tileset the tile layers use, so Tiled shows them.
-- `jump.json`: the player's jump (#331) on each grade of legs (#389), from
+- `jump.json`: the player's jump (#331) on each grade of legs and feet (#389, #408), from
   `server/simile/street/jump.py`. The client plays it and the server checks the player's positions
   and paths by it (below).
 - [`preview.png`](preview.png): every street with its buildings' floors drawn in place. Ground is
@@ -65,7 +65,7 @@ Every map has every layer, bottom to top:
 | `interactables` | Objects, as today, on floors, and the metro's on its street. A `plug` charges the player's lamp while they stand on its stand tile (below). |
 | `spots` | Objects, as today. |
 | `light` | Objects. Rectangles, each a stretch of the map that's lit or dark, named by its id, with a `lit` property. A cell is dark where a dark stretch covers it and no lit one does, and lit everywhere else, so a map without any is lit all over. Only the metro has any yet, and every cell of it is in one. |
-| `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. `needs` is what reaching it takes, on one scale for every map (`simile.street.jump.NEEDS`): `jump`, the player's own, or a grade of legs, such as `hydraulic_legs`. It's left out where walking and climbing get there. |
+| `pickups` | Objects. One tile per standing cell where something lies to pick up, named by its id. Its type is `salvage`, a place salvage can lie, or `secret`, which holds `money`, or an item: `item` (its id), `item_kind`, `item_name` and `item_weight`, as `Item` has them. `needs` is what reaching it takes, on one scale for every map (`simile.street.jump.NEEDS`): `jump`, the player's own, or a grade of legs or feet, such as `spring_feet`. It's left out where walking and climbing get there. |
 
 The furniture names are `bar_counter`, `bed`, `bench`, `bicycle`, `bin`, `bookshelf`, `bush`,
 `cafe_table`, `counter`, `espresso_machine`, `fountain`, `grinder`, `kitchen`, `kitchen_counter`,
@@ -204,27 +204,28 @@ passes through it.
 | S6 | Places salvage can lie, in `pickups` | `metro_salvage_1` on the train's roof (38, 12), `_2` (63, 15) and `_3` (68, 15) in the west tunnel, `_4` in the alcove (85, 5), `_5` (83, 15), and `_6` on the high ledge (108, 12). |
 | S6 | The scrap trader's stall, and its spot | The location `scrap_stall` (24–28, rows 13–15, entry 28). The spot is `metro_scrap_trader`, `standing` at (26, 15) facing `south`, at the `scrap_stall` piece. |
 | S7 | The clinic, and the doctor's stall spot | `clinic`, an `amenity` on `clinic_floor_0` (room `clinic`, 10 wide), its door at (89, 15). The doctor's spot is `clinic_doctor`, `standing` at (6, 2) facing `south`. The room is bare for S7 to furnish. |
-| S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEGS_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the sprint legs', and in reach of the hydraulic legs', four rows up (`rise` 4.3). Salvage and a secret wait on it. |
+| S8 | The high ledge, a `machine` | `metro_high_ledge`, its four cells (106–109, row 12). It's three rows above the floor under it (`LEDGE_ROWS`): out of reach of the player's own jump, two rows up (`rise` 2.3 tiles), and of the legs' on any grade, and in reach of the spring feet's, four rows up (`rise` 4.3). Salvage and a secret wait on it. |
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | Premium legs' part | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The clinic fits the premium legs only to someone carrying it. |
-| S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
+| S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
 **Secrets** are `secret` pickups, each a jump that walking and climbing alone don't reach, and
-salvage waits in two of the places only legs reach:
+salvage waits in two of the places only the feet reach:
 
 | Needs | Place | What waits there |
 |---|---|---|
 | `jump` | The catwalk over the stairwell, a run jump from the landing | `metro_secret_stairwell` (8, 7, 25 money) |
 | `jump` | The catwalk in the vault, a jump from the train's roof | `metro_secret_catwalk` (52, 10, 40 money) |
-| `hydraulic_legs` | The high ledge, three rows up | `metro_secret_ledge` (106, 12, 60 money) and `metro_salvage_6` |
-| `spring_legs` | The alcove, five rows above the catwalk up the tunnel wall | `metro_secret_alcove` (86, 5, a `ration_pack`, food, 0.5 kg) and `metro_salvage_4` |
-| `sprint_legs` | The gantry's nook, past a five-cell gap under a roof that stops a spring jump rising | `metro_secret_gantry` (61, 8, 60 money) |
+| `spring_feet` | The high ledge, three rows up | `metro_secret_ledge` (106, 12, 60 money) and `metro_salvage_6` |
+| `spring_feet_2` | The alcove, five rows above the catwalk up the tunnel wall | `metro_secret_alcove` (86, 5, a `ration_pack`, food, 0.5 kg) and `metro_salvage_4` |
+| `bionic_legs` | The gantry's nook, past a five-cell gap under a roof that stops a high jump rising | `metro_secret_gantry` (61, 8, 60 money) |
 
-A place that needs a grade is in reach of the legs that rise at least as high and run at least as
-fast: the spring legs reach the hydraulic legs' places, the blade legs the sprint legs', and the
-premium legs everything. With Space held, legs that rise higher than three rows bump their head on
-the gantry's roof and fall short, so the premium legs cross its gap on a tap.
+A place that needs a grade is in reach of whatever rises at least as high and runs at least as
+fast: the second grade of feet reaches the first's places, every grade of legs the first's, and
+stage 1's grades of legs the places of the grade of the line they jump as. With Space held, a jump
+that rises higher than three rows bumps its head on the gantry's roof and falls short, so the legs
+and feet together, like the premium legs, cross its gap on a tap.
 
 **Drawing the metro** (`server/simile/papercraft/`): the metro's layers, furniture, the clinic's
 front and room paper are painted in #329's revised cartoon, a little dirty. Its catwalks are
@@ -260,11 +261,11 @@ slab, the row under them. West to east it's columns of rooms:
   a walk along that floor ends at the ladder, as the client's walking does, rather than passing
   over it. Holes are at least two cells apart, and ladders three, so a held key stops at the end
   of each climb. Walking, climbing and the odd hop over a hole get anywhere on that side.
-- **The gate** is the way on, and it needs legs: a weir three rows high across the hall's floor,
-  which the spring legs jump onto (`WEIR`, 12 cells in, `WEIR_AT`), or at the top tier a walkway
-  from each side with a five-cell gap between them (`GAP`), under the vault, which stops a spring
-  jump rising, so only the sprint legs cross it. Either grade 1 gets through; the player's own legs
-  don't. A fall from the west walkway lands well short of the weir.
+- **The gate** is the way on: at the top tier a walkway from each side with a five-cell gap
+  between them (`GAP`), under the vault, which stops a high jump rising, so only the legs cross it,
+  or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
+  `WEIR_AT`). The legs get through on their first grade, and so do the feet, which are found past
+  it; the player's own legs don't. A fall from the west walkway lands well short of the weir.
 - **The hatch** (`HATCH`, `sewers_hatch`) is a `jack` in the room past the gate that the most
   doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
   `hatch_log`, `simile.story`). Its cell is each level's own, so it's in the map, not in
@@ -275,24 +276,25 @@ slab, the row under them. West to east it's columns of rooms:
 
 **Pickups.** Each names its item. Salvage is `sewers_salvage_<n>`, six on the way, two before the
 gate and four past it, from `SALVAGE_ITEMS`, which `simile.economy` prices. In the sewers `needs`
-counts from the way through, which every grade of legs takes:
+counts from the way through, which every grade of legs or feet takes:
 
 | Needs | Place | What waits there |
 |---|---|---|
 | | On the floors, the way through | Six of lead pipe, copper coil, brass fitting, pump impeller, float valve, filter mesh and old battery |
 | `jump` | A pipe two rows up against a wall, past the gate | `sewers_secret_actuator`, the `APEX_ACTUATOR` |
 | `jump` | The same before the gate, in most levels | `sewers_secret_pipe`, 20 to 40 money |
-| `spring_legs` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
-| `sprint_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
+| `spring_feet_2` | A sealed top room over a drop, five rows up from the room under it (`spring_pocket`) | `sewers_secret_spring`, 60 to 90 money, and `sewers_salvage_spring`, a pressure gauge |
+| `bionic_legs` | The hall's ledge, past a five-cell gap from its walkway, under the vault and ten rows over the floor | `sewers_secret_sprint`, 50 to 80 money, and `sewers_salvage_sprint`, an Apex control board |
 
-The premium legs need the spring or the blade legs, so the actuator waits where both reach. The
-spring and sprint pockets are never on the way to the hatch.
+The actuator waits where the legs and the feet both reach. The two pockets keep their stage 1 ids,
+and are never on the way to the hatch.
 
 **What every level is checked for** (`problems`, which the generator keeps trying layouts until it
-passes, and `tests/street/test_sewers.py` over the committed levels and more seeds): every grade of
-legs reaches the hatch and the plugs and the player's own legs don't; on every grade, and on their
-own legs, the player can get back to the lift from anywhere they can get to; each pickup is in
-reach of exactly the grades that meet its `needs`; and every salvage has a price.
+passes, and `tests/street/test_sewers.py` over the committed levels and more seeds): on every
+one of `KITS`, any grade of legs or feet or one of each, the player reaches the hatch and the plugs,
+and on their own legs they don't; on every one, and on their own legs, they can get back to the
+lift from anywhere they can get to; each pickup is in reach on exactly the ones that meet its
+`needs`; and every salvage has a price.
 
 **Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
 sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,
@@ -342,34 +344,44 @@ resident can stop on any cell of a run. A move comes with its cost.
 another up to `cells` (4) along the row and `rows` (2) up, or down any way, through open air: up
 from where it takes off, along over the higher end with room for the head, and down onto where it
 lands. Under something solid the jump can rise only until the head meets it, and goes no further
-along than a jump that high (`Jump.along`). `moves(town, cell, jump)` jumps on a grade of legs'
-`Jump` instead. Residents never jump, so their paths are as they were.
+along than a jump that high (`Jump.along`). `moves(town, cell, jump)` jumps on another `Jump`
+instead, such as one of `KITS`. Residents never jump, so their paths are as they were.
 
 **The player's position.** `simile.street.moves.possible(town, x, y, last)` is the server's check
 on a `player_move` (`docs/protocol.md`): somewhere to stand or climb, or mid-step, or in open air
 over somewhere to land, either within the farthest jump from somewhere to stand, or lower than
 `last`, the last position kept on that map, and within that jump's reach of it along the row.
 
-`jump.json` is the jump both sides share, on the player's own legs, with what each grade of legs
-changes of it under `legs`, by the bionic (`simile.street.jump.GRADES`):
+`jump.json` is the jump both sides share, on the player's own legs, with what each of `KITS`
+changes of it under `kits`: each grade of legs or feet on its own, by the bionic, and one of each
+together, joined by `+`, e.g. `bionic_legs+spring_feet` (`simile.street.jump.kit_name`). The legs
+(`LEGS`) run faster and kick harder, and the feet (`FEET`) rise higher; together the jump rises as
+the feet do and runs as the legs do, `kit`'s best of each:
 
-| Legs | `rise` | `rows` | `run` | `cells` | `reach` |
-|---|--:|--:|--:|--:|--:|
-| Their own | 2.3 | 2 | 5.2 | 4 | 5.5 |
-| `hydraulic_legs`, spring grade 1 | 4.3 | 4 | 5.2 | 5 | 6.9 |
-| `spring_legs`, spring grade 2 | 6.3 | 6 | 5.2 | 6 | 7.9 |
-| `sprint_legs`, sprint grade 1 | 2.3 | 2 | 7.8 | 6 | 7.9 |
-| `blade_legs`, sprint grade 2 | 2.3 | 2 | 10.4 | 8 | 10.2 |
-| `premium_legs` | 6.3 | 6 | 10.4 | 13 | 15.1 |
+| Fitted | `rise` | `rows` | `run` | `cells` | `reach` | `kick` |
+|---|--:|--:|--:|--:|--:|--:|
+| Their own | 2.3 | 2 | 5.2 | 4 | 5.5 | 1 |
+| `bionic_legs` | 2.3 | 2 | 7.8 | 6 | 7.9 | 2 |
+| `bionic_legs_2` | 2.3 | 2 | 10.4 | 8 | 10.2 | 3 |
+| `bionic_legs_3` | 2.3 | 2 | 13 | 10 | 12.6 | 4 |
+| `spring_feet` | 4.3 | 4 | 5.2 | 5 | 6.9 | 1 |
+| `spring_feet_2` | 6.3 | 6 | 5.2 | 6 | 7.9 | 1 |
+| `bionic_legs+spring_feet` | 4.3 | 4 | 7.8 | 8 | 9.9 | 2 |
+| `bionic_legs_3+spring_feet_2` | 6.3 | 6 | 13 | 16 | 18.7 | 4 |
 
-Every grade jumps under the same gravity, so a higher jump stays up longer and goes further too.
+Stage 1's grades of legs (`STAGE_1`) jump as they did, until P18 retires them: `hydraulic_legs` as
+the spring feet, `spring_legs` as their second grade, `sprint_legs` and `blade_legs` as the legs'
+first two grades, and `premium_legs` as the legs' second grade with the feet's second. They kick
+as the player's own legs do. Every grade jumps under the same gravity, so a higher jump stays up longer and
+goes further too.
 `rise` is how many tiles the feet rise with Space held, in `rise_seconds`; `run` how many tiles a
 second they run, and fly along in a run jump; `fall_gravity` how much stronger gravity is falling or
 once Space is let go;
 `cut` how much of its speed up a jump keeps when Space is let go early; `coyote_seconds` and
 `buffer_seconds` the grace after walking off a ledge and before landing; `foot` and `body` the
-player's half-width and height; `cells` and `rows` the jump in the neighbour rule; and `reach` the
-farthest jump's reach in tiles from the middle of the cell it takes off from: a run jump with
+player's half-width and height; `kick` how many times harder than their own legs they kick, for
+kicking (P9), and left out of comparing jumps; `cells` and `rows` the jump in the neighbour rule;
+and `reach` the farthest jump's reach in tiles from the middle of the cell it takes off from: a run jump with
 Space held, taking off as late as coyote time allows, at the client's longest step
 (`frame_seconds`).
 
