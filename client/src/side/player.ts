@@ -34,7 +34,6 @@ export type Controls = {
   x: number;
   y: number;
   use: boolean;
-  eTaken: boolean;
   run: boolean;
   jump?: boolean;
   hold?: boolean;
@@ -190,7 +189,7 @@ export class SidePlayer {
     }
     const ways = this.ways();
     const vertical: Press | undefined = this.armed && controls.y !== 0 ? (controls.y < 0 ? 'up' : 'down') : undefined;
-    const way = (controls.use ? chosen(ways, 'use') : undefined) ?? (vertical && chosen(ways, vertical, controls.eTaken));
+    const way = (controls.use ? chosen(ways, 'use') : undefined) ?? (vertical && chosen(ways, vertical));
     if (way?.kind === 'door') {
       this.armed = false;
       return way.link;

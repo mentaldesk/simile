@@ -30,8 +30,8 @@ const NONE: Held = { up: false, down: false, left: false, right: false, run: fal
 /** One frame of the side scene's input: the keys held and whether E was pressed. */
 function frame(at: MapPosition, held: Partial<Held>, pressedE: boolean) {
   const player = new SidePlayer(village, at);
-  const controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
-  readControls({ ...NONE, ...held }, pressedE, player.mapPosition, controls);
+  const controls: Controls = { x: 0, y: 0, use: false, run: false };
+  readControls({ ...NONE, ...held }, pressedE, controls);
   return { controls, door: player.update(controls, 1 / 60) };
 }
 
@@ -49,36 +49,22 @@ afterEach(() => {
 
 describe('readControls', () => {
   it('reads the arrows as directions, y negative up, running as switched on, and Space', () => {
-    const controls: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+    const controls: Controls = { x: 0, y: 0, use: false, run: false };
     const held = { up: true, down: false, left: true, right: false, run: true, jump: true, hold: true };
-    readControls(held, false, { x: 30, y: 15, map: 'high_street' }, controls);
-    expect(controls).toEqual({ x: -1, y: -1, use: false, eTaken: false, run: true, jump: true, hold: true });
+    readControls(held, false, controls);
+    expect(controls).toEqual({ x: -1, y: -1, use: false, run: true, jump: true, hold: true });
   });
 
-  it('leaves E to the mural by house 10’s door, so one press doesn’t also go in', () => {
+  it('takes house 10’s door with E though its mural is beside it, and not with up', () => {
     const { controls, door } = frame(DOORSTEP, {}, true);
 
-    expect(controls).toMatchObject({ use: false, eTaken: true });
-    expect(door).toBeUndefined();
-  });
-
-  it('takes house 10’s door with up instead, while the mural has E', () => {
-    expect(frame(DOORSTEP, { up: true }, false).door?.id).toBe('house_10');
-  });
-
-  it('leaves E to the mural at the passage to the High Street too', () => {
-    expect(frame(PASSAGE, {}, true).door).toBeUndefined();
-    expect(frame(PASSAGE, { up: true }, false).door?.to.map).toBe('high_street');
-  });
-
-  it('takes the door with E once nothing is in reach, and not with up', () => {
-    server.dispatch(JSON.stringify({ type: 'murals', walls: [] }));
-
-    const { controls, door } = frame(DOORSTEP, {}, true);
-
-    expect(controls).toMatchObject({ use: true, eTaken: false });
+    expect(controls.use).toBe(true);
     expect(door?.id).toBe('house_10');
     expect(frame(DOORSTEP, { up: true }, false).door).toBeUndefined();
+  });
+
+  it('takes the passage to the High Street with E beside the mural too', () => {
+    expect(frame(PASSAGE, {}, true).door?.to.map).toBe('high_street');
   });
 });
 
@@ -132,7 +118,7 @@ describe('Shift', () => {
     const player = new SidePlayer(village, { x: 9, y: 2, map: 'coffee_shop_floor_0' });
     const go = (controls: Partial<Controls>, seconds: number) => {
       for (let t = 0; t < seconds - 1e-9; t += 1 / 60) {
-        player.update({ x: 0, y: 0, use: false, eTaken: false, run: running.on, ...controls }, 1 / 60);
+        player.update({ x: 0, y: 0, use: false, run: running.on, ...controls }, 1 / 60);
       }
     };
     go({ x: 1 }, 1);

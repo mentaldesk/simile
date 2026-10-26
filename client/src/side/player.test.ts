@@ -6,7 +6,7 @@ import { TILE_M } from './layout';
 import { RIDE_SPEED, RUN_CYCLE_M, WALK_CYCLE_M } from './motion';
 import { PLAYER_CLIMB, RUN_BLEND_SECONDS, RUN_PACE, SidePlayer, type Controls, type MapPosition } from './player';
 
-const idle: Controls = { x: 0, y: 0, use: false, eTaken: false, run: false };
+const idle: Controls = { x: 0, y: 0, use: false, run: false };
 const press = (controls: Partial<Controls>): Controls => ({ ...idle, ...controls });
 const RUN_SPEED = RUN_PACE * PLAYER_SPEED;
 
@@ -159,18 +159,6 @@ describe('doors', () => {
     );
   });
 
-  it('goes through it on up instead while E is used by something in reach', () => {
-    const front = at({ x: 43, y: 15, map: 'high_street' });
-    expect(front.update(press({ y: -1, eTaken: true }), 1 / 60)?.id).toBe('coffee_shop');
-  });
-
-  it("doesn't go straight back while up is still held after arriving", () => {
-    const player = at({ x: 43, y: 15, map: 'high_street' });
-    player.place({ x: 18, y: 2, map: 'coffee_shop_floor_0' });
-    expect(hold(player, press({ y: -1, eTaken: true }), 0.5)).toBeUndefined();
-    player.update(idle, 1 / 60);
-    expect(player.update(press({ y: -1, eTaken: true }), 1 / 60)?.to.map).toBe('high_street');
-  });
 
   it('leaves a building by its front door on E, and not on down', () => {
     const player = at({ x: 18, y: 2, map: 'coffee_shop_floor_0' });

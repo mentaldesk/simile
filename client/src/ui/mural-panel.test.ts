@@ -69,7 +69,7 @@ afterEach(() => {
 it('hints at a painted wall the player stands near', () => {
   panel.update(IN_FRONT);
   expect(hint().hidden).toBe(false);
-  expect(hint().textContent).toBe('Press E to look at “Red Horizon”.');
+  expect(hint().textContent).toBe('Press V to look at “Red Horizon”.');
 
   panel.update(ACROSS_THE_SQUARE);
   expect(hint().hidden).toBe(true);
@@ -83,7 +83,7 @@ it('changes the hint when the wall is painted over', () => {
   murals([{ ...GRIND, mural: { ...GRIND.mural!, work_id: 'river', title: 'Slow River' } }, BLANK]);
   panel.update(IN_FRONT);
 
-  expect(hint().textContent).toBe('Press E to look at “Slow River”.');
+  expect(hint().textContent).toBe('Press V to look at “Slow River”.');
 });
 
 it('opens near a wall with its picture, title, artist and statement', () => {
@@ -117,7 +117,7 @@ it('opens nothing while no scene draws murals', () => {
   expect(panel.click({ x: 1, y: 1 }, IN_FRONT)).toBe(false);
 });
 
-it('closes on Esc or E, without the keys reaching the game', () => {
+it('closes on Esc or V, but not E, without the keys reaching the game', () => {
   let reached = 0;
   const count = () => reached++;
   window.addEventListener('keydown', count);
@@ -128,8 +128,9 @@ it('closes on Esc or E, without the keys reaching the game', () => {
 
   panel.look(IN_FRONT);
   press('ArrowLeft');
-  expect(section().hidden).toBe(false);
   press('e');
+  expect(section().hidden).toBe(false);
+  press('v');
   expect(section().hidden).toBe(true);
 
   window.removeEventListener('keydown', count);

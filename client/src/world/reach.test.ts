@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { server, type Pile, type Wall } from '../net';
+import { server, type Buyer, type Pile, type Wall } from '../net';
 import { interactableAt } from './interactables';
 import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
-import { inReach, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
+import { SidePlayer } from '../side/player';
+import { prompts } from '../side/ways';
+import { village } from '../side/content';
+import { eUse, inReach, lookedAtByV, orderedAtByT, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -30,34 +33,40 @@ const at = (map: string, x: number, y = 15) => ({ x, y, map });
 afterEach(() => server.dispatch(JSON.stringify({ type: 'murals', walls: [] })));
 
 describe('usedByE', () => {
-  it('uses the terminal, counter or painting frame the player is at', () => {
+  it('uses the terminal the player is at', () => {
     expect(usedByE(at('high_street', 60))).toMatchObject({ kind: 'terminal', terminal: { id: 'terminal_1' } });
     expect(usedByE(at('banyan_row', 60, 18))).toMatchObject({ kind: 'terminal', terminal: { id: 'terminal_3' } });
-    expect(usedByE(at('coffee_shop_floor_0', 6, 2))).toMatchObject({
-      kind: 'counter',
-      interactable: { id: 'coffee_shop_counter' },
-    });
-    expect(usedByE(at('gallery_floor_1', 14, 2))).toMatchObject({
-      kind: 'painting',
-      interactable: { id: 'painting_8' },
-    });
   });
 
-  it('uses nothing at a machine, at a plain door or nowhere', () => {
+  it('leaves the counter the player is at to T', () => {
+    expect(usedByE(at('coffee_shop_floor_0', 6, 2))).toBeUndefined();
+    expect(orderedAtByT(at('coffee_shop_floor_0', 6, 2))).toMatchObject({ id: 'coffee_shop_counter' });
+    expect(orderedAtByT(at('coffee_shop_floor_0', 9, 2))).toBeUndefined();
+  });
+
+  it('uses nothing at a machine, a painting frame, a plain door or nowhere', () => {
+    expect(usedByE(at('gallery_floor_1', 14, 2))).toBeUndefined();
     expect(usedByE(at('maker_space_floor_0', 8, 2))).toBeUndefined();
     expect(usedByE(at('high_street', 43))).toBeUndefined();
     expect(usedByE(at('gallery_floor_1', 15, 2))).toBeUndefined();
     expect(usedByE(undefined)).toBeUndefined();
   });
 
-  it('looks at the mural by house 10’s door, rather than going in, once murals are drawn', () => {
+  it('leaves the painting frame the player is at to V', () => {
+    expect(lookedAtByV(at('gallery_floor_1', 14, 2))).toMatchObject({ kind: 'painting', interactable: { id: 'painting_8' } });
+    expect(lookedAtByV(at('gallery_floor_1', 15, 2))).toBeUndefined();
+  });
+
+  it('leaves the door by house 10’s mural to E, and the mural to V, once murals are drawn', () => {
     server.dispatch(JSON.stringify({ type: 'murals', walls: [HOUSE_10] }));
-    expect(usedByE(at('banyan_row', 17))).toBeUndefined();
+    expect(lookedAtByV(at('banyan_row', 17))).toBeUndefined();
 
     const unset = setMuralView({ wallAt: () => undefined });
-    expect(usedByE(at('banyan_row', 17))).toMatchObject({ kind: 'mural', tiles: 1.5, wall: HOUSE_10 });
-    expect(usedByE(at('banyan_row', 24))).toMatchObject({ kind: 'mural', wall: HOUSE_10 });
-    expect(usedByE(at('banyan_row', 10))).toBeUndefined();
+    expect(usedByE(at('banyan_row', 17))).toBeUndefined();
+    expect(usedByE(at('banyan_row', 24))).toBeUndefined();
+    expect(lookedAtByV(at('banyan_row', 17))).toMatchObject({ kind: 'mural', tiles: 1.5, wall: HOUSE_10 });
+    expect(lookedAtByV(at('banyan_row', 24))).toMatchObject({ kind: 'mural', wall: HOUSE_10 });
+    expect(lookedAtByV(at('banyan_row', 10))).toBeUndefined();
     expect(muralWalls.walls).toEqual([HOUSE_10]);
     unset();
   });
@@ -202,12 +211,22 @@ describe('wayPrompts', () => {
     unset();
     expect(wayPrompts()).toEqual([]);
   });
+});
 
-  it('tell the world scene when E is used for something in reach', () => {
-    const door = (eTaken: boolean) => ({ keys: eTaken ? ['↑'] : ['E', '↑'], action: 'go in', x: 0, y: 0 });
-    const unset = setWayPrompts((eTaken) => [door(eTaken)]);
-    expect(wayPrompts()[0].keys).toEqual(['E', '↑']);
-    expect(wayPrompts(true)[0].keys).toEqual(['↑']);
-    unset();
+describe('eUse', () => {
+  const clinic: Buyer = { place: 'clinic', name: 'The Clinic', prices: {}, parts: { left_kidney: 100 } };
+  const inClinic = { ...reachables, buyer: () => clinic };
+  const at = (x: number) => {
+    const position = { x, y: 2, map: 'clinic_floor_0' };
+    const ways = prompts(village, village.map(position.map)!, new SidePlayer(village, position).ways());
+    return eUse(position, ways.map(({ keys, action, at }) => ({ keys, action, ...at })), inClinic);
+  };
+
+  it('uses nothing on the clinic’s door cell, where E takes the door', () => {
+    expect(at(1)).toBeUndefined();
+  });
+
+  it('uses the clinic a cell inside it', () => {
+    expect(at(2)).toEqual({ kind: 'clinic', tiles: 0, buyer: clinic });
   });
 });

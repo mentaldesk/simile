@@ -162,7 +162,7 @@ async function shot(page: Page, index: number, name: string): Promise<void> {
   await page.screenshot({ path, type: 'jpeg', quality: 80 });
 }
 
-/** E where nothing takes it leaves the player where they are. */
+/** E where nothing takes it leaves the player where they are, and talks to nobody. */
 async function pressingE(page: Page, api: Api, name: string): Promise<void> {
   const before = (await api.state())!;
   await page.keyboard.press('e');
@@ -171,6 +171,7 @@ async function pressingE(page: Page, api: Api, name: string): Promise<void> {
   if (after.climbing || after.map !== before.map || Math.abs(after.x - before.x) > 1e-6 || after.y !== before.y) {
     throw new Error(`${name}: E moved the player from ${JSON.stringify(before)} to ${JSON.stringify(after)}`);
   }
+  if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: E opened the chat`);
 }
 
 /** Through a door, the label names another place and stands out. */
@@ -196,7 +197,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     await page.keyboard.up(walk);
   }
   await run(page, 200);
-  const { prompts, x, used, talk } = (await api.state())!;
+  const { prompts, x, used } = (await api.state())!;
   if (leg.reach === REACH.edge && Math.abs(x - leg.x) < 1.3) {
     throw new Error(`${leg.name}: stopped ${Math.abs(x - leg.x).toFixed(2)} from ${leg.x}, not at the edge of its reach`);
   }
@@ -205,7 +206,7 @@ async function walkLeg(page: Page, api: Api, leg: Leg, index: number): Promise<s
     throw new Error(`${leg.name}: no prompt for ${key} at ${leg.x}, only ${JSON.stringify(prompts)}`);
   }
   await shot(page, index, leg.name);
-  const eFree = !used && !talk && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
+  const eFree = !used && !prompts.some((prompt) => prompt.split(':')[0].split(' ').includes('E'));
   const place = await shown(page, '.place-label');
   if (leg.key === 'e') await page.keyboard.press('e');
   else {
@@ -537,43 +538,70 @@ async function terminalLeg(page: Page, api: Api, at: Place, index: number): Prom
   if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
 }
 
-/** E at the café counter opens the chat to whoever is behind it, and Esc closes it. */
+/** E at the café counter does nothing, T opens the chat to whoever is behind it, and Esc closes it. */
 async function counterLeg(page: Page, api: Api, counter: Counter, index: number): Promise<void> {
   const name = `the counter on ${counter.map}`;
   await api.move('odalys', { map: counter.map, x: counter.behind, y: counter.y });
   const stand = { map: counter.map, x: counter.x, y: counter.y };
   await teleport(page, api, stand, name);
   await run(page, 500);
-  if (!(await shown(page, '.counter-hint'))?.includes('Press E')) throw new Error(`${name}: no hint to press E`);
-  await page.keyboard.press('e');
+  const hint = await shown(page, '.counter-hint');
+  if (hint !== 'Press T to order at the counter.') throw new Error(`${name}: the hint is ${hint}`);
+  await pressingE(page, api, name);
+  await page.keyboard.press('t');
   await run(page, 300);
   await shot(page, index, name);
   const chat = await shown(page, '.dialogue-chat');
-  if (!chat?.includes('Odalys')) throw new Error(`${name}: E didn't open the chat to Odalys, only ${chat}`);
+  if (!chat?.includes('Odalys')) throw new Error(`${name}: T didn't open the chat to Odalys, only ${chat}`);
   await page.keyboard.press('Escape');
   await run(page, 200);
   if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
   if (!near(await api.state(), stand)) throw new Error(`${name}: the player moved`);
 }
 
-/** E beside Lachlan, with nothing else here, opens the chat to him, and Esc closes it. */
+/** E beside Lachlan does nothing, T opens the chat to him, and Esc closes it. */
 async function talkLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'talking to Lachlan';
   const at = { map: 'high_street', x: 27, y: 15 };
   await teleport(page, api, at, name);
   await run(page, 500);
   const { talk, prompts, used } = (await api.state())!;
-  if (talk !== 'E: talk to Lachlan' || prompts.length || used) {
+  if (talk !== 'T: talk to Lachlan' || prompts.length || used) {
     throw new Error(`${name}: ${JSON.stringify({ talk, prompts, used })}`);
   }
   await shot(page, index, name);
-  await page.keyboard.press('e');
+  await pressingE(page, api, name);
+  await page.keyboard.press('t');
   await run(page, 300);
   const chat = await shown(page, '.dialogue-chat');
-  if (!chat?.includes('Lachlan')) throw new Error(`${name}: E didn't open the chat to Lachlan, only ${chat}`);
+  if (!chat?.includes('Lachlan')) throw new Error(`${name}: T didn't open the chat to Lachlan, only ${chat}`);
+  const typed = await page.$eval('.dialogue-chat input', (input) => (input as HTMLInputElement).value);
+  if (typed) throw new Error(`${name}: T typed ${JSON.stringify(typed)} into the chat`);
   await page.keyboard.press('Escape');
   await run(page, 200);
   if ((await shown(page, '.dialogue-chat')) !== null) throw new Error(`${name}: Esc didn't close the chat`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
+}
+
+const hints = (page: Page) =>
+  page.$$eval('.news-hint', (all) => all.filter((hint) => !(hint as HTMLElement).hidden).map((hint) => hint.textContent ?? ''));
+
+/** V at a mural or a painting opens it and V closes it again, while a door beside the mural stays E's. */
+async function lookLeg(page: Page, api: Api, at: Place, panel: string, door: string | null, index: number): Promise<void> {
+  const name = `V at the ${panel} on ${at.map}`;
+  await teleport(page, api, at, name);
+  await run(page, 500);
+  const hint = (await hints(page)).find((text) => text.startsWith('Press V to look at'));
+  if (!hint) throw new Error(`${name}: no hint to press V, only ${JSON.stringify(await hints(page))}`);
+  const { prompts, used } = (await api.state())!;
+  if (used || (door && !prompts.includes(door))) throw new Error(`${name}: ${JSON.stringify({ prompts, used })}`);
+  await page.keyboard.press('v');
+  await run(page, 300);
+  await shot(page, index, name);
+  if ((await shown(page, `section.${panel}`)) === null) throw new Error(`${name}: V didn't open the ${panel}`);
+  await page.keyboard.press('v');
+  await run(page, 200);
+  if ((await shown(page, `section.${panel}`)) !== null) throw new Error(`${name}: V didn't close the ${panel}`);
   if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
 }
 
@@ -622,7 +650,7 @@ try {
   page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));
   if (!realTime) await page.clock.install();
   const url = server.resolvedUrls!.local[0];
-  await page.goto(`${url}?harness=side&still&panel=0&murals=0`);
+  await page.goto(`${url}?harness=side&still&panel=0`);
   if (!realTime) await page.clock.pauseAt(Date.now() + 1000);
   const api = walkApi(page);
   await until(page, async () => !!(await page.evaluate(() => 'sideWalk' in window)) && !!(await api.state()), 60, 'starting');
@@ -642,10 +670,12 @@ try {
       (i) => terminalLeg(page, api, at, i),
     ]),
     ...(await api.counters()).map((counter): [string, (index: number) => Promise<string | void>] => [
-      `E at the counter on ${counter.map}`,
+      `T at the counter on ${counter.map}`,
       (i) => counterLeg(page, api, counter, i),
     ]),
-    ['E beside a resident', (i) => talkLeg(page, api, i)],
+    ['T beside a resident', (i) => talkLeg(page, api, i)],
+    ["V at the mural by house 10's door", (i) => lookLeg(page, api, { map: 'banyan_row', x: 17, y: 15 }, 'mural', 'E: go in', i)],
+    ['V at a painting in the gallery', (i) => lookLeg(page, api, { map: 'gallery_floor_1', x: 14, y: 2 }, 'gallery', null, i)],
     ['C for the character screen', (i) => characterLeg(page, api, i)],
   ];
   const started = Date.now();
