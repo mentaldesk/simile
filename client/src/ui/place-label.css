@@ -1,6 +1,11 @@
 .place-label {
+  /* Right of the hunger corner's widest line, set by `.hunger-hint`'s left and max-width. */
+  --clear: 268px;
+  --width: calc(var(--chars, 0) * 1ch + 14px);
+  --scale: 1;
+
   position: absolute;
-  left: 50%;
+  left: max(50%, calc(var(--clear) + var(--width) * var(--scale) / 2));
   top: 4px;
   padding: 1px 6px;
   border: 1px solid #1d2b26;
@@ -11,18 +16,20 @@
   opacity: 0.8;
   font-size: 7px;
   white-space: nowrap;
-  transform: translateX(-50%);
+  transform: translateX(-50%) scale(var(--scale));
   transform-origin: 50% 0;
   transition:
+    left 0.6s ease-in-out,
     transform 0.6s ease-in-out,
     opacity 0.6s ease-in-out,
     box-shadow 0.6s ease-in-out;
 }
 
 .place-label-new {
+  --scale: 1.7;
+
   box-shadow: 2px 2px 0 #1d2b26;
   opacity: 1;
-  transform: translateX(-50%) scale(1.7);
   transition: none;
   animation: place-label-drop 0.4s cubic-bezier(0.3, 1.6, 0.6, 1);
 }
@@ -34,6 +41,6 @@
   }
 }
 
-.dialogue:has(> .news-hint:not([hidden]), > .counter-hint:not([hidden])) .place-label {
+body:has(> .dialogue > :is(.news-hint, .counter-hint):not([hidden])) .place-label {
   top: 16px;
 }

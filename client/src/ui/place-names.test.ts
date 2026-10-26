@@ -3,15 +3,10 @@ import type { TiledMap } from '../world/map';
 import { placeName } from './place-label';
 import { streets } from './street.fixture';
 
-const sewers = import.meta.glob<string>('../../../content/street/levels/3/sewers.tmj', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-});
-const maps: Record<string, TiledMap> = {
-  ...streets,
-  sewers: JSON.parse(Object.values(sewers)[0]) as TiledMap,
-};
+const levels = Object.values(
+  import.meta.glob<string>('../../../content/street/levels/*/sewers.tmj', { eager: true, query: '?raw', import: 'default' }),
+).map((json) => JSON.parse(json) as TiledMap);
+const maps: Record<string, TiledMap> = { ...streets, sewers: levels[0] };
 
 describe('placeName', () => {
   it.each([
@@ -32,6 +27,11 @@ describe('placeName', () => {
 
   it('names every street and floor', () => {
     for (const mapId of Object.keys(maps)) expect(placeName(maps, mapId), mapId).toBeTruthy();
+  });
+
+  it('names every level of the sewers', () => {
+    expect(levels.length).toBeGreaterThan(1);
+    for (const sewers of levels) expect(placeName({ ...streets, sewers }, 'sewers')).toBe('The Sewers');
   });
 
   it('names nothing off the maps', () => {

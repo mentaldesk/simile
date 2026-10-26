@@ -58,6 +58,20 @@ describe('PlaceLabel', () => {
     expect(standsOut()).toBe(true);
   });
 
+  it('stands out for the whole while again on a second change before settling', () => {
+    label.update('high_street', 0);
+    label.update('noodle_bar_floor_0', 1);
+    label.update('noodle_bar_floor_0', 1 + NEW_PLACE_SECONDS - 0.1);
+    expect(standsOut()).toBe(true);
+    label.update('noodle_bar_floor_0', 1 + NEW_PLACE_SECONDS);
+    expect(standsOut()).toBe(false);
+  });
+
+  it('sizes itself by its name, to keep clear of the corner', () => {
+    label.update('noodle_bar_floor_0', 0);
+    expect(element().style.getPropertyValue('--chars')).toBe('19');
+  });
+
   it('stays settled up the stairs, in the same building', () => {
     label.update('noodle_bar_floor_0', 0);
     label.update('noodle_bar_floor_1', NEW_PLACE_SECONDS);

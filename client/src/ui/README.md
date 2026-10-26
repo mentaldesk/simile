@@ -245,7 +245,8 @@ A paper tag at the top names the place the player is in (`PlaceLabel` in
 its building's, from the `buildings` front on its street ([`content/street/`](../../../content/street/README.md)),
 so every floor of the café is "The Daily Grind". When the name changes, through a door or onto
 another street, it stands out bigger for `NEW_PLACE_SECONDS` (2.5), then settles. It drops a line
-while a hint takes the top, and panels cover it.
+while a hint takes the top, in this overlay or the gallery's, and panels cover it. It's centred
+unless that would reach under the hunger corner's widest line, when it sits just right of it.
 
 ## The lamp
 

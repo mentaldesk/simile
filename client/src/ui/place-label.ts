@@ -3,7 +3,6 @@ import './place-label.css';
 
 type Maps = Readonly<Record<string, TiledMap | undefined>>;
 
-/** How long a new place's name stands out before it settles. */
 export const NEW_PLACE_SECONDS = 2.5;
 
 const property = (properties: TiledProperty[] | undefined, name: string): unknown =>
@@ -41,8 +40,17 @@ export class PlaceLabel {
       this.shown = name;
       this.root.hidden = !name;
       this.root.textContent = name ?? '';
+      this.root.style.setProperty('--chars', String(name?.length ?? 0));
       this.settleAt = now + NEW_PLACE_SECONDS;
+      this.replay();
     }
     this.root.classList.toggle('place-label-new', !!name && now < this.settleAt);
+  }
+
+  /** A reflow between dropping and adding the class replays the drop-in. */
+  private replay(): void {
+    if (!this.root.classList.contains('place-label-new')) return;
+    this.root.classList.remove('place-label-new');
+    void this.root.offsetWidth;
   }
 }

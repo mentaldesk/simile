@@ -179,7 +179,7 @@ async function placeChanged(page: Page, before: string | null, what: string): Pr
   const after = await shown(page, '.place-label');
   const standsOut = await page.evaluate(() => !!document.querySelector('.place-label-new'));
   if (!before || !after || after === before || !standsOut) {
-    throw new Error(`${what}: the place label went from ${before} to ${after}${standsOut ? '' : ', standing out'}`);
+    throw new Error(`${what}: the place label went from ${before} to ${after}${standsOut ? '' : ', not standing out'}`);
   }
 }
 
