@@ -19,9 +19,9 @@ from simile.schema import (
     Player,
     Relationship,
 )
-from simile.social import as_of, meet
+from simile.social import as_of, tolerance
+from simile.social.bionics import level
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
-from simile.story.suspects import lean
 
 logger = logging.getLogger(__name__)
 
@@ -57,25 +57,19 @@ def keeper(
     besides: Collection[Id] = (),
     config: StoryConfig = DEFAULT_CONFIG,
 ) -> Npc | None:
-    """Who has the lens: drawn from those whose values lean to `keeps` by `keeps_from` or more,
-    by how far past it they are, or else whoever leans that way most. Nobody in `besides` while
-    anyone else lives here."""
-    pool = sorted((npc for npc in npcs if npc.id not in besides), key=lambda npc: npc.id)
-    if not pool:
-        pool = sorted(npcs, key=lambda npc: npc.id)
-    if not pool:
-        return None
-    leaning = [(lean(npc, config.keeps), npc) for npc in pool]
-    keen = [(score, npc) for score, npc in leaning if score >= config.keeps_from]
-    if not keen:
-        return max(leaning, key=lambda found: found[0])[1]
-    weights = [score - config.keeps_from + 0.05 for score, _ in keen]
-    return rng.choices([npc for _, npc in keen], weights)[0]
+    """Who has the lens: drawn from those who take to bionics at `tolerates_from` or better, or
+    else whoever takes to them best. Nobody in `besides` while anyone else would do."""
+    residents = sorted(npcs, key=lambda npc: npc.id)
+    tolerant = [npc for npc in residents if level(tolerance(npc.values)) >= config.tolerates_from]
+    rng.shuffle(tolerant)
+    pool = tolerant or sorted(residents, key=lambda npc: -tolerance(npc.values))
+    return next((npc for npc in pool if npc.id not in besides), pool[0] if pool else None)
 
 
 class Lens:
-    """The keeper speaks of the lens once they trust the player `mentions_from`, and hands it
-    over in a conversation with them once they trust them `gives_from`, if they can carry it."""
+    """Once they've met, the keeper speaks of the lens when they trust the player
+    `mentions_from`, and hands it over in a conversation with them once they trust them
+    `gives_from`, if they can carry it."""
 
     def __init__(
         self,
@@ -102,10 +96,10 @@ class Lens:
         self._considered: set[str] = set()
         self._elapsed = config.lens_every
 
-    def trust(self) -> float:
+    def trusts(self, enough: float) -> bool:
+        """Whether they've met the player and trust them `enough`."""
         stored = self.memory.relationship(self.keeper.id, PLAYER_ID)
-        rel = as_of(stored, self.now()) if stored else meet(self.keeper, PLAYER_ID)
-        return rel.trust
+        return stored is not None and as_of(stored, self.now()).trust >= enough
 
     def tick(self, dt: float) -> None:
         self._elapsed += dt
@@ -116,7 +110,7 @@ class Lens:
 
     def mention(self) -> bool:
         """Remembers still having it, about the player, once trusting them enough to say so."""
-        if self.kept or self.given or self.trust() < self.config.mentions_from:
+        if self.kept or self.given or not self.trusts(self.config.mentions_from):
             return False
         self.kept = True
         self._remember(KEEPS, KEPT, salience=0.6, valence=0.2)
@@ -133,7 +127,7 @@ class Lens:
         if talk.refusing or talk.closing or not waiting or not spoken:
             return False
         self._considered.add(talk.conversation.id)
-        if self.trust() < self.config.gives_from:
+        if not self.trusts(self.config.gives_from):
             return False
         player = self.player()
         if player.load + LENS.weight > player.carry_limit + 1e-9:

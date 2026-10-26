@@ -82,28 +82,20 @@ class StoryConfig(BaseModel):
         description="How its owner felt about it. A hostile resident is glad she's gone.",
     )
     relieved: float = Field(default=0.2, description="How a hostile resident feels she's gone.")
-    keeps: dict[CoreValue, float] = Field(
-        default={
-            CoreValue.SECURITY: 0.3,
-            CoreValue.TRADITION: 0.3,
-            CoreValue.KNOWLEDGE: 0.2,
-            CoreValue.ADVENTURE: 0.2,
-        },
-        description="The values of someone who'd keep an old thermal camera, whose infrared lens "
-        "the eye needs, weighed as an attacker's grievance is.",
-    )
-    keeps_from: float = Field(
-        default=0.1,
-        description="The least lean to `keeps` the lens's keeper is drawn from. If nobody has "
-        "it, whoever leans that way most keeps it.",
+    tolerates_from: int = Field(
+        default=0,
+        ge=-2,
+        le=2,
+        description="The least S11 bionics `level` the lens's keeper is drawn from: 0 barely "
+        "minds, 1 for. If nobody has it, whoever takes to bionics best keeps it.",
     )
     mentions_from: Unit = Field(
-        default=0.55,
+        default=0.58,
         description="The trust the keeper needs in the player to remember, and so say, that they "
         "have the lens.",
     )
     gives_from: Unit = Field(
-        default=0.7, description="The trust the keeper needs in the player to give them the lens."
+        default=0.62, description="The trust the keeper needs in the player to give them the lens."
     )
     lens_every: float = Field(
         default=60.0,
