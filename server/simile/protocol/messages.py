@@ -342,6 +342,30 @@ class Meal(Model):
     price: float = Field(ge=0, allow_inf_nan=False, description="What it costs. Nothing at home.")
 
 
+class ShutReason(StrEnum):
+    """Why a shop that sells meals isn't serving them: `closed`, not serving now, off shift or past
+    last orders, or `sold_out`, open but with nothing left of its batch for this shift."""
+
+    CLOSED = "closed"
+    SOLD_OUT = "sold_out"
+
+
+class Shut(Model):
+    """A shop where the player stands that sells meals but isn't serving them now."""
+
+    place: Id = Field(description='The shop\'s location id, e.g. "noodle_bar".')
+    name: str = Field(
+        min_length=1,
+        description='The shop as the player sees it, e.g. "Golden Bowl Noodles".',
+    )
+    reason: ShutReason
+    opens: Timestamp | None = Field(
+        description="When it next starts serving, by its keeper's shifts or its own hours: the "
+        "next start after now, even while a keeper is due but hasn't come. Null only for a shop "
+        "with no keeper, or a keeper with no shifts, and no hours of its own."
+    )
+
+
 class Fitting(Model):
     """A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`."""
 
@@ -444,9 +468,9 @@ class Buyer(Model):
 
 class PlayerStateMessage(Model):
     """The player's money, what they carry, their body, their vitals and what they know, but never
-    their humanity, with the recipes they know, the meal on offer and the buyer where they stand,
-    and what's lying in the world for them to pick up. Sent after the snapshot on connect, and
-    whenever any of it changes."""
+    their humanity, with the recipes they know, the meal on offer or the shop that's shut and the
+    buyer where they stand, and what's lying in the world for them to pick up. Sent after the
+    snapshot on connect, and whenever any of it changes."""
 
     type: Literal["player_state"] = "player_state"
     player: Player
@@ -461,6 +485,12 @@ class PlayerStateMessage(Model):
         exclude_if=lambda meal: meal is None,
         description="The meal on offer where they stand: at home, or at a shop that's serving. "
         "Left out where there's none.",
+    )
+    shut: Shut | None = Field(
+        default=None,
+        exclude_if=lambda shut: shut is None,
+        description="The shop where they stand, if it sells meals but isn't serving them, and "
+        "why. Left out everywhere else.",
     )
     buyer: Buyer | None = Field(
         default=None,
@@ -479,6 +509,12 @@ class PlayerStateMessage(Model):
     def _the_recipes_they_know(self) -> Self:
         if [recipe.bionic for recipe in self.recipes] != self.player.mind.recipes:
             raise ValueError("player_state has each recipe they know, in order")
+        return self
+
+    @model_validator(mode="after")
+    def _a_meal_or_a_shut_shop(self) -> Self:
+        if self.meal is not None and self.shut is not None:
+            raise ValueError("player_state has a meal on offer or a shop that's shut, not both")
         return self
 
 
