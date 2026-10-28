@@ -3,7 +3,7 @@
 import heapq
 import math
 import random
-from collections import deque
+from collections import Counter, deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 
@@ -23,7 +23,7 @@ from simile.schema import (
     TileArea,
 )
 from simile.street.finds import searchable, under
-from simile.street.jump import KITS, OWN_JUMP, Jump, meets
+from simile.street.jump import JUMP, KITS, OWN_JUMP, Jump, meets
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan, Spawn
@@ -57,13 +57,21 @@ WEIR_AT = 12
 ATTEMPTS = 40
 RATS = (3, 2)
 """Zone 0's nests of rats, each keeping to a room of its own."""
+BOT_FLOOR = 10
+"""Cells of floor a bot has to itself at least, room to jump it as it comes."""
+BOT_CLEAR = 2
+"""Cells every cell of a bot's patrol keeps from where the player comes onto its floor."""
 BOT_GAP = 8
 """Steps from any salvage that every cell of a bot's patrol keeps: over half a minute's drift."""
 REACH = next(way.within for way in BOT.ways if isinstance(way, Collect))
 """How far by its own grid a bot notices salvage: every cell of its patrol is within it of some."""
-DEN = 14
+DEN = 18
 """The dogs' den's width: a column of its own east of the last room."""
 DOGS = 3
+DEN_LADDER = 3
+"""Cells in from the den's door that a ladder climbs to its loft, out of the dogs' reach."""
+DEN_CLEAR = 2
+"""Cells past that ladder before the floor the dogs keep to."""
 BATS = (2, 2)
 """Zone 0's roosts of bats, each in a dark room of its own, the first on the way to the gate."""
 CAVE = 18
@@ -580,7 +588,10 @@ def cover(level: Level, plan: Plan) -> None:
 
 
 def dangers(level: Level, plan: Plan) -> None:
-    """Zone 0's rats and bots: content/street/README.md's *Creatures*."""
+    """Zone 0's rats and bots, each where it has a solution: content/street/README.md's
+    *Creatures*. A bot keeps to a floor of its own, long enough to jump it as it comes, and patrols
+    clear of the ladders and holes onto it, to wait at out of its sight. A nest keeps to a room off
+    every bot's floor, on its widest stretch, to come down on each rat as it comes."""
     rng = random.Random(f"sewers/{level.seed}/creatures")
     start, gate = level.columns[1].x, level.columns[level.gate].x
     zone = TileArea(x=start, y=0, width=gate - start, height=plan.height)
@@ -608,34 +619,103 @@ def dangers(level: Level, plan: Plan) -> None:
     def clear(cell: Cell) -> bool:
         return all(d.get(c, math.inf) >= BOT_GAP for c in patrol(cell) for d in steps)
 
-    used: set[Cell] = set()
-    for number in range(1, len(salvage) + 1):
-        free = sorted(c for c in edges if plan.standing(*c) and c not in used and clear(c))
+    floors = stretches(edges)
+    rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
+    sizes = Counter(floors[c] for c in edges if plan.standing(*c))
+    reached = {floors[c] for c in routes(Cells(plan), (LANDING.x, LANDING.y), JUMP) if c in floors}
+    ways_on = [c for c in edges if plan.standing(*c) and onto(plan, *c, start, gate)]
+
+    def unguarded(guarded: set[int]) -> list[Node]:
+        return [n for n in rooms if not {floors.get((x, FLOORS[n[1]])) for x in floor(n)} & guarded]
+
+    def passable(cell: Cell, apart: int = BOT_CLEAR) -> bool:
+        """On a floor the player gets to on their own legs, long enough to jump the bot, its
+        patrol `apart` from every way onto it."""
+        here = floors[cell]
+        ways = [w for w in ways_on if floors[w] == here]
+        far = all(abs(w[0] - c[0]) >= apart for w in ways for c in patrol(cell))
+        return here in reached and sizes[here] >= BOT_FLOOR and far
+
+    used: list[Cell] = []
+    for number in range(len(salvage)):
+        taken = {floors[c] for c in used}
+        own = [c for c in edges if plan.standing(*c) and floors[c] not in taken and clear(c)]
+        free = sorted(c for c in own if passable(c)) or sorted(c for c in own if passable(c, 0))
+        free = [c for c in free if len(unguarded(taken | {floors[c]})) >= len(RATS)]
+        if not free:
+            continue
         options = free
-        for cost in sorted(costs, key=lambda cost: cost is not costs[number - 1]):
+        for cost in sorted(costs, key=lambda cost: cost is not costs[number]):
             near = [c for c in free if all(cost.get(p, math.inf) <= REACH for p in patrol(c))]
             if near:
                 options = near
                 break
         x, y = rng.choice(options)
-        used.add((x, y))
-        bot = Spawn(f"sewers_bot_{number}", CreatureKind.BOT, x, y, zone, BOT_SPAN)
+        used.append((x, y))
+        bot = Spawn(f"sewers_bot_{len(used)}", CreatureKind.BOT, x, y, zone, BOT_SPAN)
         plan.creatures.append(bot)
-    rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
-    bots = {node(p.x, p.y) for p in salvage}
-    nests = [n for n in rooms if n not in bots]
-    nests = rng.sample(nests if len(nests) >= len(RATS) else rooms, len(RATS))
+    clear_of = unguarded({floors[c] for c in used})
+    lying = {node(p.x, p.y) for p in salvage}
+    choices = [[n for n in clear_of if n not in lying], clear_of, rooms]
+    nests = rng.sample(next(c for c in choices if len(c) >= len(RATS)), len(RATS))
     number = 0
     for (c, tier), rats in zip(nests, RATS, strict=True):
         column, row = level.columns[c], FLOORS[tier]
         area = TileArea(x=column.x, y=row - 3, width=column.width, height=4)
-        for x in sorted(rng.sample(floor((c, tier)), rats)):
+        for x in sorted(rng.sample(widest(floor((c, tier))), rats)):
             number += 1
             plan.creatures.append(Spawn(f"sewers_rat_{number}", CreatureKind.RAT, x, row, area))
 
 
+def widest(xs: list[int]) -> list[int]:
+    """The longest run of neighbouring cells in `xs`, the first of them if two tie."""
+    runs: list[list[int]] = []
+    for x in xs:
+        if runs and runs[-1][-1] == x - 1:
+            runs[-1].append(x)
+        else:
+            runs.append([x])
+    return max(runs, key=len)
+
+
+def onto(plan: Plan, x: int, y: int, start: int, end: int) -> bool:
+    """Whether the player comes onto a floor at (x, y) from elsewhere: at a ladder's foot or
+    beside its top, at the edge of a hole they hop, under one they drop through, or at the zone's
+    ends."""
+    if x in (start, end - 1) or plan.climbable.get((x, y - 1)) is DoorKind.LADDER:
+        return True
+    for side in (x - 1, x + 1):
+        if plan.climbable.get((side, y)) is DoorKind.LADDER is plan.climbable.get((side, y + 1)):
+            return True
+        if not plan.walkable(side, y) and (side, y) not in plan.solid:
+            return True
+    for up in range(y - 1, 0, -1):
+        if (x, up) in plan.solid:
+            return False
+        if plan.standing(x - 1, up) or plan.standing(x + 1, up):
+            return True
+    return False
+
+
+def stretches(edges: dict[Cell, list[moving.Edge]]) -> dict[Cell, int]:
+    """Each cell's stretch of floor: the cells joined to it by `edges`, numbered."""
+    found: dict[Cell, int] = {}
+    for start in sorted(edges):
+        if start in found:
+            continue
+        number, queue = len(set(found.values())), deque([start])
+        found[start] = number
+        while queue:
+            for edge in edges[queue.popleft()]:
+                if edge.to not in found:
+                    found[edge.to] = number
+                    queue.append(edge.to)
+    return found
+
+
 def den(level: Level, plan: Plan) -> None:
-    """The dogs' den past the last room, and its loft: content/street/README.md's *The den*."""
+    """The dogs' den past the last room, and its loft: content/street/README.md's *The den*. The
+    way past the dogs is up the ladder by the door, which they keep clear of, and along the loft."""
     rng = random.Random(f"sewers/{level.seed}/den")
     last, wall = len(level.columns) - 1, level.width
     column = Column(DEN_KIND, wall + 1, DEN, 1)
@@ -649,6 +729,8 @@ def den(level: Level, plan: Plan) -> None:
     ladder = column.end - 2
     plan.fill(x, slab(1), ladder - x, 1)
     plan.ladder((ladder, floor), floor - loft)
+    plan.clear(x + DEN_LADDER - 1, slab(1), 2, 1)
+    plan.ladder((x + DEN_LADDER, floor), floor - loft)
     light(plan, "sewers_den", wall, 0, DEN + 1, plan.height, lit=False)
     row = loft - 2
     plan.fill(x, row + 1, 2, 1)
@@ -656,13 +738,14 @@ def den(level: Level, plan: Plan) -> None:
     money = float(rng.choice((90, 100, 110, 120)))
     plan.pickups.append(Pickup(DEN_SECRET, SECRET, x, row, money, needs=OWN_JUMP))
     plan.piece("bedroll", ladder - 3, loft, 2, 1)
-    area = TileArea(x=x, y=floor - 3, width=DEN, height=4)
-    for number, at in enumerate(sorted(rng.sample(range(x + 2, ladder), DOGS)), 1):
+    kept = x + DEN_LADDER + DEN_CLEAR
+    area = TileArea(x=kept, y=floor - 3, width=column.end - kept, height=4)
+    for number, at in enumerate(sorted(rng.sample(range(kept + 1, ladder), DOGS)), 1):
         plan.creatures.append(Spawn(f"sewers_dog_{number}", CreatureKind.DOG, at, floor, area))
 
 
 def bats(level: Level, plan: Plan) -> None:
-    """Zone 0's bats: content/street/README.md's *Creatures*."""
+    """Zone 0's bats: content/street/README.md's *Creatures*. The way past them is in the dark."""
     rng = random.Random(f"sewers/{level.seed}/bats")
     rooms = [n for n in level.nodes(0) if n[0] > 0 and level.columns[n[0]].kind == ROOMS]
     dark = [n for n in rooms if roosts(level, plan, n) and not lit(plan, level, n)]
@@ -725,7 +808,8 @@ def between(level: Level, start: Node, end: Node) -> list[Node]:
 
 
 def cave(level: Level, plan: Plan) -> None:
-    """The bat cave past the den: content/street/README.md's *The cave*."""
+    """The bat cave past the den: content/street/README.md's *The cave*. The way past its bats is
+    in the dark, and in from the den's loft past the dogs."""
     rng = random.Random(f"sewers/{level.seed}/cave")
     den, wall = len(level.columns) - 1, level.width
     column = Column(CAVE_KIND, wall + 1, CAVE, 1)
@@ -735,7 +819,9 @@ def cave(level: Level, plan: Plan) -> None:
     x, end = column.x, column.end
     plan.fill(wall, 0, CAVE + 1, CEILING + 1)
     plan.fill(wall, GROUND + 1, CAVE + 1, plan.height - GROUND - 1)
-    plan.fill(wall, CEILING + 1, 1, slab(1) - CEILING)
+    plan.fill(wall, CEILING + 1, 1, FLOORS[1] - 3 - CEILING - 1)
+    plan.fill(wall, slab(1), 1, 1)
+    level.doors.add((den, 1))
     ledge = end - 2
     up = ledge - GAP - 2
     plan.fill(x, slab(1), up - x, 1)

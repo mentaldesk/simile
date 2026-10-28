@@ -32,7 +32,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
         except AttributeError:
             return
         if kind.bites:
-            health.bite()
+            health.bite(kind.damage)
         else:
             health.hurt(kind.damage)
 

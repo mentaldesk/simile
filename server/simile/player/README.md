@@ -68,8 +68,8 @@ to hurt and bite the player: they look it up when they do, not at startup.
   starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
   `heal_at_home` (0.5) at home, in two. The clinic patches them up for money (`simile.clinic`).
-- **A rat bite.** `bite()` takes `bite` (0.05) health and gives them a `rat_bite` effect of
-  `bitten` (0.2) strength, or makes the one they have that much stronger, up to 1, keeping `since`
+- **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.14, `simile.creatures`)
+  and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that much stronger, up to 1, keeping `since`
   from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
   still there `infects` (2) sim hours after `since` turns into an `infection` of the same strength,
   as a handful of bites at once does.

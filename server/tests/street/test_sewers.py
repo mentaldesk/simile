@@ -34,6 +34,7 @@ from simile.street.sewers import (
     CAVE_SECRET,
     CEILING,
     DEN,
+    DEN_LADDER,
     DEN_SECRET,
     FLOORS,
     GAP,
@@ -162,16 +163,17 @@ def test_each_pickup_is_in_reach_only_of_the_legs_or_feet_it_needs(
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
-def test_past_the_last_room_the_den_has_a_door_and_a_ladder_up_to_its_stash(
+def test_past_the_last_room_the_den_has_a_door_and_ladders_up_to_its_stash_at_each_end(
     seed: int, level: Callable[[int], Played]
 ) -> None:
     town, found = level(seed).town, level(seed).reached
     [door] = [light.area.x for light in town.light if light.id == "sewers_den"]
-    ladder, floor, loft = door + DEN - 1, FLOORS[0], FLOORS[1]
+    floor, loft = FLOORS[0], FLOORS[1]
     [stash] = [pickup for pickup in town.pickups if pickup.id == DEN_SECRET]
 
     assert town.walkable(door, floor) and all(town.solid(door, y) for y in range(CEILING, loft))
-    assert all(town.climb(ladder, y) is DoorKind.LADDER for y in range(loft, floor))
+    for ladder in (door + DEN_LADDER + 1, door + DEN - 1):
+        assert all(town.climb(ladder, y) is DoorKind.LADDER for y in range(loft, floor))
     assert door < stash.x <= ladder and stash.y < loft and stash.money >= 90
     for name in FITTED:
         assert {(door + 1, floor), (stash.x, stash.y)} <= found[name], name
@@ -188,7 +190,9 @@ def test_past_the_den_the_bat_cave_climbs_three_dark_tiers_to_a_stash_only_the_l
     [stash] = [pickup for pickup in town.pickups if pickup.id == CAVE_SECRET]
 
     assert east == town.width - 1 and town.walkable(door, FLOORS[0])
-    assert all(town.solid(door, y) for y in range(CEILING, FLOORS[0] - 3))
+    assert town.walkable(door, FLOORS[1]), "a doorway from the den's loft"
+    walls = [*range(CEILING, FLOORS[1] - 3), *range(FLOORS[1] + 1, FLOORS[0] - 3)]
+    assert all(town.solid(door, y) for y in walls)
     assert not any(town.lit(x, y) for x in range(door, east) for y in range(town.height))
     for tier, ladder in ((0, east - GAP - 3), (1, west + 1)):
         rungs = range(FLOORS[tier + 1], FLOORS[tier])

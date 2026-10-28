@@ -16,12 +16,13 @@ second:
 | `speed` | 1 | Its own pace; each way can go `pace` times it. The player walks 2.6 tiles a second and runs 5.2 on their own legs. |
 | `think` | 0.25 | How often it chooses where to go. |
 | `flies` | no | Through any open cell, rather than along floors. |
-| `climbs` | yes | Up and down ladders. Every walking kind takes stairs. |
+| `climbs` | yes | Up and down ladders. |
+| `stairs` | yes | Up and down stairs. |
 | `doors` | yes | Onto a door's tile, a link's end on its map. No creature takes a link to another map. |
 | `drops` | yes | Off a ledge or through a hole to the floor below. |
 | `reach` | 0.7 | How near the player it hurts them. |
-| `bites` | no | Hurts with `health_of(app).bite()`, which can turn infected, rather than `hurt(damage)`. |
-| `damage` | 0.05 | Health each attack takes, if it doesn't bite. |
+| `bites` | no | Hurts with `health_of(app).bite(damage)`, which can turn infected, rather than `hurt(damage)`. |
+| `damage` | 0.05 | Health each attack takes. |
 | `windup` | 0.3 | How long it shows its attack before it lands. |
 | `lunges` | no | Keeps after the player while its attack winds up, so running doesn't get away. |
 | `rest` | 1 | How long after an attack before the next. |
@@ -35,22 +36,27 @@ The tunnels' kinds are in `kinds.py` (below).
 
 | | Rat (P13) | Recycler bot (P13) | Wild dog (P14) | Bat (P15) |
 |---|---|---|---|---|
-| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
+| Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks, floor)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted, floor)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
 | Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up | 3, and 12 chasing: faster than any legs but the best (13). It flies, and thinks every 0.15 s |
-| Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
+| Attack | Bites, `bite(0.12)`, from 0.9 tiles after a 0.3 s windup, then scurries home and rests 6 s before the next | `hurt(0.35)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
 | Landed on | Goes down, and it's back 120 s later | Never goes down until there are weapons: landing on one is landing in its reach | As the bot | Never: it flies |
-| Climbs | No | Yes | No, and takes no door | Flies |
+| Climbs | No ladders | No ladders or stairs, and never drops off its floor | No, and takes no door | Flies |
 
-A rat leaves a player who carries no food alone, so a handful of them costs some health only
-when the player brings food, and they scatter after each bite. A bot ignores a wholly human
-player and chases one with any bionic (`fitted`): in the sewers that's always, since the lift
-takes the datajack. Bots are placed to start within `Collect`'s reach of salvage but patrol at
-least eight steps from any, so a player who heads straight for it gets there first.
+A rat leaves a player who carries no food alone, and notices one who does only on its own floor
+(`floor`, below), and they scatter after each bite. A bot ignores a wholly human player and
+chases one with any bionic (`fitted`): in the sewers that's always, since the lift takes the
+datajack. It too sees the player only on its own floor, which it never leaves, so height is the
+way past it. Bots are placed to start within `Collect`'s reach of salvage but patrol at least
+eight steps from any, so a player who heads straight for it gets there first.
 
-Three dogs keep to their den (`content/street/README.md`), and nothing puts them down or holds
-them back. A player on their own legs or the feet is bitten about fifteen times going through and
-back, and collapses. On the first legs, running through leaves about a tenth of their health, and
-the best legs a quarter or so (`tests/creatures/test_den.py`).
+A careless pass costs about a third of full health, and three collapse the player: walking
+through a bot's patrol, it lands one hit of 0.35, and walking through a nest of three rats with
+food, a bite from each, 0.36 (`tests/creatures/test_kinds.py`). Running through is a gamble.
+
+Three dogs keep to their den's floor past the ladder by its door (`content/street/README.md`), and
+nothing puts them down or holds them back. A player on their own legs or the feet who runs across
+their floor and back is bitten about fifteen times, and collapses. On the first legs, it leaves
+about a tenth of their health, and on the best legs under half (`tests/creatures/test_den.py`).
 
 A bat hangs at its roost while the player's lamp is off, however near they are. While it's on, a
 bat that sees the lamp, with nothing solid between, flies at the player's chest and keeps
@@ -95,9 +101,9 @@ With none, it stands still, `idle`.
 | Way | Goes | State |
 |---|---|---|
 | `Patrol(pause)` | Back and forth along its route, stopping `pause` at each end. | `moving` |
-| `Chase(sight, pace, memory, when)` | After the player while it sees them within `sight`, nothing solid between, and `when` holds; then to where it saw them last, for `memory`. Attacks in reach. | `chasing` |
+| `Chase(sight, pace, memory, when, floor)` | After the player while it sees them within `sight`, nothing solid between, and `when` holds; then to where it saw them last, for `memory`. With `floor`, it sees them only on its own floor: their feet from 0.9 tiles below it to 2.5 above (`ON_FLOOR`, a jump off it), not on a ladder or stairs it doesn't take, with floor it walks all the way between them. Attacks in reach. | `chasing` |
 | `FleeLight(radius, lit, within, pace)` | Out of the lamp's light (`radius`, 4.5 tiles, as the client draws it) and, with `lit`, the map's lit stretches, to the nearest dark cell within `within`, or else as far from the lamp as it can. | `fleeing` |
-| `DrawnTo(lure, within, pace, attacks)` | Towards `lure` while it's within `within`: `food`, the player while they carry food, or `lamp`, theirs while it's on. Attacks in reach if `attacks`. | `moving`, or `chasing` if it attacks |
+| `DrawnTo(lure, within, pace, attacks, floor)` | Towards `lure` while it's within `within`, and with `floor` on its own floor, as `Chase`: `food`, the player while they carry food, or `lamp`, theirs while it's on. Attacks in reach if `attacks`. | `moving`, or `chasing` if it attacks |
 | `Roost(when)` | A bat to its roost, to hang there while `when` holds. | `moving`, then `roosting` |
 | `Scurry(pace)` | Home after its attack lands, until it's rested. | `fleeing` |
 | `Collect(within, pace)` | To the nearest salvage lying within `within` (4) cells' walk, to take it (below). | `moving`, then `attacking` |
@@ -110,7 +116,7 @@ for bats, and `fitted` for bots.
 ## Hurting the player
 
 A creature whose way attacks, in `reach` of the player, starts its attack: `attacking` for `windup`,
-facing them. Then, if they're still in reach, it lands, `bite()` or `hurt(damage)` on
+facing them. Then, if they're still in reach, it lands, `bite(damage)` or `hurt(damage)` on
 `health_of(app)`, looked up as it lands, and it rests for `rest`. A kind that `lunges` keeps
 moving after the player while it winds up. A player more than 0.8 tiles above a walking creature
 has jumped out of its reach.
@@ -138,8 +144,10 @@ The player kills a rat by landing on it, as in the classic platformers. Each tic
 where the server keeps the player with where it kept them the tick before: feet that came down
 from above a `stomped` creature's back (`STOMP_TOP`, 0.4 tiles over its floor) to it or below,
 within `STOMP_REACH` (0.9 tiles) of it, put it down: `creature_gone`, and it's back after `respawn`
-if it has one. Walking into one, jumping up past it or coming down beside it doesn't. The reach is
-the player's foot and half a rat, and slack for the rat having moved on since the client drew it.
+if it has one. Walking into one, jumping up past it or coming down beside it doesn't, and nor does
+coming down a ladder or stairs onto one: climbing a ladder puts the player on its column, so a jump
+from anywhere else onto a rat at a ladder's foot still counts. The reach is the player's foot and
+half a rat, and slack for the rat having moved on since the client drew it.
 
 The client bounces the player off the rat as their feet reach its back, and sends that position at
 once (`client/src/side/stomp.ts`), so the server hears the feet come down on it. Landing on a bot or
@@ -151,3 +159,19 @@ The snapshot carries every creature, and `creature_moved` each change: at once f
 state or facing, and every `SEND` (0.2 sim seconds) while one moves, with where it is mid-step. The
 client tweens between them. A walking creature's position is the floor under it, and a bat's the
 middle of its cell, or the ceiling above it while it roosts.
+
+## Solutions
+
+Every danger has a solution (`docs/game-design.md`'s *Design rules*): a pattern to time a way past,
+a route it can't follow, or a way to kill it. The maps write each one down beside where they place
+it, and `tests/creatures/test_solutions.py` proves them: a scripted player
+(`tests/creatures/walkthrough.py`) moves as the client does, walking, climbing and jumping by
+`content/street/jump.json`, and is heard by the server as the client sends its moves, past every
+creature on the metro and every committed level of the sewers, and loses no health.
+
+| Danger | Solution |
+|---|---|
+| A bot | A running jump over it as it comes, taking off within two tiles of it: it hurts nothing above its reach, and it's slower than a walk, so it never catches up. Or go over it: it never leaves its floor and doesn't see the player off it or on a ladder, so wait on a ladder, or before jumping onto its floor, for it to patrol away. To climb from its floor, lead it off along the floor, jump it, and run back to the ladder ahead of it. |
+| A rat nest | Stand on its floor with the food and hop, coming down on each rat as it comes, or bring none. Rats don't see the player on a ladder, so wait on it for them to wander off its foot. |
+| The dogs' den | Up the ladder by the door, out of their reach, to the loft's stash, and along the loft into the bat cave. |
+| Bats | Cross with the lamp off. |

@@ -30,15 +30,15 @@ def maps(level: int) -> dict[str, TownMap]:
 
 
 def route(town: TownMap, run: float) -> list[tuple[float, float, float, float]]:
-    """In through the den's door, up its ladder to the loft's stash, down its hole and back out:
-    each point, the pace there and how long they stop."""
+    """In through the den's door, across the dogs' floor and up its far ladder to the loft, down
+    the hole by that ladder and back out: each point, the pace there and how long they stop."""
     [door] = [light.area.x for light in town.light if light.id == "sewers_den"]
     ladder, outside = door + DEN - 1, door - 3
     return [
         (outside, FLOOR, run, 0.0),
         (ladder, FLOOR, run, 0.0),
         (ladder, LOFT, CLIMB, 0.0),
-        (door + 3, LOFT, run, 1.0),
+        (door + 5, LOFT, run, 1.0),
         (ladder + 1, LOFT, run, 0.0),
         (ladder + 1, FLOOR, FALL, 0.0),
         (outside, FLOOR, run, 0.0),
