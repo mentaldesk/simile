@@ -6,6 +6,8 @@ import random
 from collections import Counter, deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
+from itertools import pairwise
+from typing import Any
 
 from simile.creatures import grid as moving
 from simile.creatures.kinds import BOT
@@ -22,12 +24,15 @@ from simile.schema import (
     Tile,
     TileArea,
 )
+from simile.street import charge
+from simile.street.charge import Ways, runs, seconds
 from simile.street.finds import searchable, under
-from simile.street.jump import JUMP, KITS, OWN_JUMP, Jump, meets
+from simile.street.jump import JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, plug, street
+from simile.world.map import TownMap
 
 SEWERS = "sewers"
 LEVELS = 8
@@ -41,6 +46,8 @@ APEX_ACTUATOR = Item(id="apex_actuator", kind=ItemKind.PART, name="Apex actuator
 gate."""
 HATCH = "sewers_hatch"
 """The maintenance hatch deep in every level, a jack holding Aris's trail."""
+GATE_BOX = "sewers_plug_1"
+"""The junction box in the last column before the gate, at the end of the way in."""
 FLOORS = (GROUND, GROUND - 5, GROUND - 10)
 """Each tier's standing row, bottom up, with four rows of room over it."""
 CEILING = FLOORS[-1] - 4
@@ -83,6 +90,7 @@ ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 DEN_KIND, CAVE_KIND = "den", "cave"
 SPRING_SECRET = "sewers_secret_spring"
 SPRINT_SECRET = "sewers_secret_sprint"
+SPRINT_SALVAGE = "sewers_salvage_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
 PIPE_SECRET = "sewers_secret_pipe"
 DEN_SECRET = "sewers_secret_den"
@@ -407,9 +415,9 @@ class Stocker:
         return x, row
 
 
-def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
-    """The hatch, the plugs, the secrets and the salvage."""
-    rng, gate, cells = level.rng, level.gate, Stocker(level, plan)
+def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]], cells: Stocker) -> None:
+    """The hatch, the gate's junction box, the secrets and the salvage."""
+    rng, gate = level.rng, level.gate
     west, east = level.nodes(0), level.nodes(1)
     room = farthest(level, (gate + 1, 0))
     at = "east" if room[0] == len(level.columns) - 1 else rng.choice(("west", "east"))
@@ -420,20 +428,13 @@ def stock(level: Level, plan: Plan, shelves: list[tuple[Node, int]]) -> None:
     area = TileArea(x=hx, y=hy - 1, width=2, height=2)
     machine(plan, HATCH, "Maintenance hatch", area, [Tile(x=hx, y=hy)], InteractableKind.JACK)
     plan.piece("maintenance_hatch", hx, hy - 1, 2, 2)
-    plugs = [rng.choice([n for n in west if n[0] == gate - 1])]
+    nodes = [rng.choice([n for n in west if n[0] == gate - 1])]
     if rng.random() < 0.5:
-        plugs.append(rng.choice([n for n in east if n != room]))
-    for number, node in enumerate(plugs, 1):
-        spot = cells.take(node)
-        if spot is None:
-            raise ValueError(f"no room for a plug in sewers level {level.seed}")
-        px, py = spot
-        plug_id = f"sewers_plug_{number}"
-        area = TileArea(x=px, y=py - 1, width=1, height=2)
-        plug(plan, plug_id, "Junction box", area, Tile(x=px, y=py))
-        plan.piece("breaker_box", px, py - 1, 1, 2)
-        left, right = max(px - 1, 0), min(px + 2, level.width)
-        light(plan, plug_id, left, FLOORS[node[1]] - 3, right - left, 4, lit=True)
+        nodes.append(rng.choice([n for n in east if n != room]))  # kept so no level moves
+    spot, *_ = [cells.take(node) for node in nodes]
+    if spot is None:
+        raise ValueError(f"no room for a plug in sewers level {level.seed}")
+    box(plan, GATE_BOX, *spot)
     pockets(level, plan)
     for (node, x), zone in zip(shelves, (1, 0), strict=False):
         row = FLOORS[node[1]] - 2
@@ -493,6 +494,15 @@ def finds(
         searchable(plan, find.id, label, area, under(area), items, find.teaches, kind)
 
 
+def box(plan: Plan, plug_id: str, x: int, row: int) -> None:
+    """A junction box to charge the lamp at, in a lit stretch three cells wide."""
+    area = TileArea(x=x, y=row - 1, width=1, height=2)
+    plug(plan, plug_id, "Junction box", area, Tile(x=x, y=row))
+    plan.piece("breaker_box", x, row - 1, 1, 2)
+    left, right = max(x - 1, 0), min(x + 2, plan.width)
+    light(plan, plug_id, left, row - 3, right - left, 4, lit=True)
+
+
 def pockets(level: Level, plan: Plan) -> None:
     """The secrets only a grade reaches: the spring pocket's room on the feet, and on the legs
     the hall's ledge."""
@@ -511,7 +521,7 @@ def pockets(level: Level, plan: Plan) -> None:
     money = float(rng.choice((50, 60, 70, 80)))
     end = hall.end - 1
     plan.pickups.append(Pickup(SPRINT_SECRET, SECRET, end, row, money, needs=sprint))
-    salvage = Pickup("sewers_salvage_sprint", SALVAGE, end - 1, row, item=APEX_BOARD, needs=sprint)
+    salvage = Pickup(SPRINT_SALVAGE, SALVAGE, end - 1, row, item=APEX_BOARD, needs=sprint)
     plan.pickups.append(salvage)
 
 
@@ -840,6 +850,74 @@ def cave(level: Level, plan: Plan) -> None:
         plan.creatures.append(bat)
 
 
+def stops(town: Any, zone: int) -> list[Cell]:
+    [gate] = [light.area for light in town.light if light.id == "sewers_gate"]
+    things = [
+        (item.stand[0].x, item.stand[0].y)
+        for item in town.interactables
+        if item.id in ZONES or item.id == HATCH
+    ]
+    things += [
+        (pickup.x, pickup.y)
+        for pickup in town.pickups
+        if pickup.id.removeprefix("sewers_salvage_").isdigit()
+        or pickup.id in (PIPE_SECRET, ACTUATOR_SECRET, DEN_SECRET)
+    ]
+    if zone == 0:
+        return [cell for cell in things if cell[0] < gate.x]
+    legs = [(p.x, p.y) for p in town.pickups if p.id in (SPRINT_SECRET, SPRINT_SALVAGE)]
+    return [*(cell for cell in things if cell[0] >= gate.x + gate.width), *legs]
+
+
+def gate_box(town: Any) -> Cell:
+    [stand] = [item.stand[0] for item in town.interactables if item.id == GATE_BOX]
+    return stand.x, stand.y
+
+
+def way_in(town: Any) -> list[Cell]:
+    return Ways(town).tour((LANDING.x, LANDING.y), stops(town, 0), gate_box(town))
+
+
+def way_on(town: Any) -> list[Cell]:
+    start = gate_box(town)
+    return Ways(town, LEGS[Bionic.BIONIC_LEGS]).tour(start, stops(town, 1), start)
+
+
+def boxes(level: Level, plan: Plan, cells: Stocker) -> None:
+    town, route = Cells(plan), way_on(Cells(plan))
+    floors = {(x, FLOORS[node[1]]) for node in level.nodes(1) for x in cells.free(node)}
+    plugs = {
+        (item.stand[0].x, item.stand[0].y)
+        for item in plan.interactables
+        if item.kind is InteractableKind.PLUG
+    }
+
+    def runs_out(plugs: set[Cell]) -> int:
+        """How far along the way the lamp runs past its reach, or its end if it never does."""
+        spent = 0.0
+        for i, (a, b) in enumerate(pairwise(route)):
+            if not (town.lit(*a) and town.lit(*b)):
+                spent += seconds(town, a, b)
+            if spent > charge.REACH:
+                return i
+            if b in plugs:
+                spent = 0.0
+        return len(route)
+
+    while runs_out(plugs) < len(route):
+        spots = [c for c in dict.fromkeys(route) if c in floors and c not in cells.taken]
+        if not spots:
+            raise ValueError(f"no room for a junction box in sewers level {level.seed}")
+
+        def first(c: Cell) -> tuple[int, float]:
+            return runs_out(plugs | {c}), runs(town, route, plugs | {c})[0]
+
+        x, row = max(spots, key=first)
+        cells.taken |= {(x + d, row) for d in (-1, 0, 1)}
+        box(plan, f"sewers_plug_{len(plugs) + 1}", x, row)
+        plugs.add((x, row))
+
+
 def towards(
     edges: dict[Cell, list[moving.Edge]], goal: Cell, cost: Callable[[moving.Edge], float]
 ) -> dict[Cell, float]:
@@ -876,11 +954,13 @@ def build(level: Level) -> Plan:
     gate = level.columns[level.gate]
     light(plan, "sewers_gate", gate.x, CEILING + 1, gate.width, GROUND - CEILING, lit=True)
     plan.piece("freight_lift", LANDING.x, GROUND - 3, 2, 4)
-    stock(level, plan, ledges)
+    cells = Stocker(level, plan)
+    stock(level, plan, ledges, cells)
     dangers(level, plan)
     bats(level, plan)
     den(level, plan)
     cave(level, plan)
+    boxes(level, plan, cells)
     cover(level, plan)
     plan.doors.append(lift())
     return plan
@@ -913,6 +993,7 @@ class Cells:
     def __init__(self, plan: Plan) -> None:
         self.plan, self.width, self.height = plan, plan.width, plan.height
         self.id, self.doors = plan.id, plan.doors
+        self.interactables, self.pickups, self.light = plan.interactables, plan.pickups, plan.light
 
     def solid(self, x: int, y: int) -> bool:
         return not (0 <= x < self.width and 0 <= y < self.height) or (x, y) in self.plan.solid
@@ -925,6 +1006,9 @@ class Cells:
 
     def standing(self, x: int, y: int) -> bool:
         return self.plan.standing(x, y)
+
+    def lit(self, x: int, y: int) -> bool:
+        return TownMap.lit(self, x, y)  # type: ignore[arg-type]
 
 
 def routes(town: object, start: Cell, jump: bool | Jump) -> dict[Cell, list[Cell]]:

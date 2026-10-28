@@ -20,6 +20,7 @@ from simile.world.map import load_maps
 MAPS = load_maps()
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 MINUTE = 60.0
+LIGHT = LampConfig().light
 TUNNEL = Point(65, 15, "metro")
 METRO_PLUG = Point(72, 15, "metro")
 CAFE_PLUG = Point(16, 2, "coffee_shop_floor_0")
@@ -58,14 +59,22 @@ class Underground:
 def test_the_battery_runs_down_while_the_lamp_is_on() -> None:
     down = Underground(with_lamp(on=True))
 
-    down.run(10 * MINUTE)
+    down.run(LIGHT / 2, step=0.25)
 
     assert down.held.charge == pytest.approx(0.5)
     assert down.held.on is True
 
 
-def test_a_full_battery_lasts_twenty_minutes() -> None:
-    assert 60 / LampConfig().drain == 20
+def test_a_full_battery_lasts_98_seconds() -> None:
+    assert LIGHT == 98
+
+
+def test_it_runs_down_in_real_seconds_whatever_the_sims_speed() -> None:
+    down = Underground(with_lamp(on=True), speed=10)
+
+    down.run(10 * LIGHT / 2, step=2.5)
+
+    assert down.held.charge == pytest.approx(0.5)
 
 
 def test_the_battery_keeps_its_charge_while_the_lamp_is_off() -> None:

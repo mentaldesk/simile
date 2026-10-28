@@ -69,8 +69,6 @@ RELAY_RACK = "metro_relay_rack"
 SIGNAL_DESK = "metro_signal_desk"
 TOOL_CRATE = "metro_tool_crate"
 LOCKERS = "metro_lockers"
-TRACK_PLUG = "metro_track_plug"
-SHED_PLUG = "metro_shed_plug"
 STACK = 124
 """The west end of the two containers stacked on the siding, with a ladder up their side."""
 CRANE = GROUND - 10
@@ -311,7 +309,7 @@ def signal_box(plan: Plan) -> None:
 
 
 def track(plan: Plan) -> None:
-    """The disused track into the dark, a plug halfway, and a ledge a hop above a pipe ledge."""
+    """The disused track into the dark, and a ledge a hop above a pipe ledge."""
     plan.piece("tunnel_arch", 156, GROUND - 7, 3, 8)
     plan.piece("pipes", 160, GROUND - 3, 14, 1)
     plan.piece("rubble", 163, GROUND, 2, 1)
@@ -319,9 +317,6 @@ def track(plan: Plan) -> None:
     area = TileArea(x=168, y=GROUND, width=1, height=1)
     searchable(plan, TOOL_CRATE, "Tool crate", area, under(area), [COPPER_WIRE, LITHIUM_CELL])
     salvage(plan, 9, 174, GROUND, item=SIGNAL_RELAY)
-    plan.piece("breaker_box", 181, GROUND - 1, 1, 2)
-    area = TileArea(x=181, y=GROUND - 1, width=1, height=2)
-    plug(plan, TRACK_PLUG, "Track plug", area, Tile(x=181, y=GROUND))
     plan.ladder((188, GROUND), 3)
     catwalk(plan, 189, GROUND - 3, 3)
     catwalk(plan, 194, GROUND - 5, 2)
@@ -337,9 +332,6 @@ def shed(plan: Plan) -> None:
     plan.fill(205, roof, WIDTH - 205, 1)
     for x, width in ((205, 12), (217, WIDTH - 217)):
         plan.piece("pipes", x, roof, width, 1)
-    plan.piece("breaker_box", 208, GROUND - 1, 1, 2)
-    area = TileArea(x=208, y=GROUND - 1, width=1, height=2)
-    plug(plan, SHED_PLUG, "Shed plug", area, Tile(x=208, y=GROUND))
     plan.piece("lockers", 210, GROUND - 1, 2, 2)
     area = TileArea(x=210, y=GROUND - 1, width=2, height=2)
     searchable(plan, LOCKERS, "Tool lockers", area, under(area), [RATION_PACK])
@@ -371,10 +363,8 @@ def lighting(plan: Plan) -> None:
     light(plan, "metro_maintenance", 71, 0, 3, height, lit=True)
     light(plan, "metro_tunnel_east", 74, 0, 13, height, lit=False)
     light(plan, "metro_depot", 87, 0, DEPOT_END - 87, height, lit=True)
-    light(plan, "metro_siding", DEPOT_END, 0, 156 - DEPOT_END, height, lit=True)
-    light(plan, "metro_track_west", 156, 0, 24, height, lit=False)
-    light(plan, "metro_track_alcove", 180, 0, 3, height, lit=True)
-    light(plan, "metro_track_east", 183, 0, 23, height, lit=False)
+    light(plan, "metro_siding", DEPOT_END, 0, 156 - DEPOT_END, height, lit=False)
+    light(plan, "metro_track", 156, 0, 50, height, lit=False)
     light(plan, "metro_shed", 206, 0, WIDTH - 206, height, lit=True)
 
 

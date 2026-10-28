@@ -443,8 +443,6 @@ def test_the_cafe_the_noodle_bar_and_home_have_a_plug_downstairs() -> None:
         "maker_space_plug",
         "noodle_bar_plug",
         "metro_plug",
-        "metro_track_plug",
-        "metro_shed_plug",
     }
     for building in ("coffee_shop", "maker_space", "noodle_bar"):
         item = plugs[f"{building}_plug"]

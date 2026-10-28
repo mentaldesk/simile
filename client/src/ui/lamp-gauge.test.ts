@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Item, PlayerStateMessage } from '../net';
-import { lampHint, LampGauge, level } from './lamp-gauge';
+import { lampHint, LampGauge, level, warning } from './lamp-gauge';
 
 const lamp = (charge: number, on: boolean): Item => ({ id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge, on });
 const LIT = { dark: false, plug: false };
@@ -38,7 +38,11 @@ describe('lampHint', () => {
   it('offers the lamp in the dark, and warns as it runs low or flat', () => {
     expect(lampHint(lamp(0.8, false), dark)).toBe("It's dark. Press L for your lamp.");
     expect(lampHint(lamp(0.8, true), dark)).toBeUndefined();
-    expect(lampHint(lamp(0.15, true), dark)).toBe('Your lamp is running low.');
+    expect(lampHint(lamp(0.31, true), dark)).toBeUndefined();
+    expect(lampHint(lamp(0.3, true), dark)).toBe('Your lamp is low. Charge it at a plug.');
+    expect(lampHint(lamp(0.15, false), lit)).toBe('Your lamp is low. Charge it at a plug.');
+    expect(lampHint(lamp(0.1, true), dark)).toBe("Your lamp is nearly flat. Charge it at a plug, or you'll be in the dark.");
+    expect(lampHint(lamp(0.15, false), dark)).toBe("It's dark. Press L for your lamp.");
     expect(lampHint(lamp(0, false), dark)).toBe("It's dark, and your lamp is flat. Charge it at a plug.");
     expect(lampHint(lamp(0, false), lit)).toBe('Your lamp is flat. Charge it at a plug.');
   });
@@ -54,6 +58,11 @@ describe('lampHint', () => {
     expect(lampHint(lamp(1, false), plug, 0.5)).toBe('Charging your cell.');
     expect(lampHint(undefined, plug, 0.5)).toBe('Charging your cell.');
     expect(lampHint(lamp(1, false), plug, 1)).toBe('Your lamp is charged.');
+  });
+
+  it('flashes the gauge from low until it is flat or at a plug', () => {
+    expect([1, 0.31, 0.3, 0.05, 0].map((charge) => warning(charge, lit))).toEqual([false, false, true, true, false]);
+    expect(warning(0.2, { dark: false, plug: true })).toBe(false);
   });
 
   it('colours the battery by what is left', () => {
@@ -90,6 +99,22 @@ describe('LampGauge', () => {
     gauge.update(state([lamp(0.5, false)]), { dark: true, plug: false });
     expect(shown(root, '.lamp-gauge')).toBe('Loff');
     expect(shown(root, '.lamp-hint')).toBe("It's dark. Press L for your lamp.");
+  });
+
+  it('flashes as it runs low, and stops at a plug', () => {
+    const root = document.createElement('div');
+    const gauge = new LampGauge(root);
+    const flashing = () => root.querySelector('.lamp-gauge')!.classList.contains('lamp-gauge-warning');
+
+    gauge.update(state([lamp(0.5, true)]), { dark: true, plug: false });
+    expect(flashing()).toBe(false);
+
+    gauge.update(state([lamp(0.25, true)]), { dark: true, plug: false });
+    expect(flashing()).toBe(true);
+    expect(shown(root, '.lamp-hint')).toBe('Your lamp is low. Charge it at a plug.');
+
+    gauge.update(state([lamp(0.25, true)]), { dark: false, plug: true });
+    expect(flashing()).toBe(false);
   });
 });
 
