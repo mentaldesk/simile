@@ -2,11 +2,10 @@ from dataclasses import replace
 
 import pytest
 
-from simile.creatures.engine import SEND, Creature, Creatures, Sight
+from simile.creatures.engine import SEND, STOMP_TOP, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.ways import Chase, DrawnTo, FleeLight, Patrol, Roost, food, lamp_on
 from simile.creatures.ways import lamp as lamp_light
-from simile.player.kick import Kick
 from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, ServerMessage
 from simile.schema import (
     CreatureKind,
@@ -304,74 +303,87 @@ def test_nothing_attacks_without_a_way_that_attacks() -> None:
     assert rat.cell == (4, 2) and world.harmed == []
 
 
-def kick(x: float, facing: SideFacing, strength: float = 1, y: float = 2) -> Kick:
-    return Kick(Point(x, y, "tunnel"), facing, strength)
+STOMPED = replace(STAND_IN, stomped=True)
 
 
-def test_a_kick_hits_the_nearest_creature_in_front_and_knocks_it_back() -> None:
+def land(world: World, x: float, *, start: float = 0.8, end: float = 2 - STOMP_TOP) -> None:
+    """The player falling from `start` to `end`, a tick apart."""
+    for y in (start, end):
+        world.stand(x, y)
+        world.run(STEP)
+
+
+def test_the_player_landing_on_one_puts_it_down_and_it_comes_back_later() -> None:
     world = World(ROW)
-    tough = replace(STAND_IN, health=3, knock=2)
-    near = world.spawn(tough, 6, 2)
-    world.spawn(tough, 7, 2, id="far")
-    world.spawn(tough, 4, 2, id="behind")
-
-    hit = world.creatures.kickable(kick(5, EAST))
-    assert hit is not None and hit.distance == 1
-    hit.land()
-
-    assert near.state is CreatureState.HURT and near.health == 2
-    assert near.facing is WEST
-    world.run(0.5)
-    assert near.cell == (8, 2)
-    world.run(0.5)
-    assert near.state is CreatureState.IDLE
-    assert world.creatures.kickable(kick(5, EAST, y=0.5)) is None, "they're in the air"
-    assert world.creatures.kickable(kick(1, EAST)) is None
-
-
-def test_a_hard_enough_kick_puts_it_down_and_it_comes_back_later() -> None:
-    world = World(ROW)
-    rat = world.spawn(replace(STAND_IN, health=2), 6, 2, respawn=10)
-    world.creatures.kickable(kick(5, EAST, strength=2)).land()
+    rat = world.spawn(STOMPED, 6, 2, respawn=10)
+    land(world, 6.5)
 
     assert world.sent[-1] == CreatureGoneMessage(creature_id=rat.id)
     assert world.creatures.shown() == []
-    assert world.creatures.kickable(kick(5, EAST)) is None
     world.run(9.5)
     assert world.creatures.shown() == []
     world.run(1)
     assert [c.id for c in world.creatures.shown()] == [rat.id]
-    assert rat.health == 2 and rat.cell == (6, 2)
+    assert rat.cell == (6, 2)
+
+
+@pytest.mark.parametrize(
+    ("x", "start", "end"),
+    [(6, 2, 2), (6.5, 2 - STOMP_TOP, 0.8), (7.5, 0.8, 2), (6, 0.8, 1.2)],
+    ids=["walking into it", "jumping up off it", "landing beside it", "still above it"],
+)
+def test_only_coming_down_onto_its_back_puts_it_down(x: float, start: float, end: float) -> None:
+    world = World(ROW)
+    rat = world.spawn(STOMPED, 6, 2)
+    world.stand(4, 2)
+    world.run(STEP)
+    land(world, x, start=start, end=end)
+    assert rat.down is None
+
+
+def test_climbing_down_onto_one_leaves_it_and_so_does_crossing_from_another_map() -> None:
+    world = World(TUNNEL)
+    at_foot = world.spawn(STOMPED, 6, LOWER)
+    beside = world.spawn(STOMPED, 9, LOWER)
+    back = LOWER - STOMP_TOP
+
+    for y in (back - 0.3, back + 0.1):
+        world.stand(6, y)
+        world.run(STEP)
+    assert at_foot.down is None, "climbing down the ladder"
+
+    world.stand(9, back - 0.3, map="elsewhere")
+    world.run(STEP)
+    world.stand(9, back + 0.1)
+    world.run(STEP)
+    assert beside.down is None, "arriving from another map"
+
+    for y in (back - 0.3, back + 0.1):
+        world.stand(9, y)
+        world.run(STEP)
+    assert beside.down is not None, "falling beside the ladder"
+
+
+def test_landing_on_a_kind_not_stomped_leaves_it_and_one_never_back_is_gone_for_good() -> None:
+    world = World(ROW)
+    dog = world.spawn(replace(STAND_IN, id=CreatureKind.DOG), 6, 2)
+    land(world, 6)
+    assert dog.down is None
+
+    world.spawn(STOMPED, 10, 2)
+    land(world, 10)
+    assert list(world.creatures.all) == [dog.id]
 
 
 def test_each_kind_numbers_its_own_and_never_reuses_a_number() -> None:
     world = World(ROW)
-    first = world.spawn(STAND_IN, 6, 2)
+    first = world.spawn(STOMPED, 6, 2)
     assert world.spawn(FLIER, 3, 1).id == "bat_1"
-    world.creatures.kickable(kick(5, EAST)).land()
+    land(world, 6)
 
     assert [world.spawn(STAND_IN, 6, 2).id, first.id] == ["rat_2", "rat_1"]
     world.spawn(STAND_IN, 8, 2, id="rat_3")
     assert world.spawn(STAND_IN, 9, 2).id == "rat_4"
-
-
-def test_one_that_never_comes_back_is_gone_for_good_and_a_tough_one_shrugs_off_a_kick() -> None:
-    world = World(ROW)
-    world.spawn(STAND_IN, 6, 2)
-    world.creatures.kickable(kick(5, EAST)).land()
-    assert world.creatures.all == {}
-
-    dog = world.spawn(replace(STAND_IN, id=CreatureKind.DOG, toughness=1), 4, 2)
-    world.creatures.kickable(kick(5, WEST)).land()
-    assert dog.health == 1 and dog.state is CreatureState.IDLE
-
-
-def test_a_roosting_bat_is_out_of_a_kick_s_reach_and_a_low_one_is_not() -> None:
-    world = World(ROW)
-    bat = world.spawn(FLIER, 6, 2)
-    assert world.creatures.kickable(kick(5, EAST)) is not None
-    bat.state = CreatureState.ROOSTING
-    assert world.creatures.kickable(kick(5, EAST)) is None
 
 
 def test_it_sends_each_change_of_state_at_once_and_its_moves_every_send_interval() -> None:

@@ -59,9 +59,9 @@ const DOES: Record<Bionic, string> = {
   power_cell_3: runs(5),
   datajack: 'Plugs you into terminals, old machinery and the lift down to the sewers.',
   infrared_eye: 'Sees in the dark without the lamp, and sees a liar’s flush.',
-  bionic_legs: 'Run faster, jump further and kick harder.',
-  bionic_legs_2: 'Run faster, jump further and kick harder than the first grade.',
-  bionic_legs_3: 'The fastest run, the furthest jump and the hardest kick.',
+  bionic_legs: 'Run faster and jump further.',
+  bionic_legs_2: 'Run faster and jump further than the first grade.',
+  bionic_legs_3: 'The fastest run and the furthest jump.',
   spring_feet: 'Jump higher, onto ledges you couldn’t reach.',
   spring_feet_2: 'Jump higher still.',
 };

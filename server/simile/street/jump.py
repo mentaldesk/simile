@@ -2,7 +2,7 @@
 
 import json
 import math
-from dataclasses import asdict, dataclass, field, replace
+from dataclasses import asdict, dataclass, replace
 from typing import Any
 
 from simile.schema import Bionic, Body
@@ -33,8 +33,6 @@ class Jump:
     """From the feet to the top of the head."""
     frame_seconds: float = 0.1
     """The client's longest step, `MAX_FRAME_SECONDS`, which a jump can overrun its take-off by."""
-    kick: float = field(default=1.0, compare=False)
-    """Times the player's own kick, which comparing jumps leaves out: it takes them nowhere."""
 
     @property
     def gravity(self) -> float:
@@ -70,23 +68,22 @@ JUMP = Jump()
 """The player's own legs."""
 
 
-def grade(rise: float = JUMP.rise, run: float = RUN_SPEED, kick: float = JUMP.kick) -> Jump:
+def grade(rise: float = JUMP.rise, run: float = RUN_SPEED) -> Jump:
     """A grade's jump, rising `rise` tiles under the same gravity, running at `run`."""
     return replace(
         JUMP,
         rise=rise,
         rise_seconds=JUMP.rise_seconds * math.sqrt(rise / JUMP.rise),
         run=run,
-        kick=kick,
     )
 
 
 LEGS: dict[Bionic, Jump] = {
-    Bionic.BIONIC_LEGS: grade(run=7.8, kick=2.0),
-    Bionic.BIONIC_LEGS_2: grade(run=10.4, kick=3.0),
-    Bionic.BIONIC_LEGS_3: grade(run=13.0, kick=4.0),
+    Bionic.BIONIC_LEGS: grade(run=7.8),
+    Bionic.BIONIC_LEGS_2: grade(run=10.4),
+    Bionic.BIONIC_LEGS_3: grade(run=13.0),
 }
-"""The legs' line: each grade runs faster, so jumps further, and kicks harder."""
+"""The legs' line: each grade runs faster, so jumps further."""
 FEET: dict[Bionic, Jump] = {
     Bionic.SPRING_FEET: grade(rise=4.3),
     Bionic.SPRING_FEET_2: grade(rise=6.3),
@@ -98,13 +95,12 @@ OWN_JUMP = "jump"
 
 
 def kit(*grades: Jump) -> Jump:
-    """The jump on `grades` fitted together: the highest rise, the fastest run, the hardest kick."""
+    """The jump on `grades` fitted together: the highest rise and the fastest run."""
     if len(grades) <= 1:
         return grades[0] if grades else JUMP
     return grade(
         rise=max(g.rise for g in grades),
         run=max(g.run for g in grades),
-        kick=max(g.kick for g in grades),
     )
 
 

@@ -154,7 +154,7 @@ class Grid:
         return best
 
     def run(self, cell: Cell, dx: int, cells: int) -> list[Cell]:
-        """Up to `cells` cells along its row from `cell`, as far as it can go, for a knock."""
+        """Up to `cells` cells along its row from `cell`, as far as it can go."""
         x, y = cell
         along = []
         for step in range(1, cells + 1):

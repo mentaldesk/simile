@@ -319,48 +319,46 @@ def test_the_spring_feet_jump_two_rows_higher_by_the_lift() -> None:
 
 
 @pytest.mark.parametrize(
-    ("legs", "feet", "rows", "run", "cells", "kick"),
+    ("legs", "feet", "rows", "run", "cells"),
     [
-        (None, None, 2, 5.2, 4, 1.0),
-        (Bionic.BIONIC_LEGS, None, 2, 7.8, 6, 2.0),
-        (Bionic.BIONIC_LEGS_2, None, 2, 10.4, 8, 3.0),
-        (Bionic.BIONIC_LEGS_3, None, 2, 13.0, 10, 4.0),
-        (None, Bionic.SPRING_FEET, 4, 5.2, 5, 1.0),
-        (None, Bionic.SPRING_FEET_2, 6, 5.2, 6, 1.0),
-        (Bionic.BIONIC_LEGS, Bionic.SPRING_FEET, 4, 7.8, 8, 2.0),
-        (Bionic.BIONIC_LEGS_2, Bionic.SPRING_FEET_2, 6, 10.4, 13, 3.0),
-        (Bionic.BIONIC_LEGS, Bionic.SPRING_FEET_2, 6, 7.8, 9, 2.0),
+        (None, None, 2, 5.2, 4),
+        (Bionic.BIONIC_LEGS, None, 2, 7.8, 6),
+        (Bionic.BIONIC_LEGS_2, None, 2, 10.4, 8),
+        (Bionic.BIONIC_LEGS_3, None, 2, 13.0, 10),
+        (None, Bionic.SPRING_FEET, 4, 5.2, 5),
+        (None, Bionic.SPRING_FEET_2, 6, 5.2, 6),
+        (Bionic.BIONIC_LEGS, Bionic.SPRING_FEET, 4, 7.8, 8),
+        (Bionic.BIONIC_LEGS_2, Bionic.SPRING_FEET_2, 6, 10.4, 13),
+        (Bionic.BIONIC_LEGS, Bionic.SPRING_FEET_2, 6, 7.8, 9),
     ],
 )
 def test_each_grade_jumps_as_high_and_as_far_and_runs_as_fast_as_its_table_says(
-    legs: Bionic | None, feet: Bionic | None, rows: int, run: float, cells: int, kick: float
+    legs: Bionic | None, feet: Bionic | None, rows: int, run: float, cells: int
 ) -> None:
     jump = jump_of(Body(legs=legs or "present", feet=feet or "present"))
     table = jump_table()
     name = "+".join(b for b in (legs, feet) if b)
     row = table | table["kits"][name] if name else table
 
-    assert (jump.rows, jump.run, jump.cells, jump.kick) == (rows, run, cells, kick)
+    assert (jump.rows, jump.run, jump.cells) == (rows, run, cells)
     assert rows < jump.rise < rows + 1 and jump.gravity == pytest.approx(JUMP.gravity)
     assert jump.reach == pytest.approx(row["reach"], abs=1e-3)
     assert (row["rise"], row["rows"], row["run"], row["cells"]) == (jump.rise, rows, run, cells)
-    assert row["kick"] == kick
 
 
-def test_the_legs_run_faster_and_kick_harder_and_the_feet_rise_higher_by_grade() -> None:
+def test_the_legs_run_faster_and_the_feet_rise_higher_by_grade() -> None:
     legs, feet = list(LEGS.values()), list(FEET.values())
 
     assert all(jump.rise == JUMP.rise for jump in legs)
     assert JUMP.run < legs[0].run < legs[1].run < legs[2].run
-    assert JUMP.kick < legs[0].kick < legs[1].kick < legs[2].kick
-    assert all((jump.run, jump.kick) == (JUMP.run, JUMP.kick) for jump in feet)
+    assert all(jump.run == JUMP.run for jump in feet)
     assert JUMP.rows + 2 <= feet[0].rows and feet[0].rows + 2 <= feet[1].rows
 
 
 def test_the_legs_and_the_feet_together_jump_on_the_best_of_each() -> None:
     both = jump_of(Body(legs=Bionic.BIONIC_LEGS, feet=Bionic.SPRING_FEET_2))
 
-    assert (both.rise, both.run, both.kick) == (6.3, 7.8, 2.0)
+    assert (both.rise, both.run) == (6.3, 7.8)
     assert set(KITS.values()) == {jump_of(Body(legs=a, feet=b)) for a, b in _bodies()}
 
 

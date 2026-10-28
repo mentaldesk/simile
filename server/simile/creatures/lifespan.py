@@ -10,7 +10,6 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     from simile.creatures.kind import Kind
     from simile.persistence import player_of
     from simile.player.clients import InGame
-    from simile.player.kick import kickables_of
     from simile.protocol import PlayerMoveMessage, hub_of
     from simile.schema import PLAYER_ID
     from simile.sim import world_of
@@ -41,12 +40,10 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     creatures.send = hub.broadcast
     snapshot = hub.snapshot
     hub.snapshot = lambda: snapshot().model_copy(update={"creatures": creatures.shown()})
-    kickables_of(app).append(creatures.kickable)
     stops = [world.loop.register(creatures), hub.subscribe(PlayerMoveMessage, in_game.moved)]
     yield
     for stop in reversed(stops):
         stop()
-    kickables_of(app).remove(creatures.kickable)
     hub.snapshot = snapshot
 
 

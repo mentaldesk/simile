@@ -240,7 +240,7 @@ describe('body', () => {
       'feet',
     ]);
     page.querySelector('[data-part="legs"]')!.dispatchEvent(new MouseEvent('mouseenter'));
-    expect(texts(page, '.character-part p')).toEqual(['A bionic in place of your legs, grade 1 of 3.', 'Run faster, jump further and kick harder.']);
+    expect(texts(page, '.character-part p')).toEqual(['A bionic in place of your legs, grade 1 of 3.', 'Run faster and jump further.']);
   });
 });
 

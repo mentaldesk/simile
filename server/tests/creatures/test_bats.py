@@ -7,8 +7,7 @@ from simile.creatures.engine import Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.kinds import BAT
 from simile.creatures.placing import populate, spawns
-from simile.player.kick import Kick
-from simile.schema import CreatureKind, CreatureState, Item, ItemKind, MapTile, Player, SideFacing
+from simile.schema import CreatureKind, CreatureState, Item, ItemKind, MapTile, Player
 from simile.street.jump import JUMP, LEGS
 from simile.street.plan import Spawn
 from simile.street.sewers import CAVE, FLOORS, GAP, LEVELS, SEWERS
@@ -86,19 +85,6 @@ def test_a_bat_stays_on_a_player_who_runs_by_lamplight_and_attacks_again_once_re
         roost.at = Point(x, 3, ROOM.id)
         roost.run(BAT.rest + 0.5)
     assert len(roost.harmed) >= 3
-
-
-def test_a_kick_never_lands_on_a_bat_however_low_it_flies() -> None:
-    roost = Roosting()
-    roost.light(True)
-    for _ in range(50):
-        if roost.bat.state is not CreatureState.ATTACKING:
-            roost.run(STEP)
-    facing = SideFacing.WEST if roost.bat.x < roost.at.x else SideFacing.EAST
-    kick = Kick(roost.at, facing, strength=4)
-    assert roost.creatures.kickable(kick) is None
-    roost.bat.y = 3.0
-    assert roost.creatures.kickable(kick) is None
 
 
 @cache
