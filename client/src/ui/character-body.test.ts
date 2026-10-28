@@ -47,7 +47,7 @@ describe('partDetails', () => {
       title: 'legs',
       state: 'bionic',
       status: 'Bionic legs, grade 2',
-      lines: ['A bionic in place of your legs, grade 2 of 3.', 'Run faster, jump further and kick harder than the first grade.'],
+      lines: ['A bionic in place of your legs, grade 2 of 3.', 'Run faster and jump further than the first grade.'],
     });
     expect(gradeOf('datajack')).toBeUndefined();
   });

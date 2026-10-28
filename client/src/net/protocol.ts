@@ -47,7 +47,7 @@ export type SideFacing = 'east' | 'west';
  * What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a
  * bat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or
  * fly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.
- * `hurt` stands, or for a bat flies: nothing hurts a creature without going down yet.
+ * `hurt` stands, or for a bat flies.
  */
 export type CreatureState =
   'idle' | 'moving' | 'chasing' | 'fleeing' | 'attacking' | 'roosting' | 'hurt';

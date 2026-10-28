@@ -13,10 +13,10 @@ import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
+import { sideCreatures } from './creatures/creatures';
 import { CreatureView } from './creatures/view';
 import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
-import { KICK_KEY } from './kick';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
 import { eachOnce, readControls, RunToggle, type Held } from './input';
@@ -33,6 +33,7 @@ import { sideResidents } from './residents';
 import { PileGlints } from './piles';
 import { hiddenInFront, seatHeight } from './poses';
 import { SideDoll } from './side-doll';
+import { stompedOn } from './stomp';
 import { StreetView, type Content } from './street-view';
 import { UsableView } from './usable-view';
 import { SideTextures } from './textures';
@@ -115,7 +116,6 @@ export class SideScene extends Phaser.Scene {
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
     keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
     keyboard.on('keydown-L', eachOnce((event: KeyboardEvent) => !event.repeat && this.switchLamp()));
-    keyboard.on(`keydown-${KICK_KEY}`, eachOnce((event: KeyboardEvent) => !event.repeat && this.kick()));
     keyboard.on('keydown', eachOnce((event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat)));
     keyboard.on('keyup', eachOnce((event: KeyboardEvent) => this.running.keyUp(event.key)));
     for (const key of ['UP', 'W']) keyboard.on(`keydown-${key}`, () => (this.tapped.up = true));
@@ -163,6 +163,7 @@ export class SideScene extends Phaser.Scene {
     const start = this.waking ?? this.startPosition(content.village);
     this.waking = undefined;
     this.player = new SidePlayer(content.village, start);
+    this.player.stomps = (map, x, from, to) => stompedOn(sideCreatures.all.values(), map, x, from, to);
     await this.showStreet(content.village.map(start.map)!.street);
     this.cameras.main.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
     this.wakeIfWaiting();
@@ -235,6 +236,10 @@ export class SideScene extends Phaser.Scene {
 
   private report(position: MapPosition, now: number): void {
     const { sent } = this;
+    if (this.player?.bounced) {
+      this.player.bounced = false;
+      this.throttle.forget();
+    }
     if (position.x === sent.x && position.y === sent.y && position.map === sent.map) return;
     const throttled = this.throttle.next(position, now);
     if (!throttled) return;
@@ -247,10 +252,6 @@ export class SideScene extends Phaser.Scene {
   private switchLamp(): void {
     const message = switchLamp(lampOf(playerState.latest));
     if (message) server.send(message);
-  }
-
-  private kick(): void {
-    if (!this.passing) this.player?.kick();
   }
 
   private startPosition(village: Village): MapPosition {

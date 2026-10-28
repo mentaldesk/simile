@@ -379,13 +379,12 @@ describe('on each grade of legs and feet', () => {
     }
   });
 
-  it('runs faster and kicks harder up the legs, and rises higher up the feet', () => {
+  it('runs faster up the legs, and rises higher up the feet', () => {
     const [legs, legs2, legs3] = ['bionic_legs', 'bionic_legs_2', 'bionic_legs_3'].map(tableOf);
     const [feet, feet2] = ['spring_feet', 'spring_feet_2'].map(tableOf);
     expect([legs.run, legs2.run, legs3.run]).toEqual([7.8, 10.4, 13]);
-    expect([JUMP_TABLE.kick, legs.kick, legs2.kick, legs3.kick]).toEqual([1, 2, 3, 4]);
     expect([feet.rise, feet2.rise, feet.run, legs.rise]).toEqual([4.3, 6.3, JUMP_TABLE.run, JUMP_TABLE.rise]);
-    expect(tableOf('bionic_legs+spring_feet')).toMatchObject({ rise: feet.rise, run: legs.run, kick: legs.kick });
+    expect(tableOf('bionic_legs+spring_feet')).toMatchObject({ rise: feet.rise, run: legs.run });
   });
 
   it.each<[string | undefined, number]>([

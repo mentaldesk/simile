@@ -24,7 +24,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 |---|---|
 | ← → (or A D) | Walk, or run once Shift is on. In the air, steer. |
 | Shift | Switch between walking and running. You keep running, stopped or on stairs and ladders, until you press it again. |
-| Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. |
+| Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. Land on a rat to kill it. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
 | E | Go through a door, or onto another street. Off a door, read the news at a terminal, pick up what you left when you collapsed, or look at a clue in Aris's workshop. |

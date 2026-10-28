@@ -284,7 +284,7 @@ passes through it.
 | P28 | Dark stretches past the depot, in `light` | `metro_track_west` (156–179) and `metro_track_east` (183–205). The rest is lit: `metro_siding` (110–155), `metro_track_alcove` and `metro_shed`. |
 | P28 | Two more plugs, each a `plug` at a `breaker_box` | `metro_track_plug`, stood at from (181, 15) in the track's lit alcove, and `metro_shed_plug` from (208, 15). |
 | P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
-| P28 | The jammed door | The store room's wall, `STORE_WALL` (218–220, rows 9–15), solid: for now the way in is over its top. A kick (P9) that opens it would clear the wall's foot. |
+| P28 | The jammed door | The store room's wall, `STORE_WALL` (218–220, rows 9–15), solid: for now the way in is over its top. |
 | P28 | The signal desk, a `jack` | `metro_signal_desk`, stood at from (150, 11). With the datajack, E finds two circuit boards in it. |
 | S9 | What a place needs | A pickup's `needs`, on `simile.street.jump.NEEDS`' scale, and `meets(jump, needs)`. `moves(town, cell, jump)` jumps on a grade's `Jump` (`GRADES`), or on legs and feet together (`KITS`), so a test can check each place is in reach only with what it records, as `tests/street/test_metro.py` does. |
 
@@ -359,7 +359,7 @@ slab, the row under them. West to east it's columns of rooms:
   dogs (`DOGS`), kept to the den's floor, run down any player on any legs, so getting the stash
   means crossing the den to the ladder and back to the door, or dropping through the hole by the
   ladder's top and running for it. On the player's own legs or the feet that's almost certain
-  collapse; on the legs, kicks knock the dogs back (`server/simile/creatures/README.md`).
+  collapse; on the legs, they get out with a little health (`server/simile/creatures/README.md`).
 - **The cave** (`cave`, P15), the bats', is a column of its own past the den, 18 wide (`CAVE`),
   made after the den from its own random stream, so it moves nothing: the den only gains a doorway
   through its east wall on its floor. Inside it's three tiers, dark (`sewers_cave`): a ladder
@@ -492,19 +492,19 @@ over somewhere to land, either within the farthest jump from somewhere to stand,
 `jump.json` is the jump both sides share, on the player's own legs, with what each of `KITS`
 changes of it under `kits`: each grade of legs or feet on its own, by the bionic, and one of each
 together, joined by `+`, e.g. `bionic_legs+spring_feet` (`simile.street.jump.kit_name`). The legs
-(`LEGS`) run faster and kick harder, and the feet (`FEET`) rise higher; together the jump rises as
+(`LEGS`) run faster, and the feet (`FEET`) rise higher; together the jump rises as
 the feet do and runs as the legs do, `kit`'s best of each:
 
-| Fitted | `rise` | `rows` | `run` | `cells` | `reach` | `kick` |
-|---|--:|--:|--:|--:|--:|--:|
-| Their own | 2.3 | 2 | 5.2 | 4 | 5.5 | 1 |
-| `bionic_legs` | 2.3 | 2 | 7.8 | 6 | 7.9 | 2 |
-| `bionic_legs_2` | 2.3 | 2 | 10.4 | 8 | 10.2 | 3 |
-| `bionic_legs_3` | 2.3 | 2 | 13 | 10 | 12.6 | 4 |
-| `spring_feet` | 4.3 | 4 | 5.2 | 5 | 6.9 | 1 |
-| `spring_feet_2` | 6.3 | 6 | 5.2 | 6 | 7.9 | 1 |
-| `bionic_legs+spring_feet` | 4.3 | 4 | 7.8 | 8 | 9.9 | 2 |
-| `bionic_legs_3+spring_feet_2` | 6.3 | 6 | 13 | 16 | 18.7 | 4 |
+| Fitted | `rise` | `rows` | `run` | `cells` | `reach` |
+|---|--:|--:|--:|--:|--:|
+| Their own | 2.3 | 2 | 5.2 | 4 | 5.5 |
+| `bionic_legs` | 2.3 | 2 | 7.8 | 6 | 7.9 |
+| `bionic_legs_2` | 2.3 | 2 | 10.4 | 8 | 10.2 |
+| `bionic_legs_3` | 2.3 | 2 | 13 | 10 | 12.6 |
+| `spring_feet` | 4.3 | 4 | 5.2 | 5 | 6.9 |
+| `spring_feet_2` | 6.3 | 6 | 5.2 | 6 | 7.9 |
+| `bionic_legs+spring_feet` | 4.3 | 4 | 7.8 | 8 | 9.9 |
+| `bionic_legs_3+spring_feet_2` | 6.3 | 6 | 13 | 16 | 18.7 |
 
 Every grade jumps under the same gravity, so a higher jump stays up longer and goes further too.
 `rise` is how many tiles the feet rise with Space held, in `rise_seconds`; `run` how many tiles a
@@ -512,8 +512,7 @@ second they run, and fly along in a run jump; `fall_gravity` how much stronger g
 once Space is let go;
 `cut` how much of its speed up a jump keeps when Space is let go early; `coyote_seconds` and
 `buffer_seconds` the grace after walking off a ledge and before landing; `foot` and `body` the
-player's half-width and height; `kick` how many times harder than their own legs they kick, for
-kicking (P9), and left out of comparing jumps; `cells` and `rows` the jump in the neighbour rule;
+player's half-width and height; `cells` and `rows` the jump in the neighbour rule;
 and `reach` the farthest jump's reach in tiles from the middle of the cell it takes off from: a run jump with
 Space held, taking off as late as coyote time allows, at the client's longest step
 (`frame_seconds`).

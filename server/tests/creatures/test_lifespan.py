@@ -68,6 +68,21 @@ def test_the_snapshot_has_the_creatures(
     ]
 
 
+def test_the_player_landing_on_a_rat_puts_it_down(make_package: MakePackage) -> None:
+    app = make_app(make_package)
+
+    with TestClient(app) as client:
+        stomped, at = Kind(CreatureKind.RAT, stomped=True), MapTile(map="metro", x=62, y=15)
+        rat = client.portal.call(lambda: creatures_of(app).spawn(stomped, at))
+        with client.websocket_connect("/ws") as ws:
+            for y in (14.0, 14.6):
+                move(client, app, ws, 62.2, y, "metro")
+                client.portal.call(world_of(app).loop.tick)
+            gone = next_of(ws, "creature_gone")
+
+    assert gone == {"type": "creature_gone", "creature_id": rat.id}
+
+
 def test_a_rat_in_reach_bites_the_player_in_the_game_and_its_moves_reach_the_client(
     make_package: MakePackage,
 ) -> None:

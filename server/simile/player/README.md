@@ -3,7 +3,7 @@
 S5: the player gets hungry. S6: salvage, and selling it. The player's state is `player_of(app)`
 (`simile.persistence`), saved with the world. This module changes it at runtime and tells the
 client: its `running` hook joins the player to the economy, makes a `Hunger`, a `Power`, a `Health`,
-`Kicks`, `Pickups`, a `Trade` and a `PlayerSync`, and ticks `Hunger`, `Power`, `Health` and
+`Pickups`, a `Trade` and a `PlayerSync`, and ticks `Hunger`, `Power`, `Health` and
 `PlayerSync` on the sim loop.
 
 ## Hunger
@@ -82,15 +82,6 @@ to hurt and bite the player: they look it up when they do, not at startup.
 - **Collapsing** for health keeps their effects: an untreated infection still needs the clinic.
 
 Its constants are in `HealthConfig`, beside it.
-
-## Kicking
-
-`Kicks` (`kick.py`) is the client's `kick`, from where the server keeps the player on a side-view
-map, the way the client says they face. A kick is a `Kick`: where, which way, its `strength` (the
-legs' `jump_of(body).kick`, 1 on their own legs and 2 to 4 up the bionic legs) and its `reach`
-(1.2 tiles). Whatever can be kicked adds a `Kickable` to `kickables_of(app)`, as P10's creatures
-will: given the kick, it says what it would hit and how far away, as a `Hit`. The kick lands on
-the nearest hit, and only that one. Nothing else is kicked yet.
 
 ## Salvage and secrets
 
