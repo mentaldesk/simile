@@ -15,6 +15,7 @@ import { ClinicPanel, type Keeper } from './clinic-panel';
 import { CounterPrompt, servingAt } from './counter';
 import { dialogue } from './dialogue';
 import './dialogue.css';
+import { HealthGauge } from './health-gauge';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
@@ -49,6 +50,7 @@ export class DialogueScene extends Phaser.Scene {
   private counter!: CounterPrompt;
   private hunger!: HungerHint;
   private lamp!: LampGauge;
+  private health!: HealthGauge;
   private journal!: JournalPanel;
   private help!: HelpPanel;
   private character!: CharacterPanel;
@@ -88,6 +90,7 @@ export class DialogueScene extends Phaser.Scene {
     this.counter = new CounterPrompt(this.root);
     const hunger = (this.hunger = new HungerHint(this.root));
     const stopCollapses = server.on('player_collapsed', ({ cause }) => hunger.collapsed(cause));
+    const health = (this.health = new HealthGauge(hunger.corner));
     this.lamp = new LampGauge(this.root);
     const journal = (this.journal = new JournalPanel(this.root));
     const help = (this.help = new HelpPanel(this.root));
@@ -105,6 +108,7 @@ export class DialogueScene extends Phaser.Scene {
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       stopInvitations();
       stopCollapses();
+      health.destroy();
       this.news.stop();
       this.murals.stop();
       journal.stop();
@@ -140,6 +144,7 @@ export class DialogueScene extends Phaser.Scene {
     const state = playerState.latest && !sells ? { ...playerState.latest, buyer: null } : playerState.latest;
     this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
     this.lamp.update(playerState.latest);
+    this.health.update(playerState.latest);
     this.character.update(playerState.latest);
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);

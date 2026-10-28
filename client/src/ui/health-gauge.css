@@ -1,0 +1,39 @@
+.health-gauge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transform: scale(calc(1 + var(--pulse, 0) * 0.3));
+  transform-origin: 0 50%;
+}
+
+.health-bar {
+  position: relative;
+  width: 40px;
+  height: 5px;
+  border: 1px solid #f4ecd8;
+  border-radius: 1px;
+  background: rgb(17 17 17 / 60%);
+  box-shadow: 0 1px 0 #000;
+}
+
+.health-gauge-pulsing .health-bar {
+  border-color: #ff8a7a;
+  box-shadow: 0 0 calc(var(--pulse) * 6px) calc(var(--pulse) * 2px) #e8302a;
+}
+
+.health-fill,
+.health-lost {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+}
+
+.health-fill {
+  background: #e0604a;
+}
+
+.health-lost {
+  background: #fff4e0;
+  opacity: var(--pulse, 0);
+}
