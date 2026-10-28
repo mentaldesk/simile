@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
 import { addFigureAtlas } from '../dolls/sprite-figure';
 import { playerState, server, type Position } from '../net';
+import { hurts } from '../ui/hurt';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
@@ -15,6 +16,7 @@ import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { sideCreatures } from './creatures/creatures';
 import { CreatureView } from './creatures/view';
+import { BloodView } from './blood-view';
 import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { lampHere, lampOf, switchLamp } from './lamp';
@@ -69,6 +71,7 @@ export class SideScene extends Phaser.Scene {
   private pictures!: SideTextures;
   private glints!: PileGlints;
   private creatures!: CreatureView;
+  private blood!: BloodView;
   private usables!: UsableView;
   private street?: StreetView;
   private dark?: DarkView;
@@ -108,6 +111,7 @@ export class SideScene extends Phaser.Scene {
     this.pictures = new SideTextures(this);
     this.glints = new PileGlints(this);
     this.creatures = new CreatureView(this);
+    this.blood = new BloodView(this);
     this.usables = new UsableView(this, this.pictures);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
@@ -138,6 +142,7 @@ export class SideScene extends Phaser.Scene {
         },
       }),
       setWayPrompts(() => this.prompts()),
+      hurts.on((hit) => this.player && !this.passing && this.content && this.blood.hit(hit, this.player, this.content.village)),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -145,6 +150,7 @@ export class SideScene extends Phaser.Scene {
       () => this.dark?.destroy(),
       () => this.glints.destroy(),
       () => this.creatures.destroy(),
+      () => this.blood.destroy(),
       () => this.usables.destroy(),
       () => this.pictures.destroy(),
     ];
@@ -227,6 +233,7 @@ export class SideScene extends Phaser.Scene {
     }
     this.drawFigures(content.village, street);
     this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt);
+    this.blood.update(dt, street.tints.colours);
     const shown = [street.map.id, ...street.map.buildings.flatMap(({ name }) => content.village.floors(name).map(({ id }) => id))];
     const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.(), shown);
     this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
@@ -359,6 +366,7 @@ export class SideScene extends Phaser.Scene {
       for (const key of StreetView.pieces(content, old.map)) if (!kept.has(key)) this.pictures.unload(key);
     }
     this.street = new StreetView(this, this.pictures, content, map);
+    this.blood.clear();
     this.dark?.destroy();
     this.dark = hasDark(map) ? new DarkView(this, sightOf(map)) : undefined;
     for (const socket of this.sockets) socket.destroy();

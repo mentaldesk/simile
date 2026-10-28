@@ -138,6 +138,20 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   and an infection, above all else, "Your bite is infected. It won't heal until the clinic treats
   it." The character screen shows health and each effect in full.
 
+## Getting hurt
+
+Every time the player takes damage, the screen says so (#468). `Hurts` in [`hurt.ts`](hurt.ts) hears
+a hit from `player_state`'s health dropping by 0.015 or more, so an infection's slow drain (0.01 at a
+time) isn't one, or from `player_collapsed` with `cause: health`. A hit's `strength` is the health it
+took over a bot's or a dog's 0.1, up to 1: a bat's is 0.3, a rat's bite 0.5. It forgets the health it
+last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` hears each one.
+
+- `HealthGauge` ([`health-gauge.ts`](health-gauge.ts)) heads the hunger corner while they're hurt,
+  and pulses for `PULSE_SECONDS` on each hit, harder for a bigger one: it swells and glows, showing
+  what the hit took in pale over the red.
+- The world scene bursts drops of blood from the player ([`side/`](../side/README.md#how-it-draws)),
+  and the audio plays what hit them ([`audio/`](../audio/README.md#getting-hurt)).
+
 ## Picking up and selling
 
 The same corner says what E picks up or sells where the player stands, in

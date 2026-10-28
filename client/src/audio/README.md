@@ -38,6 +38,20 @@ fetches and decodes each file once, and plays nothing for someone without any.
 The same resident doesn't greet again within `GREETING_COOLDOWN_S` (60 s), however many times they
 start talking. A greeting that can't play because the audio is still suspended doesn't count.
 
+## Getting hurt
+
+Every hit the player takes (`hurts` in [`ui/hurt.ts`](../ui/hurt.ts)) plays the sound of what hit
+them, centred, once the page may play audio. What hit them is the side view's `attackerOf`
+([`side/attacker.ts`](../side/attacker.ts)) from where the player stands: the nearest creature
+attacking within 3 tiles, else the nearest there. `hurtSamples` in [`hurt-sound.ts`](hurt-sound.ts)
+synthesizes each one afresh, with no clip to fetch, a little louder the harder the hit (`HURT_GAIN`):
+
+- a rat: a short chirp, then a rising, wavering squeak, "ee-eeek";
+- a bot: a metal clank of clashing partials, then a servo's whirr rising and falling;
+- a dog: a rasping snarl, then the snap of its jaws;
+- a bat: a shrill, fluttering screech;
+- nothing near: a short, dull thud.
+
 ## Positions
 
 The world (C1) tells audio where the speakers and the listener are, in float tiles:

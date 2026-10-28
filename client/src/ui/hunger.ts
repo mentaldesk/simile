@@ -110,12 +110,13 @@ type Line = 'collapsed' | 'feeling' | 'health' | 'eat' | 'pile' | 'sell';
 
 /** How hungry the player is and what they can eat, or how much power they have, and how hurt they are, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
+  readonly corner: HTMLElement;
   private readonly lines = new Map<Line, HTMLElement>();
   private collapsedUntil = 0;
   private cause: Vital = 'hunger';
 
   constructor(parent: HTMLElement) {
-    const root = parent.appendChild(document.createElement('div'));
+    const root = (this.corner = parent.appendChild(document.createElement('div')));
     root.className = 'hunger-hint';
     for (const line of ['collapsed', 'feeling', 'health', 'eat', 'pile', 'sell'] as const) {
       const element = root.appendChild(document.createElement('div'));

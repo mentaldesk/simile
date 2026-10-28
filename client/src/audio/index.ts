@@ -1,6 +1,8 @@
 import { SAMPLE_RATE, server } from '../net';
+import { attackerOf } from '../side/attacker';
 import { dialogue } from '../ui/dialogue';
 import { fetchGreetings, Greeter, WebGreetings } from './greetings';
+import { playHurts, webSound } from './hurt-sound';
 import { listen, VoicePlayer } from './player';
 import { positions } from './positions';
 import { resumeOnFirstGesture, WebAudioOutput } from './webaudio';
@@ -16,6 +18,7 @@ if (import.meta.env.MODE !== 'test') {
     canPlay: () => context.state === 'running',
   });
   dialogue.onInvitation((npcId) => void greeter.greet(npcId));
+  playHurts(webSound(context), () => context.state === 'running', () => attackerOf(positions.listenerPosition())?.creature.kind);
   const everyFrame = () => {
     player.update();
     requestAnimationFrame(everyFrame);
