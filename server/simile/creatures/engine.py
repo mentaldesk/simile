@@ -12,7 +12,6 @@ from starlette.applications import Starlette
 from simile.creatures.grid import Cell, Edge, Grid, sees
 from simile.creatures.kind import Kind
 from simile.creatures.ways import Aim, Senses
-from simile.player.kick import Hit, Kick
 from simile.protocol import Creature as Shown
 from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, Position, ServerMessage
 from simile.schema import CreatureState, MapTile, Player, SideFacing, TileArea
@@ -25,11 +24,12 @@ logger = logging.getLogger(__name__)
 SEND = 0.2
 """Sim seconds between `creature_moved`s while one moves; a change of state goes at once."""
 FALL_SPEED = 8.0
-KNOCK_SPEED = 6.0
-KICK_SLACK = 0.3
-"""Tiles either side of a kick's reach that still hit, for the client's lag."""
-KICK_HEIGHT = 1.2
-"""Tiles above the player's feet a kick reaches: a bat lower than that is in it."""
+STOMP_TOP = 0.4
+"""Tiles above its floor the back of a kind the player can land on is: a rat's."""
+STOMP_REACH = 0.9
+"""Tiles either side of it the player's feet land on it: their foot and its half, and the lag."""
+STOMP_SLACK = 0.05
+"""Tiles either way of its back the feet still count as on it, for the client's rounding."""
 JUMPS_OVER = 0.8
 """Tiles above a walking creature the player's feet are out of its reach."""
 COLLECTING = 4.0
@@ -68,7 +68,6 @@ class Creature:
     respawn: float | None = None
     facing: SideFacing = SideFacing.EAST
     state: CreatureState = CreatureState.IDLE
-    health: float = 1.0
     path: deque[Leg] = field(default_factory=deque)
     goal: Cell | None = None
     aim: Aim | None = None
@@ -78,7 +77,6 @@ class Creature:
     thinks: float = 0.0
     strikes: float | None = None
     rested: float = 0.0
-    hurt: float = 0.0
     collecting: tuple[str, float] | None = None
     """The pickup it's taking, and when it's taken."""
     down: float | None = None
@@ -158,6 +156,8 @@ class Creatures:
         self.now = 0.0
         self.all: dict[str, Creature] = {}
         self.numbers: dict[str, int] = {}
+        self.heard: Point | None = None
+        """Where the player was last tick, to tell they're falling."""
 
     def spawn(
         self,
@@ -191,7 +191,6 @@ class Creatures:
             route=tuple(route) if route is not None else _route(grid, home, span),
             roost=roost if roost is not None else _roost(grid, home),
             respawn=respawn,
-            health=kind.health,
         )
         if creature.id in self.all:
             raise ValueError(f"there's already a creature {creature.id}")
@@ -217,6 +216,8 @@ class Creatures:
     def tick(self, dt: float) -> None:
         self.now += dt
         sight = self.sense()
+        self._stomp(self.heard, sight.at)
+        self.heard = sight.at
         senses: dict[str, Senses] = {}
         for creature in self.all.values():
             if creature.down is not None:
@@ -230,52 +231,25 @@ class Creatures:
                 senses[town.id] = Senses(self.now, town, player, at, salvage)
             self._step(creature, senses[town.id], dt)
 
-    def kickable(self, kick: Kick) -> Hit | None:
-        """The nearest creature the player's kick would hit, for `kickables_of(app)`."""
-        ahead = 1 if kick.facing is SideFacing.EAST else -1
-        hits = []
-        for creature in self.all.values():
-            if creature.down is not None or creature.kind.dodges or creature.map != kick.at.map:
+    def _stomp(self, before: Point | None, after: Point | None) -> None:
+        """Puts down whatever the player's feet came down on since last tick: README.md."""
+        if before is None or after is None or before.map != after.map or after.y <= before.y:
+            return
+        for creature in list(self.all.values()):
+            if not creature.kind.stomped or creature.down is not None:
                 continue
-            along = (creature.x - kick.at.x) * ahead
-            low = creature.y - 0.5 if creature.kind.flies else creature.y
-            if creature.state is CreatureState.ROOSTING or not (
-                -KICK_SLACK <= along <= kick.reach + KICK_SLACK
-                and kick.at.y - KICK_HEIGHT <= low <= kick.at.y + 0.5
+            top = creature.y - STOMP_TOP
+            if (
+                creature.map == after.map
+                and before.y <= top + STOMP_SLACK
+                and after.y >= top - STOMP_SLACK
+                and abs(after.x - creature.x) <= STOMP_REACH
             ):
-                continue
-            hits.append((abs(along), creature))
-        if not hits:
-            return None
-        distance, creature = min(hits, key=lambda hit: hit[0])
-        return Hit(distance, lambda: self.kicked(creature, kick))
-
-    def kicked(self, creature: Creature, kick: Kick) -> None:
-        damage = kick.strength - creature.kind.toughness
-        if damage <= 0 or creature.down is not None:
-            return
-        creature.health -= damage
-        if creature.health <= 1e-9:
-            self._go_down(creature)
-            return
-        away = 1 if kick.facing is SideFacing.EAST else -1
-        kept = creature.finishing()
-        start = kept[-1].to if kept else creature.cell
-        cells = creature.grid.run(start, away, round(creature.kind.knock * kick.strength))
-        creature.path = deque([*kept, *(Leg(cell) for cell in cells)])
-        creature.goal = creature.aim = creature.strikes = creature.collecting = None
-        creature.hurt = self.now + creature.kind.stagger
-        creature.facing = SideFacing.WEST if away > 0 else SideFacing.EAST
-        creature.state = CreatureState.HURT
-        self._log("A %s is kicked", creature)
-        self._send(creature)
+                self._log("A %s is stomped", creature)
+                self._go_down(creature)
 
     def _step(self, creature: Creature, senses: Senses, dt: float) -> None:
         kind = creature.kind
-        if self.now < creature.hurt:
-            self._move(creature, dt, KNOCK_SPEED)
-            self._settle(creature, CreatureState.HURT)
-            return
         if (collecting := creature.collecting) is not None:
             self._collect(creature, *collecting, senses)
             return
@@ -393,9 +367,8 @@ class Creatures:
             return
         creature.down = None
         creature.x, creature.y = map(float, creature.home)
-        creature.health = creature.kind.health
         creature.state, creature.leg, creature.paused = CreatureState.IDLE, 0, None
-        creature.hurt = creature.rested = creature.thinks = 0.0
+        creature.rested = creature.thinks = 0.0
         self._send(creature)
 
     def _log(self, text: str, creature: Creature) -> None:

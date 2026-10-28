@@ -63,7 +63,7 @@ PROCEDURES: dict[Bionic, Procedure] = {
             "Bionic legs",
             {"pump_impeller": 2, "copper_coil": 1},
             150.0,
-            "run faster, jump further and kick harder",
+            "run faster and jump further",
             25.0,
         ),
         _procedure(
@@ -96,7 +96,7 @@ PROCEDURES: dict[Bionic, Procedure] = {
             "Bionic legs, grade 2",
             {"pump_impeller": 2, "servo_motor": 2},
             300.0,
-            "run faster and kick harder than the first bionic legs",
+            "run faster and jump further than the first bionic legs",
             45.0,
         ),
         _procedure(
@@ -121,7 +121,7 @@ PROCEDURES: dict[Bionic, Procedure] = {
             "Bionic legs, grade 3",
             {APEX_ACTUATOR.id: 1, "servo_motor": 2},
             700.0,
-            "run the fastest and kick the hardest of any legs",
+            "run the fastest and jump the furthest of any legs",
             105.0,
         ),
     )

@@ -25,11 +25,7 @@ second:
 | `windup` | 0.3 | How long it shows its attack before it lands. |
 | `lunges` | no | Keeps after the player while its attack winds up, so running doesn't get away. |
 | `rest` | 1 | How long after an attack before the next. |
-| `health` | 1 | How hard it must be kicked to go down: a kick on the player's own legs is 1, the bionic legs 2 to 4. |
-| `toughness` | 0 | How much of each kick it shrugs off. |
-| `knock` | 1 | How many cells a kick of strength 1 sends it. |
-| `stagger` | 0.6 | How long it's `hurt` after a kick. |
-| `dodges` | no | Too quick to kick: a kick never lands on it. |
+| `stomped` | no | Goes down when the player lands on it (below). |
 
 The tunnels' kinds are in `kinds.py` (below).
 
@@ -42,7 +38,7 @@ The tunnels' kinds are in `kinds.py` (below).
 | Ways | `Scurry`, `DrawnTo(food, within=8, pace=1.4, attacks)`, `Patrol` | `Chase(sight=5, pace=1.5, memory=3, when=fitted)`, `Collect(within=14, pace=0.2)`, `Patrol(pause=3)` | `Chase(sight=10, pace=4, memory=3)`, `Patrol(pause=2)` | `Chase(sight=8, pace=4, memory=2, when=lamp_on)`, `Roost` |
 | Speed | 2, and 2.8 after food: it catches a walking player, not a running one | 1.2, 1.8 chasing: slower than a walk, and 0.24 drifting to salvage | 4, and 16 chasing: faster than the best legs (13). It thinks every 0.1 s, so it keeps up | 3, and 12 chasing: faster than any legs but the best (13). It flies, and thinks every 0.15 s |
 | Attack | Bites, then scurries home and rests 6 s before the next | `hurt(0.1)` after a 0.6 s windup, then rests 2 s | `hurt(0.1)` from 1.2 tiles after a 0.3 s windup, lunging, then rests 0.9 s | `hurt(0.03)` after a 0.3 s windup, lunging, then rests 2 s, staying on the player |
-| Kicks | Any kick puts it down, and it's back 120 s later | Never goes down: its `health` is infinite until there are weapons. It shrugs off the player's own legs (`toughness` 1), and the bionic legs knock it back | As the bot, and a kick staggers it for 1 s, knocked 1.5 cells for each of the kick's strength | Never: it `dodges` |
+| Landed on | Goes down, and it's back 120 s later | Never goes down until there are weapons: landing on one is landing in its reach | As the bot | Never: it flies |
 | Climbs | No | Yes | No, and takes no door | Flies |
 
 A rat leaves a player who carries no food alone, so a handful of them costs some health only
@@ -51,15 +47,14 @@ player and chases one with any bionic (`fitted`): in the sewers that's always, s
 takes the datajack. Bots are placed to start within `Collect`'s reach of salvage but patrol at
 least eight steps from any, so a player who heads straight for it gets there first.
 
-Three dogs keep to their den (`content/street/README.md`). With nothing but a kick it shrugs off,
-a player on their own legs or the feet is bitten about fifteen times going through and back, and
-collapses. On the first legs, running through leaves about a tenth of their health, and kicking
-each dog back as it comes leaves over half; the best legs get through running with a quarter or
-so (`tests/creatures/test_den.py`).
+Three dogs keep to their den (`content/street/README.md`), and nothing puts them down or holds
+them back. A player on their own legs or the feet is bitten about fifteen times going through and
+back, and collapses. On the first legs, running through leaves about a tenth of their health, and
+the best legs a quarter or so (`tests/creatures/test_den.py`).
 
 A bat hangs at its roost while the player's lamp is off, however near they are. While it's on, a
 bat that sees the lamp, with nothing solid between, flies at the player's chest and keeps
-attacking, and goes back to its roost once the lamp's off. It's too quick to kick. Walking across a
+attacking, and goes back to its roost once the lamp's off. Walking across a
 room of two roosting bats by lamplight and back costs about a fifth of the player's health, and
 running about a twentieth; with the lamp off, nothing. The cave's thirty bats
 collapse a player who crosses it by lamplight on any legs, and leave one who crosses in the dark
@@ -137,14 +132,18 @@ lying at each map's pickups from `simile.player`'s `Pickups`, and a take records
 client stops showing it. Creatures sense salvage only while the player is on their map, so a bot
 races them for it rather than clearing it while they're away.
 
-## Kicks
+## Landing on one
 
-The engine adds its `kickable` to `kickables_of(app)`. A kick hits the nearest creature in front of
-the player within the kick's reach, 0.3 tiles of slack either side, and no higher than 1.2 tiles
-above their feet, which would take in a low bat, but bats dodge. It takes the kick's strength
-less the kind's `toughness` from its health. At none the creature goes down: `creature_gone`, and
-it's back after `respawn` if it has one. Otherwise it's `hurt` for `stagger`, knocked `knock` ×
-strength cells away along its floor. A kick it shrugs off does nothing.
+The player kills a rat by landing on it, as in the classic platformers. Each tick the engine compares
+where the server keeps the player with where it kept them the tick before: feet that came down
+from above a `stomped` creature's back (`STOMP_TOP`, 0.4 tiles over its floor) to it or below,
+within `STOMP_REACH` (0.9 tiles) of it, put it down: `creature_gone`, and it's back after `respawn`
+if it has one. Walking into one, jumping up past it or coming down beside it doesn't. The reach is
+the player's foot and half a rat, and slack for the rat having moved on since the client drew it.
+
+The client bounces the player off the rat as their feet reach its back, and sends that position at
+once (`client/src/side/stomp.ts`), so the server hears the feet come down on it. Landing on a bot or
+a dog puts the player in its reach, and it attacks as it would anyway.
 
 ## To the client
 

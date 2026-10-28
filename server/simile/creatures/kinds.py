@@ -1,6 +1,5 @@
 """The tunnels' kinds, and how each is placed: README.md's *The kinds*."""
 
-import math
 from dataclasses import dataclass
 
 from simile.creatures.kind import Kind
@@ -23,6 +22,7 @@ RAT = Kind(
     climbs=False,
     bites=True,
     rest=6.0,
+    stomped=True,
     ways=(Scurry(), DrawnTo(food, within=8.0, pace=1.4, attacks=True), Patrol()),
 )
 BOT = Kind(
@@ -32,8 +32,6 @@ BOT = Kind(
     damage=0.1,
     windup=0.6,
     rest=2.0,
-    health=math.inf,
-    toughness=1.0,
     ways=(
         Chase(sight=5.0, pace=1.5, memory=3.0, when=fitted),
         Collect(within=14.0, pace=0.2),
@@ -50,10 +48,6 @@ DOG = Kind(
     lunges=True,
     damage=0.1,
     rest=0.9,
-    health=math.inf,
-    toughness=1.0,
-    knock=1.5,
-    stagger=1.0,
     ways=(Chase(sight=10.0, pace=4.0, memory=3.0), Patrol(pause=2.0)),
 )
 BAT = Kind(
@@ -65,7 +59,6 @@ BAT = Kind(
     damage=0.03,
     lunges=True,
     rest=2.0,
-    dodges=True,
     ways=(Chase(sight=8.0, pace=4.0, memory=2.0, when=lamp_on), Roost()),
 )
 

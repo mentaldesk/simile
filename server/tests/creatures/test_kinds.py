@@ -1,11 +1,8 @@
-import math
-
 import pytest
 
-from simile.creatures.engine import COLLECTING, Creature, Creatures, Sight
+from simile.creatures.engine import COLLECTING, STOMP_TOP, Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.kinds import BOT, DOG, RAT
-from simile.player.kick import Kick
 from simile.schema import (
     Bionic,
     Body,
@@ -14,7 +11,6 @@ from simile.schema import (
     ItemKind,
     MapTile,
     Player,
-    SideFacing,
 )
 from simile.street.jump import LEGS
 from simile.world.map import TownMap
@@ -92,13 +88,37 @@ def test_a_rat_scurries_home_after_a_bite_and_comes_back_once_it_has_rested() ->
     assert world.harmed == [RAT, RAT]
 
 
-def test_a_kick_on_the_player_s_own_legs_puts_a_rat_down() -> None:
+def land(world: World, x: float) -> None:
+    """The player falling onto row 2's floor at `x`, from a row up."""
+    for y in (1.0, 2 - STOMP_TOP):
+        world.at = Point(x, y, ROW.id)
+        world.run(STEP)
+
+
+def test_landing_on_a_rat_puts_it_down_and_walking_into_one_does_not() -> None:
     world = World()
+    world.player.items = [RATION]
     rat = world.spawn(RAT, 6)
-    hit = world.creatures.kickable(Kick(Point(5, 2, ROW.id), SideFacing.EAST, strength=1))
-    assert hit is not None
-    hit.land()
-    assert rat.down is not None
+    world.at = Point(4, 2, ROW.id)
+    world.run(STEP)
+    world.at = Point(6, 2, ROW.id)
+    world.run(STEP)
+    assert rat.down is None
+
+    land(world, 6.4)
+    assert rat.down is not None and world.harmed == []
+
+
+@pytest.mark.parametrize("kind", [BOT, DOG], ids=["bot", "dog"])
+def test_landing_on_a_bot_or_a_dog_hurts_as_running_into_it_does(kind: Kind) -> None:
+    world = World()
+    world.player.body = FITTED
+    creature = world.spawn(kind, 6)
+    land(world, 6)
+    world.at = Point(6, 2, ROW.id)
+    world.run(kind.windup + STEP)
+
+    assert creature.down is None and world.harmed == [kind]
 
 
 def test_a_bot_ignores_a_whole_body_and_chases_a_fitted_one() -> None:
@@ -114,23 +134,6 @@ def test_a_bot_ignores_a_whole_body_and_chases_a_fitted_one() -> None:
     assert bot.state is CreatureState.CHASING
     world.run(5)
     assert world.harmed and set(world.harmed) == {BOT}
-
-
-def test_a_bot_shrugs_off_the_player_s_own_kick_and_is_only_knocked_back_by_bionic_legs() -> None:
-    world = World()
-    bot = world.spawn(BOT, 6)
-
-    def kick(strength: float) -> None:
-        hit = world.creatures.kickable(Kick(Point(5, 2, ROW.id), SideFacing.EAST, strength))
-        assert hit is not None
-        hit.land()
-
-    kick(1)
-    assert bot.state is not CreatureState.HURT
-    kick(4)
-    assert bot.state is CreatureState.HURT and bot.down is None and bot.health == math.inf
-    world.run(2)
-    assert bot.cell[0] > 6
 
 
 def test_a_bot_drifts_to_salvage_while_the_player_is_on_its_map_and_takes_a_while_there() -> None:

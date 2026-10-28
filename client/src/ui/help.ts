@@ -7,7 +7,7 @@ export const HELP_KEY = '?';
 export const CONTROLS: readonly (readonly [keys: readonly string[], what: string])[] = [
   [['← →', 'A D'], 'walk, or steer in the air'],
   [['Shift'], 'switch between walking and running, until pressed again'],
-  [['Space'], 'jump, higher while held and further running'],
+  [['Space'], 'jump, higher while held and further running; land on a rat to kill it'],
   [['↑', 'W'], 'upstairs or up a ladder from beside its foot, or the lift up'],
   [['↓', 'S'], 'downstairs or down a ladder from beside its top, or the lift down'],
   [['E'], 'go through a door or onto another street; off a door, read the news at a terminal, pick something up, sell salvage, trade at the clinic, look at a clue, or use a machine with the datajack'],
@@ -16,7 +16,6 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
   [['F'], 'eat: a meal at home, at the café or the noodle bar, or food you carry'],
   [['J'], 'open or close your journal: what you have learned about Aris, and the leads still open'],
   [['L'], 'switch your lamp on or off, to see in the dark; stand at a plug to charge it'],
-  [['K'], 'kick the way you face: it hurts rats, and the bionic legs kick harder'],
   [['C'], 'open or close your character: your vitals, your body, what you carry and the recipes you know'],
   [['Enter'], 'talk to the ringed resident, then send'],
   [['Tab'], 'choose who to talk to'],

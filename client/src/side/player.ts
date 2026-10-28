@@ -1,4 +1,4 @@
-import type { Facing, Position, SideFacing } from '../net';
+import type { Facing, Position } from '../net';
 import { PLAYER_SPEED } from '../world/tuning';
 import { isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import {
@@ -19,7 +19,7 @@ import { drawnCrossing, emptyDrawn, RIDE_SPEED, RUN_CYCLE_M, sideways, WALK_CYCL
 import { TILE_M } from './layout';
 import { climbRuns, pointAlong, type Crossing, type Path, type Run } from './runs';
 import { jackAt } from './jacks';
-import { KICK_PHASE, KICK_SECONDS } from './kick';
+import { BOUNCE_RISE } from './stomp';
 import { chosen, waysNear, type Press, type Way } from './ways';
 
 /** Tiles a second. */
@@ -40,6 +40,9 @@ export type Controls = {
 };
 
 export type MapPosition = Position & { map: string };
+
+/** Where the feet stop on the back of something they came down onto at `x`, from `from` to `to`, or nowhere. */
+export type Stomps = (map: string, x: number, from: number, to: number) => number | undefined;
 
 type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
@@ -78,8 +81,6 @@ export class SidePlayer {
   /** Seconds left in which a press of Space still jumps, on landing. */
   private buffered = 0;
   private landing = 0;
-  /** Seconds left of a kick, standing still. */
-  private kicking = 0;
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
@@ -90,6 +91,10 @@ export class SidePlayer {
   runSpeed = RUN_PACE * PLAYER_SPEED;
   /** With the datajack fitted, a link from a jack, the lift's, can be taken. */
   datajack = false;
+  /** What the feet bounce off, coming down on it: the scene's rats. */
+  stomps: Stomps = () => undefined;
+  /** They just bounced off something, until the scene has sent where. */
+  bounced = false;
 
   constructor(village: Village, position: MapPosition) {
     this.village = village;
@@ -103,20 +108,9 @@ export class SidePlayer {
     this.position.x = x;
     this.position.y = y;
     this.onRun = this.crossed = this.approaching = this.air = undefined;
-    this.coyote = this.buffered = this.landing = this.kicking = 0;
+    this.coyote = this.buffered = this.landing = 0;
     this.armed = false;
     this.locate();
-  }
-
-  /** Kicks the way they last moved, standing on the ground and not kicking already. Which way, or none. */
-  kick(): SideFacing | undefined {
-    if (this.kicking > 0 || this.onRun || this.crossed || this.approaching || this.air) return undefined;
-    const facing: SideFacing = this.heading < 0 ? 'west' : 'east';
-    this.facing = facing;
-    this.kicking = KICK_SECONDS;
-    this.walking = false;
-    this.locate();
-    return facing;
   }
 
   /** Held at the end left from while crossing, as the protocol holds residents. Reused: copy it to keep it. */
@@ -153,14 +147,13 @@ export class SidePlayer {
     this.run = controls.run ? Math.min(this.run + blend, 1) : Math.max(this.run - blend, 0);
     this.buffered = controls.jump ? BUFFER_SECONDS : Math.max(this.buffered - dt, 0);
     this.landing = Math.max(this.landing - dt, 0);
-    this.kicking = Math.max(this.kicking - dt, 0);
     if (this.approaching && this.buffered > 0) this.approaching = undefined;
     let door: Link | undefined;
     if (this.crossed) this.cross(this.crossed, controls, dt);
     else if (this.onRun) this.climb(this.onRun, controls, dt);
     else if (this.approaching) this.approach(this.approaching, controls, dt);
     else if (this.air) this.fly(controls, dt);
-    else if (!this.kicking) door = this.walk(controls, dt);
+    else door = this.walk(controls, dt);
     this.locate();
     return door;
   }
@@ -247,10 +240,18 @@ export class SidePlayer {
       this.facing = sideways(controls.x);
     }
     steer(flying, controls.x * this.speed, dt / 2);
-    const from = this.position.x;
+    const from = { ...this.position };
     const landed = fly(map, this.position, flying, dt);
     steer(flying, controls.x * this.speed, dt / 2);
-    this.travelled += Math.abs(this.position.x - from);
+    this.travelled += Math.abs(this.position.x - from.x);
+    const back = this.position.y > from.y ? this.stomps(this.map, this.position.x, from.y, this.position.y) : undefined;
+    if (back !== undefined) {
+      this.position.y = back;
+      flying.vy = -jumpSpeed(BOUNCE_RISE);
+      flying.held = false;
+      this.bounced = true;
+      return;
+    }
     if (!landed) return;
     this.air = undefined;
     this.landing = LANDING_SECONDS;
@@ -375,12 +376,6 @@ export class SidePlayer {
     if (this.air) {
       drawn.pose = 'jumping';
       drawn.phase = this.air.vy < 0 ? 0 : 0.5;
-      return;
-    }
-    if (this.kicking > 0) {
-      drawn.pose = 'walking';
-      drawn.phase = KICK_PHASE;
-      drawn.run = 1;
       return;
     }
     const landing = !this.walking && this.landing > 0;
