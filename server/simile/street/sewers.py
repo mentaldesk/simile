@@ -680,11 +680,14 @@ def widest(xs: list[int]) -> list[int]:
 
 def onto(plan: Plan, x: int, y: int, start: int, end: int) -> bool:
     """Whether the player comes onto a floor at (x, y) from elsewhere: at a ladder's foot or
-    beside its top, under a hole or a gap they drop through, or at the zone's ends."""
+    beside its top, at the edge of a hole they hop, under one they drop through, or at the zone's
+    ends."""
     if x in (start, end - 1) or plan.climbable.get((x, y - 1)) is DoorKind.LADDER:
         return True
     for side in (x - 1, x + 1):
         if plan.climbable.get((side, y)) is DoorKind.LADDER is plan.climbable.get((side, y + 1)):
+            return True
+        if not plan.walkable(side, y) and (side, y) not in plan.solid:
             return True
     for up in range(y - 1, 0, -1):
         if (x, up) in plan.solid:

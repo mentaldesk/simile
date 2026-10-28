@@ -13,23 +13,26 @@ from simile.creatures.kinds import BOT, RAT
 from simile.creatures.placing import spawns
 from simile.schema import Bionic, Body, CreatureKind, CreatureState, Item, ItemKind, Player
 from simile.street.jump import JUMP, LEGS, Jump
-from simile.street.metro import BOTS, VAULT_LADDER
+from simile.street.metro import VAULT_LADDER
 from simile.street.moves import moves
 from simile.street.plan import Spawn
 from simile.street.sewers import DEN, DEN_LADDER, FLOORS, LANDING, LEVELS, SEWERS, WEIR_AT
 from simile.world.map import TownMap, load_maps
 
-from .walkthrough import Climb, Leap, Plan, Step, Stuck, Wait, Walk, Walkthrough
+from .walkthrough import FRAME, Climb, Leap, Plan, Step, Stuck, Wait, Walk, Walkthrough
 
 type Cell = tuple[int, int]
 
+FRAMES = (0.02, FRAME, 0.1)
+"""Seconds of the client's a step of the player's moves takes: each run passes at any of them."""
 FITTED = Body(vertebra=Bionic.DATAJACK)
 """As the player comes back from the clinic, so the bots go for them."""
 LEGGED = Body(vertebra=Bionic.DATAJACK, legs=Bionic.BIONIC_LEGS)
 FOOD = Item(id="ration_bar", kind=ItemKind.FOOD, name="Ration bar", weight=0.2)
 """So the rats go for them too."""
 JUMPING = 3.0
-"""What a jump adds to a way's cost, so the player walks and climbs where they can."""
+"""What a jump adds to a way's cost, on top of twice its length, so the player walks and climbs
+where they can, and jumps no further than they have to."""
 JUMP_OVER = 2.0
 """Tiles from a bot coming at them that the player jumps it."""
 CLEARS = 3.4
@@ -37,6 +40,15 @@ CLEARS = 3.4
 STOMPS = 1.5
 """Tiles from a rat that the player hops, to come down on it."""
 COMING = {CreatureState.CHASING, CreatureState.ATTACKING}
+LEAD = 2.5
+"""Tiles a bot coming for the player is behind them at least as they start to climb, or else
+they lead it away first."""
+LURE = 6.0
+"""Tiles from a ladder's foot the player leads a bot."""
+DODGES = 12
+"""How many times the player dodges on the way to one place before it's no way at all."""
+PER_DANGER = 40.0
+"""Seconds the player takes at most to get past each danger, waiting for it or leading it away."""
 LADDER_CLEAR = {BOT: 3.0, RAT: 1.5}
 """Tiles a bot or a rat keeps from a ladder's end before the player goes on up or down it."""
 
@@ -74,18 +86,21 @@ WEST = [
 ]
 
 
-def metro(steps: Iterable[Step], body: Body = FITTED) -> Walkthrough:
-    walk = Walkthrough(maps()["metro"], placed("metro"), 23, 15, player=Player(body=body))
+def metro(steps: Iterable[Step], body: Body = FITTED, frame: float = FRAME) -> Walkthrough:
+    town = maps()["metro"]
+    walk = Walkthrough(town, placed("metro"), 23, 15, player=Player(body=body), frame=frame)
     return walk.go(steps)
 
 
-def test_the_metro_s_bots_are_passed_overhead_both_ways_unhurt() -> None:
-    walk = metro([*EAST, Walk(70.5), *WEST])
+@pytest.mark.parametrize("frame", FRAMES)
+def test_the_metro_s_bots_are_passed_overhead_both_ways_unhurt(frame: float) -> None:
+    walk = metro([*EAST, Walk(70.5), *WEST], frame=frame)
     assert walk.harmed == [], walk.log
 
 
 def test_walking_the_metro_s_floor_hurts_a_fitted_player_but_not_a_whole_one() -> None:
-    assert len(metro([Walk(70), Walk(23)]).harmed) == 2 * len(BOTS)
+    for frame in FRAMES:
+        assert metro([Walk(70), Walk(23)], frame=frame).harmed, frame
     assert metro([Walk(70), Walk(23)], Body()).harmed == []
 
 
@@ -110,7 +125,8 @@ def way(town: TownMap, start: Cell, goals: set[Cell], jump: Jump) -> list[Cell]:
             if town.solid(move.cell[0], move.cell[1] - 1):
                 continue
             dx, dy = move.cell[0] - cell[0], move.cell[1] - cell[1]
-            total = cost + move.cost + (0 if abs(dx) + abs(dy) == 1 else JUMPING)
+            jumps = abs(dx) + abs(dy) != 1
+            total = cost + move.cost * (1 + jumps) + JUMPING * jumps
             if total < spent.get(move.cell, math.inf):
                 spent[move.cell], came[move.cell] = total, cell
                 heapq.heappush(frontier, (total, move.cell))
@@ -143,10 +159,16 @@ def to(goals: set[Cell] | Cell) -> Plan:
     dodge something on it."""
     ends = goals if isinstance(goals, set) else {goals}
 
-    def plan(walk: Walkthrough) -> Iterator[Step]:
+    def plan(walk: Walkthrough) -> Iterator[Step | Plan]:
+        start = walk.reactions
         while True:
             here, seen = (round(walk.x), round(walk.y)), walk.reactions
+            if seen - start > DODGES:
+                raise Stuck(f"still dodging on the way to {sorted(ends)[:3]}")
             for step in steps(walk.town, way(walk.town, here, ends, walk.jump)):
+                if isinstance(step, Climb) and (bot := guarding(walk)) is not None:
+                    yield lure(walk, bot, walk.x)
+                    break
                 yield step
                 if walk.reactions != seen:
                     break
@@ -156,15 +178,58 @@ def to(goals: set[Cell] | Cell) -> Plan:
     return plan
 
 
+def guarding(walk: Walkthrough) -> Creature | None:
+    """A bot coming for them along the floor they're about to climb from."""
+    row = round(walk.y)
+    if not walk.town.standing(round(walk.x), row):
+        return None
+    return next(
+        (
+            bot
+            for bot in alive(walk, BOT)
+            if math.isclose(bot.y, row) and bot.state in COMING and abs(bot.x - walk.x) < LEAD
+        ),
+        None,
+    )
+
+
+def lure(walk: Walkthrough, bot: Creature, foot: float) -> Plan:
+    """Leads a bot away from `foot`, where the player stops to climb: runs off along the floor,
+    away from it if there's room, waits for it to come, jumps it and runs back with a lead on it."""
+    row = round(walk.y)
+    cells = sorted(x for x, y in _stretch(bot) if y == row)
+    side = -1 if bot.x > foot else 1
+    away = [x for x in cells if (x - foot) * side >= LURE]
+    there = away or [x for x in cells if abs(x - foot) >= LURE]
+    far = min(there, key=lambda x: abs(x - foot))
+    back = 1 if foot > far else -1
+
+    def coming(walk: Walkthrough) -> bool:
+        return bot.state in COMING and 0 < (bot.x - walk.x) * back <= JUMP_OVER
+
+    def plan(walk: Walkthrough) -> Iterator[Step | Plan]:
+        while not math.isclose(walk.x, far):
+            yield Walk(far, walk.jump.run)
+        yield Wait(6, until=coming)
+        if coming(walk):
+            yield Leap(walk.x + back * CLEARS, row)
+        while not math.isclose(walk.x, foot):
+            yield Walk(foot, walk.jump.run)
+
+    return plan
+
+
 def alive(walk: Walkthrough, kind: object) -> Iterable[Creature]:
     return (c for c in walk.creatures.all.values() if c.kind is kind and c.down is None)
 
 
-def dodge(walk: Walkthrough, step: Walk | Climb | Wait) -> list[Step] | None:
-    """Waits on a ladder for a bot by its end to go, comes down on a rat that's coming for them,
-    and jumps a bot that is."""
+def dodge(walk: Walkthrough, step: Step) -> list[Step | Plan] | None:
+    """Waits on a ladder, or before jumping onto a floor, for a bot by where they'll come onto it
+    to go; comes down on a rat that's coming for them, and jumps a bot that is."""
     if isinstance(step, Climb):
         return _wait_on_ladder(walk, step)
+    if isinstance(step, Leap):
+        return _wait_to_leap(walk, step)
     row = round(walk.y)
     if not math.isclose(walk.y, row) or not walk.town.standing(round(walk.x), row):
         return None
@@ -174,7 +239,13 @@ def dodge(walk: Walkthrough, step: Walk | Climb | Wait) -> list[Step] | None:
     way = 0 if isinstance(step, Wait) else (1 if step.x > walk.x else -1)
     for bot in alive(walk, BOT):
         ahead = (bot.x - walk.x) * way
-        if math.isclose(bot.y, row) and bot.state in COMING and 0 < ahead <= JUMP_OVER:
+        if not (math.isclose(bot.y, row) and bot.state in COMING and ahead > 0):
+            continue
+        if isinstance(step, Walk) and abs(step.x - walk.x) < abs(bot.x - walk.x):
+            if abs(bot.x - step.x) < LEAD and ahead <= LEAD + 1:
+                return [lure(walk, bot, step.x)]
+            continue
+        if ahead <= JUMP_OVER:
             land = walk.x + way * CLEARS
             cells = range(round(walk.x), round(land) + way, way)
             if walk.town.standing(round(land), row) and all(
@@ -184,8 +255,25 @@ def dodge(walk: Walkthrough, step: Walk | Climb | Wait) -> list[Step] | None:
     return None
 
 
+def _wait_to_leap(walk: Walkthrough, step: Leap) -> list[Step] | None:
+    """Out of sight on another floor till no bot is by where they'll land on its."""
+    here, there = sorted((round(walk.x), round(step.x)))
+    if math.isclose(step.row, walk.y) and all(
+        walk.town.walkable(x, step.row) for x in range(here, there + 1)
+    ):
+        return None
+
+    def near(walk: Walkthrough) -> bool:
+        return any(
+            math.isclose(bot.y, step.row) and abs(bot.x - step.x) <= LADDER_CLEAR[BOT]
+            for bot in alive(walk, BOT)
+        )
+
+    return [Wait(until=lambda walk: not near(walk))] if near(walk) else None
+
+
 def _wait_on_ladder(walk: Walkthrough, step: Climb) -> list[Step] | None:
-    """Out of sight a row short of the floor at the ladder's end, till no bot or rat is near it."""
+    """Out of sight on the ladder a row short of its end, till no bot or rat is near it."""
     if not 1.0 < abs(step.row - walk.y) <= 1.3:
         return None
 
@@ -302,20 +390,27 @@ def dangers(level: int) -> list[tuple[CreatureKind, Spawn]]:
     return found
 
 
-def sewers(level: int, jump: Jump, body: Body) -> Walkthrough:
-    town = maps(level)[SEWERS]
+def sewers(level: int, jump: Jump, body: Body, frame: float) -> Walkthrough:
+    town, start = maps(level)[SEWERS], (LANDING.x, LANDING.y)
     player = Player(body=body, items=[FOOD])
-    return Walkthrough(
-        town, placed(SEWERS, level), LANDING.x, LANDING.y, player=player, jump=jump, react=dodge
-    )
+    return Walkthrough(town, placed(SEWERS, level), *start, player, jump, react=dodge, frame=frame)
 
 
 def nearest_first(walk: Walkthrough, plans: list[tuple[set[Cell], Plan]]) -> Iterator[Plan]:
+    """Each plan in turn, the nearest first, each in at most `PER_DANGER` seconds."""
     left = list(plans)
     while left:
         here = (round(walk.x), round(walk.y))
         costs = [len(way(walk.town, here, cells, walk.jump)) for cells, _ in left]
+        start = walk.now
         yield left.pop(costs.index(min(costs)))[1]
+        yield lambda walk, start=start: _in_time(walk, start)
+
+
+def _in_time(walk: Walkthrough, start: float) -> list[Step]:
+    if walk.now - start > PER_DANGER:
+        raise Stuck(f"{walk.now - start:.0f} s getting past one danger")
+    return []
 
 
 def where(walk: Walkthrough, spawn: Spawn) -> set[Cell]:
@@ -327,10 +422,10 @@ def where(walk: Walkthrough, spawn: Spawn) -> set[Cell]:
     return floor(walk.town, area.y + area.height - 1, range(area.x, area.x + area.width))
 
 
-def zone_0(level: int) -> Walkthrough:
+def zone_0(level: int, frame: float = FRAME) -> Walkthrough:
     """From the lift past every rat, bot and bat before the gate, to the gate's weir, on the
     player's own legs."""
-    walk = sewers(level, JUMP, FITTED)
+    walk = sewers(level, JUMP, FITTED, frame)
     town = walk.town
     ways = {CreatureKind.BOT: past, CreatureKind.RAT: stomping}
     plans = [
@@ -341,10 +436,10 @@ def zone_0(level: int) -> Walkthrough:
     return walk.go([to((gate + WEIR_AT - 1, FLOORS[0]))])
 
 
-def den(level: int) -> Walkthrough:
+def den(level: int, frame: float = FRAME) -> Walkthrough:
     """From the lift on the first legs through the gate to the den, up its ladder by the door to
     the loft's stash, along the loft into the bat cave by lamplight off, and back out."""
-    walk = sewers(level, LEGS[Bionic.BIONIC_LEGS], LEGGED)
+    walk = sewers(level, LEGS[Bionic.BIONIC_LEGS], LEGGED, frame)
     town = walk.town
     [door] = [light.area.x for light in town.light if light.id == "sewers_den"]
     x, end, loft, ground = door + 1, door + 1 + DEN, FLOORS[1], FLOORS[0]
@@ -371,15 +466,19 @@ def den(level: int) -> Walkthrough:
     return walk
 
 
+@pytest.mark.parametrize("frame", FRAMES)
 @pytest.mark.parametrize("level", range(LEVELS))
 def test_every_danger_before_the_gate_is_passed_unhurt_on_the_player_s_own_legs(
-    level: int,
+    level: int, frame: float
 ) -> None:
-    walk = zone_0(level)
+    walk = zone_0(level, frame)
     assert walk.harmed == [], "\n".join(walk.log[-40:])
 
 
+@pytest.mark.parametrize("frame", FRAMES)
 @pytest.mark.parametrize("level", range(LEVELS))
-def test_the_den_s_stash_and_the_cave_are_reached_past_the_dogs_unhurt(level: int) -> None:
-    walk = den(level)
+def test_the_den_s_stash_and_the_cave_are_reached_past_the_dogs_unhurt(
+    level: int, frame: float
+) -> None:
+    walk = den(level, frame)
     assert walk.harmed == [], "\n".join(walk.log[-40:])

@@ -8,13 +8,15 @@ from simile.creatures.engine import Creature, Creatures, Sight
 from simile.creatures.kind import Kind
 from simile.creatures.placing import populate
 from simile.schema import DoorKind, Player
+from simile.sim import STEP as TICK
 from simile.street.jump import JUMP, Jump
 from simile.street.moves import possible
 from simile.street.plan import Spawn
 from simile.world.map import TownMap
 from simile.world.movement import Point
 
-STEP = 0.05
+FRAME = 0.05
+"""Seconds of the client's that each step of the player's moves takes."""
 THROTTLE = 0.2
 """Real seconds between the client's `player_move`s; it sends one at once as it lands."""
 CLIMB = 1.5
@@ -44,8 +46,8 @@ class Climb:
 
 @dataclass(frozen=True)
 class Leap:
-    """Through the air to stand at (`x`, `row`), rising `rise` tiles first: none to step off a
-    ledge, and the jump's full rise by default."""
+    """A running jump through the air to stand at (`x`, `row`), rising `rise` tiles first: none
+    to step off a ledge, and the jump's full rise by default."""
 
     x: float
     row: int
@@ -64,7 +66,7 @@ class Wait:
 type Step = Walk | Climb | Leap | Wait
 type Plan = Callable[["Walkthrough"], Iterable["Step | Plan"]]
 """Steps worked out when they're reached, from where everything is then."""
-type React = Callable[["Walkthrough", Walk | Climb | Wait], "Iterable[Step | Plan] | None"]
+type React = Callable[["Walkthrough", Step], "Iterable[Step | Plan] | None"]
 """What the player does before going on with a step, if anything: dodging what's coming."""
 
 
@@ -74,7 +76,8 @@ class Stuck(AssertionError):
 
 @dataclass
 class Walkthrough:
-    """The player on `town` with its creatures from `placed`, from (`x`, `row`)."""
+    """The player on `town` with its creatures from `placed`, from (`x`, `row`), moving a `frame`
+    at a time and heard as the client sends their moves, the creatures ticking at the sim's rate."""
 
     town: TownMap
     placed: Sequence[tuple[str, Spawn]]
@@ -83,6 +86,7 @@ class Walkthrough:
     player: Player = field(default_factory=Player)
     jump: Jump = JUMP
     react: React | None = None
+    frame: float = FRAME
     now: float = 0.0
     harmed: list[Kind] = field(default_factory=list)
     log: list[str] = field(default_factory=list)
@@ -92,6 +96,7 @@ class Walkthrough:
         self.heard = Point(self.x, self.y, self.town.id)
         self.said = 0.0
         self.reactions = 0
+        self.ticked = 0.0
         self.creatures = Creatures(
             {self.town.id: self.town},
             sense=lambda: Sight(self.player, self.heard),
@@ -104,7 +109,7 @@ class Walkthrough:
         self.harmed.append(kind)
         self.log.append(f"{self.now:.2f} a {kind.id} hurts them at {self.x:.2f}, {self.y:.2f}")
 
-    def _reacted(self, step: Walk | Climb | Wait) -> bool:
+    def _reacted(self, step: Step) -> bool:
         steps = self.react(self, step) if self.react is not None else None
         if steps is None:
             return False
@@ -132,7 +137,7 @@ class Walkthrough:
         return self
 
     def _tick(self, landed: bool = False) -> None:
-        self.now += STEP
+        self.now += self.frame
         if self.now > LONGEST:
             raise Stuck(f"still going after {LONGEST} s")
         if landed or self.now - self.said >= THROTTLE - 1e-9:
@@ -140,7 +145,9 @@ class Walkthrough:
             if not possible(self.town, self.x, self.y, last, self.jump):
                 raise Stuck(f"the server keeps no move to {self.x:.2f}, {self.y:.2f}")
             self.heard, self.said = Point(self.x, self.y, self.town.id), self.now
-        self.creatures.tick(STEP)
+        while self.now - self.ticked >= TICK - 1e-9:
+            self.ticked += TICK
+            self.creatures.tick(TICK)
 
     def _walk(self, step: Walk) -> None:
         row = round(self.y)
@@ -150,7 +157,7 @@ class Walkthrough:
             gap = step.x - self.x
             if self._reacted(step):
                 return
-            x = self.x + math.copysign(min(abs(gap), step.pace * STEP), gap)
+            x = self.x + math.copysign(min(abs(gap), step.pace * self.frame), gap)
             if not (self._on(x, row) or self.town.walkable(math.floor(x + 0.5), row)):
                 raise Stuck(f"nowhere to walk at {x:.2f}, {row}")
             if self._blocked(x, row):
@@ -168,31 +175,35 @@ class Walkthrough:
             if self._reacted(step):
                 continue
             gap = step.row - self.y
-            self.y += math.copysign(min(abs(gap), CLIMB * STEP), gap)
+            self.y += math.copysign(min(abs(gap), CLIMB * self.frame), gap)
             self._tick()
 
     def _leap(self, step: Leap) -> None:
         """As the client jumps: along at a run, up at `gravity` with Space held, and down at
-        `FALL_GRAVITY` times it, landing on whatever's under the feet as they come down."""
+        `FALL_GRAVITY` times it, landing on whatever's under the feet as they come down past it."""
         if not self.town.standing(round(step.x), step.row):
             raise Stuck(f"nowhere to land at {step.x}, {step.row}")
+        while self._reacted(step):
+            pass
         rise = self.jump.rise if step.rise is None else step.rise
         vy = -math.sqrt(2 * self.gravity * rise)
         start = self.now
         while True:
             gap = step.x - self.x
-            x = self.x + math.copysign(min(abs(gap), self.jump.run * STEP), gap)
+            dt = self.frame
+            x = self.x + math.copysign(min(abs(gap), self.jump.run * dt), gap)
             if self._blocked(x, self.y):
                 raise Stuck(f"the body meets a wall at {x:.2f}, {self.y:.2f}")
             self.x = x
             gravity = self.gravity * (1 if vy < 0 else FALL_GRAVITY)
-            y = self.y + vy * STEP + gravity * STEP * STEP / 2
-            vy += gravity * STEP
+            y = self.y + vy * dt + gravity * dt * dt / 2
+            vy += gravity * dt
             if vy < 0 and self._blocked(self.x, y):
                 vy, y = 0.0, self.y
-            row = math.ceil(self.y - 1e-9)
-            landed = vy >= 0 and y >= row - 1e-9 and self._on(self.x, row)
-            if landed:
+            crossed = range(math.ceil(self.y - 1e-9), math.floor(y + 1e-9) + 1) if vy >= 0 else ()
+            row = next((r for r in crossed if self._on(self.x, r)), None)
+            landed = row is not None
+            if row is not None:
                 y, vy = float(row), 0.0
             self.y = y
             if landed and math.isclose(self.x, step.x):

@@ -26,15 +26,15 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
 
     def harm(kind: Kind) -> None:
         from simile.player.health import health_of
-        from simile.schema import EffectKind
 
         try:
             health = health_of(app)
         except AttributeError:
             return
         if kind.bites:
-            health.afflict(EffectKind.RAT_BITE, health.config.bitten)
-        health.hurt(kind.damage)
+            health.bite(kind.damage)
+        else:
+            health.hurt(kind.damage)
 
     creatures.clock, creatures.sense, creatures.harm = world.clock, sense, harm
     creatures.send = hub.broadcast

@@ -35,7 +35,6 @@ class HealthConfig(BaseModel):
     waking: float = Field(
         default=0.25, gt=0, le=1, description="Their health when they wake after collapsing."
     )
-    bite: float = Field(default=0.05, ge=0, le=1, description="The health a rat bite takes.")
     bitten: float = Field(
         default=0.2,
         gt=0,
@@ -124,10 +123,11 @@ class Health:
         logger.info("%s  The player has no health left", self.clock)
         self.collapse()
 
-    def bite(self) -> None:
-        """A rat bites them: it hurts, and the bite may turn infected if it isn't treated."""
+    def bite(self, damage: float) -> None:
+        """A rat bites them: it takes `damage`, and the bite may turn infected if it isn't
+        treated."""
         self.afflict(EffectKind.RAT_BITE, self.config.bitten)
-        self.hurt(self.config.bite)
+        self.hurt(damage)
 
     def afflict(self, kind: EffectKind, strength: float) -> None:
         """Gives them `kind` at `strength`, or makes the one they have that much stronger, up to

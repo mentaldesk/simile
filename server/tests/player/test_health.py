@@ -19,6 +19,8 @@ from simile.world.map import load_maps
 MAPS = load_maps()
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 HOUR = 3600.0
+TAKES = 0.05
+"""What a bite takes here; a rat's own is in `simile.creatures`."""
 TUNNEL = Point(65, 15, "metro")
 HOME = Point(13, 2, "maker_space_floor_0")
 BITE, INFECTION = EffectKind.RAT_BITE, EffectKind.INFECTION
@@ -60,9 +62,9 @@ def test_damage_takes_health() -> None:
     patient = Patient()
 
     patient.health.hurt(0.3)
-    patient.health.bite()
+    patient.health.bite(TAKES)
 
-    assert patient.player.health == pytest.approx(0.7 - DEFAULT_HEALTH.bite)
+    assert patient.player.health == pytest.approx(0.7 - TAKES)
     assert patient.collapses == 0
 
 
@@ -80,19 +82,19 @@ def test_it_comes_back_slowly_and_faster_at_home() -> None:
 
 def test_nothing_changes_while_nobody_is_playing() -> None:
     patient = Patient(Player(health=0.5))
-    patient.health.bite()
+    patient.health.bite(TAKES)
     patient.playing = False
 
     patient.run(5)
 
-    assert patient.player.health == pytest.approx(0.5 - DEFAULT_HEALTH.bite)
+    assert patient.player.health == pytest.approx(0.5 - TAKES)
     assert patient.strength(BITE) == DEFAULT_HEALTH.bitten
 
 
 def test_at_none_they_collapse_and_wake_with_some_health() -> None:
     patient = Patient(Player(health=0.04))
 
-    patient.health.bite()
+    patient.health.bite(TAKES)
 
     assert patient.collapses == 1
     assert patient.player.health == DEFAULT_HEALTH.waking
@@ -100,7 +102,7 @@ def test_at_none_they_collapse_and_wake_with_some_health() -> None:
 
 def test_a_single_bite_fades_before_it_can_turn() -> None:
     patient = Patient()
-    patient.health.bite()
+    patient.health.bite(TAKES)
 
     patient.run(DEFAULT_HEALTH.infects + 1)
 
@@ -109,10 +111,10 @@ def test_a_single_bite_fades_before_it_can_turn() -> None:
 
 def test_each_bite_makes_it_worse_from_when_they_were_first_bitten() -> None:
     patient = Patient()
-    patient.health.bite()
+    patient.health.bite(TAKES)
     patient.run(0.5)
 
-    patient.health.bite()
+    patient.health.bite(TAKES)
 
     [bite] = patient.player.effects
     assert bite.strength == pytest.approx(2 * DEFAULT_HEALTH.bitten - 0.5 * 0.25)
@@ -122,7 +124,7 @@ def test_each_bite_makes_it_worse_from_when_they_were_first_bitten() -> None:
 def test_a_handful_of_bites_turns_infected_and_lasts_until_its_treated() -> None:
     patient = Patient()
     for _ in range(5):
-        patient.health.bite()
+        patient.health.bite(TAKES)
 
     patient.run(DEFAULT_HEALTH.infects)
     [infection] = patient.player.effects
@@ -158,8 +160,8 @@ def test_with_one_kidney_an_effect_fades_half_as_fast() -> None:
 def test_with_one_kidney_two_bites_last_long_enough_to_turn() -> None:
     two, one = Patient(), Patient(Player(body=ONE_KIDNEY))
     for patient in (two, one):
-        patient.health.bite()
-        patient.health.bite()
+        patient.health.bite(TAKES)
+        patient.health.bite(TAKES)
 
     for patient in (two, one):
         patient.run(DEFAULT_HEALTH.infects)
@@ -234,7 +236,7 @@ def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_at_home(
             assert time.monotonic() < deadline, "the server never had the player there"
             time.sleep(0.001)
         client.portal.call(lambda: setattr(player, "health", 0.01))
-        client.portal.call(health_of(app).bite)
+        client.portal.call(health_of(app).bite, TAKES)
         collapsed = next_of(ws, "player_collapsed")
         client.portal.call(world_of(app).loop.tick)
         woken = next_of(ws, "player_state")

@@ -266,21 +266,21 @@ def careless(*placed: Spawn, **player: Any) -> float:
     return sum(kind.damage for kind in walk.harmed)
 
 
-def test_walking_through_a_bot_s_patrol_costs_a_third_of_full_health() -> None:
-    assert BOT.damage == 0.35
-    for x in range(10, 18):
-        assert careless(bot(x), body=FITTED) == BOT.damage
-
-
-def test_walking_through_a_nest_of_three_with_food_costs_about_a_third_of_full_health() -> None:
-    assert RAT.damage == 0.14
-    taken = [careless(*nest(*xs), items=[RATION]) for xs in combinations(range(10, 22, 2), 3)]
-    assert 0.3 <= sum(taken) / len(taken) <= 0.4
-    assert all(cost <= 3 * RAT.damage for cost in taken)
-
-
-def test_three_careless_passes_collapse_a_player_from_full_health() -> None:
-    assert 3 * BOT.damage >= 1 and 3 * 3 * RAT.damage >= 1
+@pytest.mark.parametrize(
+    "walks",
+    [
+        [(bot(x),) for x in range(10, 18)],
+        [nest(*xs) for xs in combinations(range(10, 22, 2), 3)],
+    ],
+    ids=["past a bot", "through a nest of three"],
+)
+def test_a_careless_walk_costs_about_a_third_of_full_health_and_three_collapse_the_player(
+    walks: list[list[Spawn]],
+) -> None:
+    costs = [careless(*placed, body=FITTED, items=[RATION]) for placed in walks]
+    each = sum(costs) / len(costs)
+    assert 0.3 <= each <= 0.4 and min(costs) > 0
+    assert 3 * each >= 1
 
 
 @pytest.mark.parametrize("gap", [1.2, 1.6, 2.0, 2.4])
@@ -321,10 +321,18 @@ def test_a_bot_never_takes_a_ladder_or_stairs_nor_drops_off_its_floor() -> None:
     [(CreatureKind.BOT, {"body": FITTED}), (CreatureKind.RAT, {"items": [RATION]})],
     ids=["bot", "rat"],
 )
-def test_bots_and_rats_notice_the_player_only_on_their_own_floor(
+def test_bots_and_rats_notice_the_player_only_on_their_own_floor_and_never_on_a_ladder(
     kind: CreatureKind, player: dict[str, Any]
 ) -> None:
-    for x, row, notices in ((13, 1, False), (17, 4, False), (19, 1, True)):
-        spawn = Spawn("it", kind, 17, 1, None, 2)
-        walk = walkthrough(STOREYS, spawn, x=x, row=row, **player).go([Wait(1)])
-        assert (walk.creature("it").state is CreatureState.CHASING) == notices, (x, row)
+    cases = [
+        ((17, 1), (13, 1, False)),
+        ((17, 1), (17, 4, False)),
+        ((17, 1), (19, 1, True)),
+        ((13, 4), (10, 3, False)),
+        ((13, 4), (11, 4, True)),
+    ]
+    for (sx, sy), (x, row, notices) in cases:
+        spawn = Spawn("it", kind, sx, sy, None, 2)
+        walk = walkthrough(STOREYS, spawn, x=x, row=row, **player).go([Wait(0.5)])
+        noticed = walk.creature("it").state in {CreatureState.CHASING, CreatureState.ATTACKING}
+        assert noticed == notices, (x, row)

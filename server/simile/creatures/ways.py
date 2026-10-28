@@ -17,8 +17,9 @@ LAMP = 4.5
 """Tiles the player's lamp lights around them, as the client draws it (`LAMP_RADIUS`)."""
 CHEST = 1.0
 """Tiles above the player's feet that a creature looks at and their lamp shines from."""
-ON_FLOOR = 0.9
-"""Tiles above or below a creature's floor the player's feet are still on it."""
+ON_FLOOR = (0.9, 2.5)
+"""Tiles below and above a creature's floor the player's feet are still on it: as high as a jump
+off it, but not a ledge three rows up or a floor over its ceiling."""
 
 
 @dataclass(frozen=True)
@@ -113,8 +114,8 @@ class Patrol:
 @dataclass(frozen=True)
 class Chase:
     """After the player while it sees them, then where it saw them last for `memory`. One that
-    keeps to its `floor` sees them only on it: within a row of it, with floor it walks all the
-    way between them."""
+    keeps to its `floor` sees them only on it (`ON_FLOOR`), with floor it walks all the way
+    between them."""
 
     sight: float = 6.0
     pace: float = 1.0
@@ -141,13 +142,19 @@ class Chase:
 
 
 def _on_floor(creature: "Creature", at: Point) -> bool:
-    """Whether the player's feet at `at` are on the floor the creature walks to them along."""
-    if abs(at.y - creature.y) > ON_FLOOR:
+    """Whether the player's feet at `at` are on the floor the creature walks to them along, and
+    not on a ladder or stairs it doesn't take."""
+    below, above = ON_FLOOR
+    if not -above <= at.y - creature.y <= below:
+        return False
+    grid = creature.grid
+    feet = (math.floor(at.x + 0.5), math.ceil(round(at.y, 6)))
+    if grid.town.climb(*feet) is not None and not grid.takes(feet):
         return False
     x, row = creature.cell
     there = math.floor(at.x + 0.5)
     step = 1 if there >= x else -1
-    return all(creature.grid.allowed((cx, row)) for cx in range(x, there + step, step))
+    return all(grid.allowed((cx, row)) for cx in range(x, there + step, step))
 
 
 @dataclass(frozen=True)
