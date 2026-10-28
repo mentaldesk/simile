@@ -378,8 +378,8 @@ slab, the row under them. West to east it's columns of rooms:
   `content/story/story.toml`.
 - **Plugs**: `sewers_plug_1`, a `Junction box` in the last column before the gate (`GATE_BOX`),
   and past it another wherever the way on would take the lamp past its reach (`boxes`, P35), each
-  in a lit stretch three cells wide. A box past the gate goes at the last free cell of a room's
-  floor on the way before the lamp would run too low, so the run up to it, and the run on from it,
+  in a lit stretch three cells wide. A box past the gate goes at the free cell of a room's floor on
+  the way that lets the lamp go furthest, then the run from the gate's box furthest, so the runs
   are as long as a charge allows. It's placed after everything else, so it moves nothing. Some
   rooms have a lamp (`sewer_lamp`) and are lit (`sewers_lamp_<n>`). The rest is dark
   (`sewers_dark`).
@@ -461,7 +461,7 @@ and `pipes` dress the rooms.
 
 ## Light
 
-Light is scarce (P35): the lamp lasts under two minutes on a full charge (`LampConfig.drain`,
+Light is scarce (P35): the lamp lasts two real minutes on a full charge (`LampConfig.light`,
 `simile.player`), and every plug is as far from the last as it can be. `simile.street.charge` says
 how much of a charge the way between plugs takes: the seconds spent in the dark at a walk, 2.6
 tiles a second, climbing a ladder at 1.5 and stairs at 2, with the lamp off wherever it's lit
@@ -469,18 +469,22 @@ tiles a second, climbing a ladder at 1.5 and stairs at 2, with the lamp off wher
 order to everything on it on the legs that reach it (`Ways.tour`), and splits it at every plug it
 passes:
 
-- **The metro**: from the stairway down over the bots (P34's way) to everything on the player's own
-  legs on the way to the maintenance plug, the one plug left; then on east to everything along the
-  siding, the signal box, the track and the shed, and back to the plug.
+- **The metro**: from the stairway down over the bots (P34's way) to every find, salvage and secret
+  on the player's own legs on the way to the maintenance plug, the one plug left; then on east to
+  everything along the siding, the signal box, the track and the shed, and back to the plug. Again
+  on the spring feet, bought before the datajack, with the high ledge and the crane too.
 - **Each level of the sewers**: from the maintenance plug down the lift, on the player's own legs to
-  everything before the gate and on to its junction box (`way_in`); on the first legs through the
-  gate to the hatch, every find, salvage and the actuator past it and the den's stash, and back to
-  the box (`way_on`); and out to the lift and the maintenance plug. The bat cave is crossed with the
-  lamp off, so it takes none.
+  every find, salvage and the pipe's secret before the gate, and on to its junction box
+  (`way_in`); on the first legs through the gate to the hatch, every find, salvage and the
+  actuator past it, the hall's ledge and the den's stash, and back to the box (`way_on`); and out
+  to the lift and the maintenance plug. The bat cave holds nothing on the way, so the way never
+  goes in.
 
 Every run fits in 85% of a charge (`REACH`), leaving 15% (`SPARE`) for waiting on what's in the
-way, and no plug could be done without: take any one away and some run no longer fits. On the metro
-the run east and back takes about 80%, and the longest run in each level 60–85%.
+way, and no plug could be done without: take the maintenance plug or any box past the gate away,
+with its light, and some run no longer fits. The gate's box stays where every level has always had
+it, and where a box past it splits the way on, it can be skipped. On the metro the run east and
+back takes about 81%, and the longest run in each level 54–83%.
 
 ## Ids
 

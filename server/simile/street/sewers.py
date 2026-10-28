@@ -25,13 +25,14 @@ from simile.schema import (
     TileArea,
 )
 from simile.street import charge
-from simile.street.charge import Ways, seconds
+from simile.street.charge import Ways, runs, seconds
 from simile.street.finds import searchable, under
 from simile.street.jump import JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan, Spawn
 from simile.street.village import GROUND, plug, street
+from simile.world.map import TownMap
 
 SEWERS = "sewers"
 LEVELS = 8
@@ -89,6 +90,7 @@ ROOMS, HALL, SHAFT_KIND, GATE_KIND = "rooms", "hall", "shaft", "gate"
 DEN_KIND, CAVE_KIND = "den", "cave"
 SPRING_SECRET = "sewers_secret_spring"
 SPRINT_SECRET = "sewers_secret_sprint"
+SPRINT_SALVAGE = "sewers_salvage_sprint"
 ACTUATOR_SECRET = "sewers_secret_actuator"
 PIPE_SECRET = "sewers_secret_pipe"
 DEN_SECRET = "sewers_secret_den"
@@ -519,7 +521,7 @@ def pockets(level: Level, plan: Plan) -> None:
     money = float(rng.choice((50, 60, 70, 80)))
     end = hall.end - 1
     plan.pickups.append(Pickup(SPRINT_SECRET, SECRET, end, row, money, needs=sprint))
-    salvage = Pickup("sewers_salvage_sprint", SALVAGE, end - 1, row, item=APEX_BOARD, needs=sprint)
+    salvage = Pickup(SPRINT_SALVAGE, SALVAGE, end - 1, row, item=APEX_BOARD, needs=sprint)
     plan.pickups.append(salvage)
 
 
@@ -849,8 +851,6 @@ def cave(level: Level, plan: Plan) -> None:
 
 
 def stops(town: Any, zone: int) -> list[Cell]:
-    """Where the way through a zone goes, on a plan or a map: its finds and salvage, and past the
-    gate the hatch, the actuator and the den's stash too."""
     [gate] = [light.area for light in town.light if light.id == "sewers_gate"]
     things = [
         (item.stand[0].x, item.stand[0].y)
@@ -861,11 +861,12 @@ def stops(town: Any, zone: int) -> list[Cell]:
         (pickup.x, pickup.y)
         for pickup in town.pickups
         if pickup.id.removeprefix("sewers_salvage_").isdigit()
-        or pickup.id in (ACTUATOR_SECRET, DEN_SECRET)
+        or pickup.id in (PIPE_SECRET, ACTUATOR_SECRET, DEN_SECRET)
     ]
     if zone == 0:
         return [cell for cell in things if cell[0] < gate.x]
-    return [cell for cell in things if cell[0] >= gate.x + gate.width]
+    legs = [(p.x, p.y) for p in town.pickups if p.id in (SPRINT_SECRET, SPRINT_SALVAGE)]
+    return [*(cell for cell in things if cell[0] >= gate.x + gate.width), *legs]
 
 
 def gate_box(town: Any) -> Cell:
@@ -874,43 +875,47 @@ def gate_box(town: Any) -> Cell:
 
 
 def way_in(town: Any) -> list[Cell]:
-    """From the lift's landing on the player's own legs to every find and salvage before the gate,
-    and on to its junction box."""
     return Ways(town).tour((LANDING.x, LANDING.y), stops(town, 0), gate_box(town))
 
 
 def way_on(town: Any) -> list[Cell]:
-    """From the gate's junction box on the first legs to everything past it, and back."""
     start = gate_box(town)
     return Ways(town, LEGS[Bionic.BIONIC_LEGS]).tour(start, stops(town, 1), start)
 
 
 def boxes(level: Level, plan: Plan, cells: Stocker) -> None:
-    """A junction box past the gate wherever the way on would take the lamp past its reach, at the
-    last free cell of a room's floor before it would: content/street/README.md's *Plugs*."""
-    town = Cells(plan)
+    town, route = Cells(plan), way_on(Cells(plan))
     floors = {(x, FLOORS[node[1]]) for node in level.nodes(1) for x in cells.free(node)}
     plugs = {
         (item.stand[0].x, item.stand[0].y)
         for item in plan.interactables
         if item.kind is InteractableKind.PLUG
     }
-    spent, last = 0.0, None
-    for a, b in pairwise(way_on(town)):
-        if not (town.lit(*a) and town.lit(*b)):
-            spent += seconds(town, a, b)
-        if spent > charge.REACH and last is not None:
-            (x, row), at = last
-            cells.taken |= {(x + d, row) for d in (-1, 0, 1)}
-            box(plan, f"sewers_plug_{len(plugs) + 1}", x, row)
-            plugs.add((x, row))
-            spent, last = spent - at, None
-        if spent > charge.REACH:
-            raise ValueError(f"no room for a junction box in time in sewers level {level.seed}")
-        if b in plugs:
-            spent, last = 0.0, None
-        elif b in floors and b not in cells.taken:
-            last = (b, spent)
+
+    def runs_out(plugs: set[Cell]) -> int:
+        """How far along the way the lamp runs past its reach, or its end if it never does."""
+        spent = 0.0
+        for i, (a, b) in enumerate(pairwise(route)):
+            if not (town.lit(*a) and town.lit(*b)):
+                spent += seconds(town, a, b)
+            if spent > charge.REACH:
+                return i
+            if b in plugs:
+                spent = 0.0
+        return len(route)
+
+    while runs_out(plugs) < len(route):
+        spots = [c for c in dict.fromkeys(route) if c in floors and c not in cells.taken]
+        if not spots:
+            raise ValueError(f"no room for a junction box in sewers level {level.seed}")
+
+        def first(c: Cell) -> tuple[int, float]:
+            return runs_out(plugs | {c}), runs(town, route, plugs | {c})[0]
+
+        x, row = max(spots, key=first)
+        cells.taken |= {(x + d, row) for d in (-1, 0, 1)}
+        box(plan, f"sewers_plug_{len(plugs) + 1}", x, row)
+        plugs.add((x, row))
 
 
 def towards(
@@ -1003,14 +1008,7 @@ class Cells:
         return self.plan.standing(x, y)
 
     def lit(self, x: int, y: int) -> bool:
-        """As `TownMap.lit`: lit, unless a dark stretch covers the cell and no lit one does."""
-        covering = [
-            light.lit
-            for light in self.plan.light
-            if light.area.x <= x < light.area.x + light.area.width
-            and light.area.y <= y < light.area.y + light.area.height
-        ]
-        return any(covering) or not covering
+        return TownMap.lit(self, x, y)  # type: ignore[arg-type]
 
 
 def routes(town: object, start: Cell, jump: bool | Jump) -> dict[Cell, list[Cell]]:

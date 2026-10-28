@@ -282,7 +282,7 @@ battery from the last `player_state`, green, then amber from 50% and red from 20
 on, off, or charging (⚡) at a plug. A line under it says "It's dark. Press L for your lamp." in the
 dark with it off, "Your lamp is flat. Charge it at a plug." when it's flat, and "Charging your
 lamp." at a plug. Otherwise it warns as power does: "Your lamp is low. Charge it at a plug." from
-30% (`LOW_LAMP`), on or off, and "Your lamp is nearly flat…" from 10%, and the battery flashes red
+30%, on or off, and "Your lamp is nearly flat…" from 10% (`LOW_POWER` and `FLAT` in `hunger.ts`), and the battery flashes red
 until it's charging. The world scene handles L ([`side/`](../side/README.md)).
 
 Once a power cell is in, a second battery under the lamp's shows their power, coloured the same,

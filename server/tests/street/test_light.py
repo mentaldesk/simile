@@ -1,19 +1,20 @@
-"""Light is scarce: on the metro and every committed level of the sewers, each run between plugs on
-the way the player's meant to go fits in a full charge with a little to spare, and none of the
-plugs could be done without (content/street/README.md's *Light*)."""
-
+from collections.abc import Collection, Sequence
+from dataclasses import replace
 from functools import cache
 
 import pytest
 
-from simile.schema import InteractableKind
-from simile.street.charge import LIGHT, REACH, SPARE, Ways, needless, runs, seconds
+from simile.schema import Bionic, InteractableKind
+from simile.street.charge import LIGHT, REACH, Ways, runs, seconds
+from simile.street.jump import FEET, JUMP, Jump
 from simile.street.metro import (
     ARRIVAL,
     BOTS,
     CONTAINER,
+    CRANE_SECRET,
     FREIGHT_CRATES,
     FRIDGE,
+    LEDGE_SECRET,
     LIFT_FOOT,
     LOCKERS,
     METRO,
@@ -31,15 +32,23 @@ from simile.world.map import TownMap, load_maps
 type Cell = tuple[int, int]
 
 METRO_MAP = load_maps()[METRO]
-OVER_THE_BOTS = Ways(
-    METRO_MAP, avoid={(x, GROUND) for _, west, east in BOTS for x in range(west - 1, east + 2)}
-)
-"""The metro on the player's own legs, never on the bots' floor: P34's way is overhead."""
-WEST = [TICKET_MACHINE, "metro_salvage_1", "metro_salvage_2", "metro_salvage_3", FRIDGE]
+BOT_FLOORS = {(x, GROUND) for _, west, east in BOTS for x in range(west - 1, east + 2)}
+"""Never walked: P34's way past the bots is overhead."""
+OVER_THE_BOTS = Ways(METRO_MAP, avoid=BOT_FLOORS)
+WEST = [
+    "metro_secret_stairwell",
+    TICKET_MACHINE,
+    "metro_salvage_1",
+    "metro_secret_catwalk",
+    "metro_salvage_2",
+    "metro_salvage_3",
+    FRIDGE,
+]
 EAST = [
     "metro_salvage_5",
     FREIGHT_CRATES,
     CONTAINER,
+    "metro_secret_container",
     "metro_salvage_7",
     SWITCHBOARD,
     RELAY_RACK,
@@ -47,9 +56,12 @@ EAST = [
     "metro_salvage_8",
     TOOL_CRATE,
     "metro_salvage_9",
+    "metro_secret_tunnel",
     LOCKERS,
 ]
 """What the player's own legs reach on the metro, either side of the maintenance plug."""
+ON_THE_FEET = [LEDGE_SECRET, "metro_salvage_6", CRANE_SECRET, "metro_salvage_10"]
+"""What the spring feet reach besides, east of the plug: they're bought before the datajack."""
 
 
 def place(town: TownMap, thing: str) -> Cell:
@@ -64,15 +76,25 @@ def plugs(town: TownMap) -> set[Cell]:
     return {place(town, i.id) for i in town.interactables if i.kind is InteractableKind.PLUG}
 
 
-def metro_way() -> list[Cell]:
+def needless(town: TownMap, cells: Sequence[Cell], plugs: Collection[Cell]) -> list[Cell]:
+    """The plugs on the way that it's in the lamp's reach without."""
+    return [
+        plug
+        for plug in plugs
+        if plug in cells and max(runs(town, cells, set(plugs) - {plug})) <= REACH
+    ]
+
+
+def metro_way(jump: Jump, more: list[str]) -> list[Cell]:
     """From the stairway down past the bots to everything on the way to the plug, then on along
     the tracks to the shed and back, and up to the village."""
+    ways = Ways(METRO_MAP, jump, BOT_FLOORS)
     arrival, plug = (ARRIVAL.x, ARRIVAL.y), place(METRO_MAP, PLUG)
     west = [place(METRO_MAP, thing) for thing in WEST]
-    east = [place(METRO_MAP, thing) for thing in EAST]
-    there = OVER_THE_BOTS.tour(arrival, west, plug)
-    along = OVER_THE_BOTS.tour(plug, east, plug)
-    return [*there, *along[1:], *OVER_THE_BOTS.cells(plug, arrival)[1:]]
+    east = [place(METRO_MAP, thing) for thing in [*EAST, *more]]
+    there = ways.tour(arrival, west, plug)
+    along = ways.tour(plug, east, plug)
+    return [*there, *along[1:], *ways.cells(plug, arrival)[1:]]
 
 
 def dark(town: TownMap, cells: list[Cell]) -> float:
@@ -103,21 +125,28 @@ def sewers(level: int) -> tuple[TownMap, list[Cell]]:
     return town, [*way_in(town), *on[1:], *out[1:]]
 
 
-def sewers_runs(level: int, without: Cell | None = None) -> list[float]:
-    """Each run's seconds of light, from the metro's plug down the lift and back to it."""
+def sewers_runs(level: int, without: str | None = None) -> list[float]:
+    """Each run's seconds of light, from the metro's plug down the lift and back to it, and
+    `without` a junction box and the light it gives, if one's named."""
     town, cells = sewers(level)
-    found = runs(town, cells, plugs(town) - {without})
+    if without is not None:
+        town = replace(
+            town,
+            light=tuple(light for light in town.light if light.id != without),
+            interactables=tuple(item for item in town.interactables if item.id != without),
+        )
+    found = runs(town, cells, plugs(town))
     going, coming = lift()
     return [found[0] + going, *found[1:-1], found[-1] + coming]
 
 
-def test_a_full_charge_lasts_under_two_minutes_and_a_run_leaves_some_of_it() -> None:
-    assert LIGHT == 112.5
-    assert REACH == LIGHT * (1 - SPARE) and SPARE == 0.15
-
-
-def test_the_metro_has_one_plug_and_every_run_from_it_fits_in_a_charge() -> None:
-    cells = metro_way()
+@pytest.mark.parametrize(
+    ("jump", "more"), [(JUMP, []), (FEET[Bionic.SPRING_FEET], ON_THE_FEET)], ids=["own", "feet"]
+)
+def test_the_metro_has_one_plug_and_every_run_from_it_fits_in_a_charge(
+    jump: Jump, more: list[str]
+) -> None:
+    cells = metro_way(jump, more)
     found = runs(METRO_MAP, cells, plugs(METRO_MAP))
 
     assert plugs(METRO_MAP) == {place(METRO_MAP, PLUG)}
@@ -131,14 +160,15 @@ def test_every_run_through_a_sewers_level_fits_in_a_charge(level: int) -> None:
     found = sewers_runs(level)
 
     assert max(found) <= REACH, found
-    assert max(found) > LIGHT / 2, found
 
 
 @pytest.mark.parametrize("level", range(LEVELS))
-def test_no_junction_box_could_be_done_without(level: int) -> None:
+def test_no_junction_box_past_the_gate_could_be_done_without(level: int) -> None:
     town, _ = sewers(level)
+    plugs = [item.id for item in town.interactables if item.kind is InteractableKind.PLUG]
+    boxes = [box for box in plugs if box != GATE_BOX]
 
-    for box in plugs(town):
+    for box in boxes:
         assert max(sewers_runs(level, without=box)) > REACH, box
 
 

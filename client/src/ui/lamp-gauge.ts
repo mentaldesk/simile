@@ -1,15 +1,11 @@
 import type { Item, PlayerStateMessage } from '../net';
 import { LAMP_KEY, lampHere, lampOf, LOW } from '../side/lamp';
-import { onCell } from './hunger';
+import { FLAT, LOW_POWER, onCell } from './hunger';
 import './lamp-gauge.css';
 
 export type Where = { dark: boolean; plug: boolean };
 
 export const percent = (charge: number): string => `${Math.round(charge * 100)}%`;
-
-/** Charge from which the gauge warns to charge, as power's does, and from which it warns the light's about to go. */
-export const LOW_LAMP = 0.3;
-export const NEARLY_FLAT = 0.1;
 
 /** Green, then amber, then red as it runs down. */
 export function level(charge: number): 'full' | 'half' | 'low' {
@@ -27,13 +23,13 @@ export function lampHint(lamp: Item | undefined, { dark, plug }: Where, power?: 
   if (plug) return charge < 1 ? 'Charging your lamp.' : 'Your lamp is charged.';
   if (!charge) return dark ? "It's dark, and your lamp is flat. Charge it at a plug." : 'Your lamp is flat. Charge it at a plug.';
   if (dark && !lamp.on) return `It's dark. Press ${LAMP_KEY} for your lamp.`;
-  if (charge <= NEARLY_FLAT) return "Your lamp is nearly flat. Charge it at a plug, or you'll be in the dark.";
-  if (charge <= LOW_LAMP) return 'Your lamp is low. Charge it at a plug.';
+  if (charge <= FLAT) return "Your lamp is nearly flat. Charge it at a plug, or you'll be in the dark.";
+  if (charge <= LOW_POWER) return 'Your lamp is low. Charge it at a plug.';
   return undefined;
 }
 
-/** Whether the gauge flashes: low, and not at a plug. */
-export const warning = (charge: number, { plug }: Where): boolean => charge > 0 && charge <= LOW_LAMP && !plug;
+/** Whether the gauge flashes: low as power warns, and not at a plug. */
+export const warning = (charge: number, { plug }: Where): boolean => charge > 0 && charge <= LOW_POWER && !plug;
 
 function battery(row: HTMLElement): HTMLElement {
   const outline = row.appendChild(document.createElement('span'));

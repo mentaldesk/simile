@@ -5,7 +5,7 @@ import math
 from collections.abc import Collection, Sequence
 from typing import Protocol
 
-from simile.player.lamp import DEFAULT_LAMP, HOUR
+from simile.player.lamp import DEFAULT_LAMP
 from simile.schema import DoorKind
 from simile.street.jump import JUMP, Jump
 from simile.street.moves import moves
@@ -16,16 +16,13 @@ WALK = JUMP.run / 2
 """Tiles a second walking: the client's `PLAYER_SPEED`."""
 CLIMB = {DoorKind.LADDER: 1.5, DoorKind.STAIRS: 2.0}
 """Tiles a second up or down a ladder or a flight: the client's `PLAYER_CLIMB`."""
-LIGHT = HOUR / DEFAULT_LAMP.drain
-"""Seconds of light in a full charge."""
+LIGHT = DEFAULT_LAMP.light
 SPARE = 0.15
 """Of a full charge that every run between plugs leaves at least, for waiting on what's in the
 way."""
 REACH = LIGHT * (1 - SPARE)
 """Seconds of light a run between plugs takes at most."""
 JUMPING = 3.0
-"""What a jump adds to a way's cost, on top of twice its length, so the player walks and climbs
-where they can, as `tests/creatures/test_solutions.py` routes them."""
 
 
 class Town(Protocol):
@@ -78,7 +75,10 @@ class Ways:
         order: list[Cell] = []
         if n:
             full = (1 << n) - 1
-            i = min(range(n), key=lambda i: best[(full, i)][0] + self.cost(stops[i], end))
+            ends = [i for i in range(n) if (full, i) in best]
+            if not ends:
+                raise ValueError(f"no way from {start} through every one of {stops}")
+            i = min(ends, key=lambda i: best[(full, i)][0] + self.cost(stops[i], end))
             mask = full
             while i != -1:
                 order.append(stops[i])
@@ -135,12 +135,3 @@ def runs(town: Town, cells: Sequence[Cell], plugs: Collection[Cell]) -> list[flo
             found.append(spent)
             spent = 0.0
     return [*found, spent]
-
-
-def needless(town: Town, cells: Sequence[Cell], plugs: Collection[Cell]) -> list[Cell]:
-    """The plugs on the way that it's in the lamp's reach without."""
-    return [
-        plug
-        for plug in plugs
-        if plug in cells and max(runs(town, cells, set(plugs) - {plug})) <= REACH
-    ]

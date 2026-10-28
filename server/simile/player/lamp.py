@@ -9,18 +9,16 @@ from simile.world.movement import Movement, cell_of
 
 logger = logging.getLogger(__name__)
 
-HOUR = 3600.0
-
 
 class LampConfig(BaseModel):
     """How fast the lamp's battery runs down and charges."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    drain: float = Field(
-        default=32.0,
+    light: float = Field(
+        default=120.0,
         gt=0,
-        description="How much of a full battery it uses each sim hour it's on: under two minutes.",
+        description="Real seconds a full battery lasts with the lamp on, whatever the sim's speed.",
     )
     charge: float = Field(
         default=3.0,
@@ -60,7 +58,7 @@ class Lamp:
         if gained := self.charging(dt):
             charge = min(charge + gained, 1.0)
         elif on:
-            charge = max(charge - self.config.drain * dt / HOUR, 0.0)
+            charge = max(charge - dt / self.clock.speed / self.config.light, 0.0)
             on = charge > 0
             if not on:
                 logger.info("%s  The player's lamp runs flat and goes out", self.clock)
