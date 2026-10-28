@@ -120,7 +120,7 @@ POWER_CELLS: Final = (Bionic.POWER_CELL, Bionic.POWER_CELL_2, Bionic.POWER_CELL_
 """The power cell's grades, in place of the stomach: it runs every other bionic, and a bigger cell
 runs more of them."""
 BIONIC_LEGS: Final = (Bionic.BIONIC_LEGS, Bionic.BIONIC_LEGS_2, Bionic.BIONIC_LEGS_3)
-"""The legs' grades, for speed and kick."""
+"""The legs' grades, for speed."""
 SPRING_FEET: Final = (Bionic.SPRING_FEET, Bionic.SPRING_FEET_2)
 """The feet's grades, for jump height."""
 STAGE_1_LEGS: Final[dict[str, tuple[Bionic | None, Bionic | None]]] = {

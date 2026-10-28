@@ -1,14 +1,10 @@
-import time
 from collections.abc import Callable
 from datetime import UTC, datetime
 
-from starlette.testclient import TestClient
-
-from simile.app import create_app
-from simile.player.kick import Hit, Kick, Kicks, kickables_of
+from simile.player.kick import Hit, Kick, Kicks
 from simile.schema import PLAYER_ID, Bionic, Body, Player, SideFacing
-from simile.sim import Clock, EventBus, World
-from simile.world import Movement, Point, movement_of
+from simile.sim import Clock, EventBus
+from simile.world import Movement, Point
 from simile.world.map import load_maps
 
 MAPS = load_maps()
@@ -69,29 +65,3 @@ def test_there_is_no_kick_off_a_side_view_map_or_before_they_are_anywhere() -> N
     assert not kicks(Player(), rat, at=Point(9, 10, "village")).kick(EAST)
     assert not kicks(Player(), rat, at=None).kick(EAST)
     assert rat.kicks == []
-
-
-def test_a_kick_from_the_client_reaches_what_other_modules_add(make_package: MakePackage) -> None:
-    files = {
-        f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n"
-        for m in ("economy", "protocol", "world", "behaviour", "memory")
-    }
-    files["protocol/routes.py"] = "from simile.protocol.routes import routes\n"
-    files["player/lifespan.py"] = "from simile.player.lifespan import running\n"
-    app = create_app(make_package(files))
-    app.state.world = World(Clock(NOW))
-    rat = Rat(TUNNEL.x + 1)
-    kickables_of(app).append(rat.kickable)
-
-    with TestClient(app) as client, client.websocket_connect("/ws") as ws:
-        ws.send_json({"type": "player_move", "position": {"x": 65, "y": 15, "map": "metro"}})
-        deadline = time.monotonic() + 2
-        while client.portal.call(movement_of(app).entities).get(PLAYER_ID) != TUNNEL:
-            assert time.monotonic() < deadline, "the server never had the player there"
-            time.sleep(0.001)
-        ws.send_json({"type": "kick", "facing": "east"})
-        while not rat.kicks:
-            assert time.monotonic() < deadline, "the kick never landed"
-            time.sleep(0.001)
-
-    assert rat.kicks[0].facing is EAST

@@ -16,7 +16,7 @@ import { sideClock } from './clock';
 import { CreatureView } from './creatures/view';
 import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
-import { kick, KICK_KEY } from './kick';
+import { KICK_KEY } from './kick';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
 import { eachOnce, readControls, RunToggle, type Held } from './input';
@@ -250,8 +250,7 @@ export class SideScene extends Phaser.Scene {
   }
 
   private kick(): void {
-    const facing = this.passing ? undefined : this.player?.kick();
-    if (facing) server.send(kick(facing));
+    if (!this.passing) this.player?.kick();
   }
 
   private startPosition(village: Village): MapPosition {
