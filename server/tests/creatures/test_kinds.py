@@ -1,22 +1,30 @@
+from itertools import combinations
+from typing import Any
+
 import pytest
 
 from simile.creatures.engine import COLLECTING, STOMP_TOP, Creature, Creatures, Sight
+from simile.creatures.grid import Grid
 from simile.creatures.kind import Kind
 from simile.creatures.kinds import BOT, DOG, RAT
 from simile.schema import (
     Bionic,
     Body,
+    CreatureKind,
     CreatureState,
     Item,
     ItemKind,
     MapTile,
     Player,
+    TileArea,
 )
 from simile.street.jump import LEGS
+from simile.street.plan import Spawn
 from simile.world.map import TownMap
 from simile.world.movement import Point
 
 from .conftest import LOWER, TWO_FLOORS, UPPER, side_view
+from .walkthrough import Leap, Step, Wait, Walk, Walkthrough
 
 STEP = 0.1
 ROW = side_view(
@@ -115,7 +123,7 @@ def test_landing_on_a_bot_or_a_dog_hurts_as_running_into_it_does(kind: Kind) -> 
     world.player.body = FITTED
     creature = world.spawn(kind, 6)
     land(world, 6)
-    world.run(kind.windup + STEP)
+    world.run(kind.think + kind.windup + STEP)
 
     assert creature.down is None and world.harmed == [kind]
 
@@ -172,13 +180,21 @@ LONG = side_view("#" * 120, "#" + "." * 118 + "#", "#" + "." * 118 + "#", "#" * 
 
 
 class Hunted:
-    def __init__(self, town: TownMap, dog: tuple[int, int], at: Point) -> None:
+    def __init__(
+        self,
+        town: TownMap,
+        dog: tuple[int, int],
+        at: Point,
+        kind: Kind = DOG,
+        body: Body | None = None,
+    ) -> None:
         self.at = at
         self.harmed: list[Kind] = []
+        player = Player(body=body or Body())
         self.creatures = Creatures(
-            {town.id: town}, sense=lambda: Sight(Player(), self.at), harm=self.harmed.append
+            {town.id: town}, sense=lambda: Sight(player, self.at), harm=self.harmed.append
         )
-        self.dog = self.creatures.spawn(DOG, MapTile(map=town.id, x=dog[0], y=dog[1]), route=())
+        self.dog = self.creatures.spawn(kind, MapTile(map=town.id, x=dog[0], y=dog[1]), route=())
 
     def run(self, seconds: float) -> None:
         for _ in range(round(seconds / STEP)):
@@ -210,3 +226,105 @@ def test_a_dog_waits_under_the_ladder_the_player_climbs_and_never_takes_a_door()
         hunted.at = Point(x, LOWER, tunnel.id)
         hunted.run(1.5)
     assert hunted.dog.cell == (17, LOWER)
+
+
+ROOM = side_view(
+    "############################",
+    "#..........................#",
+    "#..........................#",
+    "#..........................#",
+    "############################",
+)
+"""A floor with room to jump over it, standing row 3."""
+STOREYS = side_view(
+    "######################",
+    "#.........H..........#",
+    "#.../#####H###..######",
+    "#../......H..........#",
+    "#....................#",
+    "######################",
+)
+"""Stairs up from (2, 4) to (5, 1), a ladder at 10, and a hole at 14 and 15 in the upper floor."""
+
+
+def walkthrough(town: TownMap, *placed: Spawn, x: float, row: int, **player: Any) -> Walkthrough:
+    return Walkthrough(town, [(town.id, spawn) for spawn in placed], x, row, Player(**player))
+
+
+def bot(x: int, row: int = 3) -> Spawn:
+    return Spawn("bot", CreatureKind.BOT, x, row, None, 2)
+
+
+def nest(*xs: int) -> list[Spawn]:
+    area = TileArea(x=10, y=0, width=12, height=4)
+    return [Spawn(f"rat_{x}", CreatureKind.RAT, x, 3, area, None) for x in xs]
+
+
+def careless(*placed: Spawn, **player: Any) -> float:
+    """The health a walk along the room past `placed` takes."""
+    walk = walkthrough(ROOM, *placed, x=1.5, row=3, **player).go([Walk(26)])
+    return sum(kind.damage for kind in walk.harmed)
+
+
+def test_walking_through_a_bot_s_patrol_costs_a_third_of_full_health() -> None:
+    assert BOT.damage == 0.35
+    for x in range(10, 18):
+        assert careless(bot(x), body=FITTED) == BOT.damage
+
+
+def test_walking_through_a_nest_of_three_with_food_costs_about_a_third_of_full_health() -> None:
+    assert RAT.damage == 0.14
+    taken = [careless(*nest(*xs), items=[RATION]) for xs in combinations(range(10, 22, 2), 3)]
+    assert 0.3 <= sum(taken) / len(taken) <= 0.4
+    assert all(cost <= 3 * RAT.damage for cost in taken)
+
+
+def test_three_careless_passes_collapse_a_player_from_full_health() -> None:
+    assert 3 * BOT.damage >= 1 and 3 * 3 * RAT.damage >= 1
+
+
+@pytest.mark.parametrize("gap", [1.2, 1.6, 2.0, 2.4])
+def test_a_bot_jumped_as_it_comes_does_no_harm(gap: float) -> None:
+    walk = walkthrough(ROOM, bot(14), x=2, row=3, body=FITTED)
+
+    def near(walk: Walkthrough) -> bool:
+        return abs(walk.creature("bot").x - walk.x) <= gap
+
+    def over(walk: Walkthrough) -> list[Step]:
+        return [Leap(walk.x + 3.4, 3)]
+
+    assert walk.go([Walk(25, until=near), over, Walk(25)]).harmed == []
+
+
+def rows_after(start: int, way: list[tuple[int, int]]) -> set[int]:
+    """The rows a bot on the lower floor is on while the player goes `way` from beside it."""
+    hunted = Hunted(STOREYS, (start, 4), Point(start - 4, 4, STOREYS.id), BOT, FITTED)
+    rows = set()
+    for x, y in way:
+        hunted.at = Point(x, y, STOREYS.id)
+        for _ in range(round(2 / STEP)):
+            hunted.run(STEP)
+            rows.add(hunted.dog.cell[1])
+    return rows
+
+
+def test_a_bot_never_takes_a_ladder_or_stairs_nor_drops_off_its_floor() -> None:
+    grid = Grid(STOREYS, BOT)
+    for cell in (c for x in range(STOREYS.width) for y in (1, 4) if grid.allowed(c := (x, y))):
+        assert all(STOREYS.climb(*e.to) is None and e.to[1] == cell[1] for e in grid.edges(cell))
+    assert rows_after(16, [(12, 4), (3, 3), (4, 2), (5, 1), (9, 1)]) == {4}
+    assert rows_after(7, [(3, 4), (10, 3), (10, 1), (13, 1)]) == {4}
+
+
+@pytest.mark.parametrize(
+    ("kind", "player"),
+    [(CreatureKind.BOT, {"body": FITTED}), (CreatureKind.RAT, {"items": [RATION]})],
+    ids=["bot", "rat"],
+)
+def test_bots_and_rats_notice_the_player_only_on_their_own_floor(
+    kind: CreatureKind, player: dict[str, Any]
+) -> None:
+    for x, row, notices in ((13, 1, False), (17, 4, False), (19, 1, True)):
+        spawn = Spawn("it", kind, 17, 1, None, 2)
+        walk = walkthrough(STOREYS, spawn, x=x, row=row, **player).go([Wait(1)])
+        assert (walk.creature("it").state is CreatureState.CHASING) == notices, (x, row)

@@ -17,6 +17,7 @@ class Kind:
     think: float = 0.25
     flies: bool = False
     climbs: bool = True
+    stairs: bool = True
     doors: bool = True
     drops: bool = True
     reach: float = 0.7

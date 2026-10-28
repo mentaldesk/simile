@@ -14,7 +14,7 @@ from simile.creatures.kind import Kind
 from simile.creatures.ways import Aim, Senses
 from simile.protocol import Creature as Shown
 from simile.protocol import CreatureGoneMessage, CreatureMovedMessage, Position, ServerMessage
-from simile.schema import CreatureState, MapTile, Player, SideFacing, TileArea
+from simile.schema import CreatureState, DoorKind, MapTile, Player, SideFacing, TileArea
 from simile.sim import Clock
 from simile.world.map import TownMap
 from simile.world.movement import Point
@@ -386,9 +386,14 @@ def _touches(creature: Creature, at: Point) -> bool:
 
 
 def _climbing(town: TownMap, at: Point) -> bool:
-    """On a ladder or stairs, from which coming down onto a rat doesn't stomp it."""
+    """On a ladder or stairs, from which coming down onto a rat doesn't stomp it. Climbing a
+    ladder puts the player on its column, so a jump past one isn't on it."""
     x = math.floor(at.x + 0.5)
-    return any(town.climb(x, y) is not None for y in (math.floor(at.y), math.ceil(at.y)))
+    for y in (math.floor(at.y), math.ceil(at.y)):
+        climb = town.climb(x, y)
+        if climb is DoorKind.STAIRS or (climb is DoorKind.LADDER and math.isclose(at.x, x)):
+            return True
+    return False
 
 
 def _route(grid: Grid, home: Cell, span: int) -> tuple[Cell, ...]:

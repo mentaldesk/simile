@@ -260,7 +260,7 @@ passes through it.
 | x | |
 |---|---|
 | 0–19 | The landing (row 9), a flight down to the ticket hall (row 12) with the `turnstile` and a dead `ticket_machine` to search, and a flight down to the platform (row 15). A catwalk over the first flight, at row 7, is a run jump from the landing. |
-| 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–52, row 10) is a jump from the roof's east end. |
+| 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–52, row 10) is a jump from the roof's east end, and a step down from its east end is a pipe ledge (53–54, row 12) with a ladder (55) down to the floor: the way over the bots. |
 | 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug, and a dead `fridge` to search at 70. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) goes on up the wall, a jump from it. An alcove (85–86, row 5) is five rows above that catwalk. West of the pipe ledge, a step (73–74, row 10) is a hop up to a gantry (69–72, row 8) that runs west under a roof of `pipes` (58–73, row 4), lit, with a five-cell gap (64–68) before a nook at its end (61–63). |
 | 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12). Nothing past it stands lower than the floor for twelve cells, so the legs alone don't reach the ledge from the east. |
 | 110–155 | The freight siding, lit, through a `tunnel_arch` (112–114): `crates` to search (119), two `shipping_container`s stacked (124–129) with a ladder (123) up their side to the top (row 9), a third beside them (132–137, roof row 12) a jump down from the top, and over it a crane's gantry (131–138, row 5), four rows above the top of the stack. Then the signal box: a deck (142–153, row 11) up a ladder (141), with two dead `switchboard`s and the signal desk, a `dead_terminal`. |
@@ -280,7 +280,7 @@ passes through it.
 | S8 | The dead terminal, a `jack` | `metro_terminal`, stood at from (104, 15). With the datajack, E finds the incident's `lift_log` in it. |
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
-| P13 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 53 and is kept to 30–68, ten cells from `metro_salvage_2`, which it drifts to while the player's in the metro. `metro_bot_2` guards the platform, starting at 46 and kept to 30–54, with no salvage in reach. Each patrols two cells either side, clear of where the player stops: the stall, the plug, the fridge, the clinic and the lift. |
+| P13, P34 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 48 under the catwalk and is kept to 44–52, and `metro_bot_2` starts at 38 under the train and is kept to 34–43. Each patrols two cells either side, with no salvage in reach, clear of where the player stops and of the ladders' feet. Neither climbs, so the way past both is overhead (`BOTS`): up the ladder at 32 to the train's roof, a jump to the catwalk, a step down to the pipe ledge and down its ladder at 55, or the same back. On the floor, each is jumped as it comes. |
 | P28 | Dark stretches past the depot, in `light` | `metro_track_west` (156–179) and `metro_track_east` (183–205). The rest is lit: `metro_siding` (110–155), `metro_track_alcove` and `metro_shed`. |
 | P28 | Two more plugs, each a `plug` at a `breaker_box` | `metro_track_plug`, stood at from (181, 15) in the track's lit alcove, and `metro_shed_plug` from (208, 15). |
 | P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
@@ -351,18 +351,21 @@ slab, the row under them. West to east it's columns of rooms:
   or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
   `WEIR_AT`). The legs get through on their first grade, and so do the feet, which are found past
   it; the player's own legs don't. A fall from the west walkway lands well short of the weir.
-- **The den** (`den`, P14), the wild dogs', is a column of its own past the last room, 14 wide
+- **The den** (`den`, P14), the wild dogs', is a column of its own past the last room, 18 wide
   (`DEN`), made after the rest of the level from its own random stream, so it moves nothing. A
-  doorway leads in from the last room's bottom tier. At its far end a ladder climbs through the
-  den's ceiling to a loft as high as the two tiers over it, where a delver slept out of the dogs'
-  reach, and left a stash on a pipe against its wall: `sewers_secret_den`, 90 to 120 money. Three
-  dogs (`DOGS`), kept to the den's floor, run down any player on any legs, so getting the stash
-  means crossing the den to the ladder and back to the door, or dropping through the hole by the
-  ladder's top and running for it. On the player's own legs or the feet that's almost certain
-  collapse; on the legs, they get out with a little health (`server/simile/creatures/README.md`).
+  doorway leads in from the last room's bottom tier. A ladder three cells in (`DEN_LADDER`) and
+  another at its far end climb through the den's ceiling to a loft as high as the two tiers over
+  it, where a delver slept out of the dogs' reach, and left a stash on a pipe against its wall:
+  `sewers_secret_den`, 90 to 120 money. Three dogs (`DOGS`), kept to the den's floor from two
+  cells past the first ladder (`DEN_CLEAR`), run down any player on any legs. The way past them
+  (P34) is up the first ladder, out of their reach, along the loft to the stash, and on over the
+  far ladder's top through a doorway into the bat cave's middle tier. Crossing their floor to the
+  far ladder and back instead, or dropping through the hole by its top and running for it, is
+  almost certain collapse on the player's own legs or the feet; on the legs, they get out with a
+  little health (`server/simile/creatures/README.md`).
 - **The cave** (`cave`, P15), the bats', is a column of its own past the den, 18 wide (`CAVE`),
-  made after the den from its own random stream, so it moves nothing: the den only gains a doorway
-  through its east wall on its floor. Inside it's three tiers, dark (`sewers_cave`): a ladder
+  made after the den from its own random stream, so it moves nothing: the den only gains doorways
+  through its east wall, on its floor and from its loft. Inside it's three tiers, dark (`sewers_cave`): a ladder
   up from the floor near its east end, another up from the middle tier at its west, and along the
   top tier a walkway to a five-cell gap (`GAP`) under the vault, past which a ledge against the
   east wall holds a stash, `sewers_secret_cave`, 140 to 200 money. As with the hall's ledge only the
@@ -394,15 +397,22 @@ counts from the way through, which every grade of legs or feet takes:
 
 **Creatures** (`dangers`, P13), all in zone 0, the learner area, and none in the lift's shaft:
 
-- `sewers_bot_<n>`, a recycler bot for each salvage there, kept to zone 0. Every cell of its patrol,
-  two cells either side of where it starts, is within `REACH` of its salvage by the bot's own grid
-  (the bot's `Collect` reach, 14), so it drifts there while the player's in the sewers. Every cell
-  is also at least `BOT_GAP` (8) moves from any salvage. That's over half a minute's drift, so a
-  player walking from the lift gets there first. A bot whose salvage is on a ledge only a jump
-  reaches starts by the zone's other salvage instead. Where neither is in reach, as in level 5,
-  it only guards, starting anywhere clear.
-- `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to a room of its own, away from
-  the salvage where zone 0 has the rooms.
+- `sewers_bot_<n>`, a recycler bot for each salvage there that has a floor of its own for it (P34),
+  kept to zone 0. A bot never leaves its floor, a stretch it walks without ladders, stairs or drops,
+  and no two bots share one. It's a floor the player gets to on their own legs, at least
+  `BOT_FLOOR` (10) cells long to jump the bot on, and every cell of the bot's patrol, two cells
+  either side of where it starts, is at least `BOT_CLEAR` (2) cells from where the player comes
+  onto that floor (`onto`: a ladder's foot or top, under a hole, the zone's ends), or else
+  anywhere on it, and it leaves zone 0 rooms enough for the nests off every bot's floor. Every
+  cell of its patrol is within `REACH` of its salvage by the bot's own grid (the bot's `Collect`
+  reach, 14) where it can be, so it drifts there while the player's in the sewers, and at least
+  `BOT_GAP` (8) moves from any salvage. That's over half a minute's drift, so a player walking
+  from the lift gets there first. Where no salvage is in reach it only guards. The way past a bot
+  is to jump it as it comes, or to wait on a ladder out of its sight for it to patrol away.
+- `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to a room of its own off every
+  bot's floor, away from the salvage where zone 0 has the rooms, on the room's widest stretch of
+  floor. The way past them is to come down on each as it comes for the player's food, or to bring
+  none.
 
 They're placed from their own random stream, after the rest of the level, so adding them moved
 nothing else, and later kinds can follow them the same way.
@@ -411,7 +421,12 @@ Bats (`bats`, P15) roost in zone 0 too, from their own random stream after the r
 
 - `sewers_bat_<n>`, two roosts of two bats (`BATS`) under the ceilings of dark rooms, each kept
   to its room. The first is in a room on the way from the lift to the gate's floor where one is
-  dark, so the way through passes it. They attack only while the lamp is on.
+  dark, so the way through passes it. They attack only while the lamp is on, so the way past them
+  is in the dark.
+
+`tests/creatures/test_solutions.py` takes a scripted player past every one of them on every
+committed level, on their own legs and carrying food, and through the den to the cave on the
+first legs, without losing any health.
 
 Past them all, `sewers_dog_1` to `sewers_dog_3` keep to the den, and `sewers_cave_bat_<n>` to the
 cave (above).

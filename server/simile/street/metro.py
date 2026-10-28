@@ -97,8 +97,15 @@ CIRCUIT_BOARD = _LYING["circuit_board"]
 BRASS_VALVE = _LYING["brass_valve"]
 SIGNAL_RELAY = _LYING["signal_relay"]
 SERVO_MOTOR = _LYING["servo_motor"]
-BOTS = ((53, 30, 68), (46, 30, 54))
-"""Each bot on the floor: where it starts, and the stretch it keeps to, west to east."""
+BOTS = ((48, 44, 52), (38, 34, 43))
+"""Each bot on the floor: where it starts, and the stretch it keeps to, west to east. The first
+patrols under the vault's catwalk and the second under the train, and neither climbs, so the way
+past both is overhead: up the ladder at 32 onto the train's roof, a jump up to the catwalk, and
+off its east end onto the pipe ledge and down its ladder at 55, or the same back. On the floor,
+each is jumped over as it comes."""
+LEDGE = 53
+"""The west end of the pipe ledge past the catwalk, a step down from it, with a ladder at its east
+end down to the floor past the bots."""
 BOT_SPAN = 2
 """Cells either side of where it starts that a bot patrols."""
 
@@ -190,6 +197,8 @@ def platform(plan: Plan) -> None:
     salvage(plan, 1, 38, roof)
     catwalk(plan, 45, roof - 2, 8)
     secret(plan, "metro_secret_catwalk", 52, roof - 2, OWN_JUMP, money=40.0)
+    catwalk(plan, LEDGE, roof, 2)
+    plan.ladder((LEDGE + 2, GROUND), GROUND - roof)
     plan.piece("crates", 44, GROUND, 1, 1)
     plan.piece("metro_bench", 49, GROUND, 2, 1)
     plan.piece("tunnel_arch", 55, GROUND - 7, 3, 8)

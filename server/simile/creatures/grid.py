@@ -46,10 +46,14 @@ class Grid:
             return False
         if self.kind.flies:
             return not self.town.solid(*cell)
-        return self.town.walkable(*cell) and (self.kind.climbs or not self.ladder(cell))
+        return self.town.walkable(*cell) and self.takes(cell)
 
-    def ladder(self, cell: Cell) -> bool:
-        return self.town.climb(*cell) is DoorKind.LADDER
+    def takes(self, cell: Cell) -> bool:
+        """Whether its kind goes onto a ladder or stairs there, if there's one."""
+        climb = self.town.climb(*cell)
+        if climb is DoorKind.LADDER:
+            return self.kind.climbs
+        return self.kind.stairs or climb is not DoorKind.STAIRS
 
     def open(self, cell: Cell) -> bool:
         return not self.town.solid(*cell)
@@ -59,7 +63,7 @@ class Grid:
             yield from self._flights(cell)
             return
         for move in moves(self.town, cell):
-            if self.allowed(move.cell) and (self.kind.climbs or not self.ladder(cell)):
+            if self.allowed(move.cell) and self.takes(cell):
                 yield Edge(move.cell, move.cost)
         if self.kind.drops and self.town.standing(*cell):
             x, y = cell
