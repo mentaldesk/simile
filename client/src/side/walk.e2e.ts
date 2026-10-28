@@ -709,9 +709,12 @@ try {
   const open = async (query = ''): Promise<[Page, Api]> => {
     const page = await browser.newPage({ viewport: screens ? { width: 1440, height: 900 } : { width: 320, height: 200 } });
     page.on('pageerror', (error) => failures.push(`page error: ${error.message}`));
-    if (!realTime) await page.clock.install();
+    if (!realTime) {
+      const start = Date.now();
+      await page.clock.install({ time: start });
+      await page.clock.pauseAt(start + 60_000);
+    }
     await page.goto(`${url}?harness=side&still&panel=0&${query}`);
-    if (!realTime) await page.clock.pauseAt(Date.now() + 1000);
     const api = walkApi(page);
     await until(page, async () => !!(await page.evaluate(() => 'sideWalk' in window)) && !!(await api.state()), 60, 'starting');
     return [page, api];
