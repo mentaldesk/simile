@@ -43,10 +43,9 @@ export class HurtView {
   private readonly pulsing = new Fade();
   private readonly stop: () => void;
   private readonly now: () => number;
-  private health = 1;
+  private drawnHealth = 1;
   private lostFrom = 1;
 
-  /** `corner` is the hunger corner, which the gauge heads. */
   constructor(parent: HTMLElement, corner: HTMLElement, source: Pick<Hurts, 'on'> = hurts, now = () => performance.now() / 1000) {
     this.now = now;
     this.flash = parent.insertBefore(document.createElement('div'), parent.firstChild);
@@ -65,28 +64,27 @@ export class HurtView {
     this.stop = source.on((hit) => this.hit(hit));
   }
 
-  /** Before `update` hears of it, so the gauge still has the health it took. */
   hit({ strength }: Hit, now = this.now()): void {
     if (this.flashing.start(lerp(FLASH_OPACITY, strength), now, lerp(FLASH_SECONDS, strength))) {
       const px = lerp(FLASH_PX, strength);
       this.flash.style.boxShadow = `inset 0 0 ${px}px ${px / 3}px #c81010`;
     }
-    this.lostFrom = this.health;
+    this.lostFrom = this.drawnHealth;
     this.pulsing.start(Math.max(strength, 0.5), now, PULSE_SECONDS);
   }
 
   update(state: PlayerStateMessage | undefined, now = this.now()): void {
-    this.health = state?.player.health ?? 1;
+    this.drawnHealth = state?.player.health ?? 1;
     const flash = this.flashing.left(now);
     this.flash.hidden = flash === 0;
     this.flash.style.opacity = flash.toFixed(3);
     const pulse = this.pulsing.left(now);
-    this.gauge.hidden = !state || (this.health >= 1 && pulse === 0);
+    this.gauge.hidden = !state || (this.drawnHealth >= 1 && pulse === 0);
     this.gauge.classList.toggle('health-gauge-pulsing', pulse > 0);
     this.gauge.style.setProperty('--pulse', pulse.toFixed(3));
-    this.fill.style.width = percent(this.health);
-    this.lost.style.width = percent(pulse > 0 ? Math.max(this.lostFrom, this.health) : this.health);
-    this.gauge.ariaLabel = `Health ${percent(this.health)}`;
+    this.fill.style.width = percent(this.drawnHealth);
+    this.lost.style.width = percent(pulse > 0 ? Math.max(this.lostFrom, this.drawnHealth) : this.drawnHealth);
+    this.gauge.ariaLabel = `Health ${percent(this.drawnHealth)}`;
   }
 
   destroy(): void {

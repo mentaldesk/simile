@@ -1,3 +1,4 @@
+import type { CreatureState } from '../net';
 import type { Hit } from '../ui/hurt';
 import { sideCreatures } from './creatures/creatures';
 import type { SidePlayer } from './player';
@@ -7,22 +8,27 @@ export const FLINCH_SECONDS = { least: 0.35, most: 0.75 };
 export const BLINK_HZ = 12;
 /** Tiles a second they're knocked away and up, y down, for the weakest hit and the strongest. */
 export const KNOCK = { vx: { least: 2.5, most: 5 }, vy: { least: -3, most: -5.5 } };
-/** Tiles along the street within which a creature is taken to be what hit them. */
+/** Tiles within which a creature is taken to be what hit them. */
 export const HIT_FROM_TILES = 3;
 
 const lerp = (range: { least: number; most: number }, t: number) => range.least + (range.most - range.least) * t;
 
-type Placed = { x: number; map: string };
+type Placed = { x: number; y: number; map: string };
+type Near = { at: { x: number; y: number }; map: string; state: CreatureState; down?: number };
 
-/** 1 east or -1 west: away from the nearest creature on their map within reach, else back from the way they face. */
-export function awayFrom(player: Placed, facing: string, creatures: Iterable<{ at: { x: number }; map: string }>): 1 | -1 {
-  let nearest: number | undefined;
-  for (const { at, map } of creatures) {
+/** 1 east or -1 west: away from the nearest creature attacking them, else the nearest, else back from the way they face. */
+export function awayFrom(player: Placed, facing: string, creatures: Iterable<Near>): 1 | -1 {
+  let from: { gap: number; distance: number; attacking: boolean } | undefined;
+  for (const { at, map, state, down } of creatures) {
     const gap = player.x - at.x;
-    if (map !== player.map || Math.abs(gap) > HIT_FROM_TILES || gap === 0) continue;
-    if (nearest === undefined || Math.abs(gap) < Math.abs(nearest)) nearest = gap;
+    const distance = Math.hypot(gap, player.y - at.y);
+    if (down !== undefined || map !== player.map || distance > HIT_FROM_TILES || gap === 0) continue;
+    const attacking = state === 'attacking';
+    if (!from || (attacking && !from.attacking) || (attacking === from.attacking && distance < from.distance)) {
+      from = { gap, distance, attacking };
+    }
   }
-  if (nearest !== undefined) return nearest > 0 ? 1 : -1;
+  if (from) return from.gap > 0 ? 1 : -1;
   return facing === 'west' ? 1 : -1;
 }
 

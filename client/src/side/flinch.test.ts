@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import type { CreatureState } from '../net';
 import { village } from './content';
 import { sideCreatures } from './creatures/creatures';
 import { awayFrom, BLINK_HZ, Flinch, FLINCH_SECONDS, HIT_FROM_TILES, reddened } from './flinch';
@@ -29,13 +30,24 @@ const flinched = (strength: number) => {
   return flinch;
 };
 
+type Near = { at: { x: number; y: number }; map: string; state: CreatureState; down?: number };
+const rat = (x: number, more: Partial<Near> = {}): Near => ({ at: { x, y: 15 }, map: 'high_street', state: 'chasing', ...more });
+
 describe('flinching', () => {
+  afterEach(() => sideCreatures.reset([]));
+
   it('is away from the nearest creature on their map, else back from the way they face', () => {
-    const rat = (x: number, map = 'high_street') => ({ at: { x }, map });
     expect(awayFrom(STREET, 'east', [rat(41), rat(38.5)])).toBe(-1);
     expect(awayFrom(STREET, 'east', [rat(39)])).toBe(1);
-    expect(awayFrom(STREET, 'east', [rat(39, 'metro'), rat(40 - HIT_FROM_TILES - 1)])).toBe(-1);
+    expect(awayFrom(STREET, 'east', [rat(39, { map: 'metro' }), rat(40 - HIT_FROM_TILES - 1)])).toBe(-1);
     expect(awayFrom(STREET, 'west', [])).toBe(1);
+  });
+
+  it('is away from the one attacking, over a nearer one, one below or one going down', () => {
+    expect(awayFrom(STREET, 'east', [rat(39.5), rat(41.5, { state: 'attacking' })])).toBe(-1);
+    expect(awayFrom(STREET, 'east', [rat(40.3, { at: { x: 40.3, y: 17.9 } }), rat(38.5)])).toBe(1);
+    expect(awayFrom(STREET, 'west', [rat(40.5, { at: { x: 40.5, y: 18.5 } })])).toBe(1);
+    expect(awayFrom(STREET, 'east', [rat(40.5, { down: 0.1, state: 'attacking' }), rat(39)])).toBe(1);
   });
 
   it('blinks the figure red, for longer the harder the hit', () => {
@@ -69,7 +81,6 @@ describe('flinching', () => {
     expect(bot).toBeGreaterThan(bat);
     expect(bot).toBeLessThan(1.5);
     expect(knocked(1, { ...idle, x: 1 })).toBeCloseTo(bot);
-    sideCreatures.reset([]);
   });
 
   it('leaves them where they are on the stairs, only blinking', () => {

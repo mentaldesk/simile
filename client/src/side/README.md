@@ -164,8 +164,8 @@ The Phaser-free halves are tested under vitest.
   another kick waits until it's done.
 - A hit (`ui/hurt.ts`'s `hurts`) makes the player flinch (`flinch.ts`): their figure blinks red at
   `BLINK_HZ` for `FLINCH_SECONDS`, longer the harder the hit, and they're knocked off their feet
-  away from the nearest creature on their map within `HIT_FROM_TILES` (else back from the way they
-  face), a hop of half a tile to a tile by the hit's strength (`KNOCK`). The arrows don't steer it
+  away from the nearest creature attacking them within `HIT_FROM_TILES`, else the nearest one there
+  that isn't going down, else back from the way they face: a hop of half a tile to a tile by the hit's strength (`KNOCK`). The arrows don't steer it
   until they land. On stairs, a ladder or the lift they only blink.
 - The server keeps every position a jump or a fall sends, and ignores one nobody could be at
   (`simile.street.moves.possible`, `docs/protocol.md`), by the same jump. `server/tests/street/positions.json` is a

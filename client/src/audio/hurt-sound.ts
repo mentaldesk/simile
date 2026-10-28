@@ -7,10 +7,6 @@ const FADE_OUT_S = 0.006;
 
 const lerp = (range: { least: number; most: number }, t: number) => range.least + (range.most - range.least) * t;
 
-/**
- * A hit, synthesized: a thump dropping in pitch, a crack of noise and a short falling yelp, bigger,
- * lower and longer the harder it was.
- */
 export function hurtSamples(strength: number, sampleRate: number, random: () => number = Math.random): Float32Array<ArrayBuffer> {
   const seconds = lerp(HURT_SECONDS, strength);
   const samples = new Float32Array(Math.round(seconds * sampleRate));
