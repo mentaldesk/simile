@@ -123,7 +123,7 @@ side-view maps; and its `state`, what it's doing, which picks the pose its figur
 | `"moving"`, `"chasing"`, `"fleeing"` | Its kind's cycle: `walk` for rats and bots, `run` for dogs, `fly` for bats. |
 | `"attacking"` | `attack`. |
 | `"roosting"` | `roost`, hanging from the ceiling. Only a bat roosts. |
-| `"hurt"` | `stand`, or for a bat `fly`. Nothing hurts a creature without it going down yet. |
+| `"hurt"` | `stand`, or for a bat `fly`. |
 
 A walking kind's position is the ground under it, its figure's anchor, and a bat's is the middle of
 it in the air, or the ceiling it hangs from while it roosts. How a creature moves, its health and
