@@ -187,10 +187,10 @@ Every constant is in `PlayerConfig`.
 `Lamp` (`lamp.py`) runs the lamp the player carries, on the sim loop too, and only while a client is
 in the game, like hunger:
 
-- **It drains** while it's on: a full battery lasts `light` (120) real seconds whatever the sim's
-  speed, so light is scarce. That covers the longest run between plugs on the metro and in the
-  sewers at a walk with some to spare (`simile.street.charge`, content/street/README.md's
-  *Light*). When it runs flat it goes off by itself.
+- **It drains** while it's on: a full battery lasts `light` (98) real seconds whatever the sim's
+  speed, so light is scarce. That just covers the longest run between plugs on the metro and in
+  the sewers at a walk (`simile.street.charge`, content/street/README.md's *Light*). When it runs
+  flat it goes off by itself.
 - **It charges** while the player stands on a plug's stand tile (a `plug` interactable: at home,
   the café, the noodle bar, the metro's maintenance alcove and the sewers' junction boxes), on or
   off, from flat to full in `charge` (3) real seconds whatever the sim's speed. Getting to a plug

@@ -511,7 +511,7 @@
           "type": "breaker_box",
           "visible": true,
           "width": 16,
-          "x": 1344,
+          "x": 1408,
           "y": 64
         },
         {
@@ -1300,14 +1300,14 @@
             {
               "name": "stand",
               "type": "string",
-              "value": "84,5"
+              "value": "88,5"
             }
           ],
           "rotation": 0,
           "type": "plug",
           "visible": true,
           "width": 16,
-          "x": 1344,
+          "x": 1408,
           "y": 64
         }
       ],
@@ -1510,7 +1510,7 @@
           "type": "light",
           "visible": true,
           "width": 48,
-          "x": 1328,
+          "x": 1392,
           "y": 32
         }
       ],

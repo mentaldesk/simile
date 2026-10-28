@@ -65,8 +65,8 @@ def test_the_battery_runs_down_while_the_lamp_is_on() -> None:
     assert down.held.on is True
 
 
-def test_a_full_battery_lasts_two_minutes() -> None:
-    assert LIGHT == 120
+def test_a_full_battery_lasts_98_seconds() -> None:
+    assert LIGHT == 98
 
 
 def test_it_runs_down_in_real_seconds_whatever_the_sims_speed() -> None:

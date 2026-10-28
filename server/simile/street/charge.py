@@ -17,11 +17,9 @@ WALK = JUMP.run / 2
 CLIMB = {DoorKind.LADDER: 1.5, DoorKind.STAIRS: 2.0}
 """Tiles a second up or down a ladder or a flight: the client's `PLAYER_CLIMB`."""
 LIGHT = DEFAULT_LAMP.light
-SPARE = 0.15
-"""Of a full charge that every run between plugs leaves at least, for waiting on what's in the
-way."""
-REACH = LIGHT * (1 - SPARE)
-"""Seconds of light a run between plugs takes at most."""
+REACH = LIGHT
+"""Seconds of light a run between plugs takes at most at a walk: all of a charge, so a walker plans
+or hurries, and a runner keeps about half."""
 JUMPING = 3.0
 
 

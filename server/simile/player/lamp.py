@@ -16,7 +16,7 @@ class LampConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     light: float = Field(
-        default=120.0,
+        default=98.0,
         gt=0,
         description="Real seconds a full battery lasts with the lamp on, whatever the sim's speed.",
     )

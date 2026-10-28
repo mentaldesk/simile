@@ -461,7 +461,7 @@ and `pipes` dress the rooms.
 
 ## Light
 
-Light is scarce (P35): the lamp lasts two real minutes on a full charge (`LampConfig.light`,
+Light is scarce (P35): the lamp lasts 98 real seconds on a full charge (`LampConfig.light`,
 `simile.player`), and every plug is as far from the last as it can be. `simile.street.charge` says
 how much of a charge the way between plugs takes: the seconds spent in the dark at a walk, 2.6
 tiles a second, climbing a ladder at 1.5 and stairs at 2, with the lamp off wherever it's lit
@@ -480,11 +480,11 @@ passes:
   to the lift and the maintenance plug. The bat cave holds nothing on the way, so the way never
   goes in.
 
-Every run fits in 85% of a charge (`REACH`), leaving 15% (`SPARE`) for waiting on what's in the
-way, and no plug could be done without: take the maintenance plug or any box past the gate away,
+Every run fits in a full charge at a walk (`REACH`), the longest exactly, so a walker has to plan
+or hurry and a runner keeps about half. No plug could be done without: take the maintenance plug or any box past the gate away,
 with its light, and some run no longer fits. The gate's box stays where every level has always had
 it, and where a box past it splits the way on, it can be skipped. On the metro the run east and
-back takes about 81%, and the longest run in each level 54–83%.
+back takes 99–100% of a charge, and the longest run in each level 66–99%.
 
 ## Ids
 
