@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { village } from './content';
-import { kick, KICK_PHASE, KICK_SECONDS } from './kick';
+import { KICK_PHASE, KICK_SECONDS } from './kick';
 import { SidePlayer, type Controls } from './player';
 
 const idle: Controls = { x: 0, y: 0, use: false, run: false };
@@ -33,9 +33,5 @@ describe('kicking', () => {
     player.update({ ...idle, jump: true, hold: true }, 1 / 60);
     expect(player.airborne).toBe(true);
     expect(player.kick()).toBeUndefined();
-  });
-
-  it('tells the server which way, and leaves what it hits to the server', () => {
-    expect(kick('west')).toEqual({ type: 'kick', facing: 'west' });
   });
 });

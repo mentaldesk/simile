@@ -15,7 +15,7 @@ class CreatureState(StrEnum):
     """What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a
     bat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or
     fly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.
-    `hurt` is just kicked, standing or flying."""
+    `hurt` stands, or for a bat flies: nothing hurts a creature without going down yet."""
 
     IDLE = "idle"
     MOVING = "moving"

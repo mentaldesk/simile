@@ -155,7 +155,7 @@ class CreatureMovedMessage(Model):
 
 
 class CreatureGoneMessage(Model):
-    """A creature is gone from the world, such as a rat kicked to death."""
+    """A creature is gone from the world, such as a rat the player jumps on."""
 
     type: Literal["creature_gone"] = "creature_gone"
     creature_id: Id
@@ -663,14 +663,6 @@ class TreatMessage(Model):
     )
 
 
-class KickMessage(Model):
-    """The player kicks, right or left, from where the server last kept them. The server decides
-    what it hits. It ignores a kick off a side-view map."""
-
-    type: Literal["kick"] = "kick"
-    facing: SideFacing
-
-
 class BuyMessage(Model):
     """Buys one of something the buyer where they stand sells, `player_state`'s `buyer`'s
     `stock`, at its price."""
@@ -715,8 +707,7 @@ type ClientMessage = Annotated[
     | FitMessage
     | SellRecipeMessage
     | BuyMessage
-    | TreatMessage
-    | KickMessage,
+    | TreatMessage,
     Field(discriminator="type"),
 ]
 

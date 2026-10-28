@@ -47,7 +47,7 @@ export type SideFacing = 'east' | 'west';
  * What a creature is doing, which picks the pose its figure plays. `idle` stands, or for a
  * bat flies on the spot. `moving`, `chasing` and `fleeing` play its kind's cycle: walk, run or
  * fly. `attacking` plays its attack, and `roosting`, a bat's alone, hangs from the ceiling.
- * `hurt` is just kicked, standing or flying.
+ * `hurt` stands, or for a bat flies: nothing hurts a creature without going down yet.
  */
 export type CreatureState =
   'idle' | 'moving' | 'chasing' | 'fleeing' | 'attacking' | 'roosting' | 'hurt';
@@ -120,8 +120,7 @@ export type ClientMessage =
   | FitMessage
   | SellRecipeMessage
   | BuyMessage
-  | TreatMessage
-  | KickMessage;
+  | TreatMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -253,7 +252,7 @@ export interface CreatureMovedMessage {
   creature: Creature;
 }
 /**
- * A creature is gone from the world, such as a rat kicked to death.
+ * A creature is gone from the world, such as a rat the player jumps on.
  */
 export interface CreatureGoneMessage {
   type: 'creature_gone';
@@ -1018,12 +1017,4 @@ export interface TreatMessage {
    * The effect to treat, or null for patching up their health.
    */
   effect: EffectKind | null;
-}
-/**
- * The player kicks, right or left, from where the server last kept them. The server decides
- * what it hits. It ignores a kick off a side-view map.
- */
-export interface KickMessage {
-  type: 'kick';
-  facing: SideFacing;
 }
