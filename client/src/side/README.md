@@ -66,7 +66,7 @@ it, and rises to the top floor or drops to Banyan Row's river.
   always early afternoon's light with the glow maps at 55% (`lightBelow`), whatever the time.
 - **Shadows** are made at runtime from each picture's alpha, blurred and offset (`textures.ts`).
 - **Blood** (`blood.ts`, drawn by `blood-view.ts`): each hit the player takes (`ui/hurt.ts`'s
-  `hurts`) bursts three to six drops from their chest, more and a little bigger the harder the hit
+  `hurts`) bursts four to six drops from their chest, a bat's to a bot's, a little bigger the harder the hit
   (`BLOOD`). They fly up and away from what hit them, fall, settle on the ground if they reach it,
   and fade within `LIFE_SECONDS`, lit like the player. What hit them is `attacker.ts`'s
   `attackerOf`: the nearest creature attacking them within `HIT_FROM_TILES` (3 tiles, across rows
