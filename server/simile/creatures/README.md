@@ -74,7 +74,7 @@ each time the server starts. Options:
 - `route`, the cells it patrols, or else the floor (or air) `span` (5) cells either side of where it
   starts, as far as it can walk.
 - `roost`, where a bat hangs, or else under the ceiling straight above where it starts.
-- `respawn`, sim seconds after going down that it's back where it started, full of health, or never.
+- `respawn`, sim seconds after going down that it's back where it started, or never.
 - `id`, or else `<kind>_<n>`.
 
 A walking creature placed in the air stands on the floor under it. Placing one where its kind can't

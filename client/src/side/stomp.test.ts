@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import enginePy from '../../../server/simile/creatures/engine.py?raw';
 import type { Creature, CreatureKind } from '../net';
 import { village } from './content';
 import { Tracked } from './creatures/creatures';
@@ -12,6 +13,10 @@ const creature = (kind: CreatureKind, x = STREET.x, map = STREET.map): Tracked =
   new Tracked({ id: `${kind}_1`, kind, position: { x, y: STREET.y, map }, facing: 'east', state: 'idle' } satisfies Creature);
 
 describe('landing on a rat', () => {
+  it("puts a rat's back where the server does", () => {
+    expect(Number(/^STOMP_TOP = ([\d.]+)$/m.exec(enginePy)?.[1])).toBe(STOMP_TOP);
+  });
+
   it('stops the feet on the back of a rat they come down onto, and nothing else', () => {
     const on = (creatures: Tracked[], x = STREET.x, from = 13, to = 15) => stompedOn(creatures, STREET.map, x, from, to);
     expect(on([creature('rat')])).toBe(BACK);

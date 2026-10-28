@@ -126,8 +126,8 @@ side-view maps; and its `state`, what it's doing, which picks the pose its figur
 | `"hurt"` | `stand`, or for a bat `fly`. |
 
 A walking kind's position is the ground under it, its figure's anchor, and a bat's is the middle of
-it in the air, or the ceiling it hangs from while it roosts. How a creature moves, its health and
-what it does on contact stay on the server.
+it in the air, or the ceiling it hangs from while it roosts. How a creature moves and what it does
+on contact stay on the server.
 
 Until the sim has a world of its own, the snapshot comes from F2's fixtures in
 `server/tests/fixtures/`: the NPCs at their front doors, the player in the town square, and the one

@@ -36,8 +36,8 @@ names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift", 
 reads its keys through `input.ts`'s `readControls`; a tap of E, up or down shorter than a frame
 still counts, and so does a tap of Space. Shift switches running only when it's pressed and let go
 on its own (`RunToggle`), so Shift+Tab and ? leave it alone. Clicking a mural looks at it. L
-switches the lamp (below). Landing on a rat kills it (below). In the harness, `[` and `]` move the clock an hour and 1
-to 6 go to each street, 5 the rooftops and 6 the metro.
+switches the lamp (below). Landing on a rat kills it (below). In the harness, `[` and `]` move the
+clock an hour and 1 to 6 go to each street, 5 the rooftops and 6 the metro.
 
 ## How it draws
 
@@ -152,13 +152,12 @@ The Phaser-free halves are tested under vitest.
   `kits` say what each grade of either, or one of each, changes, under the same gravity
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
   grade; the legs run half as fast again, then twice and two and a half times as fast, and so jump
-  further. With both, the jump rises as
-  the feet do and runs as the legs do. The scene reads
-  the body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the
-  datajack fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any
-  other; without, it isn't.
+  further. With both, the jump rises as the feet do and runs as the legs do. The scene reads the
+  body from `player_state` each frame and sets the player's `rise` and `runSpeed`. With the datajack
+  fitted, the link from a jack's stand tile, the lift down to the sewers, is a way like any other;
+  without, it isn't.
 - Landing on a rat (`stomp.ts`): feet that come down past a rat's back, `STOMP_TOP` (0.4) tiles
-  over its floor, within `STOMP_REACH` (0.6) of it, stop there and bounce `BOUNCE_RISE` (1.2) tiles
+  over its floor, within `BOUNCE_REACH` (0.6) of it, stop there and bounce `BOUNCE_RISE` (1.2) tiles
   up, keeping their speed along. The scene sends that position at once, past the throttle, so the
   server hears the feet come down on the rat: the server decides it's dead and sends
   `creature_gone` (`server/simile/creatures/README.md`). A bot, a dog or a bat isn't bounced off.

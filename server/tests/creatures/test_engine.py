@@ -341,6 +341,29 @@ def test_only_coming_down_onto_its_back_puts_it_down(x: float, start: float, end
     assert rat.down is None
 
 
+def test_climbing_down_onto_one_leaves_it_and_so_does_crossing_from_another_map() -> None:
+    world = World(TUNNEL)
+    at_foot = world.spawn(STOMPED, 6, LOWER)
+    beside = world.spawn(STOMPED, 9, LOWER)
+    back = LOWER - STOMP_TOP
+
+    for y in (back - 0.3, back + 0.1):
+        world.stand(6, y)
+        world.run(STEP)
+    assert at_foot.down is None, "climbing down the ladder"
+
+    world.stand(9, back - 0.3, map="elsewhere")
+    world.run(STEP)
+    world.stand(9, back + 0.1)
+    world.run(STEP)
+    assert beside.down is None, "arriving from another map"
+
+    for y in (back - 0.3, back + 0.1):
+        world.stand(9, y)
+        world.run(STEP)
+    assert beside.down is not None, "falling beside the ladder"
+
+
 def test_landing_on_a_kind_not_stomped_leaves_it_and_one_never_back_is_gone_for_good() -> None:
     world = World(ROW)
     dog = world.spawn(replace(STAND_IN, id=CreatureKind.DOG), 6, 2)

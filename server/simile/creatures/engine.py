@@ -235,6 +235,8 @@ class Creatures:
         """Puts down whatever the player's feet came down on since last tick: README.md."""
         if before is None or after is None or before.map != after.map or after.y <= before.y:
             return
+        if (town := self.maps.get(after.map)) is None or _climbing(town, before):
+            return
         for creature in list(self.all.values()):
             if not creature.kind.stomped or creature.down is not None:
                 continue
@@ -381,6 +383,12 @@ def _touches(creature: Creature, at: Point) -> bool:
     if creature.kind.flies:
         return at.y - 2.0 <= creature.y - 0.5 <= at.y + 0.3
     return -0.5 <= creature.y - at.y <= JUMPS_OVER
+
+
+def _climbing(town: TownMap, at: Point) -> bool:
+    """On a ladder or stairs, from which coming down onto a rat doesn't stomp it."""
+    x = math.floor(at.x + 0.5)
+    return any(town.climb(x, y) is not None for y in (math.floor(at.y), math.ceil(at.y)))
 
 
 def _route(grid: Grid, home: Cell, span: int) -> tuple[Cell, ...]:

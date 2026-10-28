@@ -115,7 +115,6 @@ def test_landing_on_a_bot_or_a_dog_hurts_as_running_into_it_does(kind: Kind) -> 
     world.player.body = FITTED
     creature = world.spawn(kind, 6)
     land(world, 6)
-    world.at = Point(6, 2, ROW.id)
     world.run(kind.windup + STEP)
 
     assert creature.down is None and world.harmed == [kind]
