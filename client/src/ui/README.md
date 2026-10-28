@@ -251,7 +251,7 @@ its own Enter, Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it: a
 terminal, a pile, the clinic, a buyer they can sell to, or a clue, but not on a door's cell, where E
-takes the door (`eUse` in [`keys.ts`](keys.ts)), so one press never does two things. E never talks
+takes the door (`eUse` in [`world/reach.ts`](../world/reach.ts)), so one press never does two things. E never talks
 to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
 counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to
 Lachlan". V looks at a mural or a painting (`lookedAtByV`). Stairs, ladders and the lift are the

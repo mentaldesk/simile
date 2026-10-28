@@ -2,24 +2,21 @@ import asyncio
 import json
 import shutil
 from pathlib import Path
-from typing import Any
 
 import pytest
-from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.economy import Kind
-from simile.loop.playthrough import QUESTION, Result, Saves, play
+from simile.loop.playthrough import FEET, LEGS, Result, play
 from simile.loop.serve import create_loop_app
 from simile.npc import load_npcs
 from simile.schema import Bionic
 from simile.social.bionics import tolerance
 from simile.social.config import DEFAULT_BIONICS
-from simile.story import says
-from simile.story.incident import GONE, HATCH_LOG, LIFT_LOG, NOTED, there
+from simile.story.incident import GONE, HATCH_LOG, LIFT_LOG, NOTED
 from simile.world.paths import Spot
 
-BEATS = ("kidney", "feet", "datajack", "hatch", "eye")
+BEATS = ("kidney", "cell", "datajack", "legs", "gate", "hatch", "feet")
 NPCS = {npc.id: npc for npc in load_npcs()}
 
 
@@ -37,31 +34,42 @@ def result(saves: Path) -> Result:
         return asyncio.run(play(saves=saves))
 
 
-def test_a_kidney_and_what_the_tunnels_pay_buy_every_bionic(result: Result) -> None:
+def test_a_kidney_and_what_the_tunnels_pay_buy_the_cell_datajack_legs_and_feet(
+    result: Result,
+) -> None:
     body = result.player.body
 
     assert (body.left_kidney, body.right_kidney) == ("sold", "present")
-    assert (body.feet, body.vertebra, body.left_eye, body.stomach) == (
-        Bionic.SPRING_FEET,
-        Bionic.DATAJACK,
-        Bionic.INFRARED_EYE,
+    assert (body.stomach, body.vertebra, body.legs, body.feet) == (
         Bionic.POWER_CELL,
+        Bionic.DATAJACK,
+        Bionic.BIONIC_LEGS,
+        Bionic.SPRING_FEET,
     )
     assert set(result.earned) == {Kind.SALVAGE, Kind.FOUND, Kind.PURCHASE}
-    assert result.earned[Kind.PURCHASE] == -(150 + 100 + 200)
+    assert result.earned[Kind.PURCHASE] == -(100 + 100 + 150 + 150)
     assert result.earned[Kind.FOUND] >= 25 + 40 + 60
     assert sum(result.earned.values()) == pytest.approx(result.player.money)
 
 
-def test_an_attackers_alibi_flushes_and_the_journal_records_it(result: Result) -> None:
-    lie = next(entry for entry in result.journal if entry.fact_id == there(result.attacker))
+def test_every_recipe_is_learned_and_every_part_found_in_the_world(result: Result) -> None:
+    searched = set(result.player.searched)
 
-    assert result.lie.flushed and result.lie.line.speaker == result.attacker
-    assert lie.flushed is True
-    assert says(lie.text, result.lie.line.text)
+    assert {Bionic.POWER_CELL, Bionic.DATAJACK, Bionic.BIONIC_LEGS, Bionic.SPRING_FEET} <= set(
+        result.player.mind.recipes
+    )
+    assert {"maker_space_bench", "maker_space_spares", "maker_space_shelf"} <= searched
+    assert {"metro_ticket_machine", "metro_fridge", *LEGS, *FEET} <= searched
 
 
-def test_the_journal_fills_in_with_what_was_found_and_told(result: Result) -> None:
+def test_every_danger_is_passed_unhurt_with_the_lamp_off_by_the_bats(result: Result) -> None:
+    assert result.stomped >= 3
+    assert result.hurt == []
+    assert result.roused == set()
+    assert result.dark == []
+
+
+def test_the_journal_fills_in_with_what_was_found(result: Result) -> None:
     found = {entry.fact_id: entry for entry in result.journal}
 
     assert {LIFT_LOG, HATCH_LOG, NOTED} <= set(found)
@@ -82,45 +90,20 @@ def test_each_of_the_browsers_beats_has_a_save(saves: Path, result: Result) -> N
         info = json.loads((saves / f"{beat}.json").read_text())
         assert (saves / f"{beat}.db").stat().st_size > 0
         assert set(info["at"]) == {"map", "x", "y"}
-    eye = json.loads((saves / "eye.json").read_text())
-    assert eye["attacker"]["id"] == result.attacker
-    assert says(result.lie.line.text, eye["alibi"])
+    gap = json.loads((saves / "gate.json").read_text())["gap"]
+    assert gap["to"] - gap["from"] >= 5
 
 
-def test_the_eye_beats_server_starts_the_player_there_and_flushes_the_alibi(
+def test_a_beats_server_starts_the_player_where_it_was_saved_among_the_creatures(
     saves: Path, result: Result, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    eye = json.loads((saves / "eye.json").read_text())
-    monkeypatch.setenv("SIMILE_DB", str(shutil.copy(saves / "eye.db", tmp_path)))
-    at, attacker = eye["at"], eye["attacker"]["id"]
+    at = json.loads((saves / "gate.json").read_text())["at"]
+    monkeypatch.setenv("SIMILE_DB", str(shutil.copy(saves / "gate.db", tmp_path)))
 
     app = create_loop_app(Spot(at["map"], at["x"], at["y"]))
     with TestClient(app) as client, client.websocket_connect("/ws") as ws:
         snapshot = ws.receive_json()
-        [player] = [entity for entity in snapshot["entities"] if entity["kind"] == "player"]
-        ws.send_json({"type": "player_move", "position": player["position"]})
-        ws.send_json({"type": "player_say", "text": QUESTION, "target": attacker})
-        line = next_line(ws, attacker)
 
+    [player] = [entity for entity in snapshot["entities"] if entity["kind"] == "player"]
     assert player["position"] == {"x": at["x"], "y": at["y"], "map": at["map"]}
-    assert line["flushed"] is True
-    assert says(line["line"]["text"], eye["alibi"])
-
-
-def test_whether_a_resident_stays_put_in_a_served_save_is_the_same_every_time(
-    saves: Path, result: Result
-) -> None:
-    served = Saves(Starlette(), saves)
-
-    stays = {npc: {served.stays("eye", npc) for _ in range(3)} for npc in NPCS}
-
-    assert stays[result.attacker] == {True}
-    assert all(len(answers) == 1 for answers in stays.values()), stays
-
-
-def next_line(ws: Any, speaker: str) -> dict[str, Any]:
-    for _ in range(5000):
-        message = ws.receive_json()
-        if message["type"] == "line" and message["line"]["speaker"] == speaker:
-            return message
-    raise AssertionError(f"no line from {speaker}")
+    assert any(creature["position"]["map"] == at["map"] for creature in snapshot["creatures"])

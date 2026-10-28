@@ -83,10 +83,10 @@ describe('CounterPrompt', () => {
     const prompt = new CounterPrompt(document.body);
     const hint = [...document.body.querySelectorAll<HTMLElement>('.counter-hint')].at(-1)!;
 
-    prompt.flash("Nobody's behind the counter.");
+    prompt.flash('Nothing happens: the dead terminal needs a datajack.');
     prompt.update(undefined, true);
     expect(hint.hidden).toBe(false);
-    expect(hint.textContent).toBe("Nobody's behind the counter.");
+    expect(hint.textContent).toBe('Nothing happens: the dead terminal needs a datajack.');
 
     vi.advanceTimersByTime(3000);
     prompt.update(undefined, true);
