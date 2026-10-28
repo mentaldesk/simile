@@ -25,7 +25,6 @@ from simile.protocol import (
     Fitting,
     Frame,
     JournalMessage,
-    KickMessage,
     LampMessage,
     LineMessage,
     ListNewsMessage,
@@ -420,8 +419,6 @@ CLIENT = [
     BuyMessage(item="usb_c_connector"),
     TreatMessage(effect=None),
     TreatMessage(effect=EffectKind.INFECTION),
-    KickMessage(facing="east"),
-    KickMessage(facing="west"),
 ]
 
 
@@ -1217,7 +1214,6 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
             TreatMessage(effect=EffectKind.RAT_BITE),
             {"type": "treat", "effect": "rat_bite"},
         ),
-        (KickMessage(facing="west"), {"type": "kick", "facing": "west"}),
     ],
     ids=[
         "item",
@@ -1233,7 +1229,6 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
         "buy",
         "patch_up",
         "treat",
-        "kick",
     ],
 )
 def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
@@ -1383,10 +1378,7 @@ def test_timestamps_are_utc() -> None:
         {"type": "buy", "item": "usb_c_connector", "price": 40},
         {"type": "treat"},
         {"type": "treat", "effect": "snake_bite"},
-        {"type": "kick"},
-        {"type": "kick", "facing": "north"},
-        {"type": "kick", "facing": None},
-        {"type": "kick", "facing": "east", "creature": "rat_1"},
+        {"type": "kick", "facing": "east"},
     ],
 )
 def test_rejects_invalid_client_messages(data: dict[str, Any]) -> None:
@@ -1457,12 +1449,11 @@ def test_each_kind_of_creature_has_its_figure(kind: CreatureKind) -> None:
     assert figure["id"] == kind
 
 
-def test_creatures_and_kicks_face_right_or_left_alike() -> None:
+def test_creatures_face_right_or_left() -> None:
     defs = json.loads(SCHEMA_FILE.read_text())["$defs"]
 
     assert defs["SideFacing"]["enum"] == ["east", "west"]
     assert defs["Creature"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
-    assert defs["KickMessage"]["properties"]["facing"] == {"$ref": "#/$defs/SideFacing"}
 
 
 def test_the_exported_creature_requires_every_field() -> None:

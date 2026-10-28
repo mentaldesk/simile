@@ -123,7 +123,7 @@ side-view maps; and its `state`, what it's doing, which picks the pose its figur
 | `"moving"`, `"chasing"`, `"fleeing"` | Its kind's cycle: `walk` for rats and bots, `run` for dogs, `fly` for bats. |
 | `"attacking"` | `attack`. |
 | `"roosting"` | `roost`, hanging from the ceiling. Only a bat roosts. |
-| `"hurt"` | Just kicked: `stand`, or for a bat `fly`. |
+| `"hurt"` | `stand`, or for a bat `fly`. Nothing hurts a creature without it going down yet. |
 
 A walking kind's position is the ground under it, its figure's anchor, and a bat's is the middle of
 it in the air, or the ceiling it hangs from while it roosts. How a creature moves, its health and
@@ -168,7 +168,7 @@ client adds it.
 
 ### `creature_gone`
 
-`creature_id`: a creature that's gone from the world, such as a rat kicked to death. The client
+`creature_id`: a creature that's gone from the world, such as a rat the player jumps on. The client
 removes it.
 
 ### `conversation_started`
@@ -397,7 +397,7 @@ Three bionics come in a line of grades, each grade better than the one before:
 
 - the power cell, in place of the stomach: `"power_cell"`, `"power_cell_2"` and `"power_cell_3"`.
   It runs every other bionic, and a bigger cell runs more of them.
-- the legs, for speed and kick: `"bionic_legs"`, `"bionic_legs_2"` and `"bionic_legs_3"`.
+- the legs, for speed: `"bionic_legs"`, `"bionic_legs_2"` and `"bionic_legs_3"`.
 - the feet, for jump height: `"spring_feet"` and `"spring_feet_2"`.
 
 `mind` is what they know, a `Mind`. They keep it when they collapse, and later when they die. It has
@@ -602,14 +602,6 @@ can't pay for, and one that won't fit under their carry limit.
 pay its `price` from their `money`. The server sends the [`player_state`](#player_state) that
 follows. It ignores a `treat` where there's no buyer, for a treatment it doesn't give now, and one
 they can't pay for.
-
-### `kick`
-
-`facing`: a `SideFacing`, as a creature's is: `"east"` to kick right, or `"west"` to kick left. The
-player kicks from where the server last kept them ([`player_move`](#player_move)), and the server
-decides what it hits, as it runs the creatures: a creature it hurts changes `state`, in a
-[`creature_moved`](#creature_moved), or is gone, in a [`creature_gone`](#creature_gone). The client
-plays the kick itself. The server ignores a `kick` off a side-view map.
 
 ### `watch_npc`
 

@@ -46,7 +46,7 @@ def move(client: TestClient, app: Starlette, ws: Any, x: float, y: float, map: s
         time.sleep(0.001)
 
 
-def test_the_snapshot_has_the_creatures_and_a_kick_from_the_client_puts_one_down(
+def test_the_snapshot_has_the_creatures(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
@@ -56,9 +56,6 @@ def test_the_snapshot_has_the_creatures_and_a_kick_from_the_client_puts_one_down
         rat = client.portal.call(lambda: creatures_of(app).spawn(Kind(CreatureKind.RAT), at))
         with client.websocket_connect("/ws") as ws:
             snapshot = next_of(ws, "snapshot")
-            move(client, app, ws, 65, 15, "metro")
-            ws.send_json({"type": "kick", "facing": "east"})
-            gone = next_of(ws, "creature_gone")
 
     assert snapshot["creatures"] == [
         {
@@ -69,7 +66,6 @@ def test_the_snapshot_has_the_creatures_and_a_kick_from_the_client_puts_one_down
             "state": "idle",
         }
     ]
-    assert gone == {"type": "creature_gone", "creature_id": rat.id}
 
 
 def test_a_rat_in_reach_bites_the_player_in_the_game_and_its_moves_reach_the_client(
