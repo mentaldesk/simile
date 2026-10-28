@@ -13,7 +13,7 @@ from simile.creatures.kinds import BOT, RAT
 from simile.creatures.placing import spawns
 from simile.schema import Bionic, Body, CreatureKind, CreatureState, Item, ItemKind, Player
 from simile.street.jump import JUMP, LEGS, Jump
-from simile.street.metro import BOTS, LEDGE
+from simile.street.metro import BOTS, VAULT_LADDER
 from simile.street.moves import moves
 from simile.street.plan import Spawn
 from simile.street.sewers import DEN, DEN_LADDER, FLOORS, LANDING, LEVELS, SEWERS, WEIR_AT
@@ -58,18 +58,14 @@ EAST = [
     Climb(12),
     Walk(42.6),
     Leap(45, 10),
-    Walk(52.5),
-    Leap(LEDGE + 1, 12, rise=0.3),
-    Walk(LEDGE + 2),
+    Walk(VAULT_LADDER),
     Climb(15),
     Walk(70),
 ]
 """From the foot of the stairs to the plug, over both bots: `BOTS` in `simile.street.metro`."""
 WEST = [
-    Walk(LEDGE + 2),
-    Climb(12),
-    Walk(LEDGE + 1.4),
-    Leap(52, 10),
+    Walk(VAULT_LADDER),
+    Climb(10),
     Walk(44.6),
     Leap(42, 12),
     Walk(32),
