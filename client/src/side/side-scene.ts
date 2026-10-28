@@ -15,8 +15,8 @@ import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { CreatureView } from './creatures/view';
+import { BloodView } from './blood-view';
 import { DarkView } from './dark-view';
-import { Flinch } from './flinch';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { KICK_KEY } from './kick';
 import { lampHere, lampOf, switchLamp } from './lamp';
@@ -70,6 +70,7 @@ export class SideScene extends Phaser.Scene {
   private pictures!: SideTextures;
   private glints!: PileGlints;
   private creatures!: CreatureView;
+  private blood!: BloodView;
   private usables!: UsableView;
   private street?: StreetView;
   private dark?: DarkView;
@@ -90,7 +91,6 @@ export class SideScene extends Phaser.Scene {
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false, run: false };
   private readonly running = new RunToggle();
-  private readonly flinch = new Flinch();
   private jumped = false;
   private passing = false;
   /** Where they wake once the street is shown and any door they are going through is done. */
@@ -110,6 +110,7 @@ export class SideScene extends Phaser.Scene {
     this.pictures = new SideTextures(this);
     this.glints = new PileGlints(this);
     this.creatures = new CreatureView(this);
+    this.blood = new BloodView(this);
     this.usables = new UsableView(this, this.pictures);
     const camera = this.cameras.main;
     camera.setBackgroundColor('#9fc3d8').fadeOut(0);
@@ -141,7 +142,7 @@ export class SideScene extends Phaser.Scene {
         },
       }),
       setWayPrompts(() => this.prompts()),
-      hurts.on((hit) => this.flinch.hit(hit, this.passing ? undefined : this.player)),
+      hurts.on((hit) => this.player && !this.passing && this.content && this.blood.hit(hit, this.player, this.content.village)),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -149,6 +150,7 @@ export class SideScene extends Phaser.Scene {
       () => this.dark?.destroy(),
       () => this.glints.destroy(),
       () => this.creatures.destroy(),
+      () => this.blood.destroy(),
       () => this.usables.destroy(),
       () => this.pictures.destroy(),
     ];
@@ -196,7 +198,6 @@ export class SideScene extends Phaser.Scene {
     const { content, player, street } = this;
     if (!content || !player || !street) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
-    this.flinch.update(dt);
     const body = playerState.latest?.player.body;
     const jump = jumpOf(body);
     player.rise = jump.rise;
@@ -231,6 +232,7 @@ export class SideScene extends Phaser.Scene {
     }
     this.drawFigures(content.village, street);
     this.creatures.update(content.village, street.map.id, street.tints.colours.ground, dt);
+    this.blood.update(dt, street.tints.colours);
     const shown = [street.map.id, ...street.map.buildings.flatMap(({ name }) => content.village.floors(name).map(({ id }) => id))];
     const unsearched = toSearch(reachables.searched?.() ?? [], !!reachables.jacked?.(), shown);
     this.glints.update(content.village, street.map.id, [...reachables.piles(), ...unsearched], time / 1000);
@@ -432,8 +434,7 @@ export class SideScene extends Phaser.Scene {
     const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
     figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
     const seat = map ? seatHeight(map, at.x - map.offset.x, at.y - map.offset.y) : 0;
-    const light = street.tints.colours[inside ? 'inside' : 'ground'];
-    figure.doll.show(drawn, id === PLAYER_ID ? this.flinch.tint(light) : light, seat);
+    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat);
     const below = feetOf(ground);
     figure.contact.setPosition(figure.x, below).setAlpha(contactAlpha((below - figure.feet) / PPM));
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);

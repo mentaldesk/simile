@@ -80,8 +80,6 @@ export class SidePlayer {
   private landing = 0;
   /** Seconds left of a kick, standing still. */
   private kicking = 0;
-  /** Knocked back by a hit: the arrows don't steer until they land. */
-  private knocked = false;
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
@@ -107,19 +105,7 @@ export class SidePlayer {
     this.onRun = this.crossed = this.approaching = this.air = undefined;
     this.coyote = this.buffered = this.landing = this.kicking = 0;
     this.armed = false;
-    this.knocked = false;
     this.locate();
-  }
-
-  /** Knocked off their feet, `vx` and `vy` tiles a second, y down; not while climbing or riding. Whether they were. */
-  knock(vx: number, vy: number): boolean {
-    if (this.onRun || this.crossed || this.approaching) return false;
-    this.air = { vx, vy: Math.min(this.air?.vy ?? 0, vy), held: false };
-    this.knocked = true;
-    this.coyote = this.buffered = 0;
-    this.walking = false;
-    this.locate();
-    return true;
   }
 
   /** Kicks the way they last moved, standing on the ground and not kicking already. Which way, or none. */
@@ -161,8 +147,7 @@ export class SidePlayer {
   }
 
   /** Returns the door to take, for the scene. */
-  update(steering: Controls, dt: number): Link | undefined {
-    const controls = this.knocked ? { ...steering, x: 0, jump: false } : steering;
+  update(controls: Controls, dt: number): Link | undefined {
     if (controls.y === 0) this.armed = true;
     const blend = dt / RUN_BLEND_SECONDS;
     this.run = controls.run ? Math.min(this.run + blend, 1) : Math.max(this.run - blend, 0);
@@ -268,7 +253,6 @@ export class SidePlayer {
     this.travelled += Math.abs(this.position.x - from);
     if (!landed) return;
     this.air = undefined;
-    this.knocked = false;
     this.landing = LANDING_SECONDS;
     if (this.buffered > 0) this.jump(controls.x);
   }

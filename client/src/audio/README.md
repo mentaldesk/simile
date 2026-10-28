@@ -40,10 +40,17 @@ start talking. A greeting that can't play because the audio is still suspended d
 
 ## Getting hurt
 
-Every hit the player takes (`hurts` in [`ui/hurt.ts`](../ui/hurt.ts)) plays a short sound, centred
-and once the page may play audio: `hurtSamples` in [`hurt-sound.ts`](hurt-sound.ts) synthesizes it
-each time, with no clip to fetch. It's a thump falling in pitch, a crack of noise and a short falling
-square-ish yelp, louder, lower and longer the harder the hit (`HURT_GAIN`, `HURT_SECONDS`).
+Every hit the player takes (`hurts` in [`ui/hurt.ts`](../ui/hurt.ts)) plays the sound of what hit
+them, centred, once the page may play audio. What hit them is the side view's `attackerOf`
+([`side/attacker.ts`](../side/attacker.ts)) from where the player stands: the nearest creature
+attacking within 3 tiles, else the nearest there. `hurtSamples` in [`hurt-sound.ts`](hurt-sound.ts)
+synthesizes each one afresh, with no clip to fetch, a little louder the harder the hit (`HURT_GAIN`):
+
+- a rat: a short chirp, then a rising, wavering squeak, "ee-eeek";
+- a bot: a metal clank of clashing partials, then a servo's whirr rising and falling;
+- a dog: a rasping snarl, then the snap of its jaws;
+- a bat: a shrill, fluttering screech;
+- nothing near: a short, dull thud.
 
 ## Positions
 

@@ -146,12 +146,11 @@ time) isn't one, or from `player_collapsed` with `cause: health`. A hit's `stren
 took over a bot's or a dog's 0.1, up to 1: a bat's is 0.3, a rat's bite 0.5. It forgets the health it
 last heard at each `snapshot`, so a reconnect isn't a hit. `hurts.on(listener)` hears each one.
 
-- `HurtView` ([`hurt-view.ts`](hurt-view.ts)) flashes the screen's edges red, reaching further in,
-  more opaque and for longer the harder the hit (`FLASH_PX`, `FLASH_OPACITY`, `FLASH_SECONDS`).
-- It heads the hunger corner with a health gauge while they're hurt, and pulses it for
-  `PULSE_SECONDS`: it swells and glows, showing what the hit took in pale over the red.
-- The world scene makes the player flinch ([`side/`](../side/README.md#movement)), and the audio
-  plays a hit ([`audio/`](../audio/README.md#getting-hurt)).
+- `HealthGauge` ([`health-gauge.ts`](health-gauge.ts)) heads the hunger corner while they're hurt,
+  and pulses for `PULSE_SECONDS` on each hit, harder for a bigger one: it swells and glows, showing
+  what the hit took in pale over the red.
+- The world scene bursts drops of blood from the player ([`side/`](../side/README.md#how-it-draws)),
+  and the audio plays what hit them ([`audio/`](../audio/README.md#getting-hurt)).
 
 ## Picking up and selling
 
