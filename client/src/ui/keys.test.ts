@@ -10,7 +10,8 @@ const eat = vi.fn();
 const help = { toggle: vi.fn(), close: vi.fn() };
 const journal = { toggle: vi.fn(), close: vi.fn() };
 const character = { toggle: vi.fn(), close: vi.fn() };
-const handler = onGameKey({ chat, talk, use, view, eat, help, journal, character });
+const pause = vi.fn();
+const handler = onGameKey({ chat, talk, use, view, eat, help, journal, character, pause });
 
 function press(target: EventTarget, key: string, init: KeyboardEventInit = {}): KeyboardEvent {
   const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init });
@@ -36,6 +37,13 @@ describe('with nothing focused', () => {
     expect(chat.open).toHaveBeenCalledOnce();
     expect(chat.clear).toHaveBeenCalledOnce();
     expect(chat.cycle.mock.calls).toEqual([[1], [-1]]);
+  });
+
+  it('Esc asks for the pause menu before it closes anything', () => {
+    press(document.body, 'Escape');
+
+    expect(pause).toHaveBeenCalledOnce();
+    expect(pause.mock.invocationCallOrder[0]).toBeLessThan(help.close.mock.invocationCallOrder[0]);
   });
 
   it('? shows or hides the controls, and Esc hides them', () => {
@@ -139,6 +147,7 @@ it.each(['input', 'textarea', 'a', 'button'])('leaves keys on a focused %s alone
   expect(tab.defaultPrevented).toBe(false);
   expect(chat.open).not.toHaveBeenCalled();
   expect(chat.clear).not.toHaveBeenCalled();
+  expect(pause).not.toHaveBeenCalled();
   expect(chat.cycle).not.toHaveBeenCalled();
   expect(use).not.toHaveBeenCalled();
   expect(talk).not.toHaveBeenCalled();

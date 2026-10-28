@@ -12,22 +12,46 @@ export type Pin = { kind: HookKind; actor: string; target: string };
 
 export type NewWorld = { count: number; picks: string[]; pins: Pin[] };
 
+export type MakeWorld = NewWorld & { name?: string; open?: boolean };
+
 export type Resident = { id: string; name: string; age: number; occupation: string; home: string };
 
 export type CurrentWorld = {
+  id: string | null;
   name: string;
   default: boolean;
   data: string | null;
   residents: Resident[];
 };
 
-export type Worlds = { current: CurrentWorld; houses: number };
+export type SavedWorld = {
+  id: string;
+  name: string;
+  default: boolean;
+  running: boolean;
+  made: string | null;
+  played: string | null;
+  day: number | null;
+  time: string | null;
+  player: string;
+  residents: number;
+};
+
+export type Worlds = {
+  current: CurrentWorld;
+  houses: number;
+  worlds: SavedWorld[];
+  supervised: boolean;
+};
+
+export type Opening = { id: string; opening: boolean };
 
 export type Bond = Pin & { pinned: boolean };
 
 export type Missing = { id: string; name: string; needs: ('voice' | 'sprite')[] };
 
 export type MadeWorld = {
+  id: string;
   name: string;
   data: string;
   seed: number;
@@ -35,6 +59,7 @@ export type MadeWorld = {
   bonds: Bond[];
   missing: Missing[];
   restart: { env: Record<string, string>; command: string };
+  opening: boolean;
 };
 
 export type LibraryCharacter = {
@@ -68,7 +93,10 @@ export interface MenuApi {
   worlds(): Promise<Worlds>;
   characters(): Promise<LibraryCharacter[]>;
   draw(asked: NewWorld): Promise<string[]>;
-  create(asked: NewWorld): Promise<MadeWorld>;
+  create(asked: MakeWorld): Promise<MadeWorld>;
+  open(id: string): Promise<Opening>;
+  rename(id: string, name: string): Promise<SavedWorld>;
+  remove(id: string): Promise<void>;
   feeds(): Promise<NewsFeeds>;
   checkFeed(url: string): Promise<CheckedFeed>;
   addFeed(url: string): Promise<NewsFeeds>;
@@ -96,8 +124,20 @@ export class ServerApi implements MenuApi {
     return (await this.json<{ residents: string[] }>('/api/worlds/draw', asked)).residents;
   }
 
-  create(asked: NewWorld): Promise<MadeWorld> {
+  create(asked: MakeWorld): Promise<MadeWorld> {
     return this.json('/api/worlds', asked);
+  }
+
+  open(id: string): Promise<Opening> {
+    return this.json(`/api/worlds/${encodeURIComponent(id)}/open`, undefined, 'POST');
+  }
+
+  rename(id: string, name: string): Promise<SavedWorld> {
+    return this.json(`/api/worlds/${encodeURIComponent(id)}`, { name }, 'PATCH');
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.json(`/api/worlds/${encodeURIComponent(id)}`, undefined, 'DELETE');
   }
 
   feeds(): Promise<NewsFeeds> {
@@ -124,12 +164,14 @@ export class ServerApi implements MenuApi {
     return this.json('/api/news/feeds/reset', {});
   }
 
-  private async json<T>(url: string, body?: unknown): Promise<T> {
+  private async json<T>(url: string, body?: unknown, method?: string): Promise<T> {
     const init: RequestInit | undefined =
       body === undefined
-        ? undefined
+        ? method === undefined
+          ? undefined
+          : { method }
         : {
-            method: 'POST',
+            method: method ?? 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           };

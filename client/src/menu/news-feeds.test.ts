@@ -56,6 +56,9 @@ class FakeFeeds {
       characters: vi.fn(),
       draw: vi.fn(),
       create: vi.fn(),
+      open: vi.fn(),
+      rename: vi.fn(),
+      remove: vi.fn(),
       feeds: vi.fn(async () => this.current()),
       checkFeed: vi.fn(async (url: string) => {
         if (url !== BIG_THINK.url) throw new Error("That's a web page, not a feed");
@@ -97,7 +100,7 @@ const switchOf = (root: HTMLElement, name: string) =>
 
 async function open(server = new FakeFeeds()) {
   const api = server.api();
-  const menu = new Menu(document.body, api, { play: vi.fn() });
+  const menu = new Menu(document.body, api, { play: vi.fn(), enter: vi.fn() });
   button(menu.root, 'News feedsChoose what the village reads').click();
   await settle();
   return { root: menu.root, api, server };
@@ -283,7 +286,7 @@ describe('the News feeds screen', () => {
     const server = new FakeFeeds();
     const api = server.api();
     api.removeFeed = vi.fn(async () => Promise.reject(new Error("That feed isn't in the list")));
-    const menu = new Menu(document.body, api, { play: vi.fn() });
+    const menu = new Menu(document.body, api, { play: vi.fn(), enter: vi.fn() });
     await menu.newsFeeds();
 
     rows(menu.root)[0].querySelector<HTMLButtonElement>('.menu-remove')!.click();

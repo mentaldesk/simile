@@ -36,7 +36,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 | C | Open or close your character: your power or hunger, health, lamp, credits and ailments; each part of your body, still yours, sold or bionic; what you carry against what you can; and the recipes you know, with what each needs and what you have of it. ← → switch between them. |
 | Enter | Talk to the ringed resident, then send what you typed. |
 | Tab | Choose who to talk to. Clicking a resident does too. |
-| Esc | Close the chat or a panel. |
+| Esc | Close the chat or a panel. With none open, open the menu: resume, the controls, or exit to the title menu to load another world. |
 | ? | Show or hide these controls in the game. |
 
 A small tag over each door, flight of stairs, ladder and the lift names its keys.
