@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from starlette.applications import Starlette
 from starlette.testclient import TestClient
 
 from simile.economy import Kind
-from simile.loop.playthrough import QUESTION, Result, play
+from simile.loop.playthrough import QUESTION, Result, Saves, play
 from simile.loop.serve import create_loop_app
 from simile.npc import load_npcs
 from simile.schema import Bionic
@@ -104,6 +105,17 @@ def test_the_eye_beats_server_starts_the_player_there_and_flushes_the_alibi(
     assert player["position"] == {"x": at["x"], "y": at["y"], "map": at["map"]}
     assert line["flushed"] is True
     assert says(line["line"]["text"], eye["alibi"])
+
+
+def test_whether_a_resident_stays_put_in_a_served_save_is_the_same_every_time(
+    saves: Path, result: Result
+) -> None:
+    served = Saves(Starlette(), saves)
+
+    stays = {npc: {served.stays("eye", npc) for _ in range(3)} for npc in NPCS}
+
+    assert stays[result.attacker] == {True}
+    assert all(len(answers) == 1 for answers in stays.values()), stays
 
 
 def next_line(ws: Any, speaker: str) -> dict[str, Any]:
