@@ -134,11 +134,11 @@ Dangerous: each danger moves in its own way, and learning how is the puzzle. Get
 health, and at none you collapse and wake at home, as when you starve. Each danger is also a door:
 the bionic or tool that answers it is further on.
 
-- **Rats** are the weakest. You can kick them, and bionic legs kick harder. A handful at once
-  costs some health, no more.
+- **Rats** are the weakest. Jumping on one kills it. Running into a handful hurts enough to matter.
 - **Recycler bots** are broken maintenance robots, in the sewers and on the metro's floor. They
   collect the same salvage you do, and ignore you while you're wholly human. Once you're fitted,
-  they try to recycle you. Later you can destroy one and take everything it collected.
+  they try to recycle you. They can't climb ladders or stairs, so height is the way past them. Later
+  you can destroy one and take everything it collected.
 - **Wild dogs** are few and frightening. They're faster than you, even on your first bionic legs,
   and the only way out is up a ladder or through a door. Without the legs or a weapon, their den
   is almost certain death. Matching their speed takes a long time.
@@ -152,6 +152,9 @@ the bionic or tool that answers it is further on.
   ailment that fades slowly. With one kidney it fades more slowly still.
 
 Some ailments fade on their own and some, like an infected bite, last until they're treated.
+
+Getting hurt has to be felt: a sound, a flash and a flinch every time, so the player knows what hit
+them.
 
 Later the maker space prints and builds weapons: a plastic pistol that lasts a few shots, charges
 that open walls, and maybe a sonar for the bats.
@@ -239,6 +242,13 @@ player to speculate about.
   testable and winnable.
 - **No talking your way to a win.** The LLM turns what the player says into bounded effects on
   relationship scores. NPCs act on those scores, not on whatever the player types.
+- **Every danger has a solution.** As in Rick Dangerous and the early platformers, each map is a
+  puzzle: an enemy you can't kill moves in a pattern you can learn and time your way past, or there's
+  a route it can't follow (a ladder, a ledge, a door), or a way to kill it. Walking through and
+  taking the damage is never the only way. Every danger placed on a map comes with its solution,
+  checked by a test.
+- **Light is scarce.** The lamp's battery is a resource to ration and plan around. Dark stretches
+  are long enough, and plugs far enough apart, that reaching the next one is a relief.
 - **The tunnels are where you get the means; the village is where the game happens.** If the tunnels
   stop needing the village, the dungeon has become a separate game and Simile's core is wasted. Some
   components that upgrades need can only be had in the village, and key pieces of information for the
