@@ -19,12 +19,11 @@ export type Drop = { x: number; y: number; vx: number; vy: number; radius: numbe
 
 export const alphaOf = ({ age, life }: Drop): number => Math.max(0, Math.min(1, 2 * (1 - age / life)));
 
-/** Drops of blood that burst from the player on a hit, fall, settle on the ground and fade. */
 export class Blood {
   readonly drops: Drop[] = [];
 
-  /** `feet` in world px; `away` 1 east or -1 west from what hit them, or 0. */
-  burst(strength: number, feet: { x: number; y: number }, away: number, random: () => number = Math.random): void {
+  /** `feet` and `ground`, the row under them while they're in the air, in world px; `away` 1 east or -1 west from what hit them, or 0. */
+  burst(strength: number, feet: { x: number; y: number }, ground: number, away: number, random: () => number = Math.random): void {
     const count = Math.round(lerp(BLOOD.drops, strength));
     for (let i = 0; i < count; i++) {
       this.drops.push({
@@ -35,10 +34,14 @@ export class Blood {
         radius: lerp(BLOOD.radiusM, random()) * (0.85 + 0.3 * strength) * PPM,
         age: 0,
         life: lerp(LIFE_SECONDS, random()),
-        ground: feet.y,
+        ground,
         landed: false,
       });
     }
+  }
+
+  clear(): void {
+    this.drops.length = 0;
   }
 
   update(dt: number): void {

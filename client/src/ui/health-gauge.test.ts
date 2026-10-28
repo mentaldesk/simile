@@ -7,7 +7,6 @@ import { Hurts } from './hurt';
 
 const state = (health: number) => ({ type: 'player_state', player: { health } }) as PlayerStateMessage;
 
-/** A frame at `seconds`, after `player_state` with `health`. */
 function gauge() {
   const connection = new ServerConnection();
   const corner = document.createElement('div');

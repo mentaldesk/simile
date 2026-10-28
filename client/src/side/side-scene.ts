@@ -366,6 +366,7 @@ export class SideScene extends Phaser.Scene {
       for (const key of StreetView.pieces(content, old.map)) if (!kept.has(key)) this.pictures.unload(key);
     }
     this.street = new StreetView(this, this.pictures, content, map);
+    this.blood.clear();
     this.dark?.destroy();
     this.dark = hasDark(map) ? new DarkView(this, sightOf(map)) : undefined;
     for (const socket of this.sockets) socket.destroy();

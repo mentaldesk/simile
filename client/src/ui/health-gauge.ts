@@ -4,7 +4,6 @@ import { percent } from './lamp-gauge';
 import './health-gauge.css';
 
 export const PULSE_SECONDS = 0.6;
-/** The pulse's strength for the weakest hit. */
 const LEAST_PULSE = 0.5;
 
 /** A hit's effect fading over its `seconds`, from its strength at first to nothing; overlapping ones keep the strongest. */
@@ -20,14 +19,12 @@ export class Fade {
     this.seconds = seconds;
   }
 
-  /** How much is left: `strength` when it starts, falling to 0. */
   left(now: number): number {
     const t = (now - this.at) / this.seconds;
     return t >= 0 && t < 1 ? this.strength * (1 - t) : 0;
   }
 }
 
-/** Health at the head of the hunger corner while the player is hurt, pulsing on each hit with what it took. */
 export class HealthGauge {
   private readonly gauge: HTMLElement;
   private readonly fill: HTMLElement;

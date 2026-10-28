@@ -12,7 +12,6 @@ const RED = 0x9c0c0c;
 const multiply = (a: number, b: number) =>
   [16, 8, 0].reduce<number>((colour, shift) => colour | (Math.round((((a >> shift) & 0xff) * ((b >> shift) & 0xff)) / 255) << shift), 0);
 
-/** Drops of blood over the player on a hit, lit as they are. */
 export class BloodView {
   private readonly blood = new Blood();
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -26,8 +25,12 @@ export class BloodView {
     this.inside = village.map(player.drawnMap)?.kind === 'floor';
     const attacker = attackerOf(player.mapPosition);
     const away = attacker ? Math.sign(player.mapPosition.x - attacker.at.x) : 0;
-    this.blood.burst(strength, { x: xOf(player.at.x), y: feetOf(player.at.y) }, away);
+    this.blood.burst(strength, { x: xOf(player.at.x), y: feetOf(player.at.y) }, feetOf(player.ground), away);
     this.graphics.setDepth((this.inside ? DEPTH.insideDoll : DEPTH.doll) + 0.5);
+  }
+
+  clear(): void {
+    this.blood.clear();
   }
 
   update(dt: number, light: { inside: number; ground: number }): void {

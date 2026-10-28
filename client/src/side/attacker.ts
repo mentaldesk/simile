@@ -1,7 +1,6 @@
 import type { Position } from '../net';
 import { sideCreatures, type Tracked } from './creatures/creatures';
 
-/** Tiles within which a creature is taken to be what hit the player. */
 export const HIT_FROM_TILES = 3;
 
 /** What hit the player at `at`: the nearest creature attacking within reach on their map, else the nearest there, never one going down. */

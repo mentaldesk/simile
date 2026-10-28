@@ -1,7 +1,6 @@
 import type { CreatureKind } from '../net';
 import { hurts, type Hit, type Hurts } from '../ui/hurt';
 
-/** What a hit sounds like: the creature that made it, or a thud when nothing did. */
 export type HurtSound = CreatureKind | 'thud';
 type Random = () => number;
 type Voice = (t: number) => number;
@@ -125,7 +124,6 @@ export const soundOf = (kind: CreatureKind | undefined): HurtSound => (kind && k
 
 export const secondsOf = (sound: HurtSound): number => MAKERS[sound].seconds;
 
-/** `sound`, synthesized afresh, louder the harder the hit. */
 export function hurtSamples(sound: HurtSound, strength: number, rate: number, random: Random = Math.random): Float32Array<ArrayBuffer> {
   const { seconds, make } = MAKERS[sound];
   const voice = make(rate, random);
@@ -158,7 +156,6 @@ export function webSound(context: BaseAudioContext): SoundOutput {
   };
 }
 
-/** Plays what hit the player, by `attacker`, every time they take damage, once the page may play audio. */
 export function playHurts(
   output: SoundOutput,
   canPlay: () => boolean,

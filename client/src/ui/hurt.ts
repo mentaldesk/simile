@@ -12,7 +12,6 @@ type Listener = (hit: Hit) => void;
 
 export const strengthOf = (size: number): number => Math.min(size / FULL_HIT, 1);
 
-/** Every time the player takes damage, from `player_state`'s health dropping, or collapsing from their wounds. */
 export class Hurts {
   private readonly listeners = new Set<Listener>();
   private health?: number;
