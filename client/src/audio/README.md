@@ -38,6 +38,13 @@ fetches and decodes each file once, and plays nothing for someone without any.
 The same resident doesn't greet again within `GREETING_COOLDOWN_S` (60 s), however many times they
 start talking. A greeting that can't play because the audio is still suspended doesn't count.
 
+## Getting hurt
+
+Every hit the player takes (`hurts` in [`ui/hurt.ts`](../ui/hurt.ts)) plays a short sound, centred
+and once the page may play audio: `hurtSamples` in [`hurt-sound.ts`](hurt-sound.ts) synthesizes it
+each time, with no clip to fetch. It's a thump falling in pitch, a crack of noise and a short falling
+square-ish yelp, louder, lower and longer the harder the hit (`HURT_GAIN`, `HURT_SECONDS`).
+
 ## Positions
 
 The world (C1) tells audio where the speakers and the listener are, in float tiles:

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { setPositionProvider } from '../audio';
 import { addFigureAtlas } from '../dolls/sprite-figure';
 import { playerState, server, type Position } from '../net';
+import { hurts } from '../ui/hurt';
 import { PLAYER_ID, setWorldView, type ScreenSprite, type WorldView } from '../ui/world-view';
 import { dollFor } from '../world/assets';
 import { interactables } from '../world/interactables';
@@ -15,6 +16,7 @@ import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
 import { CreatureView } from './creatures/view';
 import { DarkView } from './dark-view';
+import { Flinch } from './flinch';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { kick, KICK_KEY } from './kick';
 import { lampHere, lampOf, switchLamp } from './lamp';
@@ -88,6 +90,7 @@ export class SideScene extends Phaser.Scene {
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false, run: false };
   private readonly running = new RunToggle();
+  private readonly flinch = new Flinch();
   private jumped = false;
   private passing = false;
   /** Where they wake once the street is shown and any door they are going through is done. */
@@ -138,6 +141,7 @@ export class SideScene extends Phaser.Scene {
         },
       }),
       setWayPrompts(() => this.prompts()),
+      hurts.on((hit) => this.flinch.hit(hit, this.passing ? undefined : this.player)),
       muralWalls.onChange(() => (this.worksChanged = true)),
       galleryFrames.onChange(() => (this.worksChanged = true)),
       () => interactables.update(undefined),
@@ -192,6 +196,7 @@ export class SideScene extends Phaser.Scene {
     const { content, player, street } = this;
     if (!content || !player || !street) return;
     const dt = Math.min(delta / 1000, MAX_FRAME_SECONDS);
+    this.flinch.update(dt);
     const body = playerState.latest?.player.body;
     const jump = jumpOf(body);
     player.rise = jump.rise;
@@ -428,7 +433,8 @@ export class SideScene extends Phaser.Scene {
     const depth = (inside ? DEPTH.insideDoll : DEPTH.doll) + figure.feet * 1e-7;
     figure.doll.setPosition(figure.x, figure.feet).setDepth(depth);
     const seat = map ? seatHeight(map, at.x - map.offset.x, at.y - map.offset.y) : 0;
-    figure.doll.show(drawn, street.tints.colours[inside ? 'inside' : 'ground'], seat);
+    const light = street.tints.colours[inside ? 'inside' : 'ground'];
+    figure.doll.show(drawn, id === PLAYER_ID ? this.flinch.tint(light) : light, seat);
     const below = feetOf(ground);
     figure.contact.setPosition(figure.x, below).setAlpha(contactAlpha((below - figure.feet) / PPM));
     figure.contact.setDepth(inside ? DEPTH.insideContact : DEPTH.contact);
