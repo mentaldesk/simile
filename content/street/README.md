@@ -263,9 +263,9 @@ passes through it.
 | 20–54 | The platform: the scrap trader's `scrap_stall`, benches, and a dead `train_carriage` (33–42) with a ladder (32) up to its roof, row 12. A catwalk along the vault (45–49, row 10) is a jump from the roof's east end, with a ladder (50) through it down to the floor (P34), the way over the bots, and its last cell (52) is a hop past the ladder's top. |
 | 55–86 | The `tunnel_arch`, then the service tunnel, dark either side of the maintenance alcove (71–73) with the plug, and a dead `fridge` to search at 70. In the east half a ladder (75) climbs to a pipe ledge (76–78, row 12), and a catwalk (81–82, row 10) goes on up the wall, a jump from it. An alcove (85–86, row 5) is five rows above that catwalk. West of the pipe ledge, a step (73–74, row 10) is a hop up to a gantry (69–72, row 8) that runs west under a roof of `pipes` (58–73, row 4), lit, with a five-cell gap (64–68) before a nook at its end (61–63). |
 | 87–109 | The depot: the clinic (88–97), the `freight_lift` down to the sewers (100–101), a `dead_terminal` (104), and the high ledge (106–109, row 12). Nothing past it stands lower than the floor for twelve cells, so the legs alone don't reach the ledge from the east. |
-| 110–155 | The freight siding, lit, through a `tunnel_arch` (112–114): `crates` to search (119), two `shipping_container`s stacked (124–129) with a ladder (123) up their side to the top (row 9), a third beside them (132–137, roof row 12) a jump down from the top, and over it a crane's gantry (131–138, row 5), four rows above the top of the stack. Then the signal box: a deck (142–153, row 11) up a ladder (141), with two dead `switchboard`s and the signal desk, a `dead_terminal`. |
-| 156–205 | The disused track, through a `tunnel_arch` (156–158), dark either side of a lit alcove (180–182) with a plug, past `rubble`, a tool crate (168) and a `bedroll`. In the east half a ladder (188) climbs to a pipe ledge (189–191, row 12), and a ledge (194–195, row 10) is a hop up from it. |
-| 206–229 | The shed, lit, under a roof of `pipes` (row 4) like the gantry's: a plug, the `lockers`, and a ladder (207) up to a mezzanine (208–212, row 8). Past a five-cell gap from it is the top of the store room's wall (218–220, row 8), a `bulkhead` with a jammed door at its foot, and a ladder (221) inside down to the store room's floor and back up. |
+| 110–155 | The freight siding, dark (P35), through a `tunnel_arch` (112–114): `crates` to search (119), two `shipping_container`s stacked (124–129) with a ladder (123) up their side to the top (row 9), a third beside them (132–137, roof row 12) a jump down from the top, and over it a crane's gantry (131–138, row 5), four rows above the top of the stack. Then the signal box: a deck (142–153, row 11) up a ladder (141), with two dead `switchboard`s and the signal desk, a `dead_terminal`. |
+| 156–205 | The disused track, dark, through a `tunnel_arch` (156–158), past `rubble`, a tool crate (168) and a `bedroll`. In the east half a ladder (188) climbs to a pipe ledge (189–191, row 12), and a ledge (194–195, row 10) is a hop up from it. |
+| 206–229 | The shed, lit but with no plug, under a roof of `pipes` (row 4) like the gantry's: the `lockers`, and a ladder (207) up to a mezzanine (208–212, row 8). Past a five-cell gap from it is the top of the store room's wall (218–220, row 8), a `bulkhead` with a jammed door at its foot, and a ladder (221) inside down to the store room's floor and back up. |
 
 **What later tasks build on.** Each has an id that stays put; `simile.street.metro` names them.
 
@@ -281,8 +281,7 @@ passes through it.
 | S8, S9 | The lift down to the sewers, a `jack` | `metro_lift`, stood at from its foot, (100, 15) (`LIFT_FOOT`). The door `metro_to_sewers` goes from there to the sewers' landing, and the client takes it only with the datajack. |
 | S9 | The Apex actuator | `APEX_ACTUATOR` in `simile.street.sewers`, an item of kind `part`, in a secret past the gate in every level of the sewers (below). The bionic legs' top grade uses it up. |
 | P13, P34 | Bots on the floor, in `creatures` | `metro_bot_1` starts at 46 under the catwalk and is kept to 44–48, and `metro_bot_2` starts at 38 under the train and is kept to 34–43. Each patrols two cells either side, with no salvage in reach, clear of where the player stops and of the ladders' feet. Neither climbs, so the way past both is overhead (`BOTS`): up the ladder at 32 to the train's roof, a jump to the catwalk and down its ladder at 50, or the same back. On the floor, each is jumped as it comes. |
-| P28 | Dark stretches past the depot, in `light` | `metro_track_west` (156–179) and `metro_track_east` (183–205). The rest is lit: `metro_siding` (110–155), `metro_track_alcove` and `metro_shed`. |
-| P28 | Two more plugs, each a `plug` at a `breaker_box` | `metro_track_plug`, stood at from (181, 15) in the track's lit alcove, and `metro_shed_plug` from (208, 15). |
+| P28, P35 | Dark stretches past the depot, in `light` | `metro_siding` (110–155) and `metro_track` (156–205), one dark way to the shed, `metro_shed`, which is lit. P28's two plugs on the way, on the track and in the shed, are gone (P35): from the maintenance plug to the shed and back is the longest run on a charge (*Light*, below). |
 | P28 | Places salvage can lie, each naming its item | `metro_salvage_7`, scrap steel (139, 15), `_8`, a circuit board on the signal box's deck (152, 11), `_9`, a signal relay on the track (174, 15), `_10`, a servo motor on the crane (137, 5), and `_11`, a brass valve in the store room (224, 15). |
 | P28 | The jammed door | The store room's wall, `STORE_WALL` (218–220, rows 9–15), solid: for now the way in is over its top. |
 | P28 | The signal desk, a `jack` | `metro_signal_desk`, stood at from (150, 11). With the datajack, E finds two circuit boards in it. |
@@ -377,9 +376,13 @@ slab, the row under them. West to east it's columns of rooms:
   doorways and ladders lead to: the maintenance hatch where Aris's trail goes on (S12's
   `hatch_log`, `simile.story`). Its cell is each level's own, so it's in the map, not in
   `content/story/story.toml`.
-- **Plugs**: `sewers_plug_1`, a `Junction box` in the last column before the gate, and in half the
-  levels `sewers_plug_2` past it, each in a lit stretch three cells wide. Some rooms have a lamp
-  (`sewer_lamp`) and are lit (`sewers_lamp_<n>`). The rest is dark (`sewers_dark`).
+- **Plugs**: `sewers_plug_1`, a `Junction box` in the last column before the gate (`GATE_BOX`),
+  and past it another wherever the way on would take the lamp past its reach (`boxes`, P35), each
+  in a lit stretch three cells wide. A box past the gate goes at the last free cell of a room's
+  floor on the way before the lamp would run too low, so the run up to it, and the run on from it,
+  are as long as a charge allows. It's placed after everything else, so it moves nothing. Some
+  rooms have a lamp (`sewer_lamp`) and are lit (`sewers_lamp_<n>`). The rest is dark
+  (`sewers_dark`).
 
 **Pickups.** Each names its item. Salvage is `sewers_salvage_<n>`, six on the way, two before the
 gate and four past it, from `SALVAGE_ITEMS`, which `simile.economy` prices. In the sewers `needs`
@@ -455,6 +458,29 @@ sewers' own, and every solid cell above the floor has a piece over it: `sewer_va
 walkway's edge, which the ground strip leaves out under it. The hatch is a
 `maintenance_hatch`, the plugs `breaker_box`es, and `sewer_outfall`, `rubble`, `crates`, `bedroll`
 and `pipes` dress the rooms.
+
+## Light
+
+Light is scarce (P35): the lamp lasts under two minutes on a full charge (`LampConfig.drain`,
+`simile.player`), and every plug is as far from the last as it can be. `simile.street.charge` says
+how much of a charge the way between plugs takes: the seconds spent in the dark at a walk, 2.6
+tiles a second, climbing a ladder at 1.5 and stairs at 2, with the lamp off wherever it's lit
+(`runs`). `tests/street/test_light.py` follows the way the player's meant to go, the cheapest
+order to everything on it on the legs that reach it (`Ways.tour`), and splits it at every plug it
+passes:
+
+- **The metro**: from the stairway down over the bots (P34's way) to everything on the player's own
+  legs on the way to the maintenance plug, the one plug left; then on east to everything along the
+  siding, the signal box, the track and the shed, and back to the plug.
+- **Each level of the sewers**: from the maintenance plug down the lift, on the player's own legs to
+  everything before the gate and on to its junction box (`way_in`); on the first legs through the
+  gate to the hatch, every find, salvage and the actuator past it and the den's stash, and back to
+  the box (`way_on`); and out to the lift and the maintenance plug. The bat cave is crossed with the
+  lamp off, so it takes none.
+
+Every run fits in 85% of a charge (`REACH`), leaving 15% (`SPARE`) for waiting on what's in the
+way, and no plug could be done without: take any one away and some run no longer fits. On the metro
+the run east and back takes about 80%, and the longest run in each level 60–85%.
 
 ## Ids
 

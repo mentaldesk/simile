@@ -68,9 +68,9 @@ to hurt and bite the player: they look it up when they do, not at startup.
   starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
   `heal_at_home` (0.5) at home, in two. The clinic patches them up for money (`simile.clinic`).
-- **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.14, `simile.creatures`)
-  and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that much stronger, up to 1, keeping `since`
-  from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
+- **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
+  and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
+  much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
   still there `infects` (2) sim hours after `since` turns into an `infection` of the same strength,
   as a handful of bites at once does.
 - **An infection** lasts until the clinic treats it (`fades` null). While infected no health comes
@@ -187,12 +187,14 @@ Every constant is in `PlayerConfig`.
 `Lamp` (`lamp.py`) runs the lamp the player carries, on the sim loop too, and only while a client is
 in the game, like hunger:
 
-- **It drains** by `drain` (3) a sim hour while it's on: a full battery lasts twenty minutes. When
-  it runs flat it goes off by itself.
+- **It drains** by `drain` (32) a sim hour while it's on: a full battery lasts under two minutes,
+  so light is scarce. That covers the longest run between plugs on the metro and in the sewers at
+  a walk with some to spare (`simile.street.charge`, content/street/README.md's *Light*). When it
+  runs flat it goes off by itself.
 - **It charges** while the player stands on a plug's stand tile (a `plug` interactable: at home,
-  the café, the noodle bar and the metro's maintenance alcove), on or off, from flat to full in
-  `charge` (3) real seconds whatever the sim's speed. Getting to a plug is the game, not waiting at
-  one. Plugged in, it doesn't drain.
+  the café, the noodle bar, the metro's maintenance alcove and the sewers' junction boxes), on or
+  off, from flat to full in `charge` (3) real seconds whatever the sim's speed. Getting to a plug
+  is the game, not waiting at one. Plugged in, it doesn't drain.
 - **A collapse switches it off,** so it doesn't run down at home while they recover.
 - **The client's `lamp`** switches it on or off (`docs/protocol.md`). Switching on a flat one, or
   to how it already is, does nothing. A switch goes out in `player_state` at once, and the charge

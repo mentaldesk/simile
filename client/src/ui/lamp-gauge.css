@@ -73,3 +73,18 @@
 .power-gauge:not([hidden]) ~ .lamp-hint {
   top: 40px;
 }
+
+.lamp-gauge-warning .lamp-battery {
+  border-color: #ff8a7a;
+  animation: lamp-warning 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes lamp-warning {
+  from {
+    box-shadow: 0 1px 0 #000;
+  }
+
+  to {
+    box-shadow: 0 0 4px 1px #e8302a;
+  }
+}

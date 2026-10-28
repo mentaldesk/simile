@@ -9,7 +9,7 @@ from starlette.testclient import TestClient
 
 from simile.app import create_app
 from simile.persistence import player_of
-from simile.player.lamp import Lamp, LampConfig
+from simile.player.lamp import HOUR, Lamp, LampConfig
 from simile.player.sync import PlayerSync
 from simile.protocol import PlayerStateMessage
 from simile.schema import PLAYER_ID, Item, ItemKind, Player, lamp
@@ -20,6 +20,8 @@ from simile.world.map import load_maps
 MAPS = load_maps()
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 MINUTE = 60.0
+LIGHT = HOUR / LampConfig().drain
+"""Seconds a full battery lasts with the lamp on."""
 TUNNEL = Point(65, 15, "metro")
 METRO_PLUG = Point(72, 15, "metro")
 CAFE_PLUG = Point(16, 2, "coffee_shop_floor_0")
@@ -58,14 +60,14 @@ class Underground:
 def test_the_battery_runs_down_while_the_lamp_is_on() -> None:
     down = Underground(with_lamp(on=True))
 
-    down.run(10 * MINUTE)
+    down.run(LIGHT / 2, step=0.25)
 
     assert down.held.charge == pytest.approx(0.5)
     assert down.held.on is True
 
 
-def test_a_full_battery_lasts_twenty_minutes() -> None:
-    assert 60 / LampConfig().drain == 20
+def test_a_full_battery_lasts_under_two_minutes() -> None:
+    assert LIGHT == 112.5
 
 
 def test_the_battery_keeps_its_charge_while_the_lamp_is_off() -> None:

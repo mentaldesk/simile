@@ -18,9 +18,9 @@ class LampConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     drain: float = Field(
-        default=3.0,
+        default=32.0,
         gt=0,
-        description="How much of a full battery it uses each sim hour it's on: twenty minutes.",
+        description="How much of a full battery it uses each sim hour it's on: under two minutes.",
     )
     charge: float = Field(
         default=3.0,

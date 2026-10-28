@@ -7,6 +7,10 @@ export type Where = { dark: boolean; plug: boolean };
 
 export const percent = (charge: number): string => `${Math.round(charge * 100)}%`;
 
+/** Charge from which the gauge warns to charge, as power's does, and from which it warns the light's about to go. */
+export const LOW_LAMP = 0.3;
+export const NEARLY_FLAT = 0.1;
+
 /** Green, then amber, then red as it runs down. */
 export function level(charge: number): 'full' | 'half' | 'low' {
   if (charge > 0.5) return 'full';
@@ -23,9 +27,13 @@ export function lampHint(lamp: Item | undefined, { dark, plug }: Where, power?: 
   if (plug) return charge < 1 ? 'Charging your lamp.' : 'Your lamp is charged.';
   if (!charge) return dark ? "It's dark, and your lamp is flat. Charge it at a plug." : 'Your lamp is flat. Charge it at a plug.';
   if (dark && !lamp.on) return `It's dark. Press ${LAMP_KEY} for your lamp.`;
-  if (lamp.on && charge <= LOW) return 'Your lamp is running low.';
+  if (charge <= NEARLY_FLAT) return "Your lamp is nearly flat. Charge it at a plug, or you'll be in the dark.";
+  if (charge <= LOW_LAMP) return 'Your lamp is low. Charge it at a plug.';
   return undefined;
 }
+
+/** Whether the gauge flashes: low, and not at a plug. */
+export const warning = (charge: number, { plug }: Where): boolean => charge > 0 && charge <= LOW_LAMP && !plug;
 
 function battery(row: HTMLElement): HTMLElement {
   const outline = row.appendChild(document.createElement('span'));
@@ -73,6 +81,7 @@ export class LampGauge {
     const charge = lamp.charge ?? 0;
     this.fill.style.width = percent(charge);
     this.fill.className = `lamp-level-${level(charge)}`;
+    this.root.classList.toggle('lamp-gauge-warning', warning(charge, where));
     const state = where.plug && charge < 1 ? '⚡' : lamp.on ? 'on' : 'off';
     if (this.state.textContent !== state) this.state.textContent = state;
     this.root.ariaLabel = `Lamp ${lamp.on ? 'on' : 'off'}, ${percent(charge)}`;

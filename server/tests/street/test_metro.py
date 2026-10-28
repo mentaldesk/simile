@@ -40,7 +40,6 @@ from simile.street.metro import (
     RELAY_RACK,
     SCRAP_STALL,
     SCRAP_TRADER,
-    SHED_PLUG,
     SIGNAL_DESK,
     STACK,
     STORE_SECRET,
@@ -48,7 +47,6 @@ from simile.street.metro import (
     SWITCHBOARD,
     TICKET_MACHINE,
     TOOL_CRATE,
-    TRACK_PLUG,
 )
 from simile.street.moves import moves
 from simile.street.plan import LIGHT_LAYER, PICKUPS_LAYER
@@ -288,8 +286,8 @@ DARK = {
     "metro_vault",
     "metro_tunnel_west",
     "metro_tunnel_east",
-    "metro_track_west",
-    "metro_track_east",
+    "metro_siding",
+    "metro_track",
 }
 
 
@@ -397,8 +395,6 @@ def test_the_hooks_keep_their_ids_and_cells() -> None:
         RELAY_RACK: [(146, 11), (147, 11)],
         SIGNAL_DESK: [(150, 11)],
         TOOL_CRATE: [(168, 15)],
-        TRACK_PLUG: [(181, 15)],
-        SHED_PLUG: [(208, 15)],
         LOCKERS: [(210, 15), (211, 15)],
     }
     assert spots == {SCRAP_TRADER: (METRO, 26, 15), DOCTOR: (CLINIC_FLOOR, 6, 2)}
@@ -444,7 +440,7 @@ def walk(start: tuple[int, int]) -> set[tuple[int, int]]:
 def test_the_metro_goes_on_past_the_clinic_and_its_new_places_are_walked_to_from_there() -> None:
     clinic = next(d.outside for d in TOWN.doors if d.id == CLINIC)
     walked = walk((clinic.x, clinic.y))
-    things = [*BEYOND, SIGNAL_DESK, TRACK_PLUG, SHED_PLUG]
+    things = [*BEYOND, SIGNAL_DESK]
     salvage = [(s.x, s.y) for s, held in pickups("salvage").values() if "needs" not in held]
 
     assert METRO_MAP.width > DEPOT_END
@@ -481,16 +477,12 @@ def test_the_signal_box_is_a_deck_up_a_ladder_with_switchboards_to_strip_and_a_j
     assert machine(SIGNAL_DESK).kind is InteractableKind.JACK and machine(SIGNAL_DESK).items
 
 
-def test_the_disused_track_is_dark_with_a_lit_plug_halfway_and_a_lit_shed_at_its_end() -> None:
-    [track] = stands(TRACK_PLUG)
-    [shed] = stands(SHED_PLUG)
+def test_past_the_depot_it_is_dark_to_a_lit_shed_with_no_plug_at_the_end() -> None:
+    plugs = [item.id for item in METRO_MAP.interactables if item.kind is InteractableKind.PLUG]
 
-    for plug in (TRACK_PLUG, SHED_PLUG):
-        assert machine(plug).kind is InteractableKind.PLUG
-    assert METRO_MAP.lit(track.x, track.y) and METRO_MAP.lit(shed.x, shed.y)
-    assert not METRO_MAP.lit(track.x - 2, track.y) and not METRO_MAP.lit(track.x + 2, track.y)
-    assert not any(METRO_MAP.lit(x, GROUND) for x in range(159, track.x - 1))
-    assert not any(METRO_MAP.lit(x, GROUND) for x in range(track.x + 2, 206))
+    assert plugs == [PLUG]
+    assert not any(METRO_MAP.lit(x, GROUND) for x in range(DEPOT_END, 206))
+    assert all(METRO_MAP.lit(x, GROUND) for x in range(206, METRO_MAP.width))
 
 
 def test_the_store_room_is_behind_a_jammed_door_and_only_the_legs_clear_the_gap_over_it() -> None:
