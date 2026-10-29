@@ -57,6 +57,7 @@ export class DialogueScene extends Phaser.Scene {
   private help!: HelpPanel;
   private character!: CharacterPanel;
   private chat!: ChatBox;
+  private log!: LogPanel;
   private readonly targets = new ChatTarget(worldView, dialogue);
   private fitted = '';
   private fromGame = 1;
@@ -72,7 +73,7 @@ export class DialogueScene extends Phaser.Scene {
 
     this.marker = new TargetMarker(this.root);
     this.bubbles = new BubbleLayer(this.root);
-    const log = new LogPanel(this.root, dialogue.log);
+    const log = (this.log = new LogPanel(this.root, dialogue.log));
     this.place = new PlaceLabel(this.root, maps);
     const chat = (this.chat = new ChatBox(this.root, dialogue, this.targets));
     const stopInvitations = dialogue.onInvitation((npcId) => {
@@ -136,6 +137,7 @@ export class DialogueScene extends Phaser.Scene {
     const view = inOverlay(worldView(), this.fromGame);
     this.bubbles.render(dialogue.bubbles.current(), view);
     callCue.update(dialogue.partner());
+    this.log.update(this.chat, dialogue);
     const player = this.player();
     this.place.update(player?.map, this.time.now / 1000);
     const here = wayPrompts();
