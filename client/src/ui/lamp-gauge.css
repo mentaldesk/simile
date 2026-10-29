@@ -64,14 +64,10 @@
 .lamp-hint {
   position: absolute;
   right: 4px;
-  top: 28px;
+  top: 52px;
   max-width: 200px;
   text-align: right;
   text-shadow: 0 1px 0 #000;
-}
-
-.power-gauge:not([hidden]) ~ .lamp-hint {
-  top: 40px;
 }
 
 .lamp-gauge-warning .lamp-battery {
