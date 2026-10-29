@@ -19,7 +19,7 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
   (see *Picking up and selling*);
 - the player's journal of what happened to Aris (see *The journal*);
-- the character screen: their vitals, body, gear and recipes (see *The character screen*).
+- the character screen: their vitals, body and gear (see *The character screen*).
 
 ## Choosing who to talk to
 
@@ -190,8 +190,10 @@ fits.". It lists, from the latest `player_state`:
   connector ×2", bought with `buy` on one Enter. One they can't afford or carry is dimmed, and says
   why;
 - a kidney, for `buyer.parts`' price, sold with `sell_part`;
-- each fitting in each part it can go in place of, with its price, fitted with `fit`. One they
-  can't afford is dimmed, and says what it costs against what they have.
+- each fitting in each part it can go in place of, with its price and the parts its recipe uses
+  against what they carry ("copper wire 1/3 · usb-c connector 1/1"), fitted with `fit`. One they
+  can't afford or lack a part for is dimmed, and says what it's short of. There's no list of
+  recipes elsewhere: the clinic fitting it is how they see one they've found.
 
 ↑ and ↓ choose, and Enter or a click goes ahead. Selling a part or a fitting can't be undone, so it
 takes a second Enter or click, and moving the choice forgets the first. Esc or E closes the panel,
@@ -217,7 +219,7 @@ pile on a tie, as the server does.
 ## The character screen
 
 C opens the character screen (`CharacterPanel` in [`character-panel.ts`](character-panel.ts)), and
-C or Esc closes it. It shows the last `player_state` in four tabs, and ← → or a click switch them.
+C or Esc closes it. It shows the last `player_state` in three tabs, and ← → or a click switch them.
 It opens on the tab it was left on, and takes the keys while it's open, so the player stands still.
 Opening it closes the journal and the controls.
 
@@ -237,9 +239,6 @@ Opening it closes the journal and the controls.
   none), how many when there's more than one, its name, and the lamp's charge. Hovering over a
   tile, or Down then the arrows, shows what it's for, its weight, the lamp's charge and which
   recipes they know use it. Up off the top row lets go of the grid, so ← → switch tabs again.
-- **Mind:** each recipe in `player.mind`, from `player_state`'s `recipes`: the parts it needs
-  against what they carry, its credits against their money, what it goes in place of and what must
-  be fitted first, and whether they've sold it to the clinic.
 
 The side walk opens it on C and goes through its tabs.
 

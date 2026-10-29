@@ -35,9 +35,10 @@ describe('searchable things', () => {
   });
 
   it('say what E finds in them', () => {
-    expect(foundIn(BENCH)).toBe('You learn how to build the datajack.');
+    expect(foundIn(BENCH)).toBe('Schematic found: the clinic can fit the datajack.');
     expect(foundIn(SHELF)).toBe('You find a USB-C connector and a copper wire.');
-    expect(foundIn({ ...SHELF, items: [], teaches: 'power_cell_2' })).toBe('You learn how to build the power cell, grade 2.');
+    expect(foundIn({ ...SHELF, items: [], teaches: 'power_cell_2' })).toBe('Schematic found: the clinic can fit the power cell, grade 2.');
+    expect(foundIn({ ...SHELF, teaches: 'datajack' })).toBe('You find a USB-C connector and a copper wire. Schematic found: the clinic can fit the datajack.');
     expect(foundIn({ ...SHELF, items: undefined })).toBe("There's nothing in the storage shelf.");
     const battery = { id: 'old_battery', kind: 'salvage', name: 'Old battery', weight: 2, charge: null, on: null } as const;
     const coil = { ...battery, id: 'copper_coil', name: 'Copper coil' };

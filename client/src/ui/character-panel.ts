@@ -3,7 +3,6 @@ import { LAMP_KEY, lampHere, lampOf } from '../side/lamp';
 import { callCue } from './call-cue';
 import { CHART, gradeOf, partDetails, pictureOf, PLACES } from './character-body';
 import './character-panel.css';
-import { needs, type Need } from './clinic-panel';
 import { feeling } from './hunger';
 import { iconUrl } from './icons';
 import { level, percent, type Where } from './lamp-gauge';
@@ -12,7 +11,7 @@ import { CHARACTER_KEY, EAT_KEY } from './tuning';
 
 const KEY = CHARACTER_KEY.toUpperCase();
 
-export const TABS = ['Vitals', 'Body', 'Gear', 'Mind'] as const;
+export const TABS = ['Vitals', 'Body', 'Gear'] as const;
 export type Tab = (typeof TABS)[number];
 
 /** Head to foot. */
@@ -157,38 +156,6 @@ export function itemDetails(tile: GearTile, player: Player, recipes: readonly Re
   return { title: name, kind, status: KINDS[kind], lines };
 }
 
-export type Known = {
-  bionic: Bionic;
-  name: string;
-  needs: Need[];
-  credits: number;
-  short: boolean;
-  replaces: string;
-  after: string[];
-  sold: boolean;
-};
-
-const PART_NAMES = Object.fromEntries(PARTS.map(([part, label]) => [part, label.toLowerCase()]));
-
-export function known(player: Player, recipes: readonly Recipe[] = []): Known[] {
-  const sold = new Set(player.mind?.sold ?? []);
-  return (player.mind?.recipes ?? []).map((bionic) => {
-    const recipe = recipes.find((each) => each.bionic === bionic);
-    const needed = needs(recipe, player.items);
-    const credits = recipe?.credits ?? 0;
-    return {
-      bionic,
-      name: bionicName(bionic, recipes),
-      needs: needed,
-      credits,
-      short: player.money < credits || needed.some(({ count, have }) => have < count),
-      replaces: [...new Set((recipe?.replaces ?? []).map((part) => PART_NAMES[part]))].join(' or '),
-      after: (recipe?.after ?? []).map((first) => bionicName(first, recipes)),
-      sold: sold.has(bionic),
-    };
-  });
-}
-
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string) => {
   const element = document.createElement(tag);
   if (text !== undefined) element.textContent = text;
@@ -209,7 +176,7 @@ function row(label: string, ...rest: (Node | string)[]): HTMLElement {
   return item;
 }
 
-/** The player's own screen, opened with C: vitals, body, gear and mind, a tab each. */
+/** The player's own screen, opened with C: vitals, body and gear, a tab each. */
 export class CharacterPanel {
   private readonly panel: HTMLElement;
   private readonly tabs: HTMLButtonElement[];
@@ -322,8 +289,7 @@ export class CharacterPanel {
     const tab = this.tab;
     if (tab === 'Vitals') this.page.replaceChildren(...this.vitals(vitals(player, where)));
     else if (tab === 'Body') this.page.replaceChildren(this.body(bodyRows(player.body, recipes)));
-    else if (tab === 'Gear') this.page.replaceChildren(...this.gear(gear(player), player, recipes));
-    else this.page.replaceChildren(...this.mind(known(player, recipes), player.money));
+    else this.page.replaceChildren(...this.gear(gear(player), player, recipes));
   }
 
   private vitals({ meters, credits, effects }: Vitals): HTMLElement[] {
@@ -461,29 +427,5 @@ export class CharacterPanel {
       el('small', 'Arrows move · ↑ off the top row for the tabs'),
     );
     if (scroll) cells[index].scrollIntoView?.({ block: 'nearest' });
-  }
-
-  private mind(recipes: Known[], money: number): HTMLElement[] {
-    if (!recipes.length) return [el('p', 'You know no recipes yet.', 'character-empty')];
-    const list = el('ul', undefined, 'character-recipes');
-    for (const recipe of recipes) {
-      const item = list.appendChild(el('li'));
-      item.classList.toggle('character-short', recipe.short);
-      const title = item.appendChild(el('b', recipe.name));
-      if (recipe.sold) title.appendChild(el('span', 'sold to the clinic', 'character-sold-recipe'));
-      const parts = item.appendChild(el('ul'));
-      for (const { name, count, have } of recipe.needs) {
-        parts.appendChild(el('li', `${name} ${have}/${count}`, have < count ? 'character-missing' : undefined));
-      }
-      if (recipe.credits) {
-        const cost = parts.appendChild(el('li', `${amount(recipe.credits)} credits, you have ${amount(money)}`));
-        cost.classList.toggle('character-missing', money < recipe.credits);
-      }
-      const where = [];
-      if (recipe.replaces) where.push(`in place of your ${recipe.replaces}`);
-      if (recipe.after.length) where.push(`after the ${recipe.after.join(' and ').toLowerCase()}`);
-      if (where.length) item.appendChild(el('small', `${upperFirst(where.join(', '))}.`));
-    }
-    return [list];
   }
 }

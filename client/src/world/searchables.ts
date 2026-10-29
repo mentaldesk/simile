@@ -31,12 +31,12 @@ export const listed = (items: readonly Item[]): string => joined(counted(items))
 /** "the datajack", "the power cell, grade 2" */
 const bionicName = (bionic: string) => `the ${bionic.replaceAll('_', ' ').replace(/ (\d)$/, ', grade $1')}`;
 
-/** What E at it says: the cash and things in it, and the recipe it teaches. */
+/** What E at it says: the cash and things in it, and what the schematic in it lets the clinic fit. */
 export function foundIn(thing: Interactable): string {
   const what = [...(thing.money ? [credits(thing.money)] : []), ...counted(thing.items ?? [])];
-  const found = what.length ? [`find ${joined(what)}`] : [];
-  if (thing.teaches) found.push(`learn how to build ${bionicName(thing.teaches)}`);
-  return found.length ? `You ${found.join(' and ')}.` : `There's nothing in ${theLabel(thing.label)}.`;
+  const found = what.length ? [`You find ${joined(what)}.`] : [];
+  if (thing.teaches) found.push(`Schematic found: the clinic can fit ${bionicName(thing.teaches)}.`);
+  return found.length ? found.join(' ') : `There's nothing in ${theLabel(thing.label)}.`;
 }
 
 const glints = new WeakMap<Interactable, Pile>();
