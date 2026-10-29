@@ -13,7 +13,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   (the news, a mural, a painting or the controls) while they're the player's partner (`callCue` in
   [`call-cue.ts`](call-cue.ts)), as audio plays their greeting;
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
-  marked "→ You".
+  marked "→ You", shown in the bottom left only while the chat box is open or the player is in a
+  conversation;
 - the news and residents' writing at a terminal (see *Reading the news*);
 - a mural up close (see *Looking at a mural*);
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
