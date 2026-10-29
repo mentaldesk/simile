@@ -70,6 +70,10 @@
   text-shadow: 0 1px 0 #000;
 }
 
+.dialogue:has(> :is(.clinic, .news, .mural):not([hidden])) > :is(.help-hint, .lamp-gauge, .power-gauge, .lamp-hint, .journal-hint) {
+  visibility: hidden;
+}
+
 .lamp-gauge-warning .lamp-battery {
   border-color: #ff8a7a;
   animation: lamp-warning 0.8s ease-in-out infinite alternate;
