@@ -113,7 +113,7 @@ SALVAGE_ITEMS = (
     scrap("pump_impeller", "Pump impeller", 2.5),
     scrap("float_valve", "Float valve", 1.2),
     scrap("filter_mesh", "Filter mesh", 1.5),
-    scrap("old_battery", "Old battery", 2.0),
+    scrap("old_battery", "Old battery", 1.0),
 )
 """What lies on the way through. `simile.economy` prices each."""
 APEX_BOARD = scrap("apex_board", "Apex control board", 0.4)
