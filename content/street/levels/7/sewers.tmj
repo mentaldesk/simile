@@ -1267,7 +1267,7 @@
             {
               "name": "items",
               "type": "string",
-              "value": "[{\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 2.0, \"charge\": null, \"on\": null}]"
+              "value": "[{\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 1.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 1.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 1.0, \"charge\": null, \"on\": null}, {\"id\": \"old_battery\", \"kind\": \"salvage\", \"name\": \"Old battery\", \"weight\": 1.0, \"charge\": null, \"on\": null}]"
             },
             {
               "name": "label",
@@ -1797,7 +1797,7 @@
             {
               "name": "item_weight",
               "type": "float",
-              "value": 2.0
+              "value": 1.0
             }
           ],
           "rotation": 0,
