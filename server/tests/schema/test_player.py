@@ -109,6 +109,20 @@ def test_anything_left_out_is_the_starting_players() -> None:
     assert Body.model_validate({"legs": "bionic_legs"}).left_kidney == PRESENT
 
 
+def test_a_new_player_carries_15_kg() -> None:
+    assert Player().carry_limit == 15
+
+
+def test_a_save_holding_the_old_10_kg_limit_loads_at_15() -> None:
+    def loaded(carry_limit: float) -> float:
+        saved = json.dumps(STARTING | {"carry_limit": carry_limit})
+        return Player.model_validate_json(saved).carry_limit
+
+    assert loaded(10) == 15
+    assert loaded(12) == 12
+    assert Player(carry_limit=10).carry_limit == 10
+
+
 def test_humanity_falls_with_each_bionic_fitted() -> None:
     humanity = [Player.model_validate(data).humanity for data in PLAYERS]
 

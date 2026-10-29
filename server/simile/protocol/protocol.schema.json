@@ -1473,7 +1473,7 @@
     },
     "Player": {
       "additionalProperties": false,
-      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects and nothing searched. Their humanity is derived from the bionics\nfitted and isn't a field, so the client never sees it.",
+      "description": "The player's state, saved with the world. Each field defaults to the starting player's, so\na save from before the player loads with a whole body, no money, a charged lamp, nothing known,\nfull health, no effects and nothing searched. A save holding the old 10 kg carry limit loads\nwith 15. Their humanity is derived from the bionics fitted and isn't a field, so the client\nnever sees it.",
       "properties": {
         "money": {
           "default": 0.0,
@@ -1489,7 +1489,7 @@
           "type": "array"
         },
         "carry_limit": {
-          "default": 10.0,
+          "default": 15.0,
           "description": "The most they carry, in kg.",
           "exclusiveMinimum": 0,
           "type": "number"

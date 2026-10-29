@@ -793,7 +793,7 @@ def test_player_state_has_their_money_items_body_and_hunger() -> None:
                     "on": None,
                 },
             ],
-            "carry_limit": 10.0,
+            "carry_limit": 15.0,
             "body": {
                 "legs": "bionic_legs",
                 "vertebra": "present",
