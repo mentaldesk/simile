@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Item, Player, PlayerStateMessage, Recipe } from '../net';
-import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, known, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
+import { bionicName, bodyRows, CharacterPanel, COLUMNS, gear, itemDetails, TABS, UNKNOWN_ITEM, vitals } from './character-panel';
 
 vi.mock('./icons', () => ({ iconUrl: (id: string) => (id === 'unpainted' ? undefined : `/icons/${id}.webp`) }));
 
@@ -350,7 +350,7 @@ describe('gear', () => {
     expect(picked(page)).toBeUndefined();
     expect(page.querySelector('.character-item h3')).toBeNull();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
   });
 
   it('picks the first tile on Down, moves with the arrows, and lets go Up off the top row so ← → switch tabs', () => {
@@ -406,7 +406,7 @@ describe('gear', () => {
     expect(picked(page)).toBeUndefined();
     expect(page.querySelector('.character-item h3')).toBeNull();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
   });
 
   it('opens again with nothing picked, so ← → switch tabs straight away', () => {
@@ -416,7 +416,7 @@ describe('gear', () => {
     panel.open();
     expect(picked(page)).toBeUndefined();
     press(section, 'ArrowRight');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
+    expect(texts(section, '[aria-selected="true"]')).toEqual(['Vitals']);
   });
 
   it('says when they carry nothing', () => {
@@ -426,48 +426,12 @@ describe('gear', () => {
   });
 });
 
-describe('mind', () => {
-  it('lists each recipe they know, what it needs and what they have of it', () => {
-    const [cell, datajack] = known(PLAYER, STATE.recipes);
-    expect(cell).toMatchObject({ name: 'Power cell', sold: true, short: true, replaces: 'stomach', after: [] });
-    expect(datajack).toEqual({
-      bionic: 'datajack',
-      name: 'Datajack',
-      needs: [
-        { name: 'copper wire', count: 3, have: 2 },
-        { name: 'usb c connector', count: 1, have: 0 },
-      ],
-      credits: 100,
-      short: true,
-      replaces: 'vertebra',
-      after: ['Power cell'],
-      sold: false,
-    });
-  });
-
-  it('knows nothing without a mind', () => {
-    expect(known(STAGE_1)).toEqual([]);
-  });
-
-  it('draws on the Mind tab', () => {
-    const { section, page } = opened();
-    press(section, 'ArrowLeft');
-    expect(texts(section, '[aria-selected="true"]')).toEqual(['Mind']);
-    expect(texts(page, '.character-recipes > li > b')).toEqual(['Power cellsold to the clinic', 'Datajack']);
-    const datajack = page.querySelectorAll('.character-recipes > li')[1];
-    expect(texts(datajack, 'li')).toEqual(['copper wire 2/3', 'usb c connector 0/1', '100 credits, you have 120']);
-    expect(texts(datajack, '.character-missing')).toEqual(['copper wire 2/3', 'usb c connector 0/1']);
-    expect(datajack.querySelector('small')?.textContent).toBe('In place of your vertebra, after the power cell.');
-  });
-
-  it('says when they know none', () => {
-    const { section, page } = opened({ type: 'player_state', player: STAGE_1 });
-    press(section, 'ArrowLeft');
-    expect(texts(page, '.character-empty')).toEqual(['You know no recipes yet.']);
-  });
-});
-
 describe('CharacterPanel', () => {
+  it('has a tab each for vitals, body and gear, and none for recipes', () => {
+    const { section } = opened();
+    expect(texts(section, '[role="tab"]')).toEqual(['Vitals', 'Body', 'Gear']);
+  });
+
   it('opens on the tab it was left on, keeps its keys from the game, and closes on Esc or C', () => {
     const { panel, section } = opened();
     let reached = 0;

@@ -478,7 +478,7 @@ async function notesLeg(page: Page, api: Api, index: number): Promise<void> {
   await shot(page, index, name);
 }
 
-/** E at Aris's bench searches it and learns the datajack's schematic, once. */
+/** E at Aris's bench searches it and finds the datajack's schematic, once. */
 async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = "searching Aris's bench";
   await teleport(page, api, { map: 'maker_space_floor_0', x: 5, y: 2 }, name);
@@ -487,7 +487,7 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   if (hint !== "Press E to search Aris's bench.") throw new Error(`${name}: the hint is ${hint}`);
   await pressingE(page, api, name);
   const found = await shown(page, '.counter-hint');
-  if (found !== 'You learn how to build the datajack.') throw new Error(`${name}: E said ${found}`);
+  if (found !== 'Schematic found: the clinic can fit the datajack.') throw new Error(`${name}: E said ${found}`);
   await shot(page, index, name);
   const { recipes, searched } = await api.mind();
   if (!recipes.includes('datajack') || !searched.includes('maker_space_bench')) {
@@ -677,14 +677,11 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
     ['Vitals', 'Lamp'],
     ['Body', 'Your own'],
     ['Gear', 'Lamp'],
-    ['Mind', 'Datajack'],
+    ['Vitals', 'Lamp'],
   ] as const) {
     const selected = await shown(page, '.character-tabs [aria-selected="true"]');
     const body = await shown(page, '.character-page');
     if (selected !== tab || !body?.includes(has)) throw new Error(`${name}: on ${selected}, not ${tab} with ${has}: ${body}`);
-    if (tab === 'Mind' && !['copper wire 1/3', 'usb-c connector 1/1'].every((part) => body.includes(part))) {
-      throw new Error(`${name}: the datajack's parts against what they carry aren't on the Mind tab: ${body}`);
-    }
     await shot(page, index, `${name}, ${tab}`);
     await page.keyboard.press('ArrowRight');
     await run(page, 100);
@@ -693,6 +690,38 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
   await run(page, 200);
   if ((await shown(page, 'section.character')) !== null) throw new Error(`${name}: C didn't close it`);
   if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
+}
+
+/** The clinic's doctor offering the datajack, as the server would once they have its schematic and a power cell. */
+const CLINIC = { place: 'clinic', name: 'The Clinic', prices: {}, fittings: [{ bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] }] };
+
+const offer = (page: Page, buyer: object | undefined) =>
+  page.evaluate(async (buyer) => {
+    const net = '/src/net/index.ts';
+    const { server, playerState } = await import(/* @vite-ignore */ net);
+    server.dispatch(JSON.stringify({ ...playerState.latest, buyer }));
+  }, buyer);
+
+/** E at the clinic lists the datajack with its parts against what they carry. */
+async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'the datajack at the clinic';
+  const at = { map: 'clinic_floor_0', x: 4, y: 2 };
+  await teleport(page, api, at, name);
+  await offer(page, CLINIC);
+  await run(page, 300);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const listed = await page.$$eval('section.clinic li', (items) => items.map((item) => item.textContent ?? ''));
+  const datajack = listed.find((text) => text.startsWith('Datajack'));
+  if (!datajack || !['copper wire 1/3', 'usb-c connector 1/1', '100'].every((part) => datajack.includes(part))) {
+    throw new Error(`${name}: the clinic doesn't list its parts against what they carry: ${JSON.stringify(listed)}`);
+  }
+  await shot(page, index, name);
+  await page.keyboard.press('Escape');
+  await run(page, 200);
+  if ((await shown(page, 'section.clinic')) !== null) throw new Error(`${name}: Esc didn't close it`);
+  await offer(page, undefined);
+  await run(page, 200);
 }
 
 const root = new URL('../..', import.meta.url).pathname;
@@ -745,6 +774,7 @@ try {
     ["V at the mural by house 10's door", (i) => lookLeg(page, api, { map: 'banyan_row', x: 17, y: 15 }, 'mural', 'E: go in', i)],
     ['V at a painting in the gallery', (i) => lookLeg(page, api, { map: 'gallery_floor_1', x: 14, y: 2 }, 'gallery', null, i)],
     ['C for the character screen', (i) => characterLeg(page, api, i)],
+    ['E at the clinic', (i) => clinicLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();
