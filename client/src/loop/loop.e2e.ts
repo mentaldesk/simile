@@ -1,4 +1,4 @@
-// S15's loop in Chromium, by the keys, against the real server on the fake LLM: server/simile/loop/README.md.
+// Stage 2's loop in Chromium, by the keys, against the real server on the fake LLM: server/simile/loop/README.md.
 import { chromium, type Browser, type Page } from 'playwright';
 import { createServer } from 'vite';
 
@@ -26,7 +26,7 @@ type Place = { map: string; x: number; y: number };
 type Body = Record<string, string>;
 type Seen = Place & { money: number; body: Body };
 /** What `simile loop play --saves` writes beside each beat's world. */
-type Saved = { at: Place; money: number; lift_log?: string; hatch_log?: string; attacker?: { id: string; name: string }; alibi?: string };
+type Saved = { at: Place; money: number; lift_log?: string; hatch_log?: string; gap?: { from: number; to: number; row: number } };
 type Probe = { view(): { positionOf(id: string): Place | undefined }; playerState: { latest?: { player: { money: number; body: Body } } } };
 type Probed = { loopProbe: Probe };
 type Beat = (page: Page, saved: Saved, shot: (name: string) => Promise<void>) => Promise<void>;
@@ -48,9 +48,10 @@ const serverDir = new URL('../../../server', import.meta.url).pathname;
 const metro = (x: number, y: number): Place => ({ map: 'metro', x, y });
 const CLINIC: Place = { map: 'clinic_floor_0', x: 1, y: 2 };
 const SEWERS: Place = { map: 'sewers', x: 2, y: 15 };
-/** The walk's jump onto the metro's high ledge on the spring feet, landing on its secret's cell. */
-const LEDGE = { from: 96, takeOff: 103, land: 106, onto: 12 };
-const QUESTION = 'Where were you the night Aris was attacked?';
+/** The walk's jump onto the metro's high ledge on the bionic legs and spring feet, landing on its secret's cell. */
+const LEDGE = { from: 96, takeOff: 104.4, land: 106, onto: 12 };
+/** Cells of run-up before the gate's gap, and how far short of its edge the run jump takes off. */
+const GATE = { runUp: 6, early: 0.3 };
 
 async function run(page: Page, ms: number): Promise<void> {
   await page.clock.runFor(Math.ceil(ms / FRAME_MS) * FRAME_MS);
@@ -124,7 +125,7 @@ async function deal(page: Page, label: string, done: (at: Seen) => boolean): Pro
   const index = (await labels()).findIndex(([text]) => text.startsWith(label));
   if (index === -1) throw new Error(`the clinic offers no ${label}: ${JSON.stringify(await labels())}`);
   for (let tries = 0; !(await labels())[index][1]; tries++) {
-    if (tries > 10) throw new Error(`couldn't choose ${label}`);
+    if (tries > 30) throw new Error(`couldn't choose ${label}`);
     await page.keyboard.press('ArrowDown');
     await run(page, 50);
   }
@@ -134,14 +135,14 @@ async function deal(page: Page, label: string, done: (at: Seen) => boolean): Pro
   await awaitServer(page, async () => done((await seen(page))!), label);
 }
 
-async function jumpToTheLedge(page: Page): Promise<void> {
-  await walkTo(page, LEDGE.from, REACH.cell, 'to the run-up');
-  await page.keyboard.press('Shift');
+/** Along to `takeOff` and a jump with Space held until they land, walking or with Shift running. */
+async function jump(page: Page, takeOff: number, row: number, running: boolean, what: string): Promise<Seen> {
+  if (running) await page.keyboard.press('Shift');
   await run(page, 100);
   await page.keyboard.down('ArrowRight');
-  await until(page, async () => (await seen(page))!.x >= LEDGE.takeOff, 5, 'running up to the ledge', FRAME_MS);
+  await until(page, async () => (await seen(page))!.x >= takeOff, 5, `${what}: the run-up`, FRAME_MS);
   await page.keyboard.down(' ');
-  await until(page, async () => (await seen(page))!.y < 14.9, 1, 'taking off', FRAME_MS);
+  await until(page, async () => (await seen(page))!.y < row - 0.1, 1, `${what}: taking off`, FRAME_MS);
   let last = NaN;
   const landed = async () => {
     const { y } = (await seen(page))!;
@@ -149,12 +150,17 @@ async function jumpToTheLedge(page: Page): Promise<void> {
     last = y;
     return still;
   };
-  await until(page, landed, 3, 'landing', FRAME_MS);
+  await until(page, landed, 3, `${what}: landing`, FRAME_MS);
   await page.keyboard.up(' ');
   await page.keyboard.up('ArrowRight');
-  await page.keyboard.press('Shift');
+  if (running) await page.keyboard.press('Shift');
   await run(page, 300);
-  const at = (await seen(page))!;
+  return (await seen(page))!;
+}
+
+async function jumpToTheLedge(page: Page): Promise<void> {
+  await walkTo(page, LEDGE.from, REACH.cell, 'to the run-up');
+  const at = await jump(page, LEDGE.takeOff, 15, false, 'onto the ledge');
   if (at.y !== LEDGE.onto || at.x < LEDGE.land) throw new Error(`landed at ${at.x.toFixed(2)}, ${at.y}, not on the ledge`);
 }
 
@@ -169,6 +175,14 @@ async function jack(page: Page, text: string, what: string): Promise<void> {
   await awaitServer(page, async () => !!(await shown(page, 'section.journal'))?.includes(text), `the journal opening on the ${what}`);
 }
 
+/** Into the clinic from outside it, and its deal starting `label`. */
+async function fitted(page: Page, label: string, done: (at: Seen) => boolean): Promise<void> {
+  await walkTo(page, 89, REACH.cell, 'to the clinic');
+  await take(page, 'e', CLINIC, 'into the clinic');
+  await openClinic(page);
+  await deal(page, label, done);
+}
+
 const kidney: Beat = async (page, saved, shot) => {
   await walkTo(page, 89, REACH.cell, 'to the clinic');
   await take(page, 'e', CLINIC, 'into the clinic');
@@ -178,27 +192,13 @@ const kidney: Beat = async (page, saved, shot) => {
   await shot('the kidney sold');
 };
 
-const feet: Beat = async (page, _saved, shot) => {
-  await walkTo(page, 89, REACH.cell, 'to the clinic');
-  await take(page, 'e', CLINIC, 'into the clinic');
-  await openClinic(page);
-  await deal(page, 'Spring feet', (at) => at.body.feet === 'spring_feet');
-  await shot('the feet fitted');
-  await page.keyboard.press('Escape');
-  await leaveClinic(page);
-  await jumpToTheLedge(page);
-  await walkTo(page, LEDGE.land, 0.3, "to the secret's cell");
-  const money = (await seen(page))!.money;
-  await page.keyboard.press('e');
-  await awaitServer(page, async () => (await seen(page))!.money === money + 60, 'picking up the secret');
-  await shot('the secret on the high ledge');
+const cell: Beat = async (page, _saved, shot) => {
+  await fitted(page, 'Power cell', (at) => at.body.stomach === 'power_cell');
+  await shot('the power cell fitted');
 };
 
 const datajack: Beat = async (page, saved, shot) => {
-  await walkTo(page, 89, REACH.cell, 'to the clinic');
-  await take(page, 'e', CLINIC, 'into the clinic');
-  await openClinic(page);
-  await deal(page, 'Datajack', (at) => at.body.vertebra === 'datajack');
+  await fitted(page, 'Datajack', (at) => at.body.vertebra === 'datajack');
   await page.keyboard.press('Escape');
   await leaveClinic(page);
   await walkTo(page, 104, REACH.cell, 'to the dead terminal');
@@ -211,6 +211,20 @@ const datajack: Beat = async (page, saved, shot) => {
   await take(page, 'e', metro(100, 15), 'up the lift');
 };
 
+const legs: Beat = async (page, _saved, shot) => {
+  await fitted(page, 'Bionic legs', (at) => at.body.legs === 'bionic_legs');
+  await shot('the legs fitted');
+};
+
+const gate: Beat = async (page, saved, shot) => {
+  const gap = saved.gap!;
+  await walkTo(page, gap.from - GATE.runUp, REACH.cell, "to the gate's run-up");
+  await shot("the gate's gap");
+  const at = await jump(page, gap.from + 0.5 - GATE.early, gap.row, true, "over the gate's gap");
+  if (at.y !== gap.row || at.x < gap.to - 0.5) throw new Error(`landed at ${at.x.toFixed(2)}, ${at.y}, not past the gap`);
+  await shot('over the gate');
+};
+
 const hatch: Beat = async (page, saved, shot) => {
   await walkTo(page, 112, REACH.cell, 'to the hatch');
   await shot('at the hatch');
@@ -218,29 +232,27 @@ const hatch: Beat = async (page, saved, shot) => {
   await shot('the hatch log');
 };
 
-const eye: Beat = async (page, saved, shot) => {
-  const { name } = saved.attacker!;
-  const talk = `T: talk to ${name}`;
-  const label = () => page.$eval('.dialogue-target-name', (tag) => tag.ariaLabel).catch(() => null);
-  await awaitServer(page, async () => (await label()) === talk, `${talk} showing`);
-  await page.keyboard.press('t');
-  await until(page, async () => !!(await shown(page, '.dialogue-chat'))?.includes(name), 3, 'T opening the chat');
-  await page.keyboard.type(QUESTION);
-  await page.keyboard.press('Enter');
-  const flushed = async () => (await page.$$eval('.dialogue-bubble-flushed', (all) => all.map((bubble) => bubble.textContent ?? ''))).some((text) => text.includes(saved.alibi!));
-  await awaitServer(page, flushed, `${name}'s alibi flushing`);
-  await shot('the flush');
-  await page.keyboard.press('j');
-  await until(page, async () => !!(await shown(page, 'section.journal .journal-flushed'))?.includes(saved.alibi!), 3, 'the journal marking the flush');
-  await shot('the journal');
+const feet: Beat = async (page, _saved, shot) => {
+  await fitted(page, 'Spring feet', (at) => at.body.feet === 'spring_feet');
+  await shot('the feet fitted');
+  await page.keyboard.press('Escape');
+  await leaveClinic(page);
+  await jumpToTheLedge(page);
+  await walkTo(page, LEDGE.land, 0.3, "to the secret's cell");
+  const money = (await seen(page))!.money;
+  await page.keyboard.press('e');
+  await awaitServer(page, async () => (await seen(page))!.money === money + 60, 'picking up the secret');
+  await shot('the secret on the high ledge');
 };
 
 const BEATS: [string, Beat][] = [
   ['kidney', kidney],
-  ['feet', feet],
+  ['cell', cell],
   ['datajack', datajack],
+  ['legs', legs],
+  ['gate', gate],
   ['hatch', hatch],
-  ['eye', eye],
+  ['feet', feet],
 ];
 
 function exited(child: Child, what: string): Promise<void> {
@@ -295,9 +307,10 @@ async function open(browser: Browser, url: string, failures: string[]): Promise<
     await arrived;
     await route.continue();
   });
-  await page.clock.install();
+  const start = Date.now();
+  await page.clock.install({ time: start });
+  await page.clock.pauseAt(start + 1000);
   await page.goto(`${url}?play`);
-  await page.clock.pauseAt(Date.now() + 1000);
   await page.evaluate(
     async ([view, net]) => {
       const [{ worldView }, { playerState }] = await Promise.all([import(view), import(net)]);

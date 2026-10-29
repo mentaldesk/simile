@@ -497,8 +497,9 @@ export interface PlayerStateMessage {
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
  * a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
- * full health, no effects and nothing searched. Their humanity is derived from the bionics
- * fitted and isn't a field, so the client never sees it.
+ * full health, no effects and nothing searched. A save holding the old 10 kg carry limit loads
+ * with 15. Their humanity is derived from the bionics fitted and isn't a field, so the client
+ * never sees it.
  */
 export interface Player {
   /**

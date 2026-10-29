@@ -189,7 +189,7 @@ async def test_it_is_given_once_even_after_a_restart() -> None:
 
 async def test_with_full_hands_they_say_so_and_give_it_once_there_s_room() -> None:
     heavy = Item(id="scrap_steel", kind=ItemKind.SALVAGE, name="Scrap steel", weight=9.0)
-    player = Player()
+    player = Player(carry_limit=10)
     player.items = [*player.items, heavy]
     keeping = Keeping(trust=0.9, player=player)
 

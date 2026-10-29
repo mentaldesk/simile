@@ -1,11 +1,12 @@
 from enum import StrEnum
 from typing import Annotated, Any, Final, Literal, Self, get_args
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, ValidationInfo, field_validator, model_validator
 
 from simile.schema.common import CHECKED, Id, Key, MapTile, Model, Timestamp, Unit
 
-CARRY_LIMIT = 10.0
+CARRY_LIMIT = 15.0
+OLD_CARRY_LIMIT: Final = 10.0
 PRESENT: Final = "present"
 SOLD: Final = "sold"
 
@@ -340,8 +341,9 @@ class Sale(Model):
 class Player(Model):
     """The player's state, saved with the world. Each field defaults to the starting player's, so
     a save from before the player loads with a whole body, no money, a charged lamp, nothing known,
-    full health, no effects and nothing searched. Their humanity is derived from the bionics
-    fitted and isn't a field, so the client never sees it."""
+    full health, no effects and nothing searched. A save holding the old 10 kg carry limit loads
+    with 15. Their humanity is derived from the bionics fitted and isn't a field, so the client
+    never sees it."""
 
     model_config = CHECKED
 
@@ -406,6 +408,12 @@ class Player(Model):
         "order they searched them. Each is searched once, and holds nothing after. Left out while "
         "there's none.",
     )
+
+    @field_validator("carry_limit")
+    @classmethod
+    def _raised_in_old_saves(cls, carry_limit: float, info: ValidationInfo) -> float:
+        old = info.mode == "json" and carry_limit == OLD_CARRY_LIMIT
+        return CARRY_LIMIT if old else carry_limit
 
     @field_validator("effects")
     @classmethod

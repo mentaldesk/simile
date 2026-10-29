@@ -162,7 +162,7 @@ def test_a_secret_can_hold_food() -> None:
 
 
 def test_what_does_not_fit_of_a_pickup_is_left_there_as_theirs() -> None:
-    tunnels = Tunnels(Player(items=[lamp(), SERVO, SERVO, SERVO]))
+    tunnels = Tunnels(Player(items=[lamp(), SERVO, SERVO, SERVO], carry_limit=10))
     tunnels.stand(60)
 
     assert tunnels.pickups.pick_up()
