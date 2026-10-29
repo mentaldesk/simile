@@ -702,7 +702,7 @@ const offer = (page: Page, buyer: object | undefined) =>
     server.dispatch(JSON.stringify({ ...playerState.latest, buyer }));
   }, buyer);
 
-/** E at the clinic lists the datajack with its parts against what they carry, now that there's no Mind tab. */
+/** E at the clinic lists the datajack with its parts against what they carry. */
 async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the datajack at the clinic';
   const at = { map: 'clinic_floor_0', x: 4, y: 2 };
@@ -718,9 +718,10 @@ async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
   }
   await shot(page, index, name);
   await page.keyboard.press('Escape');
-  await offer(page, undefined);
   await run(page, 200);
   if ((await shown(page, 'section.clinic')) !== null) throw new Error(`${name}: Esc didn't close it`);
+  await offer(page, undefined);
+  await run(page, 200);
 }
 
 const root = new URL('../..', import.meta.url).pathname;
