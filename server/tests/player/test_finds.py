@@ -121,7 +121,7 @@ def test_the_money_in_a_thing_is_found_through_the_ledger_once() -> None:
 
 
 def test_what_doesnt_fit_is_left_where_they_stand() -> None:
-    player = Player()
+    player = Player(carry_limit=10)
     player.items = [*player.items, ANVIL]
     searching = Searching(player)
 
