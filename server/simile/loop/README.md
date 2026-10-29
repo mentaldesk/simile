@@ -7,10 +7,11 @@ S15's loop in stage 2's order (P19), played end to end on the fake LLM, in the s
 `play()` (`playthrough.py`) runs a new village in memory, as `simile.ambient`'s playthrough does,
 and a `LoopPlayer` (`player.py`) joins it as a client through the hub. It plays by the client's own
 messages alone (`player_move`, `pick_up`, `sell`, `sell_part`, `sell_recipe`, `fit`, `lamp`, `eat`,
-`player_say`), and knows of the world only the maps the client bundles and the `snapshot`,
-`player_state`, `journal`, `line` and `creature_moved` messages it's sent. Nothing is handed to it:
-every recipe is learned and every part found where the game puts them (`content/street/README.md`'s
-*Finds*).
+`player_say`). It reads the maps the client bundles and the `snapshot`, `player_state`,
+`journal`, `line` and `creature_moved` messages it's sent, but three things it reads straight from
+the server: where the server kept it after a move (`kept`), where a resident is (`approach`) and
+whether they're asleep (`awake`). Nothing is handed to it: every recipe is learned and every part
+found where the game puts them (`content/street/README.md`'s *Finds*).
 
 **Moving.** It runs the cheapest way its legs and feet allow (`simile.street.moves`), sending where
 it is every tenth of a sim second, as the client does every frame or so, and climbing at the
@@ -21,7 +22,7 @@ can, as on the metro's train roof and catwalk. On the way it uses P34's solution
 - **A rat** coming for its food it comes down on, hopping as the rat comes under it.
 - **A ladder or a jump onto a floor** waits until no bot, rat or dog is by where it would come onto
   it, off that floor.
-- **Bats**: its lamp is on in the dark, as L does, but never within ten tiles of a bat.
+- **Bats**: its lamp is on in the dark, as L does, but never in a bat's sight within ten tiles.
 - **Light and power**: before each way it checks the lamp lasts the dark there and on to the
   nearest plug from there, and charges first at the nearest plug if it doesn't, or if its power
   cell is under half.
@@ -54,7 +55,7 @@ fitted with it. The infrared eye isn't in the loop: its recipe needs the second 
 parts weigh 10 kg, as much as the player can carry with nothing else, and the lamp weighs 1.
 
 Every coin comes from the kidney, salvage, secrets, finds and recipes, through the ledger. The fake
-LLM is `Covers`, the canned one, which has nothing to reflect on and notes each prompt that has a
+LLM is `Canned`, the canned one, which has nothing to reflect on and notes each prompt that has a
 resident turn the player down. The loop takes about eleven minutes of play in its first sim
 morning, unhurt, with the lamp never running flat in the dark.
 
@@ -68,7 +69,7 @@ uv run simile loop play --saves <dir>    # and the world before each of the brow
 
 `client/src/loop/loop.e2e.ts` plays the visible beats in Chromium, by the keys, against the real
 client and a real server on the fake LLM. It runs `simile loop play --saves` first, then starts
-each beat from its save with `simile loop serve`, which serves a copy of the world with `Covers`,
+each beat from its save with `simile loop serve`, which serves a copy of the world with `Canned`,
 the player where the beat starts and residents who choose by a seed:
 
 | Beat | From | By the keys |

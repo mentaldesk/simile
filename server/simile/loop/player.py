@@ -52,6 +52,7 @@ from simile.schema import (
     Player,
 )
 from simile.sim import world_of
+from simile.street.charge import CLIMB, JUMPING
 from simile.street.jump import Jump, jump_of
 from simile.street.moves import moves, possible
 from simile.voicing.distance import between
@@ -69,10 +70,6 @@ QUIET = 10
 SKIPPED = ('{"type":"entity_moved"', '{"type":"clock"', '{"type":"npc_state"')
 SAMPLE = 0.1
 """Sim seconds between the positions the player sends as they move."""
-CLIMB = {DoorKind.LADDER: 1.5, DoorKind.STAIRS: 2.0}
-"""Tiles a second up or down a ladder or a flight, as the client climbs."""
-JUMPING = 3.0
-"""What a jump adds to a way's cost, so they walk and climb where they can."""
 GUARDED = 40.0
 """What a cell adds to a way's cost in sight of a bot or a dog on its floor."""
 SIGHT = {CreatureKind.BOT: 7.0, CreatureKind.DOG: 14.0}
@@ -118,9 +115,11 @@ class LoopPlayer:
         self.dark: list[str] = []
         """Each time their lamp ran flat in the dark."""
         self.stomped = 0
+        self.leapt = 0
         self.roused: set[Id] = set()
         """The bats that came for them."""
         self.by_bats = False
+        self.lamp_off_by_bats = 0
         self._reach: dict[Jump, set[Spot]] = {}
 
     @property
@@ -206,8 +205,7 @@ class LoopPlayer:
         self.where = Point(to.x, to.y, to.map)
 
     def light(self, to: Point) -> None:
-        """Switches the lamp on going into the dark and off coming out, as L does, but never in a
-        bat's sight."""
+        """On in the dark and off in the light, as L does, but never in a bat's sight."""
         lamp = self._lamp(self.player)
         town = self.movement.maps[to.map]
         dark = not town.lit(math.floor(to.x + 0.5), math.floor(to.y + 0.5))
@@ -216,6 +214,7 @@ class LoopPlayer:
         if lamp.on != on:
             self.send(LampMessage(on=on))
         if bats and not self.by_bats:
+            self.lamp_off_by_bats += 1
             self.note(f"Kept the lamp off by the bats at {to.map} ({to.x:.0f}, {to.y:.0f})")
         self.by_bats = bats
 
@@ -259,8 +258,7 @@ class LoopPlayer:
         return found
 
     def route(self, goal: Spot, start: Spot | None = None) -> list[Spot] | None:
-        """The cheapest way there on their legs, from here or `start`: walking and climbing where
-        they can, and out of sight of what would come for them."""
+        """The cheapest way there from here or `start`, out of sight of bots and dogs."""
         if goal not in self.reach() or (start is not None and start not in self.reach()):
             return None
         maps, doors, crossings = self.movement.maps, self.movement.doors, self.movement.crossings
@@ -402,8 +400,7 @@ class LoopPlayer:
         ]
 
     async def dodge(self, b: Spot) -> bool:
-        """Comes down on a rat coming for their food, or jumps a bot coming at them: whether
-        they did."""
+        """Stomps a rat coming for their food or jumps a bot coming at them: whether they did."""
         assert self.where is not None
         here = self.where
         if self.carries(ItemKind.FOOD):
@@ -469,11 +466,12 @@ class LoopPlayer:
         for x, y, seconds in self.arc(here.map, (here.x, here.y), Spot(here.map, land, at.y)):
             await self.wait(seconds)
             self.move(Point(x, y, here.map))
+        if what == "over":
+            self.leapt += 1
         self.note(f"Jumped {what} {bot.id}")
 
     async def wait_to_come_onto(self, a: Spot, b: Spot) -> bool:
-        """Off a creature's floor, on a ladder or before a jump, until nothing waits by where
-        they'd come onto it: whether they waited."""
+        """Waits off a floor until nothing is by where they'd come onto it: whether they did."""
         town = self.movement.maps[a.map]
         jump = abs(b.x - a.x) + abs(b.y - a.y) != 1 and town.climb(a.x, a.y) is not DoorKind.STAIRS
         off = town.climb(a.x, a.y) is DoorKind.LADDER and town.standing(b.x, b.y)
@@ -522,8 +520,7 @@ class LoopPlayer:
         return spent
 
     async def charged(self, goal: Spot) -> None:
-        """At the nearest plug first if the lamp wouldn't last the dark on the way to `goal` and
-        on to a plug from there, or their power is low."""
+        """Charges first if the lamp wouldn't last to `goal` and a plug after, or power is low."""
         route = self.route(goal)
         if route is None:
             return
@@ -636,27 +633,6 @@ class LoopPlayer:
             raise Refused(f"Nothing sold at {place}")
         self.note(f"Sold what they didn't need at {place} for {self.money - money:g}")
 
-    async def gather(
-        self, maps: Collection[str], enough: float = math.inf, skip: Collection[Id] = ()
-    ) -> None:
-        """Picks up what pays on `maps`, nearest first, selling when nothing more fits."""
-        while self.money < enough:
-            await self.fed()
-            near = [
-                (self.away_from(pickup.x, pickup.map), pickup.id, pickup)
-                for pickup, pile in self.lying(maps)
-                if pickup.id not in skip
-                and (pile.money or any(item.kind is ItemKind.SALVAGE for item in pile.items))
-                and Spot(pickup.map, pickup.x, pickup.y) in self.reach()
-                and self.fits(pile.items)
-            ]
-            if near:
-                await self.take(min(near)[2])
-            elif self.spare():
-                await self.sell()
-            else:
-                return
-
     async def fed(self) -> None:
         """Goes home and eats, once they're hungry."""
         if self.player.hunger < HUNGRY:
@@ -691,6 +667,8 @@ class LoopPlayer:
         for bionic, price in (self.state.buyer.recipes if self.state.buyer else {}).items():
             self.send(SellRecipeMessage(recipe=bionic))
             await self.wait(0.1)
+            if bionic not in self.player.mind.sold:
+                raise Refused(f"The clinic didn't buy the {bionic} recipe")
             self.note(f"Sold the {bionic} recipe for {price:g}")
 
     async def fit(self, bionic: Bionic, part: BodyPart) -> None:

@@ -66,19 +66,17 @@ METRO = (
     "metro_tool_crate",
     "metro_lockers",
 )
-"""The metro's dead appliances and furniture a player on their own legs searches: the cell's and
-the datajack's parts, spares to sell, and a ration pack in the lockers."""
+"""The metro's finds on their own legs: the cell's and datajack's parts, spares, a ration pack."""
 LEGS = ("sewers_bedroll_legs", "sewers_crates_legs")
 FEET = ("sewers_bedroll_feet", "sewers_crates_feet")
 CAVE = "sewers_secret_cave"
 """Past the bats, which the infrared eye is for."""
 
 
-class Covers:
-    """The canned fake LLM, with nothing to reflect on, which notes each time it's cued to turn
-    the player down."""
+class Canned:
+    """The canned fake LLM, with nothing to reflect on, noting each prompt to turn them down."""
 
-    name = "covers"
+    name = "canned"
 
     def __init__(self) -> None:
         self.canned = CannedProvider()
@@ -133,6 +131,8 @@ class Result:
     hurt: list[str]
     dark: list[str]
     stomped: int
+    leapt: int
+    lamp_off_by_bats: int
     roused: set[Id]
     earned: dict[Kind, float] = field(default_factory=dict)
     """The player's money in and out of the ledger by kind: out is negative."""
@@ -149,8 +149,8 @@ class Result:
 class Playthrough:
     """Stage 2's loop, played in order."""
 
-    def __init__(self, app: Starlette, covers: Covers, saves: Saves) -> None:
-        self.app, self.covers, self.saves = app, covers, saves
+    def __init__(self, app: Starlette, canned: Canned, saves: Saves) -> None:
+        self.app, self.canned, self.saves = app, canned, saves
         self.notes: list[str] = []
         self.player = LoopPlayer(app, self.notes)
         self.incident = investigation_of(app).incident
@@ -193,6 +193,8 @@ class Playthrough:
             p.hurt,
             p.dark,
             p.stomped,
+            p.leapt,
+            p.lamp_off_by_bats,
             p.roused,
             earned,
         )
@@ -211,9 +213,7 @@ class Playthrough:
         await p.sell_part("left_kidney")
 
     async def the_power_cell(self) -> None:
-        """Aris's bench and the maker space's spares and shelf, then the metro on their own legs,
-        while its bots pay a wholly human player no mind, for the cell's parts and the
-        datajack's, and what pays."""
+        """The maker space's finds, then the metro's while its bots ignore a whole player."""
         p = self.player
         for id in ("maker_space_bench", "maker_space_spares", "maker_space_shelf"):
             await p.search(id)
@@ -232,8 +232,7 @@ class Playthrough:
         await p.to(LANDING)
 
     async def the_rats(self) -> None:
-        """On the floor of the biggest nest with the lockers' ration pack, coming down on each
-        rat as it comes for it."""
+        """Stomps the biggest nest's rats as they come for the ration pack."""
         p = self.player
         if not p.carries(ItemKind.FOOD):
             raise Refused("They have no food to draw the rats")
@@ -302,8 +301,7 @@ class Playthrough:
         await p.take(ledge)
 
     async def fitted(self, bionic: Bionic, part: BodyPart, beat: str, **extra: object) -> None:
-        """Pays for `bionic` from what the tunnels give, a day at a time, and is fitted with it,
-        saving the browser's beat outside the clinic first."""
+        """Pays for `bionic` a day at a time and is fitted with it, saving the beat first."""
         p, price = self.player, self.price(bionic)
         for _ in range(DAYS):
             if p.money < price:
@@ -333,8 +331,7 @@ class Playthrough:
         finds: Collection[Id] = (),
         skip: Collection[Id] = (),
     ) -> None:
-        """Searches `finds` and picks up what pays on `maps`, nearest first, selling when nothing
-        more fits."""
+        """Searches `finds` and picks up what pays on `maps`, nearest first, selling when full."""
         p = self.player
         while p.money < enough:
             await p.fed()
@@ -381,9 +378,9 @@ class Playthrough:
                 continue
             if not await p.approach(npc):
                 continue
-            refusals = len(self.covers.refusals)
+            refusals = len(self.canned.refusals)
             _, ended = await p.say(npc, HELLO)
-            if ended and len(self.covers.refusals) > refusals:
+            if ended and len(self.canned.refusals) > refusals:
                 p.note(f"{npc} turned them down")
                 return npc
         raise Refused("Nobody turned the player down")
@@ -433,10 +430,10 @@ async def play(*, seed: int = 0, start: datetime = START, saves: Path | None = N
     app.state.conversation = create_engine(app, seed=seed)
     await begin(app, rng=random.Random(f"story/{seed}"))
     async with app.router.lifespan_context(app):
-        covers = Covers()
-        app.state.llm = LLMClient(covers)
+        canned = Canned()
+        app.state.llm = LLMClient(canned)
         app.state.players.rng.seed(seed)
-        result = await Playthrough(app, covers, Saves(app, saves)).run()
+        result = await Playthrough(app, canned, Saves(app, saves)).run()
     return result
 
 
@@ -449,8 +446,10 @@ def report(result: Result) -> str:
         "salvage to lie there again.",
         f"Money by kind: {', '.join(f'{k} {v:g}' for k, v in sorted(result.earned.items()))}",
         f"Body: {', '.join(f'{part} {state}' for part, state in result.player.body)}",
-        f"Came down on {result.stomped} rats; hurt {len(result.hurt)} times; the lamp ran flat in "
-        f"the dark {len(result.dark)} times; {len(result.roused)} bats came for them.",
+        f"Came down on {result.stomped} rats, jumped {result.leapt} bots and kept the lamp off by "
+        f"the bats {result.lamp_off_by_bats} times.",
+        f"Hurt {len(result.hurt)} times; the lamp ran flat in the dark {len(result.dark)} times; "
+        f"{len(result.roused)} bats came for them.",
         *result.hurt,
         *result.dark,
         f"{result.refused_by} turned the player down.",

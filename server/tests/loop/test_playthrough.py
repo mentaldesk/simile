@@ -62,8 +62,12 @@ def test_every_recipe_is_learned_and_every_part_found_in_the_world(result: Resul
     assert {"metro_ticket_machine", "metro_fridge", *LEGS, *FEET} <= searched
 
 
-def test_every_danger_is_passed_unhurt_with_the_lamp_off_by_the_bats(result: Result) -> None:
+def test_every_danger_is_met_and_passed_unhurt_with_the_lamp_off_by_the_bats(
+    result: Result,
+) -> None:
     assert result.stomped >= 3
+    assert result.leapt >= 1
+    assert result.lamp_off_by_bats >= 1
     assert result.hurt == []
     assert result.roused == set()
     assert result.dark == []
