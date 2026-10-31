@@ -7,6 +7,7 @@ import { PLAYER_ID } from './world-view';
 export class LogPanel {
   private readonly panel: HTMLElement;
   private readonly list: HTMLOListElement;
+  private reading = false;
   readonly stop: () => void;
 
   constructor(parent: HTMLElement, log: DialogueLog) {
@@ -19,12 +20,25 @@ export class LogPanel {
     this.stop = log.onAdd((entry) => this.append(entry));
   }
 
-  /** Shown only while the player talks with someone or types to them, scrolled to the latest line. */
+  /** Whether the player opened the log to read it, with nobody to talk to. */
+  get isReading(): boolean {
+    return this.reading;
+  }
+
+  toggle(): void {
+    this.reading = !this.reading;
+  }
+
+  close(): void {
+    this.reading = false;
+  }
+
+  /** Shown while the player reads it, talks with someone or types to them, scrolled to the latest line. */
   update(chat: Pick<ChatBox, 'isOpen'>, dialogue: Pick<Dialogue, 'partner'>): void {
-    const talking = chat.isOpen || dialogue.partner() !== undefined;
-    if (talking === !this.panel.hidden) return;
-    this.panel.hidden = !talking;
-    if (talking) this.list.scrollTop = this.list.scrollHeight;
+    const shown = this.reading || chat.isOpen || dialogue.partner() !== undefined;
+    if (shown === !this.panel.hidden) return;
+    this.panel.hidden = !shown;
+    if (shown) this.list.scrollTop = this.list.scrollHeight;
   }
 
   private append(entry: LogEntry): void {

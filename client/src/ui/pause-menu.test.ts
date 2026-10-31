@@ -105,7 +105,8 @@ describe('PauseGate', () => {
     };
     const closed = { toggle: vi.fn(), close: vi.fn() };
     const handler = onGameKey({
-      chat: { open: vi.fn(), clear: vi.fn(), cycle: vi.fn() },
+      chat: { clear: vi.fn(), cycle: vi.fn() },
+      reply: vi.fn(),
       talk: vi.fn(),
       use: vi.fn(),
       view: vi.fn(),
@@ -113,6 +114,7 @@ describe('PauseGate', () => {
       help: closed,
       journal,
       character: closed,
+      log: closed,
       pause,
     });
     window.addEventListener('keydown', handler);

@@ -89,3 +89,18 @@ it('shows when a resident starts talking to the player, until the conversation e
   ended();
   expect(shown()).toBe(false);
 });
+
+it('shows while the player reads it with nobody near, scrolled to the latest line, until closed', () => {
+  started(['priya', 'henrietta']);
+  overheard("That's the pump. Someone's fixed it again.");
+  log.toggle();
+  expect(log.isReading).toBe(true);
+  expect(shown()).toBe(true);
+
+  log.toggle();
+  expect(shown()).toBe(false);
+  log.toggle();
+  log.close();
+  expect(log.isReading).toBe(false);
+  expect(shown()).toBe(false);
+});
