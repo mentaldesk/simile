@@ -302,6 +302,11 @@
   outline: none;
 }
 
+.dialogue:has(> :is(.clinic, .news, .mural):not([hidden])) > :is(.help-hint, .lamp-gauge, .power-gauge, .lamp-hint, .journal-hint),
+.dialogue:has(> :is(.clinic, .news, .mural):not([hidden])) > .hunger-hint > :not(.health-gauge) {
+  visibility: hidden;
+}
+
 .news header {
   display: flex;
   justify-content: space-between;
