@@ -148,7 +148,8 @@ def steps(town: TownMap, cells: list[Cell]) -> list[Step]:
             found.append(Climb(ny))
         else:
             side = 1 if nx > x else -1
-            if nx != x and not town.standing(x + side, y) and town.standing(x, y):
+            edge = not town.standing(x + side, y) and not town.solid(x + side, y)
+            if nx != x and edge and town.standing(x, y):
                 found.append(Walk(x + 0.45 * side))
             found.append(Leap(nx, ny, rise=0.0 if ny > y and abs(nx - x) <= 1 else None))
     return found
