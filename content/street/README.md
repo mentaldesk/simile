@@ -345,6 +345,10 @@ slab, the row under them. West to east it's columns of rooms:
   a walk along that floor ends at the ladder, as the client's walking does, rather than passing
   over it. Holes are at least two cells apart, and ladders three, so a held key stops at the end
   of each climb. Walking, climbing and the odd hop over a hole get anywhere on that side.
+  Before the gate (P46) every hole but the spring pocket's is one cell wide, so a walking jump
+  crosses it: a drop is a single cell, and a ladder comes up through its own cell with a
+  `sewer_pipe` to stand on beside its top rung in place of the open air, which ends a walk at the
+  ladder just the same and is a hop up from either side.
 - **The gate** is the way on: at the top tier a walkway from each side with a five-cell gap
   between them (`GAP`), under the vault, which stops a high jump rising, so only the legs cross it,
   or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
@@ -448,8 +452,10 @@ passes, and `tests/street/test_sewers.py` over the committed levels and more see
 one of `KITS`, any grade of legs or feet or one of each, the player reaches the hatch, the plugs and
 the finds past the gate, and on their own legs they don't, while zone 0's finds are in reach of
 every kit and the player's own legs; on every one, and on their own legs, they can get back to the
-lift from anywhere they can get to; each pickup is in reach on exactly the ones that meet its
-`needs`; and every salvage has a price.
+lift from anywhere they can get to; zone 0 is passable on a walking jump (`WALKS`, on their own legs
+and on the spring feet): zone 0's finds and the gate's junction box are in reach, and from anywhere
+before the gate they can get back to the lift; each pickup is in reach on exactly the ones that meet
+its `needs`; and every salvage has a price.
 
 **Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
 sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,
@@ -527,7 +533,10 @@ another up to `cells` (4) along the row and `rows` (2) up, or down any way, thro
 from where it takes off, along over the higher end with room for the head, and down onto where it
 lands. Under something solid the jump can rise only until the head meets it, and goes no further
 along than a jump that high (`Jump.along`). `moves(town, cell, jump)` jumps on another `Jump`
-instead, such as one of `KITS`. Residents never jump, so their paths are as they were.
+instead, such as one of `KITS`, or `walking(jump)`, the same jump taken at a walk (`WALK_SPEED`,
+2.6, the client's `PLAYER_SPEED`), which clears one cell where a run jump clears three. A jump's
+length is measured from the middle of the cell it takes off from, where the client stops a walk
+beside a ladder's top. Residents never jump, so their paths are as they were.
 
 **The player's position.** `simile.street.moves.possible(town, x, y, last)` is the server's check
 on a `player_move` (`docs/protocol.md`): somewhere to stand or climb, or mid-step, or in open air

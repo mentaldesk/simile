@@ -15,9 +15,12 @@ from simile.street.jump import (
     LEGS,
     NEEDS,
     OWN_JUMP,
+    RUN_SPEED,
+    WALK_SPEED,
     jump_of,
     jump_table,
     meets,
+    walking,
 )
 from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
 from simile.world import Movement, Outcome
@@ -387,6 +390,30 @@ GAP = (
     "################",
 )
 """A five-cell gap between two ledges, over a floor."""
+
+
+TIER = side_view(
+    "##############",
+    "..............",
+    "..............",
+    "..............",
+    "..............",
+    "####.###..####",
+    "..............",
+    "##############",
+)
+"""A sewers' walkway under four rows of room, with a hole of one cell and one of two."""
+
+
+def test_a_walking_jump_under_a_walkways_room_clears_one_cell_and_no_more() -> None:
+    assert WALK_SPEED == 2 * WALKING_SPEED and RUN_SPEED == 2 * WALK_SPEED
+
+    for jump in (JUMP, FEET[Bionic.SPRING_FEET]):
+        walk = walking(jump)
+        assert (walk.rise, walk.run) == (jump.rise, WALK_SPEED)
+        assert (5, 4) in dict(moves(TIER, (3, 4), walk))
+        assert (10, 4) not in dict(moves(TIER, (7, 4), walk))
+        assert (10, 4) in dict(moves(TIER, (7, 4), jump))
 
 
 def test_a_roof_low_over_a_gap_leaves_only_the_faster_legs_across() -> None:

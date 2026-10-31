@@ -7,6 +7,8 @@ from typing import Any
 
 from simile.schema import Bionic, Body
 
+WALK_SPEED = 2.6
+"""Tiles a second walking on any legs: the client's `PLAYER_SPEED`."""
 RUN_SPEED = 5.2
 """Tiles a second running on their own legs: the client's `PLAYER_SPEED` times `RUN_PACE`."""
 JUMP_FILE = "jump.json"
@@ -18,7 +20,7 @@ class Jump:
     """Tiles the feet rise with Space held."""
     rise_seconds: float = 0.38
     run: float = RUN_SPEED
-    """Tiles a second running, and flying along in a run jump."""
+    """Tiles a second running, and flying along in a run jump, or walking for a `walking` one."""
     fall_gravity: float = 1.3
     """Times the gravity rising with Space held, falling or once Space is let go."""
     cut: float = 0.45
@@ -50,7 +52,8 @@ class Jump:
         return math.floor(self.rise)
 
     def along(self, rise: float | None = None) -> int:
-        """Cells along a row a run jump rising at most `rise` lands from its middle, for paths."""
+        """Cells along a row a jump rising at most `rise` lands from its take-off cell's middle,
+        where the client stops a walk at a ladder, for paths."""
         return math.floor(0.5 + self.foot + self.run * self.airtime(rise))
 
     @property
@@ -92,6 +95,11 @@ FEET: dict[Bionic, Jump] = {
 GRADES: dict[Bionic, Jump] = {**LEGS, **FEET}
 """Each grade's jump on its own."""
 OWN_JUMP = "jump"
+
+
+def walking(jump: Jump) -> Jump:
+    """`jump` taken walking, as fast on any legs: zone 0 of the sewers is passable on it."""
+    return replace(jump, run=WALK_SPEED)
 
 
 def kit(*grades: Jump) -> Jump:
