@@ -8,7 +8,7 @@ const story = import.meta.glob<string>('../../../content/story/story.toml', {
   import: 'default',
 });
 
-/** Somewhere the player can find a fact about Aris's attack, on a cell of a map. */
+/** Somewhere the player can find a fact about Aris's disappearance, on a cell of a map. */
 export type Clue = { id: string; label: string; map: string; x: number; y: number };
 
 export function cluesOf(toml: string): Clue[] {
@@ -19,7 +19,7 @@ export function cluesOf(toml: string): Clue[] {
 /** The clues in content/story/story.toml. */
 export const clues: readonly Clue[] = Object.values(story).flatMap(cluesOf);
 
-/** On its cell, inside the server's `clue_reach` of a tile, so the door beside the door frame keeps E. */
+/** On its cell, inside the server's `clue_reach` of a tile. */
 export const CLUE_TILES = 0.5;
 
 /** The clue on the cell the player stands on. */

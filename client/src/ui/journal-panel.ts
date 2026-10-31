@@ -50,7 +50,7 @@ export function lookAtClue(
   journal.open();
 }
 
-/** The player's journal of the incident, opened with J: the open leads, then what they learned, newest first. */
+/** The player's journal of Aris's disappearance, opened with J: the open leads, then what they learned, newest first. */
 export class JournalPanel {
   readonly hint: HTMLElement;
   private readonly clueHint: HTMLElement;

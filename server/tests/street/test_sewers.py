@@ -1,4 +1,3 @@
-import asyncio
 import json
 import random
 import time
@@ -22,9 +21,9 @@ from simile.npc import load_npcs
 from simile.persistence import investigation_of, player_of
 from simile.schema import PLAYER_ID, Bionic, Body, DoorKind, InteractableKind, ItemKind
 from simile.sim import Clock, World
-from simile.story import make_incident
+from simile.story import make_disappearance
 from simile.story.content import HATCH as HATCH_CLUE
-from simile.story.incident import HATCH_LOG, LIFT_LOG
+from simile.story.disappearance import HATCH_LOG, LIFT_LOG
 from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
@@ -408,8 +407,8 @@ def test_the_world_plays_its_level_and_its_hatch_holds_aris_trail(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
-    made = asyncio.run(make_incident(load_npcs(), NOW, None, rng=random.Random(1)))
-    investigation_of(app).incident = made.incident
+    made = make_disappearance(load_npcs(), NOW, rng=random.Random(1))
+    investigation_of(app).disappearance = made.disappearance
     player_of(app).body = Body(vertebra=Bionic.DATAJACK)
     number = world_level()
     [hatch] = [item for item in played(number).town.interactables if item.id == HATCH]
@@ -428,5 +427,5 @@ def test_the_world_plays_its_level_and_its_hatch_holds_aris_trail(
     [entry] = journal["entries"]
     assert entry["fact_id"] == HATCH_LOG
     assert entry["source"] == {"kind": "clue", "id": HATCH, "name": "Maintenance hatch"}
-    facts = {fact.id: fact for fact in made.incident.facts}
+    facts = {fact.id: fact for fact in made.disappearance.facts}
     assert [lead.fact_id for lead in facts[LIFT_LOG].leads] == [HATCH_LOG]

@@ -4,32 +4,23 @@ import typer
 
 
 def register(app: typer.Typer) -> None:
-    story = typer.Typer(help="Aris and the incident.", no_args_is_help=True)
+    story = typer.Typer(help="Aris and her disappearance.", no_args_is_help=True)
 
     @story.command()
-    def incident(
-        seed: Annotated[int | None, typer.Option(help="Seed for who attacks and who saw.")] = None,
+    def disappearance(
+        seed: Annotated[int | None, typer.Option(help="Seed for who saw what.")] = None,
         facts: Annotated[bool, typer.Option(help="List the facts and who knows them.")] = False,
     ) -> None:
-        """Make and print an incident as a new world would, with one Sonnet call, saving nothing."""
-        import asyncio
-        import logging
-        import os
+        """Make and print a disappearance as a new world would, saving nothing."""
         import random
         from datetime import UTC, datetime
 
-        from simile.llm import LLMClient
-        from simile.llm.lifespan import FAKE_ENV, CannedProvider
         from simile.npc import load_npcs
-        from simile.story.incident import make_incident
+        from simile.story.disappearance import make_disappearance
 
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-        llm = LLMClient(CannedProvider() if os.environ.get(FAKE_ENV) == "fake" else None)
-        now = datetime.now(UTC)
-        made = asyncio.run(make_incident(load_npcs(), now, llm, rng=random.Random(seed)))
-        found = made.incident
-        typer.echo(f"Attackers: {', '.join(found.attackers)}")
-        typer.echo(f"Motive{'' if made.written else ' (from templates)'}: {found.motive}")
+        made = make_disappearance(load_npcs(), datetime.now(UTC), rng=random.Random(seed))
+        found = made.disappearance
+        typer.echo(f"Distrusted by: {', '.join(found.distrusted_by)}")
         if facts:
             for fact in found.facts:
                 knowers = ", ".join(

@@ -8,7 +8,7 @@ from enum import StrEnum
 from simile.schema import CoreValue, Fact, Id, Lead, Npc
 
 PREFIX = "town_"
-"""Every town fact's id starts with it, so none is ever one of the incident's."""
+"""Every town fact's id starts with it, so none is ever one of the disappearance's."""
 SETTLED_YEARS = 15
 """Years in the village after which a resident knows it as well as anyone."""
 GROWN_UP = 18

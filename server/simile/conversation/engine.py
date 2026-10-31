@@ -59,9 +59,9 @@ from simile.schema import (
     PLAYER_ID,
     Conversation,
     CoreValue,
+    Disappearance,
     FlagKind,
     Id,
-    Incident,
     Line,
     Memory,
     MemoryKind,
@@ -234,8 +234,8 @@ class ConversationEngine:
         """A work by id, for the works residents might bring up."""
         self.missed: Callable[[Id], list[Missed]] = lambda _: []
         """E3's shifts a resident skipped or was late to."""
-        self.incident: Callable[[], Incident | None] = lambda: None
-        """S12's incident, for what residents know of it."""
+        self.disappearance: Callable[[], Disappearance | None] = lambda: None
+        """P48's disappearance, for what residents know of it."""
         self.looks: Callable[[Id], str | None] = lambda _: None
         """S11's line on what a resident can see of the player, or None for nothing to see."""
         self._talks: dict[str, Talk] = {}
@@ -414,9 +414,9 @@ class ConversationEngine:
         return lying
 
     def tellings(self, npc: Id, listener: Id) -> list[Telling]:
-        """What `npc` would say of each incident fact they know, by their trust in `listener`."""
+        """What `npc` would say of each fact they know of Aris, by their trust in `listener`."""
         trust = self._relationship(npc, listener).trust
-        return tellings(self.incident(), npc, trust, self.memory.facts(npc))
+        return tellings(self.disappearance(), npc, trust, self.memory.facts(npc))
 
     def tick(self, dt: float) -> None:
         for talk in tuple(self._talks.values()):

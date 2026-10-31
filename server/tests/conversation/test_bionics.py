@@ -13,7 +13,7 @@ from simile.sim import ConversationStarted
 from simile.social.sightings import Sightings
 
 from .test_player import ANA, BEN, Village, make_npc
-from .test_telling import ALIBI, GONE, INCIDENT, MEMORIES
+from .test_telling import DENIAL, DISAPPEARANCE, GONE, MEMORIES
 
 pytestmark = pytest.mark.anyio
 
@@ -134,32 +134,32 @@ async def test_someone_who_barely_minds_never_turns_the_player_down() -> None:
         assert REFUSE not in village.script.prompts[-1]
 
 
-async def test_an_attacker_who_turns_the_player_down_still_gives_their_cover() -> None:
-    attacker = make_npc("ben", "house_2", tradition=1.0, security=1.0)
-    village = Village(["Home all night. Now leave me be. [values: security]"], npcs=(attacker,))
+async def test_a_distruster_who_turns_the_player_down_still_gives_their_cover() -> None:
+    distruster = make_npc("ben", "house_2", tradition=1.0, security=1.0)
+    village = Village(["Got on fine. Now leave me be. [values: security]"], npcs=(distruster,))
     village.store.add(*MEMORIES)
-    village.engine.incident = lambda: INCIDENT
-    watched(village, npcs=(attacker,))
+    village.engine.disappearance = lambda: DISAPPEARANCE
+    watched(village, npcs=(distruster,))
     await village.run()
 
-    village.players.say("Where were you the night Aris was attacked?", "ben")
+    village.players.say("How did you get on with Aris?", "ben")
     await village.run()
 
     talk = village.players.talk()
     assert talk is not None and talk.refusing
     prompt = village.script.prompts[-1]
     assert prompt.endswith(f"{REFUSE} {BLUNT} {COVERED}")
-    assert f'Only if asked that, say exactly: "{ALIBI}"' in prompt
+    assert f'Only if asked that, say exactly: "{DENIAL}"' in prompt
     assert "trust Visitor enough to tell" not in prompt and GONE not in prompt
     assert {fact: t.stance for fact, t in talk.tellings.items()} == {
-        "attack": Stance.LIE,
-        "there_ben": Stance.LIE,
+        "distrust_ben": Stance.LIE,
+        "passed": Stance.LIE,
     }
-    assert talk.lies["fact/there_ben"].fact_id == "there_ben"
+    assert talk.lies["fact/distrust_ben"].fact_id == "distrust_ben"
     lies = village.engine.lies(talk.conversation.id)
     assert {(lie.liar, lie.listener, lie.fact_id) for lie in lies} == {
-        ("ben", PLAYER_ID, "attack"),
-        ("ben", PLAYER_ID, "there_ben"),
+        ("ben", PLAYER_ID, "distrust_ben"),
+        ("ben", PLAYER_ID, "passed"),
     }
 
 

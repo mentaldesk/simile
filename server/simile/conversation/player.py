@@ -137,8 +137,8 @@ class PlayerConfig(BaseModel):
     )
     suspect_model: str = Field(
         default=Model.HAIKU_4_5,
-        description="The model that writes a reply once the NPC is set up to lie, about the "
-        "incident or anything else, such as ollama:gemma4:26b. `SIMILE_SUSPECT_MODEL` sets it. "
+        description="The model that writes a reply once the NPC is set up to lie, about Aris "
+        "or anything else, such as ollama:gemma4:26b. `SIMILE_SUSPECT_MODEL` sets it. "
         "See S14 in the evaluation README.",
     )
     say_range: float = Field(
@@ -207,7 +207,7 @@ class PlayerTalk(Talk):
     lies: dict[str, Temptation] = field(default_factory=dict)
     """What the NPC has been set up to lie about, by key."""
     tellings: dict[Id, Telling] = field(default_factory=dict)
-    """What the NPC was set up to say of each incident fact they know, by fact id."""
+    """What the NPC was set up to say of each fact they know of Aris, by fact id."""
     places: dict[str, Asked] = field(default_factory=dict)
     """The places the player has asked the NPC about, by name."""
     joked: bool = False
@@ -472,7 +472,7 @@ class PlayerConversations:
                 engine.tell(talk.conversation.id, temptation, PLAYER_ID)
 
     def _ask(self, talk: PlayerTalk, lines: Sequence[Line], *, lies_only: bool = False) -> None:
-        """Once the player touches the incident, sets the NPC up for each fact they know."""
+        """Once the player touches on Aris, sets the NPC up for each fact they know."""
         engine, npc = self.engine, talk.npc
         said = since(npc, lines)
         if talk.tellings or not said or not asked(said):

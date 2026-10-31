@@ -38,10 +38,9 @@ const ICONS: Record<string, { size: number[] }> = iconManifest.icons;
 
 /** Metres tall. */
 const ICON_M = { schematic: 0.34, pile: 0.4 };
-/** `pinned` that far up the wall, over the player's head; a `jamb` on the frame of the door beside it. */
-const CLUES: Record<string, { icon: string; m: number; pinned?: number; jamb?: boolean }> = {
+/** Pinned `pinned` metres up the wall, over the player's head. */
+const CLUES: Record<string, { icon: string; m: number; pinned: number }> = {
   aris_notes: { icon: 'aris_notes', m: 0.55, pinned: 2.2 },
-  door_frame: { icon: 'door_frame', m: 2.1, jamb: true },
 };
 /** Metres up a piece that things lie at, where that isn't near its top. */
 const SURFACE_M: Record<string, number> = { workbench: 0.66 };
@@ -100,27 +99,11 @@ function iconOn(manifest: SceneryManifest, map: SideMap, thing: Placed, icon: st
   return { icon, height: m * PPM, x, y, originX: 0.5, originY: 1, depth: (base?.depth ?? depthOf(map)) + ABOVE };
 }
 
-function cluePicture(manifest: SceneryManifest, map: SideMap, clue: Clue): IconSprite | undefined {
+function cluePicture(map: SideMap, clue: Clue): IconSprite | undefined {
   const look = CLUES[clue.id];
   if (!look) return undefined;
-  const door = map.links.find((link) => link.kind === 'door' && link.y === clue.y && Math.abs(link.x - clue.x) === 1);
-  const frame = manifest.pieces[manifest.platforms.door];
-  if (look.pinned) {
-    const y = feetOf(map.offset.y + clue.y) - look.pinned * PPM;
-    return { icon: look.icon, height: look.m * PPM, x: xOf(map.offset.x + clue.x), y, originX: 0.5, originY: 1, depth: DEPTH.stairs + ABOVE };
-  }
-  if (!look.jamb || !door || !frame) return undefined;
-  const side = Math.sign(clue.x - door.x);
-  const half = (frame.size[0] * frame.height * PPM) / frame.size[1] / 2;
-  return {
-    icon: look.icon,
-    height: look.m * PPM,
-    x: xOf(map.offset.x + door.x) + side * half,
-    y: feetOf(map.offset.y + door.y),
-    originX: side < 0 ? 0 : 1,
-    originY: 1,
-    depth: DEPTH.frame + ABOVE,
-  };
+  const y = feetOf(map.offset.y + clue.y) - look.pinned * PPM;
+  return { icon: look.icon, height: look.m * PPM, x: xOf(map.offset.x + clue.x), y, originX: 0.5, originY: 1, depth: DEPTH.stairs + ABOVE };
 }
 
 function tickOn(manifest: SceneryManifest, sprite: Sprite) {
@@ -154,7 +137,7 @@ export function usablesOn(village: Village, manifest: SceneryManifest, street: S
       if (picture) found.push({ id: thingId(map.id, terminal.name), kind: 'terminal', ...at, picture });
     }
     for (const clue of state.clues.filter((clue) => clue.map === map.id)) {
-      const picture = cluePicture(manifest, map, clue);
+      const picture = cluePicture(map, clue);
       if (picture) found.push({ id: clueId(clue.id), kind: 'clue', ...at, picture });
     }
     for (const pile of state.piles.filter(({ at, items }) => at.map === map.id && items.length)) {

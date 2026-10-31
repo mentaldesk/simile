@@ -39,7 +39,7 @@ from simile.social.bionics import tolerance
 from simile.social.config import DEFAULT_BIONICS
 from simile.story import NOTES, load_story
 from simile.story.content import HATCH, TERMINAL
-from simile.story.incident import HATCH_LOG, LIFT_LOG, NOTED
+from simile.story.disappearance import HATCH_LOG, LIFT_LOG, NOTED
 from simile.street.jump import JUMP
 from simile.street.sewers import GATE_BOX, SEWERS
 from simile.world.map import Pickup, PickupKind
@@ -153,8 +153,8 @@ class Playthrough:
         self.app, self.canned, self.saves = app, canned, saves
         self.notes: list[str] = []
         self.player = LoopPlayer(app, self.notes)
-        self.incident = investigation_of(app).incident
-        assert self.incident is not None
+        self.disappearance = investigation_of(app).disappearance
+        assert self.disappearance is not None
 
     def pickup(self, id: Id) -> Pickup:
         towns = self.player.movement.maps.values()
@@ -398,8 +398,8 @@ class Playthrough:
         return seen
 
     def fact(self, id: Id) -> str:
-        assert self.incident is not None
-        return next(fact.what for fact in self.incident.facts if fact.id == id)
+        assert self.disappearance is not None
+        return next(fact.what for fact in self.disappearance.facts if fact.id == id)
 
     def salvage_back(self) -> datetime:
         """When everything they've picked up of the salvage lies there again."""

@@ -13,7 +13,7 @@ from simile.npc import load_npcs
 from simile.schema import Bionic
 from simile.social.bionics import tolerance
 from simile.social.config import DEFAULT_BIONICS
-from simile.story.incident import GONE, HATCH_LOG, LIFT_LOG, NOTED
+from simile.story.disappearance import GONE, HATCH_LOG, LIFT_LOG, NOTED
 from simile.world.paths import Spot
 
 BEATS = ("kidney", "cell", "datajack", "legs", "gate", "hatch", "feet")

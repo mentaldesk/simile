@@ -8,7 +8,7 @@ the doctor in the snapshot and ticks their talk on the sim loop.
 
 Annelie Joubert, a struck-off Apex surgeon, is `content/npcs/tunnels/annelie.json`: an `Npc` with
 values, a persona and a voice, but not a resident. `load_npcs` reads only `content/npcs/*.json`,
-so she isn't in `Behaviour`, the economy's residents, gossip, reflection or the incident, and
+so she isn't in `Behaviour`, the economy's residents, gossip, reflection or the disappearance, and
 residents' days are as they were. She stands at the clinic's `clinic_doctor` spot, in every
 snapshot (`standing`), and never moves.
 

@@ -183,10 +183,10 @@ def give(app: Starlette, config: StoryConfig = DEFAULT_CONFIG) -> Callable[[], N
     from simile.sim import world_of
     from simile.story.town import world_seed
 
-    incident = investigation_of(app).incident
-    attackers = incident.attackers if incident else []
+    disappearance = investigation_of(app).disappearance
+    besides = disappearance.distrusted_by if disappearance else []
     npcs = list(behaviour_of(app).npcs.values())
-    chosen = keeper(npcs, random.Random(f"lens/{world_seed()}"), besides=attackers, config=config)
+    chosen = keeper(npcs, random.Random(f"lens/{world_seed()}"), besides=besides, config=config)
     if chosen is None:
         return lambda: None
     world = world_of(app)

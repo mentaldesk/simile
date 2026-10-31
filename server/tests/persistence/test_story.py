@@ -9,7 +9,7 @@ from starlette.applications import Starlette
 from simile.app import create_app
 from simile.persistence import capture, investigation_of, restore
 from simile.persistence.lifespan import FRESH_ENV
-from simile.schema import Incident, Investigation, JournalEntry
+from simile.schema import Disappearance, Incident, Investigation, JournalEntry
 
 from .test_lifespan import run_village, saved
 from .test_player import OLD_SAVE, opened, save_from_before_the_player
@@ -22,7 +22,10 @@ INCIDENT = TypeAdapter(list[Incident]).validate_json(
 JOURNAL = TypeAdapter(list[JournalEntry]).validate_json(
     (SCHEMA_TESTS / "journal.json").read_bytes()
 )
-UNDERWAY = Investigation(incident=INCIDENT, journal=JOURNAL)
+DISAPPEARANCE = TypeAdapter(list[Disappearance]).validate_json(
+    (SCHEMA_TESTS / "disappearances.json").read_bytes()
+)[0]
+UNDERWAY = Investigation(incident=INCIDENT, disappearance=DISAPPEARANCE, journal=JOURNAL)
 
 
 def test_a_save_from_before_the_investigation_loads_without_one(tmp_path: Path) -> None:
@@ -80,6 +83,7 @@ def test_restore_fills_the_investigation_in_place_with_its_own_copy() -> None:
 async def investigate(app: Starlette) -> None:
     investigation = investigation_of(app)
     investigation.incident = INCIDENT.model_copy(deep=True)
+    investigation.disappearance = DISAPPEARANCE.model_copy(deep=True)
     investigation.journal = [entry.model_copy(deep=True) for entry in JOURNAL]
 
 

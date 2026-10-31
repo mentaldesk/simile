@@ -62,9 +62,9 @@ CUES: dict[Kind, str] = {
     r"sick of|in the way|blocking|for days|since \w+day",
     Kind.FACT: r"aris|the mechanic|steel hand|(?:her|aris'?s?) workshop|what happened to her|"
     r"what happened (?:at|in) the (?:workshop|maker ?space)|"
-    r"(?:smash\w*|wreck\w*|trash\w*) (?:up )?the (?:workshop|maker ?space)|"
-    r"broke into the (?:workshop|maker ?space)|the break-?in|the attack|(?:attacked|hurt) her|"
-    r"she was attacked|(?:she|aris) (?:disappeared|vanished|went missing)",
+    r"(?:she|aris) (?:disappeared|vanished|went missing|is missing)|"
+    r"where (?:she|aris) (?:went|was going|was headed|(?:has|'s) gone)|"
+    r"(?:last|ever) (?:see|saw|seen) her|seen her since|(?:got|get|getting) on with her",
 }
 """Words that touch each kind, besides the words of what it's about."""
 
@@ -146,7 +146,7 @@ class Temptation:
     """Whose own memories already hold the truth."""
     admits: str = ADMITS
     fact_id: Id | None = None
-    """The incident's fact it hides, for one about the incident."""
+    """The story's fact it hides, for one about Aris."""
 
     def direction(self, name: str | None = None) -> str:
         """Told to them, or with `name`, about them."""
@@ -167,7 +167,7 @@ class Lie:
     known: bool
     """Whether the listener's own memories already hold the truth."""
     fact_id: Id | None = None
-    """The incident's fact it hides, for one about the incident."""
+    """The story's fact it hides, for one about Aris."""
 
 
 class Store(Protocol):
