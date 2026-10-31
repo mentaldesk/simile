@@ -91,12 +91,15 @@ Starting points, not restrictions. A character can mix them, at the cost of bein
 
 ### Two kinds of advancement
 
-- **Body: bionics.** Bought with money or built in the maker space, and fitted at a clinic, sometimes needing key components
-  that have to be found in the world. Each one replaces something human and gives an ability.
-  Bionics are the main way the world opens up.
-- **Mind: skills.** Improved by use and by spending what you earn from runs (Shadowrun's karma).
-  Hacking, climbing, haggling, first aid, tunnel lore. Many skills need a bionic to use: you can know
-  how to deck, but not without a datajack.
+- **Body: bionics.** Each is fitted at a clinic for money and the parts its recipe lists, found
+  in the world or bought. Each one replaces something human and gives an ability. Bionics are the
+  main way the world opens up. A **power cell** in place of the stomach comes first: it runs every
+  other bionic, and a bigger cell runs more of them.
+- **Mind: skills and recipes.** Skills improve by use and by spending what you earn from runs
+  (Shadowrun's karma): hacking, climbing, haggling, first aid, tunnel lore. Many skills need a
+  bionic to use: you can know how to deck, but not without a datajack. Recipes are what you know
+  about building bionics, found on Aris's benches, in terminals and in the tunnels. The clinic
+  only fits what you have a recipe for, so nobody shows you a menu of everything you could become.
 
 The split matters because of death (below): **the mind comes back, the body doesn't.**
 
@@ -113,6 +116,9 @@ money comes from the tunnels: salvaged tech, things worth selling on the surface
 other delvers left behind when they died. This keeps the organ trade as the desperate first step
 instead of an economy the player can farm.
 
+Parts can be sold too, for anyone who'd rather have the money. The trader sells back what you sold,
+at twice the price. The clinic buys each recipe once, for a one-off sum, and you still know it.
+
 ## The maker space
 
 Aris's workshop is yours to bring back, one machine at a time. Some of the earliest quests are just
@@ -120,6 +126,38 @@ finding the money and parts to repair them. Each working machine lets you do mor
 without a back-alley clinic: tune/modify the implants you have, strip salvage for parts, and eventually build
 your own. Her notes and half-finished work are still on the benches, and some of them are clues.
 By gaining access to some of her archives you can get access to more advanced designs. 
+
+## Dangers
+
+Before you have weapons, the tunnels are about getting past things, in the spirit of Rick
+Dangerous: each danger moves in its own way, and learning how is the puzzle. Getting hurt costs
+health, and at none you collapse and wake at home, as when you starve. Each danger is also a door:
+the bionic or tool that answers it is further on.
+
+- **Rats** are the weakest. Jumping on one kills it. Running into a handful hurts enough to matter.
+- **Recycler bots** are broken maintenance robots, in the sewers and on the metro's floor. They
+  collect the same salvage you do, and ignore you while you're wholly human. Once you're fitted,
+  they try to recycle you. They can't climb ladders or stairs, so height is the way past them. Later
+  you can destroy one and take everything it collected.
+- **Wild dogs** are few and frightening. They're faster than you, even on your first bionic legs,
+  and the only way out is up a ladder or through a door. Without the legs or a weapon, their den
+  is almost certain death. Matching their speed takes a long time.
+- **Bats** roost in the dark and attack only while your lamp is on. Some caves are too thick with
+  them to cross by lamplight, until the infrared eye lets you see without it. Sonar might drive
+  them off, later.
+- **Snakes** hide in knee-high water, which slows you down. Ripples show where they are.
+- **Organ cultures** are Apex's failed grow-vat organs, dumped in the sewers. They creep in the
+  dark and shrink from light, so the lamp is a tool that costs battery.
+- **Radioactive waste** leaks from medical isotope drums. Being near them builds a dose, an
+  ailment that fades slowly. With one kidney it fades more slowly still.
+
+Some ailments fade on their own and some, like an infected bite, last until they're treated.
+
+Getting hurt has to be felt: a sound, a flash and a flinch every time, so the player knows what hit
+them.
+
+Later the maker space prints and builds weapons: a plastic pistol that lasts a few shots, charges
+that open walls, and maybe a sonar for the bats.
 
 ## Death
 
@@ -204,6 +242,13 @@ player to speculate about.
   testable and winnable.
 - **No talking your way to a win.** The LLM turns what the player says into bounded effects on
   relationship scores. NPCs act on those scores, not on whatever the player types.
+- **Every danger has a solution.** As in Rick Dangerous and the early platformers, each map is a
+  puzzle: an enemy you can't kill moves in a pattern you can learn and time your way past, or there's
+  a route it can't follow (a ladder, a ledge, a door), or a way to kill it. Walking through and
+  taking the damage is never the only way. Every danger placed on a map comes with its solution,
+  checked by a test.
+- **Light is scarce.** The lamp's battery is a resource to ration and plan around. Dark stretches
+  are long enough, and plugs far enough apart, that reaching the next one is a relief.
 - **The tunnels are where you get the means; the village is where the game happens.** If the tunnels
   stop needing the village, the dungeon has become a separate game and Simile's core is wasted. Some
   components that upgrades need can only be had in the village, and key pieces of information for the
@@ -215,7 +260,9 @@ Each stage should be fun before the next starts.
 
 1. **The loop.** One village, one tunnel level, one clinic, three or four bionics, and one missing
    person. Go down, come back changed, the village reacts. No combat, no companions, no stash.
-2. **Death.** Combat, death, waking at home.
+2. **Parts, power and dangers.** Recipes and parts, the power cell, health, kicking, and the first
+   dangers to get past. Collapsing still wakes you at home; nothing stays where you fell but what
+   you carried.
 3. **Salvage.** The house stash, corpses that stay, salvaging your own body, and the maker space's
    first machines.
 4. **Companion.** One recruitable companion whose values decide how far they'll follow you.
