@@ -367,7 +367,8 @@ class Shut(Model):
 
 
 class Fitting(Model):
-    """A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`."""
+    """A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`, unless
+    it's `blocked`."""
 
     bionic: Bionic
     name: str = Field(
@@ -378,6 +379,14 @@ class Fitting(Model):
         min_length=1,
         description="The parts of their body it can go in place of, any one of which they give "
         'up for it: `["legs"]`, or `["left_eye", "right_eye"]` for an eye.',
+    )
+    blocked: str | None = Field(
+        default=None,
+        min_length=1,
+        exclude_if=lambda blocked: blocked is None,
+        description="Why the buyer can't fit it yet, as the player reads it, such as "
+        '"Needs a power cell first." or "Out of stock.", while it refuses to `fit` it. Left out '
+        "while it would fit it now.",
     )
 
     @model_validator(mode="after")
@@ -432,8 +441,9 @@ class Buyer(Model):
     fittings: list[Fitting] = Field(
         default=[],
         exclude_if=lambda fittings: not fittings,
-        description="The bionics it would fit now, by `fit`, whether or not they can pay, each "
-        "once. Left out while there are none.",
+        description="Every bionic it fits that they know the recipe for and haven't fitted, by "
+        "`fit`, whether or not they can pay, each once, with why when it can't fit it yet. Left "
+        "out while there are none.",
     )
     recipes: dict[Bionic, Annotated[float, Field(ge=0, allow_inf_nan=False)]] = Field(
         default={},

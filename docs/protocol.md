@@ -24,8 +24,8 @@ interiors' ids; this document says where.
   position's `map`, an entity's `pose` and `facing`, a line's `flushed`, an article's
   `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`,
   `sales` and `searched`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
-  buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, and `player_state`'s `meal`,
-  `shut`, `buyer`, `piles` and `recipes`, below.
+  buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
+  `player_state`'s `meal`, `shut`, `buyer`, `piles` and `recipes`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -332,12 +332,14 @@ A keeper such as the clinic's doctor may also buy parts of the player's body and
   they sell with [`sell_part`](#sell_part): `{"left_kidney": 100}`. The clinic's doctor buys one
   kidney, never the second. It's left out while it would buy none, as at the scrap trader's stall,
   or at the clinic once they've sold a kidney.
-- `fittings`: the bionics it would fit now, whether or not they can pay, each once, which they have
-  fitted with [`fit`](#fit). It's left out while there are none. A `Fitting` has its `bionic`; its
-  `name`, as the player sees it, such as `"Spring feet"`; its `price`; and its `parts`, the parts
-  of their body it can go in place of, any one of which they give up for it: `["legs"]`, or
-  `["left_eye", "right_eye"]` for the infrared eye. Each part is named once, and only a part the
-  bionic can replace. A grade of a line past the first goes in place of the grade before it, which
+- `fittings`: every bionic it fits that they know the recipe for and haven't fitted, whether or not
+  they can pay, each once, which they have fitted with [`fit`](#fit). It's left out while there are
+  none. A `Fitting` has its `bionic`; its `name`, as the player sees it, such as `"Spring feet"`;
+  its `price`; its `parts`, the parts of their body it can go in place of, any one of which they
+  give up for it: `["legs"]`, or `["left_eye", "right_eye"]` for the infrared eye; and `blocked`,
+  why it can't fit it yet, as the player reads it, such as `"Needs a power cell first."` or
+  `"Out of stock."`. `blocked` is left out while it would fit it now. Each part is named once, and
+  only a part the bionic can replace. A grade of a line past the first goes in place of the grade before it, which
   the doctor takes back.
 - `recipes`: what it pays for each recipe they know that it would buy now, keyed by the `Bionic`
   it builds, which they sell with [`sell_recipe`](#sell_recipe): `{"datajack": 40}`. It buys each
@@ -576,8 +578,8 @@ and one for a part the buyer won't buy.
 [`buyer`](#player_state)'s `fittings`, and the part of their body it goes in place of, one of that
 fitting's `parts`. They pay its `price` from their `money`, and the bionic is in that part of their
 `body` from then on. The server sends the [`player_state`](#player_state) that follows. It ignores
-a `fit` where there's no buyer, for a bionic it doesn't fit, for a part the bionic can't go in
-place of, and one they can't pay for.
+a `fit` where there's no buyer, for a bionic it doesn't fit, for a fitting that's `blocked`, for a
+part the bionic can't go in place of, and one they can't pay for.
 
 ### `sell_recipe`
 

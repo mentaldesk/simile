@@ -247,6 +247,16 @@ DOCTOR = Buyer(
     fittings=[LEGS, EYE],
 )
 AT_THE_CLINIC = STARTING.model_copy(update={"buyer": DOCTOR})
+FEET = Fitting(
+    bionic=Bionic.SPRING_FEET,
+    name="Spring feet",
+    price=120,
+    parts=["feet"],
+    blocked="Needs the bionic legs fitted first.",
+)
+BLOCKED_AT_THE_CLINIC = STARTING.model_copy(
+    update={"buyer": DOCTOR.model_copy(update={"fittings": [LEGS, FEET]})}
+)
 CELL_RECIPE = Recipe(
     bionic=Bionic.POWER_CELL, name="Power cell", parts={"lithium_cell": 2}, credits=90
 )
@@ -377,6 +387,7 @@ SERVER = [
     WOKEN,
     AT_THE_SCRAP_STALL,
     AT_THE_CLINIC,
+    BLOCKED_AT_THE_CLINIC,
     IN_THE_METRO,
     KNOWING,
     SELLING_RECIPES,
@@ -997,6 +1008,7 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("Buyer", "recipes"),
         ("Buyer", "stock"),
         ("Buyer", "treatments"),
+        ("Fitting", "blocked"),
         ("SnapshotMessage", "creatures"),
         ("Player", "searched"),
         ("Player", "power"),
@@ -1058,6 +1070,25 @@ def test_player_state_says_what_the_clinic_buys_of_their_body_and_fits() -> None
     }
 
 
+def test_a_fitting_it_cannot_fit_yet_says_why() -> None:
+    fittings = json.loads(BLOCKED_AT_THE_CLINIC.model_dump_json())["buyer"]["fittings"]
+
+    assert fittings == [
+        {"bionic": "bionic_legs", "name": "Bionic legs", "price": 80.0, "parts": ["legs"]},
+        {
+            "bionic": "spring_feet",
+            "name": "Spring feet",
+            "price": 120.0,
+            "parts": ["feet"],
+            "blocked": "Needs the bionic legs fitted first.",
+        },
+    ]
+
+
+def test_a_fitting_without_a_reason_is_one_it_would_fit_now() -> None:
+    assert Fitting.model_validate_json(LEGS.model_dump_json()).blocked is None
+
+
 def test_the_exported_buyer_buys_only_parts_of_the_body() -> None:
     parts = json.loads(SCHEMA_FILE.read_text())["$defs"]["Buyer"]["properties"]["parts"]
 
@@ -1088,6 +1119,7 @@ def test_a_buyer_that_buys_no_parts_and_fits_nothing_dumps_as_before() -> None:
         ({"price": -1}, "greater than or equal to 0"),
         ({"price": float("nan")}, "finite number"),
         ({"name": ""}, "at least 1 character"),
+        ({"blocked": ""}, "at least 1 character"),
         ({"parts": ["left_kidney"]}, "bionic_legs can't replace left_kidney"),
         ({"parts": ["legs", "legs"]}, "a fitting names each part once"),
         (

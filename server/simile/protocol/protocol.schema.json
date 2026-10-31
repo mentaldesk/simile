@@ -163,7 +163,7 @@
         },
         "fittings": {
           "default": [],
-          "description": "The bionics it would fit now, by `fit`, whether or not they can pay, each once. Left out while there are none.",
+          "description": "Every bionic it fits that they know the recipe for and haven't fitted, by `fit`, whether or not they can pay, each once, with why when it can't fit it yet. Left out while there are none.",
           "items": {
             "$ref": "#/$defs/Fitting"
           },
@@ -705,7 +705,7 @@
     },
     "Fitting": {
       "additionalProperties": false,
-      "description": "A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.",
+      "description": "A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`, unless\nit's `blocked`.",
       "properties": {
         "bionic": {
           "$ref": "#/$defs/Bionic"
@@ -726,6 +726,19 @@
           },
           "minItems": 1,
           "type": "array"
+        },
+        "blocked": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Why the buyer can't fit it yet, as the player reads it, such as \"Needs a power cell first.\" or \"Out of stock.\", while it refuses to `fit` it. Left out while it would fit it now."
         }
       },
       "required": [
