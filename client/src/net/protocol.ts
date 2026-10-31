@@ -753,7 +753,7 @@ export interface Buyer {
     [k: string]: number;
   };
   /**
-   * The bionics it would fit now, by `fit`, whether or not they can pay, each once. Left out while there are none.
+   * Every bionic it fits that they know the recipe for and haven't fitted, by `fit`, whether or not they can pay, each once, with why when it can't fit it yet. Left out while there are none.
    */
   fittings?: Fitting[];
   /**
@@ -772,7 +772,8 @@ export interface Buyer {
   treatments?: Treatment[];
 }
 /**
- * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`.
+ * A bionic the buyer fits, by `fit`, for its `price` and one of the player's `parts`, unless
+ * it's `blocked`.
  */
 export interface Fitting {
   bionic: Bionic;
@@ -787,6 +788,10 @@ export interface Fitting {
    * @minItems 1
    */
   parts: [BodyPart, ...BodyPart[]];
+  /**
+   * Why the buyer can't fit it yet, as the player reads it, such as "Needs a power cell first." or "Out of stock.", while it refuses to `fit` it. Left out while it would fit it now.
+   */
+  blocked?: string | null;
 }
 /**
  * Something a buyer sells, by `buy`, for its `price`.
