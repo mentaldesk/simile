@@ -83,6 +83,10 @@
   opacity: 0.5;
 }
 
+.clinic li.clinic-blocked {
+  opacity: 0.35;
+}
+
 .clinic p {
   margin: 0;
   opacity: 0.85;

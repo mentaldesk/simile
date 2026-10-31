@@ -274,7 +274,9 @@ def _looks(clinic: Clinic) -> str:
 def _now(clinic: Clinic) -> str:
     recipes = clinic.config.recipes
     deals = [f"buy a kidney for {_money(price)}" for price in clinic.parts().values()]
-    deals += [_fitting(clinic, f.bionic, f.name, f.price) for f in clinic.fittings()]
+    deals += [
+        _fitting(clinic, f.bionic, f.name, f.price) for f in clinic.fittings() if not f.blocked
+    ]
     deals += [
         f"buy their recipe for the {recipes[bionic].name.lower()} for a one-off {_money(price)}"
         for bionic, price in clinic.recipes().items()
@@ -294,16 +296,16 @@ def _fitting(clinic: Clinic, bionic: Bionic, name: str, price: float) -> str:
 
 
 def _waiting(clinic: Clinic) -> list[str]:
-    """The recipes they know that wait for the power cell."""
-    body, recipes = clinic.player.body, clinic.config.recipes
-    waiting = [
-        recipes[bionic].name.lower()
-        for bionic in clinic.player.mind.recipes
-        if bionic in recipes and not body.has(bionic) and not recipes[bionic].ready(body)
+    """The recipes they know that the doctor can't fit yet, and why."""
+    waiting: dict[str, list[str]] = {}
+    for fitting in clinic.fittings():
+        if fitting.blocked:
+            waiting.setdefault(fitting.blocked, []).append(fitting.name.lower())
+    return [
+        f"They know how to build the {_listed(names)}, but you can't fit "
+        f"{'it' if len(names) == 1 else 'them'} yet: {reason[0].lower()}{reason[1:]}"
+        for reason, names in waiting.items()
     ]
-    if not waiting:
-        return []
-    return [f"They know how to build the {_listed(waiting)}, but not before a power cell is in."]
 
 
 def _hints(clinic: Clinic) -> list[str]:

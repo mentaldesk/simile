@@ -236,12 +236,33 @@ async def test_what_she_says_follows_the_recipes_they_know() -> None:
     assert "buy their recipe for the datajack for a one-off 15" in prompt
     assert "buy their recipe for the power cell" not in prompt
     assert (
-        "They know how to build the datajack and infrared eye, but not before a power cell"
-        in prompt
+        "They know how to build the datajack and infrared eye, but you can't fit them yet: "
+        "needs a power cell first." in prompt
     )
+    assert "build the datajack" not in prompt.split("\n")[1]
     hint = prompt.split("you might hint at")[1]
     assert "the bionic legs, in place of their own legs" in hint
     assert "the spring feet" in hint and "datajack" not in hint and "grade 2" not in hint
+
+
+async def test_she_never_offers_what_she_cant_fit_yet() -> None:
+    three = Body(
+        stomach=Bionic.POWER_CELL,
+        vertebra=Bionic.DATAJACK,
+        legs=Bionic.BIONIC_LEGS,
+        feet=Bionic.SPRING_FEET,
+    )
+    depot = Depot(player=Player(body=three, mind=Mind(recipes=[Bionic.INFRARED_EYE])))
+    depot.stand(INSIDE)
+    await depot.run()
+
+    [request] = depot.provider.requests
+    prompt = request.messages[-1].content
+    assert "build the infrared eye for" not in prompt
+    assert (
+        "They know how to build the infrared eye, but you can't fit it yet: needs a bigger "
+        "power cell first." in prompt
+    )
 
 
 async def test_she_offers_to_patch_up_the_hurt_and_treat_their_ailments() -> None:

@@ -96,7 +96,13 @@ def knowing(*bionics: Bionic, money: float = 0, body: Body = POWERED) -> Player:
 
 
 def offered(depot: Depot) -> list[Bionic]:
-    return [fitting.bionic for fitting in depot.clinic.fittings()]
+    """What the doctor would fit now."""
+    return [fitting.bionic for fitting in depot.clinic.fittings() if not fitting.blocked]
+
+
+def blocked(depot: Depot) -> dict[Bionic, str]:
+    """What the doctor lists but can't fit yet, and why."""
+    return {f.bionic: f.blocked for f in depot.clinic.fittings() if f.blocked}
 
 
 def test_a_whole_player_knowing_nothing_is_offered_a_kidney_sale() -> None:
@@ -167,14 +173,37 @@ def test_she_fits_only_what_they_know_the_recipe_for() -> None:
 def test_nothing_but_the_cell_goes_in_before_the_cell() -> None:
     depot = Depot(knowing(JACK, EYE, Bionic.BIONIC_LEGS, CELL, money=1000, body=Body()))
 
-    assert depot.clinic.fittings() == [POWER]
+    assert offered(depot) == [CELL]
+    first = "Needs a power cell first."
+    assert blocked(depot) == {JACK: first, Bionic.BIONIC_LEGS: first, EYE: first}
     for bionic, part in [(JACK, "vertebra"), (EYE, "left_eye"), (Bionic.BIONIC_LEGS, "legs")]:
         assert not depot.clinic.fit(bionic, part), bionic
     assert depot.player.body == Body()
 
     assert depot.clinic.fit(CELL, "stomach")
     assert offered(depot) == [JACK, Bionic.BIONIC_LEGS, EYE]
+    assert blocked(depot) == {}
     assert depot.clinic.fit(JACK, "vertebra")
+
+
+def test_the_datajacks_schematic_before_a_cell_lists_it_waiting_for_the_cell() -> None:
+    depot = Depot(knowing(JACK, money=500, body=Body()))
+
+    assert depot.clinic.fittings() == [
+        DATAJACK.model_copy(update={"blocked": "Needs a power cell first."})
+    ]
+    assert depot.trade.buyer().fittings == depot.clinic.fittings()
+    assert not depot.clinic.fit(JACK, "vertebra")
+    assert depot.player.body == Body()
+    assert depot.player.money == 500
+    assert depot.economy.ledger.entries == []
+
+
+def test_a_fitting_short_only_of_money_or_parts_isnt_blocked() -> None:
+    depot = Depot(knowing(money=0))
+    depot.player.mind = Mind(recipes=[JACK])
+
+    assert depot.clinic.fittings() == [DATAJACK]
 
 
 @pytest.mark.parametrize("bionic", list(RECIPES))
@@ -249,7 +278,7 @@ def test_she_fits_nothing_past_what_their_cell_runs_until_a_bigger_cell_is_in() 
     bigger = Bionic.POWER_CELL_2
     depot = Depot(knowing(EYE, bigger, money=1000, body=three))
 
-    assert EYE not in offered(depot)
+    assert blocked(depot) == {EYE: "Needs a bigger power cell first."}
     assert not depot.clinic.fit(EYE, "left_eye")
     assert depot.clinic.fit(bigger, "stomach")
     assert depot.clinic.fit(EYE, "left_eye")
@@ -304,7 +333,10 @@ def test_the_doctor_fits_only_what_they_stock() -> None:
     config = DEFAULT_CONFIG.model_copy(update={"stock": stock})
     depot = Depot(knowing(JACK, EYE, money=500), config)
 
-    assert depot.clinic.fittings() == [INFRARED]
+    assert depot.clinic.fittings() == [
+        DATAJACK.model_copy(update={"blocked": "Out of stock."}),
+        INFRARED,
+    ]
     assert not depot.clinic.fit(JACK, "vertebra")
     assert depot.player.money == 500
 

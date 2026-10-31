@@ -694,6 +694,14 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
 
 /** The clinic's doctor offering the datajack, as the server would once they have its schematic and a power cell. */
 const CLINIC = { place: 'clinic', name: 'The Clinic', prices: {}, fittings: [{ bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] }] };
+/** The same, before the cell's in: the cell to fit, and the datajack waiting for it. */
+const WAITING = {
+  ...CLINIC,
+  fittings: [
+    { bionic: 'power_cell', name: 'Power cell', price: 100, parts: ['stomach'] },
+    { ...CLINIC.fittings[0], blocked: 'Needs a power cell first.' },
+  ],
+};
 
 const offer = (page: Page, buyer: object | undefined) =>
   page.evaluate(async (buyer) => {
@@ -702,7 +710,7 @@ const offer = (page: Page, buyer: object | undefined) =>
     server.dispatch(JSON.stringify({ ...playerState.latest, buyer }));
   }, buyer);
 
-/** E at the clinic lists the datajack with its parts against what they carry. */
+/** E at the clinic lists the datajack with its parts against what they carry, and dimmed with why before the cell's in. */
 async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the datajack at the clinic';
   const at = { map: 'clinic_floor_0', x: 4, y: 2 };
@@ -717,6 +725,14 @@ async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
     throw new Error(`${name}: the clinic doesn't list its parts against what they carry: ${JSON.stringify(listed)}`);
   }
   await shot(page, index, name);
+  await offer(page, WAITING);
+  await run(page, 300);
+  const rows = await page.$$eval('section.clinic li', (items) => items.map((item) => [item.textContent ?? '', item.classList.contains('clinic-blocked')] as const));
+  const [cell, waiting] = [rows.find(([text]) => text.startsWith('Power cell')), rows.find(([text]) => text.startsWith('Datajack'))];
+  if (!cell || cell[1] || !waiting?.[1] || !waiting[0].includes('Needs a power cell first.') || waiting[0].includes('100')) {
+    throw new Error(`${name}: the datajack isn't dimmed waiting for the cell beside the cell: ${JSON.stringify(rows)}`);
+  }
+  await shot(page, index, `${name}, waiting for the cell`);
   await page.keyboard.press('Escape');
   await run(page, 200);
   if ((await shown(page, 'section.clinic')) !== null) throw new Error(`${name}: Esc didn't close it`);

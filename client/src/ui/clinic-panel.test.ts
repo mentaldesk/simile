@@ -7,6 +7,8 @@ const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', we
 const LEGS: Fitting = { bionic: 'bionic_legs', name: 'Bionic legs', price: 80, parts: ['legs'] };
 const EYE: Fitting = { bionic: 'infrared_eye', name: 'Infrared eye', price: 200, parts: ['left_eye', 'right_eye'] };
 const JACK: Fitting = { bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] };
+const FIRST = 'Needs a power cell first.';
+const WAITING: Fitting = { ...JACK, blocked: FIRST };
 const JACK_RECIPE: Recipe = {
   bionic: 'datajack',
   name: 'Datajack',
@@ -96,6 +98,14 @@ describe('deals', () => {
     const [fit] = deals({ ...CLINIC, prices: {}, parts: undefined, fittings: [JACK] }, player(100, [WIRE, WIRE, WIRE, connector]), undefined, [JACK_RECIPE]);
 
     expect(fit).toMatchObject({ kind: 'fit', short: false, needs: [{ have: 3 }, { name: 'usb-c connector', have: 1 }] });
+  });
+
+  it('says why a fitting is blocked, apart from what it is short of', () => {
+    const [jack] = deals({ ...CLINIC, prices: {}, parts: undefined, fittings: [WAITING] }, player(0), undefined, [JACK_RECIPE]);
+
+    expect(jack).toMatchObject({ kind: 'fit', bionic: 'datajack', short: true, blocked: FIRST });
+    expect(note(jack, false, 0)).toBe(FIRST);
+    expect(deals({ ...CLINIC, fittings: [JACK] }, player(0))[1]).not.toHaveProperty('blocked');
   });
 
   it('leaves out what the doctor no longer buys or fits, and talking with nobody to talk to', () => {
@@ -294,6 +304,26 @@ describe('ClinicPanel', () => {
     press('ArrowDown');
     press('Enter');
     expect(sent).toEqual([{ type: 'sell_recipe', recipe: 'datajack' }]);
+  });
+
+  it('dims a blocked fitting with its reason in place of its price, and never fits it', () => {
+    const buyer: Buyer = { ...CLINIC, prices: {}, parts: undefined, fittings: [WAITING, LEGS] };
+    panel.open(buyer, player(500, [WIRE]), undefined, [JACK_RECIPE]);
+
+    expect(rows()).toEqual([`Datajack, in place of a vertebra${FIRST}`, 'Bionic legs, in place of your legs80']);
+    const [jack, legs] = document.querySelectorAll('.clinic li');
+    expect(jack!.classList.contains('clinic-blocked')).toBe(true);
+    expect(legs!.classList.contains('clinic-blocked')).toBe(false);
+    expect(legs!.classList.contains('clinic-short')).toBe(false);
+    expect(status()).toBe(FIRST);
+    press('Enter');
+    press('Enter');
+    expect(sent).toEqual([]);
+    expect(status()).toBe(FIRST);
+    press('ArrowDown');
+    press('Enter');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'fit', bionic: 'bionic_legs', part: 'legs' }]);
   });
 
   it('buys a part back on one Enter, and never one they cannot pay for', () => {
