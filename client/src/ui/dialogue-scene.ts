@@ -20,7 +20,7 @@ import { HealthGauge } from './health-gauge';
 import { HelpPanel } from './help';
 import { HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
-import { onGameKey } from './keys';
+import { onGameKey, reply, talk, type Talker } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -103,7 +103,20 @@ export class DialogueScene extends Phaser.Scene {
     const pause = () => {
       if (this.pauseGate.allows(this.time.now) && this.scene.isActive(SIDE_SCENE)) paused.open();
     };
-    const onKeyDown = onGameKey({ chat, talk: () => this.talk(), use: () => this.pressE(), view: () => this.view(), eat: () => this.eat(), help, journal, character, pause });
+    const talker: Talker = { chat, log, ringed: () => this.targets.current() };
+    const onKeyDown = onGameKey({
+      chat,
+      reply: () => reply(talker),
+      talk: () => talk(talker, this.counterHere()),
+      use: () => this.pressE(),
+      view: () => this.view(),
+      eat: () => this.eat(),
+      help,
+      journal,
+      character,
+      log,
+      pause,
+    });
     const onPointerDown = ({ x, y }: Phaser.Input.Pointer) => {
       const npcId = clicked({ x, y }, worldView());
       if (npcId) chat.choose(npcId);
@@ -160,13 +173,13 @@ export class DialogueScene extends Phaser.Scene {
     const panelOpen = this.news.isOpen || this.murals.isOpen || this.clinic.isOpen || this.character.isOpen;
     this.journal.update(used?.kind === 'clue' ? used.clue : undefined, !panelOpen);
     this.ways.render(panelOpen ? [] : here, this.fromGame);
-    const talks = !panelOpen && !this.chat.isOpen && !ordered;
+    const talks = !panelOpen && !this.chat.isOpen && !this.log.isReading && !ordered;
     this.marker.render(this.targets.current(), view, (id) => dialogue.nameOf(id), talks);
     this.pauseGate.frameEnd(this.time.now);
   }
 
   private panelOpen(): boolean {
-    return this.chat.isOpen || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
+    return this.chat.isOpen || this.log.isReading || this.help.isOpen || this.journal.isOpen || this.character.isOpen || this.news.isOpen || this.murals.isOpen || this.clinic.isOpen;
   }
 
   private pressE(): void {
@@ -174,12 +187,10 @@ export class DialogueScene extends Phaser.Scene {
     if (used) this.use(used);
   }
 
-  /** T orders from whoever serves at the counter here, else talks to the ringed resident. */
-  private talk(): void {
+  /** The counter T orders at here, if any, and whoever serves there. */
+  private counterHere(): { serving: string | undefined } | undefined {
     const counter = orderedAtByT(this.player());
-    const serving = counter && (servingAt(counter, worldView()) ?? dialogue.partner());
-    if (serving) this.chat.choose(serving);
-    this.chat.open();
+    return counter && { serving: servingAt(counter, worldView()) ?? dialogue.partner() };
   }
 
   /** V looks at the mural in reach; the gallery scene looks at paintings. */

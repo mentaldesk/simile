@@ -13,8 +13,8 @@ The text side of conversations, drawn as HTML over the game canvas by `DialogueS
   (the news, a mural, a painting or the controls) while they're the player's partner (`callCue` in
   [`call-cue.ts`](call-cue.ts)), as audio plays their greeting;
 - a scrollable log of everything the player has heard or said, with an NPC's lines to the player
-  marked "→ You", shown in the bottom left only while the chat box is open or the player is in a
-  conversation;
+  marked "→ You", shown in the bottom left while the chat box is open or the player is in a
+  conversation, or to read back when T or Enter opens it with nobody to talk to (see *Keys*);
 - the news and residents' writing at a terminal (see *Reading the news*);
 - a mural up close (see *Looking at a mural*);
 - how hungry the player is and what they can eat (see *Hunger*), and what they can pick up or sell
@@ -254,7 +254,8 @@ terminal, a pile, the clinic, a buyer they can sell to, or a clue, but not on a 
 takes the door (`eUse` in [`world/reach.ts`](../world/reach.ts)), so one press never does two things. E never talks
 to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
 counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to
-Lachlan". V looks at a mural or a painting (`lookedAtByV`). Stairs, ladders and the lift are the
+Lachlan". Off a counter with nobody to talk to, T and Enter open the log to read instead, and
+either, or Esc, closes it (`talk` and `reply` in [`keys.ts`](keys.ts)). V looks at a mural or a painting (`lookedAtByV`). Stairs, ladders and the lift are the
 arrows' alone. A small tag over each door, flight, ladder or lift a key takes from where the player
 stands names the keys and what it does: "E: go in", "↑: upstairs", "↓: downstairs", "↑ ↓: lift"
 (`WayPromptLayer` in [`way-prompts.ts`](way-prompts.ts)). The world scene words them and says where
