@@ -58,21 +58,33 @@ class Clinic:
         return {KIDNEYS[0]: self.config.kidney}
 
     def fittings(self) -> list[Fitting]:
-        """What the doctor would fit now, whether or not they can pay or have the parts: each
-        bionic they know the recipe for, once the cell's in and while it would run it."""
+        """Each bionic they know the recipe for and haven't fitted, whether or not they can pay or
+        have the parts, `blocked` with why the doctor can't fit it now."""
         body, known = self.player.body, self.player.mind.recipes
         fittings = []
         for bionic, recipe in self.config.recipes.items():
-            fits = recipe.ready(body) and runs(body, bionic)
-            if bionic not in known or body.has(bionic) or not fits:
+            if bionic not in known or body.has(bionic):
                 continue
             lower = bionic.line[: bionic.line.index(bionic)]
             free = [part for part in recipe.replaces if getattr(body, part) in (PRESENT, *lower)]
-            if free and self._stocked(bionic):
-                fittings.append(
-                    Fitting(bionic=bionic, name=recipe.name, price=recipe.credits, parts=free)
-                )
+            if free:
+                blocked = self._blocked(bionic)
+                fitting = Fitting(bionic=bionic, name=recipe.name, price=recipe.credits, parts=free)
+                fittings.append(fitting.model_copy(update={"blocked": blocked}))
         return fittings
+
+    def _blocked(self, bionic: Bionic) -> str | None:
+        recipes, body = self.config.recipes, self.player.body
+        if first := [b for b in recipes[bionic].after if not body.has(b)]:
+            names = [
+                recipes[b].name.lower() if b in recipes else b.replace("_", " ") for b in first
+            ]
+            return f"Needs a {' and a '.join(names)} first."
+        if not runs(body, bionic):
+            return "Needs a bigger power cell first."
+        if not self._stocked(bionic):
+            return "Out of stock."
+        return None
 
     def _stocked(self, bionic: Bionic) -> bool:
         return self.config.stock.get(bionic, 0) >= 1
@@ -147,6 +159,9 @@ class Clinic:
         they can pay and have them."""
         fitting = next((f for f in self.fittings() if f.bionic is bionic), None)
         if fitting is None or part not in fitting.parts or not self.inside():
+            return False
+        if fitting.blocked:
+            logger.info("%s  The doctor won't fit %s: %s", self.clock, bionic, fitting.blocked)
             return False
         if fitting.price > self.player.money + 1e-9 or self.missing(bionic):
             return False

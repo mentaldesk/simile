@@ -28,7 +28,7 @@ export type Deal =
   | { kind: 'item'; label: string; price: number; item: string; count: number }
   | { kind: 'buy'; label: string; price: number; item: string; weight: number; short?: 'money' | 'weight' }
   | { kind: 'part'; label: string; price: number; part: BodyPart }
-  | { kind: 'fit'; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean }
+  | { kind: 'fit'; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean; blocked?: string }
   | { kind: 'recipe'; label: string; price: number; bionic: Bionic }
   | { kind: 'treat'; label: string; price: number; effect: EffectKind | null; short: boolean };
 
@@ -80,12 +80,12 @@ export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: re
     found.push({ kind: 'part', label: `Sell ${PARTS[part]}`, price, part });
   }
   const recipe = (bionic: Bionic) => recipes.find((known) => known.bionic === bionic);
-  for (const { bionic, name, price, parts } of buyer.fittings ?? []) {
+  for (const { bionic, name, price, parts, blocked } of buyer.fittings ?? []) {
     const needed = needs(recipe(bionic), player.items);
     const short = player.money < price || needed.some(({ count, have }) => have < count);
     for (const part of parts) {
       const label = `${name}, in place of ${PARTS[part]}`;
-      found.push({ kind: 'fit', label, price, bionic, part, needs: needed, short });
+      found.push({ kind: 'fit', label, price, bionic, part, needs: needed, short, ...(blocked && { blocked }) });
     }
   }
   for (const [bionic, price] of Object.entries(buyer.recipes ?? {}) as [Bionic, number][]) {
@@ -101,6 +101,7 @@ export const needed = (needs: readonly Need[]) => needs.map(({ name, count, have
 /** What the clinic's panel says of the chosen deal: what Enter will do, or why it can't. */
 export function note(deal: Deal | undefined, armed: boolean, money: number): string {
   if (!deal) return '';
+  if (deal.kind === 'fit' && deal.blocked) return deal.blocked;
   if (deal.kind === 'fit' && deal.short) {
     const missing = deal.needs.find(({ count, have }) => have < count);
     if (missing) return `It needs ${missing.count} ${missing.name}, and you have ${missing.have}.`;
@@ -126,6 +127,7 @@ function key(deal: Deal): string {
   return deal.kind === 'sell' ? 'sell' : `${deal.kind}:${deal.label}`;
 }
 const isShort = (deal: Deal) => ((deal.kind === 'fit' || deal.kind === 'treat') && deal.short) || (deal.kind === 'buy' && deal.short !== undefined);
+const isBlocked = (deal: Deal) => deal.kind === 'fit' && deal.blocked !== undefined;
 
 /** The clinic up close: what the doctor buys and fits, for how much and what parts. */
 export class ClinicPanel {
@@ -244,7 +246,7 @@ export class ClinicPanel {
       if (!deal.short) this.send({ type: 'buy', item: deal.item });
     } else if (deal.kind === 'treat') {
       if (!deal.short) this.send({ type: 'treat', effect: deal.effect });
-    } else if (deal.kind === 'fit' && deal.short) {
+    } else if (deal.kind === 'fit' && (deal.short || deal.blocked)) {
       this.armed = undefined;
     } else if (this.armed !== key(deal)) {
       this.armed = key(deal);
@@ -262,12 +264,14 @@ export class ClinicPanel {
       item.dataset.index = String(index);
       item.classList.toggle('clinic-selected', index === this.selected);
       item.classList.toggle('clinic-short', isShort(deal));
+      item.classList.toggle('clinic-blocked', isBlocked(deal));
       item.classList.toggle('clinic-armed', this.armed === key(deal));
       const label = item.appendChild(document.createElement('span'));
       label.textContent = deal.label;
-      if (deal.kind === 'fit' && deal.needs.length) label.appendChild(document.createElement('small')).textContent = needed(deal.needs);
+      if (deal.kind === 'fit' && deal.blocked) label.appendChild(document.createElement('small')).textContent = deal.blocked;
+      else if (deal.kind === 'fit' && deal.needs.length) label.appendChild(document.createElement('small')).textContent = needed(deal.needs);
       if (deal.kind === 'item') label.appendChild(document.createElement('small')).textContent = `you have ${deal.count}`;
-      if (deal.kind !== 'talk') item.appendChild(document.createElement('b')).textContent = amount(deal.price);
+      if (deal.kind !== 'talk' && !isBlocked(deal)) item.appendChild(document.createElement('b')).textContent = amount(deal.price);
       return item;
     });
     this.list.replaceChildren(...items);
