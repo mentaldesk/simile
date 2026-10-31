@@ -1,6 +1,9 @@
+import json
+import shutil
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -9,12 +12,13 @@ from starlette.testclient import TestClient
 
 from simile.app import create_app
 from simile.persistence import player_of
-from simile.player.health import DEFAULT_HEALTH, Health, health_of
+from simile.player.health import DEFAULT_HEALTH, Health, beds_in, health_of
 from simile.player.sync import PlayerSync
 from simile.schema import PLAYER_ID, SOLD, Body, Effect, EffectKind, Player
 from simile.sim import Clock, EventBus, World, world_of
 from simile.world import Movement, Point, movement_of
-from simile.world.map import load_maps
+from simile.world.map import FLOORS, MAP_DIR, load_maps
+from simile.world.paths import Spot
 
 MAPS = load_maps()
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
@@ -23,6 +27,9 @@ TAKES = 0.05
 """What a bite takes here; a rat's own is in `simile.creatures`."""
 TUNNEL = Point(65, 15, "metro")
 HOME = Point(13, 2, "maker_space_floor_0")
+LOFT = "maker_space_floor_2"
+BED = Point(1, 2, LOFT)
+SPEED = 60.0
 BITE, INFECTION = EffectKind.RAT_BITE, EffectKind.INFECTION
 ONE_KIDNEY = Body(left_kidney=SOLD)
 
@@ -30,7 +37,12 @@ MakePackage = Callable[[dict[str, str]], str]
 
 
 class Patient:
-    def __init__(self, player: Player | None = None, at: Point = TUNNEL) -> None:
+    def __init__(
+        self,
+        player: Player | None = None,
+        at: Point = TUNNEL,
+        beds: Collection[Spot] | None = None,
+    ) -> None:
         self.player = player or Player()
         self.playing = True
         self.collapses = 0
@@ -43,6 +55,7 @@ class Patient:
             self.clock,
             playing=lambda: self.playing,
             collapse=self.collapse,
+            beds=beds,
         )
 
     def collapse(self) -> None:
@@ -52,6 +65,11 @@ class Patient:
         for _ in range(round(hours * HOUR / step)):
             self.clock.advance(step)
             self.health.tick(step)
+
+    def rest(self, seconds: float, step: float = 0.1) -> None:
+        """Runs `seconds` of real time at `SPEED`."""
+        self.clock.speed = SPEED
+        self.run(seconds * SPEED / HOUR, step * SPEED)
 
     def strength(self, kind: EffectKind) -> float:
         effect = self.health.effect(kind)
@@ -78,6 +96,74 @@ def test_it_comes_back_slowly_and_faster_at_home() -> None:
     assert home.player.health == pytest.approx(0.7)
     home.run(1)
     assert home.player.health == 1
+
+
+def home_floors(directory: Path, bed: bool) -> Path:
+    """The maker space's floor maps, with a bed at the west end of the loft if `bed`."""
+    (directory / FLOORS).mkdir()
+    for floor in range(3):
+        name = f"maker_space_floor_{floor}.tmj"
+        shutil.copy(MAP_DIR / FLOORS / name, directory / FLOORS / name)
+    if bed:
+        path = directory / FLOORS / f"{LOFT}.tmj"
+        data = json.loads(path.read_text())
+        [furniture] = [layer for layer in data["layers"] if layer["name"] == "furniture"]
+        piece = {"name": "bed", "type": "bed", "x": 16, "y": 32, "width": 32, "height": 16}
+        furniture["objects"].append({**piece, "id": 999, "rotation": 0, "visible": True})
+        path.write_text(json.dumps(data))
+    return directory
+
+
+def home_beds(directory: Path, bed: bool = True) -> frozenset[Spot]:
+    return beds_in(MAPS[HOME.map].location("maker_space"), home_floors(directory, bed))
+
+
+def test_the_beds_are_read_from_the_home_floor_maps(tmp_path: Path) -> None:
+    assert home_beds(tmp_path) == {Spot(LOFT, 1, 2), Spot(LOFT, 2, 2)}
+
+
+def test_resting_in_bed_heals_from_a_tenth_to_full_in_about_three_real_seconds(
+    tmp_path: Path,
+) -> None:
+    patient = Patient(Player(health=0.1), at=BED, beds=home_beds(tmp_path))
+
+    patient.rest(2.5)
+    assert patient.player.health == pytest.approx(0.1 + 2.5 / DEFAULT_HEALTH.rest)
+    patient.rest(0.3)
+    assert patient.player.health == 1
+
+
+def test_off_the_bed_healing_is_unchanged(tmp_path: Path) -> None:
+    beds = home_beds(tmp_path)
+    out = Patient(Player(health=0.1), beds=beds)
+    home = Patient(Player(health=0.1), at=Point(5, 2, LOFT), beds=beds)
+
+    out.rest(3)
+    home.rest(3)
+
+    assert out.player.health == pytest.approx(0.1 + DEFAULT_HEALTH.heal * 3 * SPEED / HOUR)
+    assert home.player.health == pytest.approx(0.1 + DEFAULT_HEALTH.heal_at_home * 3 * SPEED / HOUR)
+
+
+def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
+    beds = home_beds(tmp_path, bed=False)
+    patient = Patient(Player(health=0.1), at=BED, beds=beds)
+
+    patient.rest(3)
+
+    assert beds == frozenset()
+    assert patient.player.health == pytest.approx(
+        0.1 + DEFAULT_HEALTH.heal_at_home * 3 * SPEED / HOUR
+    )
+
+
+def test_an_infection_keeps_health_from_coming_back_in_bed(tmp_path: Path) -> None:
+    patient = Patient(Player(health=0.5), at=BED, beds=home_beds(tmp_path))
+    patient.health.afflict(INFECTION, 1.0)
+
+    patient.rest(3)
+
+    assert patient.player.health < 0.5
 
 
 def test_nothing_changes_while_nobody_is_playing() -> None:

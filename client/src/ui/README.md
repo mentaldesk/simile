@@ -137,7 +137,11 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   from 60%, and "You're badly hurt. Rest at home or get patched up at the clinic, or you'll
   collapse." from 25%. A rat bite says "A rat bit you. Have the clinic clean it before it turns.",
   and an infection, above all else, "Your bite is infected. It won't heal until the clinic treats
-  it." The character screen shows health and each effect in full.
+  it." While they rest in their bed at home, which heals them as fast as a plug charges, it says
+  "Resting. Your health comes back." until they're full. The protocol doesn't say where they rest,
+  so `Resting` reads it from health climbing at `RESTING_RATE` (0.1 a real second) or faster, far
+  above anywhere else; a jump of more than 0.1, waking or the clinic, isn't rest. The character
+  screen shows health and each effect in full.
 
 ## Getting hurt
 

@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { server } from '../net';
 import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
-import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, toEat, when } from './hunger';
+import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, Resting, toEat, when } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -50,6 +50,28 @@ describe('healthFeeling', () => {
   it('warns of a bite before it turns, and of an infection above all', () => {
     expect(healthFeeling(hurt(0.9, [BITE]))).toBe('A rat bit you. Have the clinic clean it before it turns.');
     expect(healthFeeling(hurt(0.1, [INFECTION]))).toBe("Your bite is infected. It won't heal until the clinic treats it.");
+  });
+});
+
+describe('resting', () => {
+  it('is health climbing as fast as a bed brings it, until it stops or is full', () => {
+    const resting = new Resting();
+    expect(resting.update(0.1, 0)).toBe(false);
+    expect(resting.update(0.11, 33)).toBe(true);
+    expect(resting.update(0.11, 400)).toBe(true);
+    expect(resting.update(0.11, 600)).toBe(false);
+    expect(resting.update(0.12, 633)).toBe(false);
+    expect(resting.update(0.13, 666)).toBe(true);
+    expect(resting.update(1, 700)).toBe(false);
+  });
+
+  it('is not healing at home, waking or the clinic', () => {
+    const home = new Resting();
+    home.update(0.5, 0);
+    expect(home.update(0.51, 20_000)).toBe(false);
+    const woken = new Resting();
+    woken.update(0, 0);
+    expect(woken.update(0.25, 33)).toBe(false);
   });
 });
 
@@ -186,6 +208,19 @@ describe('HungerHint', () => {
 
     hint.update(state(0.9, { meal: HOME, power: 0.2 }), undefined);
     expect(shown(root)).toEqual(['Your power is low. Charge it at a plug.']);
+  });
+
+  it('says they are resting while health climbs in bed', () => {
+    const root = document.createElement('div');
+    const hint = new HungerHint(root);
+    const at = (health: number, now: number) => hint.update({ ...state(0.2), player: { ...state(0.2).player, health } }, undefined, now);
+
+    at(0.5, 0);
+    expect(shown(root)).toEqual(["You're hurt. Rest at home to heal faster."]);
+    at(0.51, 33);
+    expect(shown(root)).toEqual([RESTING]);
+    at(0.51, 1000);
+    expect(shown(root)).toEqual(["You're hurt. Rest at home to heal faster."]);
   });
 
   it('says they collapsed for a few seconds after it', () => {

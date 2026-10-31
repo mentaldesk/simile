@@ -1,20 +1,27 @@
+import json
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Collection
 from datetime import timedelta
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.applications import Starlette
 
 from simile.player.config import DEFAULT_CONFIG as PLAYER_CONFIG
+from simile.player.lamp import DEFAULT_LAMP
 from simile.player.where import here, location
-from simile.schema import PRESENT, Body, BodyPart, Effect, EffectKind, Id, Player
+from simile.schema import PRESENT, Body, BodyPart, Effect, EffectKind, Id, Location, Player
 from simile.sim import Clock
-from simile.world.movement import Movement, inside
+from simile.world.map import FLOORS, MAP_DIR
+from simile.world.movement import Movement, inside, spot_of
+from simile.world.paths import Spot
 
 logger = logging.getLogger(__name__)
 
 HOUR = 3600.0
 KIDNEYS: tuple[BodyPart, ...] = ("left_kidney", "right_kidney")
+BED = "bed"
+FURNITURE_LAYER = "furniture"
 
 
 class HealthConfig(BaseModel):
@@ -31,6 +38,12 @@ class HealthConfig(BaseModel):
     )
     heal_at_home: float = Field(
         default=0.5, ge=0, description="How much comes back each sim hour at home: two hours."
+    )
+    rest: float = Field(
+        default=DEFAULT_LAMP.charge,
+        gt=0,
+        description="Real seconds resting in their bed at home takes to heal them from none to "
+        "full, whatever the sim's speed: as long as a plug takes to charge the lamp.",
     )
     waking: float = Field(
         default=0.25, gt=0, le=1, description="Their health when they wake after collapsing."
@@ -75,13 +88,33 @@ def health_of(app: Starlette) -> "Health":
     return app.state.health
 
 
+def beds_in(home: Location, directory: Path = MAP_DIR) -> frozenset[Spot]:
+    """Every cell a bed covers on `home`'s floors, read from their maps' furniture."""
+    cells: set[Spot] = set()
+    for map_id in (home.map, *(floor.map for floor in home.floors)):
+        paths = (directory / FLOORS / f"{map_id}.tmj", directory / f"{map_id}.tmj")
+        path = next((path for path in paths if path.exists()), None)
+        if path is None:
+            continue
+        data = json.loads(path.read_text())
+        size = data["tilewidth"]
+        furniture = (layer for layer in data["layers"] if layer["name"] == FURNITURE_LAYER)
+        pieces = (piece for layer in furniture for piece in layer["objects"])
+        for bed in (piece for piece in pieces if piece["name"] == BED):
+            x, y = round(bed["x"] / size), round(bed["y"] / size)
+            across, down = range(round(bed["width"] / size)), range(round(bed["height"] / size))
+            cells.update(Spot(map_id, x + dx, y + dy) for dx in across for dy in down)
+    return frozenset(cells)
+
+
 def kidneys(body: Body) -> int:
     return sum(getattr(body, kidney) == PRESENT for kidney in KIDNEYS)
 
 
 class Health:
     """The player's health and ailments: hurting, healing, fading, an untreated bite turning
-    infected, and collapsing at none. Tick it on the sim loop."""
+    infected, and collapsing at none. Tick it on the sim loop. `beds` are the cells where they
+    rest, by default the beds in their home."""
 
     def __init__(
         self,
@@ -91,6 +124,7 @@ class Health:
         *,
         playing: Callable[[], bool] = lambda: True,
         collapse: Callable[[], None] = lambda: None,
+        beds: Collection[Spot] | None = None,
         config: HealthConfig = DEFAULT_HEALTH,
     ) -> None:
         self.player = player
@@ -99,6 +133,10 @@ class Health:
         self.playing = playing
         self.collapse = collapse
         self.config = config
+        if beds is None:
+            home = location(movement, config.home)
+            beds = frozenset() if home is None else beds_in(home)
+        self.beds = frozenset(beds)
 
     def tick(self, dt: float) -> None:
         if not self.playing():
@@ -110,8 +148,7 @@ class Health:
         if infection is not None:
             self.hurt(self.config.infection * infection.strength * hours)
         elif self.player.health < 1:
-            rate = self.config.heal_at_home if self.at_home() else self.config.heal
-            self.player.health = min(self.player.health + rate * hours, 1.0)
+            self.player.health = min(self.player.health + self.healing(dt), 1.0)
 
     def hurt(self, damage: float) -> None:
         """Takes `damage` of their health, collapsing them at none."""
@@ -150,6 +187,18 @@ class Health:
         if fades is None:
             return None
         return fades if kidneys(self.player.body) == 2 else fades * self.config.one_kidney
+
+    def healing(self, dt: float) -> float:
+        """How much health comes back in `dt` sim seconds where they stand, if nothing stops it."""
+        if self.resting():
+            return dt / self.clock.speed / self.config.rest
+        rate = self.config.heal_at_home if self.at_home() else self.config.heal
+        return rate * dt / HOUR
+
+    def resting(self) -> bool:
+        """Whether they're at one of their `beds`."""
+        at = here(self.movement)
+        return at is not None and spot_of(at) in self.beds
 
     def at_home(self) -> bool:
         at, home = here(self.movement), location(self.movement, self.config.home)

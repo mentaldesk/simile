@@ -14,6 +14,12 @@ export const FLAT = 0.1;
 /** Health from which they're told they're hurt, and from which they're warned they'll collapse. */
 export const HURT = 0.6;
 export const BADLY_HURT = 0.25;
+/** Health a real second from which it's coming back as resting in bed brings it, far faster than anywhere else. */
+export const RESTING_RATE = 0.1;
+/** A bigger rise at once is the clinic or waking, not rest. */
+const MOST_REST = 0.1;
+const RESTING_MS = 500;
+export const RESTING = 'Resting. Your health comes back.';
 const COLLAPSED_MS = 6000;
 const DAY_MS = 86_400_000;
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -42,11 +48,30 @@ export function powerFeeling(power: number): string | undefined {
   return undefined;
 }
 
+/** Whether they're resting in bed, from how fast `player_state`'s health climbs: the server heals them there as fast as a plug charges. */
+export class Resting {
+  private health = 1;
+  private at = -Infinity;
+  private until = -Infinity;
+
+  update(health: number, now: number): boolean {
+    if (health !== this.health) {
+      const rise = health - this.health;
+      const fast = rise > 0 && rise <= MOST_REST && rise / ((now - this.at) / 1000) >= RESTING_RATE;
+      this.until = fast ? now + RESTING_MS : -Infinity;
+      this.health = health;
+      this.at = now;
+    }
+    return health < 1 && now < this.until;
+  }
+}
+
 /** How their health and ailments feel, the infection first: only the clinic ends it. */
-export function healthFeeling(player: Player): string | undefined {
+export function healthFeeling(player: Player, resting = false): string | undefined {
   const has = (kind: EffectKind) => player.effects?.some((effect) => effect.kind === kind);
   const health = player.health ?? 1;
   if (has('infection')) return "Your bite is infected. It won't heal until the clinic treats it.";
+  if (resting && health < 1) return RESTING;
   if (health <= BADLY_HURT) return "You're badly hurt. Rest at home or get patched up at the clinic, or you'll collapse.";
   if (has('rat_bite')) return 'A rat bit you. Have the clinic clean it before it turns.';
   if (health <= HURT) return "You're hurt. Rest at home to heal faster.";
@@ -112,6 +137,7 @@ type Line = 'collapsed' | 'feeling' | 'health' | 'eat' | 'pile' | 'sell';
 export class HungerHint {
   readonly corner: HTMLElement;
   private readonly lines = new Map<Line, HTMLElement>();
+  private readonly resting = new Resting();
   private collapsedUntil = 0;
   private cause: Vital = 'hunger';
 
@@ -134,7 +160,8 @@ export class HungerHint {
   update(state: PlayerStateMessage | undefined, pile: Pile | undefined, now = Date.now()): void {
     this.show('collapsed', now < this.collapsedUntil ? COLLAPSED[this.cause] : undefined);
     this.show('feeling', state && feelingOf(state.player));
-    this.show('health', state && healthFeeling(state.player));
+    const resting = !!state && this.resting.update(state.player.health ?? 1, now);
+    this.show('health', state && healthFeeling(state.player, resting));
     this.show('eat', state && eatPrompt(state));
     this.show('pile', state && pile && pickUpPrompt(pile, state.player));
     this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);

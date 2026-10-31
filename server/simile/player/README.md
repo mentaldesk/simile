@@ -67,7 +67,10 @@ to hurt and bite the player: they look it up when they do, not at startup.
 - **Damage.** `hurt(damage)` takes that much of their health. At none they collapse as when they
   starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
-  `heal_at_home` (0.5) at home, in two. The clinic patches them up for money (`simile.clinic`).
+  `heal_at_home` (0.5) at home, in two. Standing at their bed at home they rest, and it comes back
+  as fast as a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the
+  sim's speed. Their beds are the cells the `bed` furniture covers on their home's floor maps
+  (`beds_in`). The clinic patches them up for money (`simile.clinic`).
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
