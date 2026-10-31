@@ -49,7 +49,7 @@ async def lifespan(app: Starlette) -> AsyncIterator[None]:
     )
     engine.player_request, engine.article, engine.work = players.request, article, work
     engine.missed = missed
-    engine.incident = lambda: investigation_of(app).incident
+    engine.disappearance = lambda: investigation_of(app).disappearance
     engine.looks = lambda npc: sightings_of(app).looks(npc)
     app.state.players = players
     app.state.flushed = lambda line: flushed(players.talk(), line, player_of(app))

@@ -58,7 +58,7 @@ def test_any_tolerant_default_resident_may_keep_it_the_same_for_a_seed() -> None
     assert keeper(npcs, random.Random("lens/3")) == keeper(npcs, random.Random("lens/3"))
 
 
-def test_an_attacker_keeps_it_only_if_every_tolerant_resident_is_one() -> None:
+def test_a_distruster_keeps_it_only_if_every_tolerant_resident_is_one() -> None:
     village = [FAN, EASY, UNEASY, WARY]
 
     for seed in range(20):

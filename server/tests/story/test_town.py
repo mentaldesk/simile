@@ -4,7 +4,7 @@ import pytest
 
 from simile.npc import load_npcs
 from simile.schema import Npc
-from simile.story import incident
+from simile.story import disappearance
 from simile.story.town import FACTS, METRO, PLACES, PREFIX, Knowing, asked_about, known
 from simile.street.village import village
 
@@ -83,7 +83,7 @@ def test_residents_know_where_they_work() -> None:
     assert all(known(mirela, seed)["town_cafe"] is Knowing.KNOWS for seed in SEEDS)
 
 
-def test_every_fact_is_about_somewhere_in_the_village_and_none_about_the_incident() -> None:
+def test_every_fact_is_about_somewhere_in_the_village_and_none_about_her_disappearance() -> None:
     plans = village()
     places = {plan.id for plan in plans} | {loc.id for plan in plans for loc in plan.locations}
     for fact in FACTS.values():
@@ -91,7 +91,7 @@ def test_every_fact_is_about_somewhere_in_the_village_and_none_about_the_inciden
         assert fact.id.startswith(PREFIX)
         assert "Aris" not in fact.what + fact.rumour
         assert all(lead.fact_id in FACTS for lead in fact.leads)
-    ids = [getattr(incident, name) for name in dir(incident) if name.isupper()]
+    ids = [getattr(disappearance, name) for name in dir(disappearance) if name.isupper()]
     assert not any(isinstance(id, str) and id.startswith(PREFIX) for id in ids)
 
 

@@ -18,27 +18,18 @@ const on = (street: string, more: Partial<UsableState> = {}, from: Village = vil
 const byId = (usables: Usable[], id: string) => usables.find((usable) => usable.id === id)!;
 const furniture = (map: string, name: string) => village.map(map)!.furniture.find((piece) => piece.name === name)!;
 const MAKER = village.map('maker_space_floor_0')!;
-const DOOR = scenery.pieces[scenery.platforms.door];
 
 describe('usablesOn', () => {
   const street = on('high_street', {});
 
-  it("pins Aris's notes over her workbench, and draws the splintered door frame on the maker space's door", () => {
+  it("pins Aris's notes over her workbench, her only clue", () => {
     expect(byId(street, 'clue:aris_notes')).toMatchObject({
       kind: 'clue',
       map: 'maker_space_floor_0',
       building: 'maker_space',
       picture: { icon: 'aris_notes', x: xOf(MAKER.offset.x + 3), y: feetOf(MAKER.offset.y + 2) - 2.2 * PPM, depth: DEPTH.stairs + 0.1 },
     });
-    expect(byId(street, 'clue:door_frame').picture).toEqual({
-      icon: 'door_frame',
-      height: 2.1 * PPM,
-      x: xOf(MAKER.offset.x + 14) - DOOR.size[0] / 2,
-      y: feetOf(MAKER.offset.y + 2),
-      originX: 0,
-      originY: 1,
-      depth: DEPTH.frame + 0.1,
-    });
+    expect(street.filter((usable) => usable.kind === 'clue').map(({ id }) => id)).toEqual(['clue:aris_notes']);
   });
 
   it("draws the datajack's schematic on Aris's bench until it's searched, then a tick on the bench", () => {

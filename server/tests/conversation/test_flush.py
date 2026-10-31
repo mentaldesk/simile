@@ -9,7 +9,7 @@ from simile.conversation.flush import flushed
 from simile.schema import PLAYER_ID, Line, Player
 from simile.sim import Clock, LineSpoken, World
 
-from ..story.test_journal import ALIBI, ASLEEP, EYE, Listening
+from ..story.test_journal import DENIAL, EYE, KEPT_OUT, Listening
 from .test_player import START
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -30,42 +30,42 @@ def flushes(listening: Listening, player: Player) -> list[tuple[str, bool]]:
 
 @pytest.mark.anyio
 async def test_the_eye_shows_a_flush_exactly_on_the_lie_and_the_journal_agrees() -> None:
-    listening = Listening(EYE, f"Me? {ALIBI} Why do you ask?")
+    listening = Listening(EYE, f"Me? {DENIAL} Why do you ask?")
     listening.village.walk_to("ben", 1)
     seen = flushes(listening, EYE)
 
-    await listening.say("Where were you the night Aris was attacked?", "ben")
+    await listening.say("How did you get on with Aris?", "ben")
 
-    assert [text for text, flush in seen if flush] == [ALIBI]
+    assert [text for text, flush in seen if flush] == [DENIAL]
     assert len(seen) > 1
     assert [(e.fact_id, e.flushed) for e in listening.notebook.entries] == [
         ("gone", False),
-        ("there_ben", True),
+        ("distrust_ben", True),
     ]
 
 
 @pytest.mark.anyio
 async def test_a_cover_of_two_sentences_flushes_on_the_second_as_the_journal_writes_it() -> None:
-    listening = Listening(EYE, "I was fast asleep that night. I didn’t hear a THING!")
+    listening = Listening(EYE, "I keep out of other people’s business. I never heard a THING!")
     seen = flushes(listening, EYE)
 
-    await listening.say("Did you hear anything the night Aris was attacked?", "ana")
+    await listening.say("What did you hear said about Aris?", "ana")
 
     assert [flush for _, flush in seen] == [False, True]
     assert listening.notebook.entries[-1].flushed is True
-    assert listening.notebook.entries[-1].text == f"“{ASLEEP}”"
+    assert listening.notebook.entries[-1].text == f"“{KEPT_OUT}”"
 
 
 @pytest.mark.anyio
 async def test_no_flush_without_the_eye_nor_on_the_truth() -> None:
-    lie = Listening(None, f"Me? {ALIBI}")
+    lie = Listening(None, f"Me? {DENIAL}")
     lie.village.walk_to("ben", 1)
     unseen = flushes(lie, Player())
     truth = Listening(EYE)
     told = flushes(truth, EYE)
 
-    await lie.say("Where were you the night Aris was attacked?", "ben")
-    await truth.say("Did you see anything the night Aris was attacked?", "ana")
+    await lie.say("How did you get on with Aris?", "ben")
+    await truth.say("Did you see Aris the evening before she went missing?", "ana")
 
     assert unseen and not any(flush for _, flush in unseen)
     assert told and not any(flush for _, flush in told)
@@ -76,7 +76,7 @@ def test_the_lifespan_sets_the_flush_hook_while_running(make_package: MakePackag
     files = {f"{m}/lifespan.py": f"from simile.{m}.lifespan import lifespan\n" for m in lifespans}
     app: Starlette = create_app(make_package(files))
     app.state.world = World(Clock(START))
-    line = Line(id=1, conversation_id="c", speaker="ben", text=ALIBI, timestamp=START, duration=1)
+    line = Line(id=1, conversation_id="c", speaker="ben", text=DENIAL, timestamp=START, duration=1)
 
     with TestClient(app):
         assert app.state.flushed(line) is False

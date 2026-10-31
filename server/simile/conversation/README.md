@@ -263,10 +263,10 @@ tells the model what the lie is (`temptation.py`).
   and a scene's direction has it in the third person. Without a roll nothing is added. The lies
   stay within *Rough edges*' bounds: about the resident, what they did and what they'll do. Each
   direction ends "Use that cover story and nothing else: no days, times, places or other people."
-- **Who voices them.** Once a resident is set up to lie to the player, about the incident or
-  anything above, their replies use `PlayerConfig.suspect_model`. It's Haiku 4.5, like everyone
-  else's, unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b`. S14 (#361)
-  compared the two and kept Haiku: [#383](https://github.com/mentaldesk/simile/pull/383) has the
+- **Who voices them.** Once a resident is set up to lie to the player, about Aris or anything
+  above, their replies use `PlayerConfig.suspect_model`. It's Haiku 4.5, like everyone else's,
+  unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b`. S14
+  ([#361](https://github.com/mentaldesk/simile/issues/361)) compared the two and kept Haiku: [#383](https://github.com/mentaldesk/simile/pull/383) has the
   numbers. Scenes keep B2's model.
 - **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
   was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
@@ -275,29 +275,31 @@ tells the model what the lie is (`temptation.py`).
 
 ## Telling
 
-What residents know of S12's incident ([`simile.story`](../story/README.md)) comes up only with the
-player, and only as their trust allows (`telling.py`). `engine.incident`, which the lifespan points
-at the saved investigation, is the incident.
+What residents know of P48's disappearance ([`simile.story`](../story/README.md)) comes up only
+with the player, and only as their trust allows (`telling.py`). `engine.disappearance`, which the
+lifespan points at the saved investigation, is the disappearance.
 
-- **Asked.** Once the player's lines since the resident last spoke mention Aris or the attack (Aris,
-  the mechanic, her workshop or steel hand, what happened to her or at the workshop, who smashed up
-  the workshop, the break-in, the attack, ...: `CUES[Kind.FACT]`; "a heart attack", everyday
-  talk of the maker space, "that night" or "where were you" alone don't count), the resident is set
-  up, for the rest of the conversation, for each fact they know
+- **Asked.** Once the player's lines since the resident last spoke mention Aris or her going missing
+  (Aris, the mechanic, her workshop or steel hand, what happened to her or at the workshop, that
+  she went missing or disappeared, where she went, when they last saw her, whether they've seen her
+  since, how they got on with her: `CUES[Kind.FACT]`; everyday talk of the maker space, "where were
+  you", or a bare "gone" or "seen" don't count, so a hello never does), the resident is set up, for
+  the rest of the conversation, for each fact they know
   (`engine.tellings(npc, PLAYER_ID)`), by R1's trust in the player then:
   - from the knower's `tells_from`, they **tell** it: "You remember this, and trust Visitor enough to
     tell them if they ask:" and their first memory of it, so a lie they told since never takes its
     place;
   - below it, with a `cover`, they **lie**: it's one of the lies above, of kind `fact`, with no
     roll, since trust has already decided it. Its direction ties the cover to the one question it
-    answers, without the truth: 'You won't say where you'd been the night Aris was attacked. Only
-    if asked that, say exactly: "I was at home all night."' After the lies, once, they're told never
-    to volunteer a cover story or add a denial of their own;
+    answers, without the truth: 'You won't say how you got on with Aris. Only if asked that, say
+    exactly: "Aris and I always got on fine."' A passer's is 'whether you saw Aris the evening before
+    she went missing'. After the lies, once, they're told never to volunteer a cover story or add a
+    denial of their own;
   - below it, without a cover, they **keep it back**: one paragraph, however many facts, says they'd
     rather not talk about it, without denying that they know something.
 
   Their memory of a fact they lie about or keep back isn't in the prompt, so it can't slip out.
-- **Elsewhere.** The incident's memories are out of R2's `recall`, so they're not on anyone's mind
+- **Elsewhere.** The disappearance's memories are out of R2's `recall`, so they're not on anyone's mind
   in a scene, a reply or a work until the player asks. After that, B3 remembers the conversation
   like any other: a resident who told the player something remembers telling it, which `recall`
   returns. A lie's direction holds no truth, and both the liar's memory of lying and their summary
@@ -321,8 +323,9 @@ by the place's name, and the lifespan seeds `players.town_seed` from the cast.
 
 ## The flush
 
-S8: the infrared eye shows a flush on a resident's line that gives one of their cover stories for
-the incident, as the code decided them (`flush.py`). A line is a lie when it says a `Stance.LIE`
+S8: the infrared eye shows a flush on a resident's line that gives one of their cover stories about
+Aris, as the code decided them (`flush.py`): a distruster's "Aris and I always got on fine." or "I
+didn't see her that evening.", or a witness's cover. A line is a lie when it says a `Stance.LIE`
 telling's cover word for word (`simile.story.says`), or completes it, as the journal reads their
 lines joined. The lifespan sets `app.state.flushed`, which the protocol sends as `line.flushed`,
 true only with the eye fitted, by `simile.story.flushed`, so the bubble and the journal agree.
@@ -347,11 +350,11 @@ bionics. The lifespan points `engine.looks` at its sightings.
   curt line, and anyone else to stay polite and keep their reason to themselves. Only someone
   uneasy turns the player down, never at work, and someone talking with another resident doesn't
   break off to do it: the player gets no answer.
-- **Lies in a refusal.** Turning the player down sets up the lies of #285 and of the incident as
-  usual, but tells nothing: a resident asked about the incident who'd lie about a fact still gets
+- **Lies in a refusal.** Turning the player down sets up the lies of #285 and of the disappearance
+  as usual, but tells nothing: a resident asked about Aris who'd lie about a fact still gets
   its cover (*Telling* above), and the cue adds "If they asked what one of your cover stories
   answers, give it as you turn them down." So the lie is in `talk.lies` and `engine.lies` for the
-  eye to read. A lower trust from a sighting also makes them tell less of the incident.
+  eye to read. A lower trust from a sighting also makes them tell less of what they know of her.
 
 ## Only promising what's possible
 

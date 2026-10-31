@@ -27,7 +27,7 @@ async def test_a_reply_set_up_to_lie_is_written_by_the_suspect_model_from_then_o
     village = investigating(config=LONG_AGO, player=PlayerConfig(suspect_model=LOCAL))
     village.walk_to("ben", 1)
 
-    for said in ("Lovely morning, isn't it?", "Where were you the night Aris was attacked?", "Ok."):
+    for said in ("Lovely morning, isn't it?", "How did you get on with Aris?", "Ok."):
         village.players.say(said, "ben")
         await village.run()
 
@@ -37,7 +37,7 @@ async def test_a_reply_set_up_to_lie_is_written_by_the_suspect_model_from_then_o
 async def test_a_resident_with_nothing_to_lie_about_keeps_the_usual_model() -> None:
     village = investigating(player=PlayerConfig(suspect_model=LOCAL))
 
-    village.players.say("Did you see anything the night Aris was attacked?", "ana")
+    village.players.say("Did you see Aris the evening before she went missing?", "ana")
     await village.run()
 
     assert models(village) == [Model.HAIKU_4_5]
@@ -47,7 +47,7 @@ async def test_by_default_suspects_are_voiced_by_the_same_haiku() -> None:
     village = investigating()
     village.walk_to("ben", 1)
 
-    village.players.say("Where were you the night Aris was attacked?", "ben")
+    village.players.say("How did you get on with Aris?", "ben")
     await village.run()
 
     assert DEFAULT_PLAYER_CONFIG.suspect_model == DEFAULT_PLAYER_CONFIG.model == Model.HAIKU_4_5

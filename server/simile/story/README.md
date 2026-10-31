@@ -1,111 +1,92 @@
 # simile.story
 
-S12: Aris, who is missing, and the night she was attacked. Each world makes its own incident once,
-when it's created: who attacked her and why, who saw what, and who knows it. The facts live in the
-sim, in S2's `Incident` (`investigation_of(app).incident`), and residents only voice them. B5's
+P48: Aris, who one morning is gone. Each world makes its disappearance once, when it's created, with
+no LLM call: who distrusted her bionics, who saw her last, and who knows what. The facts live in the
+sim, in S2's `Disappearance` (`investigation_of(app).disappearance`), and residents only voice
+them. Nobody in the village made her vanish: what they saw only points the way underground. B5's
 conversations with the player tell, lie about or keep back what each resident knows (see
 [*Telling*](../conversation/README.md#telling) in the conversation README).
 
 ## Aris and her workshop
 
-[`content/story/story.toml`](../../../content/story/story.toml) has Aris, for the motive's writer,
-and her workshop, the maker space. Its two clues are cells on the workshop's ground floor, so the
-map stays as it is: `aris_notes`, her notebook on the workbench, with a few pages of her own besides
-the one that matters, and `door_frame`, where the attackers left a scrap of cloth. A fact's
-`found_in` is one of them, and `load_story().clue(id)` says where it is and what the journal calls
-it.
+[`content/story/story.toml`](../../../content/story/story.toml) has Aris, her workshop, the maker
+space, and the street she was last seen on (`last_seen`, Banyan Row). Her one clue is a cell on
+the workshop's ground floor, so the map stays as it is: `aris_notes`, her notebook on the
+workbench, with a few pages of her own besides the one that matters. A fact's `found_in` is a clue,
+and `load_story().clue(id)` says where it is and what the journal calls it. The content also has
+the lines Aris wrote about those who distrusted her, the residents' memories, and the cover
+stories.
 
-## The attackers
+## Who distrusted her
 
-Each grievance in the content is something Aris did that someone can't forgive (a repair that
-failed them, what she does to her own body, the rules she breaks, a deal she cost them, a public
-humiliation), with the core values that make it rankle. A resident's fit to one is the sum of each
-weight times how far that value is from 0.5, over the sum of the weights, from -0.5 to 0.5. Their
-hostility is their best fit plus `harm` times how far their Compassion is below 0.5.
-
-- Everyone at `hostile_from` (0.2) or more is a suspect. With today's residents that's Henrietta,
-  Raymond, Marguerite and Priya.
-- One, two or three of them attack her (`attackers`: 40%, 35%, 25%, while there are enough), drawn
-  by how far each is past the bar. If nobody reaches it, the most hostile attacks alone.
-- Each attacker's grievance is drawn from those within `grievance_spread` (0.15) of their best.
-
-## The motive
-
-One `structured` call with Sonnet (`purpose="story-motive"`) writes the backstory from the
-attackers' names, jobs, personas, values and grievances, and where several of them met the evening
-before (one of the content's `meeting_places`): the motive, and for each attacker what Aris
-did to them in the third person and in their own words, their memory of the night, the alibi,
-deflection and denial they give instead of the truth, and the line Aris wrote about them, naming
-them by their initial. Every alibi, deflection and denial stays vague and points at nobody, neither
-a resident nor a stranger, since #283's bounds rule out making up facts about people. A reply that
-doesn't validate gets one retry, as L1 does. A call that fails,
-times out after `write_for` (180 s) or runs on the fake LLM leaves it to the content's templates, so
-a world always has an incident.
+The residents at or below `distrusts_from` (-1) on S11's bionics `level` of their tolerance
+([`simile.social`](../social/README.md#bionics)) distrusted her, least tolerant first. If nobody is
+that far, the least tolerant resident distrusts her alone. In the default village that's Tobias
+(-2), Henrietta (-2), Mirela (-1) and Raymond (-1).
 
 ## The facts
 
-Placed a week before the world starts (`night_before`, 23:00 to 23:20), with Aris's workshop found
-open the day before it starts (`gone_before`):
+Her workshop was found open the day before the world starts (`gone_before`, 26 hours), and she was
+last seen the evening before that, on the five minutes between 21:20 and 22:00 (`seen_between`):
 
 | Fact | Who knows it | Leads to |
 |---|---|---|
-| `gone`: she was attacked, wouldn't say who, and a week later vanished | everyone, told to anyone | `notes`, `shouting` |
-| `notes`: what she wrote about one attacker (each, if nobody else lives there), by their initial | found in `aris_notes` | that attacker's `grudge_`, `shouting` |
-| `cloth`: a scrap of one attacker's top colour on the door frame | found in `door_frame` | `seen`, or with nobody to see, their `there_` |
-| `shouting`: heard from the workshop that night | a witness | `seen` |
-| `seen`: someone who looked like that attacker, and any others, leaving the lane | a witness | that attacker's `there_`, `meeting` |
-| `meeting`: the attackers together the evening before, with two or more | a witness | each `there_` |
-| `grudge_<id>`: the attacker rowed with Aris, and why | the attacker, and a witness | their `there_` |
-| `there_<id>`: the attacker was in the lane, not where they say | the attacker | |
-| `attack`: who did it | the attackers | |
+| `gone`: one morning her workshop was found open, her tea cold and her tools on the bench, and nobody saw her leave | everyone, told to anyone | `notes`, `last_seen` naming its witness |
+| `notes`: her lines about one or two distrusters, by initial | found in `aris_notes` | each noted distruster's `distrust_<id>` |
+| `distrust_<id>`: they distrusted her bionics and said she wasn't one of them any more | the distruster (`did`), and a bystander who heard it (`witnessed`) | `passed`, for the passer |
+| `last_seen`: the witness saw her heading down Banyan Row's steps towards the old metro, with the passer going the other way | a witness | `lift_log`, `passed` |
+| `passed`: one distruster passed her that evening and said nothing | the passer (`witnessed`) | `lift_log` |
 | `lift_log`: Aris rewired the metro's dead terminal, which logged the lift going down to the sewers the night before her workshop was found open | found in `metro_terminal`, with the datajack (S8) | `hatch_log` |
 | `hatch_log`: a maintenance hatch deep in the sewers, stamped with Apex's mark, took a key with Aris's mark that night, onto a shaft towards the Apex towers | found in `sewers_hatch`, with the datajack (S9) | |
 
-Every lead goes from what the player can find or ask about towards an attacker, so each attacker's
-`there_` can be reached from the notes, the cloth or `gone`. Witnesses are residents other than the
-attackers, each once before anyone twice.
+The passer is one of the noted distrusters, so the notes lead to `passed` even with nobody else to
+see her. Witnesses and bystanders are residents who didn't distrust her, each once before anyone
+twice. The logs are dated 15 and 75 minutes after she was last seen.
 
 How willing each knower is:
 
 - **A witness** tells anyone they trust at least 0.5 plus 0.3 × Security, 0.2 × Peace of Mind,
   -0.3 × Justice and -0.2 × Honesty, each from 0.5 (`tells_from`), up to `most_wary` (0.9). Below
   that they keep quiet, or, below `witness_lies_below` (0.4) Honesty, lie with a cover story like
-  "I didn't see anything that night".
-- **An attacker** lies about `attack` and their `there_` with their deflection and alibi, and owns
-  up only to someone they trust `owns_up_to` (0.95), and only if their Honesty is at least
-  `owns_up_from` (0.6). They own up to their grudge from `admits_grudge_from` (0.75) trust, and
-  deny it below.
+  "I was home all evening."
+- **A distruster** tells from `admits_from` (0.75) trust, or tells anyone if they're strongly
+  against bionics and their Honesty is at least `distruster_lies_below` (0.6). Below that they keep
+  quiet, or, if they're less honest than that, deny it: "Aris and I always got on fine." and, as the
+  passer, "I didn't see her that evening." In the default village Henrietta and Raymond lie, and
+  Tobias says it out loud.
 - **Everyone** tells `gone` to anyone.
 
 Each knower gets one `observation` memory of each fact they know, in their own words, with its
-`fact_id`, dated when it happened, with `salience` and `valence` by how they know it. A resident
-hostile enough to be a suspect remembers her going as good riddance. R2's `recall` leaves these
-out, so nobody brings the incident up in a scene or makes a work about it until the player asks:
-only `MemoryStore.facts` returns them, for telling the player. Once a resident has told the player
-something, B3's memory of that conversation holds it (see
-[*Telling*](../conversation/README.md#telling)).
+`fact_id`, dated when it happened, with `salience` and `valence` by how they know it. A distruster's
+memory of her going ends "Good riddance, if you ask me." R2's `recall` leaves these out, so nobody
+brings her up in a scene or makes a work about it until the player asks: only `MemoryStore.facts`
+returns them, for telling the player. Once a resident has told the player something, B3's memory of
+that conversation holds it (see [*Telling*](../conversation/README.md#telling)).
 
 ## When it's made
 
-The lifespan makes it on startup when the world has no incident: a new world, a fresh start, every
-`SIMILE_DB=:memory:` run, and once for a save from before it. A world with no residents gets none.
-A cast world (P9) draws it from the cast's seed, and any other world at random. It runs after
-persistence has restored the save. First it forgets any memories with a `fact_id`, which can only
-be left from a start that stored them and then died before saving the incident. Then it stores
-the new memories, and only then sets the incident and saves the world, so the incident is made at
-most once and its memories are never lost. The log says only that it was made, not who did it.
+The lifespan makes it on startup when the world has no disappearance: a new world, a fresh start,
+every `SIMILE_DB=:memory:` run, and once for a save from before it. A world with no residents gets
+none. A cast world (P9) draws it from the cast's seed, and any other world at random. It runs after
+persistence has restored the save, in a crash-safe order:
 
-A world whose incident predates S8 or S9 gains the fixed `lift_log` and `hatch_log` (`logged`) on
-its next start, dated 20 and 19 hours before its `gone`, and is saved. The hatch is a jack in every
-level of the sewers (`simile.street.sewers.HATCH`), so its cell is each level's own and isn't in
-`story.toml`. A save from before the incident gets one rather than none, since without it an old village has no
-story short of `simile reset`. It's dated a week before the save's own time, which can fall within
-what the village has already lived through, but its memories stay out of `recall`, so nobody brings
-it up until the player asks.
+1. It forgets any memories with a `fact_id`: those of an old incident, or of a start that stored
+   them and then died before saving.
+2. It makes the disappearance.
+3. It keeps only the journal entries that are still true word for word (the lift and hatch logs)
+   and the town's (`town_*`), and drops their leads to facts that no longer exist.
+4. It stores the new memories, then sets the disappearance, drops any old incident and saves the
+   world, so it's made at most once and its memories are never lost.
+
+A save from an incident keeps the residents' conversation memories, which have no `fact_id` and can
+still mention the attack; a new game has the clean story. A world whose logs don't match when she
+was last seen gets them again (`logged`) on its next start, and is saved. The hatch is a jack in
+every level of the sewers (`simile.street.sewers.HATCH`), so its cell is each level's own and isn't
+in `story.toml`.
 
 ```bash
 cd server
-uv run simile story incident --seed 3 --facts   # one Sonnet call, saves nothing
+uv run simile story disappearance --seed 3 --facts   # saves nothing
 ```
 
 ## The journal
@@ -128,8 +109,7 @@ the world. `Journal` (`journal.py`) writes it, and `Recorder` (`recording.py`), 
 - **Found.** A `pick_up` (E) within `clue_reach` (half a tile) of a clue's cell, from
   `load_story().clues`, writes each fact found in it (`found_in`), with its leads. The clue is a
   claim on `pick_up` (`claimers_of` in [`simile.player`](../player/README.md)), so a pile as near
-  or nearer is picked up instead, as the client shows. The reach is the client's, so they agree,
-  and it keeps the workshop's door, beside the door frame, on E.
+  or nearer is picked up instead, as the client shows. The reach is the client's, so they agree.
 - **The flush.** With the infrared eye fitted, a lie is `flushed: true` and the truth `false`
   (`flushed`). Without the eye, and for a clue, it's `null`. S8's flush on a line uses `says` and
   `flushed` the same way (`simile.conversation.flush`), so the face and the journal agree.
@@ -155,7 +135,7 @@ it, out of an old thermal camera, and gives it to the player once they trust the
 
 - **Who.** P20: someone who wouldn't turn against a player turning cyborg. The keeper is drawn at
   random from the residents whose S11 bionics `level` is at least `tolerates_from` (0: they barely
-  mind bionics, or like them), or else is whoever takes to bionics best. Never an attacker while
+  mind bionics, or like them), or else is whoever takes to bionics best. Never a distruster while
   anyone else would do. The draw is from the world's seed (the cast's, or 0 for the village in
   `content/`), so it's the same on every start and nothing is saved. In the default village that's
   Desmond.
@@ -185,8 +165,8 @@ seconds loses a lens the keeper remembers giving.
 #384: what residents know of the village, in `town.py`. Each `TownFact` is something about a place
 and what it's for: the café, the noodle bar, the maker space, the gallery, the news terminals, the
 park, the square and the river promenade, then the old metro under the promenade, the stairway down
-to it, and the clinic and scrap trader below. Their ids start `town_`, so none is ever an
-incident's.
+to it, and the clinic and scrap trader below. Their ids start `town_`, so none is ever the
+disappearance's.
 
 Who knows what is drawn from the world's seed (the cast's, or 0 for the village in `content/`) and
 each resident, so it's the same on every start and nothing is saved. Each resident gets a time in

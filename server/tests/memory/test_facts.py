@@ -19,9 +19,9 @@ def of_fact(content: str, fact_id: str, *, owner: str = "mei", days_ago: float =
     )
 
 
-def test_recall_leaves_out_memories_of_the_incident(store: MemoryStore) -> None:
+def test_recall_leaves_out_memories_of_the_story(store: MemoryStore) -> None:
     store.add(
-        of_fact("I heard shouting at the maker space.", "shouting", days_ago=0),
+        of_fact("I heard Kofi say Aris wasn't one of us.", "distrust_kofi", days_ago=0),
         memory("Kofi showed me his mural.", about=("kofi",), salience=0.1),
     )
 
@@ -32,14 +32,14 @@ def test_recall_leaves_out_memories_of_the_incident(store: MemoryStore) -> None:
     assert store.recall("mei", NOW, kind=MemoryKind.OBSERVATION) == []
 
 
-def test_facts_are_an_owners_memories_of_the_incident_oldest_first(store: MemoryStore) -> None:
-    seen = of_fact("I saw someone in a red top.", "seen", days_ago=8)
+def test_facts_are_an_owners_memories_of_the_story_oldest_first(store: MemoryStore) -> None:
+    seen = of_fact("I saw Aris heading for the old metro.", "last_seen", days_ago=8)
     gone = of_fact("Her workshop was found open.", "gone", days_ago=1)
     store.add(
         gone,
         memory("Kofi showed me his mural."),
         seen,
-        of_fact("I was there.", "there_kofi", owner="kofi"),
+        of_fact("I passed her on the steps.", "passed", owner="kofi"),
     )
 
     assert store.facts("mei") == [seen, gone]

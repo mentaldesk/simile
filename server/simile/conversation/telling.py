@@ -4,13 +4,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from simile.conversation.temptation import CUES, Kind, Temptation
-from simile.schema import Fact, Id, Incident, Knower, Memory
-from simile.story.incident import question
+from simile.schema import Disappearance, Fact, Id, Knower, Memory
+from simile.story.disappearance import question
 
 SUBJECT = "what happened to Aris"
 TELL = 'You remember this, and trust {other} enough to tell them if they ask: "{remembers}"'
 KEEP = (
-    "You know more about the night Aris was attacked than you let on, but you don't trust "
+    "You know more about Aris going missing than you let on, but you don't trust "
     "{other} enough to say what. If it comes up, say you'd rather not talk about it, without "
     "denying that you know something."
 )
@@ -18,7 +18,7 @@ HIDES = "{Who} won't say {question}."
 COVER = 'Only if asked that, {say} exactly: "{cover}"'
 UNASKED = (
     "Give each of those cover stories only when asked that very question. Never bring one up "
-    "yourself, and add no other denial about Aris or that night."
+    "yourself, and add no other denial about Aris or her going missing."
 )
 
 
@@ -39,7 +39,7 @@ def stance(knower: Knower, trust: float) -> Stance:
 
 @dataclass(frozen=True)
 class Telling:
-    """What a resident is set up to say about one of the incident's facts."""
+    """What a resident is set up to say about one of the story's facts."""
 
     fact: Fact
     knower: Knower
@@ -75,15 +75,15 @@ def told(tellings: Iterable[Telling], other: str) -> list[str]:
 
 
 def asked(said: str) -> bool:
-    """Whether `said` touches the incident."""
+    """Whether `said` touches on Aris."""
     return re.search(rf"\b(?:{CUES[Kind.FACT]})\b", said, re.IGNORECASE) is not None
 
 
 def tellings(
-    incident: Incident | None, npc: Id, trust: float, memories: Sequence[Memory] = ()
+    disappearance: Disappearance | None, npc: Id, trust: float, memories: Sequence[Memory] = ()
 ) -> list[Telling]:
     """What `npc` would say of each fact they know, in their first memory of it, at `trust`."""
-    if incident is None:
+    if disappearance is None:
         return []
     remembered: dict[Id, str] = {}
     for memory in sorted(memories, key=lambda memory: memory.timestamp):
@@ -91,7 +91,7 @@ def tellings(
             remembered.setdefault(memory.fact_id, memory.content)
     return [
         Telling(fact, knower, stance(knower, trust), remembered.get(fact.id, fact.what))
-        for fact in incident.facts
+        for fact in disappearance.facts
         for knower in fact.known_by
         if knower.id == npc
     ]

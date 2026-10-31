@@ -19,7 +19,7 @@ def register(app: typer.Typer) -> None:
 
     @loop.command()
     def play(
-        seed: Annotated[int, typer.Option(help="Seeds the residents and the incident.")] = 0,
+        seed: Annotated[int, typer.Option(help="Seeds the residents and the disappearance.")] = 0,
         saves: Annotated[
             Path | None,
             typer.Option(help="Writes the world here before each of the browser's beats."),

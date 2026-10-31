@@ -278,7 +278,7 @@ def _memory(npc: Id, reflection: Reflection, context: Context, config: Reflectio
 
 
 def _hidden(npc: Id, context: Context) -> Id | None:
-    """The incident fact `npc` was set up to lie about here, so their summary stays with it."""
+    """The story's fact `npc` was set up to lie about here, so their summary stays with it."""
     return next(
         (lie.fact_id for lie in context.lies.values() if lie.liar == npc and lie.fact_id), None
     )

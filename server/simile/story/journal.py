@@ -27,7 +27,7 @@ def flushed(lie: bool, player: Player) -> bool | None:
 
 
 class Journal:
-    """Writes what reaches the player about the incident into the investigation's journal."""
+    """Writes what reaches the player about Aris into the investigation's journal."""
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class Journal:
 
     def found(self, clue: Id, name: str) -> bool:
         """The player found each fact in `clue`. Whether the journal changed."""
-        incident = self.investigation.incident
+        disappearance = self.investigation.disappearance
         source = Source(kind=SourceKind.CLUE, id=clue, name=name)
         added = [
             self._add(
@@ -69,7 +69,7 @@ class Journal:
                 ),
                 by_anyone=True,
             )
-            for fact in (incident.facts if incident else [])
+            for fact in (disappearance.facts if disappearance else [])
             if fact.found_in == clue
         ]
         return any(added)

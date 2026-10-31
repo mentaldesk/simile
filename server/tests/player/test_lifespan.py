@@ -1,4 +1,3 @@
-import asyncio
 import random
 import time
 from collections.abc import Callable
@@ -17,7 +16,7 @@ from simile.persistence import investigation_of, player_of
 from simile.player.config import SALVAGE
 from simile.schema import PLAYER_ID, Bionic, Body, Item, ItemKind
 from simile.sim import Clock, World, world_of
-from simile.story import make_incident
+from simile.story import make_disappearance
 from simile.world import Point, movement_of
 
 MakePackage = Callable[[dict[str, str]], str]
@@ -200,8 +199,8 @@ def test_e_at_the_dead_terminal_finds_its_clue_only_with_the_datajack(
     make_package: MakePackage, datajack: bool
 ) -> None:
     app = make_app(make_package)
-    made = asyncio.run(make_incident(load_npcs(), START, None, rng=random.Random(1)))
-    investigation_of(app).incident = made.incident
+    made = make_disappearance(load_npcs(), START, rng=random.Random(1))
+    investigation_of(app).disappearance = made.disappearance
     if datajack:
         player_of(app).body = Body(vertebra=Bionic.DATAJACK)
 

@@ -226,7 +226,7 @@ class MemoryStore:
         return [Memory.model_validate_json(data) for (data,) in rows]
 
     def facts(self, owner: str) -> list[Memory]:
-        """`owner`'s memories of the incident's facts, oldest first."""
+        """`owner`'s memories of the story's facts, oldest first."""
         rows = self._fetch(
             f"SELECT data FROM memories WHERE owner = :owner AND {FACT} IS NOT NULL"
             " ORDER BY time, id",
@@ -235,7 +235,7 @@ class MemoryStore:
         return [Memory.model_validate_json(data) for (data,) in rows]
 
     def forget_facts(self) -> int:
-        """Forget everyone's memories of the incident's facts, and return how many there were."""
+        """Forget everyone's memories of the story's facts, and return how many there were."""
         with self._lock, self._db:
             return self._db.execute(f"DELETE FROM memories WHERE {FACT} IS NOT NULL").rowcount
 

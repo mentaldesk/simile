@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from simile.schema import CoreValue, Id, Key
+from simile.schema import Id, Key
 
 STORY = Path(__file__).resolve().parents[3] / "content" / "story" / "story.toml"
 
@@ -17,6 +17,7 @@ class Aris(Authored):
     name: str
     workshop: Id = Field(description="Her workshop's location id.")
     street: Key = Field(description="The street outside it, a map id.")
+    last_seen: Key = Field(description="The street she was last seen on, a map id.")
     description: str
 
 
@@ -31,41 +32,31 @@ class Clue(Authored):
     pages: list[str] = Field(default=[], description="What it says besides the fact, if anything.")
 
 
-class Place(Authored):
-    id: Id
-    name: str
+class Memories(Authored):
+    """What a knower remembers, in their own words."""
 
-
-class Grievance(Authored):
-    """Something Aris did that an attacker can't forgive, and the values that make it rankle."""
-
-    values: dict[CoreValue, float]
-    told: str = Field(description="What it is, for whoever writes the motive.")
-    grievance: str = Field(description="In the third person, with `{name}`.")
-    resents: str = Field(description="In the attacker's own words.")
-    note: str = Field(description="What Aris wrote about it, with the attacker's `{initial}`.")
+    distrusted: str = Field(description="A distruster's memory of saying what they thought.")
+    heard: str = Field(description="A bystander's memory of hearing them, with `{name}`.")
+    saw: str = Field(description="The last sighting, with `{time}` and the passer's `{name}`.")
+    passed: str = Field(description="The passer's memory of passing her.")
 
 
 class Texts(Authored):
-    """What stands in when nobody wrote it."""
-
-    remembers: str = Field(description="An attacker's memory of the night, with `{with}`.")
-    alibi: str
-    deflection: str
-    denial: str
-    alone: str = Field(description="The motive's end for one attacker, with `{name}`.")
-    together: str = Field(description="The motive's end for several.")
-    relieved: str = Field(description="How a hostile resident ends their memory of her going.")
+    relieved: str = Field(description="How a distruster ends their memory of her going.")
+    denial: str = Field(description="A dishonest distruster's lie about how they got on with her.")
+    not_seen: str = Field(description="A dishonest passer's lie about passing her.")
+    notes: list[str] = Field(
+        min_length=2, description="What Aris wrote about a distruster, with their `{initial}`."
+    )
+    memories: Memories
     covers: dict[Id, str] = Field(
-        description="What a witness who'd rather lie says instead, by the fact they saw."
+        description="What a witness who'd rather lie says instead, by the fact they know."
     )
 
 
 class StoryContent(Authored):
     aris: Aris
     clues: list[Clue]
-    meeting_places: list[Place] = Field(min_length=1)
-    grievances: dict[Id, Grievance] = Field(min_length=1)
     texts: Texts
 
     def clue(self, clue_id: Id) -> Clue:
@@ -74,8 +65,6 @@ class StoryContent(Authored):
 
 NOTES = "aris_notes"
 """The clue that holds Aris's notes."""
-DOOR = "door_frame"
-"""The clue the attackers left behind."""
 TERMINAL = "metro_terminal"
 """The metro's dead terminal, a clue only the datajack reads."""
 HATCH = "sewers_hatch"

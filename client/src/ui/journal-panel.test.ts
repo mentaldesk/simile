@@ -18,22 +18,22 @@ const entry = (fact_id: string, name: string, learned: string, extra: Partial<Jo
 const NOTES = entry('notes', "Aris's notes", '2026-01-02T10:05:00Z', {
   source: { kind: 'clue', id: 'aris_notes', name: "Aris's notes" },
   leads: [
-    { fact_id: 'grudge_raymond', text: 'Who is R.? Ask Kofi.' },
-    { fact_id: 'shouting', text: 'Tobias was up late. Ask him.' },
+    { fact_id: 'distrust_raymond', text: 'Who is R.? Ask Kofi.' },
+    { fact_id: 'last_seen', text: 'Tobias saw her that evening. Ask him.' },
   ],
 });
-const TOBIAS = entry('shouting', 'Tobias', '2026-01-02T11:30:00Z', {
-  leads: [{ fact_id: 'grudge_raymond', text: 'Who is R.? Ask Kofi.' }],
+const TOBIAS = entry('last_seen', 'Tobias', '2026-01-02T11:30:00Z', {
+  leads: [{ fact_id: 'distrust_raymond', text: 'Who is R.? Ask Kofi.' }],
 });
-const RAYMOND = entry('there_raymond', 'Raymond', '2026-01-03T14:00:00Z', {
-  text: '“I was at home all night.”',
+const RAYMOND = entry('passed', 'Raymond', '2026-01-03T14:00:00Z', {
+  text: '“I didn’t see her that evening.”',
   flushed: true,
 });
-const KOFI = entry('seen', 'Kofi', '2026-01-03T15:00:00Z', { flushed: false });
+const KOFI = entry('distrust_tobias', 'Kofi', '2026-01-03T15:00:00Z', { flushed: false });
 
 const clues: Clue[] = [
   { id: 'aris_notes', label: "Aris's notes", map: 'maker_space_floor_0', x: 3, y: 2 },
-  { id: 'door_frame', label: 'The splintered door frame', map: 'maker_space_floor_0', x: 13, y: 2 },
+  { id: 'metro_terminal', label: 'The dead terminal', map: 'metro', x: 104, y: 15 },
 ];
 
 const send = (entries: JournalEntry[]) => server.dispatch(JSON.stringify({ type: 'journal', entries }));
@@ -68,7 +68,7 @@ describe('JournalPanel', () => {
     send([NOTES, TOBIAS, RAYMOND, KOFI]);
     panel.open();
 
-    expect(texts(root, '.journal-leads li')).toEqual(['Who is R.? Ask Kofi.', 'Tobias was up late. Ask him.']);
+    expect(texts(root, '.journal-leads li')).toEqual(['Who is R.? Ask Kofi.', 'Tobias saw her that evening. Ask him.']);
     expect(texts(root, '.journal-entries p')).toEqual([KOFI.text, RAYMOND.text, TOBIAS.text, NOTES.text]);
     expect(texts(root, '.journal-entries small')).toEqual([
       'Kofi · 3 Jan, 15:00',
@@ -147,12 +147,12 @@ it('keeps the last journal for a panel made after it arrives', () => {
 it('words a clue with its label', () => {
   expect(clues.map(cluePrompt)).toEqual([
     "Press E to look at Aris's notes.",
-    'Press E to look at the splintered door frame.',
+    'Press E to look at the dead terminal.',
   ]);
 });
 
 it('lists each open lead once', () => {
-  expect(openLeads([NOTES, TOBIAS]).map(({ fact_id }) => fact_id)).toEqual(['grudge_raymond', 'shouting']);
+  expect(openLeads([NOTES, TOBIAS]).map(({ fact_id }) => fact_id)).toEqual(['distrust_raymond', 'last_seen']);
 });
 
 it('E at a clue picks it up and opens the journal in place of the controls', () => {

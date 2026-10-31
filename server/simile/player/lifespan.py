@@ -91,8 +91,8 @@ async def running(app: Starlette) -> AsyncIterator[None]:
             hub.broadcast(JournalMessage(entries=investigation.journal))
 
     def clues() -> set[str]:
-        incident = investigation.incident
-        return {fact.found_in for fact in incident.facts if fact.found_in} if incident else set()
+        story = investigation.disappearance
+        return {fact.found_in for fact in story.facts if fact.found_in} if story else set()
 
     machines = Machines(player, movement, found, clues)
     finds = Finds(player, movement, known=lambda: book, find=economy.find)

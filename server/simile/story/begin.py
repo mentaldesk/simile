@@ -7,38 +7,58 @@ from simile.behaviour import behaviour_of
 from simile.casting.store import load_cast
 from simile.memory import memory_of
 from simile.persistence import investigation_of
-from simile.schema import Incident
+from simile.schema import Disappearance, Investigation, JournalEntry
 from simile.sim import world_of
 from simile.story.config import DEFAULT_CONFIG, StoryConfig
-from simile.story.incident import logged, make_incident
+from simile.story.disappearance import logged, make_disappearance
+from simile.story.town import PREFIX
 
 logger = logging.getLogger(__name__)
 
 
 async def begin(
     app: Starlette, *, config: StoryConfig = DEFAULT_CONFIG, rng: random.Random | None = None
-) -> Incident | None:
-    """Make the world's incident if it has none, storing its memories before saving it."""
+) -> Disappearance | None:
+    """Make the world's disappearance if it has none, storing its memories before saving it."""
     investigation = investigation_of(app)
     saver = getattr(app.state, "persistence", None)
-    if investigation.incident is not None:
-        if logged(investigation.incident) and saver is not None:
+    if investigation.disappearance is not None:
+        if logged(investigation.disappearance) and saver is not None:
             await saver.save()
         return None
     clock, memory = world_of(app).clock, memory_of(app)
     if left := memory.forget_facts():
-        logger.warning("%s  Forgot %d memories of an incident that was never saved", clock, left)
+        logger.warning("%s  Forgot %d memories of a story that was never saved", clock, left)
     npcs = list(behaviour_of(app).npcs.values())
     if not npcs:
         return None
     if rng is None:
         cast = load_cast()
         rng = random.Random(f"story/{cast.seed}") if cast is not None else random.Random()
-    llm = getattr(app.state, "llm", None)
-    made = await make_incident(npcs, clock.now, llm, rng=rng, config=config)
+    made = make_disappearance(npcs, clock.now, rng=rng, config=config)
+    still_true(investigation, made.disappearance)
     memory.add(*made.memories)
-    investigation.incident = made.incident
+    investigation.incident = None
+    investigation.disappearance = made.disappearance
     if saver is not None:
         await saver.save()
-    logger.info("%s  Made the incident%s", clock, "" if made.written else " from templates")
-    return made.incident
+    logger.info("%s  Made the disappearance", clock)
+    return made.disappearance
+
+
+def still_true(investigation: Investigation, disappearance: Disappearance) -> None:
+    """Keeps only the town's entries and those true of `disappearance` word for word, with their
+    leads to facts that still exist."""
+    facts = {fact.id: fact for fact in disappearance.facts}
+
+    def kept(entry: JournalEntry) -> bool:
+        fact = facts.get(entry.fact_id)
+        return entry.fact_id.startswith(PREFIX) or (fact is not None and fact.what == entry.text)
+
+    def exists(fact_id: str) -> bool:
+        return fact_id in facts or fact_id.startswith(PREFIX)
+
+    journal = [entry for entry in investigation.journal if kept(entry)]
+    for entry in journal:
+        entry.leads = [lead for lead in entry.leads if exists(lead.fact_id)]
+    investigation.journal = journal

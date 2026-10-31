@@ -120,7 +120,7 @@ Its constants are in `HealthConfig`, beside it.
 - **The jacks** (`machines.py`, S8) are the machines only the datajack works: the metro's dead
   terminal and its lift, and the sewers' maintenance hatch (S9). With the datajack fitted, standing
   on the stand tile of a jack that holds a fact (`found_in`) is a claim on `pick_up` that writes it
-  to the journal, as a clue does, and sends `journal`. The terminal holds the incident's
+  to the journal, as a clue does, and sends `journal`. The terminal holds the disappearance's
   `lift_log` and the hatch its `hatch_log`; the lift holds none, so a pile
   there is still picked up. Without the datajack nothing claims, and the world ignores a
   `player_move` into the sewers from another map.
