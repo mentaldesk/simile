@@ -25,6 +25,9 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
 
 const NOTE = 'A tag over each door, flight, ladder and lift names its keys.';
 
+/** What the help says about healing, as the top-level README does. */
+export const REST = 'Hurt? Stand at your bed, up the ladder in the maker space, to heal fast.';
+
 /** What the help says about voices, as the top-level README does. */
 export const VOICES =
   'Residents talk in speech bubbles unless the village was started with SIMILE_VOICE=1 ./run.sh, on a Mac with Apple Silicon. Either way, each greets you out loud when they start talking to you.';
@@ -52,6 +55,7 @@ export class HelpPanel {
       list.appendChild(document.createElement('dd')).textContent = what;
     }
     this.panel.appendChild(document.createElement('p')).textContent = NOTE;
+    this.panel.appendChild(document.createElement('p')).textContent = REST;
     this.panel.appendChild(document.createElement('p')).textContent = VOICES;
   }
 

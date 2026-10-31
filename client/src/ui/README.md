@@ -268,7 +268,7 @@ they go (`wayPrompts`); tags that would overlap move apart.
 `?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in
 the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README, and say
 as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
-greet the player out loud either way.
+greet the player out loud either way, and that standing at their bed at home heals them fast (`REST`).
 
 ## The pause menu
 
