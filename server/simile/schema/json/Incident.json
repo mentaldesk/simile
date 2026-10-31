@@ -2,7 +2,7 @@
   "$defs": {
     "Fact": {
       "additionalProperties": false,
-      "description": "Something that happened, kept in the sim. Residents only voice it: code decides who tells\nit to whom, and who lies about it.",
+      "description": "Something that happened, or how someone felt, kept in the sim. Residents only voice it:\ncode decides who tells it to whom, and who lies about it.",
       "properties": {
         "id": {
           "maxLength": 64,
@@ -11,7 +11,7 @@
           "type": "string"
         },
         "what": {
-          "description": "What happened, in the third person, as it really did. Each knower's memory of it is in their own words.",
+          "description": "What happened or how someone felt, in the third person, as it really was. Each knower's memory of it is in their own words.",
           "minLength": 1,
           "title": "What",
           "type": "string"
@@ -85,7 +85,7 @@
       "type": "object"
     },
     "HowKnown": {
-      "description": "How a resident knows a fact: they `did` it, `witnessed` it (saw or heard it happen), or\nwere `told` it by someone.",
+      "description": "How a resident knows a fact. `did`: it's what they did or felt. `witnessed`: they saw or\nheard it. `told`: someone told them.",
       "enum": [
         "did",
         "witnessed",
@@ -132,7 +132,7 @@
               "type": "null"
             }
           ],
-          "description": "What they say instead of telling it, when they lie, e.g. \"I was home all night.\" Code decides when they lie, as for other lies, so the infrared eye reads it exactly. Null if they keep quiet rather than lie.",
+          "description": "What they say instead of telling it, when they lie, e.g. \"Aris and I always got on fine.\" Code decides when they lie, as for other lies, so the infrared eye reads it exactly. Null if they keep quiet rather than lie.",
           "title": "Cover"
         }
       },

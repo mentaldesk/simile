@@ -1,0 +1,244 @@
+[
+  {
+    "distrusted_by": ["tobias", "henrietta", "mirela", "raymond"],
+    "facts": [
+      {
+        "id": "gone",
+        "what": "One morning Aris's workshop was found standing open, her tea cold and her tools left on the bench as if she'd stepped out. Nobody saw her leave.",
+        "when": "2026-03-07T08:00:00Z",
+        "where": "maker_space",
+        "about": ["aris"],
+        "known_by": [
+          {"id": "desmond", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "henrietta", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "kofi", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "ingrid", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "lachlan", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "marguerite", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "odalys", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "priya", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "mirela", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "raymond", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "tobias", "how": "witnessed", "tells_from": 0, "cover": null}
+        ],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "notes", "text": "Her notes are still on the workshop bench. Read what she wrote last."},
+          {"fact_id": "last_seen", "text": "Kofi saw her the evening before she went missing. Ask him where she was going."}
+        ]
+      },
+      {
+        "id": "notes",
+        "what": "Aris wrote in her notebook: \"H. crossed the lane again rather than pass my door.\" \"R. told Mirela I'm not one of us any more.\"",
+        "when": "2026-03-05T21:00:00Z",
+        "where": "maker_space",
+        "about": ["aris", "henrietta", "raymond"],
+        "known_by": [],
+        "found_in": "aris_notes",
+        "leads": [
+          {"fact_id": "distrust_henrietta", "text": "Who's H.? Henrietta never goes near the maker space. Ask her how she got on with Aris."},
+          {"fact_id": "distrust_raymond", "text": "Who's R.? Raymond has opinions about Aris's bionics. Ask him how he got on with her."}
+        ]
+      },
+      {
+        "id": "distrust_tobias",
+        "what": "Tobias distrusted Aris's bionics and said out loud that she wasn't one of them any more.",
+        "when": "2026-03-03T17:00:00Z",
+        "where": "high_street",
+        "about": ["tobias", "aris"],
+        "known_by": [
+          {"id": "tobias", "how": "did", "tells_from": 0, "cover": null},
+          {"id": "ingrid", "how": "witnessed", "tells_from": 0.4, "cover": null}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "distrust_henrietta",
+        "what": "Henrietta distrusted Aris's bionics and said she wasn't one of them any more.",
+        "when": "2026-03-04T10:30:00Z",
+        "where": "square",
+        "about": ["henrietta", "aris"],
+        "known_by": [
+          {"id": "henrietta", "how": "did", "tells_from": 0.75, "cover": "Aris and I always got on fine."},
+          {"id": "priya", "how": "witnessed", "tells_from": 0.3, "cover": null}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "distrust_mirela",
+        "what": "Mirela distrusted Aris's bionics and said she wasn't one of them any more.",
+        "when": "2026-03-02T09:15:00Z",
+        "where": "coffee_shop",
+        "about": ["mirela", "aris"],
+        "known_by": [
+          {"id": "mirela", "how": "did", "tells_from": 0.75, "cover": null},
+          {"id": "lachlan", "how": "witnessed", "tells_from": 0.5, "cover": null}
+        ],
+        "found_in": null,
+        "leads": []
+      },
+      {
+        "id": "distrust_raymond",
+        "what": "Raymond distrusted Aris's bionics and said she wasn't one of them any more.",
+        "when": "2026-03-04T15:00:00Z",
+        "where": "coffee_shop",
+        "about": ["raymond", "aris"],
+        "known_by": [
+          {"id": "raymond", "how": "did", "tells_from": 0.75, "cover": "Aris and I always got on fine."},
+          {"id": "mirela", "how": "witnessed", "tells_from": 0.6, "cover": null}
+        ],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "passed", "text": "Raymond walks home down Banyan Row. Ask him whether he saw Aris the evening before she went missing."}
+        ]
+      },
+      {
+        "id": "last_seen",
+        "what": "Kofi saw Aris heading down Banyan Row's steps towards the old metro at about 21:40 the evening before she went missing, with Raymond going the other way.",
+        "when": "2026-03-06T21:40:00Z",
+        "where": "banyan_row",
+        "about": ["aris", "raymond"],
+        "known_by": [{"id": "kofi", "how": "witnessed", "tells_from": 0.3, "cover": null}],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "lift_log", "text": "She was heading for the old metro. See whether anything down there remembers her."},
+          {"fact_id": "passed", "text": "Raymond passed her on the steps. Ask him whether he saw her that evening."}
+        ]
+      },
+      {
+        "id": "passed",
+        "what": "Raymond passed Aris on Banyan Row's steps that last evening, heading down towards the old metro, and said nothing to her.",
+        "when": "2026-03-06T21:40:00Z",
+        "where": "banyan_row",
+        "about": ["raymond", "aris"],
+        "known_by": [
+          {"id": "raymond", "how": "witnessed", "tells_from": 0.75, "cover": "I didn't see her that evening."}
+        ],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "lift_log", "text": "She was going down to the old metro. See whether anything down there remembers her."}
+        ]
+      },
+      {
+        "id": "lift_log",
+        "what": "The dead terminal in the old metro carries Aris's maker's mark: she rewired it. Its last entry logs the maintenance lift going down to the sewers the night before her workshop was found standing open.",
+        "when": "2026-03-06T21:55:00Z",
+        "where": "metro",
+        "about": ["aris"],
+        "known_by": [],
+        "found_in": "metro_terminal",
+        "leads": [
+          {"fact_id": "hatch_log", "text": "The lift went down to the sewers. Take it down and find where she went."}
+        ]
+      },
+      {
+        "id": "hatch_log",
+        "what": "A maintenance hatch deep in the sewers is stamped with Apex's mark, and its lock carries Aris's maker's mark: she wired a key of her own into it. Its log shows that key opening it the night before her workshop was found standing open, onto a shaft that climbs towards the Apex towers.",
+        "when": "2026-03-06T22:55:00Z",
+        "where": "sewers",
+        "about": ["aris"],
+        "known_by": [],
+        "found_in": "sewers_hatch",
+        "leads": []
+      }
+    ]
+  },
+  {
+    "distrusted_by": ["henrietta"],
+    "facts": [
+      {
+        "id": "gone",
+        "what": "One morning Aris's workshop was found standing open, her tea cold and her tools left on the bench as if she'd stepped out. Nobody saw her leave.",
+        "when": "2026-04-11T07:30:00Z",
+        "where": "maker_space",
+        "about": ["aris"],
+        "known_by": [
+          {"id": "henrietta", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "desmond", "how": "witnessed", "tells_from": 0, "cover": null},
+          {"id": "priya", "how": "witnessed", "tells_from": 0, "cover": null}
+        ],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "notes", "text": "Her notes are still on the workshop bench. Read what she wrote last."},
+          {"fact_id": "last_seen", "text": "Desmond saw her the evening before she went missing. Ask him where she was going."}
+        ]
+      },
+      {
+        "id": "notes",
+        "what": "Aris wrote in her notebook: \"H. crossed the lane again rather than pass my door.\"",
+        "when": "2026-04-09T21:00:00Z",
+        "where": "maker_space",
+        "about": ["aris", "henrietta"],
+        "known_by": [],
+        "found_in": "aris_notes",
+        "leads": [
+          {"fact_id": "distrust_henrietta", "text": "Who's H.? Henrietta never goes near the maker space. Ask her how she got on with Aris."}
+        ]
+      },
+      {
+        "id": "distrust_henrietta",
+        "what": "Henrietta distrusted Aris's bionics and said she wasn't one of them any more.",
+        "when": "2026-04-08T10:30:00Z",
+        "where": "square",
+        "about": ["henrietta", "aris"],
+        "known_by": [
+          {"id": "henrietta", "how": "did", "tells_from": 0, "cover": null},
+          {"id": "priya", "how": "witnessed", "tells_from": 0.3, "cover": null}
+        ],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "passed", "text": "Henrietta was out on Banyan Row that evening. Ask her whether she saw Aris the evening before she went missing."}
+        ]
+      },
+      {
+        "id": "last_seen",
+        "what": "Desmond saw Aris heading down Banyan Row's steps towards the old metro at about 21:50 the evening before she went missing, with Henrietta going the other way.",
+        "when": "2026-04-10T21:50:00Z",
+        "where": "banyan_row",
+        "about": ["aris", "henrietta"],
+        "known_by": [{"id": "desmond", "how": "witnessed", "tells_from": 0.4, "cover": "I was home all evening."}],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "lift_log", "text": "She was heading for the old metro. See whether anything down there remembers her."},
+          {"fact_id": "passed", "text": "Henrietta passed her on the steps. Ask her whether she saw her that evening."}
+        ]
+      },
+      {
+        "id": "passed",
+        "what": "Henrietta passed Aris on Banyan Row's steps that last evening, heading down towards the old metro, and said nothing to her.",
+        "when": "2026-04-10T21:50:00Z",
+        "where": "banyan_row",
+        "about": ["henrietta", "aris"],
+        "known_by": [{"id": "henrietta", "how": "witnessed", "tells_from": 0, "cover": null}],
+        "found_in": null,
+        "leads": [
+          {"fact_id": "lift_log", "text": "She was going down to the old metro. See whether anything down there remembers her."}
+        ]
+      },
+      {
+        "id": "lift_log",
+        "what": "The dead terminal in the old metro carries Aris's maker's mark: she rewired it. Its last entry logs the maintenance lift going down to the sewers the night before her workshop was found standing open.",
+        "when": "2026-04-10T22:05:00Z",
+        "where": "metro",
+        "about": ["aris"],
+        "known_by": [],
+        "found_in": "metro_terminal",
+        "leads": [
+          {"fact_id": "hatch_log", "text": "The lift went down to the sewers. Take it down and find where she went."}
+        ]
+      },
+      {
+        "id": "hatch_log",
+        "what": "A maintenance hatch deep in the sewers is stamped with Apex's mark, and its lock carries Aris's maker's mark: she wired a key of her own into it. Its log shows that key opening it the night before her workshop was found standing open, onto a shaft that climbs towards the Apex towers.",
+        "when": "2026-04-10T23:05:00Z",
+        "where": "sewers",
+        "about": ["aris"],
+        "known_by": [],
+        "found_in": "sewers_hatch",
+        "leads": []
+      }
+    ]
+  }
+]

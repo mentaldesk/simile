@@ -130,7 +130,7 @@
         }
       ],
       "default": null,
-      "description": "The incident's `Fact` it holds, for a memory seeded from one. A memory passed on from it keeps it. Left out when there isn't one.",
+      "description": "The story's `Fact` it holds, for a memory seeded from one. A memory passed on from it keeps it. Left out when there isn't one.",
       "title": "Fact Id"
     }
   },

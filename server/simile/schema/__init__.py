@@ -77,6 +77,7 @@ from simile.schema.social import (
 )
 from simile.schema.story import (
     ARIS,
+    Disappearance,
     Fact,
     HowKnown,
     Incident,
@@ -133,6 +134,7 @@ MODELS: tuple[type[Model], ...] = (
     Item,
     Recipe,
     Incident,
+    Disappearance,
     Fact,
     JournalEntry,
     Investigation,
@@ -170,6 +172,7 @@ __all__ = [
     "CreatureKind",
     "CreatureState",
     "Craft",
+    "Disappearance",
     "Door",
     "DoorKind",
     "Effect",
