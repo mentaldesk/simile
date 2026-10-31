@@ -43,8 +43,8 @@ export const BODY = table.body;
 export const JUMP_REACH = table.cells;
 export const JUMP_UP = table.rows;
 
-/** How a jump or a fall is moving, in tiles a second, y down. `held` while Space is still held from the jump. */
-export type Air = { vx: number; vy: number; held: boolean };
+/** How a jump or a fall is moving, in tiles a second, y down. `held` while Space is still held from the jump, `launched` once its take-off is slowed to the head room. */
+export type Air = { vx: number; vy: number; held: boolean; launched?: boolean };
 
 const EPSILON = 1e-6;
 /** Each step through the air moves less than this, so it can't pass through a cell. */
@@ -63,6 +63,16 @@ function blocked(map: SideMap, x: number, feet: number): boolean {
     for (let cy = top; cy <= bottom; cy++) if (isSolid(map, cx, cy)) return true;
   }
   return false;
+}
+
+/** Tiles above the head of the body at `x` with its feet `feet` rows down, to anything solid. */
+function headRoom(map: SideMap, x: number, feet: number): number {
+  const [left, right] = columns(x - FOOT, x + FOOT);
+  const top = feet - BODY;
+  for (let row = Math.floor(top + EPSILON) - 1; row >= 0; row--) {
+    for (let cx = left; cx <= right; cx++) if (isSolid(map, cx, row)) return top - row - 1;
+  }
+  return top;
 }
 
 /** The cell along row `y` that the feet at `x` stand on: the one under the middle, else under a foot. */
@@ -92,8 +102,12 @@ export function dropBeyond(map: SideMap, end: number, y: number, way: -1 | 1): b
   return !isSolid(map, x, y) && !isSolid(map, x, y + 1) && !climbAt(map, x, y) && !climbAt(map, x, y + 1);
 }
 
-/** Moves `at` through the air for `dt`, stopped by anything solid and kept on the map; true once it lands. */
+/** Moves `at` through the air for `dt`, half way through `steer`ing it, stopped by anything solid and kept on the map; true once it lands. A jump takes off no faster than reaching the ceiling needs. */
 export function fly(map: SideMap, at: { x: number; y: number }, air: Air, dt: number): boolean {
+  if (air.held && !air.launched) {
+    air.launched = true;
+    air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)) + (GRAVITY * dt) / 2);
+  }
   const steps = Math.max(1, Math.ceil((Math.max(Math.abs(air.vx), Math.abs(air.vy)) * dt) / STEP_TILES));
   const step = dt / steps;
   for (let i = 0; i < steps; i++) {

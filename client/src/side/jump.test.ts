@@ -418,13 +418,15 @@ describe('on each grade of legs and feet', () => {
     expect(landed.x).toBeLessThan(63.75);
   });
 
-  it.each([['bionic_legs_2+spring_feet_2']])(
-    'crosses the gap on %s with Space tapped, and bumps its head with it held',
-    (kit) => {
-      expect(legsJump(kit, { x: 72, y: 8 }, -1, 68.5, 4).y).toBe(8);
-      expect(legsJump(kit, { x: 72, y: 8 }, -1, 69).y).toBe(15);
-    },
-  );
+  it("jumps the gantry's gap on bionic_legs_2+spring_feet_2 as on the legs alone, peaking under the roof", () => {
+    for (const at of [70, 69.5, 69, 68.5]) {
+      for (const hold of [2, 4, 8, 600]) {
+        const landed = legsJump('bionic_legs_2+spring_feet_2', { x: 72, y: 8 }, -1, at, hold);
+        expect(landed, `jumping at ${at}, holding ${hold}`).toEqual(legsJump('bionic_legs_2', { x: 72, y: 8 }, -1, at, hold));
+      }
+    }
+    expect(legsJump('bionic_legs_2+spring_feet_2', { x: 72, y: 8 }, -1, 69).y).toBe(8);
+  });
 
   it.each<[string | undefined]>([[undefined], ['spring_feet'], ['spring_feet_2']])(
     "never clears the gantry's gap on %s, however it jumps",
@@ -437,6 +439,48 @@ describe('on each grade of legs and feet', () => {
       }
     },
   );
+});
+
+/** server/simile/street/jump.py's `airtime`: seconds back down to where it took off, rising at most `rise`. */
+const airtime = (table: JumpTable, rise: number) =>
+  Math.sqrt((2 * Math.min(rise, table.rise)) / GRAVITY) * (1 + 1 / Math.sqrt(table.fall_gravity));
+
+/** Walks or runs right on the kit's table at `fps` under `rows` open rows, jumps with Space held, and returns how long it flew and how far. */
+function jumpUnder(rows: number, kit: string | undefined, run: boolean, fps: number) {
+  const solid = '#'.repeat(40);
+  const map = sketch([solid, ...Array<string>(rows).fill('.'.repeat(40)), solid]);
+  const [table, dt, y] = [tableOf(kit), 1 / fps, rows];
+  const player = on(map, 2, y);
+  player.rise = table.rise;
+  player.runSpeed = table.run;
+  for (let t = 0; t < 1; t += dt) player.update(press({ x: 1, run }), dt);
+  const from = player.position.x;
+  player.update(press({ x: 1, run, jump: true, hold: true }), dt);
+  let frames = 0;
+  for (; frames < 1000 && player.airborne; frames++) player.update(press({ x: 1, run, hold: true }), dt);
+  expect(player.position.y).toBe(y);
+  return { seconds: frames * dt, along: player.position.x - from, dt };
+}
+
+describe('under a low ceiling', () => {
+  it.each([30, 60, 144])('jumps at least as far on the spring feet as on its own legs under a 4-row tier, at %s fps', (fps) => {
+    for (const run of [false, true]) {
+      const own = jumpUnder(4, undefined, run, fps).along;
+      for (const kit of ['spring_feet', 'spring_feet_2']) {
+        expect(jumpUnder(4, kit, run, fps).along, `${kit}, running: ${run}`).toBeGreaterThanOrEqual(own - 1e-9);
+      }
+    }
+  });
+
+  it.each([30, 60, 144])("is in the air as long as the server's airtime says, within a frame, at %s fps", (fps) => {
+    for (const rows of [2, 3, 4]) {
+      for (const kit of [undefined, 'spring_feet', 'spring_feet_2']) {
+        const { seconds, dt } = jumpUnder(rows, kit, false, fps);
+        const room = rows - JUMP_TABLE.body;
+        expect(Math.abs(seconds - airtime(tableOf(kit), room)), `${kit} under ${rows} rows`).toBeLessThanOrEqual(dt);
+      }
+    }
+  });
 });
 
 describe('on the rooftops', () => {
