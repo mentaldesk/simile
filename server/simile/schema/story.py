@@ -25,9 +25,19 @@ def _repeats(values: list[str]) -> bool:
     return len(set(values)) < len(values)
 
 
+def _check_trail(facts: Any) -> None:
+    ids = _fields(facts, "id")
+    if _repeats(ids):
+        raise ValueError("each fact has its own id")
+    for fact in facts if isinstance(facts, list) else []:
+        for target in _fields(_field(fact, "leads"), "fact_id"):
+            if target not in ids:
+                raise ValueError(f"a lead goes to {target}, which isn't one of its facts")
+
+
 class HowKnown(StrEnum):
-    """How a resident knows a fact: they `did` it, `witnessed` it (saw or heard it happen), or
-    were `told` it by someone."""
+    """How a resident knows a fact. `did`: it's what they did or felt. `witnessed`: they saw or
+    heard it. `told`: someone told them."""
 
     DID = "did"
     WITNESSED = "witnessed"
@@ -49,8 +59,8 @@ class Knower(Model):
     )
     cover: str | None = Field(
         min_length=1,
-        description='What they say instead of telling it, when they lie, e.g. "I was home all '
-        'night." Code decides when they lie, as for other lies, so the infrared eye reads it '
+        description='What they say instead of telling it, when they lie, e.g. "Aris and I always '
+        'got on fine." Code decides when they lie, as for other lies, so the infrared eye reads it '
         "exactly. Null if they keep quiet rather than lie.",
     )
 
@@ -70,16 +80,16 @@ class Lead(Model):
 
 
 class Fact(Model):
-    """Something that happened, kept in the sim. Residents only voice it: code decides who tells
-    it to whom, and who lies about it."""
+    """Something that happened, or how someone felt, kept in the sim. Residents only voice it:
+    code decides who tells it to whom, and who lies about it."""
 
     model_config = CHECKED
 
     id: Id
     what: str = Field(
         min_length=1,
-        description="What happened, in the third person, as it really did. Each knower's memory "
-        "of it is in their own words.",
+        description="What happened or how someone felt, in the third person, as it really was. "
+        "Each knower's memory of it is in their own words.",
     )
     when: Timestamp = Field(description="Sim time.")
     where: Key = Field(
@@ -147,14 +157,36 @@ class Incident(Model):
                 raise ValueError("each attacker is named once")
             if data.get("victim", ARIS) in attackers:
                 raise ValueError("the victim isn't one of the attackers")
-            facts = data.get("facts")
-            ids = _fields(facts, "id")
-            if _repeats(ids):
-                raise ValueError("each fact has its own id")
-            for fact in facts if isinstance(facts, list) else []:
-                for target in _fields(_field(fact, "leads"), "fact_id"):
-                    if target not in ids:
-                        raise ValueError(f"a lead goes to {target}, which isn't one of its facts")
+            _check_trail(data.get("facts"))
+        return data
+
+
+class Disappearance(Model):
+    """The morning Aris was found gone, made once at world creation: who distrusted her bionics,
+    and the facts around it. Nobody in the village made her vanish."""
+
+    model_config = CHECKED
+
+    distrusted_by: list[Id] = Field(
+        min_length=1,
+        description="The residents who distrusted her bionics, each once, never Aris. They're "
+        "evasive about her, and some lie.",
+    )
+    facts: list[Fact] = Field(
+        description="Who distrusted her, who saw her last and what the clues hold. Each has its "
+        "own id, and their leads go to one another. Their knowers grow as residents pass them on."
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _consistent(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            distrusters = _strings(data.get("distrusted_by"))
+            if _repeats(distrusters):
+                raise ValueError("each resident distrusted her once")
+            if ARIS in distrusters:
+                raise ValueError("Aris isn't one of those who distrusted her")
+            _check_trail(data.get("facts"))
         return data
 
 
@@ -213,12 +245,17 @@ class JournalEntry(Model):
 
 
 class Investigation(Model):
-    """The incident and the player's journal of it, saved with the world. One object holds both,
-    so it can be restored in place before the world has made an incident."""
+    """The story and the player's journal of it, saved with the world. One object holds both, so
+    it can be restored in place before the world has made its story."""
 
     model_config = CHECKED
 
     incident: Incident | None = Field(
+        default=None,
+        description="The incident, in a save from before the disappearance. Null if the world "
+        "never made one.",
+    )
+    disappearance: Disappearance | None = Field(
         default=None, description="Null until the world makes it, as in a save from before it."
     )
     journal: list[JournalEntry] = Field(
