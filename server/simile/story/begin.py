@@ -47,8 +47,7 @@ async def begin(
 
 
 def still_true(investigation: Investigation, disappearance: Disappearance) -> None:
-    """Keeps only the town's entries and those true of `disappearance` word for word, with their
-    leads to facts that still exist."""
+    """Keeps the town's entries and those still true word for word, and leads to facts left."""
     facts = {fact.id: fact for fact in disappearance.facts}
 
     def kept(entry: JournalEntry) -> bool:

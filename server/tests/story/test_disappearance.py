@@ -129,6 +129,27 @@ def test_the_trail_reaches_the_logs_and_every_distruster_s_fact(world: Made) -> 
     assert set(leads) - reached <= {distrust(npc) for npc in world.disappearance.distrusted_by}
 
 
+@pytest.mark.parametrize(("world", "npcs"), EVERYWHERE)
+def test_the_notes_lead_to_a_distruster_who_lies_wherever_one_does(
+    world: Made, npcs: list[Npc]
+) -> None:
+    found, values = world.disappearance, {npc.id: npc.values for npc in npcs}
+    by_id = {fact.id: fact for fact in found.facts}
+    [passer] = by_id[PASSED].known_by
+    noted = {lead.fact_id for lead in by_id[NOTED].leads}
+    lies = [
+        npc
+        for npc in found.distrusted_by
+        if values[npc][CoreValue.HONESTY] < DEFAULT_CONFIG.distruster_lies_below
+    ]
+
+    assert distrust(passer.id) in noted
+    assert (passer.cover == TEXTS.not_seen) == bool(lies)
+    if lies:
+        assert passer.id in lies
+        assert by_id[distrust(passer.id)].known_by[0].cover == TEXTS.denial
+
+
 def test_willingness_follows_values_in_the_default_village() -> None:
     world = made(1)
     knowers = {(fact.id, k.id): k for fact in world.disappearance.facts for k in fact.known_by}

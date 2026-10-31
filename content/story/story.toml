@@ -27,7 +27,7 @@ pages = [
     "The kid came by again and soldered a whole board without burning anything. Better than I was at that age.",
 ]
 
-# What residents remember and say, with `{name}`, `{time}` or `{initial}` where it's drawn.
+# What residents remember and say, with `{name}`, `{time}`, `{steps}` or `{initial}` where drawn.
 [texts]
 relieved = "Good riddance, if you ask me."
 denial = "Aris and I always got on fine."
@@ -36,14 +36,14 @@ notes = [
     "{initial}. crossed the lane again rather than pass my door.",
     "{initial}. won't let me fix anything of theirs any more. Says they don't want my hands on it.",
     "{initial}. pulled the children away from my window while I was welding. Said they'd seen enough.",
-    "{initial}. told the whole café I'm not one of us any more. Said it loud enough for me to hear.",
+    "{initial}. told the whole café I'm 'not one of us' any more, loud enough for me to hear.",
 ]
 
 [texts.memories]
 distrusted = "I never trusted what Aris did to herself in that workshop. I said it out loud: she isn't one of us any more."
 heard = "I heard {name} say Aris wasn't one of us any more, not with all that machinery in her."
-saw = "The evening before Aris went missing, at about {time}, I saw her heading down Banyan Row's steps towards the old metro. {name} passed her going the other way."
-passed = "The evening before Aris went missing, I passed her on Banyan Row's steps, heading down towards the old metro. I didn't say a word to her."
+saw = "The evening before Aris went missing, at about {time}, I saw her heading down {steps} towards the old metro. {name} passed her going the other way."
+passed = "The evening before Aris went missing, I passed her on {steps}. She was going down towards the old metro. I didn't say a word to her."
 
 # What a witness who'd rather lie than keep quiet says instead, by what they know.
 [texts.covers]

@@ -81,9 +81,10 @@ it, and rises to the top floor or drops to Banyan Row's river.
   the street already draws, and one that no furniture draws is left out. The rest are icons from
   [`content/icons/`](../../../content/icons/README.md): Aris's notes pinned over her bench, out of
   the player's way, a schematic on a searchable that teaches a recipe until it's searched, and each
-  pile's first item. A clue without a picture of its own isn't drawn. A searched thing gets a painted tick. The one E would use where the player
-  stands (`glowing`, as `world/reach.ts`'s `eUse` finds it) gets a pulsing glow round its outline,
-  made in code from its picture; a jack doesn't without the datajack, and the lift does with it.
+  pile's first item. A clue without a picture of its own isn't drawn. A searched thing gets a
+  painted tick. The one E would use where the player stands (`glowing`, as `world/reach.ts`'s
+  `eUse` finds it) gets a pulsing glow round its outline, made in code from its picture; a jack
+  doesn't without the datajack, and the lift does with it.
 
 Every texture is filtered smoothly, Phaser's default. A picture wider than the GPU's widest texture
 (16384 px on most), such as `sewer_vault` stretched across a level, is cut into parts within it,
