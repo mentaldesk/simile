@@ -17,6 +17,7 @@ from simile.schema import (
     CreatureKind,
     Door,
     DoorKind,
+    Interactable,
     InteractableKind,
     Item,
     ItemKind,
@@ -27,7 +28,7 @@ from simile.schema import (
 from simile.street import charge
 from simile.street.charge import Ways, runs, seconds
 from simile.street.finds import searchable, under
-from simile.street.jump import JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
+from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets, walking
 from simile.street.metro import BOT_SPAN, LIFT_FOOT, METRO, SALVAGE, SECRET, light, machine
 from simile.street.moves import moves
 from simile.street.plan import Pickup, Plan, Spawn
@@ -62,6 +63,9 @@ WEIR = 3
 WEIR_AT = 12
 """Cells into the gate hall: farther than a fall from its west walkway carries anyone."""
 ATTEMPTS = 40
+WALKS = {OWN_JUMP: walking(JUMP), Bionic.SPRING_FEET.value: walking(FEET[Bionic.SPRING_FEET])}
+"""The walking jumps zone 0 is passable on: the player's own legs, and the spring feet a stage 1
+save is fitted with."""
 RATS = (3, 2)
 """Zone 0's nests of rats, each keeping to a room of its own."""
 BOT_FLOOR = 10
@@ -351,6 +355,24 @@ def place_holes(level: Level) -> None:
                 level.drops[node] = x
 
 
+def narrow(level: Level, node: Node) -> bool:
+    """Whether a hole is one cell, a walking jump across: before the gate, but the spring pocket's,
+    which the feet jump up through. A ladder's opening there is a pipe to stand on instead."""
+    return level.columns[node[0]].zone == 0 and node != (level.spring_pocket, 1)
+
+
+def pipes(level: Level) -> list[Cell]:
+    """The pipe beside each narrow ladder's top, so a walk along that floor ends at the ladder."""
+    return [
+        (level.openings[node], FLOORS[node[1] + 1]) for node in level.ladders if narrow(level, node)
+    ]
+
+
+def beside(level: Level) -> list[Cell]:
+    """The floor each narrow drop leaves beside its hole, kept clear to jump from."""
+    return [(x + 1, FLOORS[node[1] + 1]) for node, x in level.drops.items() if narrow(level, node)]
+
+
 def room(column: Column, ladder: int, side: int) -> int:
     """Cells of floor past a ladder's top, on the side away from its opening, to the wall."""
     return column.end - 1 - ladder if side else ladder - column.x
@@ -377,11 +399,13 @@ def carve(level: Level, plan: Plan) -> None:
             for tier in range(3):
                 if (i, tier) not in level.doors:
                     plan.fill(column.end, FLOORS[tier] - 3, 1, 4)
-    for (_, tier), x in level.drops.items():
-        plan.clear(x, slab(tier + 1), 2, 1)
-    for (c, tier), x in level.ladders.items():
-        plan.clear(min(x, level.openings[(c, tier)]), slab(tier + 1), 2, 1)
+    for node, x in [*level.drops.items(), *level.ladders.items()]:
+        start = x if narrow(level, node) else min(x, level.openings.get(node, x))
+        plan.clear(start, slab(node[1] + 1), 1 if narrow(level, node) else 2, 1)
+    for (_, tier), x in level.ladders.items():
         plan.ladder((x, FLOORS[tier]), FLOORS[tier] - FLOORS[tier + 1])
+    for x, row in pipes(level):
+        plan.fill(x, row, 1, 1)
 
 
 class Stocker:
@@ -389,7 +413,7 @@ class Stocker:
 
     def __init__(self, level: Level, plan: Plan) -> None:
         self.level, self.plan = level, plan
-        self.taken: set[Cell] = {(LANDING.x, GROUND), (LANDING.x + 1, GROUND)}
+        self.taken: set[Cell] = {(LANDING.x, GROUND), (LANDING.x + 1, GROUND), *beside(level)}
 
     def free(self, node: Node, width: int = 1) -> list[int]:
         c, tier = node
@@ -591,6 +615,8 @@ def cover(level: Level, plan: Plan) -> None:
         for tier in range(3):
             if (i, tier) not in level.doors:
                 plan.piece("sewer_pier", column.end, FLOORS[tier] - 3, 1, 4)
+    for x, row in pipes(level):
+        plan.piece("sewer_pipe", x, row, 1, 1)
     gate = level.columns[level.gate]
     plan.piece("sewer_weir", gate.x + WEIR_AT, GROUND + 1 - WEIR, 2, WEIR + 2)
     for x in (gate.x + 5, gate.x + WEIR_AT - 3):
@@ -1040,6 +1066,21 @@ def stranded(ways: dict[Cell, list[Cell]], start: Cell) -> set[Cell]:
     return set(ways) - seen
 
 
+def unwalked(town: Any, near: list[Interactable]) -> list[str]:
+    """Where zone 0 isn't passable on a walking jump, on `WALKS`: to `near` and back to the lift."""
+    start = (LANDING.x, LANDING.y)
+    [gate] = [light.area for light in town.light if light.id == "sewers_gate"]
+    found = []
+    for name, jump in WALKS.items():
+        ways = routes(town, start, jump)
+        if stuck := sorted(c for c in stranded(ways, start) if c[0] < gate.x):
+            found.append(f"walking on {name} can't get back to the lift from {stuck[0]}")
+        for item in near:
+            if (item.stand[0].x, item.stand[0].y) not in ways:
+                found.append(f"{item.id} is out of reach walking on {name}")
+    return found
+
+
 def problems(plan: Plan, town: object | None = None) -> list[str]:
     """Where a level fails content/street/README.md's checks for the sewers: none if it's sound."""
     town = town or Cells(plan)
@@ -1071,6 +1112,7 @@ def problems(plan: Plan, town: object | None = None) -> list[str]:
     for item in [hatch, *deep]:
         if (item.stand[0].x, item.stand[0].y) in reached[OWN_JUMP]:
             found.append(f"{item.id} is in reach of the player's own legs")
+    found += unwalked(town, [*near, *(plug for plug in plugs if plug.id == GATE_BOX)])
     for pickup in plan.pickups:
         cell = (pickup.x, pickup.y)
         for name, jump in KITS.items():

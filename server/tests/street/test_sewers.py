@@ -2,7 +2,7 @@ import asyncio
 import json
 import random
 import time
-from collections import Counter
+from collections import Counter, deque
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -25,7 +25,7 @@ from simile.sim import Clock, World
 from simile.story import make_incident
 from simile.story.content import HATCH as HATCH_CLUE
 from simile.story.incident import HATCH_LOG, LIFT_LOG
-from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, meets
+from simile.street.jump import FEET, JUMP, KITS, LEGS, OWN_JUMP, Jump, meets
 from simile.street.moves import moves
 from simile.street.plan import PICKUPS_LAYER, dumps, tmj
 from simile.street.sewers import (
@@ -36,14 +36,17 @@ from simile.street.sewers import (
     DEN,
     DEN_LADDER,
     DEN_SECRET,
+    FINDS,
     FLOORS,
     GAP,
+    GATE_BOX,
     HATCH,
     LANDING,
     LEVELS,
     SECURITY_TERMINAL,
     SEWERS,
     SHAFT,
+    WALKS,
     WEIR,
     WEIR_AT,
     routes,
@@ -142,6 +145,35 @@ def test_the_legs_or_the_feet_reach_the_hatch_and_the_plugs_and_the_players_own_
 def test_nobody_gets_stuck_on_any_legs_or_feet(seed: int, level: Callable[[int], Played]) -> None:
     for name, stuck in level(seed).stuck.items():
         assert not stuck, name
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_zone_0_is_walked_to_the_legs_finds_and_the_gate_box_and_back_on_walking_jumps_alone(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town = level(seed).town
+    stops = {find.id for find in FINDS if find.zone == 0} | {GATE_BOX}
+    cells = {item.id: item.stand[0] for item in town.interactables if item.id in stops}
+
+    assert set(cells) == stops
+    for name, jump in WALKS.items():
+        for item_id, stand in cells.items():
+            there = (stand.x, stand.y)
+            assert walked(town, START, there, jump), (name, "to", item_id)
+            assert walked(town, there, START, jump), (name, "back from", item_id)
+
+
+def walked(town: TownMap, start: tuple[int, int], end: tuple[int, int], jump: Jump) -> bool:
+    seen, queue = {start}, deque([start])
+    while queue:
+        here = queue.popleft()
+        if here == end:
+            return True
+        for there, _ in moves(town, here, jump):
+            if there not in seen:
+                seen.add(there)
+                queue.append(there)
+    return False
 
 
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)

@@ -70,7 +70,7 @@ def _flights(town: "TownMap", x: int, y: int) -> tuple[Cell, ...]:
 
 
 def _jumps(town: "TownMap", cell: Cell, jump: Jump) -> Iterator[Move]:
-    """A run jump through open air to a standing cell up to `jump.cells` along, `jump.rows` up."""
+    """A jump through open air to a standing cell up to `jump.cells` along, `jump.rows` up."""
     x, y = cell
     if not town.standing(x, y):
         return

@@ -179,8 +179,9 @@ class Walkthrough:
             self._tick()
 
     def _leap(self, step: Leap) -> None:
-        """As the client jumps: along at a run, up at `gravity` with Space held, and down at
-        `FALL_GRAVITY` times it, landing on whatever's under the feet as they come down past it."""
+        """As the client jumps: along at a run, held back by a wall until it rises past it, up at
+        `gravity` with Space held, and down at `FALL_GRAVITY` times it, landing on whatever's under
+        the feet as they come down past it."""
         if not self.town.standing(round(step.x), step.row):
             raise Stuck(f"nowhere to land at {step.x}, {step.row}")
         while self._reacted(step):
@@ -192,9 +193,8 @@ class Walkthrough:
             gap = step.x - self.x
             dt = self.frame
             x = self.x + math.copysign(min(abs(gap), self.jump.run * dt), gap)
-            if self._blocked(x, self.y):
-                raise Stuck(f"the body meets a wall at {x:.2f}, {self.y:.2f}")
-            self.x = x
+            if not self._blocked(x, self.y):
+                self.x = x
             gravity = self.gravity * (1 if vy < 0 else FALL_GRAVITY)
             y = self.y + vy * dt + gravity * dt * dt / 2
             vy += gravity * dt
