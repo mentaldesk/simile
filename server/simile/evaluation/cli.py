@@ -3,8 +3,6 @@ from typing import Annotated
 
 import typer
 
-LOCAL = "ollama:gemma4:26b"
-
 
 def register(app: typer.Typer) -> None:
     evaluate = typer.Typer(no_args_is_help=True, help="Measure how characters behave.")
@@ -158,109 +156,6 @@ def register(app: typer.Typer) -> None:
             typer.echo(result.report)
         else:
             typer.echo(f"Wrote {out / 'report.md'}", err=True)
-        if calling:
-            typer.echo(f"Claude calls: {result.calls}", err=True)
-
-    @evaluate.command()
-    def suspects(
-        seeds: Annotated[
-            str | None,
-            typer.Option(
-                help="Seeds of S12's incidents, comma-separated. Defaults to four whose liars "
-                "give every kind of cover."
-            ),
-        ] = None,
-        models: Annotated[
-            str | None,
-            typer.Option(help=f"Models to compare, comma-separated. Defaults to B5's and {LOCAL}."),
-        ] = None,
-        claude: Annotated[
-            bool,
-            typer.Option(
-                help="Call the models and Claude's judge through L1. Without it, stock replies "
-                "stand in and nothing is called."
-            ),
-        ] = False,
-        judge: Annotated[
-            str, typer.Option(help="Model that labels the replies and scores their character.")
-        ] = "claude-haiku-5-5",
-        write: Annotated[
-            bool,
-            typer.Option(
-                help="Have Sonnet write each incident's covers, one call a seed, as for a new "
-                "world. Without it they're the content's templates."
-            ),
-        ] = False,
-        out: Annotated[
-            Path | None,
-            typer.Option(
-                help="A folder outside content/ for report.md, replies.json and backstories.json. "
-                "A rerun reuses what's there. Without it the report goes to stdout."
-            ),
-        ] = None,
-        max_calls: Annotated[
-            int | None, typer.Option(help="Most reply calls to start, for every model together.")
-        ] = None,
-    ) -> None:
-        """Compare how models voice the incident's liars."""
-        import asyncio
-        import os
-
-        from simile.conversation.player import PlayerConfig
-        from simile.conversation.prompt import first_name
-        from simile.evaluation.fake import STOCK, Stock
-        from simile.evaluation.run import Refused
-        from simile.evaluation.suspects import SEEDS
-        from simile.evaluation.suspects_report import report
-        from simile.evaluation.suspects_run import REPORT, compare
-        from simile.llm import FakeProvider, LLMClient
-        from simile.llm.lifespan import FAKE_ENV
-        from simile.npc import load_npcs
-        from simile.npc.content import NPCS_DIR
-
-        try:
-            drawn = [int(seed) for seed in seeds.split(",") if seed.strip()] if seeds else SEEDS
-        except ValueError as e:
-            raise typer.BadParameter(f"not a list of seeds: {seeds}", param_hint="--seeds") from e
-        named = [m.strip() for m in (models or "").split(",") if m.strip()]
-        named = named or [PlayerConfig().model, LOCAL]
-        fake = os.environ.get(FAKE_ENV) == "fake"
-        calling = claude and not fake
-        if claude and fake:
-            typer.echo(f"{FAKE_ENV}=fake, so stock replies stand in for Claude.", err=True)
-        if not calling:
-            named, judge = [f"{STOCK}/{model}" for model in named], STOCK
-        llm = LLMClient(None if calling else FakeProvider(default=Stock()))
-        npcs = load_npcs(NPCS_DIR)
-        try:
-            result = asyncio.run(
-                compare(
-                    llm,
-                    npcs,
-                    models=named,
-                    judge=judge,
-                    seeds=drawn,
-                    out=out,
-                    write=write,
-                    max_calls=max_calls,
-                )
-            )
-        except Refused as e:
-            raise typer.BadParameter(str(e), param_hint="--out") from e
-        if result.missing:
-            typer.echo(
-                f"{result.missing} replies missing, so no report. Rerun with the same --out to "
-                "finish.",
-                err=True,
-            )
-            raise typer.Exit(1)
-        residents = [first_name(npc) for npc in npcs]
-        text = report(result, named, judge, residents, stock=not calling)
-        if out is None:
-            typer.echo(text)
-        else:
-            (out / REPORT).write_text(text, encoding="utf-8")
-            typer.echo(f"Wrote {out / REPORT}", err=True)
         if calling:
             typer.echo(f"Claude calls: {result.calls}", err=True)
 

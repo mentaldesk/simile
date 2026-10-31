@@ -265,8 +265,9 @@ tells the model what the lie is (`temptation.py`).
   direction ends "Use that cover story and nothing else: no days, times, places or other people."
 - **Who voices them.** Once a resident is set up to lie to the player, about the incident or
   anything above, their replies use `PlayerConfig.suspect_model`. It's Haiku 4.5, like everyone
-  else's, unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b` (see S14 in the
-  [evaluation README](../evaluation/README.md#who-voices-the-suspects)). Scenes keep B2's model.
+  else's, unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b`. S14 (#361)
+  compared the two and kept Haiku: [#383](https://github.com/mentaldesk/simile/pull/383) has the
+  numbers. Scenes keep B2's model.
 - **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
   was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
   lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a
