@@ -1,5 +1,4 @@
 import json
-import shutil
 import time
 from collections.abc import Callable, Collection
 from datetime import UTC, datetime, timedelta
@@ -28,7 +27,7 @@ TAKES = 0.05
 TUNNEL = Point(65, 15, "metro")
 HOME = Point(13, 2, "maker_space_floor_0")
 LOFT = "maker_space_floor_2"
-BED = Point(1, 2, LOFT)
+BED = Point(5, 2, LOFT)
 SPEED = 60.0
 BITE, INFECTION = EffectKind.RAT_BITE, EffectKind.INFECTION
 ONE_KIDNEY = Body(left_kidney=SOLD)
@@ -98,34 +97,26 @@ def test_it_comes_back_slowly_and_faster_at_home() -> None:
     assert home.player.health == 1
 
 
-def home_floors(directory: Path, bed: bool) -> Path:
-    """The maker space's floor maps, with a bed at the west end of the loft if `bed`."""
+MAKER_SPACE = MAPS[HOME.map].location("maker_space")
+
+
+def home_without_a_bed(directory: Path) -> frozenset[Spot]:
     (directory / FLOORS).mkdir()
     for floor in range(3):
         name = f"maker_space_floor_{floor}.tmj"
-        shutil.copy(MAP_DIR / FLOORS / name, directory / FLOORS / name)
-    if bed:
-        path = directory / FLOORS / f"{LOFT}.tmj"
-        data = json.loads(path.read_text())
-        [furniture] = [layer for layer in data["layers"] if layer["name"] == "furniture"]
-        piece = {"name": "bed", "type": "bed", "x": 16, "y": 32, "width": 32, "height": 16}
-        furniture["objects"].append({**piece, "id": 999, "rotation": 0, "visible": True})
-        path.write_text(json.dumps(data))
-    return directory
+        data = json.loads((MAP_DIR / FLOORS / name).read_text())
+        for layer in (layer for layer in data["layers"] if layer["name"] == "furniture"):
+            layer["objects"] = [piece for piece in layer["objects"] if piece["name"] != "bed"]
+        (directory / FLOORS / name).write_text(json.dumps(data))
+    return beds_in(MAKER_SPACE, directory)
 
 
-def home_beds(directory: Path, bed: bool = True) -> frozenset[Spot]:
-    return beds_in(MAPS[HOME.map].location("maker_space"), home_floors(directory, bed))
+def test_the_bed_at_home_is_in_the_maker_spaces_loft() -> None:
+    assert beds_in(MAKER_SPACE) == {Spot(BED.map, BED.x, BED.y)}
 
 
-def test_the_beds_are_read_from_the_home_floor_maps(tmp_path: Path) -> None:
-    assert home_beds(tmp_path) == {Spot(LOFT, 1, 2), Spot(LOFT, 2, 2)}
-
-
-def test_resting_in_bed_heals_from_a_tenth_to_full_in_about_three_real_seconds(
-    tmp_path: Path,
-) -> None:
-    patient = Patient(Player(health=0.1), at=BED, beds=home_beds(tmp_path))
+def test_resting_in_bed_heals_from_a_tenth_to_full_in_about_three_real_seconds() -> None:
+    patient = Patient(Player(health=0.1), at=BED)
 
     patient.rest(2.5)
     assert patient.player.health == pytest.approx(0.1 + 2.5 / DEFAULT_HEALTH.rest)
@@ -133,10 +124,9 @@ def test_resting_in_bed_heals_from_a_tenth_to_full_in_about_three_real_seconds(
     assert patient.player.health == 1
 
 
-def test_off_the_bed_healing_is_unchanged(tmp_path: Path) -> None:
-    beds = home_beds(tmp_path)
-    out = Patient(Player(health=0.1), beds=beds)
-    home = Patient(Player(health=0.1), at=Point(5, 2, LOFT), beds=beds)
+def test_off_the_bed_healing_is_unchanged() -> None:
+    out = Patient(Player(health=0.1))
+    home = Patient(Player(health=0.1), at=Point(8, 2, LOFT))
 
     out.rest(3)
     home.rest(3)
@@ -146,7 +136,7 @@ def test_off_the_bed_healing_is_unchanged(tmp_path: Path) -> None:
 
 
 def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
-    beds = home_beds(tmp_path, bed=False)
+    beds = home_without_a_bed(tmp_path)
     patient = Patient(Player(health=0.1), at=BED, beds=beds)
 
     patient.rest(3)
@@ -157,8 +147,8 @@ def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
     )
 
 
-def test_an_infection_keeps_health_from_coming_back_in_bed(tmp_path: Path) -> None:
-    patient = Patient(Player(health=0.5), at=BED, beds=home_beds(tmp_path))
+def test_an_infection_keeps_health_from_coming_back_in_bed() -> None:
+    patient = Patient(Player(health=0.5), at=BED)
     patient.health.afflict(INFECTION, 1.0)
 
     patient.rest(3)

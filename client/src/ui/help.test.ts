@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { CONTROLS, HelpPanel, VOICES } from './help';
+import { CONTROLS, HelpPanel, REST, VOICES } from './help';
 
 const visible = (root: HTMLElement, selector: string) => !root.querySelector<HTMLElement>(selector)!.hidden;
 
@@ -68,5 +68,14 @@ describe('HelpPanel', () => {
     expect(notes).toContain(VOICES);
     expect(VOICES).toMatch(/speech bubbles unless .*SIMILE_VOICE=1 \.\/run\.sh/);
     expect(VOICES).toMatch(/Either way, each greets you out loud/);
+  });
+
+  it('says resting at your bed at home heals you fast', () => {
+    const root = document.createElement('div');
+    new HelpPanel(root);
+    const notes = [...root.querySelectorAll('.help p')].map((note) => note.textContent);
+
+    expect(notes).toContain(REST);
+    expect(REST).toMatch(/bed.*maker space.*heal/);
   });
 });

@@ -95,8 +95,20 @@
           "y": 32
         },
         {
-          "height": 32,
+          "height": 16,
           "id": 3,
+          "name": "bed",
+          "properties": [],
+          "rotation": 0,
+          "type": "bed",
+          "visible": true,
+          "width": 16,
+          "x": 80,
+          "y": 32
+        },
+        {
+          "height": 32,
+          "id": 4,
           "name": "shelf",
           "properties": [],
           "rotation": 0,
@@ -142,7 +154,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 4,
+          "id": 5,
           "name": "maker_space_ladder",
           "properties": [
             {
@@ -192,7 +204,7 @@
       "objects": [
         {
           "height": 32,
-          "id": 5,
+          "id": 6,
           "name": "maker_space_shelf",
           "properties": [
             {
@@ -232,7 +244,7 @@
       "objects": [
         {
           "height": 16,
-          "id": 6,
+          "id": 7,
           "name": "desk-13-5",
           "properties": [
             {
@@ -250,7 +262,7 @@
         },
         {
           "height": 16,
-          "id": 7,
+          "id": 8,
           "name": "desk-14-5",
           "properties": [
             {
@@ -268,7 +280,7 @@
         },
         {
           "height": 16,
-          "id": 8,
+          "id": 9,
           "name": "desk-13-7",
           "properties": [
             {
@@ -286,7 +298,7 @@
         },
         {
           "height": 16,
-          "id": 9,
+          "id": 10,
           "name": "desk-14-7",
           "properties": [
             {
@@ -304,7 +316,7 @@
         },
         {
           "height": 16,
-          "id": 10,
+          "id": 11,
           "name": "desk-13-8",
           "properties": [
             {
@@ -322,7 +334,7 @@
         },
         {
           "height": 16,
-          "id": 11,
+          "id": 12,
           "name": "desk-14-8",
           "properties": [
             {
@@ -340,7 +352,7 @@
         },
         {
           "height": 16,
-          "id": 12,
+          "id": 13,
           "name": "desk-13-10",
           "properties": [
             {
@@ -358,7 +370,7 @@
         },
         {
           "height": 16,
-          "id": 13,
+          "id": 14,
           "name": "desk-14-10",
           "properties": [
             {
@@ -405,7 +417,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 14,
+  "nextobjectid": 15,
   "orientation": "orthogonal",
   "properties": [
     {

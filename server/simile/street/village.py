@@ -405,6 +405,7 @@ def maker_space(street: Plan, x: int) -> list[Plan]:
     searchable(first, SPARES, "Workbench", spares, under(spares), [LITHIUM_CELL, CHARGE_CONTROLLER])
     for at, old in ((1, (13, 6)), (7, (13, 9))):
         workbench(loft, at, old)
+    loft.piece("bed", 5, FLOOR_ROW)
     loft.piece("shelf", 11, FLOOR_ROW - 1, 4, 2)
     shelf = TileArea(x=11, y=FLOOR_ROW - 1, width=4, height=2)
     searchable(loft, SHELF, "Storage shelf", shelf, under(shelf), [USB_C_CONNECTOR, COPPER_WIRE])
