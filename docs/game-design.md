@@ -190,16 +190,18 @@ night is best not asked about. Parents steer their children away from her door.
 You were one of the children who didn't stay away. She let you hang around the workshop, taught you
 to solder and told you what everything was for. She's the closest thing you have to family.
 
-Then comes the incident. One night the maker space is smashed up and she's attacked in the lane 
-behind it. She survives, but one of her mechanical hands is torn half off, and she won't say who 
-did it. A week later the workshop door is standing open, her tea cold, her tools left on the bench.
+Not everyone trusts her. The more of herself she replaces, the more people cross the lane rather
+than pass her door, and a few say out loud that she isn't one of them any more.
+
+Then one morning she's gone. The workshop door is standing open, her tea cold, her tools left on
+the bench as if she'd stepped out for a minute. Nobody saw her leave.
 
 The village shrugs. Some are relieved, a few say "good riddance" out loud, and nobody official comes
 asking.
 
-You don't believe she left on her own. Someone in the village knows what happened that night, so
-that's where the search starts. But the trail leads underground, following it takes money you don't
-have, and the clinics in the tunnels pay well for healthy organs.
+You don't believe she left on her own. Somebody in the village saw something, so that's where the
+search starts. But the trail leads underground, following it takes money you don't have, and the
+clinics in the tunnels pay well for healthy organs.
 
 The search goes on for months, and each step costs another part of you. In one tunnel clinic, the
 bionics for sale include a steel hand and a faintly glowing eye. You'd know her work anywhere. You
@@ -215,10 +217,12 @@ back up into the spires of the Apex towers and past the internal security system
   simulation does that for free: Tradition and Security already distrust bionics.
 - **The search starts in the village.** The first leads come from questioning people, not from the
   tunnels.
-- **The suspects come from the simulation.** The failed repair and the attack are facts in the sim's
-  state, and who was hurt and who attacked her are generated each game from the villagers whose
-  values and grievances make them hostile to her. The attackers are a red herring: they hurt her,
-  but they aren't why she disappeared.
+- **What the village knows comes from the simulation.** Who saw her last, where and when, and who
+  disliked her are facts in the sim's state, generated each game. Those who distrusted her bionics
+  are chosen by their values, as the cyborg tolerance already is. They're evasive about her, and
+  some lie: about how they felt about her, or about having seen her that last evening. The lies are
+  decided in code, so the infrared eye can catch the flush. No one in the village made her vanish.
+  What they saw only points the way underground.
 - **Her maker's mark is a trail.** Every part Aris built carries her mark. Her own parts turn up for
   sale in the tunnels, and other people's bionics carry the same mark, which raises the question of
   who she was building for.
