@@ -44,7 +44,8 @@ class HealthConfig(BaseModel):
         gt=0,
         description="Real seconds resting in their bed at home, once they've lain down, takes to "
         "heal them from none to full, whatever the sim's speed: as long as a plug takes to charge "
-        "the lamp. They rest from `rest` until they're full, move off the bed, collapse or get up.",
+        "the lamp. They rest from `rest` until they're full, move off the bed, are infected, "
+        "collapse or get up.",
     )
     lie_down: float = Field(
         default=0.8,
@@ -154,6 +155,7 @@ class Health:
         self._infect()
         infection = self.effect(EffectKind.INFECTION)
         if infection is not None:
+            self.lain = None
             self.hurt(self.config.infection * infection.strength * hours)
         elif self.player.health < 1:
             self.player.health = min(self.player.health + self.healing(dt), 1.0)
@@ -228,8 +230,8 @@ class Health:
         return spot if spot in self.beds else None
 
     def resting(self) -> bool:
-        """Whether they're lying in bed, from `rest` until they're full, move off it, collapse or
-        get up."""
+        """Whether they're lying in bed, from `rest` until they're full, move off it, are infected,
+        collapse or get up."""
         if self.lain is not None and self.bed() != self.lain:
             self.lain = None
         return self.lain is not None

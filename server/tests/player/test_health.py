@@ -217,11 +217,13 @@ def test_a_home_without_a_bed_heals_as_it_does_today(tmp_path: Path) -> None:
     )
 
 
-def test_an_infection_keeps_health_from_coming_back_in_bed() -> None:
+def test_an_infection_setting_in_ends_the_rest_and_lets_no_health_come_back() -> None:
     patient = Patient(Player(health=0.5), at=BED)
     patient.health.rest(True)
     patient.health.afflict(INFECTION, 1.0)
 
+    patient.rest(0.1)
+    assert not patient.health.resting()
     patient.rest(3)
 
     assert patient.player.health < 0.5

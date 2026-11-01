@@ -73,9 +73,9 @@ to hurt and bite the player: they look it up when they do, not at startup.
 - **Resting.** The client's `rest` lies them down in that bed, unless they're at full health or
   infected. Once they've lain down, `lie_down` (0.8) real seconds later, it comes back as fast as
   a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the sim's speed.
-  They rest until they're full, move off the bed, collapse or get up with `rest`, and
-  `player_state`'s `resting` says so as soon as it changes. Getting back on the bed doesn't lie
-  them down again.
+  They rest until they're full, move off the bed, an infection sets in, they collapse or they get
+  up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
+  the bed doesn't lie them down again.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
