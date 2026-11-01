@@ -164,8 +164,9 @@ class Health:
             if self.player.health >= 1:
                 self.lain = None
 
-    def rest(self, on: bool) -> bool:
-        """Lies them down in the bed where they stand, or gets them up. Whether it did."""
+    def rest(self, on: bool, *, woken: bool = False) -> bool:
+        """Lies them down in the bed where they stand, or gets them up. Whether it did. Having
+        `woken` there from a collapse, they're lying down already."""
         if not on:
             resting = self.resting()
             self.lain = None
@@ -174,8 +175,12 @@ class Health:
         infected = self.effect(EffectKind.INFECTION) is not None
         if bed is None or self.resting() or self.player.health >= 1 or infected:
             return False
-        self.lain, self.lying = bed, self.config.lie_down
+        self.lain, self.lying = bed, 0.0 if woken else self.config.lie_down
         return True
+
+    def home_bed(self) -> Spot | None:
+        """The bed they wake in after collapsing: one of their `beds`."""
+        return min(self.beds, default=None)
 
     def hurt(self, damage: float) -> None:
         """Takes `damage` of their health, collapsing them at none."""

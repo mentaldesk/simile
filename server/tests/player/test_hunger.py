@@ -13,6 +13,8 @@ from simile.schema import (
     PLAYER_ID,
     Bionic,
     Body,
+    Effect,
+    EffectKind,
     Item,
     ItemKind,
     MapTile,
@@ -26,6 +28,7 @@ from simile.schema import (
 from simile.sim import Clock, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import load_maps
+from simile.world.paths import Spot
 
 MAPS = load_maps()
 NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
@@ -41,6 +44,7 @@ ODALYS = load_npcs()[0].model_copy(
 BUN = Item(id="pork_bun", kind=ItemKind.FOOD, name="Pork bun", weight=0.2)
 WIRE = Item(id="copper_wire", kind=ItemKind.SALVAGE, name="Copper wire", weight=1.5)
 HOME = Point(13, 2, "maker_space_floor_0")
+BED = Spot("maker_space_floor_2", 5, 2)
 NOODLES = Meal(place="noodle_bar", name="Golden Bowl Noodles", price=10)
 
 
@@ -252,6 +256,44 @@ def test_starving_collapses_them_at_home_with_what_they_carried_left_where_they_
     ]
     assert village.here() == HOME
     assert village.woke == [(MapTile(map="maker_space_floor_0", x=13, y=2), Vital.HUNGER)]
+
+
+def test_with_a_bed_at_home_they_wake_in_it() -> None:
+    village = Village(Player(hunger=0.999))
+    village.hunger.bed = lambda: BED
+    village.stand(12.3, 15, "kapok_walk")
+
+    village.hunger.tick(60)
+
+    assert village.here() == Point(BED.x, BED.y, BED.map)
+    assert village.woke == [(MapTile(map=BED.map, x=BED.x, y=BED.y), Vital.HUNGER)]
+
+
+def test_their_money_is_left_with_what_they_carried_and_every_effect_clears() -> None:
+    bite = Effect(kind=EffectKind.RAT_BITE, strength=0.4, fades=0.25, since=NOW)
+    sick = Effect(kind=EffectKind.INFECTION, strength=0.2, fades=None, since=NOW)
+    village = Village(Player(items=[lamp(), WIRE], money=31.5, effects=[bite, sick]))
+    village.stand(12, 15, "kapok_walk")
+
+    village.hunger.collapse(Vital.HEALTH)
+
+    assert village.player.money == 0
+    assert village.player.effects == []
+    assert village.player.left == [
+        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[WIRE], money=31.5)
+    ]
+
+
+def test_money_alone_is_left_in_a_pile_of_its_own() -> None:
+    village = Village(Player(money=8.0))
+    village.stand(12, 15, "kapok_walk")
+
+    village.hunger.collapse(Vital.POWER)
+
+    assert village.player.money == 0
+    assert village.player.left == [
+        Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[], money=8.0)
+    ]
 
 
 @pytest.mark.parametrize(

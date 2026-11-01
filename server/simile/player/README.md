@@ -29,11 +29,13 @@ client: its `running` hook joins the player to the economy, makes a `Hunger`, a 
     gone, otherwise `closed` (off shift, or past the café's last orders). It opens at the next
     start after now of its keeper's shifts (`hours.py`), so while a keeper is late it's their next
     shift, and never while nobody works there.
-- **Collapsing.** At 1 they collapse. Everything they carry but the lamp is left in a `Pile` where
-  they fell, on the ground below if they were mid-air or partway up stairs or a ladder, at the end
-  of `Player.left`. They wake at home, the entry of `home`, with hunger `waking` (0.75), and the
-  client gets `player_collapsed` to put them there, with `cause` `hunger`. The lamp and their money
-  stay with them, so they can see to go back for the rest.
+- **Collapsing.** At 1 they collapse. Their money and everything they carry but the lamp is left
+  in a `Pile` where they fell, on the ground below if they were mid-air or partway up stairs or a
+  ladder, at the end of `Player.left`, and every effect clears. They wake in their bed at home,
+  already resting (see *Resting*), or at the entry of `home` if it has no bed, with hunger
+  `waking` (0.75), and the client gets `player_collapsed` to put them there, with `cause`
+  `hunger`. The lamp stays with them, so they can see to go back for the rest. A collapse for
+  health or power takes the same path.
 - **Once a power cell is in** their stomach, hunger is 0 for good and nothing is on offer to eat:
   `meal()` is none and `eat` does nothing. They run on power instead.
 
@@ -75,7 +77,8 @@ to hurt and bite the player: they look it up when they do, not at startup.
   a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the sim's speed.
   They rest until they're full, move off the bed, an infection sets in, they collapse or they get
   up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
-  the bed doesn't lie them down again.
+  the bed doesn't lie them down again. Waking there from a collapse, they rest at once, with no
+  `lie_down`.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
@@ -114,10 +117,11 @@ Its constants are in `HealthConfig`, beside it.
   money and a ration pack in the metro, the 60 on the high ledge only the spring feet reach.
 - **Picking up.** The client's `pick_up` takes from the nearest pile within `reach` (1.5 tiles) on
   the map they're on, one they left or one lying at a pickup: its money, and each item that still
-  fits under their carry limit, in order. Money weighs nothing, and goes through the ledger as
-  `found`. Taking from a pickup records when, by its id, in `Player.taken`, which is saved, and
-  whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any that don't fit of
-  one of theirs stay in it.
+  fits under their carry limit, in order. Money weighs nothing, and from a pickup goes through the
+  ledger as `found`. Money they left when they collapsed never left them in the ledger, so it
+  comes back without an entry. Taking from a pickup records when, by its id, in `Player.taken`,
+  which is saved, and whatever of it didn't fit becomes a pile of theirs at the end of `left`. Any
+  that don't fit of one of theirs stay in it.
 - **One thing per press.** Other modules add what else `pick_up` can take to `claimers_of(app)`,
   such as S13's clues, each a `Claim` with its distance from the player. `pick_up` takes the
   nearest claim if it's nearer than any pile in reach, and the pile otherwise, a tie included.

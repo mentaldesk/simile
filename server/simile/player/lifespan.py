@@ -44,19 +44,11 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     in_game = InGame()
 
     def collapsed(home: MapTile, cause: Vital) -> None:
+        health.rest(True, woken=True)
         lamp.switch(False)
         position = Position(x=home.x, y=home.y, map=home.map)
         hub.broadcast(PlayerCollapsedMessage(position=position, cause=cause))
 
-    hunger = Hunger(
-        player,
-        movement,
-        world.clock,
-        supply=lambda goal, need: behaviour.hooks.supply(goal, need),
-        economy=economy,
-        playing=lambda: bool(in_game),
-        collapsed=collapsed,
-    )
     pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))
     health = app.state.health = Health(
@@ -65,6 +57,16 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         world.clock,
         playing=lambda: bool(in_game),
         collapse=lambda: hunger.collapse(Vital.HEALTH),
+    )
+    hunger = Hunger(
+        player,
+        movement,
+        world.clock,
+        supply=lambda goal, need: behaviour.hooks.supply(goal, need),
+        economy=economy,
+        playing=lambda: bool(in_game),
+        collapsed=collapsed,
+        bed=health.home_bed,
     )
 
     def bed() -> MapTile | None:
