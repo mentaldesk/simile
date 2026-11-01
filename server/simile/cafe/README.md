@@ -38,15 +38,15 @@ refuses if someone already lives above the café. Her voice came from N2's `desi
   still says what the other shops and the fridges have.
 - Off shift, whenever she's home, resting or asleep, she goes to `upstairs`, the foot of the stairs
   behind the counter, rather than standing at the café's entry, which is the front of the queue.
-  B1's stay carries on there.
+  B1's stay carries on there. Asleep in her bed, she's left there until she wakes.
 
 ## Where things are
 
 `entrance`, `machine`, `hand_over`, `pickup`, `upstairs` and `seats` are a `Layout` in
 `CafeConfig.layouts`, by the map the café's location is on: `coffee_shop_floor_0`
 (`content/street/`), where the counter, the queue and the bar are downstairs, `upstairs` is the foot
-of the stairs at the east end, and the tables are on the floor above. The barista still sleeps at
-the foot of the stairs rather than in the flat on the top floor.
+of the stairs at the east end, and the tables are on the floor above. The barista sleeps in her bed
+in the flat on the top floor.
 
 ## The queue
 

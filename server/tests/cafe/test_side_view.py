@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -5,7 +6,7 @@ import pytest
 from simile.behaviour import Activity, Goal
 from simile.cafe.config import DEFAULT_CONFIG as CAFE_CONFIG
 from simile.cafe.events import Ordered, Served
-from simile.schema import MapTile, Npc
+from simile.schema import MapTile, Npc, Pose
 from simile.sim import EntityMoved
 from simile.world import Point
 from simile.world.map import STREET_DIR, SpotKind, load_maps
@@ -102,14 +103,27 @@ async def test_the_barista_takes_orders_at_the_till_and_makes_and_hands_over_bes
     assert all((tile.map, tile.x, tile.y) in stood for tile in tiles)
 
 
-async def test_off_shift_the_barista_sleeps_at_the_foot_of_the_stairs() -> None:
-    village = side_village(start=DAY.replace(hour=23, minute=30))
+async def test_off_shift_the_barista_sleeps_in_her_bed_until_she_wakes() -> None:
+    village = side_village(start=DAY.replace(hour=23, minute=30), purposes=True)
 
-    await village.run(minutes=3)
+    def in_bed() -> bool:
+        spot = village.movement.on_spot("bea")
+        return spot is not None and spot.kind is SpotKind.BED
 
-    assert village.at("bea") == Point(SIDE.upstairs.x, SIDE.upstairs.y, GROUND)
-    assert village.behaviour.goal("bea").activity is Activity.SLEEP
-    assert not village.behaviour.minds["bea"].held
+    def moves() -> int:
+        return sum(1 for m in village.of(EntityMoved) if m.entity == "bea")
+
+    await village.run_until(in_bed, minutes=10)
+    assert village.at("bea").map == "coffee_shop_floor_2"
+    settled = moves()
+
+    while village.behaviour.goal("bea").activity is Activity.SLEEP:
+        assert moves() == settled and in_bed() and not village.behaviour.minds["bea"].held
+        assert village.movement.posture("bea")[0] is Pose.SLEEPING
+        assert village.now < DAY + timedelta(days=1, hours=12)
+        await village.run(minutes=1)
+
+    await village.run_until(lambda: not in_bed(), minutes=30)
 
 
 async def test_a_resident_who_was_just_served_climbs_to_a_table_upstairs() -> None:

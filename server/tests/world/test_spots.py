@@ -83,7 +83,8 @@ def test_every_spot_but_the_murals_is_in_a_place() -> None:
 @pytest.mark.parametrize(
     ("location", "kinds"),
     [
-        ("coffee_shop", {SpotKind.SEAT, SpotKind.BAR}),
+        ("coffee_shop", {SpotKind.SEAT, SpotKind.BAR, SpotKind.BED}),
+        ("house_1", {SpotKind.BED}),
         ("noodle_bar", {SpotKind.SEAT}),
         ("maker_space", {SpotKind.DESK}),
         ("gallery", {SpotKind.VIEWING, SpotKind.SEAT}),
@@ -141,6 +142,9 @@ def test_only_the_stools_raise_a_sitter() -> None:
         (Purpose.LOOK, "gallery", {SpotKind.VIEWING}),
         (Purpose.RELAX, "park", {SpotKind.SEAT}),
         (Purpose.LINGER, "square", {SpotKind.STANDING, SpotKind.SEAT}),
+        (Purpose.SLEEP, "house_1", {SpotKind.BED}),
+        (Purpose.SLEEP, "house_4", {SpotKind.BED}),
+        (Purpose.SLEEP, "coffee_shop", {SpotKind.BED}),
     ],
 )
 def test_takes_a_free_spot_that_suits_what_they_are_there_for(
@@ -207,6 +211,20 @@ def test_people_sit_away_from_someone_they_dislike() -> None:
 
     here = village.movement.position("mei")
     assert here.map == UPSTAIRS and abs(here.x - x) >= 3
+
+
+def test_waking_at_home_gets_them_up_off_the_bed() -> None:
+    village = Village()
+    village.go("mei", Purpose.SLEEP, "house_1")
+    assert village.movement.posture("mei")[0] is Pose.SLEEPING
+
+    village.movement.intend("mei", None)
+    walk = village.movement.walk_to("mei", "house_1")
+    village.finish(walk)
+
+    assert walk.outcome is Outcome.ARRIVED and walk.distance > 0
+    assert village.spot("mei") is None
+    assert village.movement.posture("mei")[0] is Pose.STANDING
 
 
 def test_someone_already_on_a_suitable_spot_stays_there() -> None:
@@ -289,6 +307,7 @@ def test_placing_someone_on_a_spot_seats_them() -> None:
         ("gallery", "gallery", Purpose.LOOK),
         ("park", "park", Purpose.RELAX),
         ("square", "square", Purpose.LINGER),
+        ("sleep", "house_1", Purpose.SLEEP),
         ("work", "maker_space", Purpose.MAKE),
         ("work", "gallery", Purpose.LOOK),
         ("work", "coffee_shop", None),

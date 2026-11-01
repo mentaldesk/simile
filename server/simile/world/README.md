@@ -96,14 +96,16 @@ face, in the maps' `spots` layer ([`content/street/README.md`](../../../content/
 | `terminal` | `reading` | In front of each news terminal's screen |
 | `viewing` | `looking` | In front of each painting in the gallery and each mural wall |
 | `standing` | `standing` | Around the square's fountain and by its lamps |
+| `bed` | `sleeping` | On the head of the bed in each house and in the barista's flat |
 
 **Taking one.** `intend(entity, purpose)` says what they're at their next place for, a
 `simile.world.spots.Purpose`. The world's lifespan sets it from B1's `GoalChosen`, which behaviour
 publishes before it starts the walk (`purpose_of`): the coffee shop is for a drink, the noodle bar
 for eating, a terminal for reading, the maker space and making something for making, the gallery for
-looking, the park for relaxing and the square for lingering. At work it's what the place is for,
-except at the café and the noodle bar, whose staff serve rather than take a spot. A walk to a location
-then ends on a free spot that suits the purpose (`SpotConfig.fits`):
+looking, the park for relaxing, the square for lingering and home at bedtime for sleeping. At work
+it's what the place is for, except at the café and the noodle bar, whose staff serve rather than
+take a spot. A walk to a location then ends on a free spot that suits the purpose
+(`SpotConfig.fits`):
 
 | Purpose | Spots |
 |---|---|
@@ -114,6 +116,7 @@ then ends on a free spot that suits the purpose (`SpotConfig.fits`):
 | look | a viewing spot, or a bench |
 | relax | a seat |
 | linger | a standing spot or a bench |
+| sleep | a bed, on any floor of their home |
 
 Of the free ones they take the best: near people they like and away from people they dislike, by
 `movement.affinity(a, b)`, each person's liking counting more the nearer they sit, within `near` (3)

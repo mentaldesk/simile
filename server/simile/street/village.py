@@ -284,6 +284,7 @@ def house(street: Plan, number: int, label: str, x: int, door_west: bool) -> lis
     }
     for piece, (plan, area) in furniture.items():
         plan.piece(piece, area.x, area.y, area.width, area.height)
+    bedroom.spot("bed", SpotKind.BED, middle, FLOOR_ROW, E)
     for stash in STASHES.values():
         if stash.house == home.id:
             plan, area = furniture[stash.piece]
@@ -371,6 +372,7 @@ def coffee_shop(street: Plan, x: int) -> list[Plan]:
     for at, old in tables:
         table(upstairs, "cafe_table", at, old)
     flat.piece("bed", 1, FLOOR_ROW, 2, 1)
+    flat.spot("bed", SpotKind.BED, 1, FLOOR_ROW, E)
     flat.piece("wardrobe", 3, FLOOR_ROW - 1, 1, 2)
     flat.piece("sofa", 5, FLOOR_ROW, 2, 1)
     flat.piece("kitchen", 8, FLOOR_ROW - 1, 3, 2)

@@ -583,7 +583,7 @@ def test_climbs_the_stairs_to_another_floor_held_at_their_foot_for_the_climb() -
     [stairs] = [door for door in TOWN.doors if door.id == "house_1_stairs"]
     village.movement.place("mei", "house_1")
     village.moves.clear()
-    upstairs = MapTile(map=house.floors[0].map, x=house.entry.x, y=house.entry.y)
+    upstairs = MapTile(map=house.floors[0].map, x=house.entry.x - 1, y=house.entry.y)
 
     walk = village.movement.walk_to("mei", upstairs)
     village.finish(walk)

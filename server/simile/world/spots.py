@@ -20,6 +20,7 @@ class Purpose(StrEnum):
     LOOK = "look"
     RELAX = "relax"
     LINGER = "linger"
+    SLEEP = "sleep"
 
 
 BY_ACTIVITY = {
@@ -31,6 +32,7 @@ BY_ACTIVITY = {
     "gallery": Purpose.LOOK,
     "park": Purpose.RELAX,
     "square": Purpose.LINGER,
+    "sleep": Purpose.SLEEP,
 }
 SERVING = (Purpose.EAT, Purpose.DRINK)
 """Places whose staff serve rather than take a spot."""
@@ -51,6 +53,7 @@ class SpotConfig:
             Purpose.LOOK: {SpotKind.VIEWING: 0.0, SpotKind.SEAT: -0.5},
             Purpose.RELAX: {SpotKind.SEAT: 0.0},
             Purpose.LINGER: {SpotKind.STANDING: 0.0, SpotKind.SEAT: 0.0},
+            Purpose.SLEEP: {SpotKind.BED: 0.0},
         }
     )
     """The spots that suit each purpose, and how much each kind is preferred."""

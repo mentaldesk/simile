@@ -217,7 +217,26 @@
       "draworder": "topdown",
       "id": 10,
       "name": "spots",
-      "objects": [],
+      "objects": [
+        {
+          "height": 16,
+          "id": 5,
+          "name": "bed",
+          "properties": [
+            {
+              "name": "facing",
+              "type": "string",
+              "value": "east"
+            }
+          ],
+          "rotation": 0,
+          "type": "bed",
+          "visible": true,
+          "width": 16,
+          "x": 48,
+          "y": 32
+        }
+      ],
       "opacity": 1,
       "type": "objectgroup",
       "visible": true,
@@ -248,7 +267,7 @@
     }
   ],
   "nextlayerid": 13,
-  "nextobjectid": 5,
+  "nextobjectid": 6,
   "orientation": "orthogonal",
   "properties": [
     {

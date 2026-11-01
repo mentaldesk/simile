@@ -138,7 +138,9 @@ def test_residents_sleep_at_home() -> None:
     village.run(minutes=5)
 
     assert village.behaviour.goal("ana") == Goal(A.SLEEP, "house_1")
-    assert village.at("ana").map == "house_1_floor_0"
+    bed = village.movement.on_spot("ana")
+    assert bed is not None and (bed.map, bed.kind) == ("house_1_floor_1", SpotKind.BED)
+    assert village.movement.posture("ana")[0] is Pose.SLEEPING
 
 
 def test_residents_go_to_work_upstairs_too() -> None:
