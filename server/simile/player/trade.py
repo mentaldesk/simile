@@ -56,26 +56,38 @@ class Trade:
             if stall is None or not inside(stall, at):
                 continue
             prices = self.economy.offer(place, self.player.items) or {}
+            if (lamp := self._lamp()) and place in self.economy.config.lamp:
+                prices[lamp.id] = self.economy.config.lamp[place]
             buyer = Buyer(place=place, name=stall.name, prices=prices, stock=self.stock(place))
             keeper = self.keepers.get(place)
             return keeper(buyer) if keeper else buyer
         return None
 
     def sell(self, item: Id | None) -> bool:
-        """Sells one carried item by id, or with None all the buyer buys. Whether they sold any."""
+        """Sells one carried item by id, or with None all the buyer buys but the lamp. Whether they
+        sold any."""
         buyer = self.buyer()
         if buyer is None:
             return False
         kept = list(self.player.items)
         sold = [thing for thing in kept if thing.id in buyer.prices and item in (None, thing.id)]
-        if item is not None:
+        if item is None:
+            sold = [thing for thing in sold if thing.kind is not ItemKind.LAMP]
+        else:
             sold = sold[:1]
         sales = list(self.player.sales)
         for thing in sold:
-            if self.economy.sell(buyer.place, thing):
-                kept.remove(thing)
-                if thing.kind is ItemKind.PART or thing.id in self.economy.config.kept:
-                    sales.append(Sale(item=thing, place=buyer.place, price=buyer.prices[thing.id]))
+            price = buyer.prices[thing.id]
+            if thing.kind is ItemKind.LAMP:
+                self.economy.pay(OUTSIDE, PLAYER, price, Kind.SALVAGE, buyer.place)
+            elif not self.economy.sell(buyer.place, thing):
+                continue
+            kept.remove(thing)
+            if thing.kind is ItemKind.LAMP:
+                thing = thing.model_copy(update={"on": False})
+            elif thing.kind is not ItemKind.PART and thing.id not in self.economy.config.kept:
+                continue
+            sales.append(Sale(item=thing, place=buyer.place, price=price))
         if len(kept) == len(self.player.items):
             return False
         self.player.items = kept
@@ -107,6 +119,9 @@ class Trade:
         self.player.items = [*self.player.items, sale.item]
         logger.info("%s  The player buys back %s from %s", self.clock, sale.item.name, buyer.name)
         return True
+
+    def _lamp(self) -> Item | None:
+        return next((item for item in self.player.items if item.kind is ItemKind.LAMP), None)
 
     def _kept(self, place: Id) -> list[Sale]:
         return sorted((s for s in self.player.sales if s.place == place), key=lambda s: s.price)

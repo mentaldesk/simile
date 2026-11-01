@@ -118,6 +118,23 @@ describe('LampGauge', () => {
   });
 });
 
+describe('without a lamp', () => {
+  it('hides the gauge, and a plug still charges the cell', () => {
+    const root = document.createElement('div');
+    const gauge = new LampGauge(root);
+
+    gauge.update(state([], 0.4), { dark: true, plug: false });
+    expect(shown(root, '.lamp-gauge')).toBeNull();
+    expect(shown(root, '.lamp-hint')).toBeNull();
+    expect(shown(root, '.power-gauge')).toBe('Power');
+
+    gauge.update(state([], 0.4), { dark: false, plug: true });
+    expect(shown(root, '.lamp-gauge')).toBeNull();
+    expect(shown(root, '.power-gauge')).toBe('Power⚡');
+    expect(shown(root, '.lamp-hint')).toBe('Charging your cell.');
+  });
+});
+
 describe('the power gauge', () => {
   it('shows only once a cell is in', () => {
     const root = document.createElement('div');

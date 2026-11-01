@@ -62,9 +62,10 @@ export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: re
     found.push({ kind: 'treat', label: name, price, effect, short: player.money < price });
   }
   const sold = player.items.filter(({ id }) => id in buyer.prices);
-  if (sold.length > 1) {
-    const price = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
-    found.push({ kind: 'sell', label: `Sell everything: ${listed(counted(sold))}`, price });
+  const all = sold.filter(({ kind }) => kind !== 'lamp');
+  if (all.length > 1) {
+    const price = all.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
+    found.push({ kind: 'sell', label: `Sell everything: ${listed(counted(all))}`, price });
   }
   for (const { first, count } of kinds(sold, ({ id }) => id)) {
     found.push({ kind: 'item', label: `Sell one: ${first.name}`, price: buyer.prices[first.id]!, item: first.id, count });

@@ -189,8 +189,8 @@ fits.". It lists, from the latest `player_state`:
 - each of `buyer.treatments`, by its name and price: patching up while they're hurt, and cleaning a
   bite or treating an infection. Enter sends `treat` with its `effect`, or `null` to be patched up.
   One they can't afford is dimmed, and says what it costs against what they have;
-- "Sell everything", what they carry that it buys and the total, sold at once with `sell` and
-  `null`, while they carry more than one thing it buys;
+- "Sell everything", what they carry that it buys but the lamp and the total, sold at once with
+  `sell` and `null`, while they carry more than one such thing;
 - each kind of thing it buys, with its price and how many they have: "Sell one: Copper wire", one
   a press with `sell` and its id, so they keep what they want for a fitting;
 - each part it sells back, once at its cheapest, with how many there are: "Buy back: USB-C
@@ -307,6 +307,9 @@ until it's charging. The world scene handles L ([`side/`](../side/README.md)).
 Once a power cell is in, a second battery under the lamp's shows their power, coloured the same,
 with ⚡ while it charges at a plug, and the line says "Charging your cell." (or "your lamp and your
 cell"). A plug fills both in about three seconds.
+
+The scrap trader buys the lamp and sells it back. Without one the gauge hides, and the line says
+only "Charging your cell." at a plug.
 
 ## What the world scene provides
 
