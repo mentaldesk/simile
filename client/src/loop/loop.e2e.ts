@@ -26,7 +26,14 @@ type Place = { map: string; x: number; y: number };
 type Body = Record<string, string>;
 type Seen = Place & { money: number; body: Body };
 /** What `simile loop play --saves` writes beside each beat's world. */
-type Saved = { at: Place; money: number; lift_log?: string; hatch_log?: string; gap?: { from: number; to: number; row: number } };
+type Saved = {
+  at: Place;
+  money: number;
+  lift_log?: string;
+  hatch_log?: string;
+  hatch?: { x: number; y: number };
+  gap?: { from: number; to: number; row: number };
+};
 type Probe = { view(): { positionOf(id: string): Place | undefined }; playerState: { latest?: { player: { money: number; body: Body } } } };
 type Probed = { loopProbe: Probe };
 type Beat = (page: Page, saved: Saved, shot: (name: string) => Promise<void>) => Promise<void>;
@@ -226,7 +233,7 @@ const gate: Beat = async (page, saved, shot) => {
 };
 
 const hatch: Beat = async (page, saved, shot) => {
-  await walkTo(page, 112, REACH.cell, 'to the hatch');
+  await walkTo(page, saved.hatch!.x, REACH.cell, 'to the hatch');
   await shot('at the hatch');
   await jack(page, saved.hatch_log!.slice(0, 40), 'maintenance hatch');
   await shot('the hatch log');

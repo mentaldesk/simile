@@ -102,6 +102,14 @@ def walking(jump: Jump) -> Jump:
     return replace(jump, run=WALK_SPEED)
 
 
+def tapped(jump: Jump) -> Jump:
+    """`jump` with Space let go before its first frame in the air, as the client cuts it: its speed
+    up kept to `cut`, and the falling gravity from take-off."""
+    rise = jump.rise * jump.cut**2 / jump.fall_gravity
+    gravity = jump.gravity * jump.fall_gravity
+    return replace(jump, rise=rise, rise_seconds=math.sqrt(2 * rise / gravity), fall_gravity=1.0)
+
+
 def kit(*grades: Jump) -> Jump:
     """The jump on `grades` fitted together: the highest rise and the fastest run."""
     if len(grades) <= 1:

@@ -20,6 +20,7 @@ from simile.street.jump import (
     jump_of,
     jump_table,
     meets,
+    tapped,
     walking,
 )
 from simile.street.moves import CLIMB, STAIR, WALK, moves, possible
@@ -414,6 +415,18 @@ def test_a_walking_jump_under_a_walkways_room_clears_one_cell_and_no_more() -> N
         assert (5, 4) in dict(moves(TIER, (3, 4), walk))
         assert (10, 4) not in dict(moves(TIER, (7, 4), walk))
         assert (10, 4) in dict(moves(TIER, (7, 4), jump))
+
+
+def test_a_tapped_jump_is_cut_as_the_clients_is_and_clears_no_hole_from_a_stop() -> None:
+    for jump in (JUMP, FEET[Bionic.SPRING_FEET]):
+        tap = tapped(walking(jump))
+        cut = jump.cut * math.sqrt(2 * jump.gravity * jump.rise)
+        falling = jump.gravity * jump.fall_gravity
+        assert tap.rise == pytest.approx(cut**2 / (2 * falling))
+        assert tap.airtime() == pytest.approx(2 * cut / falling)
+        assert (tap.rows, tap.cells) == (0, 1)
+        assert (5, 4) not in dict(moves(TIER, (3, 4), tap))
+        assert (4, 6) in dict(moves(TIER, (3, 4), tap))
 
 
 def test_a_roof_low_over_a_gap_leaves_only_the_faster_legs_across() -> None:
