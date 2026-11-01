@@ -111,8 +111,7 @@ export const settle = (inBed: number, lying: boolean, dt: number): number =>
 const ease = (t: number): number => t * t * (3 - 2 * t);
 const between = (a: number, b: number, t: number): number => a + (b - a) * t;
 
-/** A figure `progress` of the way from standing by a bed to lying on it, eased: sitting on its edge for
- * the first half, then lying back into the middle of it. Getting up plays it backwards. */
+/** A figure `progress` of the way from standing by a bed to lying on it, sitting on its edge first. */
 export function inBed(figure: FigureManifest, bed: Bed, progress: number): Shown {
   if (progress < 0.5) {
     const frame = figure.poses.sit[0];

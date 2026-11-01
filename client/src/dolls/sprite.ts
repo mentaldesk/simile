@@ -53,11 +53,7 @@ export function spritePose(pose: DollPose, facing: Facing, options: PoseOptions 
   }
 }
 
-/** Where a frame is drawn: its origin, as fractions of the frame, at the feet as drawn, on a seat
- * where it sits, or on a bed where it lies, mirrored or not; `x` and `y` from there by the shift,
- * the bob, the seat or the bed, in the figure's pixels; and turned `angle` degrees clockwise. A
- * lying figure is never mirrored, and without lying painted it lies as its standing frame turned,
- * head to the left. */
+/** Where a frame is drawn: its origin as fractions of the frame, its offset in figure pixels and its angle. */
 export function placed(figure: FigureManifest, { pose, frame, flip, bob, sway, seat, shift = 0 }: Shown) {
   const { frame: box, feet, seat: sits, bed } = figure.frames[frame];
   const [, , w, h] = box;

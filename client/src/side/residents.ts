@@ -119,10 +119,10 @@ export class Residents {
 
   private step(resident: Resident, dt: number): void {
     const { walker } = resident;
-    const sleeping = resident.pose === 'sleeping';
-    if (resident.bed > 0 && !sleeping) resident.bed = settle(resident.bed, false, dt);
+    const abed = resident.pose === 'sleeping' && walker.arrived && !resident.pending && !resident.under;
+    if (resident.bed > 0 && !abed) resident.bed = settle(resident.bed, false, dt);
     else walker.update(dt);
-    if (sleeping && walker.arrived && !resident.pending && !resident.under) resident.bed = settle(resident.bed, true, dt);
+    if (abed) resident.bed = settle(resident.bed, true, dt);
     resident.drawn.bed = resident.bed;
     resident.idle += dt;
     const { pending } = resident;

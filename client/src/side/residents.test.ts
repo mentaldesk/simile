@@ -240,6 +240,20 @@ describe('going to bed', () => {
     expect(odalysAt.walker.position.x).toBe(5);
   });
 
+  it('gets up before walking to a bed somewhere else, then lies down there', () => {
+    const all = residents(bedroom(3, 'sleeping'));
+    const odalysAt = all.all.get('odalys')!;
+    all.move(moved(at(4), 'sleeping', 'east'));
+    run(all, LIE_SECONDS / 2);
+    expect(odalysAt.walker.position.x).toBe(3);
+    expect(odalysAt.drawn.bed).toBeCloseTo(0.5, 1);
+    run(all, LIE_SECONDS / 2 + 0.02);
+    expect(odalysAt.drawn.bed).toBe(0);
+    run(all, 1 / WALKING_SPEED + LIE_SECONDS + 0.1);
+    expect(odalysAt.walker.position.x).toBe(4);
+    expect(odalysAt.drawn.bed).toBe(1);
+  });
+
   it('is shown lying at once from a snapshot, and up at once from the next', () => {
     const all = residents(bedroom(3, 'sleeping'));
     const odalysAt = all.all.get('odalys')!;
