@@ -21,11 +21,19 @@ export type ServerMessage =
   | PlayerCollapsedMessage;
 export type EntityKind = 'npc' | 'player';
 /**
- * What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
- * a lift.
+ * What someone is doing where they are. `climbing` is on stairs or a ladder, `riding` in a
+ * lift, and `sleeping` lying asleep in a bed, on a bed spot's cell.
  */
 export type Pose =
-  'standing' | 'walking' | 'sitting' | 'reading' | 'working' | 'looking' | 'climbing' | 'riding';
+  | 'standing'
+  | 'walking'
+  | 'sitting'
+  | 'reading'
+  | 'working'
+  | 'looking'
+  | 'climbing'
+  | 'riding'
+  | 'sleeping';
 /**
  * Which way someone faces on the map, x east and y south, by angle from east through south.
  * In side view, the three eastward values face right and the westward ones left, `north` shows
@@ -120,7 +128,8 @@ export type ClientMessage =
   | FitMessage
   | SellRecipeMessage
   | BuyMessage
-  | TreatMessage;
+  | TreatMessage
+  | RestMessage;
 
 /**
  * The whole world, sent on connect. Replaces anything the client had.
@@ -151,6 +160,7 @@ export interface SnapshotMessage {
 }
 /**
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+ * A resident asleep in their bed is `sleeping`, on the bed spot's cell.
  */
 export interface Entity {
   id: string;
@@ -234,7 +244,8 @@ export interface ClockMessage {
  * The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
  * On a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a
  * lift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb
- * or ride, then one onto the other map, as through a door.
+ * or ride, then one onto the other map, as through a door. Going to bed is an `entity_moved` onto
+ * the bed spot's cell, `sleeping`, held until they wake and the next one gets them up.
  */
 export interface EntityMovedMessage {
   type: 'entity_moved';
@@ -493,6 +504,14 @@ export interface PlayerStateMessage {
    * What's lying in the world for them to pick up, on every map, besides what they left (`player.left`): salvage and secrets. Left out while there's none.
    */
   piles?: Pile[];
+  /**
+   * The cell of their own bed at home where they stand, where `rest` lies them down. Left out everywhere else.
+   */
+  bed?: MapTile | null;
+  /**
+   * Whether they're resting in that bed, from `rest` until they're fully healed, move off it or get up. Left out unless they are.
+   */
+  resting?: boolean;
 }
 /**
  * The player's state, saved with the world. Each field defaults to the starting player's, so
@@ -1023,4 +1042,13 @@ export interface TreatMessage {
    * The effect to treat, or null for patching up their health.
    */
   effect: EffectKind | null;
+}
+/**
+ * Lies the player down in their bed where they stand, `player_state`'s `bed`, or gets them up.
+ * The server ignores it away from their bed, at full health, while they're infected, and when
+ * they're already resting or up as asked.
+ */
+export interface RestMessage {
+  type: 'rest';
+  on: boolean;
 }

@@ -48,6 +48,7 @@ from simile.protocol import (
     Position,
     ReadNewsMessage,
     ReadWorkMessage,
+    RestMessage,
     SellMessage,
     SellPartMessage,
     SellRecipeMessage,
@@ -197,6 +198,12 @@ RIDING = EntityMovedMessage(
     pose=Pose.RIDING,
     facing=Facing.SOUTH,
 )
+SLEEPING = EntityMovedMessage(
+    entity_id="kofi",
+    position=Position(x=4, y=2, map="house_1_floor_1"),
+    pose=Pose.SLEEPING,
+    facing=Facing.EAST,
+)
 
 STARTING = PlayerStateMessage(player=Player())
 DELVING = PlayerStateMessage(
@@ -278,6 +285,7 @@ SELLING_RECIPES = KNOWING.model_copy(
     update={"buyer": DOCTOR.model_copy(update={"recipes": {Bionic.DATAJACK: 40}})}
 )
 USB_C = Item(id="usb_c_connector", kind=ItemKind.PART, name="USB-C connector", weight=0.1)
+CAMP_BED = MapTile(map="maker_space_floor_2", x=5, y=2)
 HURT = PlayerStateMessage(
     player=Player(
         body=Body(stomach=Bionic.POWER_CELL),
@@ -300,6 +308,8 @@ HURT = PlayerStateMessage(
         sales=[Sale(item=USB_C, place="scrap_stall", price=20)],
     ),
 )
+AT_THEIR_BED = PlayerStateMessage(player=Player(health=0.4), bed=CAMP_BED)
+RESTING = AT_THEIR_BED.model_copy(update={"resting": True})
 BUYING_BACK = HURT.model_copy(
     update={
         "buyer": SCRAP_TRADER.model_copy(update={"stock": [Offer(item=USB_C, price=40)]}),
@@ -362,6 +372,7 @@ SERVER = [
     LOOKING,
     CLIMBING,
     RIDING,
+    SLEEPING,
     ConversationStartedMessage(conversation=CONVERSATION.model_copy(update={"lines": []})),
     ConversationEndedMessage(
         conversation_id=CONVERSATION.id, ended=datetime(2026, 3, 14, 9, 11, tzinfo=UTC)
@@ -394,6 +405,8 @@ SERVER = [
     AT_THE_SHUT_NOODLE_BAR,
     AT_A_SHOP_NOBODY_KEEPS,
     HURT,
+    AT_THEIR_BED,
+    RESTING,
     BUYING_BACK,
     TREATING,
     SEARCHED,
@@ -430,6 +443,8 @@ CLIENT = [
     BuyMessage(item="usb_c_connector"),
     TreatMessage(effect=None),
     TreatMessage(effect=EffectKind.INFECTION),
+    RestMessage(on=True),
+    RestMessage(on=False),
 ]
 
 
@@ -516,9 +531,11 @@ def test_moves_carry_a_pose_and_facing() -> None:
 
 
 @pytest.mark.parametrize(
-    ("message", "pose"), [(CLIMBING, "climbing"), (RIDING, "riding")], ids=["climbing", "riding"]
+    ("message", "pose"),
+    [(CLIMBING, "climbing"), (RIDING, "riding"), (SLEEPING, "sleeping")],
+    ids=["climbing", "riding", "sleeping"],
 )
-def test_moves_can_climb_or_ride(message: EntityMovedMessage, pose: str) -> None:
+def test_moves_can_climb_ride_or_sleep(message: EntityMovedMessage, pose: str) -> None:
     assert json.loads(message.model_dump_json())["pose"] == pose
     assert pose in json.loads(SCHEMA_FILE.read_text())["$defs"]["Pose"]["enum"]
 
@@ -906,6 +923,29 @@ def test_player_state_without_a_meal_buyer_or_piles_dumps_as_before(
     assert set(data["player"]) == {"money", "items", "carry_limit", "body", "hunger"}
 
 
+def test_player_state_says_where_their_bed_is_and_whether_they_rest_in_it() -> None:
+    at_their_bed = json.loads(AT_THEIR_BED.model_dump_json())
+    resting = json.loads(RESTING.model_dump_json())
+
+    assert at_their_bed["bed"] == {"map": "maker_space_floor_2", "x": 5, "y": 2}
+    assert "resting" not in at_their_bed
+    assert resting["bed"] == at_their_bed["bed"]
+    assert resting["resting"] is True
+
+
+def test_player_state_rests_only_at_their_bed() -> None:
+    with pytest.raises(ValidationError, match="rests only at their bed"):
+        PlayerStateMessage(player=Player(health=0.4), resting=True)
+
+
+def test_player_state_from_before_resting_is_away_from_their_bed() -> None:
+    data = {"type": "player_state", "player": json.loads(Player().model_dump_json())}
+
+    message = server_messages.validate_python(data)
+
+    assert (message.bed, message.resting) == (None, False)
+
+
 def test_player_state_has_the_recipes_they_know_in_full() -> None:
     data = json.loads(KNOWING.model_dump_json())
 
@@ -1003,6 +1043,8 @@ def test_player_state_has_what_they_left_where_they_collapsed() -> None:
         ("PlayerStateMessage", "buyer"),
         ("PlayerStateMessage", "piles"),
         ("PlayerStateMessage", "recipes"),
+        ("PlayerStateMessage", "bed"),
+        ("PlayerStateMessage", "resting"),
         ("Buyer", "parts"),
         ("Buyer", "fittings"),
         ("Buyer", "recipes"),
@@ -1231,6 +1273,8 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
         (SellMessage(item=None), {"type": "sell", "item": None}),
         (LampMessage(on=True), {"type": "lamp", "on": True}),
         (LampMessage(on=False), {"type": "lamp", "on": False}),
+        (RestMessage(on=True), {"type": "rest", "on": True}),
+        (RestMessage(on=False), {"type": "rest", "on": False}),
         (SellPartMessage(part="left_kidney"), {"type": "sell_part", "part": "left_kidney"}),
         (
             FitMessage(bionic=Bionic.DATAJACK, part="vertebra"),
@@ -1255,6 +1299,8 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
         "sell_all",
         "lamp_on",
         "lamp_off",
+        "rest_on",
+        "rest_off",
         "sell_part",
         "fit",
         "sell_recipe",
@@ -1263,7 +1309,7 @@ def test_a_collapse_from_before_its_cause_was_hunger() -> None:
         "treat",
     ],
 )
-def test_eating_picking_up_selling_and_the_lamp_go_from_client_to_server(
+def test_eating_picking_up_selling_the_lamp_and_resting_go_from_client_to_server(
     message: Any, data: dict[str, Any]
 ) -> None:
     assert json.loads(message.model_dump_json()) == data
@@ -1406,6 +1452,9 @@ def test_timestamps_are_utc() -> None:
         {"type": "lamp", "on": None},
         {"type": "lamp", "on": "maybe"},
         {"type": "lamp", "on": True, "charge": 1},
+        {"type": "rest"},
+        {"type": "rest", "on": None},
+        {"type": "rest", "on": True, "bed": {"map": "maker_space_floor_2", "x": 5, "y": 2}},
         {"type": "buy"},
         {"type": "buy", "item": None},
         {"type": "buy", "item": "USB-C connector"},

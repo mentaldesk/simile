@@ -42,8 +42,8 @@ class SideFacing(StrEnum):
 
 
 class Pose(StrEnum):
-    """What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in
-    a lift."""
+    """What someone is doing where they are. `climbing` is on stairs or a ladder, `riding` in a
+    lift, and `sleeping` lying asleep in a bed, on a bed spot's cell."""
 
     STANDING = "standing"
     WALKING = "walking"
@@ -53,6 +53,7 @@ class Pose(StrEnum):
     LOOKING = "looking"
     CLIMBING = "climbing"
     RIDING = "riding"
+    SLEEPING = "sleeping"
 
 
 class TileArea(Model):
