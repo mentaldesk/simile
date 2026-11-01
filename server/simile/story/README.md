@@ -80,10 +80,10 @@ persistence has restored the save, in a crash-safe order:
    most once and its memories are never lost.
 
 A save from before the disappearance keeps the residents' conversation memories, which have no
-`fact_id` and can still mention the old story's attack; a new game has the clean story. A world whose logs don't match when she
-was last seen gets them again (`logged`) on its next start, and is saved. The hatch is a jack in
-every level of the sewers (`simile.street.sewers.HATCH`), so its cell is each level's own and isn't
-in `story.toml`.
+`fact_id` and can still mention the old story's attack; a new game has the clean story. A world
+whose logs don't match when she was last seen gets them again (`logged`) on its next start, and is
+saved. The hatch is a jack in every level of the sewers (`simile.street.sewers.HATCH`), so its cell
+is each level's own and isn't in `story.toml`.
 
 ```bash
 cd server
