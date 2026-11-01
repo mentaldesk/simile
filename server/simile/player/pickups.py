@@ -96,7 +96,9 @@ class Pickups:
                 kept.append(item)
         if not taken and not found.pile.money:
             return False
-        if found.pile.money:
+        if found.pickup is None:
+            self.player.money += found.pile.money
+        elif found.pile.money:
             self.economy.find(found.pile.money, found.pickup)
         rest = [Pile(at=found.pile.at, items=kept)] if kept else []
         left = self.player.left

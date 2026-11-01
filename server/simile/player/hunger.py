@@ -12,6 +12,7 @@ from simile.protocol import Meal, Shut, ShutReason, Vital
 from simile.schema import PLAYER_ID, Id, ItemKind, Location, MapTile, Pile, Player
 from simile.sim import Clock
 from simile.world.movement import Movement, Point, cell_of, inside
+from simile.world.paths import Spot
 
 if TYPE_CHECKING:
     from simile.economy.economy import Economy
@@ -38,6 +39,7 @@ class Hunger:
         economy: "Economy | None" = None,
         playing: Callable[[], bool] = lambda: True,
         collapsed: Callable[[MapTile, Vital], None] = lambda home, cause: None,
+        bed: Callable[[], Spot | None] = lambda: None,
         config: PlayerConfig = DEFAULT_CONFIG,
     ) -> None:
         self.player = player
@@ -50,6 +52,8 @@ class Hunger:
         self.playing = playing
         self.collapsed = collapsed
         """Told where they wake after collapsing, and what ran out."""
+        self.bed = bed
+        """The bed they wake in after collapsing, if their home has one."""
         self.config = config
 
     def tick(self, dt: float) -> None:
@@ -99,22 +103,31 @@ class Hunger:
         return self._eat_meal() if item is None else self._eat_item(item)
 
     def collapse(self, cause: Vital = Vital.HUNGER) -> None:
-        """Leaves all but the lamp where they are, and wakes them at home, still hungry if that's
-        why."""
+        """Leaves their money and all but the lamp where they are, clears their effects, and wakes
+        them in their bed at home, or at its entry without one, still hungry if that's why."""
         at = here(self.movement)
         kept = [item for item in self.player.items if item.kind is ItemKind.LAMP]
         dropped = [item for item in self.player.items if item.kind is not ItemKind.LAMP]
-        if at is not None and dropped:
-            pile = Pile(at=ground(self.movement, at), items=dropped)
+        money = self.player.money
+        if at is not None and (dropped or money):
+            pile = Pile(at=ground(self.movement, at), items=dropped, money=money)
             self.player.left = [*self.player.left, pile]
             self.player.items = kept
-        house = self.movement.town.location(self.config.home)
-        home = MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
+            self.player.money = 0.0
+        self.player.effects = []
+        home = self._waking()
         self.movement.track(PLAYER_ID, Point(home.x, home.y, home.map))
         if cause is Vital.HUNGER:
             self.player.hunger = self.config.waking
         logger.info("%s  The player collapses (%s) and wakes at home", self.clock, cause)
         self.collapsed(home, cause)
+
+    def _waking(self) -> MapTile:
+        bed = self.bed()
+        if bed is not None:
+            return MapTile(map=bed.map, x=bed.x, y=bed.y)
+        house = self.movement.town.location(self.config.home)
+        return MapTile(map=house.map, x=house.entry.x, y=house.entry.y)
 
     def _on_cell(self) -> bool:
         return cell_in(self.player.body) is not None

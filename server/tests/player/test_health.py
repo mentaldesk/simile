@@ -14,7 +14,7 @@ from simile.persistence import player_of
 from simile.player.health import DEFAULT_HEALTH, Health, beds_in, health_of
 from simile.player.sync import PlayerSync
 from simile.schema import PLAYER_ID, SOLD, Body, Effect, EffectKind, Player
-from simile.sim import Clock, EventBus, World, world_of
+from simile.sim import STEP, Clock, EventBus, World, world_of
 from simile.world import Movement, Point, movement_of
 from simile.world.map import FLOORS, MAP_DIR, load_maps
 from simile.world.paths import Spot
@@ -191,6 +191,23 @@ def test_collapsing_ends_the_rest() -> None:
 
     assert patient.collapses == 1
     assert not patient.health.resting()
+
+
+def test_waking_in_bed_rests_them_at_once_without_lying_down() -> None:
+    patient = Patient(Player(health=DEFAULT_HEALTH.waking), at=BED)
+
+    assert patient.health.rest(True, woken=True)
+    patient.rest(0.1)
+
+    assert patient.health.resting()
+    assert patient.player.health == pytest.approx(
+        DEFAULT_HEALTH.waking + 0.1 / DEFAULT_HEALTH.rest, abs=1e-3
+    )
+
+
+def test_they_wake_in_the_bed_at_home_or_nowhere_without_one(tmp_path: Path) -> None:
+    assert Patient().health.home_bed() == Spot(BED.map, BED.x, BED.y)
+    assert Patient(beds=home_without_a_bed(tmp_path)).health.home_bed() is None
 
 
 def test_off_the_bed_healing_is_unchanged() -> None:
@@ -371,7 +388,7 @@ def next_of(ws: Any, type: str) -> dict[str, Any]:
     raise AssertionError(f"no {type}")
 
 
-def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_at_home(
+def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_resting_in_bed(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
@@ -385,13 +402,28 @@ def test_a_bite_at_no_health_collapses_them_for_health_and_they_wake_at_home(
             assert time.monotonic() < deadline, "the server never had the player there"
             time.sleep(0.001)
         client.portal.call(lambda: setattr(player, "health", 0.01))
+        client.portal.call(lambda: setattr(player, "money", 12.0))
         client.portal.call(health_of(app).bite, TAKES)
         collapsed = next_of(ws, "player_collapsed")
         client.portal.call(world_of(app).loop.tick)
         woken = next_of(ws, "player_state")
+        state, ticks = woken, 1
+        while state["player"].get("health", 1) < 1:
+            assert state["resting"]
+            client.portal.call(world_of(app).loop.tick)
+            state, ticks = next_of(ws, "player_state"), ticks + 1
 
+    bed = {"x": BED.x, "y": BED.y, "map": BED.map}
     assert collapsed["cause"] == "health"
-    assert collapsed["position"]["map"] == "maker_space_floor_0"
-    assert woken["player"]["health"] == pytest.approx(DEFAULT_HEALTH.waking, abs=0.01)
+    assert collapsed["position"] == bed
+    assert (woken["bed"], woken["resting"]) == (bed, True)
+    assert woken["player"]["health"] < DEFAULT_HEALTH.waking + 0.05
     assert woken["player"]["hunger"] < 0.01
-    assert [effect["kind"] for effect in woken["player"]["effects"]] == ["rat_bite"]
+    assert "effects" not in woken["player"]
+    assert woken["player"]["money"] == 0
+    left = {"at": {"map": "metro", "x": 65, "y": 15}, "items": [], "money": 12.0}
+    assert woken["player"]["left"] == [left]
+    assert ticks * STEP == pytest.approx(
+        (1 - DEFAULT_HEALTH.waking) * DEFAULT_HEALTH.rest, abs=0.15
+    )
+    assert "resting" not in state
