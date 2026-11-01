@@ -10,7 +10,6 @@ import { muralWalls, setMuralView } from '../world/murals';
 import { galleryFrames } from '../world/paintings';
 import { reachables, setWayPrompts, type WayPrompt } from '../world/reach';
 import { toSearch } from '../world/searchables';
-import { MoveThrottle } from '../world/throttle';
 import { DOOR_FADE_IN_SECONDS, DOOR_FADE_OUT_SECONDS, MAX_FRAME_SECONDS } from '../world/tuning';
 import { follow, sideZoom, viewCentre } from './camera';
 import { sideClock } from './clock';
@@ -34,6 +33,7 @@ import { drawSockets } from './plugs';
 import { sideResidents } from './residents';
 import { PileGlints } from './piles';
 import { bedAt, hiddenInFront, seatHeight } from './poses';
+import { MoveReport } from './report';
 import { SideDoll } from './side-doll';
 import { stompedOn } from './stomp';
 import { StreetView, type Content } from './street-view';
@@ -82,13 +82,12 @@ export class SideScene extends Phaser.Scene {
   private readonly loadingDolls = new Set<string>();
   private readonly light = emptyLight();
   private lightHour = NaN;
-  private readonly throttle = new MoveThrottle();
+  private readonly moves = new MoveReport();
   private readonly view = new Phaser.Geom.Rectangle();
   private readonly centre = { x: 0, y: 0 };
   private readonly target = { x: 0, y: 0 };
   private readonly feet = { x: 0, y: 0 };
   private readonly size = { width: 0, height: 0 };
-  private readonly sent = { x: NaN, y: NaN, map: '' };
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false, run: false };
   private readonly running = new RunToggle();
@@ -130,11 +129,11 @@ export class SideScene extends Phaser.Scene {
         positionOf: (id) => this.positionOf(id),
         listenerPosition: () => this.positionOf(PLAYER_ID),
       }),
-      server.on('snapshot', () => {
-        this.throttle.forget();
-        this.sent.map = '';
+      server.on('snapshot', () => this.moves.reset()),
+      server.on('player_collapsed', ({ position: { x, y, map } }) => {
+        this.moves.collapsed({ x, y, map: map ?? '' });
+        this.wake({ x, y, map: map ?? '' });
       }),
-      server.on('player_collapsed', ({ position: { x, y, map } }) => this.wake({ x, y, map: map ?? '' })),
       setMuralView({
         wallAt: ({ x, y }) => {
           const point = this.cameras.main.getWorldPoint(x, y);
@@ -242,18 +241,12 @@ export class SideScene extends Phaser.Scene {
   }
 
   private report(position: MapPosition, now: number): void {
-    const { sent } = this;
     if (this.player?.bounced) {
       this.player.bounced = false;
-      this.throttle.forget();
+      this.moves.forget();
     }
-    if (position.x === sent.x && position.y === sent.y && position.map === sent.map) return;
-    const throttled = this.throttle.next(position, now);
-    if (!throttled) return;
-    server.send({ type: 'player_move', position: throttled });
-    sent.x = position.x;
-    sent.y = position.y;
-    sent.map = position.map;
+    const move = this.moves.next(position, now);
+    if (move) server.send({ type: 'player_move', position: move });
   }
 
   private switchLamp(): void {

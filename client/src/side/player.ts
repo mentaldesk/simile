@@ -99,7 +99,7 @@ export class SidePlayer {
   /** 0 up to 1 lying in bed. */
   private inBed = 0;
   private lying = false;
-  /** Placed, or a snapshot came, since the server last said whether they're resting: if they are, they're already lying. */
+  /** Placed or snapshotted since the server last said: resting, they're already lying. */
   private fresh = true;
   private snapshots = snapshots.count;
   private readonly village: Village;
@@ -158,7 +158,7 @@ export class SidePlayer {
   }
 
   /** In bed, lying down, or getting up. */
-  get abed(): boolean {
+  private get abed(): boolean {
     return this.lying || this.inBed > 0;
   }
 
