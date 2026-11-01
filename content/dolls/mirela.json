@@ -1,6 +1,6 @@
 {
   "id": "mirela",
-  "hash": "abff8c773ba9e657",
+  "hash": "3da02027743cfa07",
   "appearance": {
     "skin": "#ead4aa",
     "hair_style": "bob",
@@ -13,7 +13,7 @@
       "apron"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "mirela.webp",
@@ -28,6 +28,22 @@
       "feet": [
         43.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        171,
+        140,
+        52
+      ],
+      "feet": [
+        69.0,
+        52.0
+      ],
+      "bed": [
+        69.0,
+        52.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

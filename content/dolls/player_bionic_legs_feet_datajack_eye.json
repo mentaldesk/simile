@@ -1,6 +1,6 @@
 {
   "id": "player_bionic_legs_feet_datajack_eye",
-  "hash": "2f3b63b272d5d886",
+  "hash": "51226bedc218acb1",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -19,7 +19,7 @@
     "datajack",
     "infrared_eye"
   ],
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "player_bionic_legs_feet_datajack_eye.webp",
@@ -34,6 +34,22 @@
       "feet": [
         44.4,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        592,
+        0,
+        141,
+        63
+      ],
+      "feet": [
+        69.5,
+        63.0
+      ],
+      "bed": [
+        69.5,
+        63.0
       ]
     },
     "pass": {
@@ -134,6 +150,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

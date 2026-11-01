@@ -118,6 +118,13 @@ def test_the_feet_are_asked_for_in_place_of_the_sneakers() -> None:
     assert hides((BIONIC_LEGS, FEET)) == {"shoe"} and hides((BIONIC_LEGS,)) == set()
 
 
+def test_lying_asleep_keeps_the_bionic_eye_open_on_the_upper_eye() -> None:
+    eye, legs = edit_prompt("lie", EYE, PLAYER), edit_prompt("lie", BIONIC_LEGS, PLAYER)
+
+    assert "the upper of the two closed eyes replaced" in eye and "dot eye" not in eye
+    assert "still open" in eye and "both eyes closed" in legs and "dot eyes" not in legs
+
+
 def test_climbing_asks_for_no_face() -> None:
     climb = edit_prompt("climb", DATAJACK, PLAYER)
 

@@ -11,6 +11,7 @@ uv run simile dolls paint            # every figure whose Appearance or pipeline
 uv run simile dolls paint kofi --force --paintings /tmp/dolls   # one again, saving its paintings
 uv run simile dolls paint player     # the player, and with each combination of bionics
 uv run simile dolls seats            # measure every seat again from the atlases, painting nothing
+uv run simile dolls add kofi         # paint only the frames kofi's atlas lacks, keeping the rest
 ```
 
 Don't edit them by hand. CI never paints; the tests check what's committed. Painting waits
@@ -44,6 +45,7 @@ For each resident, the clinic's doctor, `player`, and the player with each combi
     "stand": {"frame": [0, 0, 74, 168], "feet": [37.5, 166.0]},
     "run": {"frame": [76, 0, 88, 142], "feet": [44.0, 158.6]},
     "sit": {"frame": [166, 0, 80, 148], "feet": [36.5, 146.0], "seat": [36.5, 118.0]},
+    "lie": {"frame": [0, 170, 132, 66], "feet": [66.0, 64.0], "bed": [66.0, 64.0]},
     "...": {}
   },
   "poses": {
@@ -51,7 +53,8 @@ For each resident, the clinic's doctor, `player`, and the player with each combi
     "walk": ["stride", "pass", "stride", "pass"],
     "run": ["run", "run_pass", "run", "run_pass"],
     "sit": ["sit"],
-    "climb": ["climb"]
+    "climb": ["climb"],
+    "lie": ["lie"]
   }
 }
 ```
@@ -65,8 +68,13 @@ For each resident, the clinic's doctor, `player`, and the player with each combi
   a **`seat`** too, the bottom of its thighs, which the client puts on the seat: the lowest row
   behind its calves, found by following its lower edge back from its heels up the backs of its
   calves, however far its shins slant.
+- **Lying** is on its side, asleep, head to the left and feet to the right, as the bed art's
+  headboard is: the client never mirrors it. Its **`bed`** is the middle of its underside, across
+  the middle of the frame on its lowest row, which the client puts on the mattress; its `feet` are
+  the same point.
 - **`poses`**: the frames each pose plays through its cycle. Every frame faces right in
-  three-quarter view but the climb, seen from behind; the client mirrors them to face west.
+  three-quarter view but the climb, seen from behind, and lying; the client mirrors them to face
+  west.
 - **`resident`** is `false` for someone who isn't a villager, the clinic's doctor
   (`content/npcs/tunnels/`), so the client never lends her figure to anyone without one of their
   own. It's left out for everyone else.
@@ -86,7 +94,8 @@ For each resident, the clinic's doctor, `player`, and the player with each combi
    rough drawing of its legs (`legs_guide`, which leaves an apron over them as it was), since FLUX
    draws a stride whenever a passing step is asked for in words; a run; a second running frame,
    an edit of the passing step with the arms pumping; sitting in mid-air; and climbing, seen from
-   behind.
+   behind; and lying down asleep, curled up with the knees drawn up, with no bed, pillow or
+   blanket, painted in landscape.
 3. **Cut out** with #309's IS-Net and key, without the shadow FLUX paints on the floor, keeping
    pale hair the key would take for the background wherever the outline encloses it, and opaque
    everywhere but its antialiased edge and real gaps (`sprites.cut_out`).
@@ -109,16 +118,26 @@ For each resident, the clinic's doctor, `player`, and the player with each combi
    - its face is painted over (`measure.face_marks`): more than 5% of the front of the face in
      patches more than ΔE 16 from the skin that aren't ink, eyes or brows;
    - it's drawn more than a quarter bigger or smaller than the standing figure
-     (`sprites.scale`), by the width of the head, or for a climb its height.
+     (`sprites.scale`), by the width of the head, or for a climb its height;
+   - lying, it's longer than 1.8 m from head to toe once scaled (`build.LONG`), so it doesn't
+     hang far off the 1.58 m bed.
 
    What still misses is in `build.MISSES`.
-6. **Scaled** so the standing figure is 2.04 m at 80 px/m and every other frame's head is as
+6. **Lying is measured turned head up** (`sprites.upright`): the bands, the face, the scale and
+   the bionics' regions all expect an upright figure. It's laid down again for the atlas.
+7. **Scaled** so the standing figure is 2.04 m at 80 px/m and every other frame's head is as
    wide (a climb, seen from behind with its hands up, as tall from the top of its head), then
    packed into the atlas (`sprites.py`).
 
 Each painting is cached in `server/data/dolls/paintings/` by everything it was painted from, so
 cutting and matching can be retuned without painting again. A painting that comes out off-model
 gets a reroll in `build.REROLLS` (`"<id>/<frame>": n`), which repaints that frame with another seed.
+
+**The residents' paintings are gone.** Their lying frames were added by `simile dolls add`
+(`build.add_frames`): each is an edit of the resident's committed standing frame, upscaled onto
+FLUX's grey, and goes on a shelf below the atlas, which is saved again losslessly so every other
+frame keeps its pixels. To reroll one, put back their files from before and `add` again;
+`simile dolls paint` would paint them again whole, and so would changing their `Appearance`.
 
 ## The player with bionics
 
@@ -129,7 +148,7 @@ inside, under the t-shirt, so it doesn't show. Their manifests say what's `fitte
 `hash` is the whole player's with each layer's prompts and rerolls, and `bionics.VERSION`.
 
 1. **Each layer is painted once on every frame that shows it** (`bionics.LAYERS`), as an edit of
-   the whole player's same frame: 34 paintings. The bionic legs with the feet are one layer, the
+   the whole player's same frame: 39 paintings. The bionic legs with the feet are one layer, the
    feet painted over the bionic legs' painting. The eye isn't seen from behind, so no climb has
    it.
    - The bionic legs are rounded steel-grey armour plates below shorts, with black knee joints,

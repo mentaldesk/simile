@@ -1,6 +1,6 @@
 {
   "id": "desmond",
-  "hash": "f7cbd0ec197d7c47",
+  "hash": "fd6ebdf6f6624bb4",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "buzz",
@@ -13,7 +13,7 @@
       "backpack"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "desmond.webp",
@@ -28,6 +28,22 @@
       "feet": [
         41.6,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        168,
+        128,
+        58
+      ],
+      "feet": [
+        63.0,
+        58.0
+      ],
+      "bed": [
+        63.0,
+        58.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

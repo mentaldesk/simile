@@ -1,6 +1,6 @@
 {
   "id": "marguerite",
-  "hash": "15d4b75cc6351983",
+  "hash": "e378752e119d79a1",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "glasses"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "marguerite.webp",
@@ -28,6 +28,22 @@
       "feet": [
         40.5,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        168,
+        138,
+        73
+      ],
+      "feet": [
+        68.0,
+        72.0
+      ],
+      "bed": [
+        68.0,
+        72.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

@@ -1,6 +1,6 @@
 {
   "id": "lachlan",
-  "hash": "4aec096f3f364efd",
+  "hash": "2c0fc91ae9095fd0",
   "appearance": {
     "skin": "#e8b796",
     "hair_style": "buzz",
@@ -13,7 +13,7 @@
       "cap"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "lachlan.webp",
@@ -28,6 +28,22 @@
       "feet": [
         45.2,
         167.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        172,
+        161,
+        72
+      ],
+      "feet": [
+        79.5,
+        72.0
+      ],
+      "bed": [
+        79.5,
+        72.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

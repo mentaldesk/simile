@@ -1,6 +1,6 @@
 {
   "id": "annelie",
-  "hash": "45905f2ce4507749",
+  "hash": "a9f9cf5b8cbe2cfb",
   "appearance": {
     "skin": "#e8b796",
     "hair_style": "bun",
@@ -15,7 +15,7 @@
     ]
   },
   "resident": false,
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "annelie.webp",
@@ -30,6 +30,22 @@
       "feet": [
         40.8,
         166.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        532,
+        0,
+        151,
+        66
+      ],
+      "feet": [
+        74.5,
+        66.0
+      ],
+      "bed": [
+        74.5,
+        66.0
       ]
     },
     "pass": {
@@ -130,6 +146,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

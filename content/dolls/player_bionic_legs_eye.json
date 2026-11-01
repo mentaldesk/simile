@@ -1,6 +1,6 @@
 {
   "id": "player_bionic_legs_eye",
-  "hash": "55a39163db1bc3d4",
+  "hash": "2be3dada06933b67",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -17,7 +17,7 @@
     "bionic_legs",
     "infrared_eye"
   ],
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "player_bionic_legs_eye.webp",
@@ -32,6 +32,22 @@
       "feet": [
         44.8,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        592,
+        0,
+        141,
+        63
+      ],
+      "feet": [
+        69.5,
+        63.0
+      ],
+      "bed": [
+        69.5,
+        63.0
       ]
     },
     "pass": {
@@ -132,6 +148,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

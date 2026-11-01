@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from PIL import Image, ImageFilter
 
 from simile.dolls.colour import cielab, delta_e_lab
-from simile.dolls.figure import EDITS, FACE, styled, touching
+from simile.dolls.figure import ASLEEP, EDITS, FACE, styled, touching
 from simile.dolls.sprites import head
 from simile.dolls.words import described
 from simile.schema import PLAYER_ID, Appearance
@@ -92,6 +92,19 @@ EYE_FACE = (
     "The face is clean, with a small smile and no smudges on it: one bright red bionic eye nearer "
     "the ear and one plain dark dot eye beside the nose."
 )
+ASLEEP_EYE = (
+    "The face is clean and peaceful, asleep, with no smudges on it: one bright red bionic eye in "
+    "place of the upper eye, still open, and the lower eye closed as a small curved line."
+)
+ASLEEP_WORDS = {
+    EYE: (
+        "the upper of the two closed eyes replaced, right where it is on the face, by a small "
+        "bionic infrared eye no bigger than the other eye: a bright red lens with a thin chrome "
+        "rim. The lower eye stays closed, asleep, as a small curved line, and the skin around "
+        "both eyes and the ear is clean and unchanged"
+    )
+}
+"""`WORDS` for a figure asleep."""
 METAL = (12.0, 40.0, 88.0)
 """Steel and chrome, CIELAB: chroma below the first, lightness between the others."""
 LEGS_FROM = 0.6
@@ -148,6 +161,10 @@ def faces(frame: str) -> bool:
     return frame == "stand" or EDITS[frame].face
 
 
+def asleep(frame: str) -> bool:
+    return frame != "stand" and EDITS[frame].lying
+
+
 def shows(bionic: Bionic, frame: str) -> bool:
     """Whether `frame` shows the part: the eye isn't seen from behind."""
     return bionic != Bionic.INFRARED_EYE or faces(frame)
@@ -160,12 +177,15 @@ def edit_prompt(frame: str, bionic: Bionic, appearance: Appearance, over: Combin
         words = words.replace(" trousers ", " shorts ")
     if bionic == FEET:
         words = re.sub(r", ([^,]+?) (trousers|shorts) and [^,.]+? sneakers", r" and \1 \2", words)
+    part = ASLEEP_WORDS.get(bionic, WORDS[bionic]) if asleep(frame) else WORDS[bionic]
     face = ""
     if faces(frame):
-        face = f" {EYE_FACE if bionic == Bionic.INFRARED_EYE else FACE}"
+        eye = bionic == Bionic.INFRARED_EYE
+        face = (ASLEEP_EYE if eye else ASLEEP) if asleep(frame) else (EYE_FACE if eye else FACE)
+        face = f" {face}"
     return styled(
         "Redraw image 1 with the same character, unchanged in every other detail and the same "
-        f"size, in exactly the same pose and view, now with {WORDS[bionic]}. {words}{face} "
+        f"size, in exactly the same pose and view, now with {part}. {words}{face} "
         "Keep the background plain light grey."
     )
 

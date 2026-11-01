@@ -23,6 +23,10 @@ BODY = (
     "with short legs, like the residents of a cartoon colony-building game."
 )
 FACE = "The face is clean, with simple dot eyes and a small smile, and no smudges on it."
+ASLEEP = (
+    "The face is clean and peaceful, asleep with both eyes closed as small curved lines, and no "
+    "smudges on it."
+)
 STAND = (
     "A single full-body 2D game character sprite on a plain flat light grey background with "
     "nothing else in the picture: one resident of a modern southern Chinese tech city like "
@@ -57,6 +61,8 @@ class Pose:
     lifted: str | None = None
     """In the air, as high as this frame's head: FLUX draws a running figure's knees up, so
     standing on its lowest foot would drop its head."""
+    lying: bool = False
+    """Lies on its side, head to the left: painted in landscape and measured turned head up."""
 
 
 Leg = tuple[tuple[float, float], ...]
@@ -108,6 +114,14 @@ EDITS = {
         bands="climb",
         face=False,
     ),
+    "lie": Pose(
+        "Redraw image 1 with the same character, unchanged in every detail and the same size, "
+        "now lying down asleep on their side, seen from the front, curled up: the body flat and "
+        "level, the head on the left and the feet on the right, the knees bent and drawn up "
+        "towards the tummy, the arms relaxed in front of the body, floating in mid-air with "
+        "nothing under them: no bed, no pillow, no blanket, no mattress, no floor, no shadow.",
+        lying=True,
+    ),
 }
 """Each pose as an edit of another painting: `base`, the standing one unless it says."""
 STANDING = Pose(STAND)
@@ -119,6 +133,7 @@ POSES = {
     "run": ["run", "run_pass", "run", "run_pass"],
     "sit": ["sit"],
     "climb": ["climb"],
+    "lie": ["lie"],
 }
 """The frames each pose plays, one after another through its cycle."""
 
@@ -140,7 +155,7 @@ def stand_prompt(appearance: Appearance, who: str | None, persona: str = "") -> 
 
 def edit_prompt(frame: str, appearance: Appearance, who: str | None) -> str:
     pose = EDITS[frame]
-    face = f" {FACE}" if pose.face else ""
+    face = f" {ASLEEP if pose.lying else FACE}" if pose.face else ""
     return styled(
         f"{pose.words} {described(appearance, who)}{face} Keep the background plain light grey."
     )

@@ -1,6 +1,6 @@
 {
   "id": "odalys",
-  "hash": "b2df8358bddb7768",
+  "hash": "ba1cbb05e1f6877a",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "curly",
@@ -13,7 +13,7 @@
       "apron"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "odalys.webp",
@@ -28,6 +28,22 @@
       "feet": [
         42.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        169,
+        134,
+        64
+      ],
+      "feet": [
+        66.0,
+        64.0
+      ],
+      "bed": [
+        66.0,
+        64.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

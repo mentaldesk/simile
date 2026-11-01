@@ -2,6 +2,7 @@
 whose `Appearance` or pipeline changed."""
 
 import hashlib
+import io
 import json
 import time
 import zlib
@@ -44,7 +45,21 @@ from simile.dolls.measure import (
     swatches,
     worst,
 )
-from simile.dolls.sprites import VERSION, atlas, cut_out, frames, manifest, scale, seat
+from simile.dolls.sprites import (
+    HEIGHT_M,
+    PAD,
+    VERSION,
+    atlas,
+    cut_out,
+    frames,
+    manifest,
+    scale,
+    scaled,
+    seat,
+    trimmed,
+    upright,
+)
+from simile.dolls.sprites import height as tall
 from simile.dolls.words import gender_in, persona
 from simile.schema import PLAYER_ID, Appearance, Npc
 from simile.schema.player import Bionic
@@ -59,6 +74,8 @@ TRIES = {"stand": 3, "edit": 2, "fitted": 3}
 SCALE = 1.25
 """How much bigger or smaller than the standing figure FLUX may draw another pose before it's
 painted again."""
+LONG = 1.8
+"""Metres a lying figure may be from head to toe: the bed art is 1.58 m."""
 WRONG = 20.0
 """A colour painted further than this from the `Appearance`, CIEDE2000, is another colour, not a
 shade of it: rather than pulled back, the painting is made again."""
@@ -69,13 +86,30 @@ REROLLS: dict[str, int] = {
     "player_eye/sit": 8,
     "player_bionic_legs/climb": 1,
     "player_bionic_legs_feet/pass": 2,
+    "annelie/lie": 5,
+    "henrietta/lie": 2,
+    "ingrid/lie": 2,
+    "lachlan/lie": 2,
+    "marguerite/lie": 2,
+    "raymond/lie": 2,
+    "tobias/lie": 2,
 }
 """`<id>/<frame>` to a reroll number, for a painting that came out off-model by eye."""
+GROUND = (214, 214, 216)
+"""FLUX's plain light grey, behind a committed figure set up as a painting."""
+FILL = 0.87
+"""The share of a painting's height FLUX's standing figure fills."""
 MISSES: dict[tuple[str, str, str], str] = {
     ("henrietta", "climb", "shoe"): "ΔE 7.8: near-black shoes, seen from behind, among the outline",
     ("raymond", "run_pass", "shoe"): "ΔE 6.1: near-black shoes, mid-stride, among the outline",
+    ("annelie", "lie", "length"): "1.89 m: seeds 0 to 4 painted her hair the background's grey",
+    ("henrietta", "lie", "length"): "2.10 m after a reroll",
+    ("ingrid", "lie", "length"): "2.35 m after a reroll",
+    ("lachlan", "lie", "length"): "2.01 m after a reroll",
+    ("raymond", "lie", "length"): "1.94 m after a reroll",
 }
-"""(id, frame, colour) still over `CLOSE` from the `Appearance` once matched, and why."""
+"""(id, frame, colour) still over `CLOSE` from the `Appearance` once matched, or (id, frame,
+"length") still longer than `LONG`, and why."""
 
 Cut = Callable[[Image.Image], Image.Image]
 
@@ -158,6 +192,8 @@ class Try:
     figure's, already accepted, rather than another colour."""
     missing: list[str] = field(default_factory=list)
     """Bionics it should show but doesn't: `bionics.missing`."""
+    length: float = 0.0
+    """Lying, how long it is from head to toe, in metres once scaled."""
 
 
 @dataclass
@@ -187,18 +223,21 @@ class Cached:
         self.model: Painter | None = None
 
     def paint(
-        self, prompt: str, seed: int, images: list[Image.Image]
+        self, prompt: str, seed: int, images: list[Image.Image], lying: bool = False
     ) -> tuple[Image.Image, float | None]:
         key = hashlib.sha256(prompt.encode() + str(seed).encode())
         for image in images:
             key.update(image.tobytes())
+        size = SIZE[::-1] if lying else SIZE
+        if lying:
+            key.update(str(size).encode())
         path = None if self.folder is None else self.folder / f"{key.hexdigest()[:20]}.png"
         if path is not None and path.exists():
             return Image.open(path).convert("RGB"), None
         if self.model is None:
             self.model = self.stack.enter_context(self.factory())
         start = time.perf_counter()
-        painting = self.model.paint(prompt, SIZE, seed, images)
+        painting = self.model.paint(prompt, size, seed, images)
         seconds = round(time.perf_counter() - start, 1)
         if path is not None:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -222,8 +261,8 @@ def attempt(
     `standing` figure was painted, if this isn't it. With how far off they were before and after,
     how much of the face is painted over, how big it's drawn, which of the standing figure's
     colours it lost and how much of it is painted in others."""
-    painting, seconds = painter.paint(prompt, seed, images)
-    figure = cut(painting)
+    painting, seconds = painter.paint(prompt, seed, images, pose.lying)
+    figure = upright(cut(painting)) if pose.lying else cut(painting)
     raw = swatches(figure, appearance, pose.bands)
     if standing is None:
         fixed = pulled(figure, appearance, pose.bands)
@@ -237,6 +276,8 @@ def attempt(
         tried.lost = sorted(set(colours) - set(found))
         stand = standing.figures["stand"]
         tried.scale = round(scale(fixed, stand, pose.bands == "climb"), 3)
+        if pose.lying:
+            tried.length = round(tall(fixed) / tried.scale / tall(stand) * HEIGHT_M, 2)
         tried.strays = strays(fixed, stand, bionics.PALETTE if fitted else None)
     if pose.face:
         eye = bionics.spared(fixed) if Bionic.INFRARED_EYE in fitted else None
@@ -247,15 +288,18 @@ def attempt(
 
 def misses(tried: Try, appearance: Appearance) -> tuple[bool, float, float, float]:
     """Sorts tries best first: matched within `CLOSE`, with nothing painted another colour, a
-    clean face, drawn to scale and painted like the standing figure; then the least marked, off
-    scale and unlike it; then the closest."""
+    clean face, drawn to scale, painted like the standing figure and, lying, no longer than
+    `LONG`; then the least marked, off scale, unlike it and long; then the closest."""
     shown = hidden(appearance)
     after, before = worst(tried.matched, shown), worst(tried.raw, shown)
     off_scale = abs(np.log(tried.scale)) > np.log(SCALE)
     unlike = bool(tried.lost) or tried.strays > STRAYS
     wrong = before > WRONG and not tried.followed
+    long = tried.length > LONG
     bad = after > CLOSE or wrong or tried.marks > MARKS or off_scale or unlike or tried.missing
+    bad = bad or long
     odd = tried.marks + abs(np.log(tried.scale)) + tried.strays + len(tried.lost + tried.missing)
+    odd += max(0.0, tried.length - LONG)
     return bool(bad), odd, after, before
 
 
@@ -369,7 +413,8 @@ def files(
     climbs = [f for f, pose in EDITS.items() if pose.bands == "climb"]
     lifted = {f: pose.lifted for f, pose in EDITS.items() if pose.lifted}
     seated = [f for f, pose in EDITS.items() if pose.seated]
-    made = frames(painted.figures, "stand", climbs, lifted, seated, standing)
+    lying = [f for f, pose in EDITS.items() if pose.lying]
+    made = frames(painted.figures, "stand", climbs, lifted, seated, standing, lying)
     data, places = atlas(made)
     name = f"{who}.webp"
     body = manifest(made, places, POSES, name, id=who, **extra)
@@ -391,6 +436,70 @@ def reseat(directory: Path = CONTENT) -> list[Path]:
             entry["seat"] = [round(at[0], 1), round(at[1], 1)]
         named[path.name] = (json.dumps(body, indent=2) + "\n").encode()
     return write(directory, named)
+
+
+def as_painted(figure: Image.Image) -> tuple[Image.Image, Image.Image]:
+    """A committed frame upscaled to the size FLUX paints a figure, and on FLUX's grey."""
+    big = scaled(trimmed(figure, 0), FILL * SIZE[1] / trimmed(figure, 0).height)
+    painting = Image.new("RGB", SIZE, GROUND)
+    painting.paste(big, ((SIZE[0] - big.width) // 2, (SIZE[1] - big.height) // 2), big)
+    return big, painting
+
+
+def add_frames(
+    who: str,
+    appearance: Appearance,
+    painter: Cached,
+    said: str = "",
+    directory: Path = CONTENT,
+    cut: Cut = cut_out,
+    log: Callable[[str], None] = print,
+) -> Painted:
+    """Paints the frames `who`'s atlas lacks as edits of its committed standing frame, for a
+    figure whose paintings are gone, and adds them on shelves below, every other frame kept."""
+    path = directory / f"{who}.json"
+    body = json.loads(path.read_text())
+    if body["appearance"] != appearance.model_dump(mode="json"):
+        raise ValueError(f"{who}'s Appearance changed: paint them again whole")
+    with Image.open(directory / body["painted"]) as opened:
+        sheet = opened.convert("RGBA")
+    x, y, w, h = body["frames"]["stand"]["frame"]
+    stand, painting = as_painted(sheet.crop((x, y, x + w, y + h)))
+    found = identify(stand, appearance)
+    painted = Painted(who, {n: got for n, (got, _) in found.items()}, {"stand": stand})
+    painted.paintings["stand"] = painting
+    for frame, pose in EDITS.items():
+        if frame in body["frames"]:
+            continue
+        if pose.base != "stand" or pose.legs:
+            raise ValueError(f"{frame} isn't an edit of the standing figure alone")
+        prompt = edit_prompt(frame, appearance, who)
+        paint_frame(
+            painter, painted, frame, prompt, [painting], appearance, cut, pose, TRIES["edit"]
+        )
+        log(f"{who} {frame}: {summary(painted.tries[frame][-1])}")
+    lying = [f for f, pose in EDITS.items() if pose.lying]
+    made = frames(painted.figures, lying=lying)
+    for frame in (f for f in painted.figures if f != "stand"):
+        top = sheet.height + PAD
+        image = made[frame].image
+        grown = Image.new("RGBA", (max(sheet.width, image.width), top + image.height))
+        grown.paste(sheet, (0, 0))
+        grown.paste(image, (0, top))
+        sheet = grown
+        entry = manifest({frame: made[frame]}, {frame: (0, top, *image.size)}, {}, "")["frames"]
+        body["frames"][frame] = entry[frame]
+    body["frames"] = dict(sorted(body["frames"].items()))
+    body["poses"] = POSES
+    body["version"] = VERSION
+    body["hash"] = fingerprint(who, appearance, said)
+    data = io.BytesIO()
+    sheet.save(data, "WEBP", lossless=True, exact=True, quality=100, method=6)
+    write(
+        directory,
+        {body["painted"]: data.getvalue(), path.name: json.dumps(body, indent=2).encode() + b"\n"},
+    )
+    return painted
 
 
 def write(directory: Path, named: dict[str, bytes]) -> list[Path]:

@@ -1,6 +1,6 @@
 {
   "id": "player_feet_eye",
-  "hash": "a23c3894d250753a",
+  "hash": "d2aed1e369b55af8",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -17,7 +17,7 @@
     "spring_feet",
     "infrared_eye"
   ],
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "player_feet_eye.webp",
@@ -32,6 +32,22 @@
       "feet": [
         44.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        593,
+        0,
+        141,
+        63
+      ],
+      "feet": [
+        69.5,
+        63.0
+      ],
+      "bed": [
+        69.5,
+        63.0
       ]
     },
     "pass": {
@@ -132,6 +148,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

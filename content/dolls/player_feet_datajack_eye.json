@@ -1,6 +1,6 @@
 {
   "id": "player_feet_datajack_eye",
-  "hash": "6e386922e925c88b",
+  "hash": "bf0add6800b70bca",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -18,7 +18,7 @@
     "datajack",
     "infrared_eye"
   ],
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "player_feet_datajack_eye.webp",
@@ -33,6 +33,22 @@
       "feet": [
         44.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        593,
+        0,
+        141,
+        63
+      ],
+      "feet": [
+        69.5,
+        63.0
+      ],
+      "bed": [
+        69.5,
+        63.0
       ]
     },
     "pass": {
@@ -133,6 +149,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

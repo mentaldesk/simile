@@ -1,6 +1,6 @@
 {
   "id": "priya",
-  "hash": "5fb275ae7fd85e6e",
+  "hash": "53ae619599ca2d0f",
   "appearance": {
     "skin": "#c28569",
     "hair_style": "long",
@@ -11,7 +11,7 @@
     "build": "average",
     "accessories": []
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "priya.webp",
@@ -26,6 +26,22 @@
       "feet": [
         38.8,
         167.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        171,
+        123,
+        50
+      ],
+      "feet": [
+        60.5,
+        50.0
+      ],
+      "bed": [
+        60.5,
+        50.0
       ]
     },
     "pass": {
@@ -126,6 +142,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

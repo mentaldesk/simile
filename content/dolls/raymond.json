@@ -1,6 +1,6 @@
 {
   "id": "raymond",
-  "hash": "a9f0186334ca22a9",
+  "hash": "658d1fe6e9ac8cd3",
   "appearance": {
     "skin": "#c28569",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "sunglasses"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "raymond.webp",
@@ -28,6 +28,22 @@
       "feet": [
         44.4,
         172.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        176,
+        155,
+        66
+      ],
+      "feet": [
+        76.5,
+        66.0
+      ],
+      "bed": [
+        76.5,
+        66.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }
