@@ -35,6 +35,8 @@ export const COYOTE_SECONDS = table.coyote_seconds;
 /** Space pressed this long before landing jumps again on landing. */
 export const BUFFER_SECONDS = table.buffer_seconds;
 export const LANDING_SECONDS = 0.12;
+/** Tiles the feet rise jumping off a ladder with neither left nor right held. */
+export const LADDER_HOP = 0.6;
 /** Half the width of the feet, which can stand on a ledge's edge, and of the body, which walls stop. */
 export const FOOT = table.foot;
 /** From the feet to the top of the head. */
@@ -102,12 +104,15 @@ export function dropBeyond(map: SideMap, end: number, y: number, way: -1 | 1): b
   return !isSolid(map, x, y) && !isSolid(map, x, y + 1) && !climbAt(map, x, y) && !climbAt(map, x, y + 1);
 }
 
-/** Moves `at` through the air for `dt`, half way through `steer`ing it, stopped by anything solid and kept on the map; true once it lands. A jump takes off no faster than reaching the ceiling needs. */
+/** Slows a jump's take-off from `at` to no faster than reaching the ceiling needs, once, before letting go of Space can cut it. */
+export function launch(map: SideMap, at: { x: number; y: number }, air: Air, dt: number): void {
+  if (!air.held || air.launched) return;
+  air.launched = true;
+  air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)) + (GRAVITY * dt) / 2);
+}
+
+/** Moves `at` through the air for `dt`, half way through `steer`ing it, stopped by anything solid and kept on the map; true once it lands. */
 export function fly(map: SideMap, at: { x: number; y: number }, air: Air, dt: number): boolean {
-  if (air.held && !air.launched) {
-    air.launched = true;
-    air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)) + (GRAVITY * dt) / 2);
-  }
   const steps = Math.max(1, Math.ceil((Math.max(Math.abs(air.vx), Math.abs(air.vy)) * dt) / STEP_TILES));
   const step = dt / steps;
   for (let i = 0; i < steps; i++) {

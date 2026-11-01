@@ -11,7 +11,9 @@ import {
   JUMP_CUT,
   JUMP_RISE,
   jumpSpeed,
+  LADDER_HOP,
   LANDING_SECONDS,
+  launch,
   steer,
   type Air,
 } from './jump';
@@ -218,8 +220,8 @@ export class SidePlayer {
     return undefined;
   }
 
-  private jump(along: number): void {
-    this.air = { vx: along * this.speed, vy: -jumpSpeed(this.rise), held: true };
+  private jump(along: number, rise = this.rise): void {
+    this.air = { vx: along * this.speed, vy: -jumpSpeed(rise), held: true };
     this.buffered = this.coyote = this.landing = 0;
     this.walking = false;
   }
@@ -231,6 +233,7 @@ export class SidePlayer {
     if (this.buffered > 0 && this.coyote > 0) this.jump(controls.x);
     this.coyote = Math.max(this.coyote - dt, 0);
     const flying = this.air!;
+    launch(map, this.position, flying, dt);
     if (flying.held && !controls.hold) {
       flying.held = false;
       if (flying.vy < 0) flying.vy *= JUMP_CUT;
@@ -286,8 +289,14 @@ export class SidePlayer {
     }
   }
 
+  /** Up and down climb, stopping anywhere; Space on a ladder jumps off it the way the arrows hold, or hops off. */
   private climb(on: OnRun, controls: Controls, dt: number): void {
     const { path, kind } = on.run;
+    if (kind === 'ladder' && controls.jump) {
+      this.onRun = undefined;
+      this.jump(controls.x, controls.x === 0 ? LADDER_HOP : this.rise);
+      return;
+    }
     const along = controls.y !== 0 ? -controls.y : kind === 'stairs' ? sign(controls.x * rise(path)) : 0;
     const outward = (on.distance <= 0 && along <= 0) || (on.distance >= path.total && along >= 0);
     if (controls.x !== 0 && controls.y === 0 && outward && this.endStanding(path, on.distance)) {
