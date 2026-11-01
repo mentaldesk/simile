@@ -45,16 +45,35 @@ describe('reporting moves', () => {
     expect(on.x).toBeLessThan(player.position.x);
 
     on = { ...BED };
-    moves.collapsed(BED);
+    moves.collapsed();
     tell();
     for (let t = 0; t < DOOR_FADE_OUT_SECONDS + SEND_INTERVAL_SECONDS; t += DT) {
       now += DT;
       report();
     }
     player.place(BED);
+    moves.woke();
     for (let i = 0; i < 30; i++) frame(idle);
     expect(on).toEqual(BED);
     expect(resting()).toBe(true);
     expect(player.drawn.bed).toBe(1);
+  });
+
+  it('sends moves again once woken, even if they walk off at once', () => {
+    const moves = new MoveReport();
+    const player = new SidePlayer(village, { x: 10, y: 15, map: 'high_street' });
+    const sent: MapPosition[] = [];
+    let now = 0;
+    moves.collapsed();
+    player.place(BED);
+    moves.woke();
+    for (let t = 0; t < 2; t += DT) {
+      player.update({ ...idle, x: 1 }, DT);
+      now += DT;
+      const move = moves.next(player.mapPosition, now);
+      if (move) sent.push(move);
+    }
+    expect(sent.length).toBeGreaterThan(5);
+    expect(sent.at(-1)!.x).toBeGreaterThan(BED.x);
   });
 });

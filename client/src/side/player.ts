@@ -51,6 +51,8 @@ type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
 type Climb = Exclude<Way, { kind: 'door' }>;
 
+/** How far into bed they're sat on its edge, centred on their cell. */
+const SEATED = 0.5;
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);
 const EPSILON = 1e-6;
 
@@ -207,8 +209,15 @@ export class SidePlayer {
       this.fresh = false;
     }
     if (!this.abed) return false;
-    if (this.lying) this.position.x = Math.floor(this.position.x + 0.5);
-    this.inBed = settle(this.inBed, this.lying, dt);
+    const map = this.village.map(this.map);
+    if (this.air && map) this.position.y = landingRow(map, this.position);
+    const before = this.inBed;
+    this.inBed = settle(before, this.lying, dt);
+    if (this.lying) {
+      const centre = Math.floor(this.position.x + 0.5);
+      const t = before >= SEATED ? 1 : Math.min(1, (this.inBed - before) / (SEATED - before));
+      this.position.x += (centre - this.position.x) * t;
+    }
     this.approaching = this.air = undefined;
     this.buffered = 0;
     return true;

@@ -404,6 +404,8 @@ describe('resting in bed', () => {
   it('lies down on the bed cell over LIE_SECONDS while resting, whatever the keys', () => {
     const player = awake();
     rests(true);
+    player.update(press({ x: 1 }), 1 / 60);
+    expect(player.position.x).toBeGreaterThan(5.25);
     hold(player, press({ x: 1, jump: true }), LIE_SECONDS / 2);
     expect(player.position).toEqual({ x: 5, y: 2 });
     expect(player.drawn.bed).toBeGreaterThan(0.3);
@@ -428,6 +430,17 @@ describe('resting in bed', () => {
     expect(player.drawn.bed).toBe(0);
     expect(player.drawn.pose).toBe('walking');
     expect(player.position.x).toBeGreaterThan(5.5);
+  });
+
+  it('lies on the bed row if the rest starts in the air', () => {
+    const player = awake();
+    player.update(press({ jump: true, hold: true }), 1 / 60);
+    hold(player, press({ hold: true }), 0.1);
+    expect(player.airborne).toBe(true);
+    rests(true);
+    player.update(idle, 1 / 60);
+    expect(player.airborne).toBe(false);
+    expect(player.position.y).toBe(2);
   });
 
   it('is lying at once when placed, or after a snapshot, while resting already', () => {

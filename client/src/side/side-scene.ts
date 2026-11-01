@@ -131,7 +131,7 @@ export class SideScene extends Phaser.Scene {
       }),
       server.on('snapshot', () => this.moves.reset()),
       server.on('player_collapsed', ({ position: { x, y, map } }) => {
-        this.moves.collapsed({ x, y, map: map ?? '' });
+        this.moves.collapsed();
         this.wake({ x, y, map: map ?? '' });
       }),
       setMuralView({
@@ -167,6 +167,7 @@ export class SideScene extends Phaser.Scene {
     }
     const start = this.waking ?? this.startPosition(content.village);
     this.waking = undefined;
+    this.moves.woke();
     this.player = new SidePlayer(content.village, start);
     this.player.stomps = (map, x, from, to) => stompedOn(sideCreatures.all.values(), map, x, from, to);
     await this.showStreet(content.village.map(start.map)!.street);
@@ -310,13 +311,13 @@ export class SideScene extends Phaser.Scene {
   /** The server moved them home after they collapsed. */
   private wake(at: MapPosition): void {
     if (this.passing || !this.street) this.waking = at;
-    else this.takeDoorTo(at);
+    else this.takeDoorTo(at, () => this.moves.woke());
   }
 
   private wakeIfWaiting(): void {
     const waking = this.waking;
     this.waking = undefined;
-    if (waking) this.takeDoorTo(waking);
+    if (waking) this.takeDoorTo(waking, () => this.moves.woke());
   }
 
   private takeDoor(door: Link): void {
@@ -324,12 +325,16 @@ export class SideScene extends Phaser.Scene {
   }
 
   /** A front door just opens the dollhouse; another street fades out and in. */
-  private takeDoorTo(to: MapPosition): void {
+  private takeDoorTo(to: MapPosition, placed?: () => void): void {
     const { content, player, street } = this;
     const map = content?.village.map(to.map);
-    if (!content || !player || !street || !map || this.passing) return;
+    if (!content || !player || !street || !map || this.passing) {
+      if (!this.passing) placed?.();
+      return;
+    }
     if (map.street === street.map.id) {
       player.place(to);
+      placed?.();
       return;
     }
     this.passing = true;
@@ -341,6 +346,7 @@ export class SideScene extends Phaser.Scene {
         player.place(to);
       } finally {
         this.passing = false;
+        placed?.();
         camera.fadeIn(DOOR_FADE_IN_SECONDS * 1000);
         this.wakeIfWaiting();
       }

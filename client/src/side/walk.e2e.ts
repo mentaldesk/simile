@@ -517,8 +517,7 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
 const cornerLines = (page: Page) =>
   page.$$eval('.hunger-hint div', (lines) => lines.filter((line) => !(line as HTMLElement).hidden).map((line) => line.textContent ?? ''));
 
-/** E at the loft bed while hurt lies them down and rests them to full, when they get up by themselves; a move key gets
- * them up early, and only then walks; at full health E offers nothing. */
+/** E at the loft bed while hurt lies them down until full; a key gets them up early, walking only once up. */
 async function restLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'resting at the loft bed';
   const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
