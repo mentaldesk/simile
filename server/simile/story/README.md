@@ -40,7 +40,8 @@ last seen the evening before that, on the five minutes between 21:20 and 22:00 (
 | `hatch_log`: a maintenance hatch deep in the sewers, stamped with Apex's mark, took a key with Aris's mark that night, onto a shaft towards the Apex towers | found in `sewers_hatch`, with the datajack (S9) | |
 
 The passer is one of the noted distrusters, so the notes lead to `passed` even with nobody else to
-see her. Witnesses and bystanders are residents who didn't distrust her, each once before anyone
+see her, and is one who'd lie wherever any would, so the notes always reach a lie the eye can
+flush. Witnesses and bystanders are residents who didn't distrust her, each once before anyone
 twice. The logs are dated 15 and 75 minutes after she was last seen.
 
 How willing each knower is:
@@ -70,16 +71,16 @@ every `SIMILE_DB=:memory:` run, and once for a save from before it. A world with
 none. A cast world (P9) draws it from the cast's seed, and any other world at random. It runs after
 persistence has restored the save, in a crash-safe order:
 
-1. It forgets any memories with a `fact_id`: those of an old incident, or of a start that stored
-   them and then died before saving.
+1. It forgets any memories with a `fact_id`: those of a save from before the disappearance, or of
+   a start that stored them and then died before saving.
 2. It makes the disappearance.
 3. It keeps only the journal entries that are still true word for word (the lift and hatch logs)
    and the town's (`town_*`), and drops their leads to facts that no longer exist.
-4. It stores the new memories, then sets the disappearance, drops any old incident and saves the
-   world, so it's made at most once and its memories are never lost.
+4. It stores the new memories, then sets the disappearance and saves the world, so it's made at
+   most once and its memories are never lost.
 
-A save from an incident keeps the residents' conversation memories, which have no `fact_id` and can
-still mention the attack; a new game has the clean story. A world whose logs don't match when she
+A save from before the disappearance keeps the residents' conversation memories, which have no
+`fact_id` and can still mention the old story's attack; a new game has the clean story. A world whose logs don't match when she
 was last seen gets them again (`logged`) on its next start, and is saved. The hatch is a jack in
 every level of the sewers (`simile.street.sewers.HATCH`), so its cell is each level's own and isn't
 in `story.toml`.

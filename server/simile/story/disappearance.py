@@ -38,6 +38,7 @@ WHAT_GONE = (
 METRO = "She was heading for the old metro. See whether anything down there remembers her."
 DOWN = "She was going down to the old metro. See whether anything down there remembers her."
 EVENING = "the evening before she went missing"
+ARIS_EVENING = "the evening before Aris went missing"
 SAW_HER = f"whether {{they}} saw Aris {EVENING}"
 READ = "Her notes are still on the workshop bench. Read what she wrote last."
 
@@ -181,7 +182,7 @@ def build(
                     Lead(
                         fact_id=PASSED,
                         text=f"{passer_name} passed her on the steps. Ask {passer_name} "
-                        f"about {EVENING}.",
+                        f"about {ARIS_EVENING}.",
                     ),
                 ],
             ),
@@ -209,7 +210,7 @@ def build(
                 leads=[
                     Lead(
                         fact_id=PASSED,
-                        text=f"{name} had no time for Aris. Ask {name} about {EVENING}.",
+                        text=f"{name} had no time for Aris. Ask {name} about {ARIS_EVENING}.",
                     )
                 ]
                 if npc == passer
