@@ -297,6 +297,19 @@ def test_picking_up_takes_the_nearest_pile_they_left_in_reach() -> None:
     assert tunnels.player.left == piles(("kapok_walk", 12))
 
 
+def test_money_they_left_comes_back_with_their_gear_and_off_the_ledger() -> None:
+    left = Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[BUN], money=31.5)
+    tunnels = Tunnels(Player(left=[left]))
+    tunnels.stand(12)
+
+    assert tunnels.pickups.pick_up()
+
+    assert tunnels.player.money == 31.5
+    assert tunnels.player.items == [lamp(), BUN]
+    assert tunnels.player.left == []
+    assert tunnels.economy.ledger.net(PLAYER) == 0
+
+
 def test_picking_up_leaves_what_they_cannot_carry() -> None:
     heavy = [Pile(at=MapTile(map="kapok_walk", x=12, y=15), items=[SERVO, WIRE, BUN])]
     tunnels = Tunnels(Player(items=[lamp(), SERVO, SERVO], carry_limit=9, left=heavy))

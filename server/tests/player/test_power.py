@@ -22,6 +22,7 @@ NOW = datetime(2026, 1, 1, 12, tzinfo=UTC)
 HOUR = 3600.0
 TUNNEL = Point(65, 15, "metro")
 PLUG = Point(72, 15, "metro")
+HOME = Point(13, 2, "maker_space_floor_0")
 CELL, CELL_2 = Bionic.POWER_CELL, Bionic.POWER_CELL_2
 JACK, LEGS, FEET, EYE = (
     Bionic.DATAJACK,
@@ -160,7 +161,7 @@ def next_of(ws: Any, type: str) -> dict[str, Any]:
     raise AssertionError(f"no {type}")
 
 
-def test_a_flat_cell_collapses_them_for_power_and_a_plug_at_home_charges_it(
+def test_a_flat_cell_collapses_them_for_power_and_the_plug_downstairs_charges_it(
     make_package: MakePackage,
 ) -> None:
     app = make_app(make_package)
@@ -178,12 +179,17 @@ def test_a_flat_cell_collapses_them_for_power_and_a_plug_at_home_charges_it(
         client.portal.call(tick)
         collapsed = next_of(ws, "player_collapsed")
         woken = next_of(ws, "player_state")
+        ws.send_json({"type": "player_move", "position": {"x": 13, "y": 2, "map": HOME.map}})
+        while client.portal.call(movement_of(app).entities).get(PLAYER_ID) != HOME:
+            assert time.monotonic() < deadline + 2, "the server never had the player at the plug"
+            time.sleep(0.001)
         client.portal.call(lambda: [tick() for _ in range(40)])
         charging = [next_of(ws, "player_state")]
         while "power" in charging[-1]["player"]:
             charging.append(next_of(ws, "player_state"))
 
     assert collapsed["cause"] == "power"
+    assert collapsed["position"] == {"x": 5, "y": 2, "map": "maker_space_floor_2"}
     assert woken["player"]["power"] == DEFAULT_POWER.waking
     assert woken["player"]["hunger"] == 0
     assert woken.get("meal") is None
