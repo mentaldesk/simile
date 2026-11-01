@@ -164,13 +164,49 @@ def test_zone_0_is_walked_to_the_legs_finds_and_the_gate_box_and_back_on_walking
             assert walked(town, there, START, jump), (name, "back from", item_id)
 
 
-def walked(town: TownMap, start: tuple[int, int], end: tuple[int, int], jump: Jump) -> bool:
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_zone_0_needs_no_jump_but_a_tap_across_one_cell_along_a_row_on_the_players_own_legs(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town = level(seed).town
+    stops = {find.id for find in FINDS if find.zone == 0} | {GATE_BOX}
+    tap = TAPS[OWN_JUMP]
+
+    for item in town.interactables:
+        if item.id in stops:
+            there = (item.stand[0].x, item.stand[0].y)
+            assert walked(town, START, there, tap, hops=True), ("to", item.id)
+            assert walked(town, there, START, tap, hops=True), ("back from", item.id)
+
+
+@pytest.mark.parametrize("seed", SEEDS, ids=ids)
+def test_before_the_gate_every_ladder_comes_up_through_one_cell_with_floor_either_side(
+    seed: int, level: Callable[[int], Played]
+) -> None:
+    town = level(seed).town
+    [gate] = [light.area for light in town.light if light.id == "sewers_gate"]
+    rungs = {(x, y) for y in range(town.height) for x in range(town.width) if town.climb(x, y)}
+    tops = [(x, y) for x, y in rungs if (x, y - 1) not in rungs and SHAFT <= x < gate.x]
+
+    assert tops
+    for x, y in tops:
+        assert town.standing(x - 1, y) and town.standing(x + 1, y), (x, y)
+
+
+def walked(
+    town: TownMap, start: tuple[int, int], end: tuple[int, int], jump: Jump, hops: bool = False
+) -> bool:
+    """Whether `end` is reached from `start` on `jump`, or with `hops` on one-cell hops along a
+    row and no other jumps."""
     seen, queue = {start}, deque([start])
     while queue:
         here = queue.popleft()
         if here == end:
             return True
         for there, _ in moves(town, here, jump):
+            dx, dy = there[0] - here[0], there[1] - here[1]
+            if hops and abs(dx) + abs(dy) > 1 and (dy, abs(dx)) != (0, 2):
+                continue
             if there not in seen:
                 seen.add(there)
                 queue.append(there)

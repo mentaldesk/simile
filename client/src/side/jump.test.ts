@@ -7,6 +7,8 @@ import {
   BUFFER_SECONDS,
   COYOTE_SECONDS,
   FOOT,
+  footing,
+  JUMP_HOP,
   JUMP_REACH,
   JUMP_RISE,
   JUMP_TABLE,
@@ -20,7 +22,7 @@ import {
 } from './jump';
 import positions from '../../../server/tests/street/positions.json';
 import { levels } from '../world/assets';
-import { CLIMB_KINDS, isSolid, isStanding, isWalkable, readMap, Village, type SideMap } from './maps';
+import { CLIMB_KINDS, climbAt, isSolid, isStanding, isWalkable, readMap, Village, type SideMap } from './maps';
 import { RUN_PACE, SidePlayer, type Controls } from './player';
 import { climbRuns, distanceTo, pointAlong } from './runs';
 import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
@@ -206,7 +208,8 @@ describe('jumping', () => {
     };
     expect(peak(true)).toBeCloseTo(JUMP_RISE, 1);
     expect(peak(true)).toBeGreaterThan(JUMP_UP);
-    expect(peak(false)).toBeLessThan(JUMP_RISE / 2);
+    expect(peak(false)).toBeCloseTo(JUMP_HOP, 2);
+    expect(JUMP_HOP).toBeLessThan(JUMP_UP);
   });
 
   it('jumps for COYOTE_SECONDS after walking off a ledge, and not after', () => {
@@ -277,6 +280,66 @@ describe('jumping', () => {
     expect(player.steady.y).toBe(ROOF);
     expect(player.ground).toBe(ROOF);
     expect(landingRow(ROOFS, { x: 5, y: 1.5 })).toBe(LANE);
+  });
+});
+
+/** Walks `way` along row `y` from `x` until the walk stops, presses Space, holding it `hold` frames, and walks on until it lands. */
+function hopFrom(map: SideMap, x: number, y: number, way: 1 | -1, fps: number, hold = 0, kit?: string) {
+  const dt = 1 / fps;
+  const player = on(map, x, y);
+  player.rise = tableOf(kit).rise;
+  for (let t = 0, before = NaN; t < 10 && player.position.x !== before; t += dt) {
+    before = player.position.x;
+    player.update(press({ x: way }), dt);
+  }
+  const from = player.position.x;
+  player.update(press({ x: way, jump: true, hold: true }), dt);
+  for (let frame = 0; frame < 1000 && player.airborne; frame++) player.update(press({ x: way, hold: frame < hold }), dt);
+  return { from, landed: { ...player.position }, climbing: player.climbing };
+}
+
+/** A one-cell ladder hole in a slab, its top rung at x 5 on the standing row 4, under `roof`. */
+const holeUnder = (roof: string) =>
+  sketch([roof, ...Array<string>(3).fill('.'.repeat(11)), '.....H.....', '#####H#####', ...Array<string>(3).fill('.....H.....'), '.'.repeat(11), '#'.repeat(11)]);
+
+describe('a one-cell gap', () => {
+  it.each([30, 60, 144])('is cleared walking on any press of Space from where a walk stops at its edge, under a tier and in the open, at %s fps', (fps) => {
+    for (const roof of ['#'.repeat(11), '.'.repeat(11)]) {
+      const map = holeUnder(roof);
+      for (const [x, way] of [[1, 1], [9, -1]] as const) {
+        for (const hold of [0, 1, 2, 3, 5, 8, 600]) {
+          for (const kit of [undefined, 'spring_feet']) {
+            const { from, landed } = hopFrom(map, x, 4, way, fps, hold, kit);
+            const why = `from ${x} way ${way}, holding ${hold}, ${kit}, roof ${roof[0]}`;
+            expect(from, why).toBe(5 - way);
+            expect(landed.y, why).toBe(4);
+            expect(footing(map, landed.x, landed.y), why).toBe(5 + way);
+          }
+        }
+      }
+    }
+  });
+
+  it.each([30, 60, 144])('is cleared on a tap at every one-cell ladder hole before the gate in the committed levels, at %s fps', (fps) => {
+    let holes = 0;
+    for (const [level, files] of Object.entries(levels)) {
+      const map = readMap('sewers', files.sewers);
+      const gate = map.light.find(({ name }) => name === 'sewers_gate')!.x;
+      for (const { kind, path } of climbRuns(map)) {
+        const top = path.points.filter(({ x }) => x === path.points[0].x).at(-1)!;
+        if (kind !== 'ladder' || top.x >= gate || !isStanding(map, top.x - 1, top.y) || !isStanding(map, top.x + 1, top.y)) continue;
+        holes++;
+        for (const way of [1, -1] as const) {
+          for (const kit of [undefined, 'spring_feet']) {
+            const { landed } = hopFrom(map, top.x - way, top.y, way, fps, 0, kit);
+            const why = `level ${level} at ${top.x}, ${top.y}, way ${way}, ${kit}`;
+            expect(landed.y, why).toBe(top.y);
+            expect(footing(map, landed.x, landed.y), why).toBe(top.x + way);
+          }
+        }
+      }
+    }
+    expect(holes).toBeGreaterThan(Object.keys(levels).length);
   });
 });
 
@@ -741,39 +804,79 @@ describe('off a ladder', () => {
     expect(player.position.y).toBeLessThan(7);
   });
 
-  describe("on sewers level 1's ladder up beside the pipe", () => {
+  describe("on sewers level 1's ladder up to the crates' floor", () => {
     const sewers = readMap('sewers', levels[1].sewers);
+    const LADDER_X = 34;
+    const TOP = 10;
 
-    /** Climbs from the foot for `seconds`, jumps right and holds right until it lands, then walks on right for `walk` seconds. */
-    function jumpRight(seconds: number, run: boolean, fps: number, walk = 0) {
+    /** Climbs from the foot for `seconds`, presses Space `early` frames before right and holds it `hold` frames, and holds right until it lands. */
+    function jumpRight(seconds: number, fps: number, { early = 0, hold = 600, run = false } = {}) {
       const dt = 1 / fps;
-      const player = on(sewers, 33, 15);
+      const player = on(sewers, LADDER_X, 15);
       for (let t = 0; t < seconds - 1e-9; t += dt) player.update(press({ y: -1, run }), dt);
-      player.update(press({ x: 1, run, jump: true, hold: true }), dt);
+      expect(player.climbing).toBe('ladder');
       let last = { ...player.position };
-      for (let t = 0; t < 3 && player.airborne; t += dt) {
-        player.update(press({ x: 1, run, hold: true }), dt);
+      for (let frame = 0; frame < 1000 && (frame === 0 || player.airborne); frame++) {
+        const way = frame < early ? 0 : 1;
+        player.update(press({ x: way, run, jump: frame === 0, hold: frame <= hold }), dt);
         const { x, y } = player.position;
         expect(possible(sewers, x, y, last), `${x.toFixed(2)}, ${y.toFixed(2)} after ${last.x}, ${last.y}`).toBe(true);
         last = { x, y };
       }
       expect(player.airborne).toBe(false);
-      for (let t = 0; t < walk; t += dt) player.update(press({ x: 1 }), dt);
       return { ...player.position };
     }
 
-    it.each([30, 60, 144])('runs and jumps from near the top onto the walkway past the pipe, at %s fps', (fps) => {
+    it('is a one-cell hole with floor either side of its top', () => {
+      expect(climbAt(sewers, LADDER_X, TOP)).toBe('ladder');
+      expect([isStanding(sewers, LADDER_X - 1, TOP), isStanding(sewers, LADDER_X + 1, TOP)]).toEqual([true, true]);
+    });
+
+    it.each([30, 60, 144])('jumps from near the top onto the floor, walking or running, at %s fps', (fps) => {
       for (const seconds of [3, 3.3]) {
-        const landed = jumpRight(seconds, true, fps);
-        expect(landed.y, `after ${seconds}s`).toBe(10);
-        expect(landed.x, `after ${seconds}s`).toBeGreaterThan(34);
+        for (const run of [false, true]) {
+          const landed = jumpRight(seconds, fps, { run });
+          expect(landed.y, `after ${seconds}s, running ${run}`).toBeLessThanOrEqual(TOP);
+          expect(landed.x, `after ${seconds}s, running ${run}`).toBeGreaterThan(LADDER_X + 0.5);
+        }
       }
     });
 
-    it.each([30, 60, 144])('walks and jumps from near the top onto the pipe, then on along the walkway, at %s fps', (fps) => {
-      const landed = jumpRight(3.3, false, fps, 1);
-      expect(landed.y).toBe(10);
-      expect(landed.x).toBeGreaterThan(35);
+    it.each([30, 60, 144])('jumps onto the floor with Space pressed a frame or two before right, at %s fps', (fps) => {
+      for (const early of [1, 2]) {
+        for (const hold of [0, 600]) {
+          const landed = jumpRight(3, fps, { early, hold });
+          expect(landed.y, `${early} frames early, holding ${hold}`).toBe(TOP);
+          expect(landed.x, `${early} frames early, holding ${hold}`).toBeGreaterThan(LADDER_X + 0.5);
+        }
+      }
+    });
+
+    it.each([30, 60, 144])('jumps onto the floor on a short press of Space, at %s fps', (fps) => {
+      for (const hold of [0, 1, 2, 4]) {
+        expect(jumpRight(3, fps, { hold }).y, `holding ${hold}`).toBe(TOP);
+      }
+    });
+
+    it.each([30, 60, 144])('gets back on the ladder falling past it with up held, rather than down the shaft, at %s fps', (fps) => {
+      const dt = 1 / fps;
+      const player = on(sewers, LADDER_X, 15);
+      for (let t = 0; t < 3; t += dt) player.update(press({ y: -1 }), dt);
+      const from = player.position.y;
+      player.update(press({ jump: true, hold: true }), dt);
+      expect(player.airborne).toBe(true);
+      for (let t = 0; t < 1 && player.airborne; t += dt) player.update(press({ y: -1, hold: true }), dt);
+      expect(player.climbing).toBe('ladder');
+      expect(player.position.x).toBe(LADDER_X);
+      expect(player.position.y).toBeLessThan(from + 1);
+    });
+
+    it.each([30, 60, 144])('taps across its top to the crates and back, at %s fps', (fps) => {
+      for (const way of [-1, 1] as const) {
+        const { landed } = hopFrom(sewers, LADDER_X - way, TOP, way, fps);
+        expect(landed.y).toBe(TOP);
+        expect(footing(sewers, landed.x, landed.y)).toBe(LADDER_X + way);
+      }
     });
   });
 });

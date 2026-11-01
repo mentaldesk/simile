@@ -25,6 +25,8 @@ class Jump:
     """Times the gravity rising with Space held, falling or once Space is let go."""
     cut: float = 0.45
     """Of its speed up a jump keeps when Space is let go on the way up."""
+    hop: float = 1.5
+    """Tiles a jump rises at least, however soon Space is let go: a walking one clears a cell."""
     coyote_seconds: float = 0.1
     """After walking off a ledge, Space still jumps for this long."""
     buffer_seconds: float = 0.12
@@ -104,8 +106,8 @@ def walking(jump: Jump) -> Jump:
 
 def tapped(jump: Jump) -> Jump:
     """`jump` with Space let go before its first frame in the air, as the client cuts it: its speed
-    up kept to `cut`, and the falling gravity from take-off."""
-    rise = jump.rise * jump.cut**2 / jump.fall_gravity
+    up kept to `cut`, or to rise `hop`, and the falling gravity from take-off."""
+    rise = min(max(jump.rise * jump.cut**2 / jump.fall_gravity, jump.hop), jump.rise)
     gravity = jump.gravity * jump.fall_gravity
     return replace(jump, rise=rise, rise_seconds=math.sqrt(2 * rise / gravity), fall_gravity=1.0)
 
