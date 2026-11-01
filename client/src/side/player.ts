@@ -1,19 +1,21 @@
 import { playerState, server, type Facing, type PlayerStateMessage, type Position } from '../net';
 import { PLAYER_SPEED } from '../world/tuning';
-import { isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
+import { climbAt, isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import {
   BUFFER_SECONDS,
   COYOTE_SECONDS,
   dropBeyond,
   fly,
   footing,
+  GRAVITY,
+  HOP_SECONDS,
   landingRow,
-  JUMP_CUT,
   JUMP_RISE,
   jumpSpeed,
   LADDER_HOP,
   LANDING_SECONDS,
   launch,
+  letGo,
   steer,
   type Air,
 } from './jump';
@@ -97,6 +99,8 @@ export class SidePlayer {
   private coyote = 0;
   /** Seconds left in which a press of Space still jumps, on landing. */
   private buffered = 0;
+  /** Seconds left in which left or right turns a hop off a ladder into a jump that way. */
+  private hopping = 0;
   private landing = 0;
   /** 0 up to 1 lying in bed. */
   private inBed = 0;
@@ -131,7 +135,7 @@ export class SidePlayer {
     this.position.x = x;
     this.position.y = y;
     this.onRun = this.crossed = this.approaching = this.air = undefined;
-    this.coyote = this.buffered = this.landing = this.inBed = 0;
+    this.coyote = this.buffered = this.hopping = this.landing = this.inBed = 0;
     this.armed = this.lying = false;
     this.fresh = true;
     this.locate();
@@ -276,8 +280,8 @@ export class SidePlayer {
   }
 
   private jump(along: number, rise = this.rise): void {
-    this.air = { vx: along * this.speed, vy: -jumpSpeed(rise), held: true };
-    this.buffered = this.coyote = this.landing = 0;
+    this.air = { vx: along * this.speed, vy: -jumpSpeed(rise), held: true, from: this.position.y, rising: HOP_SECONDS };
+    this.buffered = this.coyote = this.hopping = this.landing = 0;
     this.walking = false;
   }
 
@@ -288,11 +292,10 @@ export class SidePlayer {
     if (this.buffered > 0 && this.coyote > 0) this.jump(controls.x);
     this.coyote = Math.max(this.coyote - dt, 0);
     const flying = this.air!;
+    if (this.hopping > 0 && controls.x !== 0 && flying.vy < 0) this.steerHop(map, flying);
+    this.hopping = Math.max(this.hopping - dt, 0);
     launch(map, this.position, flying);
-    if (flying.held && !controls.hold) {
-      flying.held = false;
-      if (flying.vy < 0) flying.vy *= JUMP_CUT;
-    }
+    if (flying.held && !controls.hold) letGo(flying, this.position.y);
     if (controls.x !== 0) {
       this.heading = controls.x;
       this.facing = sideways(controls.x);
@@ -310,10 +313,43 @@ export class SidePlayer {
       this.bounced = true;
       return;
     }
-    if (!landed) return;
+    if (!landed) {
+      if (controls.y < 0 && flying.vy > 0) this.grab(map);
+      return;
+    }
     this.air = undefined;
     this.landing = LANDING_SECONDS;
     if (this.buffered > 0) this.jump(controls.x);
+  }
+
+  /** A hop off a ladder, steered while it still rises, rises as a jump that way would have from where it left. */
+  private steerHop(map: SideMap, flying: Air): void {
+    const risen = (flying.from ?? this.position.y) - this.position.y;
+    const released = !flying.held;
+    flying.vy = -Math.sqrt(Math.max(jumpSpeed(this.rise) ** 2 - 2 * GRAVITY * risen, 0));
+    flying.rising = Math.max(HOP_SECONDS - (BUFFER_SECONDS - this.hopping), 0);
+    flying.held = true;
+    flying.launched = false;
+    launch(map, this.position, flying);
+    if (released) letGo(flying, this.position.y);
+    this.hopping = 0;
+  }
+
+  /** Falling past a ladder, gets back on it. */
+  private grab(map: SideMap): void {
+    const x = Math.floor(this.position.x + 0.5);
+    const row = Math.ceil(this.position.y - EPSILON);
+    if (climbAt(map, x, row) !== 'ladder') return;
+    const run = this.runsOf(map).find(
+      ({ kind, path }) => kind === 'ladder' && path.points.some((point) => point.x === x && point.y === row),
+    );
+    if (!run) return;
+    const [foot] = run.path.points;
+    const top = Math.min(...run.path.points.filter((point) => point.x === x).map((point) => point.y));
+    const distance = Math.min(Math.max(foot.y - this.position.y, 0), foot.y - top);
+    this.air = undefined;
+    this.onRun = { run, distance };
+    pointAlong(run.path, distance, this.position);
   }
 
   private begin(way: Climb): void {
@@ -350,6 +386,7 @@ export class SidePlayer {
     if (kind === 'ladder' && controls.jump) {
       this.onRun = undefined;
       this.jump(controls.x, controls.x === 0 ? LADDER_HOP : this.rise);
+      if (controls.x === 0) [this.hopping, this.air!.rising] = [BUFFER_SECONDS, 0];
       return;
     }
     const along = controls.y !== 0 ? -controls.y : kind === 'stairs' ? sign(controls.x * rise(path)) : 0;

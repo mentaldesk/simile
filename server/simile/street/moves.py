@@ -31,13 +31,14 @@ class Move(NamedTuple):
 def moves(town: "TownMap", cell: Cell, jumps: bool | Jump = False) -> Iterator[Move]:
     """The side-view neighbour rule: left and right between walkable cells on one row, and up and
     down only along a climbable run, straight on a ladder and diagonally on stairs, to the cells
-    at its ends. A resident can stop on any cell of a run."""
+    at its ends. A resident can stop on any cell of a run. The player, who `jumps`, walks onto or
+    off a ladder only at its top, on the side the client steps them off it."""
     x, y = cell
     if jumps:
         yield from _jumps(town, cell, JUMP if jumps is True else jumps)
     here = town.climb(x, y)
     for dx in (-1, 1):
-        if town.walkable(x + dx, y):
+        if town.walkable(x + dx, y) and (not jumps or _steps(town, cell, (x + dx, y))):
             yield Move((x + dx, y), WALK)
     for dy in (-1, 1):
         there = town.climb(x, y + dy)
@@ -53,6 +54,22 @@ def moves(town: "TownMap", cell: Cell, jumps: bool | Jump = False) -> Iterator[M
         rise = (dx, dy) if dy < 0 else (-dx, -dy)
         if rise in _flights(town, sx, sy) and town.walkable(nx, ny):
             yield Move((nx, ny), STAIR)
+
+
+def _steps(town: "TownMap", a: Cell, b: Cell) -> bool:
+    """Whether a step along a row from `a` to `b` is walked: to or from a ladder, only between its
+    top and the one cell beside it the client steps off onto, east where it can."""
+    for rung, other in ((a, b), (b, a)):
+        if town.climb(*rung) is DoorKind.LADDER:
+            return _ledge(town, rung) == other
+    return True
+
+
+def _ledge(town: "TownMap", rung: Cell) -> Cell | None:
+    x, y = rung
+    if town.climb(x, y - 1) is DoorKind.LADDER:
+        return None
+    return next(((x + dx, y) for dx in (1, -1) if town.walkable(x + dx, y)), None)
 
 
 def _flights(town: "TownMap", x: int, y: int) -> tuple[Cell, ...]:

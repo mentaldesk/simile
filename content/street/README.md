@@ -351,13 +351,12 @@ slab, the row under them. West to east it's columns of rooms:
   walking does, rather than passing over it. Holes are at least two cells apart, in a column or
   either side of a wall, and ladders three, so a held key stops at the end of each climb.
   Walking, climbing and the odd hop over a hole get anywhere on that side.
-  Before the gate (P58) nothing needs a jump, since a tap of Space doesn't clear even a one-cell
-  hole. There are no drops but the spring pocket's, which the feet jump up through. A ladder
-  comes up through its own cell, against a wall with no doorway on the floor it tops out on, so
-  that floor is all on one side of it. Otherwise (`WALLED`, half the time where both fit) it comes
-  up mid-floor with a `sewer_pipe` beside its top rung, which ends a walk at the ladder and is a
-  hop up from either side. That's kept only where the floor past the pipe is reached another
-  way, or holds nothing zone 0 needs.
+  Before the gate (P61) a ladder comes up mid-floor through a hole of one cell, with floor either
+  side of its top rung. Climbing up steps off east, as the client does, and a walk along that
+  floor from either side stops beside the ladder. The far side is a hop across it: on the
+  player's own legs, at a walk, any press of Space clears one cell along a row (`hop`, below).
+  That's the only jump zone 0 needs. There are no drops but the spring pocket's, which the feet
+  jump up through, since a walk east would fall down one.
 - **The gate** is the way on: at the top tier a walkway from each side with a five-cell gap
   between them (`GAP`), under the vault, which stops a high jump rising, so only the legs cross it,
   or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
@@ -421,8 +420,9 @@ counts from the way through, which every grade of legs or feet takes:
   onto that floor (`onto`: a ladder's foot or top, under a hole, the zone's ends), or else
   anywhere on it, and it leaves zone 0 rooms enough for the nests off every bot's floor. Every
   cell of its patrol is within `REACH` of its salvage by the bot's own grid (the bot's `Collect`
-  reach, 14) where it can be without passing a way onto its floor (P58), so it drifts there while
-  the player's in the sewers, and at least
+  reach, 14) where it can be without passing a way onto its floor (P58), and out of reach of
+  salvage past one where it can be (P61), so it drifts there while the player's in the sewers, and
+  at least
   `BOT_GAP` (8) moves from any salvage. That's over half a minute's drift, so a player walking
   from the lift gets there first. Where no salvage is in reach it only guards. The way past a bot
   is to jump it as it comes, or to wait on a ladder out of its sight for it to patrol away.
@@ -464,7 +464,8 @@ one of `KITS`, any grade of legs or feet or one of each, the player reaches the 
 the finds past the gate, and on their own legs they don't, while zone 0's finds are in reach of
 every kit and the player's own legs; on every one, and on their own legs, they can get back to the
 lift from anywhere they can get to; zone 0 is passable on a walking jump, held (`WALKS`, on their
-own legs and on the spring feet) or tapped (`TAPS`, the same with Space let go at once): zone 0's
+own legs and on the spring feet) or tapped (`TAPS`, the same with Space let go at once, which
+`test_sewers.py` checks needs only one-cell hops along a row): zone 0's
 finds and the gate's junction box are in reach, and from anywhere before the gate they can get
 back to the lift; each pickup is in reach on exactly the ones that meet
 its `needs`; and every salvage has a price.
@@ -537,8 +538,10 @@ follow it:
 - no other diagonals, and never into open air
 
 A ladder is climbed from the standing cell under it and stepped off sideways at the top, onto the
-ledge beside its top rung. Stairs run between the standing cells diagonally beyond each end. A
-resident can stop on any cell of a run. A move comes with its cost.
+ledge beside its top rung. The player, who jumps, is stepped off east where there's floor both
+sides, as the client does, and the other side is a jump across. Stairs run between the standing
+cells diagonally beyond each end. A resident can stop on any cell of a run. A move comes with its
+cost.
 
 **Jumps are the player's alone.** `moves(town, cell, jumps=True)`, and `jumps=True` on
 `simile.world.paths`' `steps`, `nearby` and `find_route`, add a run jump from a standing cell to
@@ -548,9 +551,9 @@ lands. Under something solid the jump can rise only until the head meets it, and
 along than a jump that high (`Jump.along`). `moves(town, cell, jump)` jumps on another `Jump`
 instead, such as one of `KITS`, or `walking(jump)`, the same jump taken at a walk (`WALK_SPEED`,
 2.6, the client's `PLAYER_SPEED`), which clears one cell where a run jump clears three, or
-`tapped(jump)`, the jump with Space let go at once: the client cuts its speed up to `cut` and it
-falls under `fall_gravity` from take-off, so a tapped walking jump rises under a row and clears no
-cell at all. A jump's
+`tapped(jump)`, the jump with Space let go at once: it rises `hop` (1.5) under `fall_gravity`
+from take-off, so a tapped walking jump rises a row and clears one cell, from a stop beside a
+ladder's top too (P61). A jump's
 length is measured from the middle of the cell it takes off from, where the client stops a walk
 beside a ladder's top. Residents never jump, so their paths are as they were.
 
@@ -580,7 +583,8 @@ Every grade jumps under the same gravity, so a higher jump stays up longer and g
 `rise` is how many tiles the feet rise with Space held, in `rise_seconds`; `run` how many tiles a
 second they run, and fly along in a run jump; `fall_gravity` how much stronger gravity is falling or
 once Space is let go;
-`cut` how much of its speed up a jump keeps when Space is let go early; `coyote_seconds` and
+`cut` how much of its speed up a jump keeps when Space is let go early, though it rises at least
+as long as `hop` takes under `fall_gravity`, so any press clears a cell walking; `coyote_seconds` and
 `buffer_seconds` the grace after walking off a ledge and before landing; `foot` and `body` the
 player's half-width and height; `cells` and `rows` the jump in the neighbour rule;
 and `reach` the farthest jump's reach in tiles from the middle of the cell it takes off from: a run jump with

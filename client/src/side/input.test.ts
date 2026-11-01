@@ -187,7 +187,7 @@ describe('jump keys', () => {
     const jump = (key: JumpKey, seconds: number) => rise(new SidePlayer(village, PASSAGE), key, seconds);
     expect(jump('PageUp', 3)).toBeCloseTo(jump(' ', 3), 6);
     expect(jump('PageUp', DT)).toBeCloseTo(jump(' ', DT), 6);
-    expect(jump('PageUp', DT)).toBeLessThan(jump('PageUp', 3) / 2);
+    expect(jump('PageUp', DT)).toBeLessThan(jump('PageUp', 3));
   });
 
   it('jumps off the park ladder on PageUp as on Space', () => {

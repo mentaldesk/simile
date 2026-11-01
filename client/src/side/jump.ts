@@ -26,6 +26,10 @@ export const jumpSpeed = (rise: number): number => Math.sqrt(2 * GRAVITY * rise)
 export const FALL_GRAVITY = table.fall_gravity;
 /** Of its speed up a jump keeps when Space is let go on the way up. */
 export const JUMP_CUT = table.cut;
+/** Tiles a jump rises at least, however soon Space is let go: a walking one clears a cell. */
+export const JUMP_HOP = table.hop;
+/** Seconds a jump rises at least: as long as a hop of `JUMP_HOP` under the falling gravity. */
+export const HOP_SECONDS = Math.sqrt((2 * JUMP_HOP) / (GRAVITY * FALL_GRAVITY));
 export const MAX_FALL_SPEED = 18;
 /** Tiles a second a second in the air: towards the speed the arrows ask for, or to a stop with neither. */
 export const AIR_ACCEL = 30;
@@ -45,8 +49,8 @@ export const BODY = table.body;
 export const JUMP_REACH = table.cells;
 export const JUMP_UP = table.rows;
 
-/** How a jump or a fall is moving, in tiles a second, y down. `held` while Space is still held from the jump, `launched` once its take-off is slowed to the head room. */
-export type Air = { vx: number; vy: number; held: boolean; launched?: boolean };
+/** How a jump or a fall is moving, in tiles a second, y down. `held` while Space is still held from the jump, `launched` once its take-off is slowed to the head room, `top` the highest row its feet have room to rise to, `from` the row it took off from and `rising` the seconds it still rises for at least. */
+export type Air = { vx: number; vy: number; held: boolean; launched?: boolean; top?: number; from?: number; rising?: number };
 
 const EPSILON = 1e-6;
 /** Each step through the air moves less than this, so it can't pass through a cell. */
@@ -109,7 +113,17 @@ export function dropBeyond(map: SideMap, end: number, y: number, way: -1 | 1): b
 export function launch(map: SideMap, at: { x: number; y: number }, air: Air): void {
   if (!air.held || air.launched) return;
   air.launched = true;
-  air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)));
+  const room = headRoom(map, at.x, at.y + 1);
+  air.top = at.y - room;
+  air.vy = Math.max(air.vy, -jumpSpeed(room));
+}
+
+/** Space let go at `y`: a jump on the way up keeps `JUMP_CUT` of its speed, or enough to rise for its `rising` seconds or to its `top`, under the falling gravity. */
+export function letGo(air: Air, y: number): void {
+  air.held = false;
+  const falling = GRAVITY * FALL_GRAVITY;
+  const room = Math.sqrt(2 * falling * Math.max(y - (air.top ?? -Infinity), 0));
+  if (air.vy < 0) air.vy = -Math.max(-air.vy * JUMP_CUT, Math.min(falling * (air.rising ?? 0), room));
 }
 
 /** Moves `at` through the air for `dt`, half way through `steer`ing it, stopped by anything solid and kept on the map; true once it lands. */
@@ -157,4 +171,5 @@ export function steer(air: Air, vx: number, dt: number): void {
   air.vx = air.vx < vx ? Math.min(air.vx + accel, vx) : Math.max(air.vx - accel, vx);
   const gravity = air.vy < 0 && air.held ? GRAVITY : GRAVITY * FALL_GRAVITY;
   air.vy = Math.min(air.vy + gravity * dt, MAX_FALL_SPEED);
+  if (air.rising) air.rising = Math.max(air.rising - dt, 0);
 }

@@ -417,16 +417,44 @@ def test_a_walking_jump_under_a_walkways_room_clears_one_cell_and_no_more() -> N
         assert (10, 4) in dict(moves(TIER, (7, 4), jump))
 
 
-def test_a_tapped_jump_is_cut_as_the_clients_is_and_clears_no_hole_from_a_stop() -> None:
+def test_a_tapped_jump_rises_its_hop_and_clears_one_cell_walking_from_a_stop() -> None:
     for jump in (JUMP, FEET[Bionic.SPRING_FEET]):
         tap = tapped(walking(jump))
-        cut = jump.cut * math.sqrt(2 * jump.gravity * jump.rise)
         falling = jump.gravity * jump.fall_gravity
-        assert tap.rise == pytest.approx(cut**2 / (2 * falling))
-        assert tap.airtime() == pytest.approx(2 * cut / falling)
-        assert (tap.rows, tap.cells) == (0, 1)
-        assert (5, 4) not in dict(moves(TIER, (3, 4), tap))
-        assert (4, 6) in dict(moves(TIER, (3, 4), tap))
+        cut = jump.cut * math.sqrt(2 * jump.gravity * jump.rise)
+        assert cut < math.sqrt(2 * falling * jump.hop)
+        assert tap.rise == pytest.approx(jump.hop)
+        assert tap.airtime() == pytest.approx(2 * math.sqrt(2 * jump.hop / falling))
+        assert (tap.rows, tap.cells) == (1, 2)
+        assert (5, 4) in dict(moves(TIER, (3, 4), tap))
+        assert (10, 4) not in dict(moves(TIER, (7, 4), tap))
+    assert tapped(walking(JUMP)).hop < JUMP.rows
+
+
+HOLE = side_view(
+    "#######",
+    ".......",
+    ".......",
+    ".......",
+    "...H...",
+    "###H###",
+    "...H...",
+    "...H...",
+    "...H...",
+    ".......",
+    "#######",
+)
+"""A ladder up through a one-cell hole in a walkway, with floor either side of its top."""
+
+
+def test_the_player_steps_off_a_ladders_top_east_as_the_client_does_and_taps_across_it() -> None:
+    tap = tapped(walking(JUMP))
+    assert dict(moves(HOLE, (3, 4), tap)).keys() >= {(4, 4), (3, 5)}
+    assert (2, 4) not in dict(moves(HOLE, (3, 4), tap))
+    assert (3, 4) not in dict(moves(HOLE, (2, 4), tap))
+    assert (4, 4) in dict(moves(HOLE, (2, 4), tap))
+    assert (2, 4) in dict(moves(HOLE, (4, 4), tap))
+    assert (2, 4) in dict(moves(HOLE, (3, 4))), "residents and creatures step off either side"
 
 
 def test_a_roof_low_over_a_gap_leaves_only_the_faster_legs_across() -> None:
