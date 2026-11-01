@@ -42,8 +42,14 @@ class HealthConfig(BaseModel):
     rest: float = Field(
         default=DEFAULT_LAMP.charge,
         gt=0,
-        description="Real seconds resting in their bed at home takes to heal them from none to "
-        "full, whatever the sim's speed: as long as a plug takes to charge the lamp.",
+        description="Real seconds resting in their bed at home, once they've lain down, takes to "
+        "heal them from none to full, whatever the sim's speed: as long as a plug takes to charge "
+        "the lamp. They rest from `rest` until they're full, move off the bed, collapse or get up.",
+    )
+    lie_down: float = Field(
+        default=0.8,
+        ge=0,
+        description="Real seconds lying down in bed takes, before resting heals them faster.",
     )
     waking: float = Field(
         default=0.25, gt=0, le=1, description="Their health when they wake after collapsing."
@@ -113,8 +119,8 @@ def kidneys(body: Body) -> int:
 
 class Health:
     """The player's health and ailments: hurting, healing, fading, an untreated bite turning
-    infected, and collapsing at none. Tick it on the sim loop. `beds` are the cells where they
-    rest, by default the beds in their home."""
+    infected, resting in bed, and collapsing at none. Tick it on the sim loop. `beds` are the cells
+    where they can rest, by default the beds in their home."""
 
     def __init__(
         self,
@@ -137,6 +143,8 @@ class Health:
             home = location(movement, config.home)
             beds = frozenset() if home is None else beds_in(home)
         self.beds = frozenset(beds)
+        self.lain: Spot | None = None
+        self.lying = 0.0
 
     def tick(self, dt: float) -> None:
         if not self.playing():
@@ -149,6 +157,23 @@ class Health:
             self.hurt(self.config.infection * infection.strength * hours)
         elif self.player.health < 1:
             self.player.health = min(self.player.health + self.healing(dt), 1.0)
+        if self.resting():
+            self.lying -= dt / self.clock.speed
+            if self.player.health >= 1:
+                self.lain = None
+
+    def rest(self, on: bool) -> bool:
+        """Lies them down in the bed where they stand, or gets them up. Whether it did."""
+        if not on:
+            resting = self.resting()
+            self.lain = None
+            return resting
+        bed = self.bed()
+        infected = self.effect(EffectKind.INFECTION) is not None
+        if bed is None or self.resting() or self.player.health >= 1 or infected:
+            return False
+        self.lain, self.lying = bed, self.config.lie_down
+        return True
 
     def hurt(self, damage: float) -> None:
         """Takes `damage` of their health, collapsing them at none."""
@@ -157,6 +182,7 @@ class Health:
             self.player.health = health
             return
         self.player.health = self.config.waking
+        self.lain = None
         logger.info("%s  The player has no health left", self.clock)
         self.collapse()
 
@@ -190,15 +216,23 @@ class Health:
 
     def healing(self, dt: float) -> float:
         """How much health comes back in `dt` sim seconds where they stand, if nothing stops it."""
-        if self.resting():
+        if self.resting() and self.lying < 1e-9:
             return dt / self.clock.speed / self.config.rest
         rate = self.config.heal_at_home if self.at_home() else self.config.heal
         return rate * dt / HOUR
 
-    def resting(self) -> bool:
-        """Whether they're at one of their `beds`."""
+    def bed(self) -> Spot | None:
+        """The cell of one of their `beds` where they stand."""
         at = here(self.movement)
-        return at is not None and spot_of(at) in self.beds
+        spot = None if at is None else spot_of(at)
+        return spot if spot in self.beds else None
+
+    def resting(self) -> bool:
+        """Whether they're lying in bed, from `rest` until they're full, move off it, collapse or
+        get up."""
+        if self.lain is not None and self.bed() != self.lain:
+            self.lain = None
+        return self.lain is not None
 
     def at_home(self) -> bool:
         at, home = here(self.movement), location(self.movement, self.config.home)

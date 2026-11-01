@@ -4,7 +4,7 @@ from starlette.applications import Starlette
 
 from simile.player.config import DEFAULT_CONFIG
 from simile.protocol import Buyer, Meal, PlayerStateMessage, Shut
-from simile.schema import Bionic, Pile, Player, Recipe
+from simile.schema import Bionic, MapTile, Pile, Player, Recipe
 
 
 def recipes_of(app: Starlette) -> dict[Bionic, Recipe]:
@@ -30,6 +30,8 @@ class PlayerSync:
         buyer: Callable[[], Buyer | None] = lambda: None,
         piles: Callable[[], list[Pile]] = list,
         recipes: Callable[[], list[Recipe]] = list,
+        bed: Callable[[], MapTile | None] = lambda: None,
+        resting: Callable[[], bool] = lambda: False,
     ) -> None:
         self.player = player
         self.meal = meal
@@ -39,9 +41,12 @@ class PlayerSync:
         self.buyer = buyer
         self.piles = piles
         self.recipes = recipes
+        self.bed = bed
+        self.resting = resting
         self.sent = self.message()
 
     def message(self) -> PlayerStateMessage:
+        bed = self.bed()
         return PlayerStateMessage(
             player=self.player.model_copy(deep=True),
             recipes=self.recipes(),
@@ -49,6 +54,8 @@ class PlayerSync:
             shut=self.shut(),
             buyer=self.buyer(),
             piles=self.piles(),
+            bed=bed,
+            resting=bed is not None and self.resting(),
         )
 
     def tick(self, dt: float) -> None:

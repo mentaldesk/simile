@@ -28,6 +28,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         PlayerCollapsedMessage,
         PlayerMoveMessage,
         Position,
+        RestMessage,
         SellMessage,
         Vital,
         hub_of,
@@ -58,6 +59,18 @@ async def running(app: Starlette) -> AsyncIterator[None]:
     )
     pickups = Pickups(player, movement, economy, world.clock)
     trade = Trade(player, movement, economy, world.clock, keepers_of(app))
+    health = app.state.health = Health(
+        player,
+        movement,
+        world.clock,
+        playing=lambda: bool(in_game),
+        collapse=lambda: hunger.collapse(Vital.HEALTH),
+    )
+
+    def bed() -> MapTile | None:
+        spot = health.bed()
+        return None if spot is None else MapTile(map=spot.map, x=spot.x, y=spot.y)
+
     book = recipes_of(app)
     sync = PlayerSync(
         player,
@@ -67,6 +80,8 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         buyer=trade.buyer,
         piles=pickups.piles,
         recipes=lambda: [book[bionic] for bionic in player.mind.recipes],
+        bed=bed,
+        resting=health.resting,
     )
     lamp = Lamp(player, movement, world.clock, playing=lambda: bool(in_game))
     power = Power(
@@ -75,13 +90,6 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         charging=lamp.charging,
         playing=lambda: bool(in_game),
         collapse=lambda: hunger.collapse(Vital.POWER),
-    )
-    health = app.state.health = Health(
-        player,
-        movement,
-        world.clock,
-        playing=lambda: bool(in_game),
-        collapse=lambda: hunger.collapse(Vital.HEALTH),
     )
     investigation = investigation_of(app)
     journal = Journal(investigation, lambda: world.clock.now, lambda: player)
@@ -114,6 +122,10 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         if trade.sell(message.item):
             sync.update()
 
+    def on_rest(message: RestMessage) -> None:
+        if health.rest(message.on):
+            sync.update()
+
     def on_buy(message: BuyMessage) -> None:
         if trade.buy(message.item):
             sync.update()
@@ -131,6 +143,7 @@ async def running(app: Starlette) -> AsyncIterator[None]:
         hub.subscribe(SellMessage, on_sell),
         hub.subscribe(BuyMessage, on_buy),
         hub.subscribe(LampMessage, on_lamp),
+        hub.subscribe(RestMessage, on_rest),
         hub.greet(sync.message),
     ]
     yield
