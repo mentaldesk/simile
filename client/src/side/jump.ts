@@ -57,10 +57,11 @@ function columns(x0: number, x1: number): [number, number] {
   return [Math.floor(x0 + 0.5 + EPSILON), Math.floor(x1 + 0.5 - EPSILON)];
 }
 
-/** Anything solid where the body is, standing at `x` with its feet `feet` rows down. */
-function blocked(map: SideMap, x: number, feet: number): boolean {
-  const [left, right] = columns(x - FOOT, x + FOOT);
-  const [top, bottom] = [Math.floor(feet - BODY + EPSILON), Math.floor(feet - EPSILON)];
+/** Rows the body covers with its feet `feet` rows down. */
+const rows = (feet: number): [number, number] => [Math.floor(feet - BODY + EPSILON), Math.floor(feet - EPSILON)];
+
+/** Anything solid in columns `left` to `right` of rows `top` to `bottom`. */
+function solid(map: SideMap, [left, right]: [number, number], [top, bottom]: [number, number]): boolean {
   for (let cx = left; cx <= right; cx++) {
     for (let cy = top; cy <= bottom; cy++) if (isSolid(map, cx, cy)) return true;
   }
@@ -116,22 +117,36 @@ export function fly(map: SideMap, at: { x: number; y: number }, air: Air, dt: nu
   const steps = Math.max(1, Math.ceil((Math.max(Math.abs(air.vx), Math.abs(air.vy)) * dt) / STEP_TILES));
   const step = dt / steps;
   for (let i = 0; i < steps; i++) {
+    const body = rows(at.y + 1);
+    const [left, right] = columns(at.x - FOOT, at.x + FOOT);
     const x = Math.min(Math.max(at.x + air.vx * step, 0), map.width - 1);
-    if (blocked(map, x, at.y + 1)) {
-      const [left, right] = columns(x - FOOT, x + FOOT);
-      at.x = air.vx > 0 ? right - 0.5 - FOOT - EPSILON : left + 0.5 + FOOT + EPSILON;
+    const [toLeft, toRight] = columns(x - FOOT, x + FOOT);
+    if (toRight > right && solid(map, [right + 1, toRight], body)) {
+      at.x = right + 0.5 - FOOT - EPSILON;
+      air.vx = 0;
+    } else if (toLeft < left && solid(map, [toLeft, left - 1], body)) {
+      at.x = left - 0.5 + FOOT + EPSILON;
       air.vx = 0;
     } else at.x = x;
+    const across = columns(at.x - FOOT, at.x + FOOT);
     const feet = at.y + 1 + air.vy * step;
-    if (blocked(map, at.x, feet)) {
-      if (air.vy > 0) {
-        at.y = Math.floor(feet - EPSILON) - 1;
+    const [head, under] = rows(feet);
+    if (air.vy > 0) {
+      for (let row = body[1] + 1; row <= under; row++) {
+        if (!solid(map, across, [row, row])) continue;
+        at.y = row - 1;
         air.vy = 0;
         return true;
       }
-      at.y = Math.ceil(feet - BODY) + BODY - 1;
-      air.vy = 0;
-    } else at.y = feet - 1;
+    } else {
+      for (let row = body[0]; row >= head; row--) {
+        if (!solid(map, across, [row, row])) continue;
+        at.y = Math.min(row + BODY, at.y);
+        air.vy = 0;
+        break;
+      }
+    }
+    if (air.vy !== 0) at.y = feet - 1;
   }
   return false;
 }

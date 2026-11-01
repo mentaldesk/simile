@@ -3,8 +3,10 @@ import type { Bionic, Body } from '../net';
 import type { TiledMap } from '../world/map';
 import { village } from './content';
 import {
+  BODY,
   BUFFER_SECONDS,
   COYOTE_SECONDS,
+  FOOT,
   JUMP_REACH,
   JUMP_RISE,
   JUMP_TABLE,
@@ -531,6 +533,89 @@ describe('under a low ceiling', () => {
         expect(Math.abs(seconds - airtime(tableOf(kit), room)), `${kit} under ${rows} rows`).toBeLessThanOrEqual(dt);
       }
     }
+  });
+});
+
+/** The solid cells the body overlaps at `at`, as `x,y`. */
+function overlapped(map: SideMap, at: { x: number; y: number }): string[] {
+  const cells: string[] = [];
+  const [left, right] = [Math.floor(at.x - FOOT + 0.5 + 1e-6), Math.floor(at.x + FOOT + 0.5 - 1e-6)];
+  const [top, bottom] = [Math.floor(at.y + 1 - BODY + 1e-6), Math.floor(at.y + 1 - 1e-6)];
+  for (let x = left; x <= right; x++) for (let y = top; y <= bottom; y++) if (isSolid(map, x, y)) cells.push(`${x},${y}`);
+  return cells;
+}
+
+/** Under a shelf at `x`, with `way` held, Space tapped or held; the solid cells it got into that it wasn't in on the floor, and where it landed. */
+function jumpUnderShelf(map: SideMap, x: number, y: number, way: number, held: boolean, fps: number, kit?: string) {
+  const dt = 1 / fps;
+  const player = on(map, x, y);
+  player.rise = tableOf(kit).rise;
+  const floor = new Set(overlapped(map, player.position));
+  player.update(press({ x: way, jump: true, hold: true }), dt);
+  for (const cell of overlapped(map, player.position)) floor.add(cell);
+  const into = new Set<string>();
+  for (let frame = 0; frame < 1000 && player.airborne; frame++) {
+    player.update(press({ x: way, hold: held }), dt);
+    for (const cell of overlapped(map, player.position)) if (!floor.has(cell)) into.add(cell);
+  }
+  expect(player.airborne).toBe(false);
+  return { into: [...into], landed: { ...player.position } };
+}
+
+describe('under a head-height shelf', () => {
+  /** A shelf at x 1 and 2 on row 4, against the wall at x 0, over the floor's standing row 5. */
+  const shelf = sketch([
+    '#...........',
+    '#...........',
+    '#...........',
+    '#...........',
+    '###.........',
+    '#...........',
+    '############',
+  ]);
+
+  it.each([30, 60, 144])('bumps its head and lands back on the floor, getting into neither the shelf nor the wall, at %s fps', (fps) => {
+    for (const x of [1, 1.4, 2, 2.6]) {
+      for (const way of [-1, 0, 1]) {
+        for (const held of [false, true]) {
+          for (const kit of [undefined, 'spring_feet_2']) {
+            const { into, landed } = jumpUnderShelf(shelf, x, 5, way, held, fps, kit);
+            const why = `from ${x}, way ${way}, held ${held}, ${kit}`;
+            expect(into, why).toEqual([]);
+            expect(landed.y, why).toBe(5);
+          }
+        }
+      }
+    }
+  });
+
+  it.each([30, 60, 144])('in the committed levels, gets into nothing solid, at %s fps', (fps) => {
+    let jumps = 0;
+    for (const [level, files] of Object.entries(levels)) {
+      for (const [id, file] of Object.entries(files)) {
+        const map = readMap(id, file);
+        for (let y = 1; y < map.height; y++) {
+          for (let cell = 0; cell < map.width; cell++) {
+            if (!isStanding(map, cell, y)) continue;
+            for (const x of [cell - 0.25, cell, cell + 0.25]) {
+              const under = overlapped(map, { x, y });
+              if (!under.length || under.some((at) => !at.endsWith(`,${y - 1}`))) continue;
+              for (const way of [-1, 0, 1]) {
+                for (const held of [false, true]) {
+                  for (const kit of [undefined, 'spring_feet_2']) {
+                    const { into, landed } = jumpUnderShelf(map, x, y, way, held, fps, kit);
+                    const why = `level ${level} ${id} from ${x}, ${y}, way ${way}, held ${held}, ${kit}`;
+                    expect(into, `${why}, landed ${landed.x}, ${landed.y}`).toEqual([]);
+                    jumps++;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    expect(jumps).toBeGreaterThan(0);
   });
 });
 
