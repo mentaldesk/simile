@@ -662,7 +662,7 @@ describe('off a ladder', () => {
     /** Climbs from the foot for `seconds`, jumps right and holds right until it lands, then walks on right for `walk` seconds. */
     function jumpRight(seconds: number, run: boolean, fps: number, walk = 0) {
       const dt = 1 / fps;
-      const player = on(sewers, 32, 15);
+      const player = on(sewers, 33, 15);
       for (let t = 0; t < seconds - 1e-9; t += dt) player.update(press({ y: -1, run }), dt);
       player.update(press({ x: 1, run, jump: true, hold: true }), dt);
       let last = { ...player.position };
