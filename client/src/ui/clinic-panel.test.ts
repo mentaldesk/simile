@@ -44,6 +44,7 @@ const player = (money: number, items: Item[] = []): Player => ({ money, items, c
 const DOCTOR = { id: 'annelie', name: 'Annelie Joubert' };
 const PLUG: Item = { id: 'usb_c_connector', kind: 'part', name: 'USB-C connector', weight: 0.1, charge: null, on: null };
 const LENS: Item = { id: 'infrared_lens', kind: 'part', name: 'Infrared lens', weight: 0.2, charge: null, on: null };
+const LAMP: Item = { id: 'lamp', kind: 'lamp', name: 'Lamp', weight: 1, charge: 0.4, on: false };
 const TRADER: Buyer = {
   place: 'scrap_stall',
   name: "The scrap trader's stall",
@@ -120,6 +121,19 @@ describe('selling', () => {
       { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
       { kind: 'item', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
     ]);
+  });
+
+  it('sells the lamp only on its own, and buys it back at what the stall asks', () => {
+    const buyer = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
+    expect(deals(buyer, player(0, [LAMP, WIRE, PLUG]))).toEqual([
+      { kind: 'sell', label: 'Sell everything: copper wire and USB-C connector', price: 18 },
+      { kind: 'item', label: 'Sell one: Lamp', price: 12, item: 'lamp', count: 1 },
+      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 1 },
+      { kind: 'item', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
+    ]);
+    expect(deals(buyer, player(0, [LAMP, WIRE])).map(({ kind }) => kind)).toEqual(['item', 'item']);
+    const stall: Buyer = { ...SELLS, prices: {}, stock: [{ item: LAMP, price: 24 }] };
+    expect(deals(stall, player(30))).toEqual([{ kind: 'buy', label: 'Buy back: Lamp', price: 24, item: 'lamp', weight: 1 }]);
   });
 });
 

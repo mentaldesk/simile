@@ -68,7 +68,7 @@ def test_the_scrap_trader_offers_the_economys_price_for_the_salvage_they_carry()
     assert platform.trade.buyer() == Buyer(
         place="scrap_stall",
         name="The scrap trader's stall",
-        prices={"copper_wire": ECONOMY.salvage["copper_wire"], "scrap_steel": 5},
+        prices={"copper_wire": ECONOMY.salvage["copper_wire"], "scrap_steel": 5, "lamp": 12},
     )
 
 
@@ -130,7 +130,7 @@ def test_selling_one_by_id_sells_only_one() -> None:
     assert platform.balanced()
 
 
-@pytest.mark.parametrize("item", ["lamp", "pork_bun", "odd_bolt", "servo_motor", None])
+@pytest.mark.parametrize("item", ["pork_bun", "odd_bolt", "servo_motor", None])
 def test_nothing_sells_that_the_buyer_does_not_buy_or_they_do_not_carry(item: str | None) -> None:
     platform = Platform(Player(money=3, items=[lamp(), BUN, ODD]))
     platform.stand(STALL)
@@ -160,7 +160,7 @@ def test_every_part_a_recipe_uses_up_sells() -> None:
 
 @pytest.mark.parametrize(("at", "place"), [(STALL, "scrap_stall"), (CLINIC, "clinic")])
 def test_a_part_sold_is_bought_back_at_twice_what_it_fetched(at: Point, place: str) -> None:
-    platform = Platform(Player(money=20, items=[lamp(), PLUG, WIRE]))
+    platform = Platform(Player(money=20, items=[PLUG, WIRE]))
     platform.stand(at)
 
     assert platform.trade.buyer().prices == {"usb_c_connector": 12, "copper_wire": 6}
@@ -171,7 +171,7 @@ def test_a_part_sold_is_bought_back_at_twice_what_it_fetched(at: Point, place: s
 
     assert platform.trade.buy("usb_c_connector")
 
-    assert platform.player.items == [lamp(), PLUG]
+    assert platform.player.items == [PLUG]
     assert platform.player.money == 14
     assert platform.player.sales == []
     assert platform.trade.buyer().stock == []
@@ -268,3 +268,58 @@ def test_the_salvage_kept_is_what_the_sewers_finds_hold() -> None:
     from simile.street.sewers import FINDS
 
     assert ECONOMY.kept == {item for find in FINDS for item in find.items}
+
+
+def test_the_scrap_trader_buys_the_lamp_and_sells_it_back_off_at_twice_with_its_charge() -> None:
+    held = lamp().model_copy(update={"charge": 0.4, "on": True})
+    platform = Platform(Player(money=13, items=[WIRE, held]))
+    platform.stand(STALL)
+
+    assert platform.trade.buyer().prices["lamp"] == ECONOMY.lamp["scrap_stall"] == 12
+    assert platform.trade.sell("lamp")
+
+    assert platform.player.items == [WIRE]
+    assert platform.player.money == 25
+    kept = held.model_copy(update={"on": False})
+    assert platform.player.sales == [Sale(item=kept, place="scrap_stall", price=12)]
+    assert platform.trade.buyer().prices == {"copper_wire": 6}
+    assert platform.trade.buyer().stock == [Offer(item=kept, price=24)]
+
+    assert platform.trade.buy("lamp")
+
+    assert platform.player.items == [WIRE, kept]
+    assert platform.player.money == 1
+    assert platform.player.sales == []
+    sold = platform.economy.ledger.entries[0]
+    assert (sold.kind, sold.payer, sold.payee, sold.amount) == (Kind.SALVAGE, OUTSIDE, PLAYER, 12)
+    assert platform.balanced()
+
+
+def test_selling_everything_keeps_the_lamp() -> None:
+    platform = Platform(Player(items=[lamp(), WIRE]))
+    platform.stand(STALL)
+
+    assert platform.trade.sell(None)
+
+    assert platform.player.items == [lamp()]
+    assert platform.player.sales == []
+
+
+def test_only_the_scrap_trader_buys_the_lamp() -> None:
+    platform = Platform(Player(items=[lamp()]))
+    platform.stand(CLINIC)
+
+    assert platform.trade.buyer().prices == {}
+    assert not platform.trade.sell("lamp")
+    assert platform.player.items == [lamp()]
+
+
+def test_a_save_without_a_lamp_loads_without_one_and_one_sold_loads_kept() -> None:
+    sale = Sale(item=lamp().model_copy(update={"charge": 0.3}), place="scrap_stall", price=12)
+    player = Player(items=[WIRE], sales=[sale])
+
+    loaded = Player.model_validate_json(player.model_dump_json())
+
+    assert loaded.items == [WIRE]
+    assert loaded.sales == [sale]
+    assert Player.model_validate_json('{"items": []}').items == []

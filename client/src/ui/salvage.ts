@@ -54,7 +54,7 @@ export function pickUpPrompt(pile: Pile, player: Player): string {
 /** What the buyer where they stand would pay for what they carry, for E's panel, or that it buys. */
 export function sellPrompt(buyer: Buyer, player: Player): string {
   if (trades(buyer)) return `Press ${E} to see what ${lowerFirst(buyer.name)} buys and ${fits(buyer) ? 'fits' : 'sells'}.`;
-  const sold = player.items.filter(({ id }) => id in buyer.prices);
+  const sold = player.items.filter(({ id, kind }) => id in buyer.prices && kind !== 'lamp');
   if (!sold.length) return `${buyer.name} buys salvage. You have ${amount(player.money)}.`;
   const total = sold.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
   const kinds = counted(sold);
