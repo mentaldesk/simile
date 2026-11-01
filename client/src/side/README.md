@@ -23,20 +23,21 @@ the protocol, through `server.dispatch`.
 | `lamp=on` and `charge=` | The player's lamp, off and 0.8 charged by default. L switches it as the server would; nothing drains or charges it. |
 
 Left and right (or A and D) walk, a press of Shift switches between walking and running, and Space
-jumps (`jump.ts`, below). E takes the door or street way you're on, whatever else is in reach. It
+or PageUp jumps (`jump.ts`, below). E takes the door or street way you're on, whatever else is in reach. It
 never climbs, rides or talks: T talks to the ringed resident or orders at a counter, and V looks at
 a mural or a painting (`ui/`). Up climbs stairs or a ladder from its foot, and down from its top,
 from anywhere in the tile either side of the end (`CLIMB_REACH`, 1.5 tiles from its middle): the
 player steps onto it first, and where two are in reach each key takes the nearest its way. Up and
-down keep climbing while held, stopping anywhere. Space on a ladder jumps off it from wherever the
-player is on it, the way left or right is held, or hops off `LADDER_HOP` (0.6) tiles with neither
+down keep climbing while held, stopping anywhere. A jump on a ladder takes them off it from wherever
+the player is on it, the way left or right is held, or hops off `LADDER_HOP` (0.6) tiles with neither
 and falls to its foot; stairs, and a ladder between floors, climb on. On either of the lift's
 cells, up rides it a floor up and down a floor down, all the way. Off a door, E uses what's in reach
 ([`world/reach.ts`](../world/reach.ts)). A door on the cell beside a flight's foot, as in the noodle
 bar, is E's and the stairs are up's. A small tag over each way a key takes from where you stand
 names the keys and what it does ("E: go out", "↑: upstairs", "↑ ↓: lift", `ways.ts`). The scene
 reads its keys through `input.ts`'s `readControls`; a tap of E, up or down shorter than a frame
-still counts, and so does a tap of Space. Shift switches running only when it's pressed and let go
+still counts, and so does a tap of a jump key. Space and PageUp both jump (`JumpKeys`), and the
+jump is held until both are let go. Shift switches running only when it's pressed and let go
 on its own (`RunToggle`), so Shift+Tab and ? leave it alone. Clicking a mural looks at it. L
 switches the lamp (below). Landing on a rat kills it (below). In the harness, `[` and `]` move the
 clock an hour and 1 to 6 go to each street, 5 the rooftops and 6 the metro.
@@ -147,13 +148,13 @@ The Phaser-free halves are tested under vitest.
   from its walk to its run halfway through the blend (`Drawn.run`), and its phase steps by
   `WALK_CYCLE_M` or the longer `RUN_CYCLE_M` a cycle, so the stride lengthens.
 - Jumping (`jump.ts`), arcade style, from `content/street/jump.json`, the table the server checks
-  positions by. Space jumps from anywhere the player stands, the feet rising `rise` (2.3) tiles in
-  `rise_seconds` (0.38) with Space held; letting go early keeps `cut` of the speed up, so a tap
+  positions by. Space or PageUp jumps from anywhere the player stands, the feet rising `rise` (2.3)
+  tiles in `rise_seconds` (0.38) with the key held; letting go early keeps `cut` of the speed up, so a tap
   hops. Coming down, or once let go, gravity is `fall_gravity` (1.3) times stronger, so it's
   snappy. In the air the arrows steer, towards walking or running speed at `AIR_ACCEL`, and
   braking at `AIR_BRAKE` with neither, so a run jump goes about twice as far: a walking jump clears
-  two cells, a run three. Walking off a ledge falls, and Space still jumps for `coyote_seconds`
-  (0.1); Space pressed up to `buffer_seconds` (0.12) before landing jumps again on landing. The
+  two cells, a run three. Walking off a ledge falls, and a jump still works for `coyote_seconds`
+  (0.1); a jump pressed up to `buffer_seconds` (0.12) before landing jumps again on landing. The
   player is `foot` (0.25) tiles wide either side and `body` (1.7) tall: their feet stand on a
   ledge's edge, walls stop them, a ceiling bumps their head, and they land on top of whatever is
   solid under them, from any height, with no harm. The figure leaps in its run frame furthest off
