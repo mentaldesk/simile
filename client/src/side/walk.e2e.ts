@@ -754,23 +754,61 @@ async function characterLeg(page: Page, api: Api, index: number): Promise<void> 
 
 /** The clinic's doctor offering the datajack, as the server would once they have its schematic and a power cell. */
 const CLINIC = { place: 'clinic', name: 'The Clinic', prices: {}, fittings: [{ bionic: 'datajack', name: 'Datajack', price: 100, parts: ['vertebra'] }] };
-/** The same, before the cell's in: the cell to fit, and the datajack waiting for it. */
+/** The same, before the cell's in: buying the wire, a kidney and the recipe, patching up, the cell to fit, and the datajack waiting for it. */
 const WAITING = {
   ...CLINIC,
+  prices: { copper_wire: 6 },
+  parts: { left_kidney: 100 },
+  recipes: { datajack: 15 },
+  treatments: [{ effect: null, name: 'Patch up', price: 15 }],
   fittings: [
     { bionic: 'power_cell', name: 'Power cell', price: 100, parts: ['stomach'] },
     { ...CLINIC.fittings[0], blocked: 'Needs a power cell first.' },
   ],
 };
+const part = (id: string, name: string, weight: number) => ({ id, kind: 'part', name, weight, charge: null, on: null });
+/** The scrap trader buying what they carry, the lamp too, and selling parts back. */
+const TRADER = {
+  place: 'scrap_stall',
+  name: "The scrap trader's stall",
+  prices: { copper_wire: 6, usb_c_connector: 12, lamp: 12 },
+  stock: [
+    { item: part('lithium_cell', 'Lithium cell', 0.3), price: 18 },
+    { item: part('lithium_cell', 'Lithium cell', 0.3), price: 18 },
+    { item: part('infrared_lens', 'Infrared lens', 0.2), price: 80 },
+  ],
+};
 
-const offer = (page: Page, buyer: object | undefined) =>
-  page.evaluate(async (buyer) => {
-    const net = '/src/net/index.ts';
-    const { server, playerState } = await import(/* @vite-ignore */ net);
-    server.dispatch(JSON.stringify({ ...playerState.latest, buyer }));
-  }, buyer);
+const offer = (page: Page, buyer: object | undefined, money?: number) =>
+  page.evaluate(
+    async ([buyer, money]) => {
+      const net = '/src/net/index.ts';
+      const { server, playerState } = await import(/* @vite-ignore */ net);
+      const { player } = playerState.latest;
+      server.dispatch(JSON.stringify({ ...playerState.latest, player: { ...player, money: money ?? player.money }, buyer }));
+    },
+    [buyer, money] as const,
+  );
 
-/** E at the clinic lists the datajack with its parts against what they carry, and dimmed with why before the cell's in. */
+const tradeRows = (page: Page, side: 'yours' | 'theirs') =>
+  page.$$eval(`section.clinic .clinic-${side} li`, (items) =>
+    items.map((item) => ({
+      text: item.querySelector('.clinic-name')?.textContent ?? '',
+      price: item.querySelector('b')?.textContent ?? null,
+      blocked: item.classList.contains('clinic-blocked'),
+      selected: item.classList.contains('clinic-selected'),
+      icon: !!item.querySelector('.clinic-icon img'),
+    })),
+  );
+
+const press = async (page: Page, ...keys: string[]) => {
+  for (const key of keys) {
+    await page.keyboard.press(key);
+    await run(page, 100);
+  }
+};
+
+/** E at the clinic: the datajack's parts against what they carry, then theirs and yours, the datajack dimmed with why before the cell's in. */
 async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
   const name = 'the datajack at the clinic';
   const at = { map: 'clinic_floor_0', x: 4, y: 2 };
@@ -779,23 +817,61 @@ async function clinicLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 300);
   await page.keyboard.press('e');
   await run(page, 300);
-  const listed = await page.$$eval('section.clinic li', (items) => items.map((item) => item.textContent ?? ''));
-  const datajack = listed.find((text) => text.startsWith('Datajack'));
-  if (!datajack || !['copper wire 1/3', 'usb-c connector 1/1', '100'].every((part) => datajack.includes(part))) {
-    throw new Error(`${name}: the clinic doesn't list its parts against what they carry: ${JSON.stringify(listed)}`);
+  const datajack = (await tradeRows(page, 'theirs')).find(({ text }) => text === 'Datajack');
+  const chosen = await shown(page, '.clinic-chosen');
+  if (!datajack?.selected || !datajack.icon || !['copper wire 1/3', 'usb-c connector 1/1', 'Costs 100'].every((text) => chosen?.includes(text))) {
+    throw new Error(`${name}: the clinic doesn't show the datajack's parts against what they carry: ${JSON.stringify([datajack, chosen])}`);
   }
-  await shot(page, index, name);
-  await offer(page, WAITING);
+  await offer(page, WAITING, 120);
   await run(page, 300);
-  const rows = await page.$$eval('section.clinic li', (items) => items.map((item) => [item.textContent ?? '', item.classList.contains('clinic-blocked')] as const));
-  const [cell, waiting] = [rows.find(([text]) => text.startsWith('Power cell')), rows.find(([text]) => text.startsWith('Datajack'))];
-  if (!cell || cell[1] || !waiting?.[1] || !waiting[0].includes('Needs a power cell first.') || waiting[0].includes('100')) {
-    throw new Error(`${name}: the datajack isn't dimmed waiting for the cell beside the cell: ${JSON.stringify(rows)}`);
+  const yours = await tradeRows(page, 'yours');
+  const theirs = await tradeRows(page, 'theirs');
+  const [cell, waiting] = [theirs.find(({ text }) => text === 'Power cell'), theirs.find(({ text }) => text.startsWith('Datajack'))];
+  if (!cell || cell.blocked || !waiting?.blocked || !waiting.text.includes('Needs a power cell first.') || waiting.price !== null) {
+    throw new Error(`${name}: the datajack isn't dimmed waiting for the cell beside the cell: ${JSON.stringify(theirs)}`);
   }
-  await shot(page, index, `${name}, waiting for the cell`);
+  if (!['copper wire', 'a kidney', 'datajack recipe'].every((text) => yours.some((row) => row.text.toLowerCase() === text))) {
+    throw new Error(`${name}: yours doesn't list the wire, a kidney and the recipe: ${JSON.stringify(yours)}`);
+  }
+  await press(page, 'ArrowLeft', 'ArrowDown');
+  if (!(await tradeRows(page, 'yours'))[1]?.selected) throw new Error(`${name}: ← and ↓ didn't choose the second of yours`);
+  await press(page, 'ArrowRight');
+  if (!(await tradeRows(page, 'theirs')).at(-1)?.selected || !(await shown(page, '.clinic-chosen'))?.includes('Needs a power cell first.')) {
+    throw new Error(`${name}: → didn't go back to the datajack, with why it waits`);
+  }
+  if (!near(await api.state(), at)) throw new Error(`${name}: the arrows moved the player`);
+  await shot(page, index, name);
   await page.keyboard.press('Escape');
   await run(page, 200);
   if ((await shown(page, 'section.clinic')) !== null) throw new Error(`${name}: Esc didn't close it`);
+  await offer(page, undefined);
+  await run(page, 200);
+}
+
+/** E at the scrap trader's stall: what they carry to sell on the left, the parts it sells back on the right, each with its icon. */
+async function traderLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = "the scrap trader's stall";
+  const at = metro(28, 15);
+  await teleport(page, api, at, name);
+  await offer(page, TRADER, 50);
+  await run(page, 300);
+  await page.keyboard.press('e');
+  await run(page, 300);
+  const yours = await tradeRows(page, 'yours');
+  const theirs = await tradeRows(page, 'theirs');
+  const sold = ['Everything', 'Lamp', 'Copper wire', 'USB-C connector'];
+  if (!yours[0]?.selected || !sold.every((text) => yours.some((row) => row.text === text)) || !yours.slice(1).every(({ icon }) => icon)) {
+    throw new Error(`${name}: yours isn't everything, the lamp, the wire and the plug with icons: ${JSON.stringify(yours)}`);
+  }
+  if (JSON.stringify(theirs.map(({ text, price, icon }) => [text, price, icon])) !== '[["Lithium cell","18",true],["Infrared lens","80",true]]') {
+    throw new Error(`${name}: theirs isn't the cells and the lens with icons: ${JSON.stringify(theirs)}`);
+  }
+  await press(page, 'ArrowRight');
+  if (!(await tradeRows(page, 'theirs'))[0]?.selected) throw new Error(`${name}: → didn't choose the cells`);
+  await shot(page, index, name);
+  await press(page, 'e');
+  if ((await shown(page, 'section.clinic')) !== null) throw new Error(`${name}: E didn't close it`);
+  if (!near(await api.state(), at)) throw new Error(`${name}: the player moved`);
   await offer(page, undefined);
   await run(page, 200);
 }
@@ -852,6 +928,7 @@ try {
     ['V at a painting in the gallery', (i) => lookLeg(page, api, { map: 'gallery_floor_1', x: 14, y: 2 }, 'gallery', null, i)],
     ['C for the character screen', (i) => characterLeg(page, api, i)],
     ['E at the clinic', (i) => clinicLeg(page, api, i)],
+    ["E at the scrap trader's stall", (i) => traderLeg(page, api, i)],
     ["the sewers' vault on the widest level", (i) => vaultLeg(open, widest, cells, i)],
   ];
   const started = Date.now();

@@ -1,6 +1,8 @@
 import type { Bionic, BodyPart, Buyer, ClientMessage, EffectKind, Item, Player, Recipe } from '../net';
 import { callCue } from './call-cue';
+import { pictureOf, PICTURES } from './character-body';
 import './clinic-panel.css';
+import { iconUrl } from './icons';
 import { pressedNewsKey } from './keys';
 import { amount, counted, listed } from './salvage';
 import { NEWS_KEY } from './tuning';
@@ -18,21 +20,44 @@ const PARTS: Record<BodyPart, string> = {
   feet: 'your feet',
 };
 
+const upperFirst = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+
 /** A part a recipe uses up: how many it takes, and how many they carry. */
 export type Need = { name: string; count: number; have: number };
 
-/** One thing the player can do at the clinic. */
+/** One thing the player can do at the clinic: `name` is its row, `label` what Enter does. */
 export type Deal =
-  | { kind: 'talk'; label: string; npcId: string }
-  | { kind: 'sell'; label: string; price: number }
-  | { kind: 'item'; label: string; price: number; item: string; count: number }
-  | { kind: 'buy'; label: string; price: number; item: string; weight: number; short?: 'money' | 'weight' }
-  | { kind: 'part'; label: string; price: number; part: BodyPart }
-  | { kind: 'fit'; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean; blocked?: string }
-  | { kind: 'recipe'; label: string; price: number; bionic: Bionic }
-  | { kind: 'treat'; label: string; price: number; effect: EffectKind | null; short: boolean };
+  | { kind: 'talk'; name: string; label: string; npcId: string }
+  | { kind: 'sell'; name: string; label: string; price: number }
+  | { kind: 'item'; name: string; label: string; price: number; item: string; count: number }
+  | { kind: 'buy'; name: string; label: string; price: number; item: string; count: number; weight: number; short?: 'money' | 'weight' }
+  | { kind: 'part'; name: string; label: string; price: number; part: BodyPart }
+  | { kind: 'fit'; name: string; label: string; price: number; bionic: Bionic; part: BodyPart; needs: Need[]; short: boolean; blocked?: string }
+  | { kind: 'recipe'; name: string; label: string; price: number; bionic: Bionic }
+  | { kind: 'treat'; name: string; label: string; price: number; effect: EffectKind | null; short: boolean };
 
 export type Keeper = { id: string; name: string };
+
+export type Side = 'yours' | 'theirs';
+export const SIDES: readonly Side[] = ['yours', 'theirs'];
+
+/** Theirs is what they offer: talking, treatments, stock and fittings. Yours is what they'd take from you. */
+export const sideOf = ({ kind }: Deal): Side => (kind === 'sell' || kind === 'item' || kind === 'part' || kind === 'recipe' ? 'yours' : 'theirs');
+
+/** Each side's deals, in the order `deals` lists them. */
+export function columns(found: readonly Deal[]): Record<Side, Deal[]> {
+  return { yours: found.filter((deal) => sideOf(deal) === 'yours'), theirs: found.filter((deal) => sideOf(deal) === 'theirs') };
+}
+
+/** The icon id a deal is drawn with from `content/icons/`, whether or not it's painted yet. */
+export function iconOf(deal: Deal): string {
+  if (deal.kind === 'item' || deal.kind === 'buy') return deal.item;
+  if (deal.kind === 'part') return pictureOf({ part: deal.part, state: 'present' });
+  if (deal.kind === 'fit') return PICTURES[deal.bionic] ?? deal.bionic;
+  if (deal.kind === 'recipe') return 'schematic';
+  if (deal.kind === 'treat') return deal.effect ? `treat_${deal.effect}` : 'patch_up';
+  return deal.kind === 'sell' ? 'sell_everything' : 'talk';
+}
 
 /** Each part `recipe` uses up, named as they carry it, with how many of it they have. */
 export function needs(recipe: Recipe | undefined, items: readonly Item[]): Need[] {
@@ -57,28 +82,31 @@ export function kinds<T>(things: readonly T[], id: (thing: T) => string): { firs
 /** What the player can do at a buyer's panel: talk to the doctor, be treated, sell everything it buys or one of a kind, buy back a part, sell a kidney or a recipe, or be fitted. */
 export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: readonly Recipe[] = []): Deal[] {
   const found: Deal[] = [];
-  if (keeper) found.push({ kind: 'talk', label: `Talk to ${keeper.name}`, npcId: keeper.id });
+  if (keeper) {
+    const label = `Talk to ${keeper.name}`;
+    found.push({ kind: 'talk', name: label, label, npcId: keeper.id });
+  }
   for (const { effect, name, price } of buyer.treatments ?? []) {
-    found.push({ kind: 'treat', label: name, price, effect, short: player.money < price });
+    found.push({ kind: 'treat', name, label: name, price, effect, short: player.money < price });
   }
   const sold = player.items.filter(({ id }) => id in buyer.prices);
   const all = sold.filter(({ kind }) => kind !== 'lamp');
   if (all.length > 1) {
     const price = all.reduce((sum, { id }) => sum + buyer.prices[id]!, 0);
-    found.push({ kind: 'sell', label: `Sell everything: ${listed(counted(all))}`, price });
+    found.push({ kind: 'sell', name: 'Everything', label: `Sell everything: ${listed(counted(all))}`, price });
   }
   for (const { first, count } of kinds(sold, ({ id }) => id)) {
-    found.push({ kind: 'item', label: `Sell one: ${first.name}`, price: buyer.prices[first.id]!, item: first.id, count });
+    found.push({ kind: 'item', name: first.name, label: `Sell one: ${first.name}`, price: buyer.prices[first.id]!, item: first.id, count });
   }
   const room = player.carry_limit - player.items.reduce((load, { weight }) => load + weight, 0);
   for (const { first: offer, count } of kinds(buyer.stock ?? [], ({ item }) => item.id)) {
     const { item, price } = offer;
     const label = `Buy back: ${item.name}${count > 1 ? ` ×${count}` : ''}`;
     const short = player.money < price - 1e-9 ? 'money' : item.weight > room + 1e-9 ? 'weight' : undefined;
-    found.push({ kind: 'buy', label, price, item: item.id, weight: item.weight, ...(short && { short }) });
+    found.push({ kind: 'buy', name: item.name, label, price, item: item.id, count, weight: item.weight, ...(short && { short }) });
   }
   for (const [part, price] of Object.entries(buyer.parts ?? {}) as [BodyPart, number][]) {
-    found.push({ kind: 'part', label: `Sell ${PARTS[part]}`, price, part });
+    found.push({ kind: 'part', name: upperFirst(PARTS[part]), label: `Sell ${PARTS[part]}`, price, part });
   }
   const recipe = (bionic: Bionic) => recipes.find((known) => known.bionic === bionic);
   for (const { bionic, name, price, parts, blocked } of buyer.fittings ?? []) {
@@ -86,18 +114,31 @@ export function deals(buyer: Buyer, player: Player, keeper?: Keeper, recipes: re
     const short = player.money < price || needed.some(({ count, have }) => have < count);
     for (const part of parts) {
       const label = `${name}, in place of ${PARTS[part]}`;
-      found.push({ kind: 'fit', label, price, bionic, part, needs: needed, short, ...(blocked && { blocked }) });
+      const row = parts.length > 1 ? `${name}, ${part.replace('_', ' ')}` : name;
+      found.push({ kind: 'fit', name: row, label, price, bionic, part, needs: needed, short, ...(blocked && { blocked }) });
     }
   }
   for (const [bionic, price] of Object.entries(buyer.recipes ?? {}) as [Bionic, number][]) {
     const name = recipe(bionic)?.name ?? bionic.replaceAll('_', ' ');
-    found.push({ kind: 'recipe', label: `Sell your recipe: ${name}`, price, bionic });
+    found.push({ kind: 'recipe', name: `${name} recipe`, label: `Sell your recipe: ${name}`, price, bionic });
   }
   return found;
 }
 
 /** What a fitting uses up, against what they have: "copper wire 2/3 · usb c connector 1/1". */
 export const needed = (needs: readonly Need[]) => needs.map(({ name, count, have }) => `${name} ${have}/${count}`).join(' · ');
+
+/** What the chosen deal comes to: its price against their credits, what it uses up, or why it's blocked. */
+export function details(deal: Deal, money: number): string[] {
+  if (deal.kind === 'talk') return [];
+  if (deal.kind === 'fit' && deal.blocked) return [deal.blocked];
+  if (deal.kind === 'item' && deal.count > 1) return [`Pays ${amount(deal.price)} each`, `You have ${deal.count}`];
+  if (sideOf(deal) === 'yours') return [`Pays ${amount(deal.price)}`];
+  const lines = [`Costs ${amount(deal.price)} of your ${amount(money)}`];
+  if (deal.kind === 'fit' && deal.needs.length) lines.push(needed(deal.needs));
+  if (deal.kind === 'buy') lines.push(`Weighs ${amount(deal.weight)} kg${deal.count > 1 ? ` · ${deal.count} for sale` : ''}`);
+  return lines;
+}
 
 /** What the clinic's panel says of the chosen deal: what Enter will do, or why it can't. */
 export function note(deal: Deal | undefined, armed: boolean, money: number): string {
@@ -129,18 +170,41 @@ function key(deal: Deal): string {
 }
 const isShort = (deal: Deal) => ((deal.kind === 'fit' || deal.kind === 'treat') && deal.short) || (deal.kind === 'buy' && deal.short !== undefined);
 const isBlocked = (deal: Deal) => deal.kind === 'fit' && deal.blocked !== undefined;
+const count = (deal: Deal) => (deal.kind === 'item' || deal.kind === 'buy' ? deal.count : 1);
 
-/** The clinic up close: what the doctor buys and fits, for how much and what parts. */
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string): HTMLElementTagNameMap[K] {
+  const element = document.createElement(tag);
+  if (text !== undefined) element.textContent = text;
+  if (className) element.className = className;
+  return element;
+}
+
+/** The deal's icon, or a blank frame where it isn't painted yet. */
+function icon(deal: Deal): HTMLElement {
+  const cell = el('span', undefined, 'clinic-icon');
+  const url = iconUrl(iconOf(deal));
+  if (url) {
+    const picture = cell.appendChild(el('img'));
+    picture.src = url;
+    picture.alt = '';
+  } else cell.classList.add('clinic-blank');
+  if (count(deal) > 1) cell.appendChild(el('span', `×${count(deal)}`, 'clinic-count'));
+  return cell;
+}
+
+/** A buyer up close, as a trade screen: yours to sell on the left, theirs to buy or be fitted on the right. */
 export class ClinicPanel {
   private readonly panel: HTMLElement;
   private readonly title: HTMLElement;
   private readonly money: HTMLElement;
-  private readonly list: HTMLOListElement;
+  private readonly lists: Record<Side, HTMLOListElement>;
+  private readonly chosen: HTMLElement;
   private readonly status: HTMLElement;
   private readonly send: (message: ClientMessage) => boolean;
   private readonly talk: (npcId: string) => void;
-  private shown: Deal[] = [];
-  private selected = 0;
+  private shown: Record<Side, Deal[]> = { yours: [], theirs: [] };
+  private side: Side = 'yours';
+  private at: Record<Side, number> = { yours: 0, theirs: 0 };
   private armed?: string;
   private drawn = '';
   private cash = 0;
@@ -148,26 +212,34 @@ export class ClinicPanel {
   constructor(parent: HTMLElement, send: (message: ClientMessage) => boolean, talk: (npcId: string) => void) {
     this.send = send;
     this.talk = talk;
-    this.panel = parent.appendChild(document.createElement('section'));
-    this.panel.className = 'clinic';
+    this.panel = parent.appendChild(el('section', undefined, 'clinic'));
     this.panel.tabIndex = -1;
     this.panel.hidden = true;
     this.panel.ariaLabel = 'Clinic';
     callCue.slot(this.panel);
-    const header = this.panel.appendChild(document.createElement('header'));
-    this.title = header.appendChild(document.createElement('b'));
-    this.money = this.panel.appendChild(document.createElement('small'));
-    this.list = this.panel.appendChild(document.createElement('ol'));
-    const footer = this.panel.appendChild(document.createElement('footer'));
-    this.status = footer.appendChild(document.createElement('p'));
-    footer.appendChild(document.createElement('span')).textContent = `↑ ↓ choose · Enter · Esc or ${KEY} close`;
+    const header = this.panel.appendChild(el('header'));
+    this.title = header.appendChild(el('b'));
+    this.money = header.appendChild(el('span', undefined, 'clinic-money'));
+    const sides = this.panel.appendChild(el('div', undefined, 'clinic-sides'));
+    const list = (side: Side, heading: string, empty: string) => {
+      const column = sides.appendChild(el('div', undefined, `clinic-side clinic-${side}`));
+      column.appendChild(el('h3', heading));
+      const rows = column.appendChild(el('ol'));
+      rows.dataset.empty = empty;
+      rows.addEventListener('click', (event) => {
+        const row = (event.target as Element).closest<HTMLElement>('li[data-index]');
+        if (!row) return;
+        this.choose(side, Number(row.dataset.index));
+        this.act();
+      });
+      return rows;
+    };
+    this.lists = { yours: list('yours', 'Yours', 'Nothing they want.'), theirs: list('theirs', 'Theirs', 'Nothing for you.') };
+    this.chosen = this.panel.appendChild(el('div', undefined, 'clinic-chosen'));
+    const footer = this.panel.appendChild(el('footer'));
+    this.status = footer.appendChild(el('p'));
+    footer.appendChild(el('span', `← → side · ↑ ↓ choose · Enter · Esc or ${KEY} close`));
     this.panel.addEventListener('keydown', (event) => this.onKey(event));
-    this.list.addEventListener('click', (event) => {
-      const item = (event.target as Element).closest<HTMLElement>('li[data-index]');
-      if (!item) return;
-      this.choose(Number(item.dataset.index));
-      this.act();
-    });
   }
 
   get isOpen(): boolean {
@@ -175,8 +247,11 @@ export class ClinicPanel {
   }
 
   open(buyer: Buyer, player: Player, keeper?: Keeper, recipes: readonly Recipe[] = []): void {
-    this.selected = 0;
+    this.side = 'yours';
+    this.at = { yours: 0, theirs: 0 };
+    this.shown = { yours: [], theirs: [] };
     this.armed = undefined;
+    this.drawn = '';
     this.panel.hidden = false;
     this.update(buyer, player, keeper, recipes);
     this.panel.focus();
@@ -187,26 +262,39 @@ export class ClinicPanel {
     this.panel.hidden = true;
   }
 
-  /** Each frame: closes once there's no clinic where they stand, else shows what's on offer now. */
+  /** Each frame: closes once there's no buyer where they stand, else shows what's on offer now. */
   update(buyer: Buyer | undefined, player: Player | undefined, keeper?: Keeper, recipes: readonly Recipe[] = []): void {
     if (!this.isOpen) return;
     if (!buyer || !player) {
       this.close();
       return;
     }
-    const shown = deals(buyer, player, keeper, recipes);
-    const drawn = JSON.stringify([buyer.name, player.money, shown, this.selected, this.armed]);
+    const shown = columns(deals(buyer, player, keeper, recipes));
+    const drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed]);
     if (drawn === this.drawn) return;
-    const chosen = this.shown[this.selected];
+    for (const side of SIDES) {
+      const chosen = this.shown[side][this.at[side]];
+      const kept = chosen ? shown[side].findIndex((deal) => key(deal) === key(chosen)) : -1;
+      this.at[side] = kept === -1 ? this.pastTalk(shown[side], this.at[side]) : kept;
+    }
     this.shown = shown;
-    const kept = chosen ? shown.findIndex((deal) => key(deal) === key(chosen)) : -1;
-    this.selected = Math.min(kept === -1 ? this.selected : kept, Math.max(shown.length - 1, 0));
+    if (!shown[this.side].length && shown[this.other].length) this.side = this.other;
     this.cash = player.money;
     this.title.textContent = buyer.name;
     this.panel.ariaLabel = buyer.name;
-    this.money.textContent = `You have ${amount(player.money)}.`;
+    this.money.textContent = `Credits ${amount(player.money)}`;
     this.render();
-    this.drawn = JSON.stringify([buyer.name, player.money, shown, this.selected, this.armed]);
+    this.drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed]);
+  }
+
+  private get other(): Side {
+    return this.side === 'yours' ? 'theirs' : 'yours';
+  }
+
+  /** `index` within `deals`, but past talking where there's anything else, so Enter never talks by surprise. */
+  private pastTalk(deals: readonly Deal[], index: number): number {
+    const at = Math.min(index, Math.max(deals.length - 1, 0));
+    return deals[at]?.kind === 'talk' && deals.length > 1 ? at + 1 : at;
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -215,24 +303,33 @@ export class ClinicPanel {
     if (pressed === 'Escape' || pressedNewsKey(event)) {
       event.preventDefault();
       this.close();
+    } else if (pressed === 'ArrowLeft' || pressed === 'ArrowRight') {
+      event.preventDefault();
+      const side = pressed === 'ArrowLeft' ? 'yours' : 'theirs';
+      if (this.shown[side].length) this.choose(side, this.at[side]);
     } else if (pressed === 'ArrowDown' || pressed === 'ArrowUp') {
       event.preventDefault();
-      const count = this.shown.length;
-      if (count) this.choose((this.selected + (pressed === 'ArrowDown' ? 1 : -1) + count) % count);
+      const count = this.shown[this.side].length;
+      if (count) this.choose(this.side, (this.at[this.side] + (pressed === 'ArrowDown' ? 1 : -1) + count) % count);
     } else if (pressed === 'Enter' || pressed === ' ') {
       event.preventDefault();
       this.act();
     }
   }
 
-  private choose(index: number): void {
-    if (index !== this.selected) this.armed = undefined;
-    this.selected = index;
+  private get deal(): Deal | undefined {
+    return this.shown[this.side][this.at[this.side]];
+  }
+
+  private choose(side: Side, index: number): void {
+    if (side !== this.side || index !== this.at[side]) this.armed = undefined;
+    this.side = side;
+    this.at[side] = index;
     this.render();
   }
 
   private act(): void {
-    const deal = this.shown[this.selected];
+    const deal = this.deal;
     if (!deal) return;
     if (deal.kind === 'talk') {
       this.close();
@@ -260,26 +357,33 @@ export class ClinicPanel {
   }
 
   private render(): void {
-    const items = this.shown.map((deal, index) => {
-      const item = document.createElement('li');
-      item.dataset.index = String(index);
-      item.classList.toggle('clinic-selected', index === this.selected);
-      item.classList.toggle('clinic-short', isShort(deal));
-      item.classList.toggle('clinic-blocked', isBlocked(deal));
-      item.classList.toggle('clinic-armed', this.armed === key(deal));
-      const label = item.appendChild(document.createElement('span'));
-      label.textContent = deal.label;
-      if (deal.kind === 'fit' && deal.blocked) label.appendChild(document.createElement('small')).textContent = deal.blocked;
-      else if (deal.kind === 'fit' && deal.needs.length) label.appendChild(document.createElement('small')).textContent = needed(deal.needs);
-      if (deal.kind === 'item') label.appendChild(document.createElement('small')).textContent = `you have ${deal.count}`;
-      if (deal.kind !== 'talk' && !isBlocked(deal)) item.appendChild(document.createElement('b')).textContent = amount(deal.price);
-      return item;
-    });
-    this.list.replaceChildren(...items);
-    const deal = this.shown[this.selected];
-    this.status.textContent = this.shown.length
-      ? note(deal, deal !== undefined && this.armed === key(deal), this.cash)
-      : 'Nothing to buy or sell here now.';
-    this.list.querySelector('.clinic-selected')?.scrollIntoView?.({ block: 'nearest' });
+    for (const side of SIDES) {
+      const rows = this.shown[side].map((deal, index) => {
+        const row = el('li');
+        row.dataset.index = String(index);
+        row.classList.toggle('clinic-selected', side === this.side && index === this.at[side]);
+        row.classList.toggle('clinic-short', isShort(deal));
+        row.classList.toggle('clinic-blocked', isBlocked(deal));
+        row.classList.toggle('clinic-armed', this.armed === key(deal));
+        row.appendChild(icon(deal));
+        const name = row.appendChild(el('span', deal.name, 'clinic-name'));
+        if (deal.kind === 'fit' && deal.blocked) name.appendChild(el('small', deal.blocked));
+        if (deal.kind !== 'talk' && !isBlocked(deal)) row.appendChild(el('b', amount(deal.price)));
+        return row;
+      });
+      this.lists[side].replaceChildren(...rows);
+      this.lists[side].parentElement!.classList.toggle('clinic-active', side === this.side);
+    }
+    const deal = this.deal;
+    this.chosen.replaceChildren(...(deal ? [icon(deal), this.facts(deal)] : []));
+    this.status.textContent = deal ? note(deal, this.armed === key(deal), this.cash) : 'Nothing to buy or sell here now.';
+    this.lists[this.side].querySelector('.clinic-selected')?.scrollIntoView?.({ block: 'nearest' });
+  }
+
+  private facts(deal: Deal): HTMLElement {
+    const facts = el('div', undefined, 'clinic-facts');
+    facts.appendChild(el('b', deal.label));
+    for (const line of details(deal, this.cash)) facts.appendChild(el('span', line, isBlocked(deal) ? 'clinic-reason' : undefined));
+    return facts;
   }
 }
