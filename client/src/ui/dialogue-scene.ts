@@ -18,9 +18,9 @@ import { dialogue } from './dialogue';
 import './dialogue.css';
 import { HealthGauge } from './health-gauge';
 import { HelpPanel } from './help';
-import { HungerHint, toEat } from './hunger';
+import { getsUp, HungerHint, toEat } from './hunger';
 import { JournalPanel, lookAtClue } from './journal-panel';
-import { onGameKey, reply, talk, type Talker } from './keys';
+import { onGameKey, reply, talk, unfocused, type Talker } from './keys';
 import { LampGauge } from './lamp-gauge';
 import { LogPanel } from './log-panel';
 import { MuralPanel } from './mural-panel';
@@ -36,6 +36,10 @@ import { NEWS_KEY } from './tuning';
 import { PLAYER_ID, trackedWorld, worldView } from './world-view';
 
 setMaps(maps);
+
+const onGetUp = (event: KeyboardEvent) => {
+  if (unfocused(event) && getsUp(event, playerState.latest)) server.send({ type: 'rest', on: false });
+};
 
 const trading = (used: Reachable | undefined) => (used?.kind === 'clinic' || used?.kind === 'buyer' ? used.buyer : undefined);
 
@@ -123,9 +127,11 @@ export class DialogueScene extends Phaser.Scene {
       else if (this.murals.click({ x, y }, this.player())) this.news.close();
     };
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keydown', onGetUp);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keydown', onGetUp);
       this.input.off(Phaser.Input.Events.POINTER_DOWN, onPointerDown);
       stopInvitations();
       stopCollapses();
@@ -166,7 +172,7 @@ export class DialogueScene extends Phaser.Scene {
     this.clinic.update(buyer, playerState.latest?.player, this.keeper(buyer), playerState.latest?.recipes);
     const sells = !this.clinic.isOpen && !doorOnE(here);
     const state = playerState.latest && !sells ? { ...playerState.latest, buyer: null } : playerState.latest;
-    this.hunger.update(state, used?.kind === 'pile' ? used.pile : undefined);
+    this.hunger.update(state, used);
     this.lamp.update(playerState.latest);
     this.health.update(playerState.latest);
     this.character.update(playerState.latest);
@@ -184,7 +190,8 @@ export class DialogueScene extends Phaser.Scene {
 
   private pressE(): void {
     const used = eUse(this.player(), wayPrompts());
-    if (used) this.use(used);
+    if (playerState.latest?.resting) server.send({ type: 'rest', on: false });
+    else if (used) this.use(used);
   }
 
   /** The counter T orders at here, if any, and whoever serves there. */
@@ -215,6 +222,7 @@ export class DialogueScene extends Phaser.Scene {
       server.send({ type: 'pick_up' });
       this.counter.flash(foundIn(used.interactable));
     } else if (used?.kind === 'clinic' || used?.kind === 'buyer') this.trade(used.buyer);
+    else if (used?.kind === 'bed') server.send({ type: 'rest', on: true });
   }
 
   private trade(buyer: Buyer): void {

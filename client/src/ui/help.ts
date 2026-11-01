@@ -26,7 +26,7 @@ export const CONTROLS: readonly (readonly [keys: readonly string[], what: string
 const NOTE = 'A tag over each door, flight, ladder and lift names its keys.';
 
 /** What the help says about healing, as the top-level README does. */
-export const REST = 'Hurt? Stand at your bed, up the ladder in the maker space, to heal fast.';
+export const REST = 'Hurt? Press E at your bed to rest, up the ladder in the maker space. It heals you fast.';
 
 /** What the help says about voices, as the top-level README does. */
 export const VOICES =

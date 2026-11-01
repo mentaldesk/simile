@@ -276,6 +276,13 @@ let items: Item[] = [LAMP];
 let searched: string[] = [];
 let known: Bionic[] = [];
 
+/** `health=` sets how hurt the player starts; E at their bed rests them back to full in `REST_SECONDS`, as the server does. */
+let health = Number(params.get('health') ?? 1);
+let resting = false;
+let bed: MapPosition | undefined;
+const REST_SECONDS = 3;
+const REST_TICK_MS = 100;
+
 let body: Body = {
   legs: 'present',
   vertebra: 'present',
@@ -287,9 +294,10 @@ let body: Body = {
 
 function sendPlayerState(): void {
   const mind = known.length ? { mind: { recipes: known } } : {};
-  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, ...(searched.length ? { searched } : {}), ...mind };
+  const player = { money: 0, items, carry_limit: 10, body, hunger: 0, health, ...(searched.length ? { searched } : {}), ...mind };
   const recipes = known.map((bionic) => RECIPES[bionic] ?? { bionic, name: bionic, parts: {}, credits: 0, replaces: [], after: [] });
-  dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}) });
+  const rest = { ...(bed && { bed }), ...(resting && { resting }) };
+  dispatch({ type: 'player_state', player, ...(recipes.length ? { recipes } : {}), ...rest });
 }
 
 /** E at something to search, as the server does it, carrying everything. */
@@ -303,7 +311,31 @@ function search(at: Position | undefined): void {
   sendPlayerState();
 }
 
+/** The beds at home in the maker space, healing whoever rests in one, and ending the rest off it or at full health. */
+function rests(scene: SideScene, village: Village): void {
+  const beds = [...village.maps.values()]
+    .filter(({ id }) => id.startsWith('maker_space'))
+    .flatMap(({ id, furniture }) =>
+      furniture.filter(({ name }) => name === 'bed').flatMap(({ x, y, w, h }) => [...Array(w * h).keys()].map((i) => ({ map: id, x: x + (i % w), y: y + Math.floor(i / w) }))),
+    );
+  setInterval(() => {
+    const at = scene.playing?.mapPosition;
+    const cell = at && cellOf(at);
+    const here = cell && beds.find(({ map, x, y }) => map === at.map && x === cell.x && y === cell.y);
+    const moved = here !== bed;
+    bed = here;
+    if (resting) health = Math.min(1, health + REST_TICK_MS / 1000 / REST_SECONDS);
+    const wasResting = resting;
+    resting &&= !!bed && health < 1;
+    if (moved || wasResting) sendPlayerState();
+  }, REST_TICK_MS);
+}
+
 function answer(message: ClientMessage, scene: SideScene): void {
+  if (message.type === 'rest') {
+    resting = message.on && !!bed && health < 1;
+    return sendPlayerState();
+  }
   if (message.type === 'pick_up') search(scene.playing?.mapPosition);
   if (message.type !== 'lamp' || (message.on && !LAMP.charge)) return;
   LAMP.on = message.on;
@@ -418,6 +450,11 @@ function exposeWalk(scene: SideScene, village: Village): void {
             return { key: image.texture.key, width: image.frame.realWidth, left, right, visible: image.visible };
           }),
       textureLimit: () => (scene.renderer as Partial<Phaser.Renderer.WebGL.WebGLRenderer>).getMaxTextureSize?.() ?? null,
+      rest: () => ({ health, resting, bed: bed ?? null }),
+      hurt: (to: number) => {
+        health = to;
+        sendPlayerState();
+      },
       fit: (part: keyof Body, bionic: Body[keyof Body]) => {
         body = { ...body, [part]: bionic };
         sendPlayerState();
@@ -473,6 +510,7 @@ export function startHarness(scene: SideScene, village: Village): void {
   showPanel();
   measure(scene);
   exposeWalk(scene, village);
+  rests(scene, village);
   window.addEventListener('keydown', ({ key }) => {
     if (key === '[' || key === ']') {
       const now = performance.now();

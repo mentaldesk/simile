@@ -39,6 +39,8 @@ type SideWalk = {
   levels(): Record<string, number>;
   pieces(piece: string): Drawn[];
   textureLimit(): number | null;
+  rest(): { health: number; resting: boolean; bed: Place | null };
+  hurt(health: number): void;
 };
 type Paged = { sideWalk: SideWalk };
 type Hold = 'ArrowUp' | 'ArrowDown';
@@ -78,6 +80,8 @@ const walkApi = (page: Page) => ({
   levels: () => page.evaluate(() => (window as unknown as Paged).sideWalk.levels()),
   pieces: (piece: string) => page.evaluate((piece) => (window as unknown as Paged).sideWalk.pieces(piece), piece),
   textureLimit: () => page.evaluate(() => (window as unknown as Paged).sideWalk.textureLimit()),
+  rest: () => page.evaluate(() => (window as unknown as Paged).sideWalk.rest()),
+  hurt: (health: number) => page.evaluate((health) => (window as unknown as Paged).sideWalk.hurt(health), health),
 });
 type Api = ReturnType<typeof walkApi>;
 
@@ -508,6 +512,42 @@ async function searchLeg(page: Page, api: Api, index: number): Promise<void> {
   await run(page, 2600);
 }
 
+const cornerLines = (page: Page) =>
+  page.$$eval('.hunger-hint div', (lines) => lines.filter((line) => !(line as HTMLElement).hidden).map((line) => line.textContent ?? ''));
+
+/** E at the loft bed while hurt rests them to full, a move key gets them up early, and at full health E offers nothing. */
+async function restLeg(page: Page, api: Api, index: number): Promise<void> {
+  const name = 'resting at the loft bed';
+  const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+  await teleport(page, api, bed, name);
+  await run(page, 300);
+  if ((await api.rest()).bed?.x !== bed.x) throw new Error(`${name}: not at the bed: ${JSON.stringify(await api.rest())}`);
+  if ((await cornerLines(page)).includes('Press E to rest.')) throw new Error(`${name}: E offers rest at full health`);
+  await api.hurt(0.5);
+  await run(page, 200);
+  if (!(await cornerLines(page)).includes('Press E to rest.')) throw new Error(`${name}: no rest prompt while hurt: ${await cornerLines(page)}`);
+  await pressingE(page, api, name);
+  if (!(await api.rest()).resting || !(await cornerLines(page)).includes('Resting. Your health comes back.')) {
+    throw new Error(`${name}: E didn't rest them: ${JSON.stringify(await api.rest())}, ${await cornerLines(page)}`);
+  }
+  await shot(page, index, name);
+  await until(page, async () => !(await api.rest()).resting, 3, `${name}: healing to full`);
+  if ((await api.rest()).health < 1) throw new Error(`${name}: the rest ended at ${(await api.rest()).health}`);
+  await api.hurt(0.5);
+  await run(page, 200);
+  for (const key of ['e', 'ArrowLeft']) {
+    await page.keyboard.press('e');
+    await run(page, 300);
+    if (!(await api.rest()).resting) throw new Error(`${name}: E didn't rest them again`);
+    await page.keyboard.press(key);
+    await run(page, 200);
+    const up = await api.rest();
+    if (up.resting || up.health >= 1) throw new Error(`${name}: ${key} didn't get them up early: ${JSON.stringify(up)}`);
+  }
+  await api.hurt(1);
+  await run(page, 200);
+}
+
 /** A standing jump at the face of the weir, walking towards it: where it lands. */
 async function atTheWeir(page: Page, api: Api, weir: number, name: string): Promise<State> {
   await teleport(page, api, sewers(weir - 1, 15), name);
@@ -776,6 +816,7 @@ try {
     [`jumping ${SHORT.name}`, (i) => jumpLeg(page, api, SHORT, i)],
     ["Aris's notes", (i) => notesLeg(page, api, i)],
     ["searching Aris's bench", (i) => searchLeg(page, api, i)],
+    ['resting at the loft bed', (i) => restLeg(page, api, i)],
     ['the bionics at the depot', (i) => bionicsLeg(page, api, i)],
     ["the sewers' gate", (i) => sewersLeg(page, api, i)],
     ...(await api.terminals()).map((at): [string, (index: number) => Promise<string | void>] => [

@@ -41,8 +41,8 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 
 A small tag over each door, flight of stairs, ladder and the lift names its keys.
 
-When you're hurt, stand at your bed, in the loft up the ladder at home in the maker space: it heals
-you from nothing to full in a few seconds. Anywhere else at home you heal slowly, and outside more
+When you're hurt, press E at your bed to rest, in the loft up the ladder at home in the maker space:
+it heals you from nothing to full in a few seconds. A move key, Space or E gets you up. Anywhere else at home you heal slowly, and outside more
 slowly still. An infected bite stops you healing anywhere until the clinic treats it.
 
 # Concept

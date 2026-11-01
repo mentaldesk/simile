@@ -1,4 +1,4 @@
-import { playerState, type Buyer, type Pile, type Position, type Wall } from '../net';
+import { playerState, type Buyer, type MapTile, type Pile, type PlayerStateMessage, type Position, type Wall } from '../net';
 import { maps } from './assets';
 import { trades } from './buyers';
 import { clueInReach, clues, type Clue } from './clues';
@@ -17,7 +17,8 @@ export type Reachable =
   | { kind: 'pile'; tiles: number; pile: Pile }
   | { kind: 'buyer'; tiles: number; buyer: Buyer }
   | { kind: 'clinic'; tiles: number; buyer: Buyer }
-  | { kind: 'clue'; tiles: number; clue: Clue };
+  | { kind: 'clue'; tiles: number; clue: Clue }
+  | { kind: 'bed'; tiles: number; bed: MapTile };
 
 export type Reachables = {
   terminals: readonly Terminal[];
@@ -32,7 +33,15 @@ export type Reachables = {
   leadsAway?: (jack: Interactable) => boolean;
   /** The interactables the player has searched, by id. */
   searched?: () => readonly string[];
+  /** Their bed where they stand, while they could rest in it. */
+  bed?: () => MapTile | undefined;
 };
+
+/** Their bed where they stand, unless they're well, infected or resting already, when the server ignores `rest`. */
+export function restsAt(state: PlayerStateMessage | undefined): MapTile | undefined {
+  if (!state?.bed || state.resting || (state.player.health ?? 1) >= 1) return undefined;
+  return state.player.effects?.some(({ kind }) => kind === 'infection') ? undefined : state.bed;
+}
 
 /** Murals only count while a scene draws them, as for the mural panel. */
 export const reachables: Reachables = {
@@ -45,6 +54,7 @@ export const reachables: Reachables = {
   jacked: () => jacked(playerState.latest?.player.body),
   leadsAway,
   searched: () => playerState.latest?.player.searched ?? [],
+  bed: () => restsAt(playerState.latest),
 };
 
 /** Inside the server's reach of a tile and a half, so a pick-up E offers still reaches. */
@@ -93,6 +103,8 @@ export function inReach(position: Position | undefined, from: Reachables = reach
   else if (buyer && Object.keys(buyer.prices).length) found.push({ kind: 'buyer', tiles: 0, buyer });
   const clue = clueInReach(position, from.clues);
   if (clue) found.push({ kind: 'clue', ...clue });
+  const bed = from.bed?.();
+  if (bed) found.push({ kind: 'bed', tiles: 0, bed });
   return found.sort((a, b) => a.tiles - b.tiles);
 }
 

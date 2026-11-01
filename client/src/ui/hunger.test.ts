@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { server } from '../net';
 import type { Buyer, Effect, Item, Meal, Pile, Player, PlayerStateMessage, Shut } from '../net';
-import { COLLAPSED, eatPrompt, feeling, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, Resting, toEat, when } from './hunger';
+import { COLLAPSED, eatPrompt, feeling, getsUp, healthFeeling, HungerHint, onCell, powerFeeling, RESTING, toEat, when } from './hunger';
 
 const NOODLES: Meal = { place: 'noodle_bar', name: 'Golden Bowl Noodles', price: 10 };
 const HOME: Meal = { place: 'maker_space', name: 'home', price: 0 };
@@ -53,25 +53,17 @@ describe('healthFeeling', () => {
   });
 });
 
-describe('resting', () => {
-  it('is health climbing as fast as a bed brings it, until it stops or is full', () => {
-    const resting = new Resting();
-    expect(resting.update(0.1, 0)).toBe(false);
-    expect(resting.update(0.11, 33)).toBe(true);
-    expect(resting.update(0.11, 400)).toBe(true);
-    expect(resting.update(0.11, 600)).toBe(false);
-    expect(resting.update(0.12, 633)).toBe(false);
-    expect(resting.update(0.13, 666)).toBe(true);
-    expect(resting.update(1, 700)).toBe(false);
-  });
+describe('getsUp', () => {
+  const resting = { ...state(0), bed: { map: 'maker_space_floor_2', x: 5, y: 2 }, resting: true };
+  const key = (key: string, repeat = false) => ({ key, repeat });
 
-  it('is not healing at home, waking or the clinic', () => {
-    const home = new Resting();
-    home.update(0.5, 0);
-    expect(home.update(0.51, 20_000)).toBe(false);
-    const woken = new Resting();
-    woken.update(0, 0);
-    expect(woken.update(0.25, 33)).toBe(false);
+  it('is a move key or Space while they rest', () => {
+    for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'D', ' ']) expect(getsUp(key(k), resting)).toBe(true);
+    expect(getsUp(key('t'), resting)).toBe(false);
+    expect(getsUp(key('e'), resting)).toBe(false);
+    expect(getsUp(key('ArrowLeft', true), resting)).toBe(false);
+    expect(getsUp(key('ArrowLeft'), state(0))).toBe(false);
+    expect(getsUp(key(' '), undefined)).toBe(false);
   });
 });
 
@@ -192,7 +184,7 @@ describe('HungerHint', () => {
     hint.update(state(0.2), undefined);
     expect(shown(root)).toEqual([]);
 
-    hint.update(state(0.75, { meal: HOME, left: [left] }), left);
+    hint.update(state(0.75, { meal: HOME, left: [left] }), { kind: 'pile', tiles: 0, pile: left });
     expect(shown(root)).toEqual(["You're hungry.", 'Press F to eat at home.', 'Press E to pick up what you left here.']);
 
     hint.update(state(0.2, { items: [LAMP, WIRE], buyer: TRADER }), undefined);
@@ -210,17 +202,18 @@ describe('HungerHint', () => {
     expect(shown(root)).toEqual(['Your power is low. Charge it at a plug.']);
   });
 
-  it('says they are resting while health climbs in bed', () => {
+  it('says E rests at their bed, and that they are resting while they do', () => {
     const root = document.createElement('div');
     const hint = new HungerHint(root);
-    const at = (health: number, now: number) => hint.update({ ...state(0.2), player: { ...state(0.2).player, health } }, undefined, now);
+    const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+    const hurt = { ...state(0.2), player: { ...state(0.2).player, health: 0.5 }, bed };
 
-    at(0.5, 0);
-    expect(shown(root)).toEqual(["You're hurt. Rest at home to heal faster."]);
-    at(0.51, 33);
+    hint.update(hurt, { kind: 'bed', tiles: 0, bed });
+    expect(shown(root)).toEqual(["You're hurt. Rest at home to heal faster.", 'Press E to rest.']);
+    hint.update({ ...hurt, resting: true }, undefined);
     expect(shown(root)).toEqual([RESTING]);
-    at(0.51, 1000);
-    expect(shown(root)).toEqual(["You're hurt. Rest at home to heal faster."]);
+    hint.update({ ...hurt, player: { ...hurt.player, health: 1 } }, undefined);
+    expect(shown(root)).toEqual([]);
   });
 
   it('says they collapsed for a few seconds after it', () => {

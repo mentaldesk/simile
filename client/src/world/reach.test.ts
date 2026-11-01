@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { server, type Buyer, type Pile, type Wall } from '../net';
+import { server, type Buyer, type Effect, type Pile, type PlayerStateMessage, type Wall } from '../net';
 import { interactableAt } from './interactables';
 import { deadJack, leadsAway } from './jacks';
 import { muralWalls, setMuralView } from './murals';
 import { SidePlayer } from '../side/player';
 import { prompts } from '../side/ways';
 import { village } from '../side/content';
-import { eUse, inReach, lookedAtByV, orderedAtByT, pileInReach, reachables, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
+import { eUse, inReach, lookedAtByV, orderedAtByT, pileInReach, reachables, restsAt, setWayPrompts, usedByE, wayPrompts, type Reachables } from './reach';
 import type { Terminal } from './terminals';
 
 const mural = (id: string, map: string, x: number, width: number): Wall => ({
@@ -198,6 +198,32 @@ describe('salvage, secrets and buyers', () => {
     const salvage = { place: 'clinic', name: 'The Clinic', prices: { copper_wire: 6 } };
     state({ buyer: salvage });
     expect(usedByE(at('clinic_floor_0', 4, 2))).toEqual({ kind: 'buyer', tiles: 0, buyer: salvage });
+  });
+});
+
+describe('the bed', () => {
+  const bed = { map: 'maker_space_floor_2', x: 5, y: 2 };
+  const body = { legs: 'present', vertebra: 'present', left_eye: 'present', right_eye: 'present', left_kidney: 'present', right_kidney: 'present' } as const;
+  const INFECTION: Effect = { kind: 'infection', strength: 0.4, fades: null, since: '2026-01-01T12:00:00Z' };
+  const state = (health: number, extra: Partial<PlayerStateMessage> = {}): PlayerStateMessage => ({
+    type: 'player_state',
+    player: { money: 0, items: [], carry_limit: 10, body, hunger: 0, health },
+    bed,
+    ...extra,
+  });
+
+  it('rests there while they are hurt, not infected and not resting already', () => {
+    expect(restsAt(state(0.5))).toEqual(bed);
+    expect(restsAt(state(1))).toBeUndefined();
+    expect(restsAt(state(0.5, { resting: true }))).toBeUndefined();
+    expect(restsAt(state(0.5, { bed: undefined }))).toBeUndefined();
+    expect(restsAt({ ...state(0.5), player: { ...state(0.5).player, effects: [INFECTION] } })).toBeUndefined();
+    expect(restsAt(undefined)).toBeUndefined();
+  });
+
+  it('is what E uses where they stand', () => {
+    expect(usedByE(bed, { ...reachables, bed: () => bed })).toEqual({ kind: 'bed', tiles: 0, bed });
+    expect(usedByE(bed, { ...reachables, bed: () => undefined })).toBeUndefined();
   });
 });
 
