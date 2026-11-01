@@ -69,7 +69,7 @@ class SavedWorld(Model):
     player: Player = Field(default_factory=Player)
     """The player. A save from before the player has the starting player."""
     investigation: Investigation = Field(default_factory=Investigation)
-    """The incident and the journal. A save from before them has neither."""
+    """The disappearance and the journal. A save from before them has neither."""
 
 
 def tile_of(point: Point) -> Tile:
@@ -207,8 +207,8 @@ def player_of(app: Starlette) -> Player:
 
 
 def investigation_of(app: Starlette) -> Investigation:
-    """The incident and the journal, empty on first use. Persistence restores the save into it
-    in place."""
+    """The disappearance and the journal, empty on first use. Persistence restores the save into
+    it in place."""
     if not hasattr(app.state, "investigation"):
         app.state.investigation = Investigation()
     return app.state.investigation

@@ -266,8 +266,8 @@ tells the model what the lie is (`temptation.py`).
 - **Who voices them.** Once a resident is set up to lie to the player, about Aris or anything
   above, their replies use `PlayerConfig.suspect_model`. It's Haiku 4.5, like everyone else's,
   unless `SIMILE_SUSPECT_MODEL` names another, such as `ollama:gemma4:26b`. S14
-  ([#361](https://github.com/mentaldesk/simile/issues/361)) compared the two and kept Haiku: [#383](https://github.com/mentaldesk/simile/pull/383) has the
-  numbers. Scenes keep B2's model.
+  ([#361](https://github.com/mentaldesk/simile/issues/361)) compared the two and kept Haiku:
+  [#383](https://github.com/mentaldesk/simile/pull/383) has the numbers. Scenes keep B2's model.
 - **For B3.** `engine.lies(conversation_id)` hands over, once, the lies a conversation set up: who
   was to lie to whom, about what, and whether the listener's own flags already hold the truth (who
   lent them money, knows the secret or holds the grudge). Nobody is set up to hide being short or a
@@ -299,12 +299,12 @@ lifespan points at the saved investigation, is the disappearance.
     rather not talk about it, without denying that they know something.
 
   Their memory of a fact they lie about or keep back isn't in the prompt, so it can't slip out.
-- **Elsewhere.** The disappearance's memories are out of R2's `recall`, so they're not on anyone's mind
-  in a scene, a reply or a work until the player asks. After that, B3 remembers the conversation
-  like any other: a resident who told the player something remembers telling it, which `recall`
-  returns. A lie's direction holds no truth, and both the liar's memory of lying and their summary
-  of that conversation carry the fact's id (`Lie.fact_id`), so `recall` leaves them out. Residents
-  don't tell each other what they know.
+- **Elsewhere.** The disappearance's memories are out of R2's `recall`, so they're not on anyone's
+  mind in a scene, a reply or a work until the player asks. After that, B3 remembers the
+  conversation like any other: a resident who told the player something remembers telling it, which
+  `recall` returns. A lie's direction holds no truth, and both the liar's memory of lying and their
+  summary of that conversation carry the fact's id (`Lie.fact_id`), so `recall` leaves them out.
+  Residents don't tell each other what they know.
 - **For other modules.** `PlayerTalk.tellings` has what the resident was set up to say about each
   fact, by its id, with the `Stance` (`tell`, `lie` or `keep`). Each lie is also in `talk.lies`, with
   `Temptation.fact_id`, and in `engine.lies` for B3.
