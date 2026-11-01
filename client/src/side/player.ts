@@ -233,7 +233,7 @@ export class SidePlayer {
     if (this.buffered > 0 && this.coyote > 0) this.jump(controls.x);
     this.coyote = Math.max(this.coyote - dt, 0);
     const flying = this.air!;
-    launch(map, this.position, flying, dt);
+    launch(map, this.position, flying);
     if (flying.held && !controls.hold) {
       flying.held = false;
       if (flying.vy < 0) flying.vy *= JUMP_CUT;

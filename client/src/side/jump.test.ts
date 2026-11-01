@@ -478,7 +478,32 @@ function tapUnder(rows: number, kit: string | undefined, fps: number) {
   return rows - highest;
 }
 
+/** Stands under `rows` open rows on the kit's table at `fps`, jumps with Space held and returns how high the feet rose. */
+function heldUnder(rows: number, kit: string | undefined, fps: number) {
+  const solid = '#'.repeat(10);
+  const player = on(sketch([solid, ...Array<string>(rows).fill('.'.repeat(10)), solid]), 5, rows);
+  player.rise = tableOf(kit).rise;
+  player.update(press({ jump: true, hold: true }), 1 / fps);
+  let highest = rows;
+  for (let frame = 0; frame < 1000 && player.airborne; frame++) {
+    player.update(press({ hold: true }), 1 / fps);
+    highest = Math.min(highest, player.position.y);
+  }
+  return rows - highest;
+}
+
 describe('under a low ceiling', () => {
+  it.each([30, 60, 144])('rises with Space held to just under the ceiling, at %s fps', (fps) => {
+    for (const rows of [3, 4]) {
+      for (const kit of [undefined, 'spring_feet', 'spring_feet_2']) {
+        const room = Math.min(rows - JUMP_TABLE.body, tableOf(kit).rise);
+        const rise = heldUnder(rows, kit, fps);
+        expect(rise, `${kit} under ${rows} rows`).toBeLessThanOrEqual(room + 1e-9);
+        expect(rise, `${kit} under ${rows} rows`).toBeGreaterThan(room - 0.005);
+      }
+    }
+  });
+
   it.each([30, 60, 144])('hops no higher on a tap of Space on the spring feet than on its own legs, at %s fps', (fps) => {
     for (const rows of [2, 3]) {
       const own = tapUnder(rows, undefined, fps);

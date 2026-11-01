@@ -105,10 +105,10 @@ export function dropBeyond(map: SideMap, end: number, y: number, way: -1 | 1): b
 }
 
 /** Slows a jump's take-off from `at` to no faster than reaching the ceiling needs, once, before letting go of Space can cut it. */
-export function launch(map: SideMap, at: { x: number; y: number }, air: Air, dt: number): void {
+export function launch(map: SideMap, at: { x: number; y: number }, air: Air): void {
   if (!air.held || air.launched) return;
   air.launched = true;
-  air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)) + (GRAVITY * dt) / 2);
+  air.vy = Math.max(air.vy, -jumpSpeed(headRoom(map, at.x, at.y + 1)));
 }
 
 /** Moves `at` through the air for `dt`, half way through `steer`ing it, stopped by anything solid and kept on the map; true once it lands. */
