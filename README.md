@@ -24,7 +24,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 |---|---|
 | ← → (or A D) | Walk, or run once Shift is on. In the air, steer. |
 | Shift | Switch between walking and running. You keep running, stopped or on stairs and ladders, until you press it again. |
-| Space | Jump. Hold it to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. Land on a rat to kill it. |
+| Space or PgUp | Jump. Hold the key to jump higher, and run to jump further. Walk off a ledge and you land safely on whatever is below. Land on a rat to kill it. |
 | ↑ (or W) | Upstairs or up a ladder, from the tile beside its foot. On the lift, up a floor. |
 | ↓ (or S) | Downstairs or down a ladder, from the tile beside its top. On the lift, down a floor. |
 | E | Go through a door, or onto another street. Off a door, read the news at a terminal, pick up what you left when you collapsed, or look at a clue in Aris's workshop. |
@@ -42,7 +42,7 @@ voice-lab's virtualenv, which loads it, and the first time downloads it, even wi
 A small tag over each door, flight of stairs, ladder and the lift names its keys.
 
 When you're hurt, press E at your bed to rest, in the loft up the ladder at home in the maker space:
-it heals you from nothing to full in a few seconds. A move key, Space or E gets you up. Anywhere else at home you heal slowly, and outside more
+it heals you from nothing to full in a few seconds. A move key, Space, PgUp or E gets you up. Anywhere else at home you heal slowly, and outside more
 slowly still. An infected bite stops you healing anywhere until the clinic treats it.
 
 # Concept

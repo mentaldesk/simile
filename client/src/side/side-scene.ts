@@ -20,7 +20,7 @@ import { DarkView } from './dark-view';
 import { atPlug, glowAround, hasDark, isLit, sightOf } from './darkness';
 import { lampHere, lampOf, switchLamp } from './lamp';
 import { DEPTH } from './depths';
-import { eachOnce, readControls, RunToggle, type Held } from './input';
+import { eachOnce, JUMP_KEYS, JumpKeys, readControls, RunToggle, type Held } from './input';
 import { DOLL_M, feetOf, PPM, xOf } from './layout';
 import { emptyLight, lightAt, lightBelow, UNDERGROUND } from './light';
 import { cellOf, type Link, type Village } from './maps';
@@ -45,7 +45,7 @@ export const SIDE_SCENE = 'side-world';
 
 /** When the snapshot's player isn't on a side-view map. */
 const DEFAULT_START: MapPosition = { x: 51, y: 15, map: 'high_street' };
-const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D,SPACE';
+const KEYS = 'UP,DOWN,LEFT,RIGHT,W,A,S,D';
 /** Above the end of a way, where its prompt sits: under a room's ceiling, or over a street's signposts. */
 const PROMPT_M = { floor: 2.75, street: 3.35 };
 /** Half a sim minute. */
@@ -60,7 +60,7 @@ const SHADOW_FADE_M = 6;
 
 const contactAlpha = (up: number) => Math.max(0, 1 - up / SHADOW_FADE_M);
 
-type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D' | 'SPACE', Phaser.Input.Keyboard.Key>;
+type Keys = Record<'UP' | 'DOWN' | 'LEFT' | 'RIGHT' | 'W' | 'A' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
 type Figure = { id: string; doll: SideDoll; contact: Phaser.GameObjects.Image; x: number; feet: number; shown: boolean };
 
 const harness = import.meta.env.DEV && new URLSearchParams(globalThis.location?.search ?? '').get('harness') === 'side';
@@ -91,7 +91,7 @@ export class SideScene extends Phaser.Scene {
   private readonly held: Held = { up: false, down: false, left: false, right: false, run: false };
   private readonly controls: Controls = { x: 0, y: 0, use: false, run: false };
   private readonly running = new RunToggle();
-  private jumped = false;
+  private jumping!: JumpKeys;
   private passing = false;
   /** Where they wake once the street is shown and any door they are going through is done. */
   private waking?: MapPosition;
@@ -117,7 +117,8 @@ export class SideScene extends Phaser.Scene {
     const keyboard = this.input.keyboard!;
     this.keys = keyboard.addKeys(KEYS, false) as Keys;
     keyboard.on('keydown-E', (event: KeyboardEvent) => (this.used ||= !event.repeat));
-    keyboard.on('keydown-SPACE', (event: KeyboardEvent) => (this.jumped ||= !event.repeat));
+    this.jumping = new JumpKeys(JUMP_KEYS.map((key) => keyboard.addKey(key, false)));
+    for (const key of JUMP_KEYS) keyboard.on(`keydown-${key}`, this.jumping.keyDown);
     keyboard.on('keydown-L', eachOnce((event: KeyboardEvent) => !event.repeat && this.switchLamp()));
     keyboard.on('keydown', eachOnce((event: KeyboardEvent) => this.running.keyDown(event.key, event.repeat)));
     keyboard.on('keyup', eachOnce((event: KeyboardEvent) => this.running.keyUp(event.key)));
@@ -267,10 +268,9 @@ export class SideScene extends Phaser.Scene {
     held.left = keys.LEFT.isDown || keys.A.isDown;
     held.right = keys.RIGHT.isDown || keys.D.isDown;
     held.run = this.running.on;
-    held.jump = this.jumped;
-    held.hold = keys.SPACE.isDown;
+    this.jumping.read(held);
     readControls(held, this.used, this.controls);
-    this.used = this.jumped = tapped.up = tapped.down = false;
+    this.used = tapped.up = tapped.down = false;
     return this.controls;
   }
 
