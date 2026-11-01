@@ -1,6 +1,6 @@
 {
   "id": "kofi",
-  "hash": "14b7ce8aefd60a8b",
+  "hash": "45b97c1868ec3799",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "curly",
@@ -13,7 +13,7 @@
       "headphones"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "kofi.webp",
@@ -28,6 +28,22 @@
       "feet": [
         48.5,
         171.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        175,
+        139,
+        61
+      ],
+      "feet": [
+        68.5,
+        61.0
+      ],
+      "bed": [
+        68.5,
+        61.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

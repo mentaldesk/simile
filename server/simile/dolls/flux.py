@@ -20,6 +20,8 @@ OTHERS = ("mflux", "simile (papercraft|dolls)")
 SHELLS = {"sh", "bash", "zsh", "fish", "sleep", "pgrep", "grep"}
 """Programs whose command lines may name one without running it."""
 WAIT_S = 60
+CURLED = 0.75
+"""How long the fake painter's lying figure is against its standing one."""
 
 
 def ours() -> set[str]:
@@ -140,7 +142,8 @@ class Flux:
 
 class FakePainter:
     """Draws a figure in the colours the prompt names, without a model: for tests and dry runs.
-    An edit redraws the figure in `images[0]` a little darker, with any bionic it asks for."""
+    An edit redraws the figure in `images[0]` a little darker, with any bionic it asks for, lying
+    down and shorter if it's painted in landscape."""
 
     BACKGROUND = (214, 214, 216)
 
@@ -158,12 +161,24 @@ class FakePainter:
     ) -> Image.Image:
         import numpy as np
 
+        from simile.dolls.sprites import lain, upright
+
         self.calls.append((prompt, seed, len(images)))
         if images:
-            base = np.asarray(images[0].convert("RGB").resize(size), dtype=np.float64)
+            lying = size[0] > size[1]
+            base = images[0].convert("RGB")
+            if base.width > base.height:
+                base = upright(base)
+                base = base.crop((0, 0, base.width, round(CURLED * base.height))).resize(base.size)
+            base = np.asarray(base.resize(sorted(size)), dtype=np.float64)
             figure_only = np.where(np.all(base == self.BACKGROUND, axis=2), 1.0, 0.98)
             darker = np.clip(base * figure_only[..., None], 0, 255).astype(np.uint8)
-            return fitted(Image.fromarray(darker), prompt)
+            painted = fitted(Image.fromarray(darker), prompt)
+            if not lying:
+                return painted
+            curled = Image.new("RGB", painted.size, self.BACKGROUND)
+            curled.paste(painted.resize((painted.width, round(CURLED * painted.height))), (0, 0))
+            return lain(curled)
         return figure(size, named_colours(prompt))
 
 
@@ -171,7 +186,7 @@ def fitted(painting: Image.Image, prompt: str) -> Image.Image:
     """`painting` of `figure` with each bionic `prompt` asks for."""
     from PIL import ImageDraw
 
-    from simile.dolls.bionics import WORDS
+    from simile.dolls.bionics import ASLEEP_WORDS, WORDS
     from simile.schema.player import Bionic
 
     w, h = painting.size
@@ -191,7 +206,7 @@ def fitted(painting: Image.Image, prompt: str) -> Image.Image:
             draw.rectangle(box(feet[0], 0.94, feet[1], 1.0), (240, 210, 40), (40, 26, 20), 3)
     if WORDS[Bionic.DATAJACK] in prompt:
         draw.ellipse(box(-0.13, 0.3, -0.09, 0.34), (60, 220, 60))
-    if WORDS[Bionic.INFRARED_EYE] in prompt:
+    if WORDS[Bionic.INFRARED_EYE] in prompt or ASLEEP_WORDS[Bionic.INFRARED_EYE] in prompt:
         draw.ellipse(box(0.04, 0.16, 0.08, 0.2), (222, 30, 30))
     return painting
 

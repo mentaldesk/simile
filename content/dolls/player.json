@@ -1,6 +1,6 @@
 {
   "id": "player",
-  "hash": "02b47e67b5acc337",
+  "hash": "2a82573bc8356778",
   "appearance": {
     "skin": "#e4a672",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "backpack"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "player.webp",
@@ -28,6 +28,22 @@
       "feet": [
         44.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        592,
+        0,
+        141,
+        63
+      ],
+      "feet": [
+        69.5,
+        63.0
+      ],
+      "bed": [
+        69.5,
+        63.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

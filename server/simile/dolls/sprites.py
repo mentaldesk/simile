@@ -14,7 +14,7 @@ PPM = 80
 """Atlas pixels a metre: a retina screen's, so a figure draws 1:1 at play size."""
 HEIGHT_M = 2.04
 """A standing figure, sole to crown: the client's `DOLL_M`."""
-VERSION = 3
+VERSION = 4
 QUALITY = 85
 PAD = 2
 ATLAS_WIDTH = 1024
@@ -46,10 +46,29 @@ class Frame:
     seat: tuple[float, float] | None = None
     """Where a sitting figure sits, under the middle of its head: the bottom of what's behind
     its calves."""
+    bed: tuple[float, float] | None = None
+    """Where a lying figure lies: the middle of its underside."""
 
 
 def solid(image: Image.Image) -> NDArray[np.bool_]:
     return np.asarray(image.getchannel("A")) >= SOLID
+
+
+def upright(image: Image.Image) -> Image.Image:
+    """A figure lying with its head to the left turned head up, to be measured as one standing."""
+    return image.transpose(Image.Transpose.ROTATE_270)
+
+
+def lain(image: Image.Image) -> Image.Image:
+    """An `upright` figure laid down again, head to the left."""
+    return image.transpose(Image.Transpose.ROTATE_90)
+
+
+def underside(image: Image.Image) -> tuple[float, float]:
+    """The middle of a lying figure's underside: across the middle of it, on its lowest row."""
+    a = solid(image)
+    cols, rows = np.flatnonzero(a.any(axis=0)), np.flatnonzero(a.any(axis=1))
+    return (cols[0] + cols[-1] + 1) / 2, float(rows[-1] + 1)
 
 
 def cut_out(painting: Image.Image) -> Image.Image:
@@ -171,11 +190,13 @@ def frames(
     lifted: Mapping[str, str] | None = None,
     seated: Iterable[str] = (),
     reference: Image.Image | None = None,
+    lying: Iterable[str] = (),
 ) -> dict[str, Frame]:
     """Every cut-out figure at `PPM`: the standing one `HEIGHT_M` tall, and each other one by
     the same factor over its `scale`, since FLUX may redraw a pose a little bigger or smaller.
     A frame `lifted` to another is in the air: its feet go below its lowest row, so its head is
-    as high as the other's. A `seated` frame says where it sits."""
+    as high as the other's. A `seated` frame says where it sits. A `lying` frame is measured
+    `upright` and laid down again, its feet where it lies."""
     stand = trimmed(figures[standing] if reference is None else reference)
     factor = HEIGHT_M * PPM / height(stand)
     depth = HEAD * height(stand)
@@ -187,6 +208,10 @@ def frames(
         out[name] = Frame(small, feet(small, depth * factor * fit, up))
         if name in seated:
             out[name].seat = seat(small, out[name].feet[0])
+        if name in lying:
+            small = lain(small)
+            bed = underside(small)
+            out[name] = Frame(small, bed, bed=bed)
     for name, other in (lifted or {}).items():
         x, y = out[name].feet
         lift = max(0.0, crown(out[other]) - crown(out[name]))
@@ -270,6 +295,11 @@ def manifest(
                 **(
                     {"seat": [round(made[name].seat[0], 1), round(made[name].seat[1], 1)]}
                     if made[name].seat
+                    else {}
+                ),
+                **(
+                    {"bed": [round(made[name].bed[0], 1), round(made[name].bed[1], 1)]}
+                    if made[name].bed
                     else {}
                 ),
             }

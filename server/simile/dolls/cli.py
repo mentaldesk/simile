@@ -43,6 +43,23 @@ def register(app: typer.Typer) -> None:
                 if off:
                     typer.echo(f"{painted.who} {frame}: still off by {off}")
 
+    @dolls.command("add")
+    def add(
+        who: Annotated[list[str], typer.Argument(help="Residents whose paintings are gone.")],
+    ) -> None:
+        """Paint the frames each figure's atlas lacks from its committed standing frame, keeping
+        every other frame as it is."""
+        from functools import partial
+
+        from simile.dolls.build import PAINTINGS, Cached, add_frames, people, personas
+        from simile.dolls.flux import Flux, wait_for_gpu
+
+        model = Cached(partial(Flux, wait_for_gpu), PAINTINGS)
+        with model.stack:
+            for name in who:
+                painted = add_frames(name, people()[name], model, personas().get(name, ""))
+                typer.echo(f"{name}: added in {painted.seconds:.0f} s of FLUX")
+
     @dolls.command("seats")
     def seats() -> None:
         """Measure each figure's seat in content/dolls/ again from its atlas, without painting."""

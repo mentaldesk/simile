@@ -13,9 +13,12 @@ from simile.dolls.sprites import (
     feet,
     frames,
     head,
+    lain,
     manifest,
     pack,
     seat,
+    underside,
+    upright,
 )
 
 
@@ -189,3 +192,39 @@ def test_only_clear_patches_the_outline_shuts_in_are_enclosed() -> None:
     inside = enclosed(clear)
 
     assert inside[25, 25] and not inside[0, 0] and not inside[45, 42]
+
+
+def test_a_figure_lying_head_to_the_left_turns_head_up_and_back() -> None:
+    lying = lain(person())
+
+    skin = np.all(np.asarray(lying) == (230, 170, 120, 255), axis=2)
+    assert lying.width > lying.height
+    assert np.flatnonzero(skin.any(axis=0)).max() < lying.width / 2
+    assert np.array_equal(np.asarray(upright(lying)), np.asarray(person()))
+
+
+def test_a_lying_frame_is_scaled_upright_and_lies_on_the_middle_of_its_underside() -> None:
+    figures = {"stand": person(), "sit": person(scale=1.2), "lie": person(scale=1.2)}
+    made = frames(figures, lying=["lie"])
+
+    lie = made["lie"]
+    assert lie.image.width > lie.image.height
+    assert np.array_equal(np.asarray(upright(lie.image)), np.asarray(made["sit"].image))
+    assert lie.bed == lie.feet == underside(lie.image)
+    assert made["stand"].bed is None
+
+
+def test_a_lying_figure_lies_across_the_middle_of_it_on_its_lowest_row() -> None:
+    image = Image.new("RGBA", (100, 40), (0, 0, 0, 0))
+    ImageDraw.Draw(image).rectangle((10, 5, 69, 29), (200, 100, 50, 255))
+
+    assert underside(image) == (40.0, 30.0)
+
+
+def test_only_a_lying_frame_has_a_bed_in_the_manifest() -> None:
+    made = frames({"stand": person(), "lie": person()}, lying=["lie"])
+
+    found = manifest(made, atlas(made)[1], {"lie": ["lie"]}, "a.webp")["frames"]
+
+    assert found["lie"]["bed"] == found["lie"]["feet"]
+    assert "bed" not in found["stand"]

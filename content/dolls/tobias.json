@@ -1,6 +1,6 @@
 {
   "id": "tobias",
-  "hash": "fc7c9e2e1266189c",
+  "hash": "f5b2bb69dd3972a3",
   "appearance": {
     "skin": "#ead4aa",
     "hair_style": "short",
@@ -13,7 +13,7 @@
       "cap"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "tobias.webp",
@@ -28,6 +28,22 @@
       "feet": [
         48.7,
         164.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        168,
+        133,
+        57
+      ],
+      "feet": [
+        65.5,
+        57.0
+      ],
+      "bed": [
+        65.5,
+        57.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

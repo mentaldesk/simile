@@ -1,6 +1,6 @@
 {
   "id": "henrietta",
-  "hash": "4815a8d4823b4c7f",
+  "hash": "542321e36aaaa838",
   "appearance": {
     "skin": "#733e39",
     "hair_style": "bun",
@@ -13,7 +13,7 @@
       "scarf"
     ]
   },
-  "version": 3,
+  "version": 4,
   "ppm": 80,
   "height": 163.2,
   "painted": "henrietta.webp",
@@ -28,6 +28,22 @@
       "feet": [
         44.5,
         165.0
+      ]
+    },
+    "lie": {
+      "frame": [
+        0,
+        170,
+        168,
+        79
+      ],
+      "feet": [
+        83.5,
+        79.0
+      ],
+      "bed": [
+        83.5,
+        79.0
       ]
     },
     "pass": {
@@ -128,6 +144,9 @@
     ],
     "climb": [
       "climb"
+    ],
+    "lie": [
+      "lie"
     ]
   }
 }

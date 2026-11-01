@@ -154,6 +154,7 @@ describe('the committed figures', () => {
   it('draw every frame at the standing figure’s scale', () => {
     for (const doll of Object.values(dolls)) {
       for (const [name, { frame: box }] of Object.entries(doll.frames)) {
+        if (name === 'lie') continue;
         expect(box[3], `${doll.id} ${name}`).toBeLessThan(doll.height * 1.2);
         expect(box[3], `${doll.id} ${name}`).toBeGreaterThan(doll.height * 0.75);
       }

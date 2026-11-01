@@ -7,7 +7,7 @@ import pytest
 from PIL import Image, ImageDraw
 
 from simile.dolls import bionics, build
-from simile.dolls.bionics import COMBINATIONS, WORDS, figure_id
+from simile.dolls.bionics import ASLEEP_WORDS, COMBINATIONS, WORDS, figure_id
 from simile.dolls.figure import FRAMES, POSES
 from simile.dolls.flux import FakePainter, figure
 from simile.dolls.measure import MARKS
@@ -263,6 +263,61 @@ def test_seats_are_measured_again_from_the_atlas_without_painting(
     assert build.reseat(tmp_path) == []
 
 
+def frames_of(directory: Path, who: str) -> dict[str, bytes]:
+    body = json.loads((directory / f"{who}.json").read_text())
+    with Image.open(directory / body["painted"]) as opened:
+        sheet = opened.convert("RGBA")
+    return {
+        name: sheet.crop((x, y, x + w, y + h)).tobytes()
+        for name, entry in body["frames"].items()
+        for x, y, w, h in [entry["frame"]]
+    }
+
+
+def test_lies_down_in_landscape_on_the_middle_of_its_underside(tmp_path: Path, two: dict) -> None:
+    done = made(Painters(), tmp_path, only=["odalys"], cache=None)
+
+    painting = done[0].paintings["lie"]
+    assert painting.width > painting.height
+    entry = json.loads((tmp_path / "odalys.json").read_text())["frames"]["lie"]
+    assert entry["frame"][2] > entry["frame"][3]
+    assert entry["bed"] == entry["feet"]
+
+
+def test_a_frame_the_atlas_lacks_is_painted_from_its_standing_frame_and_added(
+    tmp_path: Path, two: dict
+) -> None:
+    made(Painters(), tmp_path, only=["odalys"], cache=None)
+    path = tmp_path / "odalys.json"
+    body = json.loads(path.read_text())
+    del body["frames"]["lie"], body["poses"]["lie"]
+    body["hash"] = "painted before lying"
+    path.write_text(json.dumps(body, indent=2) + "\n")
+    before = frames_of(tmp_path, "odalys")
+    painters = Painters()
+
+    said = build.personas()["odalys"]
+    model = build.Cached(painters, None)
+    build.add_frames("odalys", two["odalys"], model, said, tmp_path, keyed, lambda _: None)
+
+    after = json.loads(path.read_text())
+    lies = {build.seed("odalys", "lie", n) for n in range(build.TRIES["edit"])}
+    assert painters.fake.calls and all(c[1] in lies and c[2] == 1 for c in painters.fake.calls)
+    assert {k: v for k, v in frames_of(tmp_path, "odalys").items() if k != "lie"} == before
+    assert {k: v for k, v in after["frames"].items() if k != "lie"} == body["frames"]
+    assert after["frames"]["lie"]["bed"] == after["frames"]["lie"]["feet"]
+    assert after["poses"] == POSES
+    assert after["hash"] == build.fingerprint("odalys", two["odalys"], said)
+
+
+def test_frames_arent_added_to_a_figure_whose_appearance_changed(tmp_path: Path, two: dict) -> None:
+    made(Painters(), tmp_path, only=["odalys"], cache=None)
+    changed = two["odalys"].model_copy(update={"top_colour": "#124e89"})
+
+    with pytest.raises(ValueError, match="Appearance changed"):
+        build.add_frames("odalys", changed, build.Cached(Painters(), None), directory=tmp_path)
+
+
 def test_paints_the_player_with_each_combination_of_bionics(tmp_path: Path, every: dict) -> None:
     painters = Painters()
 
@@ -293,7 +348,7 @@ def test_each_part_is_painted_once_over_the_player_and_laid_over_it(
     made(painters, tmp_path, only=["player"], cache=None)
 
     edits = [prompt for prompt, _, images in painters.fake.calls if images]
-    eye = [prompt for prompt in edits if WORDS[EYE] in prompt]
+    eye = [prompt for prompt in edits if WORDS[EYE] in prompt or ASLEEP_WORDS[EYE] in prompt]
     assert len(eye) == len(FRAMES) - 1
     assert not any(WORDS[DATAJACK] in prompt for prompt in eye)
     both = json.loads((tmp_path / "player_datajack_eye.json").read_text())

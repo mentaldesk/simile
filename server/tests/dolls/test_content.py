@@ -9,6 +9,7 @@ from simile.dolls import bionics
 from simile.dolls.bionics import COMBINATIONS, SHORTS, figure_id, missing, spared
 from simile.dolls.build import (
     CONTENT,
+    LONG,
     MISSES,
     fingerprint,
     fitted_fingerprint,
@@ -27,6 +28,8 @@ from simile.dolls.sprites import (
     lower_edge,
     scale,
     seat,
+    underside,
+    upright,
 )
 from simile.schema import PLAYER_ID
 from simile.schema.player import Bionic
@@ -53,6 +56,7 @@ FROM_APPEARANCE = CLOSE + 1.5
 """The build matches within `CLOSE`; the atlas is smaller and lossy."""
 ON_SEAT = 0.03
 """Metres a sitting figure's seat may be from the bottom of its thighs as painted."""
+LYING = [f for f, pose in EDITS.items() if pose.lying]
 
 
 def manifest(who: str) -> dict:
@@ -64,9 +68,11 @@ def atlas(who: str) -> Image.Image:
     return Image.open(CONTENT / manifest(who)["painted"]).convert("RGBA")
 
 
-def frame(who: str, name: str) -> Image.Image:
+def frame(who: str, name: str, laid: bool = False) -> Image.Image:
+    """A frame as measured: lying ones turned head up, unless `laid`."""
     x, y, w, h = manifest(who)["frames"][name]["frame"]
-    return atlas(who).crop((x, y, x + w, y + h))
+    found = atlas(who).crop((x, y, x + w, y + h))
+    return upright(found) if name in LYING and not laid else found
 
 
 def test_content_dolls_stay_within_budget() -> None:
@@ -94,6 +100,8 @@ def test_each_frame_stands_under_the_middle_of_its_head(who: str) -> None:
         picture = frame(who, name)
         x, y, w, h = entry["frame"]
         assert x + w <= atlas(who).width and y + h <= atlas(who).height, name
+        if name in LYING:
+            continue
         solid = np.asarray(picture.getchannel("A")) >= 128
         lowest = np.flatnonzero(solid.any(axis=1))[-1] + 1
         feet_x, feet_y = entry["feet"]
@@ -103,6 +111,18 @@ def test_each_frame_stands_under_the_middle_of_its_head(who: str) -> None:
             assert feet_y == pytest.approx(lowest, abs=FEET_PX), name
         middle = climber(picture)[0] if name in hands_up else head(picture, depth)[0]
         assert feet_x == pytest.approx(middle, abs=FEET_PX), name
+
+
+@pytest.mark.parametrize("who", FIGURES)
+def test_lying_figures_lie_on_the_middle_of_their_underside_and_fit_a_bed(who: str) -> None:
+    for name in LYING:
+        entry = manifest(who)["frames"][name]
+        laid = frame(who, name, laid=True)
+        assert laid.width > laid.height, name
+        assert entry["bed"] == entry["feet"], name
+        assert entry["bed"] == pytest.approx(underside(laid), abs=FEET_PX), name
+        if (who.split("_")[0], name, "length") not in MISSES:
+            assert np.ptp(np.flatnonzero(np.asarray(laid.getchannel("A")).any(axis=0))) < LONG * PPM
 
 
 @pytest.mark.parametrize("who", FIGURES)

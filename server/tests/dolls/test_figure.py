@@ -4,6 +4,7 @@ import pytest
 from simile.characters.palette import PLAYER
 from simile.dolls.colour import rgb
 from simile.dolls.figure import (
+    ASLEEP,
     BODY,
     EDITS,
     FACE,
@@ -38,7 +39,16 @@ def test_every_other_pose_redraws_the_same_character(frame: str) -> None:
     assert words.startswith("Redraw image 1")
     assert "unchanged in every detail and the same size" in words
     assert "golden tan skin" in words
-    assert (FACE in words) == (frame != "climb")
+    assert (FACE in words) == (frame not in ("climb", "lie"))
+
+
+def test_lying_asks_for_closed_eyes_head_to_the_left_and_no_bed() -> None:
+    words = edit_prompt("lie", PLAYER, "player")
+
+    assert ASLEEP in words and FACE not in words
+    assert "the head on the left and the feet on the right" in words
+    assert "no bed, no pillow, no blanket" in words
+    assert EDITS["lie"].lying and not EDITS["sit"].lying
 
 
 def test_every_pose_plays_only_painted_frames() -> None:
