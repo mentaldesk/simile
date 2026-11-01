@@ -248,6 +248,8 @@ def dodge(walk: Walkthrough, step: Step) -> list[Step | Plan] | None:
             continue
         if ahead <= JUMP_OVER:
             land = walk.x + way * CLEARS
+            if walk._blocked(land, row):
+                land = float(round(land))
             cells = range(round(walk.x), round(land) + way, way)
             if walk.town.standing(round(land), row) and all(
                 walk.town.walkable(x, row) for x in cells
@@ -293,7 +295,8 @@ def floor(town: TownMap, row: int, xs: range) -> set[Cell]:
 
 
 def past(town: TownMap, spawn: Spawn) -> Plan:
-    """Across the floor a bot keeps to, from wherever they come onto it to past where it starts."""
+    """Across the floor a bot keeps to, from wherever they come onto it to past where it starts,
+    or only onto it where it starts too near the floor's end to land past it."""
 
     def plan(walk: Walkthrough) -> list[Step | Plan]:
         bot = walk.creature(spawn.id)
@@ -302,6 +305,8 @@ def past(town: TownMap, spawn: Spawn) -> Plan:
         onto = next(c for c in way(walk.town, here, stretch, walk.jump) if c in stretch)
         side = 1 if bot.home[0] >= onto[0] else -1
         beyond = [c for c in stretch if (c[0] - bot.home[0]) * side >= 0]
+        if max((c[0] - bot.home[0]) * side for c in beyond) < CLEARS + 1:
+            return [to(onto)]
         far = min(beyond, key=lambda c: abs(c[0] - (bot.home[0] + 4 * side)))
         return [to(far)]
 
@@ -323,6 +328,7 @@ def across(town: TownMap, spawn: Spawn) -> Plan:
     area = spawn.area
     assert area is not None
     room = floor(town, area.y + area.height - 1, range(area.x, area.x + area.width))
+    room = {c for c in room if not town.solid(*above(c))}
 
     def plan(walk: Walkthrough) -> list[Step | Plan]:
         here = (round(walk.x), round(walk.y))

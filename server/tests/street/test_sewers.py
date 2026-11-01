@@ -45,6 +45,7 @@ from simile.street.sewers import (
     SECURITY_TERMINAL,
     SEWERS,
     SHAFT,
+    TAPS,
     WALKS,
     WEIR,
     WEIR_AT,
@@ -146,16 +147,17 @@ def test_nobody_gets_stuck_on_any_legs_or_feet(seed: int, level: Callable[[int],
         assert not stuck, name
 
 
+@pytest.mark.parametrize("jumps", [WALKS, TAPS], ids=["held", "tapped"])
 @pytest.mark.parametrize("seed", SEEDS, ids=ids)
 def test_zone_0_is_walked_to_the_legs_finds_and_the_gate_box_and_back_on_walking_jumps_alone(
-    seed: int, level: Callable[[int], Played]
+    seed: int, jumps: dict[str, Jump], level: Callable[[int], Played]
 ) -> None:
     town = level(seed).town
     stops = {find.id for find in FINDS if find.zone == 0} | {GATE_BOX}
     cells = {item.id: item.stand[0] for item in town.interactables if item.id in stops}
 
     assert set(cells) == stops
-    for name, jump in WALKS.items():
+    for name, jump in jumps.items():
         for item_id, stand in cells.items():
             there = (stand.x, stand.y)
             assert walked(town, START, there, jump), (name, "to", item_id)
