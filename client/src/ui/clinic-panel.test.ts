@@ -284,6 +284,7 @@ describe('ClinicPanel', () => {
     press('ArrowRight');
     expect(selected()).toBe('Bionic legs');
     expect(document.querySelector('.clinic-active h3')!.textContent).toBe('Theirs');
+    expect(document.querySelector('.clinic-kept .clinic-name')!.textContent).toBe('Copper wire');
     press('ArrowUp');
     expect(selected()).toBe('Talk to Annelie Joubert');
     press('ArrowUp');
@@ -360,13 +361,60 @@ describe('ClinicPanel', () => {
     expect(panel.isOpen).toBe(false);
   });
 
-  it('chooses the next deal once the chosen one is done, never talking by surprise', () => {
+  it('stays in its column once it empties, and chooses past talking on →', () => {
     panel.open(CLINIC, player(0), DOCTOR);
     panel.update({ ...CLINIC, parts: undefined }, player(100), DOCTOR);
 
-    expect(selected()).toBe('Bionic legs');
+    expect(selected()).toBeUndefined();
+    expect(document.querySelector('.clinic-active h3')!.textContent).toBe('Yours');
     press('Enter');
     expect(talk).not.toHaveBeenCalled();
+    press('ArrowRight');
+    expect(selected()).toBe('Bionic legs');
+  });
+
+  it('waits for the arrows once everything is sold, never selling the lamp on a quick second Enter', () => {
+    const stall = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
+    panel.open(stall, player(0, [LAMP, WIRE, PLUG]));
+    press('Enter');
+    panel.update(stall, player(18, [LAMP]));
+
+    expect(rows('yours')).toEqual(['Lamp']);
+    expect(selected()).toBeUndefined();
+    expect(status()).toBe('Done. Choose the next with the arrows.');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell', item: null }]);
+    press('ArrowDown');
+    expect(selected()).toBe('Lamp');
+    press('Enter');
+    expect(sent).toEqual([
+      { type: 'sell', item: null },
+      { type: 'sell', item: 'lamp' },
+    ]);
+  });
+
+  it('never buys back what they just sold on a quick second Enter', () => {
+    panel.open(SELLS, player(0, [PLUG]));
+    press('Enter');
+    panel.update({ ...SELLS, stock: [{ item: PLUG, price: 24 }] }, player(12));
+
+    expect(rows('theirs')).toEqual(['USB-C connector']);
+    expect(selected()).toBeUndefined();
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell', item: 'usb_c_connector' }]);
+    press('ArrowRight');
+    expect(selected()).toBe('USB-C connector');
+  });
+
+  it('lands off the lamp once the chosen row is sold', () => {
+    const stall = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
+    panel.open(stall, player(0, [WIRE, PLUG, LAMP]));
+    press('ArrowDown', 'ArrowDown', 'Enter');
+    panel.update(stall, player(12, [WIRE, LAMP]));
+
+    expect(rows('yours')).toEqual(['Copper wire', 'Lamp']);
+    press('ArrowDown');
+    expect(selected()).toBe('Copper wire');
   });
 
   it('shows what a fitting needs when chosen, and sells a recipe on one Enter', () => {
@@ -424,6 +472,8 @@ describe('ClinicPanel', () => {
     panel.update(SELLS, player(12, [PLUG]));
     expect(rows('yours')).toEqual(['USB-C connector']);
     press('Enter');
+    expect(sent).toHaveLength(2);
+    press('ArrowDown', 'Enter');
     expect(sent).toEqual([
       { type: 'sell', item: 'copper_wire' },
       { type: 'sell', item: 'copper_wire' },

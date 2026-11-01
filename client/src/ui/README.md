@@ -210,10 +210,13 @@ what Enter does ("Sell one: Copper wire"), what it pays or costs against their c
 fitting's recipe uses up against what they carry ("copper wire 1/3 · usb-c connector 1/1"), or why
 it's blocked; the footer says what Enter will do, or why it can't.
 
-← and → switch columns, each keeping its own choice, and ↑ and ↓ choose within one; the panel keeps
-these keys from the game while it's open. It opens on yours, or on theirs when it buys nothing they
-carry, and never chooses talking unless they do. Enter or a click goes ahead. Selling a part or a
-fitting can't be undone, so it takes a second Enter or click, and moving the choice forgets the
+← and → switch columns, each keeping its own choice (faintly outlined in the other column), and ↑
+and ↓ choose within one; the panel keeps these keys from the game while it's open. It opens on
+yours, or on theirs when it buys nothing they carry, and only switches columns on the arrows. The
+choice never lands on talking or the lamp unless they move it there. Enter or a click goes ahead.
+Once the chosen row is gone, say sold, Enter does nothing until an arrow chooses again (↓ chooses the
+row now in its place), so a quick second Enter never trades what they didn't choose. Selling a part
+or a fitting can't be undone, so it takes a second Enter or click, and moving the choice forgets the
 first. Esc or E closes the panel, and so does walking away from the buyer, or once it has nothing
 left to trade.
 

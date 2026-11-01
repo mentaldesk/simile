@@ -170,6 +170,7 @@ function key(deal: Deal): string {
 }
 const isShort = (deal: Deal) => ((deal.kind === 'fit' || deal.kind === 'treat') && deal.short) || (deal.kind === 'buy' && deal.short !== undefined);
 const isBlocked = (deal: Deal) => deal.kind === 'fit' && deal.blocked !== undefined;
+const isLamp = (deal: Deal) => deal.kind === 'item' && deal.item === 'lamp';
 const count = (deal: Deal) => (deal.kind === 'item' || deal.kind === 'buy' ? deal.count : 1);
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, className?: string): HTMLElementTagNameMap[K] {
@@ -177,6 +178,15 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, classN
   if (text !== undefined) element.textContent = text;
   if (className) element.className = className;
   return element;
+}
+
+/** `index` within `deals`, but off talking and the lamp where there's anything else, so the choice never lands on either by surprise. */
+function landing(deals: readonly Deal[], index: number): number {
+  const at = Math.min(index, Math.max(deals.length - 1, 0));
+  const plain = (i: number) => deals[i] !== undefined && deals[i].kind !== 'talk' && !isLamp(deals[i]);
+  if (plain(at)) return at;
+  const order = [...deals.keys()].filter((i) => i > at).concat([...deals.keys()].filter((i) => i < at).reverse());
+  return order.find(plain) ?? at;
 }
 
 /** The deal's icon, or a blank frame where it isn't painted yet. */
@@ -206,6 +216,8 @@ export class ClinicPanel {
   private side: Side = 'yours';
   private at: Record<Side, number> = { yours: 0, theirs: 0 };
   private armed?: string;
+  /** The chosen row is gone, so Enter waits for the arrows. */
+  private lost = false;
   private drawn = '';
   private cash = 0;
 
@@ -247,10 +259,12 @@ export class ClinicPanel {
   }
 
   open(buyer: Buyer, player: Player, keeper?: Keeper, recipes: readonly Recipe[] = []): void {
-    this.side = 'yours';
-    this.at = { yours: 0, theirs: 0 };
-    this.shown = { yours: [], theirs: [] };
+    const shown = columns(deals(buyer, player, keeper, recipes));
+    this.side = shown.yours.length || !shown.theirs.length ? 'yours' : 'theirs';
+    this.at = { yours: landing(shown.yours, 0), theirs: landing(shown.theirs, 0) };
+    this.shown = shown;
     this.armed = undefined;
+    this.lost = false;
     this.drawn = '';
     this.panel.hidden = false;
     this.update(buyer, player, keeper, recipes);
@@ -270,31 +284,21 @@ export class ClinicPanel {
       return;
     }
     const shown = columns(deals(buyer, player, keeper, recipes));
-    const drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed]);
+    const drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed, this.lost]);
     if (drawn === this.drawn) return;
     for (const side of SIDES) {
       const chosen = this.shown[side][this.at[side]];
       const kept = chosen ? shown[side].findIndex((deal) => key(deal) === key(chosen)) : -1;
-      this.at[side] = kept === -1 ? this.pastTalk(shown[side], this.at[side]) : kept;
+      if (chosen && kept === -1 && side === this.side) this.lost = true;
+      this.at[side] = kept === -1 ? landing(shown[side], this.at[side]) : kept;
     }
     this.shown = shown;
-    if (!shown[this.side].length && shown[this.other].length) this.side = this.other;
     this.cash = player.money;
     this.title.textContent = buyer.name;
     this.panel.ariaLabel = buyer.name;
     this.money.textContent = `Credits ${amount(player.money)}`;
     this.render();
-    this.drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed]);
-  }
-
-  private get other(): Side {
-    return this.side === 'yours' ? 'theirs' : 'yours';
-  }
-
-  /** `index` within `deals`, but past talking where there's anything else, so Enter never talks by surprise. */
-  private pastTalk(deals: readonly Deal[], index: number): number {
-    const at = Math.min(index, Math.max(deals.length - 1, 0));
-    return deals[at]?.kind === 'talk' && deals.length > 1 ? at + 1 : at;
+    this.drawn = JSON.stringify([buyer.name, player.money, shown, this.side, this.at, this.armed, this.lost]);
   }
 
   private onKey(event: KeyboardEvent): void {
@@ -310,7 +314,8 @@ export class ClinicPanel {
     } else if (pressed === 'ArrowDown' || pressed === 'ArrowUp') {
       event.preventDefault();
       const count = this.shown[this.side].length;
-      if (count) this.choose(this.side, (this.at[this.side] + (pressed === 'ArrowDown' ? 1 : -1) + count) % count);
+      const step = pressed === 'ArrowDown' ? (this.lost ? 0 : 1) : -1;
+      if (count) this.choose(this.side, (this.at[this.side] + step + count) % count);
     } else if (pressed === 'Enter' || pressed === ' ') {
       event.preventDefault();
       this.act();
@@ -325,12 +330,13 @@ export class ClinicPanel {
     if (side !== this.side || index !== this.at[side]) this.armed = undefined;
     this.side = side;
     this.at[side] = index;
+    this.lost = false;
     this.render();
   }
 
   private act(): void {
     const deal = this.deal;
-    if (!deal) return;
+    if (!deal || this.lost) return;
     if (deal.kind === 'talk') {
       this.close();
       this.talk(deal.npcId);
@@ -361,7 +367,9 @@ export class ClinicPanel {
       const rows = this.shown[side].map((deal, index) => {
         const row = el('li');
         row.dataset.index = String(index);
-        row.classList.toggle('clinic-selected', side === this.side && index === this.at[side]);
+        const at = index === this.at[side];
+        row.classList.toggle('clinic-selected', at && side === this.side && !this.lost);
+        row.classList.toggle('clinic-kept', at && side !== this.side);
         row.classList.toggle('clinic-short', isShort(deal));
         row.classList.toggle('clinic-blocked', isBlocked(deal));
         row.classList.toggle('clinic-armed', this.armed === key(deal));
@@ -374,9 +382,10 @@ export class ClinicPanel {
       this.lists[side].replaceChildren(...rows);
       this.lists[side].parentElement!.classList.toggle('clinic-active', side === this.side);
     }
-    const deal = this.deal;
+    const deal = this.lost ? undefined : this.deal;
     this.chosen.replaceChildren(...(deal ? [icon(deal), this.facts(deal)] : []));
-    this.status.textContent = deal ? note(deal, this.armed === key(deal), this.cash) : 'Nothing to buy or sell here now.';
+    if (this.lost) this.status.textContent = 'Done. Choose the next with the arrows.';
+    else this.status.textContent = deal ? note(deal, this.armed === key(deal), this.cash) : 'Nothing to buy or sell here now.';
     this.lists[this.side].querySelector('.clinic-selected')?.scrollIntoView?.({ block: 'nearest' });
   }
 
