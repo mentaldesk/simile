@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { playerState, server } from '../net';
 import { MoveThrottle } from '../world/throttle';
 import { MAX_FRAME_SECONDS, PLAYER_SPEED } from '../world/tuning';
 import { village } from './content';
 import { TILE_M } from './layout';
+import { LIE_SECONDS } from './poses';
 import { RIDE_SPEED, RUN_CYCLE_M, WALK_CYCLE_M } from './motion';
 import { PLAYER_CLIMB, RUN_BLEND_SECONDS, RUN_PACE, SidePlayer, type Controls, type MapPosition } from './player';
 
@@ -379,5 +381,79 @@ describe('stairs and ladders on a street', () => {
     const player = at({ x: 46, y: 12, map: 'lychee_lane' });
     hold(player, press({ y: 1 }), 6);
     expect(player.position).toEqual({ x: 45, y: 15 });
+  });
+});
+
+describe('resting in bed', () => {
+  const BED = { x: 5, y: 2, map: 'maker_space_floor_2' };
+  const rests = (resting: boolean) =>
+    server.dispatch(JSON.stringify({ type: 'player_state', player: { money: 0, items: [] }, bed: BED, ...(resting && { resting }) }));
+  const snapshot = () =>
+    server.dispatch(JSON.stringify({ type: 'snapshot', time: '2026-03-14T09:10:03Z', map_id: 'maker_space_floor_2', entities: [], conversations: [] }));
+  const awake = () => {
+    rests(false);
+    const player = at({ ...BED, x: 5.3 });
+    player.update(idle, 1 / 60);
+    return player;
+  };
+
+  afterEach(() => {
+    playerState.latest = undefined;
+  });
+
+  it('lies down on the bed cell over LIE_SECONDS while resting, whatever the keys', () => {
+    const player = awake();
+    rests(true);
+    player.update(press({ x: 1 }), 1 / 60);
+    expect(player.position.x).toBeGreaterThan(5.25);
+    hold(player, press({ x: 1, jump: true }), LIE_SECONDS / 2);
+    expect(player.position).toEqual({ x: 5, y: 2 });
+    expect(player.drawn.bed).toBeGreaterThan(0.3);
+    expect(player.drawn.bed).toBeLessThan(0.7);
+    expect(player.ways()).toEqual([]);
+    hold(player, press({ x: 1 }), LIE_SECONDS / 2 + 0.05);
+    expect(player.drawn).toMatchObject({ bed: 1, pose: 'sleeping' });
+    expect(player.airborne).toBe(false);
+    hold(player, idle, 5);
+    expect(player.drawn.bed).toBe(1);
+  });
+
+  it('gets up once the rest ends, and only then walks', () => {
+    const player = awake();
+    rests(true);
+    hold(player, idle, LIE_SECONDS + 0.1);
+    rests(false);
+    hold(player, press({ x: 1 }), LIE_SECONDS - 0.05);
+    expect(player.position.x).toBe(5);
+    expect(player.drawn.bed).toBeGreaterThan(0);
+    hold(player, press({ x: 1 }), 0.5);
+    expect(player.drawn.bed).toBe(0);
+    expect(player.drawn.pose).toBe('walking');
+    expect(player.position.x).toBeGreaterThan(5.5);
+  });
+
+  it('lies on the bed row if the rest starts in the air', () => {
+    const player = awake();
+    player.update(press({ jump: true, hold: true }), 1 / 60);
+    hold(player, press({ hold: true }), 0.1);
+    expect(player.airborne).toBe(true);
+    rests(true);
+    player.update(idle, 1 / 60);
+    expect(player.airborne).toBe(false);
+    expect(player.position.y).toBe(2);
+  });
+
+  it('is lying at once when placed, or after a snapshot, while resting already', () => {
+    rests(true);
+    const placed = at(BED);
+    placed.update(idle, 1 / 60);
+    expect(placed.drawn.bed).toBe(1);
+    const woken = awake();
+    snapshot();
+    woken.update(idle, 1 / 60);
+    expect(woken.drawn.bed).toBe(0);
+    rests(true);
+    woken.update(idle, 1 / 60);
+    expect(woken.drawn.bed).toBe(1);
   });
 });

@@ -138,6 +138,10 @@ The Phaser-free halves are tested under vitest.
   stops at walls, stairs and ladders on a map, which are taken with up or down, and walks off a
   ledge. While crossing between floors the player's position stays at the end they left from, as
   the protocol holds residents.
+- While `player_state` says they're `resting`, the player lies down on their bed's cell over
+  `LIE_SECONDS`, moving to its middle as they sit on the edge, and gets up once it doesn't, at full
+  health or on a key, by `poses.ts`'s `settle`. No key moves them until they're up. Placed, or after
+  a snapshot, while resting already, as on waking in bed after a collapse, they're lying at once.
 - Running: a press of Shift turns the walk into a run over `RUN_BLEND_SECONDS`, and another turns it
   back, at up to `runSpeed`, `RUN_PACE` (2) times `PLAYER_SPEED` on their own legs and faster on the
   bionic legs, along streets and floors and through the air. Each press counts once, though Phaser
@@ -163,8 +167,11 @@ The Phaser-free halves are tested under vitest.
   (`steady`). Anywhere off a whole row, as a snapshot can leave the player, they fall.
 - When the player collapses from hunger, `player_collapsed` puts them at home, as through a door,
   once the street is shown and any door they're going through is done. It's also where the scene
-  starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed. After every `snapshot` the
-  scene sends the player's position again, so a restarted server knows where they are.
+  starts them next (`sideResidents.start`), for a tab that wasn't in the game when they collapsed.
+  After every `snapshot` the scene sends the player's position again, so a restarted server knows
+  where they are. From `player_collapsed` until it has placed them where the server woke them, the
+  scene sends no position (`report.ts`), so a move the throttle held back can't take them off the
+  bed they wake in.
 - The jump is the player's own, by the legs and feet fitted (`jumpOf`): `content/street/jump.json`'s
   `kits` say what each grade of either, or one of each, changes, under the same gravity
   (`KIT_TABLES`). The feet rise higher, two rows on the spring feet and two more on their second
@@ -197,9 +204,9 @@ roof, and the metro's jumps up to its secrets, walks off the clock house's roof 
 down into the metro, through it into the clinic and back up to Banyan Row, walks into the metro's
 dark west tunnel, lights the lamp with L and walks on to the plug, checking the darkness and the
 gauge's hints, checks Aris's notes are drawn in the maker space and glow only while the player
-stands by them, searches Aris's bench and checks it's drawn searched, checks a run jump at the
-metro's high ledge falls short, lands on the high ledge's
-secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
+stands by them, searches Aris's bench and checks it's drawn searched, rests on E at the loft's bed,
+checking they lie down and get up at full health or on a key, checks a run jump at the metro's
+high ledge falls short, lands on the high ledge's secret on the spring feet and crosses the gantry's gap to its secret on the bionic legs, at the gate
 in level 0 of the sewers checks a jump on the player's own legs falls back from the weir, gets onto
 it on the spring feet and crosses the high gap on the bionic legs, opens the news at every terminal
 on E, orders at the café's counter on T, talks to Lachlan on T, each after E there does nothing, and
