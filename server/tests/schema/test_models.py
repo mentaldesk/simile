@@ -436,6 +436,7 @@ def test_poses_are_a_closed_set() -> None:
         "looking",
         "climbing",
         "riding",
+        "sleeping",
     ]
 
 

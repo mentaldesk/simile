@@ -220,6 +220,7 @@
           "player_say": "#/$defs/PlayerSayMessage",
           "read_news": "#/$defs/ReadNewsMessage",
           "read_work": "#/$defs/ReadWorkMessage",
+          "rest": "#/$defs/RestMessage",
           "sell": "#/$defs/SellMessage",
           "sell_part": "#/$defs/SellPartMessage",
           "sell_recipe": "#/$defs/SellRecipeMessage",
@@ -276,6 +277,9 @@
         },
         {
           "$ref": "#/$defs/TreatMessage"
+        },
+        {
+          "$ref": "#/$defs/RestMessage"
         }
       ]
     },
@@ -583,7 +587,7 @@
     },
     "Entity": {
       "additionalProperties": false,
-      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.",
+      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.\nA resident asleep in their bed is `sleeping`, on the bed spot's cell.",
       "properties": {
         "id": {
           "maxLength": 64,
@@ -625,7 +629,7 @@
     },
     "EntityMovedMessage": {
       "additionalProperties": false,
-      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.\nOn a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a\nlift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb\nor ride, then one onto the other map, as through a door.",
+      "description": "The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.\nOn a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a\nlift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb\nor ride, then one onto the other map, as through a door. Going to bed is an `entity_moved` onto\nthe bed spot's cell, `sleeping`, held until they wake and the next one gets them up.",
       "properties": {
         "type": {
           "const": "entity_moved",
@@ -1727,6 +1731,23 @@
             "$ref": "#/$defs/Pile"
           },
           "type": "array"
+        },
+        "bed": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MapTile"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The cell of their own bed at home where they stand, where `rest` lies them down. Left out everywhere else."
+        },
+        "resting": {
+          "default": false,
+          "description": "Whether they're resting in that bed, from `rest` until they're fully healed, move off it or get up. Left out unless they are.",
+          "type": "boolean"
         }
       },
       "required": [
@@ -1737,7 +1758,7 @@
       "type": "object"
     },
     "Pose": {
-      "description": "What someone is doing where they are. `climbing` is on stairs or a ladder, and `riding` in\na lift.",
+      "description": "What someone is doing where they are. `climbing` is on stairs or a ladder, `riding` in a\nlift, and `sleeping` lying asleep in a bed, on a bed spot's cell.",
       "enum": [
         "standing",
         "walking",
@@ -1746,7 +1767,8 @@
         "working",
         "looking",
         "climbing",
-        "riding"
+        "riding",
+        "sleeping"
       ],
       "title": "Pose",
       "type": "string"
@@ -1870,6 +1892,26 @@
         "after"
       ],
       "title": "Recipe",
+      "type": "object"
+    },
+    "RestMessage": {
+      "additionalProperties": false,
+      "description": "Lies the player down in their bed where they stand, `player_state`'s `bed`, or gets them up.\nThe server ignores it away from their bed, at full health, while they're infected, and when\nthey're already resting or up as asked.",
+      "properties": {
+        "type": {
+          "const": "rest",
+          "default": "rest",
+          "type": "string"
+        },
+        "on": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "on"
+      ],
+      "title": "RestMessage",
       "type": "object"
     },
     "Sale": {

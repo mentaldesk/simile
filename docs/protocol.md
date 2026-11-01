@@ -25,7 +25,7 @@ interiors' ids; this document says where.
   `long_summary`, a wall's `map`, a player's `left`, `taken`, `mind`, `power`, `health`, `effects`,
   `sales` and `searched`, a body's `stomach` and `feet`, a mind's `sold`, a pile's `money`, a
   buyer's `parts`, `fittings`, `recipes`, `stock` and `treatments`, a fitting's `blocked`, and
-  `player_state`'s `meal`, `shut`, `buyer`, `piles` and `recipes`, below.
+  `player_state`'s `meal`, `shut`, `buyer`, `piles`, `recipes`, `bed` and `resting`, below.
 - Timestamps are sim time: ISO 8601 in UTC, e.g. `"2026-03-14T09:10:03Z"`. UTC is village time.
 - A **position** is `{"x": 4.5, "y": 6, "map": "village"}` in tiles, measured like F2's `Tile`:
   `(4, 6)` is standing on tile (4, 6), and fractions are part-way between tiles while walking.
@@ -40,19 +40,21 @@ interiors' ids; this document says where.
     climbable cell (stairs or a ladder), and fractions are mid-step or mid-climb. The player can
     also be mid-air, jumping or falling (see [`player_move`](#player_move)).
 - An entity's **pose** is what it's doing: `"standing"`, `"walking"`, `"sitting"`, `"reading"`,
-  `"working"`, `"looking"`, `"climbing"` (on stairs or a ladder) or `"riding"` (in a lift). Its
-  **facing** is the way it faces on the map, x east and y south: `"east"`, `"south_east"`,
-  `"south"`, `"south_west"`, `"west"`, `"north_west"`, `"north"` or `"north_east"`, in order of
-  angle from east round through south. Both are F2 types, `Pose` and
-  `Facing` in `server/simile/schema/world.py`, so the world and the sim's events can use them too.
+  `"working"`, `"looking"`, `"climbing"` (on stairs or a ladder), `"riding"` (in a lift) or
+  `"sleeping"` (lying asleep in a bed, on a bed spot's cell). Its **facing** is the way it faces on
+  the map, x east and y south: `"east"`, `"south_east"`, `"south"`, `"south_west"`, `"west"`,
+  `"north_west"`, `"north"` or `"north_east"`, in order of angle from east round through south.
+  Both are F2 types, `Pose` and `Facing` in `server/simile/schema/world.py`, so the world and the
+  sim's events can use them too.
   - On a side-view map, the three eastward facings draw them facing right and the three westward
     ones left. `north` draws their back, looking into the picture (at a mural or a terminal), and
     `south` their front.
   - The server always sends both. Without them an entity is standing, facing south-east. As with
     `map`, the generated TypeScript has them optional: read `entity.pose ?? 'standing'` and
     `entity.facing ?? 'south_east'`.
-  - Sitting, reading, working and looking come with #264's spots, which face along the grid:
-    `north`, `east`, `south` or `west`.
+  - Sitting, reading, working, looking and sleeping come with #264's spots, which face along the
+    grid: `north`, `east`, `south` or `west`. A client that predates `sleeping` draws it as
+    standing.
   - The server doesn't track the player's, so the player's entity is always `standing`, facing
     `south_east`.
 - Entity ids are F2 `Id`s. The player is always `"player"`.
@@ -159,6 +161,10 @@ On a side-view map:
   then arrives on the other map as through a door.
 - The client finds the link from that end tile, which no other link shares, and plays a climb or
   a ride by its `kind`.
+
+A resident going to bed gets an `entity_moved` onto their bed spot's cell, `sleeping`. It holds
+that until they wake, and the next `entity_moved`, standing or walking off, gets them up. The client
+finds the bed from the furniture under that cell, and lies them down or gets them up there.
 
 ### `creature_moved`
 
@@ -368,6 +374,14 @@ a lower grade of its line fitted there; and `after`, what must be fitted first, 
 higher grade of its line: a power cell, for everything but a cell. The clinic fits only what they
 have a recipe for.
 
+It has `bed`: the cell of the player's own bed at home where they stand, a `MapTile` such as
+`{"map": "maker_space_floor_2", "x": 5, "y": 2}`, the camp bed in the maker space's loft. It's
+left out everywhere else. There they can lie down in it with [`rest`](#rest). And it has
+`resting`, `true` while they're resting in that bed: from a `rest` that lies them down until
+they're fully healed, move off the bed, collapse, or get up with `rest`. It's left out unless
+they're resting, and never sent without `bed`. The server sends a new `player_state` as soon as
+either changes.
+
 And it has `piles`: what's lying in the world for the player to pick up besides what they left,
 such as salvage and secrets, as `Pile`s on every map. It's left out while there's none. A pile in
 `piles` that they take everything from is gone from the next `player_state`, and one they take only
@@ -563,6 +577,13 @@ for an item they don't carry or the buyer doesn't buy.
 `on`: `true` to switch on the lamp the player carries, `false` to switch it off. The server sends
 the [`player_state`](#player_state) that follows. It ignores a `lamp` if they carry no lamp, if it's
 already on or off as asked, and for switching on a flat one.
+
+### `rest`
+
+`on`: `true` to lie the player down in their own bed where they stand, `player_state`'s
+[`bed`](#player_state), `false` to get them up. The server sends the
+[`player_state`](#player_state) that follows, with `resting`. It ignores a `rest` away from their
+bed, at full health, while they're infected, and when they're already resting or up as asked.
 
 ### `sell_part`
 

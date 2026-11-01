@@ -18,6 +18,7 @@ from simile.schema import (
     JournalEntry,
     Key,
     Line,
+    MapTile,
     Model,
     Pile,
     Player,
@@ -67,7 +68,8 @@ _POSE_NOT_REQUIRED = ConfigDict(json_schema_extra=_not_required("pose", "facing"
 
 
 class Entity(Model):
-    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east."""
+    """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
+    A resident asleep in their bed is `sleeping`, on the bed spot's cell."""
 
     model_config = _POSE_NOT_REQUIRED
 
@@ -135,7 +137,8 @@ class EntityMovedMessage(Model):
     """The server always sends `pose` and `facing`. Missing, they're standing, facing south-east.
     On a side-view map, someone on stairs or a ladder is `climbing`. Taking stairs, a ladder or a
     lift to another map is an `entity_moved` at its end, `climbing` or `riding`, held for the climb
-    or ride, then one onto the other map, as through a door."""
+    or ride, then one onto the other map, as through a door. Going to bed is an `entity_moved` onto
+    the bed spot's cell, `sleeping`, held until they wake and the next one gets them up."""
 
     model_config = _POSE_NOT_REQUIRED
 
@@ -514,6 +517,18 @@ class PlayerStateMessage(Model):
         description="What's lying in the world for them to pick up, on every map, besides what "
         "they left (`player.left`): salvage and secrets. Left out while there's none.",
     )
+    bed: MapTile | None = Field(
+        default=None,
+        exclude_if=lambda bed: bed is None,
+        description="The cell of their own bed at home where they stand, where `rest` lies them "
+        "down. Left out everywhere else.",
+    )
+    resting: bool = Field(
+        default=False,
+        exclude_if=lambda resting: not resting,
+        description="Whether they're resting in that bed, from `rest` until they're fully healed, "
+        "move off it or get up. Left out unless they are.",
+    )
 
     @model_validator(mode="after")
     def _the_recipes_they_know(self) -> Self:
@@ -525,6 +540,12 @@ class PlayerStateMessage(Model):
     def _a_meal_or_a_shut_shop(self) -> Self:
         if self.meal is not None and self.shut is not None:
             raise ValueError("player_state has a meal on offer or a shop that's shut, not both")
+        return self
+
+    @model_validator(mode="after")
+    def _resting_in_their_bed(self) -> Self:
+        if self.resting and self.bed is None:
+            raise ValueError("player_state rests only at their bed")
         return self
 
 
@@ -630,6 +651,15 @@ class LampMessage(Model):
     on: bool
 
 
+class RestMessage(Model):
+    """Lies the player down in their bed where they stand, `player_state`'s `bed`, or gets them up.
+    The server ignores it away from their bed, at full health, while they're infected, and when
+    they're already resting or up as asked."""
+
+    type: Literal["rest"] = "rest"
+    on: bool
+
+
 class SellMessage(Model):
     """Sells to the buyer where the player stands, `player_state`'s `buyer`, for its price. The
     server ignores it if there's no buyer, or they carry nothing it buys."""
@@ -717,7 +747,8 @@ type ClientMessage = Annotated[
     | FitMessage
     | SellRecipeMessage
     | BuyMessage
-    | TreatMessage,
+    | TreatMessage
+    | RestMessage,
     Field(discriminator="type"),
 ]
 
