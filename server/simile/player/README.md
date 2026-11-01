@@ -174,6 +174,11 @@ cheapest first, and only where they sold it. The client's `buy` buys back the fi
 the cheapest, through the ledger as a `purchase` to `OUTSIDE`, if they can pay and it fits under
 their carry limit.
 
+**The lamp.** The scrap trader buys the lamp too, at the economy's `lamp` price, and keeps it like a
+part: switched off, with the charge it had. Selling everything leaves the lamp, which sells only by
+id. Without one the player sees by the infrared eye, if fitted, or not at all, and a plug still
+charges their power cell.
+
 ## `player_state`
 
 `PlayerSync` sends `player_state`, the player, each recipe they know in full, the meal on offer
@@ -197,7 +202,7 @@ Every constant is in `PlayerConfig`.
 
 ## The lamp
 
-`Lamp` (`lamp.py`) runs the lamp the player carries, on the sim loop too, and only while a client is
+`Lamp` (`lamp.py`) runs the lamp the player carries, if they carry one, on the sim loop too, and only while a client is
 in the game, like hunger:
 
 - **It drains** while it's on: a full battery lasts `light` (98) real seconds whatever the sim's

@@ -235,11 +235,11 @@ def test_on_the_metro_they_pick_up_salvage_and_cash_and_sell_the_salvage_at_the_
     assert at_the_stall["buyer"] == {
         "place": "scrap_stall",
         "name": "The scrap trader's stall",
-        "prices": {"copper_wire": 6.0},
+        "prices": {"copper_wire": 6.0, "lamp": 12.0},
     }
     assert [item["id"] for item in sold["player"]["items"]] == ["lamp"]
     assert sold["player"]["money"] == 46
-    assert sold["buyer"]["prices"] == {}
+    assert sold["buyer"]["prices"] == {"lamp": 12.0}
     assert [entry.kind for entry in ledger.entries] == [Kind.FOUND, Kind.SALVAGE]
     assert ledger.net(PLAYER) == 46
     assert ledger.gap(economy.money) == pytest.approx(0)

@@ -98,6 +98,12 @@ describe('Sight', () => {
     expect(glowAround(TUNNEL, lamp(0, true), true).infrared).toBe(true);
   });
 
+  it('without a lamp, sees by the eye if fitted, else only by the glimmer', () => {
+    expect(glowAround(TUNNEL, undefined, true)).toMatchObject({ radius: EYE.radius, strength: EYE.strength, infrared: true });
+    expect(glowAround(TUNNEL, undefined)).toMatchObject({ radius: GLIMMER.radius, strength: GLIMMER.strength });
+    expect(glowAround(TUNNEL, undefined).infrared).toBeUndefined();
+  });
+
   it('sees nothing new with a flat lamp, which gives no light', () => {
     const sight = new Sight(metro);
     const flat = lamp(0, true);
