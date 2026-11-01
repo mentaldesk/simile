@@ -70,12 +70,12 @@ describe('HelpPanel', () => {
     expect(VOICES).toMatch(/Either way, each greets you out loud/);
   });
 
-  it('says resting at your bed at home heals you fast', () => {
+  it('says E at your bed at home rests and heals you fast', () => {
     const root = document.createElement('div');
     new HelpPanel(root);
     const notes = [...root.querySelectorAll('.help p')].map((note) => note.textContent);
 
     expect(notes).toContain(REST);
-    expect(REST).toMatch(/bed.*maker space.*heal/);
+    expect(REST).toMatch(/Press E at your bed to rest.*maker space.*heal/);
   });
 });

@@ -137,11 +137,13 @@ The top-left corner shows the player's hunger from the last `player_state` (`pla
   from 60%, and "You're badly hurt. Rest at home or get patched up at the clinic, or you'll
   collapse." from 25%. A rat bite says "A rat bit you. Have the clinic clean it before it turns.",
   and an infection, above all else, "Your bite is infected. It won't heal until the clinic treats
-  it." While they rest in their bed at home, which heals them as fast as a plug charges, it says
-  "Resting. Your health comes back." until they're full. The protocol doesn't say where they rest,
-  so `Resting` reads it from health climbing at `RESTING_RATE` (0.1 a real second) or faster, far
-  above anywhere else; a jump of more than 0.1, waking or the clinic, isn't rest. The character
+  it." While `player_state` says they're `resting` in their bed at home, which heals them as fast
+  as a plug charges, it says "Resting. Your health comes back." until they're full. The character
   screen shows health and each effect in full.
+- **Resting.** At their bed, while they're hurt, not infected and not resting already (`restsAt` in
+  [`world/reach.ts`](../world/reach.ts)), a line says "Press E to rest." and E sends `rest {on:
+  true}`. While they rest, E, or a move key or Space (`getsUp`), sends `rest {on: false}`. The figure
+  stays standing on the bed.
 
 ## Getting hurt
 
@@ -254,7 +256,7 @@ the page has focus (`onGameKey` in [`keys.ts`](keys.ts)), so a focused link, but
 its own Enter, Tab and Esc.
 
 E uses the nearest thing in reach, as `usedByE` in [`world/reach.ts`](../world/reach.ts) finds it: a
-terminal, a pile, the clinic, a buyer they can sell to, or a clue, but not on a door's cell, where E
+terminal, a pile, the clinic, a buyer they can sell to, a clue, or their bed to rest in, but not on a door's cell, where E
 takes the door (`eUse` in [`world/reach.ts`](../world/reach.ts)), so one press never does two things. E never talks
 to anyone, so a resident by a door doesn't stand in the way: T opens the chat to whoever serves at a
 counter, else the ringed NPC, as Enter does, and the ringed NPC's name tag says so: "T: talk to
@@ -268,7 +270,7 @@ they go (`wayPrompts`); tags that would overlap move apart.
 `?` shows or hides the controls (`HelpPanel` in [`help.ts`](help.ts)), from a "? controls" hint in
 the corner; Esc hides them too. They list `CONTROLS`, the same keys as the top-level README, and say
 as it does that voices are off unless the village runs with `SIMILE_VOICE=1`, and that residents
-greet the player out loud either way, and that standing at their bed at home heals them fast (`REST`).
+greet the player out loud either way, and that E at their bed at home rests and heals them fast (`REST`).
 
 ## The pause menu
 

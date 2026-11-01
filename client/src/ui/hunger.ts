@@ -1,7 +1,8 @@
 import { server } from '../net';
-import type { EffectKind, Item, Meal, Pile, Player, PlayerStateMessage, Shut, Vital } from '../net';
+import type { EffectKind, Item, Meal, Player, PlayerStateMessage, Shut, Vital } from '../net';
+import type { Reachable } from '../world/reach';
 import { amount, pickUpPrompt, sellPrompt } from './salvage';
-import { EAT_KEY } from './tuning';
+import { EAT_KEY, NEWS_KEY } from './tuning';
 
 /** Hunger from which F eats. */
 export const PECKISH = 0.3;
@@ -14,12 +15,8 @@ export const FLAT = 0.1;
 /** Health from which they're told they're hurt, and from which they're warned they'll collapse. */
 export const HURT = 0.6;
 export const BADLY_HURT = 0.25;
-/** Health a real second from which it's coming back as resting in bed brings it, far faster than anywhere else. */
-export const RESTING_RATE = 0.1;
-/** A bigger rise at once is the clinic or waking, not rest. */
-const MOST_REST = 0.1;
-const RESTING_MS = 500;
 export const RESTING = 'Resting. Your health comes back.';
+export const REST_PROMPT = `Press ${NEWS_KEY.toUpperCase()} to rest.`;
 const COLLAPSED_MS = 6000;
 const DAY_MS = 86_400_000;
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -48,24 +45,6 @@ export function powerFeeling(power: number): string | undefined {
   return undefined;
 }
 
-/** Whether they're resting in bed, from how fast `player_state`'s health climbs: the server heals them there as fast as a plug charges. */
-export class Resting {
-  private health = 1;
-  private at = -Infinity;
-  private until = -Infinity;
-
-  update(health: number, now: number): boolean {
-    if (health !== this.health) {
-      const rise = health - this.health;
-      const fast = rise > 0 && rise <= MOST_REST && rise / ((now - this.at) / 1000) >= RESTING_RATE;
-      this.until = fast ? now + RESTING_MS : -Infinity;
-      this.health = health;
-      this.at = now;
-    }
-    return health < 1 && now < this.until;
-  }
-}
-
 /** How their health and ailments feel, the infection first: only the clinic ends it. */
 export function healthFeeling(player: Player, resting = false): string | undefined {
   const has = (kind: EffectKind) => player.effects?.some((effect) => effect.kind === kind);
@@ -77,6 +56,12 @@ export function healthFeeling(player: Player, resting = false): string | undefin
   if (health <= HURT) return "You're hurt. Rest at home to heal faster.";
   return undefined;
 }
+
+const GET_UP = new Set(['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'w', 'a', 's', 'd', ' ']);
+
+/** While they rest, a move key or Space gets them up, as E does. */
+export const getsUp = ({ key, repeat }: Pick<KeyboardEvent, 'key' | 'repeat'>, state: PlayerStateMessage | undefined): boolean =>
+  !!state?.resting && !repeat && GET_UP.has(key.toLowerCase());
 
 const feelingOf = (player: Player): string | undefined =>
   onCell(player) ? powerFeeling(player.power ?? 1) : feeling(player.hunger);
@@ -131,20 +116,19 @@ export const COLLAPSED: Record<Vital, string> = {
   health: 'You collapsed from your wounds and woke at home.',
 };
 
-type Line = 'collapsed' | 'feeling' | 'health' | 'eat' | 'pile' | 'sell';
+type Line = 'collapsed' | 'feeling' | 'health' | 'rest' | 'eat' | 'pile' | 'sell';
 
 /** How hungry the player is and what they can eat, or how much power they have, and how hurt they are, in a corner, and what they can pick up or sell where they stand. */
 export class HungerHint {
   readonly corner: HTMLElement;
   private readonly lines = new Map<Line, HTMLElement>();
-  private readonly resting = new Resting();
   private collapsedUntil = 0;
   private cause: Vital = 'hunger';
 
   constructor(parent: HTMLElement) {
     const root = (this.corner = parent.appendChild(document.createElement('div')));
     root.className = 'hunger-hint';
-    for (const line of ['collapsed', 'feeling', 'health', 'eat', 'pile', 'sell'] as const) {
+    for (const line of ['collapsed', 'feeling', 'health', 'rest', 'eat', 'pile', 'sell'] as const) {
       const element = root.appendChild(document.createElement('div'));
       element.hidden = true;
       this.lines.set(line, element);
@@ -156,12 +140,13 @@ export class HungerHint {
     this.collapsedUntil = now + COLLAPSED_MS;
   }
 
-  /** `pile` is the one E picks up from, if any. */
-  update(state: PlayerStateMessage | undefined, pile: Pile | undefined, now = Date.now()): void {
+  /** `used` is what E uses, if any: a pile to pick up from, or their bed. */
+  update(state: PlayerStateMessage | undefined, used: Reachable | undefined, now = Date.now()): void {
+    const pile = used?.kind === 'pile' ? used.pile : undefined;
     this.show('collapsed', now < this.collapsedUntil ? COLLAPSED[this.cause] : undefined);
     this.show('feeling', state && feelingOf(state.player));
-    const resting = !!state && this.resting.update(state.player.health ?? 1, now);
-    this.show('health', state && healthFeeling(state.player, resting));
+    this.show('health', state && healthFeeling(state.player, !!state.resting));
+    this.show('rest', used?.kind === 'bed' ? REST_PROMPT : undefined);
     this.show('eat', state && eatPrompt(state));
     this.show('pile', state && pile && pickUpPrompt(pile, state.player));
     this.show('sell', state?.buyer ? sellPrompt(state.buyer, state.player) : undefined);
