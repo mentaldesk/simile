@@ -46,6 +46,7 @@ from simile.social import as_of, meet
 from simile.voice import speaking_rate
 from simile.voicing.distance import between
 from simile.world import Point
+from simile.world.map import SpotKind
 
 logger = logging.getLogger(__name__)
 
@@ -319,7 +320,8 @@ class Cafe:
                 self._leave(npc)
 
     def _home(self) -> None:
-        """Off shift, the barista rests and sleeps upstairs, not in front of the counter."""
+        """Off shift, the barista rests upstairs, not in front of the counter, and sleeps in her bed
+        if she has one."""
         barista = self.barista
         if barista is None or self.on_shift:
             return
@@ -333,12 +335,18 @@ class Cafe:
             return
         if mind.paused or mind.held or mind.walk is not None or mind.until is None:
             return
+        if mind.goal.activity is Activity.SLEEP and self._in_bed(barista):
+            return
         upstairs = self.layout.upstairs
         here = self.movement.position(barista)
         at_home = mind.goal.activity in AWAY and mind.goal.target == self.config.home
         if at_home and not _at(here, upstairs):
             self.going_home = max(mind.until - self.clock.now, timedelta())
             self.behaviour.hold(barista, upstairs, mind.goal)
+
+    def _in_bed(self, npc: Id) -> bool:
+        spot = self.movement.on_spot(npc)
+        return spot is not None and spot.kind is SpotKind.BED
 
     def _admit(self, now: datetime) -> None:
         """Take in residents who've chosen the café: customers queue, everyone else sits."""

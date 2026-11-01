@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from typing import Any
 
 from simile.ambient.config import AmbientConfig
-from simile.behaviour import DEFAULT_CONFIG, Activity, Behaviour, BehaviourConfig
+from simile.behaviour import DEFAULT_CONFIG, Activity, Behaviour, BehaviourConfig, GoalChosen
 from simile.cafe.cafe import Cafe
 from simile.cafe.config import DEFAULT_CONFIG as CAFE_CONFIG
 from simile.cafe.config import CafeConfig
@@ -15,6 +15,7 @@ from simile.schema import PLAYER_ID, Conversation, CoreValue, Line, MapTile, Npc
 from simile.sim import Clock, Event, FakeWallClock, World
 from simile.world import Movement, Point
 from simile.world.map import TownMap, load_maps
+from simile.world.spots import purpose_of
 
 MAPS = load_maps()
 DAY = datetime(2026, 1, 1, tzinfo=UTC)
@@ -94,9 +95,14 @@ class Village:
         director: Any = None,
         players: Any = None,
         maps: Mapping[str, TownMap] = MAPS,
+        purposes: bool = False,
     ) -> None:
         self.world = World(Clock(start), FakeWallClock())
         self.movement = Movement(maps, self.world.bus)
+        if purposes:
+            self.world.bus.subscribe(
+                GoalChosen, lambda e: self.movement.intend(e.npc, purpose_of(e.activity, e.target))
+            )
         self.store = MemoryStore(":memory:")
         self.behaviour = Behaviour(
             self.world.clock,
