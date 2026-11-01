@@ -1,4 +1,4 @@
-import type { Facing, Position } from '../net';
+import { playerState, server, type Facing, type PlayerStateMessage, type Position } from '../net';
 import { PLAYER_SPEED } from '../world/tuning';
 import { isStanding, type ClimbKind, type Link, type SideMap, type Village } from './maps';
 import {
@@ -21,6 +21,7 @@ import { drawnCrossing, emptyDrawn, RIDE_SPEED, RUN_CYCLE_M, sideways, WALK_CYCL
 import { TILE_M } from './layout';
 import { climbRuns, pointAlong, type Crossing, type Path, type Run } from './runs';
 import { jackAt } from './jacks';
+import { settle } from './poses';
 import { BOUNCE_RISE } from './stomp';
 import { chosen, waysNear, type Press, type Way } from './ways';
 
@@ -50,8 +51,22 @@ type OnRun = { run: Run; distance: number };
 type Crossed = { crossing: Crossing; distance: number };
 type Climb = Exclude<Way, { kind: 'door' }>;
 
+/** How far into bed they're sat on its edge, centred on their cell. */
+const SEATED = 0.5;
 const sign = (value: number) => (value > 0 ? 1 : value < 0 ? -1 : 0);
 const EPSILON = 1e-6;
+
+const snapshots = { count: 0, before: undefined as PlayerStateMessage | undefined };
+server.on('snapshot', () => {
+  snapshots.count += 1;
+  snapshots.before = playerState.latest;
+});
+
+/** Whether the server has them resting in bed, unknown until a `player_state` since the last snapshot says. */
+function restingNow(): boolean | undefined {
+  const state = playerState.latest;
+  return state && state !== snapshots.before ? !!state.resting : undefined;
+}
 
 export class SidePlayer {
   map: string;
@@ -83,6 +98,12 @@ export class SidePlayer {
   /** Seconds left in which a press of Space still jumps, on landing. */
   private buffered = 0;
   private landing = 0;
+  /** 0 up to 1 lying in bed. */
+  private inBed = 0;
+  private lying = false;
+  /** Placed or snapshotted since the server last said: resting, they're already lying. */
+  private fresh = true;
+  private snapshots = snapshots.count;
   private readonly village: Village;
   private readonly runs = new Map<string, Run[]>();
   private readonly reported: MapPosition = { x: 0, y: 0, map: '' };
@@ -110,8 +131,9 @@ export class SidePlayer {
     this.position.x = x;
     this.position.y = y;
     this.onRun = this.crossed = this.approaching = this.air = undefined;
-    this.coyote = this.buffered = this.landing = 0;
-    this.armed = false;
+    this.coyote = this.buffered = this.landing = this.inBed = 0;
+    this.armed = this.lying = false;
+    this.fresh = true;
     this.locate();
   }
 
@@ -137,6 +159,11 @@ export class SidePlayer {
     return this.crossed?.crossing.from.map ?? this.map;
   }
 
+  /** In bed, lying down, or getting up. */
+  private get abed(): boolean {
+    return this.lying || this.inBed > 0;
+  }
+
   /** Jumping or falling. */
   get airborne(): boolean {
     return !!this.air;
@@ -151,7 +178,8 @@ export class SidePlayer {
     this.landing = Math.max(this.landing - dt, 0);
     if (this.approaching && this.buffered > 0) this.approaching = undefined;
     let door: Link | undefined;
-    if (this.crossed) this.cross(this.crossed, controls, dt);
+    if (this.rest(dt)) this.walking = false;
+    else if (this.crossed) this.cross(this.crossed, controls, dt);
     else if (this.onRun) this.climb(this.onRun, controls, dt);
     else if (this.approaching) this.approach(this.approaching, controls, dt);
     else if (this.air) this.fly(controls, dt);
@@ -163,9 +191,36 @@ export class SidePlayer {
   /** What the player can take from here, nearest first: none while climbing or riding. */
   ways(): Way[] {
     const map = this.village.map(this.map);
-    if (!map || this.onRun || this.crossed || this.approaching || this.air) return [];
+    if (!map || this.onRun || this.crossed || this.approaching || this.air || this.abed) return [];
     const locked = (link: Link) => !this.datajack && jackAt(map, link);
     return waysNear(this.village, map, this.runsOf(map), this.position, locked);
+  }
+
+  /** Lies down on their cell while the server has them resting, and gets up once it doesn't; whether they're in bed. */
+  private rest(dt: number): boolean {
+    if (this.snapshots !== snapshots.count) {
+      this.snapshots = snapshots.count;
+      this.fresh = true;
+    }
+    const resting = restingNow();
+    if (resting !== undefined) {
+      if (resting && this.fresh) this.inBed = 1;
+      this.lying = resting;
+      this.fresh = false;
+    }
+    if (!this.abed) return false;
+    const map = this.village.map(this.map);
+    if (this.air && map) this.position.y = landingRow(map, this.position);
+    const before = this.inBed;
+    this.inBed = settle(before, this.lying, dt);
+    if (this.lying) {
+      const centre = Math.floor(this.position.x + 0.5);
+      const t = before >= SEATED ? 1 : Math.min(1, (this.inBed - before) / (SEATED - before));
+      this.position.x += (centre - this.position.x) * t;
+    }
+    this.approaching = this.air = undefined;
+    this.buffered = 0;
+    return true;
   }
 
   /** Tiles a second along a street or a floor. */
@@ -358,6 +413,7 @@ export class SidePlayer {
   private locate(): void {
     const { drawn } = this;
     drawn.run = 0;
+    drawn.bed = this.inBed;
     if (this.crossed) {
       const { crossing: across, distance } = this.crossed;
       pointAlong(across.path, distance, this.at);
@@ -382,6 +438,11 @@ export class SidePlayer {
     }
     drawn.on = undefined;
     drawn.facing = this.facing;
+    if (this.inBed > 0) {
+      drawn.pose = 'sleeping';
+      drawn.phase = 0;
+      return;
+    }
     if (this.air) {
       drawn.pose = 'jumping';
       drawn.phase = this.air.vy < 0 ? 0 : 0.5;

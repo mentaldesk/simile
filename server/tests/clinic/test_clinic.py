@@ -352,7 +352,9 @@ def test_nothing_is_bought_sold_or_fitted_outside_the_clinic() -> None:
     assert depot.player.body == POWERED
     assert depot.player.money == 500
     assert depot.trade.buyer() == Buyer(
-        place="scrap_stall", name="The scrap trader's stall", prices={"usb_c_connector": 12}
+        place="scrap_stall",
+        name="The scrap trader's stall",
+        prices={"usb_c_connector": 12, "lamp": 12},
     )
 
 

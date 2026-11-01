@@ -91,9 +91,13 @@ def test_power_waits_while_nobody_is_playing() -> None:
     assert cell.player.power == 0.5
 
 
+@pytest.mark.parametrize("lamp", [True, False], ids=["with_a_lamp", "without_one"])
 @pytest.mark.parametrize("speed", [1.0, 10.0])
-def test_a_plug_charges_it_from_flat_to_full_in_three_real_seconds(speed: float) -> None:
-    cell = Cell(Player(body=THREE, power=0.01), at=PLUG, speed=speed)
+def test_a_plug_charges_it_from_flat_to_full_in_three_real_seconds(
+    speed: float, lamp: bool
+) -> None:
+    player = Player(body=THREE, power=0.01) if lamp else Player(body=THREE, power=0.01, items=[])
+    cell = Cell(player, at=PLUG, speed=speed)
 
     cell.run(1.4 * speed, step=0.1)
     partway = cell.player.power

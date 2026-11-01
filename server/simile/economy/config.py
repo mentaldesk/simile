@@ -92,6 +92,11 @@ class EconomyConfig(BaseModel):
         default=PARTS,
         description="What a buyer pays the player for one of each kind of part, by item id.",
     )
+    lamp: dict[Id, Annotated[float, Field(ge=0)]] = Field(
+        default={"scrap_stall": 12.0},
+        description="What a buyer pays the player for their lamp, by location id. It keeps the "
+        "lamp for them to buy back, as it keeps every part.",
+    )
     kept: frozenset[Id] = Field(
         default=KEPT,
         description="The salvage a buyer keeps for the player to buy back, as it keeps every part.",
