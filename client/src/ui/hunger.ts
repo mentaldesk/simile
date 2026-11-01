@@ -57,9 +57,9 @@ export function healthFeeling(player: Player, resting = false): string | undefin
   return undefined;
 }
 
-const GET_UP = new Set(['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'w', 'a', 's', 'd', ' ']);
+const GET_UP = new Set(['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'w', 'a', 's', 'd', ' ', 'pageup']);
 
-/** While they rest, a move key or Space gets them up, as E does. */
+/** While they rest, a move key, Space or PageUp gets them up, as E does. */
 export const getsUp = ({ key, repeat }: Pick<KeyboardEvent, 'key' | 'repeat'>, state: PlayerStateMessage | undefined): boolean =>
   !!state?.resting && !repeat && GET_UP.has(key.toLowerCase());
 
