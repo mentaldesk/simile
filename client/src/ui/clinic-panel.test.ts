@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Buyer, ClientMessage, Fitting, Item, Player, Recipe } from '../net';
-import { ClinicPanel, deals, needed, needs, note } from './clinic-panel';
+import { ClinicPanel, columns, deals, details, iconOf, needed, needs, note, sideOf, type Side } from './clinic-panel';
+import { iconUrl } from './icons';
+
+vi.mock('./icons', async () => {
+  const { icons } = (await import('../../../content/icons/icons.json')).default;
+  return { iconUrl: (id: string) => (id in icons ? `/icons/${id}.webp` : undefined) };
+});
 
 const WIRE: Item = { id: 'copper_wire', kind: 'salvage', name: 'Copper wire', weight: 1.5, charge: null, on: null };
 const LEGS: Fitting = { bionic: 'bionic_legs', name: 'Bionic legs', price: 80, parts: ['legs'] };
@@ -60,13 +66,13 @@ const SELLS: Buyer = { place: 'scrap_stall', name: "The scrap trader's stall", p
 describe('deals', () => {
   it('lists talking, the salvage, the kidney and each fitting in each part it takes', () => {
     expect(deals(CLINIC, player(90, [WIRE, WIRE]), DOCTOR)).toEqual([
-      { kind: 'talk', label: 'Talk to Annelie Joubert', npcId: 'annelie' },
-      { kind: 'sell', label: 'Sell everything: copper wire ×2', price: 12 },
-      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
-      { kind: 'part', label: 'Sell a kidney', price: 100, part: 'left_kidney' },
-      { kind: 'fit', label: 'Bionic legs, in place of your legs', price: 80, bionic: 'bionic_legs', part: 'legs', needs: [], short: false },
-      { kind: 'fit', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', needs: [], short: true },
-      { kind: 'fit', label: 'Infrared eye, in place of your right eye', price: 200, bionic: 'infrared_eye', part: 'right_eye', needs: [], short: true },
+      { kind: 'talk', name: 'Talk to Annelie Joubert', label: 'Talk to Annelie Joubert', npcId: 'annelie' },
+      { kind: 'sell', name: 'Everything', label: 'Sell everything: copper wire ×2', price: 12 },
+      { kind: 'item', name: 'Copper wire', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
+      { kind: 'part', name: 'A kidney', label: 'Sell a kidney', price: 100, part: 'left_kidney' },
+      { kind: 'fit', name: 'Bionic legs', label: 'Bionic legs, in place of your legs', price: 80, bionic: 'bionic_legs', part: 'legs', needs: [], short: false },
+      { kind: 'fit', name: 'Infrared eye, left eye', label: 'Infrared eye, in place of your left eye', price: 200, bionic: 'infrared_eye', part: 'left_eye', needs: [], short: true },
+      { kind: 'fit', name: 'Infrared eye, right eye', label: 'Infrared eye, in place of your right eye', price: 200, bionic: 'infrared_eye', part: 'right_eye', needs: [], short: true },
     ]);
   });
 
@@ -75,10 +81,11 @@ describe('deals', () => {
     const found = deals(buyer, player(500, [WIRE, WIRE]), undefined, [CELL_RECIPE, JACK_RECIPE]);
 
     expect(found).toEqual([
-      { kind: 'sell', label: 'Sell everything: copper wire ×2', price: 12 },
-      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
+      { kind: 'sell', name: 'Everything', label: 'Sell everything: copper wire ×2', price: 12 },
+      { kind: 'item', name: 'Copper wire', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
       {
         kind: 'fit',
+        name: 'Datajack',
         label: 'Datajack, in place of a vertebra',
         price: 100,
         bionic: 'datajack',
@@ -89,7 +96,7 @@ describe('deals', () => {
         ],
         short: true,
       },
-      { kind: 'recipe', label: 'Sell your recipe: Datajack', price: 15, bionic: 'datajack' },
+      { kind: 'recipe', name: 'Datajack recipe', label: 'Sell your recipe: Datajack', price: 15, bionic: 'datajack' },
     ]);
     expect(needed(needs(JACK_RECIPE, [WIRE]))).toBe('copper wire 1/3 · usb c connector 0/1');
   });
@@ -117,31 +124,31 @@ describe('deals', () => {
 describe('selling', () => {
   it('lists everything it buys as one row, then each kind with its price and how many they have', () => {
     expect(deals(SELLS, player(0, [WIRE, PLUG, WIRE, LENS]))).toEqual([
-      { kind: 'sell', label: 'Sell everything: copper wire ×2 and USB-C connector', price: 24 },
-      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
-      { kind: 'item', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
+      { kind: 'sell', name: 'Everything', label: 'Sell everything: copper wire ×2 and USB-C connector', price: 24 },
+      { kind: 'item', name: 'Copper wire', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 2 },
+      { kind: 'item', name: 'USB-C connector', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
     ]);
   });
 
   it('sells the lamp only on its own, and buys it back at what the stall asks', () => {
     const buyer = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
     expect(deals(buyer, player(0, [LAMP, WIRE, PLUG]))).toEqual([
-      { kind: 'sell', label: 'Sell everything: copper wire and USB-C connector', price: 18 },
-      { kind: 'item', label: 'Sell one: Lamp', price: 12, item: 'lamp', count: 1 },
-      { kind: 'item', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 1 },
-      { kind: 'item', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
+      { kind: 'sell', name: 'Everything', label: 'Sell everything: copper wire and USB-C connector', price: 18 },
+      { kind: 'item', name: 'Lamp', label: 'Sell one: Lamp', price: 12, item: 'lamp', count: 1 },
+      { kind: 'item', name: 'Copper wire', label: 'Sell one: Copper wire', price: 6, item: 'copper_wire', count: 1 },
+      { kind: 'item', name: 'USB-C connector', label: 'Sell one: USB-C connector', price: 12, item: 'usb_c_connector', count: 1 },
     ]);
     expect(deals(buyer, player(0, [LAMP, WIRE])).map(({ kind }) => kind)).toEqual(['item', 'item']);
     const stall: Buyer = { ...SELLS, prices: {}, stock: [{ item: LAMP, price: 24 }] };
-    expect(deals(stall, player(30))).toEqual([{ kind: 'buy', label: 'Buy back: Lamp', price: 24, item: 'lamp', weight: 1 }]);
+    expect(deals(stall, player(30))).toEqual([{ kind: 'buy', name: 'Lamp', label: 'Buy back: Lamp', price: 24, item: 'lamp', count: 1, weight: 1 }]);
   });
 });
 
 describe('buying back', () => {
   it('offers each part once, at the cheapest, with how many there are', () => {
     expect(deals(TRADER, player(50))).toEqual([
-      { kind: 'buy', label: 'Buy back: USB-C connector ×2', price: 10, item: 'usb_c_connector', weight: 0.1 },
-      { kind: 'buy', label: 'Buy back: Infrared lens', price: 80, item: 'infrared_lens', weight: 0.2, short: 'money' },
+      { kind: 'buy', name: 'USB-C connector', label: 'Buy back: USB-C connector ×2', price: 10, item: 'usb_c_connector', count: 2, weight: 0.1 },
+      { kind: 'buy', name: 'Infrared lens', label: 'Buy back: Infrared lens', price: 80, item: 'infrared_lens', count: 1, weight: 0.2, short: 'money' },
     ]);
   });
 
@@ -167,7 +174,7 @@ describe('treatments', () => {
   it('lists each treatment after talking, and what it costs against what they have', () => {
     const [, patch, infection] = deals(TREATED, player(20), DOCTOR);
 
-    expect(patch).toEqual({ kind: 'treat', label: 'Patch up', price: 15, effect: null, short: false });
+    expect(patch).toEqual({ kind: 'treat', name: 'Patch up', label: 'Patch up', price: 15, effect: null, short: false });
     expect(infection).toMatchObject({ kind: 'treat', effect: 'infection', short: true });
     expect(note(patch, false, 20)).toBe('Enter to go ahead.');
     expect(note(infection, false, 20)).toBe('It costs 25, and you have 20.');
@@ -194,16 +201,60 @@ describe('note', () => {
   });
 });
 
+describe('columns', () => {
+  it('puts what they would take from you on the left, and what they offer on the right', () => {
+    const buyer: Buyer = { ...TREATED, fittings: [LEGS], recipes: { datajack: 15 }, stock: [{ item: LENS, price: 80 }] };
+    const { yours, theirs } = columns(deals(buyer, player(90, [WIRE, WIRE]), DOCTOR, [JACK_RECIPE]));
+
+    expect(yours.map(({ name }) => name)).toEqual(['Everything', 'Copper wire', 'A kidney', 'Datajack recipe']);
+    expect(theirs.map(({ name }) => name)).toEqual(['Talk to Annelie Joubert', 'Patch up', 'Treat the infection', 'Infrared lens', 'Bionic legs']);
+    expect(sideOf(yours[0]!)).toBe('yours');
+    expect(sideOf(theirs[0]!)).toBe('theirs');
+  });
+});
+
+describe('iconOf', () => {
+  it('draws items by their id, parts as the organ, fittings by their line and recipes as a schematic', () => {
+    const buyer: Buyer = { ...TREATED, fittings: [{ ...LEGS, bionic: 'bionic_legs_2' }, EYE], recipes: { datajack: 15 } };
+    const icons = deals(buyer, player(90, [WIRE, WIRE]), DOCTOR).map(iconOf);
+
+    expect(icons).toEqual(['talk', 'patch_up', 'treat_infection', 'sell_everything', 'copper_wire', 'kidney', 'bionic_legs', 'infrared_eye', 'infrared_eye', 'schematic']);
+    expect(['copper_wire', 'kidney', 'bionic_legs', 'infrared_eye', 'schematic', 'lamp'].every((id) => iconUrl(id))).toBe(true);
+  });
+});
+
+describe('details', () => {
+  it('says what a deal pays or costs against what they have, what a fitting uses up, or why it waits', () => {
+    const stock = [
+      { item: PLUG, price: 10 },
+      { item: PLUG, price: 10 },
+    ];
+    const buyer: Buyer = { ...CLINIC, prices: { copper_wire: 6 }, fittings: [JACK, WAITING], stock };
+    const [item, buy, kidney, jack, waiting] = deals(buyer, player(50, [WIRE, WIRE]), undefined, [JACK_RECIPE]).slice(1);
+
+    expect(details(item!, 50)).toEqual(['Pays 6 each', 'You have 2']);
+    expect(details(buy!, 50)).toEqual(['Costs 10 of your 50', 'Weighs 0.1 kg · 2 for sale']);
+    expect(details(kidney!, 50)).toEqual(['Pays 100']);
+    expect(details(jack!, 50)).toEqual(['Costs 100 of your 50', 'copper wire 2/3 · usb c connector 0/1']);
+    expect(details(waiting!, 50)).toEqual([FIRST]);
+  });
+});
+
 describe('ClinicPanel', () => {
   let sent: ClientMessage[];
   let talk: ReturnType<typeof vi.fn<(npcId: string) => void>>;
   let panel: ClinicPanel;
 
   const section = () => document.querySelector<HTMLElement>('.clinic')!;
-  const rows = () => [...document.querySelectorAll('.clinic li')].map((li) => li.textContent);
-  const status = () => document.querySelector('.clinic p')!.textContent;
-  const press = (key: string) =>
-    (document.activeElement ?? section()).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  const rows = (side: Side) => [...document.querySelectorAll(`.clinic-${side} li`)].map((li) => li.querySelector('.clinic-name')!.textContent);
+  const selected = () => document.querySelector('.clinic-selected .clinic-name')?.textContent;
+  const chosen = () => document.querySelector('.clinic-chosen')!.textContent;
+  const status = () => document.querySelector('.clinic footer p')!.textContent;
+  const press = (...keys: string[]) => {
+    for (const key of keys) {
+      (document.activeElement ?? section()).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+    }
+  };
 
   beforeEach(() => {
     sent = [];
@@ -213,21 +264,44 @@ describe('ClinicPanel', () => {
 
   afterEach(() => document.body.replaceChildren());
 
-  it('opens on what the doctor buys and fits, with what they have', () => {
+  it('opens on yours and theirs side by side, with their credits at the top and an icon for each', () => {
     panel.open(CLINIC, player(90, [WIRE]), DOCTOR);
 
     expect(panel.isOpen).toBe(true);
     expect(document.activeElement).toBe(section());
-    expect(section().querySelector('b')!.textContent).toBe('The Clinic');
-    expect(section().querySelector('small')!.textContent).toBe('You have 90.');
-    expect(rows()).toEqual([
-      'Talk to Annelie Joubert',
-      'Sell one: Copper wireyou have 16',
-      'Sell a kidney100',
-      'Bionic legs, in place of your legs80',
-      'Infrared eye, in place of your left eye200',
-      'Infrared eye, in place of your right eye200',
-    ]);
+    expect(section().querySelector('header b')!.textContent).toBe('The Clinic');
+    expect(section().querySelector('header .clinic-money')!.textContent).toBe('Credits 90');
+    expect(rows('yours')).toEqual(['Copper wire', 'A kidney']);
+    expect(rows('theirs')).toEqual(['Talk to Annelie Joubert', 'Bionic legs', 'Infrared eye, left eye', 'Infrared eye, right eye']);
+    expect(selected()).toBe('Copper wire');
+    expect(chosen()).toBe('Sell one: Copper wirePays 6');
+    expect(document.querySelector('.clinic-yours li .clinic-icon img')).not.toBeNull();
+    expect(document.querySelector('.clinic-theirs li .clinic-icon')!.classList.contains('clinic-blank')).toBe(true);
+  });
+
+  it('moves between the columns on ← and →, and within one on ↑ and ↓, past talking first', () => {
+    panel.open(CLINIC, player(90, [WIRE]), DOCTOR);
+    press('ArrowRight');
+    expect(selected()).toBe('Bionic legs');
+    expect(document.querySelector('.clinic-active h3')!.textContent).toBe('Theirs');
+    expect(document.querySelector('.clinic-kept .clinic-name')!.textContent).toBe('Copper wire');
+    press('ArrowUp');
+    expect(selected()).toBe('Talk to Annelie Joubert');
+    press('ArrowUp');
+    expect(selected()).toBe('Infrared eye, right eye');
+    press('ArrowLeft', 'ArrowDown');
+    expect(selected()).toBe('A kidney');
+    press('ArrowRight');
+    expect(selected()).toBe('Infrared eye, right eye');
+  });
+
+  it('opens on theirs when it buys nothing they carry, and says so', () => {
+    panel.open(TRADER, player(50));
+
+    expect(selected()).toBe('USB-C connector');
+    expect(document.querySelector('.clinic-yours ol')!.getAttribute('data-empty')).toBe('Nothing they want.');
+    press('ArrowLeft');
+    expect(selected()).toBe('USB-C connector');
   });
 
   it('sells a kidney only on a second Enter', () => {
@@ -236,87 +310,124 @@ describe('ClinicPanel', () => {
 
     expect(sent).toEqual([]);
     expect(status()).toBe("Enter again to sell a kidney for 100. It can't be undone.");
-    expect(section().querySelector('.clinic-armed')!.textContent).toBe('Sell a kidney100');
+    expect(section().querySelector('.clinic-armed .clinic-name')!.textContent).toBe('A kidney');
     press('Enter');
     expect(sent).toEqual([{ type: 'sell_part', part: 'left_kidney' }]);
   });
 
-  it('forgets the first Enter when the choice moves', () => {
+  it('forgets the first Enter when the choice moves to the other column and back', () => {
     panel.open(CLINIC, player(90));
-    press('Enter');
-    press('ArrowDown');
-    press('ArrowUp');
-    press('Enter');
+    press('Enter', 'ArrowRight', 'ArrowLeft', 'Enter');
 
     expect(sent).toEqual([]);
   });
 
   it('treats them on one Enter, and never for what they cannot pay', () => {
     panel.open(TREATED, player(20));
-    press('Enter');
-    press('ArrowDown');
-    press('Enter');
+    press('ArrowRight', 'Enter', 'ArrowDown', 'Enter');
 
     expect(sent).toEqual([{ type: 'treat', effect: null }]);
-    expect(section().querySelector('.clinic-short')!.textContent).toBe('Treat the infection25');
+    expect(section().querySelector('.clinic-short .clinic-name')!.textContent).toBe('Treat the infection');
   });
 
-  it('fits the legs, and never what they cannot pay for', () => {
+  it('fits the legs on a second Enter, and never what they cannot pay for', () => {
     panel.open(CLINIC, player(90));
-    press('ArrowDown');
-    press('Enter');
-    press('Enter');
-    press('ArrowDown');
-    press('Enter');
-    press('Enter');
+    press('ArrowRight', 'Enter');
+    expect(status()).toBe("Enter again to have this fitted in place of your legs for 80. It can't be undone.");
+    press('Enter', 'ArrowDown', 'Enter', 'Enter');
 
     expect(sent).toEqual([{ type: 'fit', bionic: 'bionic_legs', part: 'legs' }]);
     expect(status()).toBe('It costs 200, and you have 90.');
+    expect(chosen()).toBe('Infrared eye, in place of your left eyeCosts 200 of your 90');
   });
 
   it('sells the salvage at once, and talks to the doctor by closing', () => {
     panel.open(CLINIC, player(0, [WIRE]), DOCTOR);
-    press('ArrowDown');
     press('Enter');
     expect(sent).toEqual([{ type: 'sell', item: 'copper_wire' }]);
 
-    press('ArrowUp');
-    press('Enter');
+    press('ArrowRight', 'ArrowUp', 'Enter');
     expect(talk).toHaveBeenCalledWith('annelie');
     expect(panel.isOpen).toBe(false);
   });
 
-  it('keeps the choice as the offers change, and closes when there is no clinic', () => {
+  it('keeps the choice as the offers change, and closes when there is no buyer', () => {
     panel.open(CLINIC, player(100));
-    press('ArrowDown');
-    panel.update({ ...CLINIC, parts: undefined }, player(100));
+    press('ArrowRight', 'ArrowDown');
+    panel.update({ ...CLINIC, fittings: [EYE] }, player(100));
 
-    expect(rows()[0]).toBe('Bionic legs, in place of your legs80');
-    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Bionic legs, in place of your legs80');
+    expect(selected()).toBe('Infrared eye, left eye');
     panel.update(undefined, player(100));
     expect(panel.isOpen).toBe(false);
   });
 
-  it('chooses the next deal once the chosen one is done, never talking by surprise', () => {
+  it('stays in its column once it empties, and chooses past talking on →', () => {
     panel.open(CLINIC, player(0), DOCTOR);
-    press('ArrowDown');
     panel.update({ ...CLINIC, parts: undefined }, player(100), DOCTOR);
 
-    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Bionic legs, in place of your legs80');
+    expect(selected()).toBeUndefined();
+    expect(document.querySelector('.clinic-active h3')!.textContent).toBe('Yours');
     press('Enter');
     expect(talk).not.toHaveBeenCalled();
+    press('ArrowRight');
+    expect(selected()).toBe('Bionic legs');
   });
 
-  it('shows what a fitting needs under it, and sells a recipe on one Enter', () => {
+  it('waits for the arrows once everything is sold, never selling the lamp on a quick second Enter', () => {
+    const stall = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
+    panel.open(stall, player(0, [LAMP, WIRE, PLUG]));
+    press('Enter');
+    panel.update(stall, player(18, [LAMP]));
+
+    expect(rows('yours')).toEqual(['Lamp']);
+    expect(selected()).toBeUndefined();
+    expect(status()).toBe('Done. Choose the next with the arrows.');
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell', item: null }]);
+    press('ArrowDown');
+    expect(selected()).toBe('Lamp');
+    press('Enter');
+    expect(sent).toEqual([
+      { type: 'sell', item: null },
+      { type: 'sell', item: 'lamp' },
+    ]);
+  });
+
+  it('never buys back what they just sold on a quick second Enter', () => {
+    panel.open(SELLS, player(0, [PLUG]));
+    press('Enter');
+    panel.update({ ...SELLS, stock: [{ item: PLUG, price: 24 }] }, player(12));
+
+    expect(rows('theirs')).toEqual(['USB-C connector']);
+    expect(selected()).toBeUndefined();
+    press('Enter');
+    expect(sent).toEqual([{ type: 'sell', item: 'usb_c_connector' }]);
+    press('ArrowRight');
+    expect(selected()).toBe('USB-C connector');
+  });
+
+  it('lands off the lamp once the chosen row is sold', () => {
+    const stall = { ...SELLS, prices: { ...SELLS.prices, lamp: 12 } };
+    panel.open(stall, player(0, [WIRE, PLUG, LAMP]));
+    press('ArrowDown', 'ArrowDown', 'Enter');
+    panel.update(stall, player(12, [WIRE, LAMP]));
+
+    expect(rows('yours')).toEqual(['Copper wire', 'Lamp']);
+    press('ArrowDown');
+    expect(selected()).toBe('Copper wire');
+  });
+
+  it('shows what a fitting needs when chosen, and sells a recipe on one Enter', () => {
     const buyer: Buyer = { ...CLINIC, prices: {}, parts: undefined, fittings: [JACK], recipes: { datajack: 15 } };
     panel.open(buyer, player(500, [WIRE]), undefined, [JACK_RECIPE]);
 
-    expect(rows()).toEqual(['Datajack, in place of a vertebracopper wire 1/3 · usb c connector 0/1100', 'Sell your recipe: Datajack15']);
-    expect(document.querySelector('.clinic li small')!.textContent).toBe('copper wire 1/3 · usb c connector 0/1');
+    expect(rows('yours')).toEqual(['Datajack recipe']);
+    expect(rows('theirs')).toEqual(['Datajack']);
+    press('ArrowRight');
+    expect(chosen()).toBe('Datajack, in place of a vertebraCosts 100 of your 500copper wire 1/3 · usb c connector 0/1');
     press('Enter');
     expect(sent).toEqual([]);
-    press('ArrowDown');
-    press('Enter');
+    press('ArrowLeft', 'Enter');
     expect(sent).toEqual([{ type: 'sell_recipe', recipe: 'datajack' }]);
   });
 
@@ -324,47 +435,45 @@ describe('ClinicPanel', () => {
     const buyer: Buyer = { ...CLINIC, prices: {}, parts: undefined, fittings: [WAITING, LEGS] };
     panel.open(buyer, player(500, [WIRE]), undefined, [JACK_RECIPE]);
 
-    expect(rows()).toEqual([`Datajack, in place of a vertebra${FIRST}`, 'Bionic legs, in place of your legs80']);
-    const [jack, legs] = document.querySelectorAll('.clinic li');
+    const [jack, legs] = document.querySelectorAll('.clinic-theirs li');
+    expect(jack!.textContent).toBe(`Datajack${FIRST}`);
     expect(jack!.classList.contains('clinic-blocked')).toBe(true);
     expect(legs!.classList.contains('clinic-blocked')).toBe(false);
-    expect(legs!.classList.contains('clinic-short')).toBe(false);
+    expect(legs!.querySelector('b')!.textContent).toBe('80');
     expect(status()).toBe(FIRST);
-    press('Enter');
-    press('Enter');
+    expect(document.querySelector('.clinic-chosen .clinic-reason')!.textContent).toBe(FIRST);
+    press('Enter', 'Enter');
     expect(sent).toEqual([]);
-    expect(status()).toBe(FIRST);
-    press('ArrowDown');
-    press('Enter');
-    press('Enter');
+    press('ArrowDown', 'Enter', 'Enter');
     expect(sent).toEqual([{ type: 'fit', bionic: 'bionic_legs', part: 'legs' }]);
   });
 
   it('buys a part back on one Enter, and never one they cannot pay for', () => {
     panel.open(TRADER, player(50));
 
-    expect(section().querySelector('b')!.textContent).toBe("The scrap trader's stall");
+    expect(section().querySelector('header b')!.textContent).toBe("The scrap trader's stall");
     expect(section().ariaLabel).toBe("The scrap trader's stall");
-    expect(rows()).toEqual(['Buy back: USB-C connector ×210', 'Buy back: Infrared lens80']);
+    expect(rows('theirs')).toEqual(['USB-C connector', 'Infrared lens']);
+    expect(document.querySelector('.clinic-theirs .clinic-count')!.textContent).toBe('×2');
     expect(section().querySelectorAll('.clinic-short')).toHaveLength(1);
-    press('Enter');
-    press('ArrowDown');
-    press('Enter');
+    press('Enter', 'ArrowDown', 'Enter');
     expect(sent).toEqual([{ type: 'buy', item: 'usb_c_connector' }]);
   });
 
   it('sells one of a kind a press, keeping the choice while they have more', () => {
     panel.open(SELLS, player(0, [WIRE, PLUG, WIRE]));
-    expect(rows()).toEqual(['Sell everything: copper wire ×2 and USB-C connector24', 'Sell one: Copper wireyou have 26', 'Sell one: USB-C connectoryou have 112']);
+    expect(rows('yours')).toEqual(['Everything', 'Copper wire', 'USB-C connector']);
     press('ArrowDown');
     expect(status()).toBe('Enter to sell one.');
     press('Enter');
     panel.update(SELLS, player(6, [PLUG, WIRE]));
-    expect(section().querySelector('.clinic-selected')!.textContent).toBe('Sell one: Copper wireyou have 16');
+    expect(selected()).toBe('Copper wire');
     press('Enter');
     panel.update(SELLS, player(12, [PLUG]));
-    expect(rows()).toEqual(['Sell one: USB-C connectoryou have 112']);
+    expect(rows('yours')).toEqual(['USB-C connector']);
     press('Enter');
+    expect(sent).toHaveLength(2);
+    press('ArrowDown', 'Enter');
     expect(sent).toEqual([
       { type: 'sell', item: 'copper_wire' },
       { type: 'sell', item: 'copper_wire' },
@@ -372,10 +481,14 @@ describe('ClinicPanel', () => {
     ]);
   });
 
-  it('sells everything on one Enter', () => {
-    panel.open(SELLS, player(0, [WIRE, PLUG]));
-    press('Enter');
-    expect(sent).toEqual([{ type: 'sell', item: null }]);
+  it('sells everything on one Enter, and the lamp only on its own', () => {
+    panel.open({ ...SELLS, prices: { ...SELLS.prices, lamp: 12 } }, player(0, [LAMP, WIRE, PLUG]));
+    expect(rows('yours')).toEqual(['Everything', 'Lamp', 'Copper wire', 'USB-C connector']);
+    press('Enter', 'ArrowDown', 'Enter');
+    expect(sent).toEqual([
+      { type: 'sell', item: null },
+      { type: 'sell', item: 'lamp' },
+    ]);
   });
 
   it('closes on Esc or E, and a click chooses and acts', () => {
@@ -383,12 +496,14 @@ describe('ClinicPanel', () => {
     press('e');
     expect(panel.isOpen).toBe(false);
 
-    panel.open(CLINIC, player(0));
-    const kidney = () => document.querySelectorAll<HTMLElement>('.clinic li')[0]!;
-    kidney().click();
-    kidney().click();
-    expect(sent).toEqual([{ type: 'sell_part', part: 'left_kidney' }]);
+    panel.open(CLINIC, player(100));
+    const legs = () => document.querySelectorAll<HTMLElement>('.clinic-theirs li')[0]!;
+    legs().click();
+    expect(selected()).toBe('Bionic legs');
+    legs().click();
+    expect(sent).toEqual([{ type: 'fit', bionic: 'bionic_legs', part: 'legs' }]);
     press('Escape');
     expect(panel.isOpen).toBe(false);
   });
 });
+

@@ -183,28 +183,42 @@ The same corner says what E picks up or sells where the player stands, in
 E at a buyer opens the trading panel ([`clinic-panel.ts`](clinic-panel.ts)), the same at the scrap
 trader's stall and the clinic. While the clinic's doctor would buy a part of the player or fit a
 bionic (`buyer.parts` or `buyer.fittings`), the corner says "Press E to see what the Clinic buys and
-fits.". It lists, from the latest `player_state`:
+fits.". It's a trade screen, as in most RPGs, from the latest `player_state`: their credits at the
+top, then two columns of rows, each with its icon from `content/icons/` (`iconOf`), its name and its
+price. Anything not painted yet has a dashed frame instead: talking (`talk`), "Everything"
+(`sell_everything`) and the treatments (`patch_up`, `treat_<effect>`). **Yours**, on the left, is
+what it would take from them:
+
+- "Everything", what they carry that it buys but the lamp, for the total, sold at once with `sell`
+  and `null`, while they carry more than one such thing;
+- each kind of thing it buys, the lamp too, with its price and how many they have, sold one a press
+  with `sell` and its id, so they keep what they want for a fitting;
+- a kidney, for `buyer.parts`' price, sold with `sell_part`;
+- each recipe the doctor buys, drawn as a schematic, sold with `sell_recipe`.
+
+**Theirs**, on the right, is what it offers:
 
 - "Talk to Annelie Joubert", while she's ringed: Enter closes the panel and opens the chat to her;
-- each of `buyer.treatments`, by its name and price: patching up while they're hurt, and cleaning a
-  bite or treating an infection. Enter sends `treat` with its `effect`, or `null` to be patched up.
-  One they can't afford is dimmed, and says what it costs against what they have;
-- "Sell everything", what they carry that it buys but the lamp and the total, sold at once with
-  `sell` and `null`, while they carry more than one such thing;
-- each kind of thing it buys, with its price and how many they have: "Sell one: Copper wire", one
-  a press with `sell` and its id, so they keep what they want for a fitting;
-- each part it sells back, once at its cheapest, with how many there are: "Buy back: USB-C
-  connector ×2", bought with `buy` on one Enter. One they can't afford or carry is dimmed, and says
-  why;
-- a kidney, for `buyer.parts`' price, sold with `sell_part`;
-- each fitting in each part it can go in place of, with its price and the parts its recipe uses
-  against what they carry ("copper wire 1/3 · usb-c connector 1/1"), fitted with `fit`. One they
-  can't afford or lack a part for is dimmed, and says what it's short of. There's no list of
-  recipes elsewhere: the clinic fitting it is how they see one they've found.
+- each of `buyer.treatments`: patching up while they're hurt, and cleaning a bite or treating an
+  infection. Enter sends `treat` with its `effect`, or `null` to be patched up;
+- each part it sells back, once at its cheapest, with how many there are, bought with `buy`;
+- each fitting in each part it can go in place of, drawn as its bionic, fitted with `fit`. One the
+  clinic won't fit yet (`blocked`) is dimmed, with the reason in place of its price.
 
-↑ and ↓ choose, and Enter or a click goes ahead. Selling a part or a fitting can't be undone, so it
-takes a second Enter or click, and moving the choice forgets the first. Esc or E closes the panel,
-and so does walking away from the buyer, or once it has nothing left to trade.
+What they can't afford, carry or lack a part for is dimmed. Under the columns, the chosen row shows
+what Enter does ("Sell one: Copper wire"), what it pays or costs against their credits, what a
+fitting's recipe uses up against what they carry ("copper wire 1/3 · usb-c connector 1/1"), or why
+it's blocked; the footer says what Enter will do, or why it can't.
+
+← and → switch columns, each keeping its own choice (faintly outlined in the other column), and ↑
+and ↓ choose within one; the panel keeps these keys from the game while it's open. It opens on
+yours, or on theirs when it buys nothing they carry, and only switches columns on the arrows. The
+choice never lands on talking or the lamp unless they move it there. Enter or a click goes ahead.
+Once the chosen row is gone, say sold, Enter does nothing until an arrow chooses again (↓ chooses the
+row now in its place), so a quick second Enter never trades what they didn't choose. Selling a part
+or a fitting can't be undone, so it takes a second Enter or click, and moving the choice forgets the
+first. Esc or E closes the panel, and so does walking away from the buyer, or once it has nothing
+left to trade.
 
 ## The journal
 
