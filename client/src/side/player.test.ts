@@ -284,6 +284,19 @@ describe('stairs and ladders between floors', () => {
     expect(player.position.x).toBeLessThan(15);
   });
 
+  it('keeps climbing stairs, or a ladder between floors, on Space', () => {
+    for (const [start, kind] of [
+      [{ x: 15, y: 2, map: 'coffee_shop_floor_0' }, 'stairs'],
+      [{ x: 6, y: 2, map: 'maker_space_floor_1' }, 'ladder'],
+    ] as const) {
+      const player = at(start);
+      hold(player, press({ y: -1 }), 1);
+      player.update(press({ y: -1, jump: true, hold: true }), 1 / 60);
+      expect(player.climbing, start.map).toBe(kind);
+      expect(player.airborne, start.map).toBe(false);
+    }
+  });
+
   it('climbs a ladder from the back', () => {
     const player = at({ x: 6, y: 2, map: 'maker_space_floor_1' });
     hold(player, press({ y: -1 }), 1);
