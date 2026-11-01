@@ -340,15 +340,19 @@ slab, the row under them. West to east it's columns of rooms:
   doorway on each it doesn't. One column, on either side of the gate, is a **hall**: two tiers
   high, with a walkway along its top tier through a doorway from the room west of it. The rooms on
   each side of the gate are joined by a random tree of doorways and ladders, then an extra doorway
-  in most levels and a drop or two: a hole two cells wide in a slab, down to the room under it. A
-  ladder comes up through a hole two cells wide too, with open air on one side of its top rung, so
-  a walk along that floor ends at the ladder, as the client's walking does, rather than passing
-  over it. Holes are at least two cells apart, and ladders three, so a held key stops at the end
-  of each climb. Walking, climbing and the odd hop over a hole get anywhere on that side.
-  Before the gate (P46) every hole but the spring pocket's is one cell wide, so a walking jump
-  crosses it: a drop is a single cell, and a ladder comes up through its own cell with a
-  `sewer_pipe` to stand on beside its top rung in place of the open air, which ends a walk at the
-  ladder just the same and is a hop up from either side.
+  in most levels. Past the gate there's a drop or two as well: a hole two cells wide in a slab,
+  down to the room under it. A ladder there comes up through a hole two cells wide too, with open
+  air on one side of its top rung, so a walk along that floor ends at the ladder, as the client's
+  walking does, rather than passing over it. Holes are at least two cells apart, in a column or
+  either side of a wall, and ladders three, so a held key stops at the end of each climb.
+  Walking, climbing and the odd hop over a hole get anywhere on that side.
+  Before the gate (P58) nothing needs a jump, since a tap of Space doesn't clear even a one-cell
+  hole. There are no drops but the spring pocket's, which the feet jump up through. A ladder
+  comes up through its own cell, against a wall with no doorway on the floor it tops out on, so
+  that floor is all on one side of it. Otherwise (`WALLED`, half the time where both fit) it comes
+  up mid-floor with a `sewer_pipe` beside its top rung, which ends a walk at the ladder and is a
+  hop up from either side. That's kept only where the floor past the pipe is reached another
+  way, or holds nothing zone 0 needs.
 - **The gate** is the way on: at the top tier a walkway from each side with a five-cell gap
   between them (`GAP`), under the vault, which stops a high jump rising, so only the legs cross it,
   or a weir three rows high across the hall's floor, which the feet jump onto (`WEIR`, 12 cells in,
@@ -412,13 +416,15 @@ counts from the way through, which every grade of legs or feet takes:
   onto that floor (`onto`: a ladder's foot or top, under a hole, the zone's ends), or else
   anywhere on it, and it leaves zone 0 rooms enough for the nests off every bot's floor. Every
   cell of its patrol is within `REACH` of its salvage by the bot's own grid (the bot's `Collect`
-  reach, 14) where it can be, so it drifts there while the player's in the sewers, and at least
+  reach, 14) where it can be without passing a way onto its floor (P58), so it drifts there while
+  the player's in the sewers, and at least
   `BOT_GAP` (8) moves from any salvage. That's over half a minute's drift, so a player walking
   from the lift gets there first. Where no salvage is in reach it only guards. The way past a bot
   is to jump it as it comes, or to wait on a ladder out of its sight for it to patrol away.
 - `sewers_rat_<n>`, nests of three and two rats (`RATS`), each kept to a room of its own off every
   bot's floor, away from the salvage where zone 0 has the rooms, on the room's widest stretch of
-  floor. The way past them is to come down on each as it comes for the player's food, or to bring
+  floor, and two cells clear of a ladder's ends where that leaves four cells (`NEST_CLEAR`,
+  `NEST`), so a player climbing in gets off the ladder before the rats come. The way past them is to come down on each as it comes for the player's food, or to bring
   none.
 
 They're placed from their own random stream, after the rest of the level, so adding them moved
@@ -452,14 +458,16 @@ passes, and `tests/street/test_sewers.py` over the committed levels and more see
 one of `KITS`, any grade of legs or feet or one of each, the player reaches the hatch, the plugs and
 the finds past the gate, and on their own legs they don't, while zone 0's finds are in reach of
 every kit and the player's own legs; on every one, and on their own legs, they can get back to the
-lift from anywhere they can get to; zone 0 is passable on a walking jump (`WALKS`, on their own legs
-and on the spring feet): zone 0's finds and the gate's junction box are in reach, and from anywhere
-before the gate they can get back to the lift; each pickup is in reach on exactly the ones that meet
+lift from anywhere they can get to; zone 0 is passable on a walking jump, held (`WALKS`, on their
+own legs and on the spring feet) or tapped (`TAPS`, the same with Space let go at once): zone 0's
+finds and the gate's junction box are in reach, and from anywhere before the gate they can get
+back to the lift; each pickup is in reach on exactly the ones that meet
 its `needs`; and every salvage has a price.
 
 **Drawing it** (`server/simile/papercraft/`): in #329's properly grimy cartoon. The layers are the
 sewers' own, and every solid cell above the floor has a piece over it: `sewer_vault` the vault,
-`sewer_walkway` a slab three cells or longer and `sewer_pipe` a shorter one or a pipe to stand on,
+`sewer_walkway` a slab three cells or longer, in pieces of at most 21 (`WALKWAY`, the longest it's
+painted for), and `sewer_pipe` a shorter one or a pipe to stand on,
 `sewer_pier` a wall on a tier, and `sewer_weir` the gate's weir, down past the floor over the
 walkway's edge, which the ground strip leaves out under it. The hatch is a
 `maintenance_hatch`, the plugs `breaker_box`es, and `sewer_outfall`, `rubble`, `crates`, `bedroll`
@@ -534,7 +542,10 @@ from where it takes off, along over the higher end with room for the head, and d
 lands. Under something solid the jump can rise only until the head meets it, and goes no further
 along than a jump that high (`Jump.along`). `moves(town, cell, jump)` jumps on another `Jump`
 instead, such as one of `KITS`, or `walking(jump)`, the same jump taken at a walk (`WALK_SPEED`,
-2.6, the client's `PLAYER_SPEED`), which clears one cell where a run jump clears three. A jump's
+2.6, the client's `PLAYER_SPEED`), which clears one cell where a run jump clears three, or
+`tapped(jump)`, the jump with Space let go at once: the client cuts its speed up to `cut` and it
+falls under `fall_gravity` from take-off, so a tapped walking jump rises under a row and clears no
+cell at all. A jump's
 length is measured from the middle of the cell it takes off from, where the client stops a walk
 beside a ladder's top. Residents never jump, so their paths are as they were.
 

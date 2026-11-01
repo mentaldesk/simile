@@ -285,7 +285,8 @@ class Playthrough:
         await p.go(b)
         p.note(f"Jumped the gate's gap from {a.x} to {b.x}")
         await p.to(p.beside(hatch, (2, 3)))
-        await self.saves.write("hatch", p, hatch_log=self.fact(HATCH_LOG))
+        stand = {"x": hatch.x, "y": hatch.y}
+        await self.saves.write("hatch", p, hatch_log=self.fact(HATCH_LOG), hatch=stand)
         if HATCH_LOG not in await p.find(hatch):
             raise Refused("The hatch held no clue")
 
