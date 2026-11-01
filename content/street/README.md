@@ -127,7 +127,9 @@ As in [`content/map/`](../map/README.md), with these additions.
   other; on a counter's stools, the way it's served from (the Daily Grind's bar west to its
   counter, the noodle bar's east to its kitchen); and on a bench, at what its sitters look at (the
   square's at the fountain, the park's at the lookout, and in the gallery each at the nearest
-  painting, so two can sit back to back). `dx` and `dy` are always 0. The stools keep `dz` 0.25.
+  painting, so two can sit back to back). A bed's spot faces `east`, on its head at the west end,
+  so a sleeper isn't drawn mirrored. The maker space loft's camp bed has none. `dx` and `dy` are
+  always 0. The stools keep `dz` 0.25.
 - **Finds.** A `searchable` interactable, or a `jack`, can hold `items`, a JSON list of `Item`s,
   and cash, `money`, a float, and teach a recipe, `teaches`, by the bionic it builds. The player
   searches each once (P6, *Finds* below).
@@ -221,14 +223,17 @@ west end. The farthest two places are about 70 s' walk apart, against today's 47
   against the far wall.
 - **Houses** have the front door at one end of the living room and the foot of the stairs a step in
   from the other (x 2, or 4 where the door is west), rising to the bedroom over the door, and the
-  entry in the middle, at x 3. Houses 2, 4, 6, 9 and 10 have their door at the west end.
+  entry in the middle, at x 3. Houses 2, 4, 6, 9 and 10 have their door at the west end. The
+  bedroom's bed is 2 cells wide from x 2, or 3 where the door is east, with a `bed` spot on its
+  head, the west cell.
 - **The Daily Grind**, ground floor, west to east: behind the counter the grinder (1), the espresso
   machine (2), the till (3, `coffee_shop_staff`'s entry) and the hand-over (4); then on the
   customers' side the pickup (5), the queue from its front (6, the café's entry and the counter's
   stand) running east to 9 (`coffee_shop_queue`), the bar and its five stools (10–14), the foot of
   the stairs (15), rising east to 18 upstairs, just inside the door (17) and the mat (18). Its
   eight tables are upstairs, with the foot of the flat's stairs between them (11), rising east to
-  14. The barista's flat is the top floor. A plug, `coffee_shop_plug`, is on the wall at 16.
+  14. The barista's flat is the top floor, with a `bed` spot on the head of its bed (1). A plug,
+  `coffee_shop_plug`, is on the wall at 16.
 - **Golden Bowl Noodles**: the entry (1), the mat (2), the foot of the stairs (3), rising east to 7
   upstairs, two tables, the five stools at the counter (8–12) and the kitchen behind it (13–15).
   Seven tables upstairs. A plug, `noodle_bar_plug`, is on the wall by the entry.

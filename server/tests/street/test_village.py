@@ -358,6 +358,25 @@ def test_every_seat_faces_east_or_west_on_something_to_sit_on() -> None:
     assert {seat.facing for seat in benches} == {Facing.EAST, Facing.WEST}
 
 
+def test_each_home_bed_but_the_camp_bed_has_a_spot_on_its_head_facing_east() -> None:
+    beds = {
+        plan.id: piece.area
+        for plan in PLANS.values()
+        for piece in plan.furniture
+        if piece.name == "bed"
+    }
+    spots = {
+        spot.map: spot for town in MAPS.values() for spot in town.spots if spot.kind is SpotKind.BED
+    }
+
+    homes = [f"house_{n}_floor_1" for n in range(1, 11)] + ["coffee_shop_floor_2"]
+    assert sorted(spots) == sorted(homes)
+    assert set(beds) - set(spots) == {"maker_space_floor_2"}
+    for map_id, spot in spots.items():
+        assert (spot.x, spot.y) == (beds[map_id].x, beds[map_id].y), map_id
+        assert (spot.facing, spot.pose) == (Facing.EAST, Pose.SLEEPING), map_id
+
+
 def stools_at(map_id: str) -> list[MapSpot]:
     return [s for s in MAPS[map_id].spots if "stool" in pieces_at(s.x, s.y, map_id)]
 

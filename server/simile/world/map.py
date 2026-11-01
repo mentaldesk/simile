@@ -84,6 +84,7 @@ class SpotKind(StrEnum):
     TERMINAL = "terminal"
     VIEWING = "viewing"
     STANDING = "standing"
+    BED = "bed"
 
 
 POSES = {
@@ -93,6 +94,7 @@ POSES = {
     SpotKind.TERMINAL: Pose.READING,
     SpotKind.VIEWING: Pose.LOOKING,
     SpotKind.STANDING: Pose.STANDING,
+    SpotKind.BED: Pose.SLEEPING,
 }
 
 
