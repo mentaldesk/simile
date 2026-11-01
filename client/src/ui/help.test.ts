@@ -29,7 +29,7 @@ describe('HelpPanel', () => {
     ]);
     expect(rows).toEqual(CONTROLS.map(([keys, what]) => [keys, what]));
     expect(rows.map(([keys]) => (keys as string[]).join(' '))).toEqual(
-      expect.arrayContaining(['← → A D', 'Shift', 'Space', '↑ W', '↓ S', 'E', 'T', 'V', 'Enter', 'Tab', 'Esc', '?']),
+      expect.arrayContaining(['← → A D', 'Shift', 'Space PgUp', '↑ W', '↓ S', 'E', 'T', 'V', 'Enter', 'Tab', 'Esc', '?']),
     );
   });
 
@@ -40,7 +40,8 @@ describe('HelpPanel', () => {
     expect(what['↓']).toMatch(/downstairs.*ladder.*lift down/);
     expect(what['↑']).not.toMatch(/door/);
     expect(what.Shift).toMatch(/switch between walking and running/);
-    expect(what.Space).toMatch(/jump/);
+    expect(what.Space).toMatch(/hold the key to jump higher/);
+    expect(CONTROLS.find(([keys]) => keys[0] === 'Space')?.[0]).toEqual(['Space', 'PgUp']);
   });
 
   it('gives talking to T and looking at art to V, never to E', () => {

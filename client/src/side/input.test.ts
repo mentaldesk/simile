@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { server, type Wall } from '../net';
 import { setMuralView } from '../world/murals';
 import { village } from './content';
-import { eachOnce, readControls, RunToggle, type Held } from './input';
+import { eachOnce, JumpKeys, readControls, RunToggle, type Held } from './input';
 import { RUN_BLEND_SECONDS, RUN_PACE, SidePlayer, type Controls, type MapPosition } from './player';
 
 /** content/street/banyan_row.tmj's wall on house 10, along cells 19 to 21. */
@@ -136,5 +136,87 @@ describe('Shift', () => {
     tap(running, 'Shift');
     go({ x: -1 }, RUN_BLEND_SECONDS + 1 / 60);
     expect(player.drawn.run).toBe(0);
+  });
+});
+
+describe('jump keys', () => {
+  const DT = 1 / 60;
+  const PARK_LADDER: MapPosition = { x: 45, y: 15, map: 'lychee_lane' };
+  type JumpKey = ' ' | 'PageUp';
+
+  /** Space and PageUp as Phaser keys, and the side scene's reading of them. */
+  function keyboard() {
+    const keys = { ' ': { isDown: false }, PageUp: { isDown: false } };
+    const jumping = new JumpKeys(Object.values(keys));
+    const held: Held = { ...NONE };
+    const controls: Controls = { x: 0, y: 0, use: false, run: false };
+    const down = (key: JumpKey) => {
+      const event = { key, repeat: keys[key].isDown, preventDefault: vi.fn() };
+      keys[key].isDown = true;
+      jumping.keyDown(event);
+      return event;
+    };
+    const up = (key: JumpKey) => (keys[key].isDown = false);
+    const read = (x = 0) => {
+      held.left = x < 0;
+      held.right = x > 0;
+      jumping.read(held);
+      return readControls(held, false, controls);
+    };
+    return { down, up, read };
+  }
+
+  /** Tiles risen by a jump on `key` held for `seconds`, with `x` held. */
+  function rise(player: SidePlayer, key: JumpKey, seconds: number, x = 0) {
+    const { down, up, read } = keyboard();
+    const from = player.position.y;
+    let highest = from;
+    down(key);
+    player.update(read(x), DT);
+    expect(player.airborne).toBe(true);
+    for (let t = DT; t < 3 && player.airborne; t += DT) {
+      if (t >= seconds) up(key);
+      player.update(read(x), DT);
+      highest = Math.min(highest, player.position.y);
+    }
+    expect(player.airborne).toBe(false);
+    return from - highest;
+  }
+
+  it('jumps on PageUp as high as on Space, held or tapped', () => {
+    const jump = (key: JumpKey, seconds: number) => rise(new SidePlayer(village, PASSAGE), key, seconds);
+    expect(jump('PageUp', 3)).toBeCloseTo(jump(' ', 3), 6);
+    expect(jump('PageUp', DT)).toBeCloseTo(jump(' ', DT), 6);
+    expect(jump('PageUp', DT)).toBeLessThan(jump('PageUp', 3));
+  });
+
+  it('jumps off the park ladder on PageUp as on Space', () => {
+    const offLadder = (key: JumpKey) => {
+      const player = new SidePlayer(village, PARK_LADDER);
+      for (let t = 0; t < 1; t += DT) player.update({ x: 0, y: -1, use: false, run: false }, DT);
+      expect(player.climbing).toBe('ladder');
+      return rise(player, key, 3, -1);
+    };
+    expect(offLadder('PageUp')).toBeGreaterThan(1);
+    expect(offLadder('PageUp')).toBeCloseTo(offLadder(' '), 6);
+  });
+
+  it('holds while either key is down, and presses once per key down, not on repeats', () => {
+    const { down, up, read } = keyboard();
+    down(' ');
+    expect(read()).toMatchObject({ jump: true, hold: true });
+    down('PageUp');
+    up(' ');
+    expect(read()).toMatchObject({ jump: true, hold: true });
+    down('PageUp');
+    expect(read()).toMatchObject({ jump: false, hold: true });
+    up('PageUp');
+    expect(read()).toMatchObject({ jump: false, hold: false });
+  });
+
+  it("stops PageUp scrolling the page, and leaves Space's default alone", () => {
+    const { down } = keyboard();
+    expect(down('PageUp').preventDefault).toHaveBeenCalled();
+    expect(down(' ').preventDefault).not.toHaveBeenCalled();
   });
 });

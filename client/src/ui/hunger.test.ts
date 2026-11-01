@@ -58,7 +58,7 @@ describe('getsUp', () => {
   const key = (key: string, repeat = false) => ({ key, repeat });
 
   it('is a move key or Space while they rest', () => {
-    for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'D', ' ']) expect(getsUp(key(k), resting)).toBe(true);
+    for (const k of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'a', 'D', ' ', 'PageUp']) expect(getsUp(key(k), resting)).toBe(true);
     expect(getsUp(key('t'), resting)).toBe(false);
     expect(getsUp(key('e'), resting)).toBe(false);
     expect(getsUp(key('ArrowLeft', true), resting)).toBe(false);

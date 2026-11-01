@@ -251,6 +251,10 @@ player to speculate about.
   a route it can't follow (a ladder, a ledge, a door), or a way to kill it. Walking through and
   taking the damage is never the only way. Every danger placed on a map comes with its solution,
   checked by a test.
+- **Your own legs clear a ladder's gap.** With no implants, walking, any press of jump clears a
+  one-cell gap along a row, such as the hole a ladder comes up through between two floors. Levels
+  are built on that, so the way to the first implants needs no more. Wider gaps and higher ledges
+  are for the implants: the bionic legs jump further and the spring feet higher.
 - **Light is scarce.** The lamp's battery is a resource to ration and plan around. Dark stretches
   are long enough, and plugs far enough apart, that reaching the next one is a relief.
 - **The tunnels are where you get the means; the village is where the game happens.** If the tunnels
