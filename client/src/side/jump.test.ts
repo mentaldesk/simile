@@ -298,9 +298,17 @@ function hopFrom(map: SideMap, x: number, y: number, way: 1 | -1, fps: number, h
   return { from, landed: { ...player.position }, climbing: player.climbing };
 }
 
-/** A one-cell ladder hole in a slab, its top rung at x 5 on the standing row 4, under `roof`. */
-const holeUnder = (roof: string) =>
-  sketch([roof, ...Array<string>(3).fill('.'.repeat(11)), '.....H.....', '#####H#####', ...Array<string>(3).fill('.....H.....'), '.'.repeat(11), '#'.repeat(11)]);
+/** A one-cell ladder hole in a slab, its top rung at x 5 on the standing row `rows`, under `roof`. */
+const holeUnder = (roof: string, rows = 4) =>
+  sketch([
+    roof,
+    ...Array<string>(rows - 1).fill('.'.repeat(11)),
+    '.....H.....',
+    '#####H#####',
+    ...Array<string>(3).fill('.....H.....'),
+    '.'.repeat(11),
+    '#'.repeat(11),
+  ]);
 
 describe('a one-cell gap', () => {
   it.each([30, 60, 144])('is cleared walking on any press of Space from where a walk stops at its edge, under a tier and in the open, at %s fps', (fps) => {
@@ -316,6 +324,18 @@ describe('a one-cell gap', () => {
             expect(footing(map, landed.x, landed.y), why).toBe(5 + way);
           }
         }
+      }
+    }
+  });
+
+  it.each([30, 60, 144])('is cleared on a tap or a short press under a 3-row roof, rising to the head room, at %s fps', (fps) => {
+    const map = holeUnder('#'.repeat(11), 3);
+    for (const [x, way] of [[1, 1], [9, -1]] as const) {
+      for (const hold of [0, 1, 2, 3]) {
+        const { landed } = hopFrom(map, x, 3, way, fps, hold);
+        const why = `from ${x} way ${way}, holding ${hold}`;
+        expect(landed.y, why).toBe(3);
+        expect(footing(map, landed.x, landed.y), why).toBe(5 + way);
       }
     }
   });

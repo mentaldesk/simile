@@ -539,8 +539,9 @@ follow it:
 
 A ladder is climbed from the standing cell under it and stepped off sideways at the top, onto the
 ledge beside its top rung. The player, who jumps, is stepped off east where there's floor both
-sides, as the client does, and the other side is a jump across. Stairs run between the standing cells diagonally beyond each end. A
-resident can stop on any cell of a run. A move comes with its cost.
+sides, as the client does, and the other side is a jump across. Stairs run between the standing
+cells diagonally beyond each end. A resident can stop on any cell of a run. A move comes with its
+cost.
 
 **Jumps are the player's alone.** `moves(town, cell, jumps=True)`, and `jumps=True` on
 `simile.world.paths`' `steps`, `nearby` and `find_route`, add a run jump from a standing cell to

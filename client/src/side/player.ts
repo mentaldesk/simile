@@ -292,10 +292,10 @@ export class SidePlayer {
     if (this.buffered > 0 && this.coyote > 0) this.jump(controls.x);
     this.coyote = Math.max(this.coyote - dt, 0);
     const flying = this.air!;
-    if (this.hopping > 0 && controls.x !== 0 && flying.vy < 0) this.steerHop(flying);
+    if (this.hopping > 0 && controls.x !== 0 && flying.vy < 0) this.steerHop(map, flying);
     this.hopping = Math.max(this.hopping - dt, 0);
     launch(map, this.position, flying);
-    if (flying.held && !controls.hold) letGo(flying);
+    if (flying.held && !controls.hold) letGo(flying, this.position.y);
     if (controls.x !== 0) {
       this.heading = controls.x;
       this.facing = sideways(controls.x);
@@ -323,11 +323,15 @@ export class SidePlayer {
   }
 
   /** A hop off a ladder, steered while it still rises, rises as a jump that way would have from where it left. */
-  private steerHop(flying: Air): void {
+  private steerHop(map: SideMap, flying: Air): void {
     const risen = (flying.from ?? this.position.y) - this.position.y;
+    const released = !flying.held;
     flying.vy = -Math.sqrt(Math.max(jumpSpeed(this.rise) ** 2 - 2 * GRAVITY * risen, 0));
+    flying.rising = Math.max(HOP_SECONDS - (BUFFER_SECONDS - this.hopping), 0);
+    flying.held = true;
     flying.launched = false;
-    if (!flying.held) letGo(flying);
+    launch(map, this.position, flying);
+    if (released) letGo(flying, this.position.y);
     this.hopping = 0;
   }
 
@@ -382,7 +386,7 @@ export class SidePlayer {
     if (kind === 'ladder' && controls.jump) {
       this.onRun = undefined;
       this.jump(controls.x, controls.x === 0 ? LADDER_HOP : this.rise);
-      if (controls.x === 0) this.hopping = BUFFER_SECONDS;
+      if (controls.x === 0) [this.hopping, this.air!.rising] = [BUFFER_SECONDS, 0];
       return;
     }
     const along = controls.y !== 0 ? -controls.y : kind === 'stairs' ? sign(controls.x * rise(path)) : 0;
