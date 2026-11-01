@@ -157,3 +157,22 @@ def test_it_sends_each_recipe_they_know_in_full() -> None:
 
     [message] = sent
     assert message.recipes == [jack]
+
+
+def test_the_bed_and_resting_are_sent_as_soon_as_either_changes() -> None:
+    bed, player = MapTile(map="maker_space_floor_2", x=5, y=2), Player(health=0.5)
+    at: list[MapTile | None] = [None]
+    resting = [False]
+    sent: list[PlayerStateMessage] = []
+    sync = PlayerSync(
+        player, lambda: None, sent.append, bed=lambda: at[0], resting=lambda: resting[0]
+    )
+
+    at[0] = bed
+    sync.update()
+    resting[0] = True
+    sync.update()
+    at[0] = None
+    sync.update()
+
+    assert [(m.bed, m.resting) for m in sent] == [(bed, False), (bed, True), (None, False)]

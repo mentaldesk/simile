@@ -67,10 +67,15 @@ to hurt and bite the player: they look it up when they do, not at startup.
 - **Damage.** `hurt(damage)` takes that much of their health. At none they collapse as when they
   starve, with `cause` `health`, and wake at home with `waking` (0.25) health.
 - **Healing.** It comes back by `heal` (0.1) a sim hour, from none to full in ten hours, and
-  `heal_at_home` (0.5) at home, in two. Standing at their bed at home they rest, and it comes back
-  as fast as a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the
-  sim's speed. Their beds are the cells the `bed` furniture covers on their home's floor maps
-  (`beds_in`). The clinic patches them up for money (`simile.clinic`).
+  `heal_at_home` (0.5) at home, in two, standing on their bed too. Their beds are the cells the
+  `bed` furniture covers on their home's floor maps (`beds_in`), and `player_state`'s `bed` is the
+  one where they stand. The clinic patches them up for money (`simile.clinic`).
+- **Resting.** The client's `rest` lies them down in that bed, unless they're at full health or
+  infected. Once they've lain down, `lie_down` (0.8) real seconds later, it comes back as fast as
+  a plug charges the lamp: from none to full in `rest` (3) real seconds, whatever the sim's speed.
+  They rest until they're full, move off the bed, an infection sets in, they collapse or they get
+  up with `rest`, and `player_state`'s `resting` says so as soon as it changes. Getting back on
+  the bed doesn't lie them down again.
 - **A rat bite.** `bite(damage)` takes `damage` health (a rat's is 0.12, `simile.creatures`)
   and gives them a `rat_bite` effect of `bitten` (0.2) strength, or makes the one they have that
   much stronger, up to 1, keeping `since` from the first. A bite fades by 0.25 a sim hour, so a single one is gone in under an hour. One
@@ -177,7 +182,8 @@ fill with theirs. It's sent:
 - at once after any change but to hunger, power, health, an effect's strength or a lamp's charge:
   money, items, a lamp's switch, the body, an effect gained or gone, a pile, a pickup taken, or the
   meal on offer, the shop that's shut or the buyer as they walk in or out of somewhere to eat or
-  sell, or as a shop they're in starts or stops serving;
+  sell, or as a shop they're in starts or stops serving, or their bed where they stand or their
+  resting in it;
 - and for hunger, power, health, an effect's strength or a lamp's charge alone, once one of them
   has moved by `step` (0.01)
   since the last one sent, or reached 0 or 1, so a full or flat battery is never shown a step
